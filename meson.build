@@ -109,7 +109,11 @@ server_src = [
 ]
 
 game_src = [
+  'src/shared/m_flash.c',
+  'src/shared/shared.c'
 ]
+
+subdir('src/game')
 
 cc = meson.get_compiler('c')
 
