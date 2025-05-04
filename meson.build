@@ -376,11 +376,6 @@ elif not openal.found()
   warning('Neither software sound nor OpenAL enabled, this is not supported')
 endif
 
-if get_option('anticheat-server')
-  server_src += 'src/server/ac.c'
-  config.set('USE_AC_SERVER', 'USE_SERVER')
-endif
-
 if get_option('mvd-server')
   common_src += 'src/server/mvd.c'
   config.set10('USE_MVD_SERVER', true)
@@ -502,7 +497,6 @@ if system_wide
 endif
 
 summary({
-  'anticheat-server'   : config.get('USE_AC_SERVER', '') != '',
   'auto-reply'         : config.get('USE_AUTOREPLY', 0) != 0,
   'avcodec'            : config.get('USE_AVCODEC', 0) != 0,
   'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,

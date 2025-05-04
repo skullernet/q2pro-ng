@@ -1309,7 +1309,6 @@ static void CL_ConnectionlessPacket(void)
     // server connection
     if (!strcmp(c, "client_connect")) {
         netchan_type_t type;
-        int anticheat = 0;
         char mapname[MAX_QPATH];
         bool got_server = false;
 
@@ -1338,12 +1337,7 @@ static void CL_ConnectionlessPacket(void)
         j = Cmd_Argc();
         for (i = 1; i < j; i++) {
             s = Cmd_Argv(i);
-            if (!strncmp(s, "ac=", 3)) {
-                s += 3;
-                if (*s) {
-                    anticheat = Q_atoi(s);
-                }
-            } else if (!strncmp(s, "nc=", 3)) {
+            if (!strncmp(s, "nc=", 3)) {
                 s += 3;
                 if (*s) {
                     type = Q_atoi(s);
@@ -1371,28 +1365,6 @@ static void CL_ConnectionlessPacket(void)
         Netchan_Close(&cls.netchan);
         Netchan_Setup(&cls.netchan, NS_CLIENT, type, &cls.serverAddress,
                       cls.quakePort, 1024, cls.serverProtocol);
-
-#if USE_AC_CLIENT
-        if (anticheat) {
-            MSG_WriteByte(clc_nop);
-            MSG_FlushTo(&cls.netchan.message);
-            Netchan_Transmit(&cls.netchan, 0, NULL, 3);
-            S_StopAllSounds();
-            cls.connect_count = -1;
-            Com_Printf("Loading anticheat, this may take a few moments...\n");
-            SCR_UpdateScreen();
-            if (!Sys_GetAntiCheatAPI()) {
-                Com_Printf("Trying to connect without anticheat.\n");
-            } else {
-                Com_NPrintf("Anticheat loaded successfully.\n");
-            }
-        }
-#else
-        if (anticheat >= 2) {
-            Com_Printf("Anticheat required by server, "
-                       "but no anticheat support linked in.\n");
-        }
-#endif
 
         CL_ClientCommand("new");
         cls.state = ca_connected;

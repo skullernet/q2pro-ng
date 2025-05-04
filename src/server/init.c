@@ -496,7 +496,5 @@ void SV_InitGame(unsigned mvd_spawn)
         client->number = i;
     }
 
-    AC_Connect(mvd_spawn);
-
     svs.initialized = true;
 }

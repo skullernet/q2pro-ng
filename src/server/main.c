@@ -138,24 +138,13 @@ void SV_RemoveClient(client_t *client)
 
 void SV_CleanClient(client_t *client)
 {
-    int i;
-#if USE_AC_SERVER
-    string_entry_t *bad, *next;
-
-    for (bad = client->ac_bad_files; bad; bad = next) {
-        next = bad->next;
-        Z_Free(bad);
-    }
-    client->ac_bad_files = NULL;
-#endif
-
     // close any existing download
     SV_CloseDownload(client);
 
     Z_Freep(&client->version_string);
 
     // free baselines allocated for this client
-    for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
+    for (int i = 0; i < SV_BASELINES_CHUNKS; i++) {
         Z_Freep(&client->baselines[i]);
     }
 
@@ -235,8 +224,6 @@ void SV_DropClient(client_t *client, const char *reason)
         // this will remove the body, among other things
         ge->ClientDisconnect(client->edict);
     }
-
-    AC_ClientDisconnect(client);
 
     SV_CleanClient(client);
 
@@ -1035,7 +1022,6 @@ static void init_pmove_and_es_flags(client_t *newcl)
 static void send_connect_packet(client_t *newcl, int nctype)
 {
     const char *ncstring    = "";
-    const char *acstring    = "";
     const char *dlstring1   = "";
     const char *dlstring2   = "";
 
@@ -1046,16 +1032,13 @@ static void send_connect_packet(client_t *newcl, int nctype)
             ncstring = " nc=0";
     }
 
-    if (!sv_force_reconnect->string[0] || newcl->reconnect_var[0])
-        acstring = AC_ClientConnect(newcl);
-
     if (sv_downloadserver->string[0]) {
         dlstring1 = " dlserver=";
         dlstring2 = sv_downloadserver->string;
     }
 
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s%s map=%s",
-                      ncstring, acstring, dlstring1, dlstring2, newcl->mapname);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s map=%s",
+                      ncstring, dlstring1, dlstring2, newcl->mapname);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1937,9 +1920,6 @@ unsigned SV_Frame(unsigned msec)
     NET_GetPackets(NS_SERVER, SV_PacketEvent);
 
     if (svs.initialized) {
-        // run connection to the anticheat server
-        AC_Run();
-
         // run connections from MVD/GTV clients
         SV_MvdRunClients();
 
@@ -2172,8 +2152,6 @@ void SV_Init(void)
     MVD_Register();
 #endif
 
-    AC_Register();
-
     SV_RegisterSavegames();
 
     Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_DEFAULT), CVAR_SERVERINFO | CVAR_ROM);
@@ -2382,8 +2360,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     }
     type &= ~MVD_SPAWN_MASK;
 #endif
-
-    AC_Disconnect();
 
     SV_MvdShutdown(type);
 

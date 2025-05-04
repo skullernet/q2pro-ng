@@ -190,22 +190,6 @@ typedef enum {
     cs_spawned      // client is fully in game
 } clstate_t;
 
-#if USE_AC_SERVER
-
-typedef enum {
-    AC_NORMAL,
-    AC_REQUIRED,
-    AC_EXEMPT
-} ac_required_t;
-
-typedef enum {
-    AC_QUERY_UNSENT,
-    AC_QUERY_SENT,
-    AC_QUERY_DONE
-} ac_query_t;
-
-#endif // USE_AC_SERVER
-
 #define MSG_POOLSIZE        1024
 #define MSG_TRESHOLD        (62 - sizeof(list_t))   // keep message_packet_t 64 bytes aligned
 
@@ -371,17 +355,6 @@ typedef struct client_s {
 
     // misc
     time_t          connect_time; // time of initial connect
-
-#if USE_AC_SERVER
-    bool            ac_valid;
-    ac_query_t      ac_query_sent;
-    ac_required_t   ac_required;
-    int             ac_file_failures;
-    unsigned        ac_query_time;
-    int             ac_client_type;
-    string_entry_t  *ac_bad_files;
-    char            *ac_token;
-#endif
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -681,41 +654,6 @@ void SV_MvdStop_f(void);
 
 #define SV_MvdRecord_f()    (void)0
 #define SV_MvdStop_f()      (void)0
-#endif
-
-//
-// sv_ac.c
-//
-#if USE_AC_SERVER
-const char *AC_ClientConnect(client_t *cl);
-void AC_ClientDisconnect(client_t *cl);
-bool AC_ClientBegin(client_t *cl);
-void AC_ClientAnnounce(client_t *cl);
-void AC_ClientToken(client_t *cl, const char *token);
-
-void AC_Register(void);
-void AC_Disconnect(void);
-void AC_Connect(unsigned mvd_spawn);
-void AC_Run(void);
-
-void AC_List_f(void);
-void AC_Info_f(void);
-#else
-#define AC_ClientConnect(cl)        ""
-#define AC_ClientDisconnect(cl)     (void)0
-#define AC_ClientBegin(cl)          true
-#define AC_ClientAnnounce(cl)       (void)0
-#define AC_ClientToken(cl, token)   (void)0
-
-#define AC_Register()               (void)0
-#define AC_Disconnect()             (void)0
-#define AC_Connect(mvd_spawn)       (void)0
-#define AC_Run()                    (void)0
-
-#define AC_List_f() \
-    Com_Printf("This server does not support anticheat.\n")
-#define AC_Info_f() \
-    Com_Printf("This server does not support anticheat.\n")
 #endif
 
 //

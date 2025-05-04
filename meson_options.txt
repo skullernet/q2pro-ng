@@ -1,8 +1,3 @@
-option('anticheat-server',
-  type: 'boolean',
-  value: false,
-  description: 'Enable r1ch.net anticheat server interface')
-
 option('auto-reply',
   type: 'boolean',
   value: true,

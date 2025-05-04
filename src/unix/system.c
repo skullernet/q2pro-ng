@@ -138,14 +138,6 @@ const char *Sys_ErrorString(int err)
     return strerror(err);
 }
 
-#if USE_AC_CLIENT
-bool Sys_GetAntiCheatAPI(void)
-{
-    Sys_Sleep(1500);
-    return false;
-}
-#endif
-
 bool Sys_SetNonBlock(int fd, bool nb)
 {
     int ret = fcntl(fd, F_GETFL, 0);

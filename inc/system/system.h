@@ -68,10 +68,6 @@ void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 void    Sys_DebugBreak(void);
 bool    Sys_IsMainThread(void);
 
-#if USE_AC_CLIENT
-bool    Sys_GetAntiCheatAPI(void);
-#endif
-
 #ifndef _WIN32
 bool    Sys_SetNonBlock(int fd, bool nb);
 #endif
