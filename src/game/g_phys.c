@@ -139,8 +139,6 @@ ClipVelocity
 Slide off of the impacting object
 ==================
 */
-#define STOP_EPSILON    0.1f
-
 void ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce)
 {
     float dot = DotProduct(in, normal);
@@ -164,146 +162,6 @@ void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float o
 }
 
 /*
-==================
-PM_StepSlideMove
-
-Each intersection will try to step over the obstruction instead of
-sliding along it.
-
-Returns a new origin, velocity, and contact entity
-Does not modify any world state?
-==================
-*/
-
-#define MAX_CLIP_PLANES 5
-
-#define MAXTOUCH 32
-
-typedef struct {
-    int num;
-    trace_t traces[MAXTOUCH];
-} touch_list_t;
-
-static void G_RecordTrace(touch_list_t *touch, const trace_t *tr)
-{
-    if (touch->num == MAXTOUCH)
-        return;
-
-    for (int i = 0; i < touch->num; i++)
-        if (touch->traces[i].ent == tr->ent)
-            return;
-
-    touch->traces[touch->num++] = *tr;
-}
-
-static void G_StepSlideMove(edict_t *ent, float frametime, contents_t mask, touch_list_t *touch)
-{
-    vec3_t  dir;
-    float   d;
-    int     numplanes;
-    vec3_t  planes[MAX_CLIP_PLANES];
-    vec3_t  primal_velocity;
-    int     i, j;
-    trace_t trace;
-    vec3_t  end;
-    float   time_left;
-
-    VectorCopy(ent->velocity, primal_velocity);
-    numplanes = 0;
-
-    time_left = frametime;
-
-    for (int bumpcount = 0; bumpcount < 4; bumpcount++) {
-        VectorMA(ent->s.origin, time_left, ent->velocity, end);
-
-        trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
-
-        if (trace.allsolid) {
-            // entity is trapped in another solid
-            ent->velocity[2] = 0; // don't build up falling damage
-
-            // save entity for contact
-            G_RecordTrace(touch, &trace);
-            return;
-        }
-
-        if (trace.fraction > 0) {
-            // actually covered some distance
-            VectorCopy(trace.endpos, ent->s.origin);
-            numplanes = 0;
-        }
-
-        if (trace.fraction == 1)
-            break; // moved the entire distance
-
-        // save entity for contact
-        G_RecordTrace(touch, &trace);
-
-        time_left -= time_left * trace.fraction;
-
-        // slide along this plane
-        if (numplanes >= MAX_CLIP_PLANES) {
-            // this shouldn't really happen
-            VectorClear(ent->velocity);
-            break;
-        }
-
-        //
-        // if this is the same plane we hit before, nudge origin
-        // out along it, which fixes some epsilon issues with
-        // non-axial planes (xswamp, q2dm1 sometimes...)
-        //
-        for (i = 0; i < numplanes; i++) {
-            if (DotProduct(trace.plane.normal, planes[i]) > 0.99f) {
-                ent->s.origin[0] += trace.plane.normal[0] * 0.01f;
-                ent->s.origin[1] += trace.plane.normal[1] * 0.01f;
-                G_FixStuckObject_Generic(ent->s.origin, ent->mins, ent->maxs, ent, mask);
-                break;
-            }
-        }
-
-        if (i < numplanes)
-            continue;
-
-        VectorCopy(trace.plane.normal, planes[numplanes]);
-        numplanes++;
-
-        //
-        // modify original_velocity so it parallels all of the clip planes
-        //
-        for (i = 0; i < numplanes; i++) {
-            SlideClipVelocity(ent->velocity, planes[i], ent->velocity, 1.01f);
-            for (j = 0; j < numplanes; j++)
-                if ((j != i) && DotProduct(ent->velocity, planes[j]) < 0)
-                    break; // not ok
-            if (j == numplanes)
-                break;
-        }
-
-        if (i != numplanes) {
-            // go along this plane
-        } else {
-            // go along the crease
-            if (numplanes != 2) {
-                VectorClear(ent->velocity);
-                break;
-            }
-            CrossProduct(planes[0], planes[1], dir);
-            d = DotProduct(dir, ent->velocity);
-            VectorScale(dir, d, ent->velocity);
-        }
-
-        //
-        // if velocity is against the original velocity, stop dead
-        // to avoid tiny oscillations in sloping corners
-        //
-        if (DotProduct(ent->velocity, primal_velocity) <= 0) {
-            VectorClear(ent->velocity);
-            break;
-        }
-    }
-}
-/*
 ============
 SV_FlyMove
 
@@ -315,9 +173,8 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
     ent->groundentity = NULL;
 
     touch_list_t touch;
-    touch.num = 0;
-
-    G_StepSlideMove(ent, time, mask, &touch);
+    PM_StepSlideMove_Generic(ent->s.origin, ent->velocity, time, ent->mins,
+                             ent->maxs, ent, mask, &touch, false, gi.trace);
 
     for (int i = 0; i < touch.num; i++) {
         trace_t *trace = &touch.traces[i];

@@ -15,6 +15,8 @@
 #include "shared/game.h"
 #include "shared/gameext.h"
 
+#include "bg_local.h"
+
 #if USE_FPS
 #define G_GMF_VARIABLE_FPS  GMF_VARIABLE_FPS
 #else
@@ -1467,13 +1469,6 @@ void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *d
 // g_monster.c
 //
 
-typedef enum {
-    WATER_NONE,
-    WATER_FEET,
-    WATER_WAIST,
-    WATER_UNDER
-} water_level_t;
-
 void monster_muzzleflash(edict_t *self, const vec3_t start, monster_muzzleflash_id_t id);
 void monster_fire_bullet(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int kick, int hspread,
                          int vspread, monster_muzzleflash_id_t flashtype);
@@ -1558,8 +1553,8 @@ typedef enum {
     NO_GOOD_POSITION
 } stuck_result_t;
 
-stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs, edict_t *ignore, contents_t mask);
-
+stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
+                                        edict_t *ignore, contents_t mask, trace_func_t trace_func);
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check);
 
 // this is for the count of monsters

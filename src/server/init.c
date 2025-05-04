@@ -448,15 +448,9 @@ void SV_InitGame(void)
     svs.pmp.waterhack = true;
     svs.pmp.flyfriction = 4;
 
-    if (sv_qwmod->integer) {
-        PmoveEnableQW(&svs.pmp);
-    }
-
     // init game
     SV_InitGameProgs();
     SV_CheckForEnhancedSavegames();
-
-    PmoveEnableExt(&svs.pmp);
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;

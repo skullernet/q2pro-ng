@@ -450,7 +450,7 @@ static void SV_CalcGunOffset(edict_t *ent)
 G_AddBlend
 =============
 */
-static void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
+void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
 {
     if (a <= 0)
         return;

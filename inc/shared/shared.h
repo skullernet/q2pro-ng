@@ -664,6 +664,17 @@ static inline float LongToFloat(uint32_t l)
     return dat.f;
 }
 
+static inline uint32_t FloatToLong(float f)
+{
+    union {
+        float f;
+        uint32_t l;
+    } dat;
+
+    dat.f = f;
+    return dat.l;
+}
+
 static inline int32_t SignExtend(uint32_t v, int bits)
 {
     return (int32_t)(v << (32 - bits)) >> (32 - bits);
@@ -799,6 +810,7 @@ COLLISION DETECTION
 
 // remaining contents are non-visible, and don't eat brushes
 
+#define CONTENTS_NO_WATERJUMP   BIT(13)     // KEX
 #define CONTENTS_PROJECTILECLIP BIT(14)     // KEX
 #define CONTENTS_AREAPORTAL     BIT(15)
 
@@ -877,10 +889,14 @@ typedef struct {
 #define PLANE_NON_AXIAL 6
 
 typedef struct {
-    char        name[16];
+    char        name[32];
     int         flags;
     int         value;
+    int         id;
+    char        material[16];
 } csurface_t;
+
+typedef int contents_t;
 
 // a trace is returned when a box is swept through the world
 typedef struct {
@@ -890,8 +906,10 @@ typedef struct {
     vec3_t      endpos;     // final position
     cplane_t    plane;      // surface normal at impact
     csurface_t  *surface;   // surface hit
-    int         contents;   // contents on other side of surface hit
+    contents_t  contents;   // contents on other side of surface hit
     struct edict_s  *ent;   // not set by CM_*() functions
+    cplane_t    plane2;     // second surface normal at impact
+    csurface_t *surface2;   // second surface hit
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement
@@ -899,6 +917,8 @@ typedef struct {
 typedef enum {
     // can accelerate and turn
     PM_NORMAL,
+    PM_GRAPPLE, // [Paril-KEX] pull towards velocity, no gravity
+    PM_NOCLIP,
     PM_SPECTATOR,
     // no acceleration or turning
     PM_DEAD,
@@ -907,6 +927,7 @@ typedef enum {
 } pmtype_t;
 
 // pmove->pm_flags
+#define PMF_NONE            0U
 #define PMF_DUCKED          BIT(0)
 #define PMF_JUMP_HELD       BIT(1)
 #define PMF_ON_GROUND       BIT(2)
@@ -914,11 +935,12 @@ typedef enum {
 #define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
 #define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
 #define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
-#define PMF_TELEPORT_BIT    BIT(7)      // used by Q2PRO (non-extended servers)
 
 //KEX
-#define PMF_IGNORE_PLAYER_COLLISION     BIT(7)
-#define PMF_ON_LADDER                   BIT(8)
+#define PMF_ON_LADDER                   BIT(7)
+#define PMF_NO_ANGULAR_PREDICTION       BIT(8)
+#define PMF_IGNORE_PLAYER_COLLISION     BIT(9)
+#define PMF_TIME_TRICK                  BIT(10)
 //KEX
 
 #define PM_TIME_SHIFT       0
@@ -931,13 +953,14 @@ typedef enum {
 typedef struct {
     pmtype_t    pm_type;
 
-    int32_t     origin[3];      // 19.3
-    int32_t     velocity[3];    // 19.3
+    vec3_t      origin;
+    vec3_t      velocity;
     uint16_t    pm_flags;       // ducked, jump_held, etc
     uint16_t    pm_time;        // in msec
     int16_t     gravity;
     int16_t     delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
+    int8_t      viewheight;
 } pmove_state_t;
 
 //
@@ -946,9 +969,10 @@ typedef struct {
 #define BUTTON_NONE     0U
 #define BUTTON_ATTACK   BIT(0)
 #define BUTTON_USE      BIT(1)
+#define BUTTON_HOLSTER  BIT(2)
+#define BUTTON_JUMP     BIT(3)
+#define BUTTON_CROUCH   BIT(4)
 #define BUTTON_ANY      BIT(7)  // any key whatsoever
-#define BUTTON_HOLSTER  0
-#define BUTTON_JUMP     0
 
 // usercmd_t is sent to the server each client frame
 typedef struct {
@@ -960,7 +984,22 @@ typedef struct {
     byte    lightlevel;     // light level the player is standing on
 } usercmd_t;
 
+typedef enum {
+    WATER_NONE,
+    WATER_FEET,
+    WATER_WAIST,
+    WATER_UNDER
+} water_level_t;
+
 #define MAXTOUCH    32
+
+typedef struct {
+    int num;
+    trace_t traces[MAXTOUCH];
+} touch_list_t;
+
+typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, struct edict_s *passent, contents_t contentmask);
+typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
 
 typedef struct {
     // state (in / out)
@@ -971,8 +1010,7 @@ typedef struct {
     qboolean        snapinitial;    // if s has been changed outside pmove
 
     // results (out)
-    int             numtouch;
-    struct edict_s  *touchents[MAXTOUCH];
+    touch_list_t    touch;
 
     vec3_t      viewangles;         // clamped
     float       viewheight;
@@ -981,12 +1019,24 @@ typedef struct {
 
     struct edict_s  *groundentity;
     cplane_t        groundplane;
-    int             watertype;
-    int             waterlevel;
+    contents_t      watertype;
+    water_level_t   waterlevel;
 
     // callbacks to test the world
-    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
-    int         (*pointcontents)(const vec3_t point);
+    trace_func_t    trace;
+    clip_func_t     clip;
+    int             (*pointcontents)(const vec3_t point);
+
+    // [KEX] variables (in)
+    vec3_t      viewoffset;
+    struct edict_s *player;
+
+    // [KEX] results (out)
+    vec4_t      screen_blend;
+    int         rdflags;
+    bool        jump_sound;
+    bool        step_clip;
+    float       impact_delta;
 } pmove_t;
 
 // entity_state_t->effects

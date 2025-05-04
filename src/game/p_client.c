@@ -1199,7 +1199,7 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
     // no idea why this happens in some maps..
     if (tr.startsolid && !tr.ent->client) {
         // try a nudge
-        if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, NULL, mask) == NO_GOOD_POSITION)
+        if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, NULL, mask, gi.trace) == NO_GOOD_POSITION)
             return tr.ent; // what do we do here...?
 
         trace_t tr = gi.trace(spot, player_mins, player_maxs, spot, NULL, mask);
@@ -1339,7 +1339,7 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
 
     // sometimes, landmark spawns can cause slight inconsistencies in collision;
     // we'll do a bit of tracing to make sure the bbox is clear
-    if (G_FixStuckObject_Generic(point, player_mins, player_maxs, ent, MASK_PLAYERSOLID & ~CONTENTS_PLAYER) == NO_GOOD_POSITION)
+    if (G_FixStuckObject_Generic(point, player_mins, player_maxs, ent, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, gi.trace) == NO_GOOD_POSITION)
         return false;
 
     VectorCopy(point, origin);
@@ -2468,15 +2468,6 @@ static bool HandleMenuMovement(edict_t *ent, usercmd_t *ucmd)
     return false;
 }
 
-static edict_t *pm_passent;
-static contents_t pm_clipmask;
-
-// pmove doesn't need to know about passent and contentmask
-static trace_t PM_trace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
-{
-    return gi.trace(start, mins, maxs, end, pm_passent, contentmask ? contentmask : pm_clipmask);
-}
-
 /*
 ==============
 ClientThink
@@ -2548,18 +2539,11 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         else
             client->ps.pmove.pm_type = PM_NORMAL;
 
-        pm_passent = ent;
-        if (client->ps.pmove.pm_type == PM_DEAD || client->ps.pmove.pm_type == PM_GIB)
-            pm_clipmask = MASK_DEADSOLID;
-        else
-            pm_clipmask = MASK_PLAYERSOLID;
-
         // [Paril-KEX]
         if (!G_ShouldPlayersCollide(false) ||
             (coop->integer && !(ent->clipmask & CONTENTS_PLAYER)) // if player collision is on and we're temporarily ghostly...
            )
         {
-            pm_clipmask &= ~CONTENTS_PLAYER;
             client->ps.pmove.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
         } else {
             client->ps.pmove.pm_flags &= ~PMF_IGNORE_PLAYER_COLLISION;
@@ -2575,17 +2559,16 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         }
 
         pm.s = client->ps.pmove;
+        pm.player = ent;
 
-        for (i = 0; i < 3; i++) {
-            pm.s.origin[i] = COORD2SHORT(ent->s.origin[i]);
-            pm.s.velocity[i] = COORD2SHORT(ent->velocity[i]);
-        }
+        VectorCopy(ent->s.origin, pm.s.origin);
+        VectorCopy(ent->velocity, pm.s.velocity);
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
             pm.snapinitial = qtrue;
 
         pm.cmd = *ucmd;
-        pm.trace = PM_trace;
+        pm.trace = gi.trace;
         pm.pointcontents = gi.pointcontents;
 
         // perform a pmove
@@ -2595,10 +2578,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         vec3_t old_origin;
         VectorCopy(ent->s.origin, old_origin);
 
-        for (i = 0; i < 3; i++) {
-            ent->s.origin[i] = SHORT2COORD(pm.s.origin[i]);
-            ent->velocity[i] = SHORT2COORD(pm.s.velocity[i]);
-        }
+        VectorCopy(pm.s.origin, ent->s.origin);
+        VectorCopy(pm.s.velocity, ent->velocity);
 
         // [Paril-KEX] if we stepped onto/off of a ladder, reset the
         // last ladder pos
@@ -2673,14 +2654,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         }
 
         // touch other objects
-        for (i = 0; i < pm.numtouch; i++) {
-            other = pm.touchents[i];
-            for (j = 0; j < i; j++)
-                if (pm.touchents[j] == other)
-                    break;
-            if (j != i)
-                continue;   // duplicated
-
+        for (i = 0; i < pm.touch.num; i++) {
+            other = pm.touch.traces[i].ent;
             if (other->touch)
                 other->touch(other, ent, &null_trace, true);
         }

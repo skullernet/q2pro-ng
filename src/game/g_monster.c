@@ -1110,7 +1110,7 @@ bool monster_start(edict_t *self)
 
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 {
-    stuck_result_t result = G_FixStuckObject_Generic(check, self->mins, self->maxs, self, G_GetClipMask(self));
+    stuck_result_t result = G_FixStuckObject_Generic(check, self->mins, self->maxs, self, G_GetClipMask(self), gi.trace);
 
     if (result == NO_GOOD_POSITION)
         return result;

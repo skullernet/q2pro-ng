@@ -25,7 +25,6 @@ common_src = [
   'src/common/msg.c',
   'src/common/net/chan.c',
   'src/common/net/net.c',
-  'src/common/pmove.c',
   'src/common/prompt.c',
   'src/common/sizebuf.c',
   'src/common/utils.c',

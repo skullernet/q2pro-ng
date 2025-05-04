@@ -537,7 +537,6 @@ static void CL_ParseServerData(void)
     }
     if (i & Q2PRO_PF_QW_MODE) {
         Com_DPrintf("Q2PRO QW mode enabled\n");
-        PmoveEnableQW(&cl.pmp);
     }
     if (i & Q2PRO_PF_WATERJUMP_HACK) {
         Com_DPrintf("Q2PRO waterjump hack enabled\n");
@@ -551,7 +550,6 @@ static void CL_ParseServerData(void)
         cl.esFlags |= MSG_ES_EXTENSIONS_2;
         cl.psFlags |= MSG_PS_EXTENSIONS_2;
         cl.psFlags |= MSG_PS_MOREBITS;
-        PmoveEnableExt(&cl.pmp);
     }
     cl.esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
     cl.esFlags |= MSG_ES_BEAMORIGIN;
