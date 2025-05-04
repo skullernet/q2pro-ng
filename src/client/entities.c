@@ -149,12 +149,7 @@ static void parse_entity_update(const centity_state_t *state)
 
     if (state->solid && state->solid != PACKED_BSP) {
         // encoded bbox
-        if (cl.csr.extended)
-            MSG_UnpackSolid32_Ver2(state->solid, ent->mins, ent->maxs);
-        else if (cl.esFlags & MSG_ES_LONGSOLID)
-            MSG_UnpackSolid32_Ver1(state->solid, ent->mins, ent->maxs);
-        else
-            MSG_UnpackSolid16(state->solid, ent->mins, ent->maxs);
+        MSG_UnpackSolid32_Ver2(state->solid, ent->mins, ent->maxs);
         ent->radius = Distance(ent->maxs, ent->mins) * 0.5f;
     } else {
         VectorClear(ent->mins);
@@ -222,11 +217,11 @@ static void parse_entity_event(int number)
             CL_PlayFootstepSfx(-1, number, 1.0f, ATTN_NORM);
         break;
     case EV_OTHER_FOOTSTEP:
-        if (cl.csr.extended && cl_footsteps->integer)
+        if (cl_footsteps->integer)
             CL_PlayFootstepSfx(-1, number, 0.5f, ATTN_IDLE);
         break;
     case EV_LADDER_STEP:
-        if (cl.csr.extended && cl_footsteps->integer)
+        if (cl_footsteps->integer)
             CL_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
     case EV_FALLSHORT:
@@ -335,10 +330,7 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
     }
 
     // no lerping if teleport bit was flipped
-    if (!cl.csr.extended && (ops->pmove.pm_flags ^ ps->pmove.pm_flags) & PMF_TELEPORT_BIT)
-        goto dup;
-
-    if (cl.csr.extended && (ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
+    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
         goto dup;
 
     // no lerping if POV number changed
@@ -618,60 +610,57 @@ static void CL_AddPacketEntities(void)
         }
 
         if (!cl_gibs->integer) {
-            if (effects & EF_GIB && !(cl.csr.extended && effects & EF_ROCKET))
+            if (effects & EF_GIB && !(effects & EF_ROCKET))
                 goto skip;
             if (effects & EF_GREENGIB)
                 goto skip;
         }
 
         // create a new entity
-
-        if (cl.csr.extended) {
-            if (renderfx & RF_FLARE) {
-                if (!cl_flares->integer)
-                    goto skip;
-                float fade_start = s1->modelindex2;
-                float fade_end = s1->modelindex3;
-                float d = Distance(cl.refdef.vieworg, ent.origin);
-                if (d < fade_start)
-                    goto skip;
-                if (d > fade_end)
-                    ent.alpha = 1;
-                else
-                    ent.alpha = (d - fade_start) / (fade_end - fade_start);
-                ent.skin = 0;
-                if (renderfx & RF_CUSTOMSKIN && (unsigned)s1->frame < cl.csr.max_images)
-                    ent.skin = cl.image_precache[s1->frame];
-                if (!ent.skin)
-                    ent.skin = cl_img_flare;
-                ent.scale = s1->scale ? s1->scale : 1;
-                ent.flags = renderfx | RF_TRANSLUCENT;
-                if (!s1->skinnum)
-                    ent.rgba.u32 = U32_WHITE;
-                else
-                    ent.rgba.u32 = BigLong(s1->skinnum);
-                ent.skinnum = s1->number;
-                V_AddEntity(&ent);
+        if (renderfx & RF_FLARE) {
+            if (!cl_flares->integer)
                 goto skip;
-            }
-
-            if (renderfx & RF_CUSTOM_LIGHT) {
-                color_t color;
-                if (!s1->skinnum)
-                    color.u32 = U32_WHITE;
-                else
-                    color.u32 = BigLong(s1->skinnum);
-                V_AddLight(ent.origin, DLIGHT_CUTOFF + s1->frame,
-                           color.u8[0] / 255.0f,
-                           color.u8[1] / 255.0f,
-                           color.u8[2] / 255.0f);
+            float fade_start = s1->modelindex2;
+            float fade_end = s1->modelindex3;
+            float d = Distance(cl.refdef.vieworg, ent.origin);
+            if (d < fade_start)
                 goto skip;
-            }
+            if (d > fade_end)
+                ent.alpha = 1;
+            else
+                ent.alpha = (d - fade_start) / (fade_end - fade_start);
+            ent.skin = 0;
+            if (renderfx & RF_CUSTOMSKIN && (unsigned)s1->frame < MAX_IMAGES)
+                ent.skin = cl.image_precache[s1->frame];
+            if (!ent.skin)
+                ent.skin = cl_img_flare;
+            ent.scale = s1->scale ? s1->scale : 1;
+            ent.flags = renderfx | RF_TRANSLUCENT;
+            if (!s1->skinnum)
+                ent.rgba.u32 = U32_WHITE;
+            else
+                ent.rgba.u32 = BigLong(s1->skinnum);
+            ent.skinnum = s1->number;
+            V_AddEntity(&ent);
+            goto skip;
+        }
 
-            if (renderfx & RF_BEAM && s1->modelindex > 1) {
-                CL_DrawBeam(ent.oldorigin, ent.origin, cl.model_draw[s1->modelindex]);
-                goto skip;
-            }
+        if (renderfx & RF_CUSTOM_LIGHT) {
+            color_t color;
+            if (!s1->skinnum)
+                color.u32 = U32_WHITE;
+            else
+                color.u32 = BigLong(s1->skinnum);
+            V_AddLight(ent.origin, DLIGHT_CUTOFF + s1->frame,
+                       color.u8[0] / 255.0f,
+                       color.u8[1] / 255.0f,
+                       color.u8[2] / 255.0f);
+            goto skip;
+        }
+
+        if (renderfx & RF_BEAM && s1->modelindex > 1) {
+            CL_DrawBeam(ent.oldorigin, ent.origin, cl.model_draw[s1->modelindex]);
+            goto skip;
         }
 
         // tweak the color of beams
@@ -709,7 +698,7 @@ static void CL_AddPacketEntities(void)
         }
 
         // allow skin override for remaster
-        if (cl.csr.extended && renderfx & RF_CUSTOMSKIN && (unsigned)s1->skinnum < cl.csr.max_images) {
+        if (renderfx & RF_CUSTOMSKIN && (unsigned)s1->skinnum < MAX_IMAGES) {
             ent.skin = cl.image_precache[s1->skinnum];
             ent.skinnum = 0;
         }
@@ -890,10 +879,8 @@ static void CL_AddPacketEntities(void)
             if (s1->modelindex2 == MODELINDEX_PLAYER) {
                 // custom weapon
                 ci = &cl.clientinfo[s1->skinnum & 0xff];
-                i = (s1->skinnum >> 8); // 0 is default weapon model
-                if (cl.csr.extended)
-                    i &= 0xff;
-                if (i < 0 || i > cl.numWeaponModels - 1)
+                i = (s1->skinnum >> 8) & 0xff; // 0 is default weapon model
+                if (i >= cl.numWeaponModels)
                     i = 0;
                 ent.model = ci->weaponmodel[i];
                 if (!ent.model) {
@@ -906,7 +893,7 @@ static void CL_AddPacketEntities(void)
                 ent.model = cl.model_draw[s1->modelindex2];
 
             // PMM - check for the defender sphere shell .. make it translucent
-            if (!Q_strcasecmp(cl.configstrings[cl.csr.models + s1->modelindex2], "models/items/shell/tris.md2")) {
+            if (!Q_strcasecmp(cl.configstrings[CS_MODELS + s1->modelindex2], "models/items/shell/tris.md2")) {
                 ent.alpha = custom_alpha * 0.32f;
                 ent.flags = RF_TRANSLUCENT;
             }
@@ -961,7 +948,7 @@ static void CL_AddPacketEntities(void)
             goto skip;
 
         if (effects & EF_ROCKET) {
-            if (cl.csr.extended && effects & EF_GIB) {
+            if (effects & EF_GIB) {
                 CL_DiminishingTrail(cent, ent.origin, DT_FIREBALL);
                 has_trail = true;
             } else if (!(cl_disable_particles->integer & NOPART_ROCKET_TRAIL)) {
@@ -1087,13 +1074,10 @@ static int shell_effect_hack(const centity_t *ent)
         flags |= RF_SHELL_DOUBLE;
     if (ent->current.effects & EF_HALF_DAMAGE)
         flags |= RF_SHELL_HALF_DAM;
-
-    if (cl.csr.extended) {
-        if (ent->current.morefx & EFX_DUALFIRE)
-            flags |= RF_SHELL_LITE_GREEN;
-        if (ent->current.effects & EF_COLOR_SHELL)
-            flags |= ent->current.renderfx & RF_SHELL_MASK;
-    }
+    if (ent->current.morefx & EFX_DUALFIRE)
+        flags |= RF_SHELL_LITE_GREEN;
+    if (ent->current.effects & EF_COLOR_SHELL)
+        flags |= ent->current.renderfx & RF_SHELL_MASK;
 
     return flags;
 }
@@ -1245,7 +1229,7 @@ static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
     vec3_t org, ang;
 
     // check against world
-    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask, cl.csr.extended);
+    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
     tr->ent = (struct edict_s *)cl_entities;
     if (tr->fraction == 0)
         return;     // blocked by the world
@@ -1266,7 +1250,7 @@ static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         LerpAngles(ent->prev.angles, ent->current.angles, cl.lerpfrac, ang);
 
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs, cmodel->headnode,
-                               contentmask, org, ang, cl.csr.extended);
+                               contentmask, org, ang);
 
         CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
     }
@@ -1424,12 +1408,12 @@ void CL_CalcViewValues(void)
     }
 
     // interpolate blend
-    if (cl.csr.extended && ops->blend[3])
+    if (ops->blend[3])
         lerp_values(ops->blend, ps->blend, lerp, cl.refdef.screen_blend, 4);
     else
         Vector4Copy(ps->blend, cl.refdef.screen_blend);
 
-    if (cl.csr.extended && ops->damage_blend[3])
+    if (ops->damage_blend[3])
         lerp_values(ops->damage_blend, ps->damage_blend, lerp, cl.refdef.damage_blend, 4);
     else
         Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
@@ -1511,7 +1495,7 @@ void CL_GetEntitySoundOrigin(unsigned entnum, vec3_t org)
     const mmodel_t  *mod;
     vec3_t          mid;
 
-    if (entnum >= cl.csr.max_edicts)
+    if (entnum >= MAX_EDICTS)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
     if (!entnum || entnum == listener_entnum) {

@@ -920,7 +920,7 @@ static void Con_DrawSolidConsole(void)
         // draw loading state
         switch (con.loadstate) {
         case LOAD_MAP:
-            text = cl.configstrings[cl.csr.models + 1];
+            text = cl.configstrings[CS_MODELS + 1];
             break;
         case LOAD_MODELS:
             text = "models";

@@ -736,7 +736,7 @@ static void BSP_MergeLeafContents(bsp_t *bsp)
 
     for (i = 1, leaf = bsp->leafs + i; i < bsp->numleafs; i++, leaf++)
         for (j = 0; j < leaf->numleafbrushes; j++)
-            leaf->contents[1] |= leaf->firstleafbrush[j]->contents;
+            leaf->contents |= leaf->firstleafbrush[j]->contents;
 }
 
 /*

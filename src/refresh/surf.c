@@ -1029,7 +1029,7 @@ static void remove_fake_sky_faces(const bsp_t *bsp)
 
     // find CONTENTS_MIST leafs
     for (i = 1, leaf = bsp->leafs + i; i < bsp->numleafs; i++, leaf++) {
-        if (!(leaf->contents[0] & CONTENTS_MIST))
+        if (!(leaf->contents & CONTENTS_MIST))
             continue;
 
         // remove sky faces in this leaf

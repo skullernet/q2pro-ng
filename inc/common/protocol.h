@@ -32,8 +32,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     ((x) >= PROTOCOL_VERSION_MINOR_OLDEST && \
      (x) <= PROTOCOL_VERSION_MINOR)
 
-#define VALIDATE_CLIENTNUM(csr, x) \
-    ((x) >= -1 && (x) < (csr)->max_edicts - 1)
+#define VALIDATE_CLIENTNUM(x) \
+    ((x) >= -1 && (x) < MAX_EDICTS - 1)
 
 #define Q2PRO_PF_STRAFEJUMP_HACK    BIT(0)
 #define Q2PRO_PF_QW_MODE            BIT(1)

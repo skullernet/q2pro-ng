@@ -494,7 +494,7 @@ static void GL_OccludeFlares(void)
         if (dist > 20)
             scale += dist * 0.004f;
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents[0] & CONTENTS_SOLID) {
+        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents & CONTENTS_SOLID) {
             VectorNormalize(dir);
             VectorMA(ent->origin, -5.0f, dir, org);
             make_flare_quad(org, scale);
@@ -1001,7 +1001,7 @@ static size_t GL_ViewLeaf_m(char *buffer, size_t size)
         const mleaf_t *leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
         return Q_snprintf(buffer, size, "%td %d %d %d %#x", leaf - bsp->leafs,
                           leaf->cluster, leaf->numleafbrushes, leaf->numleaffaces,
-                          leaf->contents[0]);
+                          leaf->contents);
     }
 
     return Q_strlcpy(buffer, "", size);

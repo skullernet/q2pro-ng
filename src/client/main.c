@@ -1072,7 +1072,7 @@ static void CL_Skins_f(void)
     CL_RegisterVWepModels();
 
     for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[cl.csr.playerskins + i];
+        s = cl.configstrings[CS_PLAYERSKINS + i];
         if (!s[0])
             continue;
         ci = &cl.clientinfo[i];
@@ -1096,7 +1096,7 @@ static void cl_noskins_changed(cvar_t *self)
     }
 
     for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[cl.csr.playerskins + i];
+        s = cl.configstrings[CS_PLAYERSKINS + i];
         if (!s[0])
             continue;
         ci = &cl.clientinfo[i];
@@ -1234,7 +1234,6 @@ static void CL_ConnectionlessPacket(void)
         cls.state = ca_connected;
         cls.connect_count = 0;
         Q_strlcpy(cl.mapname, mapname, sizeof(cl.mapname)); // for levelshot screen
-        cl.csr = cs_remap_old;
         cl.max_stats = MAX_STATS_OLD;
         return;
     }
@@ -2014,7 +2013,7 @@ static void CL_Item_c(genctx_t *ctx, int argnum)
     ctx->ignorecase = true;
     ctx->stripquotes = true;
     for (int i = 0; i < MAX_ITEMS; i++)
-        Prompt_AddMatch(ctx, cl.configstrings[cl.csr.items + i]);
+        Prompt_AddMatch(ctx, cl.configstrings[CS_ITEMS + i]);
 }
 
 static size_t CL_Mapname_m(char *buffer, size_t size)
@@ -2120,7 +2119,7 @@ static size_t CL_Armor_m(char *buffer, size_t size)
 
 static size_t CL_WeaponModel_m(char *buffer, size_t size)
 {
-    int i = cl.csr.models + (cl.frame.ps.gunindex & GUNINDEX_MASK);
+    int i = CS_MODELS + (cl.frame.ps.gunindex & GUNINDEX_MASK);
     return Q_strlcpy(buffer, cl.configstrings[i], size);
 }
 

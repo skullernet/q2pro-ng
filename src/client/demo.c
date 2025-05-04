@@ -75,14 +75,7 @@ fail:
 
 void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
 {
-    MSG_PackEntity(out, &in->s, cl.csr.extended ? &in->x : NULL);
-
-    // repack solid 32 to 16
-    if (!cl.csr.extended && cl.esFlags & MSG_ES_LONGSOLID && in->solid && in->solid != PACKED_BSP) {
-        vec3_t mins, maxs;
-        MSG_UnpackSolid32_Ver1(in->solid, mins, maxs);
-        out->solid = MSG_PackSolid16(mins, maxs);
-    }
+    MSG_PackEntity(out, &in->s, &in->x);
 }
 
 // writes a delta update of an entity_state_t list to the message.
@@ -317,8 +310,6 @@ void CL_Stop_f(void)
 static const cmd_option_t o_record[] = {
     { "h", "help", "display this message" },
     { "z", "compress", "compress demo with gzip" },
-    { "e", "extended", "use extended packet size" },
-    { "s", "standard", "use standard packet size" },
     { NULL }
 };
 
@@ -341,10 +332,6 @@ static void CL_Record_f(void)
     char            *s;
     qhandle_t       f;
     unsigned        mode = FS_MODE_WRITE;
-    size_t          size = Cvar_ClampInteger(
-                               cl_demomsglen,
-                               MIN_PACKETLEN,
-                               MAX_MSGLEN);
 
     while ((c = Cmd_ParseOptions(o_record)) != -1) {
         switch (c) {
@@ -355,12 +342,6 @@ static void CL_Record_f(void)
             return;
         case 'z':
             mode |= FS_FLAG_GZIP;
-            break;
-        case 'e':
-            size = MAX_PACKETLEN_WRITABLE;
-            break;
-        case 's':
-            size = MAX_PACKETLEN_WRITABLE_DEFAULT;
             break;
         default:
             return;
@@ -401,10 +382,7 @@ static void CL_Record_f(void)
     // the first frame will be delta uncompressed
     cls.demo.last_server_frame = -1;
 
-    if (cl.csr.extended)
-        size = MAX_MSGLEN;
-
-    SZ_InitWrite(&cls.demo.buffer, demo_buffer, size);
+    SZ_InitWrite(&cls.demo.buffer, demo_buffer, MAX_MSGLEN);
 
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
@@ -426,13 +404,13 @@ static void CL_Record_f(void)
     MSG_WriteString(cl.configstrings[CS_NAME]);
 
     // configstrings
-    for (i = 0; i < cl.csr.end; i++) {
+    for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         s = cl.configstrings[i];
         if (!*s)
             continue;
 
         len = Q_strnlen(s, MAX_QPATH);
-        if (msg_write.cursize + len + 4 > size) {
+        if (msg_write.cursize + len + 4 > msg_write.maxsize) {
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
         }
@@ -444,12 +422,12 @@ static void CL_Record_f(void)
     }
 
     // baselines
-    for (i = 1; i < cl.csr.max_edicts; i++) {
+    for (i = 1; i < MAX_EDICTS; i++) {
         ent = &cl.baselines[i];
         if (!ent->number)
             continue;
 
-        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > size) {
+        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
         }
@@ -744,7 +722,6 @@ static void CL_PlayDemo_f(void)
     cls.state = ca_connected;
     Q_strlcpy(cls.servername, COM_SkipPath(name), sizeof(cls.servername));
     cls.serverAddress.type = NA_LOOPBACK;
-    cl.csr = cs_remap_old;
     cl.max_stats = MAX_STATS_OLD;
 
     Con_Popup(true);
@@ -824,7 +801,7 @@ void CL_EmitDemoSnapshot(void)
     }
 
     // write configstrings
-    for (i = 0; i < cl.csr.end; i++) {
+    for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         from = cl.baseconfigstrings[i];
         to = cl.configstrings[i];
 
@@ -899,7 +876,7 @@ void CL_FirstDemoFrame(void)
     Com_DPrintf("[%d] first frame\n", cl.frame.number);
 
     // save base configstrings
-    memcpy(cl.baseconfigstrings, cl.configstrings, sizeof(cl.baseconfigstrings[0]) * cl.csr.end);
+    memcpy(cl.baseconfigstrings, cl.configstrings, sizeof(cl.baseconfigstrings[0]) * MAX_CONFIGSTRINGS);
 
     // obtain file length and offset of the second frame
     len = FS_Length(cls.demo.playback);
@@ -1036,7 +1013,7 @@ static void CL_Seek_f(void)
             cls.demo.eof = false;
 
             // reset configstrings
-            for (i = 0; i < cl.csr.end; i++) {
+            for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
                 from = cl.baseconfigstrings[i];
                 to = cl.configstrings[i];
 
@@ -1120,21 +1097,21 @@ done:
     cls.demo.seeking = false;
 }
 
-static void parse_info_string(demoInfo_t *info, int clientNum, int index, const cs_remap_t *csr)
+static void parse_info_string(demoInfo_t *info, int clientNum, int index)
 {
     char string[MAX_QPATH], *p;
 
     MSG_ReadString(string, sizeof(string));
 
-    if (index >= csr->playerskins && index < csr->playerskins + MAX_CLIENTS) {
-        if (index - csr->playerskins == clientNum) {
+    if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
+        if (index - CS_PLAYERSKINS == clientNum) {
             Q_strlcpy(info->pov, string, sizeof(info->pov));
             p = strchr(info->pov, '\\');
             if (p) {
                 *p = 0;
             }
         }
-    } else if (index == csr->models + 1) {
+    } else if (index == CS_MODELS + 1) {
         Com_ParseMapName(info->map, string, sizeof(info->map));
     }
 }
@@ -1148,7 +1125,6 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
 {
     qhandle_t f;
     int c, index, clientNum, version, flags, type;
-    const cs_remap_t *csr = &cs_remap_new;
     bool res = false;
 
     FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
@@ -1186,10 +1162,10 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
             break;
         }
         index = MSG_ReadWord();
-        if (index < 0 || index >= csr->end) {
+        if (index < 0 || index >= MAX_CONFIGSTRINGS) {
             goto fail;
         }
-        parse_info_string(info, clientNum, index, csr);
+        parse_info_string(info, clientNum, index);
     }
     res = true;
 

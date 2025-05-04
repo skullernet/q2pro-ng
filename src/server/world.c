@@ -230,10 +230,7 @@ static uint32_t SV_PackSolid32(const edict_t *ent)
 {
     uint32_t solid32;
 
-    if (svs.csr.extended)
-        solid32 = MSG_PackSolid32_Ver2(ent->mins, ent->maxs);
-    else
-        solid32 = MSG_PackSolid32_Ver1(ent->mins, ent->maxs);
+    solid32 = MSG_PackSolid32_Ver2(ent->mins, ent->maxs);
 
     if (solid32 == PACKED_BSP)
         solid32 = 0;  // can happen in pathological case if z mins > maxs
@@ -242,10 +239,7 @@ static uint32_t SV_PackSolid32(const edict_t *ent)
     if (developer->integer) {
         vec3_t mins, maxs;
 
-        if (svs.csr.extended)
-            MSG_UnpackSolid32_Ver2(solid32, mins, maxs);
-        else
-            MSG_UnpackSolid32_Ver1(solid32, mins, maxs);
+        MSG_UnpackSolid32_Ver2(solid32, mins, maxs);
 
         if (!VectorCompare(ent->mins, mins) || !VectorCompare(ent->maxs, maxs))
             Com_LPrintf(PRINT_DEVELOPER, "Bad mins/maxs on entity %d: %s %s\n",
@@ -290,21 +284,15 @@ void PF_LinkEdict(edict_t *ent)
     case SOLID_BBOX:
         if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs)) {
             ent->s.solid = 0;
-            sent->solid32 = 0;
-        } else if (svs.csr.extended) {
-            sent->solid32 = ent->s.solid = SV_PackSolid32(ent);
         } else {
-            ent->s.solid = MSG_PackSolid16(ent->mins, ent->maxs);
-            sent->solid32 = SV_PackSolid32(ent);
+            ent->s.solid = SV_PackSolid32(ent);
         }
         break;
     case SOLID_BSP:
         ent->s.solid = PACKED_BSP;      // a SOLID_BBOX will never create this value
-        sent->solid32 = PACKED_BSP;     // FIXME: use 255?
         break;
     default:
         ent->s.solid = 0;
-        sent->solid32 = 0;
         break;
     }
 
@@ -471,12 +459,12 @@ SV_PointContents
 */
 int SV_PointContents(const vec3_t p)
 {
-    edict_t     *touch[MAX_EDICTS_OLD], *hit;
+    edict_t     *touch[MAX_EDICTS], *hit;
     int         i, num;
     int         contents;
 
     // get base contents from world
-    contents = CM_PointContents(p, SV_WorldNodes(), svs.csr.extended);
+    contents = CM_PointContents(p, SV_WorldNodes());
 
     // or in contents from all the other entities
     num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID);
@@ -486,8 +474,7 @@ int SV_PointContents(const vec3_t p)
 
         // might intersect, so do an exact clip
         contents |= CM_TransformedPointContents(p, SV_HullForEntity(hit, false),
-                                                hit->s.origin, hit->s.angles,
-                                                svs.csr.extended);
+                                                hit->s.origin, hit->s.angles);
     }
 
     return contents;
@@ -542,20 +529,18 @@ static void SV_ClipMoveToEntities(trace_t *tr,
             && (touch->svflags & SVF_DEADMONSTER))
             continue;
 
-        if (svs.csr.extended) {
-            if (!(contentmask & CONTENTS_PROJECTILE)
-                && (touch->svflags & SVF_PROJECTILE))
-                continue;
-            if (!(contentmask & CONTENTS_PLAYER)
-                && (touch->svflags & SVF_PLAYER))
-                continue;
-        }
+        if (!(contentmask & CONTENTS_PROJECTILE)
+            && (touch->svflags & SVF_PROJECTILE))
+            continue;
+
+        if (!(contentmask & CONTENTS_PLAYER)
+            && (touch->svflags & SVF_PLAYER))
+            continue;
 
         // might intersect, so do an exact clip
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                SV_HullForEntity(touch, false), contentmask,
-                               touch->s.origin, touch->s.angles,
-                               svs.csr.extended);
+                               touch->s.origin, touch->s.angles);
 
         CM_ClipEntity(tr, &trace, touch);
     }
@@ -581,7 +566,7 @@ trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
         maxs = vec3_origin;
 
     // clip to world
-    CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask, svs.csr.extended);
+    CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     trace.ent = ge->edicts;
     if (trace.fraction == 0)
         return trace;   // blocked by the world
@@ -611,12 +596,11 @@ trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
         maxs = vec3_origin;
 
     if (clip == ge->edicts)
-        CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask, svs.csr.extended);
+        CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     else
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                SV_HullForEntity(clip, true), contentmask,
-                               clip->s.origin, clip->s.angles,
-                               svs.csr.extended);
+                               clip->s.origin, clip->s.angles);
     trace.ent = clip;
     return trace;
 }

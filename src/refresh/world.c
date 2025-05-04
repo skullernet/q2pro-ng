@@ -334,12 +334,12 @@ static void GL_MarkLeaves(void)
     leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
     cluster1 = cluster2 = leaf->cluster;
     VectorCopy(glr.fd.vieworg, tmp);
-    if (!leaf->contents[0])
+    if (!leaf->contents)
         tmp[2] -= 16;
     else
         tmp[2] += 16;
     leaf = BSP_PointLeaf(bsp->nodes, tmp);
-    if (!(leaf->contents[0] & CONTENTS_SOLID))
+    if (!(leaf->contents & CONTENTS_SOLID))
         cluster2 = leaf->cluster;
 
     if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2)
@@ -504,8 +504,7 @@ static inline bool GL_ClipNode(const mnode_t *node, int *clipflags)
 
 static inline void GL_DrawLeaf(const mleaf_t *leaf)
 {
-    // FIXME: use `&' here?
-    if (leaf->contents[0] == CONTENTS_SOLID)
+    if (leaf->contents & CONTENTS_SOLID)
         return; // solid leaf
 
     if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area))

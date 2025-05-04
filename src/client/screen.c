@@ -436,8 +436,7 @@ CENTER PRINTING
 ===============================================================================
 */
 
-#define MAX_CENTERPRINTS_REAL   4
-#define MAX_CENTERPRINTS        (cl.csr.extended ? MAX_CENTERPRINTS_REAL : 1)
+#define MAX_CENTERPRINTS    4
 
 typedef struct {
     char        string[MAX_STRING_CHARS - 8];
@@ -446,7 +445,7 @@ typedef struct {
     uint16_t    typewrite;  // msec to typewrite (0 if instant)
 } centerprint_t;
 
-static centerprint_t    scr_centerprints[MAX_CENTERPRINTS_REAL];
+static centerprint_t    scr_centerprints[MAX_CENTERPRINTS];
 static unsigned         scr_centerhead, scr_centertail;
 
 void SCR_ClearCenterPrints(void)
@@ -1652,11 +1651,11 @@ static void SCR_DrawInventory(void)
     for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
         item = index[i];
         // search for a binding
-        Q_concat(string, sizeof(string), "use ", cl.configstrings[cl.csr.items + item]);
+        Q_concat(string, sizeof(string), "use ", cl.configstrings[CS_ITEMS + item]);
         bind = Key_GetBinding(string);
 
         Q_snprintf(string, sizeof(string), "%6s %3i %s",
-                   bind, cl.inventory[item], cl.configstrings[cl.csr.items + item]);
+                   bind, cl.inventory[item], cl.configstrings[CS_ITEMS + item]);
 
         if (item != selected) {
             HUD_DrawAltString(x, y, string);
@@ -1805,10 +1804,10 @@ static void SCR_ExecuteLayoutString(const char *s)
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             value = cl.frame.ps.stats[value];
-            if (value < 0 || value >= cl.csr.max_images) {
+            if (value < 0 || value >= MAX_IMAGES) {
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
-            token = cl.configstrings[cl.csr.images + value];
+            token = cl.configstrings[CS_IMAGES + value];
             if (token[0]) {
                 qhandle_t pic = cl.image_precache[value];
                 // hack for action mod scope scaling
@@ -1990,7 +1989,7 @@ static void SCR_ExecuteLayoutString(const char *s)
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
             index = cl.frame.ps.stats[index];
-            if (index < 0 || index >= cl.csr.end) {
+            if (index < 0 || index >= MAX_CONFIGSTRINGS) {
                 Com_Error(ERR_DROP, "%s: invalid string index", __func__);
             }
             token = cl.configstrings[index];
@@ -2053,14 +2052,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             }
             value = cl.frame.ps.stats[value];
             if (!value) {   // skip to endif
-                if (cl.csr.extended) {
-                    SCR_SkipToEndif(&s);
-                } else while (strcmp(token, "endif")) {
-                    token = COM_Parse(&s);
-                    if (!s) {
-                        break;
-                    }
-                }
+                SCR_SkipToEndif(&s);
             }
             continue;
         }
@@ -2087,7 +2079,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             token = COM_Parse(&s);
             index = Q_atoi(token);
-            if (index < 0 || index >= cl.csr.end) {
+            if (index < 0 || index >= MAX_CONFIGSTRINGS) {
                 Com_Error(ERR_DROP, "%s: invalid string index", __func__);
             }
 

@@ -72,27 +72,15 @@ typedef int qhandle_t;
 // per-level limits
 //
 #define MAX_CLIENTS         256     // absolute limit
-#define MAX_EDICTS_OLD      1024    // must change protocol to increase more
-#define MAX_MODELS_OLD      256     // these are sent over the net as bytes
-#define MAX_SOUNDS_OLD      256     // so they cannot be blindly increased
-#define MAX_IMAGES_OLD      256
-#define MAX_LIGHTSTYLES     256
-#define MAX_ITEMS           256
-#define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
-
-#if USE_PROTOCOL_EXTENSIONS
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
 #define MAX_IMAGES          2048
-#else
-#define MAX_EDICTS          MAX_EDICTS_OLD
-#define MAX_MODELS          MAX_MODELS_OLD
-#define MAX_SOUNDS          MAX_SOUNDS_OLD
-#define MAX_IMAGES          MAX_IMAGES_OLD
-#endif
+#define MAX_LIGHTSTYLES     256
+#define MAX_ITEMS           256
+#define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
-#define MODELINDEX_PLAYER   (MAX_MODELS_OLD - 1)
+#define MODELINDEX_PLAYER   255
 
 #define MAX_CLIENT_NAME     16
 
@@ -1397,19 +1385,6 @@ enum {
 #define CS_SKYROTATE        4
 #define CS_STATUSBAR        5       // display program string
 
-#define CS_AIRACCEL_OLD         29      // air acceleration control
-#define CS_MAXCLIENTS_OLD       30
-#define CS_MAPCHECKSUM_OLD      31      // for catching cheater maps
-#define CS_MODELS_OLD           32
-#define CS_SOUNDS_OLD           (CS_MODELS_OLD + MAX_MODELS_OLD)
-#define CS_IMAGES_OLD           (CS_SOUNDS_OLD + MAX_SOUNDS_OLD)
-#define CS_LIGHTS_OLD           (CS_IMAGES_OLD + MAX_IMAGES_OLD)
-#define CS_ITEMS_OLD            (CS_LIGHTS_OLD + MAX_LIGHTSTYLES)
-#define CS_PLAYERSKINS_OLD      (CS_ITEMS_OLD + MAX_ITEMS)
-#define CS_GENERAL_OLD          (CS_PLAYERSKINS_OLD + MAX_CLIENTS)
-#define MAX_CONFIGSTRINGS_OLD   (CS_GENERAL_OLD + MAX_GENERAL)
-
-#if USE_PROTOCOL_EXTENSIONS
 #define CS_AIRACCEL         59
 #define CS_MAXCLIENTS       60
 #define CS_MAPCHECKSUM      61
@@ -1421,49 +1396,6 @@ enum {
 #define CS_PLAYERSKINS      (CS_ITEMS + MAX_ITEMS)
 #define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
 #define MAX_CONFIGSTRINGS   (CS_GENERAL + MAX_GENERAL)
-#else
-#define CS_AIRACCEL         CS_AIRACCEL_OLD
-#define CS_MAXCLIENTS       CS_MAXCLIENTS_OLD
-#define CS_MAPCHECKSUM      CS_MAPCHECKSUM_OLD
-#define CS_MODELS           CS_MODELS_OLD
-#define CS_SOUNDS           CS_SOUNDS_OLD
-#define CS_IMAGES           CS_IMAGES_OLD
-#define CS_LIGHTS           CS_LIGHTS_OLD
-#define CS_ITEMS            CS_ITEMS_OLD
-#define CS_PLAYERSKINS      CS_PLAYERSKINS_OLD
-#define CS_GENERAL          CS_GENERAL_OLD
-#define MAX_CONFIGSTRINGS   MAX_CONFIGSTRINGS_OLD
-#endif
-
-#if USE_PROTOCOL_EXTENSIONS
-
-typedef struct {
-    bool        extended;
-
-    uint16_t    max_edicts;
-    uint16_t    max_models;
-    uint16_t    max_sounds;
-    uint16_t    max_images;
-
-    uint16_t    airaccel;
-    uint16_t    maxclients;
-    uint16_t    mapchecksum;
-
-    uint16_t    models;
-    uint16_t    sounds;
-    uint16_t    images;
-    uint16_t    lights;
-    uint16_t    items;
-    uint16_t    playerskins;
-    uint16_t    general;
-
-    uint16_t    end;
-} cs_remap_t;
-
-extern const cs_remap_t     cs_remap_old;
-extern const cs_remap_t     cs_remap_new;
-
-#endif
 
 //==============================================
 

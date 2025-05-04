@@ -36,7 +36,7 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
     centity_state_t     *state;
 
     // suck up to MAX_EDICTS for servers that don't cap at MAX_PACKET_ENTITIES
-    if (frame->numEntities >= cl.csr.max_edicts) {
+    if (frame->numEntities >= MAX_EDICTS) {
         Com_Error(ERR_DROP, "%s: too many entities", __func__);
     }
 
@@ -59,18 +59,11 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
         VectorCopy(old->origin, state->old_origin);
 
     // make sure extended indices don't overflow
-    if ((state->modelindex | state->modelindex2 | state->modelindex3 | state->modelindex4) >= cl.csr.max_models)
+    if ((state->modelindex | state->modelindex2 | state->modelindex3 | state->modelindex4) >= MAX_MODELS)
         Com_Error(ERR_DROP, "%s: bad modelindex", __func__);
 
-    if (state->sound >= cl.csr.max_sounds)
+    if (state->sound >= MAX_SOUNDS)
         Com_Error(ERR_DROP, "%s: bad sound", __func__);
-
-    // mask off high bits for non-extended servers
-    if (!cl.csr.extended) {
-        state->renderfx &= RF_SHELL_LITE_GREEN - 1;
-        if (state->renderfx & RF_BEAM)
-            state->renderfx &= ~RF_GLOW;
-    }
 }
 
 static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_t *frame)
@@ -102,7 +95,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
         uint32_t readcount = msg_read.readcount;
 #endif
         newnum = MSG_ParseEntityBits(&bits, cl.esFlags);
-        if (newnum < 0 || newnum >= cl.csr.max_edicts) {
+        if (newnum < 0 || newnum >= MAX_EDICTS) {
             Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
         }
 
@@ -310,7 +303,7 @@ static void CL_ParseFrame(int extrabits)
     // parse clientNum
     if (extraflags & EPS_CLIENTNUM) {
         frame.clientNum = MSG_ReadShort();
-        if (!VALIDATE_CLIENTNUM(&cl.csr, frame.clientNum)) {
+        if (!VALIDATE_CLIENTNUM(frame.clientNum)) {
             Com_Error(ERR_DROP, "%s: bad clientNum", __func__);
         }
     } else if (oldframe) {
@@ -379,12 +372,12 @@ static void CL_ParseConfigstring(int index)
     size_t  len, maxlen;
     char    *s;
 
-    if (index < 0 || index >= cl.csr.end) {
+    if (index < 0 || index >= MAX_CONFIGSTRINGS) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
     s = cl.configstrings[index];
-    maxlen = Com_ConfigstringSize(&cl.csr, index);
+    maxlen = Com_ConfigstringSize(index);
     len = MSG_ReadString(s, maxlen);
 
     SHOWNET(3, "    %d \"%s\"\n", index, Com_MakePrintable(s));
@@ -412,7 +405,7 @@ static void CL_ParseBaseline(int index, uint64_t bits)
 {
     centity_state_t *base;
 
-    if (index < 1 || index >= cl.csr.max_edicts) {
+    if (index < 1 || index >= MAX_EDICTS) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
@@ -438,7 +431,7 @@ static void CL_ParseGamestate(int cmd)
     if (cmd == svc_gamestate || cmd == svc_configstringstream) {
         while (1) {
             index = MSG_ReadWord();
-            if (index == cl.csr.end) {
+            if (index == MAX_CONFIGSTRINGS) {
                 break;
             }
             CL_ParseConfigstring(index);
@@ -475,8 +468,6 @@ static void CL_ParseServerData(void)
     Com_DPrintf("Serverdata packet received "
                 "(protocol=%d, servercount=%d, attractloop=%d)\n",
                 protocol, cl.servercount, attractloop);
-
-    cl.csr = cs_remap_new;
 
     // check protocol
     if (cls.serverProtocol != protocol) {
@@ -554,12 +545,8 @@ static void CL_ParseServerData(void)
     }
     if (i & Q2PRO_PF_EXTENSIONS) {
         Com_DPrintf("Q2PRO protocol extensions enabled\n");
-        cl.csr = cs_remap_new;
     }
     if (i & Q2PRO_PF_EXTENSIONS_2) {
-        if (!cl.csr.extended) {
-            Com_Error(ERR_DROP, "Q2PRO_PF_EXTENSIONS_2 without Q2PRO_PF_EXTENSIONS");
-        }
         Com_DPrintf("Q2PRO protocol extensions v2 enabled\n");
         cl.esFlags |= MSG_ES_EXTENSIONS_2;
         cl.psFlags |= MSG_PS_EXTENSIONS_2;
@@ -572,20 +559,17 @@ static void CL_ParseServerData(void)
     cl.pmp.speedmult = 2;
     cl.pmp.flyhack = true; // fly hack is unconditionally enabled
     cl.pmp.flyfriction = 4;
-
-    if (cl.csr.extended) {
-        cl.esFlags |= CL_ES_EXTENDED_MASK;
-        cl.psFlags |= MSG_PS_EXTENSIONS;
-        cl.esFlags |= MSG_ES_EXTENSIONS_2;
-        cl.psFlags |= MSG_PS_EXTENSIONS_2;
-        cl.psFlags |= MSG_PS_MOREBITS;
-    }
+    cl.esFlags |= CL_ES_EXTENDED_MASK;
+    cl.psFlags |= MSG_PS_EXTENSIONS;
+    cl.esFlags |= MSG_ES_EXTENSIONS_2;
+    cl.psFlags |= MSG_PS_EXTENSIONS_2;
+    cl.psFlags |= MSG_PS_MOREBITS;
 
     cl.max_stats = (cl.psFlags & MSG_PS_EXTENSIONS_2) ? MAX_STATS_NEW : MAX_STATS_OLD;
 
     // use full extended flags unless writing backward compatible demo
-    cls.demo.esFlags = cl.csr.extended ? CL_ES_EXTENDED_MASK_2 : 0;
-    cls.demo.psFlags = cl.csr.extended ? CL_PS_EXTENDED_MASK_2 : 0;
+    cls.demo.esFlags = CL_ES_EXTENDED_MASK_2;
+    cls.demo.psFlags = CL_PS_EXTENDED_MASK_2;
 
     if (cinematic) {
         SCR_PlayCinematic(levelname);
@@ -604,7 +588,7 @@ static void CL_ParseServerData(void)
     }
 
     // make sure clientNum is in range
-    if (!VALIDATE_CLIENTNUM(&cl.csr, cl.clientNum)) {
+    if (!VALIDATE_CLIENTNUM(cl.clientNum)) {
         Com_WPrintf("Serverdata has invalid playernum %d\n", cl.clientNum);
         cl.clientNum = -1;
     }
@@ -773,12 +757,12 @@ static void CL_ParseMuzzleFlashPacket(int mask)
     entity = MSG_ReadWord();
     weapon = MSG_ReadByte();
 
-    if (!mask && cl.csr.extended) {
+    if (!mask) {
         weapon |= entity >> ENTITYNUM_BITS << 8;
         entity &= ENTITYNUM_MASK;
     }
 
-    if (entity < 1 || entity >= cl.csr.max_edicts)
+    if (entity < 1 || entity >= MAX_EDICTS)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
     if (!mask && weapon >= q_countof(monster_flash_offset))
@@ -795,12 +779,12 @@ static void CL_ParseStartSoundPacket(void)
 
     snd.flags = flags = MSG_ReadByte();
 
-    if (cl.csr.extended && flags & SND_INDEX16)
+    if (flags & SND_INDEX16)
         snd.index = MSG_ReadWord();
     else
         snd.index = MSG_ReadByte();
 
-    if (snd.index >= cl.csr.max_sounds)
+    if (snd.index >= MAX_SOUNDS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, snd.index);
 
     if (flags & SND_VOLUME)
@@ -822,7 +806,7 @@ static void CL_ParseStartSoundPacket(void)
         // entity relative
         channel = MSG_ReadWord();
         entity = channel >> 3;
-        if (entity < 0 || entity >= cl.csr.max_edicts)
+        if (entity < 0 || entity >= MAX_EDICTS)
             Com_Error(ERR_DROP, "%s: bad entity: %d", __func__, entity);
         snd.entity = entity;
         snd.channel = channel & 7;
@@ -835,7 +819,7 @@ static void CL_ParseStartSoundPacket(void)
     if (flags & SND_POS)
         CL_ReadPos(snd.pos);
 
-    SHOWNET(3, "    %s\n", cl.configstrings[cl.csr.sounds + snd.index]);
+    SHOWNET(3, "    %s\n", cl.configstrings[CS_SOUNDS + snd.index]);
 }
 
 static void CL_ParseReconnect(void)
@@ -927,7 +911,7 @@ static void CL_ParsePrint(void)
     SHOWNET(3, "    %i \"%s\"\n", level, Com_MakePrintable(s));
 
     if (level != PRINT_CHAT) {
-        if (cl.csr.extended && (level == PRINT_TYPEWRITER || level == PRINT_CENTER))
+        if (level == PRINT_TYPEWRITER || level == PRINT_CENTER)
             SCR_CenterPrint(s, level == PRINT_TYPEWRITER);
         else
             Com_Printf("%s", s);

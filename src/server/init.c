@@ -140,31 +140,31 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
 
     if (Cvar_VariableInteger("deathmatch")) {
-        sprintf(sv.configstrings[svs.csr.airaccel], "%d", sv_airaccelerate->integer);
+        sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
     } else {
-        strcpy(sv.configstrings[svs.csr.airaccel], "0");
+        strcpy(sv.configstrings[CS_AIRACCEL], "0");
     }
 
     resolve_masters();
 
     if (cmd->state == ss_game) {
         sv.cm = cmd->cm;
-        sprintf(sv.configstrings[svs.csr.mapchecksum], "%d", sv.cm.checksum);
+        sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", sv.cm.checksum);
 
         // model indices 0 and 255 are reserved
-        if (sv.cm.cache->nummodels > svs.csr.max_models - 2)
+        if (sv.cm.cache->nummodels > MAX_MODELS - 2)
             Com_Error(ERR_DROP, "Too many inline models");
 
         // set inline model names
-        Q_concat(sv.configstrings[svs.csr.models + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
+        Q_concat(sv.configstrings[CS_MODELS + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
         for (i = 1, j = 2; i < sv.cm.cache->nummodels; i++, j++) {
             if (j == MODELINDEX_PLAYER)
                 j++;    // skip reserved index
-            sprintf(sv.configstrings[svs.csr.models + j], "*%d", i);
+            sprintf(sv.configstrings[CS_MODELS + j], "*%d", i);
         }
     } else {
         // no real map
-        strcpy(sv.configstrings[svs.csr.mapchecksum], "0");
+        strcpy(sv.configstrings[CS_MAPCHECKSUM], "0");
         sv.cm.entitystring = "";
     }
 
@@ -189,7 +189,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
         ge->RunFrame();
 
     // make sure maxclients string is correct
-    sprintf(sv.configstrings[svs.csr.maxclients], "%d", svs.maxclients);
+    sprintf(sv.configstrings[CS_MAXCLIENTS], "%d", svs.maxclients);
 
     // check for a savegame
     SV_CheckForSavegame(cmd);
@@ -200,7 +200,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // set serverinfo variable
     SV_InfoSet("mapname", sv.name);
     SV_InfoSet("port", net_port->string);
-    SV_InfoSet("protocol", svs.csr.extended ? "36" : "34");
 
     Cvar_Set("sv_paused", "0");
     Cvar_Set("timedemo", "0");
@@ -440,8 +439,6 @@ void SV_InitGame(void)
     svs.z_buffer = SV_Malloc(svs.z_buffer_size);
 #endif
 
-    svs.csr = cs_remap_old;
-
     // set up default pmove parameters
     PmoveInit(&svs.pmp);
 
@@ -459,7 +456,7 @@ void SV_InitGame(void)
     SV_InitGameProgs();
     SV_CheckForEnhancedSavegames();
 
-    if (svs.csr.extended && IS_NEW_GAME_API)
+    if (IS_NEW_GAME_API)
         PmoveEnableExt(&svs.pmp);
 
     // send heartbeat very soon

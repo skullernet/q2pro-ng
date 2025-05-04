@@ -86,7 +86,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
 
-        if (cl.csr.extended && ent->current.number <= cl.maxclients && !(contentmask & CONTENTS_PLAYER))
+        if (ent->current.number <= cl.maxclients && !(contentmask & CONTENTS_PLAYER))
             continue;
 
         if (ent->current.solid == PACKED_BSP) {
@@ -104,8 +104,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 
         CM_TransformedBoxTrace(&trace, start, end,
                                mins, maxs, headnode, contentmask,
-                               ent->current.origin, ent->current.angles,
-                               cl.csr.extended);
+                               ent->current.origin, ent->current.angles);
 
         CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
     }
@@ -119,7 +118,7 @@ CL_Trace
 void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contentmask)
 {
     // check against world
-    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask, cl.csr.extended);
+    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
     tr->ent = (struct edict_s *)cl_entities;
     if (tr->fraction == 0)
         return;     // blocked by the world
@@ -133,7 +132,7 @@ static int pm_clipmask;
 static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
 {
     trace_t t;
-    CL_Trace(&t, start, end, mins, maxs, (cl.csr.extended && contentmask) ? contentmask : pm_clipmask);
+    CL_Trace(&t, start, end, mins, maxs, contentmask ? contentmask : pm_clipmask);
     return t;
 }
 
@@ -143,7 +142,7 @@ static int CL_PointContents(const vec3_t point)
     const mmodel_t  *cmodel;
     int i, contents;
 
-    contents = CM_PointContents(point, cl.bsp->nodes, cl.csr.extended);
+    contents = CM_PointContents(point, cl.bsp->nodes);
 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
@@ -155,8 +154,7 @@ static int CL_PointContents(const vec3_t point)
         if (!cmodel)
             continue;
 
-        contents |= CM_TransformedPointContents(point, cmodel->headnode, ent->current.origin,
-                                                ent->current.angles, cl.csr.extended);
+        contents |= CM_TransformedPointContents(point, cmodel->headnode, ent->current.origin, ent->current.angles);
     }
 
     return contents;
@@ -217,13 +215,11 @@ void CL_PredictMovement(void)
     pm_clipmask = MASK_PLAYERSOLID;
 
     // remaster player collision rules
-    if (cl.csr.extended) {
-        if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
-            pm_clipmask = MASK_DEADSOLID;
+    if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
+        pm_clipmask = MASK_DEADSOLID;
 
-        if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
-            pm_clipmask |= CONTENTS_PLAYER;
-    }
+    if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
+        pm_clipmask |= CONTENTS_PLAYER;
 
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));

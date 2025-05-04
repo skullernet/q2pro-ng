@@ -85,10 +85,6 @@ static void SV_CreateBaselines(void)
 
         // don't ever transmit event
         base->event = 0;
-
-        if (sv_client->esFlags & MSG_ES_LONGSOLID && !svs.csr.extended) {
-            base->solid = sv.entities[i].solid32;
-        }
     }
 }
 
@@ -101,7 +97,7 @@ static void write_configstring_stream(void)
     MSG_WriteByte(svc_configstringstream);
 
     // write a packet full of data
-    for (i = 0; i < svs.csr.end; i++) {
+    for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         string = sv.configstrings[i];
         if (!string[0]) {
             continue;
@@ -110,7 +106,7 @@ static void write_configstring_stream(void)
 
         // check if this configstring will overflow
         if (msg_write.cursize + length + 5 > msg_write.maxsize) {
-            MSG_WriteShort(svs.csr.end);
+            MSG_WriteShort(MAX_CONFIGSTRINGS);
             SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
             MSG_WriteByte(svc_configstringstream);
         }
@@ -120,7 +116,7 @@ static void write_configstring_stream(void)
         MSG_WriteByte(0);
     }
 
-    MSG_WriteShort(svs.csr.end);
+    MSG_WriteShort(MAX_CONFIGSTRINGS);
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
@@ -190,8 +186,7 @@ static int q2pro_protocol_flags(void)
     if (sv_client->pmp.waterhack)
         flags |= Q2PRO_PF_WATERJUMP_HACK;
 
-    if (svs.csr.extended)
-        flags |= Q2PRO_PF_EXTENSIONS;
+    flags |= Q2PRO_PF_EXTENSIONS;
 
     if (sv_client->esFlags & MSG_ES_EXTENSIONS_2)
         flags |= Q2PRO_PF_EXTENSIONS_2;
@@ -327,8 +322,7 @@ void SV_Begin_f(void)
 
     // allocate packet entities if not done yet
     if (!sv_client->entities) {
-        int max_packet_entities = svs.csr.extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
-        sv_client->num_entities = max_packet_entities * UPDATE_BACKUP;
+        sv_client->num_entities = MAX_PACKET_ENTITIES * UPDATE_BACKUP;
         sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * sv_client->num_entities);
     }
 

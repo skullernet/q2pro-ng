@@ -275,7 +275,6 @@ typedef struct {
 
     configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
-    cs_remap_t      csr;
 
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 

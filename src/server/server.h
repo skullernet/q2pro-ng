@@ -167,7 +167,7 @@ typedef struct {
 
 #define MAX_TOTAL_ENT_LEAFS        128
 
-#define ENT_EXTENSION(ent)  (svs.csr.extended ? &(ent)->x : NULL)
+#define ENT_EXTENSION(ent)  (&(ent)->x)
 
 typedef enum {
     cs_free,        // can be reused for a new connection
@@ -400,7 +400,6 @@ typedef struct {
     int             gamedetecthack;
 #endif
 
-    cs_remap_t      csr;
     pmoveParams_t   pmp;
 
     unsigned        last_heartbeat;

@@ -331,7 +331,7 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
     (ent->s.number <= svs.maxclients || IS_MONSTER(ent) || ent->solid == SOLID_BSP)
 
 #define IS_GIB(ent) \
-    (svs.csr.extended ? (ent->s.renderfx & RF_LOW_PRIORITY) : (ent->s.effects & (EF_GIB | EF_GREENGIB)))
+    (ent->s.renderfx & RF_LOW_PRIORITY)
 
 #define IS_LO_PRIO(ent) \
     (IS_GIB(ent) || (!ent->s.modelindex && !ent->s.effects))
@@ -427,7 +427,7 @@ void SV_BuildClientFrame(client_t *client)
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {
         frame->clientNum = SV_GetClient_ClientNum(client);
-        if (!VALIDATE_CLIENTNUM(&svs.csr, frame->clientNum)) {
+        if (!VALIDATE_CLIENTNUM(frame->clientNum)) {
             Com_DWPrintf("%s: bad clientNum %d for client %d\n",
                          __func__, frame->clientNum, client->number);
             frame->clientNum = client->number;
@@ -438,8 +438,7 @@ void SV_BuildClientFrame(client_t *client)
 
     // limit maximum number of entities in client frame
     max_packet_entities =
-        sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
-        svs.csr.extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
+        sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer : MAX_PACKET_ENTITIES;
 
     if (gex && gex->apiversion >= GAME_API_VERSION_EX_ENTITY_VISIBLE) {
         visible = gex->EntityVisibleToClient;
@@ -471,18 +470,18 @@ void SV_BuildClientFrame(client_t *client)
 
         // ignore gibs if client says so
         if (client->settings[CLS_NOGIBS]) {
-            if (ent->s.effects & EF_GIB && !(svs.csr.extended && ent->s.effects & EF_ROCKET))
+            if (ent->s.effects & EF_GIB && !(ent->s.effects & EF_ROCKET))
                 continue;
             if (ent->s.effects & EF_GREENGIB)
                 continue;
         }
 
         // ignore flares if client says so
-        if (svs.csr.extended && ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
+        if (ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
             continue;
 
         // ignore if not touching a PV leaf
-        if (ent != clent && !sv_novis->integer && !(svs.csr.extended && ent->svflags & SVF_NOCULL)) {
+        if (ent != clent && !sv_novis->integer && !(ent->svflags & SVF_NOCULL)) {
             // check area
             if (!CM_AreasConnected(&sv.cm, clientarea, ent->areanum)) {
                 // doors can legally straddle two areas, so
@@ -496,7 +495,7 @@ void SV_BuildClientFrame(client_t *client)
             bool beam_cull = ent->s.renderfx & RF_BEAM;
 
             // remaster uses different sound culling rules
-            bool sound_cull = svs.csr.extended && ent->s.sound;
+            bool sound_cull = ent->s.sound;
 
             if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? &clientphs : &clientpvs))
                 continue;
@@ -562,9 +561,8 @@ void SV_BuildClientFrame(client_t *client)
 #endif
 
         // clear footsteps
-        if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP
-            || (svs.csr.extended && (state->event == EV_OTHER_FOOTSTEP ||
-                                     state->event == EV_LADDER_STEP)))) {
+        if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP ||
+            state->event == EV_OTHER_FOOTSTEP || state->event == EV_LADDER_STEP)) {
             state->event = 0;
         }
 
@@ -576,8 +574,6 @@ void SV_BuildClientFrame(client_t *client)
         if (ent->owner == clent) {
             // don't mark players missiles as solid
             state->solid = 0;
-        } else if (client->esFlags & MSG_ES_LONGSOLID && !svs.csr.extended) {
-            state->solid = sv.entities[e].solid32;
         }
 
         frame->num_entities++;

@@ -329,14 +329,9 @@ void CL_MuzzleFlash(void)
         break;
     case MZ_SHOTGUN2:
         // remaster overloads this as MZ_ETF_RIFLE_2
-        if (cl.csr.extended) {
-            VectorSet(dl->color, 0.9f, 0.7f, 0);
-            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-            CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
-        } else {
-            VectorSet(dl->color, 1, 1, 0);
-            S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotg2.wav"), volume, ATTN_NORM, 0);
-        }
+        VectorSet(dl->color, 0.9f, 0.7f, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
+        CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
         break;
     case MZ_HEATBEAM:
         VectorSet(dl->color, 1, 1, 0);
@@ -504,7 +499,7 @@ void CL_MuzzleFlash2(void)
     case MZ2_CARRIER_MACHINEGUN_L1:
     case MZ2_CARRIER_MACHINEGUN_L2:
         VectorSet(dl->color, 1, 1, 0);
-        if (cl.csr.extended && mz.weapon == MZ2_BOSS2_MACHINEGUN_L2) {
+        if (mz.weapon == MZ2_BOSS2_MACHINEGUN_L2) {
             S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
             CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
         } else {
@@ -741,7 +736,7 @@ void CL_MuzzleFlash2(void)
     case MZ2_BOSS2_MACHINEGUN_R5:
     case MZ2_CARRIER_MACHINEGUN_R1:
     case MZ2_CARRIER_MACHINEGUN_R2:
-        if (cl.csr.extended && mz.weapon == MZ2_BOSS2_MACHINEGUN_R2) {
+        if (mz.weapon == MZ2_BOSS2_MACHINEGUN_R2) {
             S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
             CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
         } else {

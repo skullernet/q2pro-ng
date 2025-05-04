@@ -163,7 +163,7 @@ typedef struct {
 #endif
     /* <====== */
 
-    int             contents[2];    // 0 - original, 1 - merged
+    int             contents;
     int             cluster;
     int             area;
     int             numleafbrushes;

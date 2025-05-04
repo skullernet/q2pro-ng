@@ -201,8 +201,8 @@ void CL_RegisterSounds(void)
 
     S_BeginRegistration();
     CL_RegisterTEntSounds();
-    for (i = 1; i < cl.csr.max_sounds; i++) {
-        s = cl.configstrings[cl.csr.sounds + i];
+    for (i = 1; i < MAX_SOUNDS; i++) {
+        s = cl.configstrings[CS_SOUNDS + i];
         if (!s[0])
             break;
         cl.sound_precache[i] = S_RegisterSound(s);
@@ -219,7 +219,7 @@ Registers main BSP file and inline models
 */
 void CL_RegisterBspModels(void)
 {
-    char *name = cl.configstrings[cl.csr.models + 1];
+    char *name = cl.configstrings[CS_MODELS + 1];
     int i, ret;
 
     if (!name[0]) {
@@ -230,18 +230,18 @@ void CL_RegisterBspModels(void)
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
     }
 
-    if (cl.bsp->checksum != Q_atoi(cl.configstrings[cl.csr.mapchecksum])) {
+    if (cl.bsp->checksum != Q_atoi(cl.configstrings[CS_MAPCHECKSUM])) {
         if (cls.demo.playback) {
             Com_WPrintf("Local map version differs from demo: %i != %s\n",
-                        cl.bsp->checksum, cl.configstrings[cl.csr.mapchecksum]);
+                        cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
         } else {
             Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
-                      cl.bsp->checksum, cl.configstrings[cl.csr.mapchecksum]);
+                      cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
         }
     }
 
-    for (i = 2; i < cl.csr.max_models; i++) {
-        name = cl.configstrings[cl.csr.models + i];
+    for (i = 2; i < MAX_MODELS; i++) {
+        name = cl.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
@@ -272,8 +272,8 @@ void CL_RegisterVWepModels(void)
         return;
     }
 
-    for (i = 2; i < cl.csr.max_models; i++) {
-        name = cl.configstrings[cl.csr.models + i];
+    for (i = 2; i < MAX_MODELS; i++) {
+        name = cl.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
@@ -302,10 +302,7 @@ void CL_SetSky(void)
     int         autorotate = 1;
     vec3_t      axis;
 
-    if (cl.csr.extended)
-        sscanf(cl.configstrings[CS_SKYROTATE], "%f %d", &rotate, &autorotate);
-    else
-        rotate = Q_atof(cl.configstrings[CS_SKYROTATE]);
+    sscanf(cl.configstrings[CS_SKYROTATE], "%f %d", &rotate, &autorotate);
 
     if (sscanf(cl.configstrings[CS_SKYAXIS], "%f %f %f",
                &axis[0], &axis[1], &axis[2]) != 3) {
@@ -327,7 +324,7 @@ static qhandle_t CL_RegisterImage(const char *s)
 {
     // if it's in a subdir and has an extension, it's either a sprite or a skin
     // allow /some/pic.pcx escape syntax
-    if (cl.csr.extended && *s != '/' && *s != '\\' && *COM_FileExtension(s)) {
+    if (*s != '/' && *s != '\\' && *COM_FileExtension(s)) {
         if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/psx_flare")))
             return R_RegisterImage(s, IT_SPRITE, IF_DEFAULT_FLARE);
 
@@ -365,8 +362,8 @@ void CL_PrepRefresh(void)
 
     CL_RegisterTEntModels();
 
-    for (i = 2; i < cl.csr.max_models; i++) {
-        name = cl.configstrings[cl.csr.models + i];
+    for (i = 2; i < MAX_MODELS; i++) {
+        name = cl.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
@@ -377,8 +374,8 @@ void CL_PrepRefresh(void)
     }
 
     CL_LoadState(LOAD_IMAGES);
-    for (i = 1; i < cl.csr.max_images; i++) {
-        name = cl.configstrings[cl.csr.images + i];
+    for (i = 1; i < MAX_IMAGES; i++) {
+        name = cl.configstrings[CS_IMAGES + i];
         if (!name[0]) {
             break;
         }
@@ -387,7 +384,7 @@ void CL_PrepRefresh(void)
 
     CL_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
-        name = cl.configstrings[cl.csr.playerskins + i];
+        name = cl.configstrings[CS_PLAYERSKINS + i];
         if (!name[0]) {
             continue;
         }
@@ -422,24 +419,24 @@ void CL_UpdateConfigstring(int index)
 {
     const char *s = cl.configstrings[index];
 
-    if (index == cl.csr.maxclients) {
+    if (index == CS_MAXCLIENTS) {
         cl.maxclients = Q_atoi(s);
         return;
     }
 
-    if (index == cl.csr.airaccel) {
+    if (index == CS_AIRACCEL) {
         cl.pmp.airaccelerate = cl.pmp.qwmode || Q_atoi(s);
         return;
     }
 
-    if (index == cl.csr.models + 1) {
+    if (index == CS_MODELS + 1) {
         if (!Com_ParseMapName(cl.mapname, s, sizeof(cl.mapname)))
             Com_Error(ERR_DROP, "%s: bad world model: %s", __func__, s);
         return;
     }
 
-    if (index >= cl.csr.lights && index < cl.csr.lights + MAX_LIGHTSTYLES) {
-        CL_SetLightStyle(index - cl.csr.lights, s);
+    if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
+        CL_SetLightStyle(index - CS_LIGHTS, s);
         return;
     }
 
@@ -447,8 +444,8 @@ void CL_UpdateConfigstring(int index)
         return;
     }
 
-    if (index >= cl.csr.models + 2 && index < cl.csr.models + cl.csr.max_models) {
-        int i = index - cl.csr.models;
+    if (index >= CS_MODELS + 2 && index < CS_MODELS + MAX_MODELS) {
+        int i = index - CS_MODELS;
 
         cl.model_draw[i] = R_RegisterModel(s);
         if (*s == '*')
@@ -458,18 +455,18 @@ void CL_UpdateConfigstring(int index)
         return;
     }
 
-    if (index >= cl.csr.sounds && index < cl.csr.sounds + cl.csr.max_sounds) {
-        cl.sound_precache[index - cl.csr.sounds] = S_RegisterSound(s);
+    if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
+        cl.sound_precache[index - CS_SOUNDS] = S_RegisterSound(s);
         return;
     }
 
-    if (index >= cl.csr.images && index < cl.csr.images + cl.csr.max_images) {
-        cl.image_precache[index - cl.csr.images] = CL_RegisterImage(s);
+    if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
+        cl.image_precache[index - CS_IMAGES] = CL_RegisterImage(s);
         return;
     }
 
-    if (index >= cl.csr.playerskins && index < cl.csr.playerskins + MAX_CLIENTS) {
-        CL_LoadClientinfo(&cl.clientinfo[index - cl.csr.playerskins], s);
+    if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
+        CL_LoadClientinfo(&cl.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 

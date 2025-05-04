@@ -1292,7 +1292,7 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_SPLASH:         // bullet hitting water
-        if (cl.csr.extended && te.color == SPLASH_ELECTRIC_N64) {
+        if (te.color == SPLASH_ELECTRIC_N64) {
             CL_ParticleEffect(te.pos1, te.dir, 0x6c, te.count / 2);
             CL_ParticleEffect(te.pos1, te.dir, 0xb0, (te.count + 1) / 2);
             te.color = SPLASH_SPARKS;

@@ -355,18 +355,11 @@ void CL_Tracker_Shell(const centity_t *ent, const vec3_t origin)
     cparticle_t     *p;
     float           radius, scale;
 
-    if (cl.csr.extended) {
-        VectorAvg(ent->mins, ent->maxs, mid);
-        VectorAdd(origin, mid, org);
-        radius = ent->radius;
-        scale = Q_clipf(ent->radius / 40.0f, 1, 2);
-        count = 300 * scale;
-    } else {
-        VectorCopy(origin, org);
-        radius = 40.0f;
-        scale = 1.0f;
-        count = 300;
-    }
+    VectorAvg(ent->mins, ent->maxs, mid);
+    VectorAdd(origin, mid, org);
+    radius = ent->radius;
+    scale = Q_clipf(ent->radius / 40.0f, 1, 2);
+    count = 300 * scale;
 
     for (i = 0; i < count; i++) {
         p = CL_AllocParticle();
@@ -912,7 +905,7 @@ void CL_PowerSplash(void)
     vec3_t      org, dir, mid;
     centity_t   *ent;
 
-    if ((unsigned)te.entity1 >= cl.csr.max_edicts)
+    if ((unsigned)te.entity1 >= MAX_EDICTS)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
     ent = &cl_entities[te.entity1];
