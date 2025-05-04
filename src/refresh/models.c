@@ -761,7 +761,7 @@ static void MOD_PrintError(const char *path, int err)
         break;
     }
 
-    Com_LPrintf(level, "Couldn't load %s: %s\n", Com_MakePrintable(path), msg);
+    Com_LPrintf(level, "Couldn't load %s: %s\n", COM_MakePrintable(path), msg);
 }
 
 #if USE_MD5
@@ -805,7 +805,7 @@ static void MD5_ParseExpect(const char **buffer, const char *expect)
     char *token = COM_Parse(buffer);
 
     if (strcmp(token, expect))
-        MD5_ParseError(va("Expected \"%s\", got \"%s\"", expect, Com_MakePrintable(token)));
+        MD5_ParseError(va("Expected \"%s\", got \"%s\"", expect, COM_MakePrintable(token)));
 }
 
 static float MD5_ParseFloat(const char **buffer)
@@ -815,7 +815,7 @@ static float MD5_ParseFloat(const char **buffer)
 
     float v = strtof(token, &endptr);
     if (endptr == token || *endptr)
-        MD5_ParseError(va("Expected float, got \"%s\"", Com_MakePrintable(token)));
+        MD5_ParseError(va("Expected float, got \"%s\"", COM_MakePrintable(token)));
 
     return v;
 }
@@ -827,7 +827,7 @@ static uint32_t MD5_ParseUint(const char **buffer, uint32_t min_v, uint32_t max_
 
     unsigned long v = strtoul(token, &endptr, 10);
     if (endptr == token || *endptr)
-        MD5_ParseError(va("Expected uint, got \"%s\"", Com_MakePrintable(token)));
+        MD5_ParseError(va("Expected uint, got \"%s\"", COM_MakePrintable(token)));
     if (v < min_v || v > max_v)
         MD5_ParseError(va("Value out of range: %lu", v));
 
@@ -841,7 +841,7 @@ static int32_t MD5_ParseInt(const char **buffer, int32_t min_v, int32_t max_v)
 
     long v = strtol(token, &endptr, 10);
     if (endptr == token || *endptr)
-        MD5_ParseError(va("Expected int, got \"%s\"", Com_MakePrintable(token)));
+        MD5_ParseError(va("Expected int, got \"%s\"", COM_MakePrintable(token)));
     if (v < min_v || v > max_v)
         MD5_ParseError(va("Value out of range: %ld", v));
 
@@ -1178,7 +1178,7 @@ static void MD5_LoadScales(const md5_model_t *model, const char *path, joint_inf
         }
 
         if (joint_id == -1)
-            Com_WPrintf("No such joint \"%s\" in %s\n", Com_MakePrintable(joint_name), path);
+            Com_WPrintf("No such joint \"%s\" in %s\n", COM_MakePrintable(joint_name), path);
 
         if (++tok == end || tok->type != JSMN_OBJECT)
             goto fail;

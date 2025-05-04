@@ -16,6 +16,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include "shared/shared.h"
+#include "common/pmove.h"
+
+#define PMOVE_NEW 1
+#define PMOVE_TYPE pmove_t
+#define PMOVE_FUNC Pmove
+#define PMOVE_TIME_SHIFT pmp->time_shift
+#define PMOVE_C2S(x) SignExtend(COORD2SHORT(x), pmp->coord_bits)
+#define PMOVE_TRACE(start, mins, maxs, end) pm->trace(start, mins, maxs, end, 0)
+#define PMOVE_TRACE_MASK(start, mins, maxs, end, mask) pm->trace(start, mins, maxs, end, mask)
+
 #define STEPSIZE    18
 
 // all of the locals will be zeroed before each
@@ -1138,4 +1149,36 @@ void PMOVE_FUNC(PMOVE_TYPE *pmove, const pmoveParams_t *params)
     else
         pm->s.pm_flags &= ~PMF_ON_LADDER;
 #endif
+}
+
+void PmoveInit(pmoveParams_t *pmp)
+{
+    // set up default pmove parameters
+    memset(pmp, 0, sizeof(*pmp));
+
+    pmp->speedmult = 1;
+    pmp->watermult = 0.5f;
+    pmp->maxspeed = 300;
+    pmp->friction = 6;
+    pmp->waterfriction = 1;
+    pmp->flyfriction = 9;
+    pmp->time_shift = 3;
+    pmp->coord_bits = 16;
+}
+
+void PmoveEnableQW(pmoveParams_t *pmp)
+{
+    pmp->qwmode = true;
+    pmp->watermult = 0.7f;
+    pmp->maxspeed = 320;
+    //pmp->upspeed = (sv_qwmod->integer > 1) ? 310 : 350;
+    pmp->friction = 4;
+    pmp->waterfriction = 4;
+    pmp->airaccelerate = true;
+}
+
+void PmoveEnableExt(pmoveParams_t *pmp)
+{
+    pmp->time_shift = 0;
+    pmp->coord_bits = 23;
 }

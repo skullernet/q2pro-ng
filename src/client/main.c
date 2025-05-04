@@ -258,7 +258,7 @@ void CL_ClientCommand(const char *string)
         return;
     }
 
-    Com_DDPrintf("%s: %s\n", __func__, Com_MakePrintable(string));
+    Com_DDPrintf("%s: %s\n", __func__, COM_MakePrintable(string));
 
     MSG_WriteByte(clc_stringcmd);
     MSG_WriteString(string);
@@ -1142,7 +1142,7 @@ static void CL_ConnectionlessPacket(void)
 {
     char    string[MAX_STRING_CHARS];
     char    *s, *c;
-    int     i, j, k;
+    int     i, j;
 
     MSG_BeginReading();
     MSG_ReadLong(); // skip the -1
@@ -1156,12 +1156,10 @@ static void CL_ConnectionlessPacket(void)
 
     c = Cmd_Argv(0);
 
-    Com_DPrintf("%s: %s\n", NET_AdrToString(&net_from), Com_MakePrintable(string));
+    Com_DPrintf("%s: %s\n", NET_AdrToString(&net_from), COM_MakePrintable(string));
 
     // challenge from the server we are connecting to
     if (!strcmp(c, "challenge")) {
-        int mask = 0;
-
         if (cls.state < ca_challenging) {
             Com_DPrintf("Challenge received while not connecting.  Ignored.\n");
             return;
@@ -1234,7 +1232,6 @@ static void CL_ConnectionlessPacket(void)
         cls.state = ca_connected;
         cls.connect_count = 0;
         Q_strlcpy(cl.mapname, mapname, sizeof(cl.mapname)); // for levelshot screen
-        cl.max_stats = MAX_STATS_OLD;
         return;
     }
 
@@ -2365,7 +2362,7 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
         return;        // no tokens
     }
 
-    Com_DPrintf("stufftext: %s\n", Com_MakePrintable(text));
+    Com_DPrintf("stufftext: %s\n", COM_MakePrintable(text));
 
     s = Cmd_Argv(0);
 

@@ -345,59 +345,6 @@ box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_
     return sides;
 }
 
-#if USE_REF
-
-/*
-==================
-SetupRotationMatrix
-
-Setup rotation matrix given the normalized direction vector and angle to rotate
-around this vector. Adapted from Mesa 3D implementation of _math_matrix_rotate.
-==================
-*/
-void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
-{
-    vec_t   angle, s, c, one_c, xx, yy, zz, xy, yz, zx, xs, ys, zs;
-
-    angle = DEG2RAD(degrees);
-    s = sinf(angle);
-    c = cosf(angle);
-    one_c = 1.0F - c;
-
-    xx = dir[0] * dir[0];
-    yy = dir[1] * dir[1];
-    zz = dir[2] * dir[2];
-    xy = dir[0] * dir[1];
-    yz = dir[1] * dir[2];
-    zx = dir[2] * dir[0];
-    xs = dir[0] * s;
-    ys = dir[1] * s;
-    zs = dir[2] * s;
-
-    matrix[0][0] = (one_c * xx) + c;
-    matrix[0][1] = (one_c * xy) - zs;
-    matrix[0][2] = (one_c * zx) + ys;
-
-    matrix[1][0] = (one_c * xy) + zs;
-    matrix[1][1] = (one_c * yy) + c;
-    matrix[1][2] = (one_c * yz) - xs;
-
-    matrix[2][0] = (one_c * zx) - ys;
-    matrix[2][1] = (one_c * yz) + xs;
-    matrix[2][2] = (one_c * zz) + c;
-}
-
-void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees)
-{
-    vec3_t matrix[3];
-    vec3_t temp;
-
-    SetupRotationMatrix(matrix, dir, degrees);
-
-    VectorCopy(in, temp);
-    VectorRotate(temp, matrix, out);
-}
-
 #if USE_MD5
 
 #define X 0
@@ -548,5 +495,3 @@ void Quat_ToAxis(const quat_t q, vec3_t axis[3])
 }
 
 #endif  // USE_MD5
-
-#endif  // USE_REF

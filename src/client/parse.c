@@ -380,7 +380,7 @@ static void CL_ParseConfigstring(int index)
     maxlen = Com_ConfigstringSize(index);
     len = MSG_ReadString(s, maxlen);
 
-    SHOWNET(3, "    %d \"%s\"\n", index, Com_MakePrintable(s));
+    SHOWNET(3, "    %d \"%s\"\n", index, COM_MakePrintable(s));
 
     if (len >= maxlen) {
         Com_WPrintf(
@@ -564,8 +564,6 @@ static void CL_ParseServerData(void)
     cl.esFlags |= MSG_ES_EXTENSIONS_2;
     cl.psFlags |= MSG_PS_EXTENSIONS_2;
     cl.psFlags |= MSG_PS_MOREBITS;
-
-    cl.max_stats = (cl.psFlags & MSG_PS_EXTENSIONS_2) ? MAX_STATS_NEW : MAX_STATS_OLD;
 
     // use full extended flags unless writing backward compatible demo
     cls.demo.esFlags = CL_ES_EXTENDED_MASK_2;
@@ -908,7 +906,7 @@ static void CL_ParsePrint(void)
     level = MSG_ReadByte();
     MSG_ReadString(s, sizeof(s));
 
-    SHOWNET(3, "    %i \"%s\"\n", level, Com_MakePrintable(s));
+    SHOWNET(3, "    %i \"%s\"\n", level, COM_MakePrintable(s));
 
     if (level != PRINT_CHAT) {
         if (level == PRINT_TYPEWRITER || level == PRINT_CENTER)
@@ -965,7 +963,7 @@ static void CL_ParseCenterPrint(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(3, "    \"%s\"\n", Com_MakePrintable(s));
+    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(s));
     SCR_CenterPrint(s, false);
 
     if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
@@ -979,14 +977,14 @@ static void CL_ParseStuffText(void)
     char s[MAX_STRING_CHARS];
 
     MSG_ReadString(s, sizeof(s));
-    SHOWNET(3, "    \"%s\"\n", Com_MakePrintable(s));
+    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(s));
     Cbuf_AddText(&cl_cmdbuf, s);
 }
 
 static void CL_ParseLayout(void)
 {
     MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(3, "    \"%s\"\n", Com_MakePrintable(cl.layout));
+    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(cl.layout));
 }
 
 static void CL_ParseInventory(void)

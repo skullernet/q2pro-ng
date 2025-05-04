@@ -231,7 +231,7 @@ void CL_PredictMovement(void)
     // run frames
     while (++ack <= current) {
         pm.cmd = cl.cmds[ack & CMD_MASK];
-        PmoveNew(&pm, &cl.pmp);
+        Pmove(&pm, &cl.pmp);
         pm.snapinitial = qfalse;
 
         // save for debug checking
@@ -244,7 +244,7 @@ void CL_PredictMovement(void)
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
         pm.cmd.upmove = cl.localmove[2];
-        PmoveNew(&pm, &cl.pmp);
+        Pmove(&pm, &cl.pmp);
         frame = current;
 
         // save for debug checking

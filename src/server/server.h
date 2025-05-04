@@ -89,10 +89,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
                      GMF_IPV6_ADDRESS_AWARE | GMF_ALLOW_INDEX_OVERFLOW | \
                      GMF_PROTOCOL_EXTENSIONS)
 
-// flag indicating if game uses new versions of gclient_t and pmove_t.
-// doesn't enable protocol extensions by itself.
-#define IS_NEW_GAME_API    (ge->apiversion == GAME_API_VERSION_NEW)
-
 typedef struct {
     int         number;
     int         num_entities;
@@ -629,37 +625,23 @@ void SV_RegisterSavegames(void);
 
 static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
 {
-    if (IS_NEW_GAME_API) {
-        const gclient_new_t *cl = client->edict->client;
-        VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
-    } else {
-        const gclient_old_t *cl = client->edict->client;
-        VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
-    }
+    const gclient_t *cl = client->edict->client;
+    VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
 }
 
 static inline int SV_GetClient_ClientNum(const client_t *client)
 {
-    if (IS_NEW_GAME_API)
-        return ((const gclient_new_t *)client->edict->client)->clientNum;
-    else
-        return ((const gclient_old_t *)client->edict->client)->clientNum;
+    return client->edict->client->clientNum;
 }
 
 static inline int SV_GetClient_Stat(const client_t *client, int stat)
 {
-    if (IS_NEW_GAME_API)
-        return ((const gclient_new_t *)client->edict->client)->ps.stats[stat];
-    else
-        return ((const gclient_old_t *)client->edict->client)->ps.stats[stat];
+    return client->edict->client->ps.stats[stat];
 }
 
 static inline void SV_SetClient_Ping(const client_t *client, int ping)
 {
-    if (IS_NEW_GAME_API)
-        ((gclient_new_t *)client->edict->client)->ping = ping;
-    else
-        ((gclient_old_t *)client->edict->client)->ping = ping;
+    client->edict->client->ping = ping;
 }
 
 //============================================================

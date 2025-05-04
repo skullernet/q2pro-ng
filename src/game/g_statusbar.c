@@ -1,7 +1,7 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 
-#include "q_shared.h"
+#include "shared/shared.h"
 #include "g_statusbar.h"
 
 static struct {

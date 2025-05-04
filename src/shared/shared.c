@@ -122,6 +122,57 @@ vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs)
     return VectorLength(corner);
 }
 
+/*
+==================
+SetupRotationMatrix
+
+Setup rotation matrix given the normalized direction vector and angle to rotate
+around this vector. Adapted from Mesa 3D implementation of _math_matrix_rotate.
+==================
+*/
+void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
+{
+    vec_t   angle, s, c, one_c, xx, yy, zz, xy, yz, zx, xs, ys, zs;
+
+    angle = DEG2RAD(degrees);
+    s = sinf(angle);
+    c = cosf(angle);
+    one_c = 1.0F - c;
+
+    xx = dir[0] * dir[0];
+    yy = dir[1] * dir[1];
+    zz = dir[2] * dir[2];
+    xy = dir[0] * dir[1];
+    yz = dir[1] * dir[2];
+    zx = dir[2] * dir[0];
+    xs = dir[0] * s;
+    ys = dir[1] * s;
+    zs = dir[2] * s;
+
+    matrix[0][0] = (one_c * xx) + c;
+    matrix[0][1] = (one_c * xy) - zs;
+    matrix[0][2] = (one_c * zx) + ys;
+
+    matrix[1][0] = (one_c * xy) + zs;
+    matrix[1][1] = (one_c * yy) + c;
+    matrix[1][2] = (one_c * yz) - xs;
+
+    matrix[2][0] = (one_c * zx) - ys;
+    matrix[2][1] = (one_c * yz) + xs;
+    matrix[2][2] = (one_c * zz) + c;
+}
+
+void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees)
+{
+    vec3_t matrix[3];
+    vec3_t temp;
+
+    SetupRotationMatrix(matrix, dir, degrees);
+
+    VectorCopy(in, temp);
+    VectorRotate(temp, matrix, out);
+}
+
 //====================================================================================
 
 /*
@@ -622,6 +673,67 @@ finish:
     *d = 0;
 
     return d - data;
+}
+
+static int escape_char(int c)
+{
+    switch (c) {
+        case '\a': return 'a';
+        case '\b': return 'b';
+        case '\t': return 't';
+        case '\n': return 'n';
+        case '\v': return 'v';
+        case '\f': return 'f';
+        case '\r': return 'r';
+        case '\\': return '\\';
+        case '"': return '"';
+    }
+    return 0;
+}
+
+const char com_hexchars[16] = "0123456789ABCDEF";
+
+size_t COM_EscapeString(char *dst, const char *src, size_t size)
+{
+    char *p, *end;
+
+    if (!size)
+        return 0;
+
+    p = dst;
+    end = dst + size;
+    while (*src) {
+        byte c = *src++;
+        int e = escape_char(c);
+
+        if (e) {
+            if (end - p <= 2)
+                break;
+            *p++ = '\\';
+            *p++ = e;
+        } else if (Q_isprint(c)) {
+            if (end - p <= 1)
+                break;
+            *p++ = c;
+        } else {
+            if (end - p <= 4)
+                break;
+            *p++ = '\\';
+            *p++ = 'x';
+            *p++ = com_hexchars[c >> 4];
+            *p++ = com_hexchars[c & 15];
+        }
+    }
+
+    *p = 0;
+    return p - dst;
+}
+
+char *COM_MakePrintable(const char *s)
+{
+    static char buffer[4096];
+    COM_EscapeString(buffer, s, sizeof(buffer));
+    return buffer;
 }
 
 /*

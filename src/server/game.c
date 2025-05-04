@@ -432,7 +432,7 @@ static void PF_WriteFloat(float f)
 
 static void PF_WritePos(const vec3_t pos)
 {
-    MSG_WritePos(pos, IS_NEW_GAME_API);
+    MSG_WritePos(pos, true);
 }
 
 static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
@@ -509,9 +509,8 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
                           int channel, int soundindex, float volume,
                           float attenuation, float timeofs)
 {
-    int         i, ent, vol, att, ofs, flags, sendchan;
+    int         ent, vol, att, ofs, flags, sendchan;
     vec3_t      origin_v;
-    client_t    *client;
 
     if (!edict)
         Com_Error(ERR_DROP, "%s: edict = NULL", __func__);
@@ -629,12 +628,7 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
 
 void PF_Pmove(void *pm)
 {
-    const pmoveParams_t *pmp = sv_client ? &sv_client->pmp : &svs.pmp;
-
-    if (IS_NEW_GAME_API)
-        PmoveNew(pm, pmp);
-    else
-        PmoveOld(pm, pmp);
+    Pmove(pm, sv_client ? &sv_client->pmp : &svs.pmp);
 }
 
 static cvar_t *PF_cvar(const char *name, const char *value, int flags)
@@ -925,9 +919,9 @@ void SV_InitGameProgs(void)
 
     Com_DPrintf("Game API version: %d\n", ge->apiversion);
 
-    if (ge->apiversion != GAME_API_VERSION_OLD && ge->apiversion != GAME_API_VERSION_NEW) {
-        Com_Error(ERR_DROP, "Game library is version %d, expected %d or %d",
-                  ge->apiversion, GAME_API_VERSION_OLD, GAME_API_VERSION_NEW);
+    if (ge->apiversion != GAME_API_VERSION) {
+        Com_Error(ERR_DROP, "Game library is version %d, expected %d",
+                  ge->apiversion, GAME_API_VERSION);
     }
 
     // get extended api if present

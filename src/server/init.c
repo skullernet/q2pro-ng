@@ -456,8 +456,7 @@ void SV_InitGame(void)
     SV_InitGameProgs();
     SV_CheckForEnhancedSavegames();
 
-    if (IS_NEW_GAME_API)
-        PmoveEnableExt(&svs.pmp);
+    PmoveEnableExt(&svs.pmp);
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;

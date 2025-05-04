@@ -57,7 +57,7 @@ typedef struct {
 } player_packed_fog_t;
 
 typedef struct {
-    pmove_state_new_t   pmove;
+    pmove_state_t       pmove;
     int16_t             viewangles[3];
     int8_t              viewoffset[3];
     int8_t              kick_angles[3];
@@ -70,7 +70,7 @@ typedef struct {
     player_packed_fog_t fog;
     uint8_t             fov;
     uint8_t             rdflags;
-    int16_t             stats[MAX_STATS_NEW];
+    int16_t             stats[MAX_STATS];
 } player_packed_t;
 
 typedef enum {
@@ -131,8 +131,7 @@ int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *c
 void    MSG_WriteDir(const vec3_t vector);
 void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity_state_extension_t *ext);
 void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags);
-void    MSG_PackPlayerOld(player_packed_t *out, const player_state_old_t *in);
-void    MSG_PackPlayerNew(player_packed_t *out, const player_state_new_t *in);
+void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
 int     MSG_WriteDeltaPlayerstate(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
 
 static inline void *MSG_WriteData(const void *data, size_t len)

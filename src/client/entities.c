@@ -360,7 +360,6 @@ void CL_DeltaFrame(void)
     centity_t           *ent;
     int                 i, j;
     int                 framenum;
-    int                 prevstate = cls.state;
 
     // getting a valid frame message ends the connection process
     if (cls.state == ca_precached)

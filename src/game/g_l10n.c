@@ -2,7 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
-#include "q_files.h"
+#include "shared/files.h"
 
 #define MIN_MESSAGES    1024
 

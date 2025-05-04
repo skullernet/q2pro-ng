@@ -102,7 +102,7 @@ typedef struct {
 #define P(name, type) FA_(F_POINTER, name, type)
 
 static const save_field_t moveinfo_fields[] = {
-#define _OFS(x) q_offsetof(moveinfo_t, x)
+#define _OFS(x) offsetof(moveinfo_t, x)
     V(start_origin),
     V(start_angles),
     V(end_origin),
@@ -135,7 +135,7 @@ static const save_field_t moveinfo_fields[] = {
 };
 
 static const save_field_t reinforcement_fields[] = {
-#define _OFS(x) q_offsetof(reinforcement_t, x)
+#define _OFS(x) offsetof(reinforcement_t, x)
     L(classname),
     I(strength),
     F(radius),
@@ -145,7 +145,7 @@ static const save_field_t reinforcement_fields[] = {
 };
 
 static const save_field_t monsterinfo_fields[] = {
-#define _OFS(x) q_offsetof(monsterinfo_t, x)
+#define _OFS(x) offsetof(monsterinfo_t, x)
     P(active_move, P_mmove_t),
     P(next_move, P_mmove_t),
     H64(aiflags),
@@ -266,7 +266,7 @@ static const save_field_t monsterinfo_fields[] = {
 };
 
 static const save_field_t bmodel_anim_fields[] = {
-#define _OFS(x) q_offsetof(bmodel_anim_t, x)
+#define _OFS(x) offsetof(bmodel_anim_t, x)
     I(params[0].start),
     I(params[0].end),
     I(params[0].style),
@@ -285,7 +285,7 @@ static const save_field_t bmodel_anim_fields[] = {
 };
 
 static const save_field_t player_fog_fields[] = {
-#define _OFS(x) q_offsetof(player_fog_t, x)
+#define _OFS(x) offsetof(player_fog_t, x)
     V(color),
     F(density),
     F(sky_factor),
@@ -293,7 +293,7 @@ static const save_field_t player_fog_fields[] = {
 };
 
 static const save_field_t player_heightfog_fields[] = {
-#define _OFS(x) q_offsetof(player_heightfog_t, x)
+#define _OFS(x) offsetof(player_heightfog_t, x)
     V(start.color),
     F(start.dist),
     V(end.color),
@@ -487,7 +487,7 @@ static const save_field_t entityfields[] = {
 };
 
 static const save_field_t levelfields[] = {
-#define _OFS(x) q_offsetof(level_locals_t, x)
+#define _OFS(x) offsetof(level_locals_t, x)
     T(time),
 
     SZ(level_name, MAX_QPATH),
@@ -549,7 +549,7 @@ static const save_field_t levelfields[] = {
 };
 
 static const save_field_t client_persistent_fields[] = {
-#define _OFS(x) q_offsetof(client_persistent_t, x)
+#define _OFS(x) offsetof(client_persistent_t, x)
     SZ(userinfo, MAX_INFO_STRING),
     SZ(netname, 16),
     I(hand),
@@ -710,7 +710,7 @@ static const save_field_t clientfields[] = {
 };
 
 static const save_field_t level_entry_fields[] = {
-#define _OFS(x) q_offsetof(level_entry_t, x)
+#define _OFS(x) offsetof(level_entry_t, x)
     SZ(map_name, MAX_QPATH),
     SZ(pretty_name, MAX_QPATH),
     I(total_secrets),
@@ -723,7 +723,7 @@ static const save_field_t level_entry_fields[] = {
 };
 
 static const save_field_t gamefields[] = {
-#define _OFS(x) q_offsetof(game_locals_t, x)
+#define _OFS(x) offsetof(game_locals_t, x)
     SZ(helpmessage1, MAX_TOKEN_CHARS),
     SZ(helpmessage2, MAX_TOKEN_CHARS),
     I(help1changed),

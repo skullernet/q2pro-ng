@@ -500,7 +500,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
     len = FS_LoadFile(name, (void **)&data);
     if (!data) {
         if (len != Q_ERR(ENOENT))
-            Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(name), Q_ErrorString(len));
+            Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(name), Q_ErrorString(len));
         s->error = len;
         return NULL;
     }
@@ -527,7 +527,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 
 fail:
     if (!sc)
-        Com_EPrintf("Couldn't load %s: %s\n", Com_MakePrintable(name), Com_GetLastError());
+        Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(name), Com_GetLastError());
     FS_FreeFile(data);
     return sc;
 }

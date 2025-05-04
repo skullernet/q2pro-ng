@@ -419,10 +419,7 @@ void SV_BuildClientFrame(client_t *client)
     frame->areabytes = CM_WriteAreaBits(&sv.cm, frame->areabits, clientarea);
 
     // grab the current player_state_t
-    if (IS_NEW_GAME_API)
-        MSG_PackPlayerNew(&frame->ps, clent->client);
-    else
-        MSG_PackPlayerOld(&frame->ps, clent->client);
+    MSG_PackPlayer(&frame->ps, &clent->client->ps);
 
     // grab the current clientNum
     if (g_features->integer & GMF_CLIENTNUM) {

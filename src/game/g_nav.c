@@ -4,8 +4,8 @@
 
 #include "g_local.h"
 #include "g_nav.h"
-#include "q_files.h"
-#include "q_list.h"
+#include "shared/files.h"
+#include "shared/list.h"
 
 // magic file header
 #define NAV_MAGIC   MakeLittleLong('N', 'A', 'V', '3')

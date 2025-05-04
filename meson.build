@@ -25,9 +25,7 @@ common_src = [
   'src/common/msg.c',
   'src/common/net/chan.c',
   'src/common/net/net.c',
-  'src/common/pmove/common.c',
-  'src/common/pmove/new.c',
-  'src/common/pmove/old.c',
+  'src/common/pmove.c',
   'src/common/prompt.c',
   'src/common/sizebuf.c',
   'src/common/utils.c',
@@ -108,10 +106,10 @@ server_src = [
   'src/server/world.c',
 ]
 
-game_src = [
+game_src = files(
   'src/shared/m_flash.c',
   'src/shared/shared.c'
-]
+)
 
 subdir('src/game')
 
@@ -375,7 +373,7 @@ executable('q2proded', common_src, server_src,
 shared_library('game' + cpu, game_src,
   name_prefix:           '',
   dependencies:          game_deps,
-  include_directories:   'inc',
+  include_directories:   ['inc', 'src/game'],
   gnu_symbol_visibility: 'hidden',
   link_args:             dll_link_args,
   install:               system_wide,

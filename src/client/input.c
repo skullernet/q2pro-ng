@@ -868,10 +868,8 @@ CL_SendDefaultCmd
 static void CL_SendDefaultCmd(void)
 {
     int cursize q_unused;
-    uint32_t checksumIndex;
     usercmd_t *cmd, *oldcmd;
     client_history_t *history;
-    int version;
 
     // archive this packet
     history = &cl.history[cls.netchan.outgoing_sequence & CMD_MASK];
@@ -892,10 +890,6 @@ static void CL_SendDefaultCmd(void)
 
     // begin a client move command
     MSG_WriteByte(clc_move);
-
-    // save the position for a checksum byte
-    checksumIndex = 0;
-    version = 0;
 
     // let the server know what the last frame we
     // got was, so the next message can be delta compressed

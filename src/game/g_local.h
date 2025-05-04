@@ -588,9 +588,9 @@ typedef struct {
     bool        no_point_loss;
 } mod_t;
 
-#define FOFS(x) q_offsetof(edict_t, x)
-#define STOFS(x) q_offsetof(spawn_temp_t, x)
-#define CLOFS(x) q_offsetof(gclient_t, x)
+#define FOFS(x) offsetof(edict_t, x)
+#define STOFS(x) offsetof(spawn_temp_t, x)
+#define CLOFS(x) offsetof(gclient_t, x)
 
 // the total number of levels we'll track for the
 // end of unit screen.

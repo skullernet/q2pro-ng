@@ -327,8 +327,7 @@ void CL_MuzzleFlash(void)
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 5.25f, -5.5f }, 4.0f);
         break;
-    case MZ_SHOTGUN2:
-        // remaster overloads this as MZ_ETF_RIFLE_2
+    case MZ_ETF_RIFLE_2:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);

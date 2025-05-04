@@ -253,8 +253,6 @@ static uint32_t SV_PackSolid32(const edict_t *ent)
 void PF_LinkEdict(edict_t *ent)
 {
     areanode_t *node;
-    server_entity_t *sent;
-    int entnum;
 #if USE_FPS
     int i;
 #endif
@@ -276,17 +274,13 @@ void PF_LinkEdict(edict_t *ent)
     if (!sv.cm.cache)
         return;
 
-    entnum = NUM_FOR_EDICT(ent);
-    sent = &sv.entities[entnum];
-
     // encode the size into the entity_state for client prediction
     switch (ent->solid) {
     case SOLID_BBOX:
-        if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs)) {
+        if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs))
             ent->s.solid = 0;
-        } else {
+        else
             ent->s.solid = SV_PackSolid32(ent);
-        }
         break;
     case SOLID_BSP:
         ent->s.solid = PACKED_BSP;      // a SOLID_BBOX will never create this value
@@ -459,7 +453,7 @@ SV_PointContents
 */
 int SV_PointContents(const vec3_t p)
 {
-    edict_t     *touch[MAX_EDICTS], *hit;
+    edict_t     *touch[MAX_EDICTS_OLD], *hit;
     int         i, num;
     int         contents;
 

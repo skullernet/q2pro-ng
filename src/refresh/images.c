@@ -1813,7 +1813,7 @@ static void print_error(const char *name, imageflags_t flags, int err)
         break;
     }
 
-    Com_LPrintf(level, "Couldn't load %s: %s\n", Com_MakePrintable(name), msg);
+    Com_LPrintf(level, "Couldn't load %s: %s\n", COM_MakePrintable(name), msg);
 }
 
 static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensions, byte **pic)

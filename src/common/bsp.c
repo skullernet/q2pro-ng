@@ -369,7 +369,7 @@ int BSP_LoadMaterials(bsp_t *bsp)
         }
 
         if (out->material[0] && !COM_IsPath(out->material)) {
-            Com_WPrintf("Bad material \"%s\" in %s\n", Com_MakePrintable(out->material), path);
+            Com_WPrintf("Bad material \"%s\" in %s\n", COM_MakePrintable(out->material), path);
             out->material[0] = 0;
         }
 

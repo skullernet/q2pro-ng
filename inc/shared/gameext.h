@@ -58,9 +58,7 @@ typedef enum {
 
 typedef struct {
     entity_state_t s;
-#if USE_PROTOCOL_EXTENSIONS
     entity_state_extension_t x;
-#endif
 } customize_entity_t;
 
 typedef struct {

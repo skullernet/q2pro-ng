@@ -2,7 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
-#include "q_files.h"
+#include "shared/files.h"
 
 static void Svcmd_Test_f(void)
 {

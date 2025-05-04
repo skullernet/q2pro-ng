@@ -39,14 +39,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "config.h"
 #endif
 
-#ifndef USE_PROTOCOL_EXTENSIONS
-#define USE_PROTOCOL_EXTENSIONS (USE_CLIENT || USE_SERVER)
-#endif
-
-#ifndef USE_NEW_GAME_API
-#define USE_NEW_GAME_API (USE_CLIENT || USE_SERVER)
-#endif
-
 #include "shared/platform.h"
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
@@ -72,6 +64,7 @@ typedef int qhandle_t;
 // per-level limits
 //
 #define MAX_CLIENTS         256     // absolute limit
+#define MAX_EDICTS_OLD      1024
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
 #define MAX_MODELS          8192    // half is reserved for inline BSP models
 #define MAX_SOUNDS          2048
@@ -80,6 +73,7 @@ typedef int qhandle_t;
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
+#define MODELINDEX_WORLD    0
 #define MODELINDEX_PLAYER   255
 
 #define MAX_CLIENT_NAME     16
@@ -273,6 +267,8 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs);
 vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
 void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
+void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
+void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {
@@ -594,6 +590,11 @@ char *COM_Parse(const char **data_p);
 // data is an in/out param, returns a parsed out token
 size_t COM_Compress(char *data);
 
+extern const char com_hexchars[16];
+
+size_t COM_EscapeString(char *dst, const char *src, size_t size);
+char *COM_MakePrintable(const char *s);
+
 int SortStrcmp(const void *p1, const void *p2);
 int SortStricmp(const void *p1, const void *p2);
 
@@ -704,6 +705,15 @@ static inline int32_t SignExtend(uint32_t v, int bits)
 #define MakeColor(r, g, b, a)   MakeRawLong(r, g, b, a)
 #endif
 
+#define U32_BLACK   MakeColor(  0,   0,   0, 255)
+#define U32_RED     MakeColor(255,   0,   0, 255)
+#define U32_GREEN   MakeColor(  0, 255,   0, 255)
+#define U32_YELLOW  MakeColor(255, 255,   0, 255)
+#define U32_BLUE    MakeColor(  0,   0, 255, 255)
+#define U32_CYAN    MakeColor(  0, 255, 255, 255)
+#define U32_MAGENTA MakeColor(255,   0, 255, 255)
+#define U32_WHITE   MakeColor(255, 255, 255, 255)
+
 //=============================================
 
 //
@@ -758,14 +768,12 @@ typedef struct cvar_s {
     struct cvar_s *next;
 
 // ------ new stuff ------
-#if USE_NEW_GAME_API
     int         integer;
     char        *default_string;
 #if USE_CLIENT || USE_SERVER
     xchanged_t      changed;
     xgenerator_t    generator;
     struct cvar_s   *hashNext;
-#endif
 #endif
 } cvar_t;
 
@@ -780,6 +788,7 @@ COLLISION DETECTION
 */
 
 // lower bits are stronger, and will eat weaker brushes completely
+#define CONTENTS_NONE           0U
 #define CONTENTS_SOLID          BIT(0)      // an eye is never valid in a solid
 #define CONTENTS_WINDOW         BIT(1)      // translucent, but not watery
 #define CONTENTS_AUX            BIT(2)
@@ -838,13 +847,14 @@ COLLISION DETECTION
 // content masks
 #define MASK_ALL                (-1)
 #define MASK_SOLID              (CONTENTS_SOLID|CONTENTS_WINDOW)
-#define MASK_PLAYERSOLID        (CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
+#define MASK_PLAYERSOLID        (CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER|CONTENTS_PLAYER)
 #define MASK_DEADSOLID          (CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW)
-#define MASK_MONSTERSOLID       (CONTENTS_SOLID|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER)
+#define MASK_MONSTERSOLID       (CONTENTS_SOLID|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER|CONTENTS_PLAYER)
 #define MASK_WATER              (CONTENTS_WATER|CONTENTS_LAVA|CONTENTS_SLIME)
 #define MASK_OPAQUE             (CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
-#define MASK_SHOT               (CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
+#define MASK_SHOT               (CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_PLAYER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
 #define MASK_CURRENT            (CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
+#define MASK_PROJECTILE         (MASK_SHOT|CONTENTS_PROJECTILECLIP)
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
 // FIXME: eliminate AREA_ distinction?
@@ -911,24 +921,13 @@ typedef enum {
 #define PMF_ON_LADDER                   BIT(8)
 //KEX
 
+#define PM_TIME_SHIFT       0
+
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
 // prediction stays in sync, so no floats are used.
 // if any part of the game code modifies this struct, it
 // will result in a prediction error of some degree.
-typedef struct {
-    pmtype_t    pm_type;
-
-    short       origin[3];      // 12.3
-    short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
-    byte        pm_time;        // each unit = 8 ms
-    short       gravity;
-    short       delta_angles[3];    // add to command angles to get view direction
-                                    // changed by spawns, rotating objects, and teleporters
-} pmove_state_old_t;
-
-#if USE_NEW_GAME_API
 typedef struct {
     pmtype_t    pm_type;
 
@@ -939,15 +938,17 @@ typedef struct {
     int16_t     gravity;
     int16_t     delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
-} pmove_state_new_t;
-#endif
+} pmove_state_t;
 
 //
 // button bits
 //
+#define BUTTON_NONE     0U
 #define BUTTON_ATTACK   BIT(0)
 #define BUTTON_USE      BIT(1)
 #define BUTTON_ANY      BIT(7)  // any key whatsoever
+#define BUTTON_HOLSTER  0
+#define BUTTON_JUMP     0
 
 // usercmd_t is sent to the server each client frame
 typedef struct {
@@ -963,34 +964,7 @@ typedef struct {
 
 typedef struct {
     // state (in / out)
-    pmove_state_old_t   s;
-
-    // command (in)
-    usercmd_t       cmd;
-    qboolean        snapinitial;    // if s has been changed outside pmove
-
-    // results (out)
-    int             numtouch;
-    struct edict_s  *touchents[MAXTOUCH];
-
-    vec3_t      viewangles;         // clamped
-    float       viewheight;
-
-    vec3_t      mins, maxs;         // bounding box size
-
-    struct edict_s  *groundentity;
-    int             watertype;
-    int             waterlevel;
-
-    // callbacks to test the world
-    trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end);
-    int         (*pointcontents)(const vec3_t point);
-} pmove_old_t;
-
-#if USE_NEW_GAME_API
-typedef struct {
-    // state (in / out)
-    pmove_state_new_t   s;
+    pmove_state_t   s;
 
     // command (in)
     usercmd_t       cmd;
@@ -1013,14 +987,14 @@ typedef struct {
     // callbacks to test the world
     trace_t     (* q_gameabi trace)(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask);
     int         (*pointcontents)(const vec3_t point);
-} pmove_new_t;
-#endif
+} pmove_t;
 
 // entity_state_t->effects
 // Effects are things handled on the client side (lights, particles, frame animations)
 // that happen constantly on the given entity.
 // An entity that has effects will be sent to the client
 // even if it has a zero index model.
+#define EF_NONE             0U
 #define EF_ROTATE           BIT(0)      // rotate (bonus items)
 #define EF_GIB              BIT(1)      // leave a trail
 #define EF_BOB              BIT(2)      // used by KEX
@@ -1061,6 +1035,7 @@ typedef struct {
 
 // entity_state_t->morefx flags
 //KEX
+#define EFX_NONE                0U
 #define EFX_DUALFIRE            BIT(0)
 #define EFX_HOLOGRAM            BIT(1)
 #define EFX_FLASHLIGHT          BIT(2)
@@ -1070,6 +1045,7 @@ typedef struct {
 //KEX
 
 // entity_state_t->renderfx flags
+#define RF_NONE             0U
 #define RF_MINLIGHT         BIT(0)      // always have some light (viewmodel)
 #define RF_VIEWERMODEL      BIT(1)      // don't draw through eyes, only mirrors
 #define RF_WEAPONMODEL      BIT(2)      // only draw through eyes
@@ -1109,6 +1085,7 @@ typedef struct {
 //KEX
 
 // player_state_t->refdef flags
+#define RDF_NONE            0U
 #define RDF_UNDERWATER      BIT(0)      // warp the screen as appropriate
 #define RDF_NOWORLDMODEL    BIT(1)      // used for player configuration screen
 
@@ -1122,7 +1099,7 @@ typedef struct {
 //
 // muzzle flashes / player effects
 //
-enum {
+typedef enum {
     MZ_BLASTER,
     MZ_MACHINEGUN,
     MZ_SHOTGUN,
@@ -1151,8 +1128,8 @@ enum {
 
 //ROGUE
     MZ_ETF_RIFLE = 30,
-    MZ_PROX,        // KEX
-    MZ_SHOTGUN2,    // MZ_ETF_RIFLE_2 in KEX
+    MZ_PROX,            // KEX
+    MZ_ETF_RIFLE_2,     // MZ_ETF_RIFLE_2 in KEX
     MZ_HEATBEAM,
     MZ_BLASTER2,
     MZ_TRACKER,
@@ -1163,7 +1140,8 @@ enum {
 //ROGUE
 
     MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
-};
+    MZ_NONE = 0,
+} player_muzzle_t;
 
 // temp entity events
 //
@@ -1262,17 +1240,18 @@ enum {
 // sound channels
 // channel 0 never willingly overrides
 // other channels (1-7) always override a playing sound on that channel
-enum {
+typedef enum {
     CHAN_AUTO,
     CHAN_WEAPON,
     CHAN_VOICE,
     CHAN_ITEM,
     CHAN_BODY,
+    CHAN_AUX,
 
     // modifier flags
     CHAN_NO_PHS_ADD     = BIT(3),   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
     CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
-};
+} soundchan_t;
 
 // sound attenuation values
 #define ATTN_LOOP_NONE          -1  // ugly hack for remaster
@@ -1303,8 +1282,7 @@ enum {
     STAT_SPECTATOR,
 };
 
-#define MAX_STATS_OLD   32
-#define MAX_STATS_NEW   64
+#define MAX_STATS   64
 
 // STAT_LAYOUTS flags
 #define LAYOUTS_LAYOUT          BIT(0)
@@ -1448,31 +1426,7 @@ typedef struct {
 // to rendered a view.  There will only be 10 player_state_t sent each second,
 // but the number of pmove_state_t changes will be relative to client
 // frame rates
-typedef struct {
-    pmove_state_old_t   pmove;  // for prediction
 
-    // these fields do not need to be communicated bit-precise
-
-    vec3_t      viewangles;     // for fixed views
-    vec3_t      viewoffset;     // add to pmovestate->origin
-    vec3_t      kick_angles;    // add to view direction to get render angles
-                                // set by weapon kicks, pain effects, etc
-
-    vec3_t      gunangles;
-    vec3_t      gunoffset;
-    int         gunindex;
-    int         gunframe;
-
-    vec4_t      blend;          // rgba full screen effect
-
-    float       fov;            // horizontal field of view
-
-    int         rdflags;        // refdef flags
-
-    short       stats[MAX_STATS_OLD];   // fast status bar updates
-} player_state_old_t;
-
-#if USE_NEW_GAME_API
 typedef struct {
     vec3_t color;
     float density;
@@ -1489,7 +1443,7 @@ typedef struct {
 } player_heightfog_t;
 
 typedef struct {
-    pmove_state_new_t   pmove;  // for prediction
+    pmove_state_t   pmove;  // for prediction
 
     // these fields do not need to be communicated bit-precise
 
@@ -1518,13 +1472,10 @@ typedef struct {
     int         reserved_3;
     int         reserved_4;
 
-    int16_t     stats[MAX_STATS_NEW];   // fast status bar updates
-} player_state_new_t;
-#endif
+    int16_t     stats[MAX_STATS];   // fast status bar updates
+} player_state_t;
 
 //==============================================
-
-#if USE_PROTOCOL_EXTENSIONS
 
 #define ENTITYNUM_BITS      13
 #define ENTITYNUM_MASK      MASK(ENTITYNUM_BITS)
@@ -1539,21 +1490,3 @@ typedef struct {
     float       loop_volume;
     float       loop_attenuation;
 } entity_state_extension_t;
-
-#endif
-
-#if USE_NEW_GAME_API
-
-#define MAX_STATS           MAX_STATS_NEW
-typedef pmove_new_t         pmove_t;
-typedef pmove_state_new_t   pmove_state_t;
-typedef player_state_new_t  player_state_t;
-
-#else
-
-#define MAX_STATS           MAX_STATS_OLD
-typedef pmove_old_t         pmove_t;
-typedef pmove_state_old_t   pmove_state_t;
-typedef player_state_old_t  player_state_t;
-
-#endif

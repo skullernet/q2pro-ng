@@ -812,33 +812,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
      out[2] = BLEND2BYTE(in[2]),   \
      out[3] = BLEND2BYTE(in[3]))
 
-void MSG_PackPlayerOld(player_packed_t *out, const player_state_old_t *in)
-{
-    out->pmove.pm_type = in->pmove.pm_type;
-    VectorCopy(in->pmove.origin, out->pmove.origin);
-    VectorCopy(in->pmove.velocity, out->pmove.velocity);
-    out->pmove.pm_flags = in->pmove.pm_flags;
-    out->pmove.pm_time = in->pmove.pm_time;
-    out->pmove.gravity = in->pmove.gravity;
-    VectorCopy(in->pmove.delta_angles, out->pmove.delta_angles);
-
-    PACK_ANGLES(out->viewangles, in->viewangles);
-    PACK_OFFSET(out->viewoffset, in->viewoffset);
-    PACK_OFFSET(out->kick_angles, in->kick_angles);
-    PACK_OFFSET(out->gunoffset, in->gunoffset);
-    PACK_OFFSET(out->gunangles, in->gunangles);
-
-    out->gunindex = in->gunindex;
-    out->gunframe = in->gunframe;
-    PACK_BLEND(out->blend, in->blend);
-    out->fov = Q_clip_uint8(in->fov);
-    out->rdflags = in->rdflags;
-
-    for (int i = 0; i < MAX_STATS_OLD; i++)
-        out->stats[i] = in->stats[i];
-}
-
-void MSG_PackPlayerNew(player_packed_t *out, const player_state_new_t *in)
+void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 {
     out->pmove = in->pmove;
 
@@ -869,16 +843,15 @@ void MSG_PackPlayerNew(player_packed_t *out, const player_state_new_t *in)
     out->fov = Q_clip_uint8(in->fov);
     out->rdflags = in->rdflags;
 
-    for (int i = 0; i < MAX_STATS_NEW; i++)
+    for (int i = 0; i < MAX_STATS; i++)
         out->stats[i] = in->stats[i];
 }
 
-static uint64_t MSG_CalcStatBits(const player_packed_t *from, const player_packed_t *to, msgPsFlags_t flags)
+static uint64_t MSG_CalcStatBits(const player_packed_t *from, const player_packed_t *to)
 {
-    int numstats = (flags & MSG_PS_EXTENSIONS_2) ? MAX_STATS_NEW : MAX_STATS_OLD;
     uint64_t statbits = 0;
 
-    for (int i = 0; i < numstats; i++)
+    for (int i = 0; i < MAX_STATS; i++)
         if (to->stats[i] != from->stats[i])
             statbits |= BIT_ULL(i);
 
@@ -896,19 +869,10 @@ static void MSG_WriteVarInt64(uint64_t v)
     } while (v);
 }
 
-static void MSG_WriteStats(const player_packed_t *to, uint64_t statbits, msgPsFlags_t flags)
+static void MSG_WriteStats(const player_packed_t *to, uint64_t statbits)
 {
-    int numstats;
-
-    if (flags & MSG_PS_EXTENSIONS_2) {
-        MSG_WriteVarInt64(statbits);
-        numstats = MAX_STATS_NEW;
-    } else {
-        MSG_WriteLong(statbits);
-        numstats = MAX_STATS_OLD;
-    }
-
-    for (int i = 0; i < numstats; i++)
+    MSG_WriteVarInt64(statbits);
+    for (int i = 0; i < MAX_STATS; i++)
         if (statbits & BIT_ULL(i))
             MSG_WriteShort(to->stats[i]);
 }
@@ -1110,7 +1074,7 @@ int MSG_WriteDeltaPlayerstate(const player_packed_t    *from,
         VectorCopy(from->gunangles, to->gunangles);
     }
 
-    statbits = MSG_CalcStatBits(from, to, flags);
+    statbits = MSG_CalcStatBits(from, to);
     if (statbits)
         eflags |= EPS_STATS;
 
@@ -1236,7 +1200,7 @@ int MSG_WriteDeltaPlayerstate(const player_packed_t    *from,
 
     // send stats
     if (eflags & EPS_STATS)
-        MSG_WriteStats(to, statbits, flags);
+        MSG_WriteStats(to, statbits);
 
     return eflags;
 }
@@ -1857,23 +1821,13 @@ static uint64_t MSG_ReadVarInt64(void)
     return v;
 }
 
-static void MSG_ReadStats(player_state_t *to, msgPsFlags_t flags)
+static void MSG_ReadStats(player_state_t *to)
 {
-    uint64_t statbits;
-    int numstats;
-
-    if (flags & MSG_PS_EXTENSIONS_2) {
-        statbits = MSG_ReadVarInt64();
-        numstats = MAX_STATS_NEW;
-    } else {
-        statbits = MSG_ReadLong();
-        numstats = MAX_STATS_OLD;
-    }
-
+    uint64_t statbits = MSG_ReadVarInt64();
     if (!statbits)
         return;
 
-    for (int i = 0; i < numstats; i++)
+    for (int i = 0; i < MAX_STATS; i++)
         if (statbits & BIT_ULL(i))
             to->stats[i] = MSG_ReadShort();
 }
@@ -2072,7 +2026,7 @@ void MSG_ParseDeltaPlayerstate(const player_state_t    *from,
 
     // parse stats
     if (extraflags & EPS_STATS)
-        MSG_ReadStats(to, psflags);
+        MSG_ReadStats(to);
 }
 
 #endif // USE_CLIENT

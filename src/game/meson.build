@@ -1,4 +1,4 @@
-game_src = files(
+game_src += files(
   'g_ai.c',
   'g_chase.c',
   'g_cmds.c',

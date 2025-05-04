@@ -1043,7 +1043,7 @@ static void Cmd_Players_f(edict_t *ent)
         strcat(large, small);
     }
 
-    gi.cprintf(ent, PRINT_HIGH | PRINT_NO_NOTIFY, "%s\n%i players\n", large, count);
+    gi.cprintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
 }
 
 bool CheckFlood(edict_t *ent)

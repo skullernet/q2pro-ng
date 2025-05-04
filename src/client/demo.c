@@ -166,9 +166,9 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
 
     // delta encode the playerstate
     MSG_WriteByte(svc_playerinfo);
-    MSG_PackPlayerNew(&newpack, &to->ps);
+    MSG_PackPlayer(&newpack, &to->ps);
     if (from) {
-        MSG_PackPlayerNew(&oldpack, &from->ps);
+        MSG_PackPlayer(&oldpack, &from->ps);
         MSG_WriteDeltaPlayerstate(&oldpack, &newpack, cls.demo.psFlags);
     } else {
         MSG_WriteDeltaPlayerstate(NULL, &newpack, cls.demo.psFlags);
@@ -722,7 +722,6 @@ static void CL_PlayDemo_f(void)
     cls.state = ca_connected;
     Q_strlcpy(cls.servername, COM_SkipPath(name), sizeof(cls.servername));
     cls.serverAddress.type = NA_LOOPBACK;
-    cl.max_stats = MAX_STATS_OLD;
 
     Con_Popup(true);
     SCR_UpdateScreen();
@@ -1124,7 +1123,7 @@ CL_GetDemoInfo
 bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
 {
     qhandle_t f;
-    int c, index, clientNum, version, flags, type;
+    int c, index, clientNum, type;
     bool res = false;
 
     FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);

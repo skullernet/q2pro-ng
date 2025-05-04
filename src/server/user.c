@@ -1182,7 +1182,7 @@ static void SV_ParseFullUserinfo(void)
     }
 
     Com_DDPrintf("%s(%s): %s [%d]\n", __func__,
-                 sv_client->name, Com_MakePrintable(sv_client->userinfo), userinfoUpdateCount);
+                 sv_client->name, COM_MakePrintable(sv_client->userinfo), userinfoUpdateCount);
 
     SV_UpdateUserinfo();
     userinfoUpdateCount++;
@@ -1317,7 +1317,7 @@ static void SV_ParseClientCommand(void)
         return;
     }
 
-    Com_DDPrintf("%s(%s): %s\n", __func__, sv_client->name, Com_MakePrintable(buffer));
+    Com_DDPrintf("%s(%s): %s\n", __func__, sv_client->name, COM_MakePrintable(buffer));
 
     SV_ExecuteUserCommand(buffer);
     stringCmdCount++;

@@ -24,22 +24,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION_OLD    3       // game uses gclient_old_t, pmove_old_t
-#define GAME_API_VERSION_NEW    3302    // game uses gclient_new_t, pmove_new_t
-
-#if USE_NEW_GAME_API
-#define GAME_API_VERSION    GAME_API_VERSION_NEW
-#else
-#define GAME_API_VERSION    GAME_API_VERSION_OLD
-#endif
+#define GAME_API_VERSION    3303
 
 // edict->svflags
 
+#define SVF_NONE                0U
 #define SVF_NOCLIENT            BIT(0)      // don't send entity to clients, even if it has effects
 #define SVF_DEADMONSTER         BIT(1)      // treat as CONTENTS_DEADMONSTER for collision
 #define SVF_MONSTER             BIT(2)      // only used by server as entity priority hint
-
-#if USE_PROTOCOL_EXTENSIONS
 #define SVF_PLAYER              BIT(3)      // treat as CONTENTS_PLAYER for collision
 #define SVF_BOT                 BIT(4)
 #define SVF_NOBOTS              BIT(5)
@@ -49,7 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_DOOR                BIT(9)
 #define SVF_NOCULL              BIT(10)     // always send entity to clients (no PVS checks)
 #define SVF_HULL                BIT(11)
-#endif
 
 // edict->solid values
 
@@ -85,23 +76,8 @@ typedef struct gclient_s gclient_t;
 
 #ifndef GAME_INCLUDE
 
-typedef struct gclient_old_s gclient_old_t;
-typedef struct gclient_new_s gclient_new_t;
-
-struct gclient_old_s {
-    player_state_old_t  ps;     // communicated by server to clients
-    int                 ping;
-
-    // set to (client POV entity number) - 1 by game,
-    // only valid if g_features has GMF_CLIENTNUM bit
-    int             clientNum;
-
-    // the game dll can add anything it wants after
-    // this point in the structure
-};
-
-struct gclient_new_s {
-    player_state_new_t  ps;     // communicated by server to clients
+struct gclient_s {
+    player_state_t      ps;     // communicated by server to clients
     int                 ping;
 
     // set to (client POV entity number) - 1 by game,
@@ -114,7 +90,7 @@ struct gclient_new_s {
 
 struct edict_s {
     entity_state_t  s;
-    void        *client;
+    gclient_t   *client;
     qboolean    inuse;
     int         linkcount;
 
@@ -137,11 +113,9 @@ struct edict_s {
 
     //================================
 
-#if USE_PROTOCOL_EXTENSIONS
     // extra entity state communicated to clients
     // only valid if g_features has GMF_PROTOCOL_EXTENSIONS bit
     entity_state_extension_t    x;
-#endif
 
     // the game dll can add anything it wants after
     // this point in the structure

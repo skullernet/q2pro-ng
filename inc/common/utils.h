@@ -79,12 +79,6 @@ color_index_t Com_ParseColor(const char *s);
 unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);
 #endif
 
-extern const char com_hexchars[16];
-
-size_t Com_EscapeString(char *dst, const char *src, size_t size);
-
-char *Com_MakePrintable(const char *s);
-
 #if USE_CLIENT
 uint32_t Com_SlowRand(void);
 #define Com_SlowFrand()  ((int32_t)Com_SlowRand() * 0x1p-32f + 0.5f)

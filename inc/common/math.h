@@ -66,13 +66,8 @@ static inline vec_t PlaneDiffFast(const vec3_t v, const cplane_t *p)
     return PlaneDiff(v, p);
 }
 
-#if USE_REF
-
-void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
-void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
-
-// quaternion routines, for MD5 skeletons
 #if USE_MD5
+// quaternion routines, for MD5 skeletons
 typedef vec4_t quat_t;
 void Quat_ComputeW(quat_t q);
 void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out);
@@ -82,6 +77,4 @@ void Quat_MultiplyVector(const float *restrict q, const float *restrict v, quat_
 void Quat_Conjugate(const quat_t in, quat_t out);
 void Quat_RotatePoint(const quat_t q, const vec3_t in, vec3_t out);
 void Quat_ToAxis(const quat_t q, vec3_t axis[3]);
-#endif
-
-#endif  // USE_REF
+#endif  // USE_MD5
