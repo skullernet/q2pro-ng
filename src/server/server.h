@@ -235,8 +235,6 @@ typedef struct client_s {
 
     // console var probes
     char            *version_string;
-    char            reconnect_var[16];
-    char            reconnect_val[16];
     int             console_queries;
 
     // usercmd stuff
@@ -444,7 +442,6 @@ extern cvar_t       *sv_enforcetime;
 #if USE_FPS
 extern cvar_t       *sv_fps;
 #endif
-extern cvar_t       *sv_force_reconnect;
 extern cvar_t       *sv_iplimit;
 
 #if USE_DEBUG

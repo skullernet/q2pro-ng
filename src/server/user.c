@@ -177,39 +177,6 @@ static void stuff_cvar_bans(void)
             SV_ClientCommand(sv_client, "cmd \177c %s $%s\n", ban->var, ban->var);
 }
 
-static void stuff_junk(void)
-{
-    static const char junkchars[] =
-        "!#&'()*+,-./0123456789:<=>?@[\\]^_``````````abcdefghijklmnopqrstuvwxyz|~~~~~~~~~~";
-    char junk[8][16];
-    int i, j;
-
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 15; j++)
-            junk[i][j] = junkchars[Q_rand_uniform(sizeof(junkchars) - 1)];
-        junk[i][j] = 0;
-    }
-
-    Q_strlcpy(sv_client->reconnect_var, junk[2], sizeof(sv_client->reconnect_var));
-    Q_strlcpy(sv_client->reconnect_val, junk[3], sizeof(sv_client->reconnect_val));
-
-    SV_ClientCommand(sv_client, "set %s set\n", junk[0]);
-    SV_ClientCommand(sv_client, "$%s %s connect\n", junk[0], junk[1]);
-    if (Q_rand() & 1) {
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[2], junk[3]);
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[4],
-                         sv_force_reconnect->string);
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[5], junk[6]);
-    } else {
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[4],
-                         sv_force_reconnect->string);
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[5], junk[6]);
-        SV_ClientCommand(sv_client, "$%s %s %s\n", junk[0], junk[2], junk[3]);
-    }
-    SV_ClientCommand(sv_client, "$%s %s \"\"\n", junk[0], junk[0]);
-    SV_ClientCommand(sv_client, "$%s $%s\n", junk[1], junk[4]);
-}
-
 static int q2pro_protocol_flags(void)
 {
     int flags = 0;
@@ -258,14 +225,6 @@ void SV_New_f(void)
         return;
     }
 
-    // stuff some junk, drop them and expect them to be back soon
-    if (sv_force_reconnect->string[0] && !sv_client->reconnect_var[0] &&
-        !NET_IsLocalAddress(&sv_client->netchan.remote_address)) {
-        stuff_junk();
-        SV_DropClient(sv_client, NULL);
-        return;
-    }
-
     SV_ClientCommand(sv_client, "\n");
 
     //
@@ -301,12 +260,6 @@ void SV_New_f(void)
     if (oldstate == cs_assigned) {
         SV_ClientCommand(sv_client, "cmd \177c version $version\n");
         stuff_cmds(&sv_cmdlist_connect);
-    }
-
-    // send reconnect var request
-    if (sv_force_reconnect->string[0] && !sv_client->reconnected) {
-        SV_ClientCommand(sv_client, "cmd \177c connect $%s\n",
-                         sv_client->reconnect_var);
     }
 
     stuff_cvar_bans();
@@ -357,11 +310,6 @@ void SV_Begin_f(void)
 
     if (!sv_client->version_string) {
         SV_DropClient(sv_client, "!failed version probe");
-        return;
-    }
-
-    if (sv_force_reconnect->string[0] && !sv_client->reconnected) {
-        SV_DropClient(sv_client, "!failed to reconnect");
         return;
     }
 
@@ -788,12 +736,6 @@ static void SV_CvarResult_f(void)
                            NET_AdrToString(&sv_client->netchan.remote_address), v);
             }
             sv_client->version_string = SV_CopyString(v);
-        }
-    } else if (!strcmp(c, "connect")) {
-        if (sv_client->reconnect_var[0]) {
-            if (!strcmp(Cmd_Argv(2), sv_client->reconnect_val)) {
-                sv_client->reconnected = true;
-            }
         }
     } else if (!strcmp(c, "console")) {
         if (sv_client->console_queries > 0) {

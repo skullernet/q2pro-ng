@@ -51,7 +51,6 @@ cvar_t  *sv_idlekick;
 cvar_t  *sv_password;
 cvar_t  *sv_reserved_password;
 
-cvar_t  *sv_force_reconnect;
 cvar_t  *sv_show_name_changes;
 
 cvar_t  *sv_airaccelerate;
@@ -596,8 +595,6 @@ typedef struct {
     bool        has_zlib;
 
     int         maxclients; // hidden client slots
-    char        reconnect_var[16];
-    char        reconnect_val[16];
 } conn_params_t;
 
 #define reject_printf(...) \
@@ -842,14 +839,7 @@ static client_t *find_client_slot(conn_params_t *params)
     // if there is already a slot for this ip, reuse it
     FOR_EACH_CLIENT(cl) {
         if (NET_IsEqualAdr(&net_from, &cl->netchan.remote_address)) {
-            if (cl->state == cs_zombie) {
-                Q_strlcpy(params->reconnect_var, cl->reconnect_var, sizeof(params->reconnect_var));
-                Q_strlcpy(params->reconnect_val, cl->reconnect_val, sizeof(params->reconnect_val));
-            } else {
-                SV_DropClient(cl, "reconnected");
-            }
-
-            Com_DPrintf("%s: reconnect\n", NET_AdrToString(&net_from));
+            SV_DropClient(cl, "reconnected");
             SV_RemoveClient(cl);
             return cl;
         }
@@ -958,8 +948,6 @@ static void SVC_DirectConnect(void)
     newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
     newcl->edict = EDICT_NUM(number + 1);
-    Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
-    Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS
     newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
@@ -1996,7 +1984,6 @@ void SV_Init(void)
 #if USE_FPS
     sv_fps = Cvar_Get("sv_fps", "10", CVAR_LATCH);
 #endif
-    sv_force_reconnect = Cvar_Get("sv_force_reconnect", "", CVAR_LATCH);
     sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 
     sv_airaccelerate = Cvar_Get("sv_airaccelerate", "0", CVAR_LATCH);
