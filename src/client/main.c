@@ -183,10 +183,6 @@ static void CL_UpdateGunSetting(void)
 {
     int nogun;
 
-    if (cls.netchan.protocol < PROTOCOL_VERSION_R1Q2) {
-        return;
-    }
-
     if (cl_gun->integer == -1) {
         nogun = 2;
     } else if (cl_gun->integer == 0 || (info_hand->integer == 2 && cl_gun->integer == 1)) {
@@ -203,10 +199,6 @@ static void CL_UpdateGunSetting(void)
 
 static void CL_UpdateGibSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
-        return;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOGIBS);
     MSG_WriteShort(!cl_gibs->integer);
@@ -215,10 +207,6 @@ static void CL_UpdateGibSetting(void)
 
 static void CL_UpdateFootstepsSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
-        return;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOFOOTSTEPS);
     MSG_WriteShort(!cl_footsteps->integer);
@@ -227,10 +215,6 @@ static void CL_UpdateFootstepsSetting(void)
 
 static void CL_UpdatePredictSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
-        return;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOPREDICT);
     MSG_WriteShort(!cl_predict->integer);
@@ -240,10 +224,6 @@ static void CL_UpdatePredictSetting(void)
 #if USE_FPS
 static void CL_UpdateRateSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
-        return;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_FPS);
     MSG_WriteShort(cl_updaterate->integer);
@@ -253,33 +233,14 @@ static void CL_UpdateRateSetting(void)
 
 void CL_UpdateRecordingSetting(void)
 {
-    int rec;
-
-    if (cls.netchan.protocol < PROTOCOL_VERSION_R1Q2) {
-        return;
-    }
-
-    if (cls.demo.recording) {
-        rec = 1;
-    } else {
-        rec = 0;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_RECORDING);
-    MSG_WriteShort(rec);
+    MSG_WriteShort(!!cls.demo.recording);
     MSG_FlushTo(&cls.netchan.message);
 }
 
 static void CL_UpdateFlaresSetting(void)
 {
-    if (cls.netchan.protocol != PROTOCOL_VERSION_Q2PRO) {
-        return;
-    }
-    if (!cl.csr.extended) {
-        return;
-    }
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOFLARES);
     MSG_WriteShort(!cl_flares->integer);
@@ -293,7 +254,7 @@ CL_ClientCommand
 */
 void CL_ClientCommand(const char *string)
 {
-    if (!cls.netchan.protocol) {
+    if (!cls.netchan.init) {
         return;
     }
 
@@ -374,7 +335,6 @@ Resend a connect message if the last one has timed out
 */
 void CL_CheckForResend(void)
 {
-    char tail[MAX_QPATH];
     char userinfo[MAX_INFO_STRING];
     int maxmsglen;
 
@@ -387,11 +347,7 @@ void CL_CheckForResend(void)
     if (cls.state < ca_connecting && sv_running->integer > ss_loading) {
         strcpy(cls.servername, "localhost");
         cls.serverAddress.type = NA_LOOPBACK;
-        cls.serverProtocol = cl_protocol->integer;
-        if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-            cls.serverProtocol > PROTOCOL_VERSION_Q2PRO) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
-        }
+        cls.serverProtocol = PROTOCOL_VERSION_MAJOR;
 
         // we don't need a challenge on the localhost
         cls.state = ca_connecting;
@@ -428,6 +384,7 @@ void CL_CheckForResend(void)
     Com_Printf("Requesting connection... %i\n", cls.connect_count);
 
     cls.userinfo_modified = 0;
+    cls.quakePort = net_qport->integer & 0xff;
 
     // use maximum allowed msglen for loopback
     maxmsglen = net_maxmsglen->integer;
@@ -435,29 +392,10 @@ void CL_CheckForResend(void)
         maxmsglen = MAX_PACKETLEN_WRITABLE;
     }
 
-    // add protocol dependent stuff
-    switch (cls.serverProtocol) {
-    case PROTOCOL_VERSION_R1Q2:
-        Q_snprintf(tail, sizeof(tail), " %d %d",
-                   maxmsglen, PROTOCOL_VERSION_R1Q2_CURRENT);
-        cls.quakePort = net_qport->integer & 0xff;
-        break;
-    case PROTOCOL_VERSION_Q2PRO:
-        Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
-                   maxmsglen, net_chantype->integer, USE_ZLIB,
-                   PROTOCOL_VERSION_Q2PRO_CURRENT);
-        cls.quakePort = net_qport->integer & 0xff;
-        break;
-    default:
-        tail[0] = 0;
-        cls.quakePort = net_qport->integer;
-        break;
-    }
-
     Cvar_BitInfo(userinfo, CVAR_USERINFO);
     Netchan_OutOfBand(NS_CLIENT, &cls.serverAddress,
-                      "connect %i %i %i \"%s\"%s\n", cls.serverProtocol, cls.quakePort,
-                      cls.challenge, userinfo, tail);
+                      "connect %i %i %i \"%s\" %i %i %i\n", PROTOCOL_VERSION_MAJOR, cls.quakePort,
+                      cls.challenge, userinfo, PROTOCOL_VERSION_MINOR, maxmsglen, USE_ZLIB);
 }
 
 static void CL_RecentIP_g(genctx_t *ctx)
@@ -707,7 +645,7 @@ void CL_Disconnect(error_type_t type)
     cls.errorReceived = false;
 #endif
 
-    if (cls.netchan.protocol) {
+    if (cls.netchan.init) {
         // send a disconnect message to the server
         MSG_WriteByte(clc_stringcmd);
         MSG_WriteData("disconnect", 11);
@@ -1241,50 +1179,8 @@ static void CL_ConnectionlessPacket(void)
         cls.state = ca_connecting;
         cls.connect_time -= CONNECT_INSTANT; // fire immediately
         //cls.connect_count = 0;
+        cls.serverProtocol = PROTOCOL_VERSION_MAJOR;
 
-        // parse additional parameters
-        j = Cmd_Argc();
-        for (i = 2; i < j; i++) {
-            s = Cmd_Argv(i);
-            if (!strncmp(s, "p=", 2)) {
-                s += 2;
-                while (*s) {
-                    k = strtoul(s, &s, 10);
-                    if (k == PROTOCOL_VERSION_R1Q2) {
-                        mask |= 1;
-                    } else if (k == PROTOCOL_VERSION_Q2PRO) {
-                        mask |= 2;
-                    }
-                    s = strchr(s, ',');
-                    if (s == NULL) {
-                        break;
-                    }
-                    s++;
-                }
-            }
-        }
-
-        if (!cls.serverProtocol) {
-            cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
-        }
-
-        // choose supported protocol
-        switch (cls.serverProtocol) {
-        case PROTOCOL_VERSION_Q2PRO:
-            if (mask & 2) {
-                break;
-            }
-            cls.serverProtocol = PROTOCOL_VERSION_R1Q2;
-            // fall through
-        case PROTOCOL_VERSION_R1Q2:
-            if (mask & 1) {
-                break;
-            }
-            // fall through
-        default:
-            cls.serverProtocol = PROTOCOL_VERSION_DEFAULT;
-            break;
-        }
         Com_DPrintf("Selected protocol %d\n", cls.serverProtocol);
 
         CL_CheckForResend();
@@ -1293,7 +1189,6 @@ static void CL_ConnectionlessPacket(void)
 
     // server connection
     if (!strcmp(c, "client_connect")) {
-        netchan_type_t type;
         char mapname[MAX_QPATH];
         bool got_server = false;
 
@@ -1310,28 +1205,13 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-            type = NETCHAN_NEW;
-        } else {
-            type = NETCHAN_OLD;
-        }
-
         mapname[0] = 0;
 
         // parse additional parameters
         j = Cmd_Argc();
         for (i = 1; i < j; i++) {
             s = Cmd_Argv(i);
-            if (!strncmp(s, "nc=", 3)) {
-                s += 3;
-                if (*s) {
-                    type = Q_atoi(s);
-                    if (type != NETCHAN_OLD && type != NETCHAN_NEW) {
-                        Com_Error(ERR_DISCONNECT,
-                                  "Server returned invalid netchan type");
-                    }
-                }
-            } else if (!strncmp(s, "map=", 4)) {
+            if (!strncmp(s, "map=", 4)) {
                 Q_strlcpy(mapname, s + 4, sizeof(mapname));
             } else if (!strncmp(s, "dlserver=", 9)) {
                 if (!got_server) {
@@ -1348,8 +1228,7 @@ static void CL_ConnectionlessPacket(void)
         Com_Printf("Connected to %s (protocol %d).\n",
                    NET_AdrToString(&cls.serverAddress), cls.serverProtocol);
         Netchan_Close(&cls.netchan);
-        Netchan_Setup(&cls.netchan, NS_CLIENT, type, &cls.serverAddress,
-                      cls.quakePort, 1024, cls.serverProtocol);
+        Netchan_Setup(&cls.netchan, NS_CLIENT, &cls.serverAddress, cls.quakePort, 1024);
 
         CL_ClientCommand("new");
         cls.state = ca_connected;
@@ -1528,12 +1407,6 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
 
     if (var->flags & CVAR_PRIVATE) {
         return;
-    }
-
-    if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
-        // transmit at next opportunity
-        cls.userinfo_modified = MAX_PACKET_USERINFOS;
-        goto done;
     }
 
     if (cls.userinfo_modified == MAX_PACKET_USERINFOS) {
@@ -2934,7 +2807,7 @@ static void CL_MeasureStats(void)
     }
 
     // measure average ping
-    if (cls.netchan.protocol) {
+    if (cls.netchan.init) {
         int ack = cls.netchan.incoming_acknowledged;
         int ping = 0;
         int j, k = 0;
@@ -2982,7 +2855,7 @@ static void CL_CheckForReply(void)
 
 static void CL_CheckTimeout(void)
 {
-    if (!cls.netchan.protocol) {
+    if (!cls.netchan.init) {
         return;
     }
     if (NET_IsLocalAddress(&cls.netchan.remote_address)) {

@@ -896,12 +896,6 @@ static void CL_SendDefaultCmd(void)
     // save the position for a checksum byte
     checksumIndex = 0;
     version = 0;
-    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
-        checksumIndex = msg_write.cursize;
-        SZ_GetSpace(&msg_write, 1);
-    } else if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2) {
-        version = cls.protocolVersion;
-    }
 
     // let the server know what the last frame we
     // got was, so the next message can be delta compressed
@@ -914,26 +908,18 @@ static void CL_SendDefaultCmd(void)
     // send this and the previous cmds in the message, so
     // if the last packet was dropped, it can be recovered
     cmd = &cl.cmds[(cl.cmdNumber - 2) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(NULL, cmd, version);
+    MSG_WriteDeltaUsercmd(NULL, cmd);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[(cl.cmdNumber - 1) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd);
     MSG_WriteByte(cl.lightlevel);
     oldcmd = cmd;
 
     cmd = &cl.cmds[cl.cmdNumber & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd, version);
+    MSG_WriteDeltaUsercmd(oldcmd, cmd);
     MSG_WriteByte(cl.lightlevel);
-
-    if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
-        // calculate a checksum over the move commands
-        msg_write.data[checksumIndex] = COM_BlockSequenceCRCByte(
-            msg_write.data + checksumIndex + 1,
-            msg_write.cursize - checksumIndex - 1,
-            cls.netchan.outgoing_sequence);
-    }
 
     P_FRAMES++;
 
@@ -1087,7 +1073,7 @@ static void CL_SendUserinfo(void)
         MSG_WriteByte(clc_userinfo);
         MSG_WriteData(userinfo, len + 1);
         MSG_FlushTo(&cls.netchan.message);
-    } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
+    } else {
         Com_DDPrintf("%s: %u: %d updates\n", __func__, com_framenum,
                      cls.userinfo_modified);
         for (i = 0; i < cls.userinfo_modified; i++) {
@@ -1102,9 +1088,6 @@ static void CL_SendUserinfo(void)
             }
         }
         MSG_FlushTo(&cls.netchan.message);
-    } else {
-        Com_WPrintf("%s: update count is %d, should never happen.\n",
-                    __func__, cls.userinfo_modified);
     }
 }
 
@@ -1157,7 +1140,7 @@ void CL_SendCmd(void)
     // send a userinfo update if needed
     CL_SendReliable();
 
-    if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO && cl_batchcmds->integer) {
+    if (cl_batchcmds->integer) {
         CL_SendBatchedCmd();
     } else {
         CL_SendDefaultCmd();

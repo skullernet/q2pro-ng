@@ -512,10 +512,6 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     int         i, ent, vol, att, ofs, flags, sendchan;
     vec3_t      origin_v;
     client_t    *client;
-    visrow_t    mask;
-    const mleaf_t       *leaf1, *leaf2;
-    message_packet_t    *msg;
-    bool        force_pos;
 
     if (!edict)
         Com_Error(ERR_DROP, "%s: edict = NULL", __func__);
@@ -552,7 +548,8 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
     // send origin for invisible entities
     // the origin can also be explicitly set
-    force_pos = (edict->svflags & SVF_NOCLIENT) || origin;
+    if ((edict->svflags & SVF_NOCLIENT) || origin)
+        flags |= SND_POS;
 
     // use the entity origin unless it is a bmodel or explicitly specified
     if (!origin) {
@@ -567,7 +564,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
     // prepare multicast message
     MSG_WriteByte(svc_sound);
-    MSG_WriteByte(flags | SND_POS);
+    MSG_WriteByte(flags);
     if (flags & SND_INDEX16)
         MSG_WriteShort(soundindex);
     else
@@ -579,9 +576,9 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         MSG_WriteByte(att);
     if (flags & SND_OFFSET)
         MSG_WriteByte(ofs);
-
     MSG_WriteShort(sendchan);
-    PF_WritePos(origin);
+    if (flags & SND_POS)
+        PF_WritePos(origin);
 
     // if the sound doesn't attenuate, send it to everyone
     // (global radio chatter, voiceovers, etc)
@@ -589,79 +586,12 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
         channel |= CHAN_NO_PHS_ADD;
 
     // multicast if force sending origin
-    if (force_pos) {
-        multicast_t to = MULTICAST_PHS;
-        if (channel & CHAN_NO_PHS_ADD)
-            to = MULTICAST_ALL;
-        if (channel & CHAN_RELIABLE)
-            to += MULTICAST_ALL_R;
-        SV_Multicast(origin, to);
-        return;
-    }
-
-    leaf1 = NULL;
-    if (!(channel & CHAN_NO_PHS_ADD)) {
-        leaf1 = CM_PointLeaf(&sv.cm, origin);
-        BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, DVIS_PHS);
-    }
-
-    // decide per client if origin needs to be sent
-    FOR_EACH_CLIENT(client) {
-        // do not send sounds to connecting clients
-        if (!CLIENT_ACTIVE(client)) {
-            continue;
-        }
-
-        // PHS cull this sound
-        if (!(channel & CHAN_NO_PHS_ADD)) {
-            leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
-            if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
-                continue;
-            if (leaf2->cluster == -1)
-                continue;
-            if (!Q_IsBitSet(mask.b, leaf2->cluster))
-                continue;
-        }
-
-        // reliable sounds will always have position explicitly set,
-        // as no one guarantees reliables to be delivered in time
-        if (channel & CHAN_RELIABLE) {
-            SV_ClientAddMessage(client, MSG_RELIABLE);
-            continue;
-        }
-
-        // default client doesn't know that bmodels have weird origins
-        if (edict->solid == SOLID_BSP && client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            SV_ClientAddMessage(client, 0);
-            continue;
-        }
-
-        if (LIST_EMPTY(&client->msg_free_list)) {
-            Com_DWPrintf("%s to %s: out of message slots\n",
-                         __func__, client->name);
-            continue;
-        }
-
-        msg = LIST_FIRST(message_packet_t, &client->msg_free_list, entry);
-
-        msg->cursize = SOUND_PACKET;
-        msg->flags = flags;
-        msg->index = soundindex;
-        msg->volume = vol;
-        msg->attenuation = att;
-        msg->timeofs = ofs;
-        msg->sendchan = sendchan;
-        for (i = 0; i < 3; i++) {
-            msg->pos[i] = COORD2SHORT(origin[i]);
-        }
-
-        List_Remove(&msg->entry);
-        List_Append(&client->msg_unreliable_list, &msg->entry);
-        client->msg_unreliable_bytes += msg_write.cursize;
-    }
-
-    // clear multicast buffer
-    SZ_Clear(&msg_write);
+    multicast_t to = MULTICAST_PHS;
+    if (channel & CHAN_NO_PHS_ADD)
+        to = MULTICAST_ALL;
+    if (channel & CHAN_RELIABLE)
+        to += MULTICAST_ALL_R;
+    SV_Multicast(origin, to);
 }
 
 static void PF_StartSound(edict_t *entity, int channel,

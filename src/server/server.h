@@ -179,35 +179,12 @@ typedef enum {
     cs_spawned      // client is fully in game
 } clstate_t;
 
-#define MSG_POOLSIZE        1024
-#define MSG_TRESHOLD        (62 - sizeof(list_t))   // keep message_packet_t 64 bytes aligned
-
 #define MSG_RELIABLE        BIT(0)
 #define MSG_CLEAR           BIT(1)
 #define MSG_COMPRESS        BIT(2)
 #define MSG_COMPRESS_AUTO   BIT(3)
 
 #define ZPACKET_HEADER      5
-
-#define MAX_SOUND_PACKET    15
-#define SOUND_PACKET        0       // special value for cursize
-
-typedef struct {
-    list_t              entry;
-    uint16_t            cursize;    // zero means sound packet
-    union {
-        uint8_t         data[MSG_TRESHOLD];
-        struct {
-            uint16_t    index;
-            uint16_t    sendchan;
-            uint8_t     flags;
-            uint8_t     volume;
-            uint8_t     attenuation;
-            uint8_t     timeofs;
-            int32_t     pos[3];     // saved in case entity is freed
-        };
-    };
-} message_packet_t;
 
 #define RATE_MESSAGES   10
 
@@ -309,14 +286,6 @@ typedef struct client_s {
     msgEsFlags_t    esFlags;    // entity protocol flags
     msgPsFlags_t    psFlags;
 
-    // packetized messages
-    list_t              msg_free_list;
-    list_t              msg_unreliable_list;
-    list_t              msg_reliable_list;
-    message_packet_t    *msg_pool;
-    unsigned            msg_unreliable_bytes;   // total size of unreliable datagram
-    unsigned            msg_dynamic_bytes;      // total size of dynamic memory allocated
-
     // per-client baseline chunks
     entity_packed_t     *baselines[SV_BASELINES_CHUNKS];
 
@@ -325,8 +294,9 @@ typedef struct client_s {
     unsigned            next_entity;    // next state to use
     entity_packed_t     *entities;      // [num_entities]
 
-    // netchan type dependent method
-    void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
+    // The datagram is written to by sound calls, prints, temp ents, etc.
+    // It can be harmlessly overflowed.
+    sizebuf_t       datagram;
 
     // netchan
     netchan_t       netchan;
@@ -627,8 +597,7 @@ static inline void SV_CheckEntityNumber(edict_t *ent, int e, const char *func)
 #define SV_CheckEntityNumber(ent, e) SV_CheckEntityNumber(ent, e, __func__)
 
 void SV_BuildClientFrame(client_t *client);
-bool SV_WriteFrameToClient_Default(client_t *client, unsigned maxsize);
-bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize);
+void SV_WriteFrameToClient(client_t *client);
 
 //
 // sv_game.c

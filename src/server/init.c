@@ -445,6 +445,16 @@ void SV_InitGame(void)
     // set up default pmove parameters
     PmoveInit(&svs.pmp);
 
+    svs.pmp.airaccelerate = sv_airaccelerate->integer;
+    svs.pmp.strafehack = true;
+    svs.pmp.flyhack = true;
+    svs.pmp.waterhack = true;
+    svs.pmp.flyfriction = 4;
+
+    if (sv_qwmod->integer) {
+        PmoveEnableQW(&svs.pmp);
+    }
+
     // init game
     SV_InitGameProgs();
     SV_CheckForEnhancedSavegames();

@@ -113,10 +113,6 @@ static bool     sv_registered;
 
 void SV_RemoveClient(client_t *client)
 {
-    if (client->msg_pool) {
-        SV_ShutdownClientSend(client);
-    }
-
     Netchan_Close(&client->netchan);
 
     // unlink them from active client list, but don't clear the list entry
@@ -144,6 +140,10 @@ void SV_CleanClient(client_t *client)
     // free packet entities
     Z_Freep(&client->entities);
     client->num_entities = 0;
+
+    // free datagram
+    Z_Free(client->datagram.data);
+    client->datagram = (sizebuf_t){ 0 };
 }
 
 static void print_drop_reason(client_t *client, const char *reason, clstate_t oldstate)
@@ -505,7 +505,7 @@ static void SVC_Info(void)
         return; // ignore in single player
 
     version = Q_atoi(Cmd_Argv(1));
-    if (version < PROTOCOL_VERSION_DEFAULT || version > PROTOCOL_VERSION_Q2PRO)
+    if (version != PROTOCOL_VERSION_MAJOR)
         return; // ignore invalid versions
 
     len = Q_scnprintf(buffer, sizeof(buffer),
@@ -614,13 +614,38 @@ static bool parse_basic_params(conn_params_t *p)
     p->challenge = Q_atoi(Cmd_Argv(3));
 
     // check for invalid protocol version
-    if (p->protocol < PROTOCOL_VERSION_OLD ||
-        p->protocol > PROTOCOL_VERSION_Q2PRO)
+    if (p->protocol != PROTOCOL_VERSION_MAJOR)
         return reject("Unsupported protocol version %d.\n", p->protocol);
 
-    // check for valid, but outdated protocol version
-    if (p->protocol < PROTOCOL_VERSION_DEFAULT)
-        return reject("You need Quake 2 version 3.19 or higher.\n");
+    // parse minor protocol version
+    p->version = Q_atoi(Cmd_Argv(5));
+    if (p->version < PROTOCOL_VERSION_MINOR_OLDEST)
+        return reject("Your client version is too old for this server.\n");
+
+    if (p->version > PROTOCOL_VERSION_MINOR)
+        p->version = PROTOCOL_VERSION_MINOR;
+
+    // set maximum packet length
+    p->maxlength = Q_atoi(Cmd_Argv(6));
+    if (p->maxlength < 0 || p->maxlength > MAX_PACKETLEN_WRITABLE)
+        return reject("Invalid maximum message length.\n");
+
+    // 0 means highest available
+    if (!p->maxlength)
+        p->maxlength = MAX_PACKETLEN_WRITABLE;
+
+    if (!NET_IsLocalAddress(&net_from) && net_maxmsglen->integer > 0) {
+        // cap to server defined maximum value
+        if (p->maxlength > net_maxmsglen->integer)
+            p->maxlength = net_maxmsglen->integer;
+    }
+
+    // don't allow too small packets
+    if (p->maxlength < MIN_PACKETLEN)
+        p->maxlength = MIN_PACKETLEN;
+
+    // set zlib
+    p->has_zlib = Q_atoi(Cmd_Argv(7));
 
     return true;
 }
@@ -695,100 +720,6 @@ static bool permit_connection(conn_params_t *p)
             else
                 return reject("Too many connections from your IP address.\n");
         }
-    }
-
-    return true;
-}
-
-static bool parse_packet_length(conn_params_t *p)
-{
-    char *s;
-
-    // set maximum packet length
-    p->maxlength = MAX_PACKETLEN_WRITABLE_DEFAULT;
-    if (p->protocol >= PROTOCOL_VERSION_R1Q2) {
-        s = Cmd_Argv(5);
-        if (*s) {
-            p->maxlength = Q_atoi(s);
-            if (p->maxlength < 0 || p->maxlength > MAX_PACKETLEN_WRITABLE)
-                return reject("Invalid maximum message length.\n");
-
-            // 0 means highest available
-            if (!p->maxlength)
-                p->maxlength = MAX_PACKETLEN_WRITABLE;
-        }
-    }
-
-    if (!NET_IsLocalAddress(&net_from) && net_maxmsglen->integer > 0) {
-        // cap to server defined maximum value
-        if (p->maxlength > net_maxmsglen->integer)
-            p->maxlength = net_maxmsglen->integer;
-    }
-
-    // don't allow too small packets
-    if (p->maxlength < MIN_PACKETLEN)
-        p->maxlength = MIN_PACKETLEN;
-
-    return true;
-}
-
-static bool parse_enhanced_params(conn_params_t *p)
-{
-    char *s;
-
-    if (p->protocol == PROTOCOL_VERSION_R1Q2) {
-        // set minor protocol version
-        s = Cmd_Argv(6);
-        if (*s) {
-            p->version = Q_clip(Q_atoi(s),
-                PROTOCOL_VERSION_R1Q2_MINIMUM,
-                PROTOCOL_VERSION_R1Q2_CURRENT);
-        } else {
-            p->version = PROTOCOL_VERSION_R1Q2_MINIMUM;
-        }
-        p->nctype = NETCHAN_OLD;
-        p->has_zlib = true;
-    } else if (p->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // set netchan type
-        s = Cmd_Argv(6);
-        if (*s) {
-            p->nctype = Q_atoi(s);
-            if (p->nctype < NETCHAN_OLD || p->nctype > NETCHAN_NEW)
-                return reject("Invalid netchan type.\n");
-        } else {
-            p->nctype = NETCHAN_NEW;
-        }
-
-        // set zlib
-        s = Cmd_Argv(7);
-        p->has_zlib = !*s || Q_atoi(s);
-
-        // set minor protocol version
-        s = Cmd_Argv(8);
-        if (*s) {
-            p->version = Q_clip(Q_atoi(s),
-                PROTOCOL_VERSION_Q2PRO_MINIMUM,
-                PROTOCOL_VERSION_Q2PRO_CURRENT);
-            if (p->version == PROTOCOL_VERSION_Q2PRO_RESERVED) {
-                p->version--; // never use this version
-            }
-        } else {
-            p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
-        }
-    }
-
-    // verify protocol extensions compatibility
-    if (svs.csr.extended) {
-        int minimal = IS_NEW_GAME_API ?
-            PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS_2 :
-            PROTOCOL_VERSION_Q2PRO_EXTENDED_LIMITS;
-
-        if (p->protocol == PROTOCOL_VERSION_Q2PRO && p->version >= minimal)
-            return true;
-
-        return reject("This is a protocol limit removing enhanced server.\n"
-                      "Your client version is not compatible. Make sure you are "
-                      "running the latest Q2PRO client version.\n");
     }
 
     return true;
@@ -949,80 +880,27 @@ static client_t *find_client_slot(conn_params_t *params)
 
 static void init_pmove_and_es_flags(client_t *newcl)
 {
-    int force;
-
     // copy default pmove parameters
     newcl->pmp = svs.pmp;
-    newcl->pmp.airaccelerate = sv_airaccelerate->integer;
-
-    // common extensions
-    force = 2;
-    if (newcl->protocol >= PROTOCOL_VERSION_R1Q2) {
-        newcl->pmp.speedmult = 2;
-        force = 1;
-    }
-    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
-
-    // R1Q2 extensions
-    if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
-        newcl->esFlags |= MSG_ES_BEAMORIGIN;
-        if (newcl->version >= PROTOCOL_VERSION_R1Q2_LONG_SOLID) {
-            newcl->esFlags |= MSG_ES_LONGSOLID;
-        }
-    }
 
     // Q2PRO extensions
-    force = 2;
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (sv_qwmod->integer) {
-            PmoveEnableQW(&newcl->pmp);
-        }
-        newcl->pmp.flyhack = true;
-        newcl->pmp.flyfriction = 4;
-        newcl->esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
-            newcl->esFlags |= MSG_ES_BEAMORIGIN;
-        }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
-            newcl->esFlags |= MSG_ES_SHORTANGLES;
-        }
-        if (svs.csr.extended) {
-            newcl->esFlags |= MSG_ES_EXTENSIONS;
-            newcl->psFlags |= MSG_PS_EXTENSIONS;
-
-            if (IS_NEW_GAME_API) {
-                newcl->esFlags |= MSG_ES_EXTENSIONS_2;
-                newcl->psFlags |= MSG_PS_EXTENSIONS_2;
-                if (newcl->version >= PROTOCOL_VERSION_Q2PRO_PLAYERFOG) {
-                    newcl->psFlags |= MSG_PS_MOREBITS;
-                }
-            }
-        }
-        force = 1;
-    }
-    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
+    newcl->esFlags = MSG_ES_UMASK | MSG_ES_LONGSOLID | MSG_ES_BEAMORIGIN |
+        MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_EXTENSIONS_2;
+    newcl->psFlags = MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS;
 }
 
 static void send_connect_packet(client_t *newcl, int nctype)
 {
-    const char *ncstring    = "";
     const char *dlstring1   = "";
     const char *dlstring2   = "";
-
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (nctype == NETCHAN_NEW)
-            ncstring = " nc=1";
-        else
-            ncstring = " nc=0";
-    }
 
     if (sv_downloadserver->string[0]) {
         dlstring1 = " dlserver=";
         dlstring2 = sv_downloadserver->string;
     }
 
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s map=%s",
-                      ncstring, dlstring1, dlstring2, sv.name);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s map=%s",
+                      dlstring1, dlstring2, sv.name);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1059,10 +937,6 @@ static void SVC_DirectConnect(void)
     if (!parse_basic_params(&params))
         return;
     if (!permit_connection(&params))
-        return;
-    if (!parse_packet_length(&params))
-        return;
-    if (!parse_enhanced_params(&params))
         return;
     if (!parse_userinfo(&params, userinfo))
         return;
@@ -1112,8 +986,7 @@ static void SVC_DirectConnect(void)
     }
 
     // setup netchan
-    Netchan_Setup(&newcl->netchan, NS_SERVER, params.nctype, &net_from,
-                  params.qport, params.maxlength, params.protocol);
+    Netchan_Setup(&newcl->netchan, NS_SERVER, &net_from, params.qport, params.maxlength);
     newcl->numpackets = 1;
 
     // parse some info from the info strings
@@ -1125,7 +998,7 @@ static void SVC_DirectConnect(void)
 
     SV_RateInit(&newcl->ratelimit_namechange, sv_namechange_limit->string);
 
-    SV_InitClientSend(newcl);
+    SZ_InitWrite(&newcl->datagram, SV_Mallocz(MAX_MSGLEN), MAX_MSGLEN);
 
     // loopback client doesn't need to reconnect
     if (NET_IsLocalAddress(&net_from)) {
@@ -1483,15 +1356,7 @@ static void SV_PacketEvent(void)
 
         // read the qport out of the message so we can fix up
         // stupid address translating routers
-        if (client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            if (msg_read.cursize < PACKET_HEADER) {
-                continue;
-            }
-            qport = RL16(&msg_read.data[8]);
-            if (netchan->qport != qport) {
-                continue;
-            }
-        } else if (netchan->qport) {
+        if (netchan->qport) {
             if (msg_read.cursize < PACKET_HEADER - 1) {
                 continue;
             }
@@ -2093,7 +1958,7 @@ void SV_Init(void)
 
     SV_RegisterSavegames();
 
-    Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_DEFAULT), CVAR_SERVERINFO | CVAR_ROM);
+    Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_MAJOR), CVAR_SERVERINFO | CVAR_ROM);
 
     Cvar_Get("skill", "1", CVAR_LATCH);
     Cvar_Get("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);

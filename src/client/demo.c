@@ -165,8 +165,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteByte(svc_frame);
     MSG_WriteLong(tonum);
     MSG_WriteLong(fromnum); // what we are delta'ing from
-    if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
-        MSG_WriteByte(cl.suppress_count);   // rate dropped packets
+    MSG_WriteByte(cl.suppress_count);   // rate dropped packets
 
     // send over the areabits
     MSG_WriteByte(to->areabytes);
@@ -177,9 +176,9 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_PackPlayerNew(&newpack, &to->ps);
     if (from) {
         MSG_PackPlayerNew(&oldpack, &from->ps);
-        MSG_WriteDeltaPlayerstate_Default(&oldpack, &newpack, cls.demo.psFlags);
+        MSG_WriteDeltaPlayerstate(&oldpack, &newpack, cls.demo.psFlags);
     } else {
-        MSG_WriteDeltaPlayerstate_Default(NULL, &newpack, cls.demo.psFlags);
+        MSG_WriteDeltaPlayerstate(NULL, &newpack, cls.demo.psFlags);
     }
 
     // delta encode the entities
@@ -419,10 +418,7 @@ static void CL_Record_f(void)
 
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
-    if (cl.csr.extended)
-        MSG_WriteLong(PROTOCOL_VERSION_EXTENDED_CURRENT);
-    else
-        MSG_WriteLong(min(cls.serverProtocol, PROTOCOL_VERSION_DEFAULT));
+    MSG_WriteLong(PROTOCOL_VERSION_MAJOR);
     MSG_WriteLong(cl.servercount);
     MSG_WriteByte(1);      // demos are always attract loops
     MSG_WriteString(cl.gamedir);
@@ -1152,7 +1148,7 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
 {
     qhandle_t f;
     int c, index, clientNum, version, flags, type;
-    const cs_remap_t *csr = &cs_remap_old;
+    const cs_remap_t *csr = &cs_remap_new;
     bool res = false;
 
     FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
@@ -1169,9 +1165,7 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
         goto fail;
     }
     c = MSG_ReadLong();
-    if (EXTENDED_SUPPORTED(c)) {
-        csr = &cs_remap_new;
-    } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
+    if (!Q2PRO_SUPPORTED(c)) {
         goto fail;
     }
     MSG_ReadLong();

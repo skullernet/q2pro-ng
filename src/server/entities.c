@@ -27,103 +27,7 @@ Encode a client frame onto the network channel
 */
 
 // some protocol optimizations are disabled when recording a demo
-#define Q2PRO_OPTIMIZE(c) \
-    ((c)->protocol == PROTOCOL_VERSION_Q2PRO && !(c)->settings[CLS_RECORDING])
-
-/*
-=============
-SV_TruncPacketEntities
-
-Truncates remainder of entity_packed_t list, patching current frame to make
-delta compression happy.
-=============
-*/
-static bool SV_TruncPacketEntities(client_t *client, const client_frame_t *from,
-                                   client_frame_t *to, int oldindex, int newindex)
-{
-    entity_packed_t *newent;
-    const entity_packed_t *oldent;
-    int i, oldnum, newnum, entities_mask, from_num_entities, to_num_entities;
-    bool ret = true;
-
-    if (!sv_trunc_packet_entities->integer || client->netchan.type == NETCHAN_NEW)
-        return false;
-
-    SV_DPrintf(1, "Truncating frame %d at %u bytes for %s\n",
-               client->framenum, msg_write.cursize, client->name);
-
-    if (!from)
-        from_num_entities = 0;
-    else
-        from_num_entities = from->num_entities;
-    to_num_entities = to->num_entities;
-
-    entities_mask = client->num_entities - 1;
-    oldent = newent = NULL;
-    while (newindex < to->num_entities || oldindex < from_num_entities) {
-        if (newindex >= to->num_entities) {
-            newnum = MAX_EDICTS;
-        } else {
-            i = (to->first_entity + newindex) & entities_mask;
-            newent = &client->entities[i];
-            newnum = newent->number;
-        }
-
-        if (oldindex >= from_num_entities) {
-            oldnum = MAX_EDICTS;
-        } else {
-            i = (from->first_entity + oldindex) & entities_mask;
-            oldent = &client->entities[i];
-            oldnum = oldent->number;
-        }
-
-        if (newnum == oldnum) {
-            // skip delta update
-            *newent = *oldent;
-            oldindex++;
-            newindex++;
-            continue;
-        }
-
-        if (newnum < oldnum) {
-            // remove new entity from frame
-            to->num_entities--;
-            for (i = newindex; i < to->num_entities; i++) {
-                client->entities[(to->first_entity + i    ) & entities_mask] =
-                client->entities[(to->first_entity + i + 1) & entities_mask];
-            }
-            continue;
-        }
-
-        if (newnum > oldnum) {
-            // drop the frame if entity list got too big.
-            // should not normally happen.
-            if (to->num_entities >= MAX_PACKET_ENTITIES) {
-                ret = false;
-                break;
-            }
-
-            // insert old entity into frame
-            for (i = to->num_entities - 1; i >= newindex; i--) {
-                client->entities[(to->first_entity + i + 1) & entities_mask] =
-                client->entities[(to->first_entity + i    ) & entities_mask];
-            }
-
-            client->entities[(to->first_entity + newindex) & entities_mask] = *oldent;
-            to->num_entities++;
-
-            // should never go backwards
-            to_num_entities = max(to_num_entities, to->num_entities);
-
-            oldindex++;
-            newindex++;
-            continue;
-        }
-    }
-
-    client->next_entity = to->first_entity + to_num_entities;
-    return ret;
-}
+#define Q2PRO_OPTIMIZE(c) (!(c)->settings[CLS_RECORDING])
 
 /*
 =============
@@ -132,17 +36,13 @@ SV_EmitPacketEntities
 Writes a delta update of an entity_packed_t list to the message.
 =============
 */
-static bool SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
-                                  client_frame_t *to, int clientEntityNum, unsigned maxsize)
+static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
+                                  client_frame_t *to, int clientEntityNum)
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
     int i, oldnum, newnum, oldindex, newindex, from_num_entities;
     msgEsFlags_t flags;
-    bool ret = true;
-
-    if (msg_write.cursize + 2 > maxsize)
-        return false;
 
     if (!from)
         from_num_entities = 0;
@@ -153,11 +53,6 @@ static bool SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
     oldindex = 0;
     oldent = newent = NULL;
     while (newindex < to->num_entities || oldindex < from_num_entities) {
-        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > maxsize) {
-            ret = SV_TruncPacketEntities(client, from, to, oldindex, newindex);
-            break;
-        }
-
         if (newindex >= to->num_entities) {
             newnum = MAX_EDICTS;
         } else {
@@ -223,7 +118,6 @@ static bool SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
     }
 
     MSG_WriteShort(0);      // end of packetentities
-    return ret;
 }
 
 static client_frame_t *get_last_frame(client_t *client)
@@ -263,54 +157,10 @@ static client_frame_t *get_last_frame(client_t *client)
 
 /*
 ==================
-SV_WriteFrameToClient_Default
+SV_WriteFrameToClient
 ==================
 */
-bool SV_WriteFrameToClient_Default(client_t *client, unsigned maxsize)
-{
-    client_frame_t  *frame, *oldframe;
-    player_packed_t *oldstate;
-    int             lastframe;
-
-    // this is the frame we are creating
-    frame = &client->frames[client->framenum & UPDATE_MASK];
-
-    // this is the frame we are delta'ing from
-    oldframe = get_last_frame(client);
-    if (oldframe) {
-        oldstate = &oldframe->ps;
-        lastframe = client->lastframe;
-    } else {
-        oldstate = NULL;
-        lastframe = -1;
-    }
-
-    MSG_WriteByte(svc_frame);
-    MSG_WriteLong(client->framenum);
-    MSG_WriteLong(lastframe);   // what we are delta'ing from
-    MSG_WriteByte(client->suppress_count);  // rate dropped packets
-    client->suppress_count = 0;
-    client->frameflags = 0;
-
-    // send over the areabits
-    MSG_WriteByte(frame->areabytes);
-    MSG_WriteData(frame->areabits, frame->areabytes);
-
-    // delta encode the playerstate
-    MSG_WriteByte(svc_playerinfo);
-    MSG_WriteDeltaPlayerstate_Default(oldstate, &frame->ps, 0);
-
-    // delta encode the entities
-    MSG_WriteByte(svc_packetentities);
-    return SV_EmitPacketEntities(client, oldframe, frame, 0, maxsize);
-}
-
-/*
-==================
-SV_WriteFrameToClient_Enhanced
-==================
-*/
-bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
+void SV_WriteFrameToClient(client_t *client)
 {
     client_frame_t  *frame, *oldframe;
     player_packed_t *oldstate;
@@ -368,31 +218,21 @@ bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
     }
 
     clientEntityNum = 0;
-    if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
-            clientEntityNum = frame->clientNum + 1;
-        }
-        if (client->settings[CLS_NOPREDICT]) {
-            psFlags |= MSG_PS_IGNORE_PREDICTION;
-        }
-        suppressed = client->frameflags;
-    } else {
-        suppressed = client->suppress_count;
+    if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
+        clientEntityNum = frame->clientNum + 1;
     }
+    if (client->settings[CLS_NOPREDICT]) {
+        psFlags |= MSG_PS_IGNORE_PREDICTION;
+    }
+    suppressed = client->frameflags;
 
     // delta encode the playerstate
-    extraflags = MSG_WriteDeltaPlayerstate_Enhanced(oldstate, &frame->ps, psFlags);
+    extraflags = MSG_WriteDeltaPlayerstate(oldstate, &frame->ps, psFlags);
 
-    if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // delta encode the clientNum
-        if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
-            extraflags |= EPS_CLIENTNUM;
-            if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT) {
-                MSG_WriteByte(frame->clientNum);
-            } else {
-                MSG_WriteShort(frame->clientNum);
-            }
-        }
+    // delta encode the clientNum
+    if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
+        extraflags |= EPS_CLIENTNUM;
+        MSG_WriteShort(frame->clientNum);
     }
 
     // save 3 high bits of extraflags
@@ -406,7 +246,7 @@ bool SV_WriteFrameToClient_Enhanced(client_t *client, unsigned maxsize)
     client->frameflags = 0;
 
     // delta encode the entities
-    return SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum, maxsize);
+    SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum);
 }
 
 /*
@@ -547,7 +387,6 @@ void SV_BuildClientFrame(client_t *client)
     int         clientarea, clientcluster;
     visrow_t    clientphs;
     visrow_t    clientpvs;
-    bool        need_clientnum_fix;
     int         max_packet_entities;
     edict_t     *edicts[MAX_EDICTS];
     int         num_edicts;
@@ -578,10 +417,6 @@ void SV_BuildClientFrame(client_t *client)
 
     // calculate the visible areas
     frame->areabytes = CM_WriteAreaBits(&sv.cm, frame->areabits, clientarea);
-    if (!frame->areabytes && client->protocol != PROTOCOL_VERSION_Q2PRO) {
-        frame->areabits[0] = 255;
-        frame->areabytes = 1;
-    }
 
     // grab the current player_state_t
     if (IS_NEW_GAME_API)
@@ -601,11 +436,6 @@ void SV_BuildClientFrame(client_t *client)
         frame->clientNum = client->number;
     }
 
-    // fix clientNum if out of range for older version of Q2PRO protocol
-    need_clientnum_fix = client->protocol == PROTOCOL_VERSION_Q2PRO
-        && client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT
-        && frame->clientNum >= CLIENTNUM_NONE;
-
     // limit maximum number of entities in client frame
     max_packet_entities =
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer :
@@ -617,7 +447,7 @@ void SV_BuildClientFrame(client_t *client)
     }
 
     CM_FatPVS(&sv.cm, &clientpvs, org);
-    BSP_ClusterVis(&sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
+    BSP_ClusterVis(sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
 
     // build up the list of visible entities
     frame->num_entities = 0;
@@ -739,8 +569,7 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         // hide POV entity from renderer, unless this is player's own entity
-        if (e == frame->clientNum + 1 && ent != clent &&
-            (!Q2PRO_OPTIMIZE(client) || need_clientnum_fix)) {
+        if (e == frame->clientNum + 1 && ent != clent && !Q2PRO_OPTIMIZE(client)) {
             state->modelindex = 0;
         }
 
@@ -754,7 +583,4 @@ void SV_BuildClientFrame(client_t *client)
         frame->num_entities++;
         client->next_entity++;
     }
-
-    if (need_clientnum_fix)
-        frame->clientNum = client->number;
 }
