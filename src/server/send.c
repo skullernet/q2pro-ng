@@ -116,7 +116,6 @@ EVENT MESSAGES
 SV_ClientPrintf
 
 Sends text across to be displayed if the level passes.
-NOT archived in MVD stream.
 =================
 */
 void SV_ClientPrintf(client_t *client, int level, const char *fmt, ...)
@@ -149,7 +148,6 @@ void SV_ClientPrintf(client_t *client, int level, const char *fmt, ...)
 SV_BroadcastPrintf
 
 Sends text to all active clients.
-NOT archived in MVD stream.
 =================
 */
 void SV_BroadcastPrintf(int level, const char *fmt, ...)
@@ -209,7 +207,6 @@ void SV_ClientCommand(client_t *client, const char *fmt, ...)
 SV_BroadcastCommand
 
 Sends command to all active clients.
-NOT archived in MVD stream.
 =================
 */
 void SV_BroadcastCommand(const char *fmt, ...)
@@ -245,8 +242,6 @@ SV_Multicast
 
 Sends the contents of the write buffer to a subset of the clients,
 then clears the write buffer.
-
-Archived in MVD stream.
 
 MULTICAST_ALL    same as broadcast (origin can be NULL)
 MULTICAST_PVS    send to clients potentially visible from org
@@ -306,9 +301,6 @@ void SV_Multicast(const vec3_t origin, multicast_t to)
 
         SV_ClientAddMessage(client, flags);
     }
-
-    // add to MVD datagram
-    SV_MvdMulticast(leaf1, to, flags & MSG_RELIABLE);
 
     // clear the buffer
     SZ_Clear(&msg_write);
@@ -547,7 +539,7 @@ static void emit_snd(const client_t *client, const message_packet_t *msg)
 
     MSG_WriteByte(svc_sound);
     MSG_WriteByte(flags);
-    if (client->csr->extended && flags & SND_INDEX16)
+    if (svs.csr.extended && flags & SND_INDEX16)
         MSG_WriteShort(msg->index);
     else
         MSG_WriteByte(msg->index);

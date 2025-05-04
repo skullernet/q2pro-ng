@@ -84,7 +84,6 @@ static int PF_ImageIndex(const char *name)
 PF_Unicast
 
 Sends the contents of the mutlicast buffer to a single client.
-Archived in MVD stream.
 ===============
 */
 static void PF_Unicast(edict_t *ent, qboolean reliable)
@@ -132,10 +131,7 @@ static void PF_Unicast(edict_t *ent, qboolean reliable)
     // fix anti-kicking exploit for broken mods
     if (cmd == svc_disconnect) {
         client->drop_hack = true;
-        goto clear;
     }
-
-    SV_MvdUnicast(ent, clientNum, reliable);
 
 clear:
     SZ_Clear(&msg_write);
@@ -146,7 +142,6 @@ clear:
 PF_bprintf
 
 Sends text to all active clients.
-Archived in MVD stream.
 =================
 */
 static void PF_bprintf(int level, const char *fmt, ...)
@@ -165,8 +160,6 @@ static void PF_bprintf(int level, const char *fmt, ...)
         Com_DWPrintf("%s: overflow\n", __func__);
         return;
     }
-
-    SV_MvdBroadcastPrint(level, string);
 
     MSG_WriteByte(svc_print);
     MSG_WriteByte(level);
@@ -225,7 +218,6 @@ static void PF_dprintf(const char *fmt, ...)
 PF_cprintf
 
 Print to a single client if the level passes.
-Archived in MVD stream.
 ===============
 */
 static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
@@ -270,8 +262,6 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
         SV_ClientAddMessage(client, MSG_RELIABLE);
     }
 
-    SV_MvdUnicast(ent, clientNum, true);
-
     SZ_Clear(&msg_write);
 }
 
@@ -280,7 +270,6 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
 PF_centerprintf
 
 Centerprint to a single client.
-Archived in MVD stream.
 ===============
 */
 static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
@@ -362,7 +351,6 @@ static void PF_setmodel(edict_t *ent, const char *name)
 PF_configstring
 
 If game is actively running, broadcasts configstring change.
-Archived in MVD stream.
 ===============
 */
 static void PF_configstring(int index, const char *val)
@@ -412,8 +400,6 @@ static void PF_configstring(int index, const char *val)
     if (sv.state == ss_loading) {
         return;
     }
-
-    SV_MvdConfigstring(index, val, len);
 
     // send the update to everyone
     MSG_WriteByte(svc_configstring);
@@ -676,8 +662,6 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
     // clear multicast buffer
     SZ_Clear(&msg_write);
-
-    SV_MvdStartSound(ent, channel, flags, soundindex, vol, att, ofs);
 }
 
 static void PF_StartSound(edict_t *entity, int channel,

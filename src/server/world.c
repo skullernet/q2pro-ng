@@ -119,7 +119,6 @@ void SV_ClearWorld(void)
 ===============
 SV_LinkEdict
 
-General purpose routine shared between game DLL and MVD code.
 Links entity to PVS leafs.
 ===============
 */

@@ -55,8 +55,8 @@ static void SV_CreateBaselines(void)
         }
     }
 
-    for (i = 1; i < sv_client->ge->num_edicts; i++) {
-        ent = EDICT_NUM2(sv_client->ge, i);
+    for (i = 1; i < ge->num_edicts; i++) {
+        ent = EDICT_NUM(i);
 
         if ((g_features->integer & GMF_PROPERINUSE) && !ent->inuse) {
             continue;
@@ -74,10 +74,10 @@ static void SV_CreateBaselines(void)
         }
 
         base = *chunk + (i & SV_BASELINES_MASK);
-        MSG_PackEntity(base, &ent->s, ENT_EXTENSION(sv_client->csr, ent));
+        MSG_PackEntity(base, &ent->s, ENT_EXTENSION(ent));
 
         // no need to transmit data that will change anyway
-        if (i <= sv_client->maxclients) {
+        if (i <= svs.maxclients) {
             VectorClear(base->origin);
             VectorClear(base->angles);
             base->frame = 0;
@@ -86,14 +86,7 @@ static void SV_CreateBaselines(void)
         // don't ever transmit event
         base->event = 0;
 
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (!sv_client->csr->extended && base->solid != PACKED_BSP)
-                base->solid = 0;
-        } else
-#endif
-        if (sv_client->esFlags & MSG_ES_LONGSOLID && !sv_client->csr->extended) {
+        if (sv_client->esFlags & MSG_ES_LONGSOLID && !svs.csr.extended) {
             base->solid = sv.entities[i].solid32;
         }
     }
@@ -117,8 +110,8 @@ static void write_configstrings(void)
     size_t      length;
 
     // write a packet full of data
-    for (i = 0; i < sv_client->csr->end; i++) {
-        string = sv_client->configstrings[i];
+    for (i = 0; i < svs.csr.end; i++) {
+        string = sv.configstrings[i];
         if (!string[0]) {
             continue;
         }
@@ -176,8 +169,8 @@ static void write_configstring_stream(void)
     MSG_WriteByte(svc_configstringstream);
 
     // write a packet full of data
-    for (i = 0; i < sv_client->csr->end; i++) {
-        string = sv_client->configstrings[i];
+    for (i = 0; i < svs.csr.end; i++) {
+        string = sv.configstrings[i];
         if (!string[0]) {
             continue;
         }
@@ -185,7 +178,7 @@ static void write_configstring_stream(void)
 
         // check if this configstring will overflow
         if (msg_write.cursize + length + 5 > msg_write.maxsize) {
-            MSG_WriteShort(sv_client->csr->end);
+            MSG_WriteShort(svs.csr.end);
             SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
             MSG_WriteByte(svc_configstringstream);
         }
@@ -195,7 +188,7 @@ static void write_configstring_stream(void)
         MSG_WriteByte(0);
     }
 
-    MSG_WriteShort(sv_client->csr->end);
+    MSG_WriteShort(svs.csr.end);
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
@@ -240,8 +233,8 @@ static void write_gamestate(void)
     MSG_WriteByte(svc_gamestate);
 
     // write configstrings
-    for (i = 0; i < sv_client->csr->end; i++) {
-        string = sv_client->configstrings[i];
+    for (i = 0; i < svs.csr.end; i++) {
+        string = sv.configstrings[i];
         if (!string[0]) {
             continue;
         }
@@ -338,7 +331,7 @@ static int q2pro_protocol_flags(void)
     if (sv_client->pmp.waterhack)
         flags |= Q2PRO_PF_WATERJUMP_HACK;
 
-    if (sv_client->csr->extended)
+    if (svs.csr.extended)
         flags |= Q2PRO_PF_EXTENSIONS;
 
     if (sv_client->esFlags & MSG_ES_EXTENSIONS_2)
@@ -394,14 +387,14 @@ void SV_New_f(void)
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
     MSG_WriteLong(sv_client->protocol);
-    MSG_WriteLong(sv_client->spawncount);
+    MSG_WriteLong(sv.spawncount);
     MSG_WriteByte(0);   // no attract loop
-    MSG_WriteString(sv_client->gamedir);
+    MSG_WriteString(fs_game->string);
     if (sv.state == ss_pic || sv.state == ss_cinematic)
         MSG_WriteShort(-1);
     else
-        MSG_WriteShort(sv_client->infonum);
-    MSG_WriteString(sv_client->configstrings[CS_NAME]);
+        MSG_WriteShort(sv_client->number);
+    MSG_WriteString(sv.configstrings[CS_NAME]);
 
     // send protocol specific stuff
     switch (sv_client->protocol) {
@@ -431,7 +424,7 @@ void SV_New_f(void)
 
     if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
         sv_client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_SHORT &&
-        sv_client->infonum == CLIENTNUM_NONE && oldstate == cs_assigned)
+        sv_client->number == CLIENTNUM_NONE && oldstate == cs_assigned)
     {
         SV_ClientPrintf(sv_client, PRINT_HIGH,
                         "WARNING: Server has allocated client slot number 255. "
@@ -479,7 +472,7 @@ void SV_New_f(void)
     }
 
     // send next command
-    SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
+    SV_ClientCommand(sv_client, "precache %i\n", sv.spawncount);
 }
 
 /*
@@ -530,7 +523,7 @@ void SV_Begin_f(void)
 
     // allocate packet entities if not done yet
     if (!sv_client->entities) {
-        int max_packet_entities = sv_client->csr->extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
+        int max_packet_entities = svs.csr.extended ? MAX_PACKET_ENTITIES : MAX_PACKET_ENTITIES_OLD;
         sv_client->num_entities = max_packet_entities * UPDATE_BACKUP;
         sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * sv_client->num_entities);
     }

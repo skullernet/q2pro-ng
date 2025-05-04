@@ -353,11 +353,6 @@ else
   subdir('src/unix')
 endif
 
-if get_option('client-gtv')
-  client_src += 'src/client/gtv.c'
-  config.set10('USE_CLIENT_GTV', true)
-endif
-
 if get_option('client-ui')
   client_src += ui_src
   config.set10('USE_UI', true)
@@ -374,20 +369,6 @@ if get_option('software-sound').require(win32 or sdl2.found()).allowed()
   config.set10('USE_SNDDMA', true)
 elif not openal.found()
   warning('Neither software sound nor OpenAL enabled, this is not supported')
-endif
-
-if get_option('mvd-server')
-  common_src += 'src/server/mvd.c'
-  config.set10('USE_MVD_SERVER', true)
-endif
-
-if get_option('mvd-client')
-  common_src += [
-    'src/server/mvd/client.c',
-    'src/server/mvd/game.c',
-    'src/server/mvd/parse.c'
-  ]
-  config.set10('USE_MVD_CLIENT', true)
 endif
 
 if get_option('save-games')
@@ -510,8 +491,6 @@ summary({
   'libpng'             : config.get('USE_PNG', 0) != 0,
   'md3'                : config.get('USE_MD3', 0) != 0,
   'md5'                : config.get('USE_MD5', 0) != 0,
-  'mvd-client'         : config.get('USE_MVD_CLIENT', 0) != 0,
-  'mvd-server'         : config.get('USE_MVD_SERVER', 0) != 0,
   'openal'             : config.get('USE_OPENAL', 0) != 0,
   'packetdup-hack'     : config.get('USE_PACKETDUP', 0) != 0,
   'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,

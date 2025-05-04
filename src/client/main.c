@@ -265,12 +265,6 @@ void CL_UpdateRecordingSetting(void)
         rec = 0;
     }
 
-#if USE_CLIENT_GTV
-    if (cls.gtv.state == ca_active) {
-        rec |= 1;
-    }
-#endif
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_RECORDING);
     MSG_WriteShort(rec);
@@ -361,13 +355,6 @@ CL_Pause_f
 */
 static void CL_Pause_f(void)
 {
-#if USE_MVD_CLIENT
-    if (sv_running->integer == ss_broadcast) {
-        Cbuf_InsertText(&cmd_buffer, "mvdpause @@\n");
-        return;
-    }
-#endif
-
     // activate manual pause
     if (cl_paused->integer == 2) {
         Cvar_Set("cl_paused", "0");
@@ -739,8 +726,6 @@ void CL_Disconnect(error_type_t type)
     CL_CleanupDownloads();
 
     CL_ClearState();
-
-    CL_GTV_Suspend();
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
@@ -1473,9 +1458,6 @@ static void CL_PacketEvent(void)
     if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC) {
         CL_WriteDemoMessage(&cls.demo.buffer);
     }
-
-    // if running GTV server, transmit to client
-    CL_GTV_Transmit();
 }
 
 #if USE_ICMP
@@ -2202,12 +2184,10 @@ static size_t CL_Timer_m(char *buffer, size_t size)
 
 static size_t CL_DemoPos_m(char *buffer, size_t size)
 {
-    int sec, min, framenum;
+    int sec, min, framenum = 0;
 
     if (cls.demo.playback)
         framenum = cls.demo.frames_read;
-    else if (!MVD_GetDemoStatus(NULL, NULL, &framenum))
-        framenum = 0;
 
     sec = framenum / BASE_FRAMERATE; framenum %= BASE_FRAMERATE;
     min = sec / 60; sec %= 60;
@@ -2683,7 +2663,6 @@ static void CL_InitLocal(void)
     CL_InitEffects();
     CL_InitTEnts();
     CL_InitDownloads();
-    CL_GTV_Init();
 
     Cmd_Register(c_client);
 
@@ -2869,10 +2848,6 @@ bool CL_CheatsOK(void)
 
     // single player can cheat
     if (cls.state > ca_connected && cl.maxclients == 1)
-        return true;
-
-    // can cheat when playing MVD
-    if (MVD_GetDemoStatus(NULL, NULL, NULL))
         return true;
 
     return false;
@@ -3380,8 +3355,6 @@ bool CL_ProcessEvents(void)
 
     HTTP_RunDownloads();
 
-    CL_GTV_Run();
-
     return cl.sendPacketNow;
 }
 
@@ -3460,8 +3433,6 @@ void CL_Shutdown(void)
     if (!cl_running || !cl_running->integer) {
         return;
     }
-
-    CL_GTV_Shutdown();
 
     CL_Disconnect(ERR_FATAL);
 

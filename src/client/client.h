@@ -489,22 +489,6 @@ typedef struct {
         msgEsFlags_t    esFlags;        // for snapshots/recording
         msgPsFlags_t    psFlags;
     } demo;
-
-#if USE_CLIENT_GTV
-    struct {
-        connstate_t     state;
-
-        netstream_t     stream;
-        unsigned        msglen;
-
-        player_packed_t     ps;
-        entity_packed_t     entities[MAX_EDICTS];
-        msgEsFlags_t        esFlags;    // for writing
-        msgPsFlags_t        psFlags;
-
-        sizebuf_t       message;
-    } gtv;
-#endif
 } client_static_t;
 
 extern client_static_t      cls;
@@ -1082,28 +1066,4 @@ void HTTP_CleanupDownloads(void);
 #define HTTP_QueueDownload(path, type)  Q_ERR(ENOSYS)
 #define HTTP_RunDownloads()             (void)0
 #define HTTP_CleanupDownloads()         (void)0
-#endif
-
-//
-// gtv.c
-//
-
-#if USE_CLIENT_GTV
-void CL_GTV_EmitFrame(void);
-void CL_GTV_WriteMessage(const byte *data, size_t len);
-void CL_GTV_Resume(void);
-void CL_GTV_Suspend(void);
-void CL_GTV_Transmit(void);
-void CL_GTV_Run(void);
-void CL_GTV_Init(void);
-void CL_GTV_Shutdown(void);
-#else
-#define CL_GTV_EmitFrame()              (void)0
-#define CL_GTV_WriteMessage(data, len)  (void)0
-#define CL_GTV_Resume()                 (void)0
-#define CL_GTV_Suspend()                (void)0
-#define CL_GTV_Transmit()               (void)0
-#define CL_GTV_Run()                    (void)0
-#define CL_GTV_Init()                   (void)0
-#define CL_GTV_Shutdown()               (void)0
 #endif

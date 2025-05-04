@@ -697,9 +697,6 @@ static int parse_next_message(int wait)
         CL_WriteDemoMessage(&cls.demo.buffer);
     }
 
-    // if running GTV server, transmit to client
-    CL_GTV_Transmit();
-
     // save a snapshot once the full packet is parsed
     CL_EmitDemoSnapshot();
 
@@ -736,11 +733,7 @@ static void CL_PlayDemo_f(void)
     }
 
     if (type == 1) {
-#if USE_MVD_CLIENT
-        Cbuf_InsertText(&cmd_buffer, va("mvdplay --replace @@ \"/%s\"\n", name));
-#else
         Com_Printf("MVD support was not compiled in.\n");
-#endif
         FS_CloseFile(f);
         return;
     }
@@ -962,13 +955,6 @@ static void CL_Seek_f(void)
         return;
     }
 
-#if USE_MVD_CLIENT
-    if (sv_running->integer == ss_broadcast) {
-        Cbuf_InsertText(&cmd_buffer, va("mvdseek \"%s\" @@\n", Cmd_Argv(1)));
-        return;
-    }
-#endif
-
     if (!cls.demo.playback) {
         Com_Printf("Not playing a demo.\n");
         return;
@@ -1175,79 +1161,41 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
     }
 
     type = read_first_message(f);
-    if (type < 0) {
+    if (type != 0) {
         goto fail;
     }
 
-    info->mvd = type;
+    if (MSG_ReadByte() != svc_serverdata) {
+        goto fail;
+    }
+    c = MSG_ReadLong();
+    if (EXTENDED_SUPPORTED(c)) {
+        csr = &cs_remap_new;
+    } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
+        goto fail;
+    }
+    MSG_ReadLong();
+    MSG_ReadByte();
+    MSG_ReadString(NULL, 0);
+    clientNum = MSG_ReadShort();
+    MSG_ReadString(NULL, 0);
 
-    if (type == 0) {
-        if (MSG_ReadByte() != svc_serverdata) {
-            goto fail;
-        }
-        c = MSG_ReadLong();
-        if (EXTENDED_SUPPORTED(c)) {
-            csr = &cs_remap_new;
-        } else if (c < PROTOCOL_VERSION_OLD || c > PROTOCOL_VERSION_DEFAULT) {
-            goto fail;
-        }
-        MSG_ReadLong();
-        MSG_ReadByte();
-        MSG_ReadString(NULL, 0);
-        clientNum = MSG_ReadShort();
-        MSG_ReadString(NULL, 0);
-
-        while (1) {
-            c = MSG_ReadByte();
-            if (c == -1) {
-                if (read_next_message(f) <= 0) {
-                    break;
-                }
-                continue; // parse new message
-            }
-            if (c != svc_configstring) {
-                break;
-            }
-            index = MSG_ReadWord();
-            if (index < 0 || index >= csr->end) {
-                goto fail;
-            }
-            parse_info_string(info, clientNum, index, csr);
-        }
-    } else {
+    while (1) {
         c = MSG_ReadByte();
-        if ((c & SVCMD_MASK) != mvd_serverdata) {
-            goto fail;
-        }
-        if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
-            goto fail;
-        }
-        version = MSG_ReadWord();
-        if (!MVD_SUPPORTED(version)) {
-            goto fail;
-        }
-        if (version >= PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2) {
-            flags = MSG_ReadWord();
-        } else {
-            flags = c >> SVCMD_BITS;
-        }
-        if (flags & MVF_EXTLIMITS) {
-            csr = &cs_remap_new;
-        }
-        MSG_ReadLong();
-        MSG_ReadString(NULL, 0);
-        clientNum = MSG_ReadShort();
-
-        while (1) {
-            index = MSG_ReadWord();
-            if (index == csr->end) {
+        if (c == -1) {
+            if (read_next_message(f) <= 0) {
                 break;
             }
-            if (index < 0 || index >= csr->end) {
-                goto fail;
-            }
-            parse_info_string(info, clientNum, index, csr);
+            continue; // parse new message
         }
+        if (c != svc_configstring) {
+            break;
+        }
+        index = MSG_ReadWord();
+        if (index < 0 || index >= csr->end) {
+            goto fail;
+        }
+        parse_info_string(info, clientNum, index, csr);
     }
     res = true;
 

@@ -1450,198 +1450,6 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
     return eflags;
 }
 
-#if USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
-
-/*
-==================
-MSG_WriteDeltaPlayerstate_Packet
-
-Throws away most of the pmove_state_t fields as they are used only
-for client prediction, and are not needed in MVDs.
-==================
-*/
-void MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from,
-                                      const player_packed_t *to,
-                                      int                   number,
-                                      msgPsFlags_t          flags)
-{
-    int         pflags = 0;
-    fog_bits_t  fogbits = 0;
-    uint64_t    statbits;
-
-    // this can happen with client GTV
-    if (number < 0 || number >= CLIENTNUM_NONE)
-        Com_Error(ERR_DROP, "%s: bad number: %d", __func__, number);
-
-    if (!to) {
-        MSG_WriteByte(number);
-        MSG_WriteShort(PPS_MOREBITS);   // MOREBITS == REMOVE for old demos
-        if (flags & MSG_PS_MOREBITS)
-            MSG_WriteByte(PPS_REMOVE >> 16);
-        return;
-    }
-
-    if (!from)
-        from = &nullPlayerState;
-
-    //
-    // determine what needs to be sent
-    //
-    if (to->pmove.pm_type != from->pmove.pm_type)
-        pflags |= PPS_M_TYPE;
-
-    if (to->pmove.origin[0] != from->pmove.origin[0] ||
-        to->pmove.origin[1] != from->pmove.origin[1])
-        pflags |= PPS_M_ORIGIN;
-
-    if (to->pmove.origin[2] != from->pmove.origin[2])
-        pflags |= PPS_M_ORIGIN2;
-
-    if (!VectorCompare(from->viewoffset, to->viewoffset))
-        pflags |= PPS_VIEWOFFSET;
-
-    if (from->viewangles[0] != to->viewangles[0] ||
-        from->viewangles[1] != to->viewangles[1])
-        pflags |= PPS_VIEWANGLES;
-
-    if (from->viewangles[2] != to->viewangles[2])
-        pflags |= PPS_VIEWANGLE2;
-
-    if (!VectorCompare(from->kick_angles, to->kick_angles))
-        pflags |= PPS_KICKANGLES;
-
-    if (!(flags & MSG_PS_IGNORE_BLEND)) {
-        if (!Vector4Compare(from->blend, to->blend))
-            pflags |= PPS_BLEND;
-        else if (flags & MSG_PS_EXTENSIONS_2 &&
-            !Vector4Compare(to->damage_blend, from->damage_blend))
-            pflags |= PPS_BLEND;
-    }
-
-    if (flags & MSG_PS_MOREBITS && (fogbits = MSG_CalcFogBits(&from->fog, &to->fog)))
-        pflags |= PPS_FOG;
-
-    if (from->fov != to->fov)
-        pflags |= PPS_FOV;
-
-    if (to->rdflags != from->rdflags)
-        pflags |= PPS_RDFLAGS;
-
-    if (!(flags & MSG_PS_IGNORE_GUNINDEX) && to->gunindex != from->gunindex)
-        pflags |= PPS_WEAPONINDEX;
-
-    if (!(flags & MSG_PS_IGNORE_GUNFRAMES)) {
-        if (to->gunframe != from->gunframe)
-            pflags |= PPS_WEAPONFRAME;
-
-        if (!VectorCompare(from->gunoffset, to->gunoffset))
-            pflags |= PPS_GUNOFFSET;
-
-        if (!VectorCompare(from->gunangles, to->gunangles))
-            pflags |= PPS_GUNANGLES;
-    }
-
-    statbits = MSG_CalcStatBits(from, to, flags);
-    if (statbits)
-        pflags |= PPS_STATS;
-
-    if (!pflags && !(flags & MSG_PS_FORCE))
-        return;
-
-    if (flags & MSG_PS_REMOVE)
-        pflags |= PPS_REMOVE; // used for MVD stream only
-
-    if (pflags & 0xff0000)
-        pflags |= PPS_MOREBITS;
-
-    //
-    // write it
-    //
-    MSG_WriteByte(number);
-    MSG_WriteShort(pflags & 0xffff);
-    if (flags & MSG_PS_MOREBITS && pflags & PPS_MOREBITS)
-        MSG_WriteByte(pflags >> 16);
-
-    //
-    // write some part of the pmove_state_t
-    //
-    if (pflags & PPS_M_TYPE)
-        MSG_WriteByte(to->pmove.pm_type);
-
-    if (flags & MSG_PS_EXTENSIONS_2) {
-        if (pflags & PPS_M_ORIGIN) {
-            MSG_WriteDeltaInt23(from->pmove.origin[0], to->pmove.origin[0]);
-            MSG_WriteDeltaInt23(from->pmove.origin[1], to->pmove.origin[1]);
-        }
-
-        if (pflags & PPS_M_ORIGIN2)
-            MSG_WriteDeltaInt23(from->pmove.origin[2], to->pmove.origin[2]);
-    } else {
-        if (pflags & PPS_M_ORIGIN) {
-            MSG_WriteShort(to->pmove.origin[0]);
-            MSG_WriteShort(to->pmove.origin[1]);
-        }
-
-        if (pflags & PPS_M_ORIGIN2)
-            MSG_WriteShort(to->pmove.origin[2]);
-    }
-
-    //
-    // write the rest of the player_state_t
-    //
-    if (pflags & PPS_VIEWOFFSET)
-        MSG_WriteData(to->viewoffset, sizeof(to->viewoffset));
-
-    if (pflags & PPS_VIEWANGLES) {
-        MSG_WriteShort(to->viewangles[0]);
-        MSG_WriteShort(to->viewangles[1]);
-    }
-
-    if (pflags & PPS_VIEWANGLE2)
-        MSG_WriteShort(to->viewangles[2]);
-
-    if (pflags & PPS_KICKANGLES)
-        MSG_WriteData(to->kick_angles, sizeof(to->kick_angles));
-
-    if (pflags & PPS_WEAPONINDEX) {
-        if (flags & MSG_PS_EXTENSIONS)
-            MSG_WriteShort(to->gunindex);
-        else
-            MSG_WriteByte(to->gunindex);
-    }
-
-    if (pflags & PPS_WEAPONFRAME)
-        MSG_WriteByte(to->gunframe);
-
-    if (pflags & PPS_GUNOFFSET)
-        MSG_WriteData(to->gunoffset, sizeof(to->gunoffset));
-
-    if (pflags & PPS_GUNANGLES)
-        MSG_WriteData(to->gunangles, sizeof(to->gunangles));
-
-    if (pflags & PPS_BLEND) {
-        if (flags & MSG_PS_EXTENSIONS_2)
-            MSG_WriteDeltaBlend(from, to);
-        else
-            MSG_WriteData(to->blend, sizeof(to->blend));
-    }
-
-    if (pflags & PPS_FOG)
-        MSG_WriteFog(&to->fog, fogbits);
-
-    if (pflags & PPS_FOV)
-        MSG_WriteByte(to->fov);
-
-    if (pflags & PPS_RDFLAGS)
-        MSG_WriteByte(to->rdflags);
-
-    // send stats
-    if (pflags & PPS_STATS)
-        MSG_WriteStats(to, statbits, flags);
-}
-
-#endif // USE_MVD_SERVER || USE_MVD_CLIENT || USE_CLIENT_GTV
-
 
 /*
 ==============================================================================
@@ -1792,7 +1600,7 @@ size_t MSG_ReadStringLine(char *dest, size_t size)
     return len;
 }
 
-#if USE_CLIENT || USE_MVD_CLIENT
+#if USE_CLIENT
 
 static inline float MSG_ReadCoord(void)
 {
@@ -1842,11 +1650,6 @@ static float MSG_ReadExtCoord(void)
     }
 }
 
-#endif
-
-#if USE_SERVER
-static inline
-#endif
 void MSG_ReadPos(vec3_t pos, bool extended)
 {
     if (extended) {
@@ -1860,7 +1663,6 @@ void MSG_ReadPos(vec3_t pos, bool extended)
     }
 }
 
-#if USE_CLIENT
 void MSG_ReadDir(vec3_t dir)
 {
     int     b;
@@ -2078,7 +1880,7 @@ void MSG_ReadDeltaUsercmd_Enhanced(const usercmd_t *from, usercmd_t *to)
     }
 }
 
-#if USE_CLIENT || USE_MVD_CLIENT
+#if USE_CLIENT
 
 /*
 =================
@@ -2248,8 +2050,6 @@ void MSG_ParseDeltaEntity(entity_state_t            *to,
     }
 }
 
-#endif // USE_CLIENT || USE_MVD_CLIENT
-
 static uint64_t MSG_ReadVarInt64(void)
 {
     uint64_t v = 0;
@@ -2340,8 +2140,6 @@ static void MSG_ReadFog(player_state_t *to)
     if (bits & FOG_BIT_HEIGHT_END_DIST)
         to->heightfog.end.dist = MSG_ReadExtCoord();
 }
-
-#if USE_CLIENT
 
 /*
 ===================
@@ -2614,107 +2412,6 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 
 #endif // USE_CLIENT
 
-#if USE_MVD_CLIENT
-
-/*
-===================
-MSG_ParseDeltaPlayerstate_Packet
-===================
-*/
-void MSG_ParseDeltaPlayerstate_Packet(player_state_t        *to,
-                                      int                   flags,
-                                      msgPsFlags_t          psflags)
-{
-    Q_assert(to);
-
-    //
-    // parse the pmove_state_t
-    //
-    if (flags & PPS_M_TYPE)
-        to->pmove.pm_type = MSG_ReadByte();
-
-    if (psflags & MSG_PS_EXTENSIONS_2) {
-        if (flags & PPS_M_ORIGIN) {
-            MSG_ReadDeltaInt23(&to->pmove.origin[0]);
-            MSG_ReadDeltaInt23(&to->pmove.origin[1]);
-        }
-
-        if (flags & PPS_M_ORIGIN2)
-            MSG_ReadDeltaInt23(&to->pmove.origin[2]);
-    } else {
-        if (flags & PPS_M_ORIGIN) {
-            to->pmove.origin[0] = MSG_ReadShort();
-            to->pmove.origin[1] = MSG_ReadShort();
-        }
-
-        if (flags & PPS_M_ORIGIN2)
-            to->pmove.origin[2] = MSG_ReadShort();
-    }
-
-    //
-    // parse the rest of the player_state_t
-    //
-    if (flags & PPS_VIEWOFFSET) {
-        to->viewoffset[0] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[1] = MSG_ReadChar() * 0.25f;
-        to->viewoffset[2] = MSG_ReadChar() * 0.25f;
-    }
-
-    if (flags & PPS_VIEWANGLES) {
-        to->viewangles[0] = MSG_ReadAngle16();
-        to->viewangles[1] = MSG_ReadAngle16();
-    }
-
-    if (flags & PPS_VIEWANGLE2)
-        to->viewangles[2] = MSG_ReadAngle16();
-
-    if (flags & PPS_KICKANGLES) {
-        to->kick_angles[0] = MSG_ReadChar() * 0.25f;
-        to->kick_angles[1] = MSG_ReadChar() * 0.25f;
-        to->kick_angles[2] = MSG_ReadChar() * 0.25f;
-    }
-
-    if (flags & PPS_WEAPONINDEX) {
-        if (psflags & MSG_PS_EXTENSIONS)
-            to->gunindex = MSG_ReadWord();
-        else
-            to->gunindex = MSG_ReadByte();
-    }
-
-    if (flags & PPS_WEAPONFRAME)
-        to->gunframe = MSG_ReadByte();
-
-    if (flags & PPS_GUNOFFSET) {
-        to->gunoffset[0] = MSG_ReadChar() * 0.25f;
-        to->gunoffset[1] = MSG_ReadChar() * 0.25f;
-        to->gunoffset[2] = MSG_ReadChar() * 0.25f;
-    }
-
-    if (flags & PPS_GUNANGLES) {
-        to->gunangles[0] = MSG_ReadChar() * 0.25f;
-        to->gunangles[1] = MSG_ReadChar() * 0.25f;
-        to->gunangles[2] = MSG_ReadChar() * 0.25f;
-    }
-
-    if (flags & PPS_BLEND)
-        MSG_ReadBlend(to, psflags);
-
-    if (flags & PPS_FOG)
-        MSG_ReadFog(to);
-
-    if (flags & PPS_FOV)
-        to->fov = MSG_ReadByte();
-
-    if (flags & PPS_RDFLAGS)
-        to->rdflags = MSG_ReadByte();
-
-    // parse stats
-    if (flags & PPS_STATS)
-        MSG_ReadStats(to, psflags);
-}
-
-#endif // USE_MVD_CLIENT
-
 
 /*
 ==============================================================================
@@ -2724,11 +2421,9 @@ void MSG_ParseDeltaPlayerstate_Packet(player_state_t        *to,
 ==============================================================================
 */
 
-#if USE_DEBUG
+#if USE_CLIENT && USE_DEBUG
 
 #define SHOWBITS(x) Com_LPrintf(PRINT_DEVELOPER, x " ")
-
-#if USE_CLIENT
 
 void MSG_ShowDeltaPlayerstateBits_Default(int flags)
 {
@@ -2801,10 +2496,6 @@ void MSG_ShowDeltaUsercmdBits_Enhanced(int bits)
 #undef S
 }
 
-#endif // USE_CLIENT
-
-#if USE_CLIENT || USE_MVD_CLIENT
-
 void MSG_ShowDeltaEntityBits(uint64_t bits)
 {
 #define S(b,s) if(bits&U_##b) SHOWBITS(s)
@@ -2862,28 +2553,6 @@ void MSG_ShowDeltaEntityBits(uint64_t bits)
 #undef S
 }
 
-void MSG_ShowDeltaPlayerstateBits_Packet(int flags)
-{
-#define S(b,s) if(flags&PPS_##b) SHOWBITS(s)
-    S(M_TYPE,       "pmove.pm_type");
-    S(M_ORIGIN,     "pmove.origin[0,1]");
-    S(M_ORIGIN2,    "pmove.origin[2]");
-    S(VIEWOFFSET,   "viewoffset");
-    S(VIEWANGLES,   "viewangles[0,1]");
-    S(VIEWANGLE2,   "viewangles[2]");
-    S(KICKANGLES,   "kick_angles");
-    S(WEAPONINDEX,  "gunindex");
-    S(WEAPONFRAME,  "gunframe");
-    S(GUNOFFSET,    "gunoffset");
-    S(GUNANGLES,    "gunangles");
-    S(BLEND,        "blend");
-    S(FOG,          "fog");
-    S(FOV,          "fov");
-    S(RDFLAGS,      "rdflags");
-    S(STATS,        "stats");
-#undef S
-}
-
 const char *MSG_ServerCommandString(int cmd)
 {
     switch (cmd) {
@@ -2921,6 +2590,4 @@ const char *MSG_ServerCommandString(int cmd)
     }
 }
 
-#endif // USE_CLIENT || USE_MVD_CLIENT
-
-#endif // USE_DEBUG
+#endif // USE_CLIENT && USE_DEBUG

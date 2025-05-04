@@ -411,12 +411,6 @@ static void draw_progress_bar(float progress, bool paused, int framenum)
 
 static void SCR_DrawDemo(void)
 {
-#if USE_MVD_CLIENT
-    float progress;
-    bool paused;
-    int framenum;
-#endif
-
     if (!scr_demobar->integer) {
         return;
     }
@@ -432,22 +426,6 @@ static void SCR_DrawDemo(void)
         }
         return;
     }
-
-#if USE_MVD_CLIENT
-    if (sv_running->integer != ss_broadcast) {
-        return;
-    }
-
-    if (!MVD_GetDemoStatus(&progress, &paused, &framenum)) {
-        return;
-    }
-
-    if (sv_paused->integer && cl_paused->integer && scr_showpause->integer == 2) {
-        paused = true;
-    }
-
-    draw_progress_bar(progress, paused, framenum);
-#endif
 }
 
 /*

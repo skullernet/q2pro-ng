@@ -131,11 +131,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     memset(&sv, 0, sizeof(sv));
     sv.spawncount = Q_rand() & INT_MAX;
 
-    // set legacy spawncounts
-    FOR_EACH_CLIENT(client) {
-        client->spawncount = sv.spawncount;
-    }
-
     // set framerate parameters
     set_frame_time();
 
@@ -201,9 +196,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     // all precaches are complete
     SV_SetState(cmd->state);
-
-    // respawn dummy MVD client, set base states, etc
-    SV_MvdMapChanged();
 
     // set serverinfo variable
     SV_InfoSet("mapname", sv.name);
@@ -370,10 +362,9 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 SV_InitGame
 
 A brand new game has been started.
-If mvd_spawn is non-zero, load the built-in MVD game module.
 ==============
 */
-void SV_InitGame(unsigned mvd_spawn)
+void SV_InitGame(void)
 {
     int     i, entnum;
     edict_t *ent;
@@ -381,7 +372,7 @@ void SV_InitGame(unsigned mvd_spawn)
 
     if (svs.initialized) {
         // cause any connected clients to reconnect
-        SV_Shutdown("Server restarted\n", ERR_RECONNECT | mvd_spawn);
+        SV_Shutdown("Server restarted\n", ERR_RECONNECT);
     } else {
         // make sure the client is down
         CL_Disconnect(ERR_RECONNECT);
@@ -404,22 +395,17 @@ void SV_InitGame(unsigned mvd_spawn)
     Cvar_Reset(sv_recycle);
 #endif
 
-    if (mvd_spawn) {
-        Cvar_Set("deathmatch", "1");
+    if (Cvar_VariableInteger("coop") &&
+        Cvar_VariableInteger("deathmatch")) {
+        Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
         Cvar_Set("coop", "0");
-    } else {
-        if (Cvar_VariableInteger("coop") &&
-            Cvar_VariableInteger("deathmatch")) {
-            Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
-            Cvar_Set("coop", "0");
-        }
+    }
 
-        // dedicated servers can't be single player and are usually DM
-        // so unless they explicitly set coop, force it to deathmatch
-        if (COM_DEDICATED) {
-            if (!Cvar_VariableInteger("coop"))
-                Cvar_Set("deathmatch", "1");
-        }
+    // dedicated servers can't be single player and are usually DM
+    // so unless they explicitly set coop, force it to deathmatch
+    if (COM_DEDICATED) {
+        if (!Cvar_VariableInteger("coop"))
+            Cvar_Set("deathmatch", "1");
     }
 
     // init clients
@@ -437,11 +423,6 @@ void SV_InitGame(unsigned mvd_spawn)
     // enable networking
     if (sv_maxclients->integer > 1) {
         NET_Config(NET_SERVER);
-    }
-
-    // initialize MVD server
-    if (!mvd_spawn) {
-        SV_MvdPreInit();
     }
 
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);
@@ -465,20 +446,8 @@ void SV_InitGame(unsigned mvd_spawn)
     PmoveInit(&svs.pmp);
 
     // init game
-#if USE_MVD_CLIENT
-    if (mvd_spawn) {
-        if (ge) {
-            SV_ShutdownGameProgs();
-        }
-        ge = &mvd_ge;
-        ge->Init();
-    } else
-#endif
-    {
-        SV_InitGameProgs();
-        SV_CheckForEnhancedSavegames();
-        SV_MvdPostInit();
-    }
+    SV_InitGameProgs();
+    SV_CheckForEnhancedSavegames();
 
     if (svs.csr.extended && IS_NEW_GAME_API)
         PmoveEnableExt(&svs.pmp);

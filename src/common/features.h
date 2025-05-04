@@ -28,9 +28,6 @@ static const char *Com_GetFeatures(void)
 #if USE_AVCODEC
     "avcodec "
 #endif
-#if USE_CLIENT_GTV
-    "client-gtv "
-#endif
 #if USE_UI
     "client-ui "
 #endif
@@ -57,12 +54,6 @@ static const char *Com_GetFeatures(void)
 #endif
 #if USE_MD5
     "md5 "
-#endif
-#if USE_MVD_CLIENT
-    "mvd-client "
-#endif
-#if USE_MVD_SERVER
-    "mvd-server "
 #endif
 #if USE_OPENAL
     "openal "

@@ -1093,10 +1093,6 @@ static void CL_ParsePrint(void)
 
     SCR_AddToChatHUD(s);
 
-    // silence MVD spectator chat
-    if (cl.serverstate == ss_broadcast && !strncmp(s, "[MVD] ", 6))
-        return;
-
     // play sound
     if (cl_chat_sound->integer > 1)
         S_StartLocalSoundOnce("misc/talk1.wav");
@@ -1422,10 +1418,6 @@ void CL_ParseServerMessage(void)
                 cls.demo.others_dropped++;
             }
         }
-
-        // if running GTV server, add current message
-        CL_GTV_WriteMessage(msg_read.data + readcount,
-                            msg_read.readcount - readcount);
     }
 }
 

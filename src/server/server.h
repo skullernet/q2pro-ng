@@ -44,10 +44,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server/server.h"
 #include "system/system.h"
 
-#if USE_MVD_CLIENT
-#include "server/mvd/client.h"
-#endif
-
 #if USE_ZLIB
 #include <zlib.h>
 #endif
@@ -87,7 +83,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 // game features this server supports
-#define SV_FEATURES (GMF_CLIENTNUM | GMF_PROPERINUSE | GMF_MVDSPEC | \
+#define SV_FEATURES (GMF_CLIENTNUM | GMF_PROPERINUSE | \
                      GMF_WANT_ALL_DISCONNECTS | GMF_ENHANCED_SAVEGAMES | \
                      SV_GMF_VARIABLE_FPS | GMF_EXTRA_USERINFO | \
                      GMF_IPV6_ADDRESS_AWARE | GMF_ALLOW_INDEX_OVERFLOW | \
@@ -96,12 +92,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // flag indicating if game uses new versions of gclient_t and pmove_t.
 // doesn't enable protocol extensions by itself.
 #define IS_NEW_GAME_API    (ge->apiversion == GAME_API_VERSION_NEW)
-
-// ugly hack for SV_Shutdown
-#define MVD_SPAWN_DISABLED  0
-#define MVD_SPAWN_ENABLED   BIT(30)
-#define MVD_SPAWN_INTERNAL  BIT(31)
-#define MVD_SPAWN_MASK      (MVD_SPAWN_ENABLED | MVD_SPAWN_INTERNAL)
 
 typedef struct {
     int         number;
@@ -172,13 +162,12 @@ typedef struct {
     server_entity_t entities[MAX_EDICTS];
 } server_t;
 
-#define EDICT_NUM2(ge, n) ((edict_t *)((byte *)(ge)->edicts + (ge)->edict_size*(n)))
-#define EDICT_NUM(n) EDICT_NUM2(ge, n)
+#define EDICT_NUM(n) ((edict_t *)((byte *)(ge)->edicts + (ge)->edict_size*(n)))
 #define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
 
 #define MAX_TOTAL_ENT_LEAFS        128
 
-#define ENT_EXTENSION(csr, ent)  ((csr)->extended ? &(ent)->x : NULL)
+#define ENT_EXTENSION(ent)  (svs.csr.extended ? &(ent)->x : NULL)
 
 typedef enum {
     cs_free,        // can be reused for a new connection
@@ -335,16 +324,6 @@ typedef struct client_s {
     unsigned            num_entities;   // UPDATE_BACKUP*MAX_PACKET_ENTITIES(_OLD)
     unsigned            next_entity;    // next state to use
     entity_packed_t     *entities;      // [num_entities]
-
-    // server state pointers (hack for MVD channels implementation)
-    const configstring_t    *configstrings;
-    const cs_remap_t        *csr;
-    const char              *gamedir, *mapname;
-    const game_export_t     *ge;
-    const cm_t              *cm;
-    int                     infonum;    // slot number visible to client
-    int                     spawncount;
-    int                     maxclients;
 
     // netchan type dependent method
     void            (*AddMessage)(struct client_s *, const byte *, size_t, bool);
@@ -577,7 +556,7 @@ void SV_ClientReset(client_t *client);
 void SV_SetState(server_state_t state);
 void SV_SpawnServer(const mapcmd_t *cmd);
 bool SV_ParseMapCmd(mapcmd_t *cmd);
-void SV_InitGame(unsigned mvd_spawn);
+void SV_InitGame(void);
 
 //
 // sv_send.c
@@ -608,55 +587,6 @@ void SV_ShutdownClientSend(client_t *client);
 void SV_InitClientSend(client_t *newcl);
 
 //
-// sv_mvd.c
-//
-#if USE_MVD_SERVER
-void SV_MvdRegister(void);
-void SV_MvdPreInit(void);
-void SV_MvdPostInit(void);
-void SV_MvdShutdown(error_type_t type);
-void SV_MvdBeginFrame(void);
-void SV_MvdEndFrame(void);
-void SV_MvdRunClients(void);
-void SV_MvdStatus_f(void);
-void SV_MvdMapChanged(void);
-void SV_MvdClientDropped(client_t *client);
-
-void SV_MvdUnicast(const edict_t *ent, int clientNum, bool reliable);
-void SV_MvdMulticast(const mleaf_t *leaf, multicast_t to, bool reliable);
-void SV_MvdConfigstring(int index, const char *string, size_t len);
-void SV_MvdBroadcastPrint(int level, const char *string);
-void SV_MvdStartSound(int entnum, int channel, int flags,
-                      int soundindex, int volume,
-                      int attenuation, int timeofs);
-
-void SV_MvdRecord_f(void);
-void SV_MvdStop_f(void);
-#else
-#define SV_MvdRegister()            (void)0
-#define SV_MvdPreInit()             (void)0
-#define SV_MvdPostInit()            (void)0
-#define SV_MvdShutdown(type)        (void)0
-#define SV_MvdBeginFrame()          (void)0
-#define SV_MvdEndFrame()            (void)0
-#define SV_MvdRunClients()          (void)0
-#define SV_MvdStatus_f()            (void)0
-#define SV_MvdMapChanged()          (void)0
-#define SV_MvdClientDropped(client) (void)0
-
-#define SV_MvdUnicast(ent, clientNum, reliable)     (void)0
-#define SV_MvdMulticast(leafnum, to)                (void)0
-#define SV_MvdConfigstring(index, string, len)      (void)0
-#define SV_MvdBroadcastPrint(level, string)         (void)0
-#define SV_MvdStartSound(entnum, channel, flags, \
-                         soundindex, volume, \
-                         attenuation, timeofs)      (void)0
-
-#define SV_MvdRecord_f()    (void)0
-#define SV_MvdStop_f()      (void)0
-#endif
-
-//
 // sv_user.c
 //
 void SV_New_f(void);
@@ -673,10 +603,6 @@ cvarban_t *SV_CheckInfoBans(const char *info, bool match_only);
 //
 // sv_ccmds.c
 //
-#if USE_MVD_CLIENT || USE_MVD_SERVER
-extern const cmd_option_t o_record[];
-#endif
-
 void SV_AddMatch_f(list_t *list);
 void SV_DelMatch_f(list_t *list);
 void SV_ListMatches_f(list_t *list);

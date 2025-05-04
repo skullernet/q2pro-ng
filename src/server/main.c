@@ -123,13 +123,6 @@ void SV_RemoveClient(client_t *client)
     // itself to make code that traverses client list in a loop happy!
     List_Remove(&client->entry);
 
-#if USE_MVD_CLIENT
-    // unlink them from MVD client list
-    if (sv.state == ss_broadcast) {
-        MVD_RemoveClient(client);
-    }
-#endif
-
     Com_DPrintf("Going from cs_zombie to cs_free for %s\n", client->name);
 
     client->state = cs_free;    // can now be reused
@@ -168,16 +161,10 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
         prefix = " ";
     }
 
-    if (announce == 2) {
+    if (announce == 2)
         // announce to others
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast)
-            MVD_GameClientDrop(client->edict, prefix, reason);
-        else
-#endif
-            SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
-                               client->name, prefix, reason);
-    }
+        SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
+                           client->name, prefix, reason);
 
     if (announce)
         // print this to client as they will not receive broadcast
@@ -228,9 +215,6 @@ void SV_DropClient(client_t *client, const char *reason)
     SV_CleanClient(client);
 
     Com_DPrintf("Going to cs_zombie for %s\n", client->name);
-
-    // give MVD server a chance to detect if its dummy client was dropped
-    SV_MvdClientDropped(client);
 }
 
 
@@ -1038,7 +1022,7 @@ static void send_connect_packet(client_t *newcl, int nctype)
     }
 
     Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s map=%s",
-                      ncstring, dlstring1, dlstring2, newcl->mapname);
+                      ncstring, dlstring1, dlstring2, sv.name);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1094,20 +1078,12 @@ static void SVC_DirectConnect(void)
     // accept the new client
     // this is the only place a client_t is ever initialized
     memset(newcl, 0, sizeof(*newcl));
-    newcl->number = newcl->infonum = number;
+    newcl->number = number;
     newcl->challenge = params.challenge; // save challenge for checksumming
     newcl->protocol = params.protocol;
     newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
     newcl->edict = EDICT_NUM(number + 1);
-    newcl->gamedir = fs_game->string;
-    newcl->mapname = sv.name;
-    newcl->configstrings = sv.configstrings;
-    newcl->csr = &svs.csr;
-    newcl->ge = ge;
-    newcl->cm = &sv.cm;
-    newcl->spawncount = sv.spawncount;
-    newcl->maxclients = svs.maxclients;
     Q_strlcpy(newcl->reconnect_var, params.reconnect_var, sizeof(newcl->reconnect_var));
     Q_strlcpy(newcl->reconnect_val, params.reconnect_val, sizeof(newcl->reconnect_val));
 #if USE_FPS
@@ -1706,13 +1682,6 @@ static void SV_PrepWorldFrame(void)
     edict_t    *ent;
     int        i;
 
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_PrepWorldFrame();
-        return;
-    }
-#endif
-
     if (gex && gex->PrepFrame) {
         gex->PrepFrame();
         return;
@@ -1745,11 +1714,6 @@ static inline bool check_paused(void)
     if (!LIST_SINGLE(&sv_clientlist))
         goto resume;
 
-#if USE_MVD_CLIENT
-    if (!LIST_EMPTY(&mvd_gtv_list))
-        goto resume;
-#endif
-
     if (!sv_paused->integer) {
         Cvar_Set("sv_paused", "1");
         IN_Activate();
@@ -1774,9 +1738,6 @@ SV_RunGameFrame
 */
 static void SV_RunGameFrame(void)
 {
-    // save the entire world state if recording a serverdemo
-    SV_MvdBeginFrame();
-
 #if USE_CLIENT
     if (host_speeds->integer)
         time_before_game = Sys_Milliseconds();
@@ -1798,9 +1759,6 @@ static void SV_RunGameFrame(void)
                     msg_write.cursize);
         SZ_Clear(&msg_write);
     }
-
-    // save the entire world state if recording a serverdemo
-    SV_MvdEndFrame();
 }
 
 /*
@@ -1891,8 +1849,8 @@ static void SV_MasterShutdown(void)
 ==================
 SV_Frame
 
-Some things like MVD client connections and command buffer
-processing are run even when server is not yet initialized.
+Some things like command buffer processing are run even when server is not yet
+initialized.
 
 Returns amount of extra frametime available for sleeping on IO.
 ==================
@@ -1911,18 +1869,10 @@ unsigned SV_Frame(unsigned msec)
         Cbuf_Execute(&cmd_buffer);
     }
 
-#if USE_MVD_CLIENT
-    // run connections to MVD/GTV servers
-    MVD_Frame();
-#endif
-
     // read packets from UDP clients
     NET_GetPackets(NS_SERVER, SV_PacketEvent);
 
     if (svs.initialized) {
-        // run connections from MVD/GTV clients
-        SV_MvdRunClients();
-
         // deliver fragments and reliable messages for connecting clients
         SV_SendAsyncPackets();
     }
@@ -2013,11 +1963,6 @@ void SV_UserinfoChanged(client_t *cl)
             Com_Printf("%s[%s] changed name to %s\n", cl->name,
                        NET_AdrToString(&cl->netchan.remote_address), name);
         }
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            MVD_GameClientNameChanged(cl->edict, name);
-        } else
-#endif
         if (sv_show_name_changes->integer > 1 ||
             (sv_show_name_changes->integer == 1 && cl->state == cs_spawned)) {
             SV_BroadcastPrintf(PRINT_HIGH, "%s changed name to %s\n",
@@ -2145,12 +2090,6 @@ Only called at quake2.exe startup, not for each game
 void SV_Init(void)
 {
     SV_InitOperatorCommands();
-
-    SV_MvdRegister();
-
-#if USE_MVD_CLIENT
-    MVD_Register();
-#endif
 
     SV_RegisterSavegames();
 
@@ -2351,17 +2290,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
         return;
 
     R_ClearDebugLines();    // for local system
-
-#if USE_MVD_CLIENT
-    if (ge != &mvd_ge && !(type & MVD_SPAWN_INTERNAL)) {
-        // shutdown MVD client now if not already running the built-in MVD game module
-        // don't shutdown if called from internal MVD spawn function (ugly hack)!
-        MVD_Shutdown();
-    }
-    type &= ~MVD_SPAWN_MASK;
-#endif
-
-    SV_MvdShutdown(type);
 
     SV_FinalMessage(finalmsg, type);
     SV_MasterShutdown();

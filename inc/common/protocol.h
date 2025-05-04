@@ -54,13 +54,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_Q2PRO_PLAYERFOG            1026    // r3579
 #define PROTOCOL_VERSION_Q2PRO_CURRENT              1026    // r3579
 
-#define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
-#define PROTOCOL_VERSION_MVD_DEFAULT            2010    // r177
-#define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS    2011    // r2894
-#define PROTOCOL_VERSION_MVD_EXTENDED_LIMITS_2  2012    // r3300
-#define PROTOCOL_VERSION_MVD_PLAYERFOG          2013    // r3579
-#define PROTOCOL_VERSION_MVD_CURRENT            2013    // r3579
-
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
      (x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
@@ -68,10 +61,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q2PRO_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_Q2PRO_MINIMUM && \
      (x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
-
-#define MVD_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_MVD_CURRENT)
 
 #define EXTENDED_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_EXTENDED_MINIMUM && \
@@ -163,42 +152,6 @@ typedef enum {
     svc_num_types
 } svc_ops_t;
 
-// MVD protocol specific operations
-typedef enum {
-    mvd_bad,
-    mvd_nop,
-    mvd_disconnect,     // reserved
-    mvd_reconnect,      // reserved
-    mvd_serverdata,
-    mvd_configstring,
-    mvd_frame,
-    mvd_frame_nodelta,  // reserved
-    mvd_unicast,
-    mvd_unicast_r,
-
-    // must match multicast_t order!!!
-    mvd_multicast_all,
-    mvd_multicast_phs,
-    mvd_multicast_pvs,
-    mvd_multicast_all_r,
-    mvd_multicast_phs_r,
-    mvd_multicast_pvs_r,
-
-    mvd_sound,
-    mvd_print,
-    mvd_stufftext,      // reserved
-
-    mvd_num_types
-} mvd_ops_t;
-
-// MVD stream flags
-typedef enum {
-    MVF_NOMSGS      = BIT(0),
-    MVF_SINGLEPOV   = BIT(1),
-    MVF_EXTLIMITS   = BIT(2),
-    MVF_EXTLIMITS_2 = BIT(3),
-} mvd_flags_t;
-
 //==============================================
 
 //
@@ -265,36 +218,6 @@ typedef enum {
 
 // Q2PRO protocol specific extra flags
 #define EPS_CLIENTNUM       BIT(6)
-
-//==============================================
-
-// packetized player_state_t communication (MVD specific)
-
-#define PPS_M_TYPE          BIT(0)
-#define PPS_M_ORIGIN        BIT(1)
-#define PPS_M_ORIGIN2       BIT(2)
-
-#define PPS_VIEWOFFSET      BIT(3)
-#define PPS_VIEWANGLES      BIT(4)
-#define PPS_VIEWANGLE2      BIT(5)
-#define PPS_KICKANGLES      BIT(6)
-#define PPS_BLEND           BIT(7)
-#define PPS_FOV             BIT(8)
-#define PPS_WEAPONINDEX     BIT(9)
-#define PPS_WEAPONFRAME     BIT(10)
-#define PPS_GUNOFFSET       BIT(11)
-#define PPS_GUNANGLES       BIT(12)
-#define PPS_RDFLAGS         BIT(13)
-#define PPS_STATS           BIT(14)
-#define PPS_MOREBITS        BIT(15)     // read one additional byte
-                                        // same as PPS_REMOVE for old demos!!!
-
-#define PPS_REMOVE          BIT(16)
-#define PPS_FOG             BIT(17)
-
-// this is just a small hack to store inuse flag
-// in a field left otherwise unused by MVD code
-#define PPS_INUSE(ps)       (ps)->pmove.pm_time
 
 //==============================================
 
