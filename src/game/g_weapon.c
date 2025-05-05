@@ -666,6 +666,11 @@ static bool binary_positional_search(const vec3_t viewer, const vec3_t start, co
     return binary_positional_search_r(viewer, start, end, cb, num_splits);
 }
 
+static qboolean in_phs_cb(const vec3_t p1, const vec3_t p2)
+{
+    return gi.inVIS(p1, p2, VIS_PHS);
+}
+
 /*
 =================
 fire_rail
@@ -731,7 +736,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
         vec3_t org;
         VectorAdd(player->s.origin, player->client->ps.viewoffset, org);
 
-        if (!binary_positional_search(org, start, tr.endpos, gi.inPHS, 3))
+        if (!binary_positional_search(org, start, tr.endpos, in_phs_cb, 3))
             continue;
 
         gi.WriteByte(svc_temp_entity);

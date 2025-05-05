@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    3303
+#define GAME_API_VERSION    4000
 
 // edict->svflags
 
@@ -43,7 +43,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_HULL                BIT(11)
 
 // edict->solid values
-
 typedef enum {
     SOLID_NOT,          // no interaction with other objects
     SOLID_TRIGGER,      // only touch when inside, after moving
@@ -51,21 +50,17 @@ typedef enum {
     SOLID_BSP           // bsp clip, touch on edge
 } solid_t;
 
-// extended features
+// flags for inVIS()
+typedef enum {
+    VIS_PVS     = 0,
+    VIS_PHS     = 1,
+    VIS_NOAREAS = 2     // can be OR'ed with one of above
+} vis_t;
 
-// R1Q2 and Q2PRO specific
-#define GMF_CLIENTNUM               BIT(0)      // game sets clientNum gclient_s field
-#define GMF_PROPERINUSE             BIT(1)      // game maintains edict_s inuse field properly
-#define GMF_MVDSPEC                 BIT(2)      // game is dummy MVD client aware
-#define GMF_WANT_ALL_DISCONNECTS    BIT(3)      // game wants ClientDisconnect() for non-spawned clients
-
-// Q2PRO specific
-#define GMF_ENHANCED_SAVEGAMES      BIT(10)     // game supports safe/portable savegames
-#define GMF_VARIABLE_FPS            BIT(11)     // game supports variable server FPS
-#define GMF_EXTRA_USERINFO          BIT(12)     // game wants extra userinfo after normal userinfo
-#define GMF_IPV6_ADDRESS_AWARE      BIT(13)     // game supports IPv6 addresses
-#define GMF_ALLOW_INDEX_OVERFLOW    BIT(14)     // game wants PF_FindIndex() to return 0 on overflow
-#define GMF_PROTOCOL_EXTENSIONS     BIT(15)     // game supports protocol extensions
+typedef struct {
+    entity_state_t s;
+    entity_state_extension_t x;
+} customize_entity_t;
 
 //===============================================================
 
@@ -129,6 +124,9 @@ struct edict_s {
 // functions provided by the main engine
 //
 typedef struct {
+    uint32_t    apiversion;
+    uint32_t    structsize;
+
     // special messages
     void (* q_printf(2, 3) bprintf)(int printlevel, const char *fmt, ...);
     void (* q_printf(1, 2) dprintf)(const char *fmt, ...);
@@ -136,12 +134,14 @@ typedef struct {
     void (* q_printf(2, 3) centerprintf)(edict_t *ent, const char *fmt, ...);
     void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
     void (*positioned_sound)(const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
+    void (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
 
     // config strings hold all the index strings, the lightstyles,
     // and misc data like the sky definition and cdtrack.
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
     void (*configstring)(int num, const char *string);
+    const char *(*get_configstring)(int index);
 
     void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
 
@@ -154,9 +154,9 @@ typedef struct {
 
     // collision detection
     void (*trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, int contentmask);
+    void (*clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
     int (*pointcontents)(const vec3_t point);
-    qboolean (*inPVS)(const vec3_t p1, const vec3_t p2);
-    qboolean (*inPHS)(const vec3_t p1, const vec3_t p2);
+    qboolean (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
     void (*SetAreaPortalState)(int portalnum, qboolean open);
     qboolean (*AreasConnected)(int area1, int area2);
 
@@ -166,11 +166,6 @@ typedef struct {
     void (*linkentity)(edict_t *ent);
     void (*unlinkentity)(edict_t *ent);     // call before removing an interactive edict
     int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
-#ifdef GAME_INCLUDE
-    void (*Pmove)(pmove_t *pmove);          // player movement code common with client prediction
-#else
-    void (*Pmove)(void *pmove);
-#endif
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);
@@ -187,6 +182,7 @@ typedef struct {
 
     // managed memory allocation
     void *(*TagMalloc)(unsigned size, unsigned tag);
+    void *(*TagRealloc)(void *ptr, size_t size);
     void (*TagFree)(void *block);
     void (*FreeTags)(unsigned tag);
 
@@ -205,13 +201,15 @@ typedef struct {
     void (*AddCommandString)(const char *text);
 
     void (*DebugGraph)(float value, int color);
+    void *(*GetExtension)(const char *name);
 } game_import_t;
 
 //
 // functions exported by the game subsystem
 //
 typedef struct {
-    int         apiversion;
+    uint32_t    apiversion;
+    uint32_t    structsize;
 
     // the init function will only be called when a game starts,
     // not each time a level is loaded.  Persistent data for clients
@@ -234,13 +232,17 @@ typedef struct {
     void (*WriteLevel)(const char *filename);
     void (*ReadLevel)(const char *filename);
 
-    qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
+    qboolean (*CanSave)(void);
+
+    qboolean (*ClientConnect)(edict_t *ent, char *userinfo, char *conninfo);
     void (*ClientBegin)(edict_t *ent);
     void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);
     void (*ClientDisconnect)(edict_t *ent);
     void (*ClientCommand)(edict_t *ent);
     void (*ClientThink)(edict_t *ent, usercmd_t *cmd);
+    void (*Pmove)(pmove_t *pmove);
 
+    void (*PrepFrame)(void);
     void (*RunFrame)(void);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
@@ -248,6 +250,12 @@ typedef struct {
     // The game can issue gi.argc() / gi.argv() commands to get the rest
     // of the parameters
     void (*ServerCommand)(void);
+
+    qboolean (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, customize_entity_t *temp); // if true is returned, `temp' must be initialized
+    qboolean (*EntityVisibleToClient)(edict_t *client, edict_t *ent);
+
+    void *(*GetExtension)(const char *name);
+    void (*RestartFilesystem)(void); // called when fs_restart is issued
 
     //
     // global variables shared between game and server
@@ -263,4 +271,52 @@ typedef struct {
     int         max_edicts;
 } game_export_t;
 
-typedef game_export_t *(*game_entry_t)(game_import_t *);
+typedef game_export_t *(*game_entry_t)(const game_import_t *);
+
+/*
+==============================================================================
+
+SERVER API EXTENSIONS
+
+==============================================================================
+*/
+
+#define FILESYSTEM_API_V1 "FILESYSTEM_API_V1"
+
+typedef struct {
+    int64_t     (*OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
+    int         (*CloseFile)(qhandle_t f);
+    int         (*LoadFile)(const char *path, void **buffer, unsigned flags, unsigned tag);
+
+    int         (*ReadFile)(void *buffer, size_t len, qhandle_t f);
+    int         (*WriteFile)(const void *buffer, size_t len, qhandle_t f);
+    int         (*FlushFile)(qhandle_t f);
+    int64_t     (*TellFile)(qhandle_t f);
+    int         (*SeekFile)(qhandle_t f, int64_t offset, int whence);
+    int         (*ReadLine)(qhandle_t f, char *buffer, size_t size);
+
+    void        **(*ListFiles)(const char *path, const char *filter, unsigned flags, int *count_p);
+    void        (*FreeFileList)(void **list);
+
+    const char  *(*ErrorString)(int error);
+} filesystem_api_v1_t;
+
+#define DEBUG_DRAW_API_V1 "DEBUG_DRAW_API_V1"
+
+typedef struct {
+    void (*ClearDebugLines)(void);
+    void (*AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugPoint)(const vec3_t point, float size, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugAxis)(const vec3_t origin, const vec3_t angles, float size, uint32_t time, qboolean depth_test);
+    void (*AddDebugBounds)(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugSphere)(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugCircle)(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugCylinder)(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+                             qboolean depth_test);
+    void (*AddDebugArrow)(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+                          uint32_t arrow_color, uint32_t time, qboolean depth_test);
+    void (*AddDebugCurveArrow)(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+                               uint32_t line_color, uint32_t arrow_color, uint32_t time, qboolean depth_test);
+    void (*AddDebugText)(const vec3_t origin, const vec3_t angles, const char *text,
+                         float size, uint32_t color, uint32_t time, qboolean depth_test);
+} debug_draw_api_v1_t;

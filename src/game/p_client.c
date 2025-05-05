@@ -97,9 +97,6 @@ void SP_info_player_intermission(edict_t *ent)
 // [Paril-KEX] whether instanced items should be used or not
 bool P_UseCoopInstancedItems(void)
 {
-    // instanced items require EntityVisibleToClient support
-    if (gix.apiversion < GAME_API_VERSION_EX_ENTITY_VISIBLE)
-        return false;
     // squad respawn forces instanced items on, since we don't
     // want players to need to backtrack just to get their stuff.
     return g_coop_instanced_items->integer || g_coop_squad_respawn->integer;
@@ -2285,7 +2282,7 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-qboolean ClientConnect(edict_t *ent, char *userinfo)
+qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 {
     // check to see if they are on the banned IP list
 #if 0
@@ -2578,7 +2575,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         pm.pointcontents = gi.pointcontents;
 
         // perform a pmove
-        gi.Pmove(&pm);
+        Pmove(&pm);
 
         // [Paril-KEX] save old position for G_TouchProjectiles
         vec3_t old_origin;

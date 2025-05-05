@@ -592,7 +592,8 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
             continue;
 
         if ((ent->solid == SOLID_BSP || (ent->svflags & SVF_HULL)) && bsp_clipping) {
-            trace_t clip = gix.clip(hit->s.origin, hit->mins, hit->maxs, hit->s.origin, ent, G_GetClipMask(hit));
+            trace_t clip;
+            gi.clip(&clip, hit->s.origin, hit->mins, hit->maxs, hit->s.origin, ent, G_GetClipMask(hit));
 
             if (clip.fraction == 1.0f)
                 continue;

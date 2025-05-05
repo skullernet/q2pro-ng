@@ -1366,7 +1366,8 @@ void ClientEndServerFrame(edict_t *ent)
             if (player == ent)
                 continue;
 
-            trace_t clip = gix.clip(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, player, CONTENTS_MONSTER | CONTENTS_PLAYER);
+            trace_t clip;
+            gi.clip(&clip, ent->s.origin, ent->mins, ent->maxs, ent->s.origin, player, CONTENTS_MONSTER | CONTENTS_PLAYER);
 
             if (clip.startsolid || clip.allsolid) {
                 clipped_player = true;

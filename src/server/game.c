@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server.h"
 
 const game_export_t     *ge;
-const game_export_ex_t  *gex;
 
 static void PF_configstring(int index, const char *val);
 
@@ -51,13 +50,8 @@ static int PF_FindIndex(const char *name, int start, int max, int skip, const ch
         }
     }
 
-    if (i == max) {
-        if (g_features->integer & GMF_ALLOW_INDEX_OVERFLOW) {
-            Com_DPrintf("%s(%s): overflow\n", func, name);
-            return 0;
-        }
+    if (i == max)
         Com_Error(ERR_DROP, "%s(%s): overflow", func, name);
-    }
 
     PF_configstring(i + start, name);
 
@@ -456,30 +450,6 @@ static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 }
 
 /*
-=================
-PF_inPVS
-
-Also checks portalareas so that doors block sight
-=================
-*/
-static qboolean PF_inPVS(const vec3_t p1, const vec3_t p2)
-{
-    return PF_inVIS(p1, p2, VIS_PVS);
-}
-
-/*
-=================
-PF_inPHS
-
-Also checks portalareas so that doors block sound
-=================
-*/
-static qboolean PF_inPHS(const vec3_t p1, const vec3_t p2)
-{
-    return PF_inVIS(p1, p2, VIS_PHS);
-}
-
-/*
 ==================
 SV_StartSound
 
@@ -626,11 +596,6 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
     PF_Unicast(target, !!(channel & CHAN_RELIABLE));
 }
 
-void PF_Pmove(void *pm)
-{
-    Pmove(pm, sv_client ? &sv_client->pmp : &svs.pmp);
-}
-
 static cvar_t *PF_cvar(const char *name, const char *value, int flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
@@ -694,61 +659,6 @@ static void *PF_TagRealloc(void *ptr, size_t size)
 
 //==============================================
 
-static const game_import_t game_import = {
-    .multicast = SV_Multicast,
-    .unicast = PF_Unicast,
-    .bprintf = PF_bprintf,
-    .dprintf = PF_dprintf,
-    .cprintf = PF_cprintf,
-    .centerprintf = PF_centerprintf,
-    .error = PF_error,
-
-    .linkentity = PF_LinkEdict,
-    .unlinkentity = PF_UnlinkEdict,
-    .BoxEdicts = SV_AreaEdicts,
-    .trace = SV_Trace,
-    .pointcontents = SV_PointContents,
-    .setmodel = PF_setmodel,
-    .inPVS = PF_inPVS,
-    .inPHS = PF_inPHS,
-    .Pmove = PF_Pmove,
-
-    .modelindex = PF_ModelIndex,
-    .soundindex = PF_SoundIndex,
-    .imageindex = PF_ImageIndex,
-
-    .configstring = PF_configstring,
-    .sound = PF_StartSound,
-    .positioned_sound = SV_StartSound,
-
-    .WriteChar = MSG_WriteChar,
-    .WriteByte = MSG_WriteByte,
-    .WriteShort = MSG_WriteShort,
-    .WriteLong = MSG_WriteLong,
-    .WriteFloat = PF_WriteFloat,
-    .WriteString = MSG_WriteString,
-    .WritePosition = PF_WritePos,
-    .WriteDir = MSG_WriteDir,
-    .WriteAngle = MSG_WriteAngle,
-
-    .TagMalloc = PF_TagMalloc,
-    .TagFree = Z_Free,
-    .FreeTags = PF_FreeTags,
-
-    .cvar = PF_cvar,
-    .cvar_set = Cvar_UserSet,
-    .cvar_forceset = Cvar_Set,
-
-    .argc = Cmd_Argc,
-    .argv = Cmd_Argv,
-    .args = Cmd_RawArgs,
-    .AddCommandString = PF_AddCommandString,
-
-    .DebugGraph = SCR_DebugGraph,
-    .SetAreaPortalState = PF_SetAreaPortalState,
-    .AreasConnected = PF_AreasConnected,
-};
-
 static const filesystem_api_v1_t filesystem_api_v1 = {
     .OpenFile = FS_OpenFile,
     .CloseFile = FS_CloseFile,
@@ -799,17 +709,66 @@ static void *PF_GetExtension(const char *name)
     return NULL;
 }
 
-static const game_import_ex_t game_import_ex = {
-    .apiversion = GAME_API_VERSION_EX,
-    .structsize = sizeof(game_import_ex),
+static const game_import_t game_import = {
+    .apiversion = GAME_API_VERSION,
+    .structsize = sizeof(game_import_t),
 
-    .local_sound = PF_LocalSound,
-    .get_configstring = PF_GetConfigstring,
+    .multicast = SV_Multicast,
+    .unicast = PF_Unicast,
+    .bprintf = PF_bprintf,
+    .dprintf = PF_dprintf,
+    .cprintf = PF_cprintf,
+    .centerprintf = PF_centerprintf,
+    .error = PF_error,
+
+    .linkentity = PF_LinkEdict,
+    .unlinkentity = PF_UnlinkEdict,
+    .BoxEdicts = SV_AreaEdicts,
+    .trace = SV_Trace,
     .clip = SV_Clip,
+    .pointcontents = SV_PointContents,
+    .setmodel = PF_setmodel,
     .inVIS = PF_inVIS,
 
-    .GetExtension = PF_GetExtension,
+    .modelindex = PF_ModelIndex,
+    .soundindex = PF_SoundIndex,
+    .imageindex = PF_ImageIndex,
+
+    .configstring = PF_configstring,
+    .get_configstring = PF_GetConfigstring,
+    .sound = PF_StartSound,
+    .positioned_sound = SV_StartSound,
+    .local_sound = PF_LocalSound,
+
+    .WriteChar = MSG_WriteChar,
+    .WriteByte = MSG_WriteByte,
+    .WriteShort = MSG_WriteShort,
+    .WriteLong = MSG_WriteLong,
+    .WriteFloat = PF_WriteFloat,
+    .WriteString = MSG_WriteString,
+    .WritePosition = PF_WritePos,
+    .WriteDir = MSG_WriteDir,
+    .WriteAngle = MSG_WriteAngle,
+
+    .TagMalloc = PF_TagMalloc,
     .TagRealloc = PF_TagRealloc,
+    .TagFree = Z_Free,
+    .FreeTags = PF_FreeTags,
+
+    .cvar = PF_cvar,
+    .cvar_set = Cvar_UserSet,
+    .cvar_forceset = Cvar_Set,
+
+    .argc = Cmd_Argc,
+    .argv = Cmd_Argv,
+    .args = Cmd_RawArgs,
+    .AddCommandString = PF_AddCommandString,
+
+    .DebugGraph = SCR_DebugGraph,
+    .SetAreaPortalState = PF_SetAreaPortalState,
+    .AreasConnected = PF_AreasConnected,
+
+    .GetExtension = PF_GetExtension,
 };
 
 static void *game_library;
@@ -824,7 +783,6 @@ it is changing to a different game directory.
 */
 void SV_ShutdownGameProgs(void)
 {
-    gex = NULL;
     if (ge) {
         ge->Shutdown();
         ge = NULL;
@@ -833,7 +791,6 @@ void SV_ShutdownGameProgs(void)
         Sys_FreeLibrary(game_library);
         game_library = NULL;
     }
-    Cvar_Set("g_features", "0");
 
     Z_LeakTest(TAG_FREE);
 }
@@ -873,22 +830,8 @@ void SV_InitGameProgs(void)
                   ge->apiversion, GAME_API_VERSION);
     }
 
-    // get extended api if present
-    game_entry_ex_t entry_ex = Sys_GetProcAddress(game_library, "GetGameAPIEx");
-    if (entry_ex) {
-        gex = entry_ex(&game_import_ex);
-        if (gex && gex->apiversion >= GAME_API_VERSION_EX_MINIMUM)
-            Com_DPrintf("Game supports Q2PRO extended API version %d.\n", gex->apiversion);
-        else
-            gex = NULL;
-    }
-
     // initialize
     ge->Init();
-
-    if (g_features->integer & GMF_PROTOCOL_EXTENSIONS) {
-        Com_Printf("Game supports Q2PRO protocol extensions.\n");
-    }
 
     // sanitize maxclients
     if (sv_maxclients->integer != svs.maxclients || sv_maxclients->value != svs.maxclients) {

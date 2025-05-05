@@ -378,7 +378,7 @@ void G_RemoveAmmoEx(edict_t *ent, int quantity)
                         ent->client->pers.weapon->quantity_warn;
 
     if (!pre_warning && post_warning)
-        gix.local_sound(ent, NULL, ent, CHAN_AUTO, gi.soundindex("weapons/lowammo.wav"), 1, ATTN_NORM, 0);
+        gi.local_sound(ent, NULL, ent, CHAN_AUTO, gi.soundindex("weapons/lowammo.wav"), 1, ATTN_NORM, 0);
 
     if (ent->client->pers.weapon->ammo == IT_AMMO_CELLS)
         G_CheckPowerArmor(ent);

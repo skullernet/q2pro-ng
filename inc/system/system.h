@@ -28,10 +28,10 @@ typedef struct {
     int         count;
 } listfiles_t;
 
-// loads the dll and returns entry pointer
-void    *Sys_LoadLibrary(const char *path, const char *sym, void **handle);
+void    *Sys_LoadLibrary(const char *path);
 void    Sys_FreeLibrary(void *handle);
 void    *Sys_GetProcAddress(void *handle, const char *sym);
+void    *Sys_LoadGameLibrary(void);
 
 unsigned    Sys_Milliseconds(void);
 void        Sys_Sleep(int msec);

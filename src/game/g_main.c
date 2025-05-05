@@ -7,7 +7,6 @@ game_locals_t  game;
 level_locals_t level;
 
 game_import_t       gi;
-game_import_ex_t    gix;
 
 filesystem_api_v1_t *fs;
 debug_draw_api_v1_t *draw;
@@ -191,21 +190,17 @@ Called after PreInitGame when the game has set up cvars.
 */
 static void InitGame(void)
 {
+    cvar_t *cv;
+
     gi.dprintf("==== InitGame ====\n");
-
-    cvar_t *cv = gi.cvar("sv_features", NULL, 0);
-    if (!cv || !(cv->flags & BIT(7)) || ((int)cv->value & G_FEATURES_REQUIRED) != G_FEATURES_REQUIRED || gix.apiversion < GAME_API_VERSION_EX_MINIMUM)
-        gi.error("This game library requires enhanced Q2PRO server");
-
-    gi.cvar_forceset("g_features", va("%d", G_FEATURES));
 
     PreInitGame();
 
     // seed RNG
     Q_srand(time(NULL));
 
-    fs = gix.GetExtension(FILESYSTEM_API_V1);
-    draw = gix.GetExtension(DEBUG_DRAW_API_V1);
+    fs = gi.GetExtension(FILESYSTEM_API_V1);
+    draw = gi.GetExtension(DEBUG_DRAW_API_V1);
 
     gun_x = gi.cvar("gun_x", "0", 0);
     gun_y = gi.cvar("gun_y", "0", 0);
@@ -417,10 +412,13 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     gi = *import;
 
     globals.apiversion = GAME_API_VERSION;
+    globals.structsize = sizeof(globals);
+
     globals.Init = InitGame;
     globals.Shutdown = ShutdownGame;
     globals.SpawnEntities = SpawnEntities;
 
+    globals.CanSave = G_CanSave;
     globals.WriteGame = WriteGame;
     globals.ReadGame = ReadGame;
     globals.WriteLevel = WriteLevel;
@@ -432,31 +430,19 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
     globals.ClientDisconnect = ClientDisconnect;
     globals.ClientBegin = ClientBegin;
     globals.ClientCommand = ClientCommand;
+    globals.Pmove = Pmove;
 
     globals.RunFrame = G_RunFrame;
+    globals.PrepFrame = G_PrepFrame;
 
+    globals.EntityVisibleToClient = G_EntityVisibleToClient;
+    globals.RestartFilesystem = G_RestartFilesystem;
+    globals.GetExtension = G_GetExtension;
     globals.ServerCommand = ServerCommand;
 
     globals.edict_size = sizeof(edict_t);
 
     return &globals;
-}
-
-q_exported const game_export_ex_t *GetGameAPIEx(const game_import_ex_t *import)
-{
-    memcpy(&gix, import, min(sizeof(gix), import->structsize));
-
-    static const game_export_ex_t gex = {
-        .apiversion = GAME_API_VERSION_EX,
-        .structsize = sizeof(gex),
-        .GetExtension = G_GetExtension,
-        .CanSave = G_CanSave,
-        .PrepFrame = G_PrepFrame,
-        .RestartFilesystem = G_RestartFilesystem,
-        .EntityVisibleToClient = G_EntityVisibleToClient,
-    };
-
-    return &gex;
 }
 
 //======================================================================

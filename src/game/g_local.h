@@ -13,19 +13,8 @@
 // because we define the full size ones in this file
 #define GAME_INCLUDE
 #include "shared/game.h"
-#include "shared/gameext.h"
 
 #include "bg_local.h"
-
-#if USE_FPS
-#define G_GMF_VARIABLE_FPS  GMF_VARIABLE_FPS
-#else
-#define G_GMF_VARIABLE_FPS  0
-#endif
-
-// features this game supports
-#define G_FEATURES_REQUIRED (GMF_PROPERINUSE | GMF_WANT_ALL_DISCONNECTS | GMF_ENHANCED_SAVEGAMES | GMF_PROTOCOL_EXTENSIONS)
-#define G_FEATURES          (G_FEATURES_REQUIRED | G_GMF_VARIABLE_FPS)
 
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
@@ -48,7 +37,6 @@ extern const vec3_t player_mins;
 extern const vec3_t player_maxs;
 
 extern game_import_t    gi;
-extern game_import_ex_t gix;
 
 extern filesystem_api_v1_t *fs;
 extern debug_draw_api_v1_t *draw;
@@ -1702,7 +1690,7 @@ void InitClientResp(gclient_t *client);
 void InitBodyQue(void);
 void ClientBeginServerFrame(edict_t *ent);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
-qboolean ClientConnect(edict_t *ent, char *userinfo);
+qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo);
 void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientUserinfoChanged(edict_t *ent, char *userinfo);

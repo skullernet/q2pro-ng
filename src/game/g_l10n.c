@@ -35,7 +35,7 @@ static void parse_line(const char *data)
         messages = gi.TagMalloc(MIN_MESSAGES * sizeof(messages[0]), TAG_L10N);
     } else if (!(nb_messages & (MIN_MESSAGES - 1))) {
         Q_assert(nb_messages < INT_MAX / sizeof(messages[0]) - MIN_MESSAGES);
-        messages = gix.TagRealloc(messages, (nb_messages + MIN_MESSAGES) * sizeof(messages[0]));
+        messages = gi.TagRealloc(messages, (nb_messages + MIN_MESSAGES) * sizeof(messages[0]));
     }
 
     // remove %junk%%junk% prefixes

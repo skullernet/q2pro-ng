@@ -41,13 +41,8 @@ void SV_ClientReset(client_t *client)
 static void set_frame_time(void)
 {
 #if USE_FPS
-    if (g_features->integer & GMF_VARIABLE_FPS)
-        sv.frametime = Com_ComputeFrametime(sv_fps->integer);
-    else
-        sv.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
-
+    sv.frametime = Com_ComputeFrametime(sv_fps->integer);
     sv.framerate = sv.frametime.div * BASE_FRAMERATE;
-
     Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
 #endif
 }

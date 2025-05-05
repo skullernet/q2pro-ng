@@ -264,7 +264,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (player->client->pers.game_help1changed != game.help1changed) {
             gi.cprintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
-            gix.local_sound(player, NULL, player, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk.wav"), 1.0f, ATTN_NONE, 0.0f);
+            gi.local_sound(player, NULL, player, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk.wav"), 1.0f, ATTN_NONE, 0.0f);
 
             player->client->pers.game_help1changed = game.help1changed;
         }

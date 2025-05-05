@@ -22,7 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "shared/game.h"
-#include "shared/gameext.h"
 
 #include "common/bsp.h"
 #include "common/cmd.h"
@@ -75,19 +74,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #else
 #define SV_PAUSED 0
 #endif
-
-#if USE_FPS
-#define SV_GMF_VARIABLE_FPS GMF_VARIABLE_FPS
-#else
-#define SV_GMF_VARIABLE_FPS 0
-#endif
-
-// game features this server supports
-#define SV_FEATURES (GMF_CLIENTNUM | GMF_PROPERINUSE | \
-                     GMF_WANT_ALL_DISCONNECTS | GMF_ENHANCED_SAVEGAMES | \
-                     SV_GMF_VARIABLE_FPS | GMF_EXTRA_USERINFO | \
-                     GMF_IPV6_ADDRESS_AWARE | GMF_ALLOW_INDEX_OVERFLOW | \
-                     GMF_PROTOCOL_EXTENSIONS)
 
 typedef struct {
     int         number;
@@ -471,8 +457,6 @@ extern cvar_t       *sv_uptime;
 
 extern cvar_t       *sv_allow_unconnected_cmds;
 
-extern cvar_t       *g_features;
-
 extern cvar_t       *sv_timeout;
 extern cvar_t       *sv_zombietime;
 extern cvar_t       *sv_ghostime;
@@ -595,12 +579,9 @@ void SV_WriteFrameToClient(client_t *client);
 // sv_game.c
 //
 extern const game_export_t      *ge;
-extern const game_export_ex_t   *gex;
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);
-
-void PF_Pmove(void *pm);
 
 //
 // sv_save.c

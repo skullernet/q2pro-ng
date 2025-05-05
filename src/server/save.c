@@ -579,23 +579,11 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 
 static bool have_enhanced_savegames(void)
 {
-    return (g_features->integer & GMF_ENHANCED_SAVEGAMES)
-        || (svs.gamedetecthack == 4) || sys_allow_unsafe_savegames->integer;
+    return true;
 }
 
 void SV_CheckForEnhancedSavegames(void)
 {
-    if (Cvar_VariableInteger("deathmatch"))
-        return;
-
-    if (g_features->integer & GMF_ENHANCED_SAVEGAMES)
-        Com_Printf("Game supports Q2PRO enhanced savegames.\n");
-    else if (svs.gamedetecthack == 4)
-        Com_Printf("Game supports YQ2 enhanced savegames.\n");
-    else if (sys_allow_unsafe_savegames->integer)
-        Com_WPrintf("Use of unsafe savegames forced from command line.\n");
-    else
-        Com_WPrintf("Game does not support enhanced savegames. Savegames will not work.\n");
 }
 
 static void SV_Savegame_c(genctx_t *ctx, int argnum)
@@ -667,8 +655,8 @@ static void SV_Savegame_f(void)
         return;
     }
 
-    if (gex && gex->CanSave) {
-        if (!gex->CanSave())
+    if (ge->CanSave) {
+        if (!ge->CanSave())
             return;
     } else {
         if (svs.maxclients == 1 && SV_GetClient_Stat(&svs.client_pool[0], STAT_HEALTH) <= 0) {

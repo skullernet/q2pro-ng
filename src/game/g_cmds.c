@@ -1202,7 +1202,7 @@ static void Cmd_Wave_f(edict_t *ent)
                 if (player != ent && !OnSameTeam(ent, player))
                     continue;
 
-                gix.local_sound(player, NULL, player, CHAN_AUTO, gi.soundindex("misc/help_marker.wav"), 1.0f, ATTN_NONE, 0.0f);
+                gi.local_sound(player, NULL, player, CHAN_AUTO, gi.soundindex("misc/help_marker.wav"), 1.0f, ATTN_NONE, 0.0f);
                 gi.cprintf(player, PRINT_HIGH, other_notify_msg, ent->client->pers.netname);
             }
         }
@@ -1213,7 +1213,7 @@ static void Cmd_Wave_f(edict_t *ent)
                 continue;
             if (!targ->client)
                 continue;
-            if (!gix.inVIS(ent->s.origin, targ->s.origin, VIS_PVS | VIS_NOAREAS))
+            if (!gi.inVIS(ent->s.origin, targ->s.origin, VIS_PVS | VIS_NOAREAS))
                 continue;
 
             if (aiming_at && other_notify_msg)
