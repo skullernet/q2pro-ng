@@ -838,38 +838,6 @@ void SV_ShutdownGameProgs(void)
     Z_LeakTest(TAG_FREE);
 }
 
-static void *SV_LoadGameLibraryFrom(const char *path)
-{
-    void *entry;
-
-    entry = Sys_LoadLibrary(path, "GetGameAPI", &game_library);
-    if (!entry)
-        Com_EPrintf("Failed to load game library: %s\n", Com_GetLastError());
-    else
-        Com_Printf("Loaded game library from %s\n", path);
-
-    return entry;
-}
-
-static void *SV_LoadGameLibrary(const char *libdir, const char *gamedir)
-{
-    char path[MAX_OSPATH];
-
-    if (Q_concat(path, sizeof(path), libdir,
-                 PATH_SEP_STRING, gamedir, PATH_SEP_STRING,
-                 "game" CPUSTRING LIBSUFFIX) >= sizeof(path)) {
-        Com_EPrintf("Game library path length exceeded\n");
-        return NULL;
-    }
-
-    if (os_access(path, X_OK)) {
-        Com_Printf("Can't access %s: %s\n", path, strerror(errno));
-        return NULL;
-    }
-
-    return SV_LoadGameLibraryFrom(path);
-}
-
 /*
 ===============
 SV_InitGameProgs
@@ -879,40 +847,21 @@ Init the game subsystem for a new map
 */
 void SV_InitGameProgs(void)
 {
-    game_import_t   import;
-    game_entry_t    entry = NULL;
+    game_entry_t    entry;
 
     // unload anything we have now
     SV_ShutdownGameProgs();
 
-    // for debugging or `proxy' mods
-    if (sys_forcegamelib->string[0])
-        entry = SV_LoadGameLibraryFrom(sys_forcegamelib->string);
-
-    // try game first
-    if (!entry && fs_game->string[0]) {
-        if (sys_homedir->string[0])
-            entry = SV_LoadGameLibrary(sys_homedir->string, fs_game->string);
-        if (!entry)
-            entry = SV_LoadGameLibrary(sys_libdir->string, fs_game->string);
-    }
-
-    // then try baseq2
-    if (!entry) {
-        if (sys_homedir->string[0])
-            entry = SV_LoadGameLibrary(sys_homedir->string, BASEGAME);
-        if (!entry)
-            entry = SV_LoadGameLibrary(sys_libdir->string, BASEGAME);
-    }
-
-    // all paths failed
-    if (!entry)
+    game_library = Sys_LoadGameLibrary();
+    if (!game_library)
         Com_Error(ERR_DROP, "Failed to load game library");
 
-    // load a new game dll
-    import = game_import;
+    entry = Sys_GetProcAddress(game_library, "GetGameAPI");
+    if (!entry)
+        Com_Error(ERR_DROP, "No game library entry point found");
 
-    ge = entry(&import);
+    // load a new game dll
+    ge = entry(&game_import);
     if (!ge) {
         Com_Error(ERR_DROP, "Game library returned NULL exports");
     }

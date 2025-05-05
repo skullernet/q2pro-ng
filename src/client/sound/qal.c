@@ -190,7 +190,7 @@ int QAL_Init(void)
 
     for (i = 0; i < q_countof(al_drivers); i++) {
         Com_DPrintf("Trying %s\n", al_drivers[i]);
-        Sys_LoadLibrary(al_drivers[i], NULL, &handle);
+        handle = Sys_LoadLibrary(al_drivers[i]);
         if (handle)
             break;
     }

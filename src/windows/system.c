@@ -953,34 +953,16 @@ void Sys_FreeLibrary(void *handle)
     }
 }
 
-void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
+void *Sys_LoadLibrary(const char *path)
 {
-    HMODULE module;
-    void    *entry;
+    HMODULE handle;
 
-    *handle = NULL;
-
-    module = LoadLibraryA(path);
-    if (!module) {
+    handle = LoadLibraryA(path);
+    if (!handle)
         Com_SetLastError(va("%s: LoadLibrary failed: %s",
                             path, Sys_ErrorString(GetLastError())));
-        return NULL;
-    }
 
-    if (sym) {
-        entry = GetProcAddress(module, sym);
-        if (!entry) {
-            Com_SetLastError(va("%s: GetProcAddress(%s) failed: %s",
-                                path, sym, Sys_ErrorString(GetLastError())));
-            FreeLibrary(module);
-            return NULL;
-        }
-    } else {
-        entry = NULL;
-    }
-
-    *handle = module;
-    return entry;
+    return handle;
 }
 
 void *Sys_GetProcAddress(void *handle, const char *sym)

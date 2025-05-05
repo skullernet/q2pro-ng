@@ -259,33 +259,16 @@ void Sys_FreeLibrary(void *handle)
 Sys_LoadLibrary
 =================
 */
-void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
+void *Sys_LoadLibrary(const char *path)
 {
-    void    *module, *entry;
-
-    *handle = NULL;
+    void    *handle;
 
     dlerror();
-    module = dlopen(path, RTLD_LAZY);
-    if (!module) {
+    handle = dlopen(path, RTLD_LAZY);
+    if (!handle)
         Com_SetLastError(dlerror());
-        return NULL;
-    }
 
-    if (sym) {
-        dlerror();
-        entry = dlsym(module, sym);
-        if (!entry) {
-            Com_SetLastError(dlerror());
-            dlclose(module);
-            return NULL;
-        }
-    } else {
-        entry = NULL;
-    }
-
-    *handle = module;
-    return entry;
+    return handle;
 }
 
 void *Sys_GetProcAddress(void *handle, const char *sym)
