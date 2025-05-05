@@ -548,26 +548,22 @@ Moves the given mins/maxs volume through the world from start to end.
 Passedict and edicts owned by passedict are explicitly not checked.
 ==================
 */
-trace_t q_gameabi SV_Trace(const vec3_t start, const vec3_t mins,
-                           const vec3_t maxs, const vec3_t end,
-                           edict_t *passedict, int contentmask)
+void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
+              const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
 {
-    trace_t     trace;
-
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
 
     // clip to world
-    CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
-    trace.ent = ge->edicts;
-    if (trace.fraction == 0)
-        return trace;   // blocked by the world
+    CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
+    trace->ent = ge->edicts;
+    if (trace->fraction == 0)
+        return;     // blocked by the world
 
     // clip to other solid entities
-    SV_ClipMoveToEntities(&trace, start, end, mins, maxs, passedict, contentmask);
-    return trace;
+    SV_ClipMoveToEntities(trace, start, end, mins, maxs, passedict, contentmask);
 }
 
 /*
@@ -578,23 +574,19 @@ Like SV_Trace(), but clip to specified entity only.
 Can be used to clip to SOLID_TRIGGER by its BSP tree.
 ==================
 */
-trace_t q_gameabi SV_Clip(const vec3_t start, const vec3_t mins,
-                          const vec3_t maxs, const vec3_t end,
-                          edict_t *clip, int contentmask)
+void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
+             const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask)
 {
-    trace_t     trace;
-
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
 
     if (clip == ge->edicts)
-        CM_BoxTrace(&trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
+        CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
     else
-        CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
+        CM_TransformedBoxTrace(trace, start, end, mins, maxs,
                                SV_HullForEntity(clip, true), contentmask,
                                clip->s.origin, clip->s.angles);
-    trace.ent = clip;
-    return trace;
+    trace->ent = clip;
 }
