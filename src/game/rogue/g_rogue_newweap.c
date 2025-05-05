@@ -65,7 +65,8 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
 
     gi.linkentity(flechette);
 
-    trace_t tr = gi.trace(self->s.origin, NULL, NULL, flechette->s.origin, flechette, flechette->clipmask);
+    trace_t tr;
+    gi.trace(&tr, self->s.origin, NULL, NULL, flechette->s.origin, flechette, flechette->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, flechette->s.origin);
         flechette->touch(flechette, tr.ent, &tr, false);
@@ -825,7 +826,7 @@ void THINK(tesla_think_active)(edict_t *self)
         if (!deathmatch->integer && hit->classname && (hit->flags & FL_TRAP))
             continue;
 
-        tr = gi.trace(start, NULL, NULL, hit->s.origin, self, MASK_PROJECTILE);
+        gi.trace(&tr, start, NULL, NULL, hit->s.origin, self, MASK_PROJECTILE);
         if (tr.fraction == 1 || tr.ent == hit) {
             VectorSubtract(hit->s.origin, start, dir);
 
@@ -1045,7 +1046,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         content_mask &= ~MASK_WATER;
     }
 
-    tr = gi.trace(start, NULL, NULL, end, self, content_mask);
+    gi.trace(&tr, start, NULL, NULL, end, self, content_mask);
 
     // see if we hit water
     if (tr.contents & MASK_WATER) {
@@ -1061,7 +1062,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         }
 
         // re-trace ignoring water this time
-        tr = gi.trace(water_start, NULL, NULL, end, self, content_mask & ~MASK_WATER);
+        gi.trace(&tr, water_start, NULL, NULL, end, self, content_mask & ~MASK_WATER);
     }
     VectorCopy(tr.endpos, endpoint);
 
@@ -1096,7 +1097,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            tr = gi.trace(pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 
@@ -1227,7 +1228,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->classname = "bolt";
     gi.linkentity(bolt);
 
-    tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
         bolt->touch(bolt, tr.ent, &tr, false);
@@ -1423,7 +1424,7 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
         bolt->think = G_FreeEdict;
     }
 
-    tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
         bolt->touch(bolt, tr.ent, &tr, false);

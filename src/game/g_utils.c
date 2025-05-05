@@ -517,7 +517,8 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
     int num_skipped = 0;
 
     while (num_skipped < q_countof(skipped)) {
-        trace_t tr = gi.trace(previous_origin, ent->mins, ent->maxs, ent->s.origin, ent, ent->clipmask | CONTENTS_PROJECTILE);
+        trace_t tr;
+        gi.trace(&tr, previous_origin, ent->mins, ent->maxs, ent->s.origin, ent, ent->clipmask | CONTENTS_PROJECTILE);
 
         if (tr.fraction == 1.0f)
             break;

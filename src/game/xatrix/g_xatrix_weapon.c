@@ -31,7 +31,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->style = MOD_BLUEBLASTER;
     gi.linkentity(bolt);
 
-    tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
         bolt->touch(bolt, tr.ent, &tr, false);
@@ -107,7 +107,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->dmg_radius = 100;
     gi.linkentity(ion);
 
-    tr = gi.trace(self->s.origin, NULL, NULL, ion->s.origin, ion, ion->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, ion->s.origin, ion, ion->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, ion->s.origin);
         ion->touch(ion, tr.ent, &tr, false);
@@ -320,7 +320,8 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
 
     VectorSubtract(ent->owner->s.origin, vec, vec);
 
-    trace_t tr = gi.trace(ent->s.origin, NULL, NULL, vec, ent, MASK_SOLID);
+    trace_t tr;
+    gi.trace(&tr, ent->s.origin, NULL, NULL, vec, ent, MASK_SOLID);
     VectorCopy(tr.endpos, ent->s.origin);
 
     // pull us towards the trap's center

@@ -884,7 +884,8 @@ static void G_RunFrame_(bool main_loop)
                 // if it's still 1 point below us, we're good
                 vec3_t end;
                 VectorAdd(ent->s.origin, ent->gravityVector, end);
-                trace_t tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
+                trace_t tr;
+                gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
 
                 if (tr.startsolid || tr.allsolid || tr.ent != ent->groundentity)
                     ent->groundentity = NULL;

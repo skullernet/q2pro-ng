@@ -1267,7 +1267,8 @@ static void GunnerCmdrCounter(edict_t *self)
     vec3_t f, r, start;
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, (const vec3_t) { 20, 0, 14 }, f, r, start);
-    trace_t tr = gi.trace(self->s.origin, NULL, NULL, start, self, MASK_SOLID);
+    trace_t tr;
+    gi.trace(&tr, self->s.origin, NULL, NULL, start, self, MASK_SOLID);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_BERSERK_SLAM);

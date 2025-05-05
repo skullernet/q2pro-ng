@@ -234,7 +234,8 @@ static void TurretAim(edict_t *self)
     vec3_t forward;
     AngleVectors(self->s.angles, forward, NULL, NULL);
     VectorMA(self->s.origin, 8192, forward, end);
-    trace_t tr = gi.trace(self->s.origin, NULL, NULL, end, self, MASK_SOLID);
+    trace_t tr;
+    gi.trace(&tr, self->s.origin, NULL, NULL, end, self, MASK_SOLID);
 
     float scan_range = 64;
 
@@ -250,7 +251,7 @@ static void TurretAim(edict_t *self)
     VectorNormalize(forward);
 
     VectorMA(self->s.origin, 8192, forward, end);
-    tr = gi.trace(self->s.origin, NULL, NULL, end, self, MASK_SOLID);
+    gi.trace(&tr, self->s.origin, NULL, NULL, end, self, MASK_SOLID);
 
     VectorCopy(tr.endpos, self->target_ent->s.old_origin);
     gi.linkentity(self->target_ent);
@@ -399,7 +400,7 @@ static void TurretFire(edict_t *self)
                 PredictAim(self, self->enemy, start, rocketSpeed, true, (frandom1(3.0f - skill->integer) / 3.0f) - frandom1(0.05f * (3.0f - skill->integer)), dir, NULL);
         }
 
-        trace = gi.trace(start, NULL, NULL, end, self, MASK_PROJECTILE);
+        gi.trace(&trace, start, NULL, NULL, end, self, MASK_PROJECTILE);
         if (trace.ent == self->enemy || trace.ent == world) {
             if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER)
                 monster_fire_blaster(self, start, dir, TURRET_BLASTER_DAMAGE, rocketSpeed, MZ2_TURRET_BLASTER, EF_BLASTER);
@@ -749,7 +750,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
         VectorCopy(self->enemy->s.origin, spot2);
         spot2[2] += self->enemy->viewheight;
 
-        tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
+        gi.trace(&tr, spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
 
         // do we have a clear shot?
         if (tr.ent != self->enemy && !(tr.ent->svflags & SVF_PLAYER)) {
@@ -762,7 +763,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
                             // wait for our time
                             return false;
                         // make sure we're not going to shoot something we don't want to shoot
-                        tr = gi.trace(spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self, CONTENTS_MONSTER | CONTENTS_PLAYER);
+                        gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self, CONTENTS_MONSTER | CONTENTS_PLAYER);
                         if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.ent != self->enemy && !(tr.ent->svflags & SVF_PLAYER))))
                             return false;
                         self->monsterinfo.attack_state = AS_BLIND;

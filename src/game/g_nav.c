@@ -510,7 +510,8 @@ static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, const vec3_t p)
 
         vec3_t end = { 0, 0, 32 };
         VectorAdd(end, node->origin, end);
-        trace_t tr = gi.trace(p, NULL, NULL, end, NULL, MASK_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP);
+        trace_t tr;
+        gi.trace(&tr, p, NULL, NULL, end, NULL, MASK_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP);
         if (tr.fraction < 1.0f)
             continue;
 
@@ -1024,6 +1025,8 @@ static bool line_intersects_box(const vec3_t start, const vec3_t end, const vec3
 
 static void Nav_UpdateConditionalNode(nav_node_t *node)
 {
+    trace_t tr;
+
     node->flags &= ~NodeFlag_Disabled;
 
     vec3_t mins, maxs, origin;
@@ -1031,7 +1034,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     Nav_GetNodeTraceOrigin(node, origin);
 
     if (node->flags & NodeFlag_CheckInSolid) {
-        trace_t tr = gi.trace(origin, mins, maxs, origin, NULL, MASK_SOLID);
+        gi.trace(&tr, origin, mins, maxs, origin, NULL, MASK_SOLID);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1040,7 +1043,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckInLiquid) {
-        trace_t tr = gi.trace(origin, mins, maxs, origin, NULL, MASK_WATER);
+        gi.trace(&tr, origin, mins, maxs, origin, NULL, MASK_WATER);
 
         if (!(tr.startsolid || tr.allsolid)) {
             node->flags |= NodeFlag_Disabled;
@@ -1049,7 +1052,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckForHazard) {
-        trace_t tr = gi.trace(origin, mins, maxs, origin, NULL, CONTENTS_SLIME | CONTENTS_LAVA);
+        gi.trace(&tr, origin, mins, maxs, origin, NULL, CONTENTS_SLIME | CONTENTS_LAVA);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1091,7 +1094,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         VectorCopy(origin, floor_end);
         floor_end[2] -= NavFloorDistance;
 
-        trace_t tr = gi.trace(origin, flat_mins, flat_maxs, floor_end, NULL, MASK_SOLID);
+        gi.trace(&tr, origin, flat_mins, flat_maxs, floor_end, NULL, MASK_SOLID);
 
         if (tr.fraction == 1.0f) {
             node->flags |= NodeFlag_Disabled;

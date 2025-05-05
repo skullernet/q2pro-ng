@@ -202,9 +202,9 @@ static void weapon_tracker_fire(edict_t *self)
     VectorMA(start, 8192, dir, end);
 
     // PMM - doing two traces .. one point and one box.
-    tr = gi.trace(start, NULL, NULL, end, self, mask);
+    gi.trace(&tr, start, NULL, NULL, end, self, mask);
     if (tr.ent == world)
-        tr = gi.trace(start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self, mask);
+        gi.trace(&tr, start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self, mask);
 
     if (tr.ent != world && ((tr.ent->svflags & SVF_MONSTER) || tr.ent->client || (tr.ent->flags & FL_DAMAGEABLE)) && tr.ent->health > 0)
         enemy = tr.ent;

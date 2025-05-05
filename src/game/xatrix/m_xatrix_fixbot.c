@@ -120,7 +120,7 @@ static void landing_goal(edict_t *self)
     VectorMA(self->s.origin, 32, forward, end); // FIXME
     VectorMA(self->s.origin, -8096, up, end);
 
-    tr = gi.trace(self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
+    gi.trace(&tr, self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
 
     VectorCopy(tr.endpos, ent->s.origin);
 
@@ -149,7 +149,7 @@ static void takeoff_goal(edict_t *self)
     VectorMA(self->s.origin, 32, forward, end); // FIXME
     VectorMA(self->s.origin, 128, up, end);
 
-    tr = gi.trace(self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
+    gi.trace(&tr, self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
 
     VectorCopy(tr.endpos, ent->s.origin);
 
@@ -220,7 +220,7 @@ static void roam_goal(edict_t *self)
         AngleVectors(dang, forward, right, up);
         VectorMA(self->s.origin, 8192, forward, end);
 
-        tr = gi.trace(self->s.origin, NULL, NULL, end, self, MASK_PROJECTILE);
+        gi.trace(&tr, self->s.origin, NULL, NULL, end, self, MASK_PROJECTILE);
 
         len = Distance(self->s.origin, tr.endpos);
         if (len > oldlen) {
@@ -303,7 +303,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     hspread += (self->s.frame - FRAME_takeoff_01);
     vspread += (self->s.frame - FRAME_takeoff_01);
 
-    tr = gi.trace(self->s.origin, NULL, NULL, start, self, MASK_PROJECTILE);
+    gi.trace(&tr, self->s.origin, NULL, NULL, start, self, MASK_PROJECTILE);
     if (!(tr.fraction < 1.0f)) {
         vectoangles(aimdir, dir);
         AngleVectors(dir, forward, right, up);
@@ -320,7 +320,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             content_mask &= ~MASK_WATER;
         }
 
-        tr = gi.trace(start, NULL, NULL, end, self, content_mask);
+        gi.trace(&tr, start, NULL, NULL, end, self, content_mask);
 
         // see if we hit water
         if (tr.contents & MASK_WATER) {
@@ -364,7 +364,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             }
 
             // re-trace ignoring water this time
-            tr = gi.trace(water_start, NULL, NULL, end, self, MASK_PROJECTILE);
+            gi.trace(&tr, water_start, NULL, NULL, end, self, MASK_PROJECTILE);
         }
     }
 
@@ -398,7 +398,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            tr = gi.trace(pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 

@@ -133,7 +133,7 @@ static bool loc_CanSee(edict_t *targ, edict_t *inflictor)
     viewpoint[2] += inflictor->viewheight;
 
     for (i = 0; i < 8; i++) {
-        trace = gi.trace(viewpoint, NULL, NULL, targpoints[i], inflictor, MASK_SOLID);
+        gi.trace(&trace, viewpoint, NULL, NULL, targpoints[i], inflictor, MASK_SOLID);
         if (trace.fraction == 1.0f)
             return true;
     }
@@ -766,7 +766,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
     VectorCopy(ent->s.origin, dest);
     dest[2] -= 128;
 
-    tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
+    gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
     if (tr.startsolid) {
         gi.dprintf("CTFFlagSetup: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
@@ -868,7 +868,7 @@ static void CTFSetIDView(edict_t *ent)
 
     AngleVectors(ent->client->v_angle, forward, NULL, NULL);
     VectorMA(ent->s.origin, 1024, forward, forward);
-    tr = gi.trace(ent->s.origin, NULL, NULL, forward, ent, MASK_SOLID);
+    gi.trace(&tr, ent->s.origin, NULL, NULL, forward, ent, MASK_SOLID);
     if (tr.fraction < 1 && tr.ent && tr.ent->client) {
         ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + (tr.ent - g_edicts) - 1;
         if (tr.ent->client->resp.ctf_team == CTF_TEAM1)
@@ -1285,7 +1285,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     self->client->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     gi.linkentity(grapple);
 
-    tr = gi.trace(self->s.origin, NULL, NULL, grapple->s.origin, grapple, grapple->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, grapple->s.origin, grapple, grapple->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, grapple->s.origin);
         grapple->touch(grapple, tr.ent, &tr, false);

@@ -446,7 +446,7 @@ static void ChickRocket(edict_t *self)
 
     // pmm blindfire doesn't check target (done in checkattack)
     // paranoia, make sure we're not shooting a target right next to us
-    trace = gi.trace(start, NULL, NULL, vec, self, MASK_PROJECTILE);
+    gi.trace(&trace, start, NULL, NULL, vec, self, MASK_PROJECTILE);
     if (blindfire) {
         // blindfire has different fail criteria for the trace
         if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
@@ -463,7 +463,7 @@ static void ChickRocket(edict_t *self)
             VectorMA(target, -10, right, vec);
             VectorSubtract(vec, start, dir);
             VectorNormalize(dir);
-            trace = gi.trace(start, NULL, NULL, vec, self, MASK_PROJECTILE);
+            gi.trace(&trace, start, NULL, NULL, vec, self, MASK_PROJECTILE);
             if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
                 // RAFAEL
                 if (self->s.skinnum > 1)
@@ -476,7 +476,7 @@ static void ChickRocket(edict_t *self)
                 VectorMA(target, 10, right, vec);
                 VectorSubtract(vec, start, dir);
                 VectorNormalize(dir);
-                trace = gi.trace(start, NULL, NULL, vec, self, MASK_PROJECTILE);
+                gi.trace(&trace, start, NULL, NULL, vec, self, MASK_PROJECTILE);
                 if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
                     // RAFAEL
                     if (self->s.skinnum > 1)

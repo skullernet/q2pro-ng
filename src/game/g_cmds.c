@@ -371,7 +371,8 @@ static void Cmd_Spawn_f(edict_t *ent)
 
         VectorMA(start, 8192, forward, end);
 
-        trace_t tr = gi.trace(start, NULL, NULL, end, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
+        trace_t tr;
+        gi.trace(&tr, start, NULL, NULL, end, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
         VectorCopy(tr.endpos, other->s.origin);
 
         for (int i = 0; i < 3; i++) {
@@ -381,7 +382,11 @@ static void Cmd_Spawn_f(edict_t *ent)
                 other->s.origin[i] += other->maxs[i] * -tr.plane.normal[i];
         }
 
-        while (gi.trace(other->s.origin, other->mins, other->maxs, other->s.origin, other, MASK_SHOT | CONTENTS_MONSTERCLIP).startsolid) {
+        while (1) {
+            gi.trace(&tr, other->s.origin, other->mins, other->maxs, other->s.origin, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
+            if (!tr.startsolid)
+                break;
+
             float dx = other->maxs[0] - other->mins[0];
             float dy = other->maxs[1] - other->mins[1];
             float f = -sqrtf(dx * dx + dy * dy);
@@ -912,7 +917,6 @@ static void Cmd_Kill_AI_f(edict_t * ent)
     }
 
     // except the one we're looking at...
-    edict_t *looked_at = NULL;
     vec3_t start, end;
 
     VectorCopy(ent->s.origin, start);
@@ -920,11 +924,12 @@ static void Cmd_Kill_AI_f(edict_t * ent)
 
     VectorMA(start, 1024, ent->client->v_forward, end);
 
-    looked_at = gi.trace(start, NULL, NULL, end, ent, MASK_SHOT).ent;
+    trace_t tr;
+    gi.trace(&tr, start, NULL, NULL, end, ent, MASK_SHOT);
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
-        if (!edict->inuse || edict == looked_at)
+        if (!edict->inuse || edict == tr.ent)
             continue;
         if (!(edict->svflags & SVF_MONSTER))
             continue;
@@ -1184,7 +1189,8 @@ static void Cmd_Wave_f(edict_t *ent)
         // don't do this stuff if we're flooding
         vec3_t end;
         VectorMA(start, 2048, ent->client->v_forward, end);
-        trace_t tr = gi.trace(start, NULL, NULL, end, ent, MASK_SHOT & ~CONTENTS_WINDOW);
+        trace_t tr;
+        gi.trace(&tr, start, NULL, NULL, end, ent, MASK_SHOT & ~CONTENTS_WINDOW);
         other_notify_msg = "%s pinged a location.\n";
 
         if (tr.fraction != 1.0f) {

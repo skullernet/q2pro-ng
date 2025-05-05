@@ -108,7 +108,7 @@ bool CheckSpawnPoint(const vec3_t origin, const vec3_t mins, const vec3_t maxs)
     if (VectorEmpty(mins) || VectorEmpty(maxs))
         return false;
 
-    tr = gi.trace(origin, mins, maxs, origin, NULL, MASK_MONSTERSOLID);
+    gi.trace(&tr, origin, mins, maxs, origin, NULL, MASK_MONSTERSOLID);
     if (tr.startsolid || tr.allsolid)
         return false;
 

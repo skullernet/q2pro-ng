@@ -86,7 +86,7 @@ static void CarrierCoopCheck(edict_t *self)
         if (!ent->client)
             continue;
         if (inback(self, ent) || below(self, ent)) {
-            tr = gi.trace(self->s.origin, NULL, NULL, ent->s.origin, self, MASK_SOLID);
+            gi.trace(&tr, self->s.origin, NULL, NULL, ent->s.origin, self, MASK_SOLID);
             if (tr.fraction == 1.0f)
                 targets[num_targets++] = ent;
         }

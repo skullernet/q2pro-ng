@@ -164,8 +164,8 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
 
     AngleVectors(ent->client->v_angle, forward, right, NULL);
     G_ProjectSource(ent->s.origin, offset, forward, right, tag_token->s.origin);
-    trace = gi.trace(ent->s.origin, tag_token->mins, tag_token->maxs,
-                     tag_token->s.origin, ent, CONTENTS_SOLID);
+    gi.trace(&trace, ent->s.origin, tag_token->mins, tag_token->maxs,
+             tag_token->s.origin, ent, CONTENTS_SOLID);
     VectorCopy(trace.endpos, tag_token->s.origin);
 
     VectorScale(forward, 100, tag_token->velocity);

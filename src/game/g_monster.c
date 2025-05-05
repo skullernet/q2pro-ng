@@ -146,13 +146,14 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
         target[2] += self->enemy->viewheight;
     }
 
-    trace_t tr = gi.trace(start, NULL, NULL, target, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+    trace_t tr;
+    gi.trace(&tr, start, NULL, NULL, target, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
 
     if (tr.ent == self->enemy || tr.ent->client || (tr.fraction > 0.8f && !tr.startsolid))
         return true;
 
     if (!is_blind) {
-        trace_t tr = gi.trace(start, NULL, NULL, self->enemy->s.origin, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+        gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
 
         if (tr.ent == self->enemy || tr.ent->client || (tr.fraction > 0.8f && !tr.startsolid))
             return true;
@@ -189,7 +190,7 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     point[1] = ent->s.origin[1];
     point[2] = ent->s.origin[2] + (0.25f * ent->gravityVector[2]); // PGM
 
-    trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, point, ent, mask);
+    gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, mask);
 
     // check steepness
     // PGM
@@ -329,7 +330,8 @@ bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, 
     trace_t trace;
 
     // PGM
-    if (gi.trace(origin, mins, maxs, origin, ignore, mask).startsolid) {
+    gi.trace(&trace, origin, mins, maxs, origin, ignore, mask);
+    if (trace.startsolid) {
         if (!ceiling)
             origin[2] += 1;
         else
@@ -343,7 +345,7 @@ bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, 
         end[2] += 256;
     // PGM
 
-    trace = gi.trace(origin, mins, maxs, end, ignore, mask);
+    gi.trace(&trace, origin, mins, maxs, end, ignore, mask);
 
     if (trace.fraction == 1 || trace.allsolid || (!allow_partial && trace.startsolid))
         return false;
@@ -360,7 +362,9 @@ bool M_droptofloor(edict_t *ent)
         if (!M_droptofloor_generic(ent->s.origin, ent->mins, ent->maxs, ent->gravityVector[2] > 0, ent, mask, true))
             return false;
     } else {
-        if (gi.trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask).startsolid)
+        trace_t tr;
+        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask);
+        if (tr.startsolid)
             return false;
     }
 
@@ -761,7 +765,8 @@ static void M_CheckDodge(edict_t *self)
         // will it hit us within 1 second? gives us enough time to dodge
         vec3_t pos;
         VectorAdd(ent->s.origin, ent->velocity, pos);
-        trace_t tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, pos, ent, ent->clipmask);
+        trace_t tr;
+        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, pos, ent, ent->clipmask);
 
         if (tr.ent == self) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
@@ -1136,17 +1141,18 @@ void monster_start_go(edict_t *self)
         // conveniently leaves only one side not in a solid; this won't fix monsters
         // stuck in a corner though.
         bool is_stuck = false;
+        trace_t tr;
 
-        if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM)))
-            is_stuck = gi.trace(self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID).startsolid;
-        else
+        if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
+            gi.trace(&tr, self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID);
+            is_stuck = tr.startsolid;
+        } else {
             is_stuck = !M_droptofloor(self) || !M_walkmove(self, 0, 0);
+        }
 
         if (is_stuck) {
             if (G_FixStuckObject(self, check) != NO_GOOD_POSITION) {
-                if (self->monsterinfo.aiflags & AI_GOOD_GUY)
-                    is_stuck = gi.trace(self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID).startsolid;
-                else if (!(self->flags & (FL_FLY | FL_SWIM)))
+                if (!(self->monsterinfo.aiflags & AI_GOOD_GUY) && !(self->flags & (FL_FLY | FL_SWIM)))
                     M_droptofloor(self);
                 is_stuck = false;
             }
@@ -1167,7 +1173,8 @@ void monster_start_go(edict_t *self)
                         self->s.origin[2] = check[2] + adjust[z];
 
                         if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-                            is_stuck = gi.trace(self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID).startsolid;
+                            gi.trace(&tr, self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID);
+                            is_stuck = tr.startsolid;
 
                             if (!is_stuck)
                                 walked = true;

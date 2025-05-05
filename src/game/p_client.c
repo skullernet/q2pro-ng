@@ -26,7 +26,9 @@ The normal starting point for a level.
 void SP_info_player_start(edict_t *self)
 {
     // fix stuck spawn points
-    if (gi.trace(self->s.origin, player_mins, player_maxs, self->s.origin, self, MASK_SOLID).startsolid)
+    trace_t tr;
+    gi.trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self, MASK_SOLID);
+    if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 
     // [Paril-KEX] on n64, since these can spawn riding elevators,
@@ -78,7 +80,9 @@ void SP_info_player_coop_lava(edict_t *self)
     }
 
     // fix stuck spawn points
-    if (gi.trace(self->s.origin, player_mins, player_maxs, self->s.origin, self, MASK_SOLID).startsolid)
+    trace_t tr;
+    gi.trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self, MASK_SOLID);
+    if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 }
 
@@ -971,9 +975,13 @@ float PlayersRangeFromSpot(edict_t *spot)
 bool SpawnPointClear(edict_t *spot)
 {
     vec3_t p;
+    trace_t tr;
+
     VectorCopy(spot->s.origin, p);
     p[2] += 9;
-    return !gi.trace(p, player_mins, player_maxs, p, spot, CONTENTS_PLAYER | CONTENTS_MONSTER).startsolid;
+
+    gi.trace(&tr, p, player_mins, player_maxs, p, spot, CONTENTS_PLAYER | CONTENTS_MONSTER);
+    return !tr.startsolid;
 }
 
 typedef struct {
@@ -1188,12 +1196,13 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
     if (!check_players)
         mask &= ~CONTENTS_PLAYER;
 
-    trace_t tr = gi.trace(spot, player_mins, player_maxs, spot, NULL, mask);
+    trace_t tr;
+    gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
 
     // sometimes the spot is too close to the ground, give it a bit of slack
     if (tr.startsolid && !tr.ent->client) {
         spot[2] += 1;
-        tr = gi.trace(spot, player_mins, player_maxs, spot, NULL, mask);
+        gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
     }
 
     // no idea why this happens in some maps..
@@ -1202,7 +1211,7 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
         if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, NULL, mask, gi.trace) == NO_GOOD_POSITION)
             return tr.ent; // what do we do here...?
 
-        trace_t tr = gi.trace(spot, player_mins, player_maxs, spot, NULL, mask);
+        gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
 
         if (tr.startsolid && !tr.ent->client)
             return tr.ent; // what do we do here...?
@@ -2741,7 +2750,8 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
 {
     // sanity check; make sure there's enough room for ourselves.
     // (crouching in a small area, etc)
-    trace_t tr = gi.trace(player->s.origin, player_mins, player_maxs, player->s.origin, player, MASK_PLAYERSOLID);
+    trace_t tr;
+    gi.trace(&tr, player->s.origin, player_mins, player_maxs, player->s.origin, player, MASK_PLAYERSOLID);
 
     if (tr.startsolid || tr.allsolid)
         return false;
@@ -2768,7 +2778,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(player->s.origin, end);
         end[2] += up_distance;
 
-        tr = gi.trace(start, player_mins, player_maxs, end, player, mask);
+        gi.trace(&tr, start, player_mins, player_maxs, end, player, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
@@ -2780,7 +2790,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(tr.endpos, start);
         VectorMA(start, back_distance, fwd, end);
 
-        tr = gi.trace(start, player_mins, player_maxs, end, player, mask);
+        gi.trace(&tr, start, player_mins, player_maxs, end, player, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
@@ -2791,7 +2801,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(tr.endpos, end);
         end[2] -= up_distance * 4;
 
-        tr = gi.trace(start, player_mins, player_maxs, end, player, mask);
+        gi.trace(&tr, start, player_mins, player_maxs, end, player, mask);
 
         // stuck, or floating, or touching some other entity
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)) || tr.fraction == 1.0f || tr.ent != world)
@@ -2818,7 +2828,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
 
         // if we went up or down 1 step, make sure we can still see their origin and their head
         if (z_diff > STEPSIZE) {
-            tr = gi.trace(player->s.origin, NULL, NULL, tr.endpos, player, mask);
+            gi.trace(&tr, player->s.origin, NULL, NULL, tr.endpos, player, mask);
 
             if (tr.fraction != 1.0f)
                 continue;
@@ -2829,7 +2839,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
             VectorCopy(tr.endpos, end);
             end[2] += player_viewheight;
 
-            tr = gi.trace(start, NULL, NULL, end, player, mask);
+            gi.trace(&tr, start, NULL, NULL, end, player, mask);
 
             if (tr.fraction != 1.0f)
                 continue;

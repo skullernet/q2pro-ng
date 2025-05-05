@@ -34,7 +34,7 @@ void dabeam_update(edict_t *self, bool damage)
     pierce_begin(&pierce);
 
     do {
-        tr = gi.trace(start, NULL, NULL, end, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
+        gi.trace(&tr, start, NULL, NULL, end, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
 
         // didn't hit anything, so we're done
         if (!tr.ent || tr.fraction == 1.0f)
