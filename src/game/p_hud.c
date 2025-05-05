@@ -19,8 +19,7 @@ void MoveClientToIntermission(edict_t *ent)
     if (ent->client->ps.pmove.pm_type != PM_FREEZE)
         ent->s.event = EV_OTHER_TELEPORT;
     VectorCopy(level.intermission_origin, ent->s.origin);
-    for (int i = 0; i < 3; i++)
-        ent->client->ps.pmove.origin[i] = COORD2SHORT(level.intermission_origin[i]);
+    VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
     ent->client->ps.pmove.pm_type = PM_FREEZE;
     ent->client->ps.gunindex = 0;

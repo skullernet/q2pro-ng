@@ -1666,13 +1666,11 @@ static void PutClientOnSpawnPoint(edict_t *ent, const vec3_t spawn_origin, const
 {
     gclient_t *client = ent->client;
 
-    for (int i = 0; i < 3; i++)
-        client->ps.pmove.origin[i] = COORD2SHORT(spawn_origin[i]);
-
     VectorCopy(spawn_origin, ent->s.origin);
     if (!use_squad_respawn)
         ent->s.origin[2] += 1; // make sure off ground
     VectorCopy(ent->s.origin, ent->s.old_origin);
+    VectorCopy(ent->s.origin, client->ps.pmove.origin);
 
     // set the delta angle
     for (int i = 0; i < 3; i++)
@@ -1766,8 +1764,7 @@ void PutClientInServer(edict_t *ent)
         }
 
         VectorCopy(level.intermission_origin, ent->s.origin);
-        for (int i = 0; i < 3; i++)
-            ent->client->ps.pmove.origin[i] = COORD2SHORT(level.intermission_origin[i]);
+        VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
         VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
 
         client->awaiting_respawn = true;

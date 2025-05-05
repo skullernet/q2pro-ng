@@ -1498,12 +1498,8 @@ void Pmove(pmove_t *pmove)
         pm->s.pm_flags = PMF_NONE;
 
         if (pm->s.pm_type == PM_SPECTATOR) {
-            pm->mins[0] = -8;
-            pm->mins[1] = -8;
-            pm->maxs[0] = 8;
-            pm->maxs[1] = 8;
-            pm->mins[2] = -8;
-            pm->maxs[2] = 8;
+            VectorSet(pm->mins, -8, -8, -8);
+            VectorSet(pm->maxs,  8,  8,  8);
         }
 
         PM_FlyMove(pm->s.pm_type == PM_SPECTATOR);

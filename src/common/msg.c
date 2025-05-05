@@ -442,8 +442,8 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, const entity
     Q_assert(in->number >= 0 && in->number < MAX_EDICTS);
     out->number = in->number;
 
-    PACK_COORDS(out->origin, in->origin);
-    PACK_COORDS(out->old_origin, in->old_origin);
+    VectorCopy(in->origin, out->origin);
+    VectorCopy(in->old_origin, out->old_origin);
     PACK_ANGLES(out->angles, in->angles);
 
     out->modelindex = in->modelindex;
@@ -811,8 +811,8 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 
     out->fog.height_density = FRAC2SHORT(in->heightfog.density);
     out->fog.height_falloff = FRAC2SHORT(in->heightfog.falloff);
-    out->fog.height_dist[0] = COORD2SHORT(in->heightfog.start.dist);
-    out->fog.height_dist[1] = COORD2SHORT(in->heightfog.end.dist);
+    out->fog.height_dist[0] = in->heightfog.start.dist;
+    out->fog.height_dist[1] = in->heightfog.end.dist;
 
     out->fov = Q_clip_uint8(in->fov);
     out->rdflags = in->rdflags;

@@ -28,8 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef struct {
     uint16_t    number;
     int16_t     angles[3];
-    int32_t     origin[3];
-    int32_t     old_origin[3];
+    vec3_t      origin;
+    vec3_t      old_origin;
     uint16_t    modelindex;
     uint16_t    modelindex2;
     uint16_t    modelindex3;
@@ -53,7 +53,7 @@ typedef struct {
     uint32_t            density;
     uint16_t            height_density;
     uint16_t            height_falloff;
-    int32_t             height_dist[2];
+    vec2_t              height_dist;
 } player_packed_fog_t;
 
 typedef struct {
