@@ -628,6 +628,16 @@ void CL_UpdateCmd(int msec)
     cl.cmd.angles[0] = ANGLE2SHORT(cl.viewangles[0]);
     cl.cmd.angles[1] = ANGLE2SHORT(cl.viewangles[1]);
     cl.cmd.angles[2] = ANGLE2SHORT(cl.viewangles[2]);
+
+    if (in_up.state & 3)
+        cl.cmd.buttons |= BUTTON_JUMP;
+    else
+        cl.cmd.buttons &= ~BUTTON_JUMP;
+
+    if (in_down.state & 3)
+        cl.cmd.buttons |= BUTTON_CROUCH;
+    else
+        cl.cmd.buttons &= ~BUTTON_CROUCH;
 }
 
 static void m_autosens_changed(cvar_t *self)

@@ -1423,7 +1423,7 @@ static void PM_ClampAngles(void)
     } else {
         // circularly clamp the angles with deltas
         for (int i = 0; i < 3; i++)
-            pm->viewangles[i] = SHORT2ANGLE((pm->cmd.angles[i] + pm->s.delta_angles[i]) & 65535);
+            pm->viewangles[i] = SHORT2ANGLE((short)(pm->cmd.angles[i] + pm->s.delta_angles[i]));
 
         // don't let the player look up or down more than 90 degrees
         pm->viewangles[PITCH] = Q_clipf(pm->viewangles[PITCH], -89, 89);

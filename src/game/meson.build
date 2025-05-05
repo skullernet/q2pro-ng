@@ -1,4 +1,5 @@
 game_src += files(
+  'cg_main.c',
   'g_ai.c',
   'g_chase.c',
   'g_cmds.c',

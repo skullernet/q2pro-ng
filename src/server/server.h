@@ -607,7 +607,7 @@ void SV_RegisterSavegames(void);
 static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
 {
     const gclient_t *cl = client->edict->client;
-    VectorMA(cl->ps.viewoffset, 0.125f, cl->ps.pmove.origin, org);
+    VectorAdd(cl->ps.pmove.origin, cl->ps.viewoffset, org);
 }
 
 static inline int SV_GetClient_ClientNum(const client_t *client)

@@ -1,5 +1,8 @@
 #include "shared/shared.h"
 #include "system/system.h"
+#include "common/common.h"
+#include "common/files.h"
+#include <errno.h>
 
 static void *load_game_lib(const char *path)
 {

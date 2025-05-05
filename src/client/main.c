@@ -665,6 +665,8 @@ void CL_Disconnect(error_type_t type)
 
     CL_ClearState();
 
+    CL_FreeCGame();
+
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
 
@@ -2031,7 +2033,7 @@ static size_t CL_Ups_m(char *buffer, size_t size)
         !(cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         VectorCopy(cl.predicted_velocity, vel);
     } else {
-        VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);
+        VectorCopy(cl.frame.ps.pmove.velocity, vel);
     }
 
     return Q_snprintf(buffer, size, "%.f", VectorLength(vel));

@@ -505,9 +505,6 @@ static void CL_ParseServerData(void)
     // get the full level name
     MSG_ReadString(levelname, sizeof(levelname));
 
-    // setup default pmove parameters
-    PmoveInit(&cl.pmp);
-
 #if USE_FPS
     // setup default frame times
     cl.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
@@ -588,6 +585,8 @@ static void CL_ParseServerData(void)
         Com_WPrintf("Serverdata has invalid playernum %d\n", cl.clientNum);
         cl.clientNum = -1;
     }
+
+    CL_InitCGame();
 }
 
 /*

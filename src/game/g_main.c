@@ -407,7 +407,7 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-q_exported game_export_t *GetGameAPI(game_import_t *import)
+q_exported game_export_t *GetGameAPI(const game_import_t *import)
 {
     gi = *import;
 

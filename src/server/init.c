@@ -434,15 +434,6 @@ void SV_InitGame(void)
     svs.z_buffer = SV_Malloc(svs.z_buffer_size);
 #endif
 
-    // set up default pmove parameters
-    PmoveInit(&svs.pmp);
-
-    svs.pmp.airaccelerate = sv_airaccelerate->integer;
-    svs.pmp.strafehack = true;
-    svs.pmp.flyhack = true;
-    svs.pmp.waterhack = true;
-    svs.pmp.flyfriction = 4;
-
     // init game
     SV_InitGameProgs();
     SV_CheckForEnhancedSavegames();

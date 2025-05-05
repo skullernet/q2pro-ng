@@ -27,6 +27,7 @@ common_src = [
   'src/common/net/net.c',
   'src/common/prompt.c',
   'src/common/sizebuf.c',
+  'src/common/system.c',
   'src/common/utils.c',
   'src/common/zone.c',
   'src/shared/shared.c',
@@ -34,6 +35,7 @@ common_src = [
 
 client_src = [
   'src/client/ascii.c',
+  'src/client/cgame.c',
   'src/client/console.c',
   'src/client/demo.c',
   'src/client/download.c',

@@ -2566,6 +2566,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         VectorCopy(ent->s.origin, pm.s.origin);
         VectorCopy(ent->velocity, pm.s.velocity);
+        VectorCopy(ent->client->ps.viewoffset, pm.viewoffset);
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
             pm.snapinitial = qtrue;

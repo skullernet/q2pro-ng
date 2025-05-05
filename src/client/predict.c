@@ -26,9 +26,9 @@ CL_CheckPredictionError
 void CL_CheckPredictionError(void)
 {
     int         frame;
-    int         delta[3];
+    vec3_t      delta;
     unsigned    cmd;
-    int         len;
+    float       len;
 
     if (cls.demo.playback) {
         return;
@@ -50,14 +50,14 @@ void CL_CheckPredictionError(void)
     VectorSubtract(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK], delta);
 
     // save the prediction error for interpolation
-    len = abs(delta[0]) + abs(delta[1]) + abs(delta[2]);
-    if (len <= 1 || len > 640) {
+    len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
+    if (len < 1.0f || len > 80.0f) {
         // > 80 world units is a teleport or something
         VectorClear(cl.prediction_error);
         return;
     }
 
-    SHOWMISS("prediction miss on %i: %i (%d %d %d)\n",
+    SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
              cl.frame.number, len, delta[0], delta[1], delta[2]);
 
     // don't predict steps against server returned data
@@ -67,7 +67,7 @@ void CL_CheckPredictionError(void)
     VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
-    VectorScale(delta, 0.125f, cl.prediction_error);
+    VectorCopy(delta, cl.prediction_error);
 }
 
 /*
@@ -127,13 +127,9 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mi
     CL_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
 }
 
-static int pm_clipmask;
-
-static trace_t q_gameabi CL_PMTrace(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int contentmask)
+static void CL_PMTrace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, struct edict_s *passedict, contents_t contentmask)
 {
-    trace_t t;
-    CL_Trace(&t, start, end, mins, maxs, contentmask ? contentmask : pm_clipmask);
-    return t;
+    CL_Trace(tr, start, end, mins, maxs, contentmask);
 }
 
 static int CL_PointContents(const vec3_t point)
@@ -212,26 +208,18 @@ void CL_PredictMovement(void)
         return;
     }
 
-    pm_clipmask = MASK_PLAYERSOLID;
-
-    // remaster player collision rules
-    if (cl.frame.ps.pmove.pm_type == PM_DEAD || cl.frame.ps.pmove.pm_type == PM_GIB)
-        pm_clipmask = MASK_DEADSOLID;
-
-    if (!(cl.frame.ps.pmove.pm_flags & PMF_IGNORE_PLAYER_COLLISION))
-        pm_clipmask |= CONTENTS_PLAYER;
-
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
     pm.trace = CL_PMTrace;
     pm.pointcontents = CL_PointContents;
     pm.s = cl.frame.ps.pmove;
+    VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);
     pm.snapinitial = qtrue;
 
     // run frames
     while (++ack <= current) {
         pm.cmd = cl.cmds[ack & CMD_MASK];
-        Pmove(&pm, &cl.pmp);
+        cge->Pmove(&pm);
         pm.snapinitial = qfalse;
 
         // save for debug checking
@@ -244,7 +232,7 @@ void CL_PredictMovement(void)
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
         pm.cmd.upmove = cl.localmove[2];
-        Pmove(&pm, &cl.pmp);
+        cge->Pmove(&pm);
         frame = current;
 
         // save for debug checking
@@ -256,14 +244,14 @@ void CL_PredictMovement(void)
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
         oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
-        if (step >= 63 && step < 160) {
+        if (step > 1.0f && step < 20.0f) {
             // check for stepping up before a previous step is completed
             unsigned delta = cls.realtime - cl.predicted_step_time;
             float prev_step = 0;
             if (delta < 100)
                 prev_step = cl.predicted_step * (100 - delta) * 0.01f;
 
-            cl.predicted_step = min(prev_step + step * 0.125f, 32);
+            cl.predicted_step = Q_clipf(prev_step + step, -32, 32);
             cl.predicted_step_time = cls.realtime;
             cl.predicted_step_frame = frame + 1;    // don't double step
         }
@@ -274,7 +262,7 @@ void CL_PredictMovement(void)
     }
 
     // copy results out for rendering
-    VectorScale(pm.s.origin, 0.125f, cl.predicted_origin);
-    VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);
+    VectorCopy(pm.s.origin, cl.predicted_origin);
+    VectorCopy(pm.s.velocity, cl.predicted_velocity);
     VectorCopy(pm.viewangles, cl.predicted_angles);
 }

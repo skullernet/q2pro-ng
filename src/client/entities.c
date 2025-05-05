@@ -159,7 +159,7 @@ static void parse_entity_update(const centity_state_t *state)
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        VectorScale(cl.frame.ps.pmove.origin, 0.125f, origin_v);
+        VectorCopy(cl.frame.ps.pmove.origin, origin_v);
         origin = origin_v;
     } else {
         origin = state->origin;
@@ -263,8 +263,8 @@ static void set_active_state(void)
         CL_FirstDemoFrame();
     } else {
         // set initial cl.predicted_origin and cl.predicted_angles
-        VectorScale(cl.frame.ps.pmove.origin, 0.125f, cl.predicted_origin);
-        VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
+        VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origin);
+        VectorCopy(cl.frame.ps.pmove.velocity, cl.predicted_velocity);
         if (cl.frame.ps.pmove.pm_type < PM_DEAD) {
             // enhanced servers don't send viewangles
             CL_PredictAngles();
@@ -1381,8 +1381,8 @@ void CL_CalcViewValues(void)
     } else {
         // just use interpolated values
         for (int i = 0; i < 3; i++) {
-            cl.refdef.vieworg[i] = SHORT2COORD(ops->pmove.origin[i] +
-                lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]));
+            cl.refdef.vieworg[i] = ops->pmove.origin[i] +
+                lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]);
         }
     }
 

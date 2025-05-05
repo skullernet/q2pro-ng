@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "shared/list.h"
+#include "shared/cgame.h"
 
 #include "common/bsp.h"
 #include "common/cmd.h"
@@ -168,10 +169,10 @@ typedef struct {
     unsigned    lastTransmitCmdNumberReal;
     bool        sendPacketNow;
 
-    usercmd_t    cmd;
-    usercmd_t    cmds[CMD_BACKUP];    // each message will send several old cmds
-    unsigned     cmdNumber;
-    int          predicted_origins[CMD_BACKUP][3];    // for debug comparing against server
+    usercmd_t   cmd;
+    usercmd_t   cmds[CMD_BACKUP];    // each message will send several old cmds
+    unsigned    cmdNumber;
+    vec3_t      predicted_origins[CMD_BACKUP];  // for debug comparing against server
     client_history_t    history[CMD_BACKUP];
     unsigned    initialSeq;
 
@@ -439,6 +440,8 @@ typedef struct {
 #if USE_ICMP
     bool        errorReceived;      // got an ICMP error from server
 #endif
+    void        *game_library;
+    void        (*Pmove)(pmove_t *);
 
 #define RECENT_ADDR 4
 #define RECENT_MASK (RECENT_ADDR - 1)
@@ -1065,3 +1068,12 @@ void HTTP_CleanupDownloads(void);
 #define HTTP_RunDownloads()             (void)0
 #define HTTP_CleanupDownloads()         (void)0
 #endif
+
+//
+// cgame.c
+//
+
+extern cgame_export_t *cge;
+
+void CL_InitCGame(void);
+void CL_FreeCGame(void);
