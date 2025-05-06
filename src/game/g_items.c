@@ -616,14 +616,14 @@ static void Drop_Ammo(edict_t *ent, const gitem_t *item)
 
 void THINK(MegaHealth_think)(edict_t *self)
 {
-    if (self->owner->health > self->owner->max_health
+    if (self->r.owner->health > self->r.owner->max_health
         //ZOID
-        && !CTFHasRegeneration(self->owner)
+        && !CTFHasRegeneration(self->r.owner)
         //ZOID
        )
     {
         self->nextthink = level.time + SEC(1);
-        self->owner->health -= 1;
+        self->r.owner->health -= 1;
         return;
     }
 

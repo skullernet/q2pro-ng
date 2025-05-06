@@ -275,7 +275,7 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -284,11 +284,11 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     }
 
     // PMM - crash prevention
-    if (self->owner && self->owner->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+    if (self->r.owner && self->r.owner->client)
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
+        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
     else {
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte((self->style != MOD_BLUEBLASTER) ? TE_BLASTER : TE_BLUEHYPERBLASTER_2);
@@ -765,12 +765,12 @@ static void bfg_laser_pos(const vec3_t p, float dist, vec3_t out)
 
 void THINK(bfg_laser_update)(edict_t *self)
 {
-    if (level.time > self->timestamp || !self->owner->inuse) {
+    if (level.time > self->timestamp || !self->r.owner->inuse) {
         G_FreeEdict(self);
         return;
     }
 
-    VectorCopy(self->owner->s.origin, self->s.origin);
+    VectorCopy(self->r.owner->s.origin, self->s.origin);
     self->nextthink = level.time + FRAME_TIME;
     gi.linkentity(self);
 }
@@ -821,18 +821,18 @@ void THINK(bfg_explode)(edict_t *self)
         while ((ent = findradius(ent, self->s.origin, self->dmg_radius)) != NULL) {
             if (!ent->takedamage)
                 continue;
-            if (ent == self->owner)
+            if (ent == self->r.owner)
                 continue;
             if (!CanDamage(ent, self))
                 continue;
-            if (!CanDamage(ent, self->owner))
+            if (!CanDamage(ent, self->r.owner))
                 continue;
             // ROGUE - make tesla hurt by bfg
             if (!(ent->svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
                 continue;
             // ZOID
             // don't target players in CTF
-            if (CheckTeamDamage(ent, self->owner))
+            if (CheckTeamDamage(ent, self->r.owner))
                 continue;
             // ZOID
 
@@ -842,7 +842,7 @@ void THINK(bfg_explode)(edict_t *self)
             dist = Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-            T_Damage(ent, self, self->owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
+            T_Damage(ent, self, self->r.owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
 
             // Paril: draw BFG lightning laser to enemies
             gi.WriteByte(svc_temp_entity);
@@ -861,7 +861,7 @@ void THINK(bfg_explode)(edict_t *self)
 
 void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -869,13 +869,13 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
         return;
     }
 
-    if (self->owner->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+    if (self->r.owner->client)
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
-        T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
-    T_RadiusDamage(self, self->owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+    T_RadiusDamage(self, self->r.owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
     gi.sound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
     self->solid = SOLID_NOT;
@@ -918,7 +918,7 @@ void THINK(bfg_think)(edict_t *self)
         if (ent == self)
             continue;
 
-        if (ent == self->owner)
+        if (ent == self->r.owner)
             continue;
 
         if (!ent->takedamage)
@@ -929,7 +929,7 @@ void THINK(bfg_think)(edict_t *self)
             continue;
         // ZOID
         // don't target players in CTF
-        if (CheckTeamDamage(ent, self->owner))
+        if (CheckTeamDamage(ent, self->r.owner))
             continue;
         // ZOID
 
@@ -958,8 +958,8 @@ void THINK(bfg_think)(edict_t *self)
                 break;
 
             // hurt it if we can
-            if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-                T_Damage(tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+            if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->r.owner))
+                T_Damage(tr.ent, self, self->r.owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
 
             // if we hit something that's not a monster or player we're done
             if (!(tr.ent->svflags & SVF_MONSTER) && !(tr.ent->flags & FL_DAMAGEABLE) && (!tr.ent->client)) {
@@ -1037,7 +1037,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
 
     if (other->svflags & (SVF_MONSTER | SVF_PLAYER)) {
         other->disintegrator_time += SEC(50);
-        other->disintegrator = self->owner;
+        other->disintegrator = self->r.owner;
     }
 }
 

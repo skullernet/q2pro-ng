@@ -9,7 +9,7 @@ fire_flechette
 */
 void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -18,10 +18,10 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     }
 
     if (self->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal,
+        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
                  self->dmg, self->dmg_radius, DAMAGE_NO_REG_ARMOR, (mod_t) { MOD_ETF_RIFLE });
     } else {
         gi.WriteByte(svc_temp_entity);
@@ -907,7 +907,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorClear(self->s.angles);
     // clear the owner if in deathmatch
     if (deathmatch->integer)
-        self->owner = NULL;
+        self->r.owner = NULL;
     self->teamchain = trigger;
     self->think = tesla_think_active;
     self->nextthink = level.time + FRAME_TIME;
@@ -1149,7 +1149,7 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
     mod_t mod;
     int   damagestat;
 
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1157,33 +1157,33 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
         return;
     }
 
-    if (self->owner && self->owner->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+    if (self->r.owner && self->r.owner->client)
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         // the only time players will be firing blaster2 bolts will be from the
         // defender sphere.
-        if (self->owner && self->owner->client)
+        if (self->r.owner && self->r.owner->client)
             mod = (mod_t) { MOD_DEFENDER_SPHERE };
         else
             mod = (mod_t) { MOD_BLASTER2 };
 
-        if (self->owner) {
-            damagestat = self->owner->takedamage;
-            self->owner->takedamage = false;
+        if (self->r.owner) {
+            damagestat = self->r.owner->takedamage;
+            self->r.owner->takedamage = false;
             if (self->dmg >= 5)
-                T_RadiusDamage(self, self->owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-            T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
-            self->owner->takedamage = damagestat;
+                T_RadiusDamage(self, self->r.owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
+            self->r.owner->takedamage = damagestat;
         } else {
             if (self->dmg >= 5)
-                T_RadiusDamage(self, self->owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-            T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
+                T_RadiusDamage(self, self->r.owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
         }
     } else {
         // PMM - yeowch this will get expensive
         if (self->dmg >= 5)
-            T_RadiusDamage(self, self->owner, self->dmg * 2, self->owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+            T_RadiusDamage(self, self->r.owner, self->dmg * 2, self->r.owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_BLASTER2);
@@ -1263,7 +1263,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
     vec3_t center;
     VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, center);
 
-    T_Damage(self->enemy, self, self->owner, vec3_origin, center, pain_normal,
+    T_Damage(self->enemy, self, self->r.owner, vec3_origin, center, pain_normal,
              self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
 
     // if we kill the player, we'll be removed.
@@ -1277,7 +1277,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
             else
                 hurt = 500;
 
-            T_Damage(self->enemy, self, self->owner, vec3_origin, center,
+            T_Damage(self->enemy, self, self->r.owner, vec3_origin, center,
                      pain_normal, hurt, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
         }
 
@@ -1321,7 +1321,7 @@ void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
 {
     float damagetime;
 
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1330,27 +1330,27 @@ void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     }
 
     if (self->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         if ((other->svflags & SVF_MONSTER) || other->client) {
             if (other->health > 0) { // knockback only for living creatures
                 // PMM - kickback was times 4 .. reduced to 3
                 // now this does no damage, just knockback
-                T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal,
+                T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
                          0, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
 
                 if (!(other->flags & (FL_FLY | FL_SWIM)))
                     other->velocity[2] += 140;
 
                 damagetime = (self->dmg * 0.1f) / TRACKER_DAMAGE_TIME_SEC;
-                tracker_pain_daemon_spawn(self->owner, other, damagetime);
+                tracker_pain_daemon_spawn(self->r.owner, other, damagetime);
             } else { // lots of damage (almost autogib) for dead bodies
-                T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal,
+                T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
                          self->dmg * 4, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
             }
         } else { // full damage in one shot for inanimate objects
-            T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal,
+            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
                      self->dmg, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
         }
     }

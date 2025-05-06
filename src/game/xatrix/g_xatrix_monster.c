@@ -80,9 +80,9 @@ void dabeam_update(edict_t *self, bool damage)
 void THINK(beam_think)(edict_t *self)
 {
     if (self->spawnflags & SPAWNFLAG_DABEAM_SECONDARY)
-        self->owner->beam2 = NULL;
+        self->r.owner->beam2 = NULL;
     else
-        self->owner->beam = NULL;
+        self->r.owner->beam = NULL;
     G_FreeEdict(self);
 }
 

@@ -1790,10 +1790,10 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // draw the teleport splash at source and on the player
     if (!(self->spawnflags & SPAWNFLAG_TELEPORTER_NO_TELEPORT_EFFECT)) {
-        self->owner->s.event = EV_PLAYER_TELEPORT;
+        self->r.owner->s.event = EV_PLAYER_TELEPORT;
         other->s.event = EV_PLAYER_TELEPORT;
     } else {
-        self->owner->s.event = EV_OTHER_TELEPORT;
+        self->r.owner->s.event = EV_OTHER_TELEPORT;
         other->s.event = EV_OTHER_TELEPORT;
     }
 

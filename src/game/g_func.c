@@ -1309,7 +1309,7 @@ void TOUCH(Touch_DoorTrigger)(edict_t *self, edict_t *other, const trace_t *tr, 
         return;
 
     if (other->svflags & SVF_MONSTER) {
-        if (self->owner->spawnflags & SPAWNFLAG_DOOR_NOMONSTER)
+        if (self->r.owner->spawnflags & SPAWNFLAG_DOOR_NOMONSTER)
             return;
         // [Paril-KEX] this is for PSX; the scale is so small that monsters walking
         // around to path_corners often initiate doors unintentionally.
@@ -1321,7 +1321,7 @@ void TOUCH(Touch_DoorTrigger)(edict_t *self, edict_t *other, const trace_t *tr, 
         return;
     self->touch_debounce_time = level.time + SEC(1);
 
-    door_use(self->owner, other, other);
+    door_use(self->r.owner, other, other);
 }
 
 void THINK(Think_CalcMoveSpeed)(edict_t *self)

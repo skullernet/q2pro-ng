@@ -491,7 +491,7 @@ void THINK(heat_guardian_think)(edict_t *self)
             edict_t *target = NULL;
 
             while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-                if (self->owner == target)
+                if (self->r.owner == target)
                     continue;
                 if (!target->client)
                     continue;

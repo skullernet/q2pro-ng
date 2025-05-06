@@ -24,8 +24,8 @@ void hunter_touch(edict_t *self, edict_t *other, const trace_t *tr, bool other_t
 
 void THINK(sphere_think_explode)(edict_t *self)
 {
-    if (self->owner && self->owner->client && !(self->spawnflags & SPHERE_DOPPLEGANGER))
-        self->owner->client->owned_sphere = NULL;
+    if (self->r.owner && self->r.owner->client && !(self->spawnflags & SPHERE_DOPPLEGANGER))
+        self->r.owner->client->owned_sphere = NULL;
 
     BecomeExplosion1(self);
 }
@@ -212,9 +212,9 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (other == world)
         return;
 
-    if (self->owner) {
+    if (self->r.owner) {
         // if owner is flying with us, make sure they stop too.
-        owner = self->owner;
+        owner = self->r.owner;
         if (owner->flags & FL_SAM_RAIMI) {
             VectorClear(owner->velocity);
             owner->movetype = MOVETYPE_NONE;
@@ -279,7 +279,7 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (self->enemy)
         return;
 
-    owner = self->owner;
+    owner = self->r.owner;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         if (owner && (owner->health > 0))
@@ -344,7 +344,7 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 void PAIN(defender_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
     // PMM
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
     // pmm
     self->enemy = other;
@@ -356,10 +356,10 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
         return;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
-        if (self->owner && self->owner->health >= 25)
+        if (self->r.owner && self->r.owner->health >= 25)
             return;
         // PMM
-        if (other == self->owner)
+        if (other == self->r.owner)
             return;
         // pmm
         self->timestamp = max(self->timestamp, level.time + MINIMUM_FLY_TIME);
@@ -378,7 +378,7 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
 
 void THINK(defender_think)(edict_t *self)
 {
-    if (!self->owner) {
+    if (!self->r.owner) {
         G_FreeEdict(self);
         return;
     }
@@ -389,7 +389,7 @@ void THINK(defender_think)(edict_t *self)
         return;
     }
 
-    if (self->owner->health <= 0) {
+    if (self->r.owner->health <= 0) {
         sphere_think_explode(self);
         return;
     }
@@ -419,7 +419,7 @@ void THINK(hunter_think)(edict_t *self)
         return;
     }
 
-    edict_t *owner = self->owner;
+    edict_t *owner = self->r.owner;
 
     if (!owner && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
@@ -473,7 +473,7 @@ void THINK(vengeance_think)(edict_t *self)
         return;
     }
 
-    if (!(self->owner) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
+    if (!(self->r.owner) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
         return;
     }

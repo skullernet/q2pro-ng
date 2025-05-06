@@ -156,7 +156,7 @@ void THINK(turret_breach_think)(edict_t *self)
         ent->avelocity[1] = self->avelocity[1];
 
     // if we have a driver, adjust his velocities
-    if (self->owner) {
+    if (self->r.owner) {
         float  angle;
         float  target_z;
         float  diff;
@@ -164,25 +164,25 @@ void THINK(turret_breach_think)(edict_t *self)
         vec3_t dir;
 
         // angular is easy, just copy ours
-        self->owner->avelocity[0] = self->avelocity[0];
-        self->owner->avelocity[1] = self->avelocity[1];
+        self->r.owner->avelocity[0] = self->avelocity[0];
+        self->r.owner->avelocity[1] = self->avelocity[1];
 
         // x & y
-        angle = DEG2RAD(self->s.angles[1] + self->owner->move_origin[1]);
-        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * self->owner->move_origin[0]);
-        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * self->owner->move_origin[0]);
-        target[2] = self->owner->s.origin[2];
+        angle = DEG2RAD(self->s.angles[1] + self->r.owner->move_origin[1]);
+        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * self->r.owner->move_origin[0]);
+        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * self->r.owner->move_origin[0]);
+        target[2] = self->r.owner->s.origin[2];
 
-        VectorSubtract(target, self->owner->s.origin, dir);
-        self->owner->velocity[0] = dir[0] * 1.0f / FRAME_TIME_SEC;
-        self->owner->velocity[1] = dir[1] * 1.0f / FRAME_TIME_SEC;
+        VectorSubtract(target, self->r.owner->s.origin, dir);
+        self->r.owner->velocity[0] = dir[0] * 1.0f / FRAME_TIME_SEC;
+        self->r.owner->velocity[1] = dir[1] * 1.0f / FRAME_TIME_SEC;
 
         // z
         angle = DEG2RAD(self->s.angles[PITCH]);
-        target_z = SnapToEights(self->s.origin[2] + self->owner->move_origin[0] * tanf(angle) + self->owner->move_origin[2]);
+        target_z = SnapToEights(self->s.origin[2] + self->r.owner->move_origin[0] * tanf(angle) + self->r.owner->move_origin[2]);
 
-        diff = target_z - self->owner->s.origin[2];
-        self->owner->velocity[2] = diff * 1.0f / FRAME_TIME_SEC;
+        diff = target_z - self->r.owner->s.origin[2];
+        self->r.owner->velocity[2] = diff * 1.0f / FRAME_TIME_SEC;
 
         if (self->spawnflags & SPAWNFLAG_TURRET_BREACH_FIRE) {
             turret_breach_fire(self);

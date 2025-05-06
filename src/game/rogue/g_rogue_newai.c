@@ -1215,14 +1215,14 @@ int CountPlayers(void)
 void THINK(BossExplode_think)(edict_t *self)
 {
     // owner gone or changed
-    if (!self->owner->inuse || self->owner->s.modelindex != self->style || self->count != self->owner->spawn_count) {
+    if (!self->r.owner->inuse || self->r.owner->s.modelindex != self->style || self->count != self->r.owner->spawn_count) {
         G_FreeEdict(self);
         return;
     }
 
     vec3_t org;
-    VectorAdd(self->owner->s.origin, self->owner->mins, org);
-    VectorMA(org, frandom(), self->owner->size, org);
+    VectorAdd(self->r.owner->s.origin, self->r.owner->mins, org);
+    VectorMA(org, frandom(), self->r.owner->size, org);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(!(self->viewheight % 3) ? TE_EXPLOSION1 : TE_EXPLOSION1_NL);

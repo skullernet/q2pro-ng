@@ -57,7 +57,7 @@ void THINK(ionripper_sparks)(edict_t *self)
 
 void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -65,13 +65,13 @@ void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    if (self->owner->client)
-        PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+    if (self->r.owner->client)
+        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (!other->takedamage)
         return;
 
-    T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
+    T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
     G_FreeEdict(self);
 }
 
@@ -141,7 +141,7 @@ void THINK(heat_think)(edict_t *self)
     if (!acquire) {
         // acquire new target
         while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-            if (self->owner == target)
+            if (self->r.owner == target)
                 continue;
             if (!target->client)
                 continue;

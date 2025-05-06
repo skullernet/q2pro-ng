@@ -1156,7 +1156,7 @@ void THINK(target_camera_dummy_think)(edict_t *self)
 {
     // bit of a hack, but this will let the dummy
     // move like a player
-    self->client = self->owner->client;
+    self->client = self->r.owner->client;
     xyspeed = sqrtf(self->velocity[0] * self->velocity[0] + self->velocity[1] * self->velocity[1]);
     G_SetClientFrame(self);
     self->client = NULL;
