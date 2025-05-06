@@ -114,7 +114,7 @@ void M_BossRocket(edict_t *self, monster_muzzleflash_id_t mz)
 // [Paril-KEX]
 void M_ProjectFlashSource(edict_t *self, const vec3_t g_offset, const vec3_t forward, const vec3_t right, vec3_t start)
 {
-    float scale = self->x.scale ? self->x.scale : 1.0f;
+    float scale = self->s.scale ? self->s.scale : 1.0f;
     vec3_t offset;
     VectorScale(g_offset, scale, offset);
     G_ProjectSource(self->s.origin, offset, forward, right, start);
@@ -381,7 +381,7 @@ void M_SetEffects(edict_t *ent)
     ent->s.renderfx &= ~(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE);
 
     ent->s.sound = 0;
-    ent->x.loop_attenuation = 0;
+    ent->s.loop_attenuation = 0;
 
     // we're gibbed
     if (ent->s.renderfx & RF_LOW_PRIORITY)
@@ -389,7 +389,7 @@ void M_SetEffects(edict_t *ent)
 
     if (ent->monsterinfo.weapon_sound && ent->health > 0) {
         ent->s.sound = ent->monsterinfo.weapon_sound;
-        ent->x.loop_attenuation = ATTN_NORM;
+        ent->s.loop_attenuation = ATTN_NORM;
     } else if (ent->monsterinfo.engine_sound)
         ent->s.sound = ent->monsterinfo.engine_sound;
 
@@ -1055,13 +1055,13 @@ bool monster_start(edict_t *self)
         self->monsterinfo.checkattack = M_CheckAttack;
 
     if (ai_model_scale->value > 0)
-        self->x.scale = ai_model_scale->value;
+        self->s.scale = ai_model_scale->value;
 
-    if (self->x.scale) {
-        self->monsterinfo.scale *= self->x.scale;
-        VectorScale(self->mins, self->x.scale, self->mins);
-        VectorScale(self->maxs, self->x.scale, self->maxs);
-        self->mass *= self->x.scale;
+    if (self->s.scale) {
+        self->monsterinfo.scale *= self->s.scale;
+        VectorScale(self->mins, self->s.scale, self->mins);
+        VectorScale(self->maxs, self->s.scale, self->maxs);
+        self->mass *= self->s.scale;
     }
 
     if (level.is_psx)

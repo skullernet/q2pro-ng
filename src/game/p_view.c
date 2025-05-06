@@ -473,7 +473,7 @@ static void SV_CalcBlend(edict_t *ent)
 {
     gtime_t remaining;
 
-    Vector4Clear(ent->client->ps.blend);
+    Vector4Clear(ent->client->ps.screen_blend);
     Vector4Clear(ent->client->ps.damage_blend);
 
     // add for contents
@@ -487,11 +487,11 @@ static void SV_CalcBlend(edict_t *ent)
         ent->client->ps.rdflags &= ~RDF_UNDERWATER;
 
     if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, ent->client->ps.blend);
+        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, ent->client->ps.screen_blend);
     else if (contents & CONTENTS_SLIME)
-        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, ent->client->ps.blend);
+        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, ent->client->ps.screen_blend);
     else if (contents & CONTENTS_WATER)
-        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, ent->client->ps.blend);
+        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, ent->client->ps.screen_blend);
 
     // add for powerups
     if (ent->client->quad_time > level.time) {
@@ -499,14 +499,14 @@ static void SV_CalcBlend(edict_t *ent)
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0, 0, 1, 0.08f, ent->client->ps.blend);
+            G_AddBlend(0, 0, 1, 0.08f, ent->client->ps.screen_blend);
     // RAFAEL
     } else if (ent->client->quadfire_time > level.time) {
         remaining = ent->client->quadfire_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/quadfire2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(1, 0.2f, 0.5f, 0.08f, ent->client->ps.blend);
+            G_AddBlend(1, 0.2f, 0.5f, 0.08f, ent->client->ps.screen_blend);
     // RAFAEL
     // PMM - double damage
     } else if (ent->client->double_time > level.time) {
@@ -514,44 +514,44 @@ static void SV_CalcBlend(edict_t *ent)
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.9f, 0.7f, 0, 0.08f, ent->client->ps.blend);
+            G_AddBlend(0.9f, 0.7f, 0, 0.08f, ent->client->ps.screen_blend);
     // PMM
     } else if (ent->client->invincible_time > level.time) {
         remaining = ent->client->invincible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(1, 1, 0, 0.08f, ent->client->ps.blend);
+            G_AddBlend(1, 1, 0, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->invisible_time > level.time) {
         remaining = ent->client->invisible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, ent->client->ps.blend);
+            G_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->enviro_time > level.time) {
         remaining = ent->client->enviro_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0, 1, 0, 0.08f, ent->client->ps.blend);
+            G_AddBlend(0, 1, 0, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->breather_time > level.time) {
         remaining = ent->client->breather_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.blend);
+            G_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.screen_blend);
     }
 
     // PGM
     if (ent->client->nuke_time > level.time) {
         float brightness = TO_SEC(ent->client->nuke_time - level.time) / 2.0f;
-        G_AddBlend(1, 1, 1, brightness, ent->client->ps.blend);
+        G_AddBlend(1, 1, 1, brightness, ent->client->ps.screen_blend);
     }
     if (ent->client->ir_time > level.time) {
         remaining = ent->client->ir_time - level.time;
         if (G_PowerUpExpiringRelative(remaining)) {
             ent->client->ps.rdflags |= RDF_IRGOGGLES;
-            G_AddBlend(1, 0, 0, 0.2f, ent->client->ps.blend);
+            G_AddBlend(1, 0, 0, 0.2f, ent->client->ps.screen_blend);
         } else
             ent->client->ps.rdflags &= ~RDF_IRGOGGLES;
     } else {
@@ -572,7 +572,7 @@ static void SV_CalcBlend(edict_t *ent)
     }
 
     if (ent->client->bonus_alpha > 0)
-        G_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, ent->client->ps.blend);
+        G_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, ent->client->ps.screen_blend);
 
     // drop the damage value
     ent->client->damage_alpha -= FRAME_TIME_SEC * 0.6f;
@@ -844,16 +844,16 @@ static void G_SetClientEffects(edict_t *ent)
     int pa_type;
 
     ent->s.effects = EF_NONE;
-    ent->x.morefx = EFX_NONE;
+    ent->s.morefx = EFX_NONE;
     ent->s.renderfx &= RF_STAIR_STEP;
     ent->s.renderfx |= RF_IR_VISIBLE;
-    ent->x.alpha = 0.0f;
+    ent->s.alpha = 0.0f;
 
     if (ent->health <= 0 || level.intermissiontime)
         return;
 
     if (ent->flags & FL_FLASHLIGHT)
-        ent->x.morefx |= EFX_FLASHLIGHT;
+        ent->s.morefx |= EFX_FLASHLIGHT;
 
     //=========
     // PGM
@@ -890,7 +890,7 @@ static void G_SetClientEffects(edict_t *ent)
     if (ent->client->quadfire_time > level.time) {
         if (G_PowerUpExpiring(ent->client->quadfire_time))
             //CTFSetPowerUpEffect(ent, EF_DUALFIRE);
-            ent->x.morefx |= EFX_DUALFIRE;
+            ent->s.morefx |= EFX_DUALFIRE;
     }
     // RAFAEL
 
@@ -908,9 +908,9 @@ static void G_SetClientEffects(edict_t *ent)
 
     if (ent->client->invisible_time > level.time) {
         if (ent->client->invisibility_fade_time <= level.time)
-            ent->x.alpha = 0.1f;
+            ent->s.alpha = 0.1f;
         else
-            ent->x.alpha = Q_clipf((float)(ent->client->invisibility_fade_time - level.time) / INVISIBILITY_TIME, 0.1f, 1.0f);
+            ent->s.alpha = Q_clipf((float)(ent->client->invisibility_fade_time - level.time) / INVISIBILITY_TIME, 0.1f, 1.0f);
     }
     // ROGUE
     //=======
@@ -968,8 +968,8 @@ static void G_SetClientSound(edict_t *ent)
 
     // reset defaults
     ent->s.sound = 0;
-    ent->x.loop_attenuation = 0;
-    ent->x.loop_volume = 0;
+    ent->s.loop_attenuation = 0;
+    ent->s.loop_volume = 0;
 
     if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME))) {
         ent->s.sound = level.snd_fry;
@@ -1003,7 +1003,7 @@ static void G_SetClientSound(edict_t *ent)
     }
 
     // weapon sounds play at a higher attn
-    ent->x.loop_attenuation = ATTN_NORM;
+    ent->s.loop_attenuation = ATTN_NORM;
 }
 
 /*
@@ -1210,7 +1210,7 @@ void ClientEndServerFrame(edict_t *ent)
     //
     if (level.intermissiontime || ent->client->awaiting_respawn) {
         if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime))) {
-            current_client->ps.blend[3] = 0;
+            current_client->ps.screen_blend[3] = 0;
             current_client->ps.damage_blend[3] = 0;
             current_client->ps.fov = 90;
             current_client->ps.gunindex = 0;

@@ -347,15 +347,15 @@ static void guncmdr_dead(edict_t *self)
     static const vec3_t mins = { -16, -16, -24 };
     static const vec3_t maxs = { 16, 16, -8 };
 
-    VectorScale(mins, self->x.scale, self->mins);
-    VectorScale(maxs, self->x.scale, self->maxs);
+    VectorScale(mins, self->s.scale, self->mins);
+    VectorScale(maxs, self->s.scale, self->maxs);
 
     monster_dead(self);
 }
 
 static void guncmdr_shrink(edict_t *self)
 {
-    self->maxs[2] = -4 * self->x.scale;
+    self->maxs[2] = -4 * self->s.scale;
     self->svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
@@ -1411,7 +1411,7 @@ void SP_monster_guncmdr(edict_t *self)
 
     PrecacheGibs(guncmdr_gibs);
 
-    self->x.scale = 1.25f;
+    self->s.scale = 1.25f;
     VectorSet(self->mins, -16, -16, -24);
     VectorSet(self->maxs, 16, 16, 36);
     self->s.skinnum = 2;

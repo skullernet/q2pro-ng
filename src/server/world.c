@@ -226,20 +226,20 @@ void PF_UnlinkEdict(edict_t *ent)
     ent->area.next = ent->area.prev = NULL;
 }
 
-static uint32_t SV_PackSolid32(const edict_t *ent)
+static uint32_t SV_PackSolid(const edict_t *ent)
 {
-    uint32_t solid32;
+    uint32_t solid;
 
-    solid32 = MSG_PackSolid32_Ver2(ent->mins, ent->maxs);
+    solid = MSG_PackSolid(ent->mins, ent->maxs);
 
-    if (solid32 == PACKED_BSP)
-        solid32 = 0;  // can happen in pathological case if z mins > maxs
+    if (solid == PACKED_BSP)
+        solid = 0;  // can happen in pathological case if z mins > maxs
 
 #if USE_DEBUG
     if (developer->integer) {
         vec3_t mins, maxs;
 
-        MSG_UnpackSolid32_Ver2(solid32, mins, maxs);
+        MSG_UnpackSolid(solid, mins, maxs);
 
         if (!VectorCompare(ent->mins, mins) || !VectorCompare(ent->maxs, maxs))
             Com_LPrintf(PRINT_DEVELOPER, "Bad mins/maxs on entity %d: %s %s\n",
@@ -247,7 +247,7 @@ static uint32_t SV_PackSolid32(const edict_t *ent)
     }
 #endif
 
-    return solid32;
+    return solid;
 }
 
 void PF_LinkEdict(edict_t *ent)
@@ -280,7 +280,7 @@ void PF_LinkEdict(edict_t *ent)
         if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs))
             ent->s.solid = 0;
         else
-            ent->s.solid = SV_PackSolid32(ent);
+            ent->s.solid = SV_PackSolid(ent);
         break;
     case SOLID_BSP:
         ent->s.solid = PACKED_BSP;      // a SOLID_BBOX will never create this value

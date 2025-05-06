@@ -1069,7 +1069,7 @@ static void medic_determine_spawn(edict_t *self)
 
     int num_summoned = M_PickReinforcements(self, 0);
 
-    float scale = self->x.scale;
+    float scale = self->s.scale;
     if (!scale)
         scale = 1;
 
@@ -1129,7 +1129,7 @@ static void medic_spawngrows(edict_t *self)
 
     AngleVectors(self->s.angles, f, r, NULL);
 
-    float scale = self->x.scale;
+    float scale = self->s.scale;
     if (!scale)
         scale = 1;
 
@@ -1171,7 +1171,7 @@ static void medic_finish_spawn(edict_t *self)
 
     AngleVectors(self->s.angles, f, r, NULL);
 
-    float scale = self->x.scale;
+    float scale = self->s.scale;
     if (!scale)
         scale = 1;
 

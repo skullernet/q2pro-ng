@@ -1009,8 +1009,8 @@ void SP_monster_tank(edict_t *self)
 
     // [Paril-KEX] N64 tank commander is a chonky boy
     if (self->spawnflags & SPAWNFLAG_TANK_COMMANDER_GUARDIAN) {
-        if (!self->x.scale)
-            self->x.scale = 1.5f;
+        if (!self->s.scale)
+            self->s.scale = 1.5f;
         self->health = 1500 * st.health_multiplier;
     }
 
@@ -1082,11 +1082,11 @@ void SP_monster_tank_stand(edict_t *self)
     VectorSet(self->mins, -32, -32, -16);
     VectorSet(self->maxs, 32, 32, 64);
 
-    if (!self->x.scale)
-        self->x.scale = 1.5f;
+    if (!self->s.scale)
+        self->s.scale = 1.5f;
 
-    VectorScale(self->mins, self->x.scale, self->mins);
-    VectorScale(self->maxs, self->x.scale, self->maxs);
+    VectorScale(self->mins, self->s.scale, self->mins);
+    VectorScale(self->maxs, self->s.scale, self->maxs);
 
     self->use = Use_Boss3;
     self->think = Think_TankStand;

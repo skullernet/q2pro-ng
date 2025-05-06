@@ -79,7 +79,7 @@ typedef struct {
     int         number;
     int         num_entities;
     unsigned    first_entity;
-    player_packed_t ps;
+    player_state_t ps;
     int         clientNum;
     int         areabytes;
     byte        areabits[MAX_MAP_AREA_BYTES];  // portalarea visibility bits
@@ -148,8 +148,6 @@ typedef struct {
 #define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
 
 #define MAX_TOTAL_ENT_LEAFS        128
-
-#define ENT_EXTENSION(ent)  (&(ent)->x)
 
 typedef enum {
     cs_free,        // can be reused for a new connection
@@ -262,17 +260,13 @@ typedef struct client_s {
     int             version;    // minor version
     int             settings[CLS_MAX];
 
-    pmoveParams_t   pmp;        // spectator speed, etc
-    msgEsFlags_t    esFlags;    // entity protocol flags
-    msgPsFlags_t    psFlags;
-
     // per-client baseline chunks
-    entity_packed_t     *baselines[SV_BASELINES_CHUNKS];
+    entity_state_t      *baselines[SV_BASELINES_CHUNKS];
 
     // per-client packet entities
     unsigned            num_entities;   // UPDATE_BACKUP*MAX_PACKET_ENTITIES(_OLD)
     unsigned            next_entity;    // next state to use
-    entity_packed_t     *entities;      // [num_entities]
+    entity_state_t      *entities;      // [num_entities]
 
     // The datagram is written to by sound calls, prints, temp ents, etc.
     // It can be harmlessly overflowed.
@@ -381,8 +375,6 @@ typedef struct {
 #if USE_SAVEGAMES
     int             gamedetecthack;
 #endif
-
-    pmoveParams_t   pmp;
 
     unsigned        last_heartbeat;
     unsigned        last_timescale_check;

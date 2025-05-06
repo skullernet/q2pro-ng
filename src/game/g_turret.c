@@ -75,7 +75,7 @@ static void turret_breach_fire(edict_t *self)
         damage = irandom2(100, 150);
     speed = 550 + 50 * skill->integer;
     edict_t *rocket = fire_rocket(self->teammaster->owner->activator ? self->teammaster->owner->activator : self->teammaster->owner, start, f, damage, speed, 150, damage);
-    rocket->x.scale = self->teammaster->dmg_radius;
+    rocket->s.scale = self->teammaster->dmg_radius;
 
     gi.positioned_sound(start, self, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
 }
@@ -142,7 +142,7 @@ void THINK(turret_breach_think)(edict_t *self)
         if (ent->noise_index) {
             if (delta[0] || delta[1]) {
                 ent->s.sound = ent->noise_index;
-                ent->x.loop_attenuation = ATTN_NORM;
+                ent->s.loop_attenuation = ATTN_NORM;
             } else
                 ent->s.sound = 0;
         }
@@ -239,8 +239,8 @@ void SP_turret_breach(edict_t *self)
     self->pos2[YAW] = st.maxyaw;
 
     // scale used for rocket scale
-    self->dmg_radius = self->x.scale;
-    self->x.scale = 0;
+    self->dmg_radius = self->s.scale;
+    self->s.scale = 0;
 
     self->ideal_yaw = self->s.angles[YAW];
     self->move_angles[YAW] = self->ideal_yaw;

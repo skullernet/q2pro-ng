@@ -390,10 +390,10 @@ void THINK(Trap_Think)(edict_t *ent)
 
             edict_t *cube = G_Spawn();
             cube->count = ent->mass;
-            cube->x.scale = 1.0f + (ent->accel - 100.0f) / 300.0f;
+            cube->s.scale = 1.0f + (ent->accel - 100.0f) / 300.0f;
             SP_item_foodcube(cube);
             VectorCopy(ent->s.origin, cube->s.origin);
-            cube->s.origin[2] += 24 * cube->x.scale;
+            cube->s.origin[2] += 24 * cube->s.scale;
             cube->s.angles[YAW] = frandom() * 360;
             cube->velocity[2] = 400;
             cube->think(cube);

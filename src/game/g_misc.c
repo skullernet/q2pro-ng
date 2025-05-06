@@ -108,8 +108,8 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
 
     gib->s.modelindex = gi.modelindex(gibname);
     gib->s.modelindex2 = 0;
-    gib->x.scale = scale;
-    gib->x.alpha = self->x.alpha;
+    gib->s.scale = scale;
+    gib->s.alpha = self->s.alpha;
     gib->solid = SOLID_NOT;
     gib->svflags |= SVF_DEADMONSTER;
     gib->svflags &= ~SVF_MONSTER;
@@ -239,8 +239,8 @@ void ThrowGibs(edict_t *self, int damage, const gib_def_t *gibs)
         float scale = gib->scale;
         if (!scale)
             scale = 1;
-        if (self->x.scale)
-            scale *= self->x.scale;
+        if (self->s.scale)
+            scale *= self->s.scale;
         for (int i = 0; i < gib->count; i++)
             ThrowGibEx(self, gib->gibname, damage, gib->type, gib->frame, scale);
     }
@@ -929,7 +929,7 @@ void THINK(barrel_burn)(edict_t *self)
     if (level.time >= self->timestamp)
         self->think = barrel_explode;
 
-    self->x.morefx |= EFX_BARREL_EXPLODING;
+    self->s.morefx |= EFX_BARREL_EXPLODING;
     self->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
     self->nextthink = level.time + FRAME_TIME;
 }
@@ -1070,7 +1070,7 @@ void SP_misc_blackhole(edict_t *ent)
 
     if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE) {
         ent->s.sound = gi.soundindex("world/blackhole.wav");
-        ent->x.loop_attenuation = ATTN_NORM;
+        ent->s.loop_attenuation = ATTN_NORM;
     }
 
     gi.linkentity(ent);
@@ -1833,7 +1833,7 @@ void SP_misc_teleporter(edict_t *ent)
     gi.setmodel(ent, "models/objects/dmspot/tris.md2");
     ent->s.skinnum = 1;
     if (level.is_n64 || (ent->spawnflags & SPAWNFLAG_TEMEPORTER_N64_EFFECT))
-        ent->x.morefx = EFX_TELEPORTER2;
+        ent->s.morefx = EFX_TELEPORTER2;
     else
         ent->s.effects = EF_TELEPORTER;
     ent->s.renderfx |= RF_NOSHADOW;
@@ -1898,7 +1898,7 @@ void SP_misc_flare(edict_t *ent)
     ent->s.modelindex = 1;
     ent->s.renderfx = RF_FLARE;
     ent->solid = SOLID_NOT;
-    ent->x.scale = st.radius;
+    ent->s.scale = st.radius;
 
     if (ent->spawnflags & SPAWNFLAG_FLARE_RED)
         ent->s.renderfx |= RF_SHELL_RED;
@@ -1933,7 +1933,7 @@ void THINK(misc_hologram_think)(edict_t *ent)
 {
     ent->s.angles[1] += 100 * FRAME_TIME_SEC;
     ent->nextthink = level.time + FRAME_TIME;
-    ent->x.alpha = frandom2(0.2f, 0.6f);
+    ent->s.alpha = frandom2(0.2f, 0.6f);
 }
 
 /*QUAKED misc_hologram (1.0 1.0 0.0) (-16 -16 0) (16 16 32)
@@ -1945,11 +1945,11 @@ void SP_misc_hologram(edict_t *ent)
     ent->s.modelindex = gi.modelindex("models/ships/strogg1/tris.md2");
     VectorSet(ent->mins, -16, -16, 0);
     VectorSet(ent->maxs, 16, 16, 32);
-    ent->x.morefx = EFX_HOLOGRAM;
+    ent->s.morefx = EFX_HOLOGRAM;
     ent->think = misc_hologram_think;
     ent->nextthink = level.time + FRAME_TIME;
-    ent->x.alpha = frandom2(0.2f, 0.6f);
-    ent->x.scale = 0.75f;
+    ent->s.alpha = frandom2(0.2f, 0.6f);
+    ent->s.scale = 0.75f;
     gi.linkentity(ent);
 }
 
@@ -2220,14 +2220,14 @@ void SP_misc_player_mannequin(edict_t *self)
 
     SetupMannequinModel(self, st.height, st.goals, st.image);
 
-    self->x.scale = 1.0f;
+    self->s.scale = 1.0f;
     if (ai_model_scale->value > 0.0f)
-        self->x.scale = ai_model_scale->value;
+        self->s.scale = ai_model_scale->value;
     else if (st.radius > 0.0f)
-        self->x.scale = st.radius;
+        self->s.scale = st.radius;
 
-    VectorScale(self->mins, self->x.scale, self->mins);
-    VectorScale(self->maxs, self->x.scale, self->maxs);
+    VectorScale(self->mins, self->s.scale, self->mins);
+    VectorScale(self->maxs, self->s.scale, self->maxs);
 
     self->think = misc_player_mannequin_think;
     self->nextthink = level.time + FRAME_TIME;

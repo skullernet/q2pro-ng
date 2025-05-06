@@ -393,7 +393,7 @@ static void AL_MergeLoopSounds(void)
     sfx_t       *sfx;
     sfxcache_t  *sc;
     int         num;
-    centity_state_t *ent;
+    entity_state_t *ent;
     vec3_t      origin;
 
     if (!S_BuildSoundList(sounds))
@@ -500,7 +500,7 @@ static void AL_AddLoopSounds(void)
     sfx_t       *sfx;
     sfxcache_t  *sc;
     int         num;
-    centity_state_t *ent;
+    entity_state_t *ent;
 
     if (!S_BuildSoundList(sounds))
         return;

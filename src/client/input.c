@@ -857,89 +857,6 @@ static inline bool ready_to_send(void)
     return true;
 }
 
-static inline bool ready_to_send_hacked(void)
-{
-    if (!cl_fuzzhack->integer) {
-        return true; // packet drop hack disabled
-    }
-
-    if (cl.cmdNumber - cl.lastTransmitCmdNumberReal > 2) {
-        return true; // can't drop more than 2 cmds
-    }
-
-    return ready_to_send();
-}
-
-/*
-=================
-CL_SendDefaultCmd
-=================
-*/
-static void CL_SendDefaultCmd(void)
-{
-    int cursize q_unused;
-    usercmd_t *cmd, *oldcmd;
-    client_history_t *history;
-
-    // archive this packet
-    history = &cl.history[cls.netchan.outgoing_sequence & CMD_MASK];
-    history->cmdNumber = cl.cmdNumber;
-    history->sent = cls.realtime;    // for ping calculation
-    history->rcvd = 0;
-
-    cl.lastTransmitCmdNumber = cl.cmdNumber;
-
-    // see if we are ready to send this packet
-    if (!ready_to_send_hacked()) {
-        cls.netchan.outgoing_sequence++; // just drop the packet
-        return;
-    }
-
-    cl.lastTransmitTime = cls.realtime;
-    cl.lastTransmitCmdNumberReal = cl.cmdNumber;
-
-    // begin a client move command
-    MSG_WriteByte(clc_move);
-
-    // let the server know what the last frame we
-    // got was, so the next message can be delta compressed
-    if (cl_nodelta->integer || !cl.frame.valid /*|| cls.demowaiting*/) {
-        MSG_WriteLong(-1);   // no compression
-    } else {
-        MSG_WriteLong(cl.frame.number);
-    }
-
-    // send this and the previous cmds in the message, so
-    // if the last packet was dropped, it can be recovered
-    cmd = &cl.cmds[(cl.cmdNumber - 2) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(NULL, cmd);
-    MSG_WriteByte(cl.lightlevel);
-    oldcmd = cmd;
-
-    cmd = &cl.cmds[(cl.cmdNumber - 1) & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd);
-    MSG_WriteByte(cl.lightlevel);
-    oldcmd = cmd;
-
-    cmd = &cl.cmds[cl.cmdNumber & CMD_MASK];
-    MSG_WriteDeltaUsercmd(oldcmd, cmd);
-    MSG_WriteByte(cl.lightlevel);
-
-    P_FRAMES++;
-
-    //
-    // deliver the message
-    //
-    cursize = Netchan_Transmit(&cls.netchan, msg_write.cursize, msg_write.data, 1);
-#if USE_DEBUG
-    if (cl_showpackets->integer) {
-        Com_Printf("%i ", cursize);
-    }
-#endif
-
-    SZ_Clear(&msg_write);
-}
-
 /*
 =================
 CL_SendBatchedCmd
@@ -951,7 +868,6 @@ static void CL_SendBatchedCmd(void)
     q_unused int totalCmds, totalMsec, cursize, bits;
     usercmd_t *cmd, *oldcmd;
     client_history_t *history, *oldest;
-    byte *patch;
 
     // see if we are ready to send this packet
     if (!ready_to_send()) {
@@ -969,27 +885,23 @@ static void CL_SendBatchedCmd(void)
     cl.lastTransmitCmdNumber = cl.cmdNumber;
     cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
-    MSG_BeginWriting();
-
     // begin a client move command
-    patch = SZ_GetSpace(&msg_write, 1);
+    MSG_BeginWriting();
 
     // let the server know what the last frame we
     // got was, so the next message can be delta compressed
     if (cl_nodelta->integer || !cl.frame.valid /*|| cls.demowaiting*/) {
-        *patch = clc_move_nodelta; // no compression
+        MSG_WriteByte(clc_move_nodelta); // no compression
     } else {
-        *patch = clc_move_batched;
+        MSG_WriteByte(clc_move_batched);
         MSG_WriteLong(cl.frame.number);
     }
 
-    Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
-    numDups = cl_packetdup->integer;
-
-    *patch |= numDups << SVCMD_BITS;
-
     // send lightlevel
     MSG_WriteByte(cl.lightlevel);
+
+    numDups = Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
+    MSG_WriteBits(numDups, 3);
 
     // send this and the previous cmds in the message, so
     // if the last packet was dropped, it can be recovered
@@ -1011,12 +923,7 @@ static void CL_SendBatchedCmd(void)
         for (j = oldest->cmdNumber + 1; j <= history->cmdNumber; j++) {
             cmd = &cl.cmds[j & CMD_MASK];
             totalMsec += cmd->msec;
-            bits = MSG_WriteDeltaUsercmd_Enhanced(oldcmd, cmd);
-#if USE_DEBUG
-            if (cl_showpackets->integer == 3) {
-                MSG_ShowDeltaUsercmdBits_Enhanced(bits);
-            }
-#endif
+            MSG_WriteDeltaUsercmd(oldcmd, cmd);
             oldcmd = cmd;
         }
     }
@@ -1144,11 +1051,7 @@ void CL_SendCmd(void)
     // send a userinfo update if needed
     CL_SendReliable();
 
-    if (cl_batchcmds->integer) {
-        CL_SendBatchedCmd();
-    } else {
-        CL_SendDefaultCmd();
-    }
+    CL_SendBatchedCmd();
 
     cl.sendPacketNow = false;
 }

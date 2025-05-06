@@ -2355,8 +2355,6 @@ struct edict_s {
     contents_t clipmask;
     edict_t    *owner;
 
-    entity_state_extension_t    x;
-
     //================================
 
     // private to game
@@ -2601,7 +2599,7 @@ static inline void pierce_end(pierce_t *p)
 
 static inline edict_t *ThrowGib(edict_t *self, const char *gibname, int damage, gib_type_t type)
 {
-    return ThrowGibEx(self, gibname, damage, type, 0, self->x.scale);
+    return ThrowGibEx(self, gibname, damage, type, 0, self->s.scale);
 }
 
 static inline bool M_CheckGib(edict_t *self, mod_t mod)

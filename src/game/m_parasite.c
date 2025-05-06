@@ -372,7 +372,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         // stick to this guy
         VectorSubtract(p, other->s.origin, self->move_origin);
         self->enemy = other;
-        self->x.alpha = 0.35f;
+        self->s.alpha = 0.35f;
         gi.sound(self, CHAN_WEAPON, sound_suck, 1, ATTN_NORM, 0);
     } else {
         VectorAdd(tr->endpos, tr->plane.normal, p);

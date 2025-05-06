@@ -57,11 +57,6 @@ typedef enum {
     VIS_NOAREAS = 2     // can be OR'ed with one of above
 } vis_t;
 
-typedef struct {
-    entity_state_t s;
-    entity_state_extension_t x;
-} customize_entity_t;
-
 //===============================================================
 
 #define MAX_ENT_CLUSTERS    16
@@ -107,10 +102,6 @@ struct edict_s {
     edict_t     *owner;
 
     //================================
-
-    // extra entity state communicated to clients
-    // only valid if g_features has GMF_PROTOCOL_EXTENSIONS bit
-    entity_state_extension_t    x;
 
     // the game dll can add anything it wants after
     // this point in the structure
@@ -251,7 +242,7 @@ typedef struct {
     // of the parameters
     void (*ServerCommand)(void);
 
-    qboolean (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, customize_entity_t *temp); // if true is returned, `temp' must be initialized
+    qboolean (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, entity_state_t *temp); // if true is returned, `temp' must be initialized
     qboolean (*EntityVisibleToClient)(edict_t *client, edict_t *ent);
 
     void *(*GetExtension)(const char *name);

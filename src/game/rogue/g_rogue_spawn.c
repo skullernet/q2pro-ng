@@ -167,8 +167,8 @@ void THINK(spawngrow_think)(edict_t *self)
     float t = 1.0f - TO_SEC(level.time - self->teleport_time) / self->wait;
     float s = lerp(self->decel, self->accel, t) / 16;
 
-    self->x.scale = Q_clipf(s, 1.0f / 16, 16);
-    self->x.alpha = t * t;
+    self->s.scale = Q_clipf(s, 1.0f / 16, 16);
+    self->s.alpha = t * t;
 
     self->nextthink += FRAME_TIME;
 }
@@ -185,7 +185,7 @@ static void SpawnGro_laser_pos(edict_t *ent, vec3_t pos)
         cosf(phi)
     };
 
-    VectorMA(ent->s.origin, ent->owner->x.scale * 9, d, pos);
+    VectorMA(ent->s.origin, ent->owner->s.scale * 9, d, pos);
 }
 
 void THINK(SpawnGro_laser_think)(edict_t *self)
@@ -222,7 +222,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     ent->decel = end_size;
     ent->think = spawngrow_think;
 
-    ent->x.scale = Q_clipf(start_size / 16, 1.0f / 16, 16);
+    ent->s.scale = Q_clipf(start_size / 16, 1.0f / 16, 16);
 
     ent->teleport_time = level.time;
     ent->wait = SPAWNGROW_LIFESPAN_SEC;

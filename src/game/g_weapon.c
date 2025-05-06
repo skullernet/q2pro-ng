@@ -483,7 +483,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
         grenade->s.modelindex = gi.modelindex("models/objects/grenade/tris.md2");
         grenade->nextthink = level.time + timer;
         grenade->think = Grenade_Explode;
-        grenade->x.morefx |= EFX_GRENADE_LIGHT;
+        grenade->s.morefx |= EFX_GRENADE_LIGHT;
     } else {
         grenade->s.modelindex = gi.modelindex("models/objects/grenade4/tris.md2");
         vectoangles(grenade->velocity, grenade->s.angles);

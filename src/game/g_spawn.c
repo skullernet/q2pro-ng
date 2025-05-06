@@ -500,8 +500,8 @@ static const spawn_field_t entity_fields[] = {
     { "angle", FOFS(s.angles), F_ANGLEHACK },
     { "rgba", FOFS(s.skinnum), F_COLOR }, // [Sam-KEX]
     { "hackflags", FOFS(hackflags), F_INT }, // [Paril-KEX] n64
-    { "alpha", FOFS(x.alpha), F_FLOAT }, // [Paril-KEX]
-    { "scale", FOFS(x.scale), F_FLOAT }, // [Paril-KEX]
+    { "alpha", FOFS(s.alpha), F_FLOAT }, // [Paril-KEX]
+    { "scale", FOFS(s.scale), F_FLOAT }, // [Paril-KEX]
     { "mangle", 0, F_IGNORE }, // editor field
     { "dead_frame", FOFS(monsterinfo.start_frame), F_INT }, // [Paril-KEX]
     { "frame", FOFS(s.frame), F_INT },
@@ -785,7 +785,7 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
     case F_EFFECTS:
         l = strtoull(value, NULL, 10);
         *(int *)(b + FOFS(s.effects)) = l;
-        *(int *)(b + FOFS(x.morefx)) = l >> 32;
+        *(int *)(b + FOFS(s.morefx)) = l >> 32;
         break;
     case F_BOOL:
         *(bool *)(b + f->ofs) = Q_atoi(value);

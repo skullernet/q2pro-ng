@@ -2483,7 +2483,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 {
     gclient_t *client;
     edict_t   *other;
-    int        i, j;
+    int        i;
     pmove_t    pm;
 
     level.current_entity = ent;
@@ -2995,7 +2995,7 @@ static bool G_CoopRespawn(edict_t *ent)
             ent->takedamage = false;
             ent->s.modelindex = 0;
             ent->svflags |= SVF_NOCLIENT;
-            ent->client->ps.blend[3] = 0;
+            ent->client->ps.screen_blend[3] = 0;
             ent->client->ps.damage_blend[3] = 0;
             ent->client->ps.rdflags = RDF_NONE;
             ent->movetype = MOVETYPE_NOCLIP;

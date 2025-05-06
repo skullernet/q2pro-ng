@@ -747,10 +747,10 @@ void SP_func_rotating(edict_t *ent)
         if (!ED_WasKeySpecified("attenuation")) {
             ent->attenuation = ATTN_STATIC;
         } else if (ent->attenuation == -1) {
-            ent->x.loop_attenuation = ATTN_LOOP_NONE;
+            ent->s.loop_attenuation = ATTN_LOOP_NONE;
             ent->attenuation = ATTN_NONE;
         } else if (ent->attenuation != ATTN_STATIC) {
-            ent->x.loop_attenuation = ent->attenuation;
+            ent->s.loop_attenuation = ent->attenuation;
         }
     }
 
@@ -1476,10 +1476,10 @@ void SP_func_door(edict_t *ent)
     if (!ED_WasKeySpecified("attenuation")) {
         ent->attenuation = ATTN_STATIC;
     } else if (ent->attenuation == -1) {
-        ent->x.loop_attenuation = ATTN_LOOP_NONE;
+        ent->s.loop_attenuation = ATTN_LOOP_NONE;
         ent->attenuation = ATTN_NONE;
     } else if (ent->attenuation != ATTN_STATIC) {
-        ent->x.loop_attenuation = ent->attenuation;
+        ent->s.loop_attenuation = ent->attenuation;
     }
 
     G_SetMovedir(ent->s.angles, ent->movedir);
@@ -1677,10 +1677,10 @@ void SP_func_door_rotating(edict_t *ent)
     if (!ED_WasKeySpecified("attenuation")) {
         ent->attenuation = ATTN_STATIC;
     } else if (ent->attenuation == -1) {
-        ent->x.loop_attenuation = ATTN_LOOP_NONE;
+        ent->s.loop_attenuation = ATTN_LOOP_NONE;
         ent->attenuation = ATTN_NONE;
     } else if (ent->attenuation != ATTN_STATIC) {
-        ent->x.loop_attenuation = ent->attenuation;
+        ent->s.loop_attenuation = ent->attenuation;
     }
 
     // if it starts open, switch the positions
@@ -2160,10 +2160,10 @@ void SP_func_train(edict_t *self)
         if (!ED_WasKeySpecified("attenuation")) {
             self->attenuation = ATTN_STATIC;
         } else if (self->attenuation == -1) {
-            self->x.loop_attenuation = ATTN_LOOP_NONE;
+            self->s.loop_attenuation = ATTN_LOOP_NONE;
             self->attenuation = ATTN_NONE;
         } else if (self->attenuation != ATTN_STATIC) {
-            self->x.loop_attenuation = self->attenuation;
+            self->s.loop_attenuation = self->attenuation;
         }
     }
 

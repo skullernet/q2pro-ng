@@ -422,7 +422,7 @@ static void arachnid_spawn(edict_t *self)
 
     int num_summoned = M_PickReinforcements(self, 2);
 
-    float scale = self->x.scale;
+    float scale = self->s.scale;
     if (!scale)
         scale = 1;
 

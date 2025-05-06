@@ -830,17 +830,6 @@ static client_t *find_client_slot(conn_params_t *params)
     return reject_ptr("Server is full.\n");
 }
 
-static void init_pmove_and_es_flags(client_t *newcl)
-{
-    // copy default pmove parameters
-    newcl->pmp = svs.pmp;
-
-    // Q2PRO extensions
-    newcl->esFlags = MSG_ES_UMASK | MSG_ES_LONGSOLID | MSG_ES_BEAMORIGIN |
-        MSG_ES_SHORTANGLES | MSG_ES_EXTENSIONS | MSG_ES_EXTENSIONS_2;
-    newcl->psFlags = MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS;
-}
-
 static void send_connect_packet(client_t *newcl, int nctype)
 {
     const char *dlstring1   = "";
@@ -910,8 +899,6 @@ static void SVC_DirectConnect(void)
     newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
 #endif
-
-    init_pmove_and_es_flags(newcl);
 
     format_conninfo(&params, conninfo);
 

@@ -33,16 +33,13 @@ Encode a client frame onto the network channel
 =============
 SV_EmitPacketEntities
 
-Writes a delta update of an entity_packed_t list to the message.
+Writes a delta update of an entity_state_t list to the message.
 =============
 */
-static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
-                                  client_frame_t *to, int clientEntityNum)
+static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, const client_frame_t *to)
 {
-    entity_packed_t *newent;
-    const entity_packed_t *oldent;
+    const entity_state_t *oldent, *newent;
     int i, oldnum, newnum, oldindex, newindex, from_num_entities;
-    msgEsFlags_t flags;
 
     if (!from)
         from_num_entities = 0;
@@ -75,16 +72,9 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
             // not changed at all. Note that players are always 'newentities',
             // this updates their old_origin always and prevents warping in case
             // of packet loss.
-            flags = client->esFlags;
             if (newnum <= svs.maxclients) {
-                flags |= MSG_ES_NEWENTITY;
             }
-            if (newnum == clientEntityNum) {
-                flags |= MSG_ES_FIRSTPERSON;
-                VectorCopy(oldent->origin, newent->origin);
-                VectorCopy(oldent->angles, newent->angles);
-            }
-            MSG_WriteDeltaEntity(oldent, newent, flags);
+            MSG_WriteDeltaEntity(oldent, newent, false);
             oldindex++;
             newindex++;
             continue;
@@ -92,32 +82,26 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from,
 
         if (newnum < oldnum) {
             // this is a new entity, send it from the baseline
-            flags = client->esFlags | MSG_ES_FORCE | MSG_ES_NEWENTITY;
             oldent = client->baselines[newnum >> SV_BASELINES_SHIFT];
             if (oldent) {
                 oldent += (newnum & SV_BASELINES_MASK);
             } else {
                 oldent = &nullEntityState;
             }
-            if (newnum == clientEntityNum) {
-                flags |= MSG_ES_FIRSTPERSON;
-                VectorCopy(oldent->origin, newent->origin);
-                VectorCopy(oldent->angles, newent->angles);
-            }
-            MSG_WriteDeltaEntity(oldent, newent, flags);
+            MSG_WriteDeltaEntity(oldent, newent, true);
             newindex++;
             continue;
         }
 
         if (newnum > oldnum) {
             // the old entity isn't present in the new message
-            MSG_WriteDeltaEntity(oldent, NULL, MSG_ES_FORCE);
+            MSG_WriteDeltaEntity(oldent, NULL, true);
             oldindex++;
             continue;
         }
     }
 
-    MSG_WriteShort(0);      // end of packetentities
+    MSG_WriteBits(0, ENTITYNUM_BITS);   // end of packetentities
 }
 
 static client_frame_t *get_last_frame(client_t *client)
@@ -163,90 +147,38 @@ SV_WriteFrameToClient
 void SV_WriteFrameToClient(client_t *client)
 {
     client_frame_t  *frame, *oldframe;
-    player_packed_t *oldstate;
-    uint32_t        extraflags, delta;
-    int             suppressed;
-    byte            *b1, *b2;
-    msgPsFlags_t    psFlags;
-    int             clientEntityNum;
+    int delta;
 
     // this is the frame we are creating
     frame = &client->frames[client->framenum & UPDATE_MASK];
 
     // this is the frame we are delta'ing from
     oldframe = get_last_frame(client);
-    if (oldframe) {
-        oldstate = &oldframe->ps;
+    if (oldframe)
         delta = client->framenum - client->lastframe;
-    } else {
-        oldstate = NULL;
+    else
         delta = 31;
-    }
 
-    // first byte to be patched
-    b1 = SZ_GetSpace(&msg_write, 1);
-
-    MSG_WriteLong((client->framenum & FRAMENUM_MASK) | (delta << FRAMENUM_BITS));
-
-    // second byte to be patched
-    b2 = SZ_GetSpace(&msg_write, 1);
+    MSG_BeginWriting();
+    MSG_WriteByte(svc_frame);
+    MSG_WriteBits(client->framenum, FRAMENUM_BITS);
+    MSG_WriteBits(delta, DELTAFRAME_BITS);
+    MSG_WriteBits(client->frameflags, FRAMEFLAGS_BITS);
 
     // send over the areabits
-    MSG_WriteByte(frame->areabytes);
-    MSG_WriteData(frame->areabits, frame->areabytes);
-
-    // ignore some parts of playerstate if not recording demo
-    psFlags = client->psFlags;
-    if (!client->settings[CLS_RECORDING]) {
-        if (client->settings[CLS_NOGUN]) {
-            psFlags |= MSG_PS_IGNORE_GUNFRAMES;
-            if (client->settings[CLS_NOGUN] != 2) {
-                psFlags |= MSG_PS_IGNORE_GUNINDEX;
-            }
-        }
-        if (client->settings[CLS_NOBLEND]) {
-            psFlags |= MSG_PS_IGNORE_BLEND;
-        }
-        if (frame->ps.pmove.pm_type < PM_DEAD) {
-            if (!(frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
-                psFlags |= MSG_PS_IGNORE_VIEWANGLES;
-            }
-        } else {
-            // lying dead on a rotating platform?
-            psFlags |= MSG_PS_IGNORE_DELTAANGLES;
-        }
-    }
-
-    clientEntityNum = 0;
-    if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
-        clientEntityNum = frame->clientNum + 1;
-    }
-    if (client->settings[CLS_NOPREDICT]) {
-        psFlags |= MSG_PS_IGNORE_PREDICTION;
-    }
-    suppressed = client->frameflags;
+    MSG_WriteBits(frame->areabytes, 6);
+    for (int i = 0; i < frame->areabytes; i++)
+        MSG_WriteBits(frame->areabits[i], 8);
 
     // delta encode the playerstate
-    extraflags = MSG_WriteDeltaPlayerstate(oldstate, &frame->ps, psFlags);
-
-    // delta encode the clientNum
-    if ((oldframe ? oldframe->clientNum : 0) != frame->clientNum) {
-        extraflags |= EPS_CLIENTNUM;
-        MSG_WriteShort(frame->clientNum);
-    }
-
-    // save 3 high bits of extraflags
-    *b1 = svc_frame | (((extraflags & 0x70) << 1));
-
-    // save 4 low bits of extraflags
-    *b2 = (suppressed & SUPPRESSCOUNT_MASK) |
-          ((extraflags & 0x0F) << SUPPRESSCOUNT_BITS);
+    MSG_WriteDeltaPlayerstate(oldframe ? &oldframe->ps : NULL, &frame->ps);
 
     client->suppress_count = 0;
     client->frameflags = 0;
 
     // delta encode the entities
-    SV_EmitPacketEntities(client, oldframe, frame, clientEntityNum);
+    SV_EmitPacketEntities(client, oldframe, frame);
+    MSG_FlushBits();
 }
 
 /*
@@ -256,51 +188,6 @@ Build a client frame structure
 
 =============================================================================
 */
-
-#if USE_FPS
-static void
-fix_old_origin(const client_t *client, entity_packed_t *state, const edict_t *ent, int e)
-{
-    server_entity_t *sent = &sv.entities[e];
-    int i, j, k;
-
-    if (ent->s.renderfx & RF_BEAM)
-        return;
-
-    if (!ent->linkcount)
-        return; // not linked in anywhere
-
-    if (sent->create_framenum >= sv.framenum) {
-        // created this frame. unfortunate for projectiles: they will move only
-        // with 1/client->framediv fraction of their normal speed on the client
-        return;
-    }
-
-    if (state->event == EV_PLAYER_TELEPORT && !Q2PRO_OPTIMIZE(client)) {
-        // other clients will lerp from old_origin on EV_PLAYER_TELEPORT...
-        VectorCopy(state->origin, state->old_origin);
-        return;
-    }
-
-    if (sent->create_framenum > sv.framenum - client->framediv) {
-        // created between client frames
-        VectorScale(sent->create_origin, 8.0f, state->old_origin);
-        return;
-    }
-
-    // find the oldest valid origin
-    for (i = 0; i < client->framediv - 1; i++) {
-        j = sv.framenum - (client->framediv - i);
-        k = j & ENT_HISTORY_MASK;
-        if (sent->history[k].framenum == j) {
-            VectorScale(sent->history[k].origin, 8.0f, state->old_origin);
-            return;
-        }
-    }
-
-    // no valid old_origin, just use what game provided
-}
-#endif
 
 static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const visrow_t *mask)
 {
@@ -318,7 +205,7 @@ static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const v
 
 static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 {
-    float mult = Com_GetEntityLoopDistMult(ent->x.loop_attenuation);
+    float mult = Com_GetEntityLoopDistMult(ent->s.loop_attenuation);
     float dist = Distance(org, ent->s.origin) - SOUND_FULLVOLUME;
 
     return dist * mult > 1.0f;
@@ -382,7 +269,7 @@ void SV_BuildClientFrame(client_t *client)
     edict_t     *ent;
     edict_t     *clent;
     client_frame_t  *frame;
-    entity_packed_t *state;
+    entity_state_t  *state;
     const mleaf_t   *leaf;
     int         clientarea, clientcluster;
     visrow_t    clientphs;
@@ -390,7 +277,7 @@ void SV_BuildClientFrame(client_t *client)
     int         max_packet_entities;
     edict_t     *edicts[MAX_EDICTS];
     int         num_edicts;
-    customize_entity_t temp;
+    entity_state_t temp;
 
     clent = client->edict;
     if (!clent->client)
@@ -417,7 +304,7 @@ void SV_BuildClientFrame(client_t *client)
     frame->areabytes = CM_WriteAreaBits(&sv.cm, frame->areabits, clientarea);
 
     // grab the current player_state_t
-    MSG_PackPlayer(&frame->ps, &clent->client->ps);
+    frame->ps = clent->client->ps;
 
     // grab the current clientNum
     frame->clientNum = SV_GetClient_ClientNum(client);
@@ -533,18 +420,11 @@ void SV_BuildClientFrame(client_t *client)
 
         // optionally customize it
         if (ge->CustomizeEntityToClient && ge->CustomizeEntityToClient(clent, ent, &temp)) {
-            Q_assert(temp.s.number == e);
-            MSG_PackEntity(state, &temp.s, ENT_EXTENSION(&temp));
+            Q_assert(temp.number == e);
+            *state = temp;
         } else {
-            MSG_PackEntity(state, &ent->s, ENT_EXTENSION(ent));
+            *state = ent->s;
         }
-
-#if USE_FPS
-        // fix old entity origins for clients not running at
-        // full server frame rate
-        if (client->framediv != 1)
-            fix_old_origin(client, state, ent, e);
-#endif
 
         // clear footsteps
         if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP ||

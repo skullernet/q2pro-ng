@@ -58,22 +58,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 //=============================================================================
 
-// Hack to merge two structures AND still allow to address them separately.
-// Requires non-standard Microsoft extension to compile. FIXME: remove this?
-typedef union {
-    struct {
-        entity_state_t;
-        entity_state_extension_t;
-    };
-    struct {
-        entity_state_t s;
-        entity_state_extension_t x;
-    };
-} centity_state_t;
-
 typedef struct {
-    centity_state_t     current;
-    centity_state_t     prev;           // will always be valid, but might just be a copy of current
+    entity_state_t      current;
+    entity_state_t      prev;           // will always be valid, but might just be a copy of current
 
     vec3_t          mins, maxs;
     float           radius;             // from mid point
@@ -189,13 +176,10 @@ typedef struct {
     centity_t       *solidEntities[MAX_PACKET_ENTITIES];
     int             numSolidEntities;
 
-    centity_state_t baselines[MAX_EDICTS];
+    entity_state_t  baselines[MAX_EDICTS];
 
-    centity_state_t entityStates[MAX_PARSE_ENTITIES];
+    entity_state_t  entityStates[MAX_PARSE_ENTITIES];
     unsigned        numEntityStates;
-
-    msgEsFlags_t    esFlags;
-    msgPsFlags_t    psFlags;
 
     server_frame_t  frames[UPDATE_BACKUP];
     unsigned        frameflags;
@@ -266,7 +250,6 @@ typedef struct {
     char        gamedir[MAX_QPATH];
     int         clientNum;            // never changed during gameplay, set by serverdata packet
     int         maxclients;
-    pmoveParams_t pmp;
 
 #if USE_FPS
     frametime_t frametime;
@@ -487,8 +470,6 @@ typedef struct {
         bool        seeking;
         bool        eof;
         bool        compat;             // demomap compatibility mode
-        msgEsFlags_t    esFlags;        // for snapshots/recording
-        msgPsFlags_t    psFlags;
     } demo;
 } client_static_t;
 
@@ -532,20 +513,15 @@ extern cvar_t   *cl_nobob;
 extern cvar_t   *cl_nolerp;
 
 #if USE_DEBUG
-#define SHOWNET(level, ...) \
-    do { if (cl_shownet->integer >= level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWCLAMP(level, ...) \
     do { if (cl_showclamp->integer >= level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
     do { if (cl_showmiss->integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
-extern cvar_t   *cl_shownet;
 extern cvar_t   *cl_showmiss;
 extern cvar_t   *cl_showclamp;
 #else
-#define SHOWNET(...)
 #define SHOWCLAMP(...)
 #define SHOWMISS(...)
 #endif
@@ -931,7 +907,6 @@ void CL_InitDemos(void);
 void CL_CleanupDemos(void);
 void CL_DemoFrame(void);
 bool CL_WriteDemoMessage(sizebuf_t *buf);
-void CL_PackEntity(entity_packed_t *out, const centity_state_t *in);
 void CL_EmitDemoFrame(void);
 void CL_EmitDemoSnapshot(void);
 void CL_FreeDemoSnapshots(void);

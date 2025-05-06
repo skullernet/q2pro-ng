@@ -77,7 +77,7 @@ static void Boss2Rocket64(edict_t *self)
     AngleVectors(self->s.angles, forward, right, NULL);
     M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right, start);
 
-    float scale = self->x.scale ? self->x.scale : 1;
+    float scale = self->s.scale ? self->s.scale : 1;
     int count = self->count++ % 4;
 
     start[2] += 10 * scale;

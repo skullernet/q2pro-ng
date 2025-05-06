@@ -378,7 +378,7 @@ bool visible_ex(edict_t *self, edict_t *other, bool through_glass)
                 return false;
 
             // otherwise, throw in some randomness
-            if (frandom() > other->x.alpha)
+            if (frandom() > other->s.alpha)
                 return false;
         }
     }

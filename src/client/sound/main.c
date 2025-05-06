@@ -811,7 +811,7 @@ void S_PauseRawSamples(bool paused)
 int S_BuildSoundList(int *sounds)
 {
     int             i, num, count;
-    centity_state_t *ent;
+    entity_state_t  *ent;
 
     if (cls.state != ca_active || !s_active || sv_paused->integer || !s_ambient->integer)
         return 0;

@@ -33,13 +33,13 @@ FRAME PARSING
 */
 
 // returns true if origin/angles update has been optimized out
-static inline bool entity_is_optimized(const centity_state_t *state)
+static inline bool entity_is_optimized(const entity_state_t *state)
 {
     return state->number == cl.frame.clientNum + 1 && cl.frame.ps.pmove.pm_type < PM_DEAD;
 }
 
 static inline void
-entity_update_new(centity_t *ent, const centity_state_t *state, const vec_t *origin)
+entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
     ent->flashlightfrac = 1.0f;
@@ -66,7 +66,7 @@ entity_update_new(centity_t *ent, const centity_state_t *state, const vec_t *ori
 }
 
 static inline void
-entity_update_old(centity_t *ent, const centity_state_t *state, const vec_t *origin)
+entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
     int event = state->event;
 
@@ -136,7 +136,7 @@ static inline bool entity_is_new(const centity_t *ent)
     return false;
 }
 
-static void parse_entity_update(const centity_state_t *state)
+static void parse_entity_update(const entity_state_t *state)
 {
     centity_t *ent = &cl_entities[state->number];
     const vec_t *origin;
@@ -149,7 +149,7 @@ static void parse_entity_update(const centity_state_t *state)
 
     if (state->solid && state->solid != PACKED_BSP) {
         // encoded bbox
-        MSG_UnpackSolid32_Ver2(state->solid, ent->mins, ent->maxs);
+        MSG_UnpackSolid(state->solid, ent->mins, ent->maxs);
         ent->radius = Distance(ent->maxs, ent->mins) * 0.5f;
     } else {
         VectorClear(ent->mins);
@@ -177,7 +177,7 @@ static void parse_entity_update(const centity_state_t *state)
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        Com_PlayerToEntityState(&cl.frame.ps, &ent->current.s);
+        Com_PlayerToEntityState(&cl.frame.ps, &ent->current);
     }
 }
 
@@ -386,7 +386,7 @@ void CL_DeltaFrame(void)
     // this is needed in situations when player entity is invisible, but
     // server sends an effect referencing it's origin (such as MZ_LOGIN, etc)
     ent = &cl_entities[cl.frame.clientNum + 1];
-    Com_PlayerToEntityState(&cl.frame.ps, &ent->current.s);
+    Com_PlayerToEntityState(&cl.frame.ps, &ent->current);
 
     // set current and prev, unpack solid, etc
     for (i = 0; i < cl.frame.numEntities; i++) {
@@ -483,7 +483,7 @@ CL_AddPacketEntities
 static void CL_AddPacketEntities(void)
 {
     entity_t                ent;
-    const centity_state_t   *s1;
+    const entity_state_t    *s1;
     float                   autorotate, autobob;
     int                     i;
     int                     pnum;
@@ -1407,10 +1407,10 @@ void CL_CalcViewValues(void)
     }
 
     // interpolate blend
-    if (ops->blend[3])
-        lerp_values(ops->blend, ps->blend, lerp, cl.refdef.screen_blend, 4);
+    if (ops->screen_blend[3])
+        lerp_values(ops->screen_blend, ps->screen_blend, lerp, cl.refdef.screen_blend, 4);
     else
-        Vector4Copy(ps->blend, cl.refdef.screen_blend);
+        Vector4Copy(ps->screen_blend, cl.refdef.screen_blend);
 
     if (ops->damage_blend[3])
         lerp_values(ops->damage_blend, ps->damage_blend, lerp, cl.refdef.damage_blend, 4);
@@ -1418,17 +1418,15 @@ void CL_CalcViewValues(void)
         Vector4Copy(ps->damage_blend, cl.refdef.damage_blend);
 
     // interpolate fog
-    if (cl.psFlags & MSG_PS_MOREBITS) {
-        lerp_values(&ops->fog, &ps->fog, lerp,
-                    &cl.refdef.fog, sizeof(cl.refdef.fog) / sizeof(float));
-        // no lerping if moved too far
-        if (fabsf(ps->heightfog.start.dist - ops->heightfog.start.dist) > 512 ||
-            fabsf(ps->heightfog.end  .dist - ops->heightfog.end  .dist) > 512)
-            cl.refdef.heightfog = ps->heightfog;
-        else
-            lerp_values(&ops->heightfog, &ps->heightfog, lerp,
-                        &cl.refdef.heightfog, sizeof(cl.refdef.heightfog) / sizeof(float));
-    }
+    lerp_values(&ops->fog, &ps->fog, lerp,
+                &cl.refdef.fog, sizeof(cl.refdef.fog) / sizeof(float));
+    // no lerping if moved too far
+    if (fabsf(ps->heightfog.start.dist - ops->heightfog.start.dist) > 512 ||
+        fabsf(ps->heightfog.end  .dist - ops->heightfog.end  .dist) > 512)
+        cl.refdef.heightfog = ps->heightfog;
+    else
+        lerp_values(&ops->heightfog, &ps->heightfog, lerp,
+                    &cl.refdef.heightfog, sizeof(cl.refdef.heightfog) / sizeof(float));
 
 #if USE_FPS
     ps = &cl.keyframe.ps;

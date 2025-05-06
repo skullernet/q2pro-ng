@@ -302,7 +302,7 @@ static void guardian_fire_blaster(edict_t *self)
     VectorNormalize(forward);
 
     edict_t *bolt = monster_fire_blaster(self, start, forward, 3, 1100, id, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
-    bolt->x.scale = 2.0f;
+    bolt->s.scale = 2.0f;
 
     if (self->enemy && self->enemy->health > 0 &&
         self->s.frame == FRAME_atk1_spin12 && self->timestamp > level.time && visible(self, self->enemy))
@@ -569,7 +569,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    heat->x.scale = 1.5f;
+    heat->s.scale = 1.5f;
     heat->owner = self;
     heat->touch = rocket_touch;
     heat->speed = speed / 2;
@@ -832,7 +832,7 @@ static void GuardianPowerArmor(edict_t *self)
 
 static void GuardianRespondPowerup(edict_t *self, edict_t *other)
 {
-    if ((other->s.effects & (EF_QUAD | EF_DOUBLE | EF_PENT)) || (other->x.morefx & EFX_DUALFIRE))
+    if ((other->s.effects & (EF_QUAD | EF_DOUBLE | EF_PENT)) || (other->s.morefx & EFX_DUALFIRE))
         GuardianPowerArmor(self);
 }
 

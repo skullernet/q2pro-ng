@@ -73,16 +73,10 @@ fail:
     return false;
 }
 
-void CL_PackEntity(entity_packed_t *out, const centity_state_t *in)
-{
-    MSG_PackEntity(out, &in->s, &in->x);
-}
-
 // writes a delta update of an entity_state_t list to the message.
 static void emit_packet_entities(const server_frame_t *from, const server_frame_t *to)
 {
-    entity_packed_t oldpack, newpack;
-    centity_state_t *oldent, *newent;
+    entity_state_t *oldent, *newent;
     int     oldindex, newindex;
     int     oldnum, newnum;
     int     i, from_num_entities;
@@ -118,12 +112,7 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
             // not changed at all. Note that players are always 'newentities',
             // this updates their old_origin always and prevents warping in case
             // of packet loss.
-            msgEsFlags_t flags = cls.demo.esFlags;
-            if (newent->number <= cl.maxclients)
-                flags |= MSG_ES_NEWENTITY;
-            CL_PackEntity(&oldpack, oldent);
-            CL_PackEntity(&newpack, newent);
-            MSG_WriteDeltaEntity(&oldpack, &newpack, flags);
+            MSG_WriteDeltaEntity(oldent, newent, false);
             oldindex++;
             newindex++;
             continue;
@@ -131,17 +120,14 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
 
         if (newnum < oldnum) {
             // this is a new entity, send it from the baseline
-            CL_PackEntity(&oldpack, &cl.baselines[newnum]);
-            CL_PackEntity(&newpack, newent);
-            MSG_WriteDeltaEntity(&oldpack, &newpack, cls.demo.esFlags | MSG_ES_FORCE | MSG_ES_NEWENTITY);
+            MSG_WriteDeltaEntity(&cl.baselines[newnum], newent, true);
             newindex++;
             continue;
         }
 
         if (newnum > oldnum) {
             // the old entity isn't present in the new message
-            CL_PackEntity(&oldpack, oldent);
-            MSG_WriteDeltaEntity(&oldpack, NULL, MSG_ES_FORCE);
+            MSG_WriteDeltaEntity(oldent, NULL, true);
             oldindex++;
             continue;
         }
@@ -153,8 +139,6 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
 static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to,
                              int fromnum, int tonum)
 {
-    player_packed_t oldpack, newpack;
-
     MSG_WriteByte(svc_frame);
     MSG_WriteLong(tonum);
     MSG_WriteLong(fromnum); // what we are delta'ing from
@@ -166,13 +150,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
 
     // delta encode the playerstate
     MSG_WriteByte(svc_playerinfo);
-    MSG_PackPlayer(&newpack, &to->ps);
-    if (from) {
-        MSG_PackPlayer(&oldpack, &from->ps);
-        MSG_WriteDeltaPlayerstate(&oldpack, &newpack, cls.demo.psFlags);
-    } else {
-        MSG_WriteDeltaPlayerstate(NULL, &newpack, cls.demo.psFlags);
-    }
+    MSG_WriteDeltaPlayerstate(from ? &from->ps : NULL, &to->ps);
 
     // delta encode the entities
     MSG_WriteByte(svc_packetentities);
@@ -327,8 +305,7 @@ static void CL_Record_f(void)
     char    buffer[MAX_OSPATH];
     int     i, c;
     size_t  len;
-    centity_state_t *ent;
-    entity_packed_t pack;
+    entity_state_t  *ent;
     char            *s;
     qhandle_t       f;
     unsigned        mode = FS_MODE_WRITE;
@@ -433,8 +410,7 @@ static void CL_Record_f(void)
         }
 
         MSG_WriteByte(svc_spawnbaseline);
-        CL_PackEntity(&pack, ent);
-        MSG_WriteDeltaEntity(NULL, &pack, cls.demo.esFlags | MSG_ES_FORCE);
+        MSG_WriteDeltaEntity(NULL, ent, true);
     }
 
     MSG_WriteByte(svc_stufftext);

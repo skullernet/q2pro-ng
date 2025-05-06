@@ -955,12 +955,12 @@ typedef struct {
 
     vec3_t      origin;
     vec3_t      velocity;
-    uint16_t    pm_flags;       // ducked, jump_held, etc
-    uint16_t    pm_time;        // in msec
-    int16_t     gravity;
-    int16_t     delta_angles[3];    // add to command angles to get view direction
+    uint32_t    pm_flags;       // ducked, jump_held, etc
+    uint32_t    pm_time;        // in msec
+    int32_t     gravity;
+    int32_t     delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
-    int8_t      viewheight;
+    int viewheight;
 } pmove_state_t;
 
 //
@@ -1450,24 +1450,28 @@ typedef enum {
 // in an update message about entities that the client will
 // need to render in some way
 typedef struct {
-    int     number;         // edict index
+    uint32_t    number;         // edict index
 
-    vec3_t  origin;
-    vec3_t  angles;
-    vec3_t  old_origin;     // for lerping
-    int     modelindex;
-    int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
-    int     frame;
-    int     skinnum;
-    unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
-    int     renderfx;
-    int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
-                            // 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
+    vec3_t      origin;
+    vec3_t      angles;
+    vec3_t      old_origin;     // for lerping
+    uint32_t    modelindex;
+    uint32_t    modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
+    uint32_t    frame;
+    uint32_t    skinnum;
+    uint32_t    effects;
+    uint32_t    renderfx;
+    uint32_t    solid;      // for client side prediction,
                             // gi.linkentity sets this properly
-    int     sound;          // for looping sounds, to guarantee shutoff
-    int     event;          // impulse events -- muzzle flashes, footsteps, etc
+    uint32_t    sound;      // for looping sounds, to guarantee shutoff
+    uint32_t    event;      // impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
+    uint32_t    morefx;
+    float       alpha;
+    float       scale;
+    float       loop_volume;
+    float       loop_attenuation;
 } entity_state_t;
 
 //==============================================
@@ -1506,21 +1510,16 @@ typedef struct {
     vec3_t      gunoffset;
     int         gunindex;
     int         gunframe;
-    int         reserved_1;
-    int         reserved_2;
 
-    vec4_t      blend;          // rgba full screen effect
+    vec4_t      screen_blend;       // rgba full screen effect
     vec4_t      damage_blend;
 
     player_fog_t        fog;
     player_heightfog_t  heightfog;
 
-    float       fov;            // horizontal field of view
+    int         fov;            // horizontal field of view
 
     int         rdflags;        // refdef flags
-
-    int         reserved_3;
-    int         reserved_4;
 
     int16_t     stats[MAX_STATS];   // fast status bar updates
 } player_state_t;
@@ -1532,11 +1531,3 @@ typedef struct {
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       MASK(GUNINDEX_BITS)
-
-typedef struct {
-    int         morefx;
-    float       alpha;
-    float       scale;
-    float       loop_volume;
-    float       loop_attenuation;
-} entity_state_extension_t;

@@ -1051,8 +1051,8 @@ void THINK(droptofloor)(edict_t *ent)
 
     // [Paril-KEX] scale foodcube based on how much we ingested
     if (strcmp(ent->classname, "item_foodcube") == 0) {
-        VectorScale(fc_mins, ent->x.scale, ent->mins);
-        VectorScale(fc_maxs, ent->x.scale, ent->maxs);
+        VectorScale(fc_mins, ent->s.scale, ent->mins);
+        VectorScale(fc_maxs, ent->s.scale, ent->maxs);
     } else {
         VectorSet(ent->mins, -15, -15, -15);
         VectorSet(ent->maxs, 15, 15, 15);

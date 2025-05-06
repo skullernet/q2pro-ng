@@ -23,7 +23,7 @@ void MoveClientToIntermission(edict_t *ent)
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
     ent->client->ps.pmove.pm_type = PM_FREEZE;
     ent->client->ps.gunindex = 0;
-    ent->client->ps.blend[3] = 0;
+    ent->client->ps.screen_blend[3] = 0;
     ent->client->ps.damage_blend[3] = 0;
     ent->client->ps.rdflags = RDF_NONE;
 

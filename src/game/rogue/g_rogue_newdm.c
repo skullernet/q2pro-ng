@@ -212,7 +212,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     VectorSet(base->mins, -16, -16, -24);
     VectorSet(base->maxs, 16, 16, 32);
     base->s.modelindex = gi.modelindex("models/objects/dopplebase/tris.md2");
-    base->x.alpha = 0.1f;
+    base->s.alpha = 0.1f;
     base->teammaster = ent;
     base->flags |= (FL_DAMAGEABLE | FL_TRAP);
     base->takedamage = true;

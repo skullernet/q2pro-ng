@@ -317,6 +317,11 @@ static const save_field_t entityfields[] = {
     H(s.effects),
     H(s.renderfx),
     I(s.sound),
+    H(s.morefx),
+    F(s.alpha),
+    F(s.scale),
+    F(s.loop_volume),
+    F(s.loop_attenuation),
 
     // [...]
 
@@ -327,12 +332,6 @@ static const save_field_t entityfields[] = {
     I(solid),
     H(clipmask),
     E(owner),
-
-    H(x.morefx),
-    F(x.alpha),
-    F(x.scale),
-    F(x.loop_volume),
-    F(x.loop_attenuation),
 
     I(spawn_count),
     I(movetype),
@@ -589,12 +588,12 @@ static const save_field_t clientfields[] = {
 #define _OFS CLOFS
     I(ps.pmove.pm_type),
 
-    IA(ps.pmove.origin, 3),
-    IA(ps.pmove.velocity, 3),
-    S(ps.pmove.pm_flags),
-    S(ps.pmove.pm_time),
-    S(ps.pmove.gravity),
-    SA(ps.pmove.delta_angles, 3),
+    FA(ps.pmove.origin, 3),
+    FA(ps.pmove.velocity, 3),
+    I(ps.pmove.pm_flags),
+    I(ps.pmove.pm_time),
+    I(ps.pmove.gravity),
+    IA(ps.pmove.delta_angles, 3),
 
     V(ps.viewangles),
     V(ps.viewoffset),
@@ -605,7 +604,7 @@ static const save_field_t clientfields[] = {
     I(ps.gunindex),
     I(ps.gunframe),
 
-    FA(ps.blend, 4),
+    FA(ps.screen_blend, 4),
     FA(ps.damage_blend, 4),
 
     F(ps.fov),

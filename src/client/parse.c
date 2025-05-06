@@ -28,12 +28,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 =====================================================================
 */
 
-static void CL_ParseDeltaEntity(server_frame_t           *frame,
-                                int                      newnum,
-                                const centity_state_t    *old,
-                                uint64_t                 bits)
+static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
+                                const entity_state_t *old, bool changed)
 {
-    centity_state_t     *state;
+    entity_state_t  *state;
 
     // suck up to MAX_EDICTS for servers that don't cap at MAX_PACKET_ENTITIES
     if (frame->numEntities >= MAX_EDICTS) {
@@ -44,32 +42,21 @@ static void CL_ParseDeltaEntity(server_frame_t           *frame,
     cl.numEntityStates++;
     frame->numEntities++;
 
-#if USE_DEBUG
-    if (cl_shownet->integer >= 3 && bits) {
-        MSG_ShowDeltaEntityBits(bits);
-        Com_LPrintf(PRINT_DEVELOPER, "\n");
-    }
-#endif
-
     *state = *old;
-    MSG_ParseDeltaEntity(&state->s, &state->x, newnum, bits, cl.esFlags);
 
     // shuffle previous origin to old
-    if (!(bits & U_OLDORIGIN) && !(state->renderfx & RF_BEAM))
+    if (/*!(bits & U_OLDORIGIN) &&*/ !(state->renderfx & RF_BEAM))
         VectorCopy(old->origin, state->old_origin);
 
-    // make sure extended indices don't overflow
-    if ((state->modelindex | state->modelindex2 | state->modelindex3 | state->modelindex4) >= MAX_MODELS)
-        Com_Error(ERR_DROP, "%s: bad modelindex", __func__);
+    if (changed)
+        MSG_ParseDeltaEntity(state, newnum);
 
-    if (state->sound >= MAX_SOUNDS)
-        Com_Error(ERR_DROP, "%s: bad sound", __func__);
 }
 
 static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_t *frame)
 {
-    uint64_t                bits;
-    const centity_state_t   *oldstate;
+    bool                    removed, changed;
+    const entity_state_t    *oldstate;
     int                     i, oldindex, oldnum, newnum;
 
     frame->firstEntity = cl.numEntityStates;
@@ -94,7 +81,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 #if USE_DEBUG
         uint32_t readcount = msg_read.readcount;
 #endif
-        newnum = MSG_ParseEntityBits(&bits, cl.esFlags);
+        newnum = MSG_ReadBits(ENTITYNUM_BITS);
         if (newnum < 0 || newnum >= MAX_EDICTS) {
             Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
         }
@@ -103,10 +90,13 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
             break;
         }
 
+        removed = MSG_ReadBit();
+        changed = !removed && MSG_ReadBit();
+
         while (oldnum < newnum) {
             // one or more entities from the old packet are unchanged
             SHOWNET(4, "   unchanged:%i\n", oldnum);
-            CL_ParseDeltaEntity(frame, oldnum, oldstate, 0);
+            CL_ParseDeltaEntity(frame, oldnum, oldstate, false);
 
             oldindex++;
 
@@ -119,7 +109,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
             }
         }
 
-        if (bits & U_REMOVE) {
+        if (removed) {
             // the entity present in oldframe is not in the current frame
             SHOWNET(3, "%3u:remove:%i\n", readcount, newnum);
             if (oldnum != newnum) {
@@ -144,10 +134,8 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
         if (oldnum == newnum) {
             // delta from previous state
             SHOWNET(3, "%3u:delta:%i ", readcount, newnum);
-            CL_ParseDeltaEntity(frame, newnum, oldstate, bits);
-            if (!bits) {
-                SHOWNET(3, "\n");
-            }
+            CL_ParseDeltaEntity(frame, newnum, oldstate, changed);
+            SHOWNET(3, "\n");
 
             oldindex++;
 
@@ -164,10 +152,8 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
         if (oldnum > newnum) {
             // delta from baseline
             SHOWNET(3, "%3u:baseline:%i ", readcount, newnum);
-            CL_ParseDeltaEntity(frame, newnum, &cl.baselines[newnum], bits);
-            if (!bits) {
-                SHOWNET(3, "\n");
-            }
+            CL_ParseDeltaEntity(frame, newnum, &cl.baselines[newnum], changed);
+            SHOWNET(3, "\n");
             continue;
         }
     }
@@ -176,7 +162,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     while (oldnum != MAX_EDICTS) {
         // one or more entities from the old packet are unchanged
         SHOWNET(4, "   unchanged:%i\n", oldnum);
-        CL_ParseDeltaEntity(frame, oldnum, oldstate, 0);
+        CL_ParseDeltaEntity(frame, oldnum, oldstate, false);
 
         oldindex++;
 
@@ -190,9 +176,8 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     }
 }
 
-static void CL_ParseFrame(int extrabits)
+static void CL_ParseFrame(void)
 {
-    uint32_t                bits, extraflags;
     int                     currentframe, deltaframe, delta, suppressed, length;
     server_frame_t          frame;
     const server_frame_t    *oldframe;
@@ -202,10 +187,8 @@ static void CL_ParseFrame(int extrabits)
 
     cl.frameflags = 0;
 
-    bits = MSG_ReadLong();
-
-    currentframe = bits & FRAMENUM_MASK;
-    delta = bits >> FRAMENUM_BITS;
+    currentframe = MSG_ReadBits(FRAMENUM_BITS);
+    delta = MSG_ReadBits(DELTAFRAME_BITS);
 
     if (delta == 31) {
         deltaframe = -1;
@@ -213,9 +196,7 @@ static void CL_ParseFrame(int extrabits)
         deltaframe = currentframe - delta;
     }
 
-    bits = MSG_ReadByte();
-
-    suppressed = bits & SUPPRESSCOUNT_MASK;
+    suppressed = MSG_ReadBits(SUPPRESSCOUNT_BITS);
     if (suppressed & FF_CLIENTPRED) {
         // CLIENTDROP is implied, don't draw both
         suppressed &= ~FF_CLIENTDROP;
@@ -224,7 +205,6 @@ static void CL_ParseFrame(int extrabits)
         cl.suppress_count = 1;
     }
     cl.frameflags |= suppressed;
-    extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
 
     frame.number = currentframe;
     frame.delta = deltaframe;
@@ -273,12 +253,14 @@ static void CL_ParseFrame(int extrabits)
     }
 
     // read areabits
-    length = MSG_ReadByte();
+    length = MSG_ReadBits(6);
     if (length) {
         if (length > sizeof(frame.areabits)) {
             Com_Error(ERR_DROP, "%s: invalid areabits length", __func__);
         }
-        memcpy(frame.areabits, MSG_ReadData(length), length);
+        for (int i = 0; i < length; i++)
+            frame.areabits[i] = MSG_ReadBits(8);
+        //memcpy(frame.areabits, MSG_ReadData(length), length);
         frame.areabytes = length;
     } else {
         frame.areabytes = 0;
@@ -287,30 +269,11 @@ static void CL_ParseFrame(int extrabits)
     SHOWNET(3, "%3u:playerinfo\n", msg_read.readcount);
 
     // parse playerstate
-    bits = MSG_ReadWord();
-    if (cl.psFlags & MSG_PS_MOREBITS && bits & PS_MOREBITS)
-        bits |= (uint32_t)MSG_ReadByte() << 16;
+    if (from)
+        frame.ps = *from;
+    MSG_ParseDeltaPlayerstate(&frame.ps);
 
-    MSG_ParseDeltaPlayerstate(from, &frame.ps, bits, extraflags, cl.psFlags);
-#if USE_DEBUG
-    if (cl_shownet->integer >= 3 && (bits || extraflags)) {
-        Com_LPrintf(PRINT_DEVELOPER, "   ");
-        MSG_ShowDeltaPlayerstateBits(bits, extraflags);
-        Com_LPrintf(PRINT_DEVELOPER, "\n");
-    }
-#endif
-
-    // parse clientNum
-    if (extraflags & EPS_CLIENTNUM) {
-        frame.clientNum = MSG_ReadShort();
-        if (!VALIDATE_CLIENTNUM(frame.clientNum)) {
-            Com_Error(ERR_DROP, "%s: bad clientNum", __func__);
-        }
-    } else if (oldframe) {
-        frame.clientNum = oldframe->clientNum;
-    }
-
-    SHOWNET(3, "%3u:packetentities\n", msg_read.readcount);
+    SHOWNET(3, "\n%3u:packetentities\n", msg_read.readcount);
 
     // parse packetentities
     CL_ParsePacketEntities(oldframe, &frame);
@@ -401,24 +364,26 @@ static void CL_ParseConfigstring(int index)
     CL_UpdateConfigstring(index);
 }
 
-static void CL_ParseBaseline(int index, uint64_t bits)
+static void CL_ParseBaseline(int index)
 {
-    centity_state_t *base;
-
     if (index < 1 || index >= MAX_EDICTS) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
-#if USE_DEBUG
+#if 0//USE_DEBUG
     if (cl_shownet->integer >= 3) {
         Com_LPrintf(PRINT_DEVELOPER, "   baseline:%i ", index);
         MSG_ShowDeltaEntityBits(bits);
         Com_LPrintf(PRINT_DEVELOPER, "\n");
     }
 #endif
+    if (MSG_ReadBit()) {
+        Com_Error(ERR_DROP, "%s: removed entity", __func__);
+        return;
+    }
 
-    base = &cl.baselines[index];
-    MSG_ParseDeltaEntity(&base->s, &base->x, index, bits, cl.esFlags);
+    if (MSG_ReadBit())
+        MSG_ParseDeltaEntity(&cl.baselines[index], index);
 }
 
 // instead of wasting space for svc_configstring and svc_spawnbaseline
@@ -426,9 +391,8 @@ static void CL_ParseBaseline(int index, uint64_t bits)
 static void CL_ParseGamestate(int cmd)
 {
     int         index;
-    uint64_t    bits;
 
-    if (cmd == svc_gamestate || cmd == svc_configstringstream) {
+    if (cmd == svc_configstringstream) {
         while (1) {
             index = MSG_ReadWord();
             if (index == MAX_CONFIGSTRINGS) {
@@ -438,13 +402,13 @@ static void CL_ParseGamestate(int cmd)
         }
     }
 
-    if (cmd == svc_gamestate || cmd == svc_baselinestream) {
+    if (cmd == svc_baselinestream) {
         while (1) {
-            index = MSG_ParseEntityBits(&bits, cl.esFlags);
+            index = MSG_ReadBits(ENTITYNUM_BITS);
             if (!index) {
                 break;
             }
-            CL_ParseBaseline(index, bits);
+            CL_ParseBaseline(index);
         }
     }
 }
@@ -528,41 +492,6 @@ static void CL_ParseServerData(void)
     cl.serverstate = i;
     cinematic = i == ss_pic || i == ss_cinematic;
     i = MSG_ReadWord();
-    if (i & Q2PRO_PF_STRAFEJUMP_HACK) {
-        Com_DPrintf("Q2PRO strafejump hack enabled\n");
-        cl.pmp.strafehack = true;
-    }
-    if (i & Q2PRO_PF_QW_MODE) {
-        Com_DPrintf("Q2PRO QW mode enabled\n");
-    }
-    if (i & Q2PRO_PF_WATERJUMP_HACK) {
-        Com_DPrintf("Q2PRO waterjump hack enabled\n");
-        cl.pmp.waterhack = true;
-    }
-    if (i & Q2PRO_PF_EXTENSIONS) {
-        Com_DPrintf("Q2PRO protocol extensions enabled\n");
-    }
-    if (i & Q2PRO_PF_EXTENSIONS_2) {
-        Com_DPrintf("Q2PRO protocol extensions v2 enabled\n");
-        cl.esFlags |= MSG_ES_EXTENSIONS_2;
-        cl.psFlags |= MSG_PS_EXTENSIONS_2;
-        cl.psFlags |= MSG_PS_MOREBITS;
-    }
-    cl.esFlags |= MSG_ES_UMASK | MSG_ES_LONGSOLID;
-    cl.esFlags |= MSG_ES_BEAMORIGIN;
-    cl.esFlags |= MSG_ES_SHORTANGLES;
-    cl.pmp.speedmult = 2;
-    cl.pmp.flyhack = true; // fly hack is unconditionally enabled
-    cl.pmp.flyfriction = 4;
-    cl.esFlags |= CL_ES_EXTENDED_MASK;
-    cl.psFlags |= MSG_PS_EXTENSIONS;
-    cl.esFlags |= MSG_ES_EXTENSIONS_2;
-    cl.psFlags |= MSG_PS_EXTENSIONS_2;
-    cl.psFlags |= MSG_PS_MOREBITS;
-
-    // use full extended flags unless writing backward compatible demo
-    cls.demo.esFlags = CL_ES_EXTENDED_MASK_2;
-    cls.demo.psFlags = CL_PS_EXTENDED_MASK_2;
 
     if (cinematic) {
         SCR_PlayCinematic(levelname);
@@ -601,11 +530,6 @@ tent_params_t   te;
 mz_params_t     mz;
 snd_params_t    snd;
 
-static void CL_ReadPos(vec3_t pos)
-{
-    MSG_ReadPos(pos, cl.esFlags & MSG_ES_EXTENSIONS_2);
-}
-
 static void CL_ParseTEntPacket(void)
 {
     te.type = MSG_ReadByte();
@@ -628,7 +552,7 @@ static void CL_ParseTEntPacket(void)
     case TE_ELECTRIC_SPARKS:
     case TE_BLUEHYPERBLASTER_2:
     case TE_BERSERK_SLAM:
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         MSG_ReadDir(te.dir);
         break;
 
@@ -637,7 +561,7 @@ static void CL_ParseTEntPacket(void)
     case TE_WELDING_SPARKS:
     case TE_TUNNEL_SPARKS:
         te.count = MSG_ReadByte();
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         break;
@@ -650,8 +574,8 @@ static void CL_ParseTEntPacket(void)
     case TE_BUBBLETRAIL2:
     case TE_BFG_LASER:
     case TE_BFG_ZAP:
-        CL_ReadPos(te.pos1);
-        CL_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos2);
         break;
 
     case TE_GRENADE_EXPLOSION:
@@ -675,7 +599,7 @@ static void CL_ParseTEntPacket(void)
     case TE_NUKEBLAST:
     case TE_EXPLOSION1_NL:
     case TE_EXPLOSION2_NL:
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         break;
 
     case TE_PARASITE_ATTACK:
@@ -685,39 +609,39 @@ static void CL_ParseTEntPacket(void)
     case TE_GRAPPLE_CABLE_2:
     case TE_LIGHTNING_BEAM:
         te.entity1 = MSG_ReadShort();
-        CL_ReadPos(te.pos1);
-        CL_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos2);
         break;
 
     case TE_GRAPPLE_CABLE:
         te.entity1 = MSG_ReadShort();
-        CL_ReadPos(te.pos1);
-        CL_ReadPos(te.pos2);
-        CL_ReadPos(te.offset);
+        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos2);
+        MSG_ReadPos(te.offset);
         break;
 
     case TE_LIGHTNING:
         te.entity1 = MSG_ReadShort();
         te.entity2 = MSG_ReadShort();
-        CL_ReadPos(te.pos1);
-        CL_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos2);
         break;
 
     case TE_FLASHLIGHT:
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         te.entity1 = MSG_ReadShort();
         break;
 
     case TE_FORCEWALL:
-        CL_ReadPos(te.pos1);
-        CL_ReadPos(te.pos2);
+        MSG_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos2);
         te.color = MSG_ReadByte();
         break;
 
     case TE_STEAM:
         te.entity1 = MSG_ReadShort();
         te.count = MSG_ReadByte();
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         MSG_ReadDir(te.dir);
         te.color = MSG_ReadByte();
         te.entity2 = MSG_ReadShort();
@@ -728,7 +652,7 @@ static void CL_ParseTEntPacket(void)
 
     case TE_WIDOWBEAMOUT:
         te.entity1 = MSG_ReadShort();
-        CL_ReadPos(te.pos1);
+        MSG_ReadPos(te.pos1);
         break;
 
     case TE_POWER_SPLASH:
@@ -812,7 +736,7 @@ static void CL_ParseStartSoundPacket(void)
 
     // positioned in space
     if (flags & SND_POS)
-        CL_ReadPos(snd.pos);
+        MSG_ReadPos(snd.pos);
 
     SHOWNET(3, "    %s\n", cl.configstrings[CS_SOUNDS + snd.index]);
 }
@@ -1108,9 +1032,8 @@ CL_ParseServerMessage
 */
 void CL_ParseServerMessage(void)
 {
-    int         cmd, index, extrabits;
+    int         cmd, index;
     uint32_t    readcount;
-    uint64_t    bits;
 
 #if USE_DEBUG
     if (cl_shownet->integer == 1) {
@@ -1133,18 +1056,11 @@ void CL_ParseServerMessage(void)
         }
 
         cmd = MSG_ReadByte();
-        if (cmd & ~SVCMD_MASK && (cmd & SVCMD_MASK) != svc_frame)
-            goto badbyte;
-
-        extrabits = cmd >> SVCMD_BITS;
-        cmd &= SVCMD_MASK;
-
         SHOWNET(2, "%3u:%s\n", msg_read.readcount - 1, MSG_ServerCommandString(cmd));
 
         // other commands
         switch (cmd) {
         default:
-        badbyte:
             Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
             break;
 
@@ -1186,8 +1102,8 @@ void CL_ParseServerMessage(void)
             break;
 
         case svc_spawnbaseline:
-            index = MSG_ParseEntityBits(&bits, cl.esFlags);
-            CL_ParseBaseline(index, bits);
+            index = MSG_ReadBits(ENTITYNUM_BITS);
+            CL_ParseBaseline(index);
             break;
 
         case svc_temp_entity:
@@ -1210,7 +1126,7 @@ void CL_ParseServerMessage(void)
             continue;
 
         case svc_frame:
-            CL_ParseFrame(extrabits);
+            CL_ParseFrame();
             continue;
 
         case svc_inventory:
@@ -1268,7 +1184,6 @@ bool CL_SeekDemoMessage(void)
 {
     int         cmd, index;
     bool        serverdata = false;
-    uint64_t    bits;
 
 #if USE_DEBUG
     if (cl_shownet->integer == 1) {
@@ -1330,8 +1245,8 @@ bool CL_SeekDemoMessage(void)
             break;
 
         case svc_spawnbaseline:
-            index = MSG_ParseEntityBits(&bits, cl.esFlags);
-            CL_ParseBaseline(index, bits);
+            index = MSG_ReadBits(ENTITYNUM_BITS);
+            CL_ParseBaseline(index);
             break;
 
         case svc_temp_entity:
@@ -1347,7 +1262,7 @@ bool CL_SeekDemoMessage(void)
             break;
 
         case svc_frame:
-            CL_ParseFrame(0);
+            CL_ParseFrame();
             continue;
 
         case svc_inventory:

@@ -82,7 +82,7 @@ void SP_target_speaker(edict_t *ent)
     if (!ent->volume)
         ent->volume = 1;
     if (ent->volume != 1)
-        ent->x.loop_volume = ent->volume;
+        ent->s.loop_volume = ent->volume;
 
     if (!ent->attenuation) {
         if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
@@ -98,7 +98,7 @@ void SP_target_speaker(edict_t *ent)
     }
 
     if (ent->attenuation != ATTN_STATIC)
-        ent->x.loop_attenuation = ent->attenuation;
+        ent->s.loop_attenuation = ent->attenuation;
 
     // check for prestarted looping sound
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
@@ -1098,7 +1098,7 @@ void THINK(update_target_camera)(edict_t *self)
         float frac = 1.0f - (self->moveinfo.remaining_distance / self->moveinfo.distance);
 
         if (self->enemy && (self->enemy->hackflags & HACKFLAG_TELEPORT_OUT))
-            self->enemy->x.alpha = max(1.0f / 255, frac);
+            self->enemy->s.alpha = max(1.0f / 255, frac);
 
         vec3_t delta, newpos;
         VectorSubtract(self->movetarget->s.origin, self->s.origin, delta);
@@ -1165,7 +1165,7 @@ void THINK(target_camera_dummy_think)(edict_t *self)
     if (self->hackflags & HACKFLAG_TELEPORT_OUT) {
         self->timestamp = max(0, self->timestamp - HZ(10));
         float frac = TO_SEC(self->timestamp) / TO_SEC(self->pain_debounce_time);
-        self->x.alpha = max(1.0f / 255, frac);
+        self->s.alpha = max(1.0f / 255, frac);
     }
 
     self->nextthink = level.time + HZ(10);

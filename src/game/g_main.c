@@ -787,7 +787,7 @@ static void G_RunFrame_(bool main_loop)
 
             for (int i = 0; i < game.maxclients; i++) {
                 if (g_edicts[i + 1].inuse)
-                    Vector4Set(game.clients[i].ps.blend, 0, 0, 0, alpha);
+                    Vector4Set(game.clients[i].ps.screen_blend, 0, 0, 0, alpha);
             }
         } else {
             level.intermission_fade = false;

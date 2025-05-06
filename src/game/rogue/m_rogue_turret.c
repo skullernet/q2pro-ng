@@ -728,7 +728,7 @@ void USE(turret_activate)(edict_t *self, edict_t *other, edict_t *activator)
         Move_Calc(self->teamchain, endpos, turret_wake);
 
         base->s.sound = sound_moving;
-        base->x.loop_attenuation = ATTN_NORM;
+        base->s.loop_attenuation = ATTN_NORM;
     }
 }
 
