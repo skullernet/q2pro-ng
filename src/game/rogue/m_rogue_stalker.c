@@ -53,7 +53,7 @@ static bool stalker_ok_to_transition(edict_t *self)
         margin = self->r.mins[2] - 8;
     } else {
         // her stalkers are just better
-        if (self->monsterinfo.commander && self->monsterinfo.commander->inuse && !strncmp(self->monsterinfo.commander->classname, "monster_widow", 13))
+        if (self->monsterinfo.commander && self->monsterinfo.commander->r.inuse && !strncmp(self->monsterinfo.commander->classname, "monster_widow", 13))
             max_dist = 256;
         else
             max_dist = 180;
@@ -546,24 +546,24 @@ static bool stalker_check_lz(edict_t *self, edict_t *target, const vec3_t dest)
 
     // check under the player's four corners
     // if they're not solid, bail.
-    jumpLZ[0] = self->enemy->mins[0];
-    jumpLZ[1] = self->enemy->mins[1];
-    jumpLZ[2] = self->enemy->mins[2] - 0.25f;
+    jumpLZ[0] = self->enemy->r.mins[0];
+    jumpLZ[1] = self->enemy->r.mins[1];
+    jumpLZ[2] = self->enemy->r.mins[2] - 0.25f;
     if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
         return false;
 
-    jumpLZ[0] = self->enemy->maxs[0];
-    jumpLZ[1] = self->enemy->mins[1];
+    jumpLZ[0] = self->enemy->r.maxs[0];
+    jumpLZ[1] = self->enemy->r.mins[1];
     if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
         return false;
 
-    jumpLZ[0] = self->enemy->maxs[0];
-    jumpLZ[1] = self->enemy->maxs[1];
+    jumpLZ[0] = self->enemy->r.maxs[0];
+    jumpLZ[1] = self->enemy->r.maxs[1];
     if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
         return false;
 
-    jumpLZ[0] = self->enemy->mins[0];
-    jumpLZ[1] = self->enemy->maxs[1];
+    jumpLZ[0] = self->enemy->r.mins[0];
+    jumpLZ[1] = self->enemy->r.maxs[1];
     if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
         return false;
 

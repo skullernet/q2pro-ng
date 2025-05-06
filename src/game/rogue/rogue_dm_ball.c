@@ -63,7 +63,7 @@ static void DBall_ClientBegin(edict_t *ent)
 
     for (int j = 1; j <= game.maxclients; j++) {
         other = &g_edicts[j];
-        if (!other->inuse)
+        if (!other->r.inuse)
             continue;
         if (!other->client)
             continue;
@@ -283,7 +283,7 @@ void TOUCH(DBall_GoalTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     // bump the score for everyone on the correct team.
     for (int j = 1; j <= game.maxclients; j++) {
         ent = &g_edicts[j];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         if (!ent->client)
             continue;

@@ -270,7 +270,7 @@ static void InfantryMachineGun(edict_t *self)
     vec3_t                   vec;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     bool is_run_attack = (self->s.frame >= FRAME_run201 && self->s.frame <= FRAME_run208);

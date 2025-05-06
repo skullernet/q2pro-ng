@@ -30,7 +30,7 @@ void mal_laser_think(edict_t *self);
 
 void THINK(mal_laser_think2)(edict_t *self)
 {
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->think = mal_laser_think;
     self->nextthink = level.time + SEC(self->wait);
     self->spawnflags |= SPAWNFLAG_LASER_ZAP;
@@ -38,7 +38,7 @@ void THINK(mal_laser_think2)(edict_t *self)
 
 void THINK(mal_laser_think)(edict_t *self)
 {
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     target_laser_think(self);
     self->think = mal_laser_think2;
     self->nextthink = level.time + HZ(10);

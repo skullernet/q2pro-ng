@@ -436,7 +436,7 @@ void THINK(Trap_Think)(edict_t *ent)
             return;
         }
 
-        if (!(target->svflags & SVF_MONSTER) && !target->client)
+        if (!(target->r.svflags & SVF_MONSTER) && !target->client)
             continue;
         if (target != ent->teammaster && CheckTeamDamage(target, ent->teammaster))
             continue;
@@ -489,7 +489,7 @@ void THINK(Trap_Think)(edict_t *ent)
 
     T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_TRAP });
 
-    if (best->svflags & SVF_MONSTER)
+    if (best->r.svflags & SVF_MONSTER)
         M_ProcessPain(best);
 
     ent->enemy = best;
@@ -508,7 +508,7 @@ void THINK(Trap_Think)(edict_t *ent)
     for (int i = game.maxclients + 1; i < globals.num_edicts; i++) {
         edict_t *e = &g_edicts[i];
 
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (strcmp(e->classname, "gib"))
             continue;

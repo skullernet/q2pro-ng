@@ -316,7 +316,7 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
 
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
-            if (player->inuse)
+            if (player->r.inuse)
                 G_PlayerNotifyGoal(player);
         }
     }
@@ -714,7 +714,7 @@ void THINK(target_laser_think)(edict_t *self)
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         // ROGUE
-        if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client) && !(tr.ent->flags & FL_DAMAGEABLE)) {
+        if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client) && !(tr.ent->flags & FL_DAMAGEABLE)) {
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
@@ -831,8 +831,8 @@ void THINK(target_laser_start)(edict_t *self)
     self->use = target_laser_use;
     self->think = target_laser_think;
 
-    VectorSet(self->mins, -8, -8, -8);
-    VectorSet(self->maxs, 8, 8, 8);
+    VectorSet(self->r.mins, -8, -8, -8);
+    VectorSet(self->r.maxs, 8, 8, 8);
     gi.linkentity(self);
 
     if (self->spawnflags & SPAWNFLAG_LASER_ON)
@@ -975,7 +975,7 @@ void THINK(target_earthquake_think)(edict_t *self)
     }
 
     for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         e->client->quake_time = level.time + SEC(1);
     }
@@ -991,7 +991,7 @@ void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activato
         edict_t *e;
 
         for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
-            if (!e->inuse)
+            if (!e->r.inuse)
                 continue;
             e->client->v_dmg_pitch = -self->speed * 0.1f;
             e->client->v_dmg_time = level.time + DAMAGE_TIME;
@@ -1057,7 +1057,7 @@ void THINK(update_target_camera)(edict_t *self)
     if ((self->hackflags & HACKFLAG_SKIPPABLE) && level.time > SEC(2)) {
         for (int i = 0; i < game.maxclients; i++) {
             edict_t *client = g_edicts + 1 + i;
-            if (!client->inuse || !client->client->pers.connected)
+            if (!client->r.inuse || !client->client->pers.connected)
                 continue;
 
             if (client->client->buttons & BUTTON_ANY) {
@@ -1117,7 +1117,7 @@ void THINK(update_target_camera)(edict_t *self)
         // move all clients to the intermission point
         for (int i = 0; i < game.maxclients; i++) {
             edict_t *client = g_edicts + 1 + i;
-            if (client->inuse)
+            if (client->r.inuse)
                 MoveClientToIntermission(client);
         }
     } else {
@@ -1200,8 +1200,8 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         dummy->nextthink = level.time + HZ(10);
         dummy->solid = SOLID_BBOX;
         dummy->movetype = MOVETYPE_STEP;
-        VectorCopy(activator->mins, dummy->mins);
-        VectorCopy(activator->maxs, dummy->maxs);
+        VectorCopy(activator->r.mins, dummy->r.mins);
+        VectorCopy(activator->r.maxs, dummy->r.maxs);
         dummy->s.modelindex = dummy->s.modelindex2 = MODELINDEX_PLAYER;
         dummy->s.skinnum = activator->s.skinnum;
         VectorCopy(activator->velocity, dummy->velocity);
@@ -1224,7 +1224,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     // move all clients to the intermission point
     for (int i = 0; i < game.maxclients; i++) {
         edict_t *client = g_edicts + 1 + i;
-        if (!client->inuse)
+        if (!client->r.inuse)
             continue;
 
         // respawn any dead clients
@@ -1344,7 +1344,7 @@ void SP_target_soundfx(edict_t *self)
 void THINK(target_light_flicker_think)(edict_t *self)
 {
     if (brandom())
-        self->svflags ^= SVF_NOCLIENT;
+        self->r.svflags ^= SVF_NOCLIENT;
 
     self->nextthink = level.time + HZ(10);
 }
@@ -1396,9 +1396,9 @@ void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
     self->health = !self->health;
 
     if (self->health)
-        self->svflags &= ~SVF_NOCLIENT;
+        self->r.svflags &= ~SVF_NOCLIENT;
     else
-        self->svflags |= SVF_NOCLIENT;
+        self->r.svflags |= SVF_NOCLIENT;
 
     if (!self->health) {
         self->think = NULL;
@@ -1571,7 +1571,7 @@ void THINK(check_target_healthbar)(edict_t *ent)
 {
     edict_t *target = G_PickTarget(ent->target);
 
-    if (!target || !(target->svflags & SVF_MONSTER)) {
+    if (!target || !(target->r.svflags & SVF_MONSTER)) {
         if (target)
             gi.dprintf("%s: target %s does not appear to be a monster\n", etos(ent), etos(target));
         G_FreeEdict(ent);

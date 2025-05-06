@@ -19,7 +19,7 @@ void USE(Use_Boss3)(edict_t *self, edict_t *other, edict_t *activator)
     gi.multicast(self->s.origin, MULTICAST_PHS);
 
     // just hide, don't kill ent so we can trigger it again
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->solid = SOLID_NOT;
 }
 

@@ -206,7 +206,7 @@ static void weapon_tracker_fire(edict_t *self)
     if (tr.ent == world)
         gi.trace(&tr, start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self, mask);
 
-    if (tr.ent != world && ((tr.ent->svflags & SVF_MONSTER) || tr.ent->client || (tr.ent->flags & FL_DAMAGEABLE)) && tr.ent->health > 0)
+    if (tr.ent != world && ((tr.ent->r.svflags & SVF_MONSTER) || tr.ent->client || (tr.ent->flags & FL_DAMAGEABLE)) && tr.ent->health > 0)
         enemy = tr.ent;
 
     P_AddWeaponKick(self, -2, -1);

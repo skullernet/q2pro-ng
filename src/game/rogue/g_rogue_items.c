@@ -176,7 +176,7 @@ void Use_Vengeance(edict_t *ent, const gitem_t *item)
 //=================
 void USE(Item_TriggeredSpawn)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
 
     if (self->spawnflags & SPAWNFLAG_ITEM_TOSS_SPAWN) {

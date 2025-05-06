@@ -370,7 +370,7 @@ static void hover_fire_blaster(edict_t *self)
     vec3_t    end;
     vec3_t    dir;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     AngleVectors(self->s.angles, forward, right, NULL);

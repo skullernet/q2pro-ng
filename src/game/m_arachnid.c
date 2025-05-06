@@ -152,7 +152,7 @@ void PAIN(arachnid_pain)(edict_t *self, edict_t *other, float kick, int damage, 
 
 static void arachnid_charge_rail(edict_t *self, monster_muzzleflash_id_t mz)
 {
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     gi.sound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM, 0);
@@ -457,7 +457,7 @@ static void arachnid_spawn(edict_t *self)
 
         gi.sound(ent, CHAN_BODY, sound_spawn, 1, ATTN_NONE, 0);
 
-        if ((self->enemy->inuse) && (self->enemy->health > 0)) {
+        if ((self->enemy->r.inuse) && (self->enemy->health > 0)) {
             ent->enemy = self->enemy;
             FoundTarget(ent);
         }
@@ -492,7 +492,7 @@ const mmove_t MMOVE_T(arachnid_taunt) = { FRAME_melee_pain1, FRAME_melee_pain16,
 
 void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     if (self->monsterinfo.melee_debounce_time < level.time && range_to(self, self->enemy) < MELEE_DISTANCE)

@@ -309,8 +309,8 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     // [Paril-KEX] don't teleport to a point_combat, it means HOLD for them.
     if (next && !strcmp(next->classname, "path_corner") && next->spawnflags & SPAWNFLAG_PATH_CORNER_TELEPORT) {
         VectorCopy(next->s.origin, v);
-        v[2] += next->mins[2];
-        v[2] -= other->mins[2];
+        v[2] += next->r.mins[2];
+        v[2] -= other->r.mins[2];
         VectorCopy(v, other->s.origin);
         next = G_PickTarget(next->target);
         other->s.event = EV_OTHER_TELEPORT;
@@ -474,7 +474,7 @@ void USE(light_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void USE(dynamic_light_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->svflags ^= SVF_NOCLIENT;
+    self->r.svflags ^= SVF_NOCLIENT;
 }
 
 void SP_dynamic_light(edict_t *self)
@@ -539,12 +539,12 @@ void USE(func_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     if (self->solid == SOLID_NOT) {
         self->solid = SOLID_BSP;
-        self->svflags &= ~SVF_NOCLIENT;
+        self->r.svflags &= ~SVF_NOCLIENT;
         gi.linkentity(self);
         KillBoxEx(self, false, MOD_TELEFRAG, true, self->spawnflags & SPAWNFLAG_SAFE_APPEAR);
     } else {
         self->solid = SOLID_NOT;
-        self->svflags |= SVF_NOCLIENT;
+        self->r.svflags |= SVF_NOCLIENT;
         gi.linkentity(self);
     }
 
@@ -659,7 +659,7 @@ void THINK(func_object_release)(edict_t *self)
 void USE(func_object_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->solid = SOLID_BSP;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     func_object_release(self);
     KillBox(self, false);
@@ -765,7 +765,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     // PMM - if we're part of a train, clean ourselves out of it
     if (self->flags & FL_TEAMSLAVE) {
         master = self->teammaster;
-        if (master && master->inuse) { // because mappers (other than jim (usually)) are stupid....
+        if (master && master->r.inuse) { // because mappers (other than jim (usually)) are stupid....
             while (!done) {
                 if (master->teamchain == self) {
                     master->teamchain = self->teamchain;
@@ -822,7 +822,7 @@ void USE(func_explosive_activate)(edict_t *self, edict_t *other, edict_t *activa
 void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->solid = SOLID_BSP;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     gi.linkentity(self);
     KillBox(self, false);
@@ -1303,7 +1303,7 @@ There must be a path for it to follow once it is activated.
 
 void USE(misc_viper_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->use = train_use;
     train_use(self, other, activator);
 }
@@ -1381,7 +1381,7 @@ void USE(misc_viper_bomb_use)(edict_t *self, edict_t *other, edict_t *activator)
     edict_t *viper;
 
     self->solid = SOLID_BBOX;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->s.effects |= EF_ROCKET;
     self->use = NULL;
     self->movetype = MOVETYPE_TOSS;
@@ -1424,7 +1424,7 @@ There must be a path for it to follow once it is activated.
 */
 void USE(misc_strogg_ship_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->use = train_use;
     train_use(self, other, activator);
 }
@@ -1889,7 +1889,7 @@ Creates a flare seen in the N64 version.
 
 void USE(misc_flare_use)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    ent->svflags ^= SVF_NOCLIENT;
+    ent->r.svflags ^= SVF_NOCLIENT;
     gi.linkentity(ent);
 }
 
@@ -2243,7 +2243,7 @@ void SP_misc_player_mannequin(edict_t *self)
 
 void USE(misc_model_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->svflags ^= SVF_NOCLIENT;
+    self->r.svflags ^= SVF_NOCLIENT;
 }
 
 /*QUAKED misc_model (1 0 0) (-8 -8 -8) (8 8 8)
@@ -2268,7 +2268,7 @@ void USE(info_nav_lock_use)(edict_t *self, edict_t *other, edict_t *activator)
     edict_t *n = NULL;
 
     while ((n = G_Find(n, FOFS(targetname), self->target))) {
-        if (!(n->svflags & SVF_DOOR)) {
+        if (!(n->r.svflags & SVF_DOOR)) {
             gi.dprintf("%s tried targeting %s, a non-SVF_DOOR\n", etos(self), etos(n));
             continue;
         }

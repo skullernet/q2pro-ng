@@ -579,7 +579,7 @@ static int G_EncodeHealthBar(int bar)
     Q_assert(ent->enemy);
 
     // enemy dead
-    if (!ent->enemy->inuse || ent->enemy->health <= 0) {
+    if (!ent->enemy->r.inuse || ent->enemy->health <= 0) {
         // hack for Makron
         if (ent->enemy->monsterinfo.aiflags & AI_DOUBLE_TROUBLE)
             return 1;
@@ -865,7 +865,7 @@ void G_SetSpectatorStats(edict_t *ent)
     if (cl->showinventory && cl->pers.health > 0)
         cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
 
-    if (cl->chase_target && cl->chase_target->inuse)
+    if (cl->chase_target && cl->chase_target->r.inuse)
         cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + (cl->chase_target - g_edicts) - 1;
     else
         cl->ps.stats[STAT_CHASE] = 0;

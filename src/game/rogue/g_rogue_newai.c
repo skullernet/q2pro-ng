@@ -798,7 +798,7 @@ bool MarkTeslaArea(edict_t *self, edict_t *tesla)
     }
 
     // see if we can grab the trigger directly
-    if (tesla->teamchain && tesla->teamchain->inuse) {
+    if (tesla->teamchain && tesla->teamchain->r.inuse) {
         edict_t *trigger = tesla->teamchain;
 
         if (tesla->air_finished)
@@ -1110,7 +1110,7 @@ void MONSTERINFO_UNDUCK(monster_duck_up)(edict_t *self)
         return;
 
     self->monsterinfo.aiflags &= ~AI_DUCKED;
-    self->maxs[2] = self->monsterinfo.base_height;
+    self->r.maxs[2] = self->monsterinfo.base_height;
     self->takedamage = true;
     // we finished a duck-up successfully, so cut the time remaining in half
     if (self->monsterinfo.next_duck_time > level.time)
@@ -1123,7 +1123,7 @@ bool has_valid_enemy(edict_t *self)
     if (!self->enemy)
         return false;
 
-    if (!self->enemy->inuse)
+    if (!self->enemy->r.inuse)
         return false;
 
     if (self->enemy->health < 1)
@@ -1215,13 +1215,13 @@ int CountPlayers(void)
 void THINK(BossExplode_think)(edict_t *self)
 {
     // owner gone or changed
-    if (!self->r.owner->inuse || self->r.owner->s.modelindex != self->style || self->count != self->r.owner->spawn_count) {
+    if (!self->r.owner->r.inuse || self->r.owner->s.modelindex != self->style || self->count != self->r.owner->spawn_count) {
         G_FreeEdict(self);
         return;
     }
 
     vec3_t org;
-    VectorAdd(self->r.owner->s.origin, self->r.owner->mins, org);
+    VectorAdd(self->r.owner->s.origin, self->r.owner->r.mins, org);
     VectorMA(org, frandom(), self->r.owner->size, org);
 
     gi.WriteByte(svc_temp_entity);

@@ -260,7 +260,7 @@ static void CarrierSpawn(edict_t *self)
     ent->monsterinfo.slots_from_commander = reinforcement->strength;
     self->monsterinfo.monster_used += reinforcement->strength;
 
-    if ((self->enemy->inuse) && (self->enemy->health > 0)) {
+    if ((self->enemy->r.inuse) && (self->enemy->health > 0)) {
         ent->enemy = self->enemy;
         FoundTarget(ent);
 
@@ -615,7 +615,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
 
     self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
 
-    if ((!self->enemy) || (!self->enemy->inuse))
+    if ((!self->enemy) || (!self->enemy->r.inuse))
         return;
 
     enemy_inback = inback(self, self->enemy);

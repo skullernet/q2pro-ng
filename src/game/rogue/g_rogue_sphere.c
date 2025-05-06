@@ -327,8 +327,8 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     VectorCopy(self->s.origin, owner->s.origin);
     VectorCopy(self->s.angles, owner->s.angles);
     VectorCopy(self->s.angles, owner->client->v_angle);
-    VectorSet(owner->mins, -5, -5, -5);
-    VectorSet(owner->maxs, 5, 5, 5);
+    VectorSet(owner->r.mins, -5, -5, -5);
+    VectorSet(owner->r.maxs, 5, 5, 5);
     owner->client->ps.fov = 140;
     owner->s.modelindex = 0;
     owner->s.modelindex2 = 0;
@@ -407,7 +407,7 @@ void THINK(defender_think)(edict_t *self)
 
     sphere_fly(self);
 
-    if (self->inuse)
+    if (self->r.inuse)
         self->nextthink = level.time + HZ(10);
 }
 
@@ -441,7 +441,7 @@ void THINK(hunter_think)(edict_t *self)
 
         // deal with sam raimi cam
         if (owner && (owner->flags & FL_SAM_RAIMI)) {
-            if (self->inuse) {
+            if (self->r.inuse) {
                 owner->movetype = MOVETYPE_FLYMISSILE;
                 LookAtKiller(owner, self, self->enemy);
                 // owner is flying with us, move him too
@@ -449,8 +449,8 @@ void THINK(hunter_think)(edict_t *self)
                 owner->viewheight = self->s.origin[2] - owner->s.origin[2];
                 VectorCopy(self->s.origin, owner->s.origin);
                 VectorCopy(self->velocity, owner->velocity);
-                VectorClear(owner->mins);
-                VectorClear(owner->maxs);
+                VectorClear(owner->r.mins);
+                VectorClear(owner->r.maxs);
                 gi.linkentity(owner);
             } else { // sphere timed out
                 VectorClear(owner->velocity);
@@ -461,7 +461,7 @@ void THINK(hunter_think)(edict_t *self)
     } else
         sphere_fly(self);
 
-    if (self->inuse)
+    if (self->r.inuse)
         self->nextthink = level.time + HZ(10);
 }
 
@@ -483,7 +483,7 @@ void THINK(vengeance_think)(edict_t *self)
     else
         sphere_fly(self);
 
-    if (self->inuse)
+    if (self->r.inuse)
         self->nextthink = level.time + HZ(10);
 }
 
@@ -572,7 +572,7 @@ static void Own_Sphere(edict_t *self, edict_t *sphere)
             self->client->owned_sphere = sphere;
         // they already have one, take care of the old one
         } else {
-            if (self->client->owned_sphere->inuse) {
+            if (self->client->owned_sphere->r.inuse) {
                 G_FreeEdict(self->client->owned_sphere);
                 self->client->owned_sphere = sphere;
             } else {

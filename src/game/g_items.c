@@ -136,7 +136,7 @@ void THINK(DoRespawn)(edict_t *ent)
             ent = master;
         else {
             // ZOID
-            ent->svflags |= SVF_NOCLIENT;
+            ent->r.svflags |= SVF_NOCLIENT;
             ent->solid = SOLID_NOT;
             gi.linkentity(ent);
 
@@ -150,8 +150,8 @@ void THINK(DoRespawn)(edict_t *ent)
         }
     }
 
-    ent->svflags &= ~SVF_NOCLIENT;
-    ent->svflags &= ~SVF_RESPAWNING;
+    ent->r.svflags &= ~SVF_NOCLIENT;
+    ent->r.svflags &= ~SVF_RESPAWNING;
     ent->solid = SOLID_TRIGGER;
     gi.linkentity(ent);
 
@@ -1020,7 +1020,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
 
 void USE(Use_Item)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    ent->svflags &= ~SVF_NOCLIENT;
+    ent->r.svflags &= ~SVF_NOCLIENT;
     ent->use = NULL;
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_NO_TOUCH) {
@@ -1051,11 +1051,11 @@ void THINK(droptofloor)(edict_t *ent)
 
     // [Paril-KEX] scale foodcube based on how much we ingested
     if (strcmp(ent->classname, "item_foodcube") == 0) {
-        VectorScale(fc_mins, ent->s.scale, ent->mins);
-        VectorScale(fc_maxs, ent->s.scale, ent->maxs);
+        VectorScale(fc_mins, ent->s.scale, ent->r.mins);
+        VectorScale(fc_maxs, ent->s.scale, ent->r.maxs);
     } else {
-        VectorSet(ent->mins, -15, -15, -15);
-        VectorSet(ent->maxs, 15, 15, 15);
+        VectorSet(ent->r.mins, -15, -15, -15);
+        VectorSet(ent->r.maxs, 15, 15, 15);
     }
 
     if (ent->model)
@@ -1070,7 +1070,7 @@ void THINK(droptofloor)(edict_t *ent)
         VectorCopy(ent->s.origin, dest);
         dest[2] -= 128;
 
-        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
+        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent, MASK_SOLID);
         if (tr.startsolid) {
             if (G_FixStuckObject(ent, ent->s.origin) == NO_GOOD_POSITION) {
                 // RAFAEL
@@ -1094,7 +1094,7 @@ void THINK(droptofloor)(edict_t *ent)
         ent->chain = ent->teamchain;
         ent->teamchain = NULL;
 
-        ent->svflags |= SVF_NOCLIENT;
+        ent->r.svflags |= SVF_NOCLIENT;
         ent->solid = SOLID_NOT;
 
         if (ent == ent->teammaster) {
@@ -1111,7 +1111,7 @@ void THINK(droptofloor)(edict_t *ent)
     }
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_TRIGGER_SPAWN) {
-        ent->svflags |= SVF_NOCLIENT;
+        ent->r.svflags |= SVF_NOCLIENT;
         ent->solid = SOLID_NOT;
         ent->use = Use_Item;
     }

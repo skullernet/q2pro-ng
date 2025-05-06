@@ -74,8 +74,8 @@ static void insane_onground(edict_t *self);
 // may fix later
 static void insane_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 #endif

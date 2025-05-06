@@ -751,8 +751,8 @@ void THINK(CTFFlagSetup)(edict_t *ent)
     trace_t tr;
     vec3_t  dest;
 
-    VectorSet(ent->mins, -15, -15, -15);
-    VectorSet(ent->maxs, 15, 15, 15);
+    VectorSet(ent->r.mins, -15, -15, -15);
+    VectorSet(ent->r.maxs, 15, 15, 15);
 
     if (ent->model)
         gi.setmodel(ent, ent->model);
@@ -766,7 +766,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
     VectorCopy(ent->s.origin, dest);
     dest[2] -= 128;
 
-    gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
+    gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent, MASK_SOLID);
     if (tr.startsolid) {
         gi.dprintf("CTFFlagSetup: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);

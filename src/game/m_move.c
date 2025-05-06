@@ -798,7 +798,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         if (!current_bad && new_bad) {
             if (new_bad->r.owner) {
                 if (!strcmp(new_bad->r.owner->classname, "tesla_mine")) {
-                    if (!ent->enemy || !ent->enemy->inuse) {
+                    if (!ent->enemy || !ent->enemy->r.inuse) {
                         TargetTesla(ent, new_bad->r.owner);
                         ent->monsterinfo.aiflags |= AI_BLOCKED;
                     } else if (!strcmp(ent->enemy->classname, "tesla_mine")) {

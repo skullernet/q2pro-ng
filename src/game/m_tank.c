@@ -343,7 +343,7 @@ static void TankBlaster(edict_t *self)
     vec3_t                   dir;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     bool blindfire = self->monsterinfo.aiflags & AI_MANUAL_STEERING;
@@ -384,7 +384,7 @@ static void TankRocket(edict_t *self)
     monster_muzzleflash_id_t flash_number;
     int                      rocketSpeed; // PGM
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     bool blindfire = self->monsterinfo.aiflags & AI_MANUAL_STEERING;
@@ -464,7 +464,7 @@ static void TankMachineGun(edict_t *self)
     vec3_t                   forward, right;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     flash_number = MZ2_TANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak406);
@@ -735,7 +735,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
     float  r;
 
     // PMM
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     if (self->enemy->health <= 0) {

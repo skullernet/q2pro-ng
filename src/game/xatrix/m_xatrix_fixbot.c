@@ -40,7 +40,7 @@ const mmove_t fixbot_move_turn;
 // [Paril-KEX] clean up bot goals if we get interrupted
 void THINK(bot_goal_check)(edict_t *self)
 {
-    if (!self->r.owner || !self->r.owner->inuse || self->r.owner->goalentity != self) {
+    if (!self->r.owner || !self->r.owner->r.inuse || self->r.owner->goalentity != self) {
         G_FreeEdict(self);
         return;
     }
@@ -818,7 +818,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
 static void fixbot_fire_laser(edict_t *self)
 {
     // critter dun got blown up while bein' fixed
-    if (!self->enemy || !self->enemy->inuse || self->enemy->health <= self->enemy->gib_health) {
+    if (!self->enemy || !self->enemy->r.inuse || self->enemy->health <= self->enemy->gib_health) {
         M_SetAnimation(self, &fixbot_move_stand);
         self->monsterinfo.aiflags &= ~AI_MEDIC;
         return;
@@ -1090,10 +1090,10 @@ void PAIN(fixbot_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 #if 0
 static void fixbot_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }

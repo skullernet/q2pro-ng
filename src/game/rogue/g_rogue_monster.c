@@ -31,7 +31,7 @@ void THINK(stationarymonster_triggered_spawn)(edict_t *self)
 {
     self->solid = SOLID_BBOX;
     self->movetype = MOVETYPE_NONE;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->air_finished = level.time + SEC(12);
     gi.linkentity(self);
 

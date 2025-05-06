@@ -456,7 +456,7 @@ Marks the edict as free
 void THINK(G_FreeEdict)(edict_t *ed)
 {
     // already freed
-    if (!ed->inuse)
+    if (!ed->r.inuse)
         return;
 
     gi.unlinkentity(ed); // unlink from world
@@ -469,7 +469,7 @@ void THINK(G_FreeEdict)(edict_t *ed)
     ed->s.number = ed - g_edicts;
     ed->classname = "freed";
     ed->freetime = level.time;
-    ed->inuse = false;
+    ed->r.inuse = false;
     ed->spawn_count = id;
 }
 
@@ -522,12 +522,12 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
 
         if (tr.fraction == 1.0f)
             break;
-        if (!(tr.ent->svflags & SVF_PROJECTILE))
+        if (!(tr.ent->r.svflags & SVF_PROJECTILE))
             break;
 
         // always skip this projectile since certain conditions may cause the projectile
         // to not disappear immediately
-        tr.ent->svflags &= ~SVF_PROJECTILE;
+        tr.ent->r.svflags &= ~SVF_PROJECTILE;
 
         skip = &skipped[num_skipped++];
         skip->projectile = tr.ent;

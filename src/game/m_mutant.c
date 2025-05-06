@@ -242,7 +242,7 @@ static void mutant_hit_right(edict_t *self)
 
 static void mutant_check_refire(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->inuse || self->enemy->health <= 0)
+    if (!self->enemy || !self->enemy->r.inuse || self->enemy->health <= 0)
         return;
 
     if ((self->monsterinfo.melee_debounce_time <= level.time) && ((brandom()) || (range_to(self, self->enemy) <= RANGE_MELEE)))
@@ -282,7 +282,7 @@ void TOUCH(mutant_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 
     // [Paril-KEX] only if we're actually moving fast enough to hurt
     if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 30) {
-        VectorMA(self->s.origin, self->maxs[0], normal, point);
+        VectorMA(self->s.origin, self->r.maxs[0], normal, point);
         damage = irandom2(40, 50);
         T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
         self->style = 0;

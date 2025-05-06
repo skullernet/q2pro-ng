@@ -167,7 +167,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
 
 void fixHealerEnemy(edict_t *self)
 {
-    if (self->oldenemy && self->oldenemy->inuse && self->oldenemy->health > 0) {
+    if (self->oldenemy && self->oldenemy->r.inuse && self->oldenemy->health > 0) {
         self->enemy = self->oldenemy;
         HuntTarget(self, false);
     } else {
@@ -184,7 +184,7 @@ void fixHealerEnemy(edict_t *self)
 void cleanupHeal(edict_t *self)
 {
     // clean up target, if we have one and it's legit
-    if (self->enemy && self->enemy->inuse)
+    if (self->enemy && self->enemy->r.inuse)
         cleanupHealTarget(self->enemy);
 
     fixHealerEnemy(self);
@@ -195,13 +195,13 @@ void abortHeal(edict_t *self, bool gib, bool mark)
     int              hurt;
     static const vec3_t pain_normal = { 0, 0, 1 };
 
-    if (self->enemy && self->enemy->inuse && !self->enemy->client && (self->monsterinfo.aiflags & AI_MEDIC)) {
+    if (self->enemy && self->enemy->r.inuse && !self->enemy->client && (self->monsterinfo.aiflags & AI_MEDIC)) {
         cleanupHealTarget(self->enemy);
 
         // gib em!
         if (mark) {
             // if the first badMedic slot is filled by a medic, skip it and use the second one
-            if ((self->enemy->monsterinfo.badMedic1) && (self->enemy->monsterinfo.badMedic1->inuse) && (!strncmp(self->enemy->monsterinfo.badMedic1->classname, "monster_medic", 13))) {
+            if ((self->enemy->monsterinfo.badMedic1) && (self->enemy->monsterinfo.badMedic1->r.inuse) && (!strncmp(self->enemy->monsterinfo.badMedic1->classname, "monster_medic", 13))) {
                 self->enemy->monsterinfo.badMedic2 = self;
             } else {
                 self->enemy->monsterinfo.badMedic1 = self;
@@ -362,8 +362,8 @@ edict_t *healFindMonster(edict_t *self, float radius)
             // FIXME - this is correcting a bug that is somewhere else
             // if the healer is a monster, and it's in medic mode .. continue .. otherwise
             //   we will override the healer, if it passes all the other tests
-            if ((ent->monsterinfo.healer->inuse) && (ent->monsterinfo.healer->health > 0) &&
-                (ent->monsterinfo.healer->svflags & SVF_MONSTER) && (ent->monsterinfo.healer->monsterinfo.aiflags & AI_MEDIC))
+            if ((ent->monsterinfo.healer->r.inuse) && (ent->monsterinfo.healer->health > 0) &&
+                (ent->monsterinfo.healer->r.svflags & SVF_MONSTER) && (ent->monsterinfo.healer->monsterinfo.aiflags & AI_MEDIC))
                 continue;
         if (ent->health > 0)
             continue;
@@ -712,7 +712,7 @@ static void medic_fire_blaster(edict_t *self)
     monster_muzzleflash_id_t mz;
 
     // paranoia checking
-    if (!(self->enemy && self->enemy->inuse))
+    if (!(self->enemy && self->enemy->r.inuse))
         return;
 
     if ((self->s.frame == FRAME_attack9) || (self->s.frame == FRAME_attack12)) {
@@ -931,7 +931,7 @@ static void medic_cable_attack(edict_t *self)
     vec3_t  start, end, f, r;
     trace_t tr;
 
-    if ((!self->enemy) || (!self->enemy->inuse) || (self->enemy->s.effects & EF_GIB)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse) || (self->enemy->s.effects & EF_GIB)) {
         abortHeal(self, false, false);
         return;
     }
@@ -1297,7 +1297,7 @@ bool MONSTERINFO_CHECKATTACK(medic_checkattack)(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_MEDIC) {
         // if our target went away
-        if ((!self->enemy) || (!self->enemy->inuse)) {
+        if ((!self->enemy) || (!self->enemy->r.inuse)) {
             abortHeal(self, false, false);
             self->monsterinfo.nextframe = FRAME_attack52;
             return false;

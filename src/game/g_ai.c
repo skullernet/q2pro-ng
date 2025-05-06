@@ -115,7 +115,7 @@ void ai_stand(edict_t *self, float dist)
             // find out if we're going to be shooting
             retval = ai_checkattack(self, 0);
             // record sightings of player
-            if ((self->enemy) && (self->enemy->inuse)) {
+            if ((self->enemy) && (self->enemy->r.inuse)) {
                 if (visible(self, self->enemy)) {
                     self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
                     VectorCopy(self->enemy->s.origin, self->monsterinfo.saved_goal);
@@ -230,7 +230,7 @@ void ai_charge(edict_t *self, float dist)
 
     // This is put in there so monsters won't move towards the origin after killing
     // a tesla. This could be problematic, so keep an eye on it.
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     // PMM - save blindfire target
@@ -642,7 +642,7 @@ bool FindTarget(edict_t *self)
         return false;
 
     if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-        if (self->goalentity && self->goalentity->inuse && self->goalentity->classname && strcmp(self->goalentity->classname, "target_actor") == 0)
+        if (self->goalentity && self->goalentity->r.inuse && self->goalentity->classname && strcmp(self->goalentity->classname, "target_actor") == 0)
             return false;
 
         // FIXME look for monsters?
@@ -865,12 +865,12 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
         }
 
         // do we have a clear shot?
-        if (!(self->hackflags & HACKFLAG_ATTACK_PLAYER) && tr.ent != self->enemy && !(tr.ent->svflags & SVF_PLAYER)) {
+        if (!(self->hackflags & HACKFLAG_ATTACK_PLAYER) && tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
             // ROGUE - we want them to go ahead and shoot at info_notnulls if they can.
             if (self->enemy->solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 // Paril - *and* we have at least seen them once
-                if (!(tr.ent->svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
+                if (!(tr.ent->r.svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
                     if (self->monsterinfo.blindfire && (self->monsterinfo.blind_fire_delay <= SEC(20))) {
                         // ROGUE
                         if (level.time < self->monsterinfo.attack_finished)
@@ -1131,13 +1131,13 @@ static bool ai_checkattack(edict_t *self, float dist)
 
     // see if the enemy is dead
     hesDeadJim = false;
-    if ((!self->enemy) || (!self->enemy->inuse)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse)) {
         hesDeadJim = true;
     } else if (self->monsterinfo.aiflags & AI_FORGET_ENEMY) {
         self->monsterinfo.aiflags &= ~AI_FORGET_ENEMY;
         hesDeadJim = true;
     } else if (self->monsterinfo.aiflags & AI_MEDIC) {
-        if (!(self->enemy->inuse) || (self->enemy->health > 0))
+        if (!(self->enemy->r.inuse) || (self->enemy->health > 0))
             hesDeadJim = true;
     } else {
         if (!(self->monsterinfo.aiflags & AI_BRUTAL) && self->enemy->health <= 0)
@@ -1322,7 +1322,7 @@ void ai_run(edict_t *self, float dist)
 
         // first off, make sure we're looking for the player, not a noise he made
         if (self->enemy) {
-            if (self->enemy->inuse) {
+            if (self->enemy->r.inuse) {
                 if (strcmp(self->enemy->classname, "player_noise") != 0)
                     realEnemy = self->enemy;
                 else if (self->enemy->owner)
@@ -1366,7 +1366,7 @@ void ai_run(edict_t *self, float dist)
     if (self->monsterinfo.aiflags & AI_SOUND_TARGET) {
         bool touching_noise = SV_CloseEnough(self, self->enemy, dist * (TICK_RATE / 10));
 
-        if ((!self->enemy || !self->enemy->inuse) || (touching_noise && FacingIdeal(self))) {
+        if ((!self->enemy || !self->enemy->r.inuse) || (touching_noise && FacingIdeal(self))) {
             self->monsterinfo.aiflags |= (AI_STAND_GROUND | AI_TEMP_STAND_GROUND);
             self->s.angles[YAW] = self->ideal_yaw;
             self->monsterinfo.stand(self);
@@ -1427,7 +1427,7 @@ void ai_run(edict_t *self, float dist)
             (!(self->monsterinfo.aiflags & AI_STAND_GROUND))) {
             M_MoveToGoal(self, dist);
         }
-        if ((self->enemy) && (self->enemy->inuse) && (enemy_vis)) {
+        if ((self->enemy) && (self->enemy->r.inuse) && (enemy_vis)) {
             if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
                 self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
 
@@ -1447,7 +1447,7 @@ void ai_run(edict_t *self, float dist)
     // PMM
 
     // PGM - added a little paranoia checking here... 9/22/98
-    if ((self->enemy) && (self->enemy->inuse) && (enemy_vis)) {
+    if ((self->enemy) && (self->enemy->r.inuse) && (enemy_vis)) {
         // PMM - check for alreadyMoved
         if (!alreadyMoved)
             M_MoveToGoal(self, dist);

@@ -323,7 +323,7 @@ void THINK(turret_driver_think)(edict_t *self)
 
     self->nextthink = level.time + FRAME_TIME;
 
-    if (self->enemy && (!self->enemy->inuse || self->enemy->health <= 0))
+    if (self->enemy && (!self->enemy->r.inuse || self->enemy->health <= 0))
         self->enemy = NULL;
 
     if (!self->enemy) {
@@ -468,7 +468,7 @@ void THINK(turret_brain_think)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 
     if (self->enemy) {
-        if (!self->enemy->inuse)
+        if (!self->enemy->r.inuse)
             self->enemy = NULL;
         else if (self->enemy->takedamage && self->enemy->health <= 0)
             self->enemy = NULL;

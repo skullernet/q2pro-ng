@@ -576,7 +576,7 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
         VectorCopy(forward, aim);
     } else {
         // [Paril-KEX] no enemy = no fire
-        if ((!self->enemy) || (!self->enemy->inuse)) {
+        if ((!self->enemy) || (!self->enemy->r.inuse)) {
             self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
             return;
         }
@@ -1185,7 +1185,7 @@ static void soldier_stand_up(edict_t *self)
 
 static bool soldier_prone_shoot_ok(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return false;
 
     vec3_t fwd;

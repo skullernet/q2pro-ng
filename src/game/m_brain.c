@@ -420,9 +420,9 @@ static void brain_tounge_attack(edict_t *self)
 
     VectorCopy(self->enemy->s.origin, end);
     if (!brain_tounge_attack_ok(start, end)) {
-        end[2] = self->enemy->s.origin[2] + self->enemy->maxs[2] - 8;
+        end[2] = self->enemy->s.origin[2] + self->enemy->r.maxs[2] - 8;
         if (!brain_tounge_attack_ok(start, end)) {
-            end[2] = self->enemy->s.origin[2] + self->enemy->mins[2] + 8;
+            end[2] = self->enemy->s.origin[2] + self->enemy->r.mins[2] + 8;
             if (!brain_tounge_attack_ok(start, end))
                 return;
         }

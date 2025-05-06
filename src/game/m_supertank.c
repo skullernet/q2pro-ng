@@ -263,7 +263,7 @@ static void supertankGrenade(edict_t *self)
     vec3_t                   start;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     if (self->s.frame == FRAME_attak4_1)
@@ -448,7 +448,7 @@ static void supertankRocket(edict_t *self)
     vec3_t                   vec;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     if (self->s.frame == FRAME_attak2_8)
@@ -480,7 +480,7 @@ static void supertankMachineGun(edict_t *self)
     vec3_t                   forward, right;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     flash_number = MZ2_SUPERTANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak1_1);

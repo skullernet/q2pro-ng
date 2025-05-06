@@ -355,7 +355,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     vec3_t p;
 
     // hit what we want to succ
-    if ((other->svflags & SVF_PLAYER) || other == self->r.owner->enemy) {
+    if ((other->r.svflags & SVF_PLAYER) || other == self->r.owner->enemy) {
         if (tr->startsolid)
             VectorCopy(tr->endpos, p);
         else {
@@ -378,7 +378,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         VectorAdd(tr->endpos, tr->plane.normal, p);
         // hit monster, don't suck but do small damage
         // and retract immediately
-        if (other->svflags & (SVF_MONSTER | SVF_DEADMONSTER))
+        if (other->r.svflags & (SVF_MONSTER | SVF_DEADMONSTER))
             proboscis_retract(self);
         else {
             // hit wall; stick to it and do break animation
@@ -486,7 +486,7 @@ void THINK(proboscis_think)(edict_t *self)
     } else if (self->style == 1) {
         if (!self->enemy) {
             // stuck in wall
-        } else if (!self->enemy->inuse || self->enemy->health <= 0 || !self->enemy->takedamage) {
+        } else if (!self->enemy->r.inuse || self->enemy->health <= 0 || !self->enemy->takedamage) {
             // target gone, retract early
             proboscis_retract(self);
         } else {
@@ -526,7 +526,7 @@ void THINK(proboscis_think)(edict_t *self)
         float dist_to_target;
 
         // owner gone away?
-        if (!self->r.owner->enemy || !self->r.owner->enemy->inuse || self->r.owner->enemy->health <= 0) {
+        if (!self->r.owner->enemy || !self->r.owner->enemy->r.inuse || self->r.owner->enemy->health <= 0) {
             proboscis_retract(self);
             return;
         }

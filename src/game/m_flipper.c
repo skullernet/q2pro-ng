@@ -322,7 +322,7 @@ void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
     gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     self->deadflag = true;
     self->takedamage = true;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     M_SetAnimation(self, &flipper_move_death);
 }
 

@@ -287,7 +287,7 @@ static void guardian_fire_blaster(edict_t *self)
     monster_muzzleflash_id_t id = MZ2_GUARDIAN_BLASTER;
     float offset;
 
-    if (!self->enemy || !self->enemy->inuse) {
+    if (!self->enemy || !self->enemy->r.inuse) {
         self->monsterinfo.nextframe = FRAME_atk1_spin13;
         return;
     }
@@ -663,7 +663,7 @@ const mmove_t MMOVE_T(guardian_move_rocket) = { FRAME_turnl_1, FRAME_turnr_11, g
 
 void MONSTERINFO_ATTACK(guardian_attack)(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     if (self->monsterinfo.attack_state == AS_BLIND) {

@@ -13,8 +13,8 @@ void THINK(info_player_start_drop)(edict_t *self)
     // allow them to drop
     self->solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_TOSS;
-    VectorCopy(player_mins, self->mins);
-    VectorCopy(player_maxs, self->maxs);
+    VectorCopy(player_mins, self->r.mins);
+    VectorCopy(player_maxs, self->r.maxs);
     gi.linkentity(self);
 }
 
@@ -528,10 +528,10 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     self->s.sound = 0;
     self->client->weapon_sound = 0;
 
-    self->maxs[2] = -8;
+    self->r.maxs[2] = -8;
 
     //  self->solid = SOLID_NOT;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
 
     if (!self->deadflag) {
         if (deathmatch->integer && g_dm_force_respawn_time->integer)
@@ -690,7 +690,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
             for (int i = 1; i <= game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
-                if (!player->inuse)
+                if (!player->r.inuse)
                     continue;
                 if (player->health > 0 || (!level.deadly_kill_box && g_coop_enable_lives->integer && player->client->pers.lives > 0)) {
                     allPlayersDead = false;
@@ -703,7 +703,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
                 for (int i = 1; i <= game.maxclients; i++) {
                     edict_t *player = &g_edicts[i];
-                    if (player->inuse)
+                    if (player->r.inuse)
                         gi.centerprintf(player, "Everyone is dead. You lose.\nRestarting level...");
                 }
             }
@@ -1457,7 +1457,7 @@ void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 
     if (mod.id == MOD_CRUSH) {
         // prevent explosion singularities
-        self->svflags = SVF_NOCLIENT;
+        self->r.svflags = SVF_NOCLIENT;
         self->takedamage = false;
         self->solid = SOLID_NOT;
         self->movetype = MOVETYPE_NOCLIP;
@@ -2384,7 +2384,7 @@ void ClientDisconnect(edict_t *ent)
         RemoveAttackingPainDaemons(ent);
 
     if (ent->client->owned_sphere) {
-        if (ent->client->owned_sphere->inuse)
+        if (ent->client->owned_sphere->r.inuse)
             G_FreeEdict(ent->client->owned_sphere);
         ent->client->owned_sphere = NULL;
     }

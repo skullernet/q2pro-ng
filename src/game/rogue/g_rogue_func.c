@@ -194,7 +194,7 @@ void TOUCH(Touch_Plat_Center2)(edict_t *ent, edict_t *other, const trace_t *tr, 
         return;
 
     // PMM - don't let non-monsters activate plat2s
-    if ((!(other->svflags & SVF_MONSTER)) && (!other->client))
+    if ((!(other->r.svflags & SVF_MONSTER)) && (!other->client))
         return;
 
     plat2_operate(ent, other);
@@ -202,11 +202,11 @@ void TOUCH(Touch_Plat_Center2)(edict_t *ent, edict_t *other, const trace_t *tr, 
 
 void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 {
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other && other->inuse && other->solid)
+        if (other && other->r.inuse && other->solid)
             BecomeExplosion1(other);
         return;
     }
@@ -218,7 +218,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
     T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     // [Paril-KEX] killed, so don't change direction
-    if (!other->inuse || !other->solid)
+    if (!other->r.inuse || !other->solid)
         return;
 
     if (self->moveinfo.state == STATE_UP)
@@ -239,7 +239,7 @@ void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
     //  return;
 
     for (i = 1, trigger = g_edicts + 1; i < globals.num_edicts; i++, trigger++) {
-        if (!trigger->inuse)
+        if (!trigger->r.inuse)
             continue;
         if (trigger->touch == Touch_Plat_Center2 && trigger->enemy == ent) {
             plat2_operate(trigger, activator);
@@ -256,10 +256,10 @@ void USE(plat2_activate)(edict_t *ent, edict_t *other, edict_t *activator)
 
     trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
-    trigger->maxs[0] += 10;
-    trigger->maxs[1] += 10;
-    trigger->mins[0] -= 10;
-    trigger->mins[1] -= 10;
+    trigger->r.maxs[0] += 10;
+    trigger->r.maxs[1] += 10;
+    trigger->r.mins[0] -= 10;
+    trigger->r.mins[1] -= 10;
 
     gi.linkentity(trigger);
 

@@ -230,7 +230,7 @@ static void flyer_kamikaze_explode(edict_t *self)
 {
     vec3_t dir;
 
-    if (self->monsterinfo.commander && self->monsterinfo.commander->inuse &&
+    if (self->monsterinfo.commander && self->monsterinfo.commander->r.inuse &&
         !strcmp(self->monsterinfo.commander->classname, "monster_carrier"))
         self->monsterinfo.commander->monsterinfo.monster_slots++;
 
@@ -256,7 +256,7 @@ static void flyer_kamikaze_check(edict_t *self)
     if (!self->r.inuse)
         return;
 
-    if ((!self->enemy) || (!self->enemy->inuse)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse)) {
         flyer_kamikaze_explode(self);
         return;
     }
@@ -371,7 +371,7 @@ static void flyer_fire(edict_t *self, monster_muzzleflash_id_t flash_number)
     vec3_t    end;
     vec3_t    dir;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     AngleVectors(self->s.angles, forward, right, NULL);
@@ -650,7 +650,7 @@ bool MONSTERINFO_BLOCKED(flyer_blocked)(edict_t *self, float dist)
         flyer_kamikaze_check(self);
 
         // if the above didn't blow us up (i.e. I got blocked by the player)
-        if (self->inuse)
+        if (self->r.inuse)
             T_Damage(self, self, self, vec3_origin, self->s.origin, vec3_origin, 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
         return true;

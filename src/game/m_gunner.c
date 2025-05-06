@@ -380,7 +380,7 @@ static void GunnerFire(edict_t *self)
     vec3_t                   aim;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
@@ -434,7 +434,7 @@ static void GunnerGrenade(edict_t *self)
     vec3_t                  target;
     bool                    blindfire;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     // pmm

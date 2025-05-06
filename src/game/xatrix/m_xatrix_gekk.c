@@ -598,7 +598,7 @@ static void gekk_hit_right(edict_t *self)
 
 static void gekk_check_refire(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->inuse || self->enemy->health <= 0)
+    if (!self->enemy || !self->enemy->r.inuse || self->enemy->health <= 0)
         return;
     if (range_to(self, self->enemy) > RANGE_MELEE)
         return;
@@ -865,7 +865,7 @@ void TOUCH(gekk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     }
 
     if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 200) {
-        VectorMA(self->s.origin, self->maxs[0], normal, point);
+        VectorMA(self->s.origin, self->r.maxs[0], normal, point);
         damage = irandom2(10, 20);
         T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, (mod_t) { MOD_GEKK });
         self->style = 0;
@@ -1561,8 +1561,8 @@ static void water_to_land(edict_t *self)
 
     M_SetAnimation(self, &gekk_move_leapatk2);
 
-    VectorSet(self->mins, -18, -18, -24);
-    VectorSet(self->maxs, 18, 18, 24);
+    VectorSet(self->r.mins, -18, -18, -24);
+    VectorSet(self->r.maxs, 18, 18, 24);
 }
 #endif
 

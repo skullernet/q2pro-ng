@@ -400,7 +400,7 @@ static void ChickRocket(edict_t *self)
     vec3_t target;
     bool   blindfire;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     blindfire = self->monsterinfo.aiflags & AI_MANUAL_STEERING;

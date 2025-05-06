@@ -772,7 +772,7 @@ static void GunnerCmdrFire(edict_t *self)
     vec3_t                   aim;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     if (self->s.frame >= FRAME_c_attack401 && self->s.frame <= FRAME_c_attack505)
@@ -862,7 +862,7 @@ static void GunnerCmdrGrenade(edict_t *self)
     vec3_t                  target;
     bool                    blindfire;
 
-    if (!self->enemy || !self->enemy->inuse) // PGM
+    if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
     // pmm

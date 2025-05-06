@@ -244,7 +244,7 @@ retry:;
         G_Impact(ent, &trace);
 
         // if the pushed entity went away and the pusher is still there
-        if (!trace.ent->inuse && ent->r.inuse) {
+        if (!trace.ent->r.inuse && ent->r.inuse) {
             // move the pusher back and try again
             VectorCopy(start, ent->s.origin);
             gi.linkentity(ent);
@@ -563,7 +563,7 @@ static void SV_Physics_Toss(edict_t *ent)
         ent->groundentity = NULL;
 
     // check for the groundentity going away
-    if (ent->groundentity && !ent->groundentity->inuse)
+    if (ent->groundentity && !ent->groundentity->r.inuse)
         ent->groundentity = NULL;
 
     // if onground, return without moving

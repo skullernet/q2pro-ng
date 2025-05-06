@@ -94,7 +94,7 @@ static void Widow2Beam(edict_t *self)
     vec3_t                   start, targ_angles, vec;
     monster_muzzleflash_id_t flashnum;
 
-    if ((!self->enemy) || (!self->enemy->inuse))
+    if ((!self->enemy) || (!self->enemy->r.inuse))
         return;
 
     AngleVectors(self->s.angles, forward, right, NULL);
@@ -300,7 +300,7 @@ static void WidowDisrupt(edict_t *self)
 
 static void Widow2SaveDisruptLoc(edict_t *self)
 {
-    if (self->enemy && self->enemy->inuse) {
+    if (self->enemy && self->enemy->r.inuse) {
         VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
         self->pos1[2] += self->enemy->viewheight;
     } else
@@ -326,7 +326,7 @@ const mmove_t MMOVE_T(widow2_move_attack_disrupt) = { FRAME_firea01, FRAME_firea
 
 static void Widow2SaveBeamTarget(edict_t *self)
 {
-    if (self->enemy && self->enemy->inuse) {
+    if (self->enemy && self->enemy->r.inuse) {
         VectorCopy(self->pos1, self->pos2);
         VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
     } else {
@@ -405,9 +405,9 @@ static void Widow2Tongue(edict_t *self)
     G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u, start);
     VectorCopy(self->enemy->s.origin, end);
     if (!widow2_tongue_attack_ok(start, end, 256)) {
-        end[2] = self->enemy->s.origin[2] + self->enemy->maxs[2] - 8;
+        end[2] = self->enemy->s.origin[2] + self->enemy->r.maxs[2] - 8;
         if (!widow2_tongue_attack_ok(start, end, 256)) {
-            end[2] = self->enemy->s.origin[2] + self->enemy->mins[2] + 8;
+            end[2] = self->enemy->s.origin[2] + self->enemy->r.mins[2] + 8;
             if (!widow2_tongue_attack_ok(start, end, 256))
                 return;
         }
@@ -438,7 +438,7 @@ static void Widow2TonguePull(edict_t *self)
     vec3_t f, r, u;
     vec3_t start, end;
 
-    if ((!self->enemy) || (!self->enemy->inuse)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse)) {
         self->monsterinfo.run(self);
         return;
     }
@@ -472,7 +472,7 @@ static void Widow2Crunch(edict_t *self)
 {
     vec3_t aim;
 
-    if ((!self->enemy) || (!self->enemy->inuse)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse)) {
         self->monsterinfo.run(self);
         return;
     }

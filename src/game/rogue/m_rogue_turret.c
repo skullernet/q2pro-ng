@@ -54,7 +54,7 @@ static void TurretAim(edict_t *self)
         if (self->enemy->s.origin[2] < self->monsterinfo.blind_fire_target[2])
             end[2] += self->enemy->viewheight + 10;
         else
-            end[2] += self->enemy->mins[2] - 10;
+            end[2] += self->enemy->r.mins[2] - 10;
     } else {
         VectorCopy(self->enemy->s.origin, end);
         if (self->enemy->client)
@@ -355,7 +355,7 @@ static void TurretFire(edict_t *self)
 
     TurretAim(self);
 
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     if (self->monsterinfo.aiflags & AI_LOST_SIGHT)
@@ -437,7 +437,7 @@ static void TurretFireBlind(edict_t *self)
 
     TurretAim(self);
 
-    if (!self->enemy || !self->enemy->inuse)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, dir);
@@ -459,7 +459,7 @@ static void TurretFireBlind(edict_t *self)
     if (self->enemy->s.origin[2] < self->monsterinfo.blind_fire_target[2])
         end[2] += self->enemy->viewheight + 10;
     else
-        end[2] += self->enemy->mins[2] - 10;
+        end[2] += self->enemy->r.mins[2] - 10;
 
     VectorSubtract(end, start, dir);
     VectorNormalize(dir);
@@ -571,7 +571,7 @@ void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     }
 
     if (self->target) {
-        if (self->enemy && self->enemy->inuse)
+        if (self->enemy && self->enemy->r.inuse)
             G_UseTargets(self, self->enemy);
         else
             G_UseTargets(self, self);
@@ -753,18 +753,18 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
         gi.trace(&tr, spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
 
         // do we have a clear shot?
-        if (tr.ent != self->enemy && !(tr.ent->svflags & SVF_PLAYER)) {
+        if (tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
             // PGM - we want them to go ahead and shoot at info_notnulls if they can.
             if (self->enemy->solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
-                if ((!(tr.ent->svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
+                if ((!(tr.ent->r.svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
                     if ((self->monsterinfo.blindfire) && (self->monsterinfo.blind_fire_delay <= SEC(10))) {
                         if (level.time < (self->monsterinfo.trail_time + self->monsterinfo.blind_fire_delay))
                             // wait for our time
                             return false;
                         // make sure we're not going to shoot something we don't want to shoot
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self, CONTENTS_MONSTER | CONTENTS_PLAYER);
-                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.ent != self->enemy && !(tr.ent->svflags & SVF_PLAYER))))
+                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER))))
                             return false;
                         self->monsterinfo.attack_state = AS_BLIND;
                         self->monsterinfo.attack_finished = level.time + random_time_sec(0.5f, 2.5f);

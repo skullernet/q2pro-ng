@@ -57,7 +57,7 @@ void dabeam_update(edict_t *self, bool damage)
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
-        if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client)) {
+        if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client)) {
             if (damage) {
                 gi.WriteByte(svc_temp_entity);
                 gi.WriteByte(TE_LASER_SPARKS);

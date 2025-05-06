@@ -433,11 +433,11 @@ static void plat_go_up(edict_t *ent)
 
 void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
 {
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->inuse && other->solid) // PGM
+        if (other->r.inuse && other->solid) // PGM
             BecomeExplosion1(other);
         return;
     }
@@ -451,7 +451,7 @@ void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
     T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     // [Paril-KEX] killed the thing, so don't switch directions
-    if (!other->inuse || !other->solid)
+    if (!other->r.inuse || !other->solid)
         return;
 
     if (self->moveinfo.state == STATE_UP)
@@ -468,7 +468,7 @@ void USE(Use_Plat)(edict_t *ent, edict_t *other, edict_t *activator)
     //======
     // ROGUE
     // if a monster is using us, then allow the activity when stopped.
-    if ((other->svflags & SVF_MONSTER) && !(ent->spawnflags & SPAWNFLAG_PLAT_NO_MONSTER)) {
+    if ((other->r.svflags & SVF_MONSTER) && !(ent->spawnflags & SPAWNFLAG_PLAT_NO_MONSTER)) {
         if (ent->moveinfo.state == STATE_TOP)
             plat_go_down(ent);
         else if (ent->moveinfo.state == STATE_BOTTOM)
@@ -1214,7 +1214,7 @@ void THINK(smart_water_go_up)(edict_t *self)
         ent = &g_edicts[1 + i];
 
         // don't count dead or unused player slots
-        if ((ent->inuse) && (ent->health > 0) && (ent->absmin[2] < lowestPlayerPt)) {
+        if ((ent->r.inuse) && (ent->health > 0) && (ent->absmin[2] < lowestPlayerPt)) {
             lowestPlayerPt = ent->absmin[2];
             lowestPlayer = ent;
         }
@@ -1282,7 +1282,7 @@ void USE(door_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     // PGM
     //  smart water is different
-    VectorAvg(self->mins, self->maxs, center);
+    VectorAvg(self->r.mins, self->r.maxs, center);
     if ((strcmp(self->classname, "func_water") == 0) && (gi.pointcontents(center) & MASK_WATER) && (self->spawnflags & SPAWNFLAG_WATER_SMART)) {
         self->message = NULL;
         self->touch = NULL;
@@ -1305,10 +1305,10 @@ void TOUCH(Touch_DoorTrigger)(edict_t *self, edict_t *other, const trace_t *tr, 
     if (other->health <= 0)
         return;
 
-    if (!(other->svflags & SVF_MONSTER) && (!other->client))
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client))
         return;
 
-    if (other->svflags & SVF_MONSTER) {
+    if (other->r.svflags & SVF_MONSTER) {
         if (self->r.owner->spawnflags & SPAWNFLAG_DOOR_NOMONSTER)
             return;
         // [Paril-KEX] this is for PSX; the scale is so small that monsters walking
@@ -1385,8 +1385,8 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     maxs[1] += 60;
 
     other = G_Spawn();
-    VectorCopy(mins, other->mins);
-    VectorCopy(maxs, other->maxs);
+    VectorCopy(mins, other->r.mins);
+    VectorCopy(maxs, other->r.maxs);
     other->owner = ent;
     other->solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
@@ -1400,11 +1400,11 @@ void MOVEINFO_BLOCKED(door_blocked)(edict_t *self, edict_t *other)
 {
     edict_t *ent;
 
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->inuse)
+        if (other->r.inuse)
             BecomeExplosion1(other);
         return;
     }
@@ -1749,11 +1749,11 @@ void SP_func_door_rotating(edict_t *ent)
 
 void MOVEINFO_BLOCKED(smart_water_blocked)(edict_t *self, edict_t *other)
 {
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_LAVA });
         // if it's still there, nuke it
-        if (other->inuse && other->solid) // PGM
+        if (other->r.inuse && other->solid) // PGM
             BecomeExplosion1(other);
         return;
     }
@@ -1870,11 +1870,11 @@ void train_next(edict_t *self);
 
 void MOVEINFO_BLOCKED(train_blocked)(edict_t *self, edict_t *other)
 {
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->inuse && other->solid)
+        if (other->r.inuse && other->solid)
             BecomeExplosion1(other);
         return;
     }
@@ -1901,7 +1901,7 @@ void MOVEINFO_ENDFUNC(train_wait)(edict_t *self)
         ent->target = savetarget;
 
         // make sure we didn't get killed by a killtarget
-        if (!self->inuse)
+        if (!self->r.inuse)
             return;
     }
 
@@ -1966,7 +1966,7 @@ again:
         if (self->spawnflags & SPAWNFLAG_TRAIN_USE_ORIGIN)
             VectorCopy(ent->s.origin, self->s.origin);
         else {
-            VectorSubtract(ent->s.origin, self->mins, self->s.origin);
+            VectorSubtract(ent->s.origin, self->r.mins, self->s.origin);
 
             if (self->spawnflags & SPAWNFLAG_TRAIN_FIX_OFFSET)
                 for (int i = 0; i < 3; i++)
@@ -2006,7 +2006,7 @@ again:
     if (self->spawnflags & SPAWNFLAG_TRAIN_USE_ORIGIN)
         VectorCopy(ent->s.origin, dest);
     else {
-        VectorSubtract(ent->s.origin, self->mins, dest);
+        VectorSubtract(ent->s.origin, self->r.mins, dest);
 
         if (self->spawnflags & SPAWNFLAG_TRAIN_FIX_OFFSET)
             for (int i = 0; i < 3; i++)
@@ -2102,7 +2102,7 @@ void THINK(func_train_find)(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_TRAIN_USE_ORIGIN)
         VectorCopy(ent->s.origin, self->s.origin);
     else {
-        VectorSubtract(ent->s.origin, self->mins, self->s.origin);
+        VectorSubtract(ent->s.origin, self->r.mins, self->s.origin);
 
         if (self->spawnflags & SPAWNFLAG_TRAIN_FIX_OFFSET)
             for (int i = 0; i < 3; i++)
@@ -2228,7 +2228,7 @@ void THINK(trigger_elevator_init)(edict_t *self)
     }
 
     self->use = trigger_elevator_use;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 void SP_trigger_elevator(edict_t *self)
@@ -2419,11 +2419,11 @@ void MOVEINFO_ENDFUNC(door_secret_done)(edict_t *self)
 
 void MOVEINFO_BLOCKED(door_secret_blocked)(edict_t *self, edict_t *other)
 {
-    if (!(other->svflags & SVF_MONSTER) && (!other->client)) {
+    if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->inuse && other->solid)
+        if (other->r.inuse && other->solid)
             BecomeExplosion1(other);
         return;
     }
@@ -2555,7 +2555,7 @@ void THINK(func_eye_think)(edict_t *self)
 
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (!player->inuse)
+        if (!player->r.inuse)
             continue;
 
         vec3_t dir;

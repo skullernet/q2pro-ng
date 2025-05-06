@@ -108,7 +108,7 @@ void THINK(target_steam_start)(edict_t *self)
     self->sounds &= 0xff;
     self->count &= 0xff;
 
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 
     gi.linkentity(self);
 }
@@ -137,9 +137,9 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     if (target && self->target) {
         // Make whatever a "good guy" so the monster will try to kill it!
-        if (!(target->svflags & SVF_MONSTER)) {
+        if (!(target->r.svflags & SVF_MONSTER)) {
             target->monsterinfo.aiflags |= AI_GOOD_GUY | AI_DO_NOT_COUNT;
-            target->svflags |= SVF_MONSTER;
+            target->r.svflags |= SVF_MONSTER;
             target->health = 300;
         }
 
@@ -147,7 +147,7 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
         while ((t = G_Find(t, FOFS(targetname), self->target))) {
             if (t == self) {
                 gi.dprintf("WARNING: entity used itself.\n");
-            } else if (t->svflags & SVF_MONSTER) {
+            } else if (t->r.svflags & SVF_MONSTER) {
                 if (t->health <= 0)
                     return;
 
@@ -155,7 +155,7 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
                 t->monsterinfo.aiflags |= AI_TARGET_ANGER;
                 FoundTarget(t);
             }
-            if (!self->inuse) {
+            if (!self->r.inuse) {
                 gi.dprintf("entity was removed while using targets\n");
                 return;
             }
@@ -199,7 +199,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 
     // kill any visible monsters
     for (ent = g_edicts; ent < &g_edicts[globals.num_edicts]; ent++) {
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         if (ent->health < 1)
             continue;
@@ -208,7 +208,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 
         for (int i = 0; i < game.maxclients; i++) {
             player = &g_edicts[1 + i];
-            if (!player->inuse)
+            if (!player->r.inuse)
                 continue;
 
             if (gi.inVIS(player->s.origin, ent->s.origin, VIS_PVS)) {
@@ -222,7 +222,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
     // kill the players
     for (int i = 0; i < game.maxclients; i++) {
         player = &g_edicts[1 + i];
-        if (!player->inuse)
+        if (!player->r.inuse)
             continue;
 
         // nail it

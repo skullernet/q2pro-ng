@@ -741,7 +741,7 @@ void MONSTERINFO_ATTACK(widow_attack)(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_TARGET_ANGER;
     }
 
-    if ((!self->enemy) || (!self->enemy->inuse))
+    if ((!self->enemy) || (!self->enemy->r.inuse))
         return;
 
     if (self->bad_area) {
@@ -893,10 +893,10 @@ void MONSTERINFO_SETSKIN(widow_setskin)(edict_t *self)
 #if 0
 static void widow_dead(edict_t *self)
 {
-    VectorSet(self->mins, -56, -56, 0);
-    VectorSet(self->maxs, 56, 56, 80);
+    VectorSet(self->r.mins, -56, -56, 0);
+    VectorSet(self->r.maxs, 56, 56, 80);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }

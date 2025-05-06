@@ -68,7 +68,7 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
 
     // [Paril-KEX]
     if ((targ->r.svflags & SVF_MONSTER) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
-        if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
+        if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
             cleanupHealTarget(targ->enemy);
 
         // clean up self
@@ -315,9 +315,9 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     //  damage
     if (targ->enemy && targ->monsterinfo.aiflags & AI_TARGET_ANGER) {
         // make sure whatever we were pissed at is still around.
-        if (targ->enemy->inuse) {
+        if (targ->enemy->r.inuse) {
             float percentHealth = (float)(targ->health) / (float)(targ->max_health);
-            if (targ->enemy->inuse && percentHealth > 0.33f)
+            if (targ->enemy->r.inuse && percentHealth > 0.33f)
                 return;
         }
 
@@ -335,7 +335,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     if ((targ->enemy) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
         float percentHealth = (float)(targ->health) / (float)(targ->max_health);
         // ignore it some of the time
-        if (targ->enemy->inuse && percentHealth > 0.25f)
+        if (targ->enemy->r.inuse && percentHealth > 0.25f)
             return;
 
         // remove the medic flag
@@ -364,7 +364,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
 
             // [Paril-KEX]
             if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
+                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
                 // clean up self
@@ -388,7 +388,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
         if (targ->enemy != attacker) {
             // [Paril-KEX]
             if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
+                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
                 // clean up self
@@ -406,7 +406,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
         if (targ->enemy != attacker->enemy) {
             // [Paril-KEX]
             if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
+                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
                 // clean up self

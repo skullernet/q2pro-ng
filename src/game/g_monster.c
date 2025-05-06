@@ -598,7 +598,7 @@ void M_ProcessPain(edict_t *e)
     if (e->health <= 0) {
         // ROGUE
         if (e->monsterinfo.aiflags & AI_MEDIC) {
-            if (e->enemy && e->enemy->inuse && (e->enemy->svflags & SVF_MONSTER)) { // god, I hope so
+            if (e->enemy && e->enemy->r.inuse && (e->enemy->r.svflags & SVF_MONSTER)) { // god, I hope so
                 cleanupHealTarget(e->enemy);
             }
 
@@ -784,7 +784,7 @@ void THINK(monster_think)(edict_t *self)
     M_ProcessPain(self);
 
     // pain/die above freed us
-    if (!self->inuse || self->think != monster_think)
+    if (!self->r.inuse || self->think != monster_think)
         return;
 
     if (self->hackflags & HACKFLAG_ATTACK_PLAYER) {
@@ -842,7 +842,7 @@ void THINK(monster_triggered_spawn)(edict_t *self)
 
     self->solid = SOLID_BBOX;
     self->movetype = MOVETYPE_STEP;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->air_finished = level.time + SEC(12);
     gi.linkentity(self);
 

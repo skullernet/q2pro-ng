@@ -673,14 +673,14 @@ void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
     self->deadflag = true;
     self->takedamage = true;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
 
     M_SetAnimation(self, &makron_move_death2);
 
     makron_spawn_torso(self);
 
-    VectorSet(self->mins, -60, -60, 0);
-    VectorSet(self->maxs, 60, 60, 48);
+    VectorSet(self->r.mins, -60, -60, 0);
+    VectorSet(self->r.maxs, 60, 60, 48);
 }
 
 // [Paril-KEX] use generic function
@@ -774,7 +774,7 @@ void THINK(MakronSpawn)(edict_t *self)
     self->think(self);
 
     // jump at player
-    if (self->enemy && self->enemy->inuse && self->enemy->health > 0)
+    if (self->enemy && self->enemy->r.inuse && self->enemy->health > 0)
         player = self->enemy;
     else
         player = AI_GetSightClient(self);

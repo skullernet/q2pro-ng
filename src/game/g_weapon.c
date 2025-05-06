@@ -44,7 +44,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
         if (!tr.ent->takedamage)
             return false;
         // if it will hit any client/monster then hit the one we wanted to hit
-        if ((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client))
+        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client))
             tr.ent = self->enemy;
     }
 
@@ -55,7 +55,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
         if (!tr.ent->takedamage)
             return false;
         // if it will hit any client/monster then hit the one we wanted to hit
-        if ((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client))
+        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client))
             tr.ent = self->enemy;
     }
 
@@ -68,7 +68,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     // do the damage
     T_Damage(tr.ent, self, self, dir, point, vec3_origin, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
 
-    if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
+    if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client))
         return false;
 
     // do our special form of knockback here
@@ -149,7 +149,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 
             // only deadmonster is pierceable, or actual dead monsters
             // that haven't been made non-solid yet
-            if ((tr.ent->svflags & SVF_DEADMONSTER) || (tr.ent->health <= 0 && (tr.ent->svflags & SVF_MONSTER))) {
+            if ((tr.ent->r.svflags & SVF_DEADMONSTER) || (tr.ent->health <= 0 && (tr.ent->r.svflags & SVF_MONSTER))) {
                 if (pierce_mark(&pierce, tr.ent))
                     continue;
             }
@@ -701,11 +701,11 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
             T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
 
         // dead, so we don't need to care about checking pierce
-        if (!tr.ent->inuse || (!tr.ent->solid || tr.ent->solid == SOLID_TRIGGER))
+        if (!tr.ent->r.inuse || (!tr.ent->solid || tr.ent->solid == SOLID_TRIGGER))
             continue;
 
         // ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
-        if ((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client) ||
+        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client) ||
             // ROGUE
             (tr.ent->flags & FL_DAMAGEABLE) ||
             // ROGUE
@@ -765,7 +765,7 @@ static void bfg_laser_pos(const vec3_t p, float dist, vec3_t out)
 
 void THINK(bfg_laser_update)(edict_t *self)
 {
-    if (level.time > self->timestamp || !self->r.owner->inuse) {
+    if (level.time > self->timestamp || !self->r.owner->r.inuse) {
         G_FreeEdict(self);
         return;
     }
@@ -828,7 +828,7 @@ void THINK(bfg_explode)(edict_t *self)
             if (!CanDamage(ent, self->r.owner))
                 continue;
             // ROGUE - make tesla hurt by bfg
-            if (!(ent->svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
+            if (!(ent->r.svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
                 continue;
             // ZOID
             // don't target players in CTF
@@ -837,7 +837,7 @@ void THINK(bfg_explode)(edict_t *self)
             // ZOID
 
             vec3_t centroid;
-            VectorAvg(ent->mins, ent->maxs, v);
+            VectorAvg(ent->r.mins, ent->r.maxs, v);
             VectorAdd(ent->s.origin, v, centroid);
             dist = Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
@@ -925,7 +925,7 @@ void THINK(bfg_think)(edict_t *self)
             continue;
 
         // ROGUE - make tesla hurt by bfg
-        if (!(ent->svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
+        if (!(ent->r.svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
             continue;
         // ZOID
         // don't target players in CTF
@@ -962,7 +962,7 @@ void THINK(bfg_think)(edict_t *self)
                 T_Damage(tr.ent, self, self->r.owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
 
             // if we hit something that's not a monster or player we're done
-            if (!(tr.ent->svflags & SVF_MONSTER) && !(tr.ent->flags & FL_DAMAGEABLE) && (!tr.ent->client)) {
+            if (!(tr.ent->r.svflags & SVF_MONSTER) && !(tr.ent->flags & FL_DAMAGEABLE) && (!tr.ent->client)) {
                 vec3_t pos;
                 VectorAdd(tr.endpos, tr.plane.normal, pos);
 
@@ -1035,7 +1035,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
 
     G_FreeEdict(self);
 
-    if (other->svflags & (SVF_MONSTER | SVF_PLAYER)) {
+    if (other->r.svflags & (SVF_MONSTER | SVF_PLAYER)) {
         other->disintegrator_time += SEC(50);
         other->disintegrator = self->r.owner;
     }

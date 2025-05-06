@@ -151,7 +151,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
 {
     edict_t *prox;
 
-    if (!(other->svflags & SVF_MONSTER) && !other->client)
+    if (!(other->r.svflags & SVF_MONSTER) && !other->client)
         return;
 
     // trigger the prox mine if it's still there, and still mine.
@@ -299,7 +299,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
         }
     }
 
-    if (VectorEmpty(tr->plane.normal) || (other->svflags & SVF_MONSTER) || other->client || (other->flags & FL_DAMAGEABLE)) {
+    if (VectorEmpty(tr->plane.normal) || (other->r.svflags & SVF_MONSTER) || other->client || (other->flags & FL_DAMAGEABLE)) {
         if (other != ent->teammaster)
             Prox_ExplodeReal(ent, other, tr->plane.normal);
         return;
@@ -330,8 +330,8 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
 
     field = G_Spawn();
     VectorCopy(ent->s.origin, field->s.origin);
-    VectorSet(field->mins, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE);
-    VectorSet(field->maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
+    VectorSet(field->r.mins, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE);
+    VectorSet(field->r.maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
     field->movetype = MOVETYPE_NONE;
     field->solid = SOLID_TRIGGER;
     field->owner = ent;
@@ -353,7 +353,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     ent->think = prox_open;
     ent->touch = NULL;
     ent->solid = SOLID_BBOX;
-    ent->svflags &= ~SVF_PROJECTILE;
+    ent->r.svflags &= ~SVF_PROJECTILE;
 
     gi.linkentity(ent);
 }
@@ -536,7 +536,7 @@ void THINK(Nuke_Quake)(edict_t *self)
     }
 
     for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (!e->client)
             continue;
@@ -802,11 +802,11 @@ void THINK(tesla_think_active)(edict_t *self)
     num = gi.BoxEdicts(self->teamchain->absmin, self->teamchain->absmax, touch, q_countof(touch), AREA_SOLID);
     for (i = 0; i < num; i++) {
         // if the tesla died while zapping things, stop zapping.
-        if (!self->inuse)
+        if (!self->r.inuse)
             break;
 
         hit = touch[i];
-        if (!hit->inuse)
+        if (!hit->r.inuse)
             continue;
         if (hit == self)
             continue;
@@ -821,7 +821,7 @@ void THINK(tesla_think_active)(edict_t *self)
                 continue;
         }
 
-        if (!(hit->svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && !hit->client)
+        if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && !hit->client)
             continue;
 
         // don't hit other teslas in SP/coop
@@ -837,7 +837,7 @@ void THINK(tesla_think_active)(edict_t *self)
                 gi.sound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
 
             // PGM - don't do knockback to walking monsters
-            if ((hit->svflags & SVF_MONSTER) && !(hit->flags & (FL_FLY | FL_SWIM)))
+            if ((hit->r.svflags & SVF_MONSTER) && !(hit->flags & (FL_FLY | FL_SWIM)))
                 T_Damage(hit, self, self->teammaster, dir, tr.endpos, tr.plane.normal,
                          self->dmg, 0, DAMAGE_NONE, (mod_t) { MOD_TESLA });
             else
@@ -854,7 +854,7 @@ void THINK(tesla_think_active)(edict_t *self)
         }
     }
 
-    if (self->inuse) {
+    if (self->r.inuse) {
         self->think = tesla_think_active;
         self->nextthink = level.time + HZ(10);
     }
@@ -894,8 +894,8 @@ void THINK(tesla_activate)(edict_t *self)
 
     trigger = G_Spawn();
     VectorCopy(self->s.origin, trigger->s.origin);
-    VectorSet(trigger->mins, -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, self->mins[2]);
-    VectorSet(trigger->maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
+    VectorSet(trigger->r.mins, -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, self->r.mins[2]);
+    VectorSet(trigger->r.maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
     trigger->movetype = MOVETYPE_NONE;
     trigger->solid = SOLID_TRIGGER;
     trigger->owner = self;
@@ -1250,7 +1250,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
 {
     static const vec3_t pain_normal = { 0, 0, 1 };
 
-    if (!self->inuse)
+    if (!self->r.inuse)
         return;
 
     if ((level.time >= self->timestamp) || (self->enemy->health <= 0)) {
@@ -1267,7 +1267,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
              self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
 
     // if we kill the player, we'll be removed.
-    if (self->inuse) {
+    if (self->r.inuse) {
         int hurt;
 
         // if we killed a monster, gib them.
@@ -1333,7 +1333,7 @@ void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        if ((other->svflags & SVF_MONSTER) || other->client) {
+        if ((other->r.svflags & SVF_MONSTER) || other->client) {
             if (other->health > 0) { // knockback only for living creatures
                 // PMM - kickback was times 4 .. reduced to 3
                 // now this does no damage, just knockback
@@ -1364,7 +1364,7 @@ void THINK(tracker_fly)(edict_t *self)
     vec3_t dest;
     vec3_t dir;
 
-    if ((!self->enemy) || (!self->enemy->inuse) || (self->enemy->health < 1)) {
+    if ((!self->enemy) || (!self->enemy->r.inuse) || (self->enemy->health < 1)) {
         tracker_explode(self);
         return;
     }
