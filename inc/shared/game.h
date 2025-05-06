@@ -18,8 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#include "shared/list.h"
-
 //
 // game.h -- game dll information visible to server
 //
@@ -59,55 +57,35 @@ typedef enum {
 
 //===============================================================
 
-#define MAX_ENT_CLUSTERS    16
-
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
+
+typedef struct {
+    bool        inuse;
+    bool        linked;
+    int         linkcount;
+    int         areanum, areanum2;
+    int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
+    vec3_t      mins, maxs;
+    vec3_t      absmin, absmax, size;
+    solid_t     solid;
+    edict_t     *owner;
+} entity_shared_t;
 
 #ifndef GAME_INCLUDE
 
 struct gclient_s {
     player_state_t      ps;     // communicated by server to clients
     int                 ping;
-
-    // set to (client POV entity number) - 1 by game,
-    // only valid if g_features has GMF_CLIENTNUM bit
-    int             clientNum;
-
-    // the game dll can add anything it wants after
-    // this point in the structure
 };
 
 struct edict_s {
     entity_state_t  s;
-    gclient_t   *client;
-    bool        inuse;
-    int         linkcount;
-
-    // FIXME: move these fields to a server private sv_entity_t
-    list_t      area;               // linked to a division node or leaf
-
-    int         num_clusters;       // if -1, use headnode instead
-    int         clusternums[MAX_ENT_CLUSTERS];
-    int         headnode;           // unused if num_clusters != -1
-    int         areanum, areanum2;
-
-    //================================
-
-    int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-    vec3_t      mins, maxs;
-    vec3_t      absmin, absmax, size;
-    solid_t     solid;
-    int         clipmask;
-    edict_t     *owner;
-
-    //================================
-
-    // the game dll can add anything it wants after
-    // this point in the structure
+    entity_shared_t r;
+    gclient_t       *client;
 };
 
-#endif      // GAME_INCLUDE
+#endif  // GAME_INCLUDE
 
 //===============================================================
 

@@ -189,8 +189,10 @@ Build a client frame structure
 =============================================================================
 */
 
-static bool SV_EntityVisible(const client_t *client, const edict_t *ent, const visrow_t *mask)
+static bool SV_EntityVisible(const client_t *client, int e, const visrow_t *mask)
 {
+    const server_entity_t *ent = &sv.entities[e];
+
     if (ent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
         return CM_HeadnodeVisible(CM_NodeNum(&sv.cm, ent->headnode), mask->b);
@@ -212,10 +214,10 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 }
 
 #define IS_MONSTER(ent) \
-    ((ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER || (ent->s.renderfx & RF_FRAMELERP))
+    ((ent->r.svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER || (ent->s.renderfx & RF_FRAMELERP))
 
 #define IS_HI_PRIO(ent) \
-    (ent->s.number <= svs.maxclients || IS_MONSTER(ent) || ent->solid == SOLID_BSP)
+    (ent->s.number <= svs.maxclients || IS_MONSTER(ent) || ent->r.solid == SOLID_BSP)
 
 #define IS_GIB(ent) \
     (ent->s.renderfx & RF_LOW_PRIORITY)
@@ -306,14 +308,6 @@ void SV_BuildClientFrame(client_t *client)
     // grab the current player_state_t
     frame->ps = clent->client->ps;
 
-    // grab the current clientNum
-    frame->clientNum = SV_GetClient_ClientNum(client);
-    if (!VALIDATE_CLIENTNUM(frame->clientNum)) {
-        Com_DWPrintf("%s: bad clientNum %d for client %d\n",
-                     __func__, frame->clientNum, client->number);
-        frame->clientNum = client->number;
-    }
-
     // limit maximum number of entities in client frame
     max_packet_entities =
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer : MAX_PACKET_ENTITIES;
@@ -327,14 +321,14 @@ void SV_BuildClientFrame(client_t *client)
 
     num_edicts = 0;
     for (e = 1; e < ge->num_edicts; e++) {
-        ent = EDICT_NUM(e);
+        ent = SV_EdictForNum(e);
 
         // ignore entities not in use
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
 
         // ignore ents without visible models
-        if (ent->svflags & SVF_NOCLIENT)
+        if (ent->r.svflags & SVF_NOCLIENT)
             continue;
 
         // ignore ents without visible models unless they have an effect
@@ -354,12 +348,12 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore if not touching a PV leaf
-        if (ent != clent && !sv_novis->integer && !(ent->svflags & SVF_NOCULL)) {
+        if (ent != clent && !sv_novis->integer && !(ent->r.svflags & SVF_NOCULL)) {
             // check area
-            if (!CM_AreasConnected(&sv.cm, clientarea, ent->areanum)) {
+            if (!CM_AreasConnected(&sv.cm, clientarea, ent->r.areanum)) {
                 // doors can legally straddle two areas, so
                 // we may need to check another one
-                if (!CM_AreasConnected(&sv.cm, clientarea, ent->areanum2)) {
+                if (!CM_AreasConnected(&sv.cm, clientarea, ent->r.areanum2)) {
                     continue;        // blocked by a door
                 }
             }
@@ -370,7 +364,7 @@ void SV_BuildClientFrame(client_t *client)
             // remaster uses different sound culling rules
             bool sound_cull = ent->s.sound;
 
-            if (!SV_EntityVisible(client, ent, (beam_cull || sound_cull) ? &clientphs : &clientpvs))
+            if (!SV_EntityVisible(client, e, (beam_cull || sound_cull) ? &clientphs : &clientpvs))
                 continue;
 
             // don't send sounds if they will be attenuated away
@@ -378,7 +372,7 @@ void SV_BuildClientFrame(client_t *client)
                 if (SV_EntityAttenuatedAway(org, ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!beam_cull && !SV_EntityVisible(client, ent, &clientpvs))
+                    if (!beam_cull && !SV_EntityVisible(client, e, &clientpvs))
                         continue;
                 }
             } else if (!ent->s.modelindex) {
@@ -433,11 +427,11 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         // hide POV entity from renderer, unless this is player's own entity
-        if (e == frame->clientNum + 1 && ent != clent && !Q2PRO_OPTIMIZE(client)) {
+        if (e == frame->ps.client_num + 1 && ent != clent && !Q2PRO_OPTIMIZE(client)) {
             state->modelindex = 0;
         }
 
-        if (ent->owner == clent) {
+        if (ent->r.owner == clent) {
             // don't mark players missiles as solid
             state->solid = 0;
         }

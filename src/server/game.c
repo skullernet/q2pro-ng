@@ -92,7 +92,7 @@ static void PF_Unicast(edict_t *ent, bool reliable)
     if (msg_write.overflowed)
         Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
 
-    clientNum = NUM_FOR_EDICT(ent) - 1;
+    clientNum = SV_NumForEdict(ent) - 1;
     if (clientNum < 0 || clientNum >= svs.maxclients) {
         Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         goto clear;
@@ -236,7 +236,7 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
         return;
     }
 
-    clientNum = NUM_FOR_EDICT(ent) - 1;
+    clientNum = SV_NumForEdict(ent) - 1;
     if (clientNum < 0 || clientNum >= svs.maxclients) {
         Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         return;
@@ -277,7 +277,7 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
         return;
     }
 
-    n = NUM_FOR_EDICT(ent);
+    n = SV_NumForEdict(ent);
     if (n < 1 || n > svs.maxclients) {
         Com_DWPrintf("%s to a non-client %d\n", __func__, n - 1);
         return;
@@ -334,8 +334,8 @@ static void PF_setmodel(edict_t *ent, const char *name)
 // if it is an inline model, get the size information for it
     if (name[0] == '*') {
         const mmodel_t *mod = CM_InlineModel(&sv.cm, name);
-        VectorCopy(mod->mins, ent->mins);
-        VectorCopy(mod->maxs, ent->maxs);
+        VectorCopy(mod->mins, ent->r.mins);
+        VectorCopy(mod->maxs, ent->r.maxs);
         PF_LinkEdict(ent);
     }
 }
@@ -495,7 +495,7 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
     // need to clip due to faulty range check above
     att = min(att, 255);
 
-    ent = NUM_FOR_EDICT(edict);
+    ent = SV_NumForEdict(edict);
 
     sendchan = (ent << 3) | (channel & 7);
 
@@ -512,13 +512,13 @@ static void SV_StartSound(const vec3_t origin, edict_t *edict,
 
     // send origin for invisible entities
     // the origin can also be explicitly set
-    if ((edict->svflags & SVF_NOCLIENT) || origin)
+    if ((edict->r.svflags & SVF_NOCLIENT) || origin)
         flags |= SND_POS;
 
     // use the entity origin unless it is a bmodel or explicitly specified
     if (!origin) {
-        if (edict->solid == SOLID_BSP) {
-            VectorAvg(edict->mins, edict->maxs, origin_v);
+        if (edict->r.solid == SOLID_BSP) {
+            VectorAvg(edict->r.mins, edict->r.maxs, origin_v);
             VectorAdd(origin_v, edict->s.origin, origin_v);
             origin = origin_v;
         } else {
@@ -573,7 +573,7 @@ static void PF_LocalSound(edict_t *target, const vec3_t origin,
                           int soundindex, float volume,
                           float attenuation, float timeofs)
 {
-    int entnum = NUM_FOR_EDICT(target);
+    int entnum = SV_NumForEdict(target);
     int sendchan = (entnum << 3) | (channel & 7);
     int flags = SND_ENT;
 

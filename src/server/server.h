@@ -80,30 +80,22 @@ typedef struct {
     int         num_entities;
     unsigned    first_entity;
     player_state_t ps;
-    int         clientNum;
     int         areabytes;
     byte        areabits[MAX_MAP_AREA_BYTES];  // portalarea visibility bits
     unsigned    sentTime;                   // for ping calculations
     int         latency;
 } client_frame_t;
 
+#define MAX_TOTAL_ENT_LEAFS        128
+
+#define MAX_ENT_CLUSTERS    16
+
 typedef struct {
-    int         solid32;
-
-#if USE_FPS
-
-// must be > MAX_FRAMEDIV
-#define ENT_HISTORY_SIZE    8
-#define ENT_HISTORY_MASK    (ENT_HISTORY_SIZE - 1)
-
-    struct {
-        vec3_t  origin;
-        int     framenum;
-    } history[ENT_HISTORY_SIZE];
-
-    vec3_t      create_origin;
-    int         create_framenum;
-#endif
+    list_t      area;               // linked to a division node or leaf
+    int         num_clusters;       // if -1, use headnode instead
+    int         clusternums[MAX_ENT_CLUSTERS];
+    int         headnode;           // unused if num_clusters != -1
+    edict_t     *edict;
 } server_entity_t;
 
 // variable server FPS
@@ -143,11 +135,6 @@ typedef struct {
 
     server_entity_t entities[MAX_EDICTS];
 } server_t;
-
-#define EDICT_NUM(n) ((edict_t *)((byte *)(ge)->edicts + (ge)->edict_size*(n)))
-#define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
-
-#define MAX_TOTAL_ENT_LEAFS        128
 
 typedef enum {
     cs_free,        // can be reused for a new connection
@@ -572,6 +559,21 @@ void SV_WriteFrameToClient(client_t *client);
 //
 extern const game_export_t      *ge;
 
+static inline int SV_NumForEdict(const edict_t *e)
+{
+    return ((byte *)e - (byte *)ge->edicts) / ge->edict_size;
+}
+
+static inline edict_t *SV_EdictForNum(int n)
+{
+    return (edict_t *)((byte *)ge->edicts + ge->edict_size * n);
+}
+
+static inline server_entity_t *SV_SentForEdict(const edict_t *e)
+{
+    return &sv.entities[SV_NumForEdict(e)];
+}
+
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);
 
@@ -602,11 +604,6 @@ static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
     VectorAdd(cl->ps.pmove.origin, cl->ps.viewoffset, org);
 }
 
-static inline int SV_GetClient_ClientNum(const client_t *client)
-{
-    return client->edict->client->clientNum;
-}
-
 static inline int SV_GetClient_Stat(const client_t *client, int stat)
 {
     return client->edict->client->ps.stats[stat];
@@ -630,7 +627,6 @@ void PF_UnlinkEdict(edict_t *ent);
 // call before removing an entity, and before trying to move one,
 // so it doesn't clip against itself
 
-void SV_LinkEdict(const cm_t *cm, edict_t *ent);
 void PF_LinkEdict(edict_t *ent);
 // Needs to be called any time an entity changes origin, mins, maxs,
 // or solid.  Automatically unlinks if needed.

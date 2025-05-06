@@ -445,7 +445,7 @@ void SV_InitGame(void)
     for (i = 0; i < svs.maxclients; i++) {
         client = svs.client_pool + i;
         entnum = i + 1;
-        ent = EDICT_NUM(entnum);
+        ent = SV_EdictForNum(entnum);
         ent->s.number = entnum;
         client->edict = ent;
         client->number = i;

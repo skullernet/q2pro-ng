@@ -1489,6 +1489,7 @@ typedef struct {
     pmove_state_t   pmove;  // for prediction
 
     // these fields do not need to be communicated bit-precise
+    int         client_num;     // current POV number
 
     vec3_t      viewangles;     // for fixed views
     vec3_t      viewoffset;     // add to pmovestate->origin

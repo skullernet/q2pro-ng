@@ -894,7 +894,7 @@ static void SVC_DirectConnect(void)
     newcl->protocol = params.protocol;
     newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
-    newcl->edict = EDICT_NUM(number + 1);
+    newcl->edict = SV_EdictForNum(number + 1);
 #if USE_FPS
     newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
@@ -1489,7 +1489,7 @@ static void SV_PrepWorldFrame(void)
         return;
 
     for (i = 1; i < ge->num_edicts; i++) {
-        ent = EDICT_NUM(i);
+        ent = SV_EdictForNum(i);
 
         // events only last for a single keyframe
         ent->s.event = 0;
