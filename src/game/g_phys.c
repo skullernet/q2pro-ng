@@ -646,7 +646,7 @@ static void SV_Physics_Toss(edict_t *ent)
         if (trace.plane.normal[2] > 0.7f) {
             if ((ent->movetype == MOVETYPE_TOSS && VectorLength(ent->velocity) < 60) ||
                 (ent->movetype != MOVETYPE_TOSS && DotProduct(ent->velocity, trace.plane.normal) < 60)) {
-                if (!(ent->flags & FL_NO_STANDING) || trace.ent->solid == SOLID_BSP) {
+                if (!(ent->flags & FL_NO_STANDING) || trace.ent->r.solid == SOLID_BSP) {
                     ent->groundentity = trace.ent;
                     ent->groundentity_linkcount = trace.ent->linkcount;
                 }

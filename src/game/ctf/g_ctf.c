@@ -741,7 +741,7 @@ void CTFDrop_Flag(edict_t *ent, const gitem_t *item)
 
 void THINK(CTFFlagThink)(edict_t *ent)
 {
-    if (ent->solid != SOLID_NOT)
+    if (ent->r.solid != SOLID_NOT)
         ent->s.frame = 173 + (((ent->s.frame - 173) + 1) % 16);
     ent->nextthink = level.time + HZ(10);
 }
@@ -758,7 +758,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
         gi.setmodel(ent, ent->model);
     else
         gi.setmodel(ent, ent->item->world_model);
-    ent->solid = SOLID_TRIGGER;
+    ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
     ent->s.frame = 173;
@@ -1156,7 +1156,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     self->r.owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_PULL; // we're on hook
     self->enemy = other;
 
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
 
     if (self->r.owner->client->silencer_shots)
         volume = 0.2f;
@@ -1211,11 +1211,11 @@ void CTFGrapplePull(edict_t *self)
     }
 
     if (self->enemy) {
-        if (self->enemy->solid == SOLID_NOT) {
+        if (self->enemy->r.solid == SOLID_NOT) {
             CTFResetGrapple(self);
             return;
         }
-        if (self->enemy->solid == SOLID_BBOX) {
+        if (self->enemy->r.solid == SOLID_BBOX) {
             VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, self->s.origin);
             gi.linkentity(self);
         } else

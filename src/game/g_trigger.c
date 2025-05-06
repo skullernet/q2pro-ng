@@ -57,10 +57,10 @@ void USE(Use_Multi)(edict_t *ent, edict_t *other, edict_t *activator)
 {
     // PGM
     if (ent->spawnflags & SPAWNFLAG_TRIGGER_TOGGLE) {
-        if (ent->solid == SOLID_TRIGGER)
-            ent->solid = SOLID_NOT;
+        if (ent->r.solid == SOLID_TRIGGER)
+            ent->r.solid = SOLID_NOT;
         else
-            ent->solid = SOLID_TRIGGER;
+            ent->r.solid = SOLID_TRIGGER;
         gi.linkentity(ent);
     } else {
         ent->activator = activator;
@@ -116,7 +116,7 @@ set "message" to text string
 */
 void USE(trigger_enable)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->use = Use_Multi;
     gi.linkentity(self);
 }
@@ -499,10 +499,10 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 // PGM
 void USE(trigger_push_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT)
-        self->solid = SOLID_TRIGGER;
+    if (self->r.solid == SOLID_NOT)
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     gi.linkentity(self);
 }
 // PGM
@@ -640,17 +640,17 @@ NO_PROTECTION   *nothing* stops the damage
 
 void USE(hurt_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT)
-        self->solid = SOLID_TRIGGER;
+    if (self->r.solid == SOLID_NOT)
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     gi.linkentity(self);
 
     if (!(self->spawnflags & SPAWNFLAG_HURT_TOGGLE))
         self->use = NULL;
 
     if (self->spawnflags & SPAWNFLAG_HURT_PASSIVE) {
-        if (self->solid == SOLID_TRIGGER) {
+        if (self->r.solid == SOLID_TRIGGER) {
             if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
                 self->nextthink = level.time + SEC(1);
             else
@@ -806,10 +806,10 @@ START_OFF - trigger_gravity starts turned off (implies TOGGLE)
 // PGM
 void USE(trigger_gravity_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT)
-        self->solid = SOLID_TRIGGER;
+    if (self->r.solid == SOLID_NOT)
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     gi.linkentity(self);
 }
 // PGM
@@ -880,10 +880,10 @@ START_OFF - trigger_monsterjump starts turned off (implies TOGGLE)
 
 void USE(trigger_monsterjump_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT)
-        self->solid = SOLID_TRIGGER;
+    if (self->r.solid == SOLID_NOT)
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     gi.linkentity(self);
 }
 

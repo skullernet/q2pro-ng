@@ -29,7 +29,7 @@ void stationarymonster_start_go(edict_t *self);
 
 void THINK(stationarymonster_triggered_spawn)(edict_t *self)
 {
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_NONE;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->air_finished = level.time + SEC(12);

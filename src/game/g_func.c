@@ -437,7 +437,7 @@ void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->r.inuse && other->solid) // PGM
+        if (other->r.inuse && other->r.solid) // PGM
             BecomeExplosion1(other);
         return;
     }
@@ -451,7 +451,7 @@ void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
     T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     // [Paril-KEX] killed the thing, so don't switch directions
-    if (!other->r.inuse || !other->solid)
+    if (!other->r.inuse || !other->r.solid)
         return;
 
     if (self->moveinfo.state == STATE_UP)
@@ -1388,7 +1388,7 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     VectorCopy(mins, other->r.mins);
     VectorCopy(maxs, other->r.maxs);
     other->owner = ent;
-    other->solid = SOLID_TRIGGER;
+    other->r.solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
     other->touch = Touch_DoorTrigger;
     gi.linkentity(other);
@@ -1753,7 +1753,7 @@ void MOVEINFO_BLOCKED(smart_water_blocked)(edict_t *self, edict_t *other)
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_LAVA });
         // if it's still there, nuke it
-        if (other->r.inuse && other->solid) // PGM
+        if (other->r.inuse && other->r.solid) // PGM
             BecomeExplosion1(other);
         return;
     }
@@ -1874,7 +1874,7 @@ void MOVEINFO_BLOCKED(train_blocked)(edict_t *self, edict_t *other)
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->r.inuse && other->solid)
+        if (other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
         return;
     }
@@ -2423,7 +2423,7 @@ void MOVEINFO_BLOCKED(door_secret_blocked)(edict_t *self, edict_t *other)
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other->r.inuse && other->solid)
+        if (other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
         return;
     }
@@ -2515,12 +2515,12 @@ void USE(use_killbox)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->spawnflags & SPAWNFLAG_KILLBOX_DEADLY_COOP)
         level.deadly_kill_box = true;
 
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     gi.linkentity(self);
 
     KillBoxEx(self, false, MOD_TELEFRAG, self->spawnflags & SPAWNFLAG_KILLBOX_EXACT_COLLISION, false);
 
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     gi.linkentity(self);
 
     level.deadly_kill_box = false;

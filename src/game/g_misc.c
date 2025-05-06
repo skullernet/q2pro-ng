@@ -537,13 +537,13 @@ START_ON        only valid for TRIGGER_SPAWN walls
 
 void USE(func_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT) {
-        self->solid = SOLID_BSP;
+    if (self->r.solid == SOLID_NOT) {
+        self->r.solid = SOLID_BSP;
         self->r.svflags &= ~SVF_NOCLIENT;
         gi.linkentity(self);
         KillBoxEx(self, false, MOD_TELEFRAG, true, self->spawnflags & SPAWNFLAG_SAFE_APPEAR);
     } else {
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
         self->r.svflags |= SVF_NOCLIENT;
         gi.linkentity(self);
     }
@@ -658,7 +658,7 @@ void THINK(func_object_release)(edict_t *self)
 
 void USE(func_object_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     func_object_release(self);
@@ -821,7 +821,7 @@ void USE(func_explosive_activate)(edict_t *self, edict_t *other, edict_t *activa
 
 void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     gi.linkentity(self);
@@ -1380,7 +1380,7 @@ void USE(misc_viper_bomb_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     edict_t *viper;
 
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->s.effects |= EF_ROCKET;
     self->use = NULL;
@@ -1982,7 +1982,7 @@ void THINK(fire_fly)(edict_t *self)
     edict_t *fireball = G_Spawn();
     fireball->s.effects = EF_ROCKET | EF_GIB;
     fireball->s.renderfx = RF_MINLIGHT;
-    fireball->solid = SOLID_BBOX;
+    fireball->r.solid = SOLID_BBOX;
     fireball->movetype = MOVETYPE_TOSS;
     fireball->clipmask = MASK_SHOT;
     fireball->velocity[0] = crandom() * 50;

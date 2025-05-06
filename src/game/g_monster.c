@@ -840,7 +840,7 @@ void THINK(monster_triggered_spawn)(edict_t *self)
 {
     self->s.origin[2] += 1;
 
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_STEP;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->air_finished = level.time + SEC(12);

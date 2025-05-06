@@ -137,7 +137,7 @@ void THINK(DoRespawn)(edict_t *ent)
         else {
             // ZOID
             ent->r.svflags |= SVF_NOCLIENT;
-            ent->solid = SOLID_NOT;
+            ent->r.solid = SOLID_NOT;
             gi.linkentity(ent);
 
             for (count = 0, ent = master; ent; ent = ent->chain, count++)
@@ -152,7 +152,7 @@ void THINK(DoRespawn)(edict_t *ent)
 
     ent->r.svflags &= ~SVF_NOCLIENT;
     ent->r.svflags &= ~SVF_RESPAWNING;
-    ent->solid = SOLID_TRIGGER;
+    ent->r.solid = SOLID_TRIGGER;
     gi.linkentity(ent);
 
     // send an effect
@@ -1024,10 +1024,10 @@ void USE(Use_Item)(edict_t *ent, edict_t *other, edict_t *activator)
     ent->use = NULL;
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_NO_TOUCH) {
-        ent->solid = SOLID_BBOX;
+        ent->r.solid = SOLID_BBOX;
         ent->touch = NULL;
     } else {
-        ent->solid = SOLID_TRIGGER;
+        ent->r.solid = SOLID_TRIGGER;
         ent->touch = Touch_Item;
     }
 
@@ -1062,7 +1062,7 @@ void THINK(droptofloor)(edict_t *ent)
         gi.setmodel(ent, ent->model);
     else
         gi.setmodel(ent, ent->item->world_model);
-    ent->solid = SOLID_TRIGGER;
+    ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
 
@@ -1095,7 +1095,7 @@ void THINK(droptofloor)(edict_t *ent)
         ent->teamchain = NULL;
 
         ent->r.svflags |= SVF_NOCLIENT;
-        ent->solid = SOLID_NOT;
+        ent->r.solid = SOLID_NOT;
 
         if (ent == ent->teammaster) {
             ent->nextthink = level.time + HZ(10);
@@ -1104,7 +1104,7 @@ void THINK(droptofloor)(edict_t *ent)
     }
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_NO_TOUCH) {
-        ent->solid = SOLID_BBOX;
+        ent->r.solid = SOLID_BBOX;
         ent->touch = NULL;
         ent->s.effects &= ~(EF_ROTATE | EF_BOB);
         ent->s.renderfx &= ~RF_GLOW;
@@ -1112,7 +1112,7 @@ void THINK(droptofloor)(edict_t *ent)
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_TRIGGER_SPAWN) {
         ent->r.svflags |= SVF_NOCLIENT;
-        ent->solid = SOLID_NOT;
+        ent->r.solid = SOLID_NOT;
         ent->use = Use_Item;
     }
 

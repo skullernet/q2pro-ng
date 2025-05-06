@@ -997,7 +997,7 @@ static void WidowVelocityForDamage(int damage, vec3_t v)
 
 void TOUCH(widow_gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->touch = NULL;
     self->s.angles[PITCH] = 0;
     self->s.angles[ROLL] = 0;

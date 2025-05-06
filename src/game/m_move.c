@@ -832,8 +832,8 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     }
 
     if (ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP && ent->health > 0) {
-        if (!ent->groundentity || ent->groundentity->solid == SOLID_BSP) {
-            if (!(trace.ent->solid == SOLID_BSP)) {
+        if (!ent->groundentity || ent->groundentity->r.solid == SOLID_BSP) {
+            if (!(trace.ent->r.solid == SOLID_BSP)) {
                 // walked off an edge
                 VectorCopy(oldorg, ent->s.origin);
                 M_CheckGround(ent, G_GetClipMask(ent));

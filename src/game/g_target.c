@@ -545,7 +545,7 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
     ED_CallSpawn(ent);
     gi.linkentity(ent);
 
-    if (ent->solid == SOLID_BBOX || (G_GetClipMask(ent) & (CONTENTS_PLAYER)))
+    if (ent->r.solid == SOLID_BBOX || (G_GetClipMask(ent) & (CONTENTS_PLAYER)))
         KillBox(ent, false);
 
     if (self->speed)
@@ -773,7 +773,7 @@ void THINK(target_laser_start)(edict_t *self)
     edict_t *ent;
 
     self->movetype = MOVETYPE_NONE;
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->s.renderfx |= RF_BEAM;
     self->s.modelindex = MODELINDEX_WORLD; // must be non-zero
 
@@ -1198,7 +1198,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->linkcount : 0;
         dummy->think = target_camera_dummy_think;
         dummy->nextthink = level.time + HZ(10);
-        dummy->solid = SOLID_BBOX;
+        dummy->r.solid = SOLID_BBOX;
         dummy->movetype = MOVETYPE_STEP;
         VectorCopy(activator->r.mins, dummy->r.mins);
         VectorCopy(activator->r.maxs, dummy->r.maxs);

@@ -396,7 +396,7 @@ void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
     VectorClear(self->avelocity);
 
     // make it invisible and desolid until respawn time
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     //  self->s.modelindex = 0;
     self->think = DBall_BallRespawn;
     self->nextthink = level.time + SEC(2);
@@ -424,7 +424,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     VectorClear(self->velocity);
     VectorClear(self->avelocity);
 
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/objects/dball/tris.md2");
     self->s.event = EV_PLAYER_TELEPORT;
     self->groundentity = NULL;

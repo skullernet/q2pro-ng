@@ -237,13 +237,13 @@ void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->wait = 1;
         self->think = NULL;
         self->nextthink = 0;
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
         gi.linkentity(self);
     } else {
         self->wait = 0;
         self->think = force_wall_think;
         self->nextthink = level.time + HZ(10);
-        self->solid = SOLID_BSP;
+        self->r.solid = SOLID_BSP;
         gi.linkentity(self);
         KillBox(self, false); // Is this appropriate?
     }

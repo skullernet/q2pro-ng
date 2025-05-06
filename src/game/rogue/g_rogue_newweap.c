@@ -177,7 +177,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     G_FreeEdict(ent);
 }
 
@@ -333,7 +333,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     VectorSet(field->r.mins, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE, -PROX_BOUND_SIZE);
     VectorSet(field->r.maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
     field->movetype = MOVETYPE_NONE;
-    field->solid = SOLID_TRIGGER;
+    field->r.solid = SOLID_TRIGGER;
     field->owner = ent;
     field->classname = "prox_field";
     field->teammaster = ent;
@@ -352,7 +352,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     ent->nextthink = level.time;
     ent->think = prox_open;
     ent->touch = NULL;
-    ent->solid = SOLID_BBOX;
+    ent->r.solid = SOLID_BBOX;
     ent->r.svflags &= ~SVF_PROJECTILE;
 
     gi.linkentity(ent);
@@ -897,7 +897,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorSet(trigger->r.mins, -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, self->r.mins[2]);
     VectorSet(trigger->r.maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
     trigger->movetype = MOVETYPE_NONE;
-    trigger->solid = SOLID_TRIGGER;
+    trigger->r.solid = SOLID_TRIGGER;
     trigger->owner = self;
     trigger->touch = tesla_zap;
     trigger->classname = "tesla trigger";

@@ -268,7 +268,7 @@ static void proboscis_retract(edict_t *self)
 
     // mark as retracting
     self->movetype = MOVETYPE_NONE;
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     // come back real hard
     if (self->style != 2)
         self->speed *= PARASITE_PROBOSCIS_RETRACT_MODIFIER;
@@ -367,7 +367,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
         self->r.owner->monsterinfo.nextframe = FRAME_drain06;
         self->movetype = MOVETYPE_NONE;
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
         self->style = 1;
         // stick to this guy
         VectorSubtract(p, other->s.origin, self->move_origin);
@@ -384,7 +384,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
             // hit wall; stick to it and do break animation
             self->r.owner->monsterinfo.active_move = &parasite_move_break;
             self->movetype = MOVETYPE_NONE;
-            self->solid = SOLID_NOT;
+            self->r.solid = SOLID_NOT;
             self->style = 1;
             self->r.owner->s.angles[YAW] = self->s.angles[YAW];
         }

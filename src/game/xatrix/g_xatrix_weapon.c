@@ -484,7 +484,7 @@ void THINK(Trap_Think)(edict_t *ent)
     }
 
     ent->takedamage = false;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->die = NULL;
 
     T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_TRAP });

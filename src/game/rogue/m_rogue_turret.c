@@ -557,7 +557,7 @@ void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
     if (self->teamchain) {
         base = self->teamchain;
-        base->solid = SOLID_NOT;
+        base->r.solid = SOLID_NOT;
         base->takedamage = false;
         base->movetype = MOVETYPE_NONE;
         base->teammaster = base;
@@ -755,7 +755,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
         // do we have a clear shot?
         if (tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
             // PGM - we want them to go ahead and shoot at info_notnulls if they can.
-            if (self->enemy->solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
+            if (self->enemy->r.solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 if ((!(tr.ent->r.svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
                     if ((self->monsterinfo.blindfire) && (self->monsterinfo.blind_fire_delay <= SEC(10))) {
@@ -797,7 +797,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 
     // PGM - go ahead and shoot every time if it's a info_notnull
     // PMM - added visibility check
-    if (((frandom() < chance) && (visible(self, self->enemy))) || (self->enemy->solid == SOLID_NOT)) {
+    if (((frandom() < chance) && (visible(self, self->enemy))) || (self->enemy->r.solid == SOLID_NOT)) {
         self->monsterinfo.attack_state = AS_MISSILE;
         self->monsterinfo.attack_finished = level.time + nexttime;
         return true;

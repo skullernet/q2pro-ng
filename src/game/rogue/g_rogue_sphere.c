@@ -333,11 +333,11 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     owner->s.modelindex = 0;
     owner->s.modelindex2 = 0;
     owner->viewheight = 8;
-    owner->solid = SOLID_NOT;
+    owner->r.solid = SOLID_NOT;
     owner->flags |= FL_SAM_RAIMI;
     gi.linkentity(owner);
 
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     gi.linkentity(self);
 }
 

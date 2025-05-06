@@ -206,7 +206,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
         // give it a chance to go away on it's own terms (like gibs)
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
-        if (other && other->r.inuse && other->solid)
+        if (other && other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
         return;
     }
@@ -218,7 +218,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
     T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     // [Paril-KEX] killed, so don't change direction
-    if (!other->r.inuse || !other->solid)
+    if (!other->r.inuse || !other->r.solid)
         return;
 
     if (self->moveinfo.state == STATE_UP)

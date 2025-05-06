@@ -20,7 +20,7 @@ void USE(Use_Boss3)(edict_t *self, edict_t *other, edict_t *activator)
 
     // just hide, don't kill ent so we can trigger it again
     self->r.svflags |= SVF_NOCLIENT;
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
 }
 
 void THINK(Think_Boss3Stand)(edict_t *self)

@@ -854,7 +854,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
         VectorCopy(self->s.origin, spot1);
         spot1[2] += self->viewheight;
         // see if any entities are in the way of the shot
-        if (!self->enemy->client || self->enemy->solid) {
+        if (!self->enemy->client || self->enemy->r.solid) {
             VectorCopy(self->enemy->s.origin, spot2);
             spot2[2] += self->enemy->viewheight;
 
@@ -867,7 +867,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
         // do we have a clear shot?
         if (!(self->hackflags & HACKFLAG_ATTACK_PLAYER) && tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
             // ROGUE - we want them to go ahead and shoot at info_notnulls if they can.
-            if (self->enemy->solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
+            if (self->enemy->r.solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 // Paril - *and* we have at least seen them once
                 if (!(tr.ent->r.svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
@@ -933,7 +933,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
         chance = far_chance;
 
     // PGM - go ahead and shoot every time if it's a info_notnull
-    if ((!self->enemy->client && self->enemy->solid == SOLID_NOT) || (frandom() < chance)) {
+    if ((!self->enemy->client && self->enemy->r.solid == SOLID_NOT) || (frandom() < chance)) {
         self->monsterinfo.attack_state = AS_MISSILE;
         self->monsterinfo.attack_finished = level.time;
         return true;

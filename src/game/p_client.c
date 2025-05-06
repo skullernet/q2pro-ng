@@ -11,7 +11,7 @@ void SP_misc_teleporter_dest(edict_t *ent);
 void THINK(info_player_start_drop)(edict_t *self)
 {
     // allow them to drop
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_TOSS;
     VectorCopy(player_mins, self->r.mins);
     VectorCopy(player_maxs, self->r.maxs);
@@ -1459,7 +1459,7 @@ void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
         // prevent explosion singularities
         self->r.svflags = SVF_NOCLIENT;
         self->takedamage = false;
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
         self->movetype = MOVETYPE_NOCLIP;
         gi.linkentity(self);
     }

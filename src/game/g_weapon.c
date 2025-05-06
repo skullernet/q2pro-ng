@@ -701,7 +701,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
             T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
 
         // dead, so we don't need to care about checking pierce
-        if (!tr.ent->r.inuse || (!tr.ent->solid || tr.ent->solid == SOLID_TRIGGER))
+        if (!tr.ent->r.inuse || (!tr.ent->r.solid || tr.ent->r.solid == SOLID_TRIGGER))
             continue;
 
         // ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
@@ -709,7 +709,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
             // ROGUE
             (tr.ent->flags & FL_DAMAGEABLE) ||
             // ROGUE
-            (tr.ent->solid == SOLID_BBOX)) {
+            (tr.ent->r.solid == SOLID_BBOX)) {
             if (pierce_mark(&pierce, tr.ent))
                 continue;
         }
@@ -878,7 +878,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     T_RadiusDamage(self, self->r.owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
     gi.sound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->touch = NULL;
     VectorMA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity, self->s.origin);
     VectorClear(self->velocity);

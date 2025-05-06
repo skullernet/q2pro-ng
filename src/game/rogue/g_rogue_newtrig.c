@@ -153,10 +153,10 @@ void TOUCH(trigger_disguise_touch)(edict_t *self, edict_t *other, const trace_t 
 
 void USE(trigger_disguise_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->solid == SOLID_NOT)
-        self->solid = SOLID_TRIGGER;
+    if (self->r.solid == SOLID_NOT)
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
 
     gi.linkentity(self);
 }
