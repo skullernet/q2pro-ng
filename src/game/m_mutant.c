@@ -374,7 +374,7 @@ static bool mutant_check_jump(edict_t *self)
     //  return false;
 
     // don't jump if there's no way we can reach standing height
-    if (self->r.absmin[2] + 125 < self->enemy->absmin[2])
+    if (self->r.absmin[2] + 125 < self->enemy->r.absmin[2])
         return false;
 
     VectorSubtract(self->s.origin, self->enemy->s.origin, v);

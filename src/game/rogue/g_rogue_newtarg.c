@@ -49,7 +49,7 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     if (self->enemy) {
-        VectorAvg(self->enemy->absmin, self->enemy->absmax, point);
+        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
         VectorSubtract(point, self->s.origin, self->movedir);
         VectorNormalize(self->movedir);
     }

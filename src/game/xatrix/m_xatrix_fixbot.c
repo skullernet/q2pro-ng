@@ -802,7 +802,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
 
     if (self->enemy && self->health > 0) {
         vec3_t point;
-        VectorAvg(self->enemy->absmin, self->enemy->absmax, point);
+        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
         if (self->monsterinfo.aiflags & AI_MEDIC)
             point[0] += sinf(TO_SEC(level.time)) * 8;
         VectorSubtract(point, self->s.origin, dir);

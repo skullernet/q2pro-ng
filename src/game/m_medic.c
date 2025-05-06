@@ -1006,7 +1006,7 @@ static void medic_cable_attack(edict_t *self)
 
     // adjust end z for end spot since the monster is currently dead
     VectorCopy(self->enemy->s.origin, end);
-    end[2] = (self->enemy->absmin[2] + self->enemy->absmax[2]) / 2;
+    end[2] = (self->enemy->r.absmin[2] + self->enemy->r.absmax[2]) / 2;
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_MEDIC_CABLE_ATTACK);

@@ -672,7 +672,7 @@ void THINK(target_laser_think)(edict_t *self)
     if (self->enemy) {
         vec3_t last_movedir, point;
         VectorCopy(self->movedir, last_movedir);
-        VectorAvg(self->enemy->absmin, self->enemy->absmax, point);
+        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
         VectorSubtract(point, self->s.origin, self->movedir);
         VectorNormalize(self->movedir);
         if (!VectorCompare(self->movedir, last_movedir))

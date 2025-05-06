@@ -238,7 +238,7 @@ static void actorMachineGun(edict_t *self)
             VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
             target[2] += self->enemy->viewheight;
         } else {
-            VectorCopy(self->enemy->absmin, target);
+            VectorCopy(self->enemy->r.absmin, target);
             target[2] += (self->enemy->size[2] / 2) + 1;
         }
         VectorSubtract(target, start, forward);

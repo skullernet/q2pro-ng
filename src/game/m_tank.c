@@ -414,12 +414,12 @@ static void TankRocket(edict_t *self)
         VectorCopy(self->monsterinfo.blind_fire_target, vec);
     // pmm
     // don't shoot at feet if they're above me.
-    } else if (frandom() < 0.66f || (start[2] < self->enemy->absmin[2])) {
+    } else if (frandom() < 0.66f || (start[2] < self->enemy->r.absmin[2])) {
         VectorCopy(self->enemy->s.origin, vec);
         vec[2] += self->enemy->viewheight;
     } else {
         VectorCopy(self->enemy->s.origin, vec);
-        vec[2] = self->enemy->absmin[2] + 1;
+        vec[2] = self->enemy->r.absmin[2] + 1;
     }
     VectorSubtract(vec, start, dir);
     VectorNormalize(dir);

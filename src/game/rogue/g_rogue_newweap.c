@@ -1261,7 +1261,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
     }
 
     vec3_t center;
-    VectorAvg(self->enemy->absmin, self->enemy->absmax, center);
+    VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, center);
 
     T_Damage(self->enemy, self, self->owner, vec3_origin, center, pain_normal,
              self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
@@ -1376,7 +1376,7 @@ void THINK(tracker_fly)(edict_t *self)
     } else if (!self->area.next) { // paranoia
         VectorCopy(self->enemy->s.origin, dest);
     } else {
-        VectorAvg(self->enemy->absmin, self->enemy->absmax, dest);
+        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, dest);
     }
 
     VectorSubtract(dest, self->s.origin, dir);

@@ -1216,7 +1216,7 @@ void CTFGrapplePull(edict_t *self)
             return;
         }
         if (self->enemy->solid == SOLID_BBOX) {
-            VectorAvg(self->enemy->absmin, self->enemy->absmax, self->s.origin);
+            VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, self->s.origin);
             gi.linkentity(self);
         } else
             VectorCopy(self->enemy->velocity, self->velocity);

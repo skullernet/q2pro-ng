@@ -481,7 +481,7 @@ void THINK(turret_brain_think)(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
     }
 
-    VectorAvg(self->enemy->absmax, self->enemy->absmin, target);
+    VectorAvg(self->enemy->r.absmax, self->enemy->r.absmin, target);
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
         gi.trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent, MASK_SHOT);

@@ -426,10 +426,10 @@ static void ChickRocket(edict_t *self)
     if (blindfire) {
     // pmm
     // don't shoot at feet if they're above where i'm shooting from.
-    } else if (frandom() < 0.33f || (start[2] < self->enemy->absmin[2])) {
+    } else if (frandom() < 0.33f || (start[2] < self->enemy->r.absmin[2])) {
         vec[2] += self->enemy->viewheight;
     } else {
-        vec[2] = self->enemy->absmin[2] + 1;
+        vec[2] = self->enemy->r.absmin[2] + 1;
     }
     VectorSubtract(vec, start, dir);
     // PGM

@@ -71,7 +71,7 @@ static bool gekk_check_jump(edict_t *self)
     vec3_t v;
 
     // don't jump if there's no way we can reach standing height
-    if (self->r.absmin[2] + 125 < self->enemy->absmin[2])
+    if (self->r.absmin[2] + 125 < self->enemy->r.absmin[2])
         return false;
 
     VectorSubtract(self->s.origin, self->enemy->s.origin, v);
@@ -94,7 +94,7 @@ static bool gekk_check_jump_close(edict_t *self)
     v[2] = 0;
 
     // don't do this if our head is below their feet
-    if (VectorLength(v) < 100 && self->r.absmax[2] <= self->enemy->absmin[2])
+    if (VectorLength(v) < 100 && self->r.absmax[2] <= self->enemy->r.absmin[2])
         return false;
 
     return true;

@@ -24,9 +24,9 @@ bool blocked_checkplat(edict_t *self, float dist)
         return false;
 
     // check player's relative altitude
-    if (self->enemy->absmin[2] >= self->r.absmax[2])
+    if (self->enemy->r.absmin[2] >= self->r.absmax[2])
         playerPosition = 1;
-    else if (self->enemy->absmax[2] <= self->r.absmin[2])
+    else if (self->enemy->r.absmax[2] <= self->r.absmin[2])
         playerPosition = -1;
     else
         playerPosition = 0;
@@ -177,7 +177,7 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
             }
 
             if ((self->r.absmin[2] - trace.endpos[2]) >= 24 && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
-                if ((self->enemy->absmin[2] - trace.endpos[2]) > 32)
+                if ((self->enemy->r.absmin[2] - trace.endpos[2]) > 32)
                     return NO_JUMP;
 
                 if (trace.plane.normal[2] < 0.9f)
