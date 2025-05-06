@@ -1190,12 +1190,12 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     // spawn fake player dummy where we were
     if (activator->client) {
         edict_t *dummy = self->enemy = G_Spawn();
-        dummy->owner = activator;
+        dummy->r.owner = activator;
         dummy->clipmask = activator->clipmask;
         VectorCopy(activator->s.origin, dummy->s.origin);
         VectorCopy(activator->s.angles, dummy->s.angles);
         dummy->groundentity = activator->groundentity;
-        dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->linkcount : 0;
+        dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->r.linkcount : 0;
         dummy->think = target_camera_dummy_think;
         dummy->nextthink = level.time + HZ(10);
         dummy->r.solid = SOLID_BBOX;

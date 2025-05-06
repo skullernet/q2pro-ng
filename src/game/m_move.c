@@ -854,7 +854,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
     ent->flags &= ~FL_PARTIALGROUND;
     ent->groundentity = trace.ent;
-    ent->groundentity_linkcount = trace.ent->linkcount;
+    ent->groundentity_linkcount = trace.ent->r.linkcount;
 
     // the move is ok
     if (relink) {

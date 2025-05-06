@@ -33,8 +33,8 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
     edict_t *attacker;
 
     if (other->takedamage) {
-        if (self->teammaster->owner)
-            attacker = self->teammaster->owner;
+        if (self->teammaster->r.owner)
+            attacker = self->teammaster->r.owner;
         else
             attacker = self->teammaster;
         T_Damage(other, self, attacker, vec3_origin, other->s.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
@@ -74,7 +74,7 @@ static void turret_breach_fire(edict_t *self)
     else
         damage = irandom2(100, 150);
     speed = 550 + 50 * skill->integer;
-    edict_t *rocket = fire_rocket(self->teammaster->owner->activator ? self->teammaster->owner->activator : self->teammaster->owner, start, f, damage, speed, 150, damage);
+    edict_t *rocket = fire_rocket(self->teammaster->r.owner->activator ? self->teammaster->r.owner->activator : self->teammaster->r.owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
 
     gi.positioned_sound(start, self, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
@@ -295,8 +295,8 @@ void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker
         self->teammaster = NULL;
         self->flags &= ~FL_TEAMSLAVE;
 
-        self->target_ent->owner = NULL;
-        self->target_ent->teammaster->owner = NULL;
+        self->target_ent->r.owner = NULL;
+        self->target_ent->teammaster->r.owner = NULL;
 
         self->target_ent->moveinfo.blocked = NULL;
 
@@ -373,8 +373,8 @@ void THINK(turret_driver_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->owner = self;
-    self->target_ent->teammaster->owner = self;
+    self->target_ent->r.owner = self;
+    self->target_ent->teammaster->r.owner = self;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
@@ -529,8 +529,8 @@ void THINK(turret_brain_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->owner = self;
-    self->target_ent->teammaster->owner = self;
+    self->target_ent->r.owner = self;
+    self->target_ent->teammaster->r.owner = self;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];

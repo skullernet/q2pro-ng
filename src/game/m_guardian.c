@@ -365,7 +365,7 @@ static const vec3_t laser_positions[] = {
 void PRETHINK(guardian_fire_update)(edict_t *laser)
 {
     if (!(laser->spawnflags & SPAWNFLAG_DABEAM_SPAWNED)) {
-        edict_t *self = laser->owner;
+        edict_t *self = laser->r.owner;
         bool sec = laser->spawnflags & SPAWNFLAG_DABEAM_SECONDARY;
 
         vec3_t forward, right, target;

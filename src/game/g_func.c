@@ -1214,8 +1214,8 @@ void THINK(smart_water_go_up)(edict_t *self)
         ent = &g_edicts[1 + i];
 
         // don't count dead or unused player slots
-        if ((ent->r.inuse) && (ent->health > 0) && (ent->absmin[2] < lowestPlayerPt)) {
-            lowestPlayerPt = ent->absmin[2];
+        if ((ent->r.inuse) && (ent->health > 0) && (ent->r.absmin[2] < lowestPlayerPt)) {
+            lowestPlayerPt = ent->r.absmin[2];
             lowestPlayer = ent;
         }
     }
@@ -1370,12 +1370,12 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     if (ent->flags & FL_TEAMSLAVE)
         return; // only the team leader spawns a trigger
 
-    VectorCopy(ent->absmin, mins);
-    VectorCopy(ent->absmax, maxs);
+    VectorCopy(ent->r.absmin, mins);
+    VectorCopy(ent->r.absmax, maxs);
 
     for (other = ent->teamchain; other; other = other->teamchain) {
-        AddPointToBounds(other->absmin, mins, maxs);
-        AddPointToBounds(other->absmax, mins, maxs);
+        AddPointToBounds(other->r.absmin, mins, maxs);
+        AddPointToBounds(other->r.absmax, mins, maxs);
     }
 
     // expand
@@ -1387,7 +1387,7 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     other = G_Spawn();
     VectorCopy(mins, other->r.mins);
     VectorCopy(maxs, other->r.maxs);
-    other->owner = ent;
+    other->r.owner = ent;
     other->r.solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
     other->touch = Touch_DoorTrigger;

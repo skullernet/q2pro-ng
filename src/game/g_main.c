@@ -860,7 +860,7 @@ static void G_RunFrame_(bool main_loop)
             VectorCopy(ent->s.origin, ent->s.old_origin);
 
         // if the ground entity moved, make sure we are still on it
-        if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount)) {
+        if ((ent->groundentity) && (ent->groundentity->r.linkcount != ent->groundentity_linkcount)) {
             contents_t mask = G_GetClipMask(ent);
 
             if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->r.svflags & SVF_MONSTER)) {
@@ -876,7 +876,7 @@ static void G_RunFrame_(bool main_loop)
                 if (tr.startsolid || tr.allsolid || tr.ent != ent->groundentity)
                     ent->groundentity = NULL;
                 else
-                    ent->groundentity_linkcount = ent->groundentity->linkcount;
+                    ent->groundentity_linkcount = ent->groundentity->r.linkcount;
             }
         }
 

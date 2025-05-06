@@ -210,7 +210,7 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     if (!trace.startsolid && !trace.allsolid) {
         VectorCopy(trace.endpos, ent->s.origin);
         ent->groundentity = trace.ent;
-        ent->groundentity_linkcount = trace.ent->linkcount;
+        ent->groundentity_linkcount = trace.ent->r.linkcount;
         ent->velocity[2] = 0;
     }
 }
@@ -788,7 +788,7 @@ void THINK(monster_think)(edict_t *self)
         return;
 
     if (self->hackflags & HACKFLAG_ATTACK_PLAYER) {
-        if (!self->enemy && g_edicts[1].inuse) {
+        if (!self->enemy && g_edicts[1].r.inuse) {
             self->enemy = &g_edicts[1];
             FoundTarget(self);
         }
@@ -798,8 +798,8 @@ void THINK(monster_think)(edict_t *self)
         M_CheckDodge(self);
 
     M_MoveFrame(self);
-    if (self->linkcount != self->monsterinfo.linkcount) {
-        self->monsterinfo.linkcount = self->linkcount;
+    if (self->r.linkcount != self->monsterinfo.linkcount) {
+        self->monsterinfo.linkcount = self->r.linkcount;
         M_CheckGround(self, G_GetClipMask(self));
     }
     M_CategorizePosition(self, self->s.origin, &self->waterlevel, &self->watertype);

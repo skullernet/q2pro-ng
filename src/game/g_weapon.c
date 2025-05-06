@@ -405,7 +405,7 @@ void THINK(Grenade_Explode)(edict_t *ent)
 
 void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == ent->owner)
+    if (other == ent->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -560,7 +560,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
 {
     vec3_t origin;
 
-    if (other == ent->owner)
+    if (other == ent->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -568,14 +568,14 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         return;
     }
 
-    if (ent->owner->client)
-        PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+    if (ent->r.owner->client)
+        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
 
     // calculate position for the explosion entity
     VectorAdd(ent->s.origin, tr->plane.normal, origin);
 
     if (other->takedamage) {
-        T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
+        T_Damage(other, ent, ent->r.owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
     } else if (!deathmatch->integer && !coop->integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
@@ -583,7 +583,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
     }
 
-    T_RadiusDamage(ent, ent->owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
+    T_RadiusDamage(ent, ent->r.owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
 
     gi.WriteByte(svc_temp_entity);
     if (ent->waterlevel)
@@ -933,7 +933,7 @@ void THINK(bfg_think)(edict_t *self)
             continue;
         // ZOID
 
-        VectorAvg(ent->absmin, ent->absmax, point);
+        VectorAvg(ent->r.absmin, ent->r.absmax, point);
 
         VectorSubtract(point, self->s.origin, dir);
         VectorNormalize(dir);

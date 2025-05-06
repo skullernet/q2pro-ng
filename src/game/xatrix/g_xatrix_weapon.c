@@ -236,7 +236,7 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
 {
     vec3_t origin;
 
-    if (other == ent->owner)
+    if (other == ent->r.owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -244,16 +244,16 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         return;
     }
 
-    if (ent->owner->client)
-        PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+    if (ent->r.owner->client)
+        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
 
     // calculate position for the explosion entity
     VectorAdd(ent->s.origin, tr->plane.normal, origin);
 
     if (other->takedamage)
-        T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
+        T_Damage(other, ent, ent->r.owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
-    T_RadiusDamage(ent, ent->owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
+    T_RadiusDamage(ent, ent->r.owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_PLASMA_EXPLOSION);
@@ -299,7 +299,7 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
 
 void THINK(Trap_Gib_Think)(edict_t *ent)
 {
-    if (ent->owner->s.frame != 5) {
+    if (ent->r.owner->s.frame != 5) {
         G_FreeEdict(ent);
         return;
     }
@@ -307,18 +307,18 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
     vec3_t forward, right, up;
     vec3_t vec;
 
-    AngleVectors(ent->owner->s.angles, forward, right, up);
+    AngleVectors(ent->r.owner->s.angles, forward, right, up);
 
     // rotate us around the center
-    float degrees = (150 * FRAME_TIME_SEC) + ent->owner->delay;
+    float degrees = (150 * FRAME_TIME_SEC) + ent->r.owner->delay;
     vec3_t diff;
 
-    VectorSubtract(ent->owner->s.origin, ent->s.origin, diff);
+    VectorSubtract(ent->r.owner->s.origin, ent->s.origin, diff);
     RotatePointAroundVector(vec, up, diff, degrees);
 
     ent->s.angles[1] += degrees;
 
-    VectorSubtract(ent->owner->s.origin, vec, vec);
+    VectorSubtract(ent->r.owner->s.origin, vec, vec);
 
     trace_t tr;
     gi.trace(&tr, ent->s.origin, NULL, NULL, vec, ent, MASK_SOLID);
@@ -412,7 +412,7 @@ void THINK(Trap_Think)(edict_t *ent)
         ent->s.effects |= EF_TRAP;
         // clear the owner if in deathmatch
         if (deathmatch->integer)
-            ent->owner = NULL;
+            ent->r.owner = NULL;
     }
 
     if (ent->s.frame < 4) {
@@ -518,7 +518,7 @@ void THINK(Trap_Think)(edict_t *ent)
         e->movetype = MOVETYPE_NONE;
         e->nextthink = level.time + FRAME_TIME;
         e->think = Trap_Gib_Think;
-        e->owner = ent;
+        e->r.owner = ent;
         Trap_Gib_Think(e);
     }
 }

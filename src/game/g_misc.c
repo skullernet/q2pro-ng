@@ -1815,7 +1815,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     if (other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
         VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->absmax[2];
+        sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
         gi.linkentity(sphere);
     }
@@ -2059,11 +2059,11 @@ void THINK(info_world_text_think)(edict_t *self)
     }
 
     if (self->s.angles[YAW] == -3.0f) {
-        draw->AddDebugText(self->s.origin, NULL, self->message, self->size[2], colors[self->sounds], FRAME_TIME, true);
+        draw->AddDebugText(self->s.origin, NULL, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
     } else {
         vec3_t textAngle = { 0 };
         textAngle[YAW] = anglemod(self->s.angles[YAW] + 180);
-        draw->AddDebugText(self->s.origin, textAngle, self->message, self->size[2], colors[self->sounds], FRAME_TIME, true);
+        draw->AddDebugText(self->s.origin, textAngle, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
     }
     self->nextthink = level.time + FRAME_TIME;
 }

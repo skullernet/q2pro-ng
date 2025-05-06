@@ -956,7 +956,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
 
 void TOUCH(drop_temp_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == ent->owner)
+    if (other == ent->r.owner)
         return;
 
     Touch_Item(ent, other, tr, other_touching_self);

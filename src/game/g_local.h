@@ -2332,34 +2332,16 @@ typedef enum {
 
 struct edict_s {
     // shared with server; do not touch members until the "private" section
-    entity_state_t s;
-    gclient_t     *client; // NULL if not a player
-    // the server expects the first part
-    // of gclient_t to be a player_state_t
-    // but the rest of it is opaque
-
-    bool    inuse;
-
-    // world linkage data
-    int     linkcount;
-    list_t  area; // linked to a division node or leaf
-    int     num_clusters; // if -1, use headnode instead
-    int     clusternums[MAX_ENT_CLUSTERS];
-    int     headnode; // unused if num_clusters != -1
-    int     areanum, areanum2;
-
-    svflags_t  svflags;
-    vec3_t     mins, maxs;
-    vec3_t     absmin, absmax, size;
-    solid_t    solid;
-    contents_t clipmask;
-    edict_t    *owner;
+    entity_state_t  s;
+    entity_shared_t r;
+    gclient_t       *client; // NULL if not a player
 
     //================================
 
     // private to game
-    int spawn_count; // [Paril-KEX] used to differentiate different entities that may be in the same slot
+    int         spawn_count; // [Paril-KEX] used to differentiate different entities that may be in the same slot
     movetype_t  movetype;
+    contents_t  clipmask;
     uint64_t    flags;
 
     const char *model;

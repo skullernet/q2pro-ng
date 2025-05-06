@@ -554,7 +554,7 @@ void PRETHINK(proboscis_segment_draw)(edict_t *self)
 {
     vec3_t start, dir;
 
-    parasite_get_proboscis_start(self->r.owner->owner, start);
+    parasite_get_proboscis_start(self->r.owner->r.owner, start);
 
     VectorCopy(start, self->s.origin);
     VectorSubtract(self->r.owner->s.origin, start, dir);

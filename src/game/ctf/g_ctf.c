@@ -683,7 +683,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
 void TOUCH(CTFDropFlagTouch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     // owner (who dropped us) can't touch for two secs
-    if (other == ent->owner &&
+    if (other == ent->r.owner &&
         ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT - SEC(2))
         return;
 
@@ -2936,7 +2936,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     if (other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
         VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->absmax[2];
+        sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
         gi.linkentity(sphere);
     }

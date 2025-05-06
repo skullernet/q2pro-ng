@@ -2629,7 +2629,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         ent->watertype = pm.watertype;
         ent->groundentity = pm.groundentity;
         if (pm.groundentity)
-            ent->groundentity_linkcount = pm.groundentity->linkcount;
+            ent->groundentity_linkcount = pm.groundentity->r.linkcount;
 
         if (ent->deadflag) {
             client->ps.viewangles[ROLL] = 40;

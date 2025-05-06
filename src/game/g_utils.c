@@ -304,7 +304,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 
 char *etos(edict_t *ent)
 {
-    if (ent->area.next) {
+    if (ent->r.linked) {
         vec3_t mid;
         VectorAvg(ent->r.absmin, ent->r.absmax, mid);
         return va("%s @ %s", ent->classname, vtos(mid));
@@ -534,7 +534,7 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
         skip->spawn_count = tr.ent->spawn_count;
 
         // if we're both players and it's coop, allow the projectile to "pass" through
-        if (ent->client && tr.ent->owner && tr.ent->owner->client && !G_ShouldPlayersCollide(true))
+        if (ent->client && tr.ent->r.owner && tr.ent->r.owner->client && !G_ShouldPlayersCollide(true))
             continue;
 
         G_Impact(ent, &tr);

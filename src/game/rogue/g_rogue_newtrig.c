@@ -85,7 +85,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
     if (other->client && other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
         VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->absmax[2];
+        sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
         gi.linkentity(sphere);
     }

@@ -325,16 +325,16 @@ static const save_field_t entityfields[] = {
 
     // [...]
 
-    I(linkcount),
-    H(svflags),
-    V(mins),
-    V(maxs),
-    I(solid),
-    H(clipmask),
-    E(owner),
+    I(r.linkcount),
+    H(r.svflags),
+    V(r.mins),
+    V(r.maxs),
+    I(r.solid),
+    E(r.owner),
 
     I(spawn_count),
     I(movetype),
+    H(clipmask),
     H64(flags),
 
     L(model),

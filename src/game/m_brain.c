@@ -485,7 +485,7 @@ static const vec3_t brain_leye[] = {
 
 void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 {
-    edict_t *self = laser->owner;
+    edict_t *self = laser->r.owner;
 
     vec3_t start, axis[3], dir;
 
@@ -507,7 +507,7 @@ void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 
 void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 {
-    edict_t *self = laser->owner;
+    edict_t *self = laser->r.owner;
 
     vec3_t start, axis[3], dir;
 

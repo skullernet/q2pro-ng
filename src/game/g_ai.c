@@ -92,7 +92,7 @@ void ai_stand(edict_t *self, float dist)
         // [Paril-KEX] check if we've been pushed out of our point_combat
         if (!(self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND) &&
             self->movetarget && self->movetarget->classname && !strcmp(self->movetarget->classname, "point_combat")) {
-            if (!boxes_intersect(self->r.absmin, self->r.absmax, self->movetarget->absmin, self->movetarget->absmax)) {
+            if (!boxes_intersect(self->r.absmin, self->r.absmax, self->movetarget->r.absmin, self->movetarget->r.absmax)) {
                 self->monsterinfo.aiflags &= ~AI_STAND_GROUND;
                 self->monsterinfo.aiflags |= AI_COMBAT_POINT;
                 self->goalentity = self->movetarget;
@@ -784,8 +784,8 @@ bool FindTarget(edict_t *self)
             return false;
 
         // check area portals - if they are different and not connected then we can't hear it
-        if (client->areanum != self->areanum)
-            if (!gi.AreasConnected(self->areanum, client->areanum))
+        if (client->r.areanum != self->r.areanum)
+            if (!gi.AreasConnected(self->r.areanum, client->r.areanum))
                 return false;
 
         self->ideal_yaw = vectoyaw(temp);
@@ -1325,8 +1325,8 @@ void ai_run(edict_t *self, float dist)
             if (self->enemy->r.inuse) {
                 if (strcmp(self->enemy->classname, "player_noise") != 0)
                     realEnemy = self->enemy;
-                else if (self->enemy->owner)
-                    realEnemy = self->enemy->owner;
+                else if (self->enemy->r.owner)
+                    realEnemy = self->enemy->r.owner;
                 else { // uh oh, can't figure out enemy, bail
                     self->enemy = NULL;
                     hintpath_stop(self);

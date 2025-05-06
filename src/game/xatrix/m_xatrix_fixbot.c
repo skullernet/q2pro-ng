@@ -794,7 +794,7 @@ bool finishHeal(edict_t *self);
 
 void PRETHINK(fixbot_laser_update)(edict_t *laser)
 {
-    edict_t *self = laser->owner;
+    edict_t *self = laser->r.owner;
 
     vec3_t start, dir;
     AngleVectors(self->s.angles, dir, NULL, NULL);
@@ -910,7 +910,7 @@ static void weldstate(edict_t *self)
         M_SetAnimation(self, &fixbot_move_weld);
     else if (self->goalentity && self->s.frame == FRAME_weldmiddle_07) {
         if (self->goalentity->health <= 0) {
-            self->enemy->owner = NULL;
+            self->enemy->r.owner = NULL;
             M_SetAnimation(self, &fixbot_move_weld_end);
         } else if (!(self->spawnflags & SPAWNFLAG_MONSTER_SCENIC))
             self->goalentity->health -= 10;

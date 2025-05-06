@@ -1067,7 +1067,7 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         vec3_t center, half_size, start, end, player_dist;
 
         VectorAvg(self->r.absmin, self->r.absmax, center);
-        VectorAvg(self->size, other->size, half_size);
+        VectorAvg(self->r.size, other->r.size, half_size);
         VectorVectorScale(half_size, self->movedir, end);
         VectorNegate(end, start);
         VectorSubtract(other->s.origin, center, player_dist);

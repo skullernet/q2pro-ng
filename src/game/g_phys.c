@@ -181,7 +181,7 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
 
         if (trace->plane.normal[2] > 0.7f) {
             ent->groundentity = trace->ent;
-            ent->groundentity_linkcount = trace->ent->linkcount;
+            ent->groundentity_linkcount = trace->ent->r.linkcount;
         }
 
         //
@@ -332,7 +332,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             check->movetype == MOVETYPE_NONE || check->movetype == MOVETYPE_NOCLIP)
             continue;
 
-        if (!check->area.next)
+        if (!check->r.linked)
             continue; // not linked in anywhere
 
         // if the entity is standing on the pusher, it will definitely be moved
@@ -614,7 +614,7 @@ static void SV_Physics_Toss(edict_t *ent)
         // just assume that the object we hit is our ground.
         if (trace.allsolid) {
             ent->groundentity = trace.ent;
-            ent->groundentity_linkcount = trace.ent->linkcount;
+            ent->groundentity_linkcount = trace.ent->r.linkcount;
             VectorClear(ent->velocity);
             VectorClear(ent->avelocity);
             break;
@@ -648,7 +648,7 @@ static void SV_Physics_Toss(edict_t *ent)
                 (ent->movetype != MOVETYPE_TOSS && DotProduct(ent->velocity, trace.plane.normal) < 60)) {
                 if (!(ent->flags & FL_NO_STANDING) || trace.ent->r.solid == SOLID_BSP) {
                     ent->groundentity = trace.ent;
-                    ent->groundentity_linkcount = trace.ent->linkcount;
+                    ent->groundentity_linkcount = trace.ent->r.linkcount;
                 }
                 VectorClear(ent->velocity);
                 VectorClear(ent->avelocity);

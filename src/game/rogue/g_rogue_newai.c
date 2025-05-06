@@ -1222,7 +1222,7 @@ void THINK(BossExplode_think)(edict_t *self)
 
     vec3_t org;
     VectorAdd(self->r.owner->s.origin, self->r.owner->r.mins, org);
-    VectorMA(org, frandom(), self->r.owner->size, org);
+    VectorMA(org, frandom(), self->r.owner->r.size, org);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(!(self->viewheight % 3) ? TE_EXPLOSION1 : TE_EXPLOSION1_NL);

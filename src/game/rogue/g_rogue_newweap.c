@@ -93,7 +93,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
     // free the trigger field
 
     // PMM - changed teammaster to "mover" .. owner of the field is the prox
-    if (ent->teamchain && ent->teamchain->owner == ent)
+    if (ent->teamchain && ent->teamchain->r.owner == ent)
         G_FreeEdict(ent->teamchain);
 
     owner = ent;
@@ -155,7 +155,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
 
     // trigger the prox mine if it's still there, and still mine.
-    prox = ent->owner;
+    prox = ent->r.owner;
 
     // teammate avoidance
     if (CheckTeamDamage(prox->teammaster, other))
@@ -215,7 +215,7 @@ void THINK(prox_open)(edict_t *ent)
         // set the owner to NULL so the owner can walk through it.  needs to be done here so the owner
         // doesn't get stuck on it while it's opening if fired at point blank wall
         if (deathmatch->integer)
-            ent->owner = NULL;
+            ent->r.owner = NULL;
 
         if (ent->teamchain)
             ent->teamchain->touch = Prox_Field_Touch;
@@ -334,7 +334,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     VectorSet(field->r.maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
     field->movetype = MOVETYPE_NONE;
     field->r.solid = SOLID_TRIGGER;
-    field->owner = ent;
+    field->r.owner = ent;
     field->classname = "prox_field";
     field->teammaster = ent;
     gi.linkentity(field);
@@ -645,7 +645,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         ent->think = Nuke_Think;
         ent->nextthink = level.time + HZ(10);
         ent->health = 1;
-        ent->owner = NULL;
+        ent->r.owner = NULL;
 
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
@@ -799,7 +799,7 @@ void THINK(tesla_think_active)(edict_t *self)
     VectorCopy(self->s.origin, start);
     start[2] += 16;
 
-    num = gi.BoxEdicts(self->teamchain->absmin, self->teamchain->absmax, touch, q_countof(touch), AREA_SOLID);
+    num = gi.BoxEdicts(self->teamchain->r.absmin, self->teamchain->r.absmax, touch, q_countof(touch), AREA_SOLID);
     for (i = 0; i < num; i++) {
         // if the tesla died while zapping things, stop zapping.
         if (!self->r.inuse)
@@ -817,7 +817,7 @@ void THINK(tesla_think_active)(edict_t *self)
         if (hit->client) {
             if (!deathmatch->integer)
                 continue;
-            if (CheckTeamDamage(hit, self->teamchain->owner))
+            if (CheckTeamDamage(hit, self->teamchain->r.owner))
                 continue;
         }
 
@@ -898,7 +898,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorSet(trigger->r.maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
     trigger->movetype = MOVETYPE_NONE;
     trigger->r.solid = SOLID_TRIGGER;
-    trigger->owner = self;
+    trigger->r.owner = self;
     trigger->touch = tesla_zap;
     trigger->classname = "tesla trigger";
     // doesn't need to be marked as a teamslave since the move code for bounce looks for teamchains
@@ -934,8 +934,8 @@ void THINK(tesla_think)(edict_t *ent)
     } else {
         if (ent->s.frame > 9) {
             if (ent->s.frame == 10) {
-                if (ent->owner && ent->owner->client)
-                    PlayerNoise(ent->owner, ent->s.origin, PNOISE_WEAPON); // PGM
+                if (ent->r.owner && ent->r.owner->client)
+                    PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_WEAPON); // PGM
                 ent->s.skinnum = 1;
             } else if (ent->s.frame == 12)
                 ent->s.skinnum = 2;
@@ -1373,7 +1373,7 @@ void THINK(tracker_fly)(edict_t *self)
     if (self->enemy->client) {
         VectorCopy(self->enemy->s.origin, dest);
         dest[2] += self->enemy->viewheight;
-    } else if (!self->area.next) { // paranoia
+    } else if (!self->r.linked) { // paranoia
         VectorCopy(self->enemy->s.origin, dest);
     } else {
         VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, dest);

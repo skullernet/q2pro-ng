@@ -239,7 +239,7 @@ static void actorMachineGun(edict_t *self)
             target[2] += self->enemy->viewheight;
         } else {
             VectorCopy(self->enemy->r.absmin, target);
-            target[2] += (self->enemy->size[2] / 2) + 1;
+            target[2] += (self->enemy->r.size[2] / 2) + 1;
         }
         VectorSubtract(target, start, forward);
         VectorNormalize(forward);

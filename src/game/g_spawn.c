@@ -536,8 +536,8 @@ static const spawn_field_t entity_fields[] = {
 
     // [Paril-KEX] for trigger_coop_relay
     { "message2", FOFS(map), F_LSTRING },
-    { "mins", FOFS(mins), F_VECTOR },
-    { "maxs", FOFS(maxs), F_VECTOR },
+    { "mins", FOFS(r.mins), F_VECTOR },
+    { "maxs", FOFS(r.maxs), F_VECTOR },
 
     // [Paril-KEX] customizable bmodel animations
     { "bmodel_anim_start", FOFS(bmodel_anim.params[0].start), F_INT },

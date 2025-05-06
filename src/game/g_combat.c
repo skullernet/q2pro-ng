@@ -20,7 +20,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
     // bmodels need special checking because their origin is 0,0,0
     vec3_t inflictor_center;
 
-    if (inflictor->area.next)
+    if (inflictor->r.linked)
         VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
     else
         VectorCopy(inflictor->s.origin, inflictor_center);
@@ -35,7 +35,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 
     vec3_t targ_center;
 
-    if (targ->area.next)
+    if (targ->r.linked)
         VectorAvg(targ->r.absmin, targ->r.absmax, targ_center);
     else
         VectorCopy(targ->s.origin, targ_center);
@@ -731,7 +731,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
     vec3_t   dir;
     vec3_t   inflictor_center;
 
-    if (inflictor->area.next)
+    if (inflictor->r.linked)
         VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
     else
         VectorCopy(inflictor->s.origin, inflictor_center);

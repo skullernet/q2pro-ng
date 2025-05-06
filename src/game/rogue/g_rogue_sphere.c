@@ -57,7 +57,7 @@ static void sphere_fly(edict_t *self)
     }
 
     VectorCopy(self->r.owner->s.origin, dest);
-    dest[2] = self->r.owner->absmax[2] + 4;
+    dest[2] = self->r.owner->r.absmax[2] + 4;
 
     if (!(level.time % HZ(1)) && !visible(self, self->r.owner)) {
         VectorCopy(dest, self->s.origin);

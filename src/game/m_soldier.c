@@ -507,7 +507,7 @@ static const uint16_t hyper_flash[] = {
 
 void PRETHINK(soldierh_laser_update)(edict_t *laser)
 {
-    edict_t *self = laser->owner;
+    edict_t *self = laser->r.owner;
     vec3_t start, axis[3];
 
     AngleVectors(self->s.angles, axis[0], axis[1], axis[2]);
