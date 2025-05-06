@@ -869,7 +869,7 @@ static void PM_GetWaterLevel(const vec3_t position, water_level_t *level, conten
     *level = WATER_NONE;
     *type = CONTENTS_NONE;
 
-    int sample2 = pm->s.viewheight - pm->mins[2];
+    int sample2 = pm->viewheight - pm->mins[2];
     int sample1 = sample2 / 2;
 
     vec3_t point;
@@ -1149,7 +1149,7 @@ static void PM_FlyMove(bool doclip)
     vec3_t  wishdir;
     float   wishspeed;
 
-    pm->s.viewheight = doclip ? 0 : 22;
+    pm->viewheight = doclip ? 0 : 22;
 
     // friction
 
@@ -1235,7 +1235,7 @@ static void PM_SetDimensions(void)
     if (pm->s.pm_type == PM_GIB) {
         pm->mins[2] = 0;
         pm->maxs[2] = 16;
-        pm->s.viewheight = 8;
+        pm->viewheight = 8;
         return;
     }
 
@@ -1243,10 +1243,10 @@ static void PM_SetDimensions(void)
 
     if ((pm->s.pm_flags & PMF_DUCKED) || pm->s.pm_type == PM_DEAD) {
         pm->maxs[2] = 4;
-        pm->s.viewheight = -2;
+        pm->viewheight = -2;
     } else {
         pm->maxs[2] = 32;
-        pm->s.viewheight = 22;
+        pm->viewheight = 22;
     }
 }
 
@@ -1437,7 +1437,7 @@ static void PM_ScreenEffects(void)
     // add for contents
     vec3_t vieworg;
     VectorAdd(pml.origin, pm->viewoffset, vieworg);
-    vieworg[2] += pm->s.viewheight;
+    vieworg[2] += pm->viewheight;
     contents_t contents = pm->pointcontents(vieworg);
 
     if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
@@ -1467,7 +1467,7 @@ void Pmove(pmove_t *pmove)
     // clear results
     pm->touch.num = 0;
     VectorClear(pm->viewangles);
-    pm->s.viewheight = 0;
+    pm->viewheight = 0;
     pm->groundentity = NULL;
     pm->watertype = CONTENTS_NONE;
     pm->waterlevel = WATER_NONE;

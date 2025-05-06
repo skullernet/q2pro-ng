@@ -960,7 +960,6 @@ typedef struct {
     int32_t     gravity;
     int32_t     delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
-    int viewheight;
 } pmove_state_t;
 
 //

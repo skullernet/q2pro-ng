@@ -174,7 +174,6 @@ void CL_PredictMovement(void)
 {
     unsigned    ack, current, frame;
     pmove_t     pm;
-    int         step, oldz;
 
     if (cls.state != ca_active) {
         return;
@@ -242,9 +241,12 @@ void CL_PredictMovement(void)
     }
 
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
+        float step, step_abs, oldz;
+
         oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
-        if (step > 1.0f && step < 20.0f) {
+        step_abs = fabsf(step);
+        if (step_abs > 1.0f && step_abs < 20.0f) {
             // check for stepping up before a previous step is completed
             unsigned delta = cls.realtime - cl.predicted_step_time;
             float prev_step = 0;
