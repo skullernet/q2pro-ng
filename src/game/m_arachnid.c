@@ -202,7 +202,7 @@ static void arachnid_rail_real(edict_t *self, monster_muzzleflash_id_t id)
         for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i + 1];
 
-            if (!player->inuse)
+            if (!player->r.inuse)
                 continue;
             if (!visible_ex(self, player, false))
                 continue;
@@ -522,10 +522,10 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
 
 static void arachnid_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -654,10 +654,10 @@ void SP_monster_arachnid(edict_t *self)
     }
 
     self->s.modelindex = gi.modelindex("models/monsters/arachnid/tris.md2");
-    VectorSet(self->mins, -40, -40, -20);
-    VectorSet(self->maxs, 40, 40, 48);
+    VectorSet(self->r.mins, -40, -40, -20);
+    VectorSet(self->r.maxs, 40, 40, 48);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 1000 * st.health_multiplier;
     self->gib_health = -200;

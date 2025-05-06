@@ -42,8 +42,10 @@ void dabeam_update(edict_t *self, bool damage)
 
         if (damage) {
             // hurt it if we can
-            if (self->dmg > 0 && (tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-                T_Damage(tr.ent, self, self->owner, self->movedir, tr.endpos, vec3_origin, self->dmg, skill->integer, DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
+            if (self->dmg > 0 && (tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->r.owner))
+                T_Damage(tr.ent, self, self->r.owner, self->movedir,
+                         tr.endpos, vec3_origin, self->dmg, skill->integer,
+                         DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
 
             if (self->dmg < 0) { // healer ray
                 // when player is at 100 health
@@ -92,10 +94,10 @@ void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*updat
         beam = G_Spawn();
 
         beam->movetype = MOVETYPE_NONE;
-        beam->solid = SOLID_NOT;
+        beam->r.solid = SOLID_NOT;
         beam->s.renderfx |= RF_BEAM;
         beam->s.modelindex = MODELINDEX_WORLD;
-        beam->owner = self;
+        beam->r.owner = self;
         beam->dmg = damage;
         beam->s.frame = 2;
         beam->spawnflags = secondary ? SPAWNFLAG_DABEAM_SECONDARY : SPAWNFLAG_NONE;

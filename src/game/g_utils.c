@@ -74,7 +74,7 @@ edict_t *G_Find(edict_t *from, int fieldofs, const char *match)
         from++;
 
     for (; from < &g_edicts[globals.num_edicts]; from++) {
-        if (!from->inuse)
+        if (!from->r.inuse)
             continue;
         s = *(char **)((byte *)from + fieldofs);
         if (!s)
@@ -105,11 +105,11 @@ edict_t *findradius(edict_t *from, const vec3_t org, float rad)
     else
         from++;
     for (; from < &g_edicts[globals.num_edicts]; from++) {
-        if (!from->inuse)
+        if (!from->r.inuse)
             continue;
-        if (from->solid == SOLID_NOT)
+        if (from->r.solid == SOLID_NOT)
             continue;
-        VectorAvg(from->mins, from->maxs, mid);
+        VectorAvg(from->r.mins, from->r.maxs, mid);
         VectorAdd(from->s.origin, mid, eorg);
         if (Distance(eorg, org) > rad)
             continue;
@@ -172,7 +172,7 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
     //
     // print the message
     //
-    if ((ent->message) && !(activator->svflags & SVF_MONSTER)) {
+    if ((ent->message) && !(activator->r.svflags & SVF_MONSTER)) {
         if (coop_global && coop->integer)
             gi.bprintf(PRINT_CENTER, "%s", ent->message);
         else
@@ -263,14 +263,14 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
             }
 
             // [Paril-KEX] if we killtarget a monster, clean up properly
-            if ((t->svflags & SVF_MONSTER) && !t->deadflag &&
+            if ((t->r.svflags & SVF_MONSTER) && !t->deadflag &&
                 !(t->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(t->spawnflags & SPAWNFLAG_MONSTER_DEAD))
                 G_MonsterKilled(t);
 
             // PMM
             G_FreeEdict(t);
 
-            if (!ent->inuse) {
+            if (!ent->r.inuse) {
                 gi.dprintf("entity was removed while using killtargets\n");
                 return;
             }
@@ -294,7 +294,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
             else if (t->use)
                 t->use(t, ent, activator);
 
-            if (!ent->inuse) {
+            if (!ent->r.inuse) {
                 gi.dprintf("entity was removed while using targets\n");
                 return;
             }
@@ -306,7 +306,7 @@ char *etos(edict_t *ent)
 {
     if (ent->area.next) {
         vec3_t mid;
-        VectorAvg(ent->absmin, ent->absmax, mid);
+        VectorAvg(ent->r.absmin, ent->r.absmax, mid);
         return va("%s @ %s", ent->classname, vtos(mid));
     }
     return va("%s @ %s", ent->classname, vtos(ent->s.origin));
@@ -402,7 +402,7 @@ void G_InitEdict(edict_t *e)
         e->nextthink = 0;
     // ROGUE
 
-    e->inuse = true;
+    e->r.inuse = true;
     e->classname = "noclass";
     e->gravity = 1.0f;
     e->s.number = e - g_edicts;
@@ -432,7 +432,7 @@ edict_t *G_Spawn(void)
     for (i = game.maxclients + 1; i < globals.num_edicts; i++, e++) {
         // the first couple seconds of server time can involve a lot of
         // freeing and allocating, so relax the replacement policy
-        if (!e->inuse && (e->freetime < SEC(2) || level.time - e->freetime > SEC(0.5f))) {
+        if (!e->r.inuse && (e->freetime < SEC(2) || level.time - e->freetime > SEC(0.5f))) {
             G_InitEdict(e);
             return e;
         }
@@ -486,16 +486,16 @@ void G_TouchTriggers(edict_t *ent)
     edict_t *hit;
 
     // dead things don't activate triggers!
-    if ((ent->client || (ent->svflags & SVF_MONSTER)) && (ent->health <= 0))
+    if ((ent->client || (ent->r.svflags & SVF_MONSTER)) && (ent->health <= 0))
         return;
 
-    num = gi.BoxEdicts(ent->absmin, ent->absmax, touch, q_countof(touch), AREA_TRIGGERS);
+    num = gi.BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
         hit = touch[i];
-        if (!hit->inuse)
+        if (!hit->r.inuse)
             continue;
         if (!hit->touch)
             continue;
@@ -518,7 +518,7 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
 
     while (num_skipped < q_countof(skipped)) {
         trace_t tr;
-        gi.trace(&tr, previous_origin, ent->mins, ent->maxs, ent->s.origin, ent, ent->clipmask | CONTENTS_PROJECTILE);
+        gi.trace(&tr, previous_origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent, ent->clipmask | CONTENTS_PROJECTILE);
 
         if (tr.fraction == 1.0f)
             break;
@@ -542,8 +542,8 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
 
     for (int i = 0; i < num_skipped; i++) {
         skip = &skipped[i];
-        if (skip->projectile->inuse && skip->projectile->spawn_count == skip->spawn_count)
-            skip->projectile->svflags |= SVF_PROJECTILE;
+        if (skip->projectile->r.inuse && skip->projectile->spawn_count == skip->spawn_count)
+            skip->projectile->r.svflags |= SVF_PROJECTILE;
     }
 }
 
@@ -579,21 +579,21 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     edict_t *touch[MAX_EDICTS_OLD];
     edict_t *hit;
 
-    num = gi.BoxEdicts(ent->absmin, ent->absmax, touch, q_countof(touch), AREA_SOLID);
+    num = gi.BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
 
     for (i = 0; i < num; i++) {
         hit = touch[i];
 
         if (hit == ent)
             continue;
-        if (!hit->inuse || !hit->takedamage || !hit->solid || hit->solid == SOLID_TRIGGER || hit->solid == SOLID_BSP)
+        if (!hit->r.inuse || !hit->takedamage || !hit->r.solid || hit->r.solid == SOLID_TRIGGER || hit->r.solid == SOLID_BSP)
             continue;
         if (hit->client && !(mask & CONTENTS_PLAYER))
             continue;
 
-        if ((ent->solid == SOLID_BSP || (ent->svflags & SVF_HULL)) && bsp_clipping) {
+        if ((ent->r.solid == SOLID_BSP || (ent->r.svflags & SVF_HULL)) && bsp_clipping) {
             trace_t clip;
-            gi.clip(&clip, hit->s.origin, hit->mins, hit->maxs, hit->s.origin, ent, G_GetClipMask(hit));
+            gi.clip(&clip, hit->s.origin, hit->r.mins, hit->r.maxs, hit->s.origin, ent, G_GetClipMask(hit));
 
             if (clip.fraction == 1.0f)
                 continue;

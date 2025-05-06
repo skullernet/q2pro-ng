@@ -18,15 +18,15 @@ void SP_misc_crashviper(edict_t *ent)
         ent->speed = 300;
 
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.modelindex = gi.modelindex("models/ships/bigviper/tris.md2");
-    VectorSet(ent->mins, -16, -16, 0);
-    VectorSet(ent->maxs, 16, 16, 32);
+    VectorSet(ent->r.mins, -16, -16, 0);
+    VectorSet(ent->r.maxs, 16, 16, 32);
 
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
     ent->use = misc_viper_use;
-    ent->svflags |= SVF_NOCLIENT;
+    ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
 
     gi.linkentity(ent);
@@ -64,9 +64,9 @@ void USE(misc_viper_missile_use)(edict_t *self, edict_t *other, edict_t *activat
 void SP_misc_viper_missile(edict_t *self)
 {
     self->movetype = MOVETYPE_NONE;
-    self->solid = SOLID_NOT;
-    VectorSet(self->mins, -8, -8, -8);
-    VectorSet(self->maxs, 8, 8, 8);
+    self->r.solid = SOLID_NOT;
+    VectorSet(self->r.mins, -8, -8, -8);
+    VectorSet(self->r.maxs, 8, 8, 8);
 
     if (!self->dmg)
         self->dmg = 250;
@@ -74,7 +74,7 @@ void SP_misc_viper_missile(edict_t *self)
     self->s.modelindex = gi.modelindex("models/objects/bomb/tris.md2");
 
     self->use = misc_viper_missile_use;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
 
     gi.linkentity(self);
 }
@@ -95,16 +95,16 @@ void SP_misc_transport(edict_t *ent)
         ent->speed = 300;
 
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.modelindex = gi.modelindex("models/objects/ship/tris.md2");
 
-    VectorSet(ent->mins, -16, -16, 0);
-    VectorSet(ent->maxs, 16, 16, 32);
+    VectorSet(ent->r.mins, -16, -16, 0);
+    VectorSet(ent->r.maxs, 16, 16, 32);
 
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
     ent->use = misc_strogg_ship_use;
-    ent->svflags |= SVF_NOCLIENT;
+    ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
 
     if (!(ent->spawnflags & SPAWNFLAG_TRAIN_START_ON))

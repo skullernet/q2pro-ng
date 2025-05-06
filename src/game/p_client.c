@@ -442,7 +442,7 @@ static void TossClientWeapon(edict_t *self)
         self->client->v_angle[YAW] += spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
-        drop->svflags &= ~SVF_INSTANCED;
+        drop->r.svflags &= ~SVF_INSTANCED;
     }
 
     if (quad) {
@@ -451,7 +451,7 @@ static void TossClientWeapon(edict_t *self)
         self->client->v_angle[YAW] -= spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
-        drop->svflags &= ~SVF_INSTANCED;
+        drop->r.svflags &= ~SVF_INSTANCED;
 
         drop->touch = Touch_Item;
         drop->nextthink = self->client->quad_time;
@@ -465,7 +465,7 @@ static void TossClientWeapon(edict_t *self)
         self->client->v_angle[YAW] -= spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
-        drop->svflags &= ~SVF_INSTANCED;
+        drop->r.svflags &= ~SVF_INSTANCED;
 
         drop->touch = Touch_Item;
         drop->nextthink = self->client->quadfire_time;
@@ -796,7 +796,7 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
         if (coop->integer) {
             for (int i = 1; i <= game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
-                if (!player->inuse || player == ent || !player->client->pers.spawned ||
+                if (!player->r.inuse || player == ent || !player->client->pers.spawned ||
                     player->client->resp.spectator || player->movetype == MOVETYPE_NOCLIP)
                     continue;
 
@@ -909,7 +909,7 @@ void SaveClientData(void)
 
     for (int i = 0; i < game.maxclients; i++) {
         ent = &g_edicts[1 + i];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         game.clients[i].pers.health = ent->health;
         game.clients[i].pers.max_health = ent->max_health;
@@ -954,7 +954,7 @@ float PlayersRangeFromSpot(edict_t *spot)
     for (int n = 1; n <= game.maxclients; n++) {
         player = &g_edicts[n];
 
-        if (!player->inuse)
+        if (!player->r.inuse)
             continue;
 
         if (player->health <= 0)
@@ -1105,11 +1105,11 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
         if (!lava)
             break;
 
-        VectorAvg(lava->absmin, lava->absmax, center);
+        VectorAvg(lava->r.absmin, lava->r.absmax, center);
 
         if ((lava->spawnflags & SPAWNFLAG_WATER_SMART) && (gi.pointcontents(center) & MASK_WATER)) {
-            if (lava->absmax[2] > lavatop) {
-                lavatop = lava->absmax[2];
+            if (lava->r.absmax[2] > lavatop) {
+                lavatop = lava->r.absmax[2];
                 highestlava = lava;
             }
         }
@@ -1120,7 +1120,7 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
         return NULL;
 
     // find the top of the lava and include a small margin of error (plus bbox size)
-    lavatop = highestlava->absmax[2] + 64;
+    lavatop = highestlava->r.absmax[2] + 64;
 
     // find all the lava spawn points and store them in spawnPoints[]
     spot = NULL;
@@ -1488,10 +1488,10 @@ static void CopyToBodyQue(edict_t *ent)
     body->s.effects = EF_NONE;
     body->s.renderfx = RF_NONE;
 
-    body->svflags = ent->svflags;
-    body->solid = ent->solid;
+    body->r.svflags = ent->r.svflags;
+    body->r.solid = ent->r.solid;
     body->clipmask = ent->clipmask;
-    body->owner = ent->owner;
+    body->r.owner = ent->r.owner;
     body->movetype = ent->movetype;
     body->health = ent->health;
     body->gib_health = ent->gib_health;
@@ -1502,11 +1502,11 @@ static void CopyToBodyQue(edict_t *ent)
     body->groundentity_linkcount = ent->groundentity_linkcount;
 
     if (ent->takedamage) {
-        VectorCopy(ent->mins, body->mins);
-        VectorCopy(ent->maxs, body->maxs);
+        VectorCopy(ent->r.mins, body->r.mins);
+        VectorCopy(ent->r.maxs, body->r.maxs);
     } else {
-        VectorClear(body->mins);
-        VectorClear(body->maxs);
+        VectorClear(body->r.mins);
+        VectorClear(body->r.maxs);
     }
 
     body->die = body_die;
@@ -1517,7 +1517,7 @@ static void CopyToBodyQue(edict_t *ent)
 
 void G_PostRespawn(edict_t *self)
 {
-    if (self->svflags & SVF_NOCLIENT)
+    if (self->r.svflags & SVF_NOCLIENT)
         return;
 
     // add a teleportation effect
@@ -1536,7 +1536,7 @@ void respawn(edict_t *self)
         // spectators don't leave bodies
         if (!self->client->resp.spectator)
             CopyToBodyQue(self);
-        self->svflags &= ~SVF_NOCLIENT;
+        self->r.svflags &= ~SVF_NOCLIENT;
         PutClientInServer(self);
 
         G_PostRespawn(self);
@@ -1574,7 +1574,7 @@ static void spectator_respawn(edict_t *ent)
 
         // count spectators
         for (i = 1, numspec = 0; i <= game.maxclients; i++)
-            if (g_edicts[i].inuse && g_edicts[i].client->pers.spectator)
+            if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
         if (numspec >= maxspectators->integer) {
@@ -1611,7 +1611,7 @@ static void spectator_respawn(edict_t *ent)
     // change spectator mode
     ent->client->resp.spectator = ent->client->pers.spectator;
 
-    ent->svflags &= ~SVF_NOCLIENT;
+    ent->r.svflags &= ~SVF_NOCLIENT;
     PutClientInServer(ent);
 
     // add a teleportation effect
@@ -1770,10 +1770,10 @@ void PutClientInServer(edict_t *ent)
         client->wanted_fog = client->ps.fog = world->fog;
         client->wanted_heightfog = client->ps.heightfog = world->heightfog;
         ent->deadflag = false;
-        ent->solid = SOLID_NOT;
+        ent->r.solid = SOLID_NOT;
         ent->movetype = MOVETYPE_NOCLIP;
         ent->s.modelindex = 0;
-        ent->svflags |= SVF_NOCLIENT;
+        ent->r.svflags |= SVF_NOCLIENT;
         //ent->client->ps.team_id = ent->client->resp.ctf_team;
         gi.linkentity(ent);
 
@@ -1785,7 +1785,7 @@ void PutClientInServer(edict_t *ent)
     bool was_waiting_for_respawn = client->awaiting_respawn;
 
     if (client->awaiting_respawn)
-        ent->svflags &= ~SVF_NOCLIENT;
+        ent->r.svflags &= ~SVF_NOCLIENT;
 
     client->awaiting_respawn = false;
     client->respawn_timeout = 0;
@@ -1852,10 +1852,10 @@ void PutClientInServer(edict_t *ent)
     ent->takedamage = true;
     ent->movetype = MOVETYPE_WALK;
     ent->viewheight = 22;
-    ent->inuse = true;
+    ent->r.inuse = true;
     ent->classname = "player";
     ent->mass = 200;
-    ent->solid = SOLID_BBOX;
+    ent->r.solid = SOLID_BBOX;
     ent->deadflag = false;
     ent->air_finished = level.time + SEC(12);
     ent->clipmask = MASK_PLAYERSOLID;
@@ -1864,13 +1864,13 @@ void PutClientInServer(edict_t *ent)
     ent->waterlevel = WATER_NONE;
     ent->watertype = CONTENTS_NONE;
     ent->flags &= ~(FL_NO_KNOCKBACK | FL_ALIVE_KNOCKBACK_ONLY | FL_NO_DAMAGE_EFFECTS);
-    ent->svflags &= ~SVF_DEADMONSTER;
-    ent->svflags |= SVF_PLAYER;
+    ent->r.svflags &= ~SVF_DEADMONSTER;
+    ent->r.svflags |= SVF_PLAYER;
 
     ent->flags &= ~FL_SAM_RAIMI; // PGM - turn off sam raimi flag
 
-    VectorCopy(player_mins, ent->mins);
-    VectorCopy(player_maxs, ent->maxs);
+    VectorCopy(player_mins, ent->r.mins);
+    VectorCopy(player_maxs, ent->r.maxs);
 
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
@@ -1916,8 +1916,8 @@ void PutClientInServer(edict_t *ent)
         client->resp.spectator = true;
 
         ent->movetype = MOVETYPE_NOCLIP;
-        ent->solid = SOLID_NOT;
-        ent->svflags |= SVF_NOCLIENT;
+        ent->r.solid = SOLID_NOT;
+        ent->r.svflags |= SVF_NOCLIENT;
         ent->client->ps.gunindex = 0;
         gi.linkentity(ent);
         return;
@@ -1984,7 +1984,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
     G_InitEdict(ent);
 
     // make sure we have a known default
-    ent->svflags |= SVF_PLAYER;
+    ent->r.svflags |= SVF_PLAYER;
 
     InitClientResp(ent->client);
 
@@ -2005,7 +2005,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
     if (level.intermissiontime) {
         MoveClientToIntermission(ent);
     } else {
-        if (!(ent->svflags & SVF_NOCLIENT)) {
+        if (!(ent->r.svflags & SVF_NOCLIENT)) {
             // send effect
             gi.WriteByte(svc_muzzleflash);
             gi.WriteShort(ent - g_edicts);
@@ -2140,7 +2140,7 @@ void ClientBegin(edict_t *ent)
 
     // if there is already a body waiting for us (a loadgame), just
     // take it, otherwise spawn one from scratch
-    if (ent->inuse) {
+    if (ent->r.inuse) {
         // the client has cleared the client side viewangles upon
         // connecting to the server, which is different than the
         // state when the game is saved, so we need to compensate
@@ -2164,13 +2164,13 @@ void ClientBegin(edict_t *ent)
     ent->client->resp.entertime = level.time;
 
     // make sure we have a known default
-    ent->svflags |= SVF_PLAYER;
+    ent->r.svflags |= SVF_PLAYER;
 
     if (level.intermissiontime) {
         MoveClientToIntermission(ent);
     } else {
         // send effect if in a multiplayer game
-        if (game.maxclients > 1 && !(ent->svflags & SVF_NOCLIENT))
+        if (game.maxclients > 1 && !(ent->r.svflags & SVF_NOCLIENT))
             gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
     }
 
@@ -2308,7 +2308,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 
         // count spectators
         for (i = numspec = 0; i < game.maxclients; i++)
-            if (g_edicts[i + 1].inuse && g_edicts[i + 1].client->pers.spectator)
+            if (g_edicts[i + 1].r.inuse && g_edicts[i + 1].client->pers.spectator)
                 numspec++;
 
         if (numspec >= maxspectators->integer) {
@@ -2333,7 +2333,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 
     // if there is already a body waiting for us (a loadgame), just
     // take it, otherwise spawn one from scratch
-    if (ent->inuse == false) {
+    if (ent->r.inuse == false) {
         // clear the respawning variables
         // ZOID -- force team join
         ent->client->resp.ctf_team = CTF_NOTEAM;
@@ -2345,7 +2345,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     }
 
     // make sure we start with known default(s)
-    ent->svflags = SVF_PLAYER;
+    ent->r.svflags = SVF_PLAYER;
 
     if (game.maxclients > 1) {
         // [Paril-KEX] fetch name because now netname is kinda unsuitable
@@ -2397,7 +2397,7 @@ void ClientDisconnect(edict_t *ent)
     //============
 
     // send effect
-    if (!(ent->svflags & SVF_NOCLIENT)) {
+    if (!(ent->r.svflags & SVF_NOCLIENT)) {
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
         gi.WriteByte(MZ_LOGOUT);
@@ -2406,8 +2406,8 @@ void ClientDisconnect(edict_t *ent)
 
     gi.unlinkentity(ent);
     ent->s.modelindex = 0;
-    ent->solid = SOLID_NOT;
-    ent->inuse = false;
+    ent->r.solid = SOLID_NOT;
+    ent->r.inuse = false;
     ent->classname = "disconnected";
     ent->client->pers.connected = false;
     ent->client->pers.spawned = false;
@@ -2417,7 +2417,7 @@ void ClientDisconnect(edict_t *ent)
     if (deathmatch->integer) {
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
-            if (player->inuse && player->client->showscores)
+            if (player->r.inuse && player->client->showscores)
                 player->client->menutime = level.time;
         }
     }
@@ -2609,8 +2609,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         client->ps.pmove = pm.s;
         client->old_pmove = pm.s;
 
-        VectorCopy(pm.mins, ent->mins);
-        VectorCopy(pm.maxs, ent->maxs);
+        VectorCopy(pm.mins, ent->r.mins);
+        VectorCopy(pm.maxs, ent->r.maxs);
 
         if (!ent->client->menu)
             for (i = 0; i < 3; i++)
@@ -2709,7 +2709,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     // update chase cam if being followed
     for (i = 1; i <= game.maxclients; i++) {
         other = g_edicts + i;
-        if (other->inuse && other->client->chase_target == ent)
+        if (other->r.inuse && other->client->chase_target == ent)
             UpdateChaseCam(other);
     }
 }
@@ -2718,7 +2718,7 @@ static bool G_MonstersSearchingFor(edict_t *player)
 {
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
-        if (!ent->inuse || !(ent->svflags & SVF_MONSTER) || ent->health <= 0)
+        if (!ent->r.inuse || !(ent->r.svflags & SVF_MONSTER) || ent->health <= 0)
             continue;
 
         // check for *any* player target
@@ -2858,7 +2858,7 @@ static edict_t *G_FindSquadRespawnTarget(vec3_t spot)
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         // no dead players
-        if (!player->inuse || player->deadflag)
+        if (!player->r.inuse || player->deadflag)
             continue;
 
         // check combat state; we can't have taken damage recently
@@ -2942,7 +2942,7 @@ static bool G_CoopRespawn(edict_t *ent)
 
             for (int i = 1; i <= game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
-                if (player->inuse && player->health > 0) {
+                if (player->r.inuse && player->health > 0) {
                     allDead = false;
                     break;
                 }
@@ -2993,10 +2993,10 @@ static bool G_CoopRespawn(edict_t *ent)
             // our thumbs forever
             CopyToBodyQue(ent);
             ent->client->resp.spectator = true;
-            ent->solid = SOLID_NOT;
+            ent->r.solid = SOLID_NOT;
             ent->takedamage = false;
             ent->s.modelindex = 0;
-            ent->svflags |= SVF_NOCLIENT;
+            ent->r.svflags |= SVF_NOCLIENT;
             ent->client->ps.screen_blend[3] = 0;
             ent->client->ps.damage_blend[3] = 0;
             ent->client->ps.rdflags = RDF_NONE;

@@ -2579,10 +2579,10 @@ static inline bool pierce_mark(pierce_t *p, edict_t *ent)
         return false;
 
     p->ents[p->count] = ent;
-    p->solids[p->count] = ent->solid;
+    p->solids[p->count] = ent->r.solid;
     p->count++;
 
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     gi.linkentity(ent);
 
     return true;
@@ -2592,7 +2592,7 @@ static inline void pierce_end(pierce_t *p)
 {
     for (int i = 0; i < p->count; i++) {
         edict_t *ent = p->ents[i];
-        ent->solid = p->solids[i];
+        ent->r.solid = p->solids[i];
         gi.linkentity(ent);
     }
 }

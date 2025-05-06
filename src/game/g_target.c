@@ -92,7 +92,7 @@ void SP_target_speaker(edict_t *ent)
     } else if (ent->attenuation == -1) { // use -1 so 0 defaults to 1
         if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON)) {
             ent->attenuation = ATTN_LOOP_NONE;
-            ent->svflags |= SVF_NOCULL;
+            ent->r.svflags |= SVF_NOCULL;
         } else
             ent->attenuation = ATTN_NONE;
     }
@@ -205,7 +205,7 @@ void SP_target_secret(edict_t *ent)
     if (!st.noise)
         st.noise = "misc/secret.wav";
     ent->noise_index = gi.soundindex(st.noise);
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
     level.total_secrets++;
 }
 
@@ -337,7 +337,7 @@ void SP_target_goal(edict_t *ent)
     if (!st.noise)
         st.noise = "misc/secret.wav";
     ent->noise_index = gi.soundindex(st.noise);
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
     level.total_goals++;
 }
 
@@ -382,7 +382,7 @@ void USE(use_target_explosion)(edict_t *self, edict_t *other, edict_t *activator
 void SP_target_explosion(edict_t *ent)
 {
     ent->use = use_target_explosion;
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
 }
 
 //==========================================================
@@ -458,7 +458,7 @@ void SP_target_changelevel(edict_t *ent)
     }
 
     ent->use = use_target_changelevel;
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
 }
 
 //==========================================================
@@ -505,7 +505,7 @@ void SP_target_splash(edict_t *self)
     if (level.is_n64 && self->sounds == SPLASH_SPARKS)
         self->sounds = SPLASH_ELECTRIC_N64;
 
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 //==========================================================
@@ -557,7 +557,7 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_spawner(edict_t *self)
 {
     self->use = use_target_spawner;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
     if (self->speed) {
         G_SetMovedir(self->s.angles, self->movedir);
         VectorScale(self->movedir, self->speed, self->movedir);
@@ -602,7 +602,7 @@ void SP_target_blaster(edict_t *self)
     if (!self->speed)
         self->speed = 1000;
 
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 //==========================================================
@@ -618,7 +618,7 @@ void USE(trigger_crosslevel_trigger_use)(edict_t *self, edict_t *other, edict_t 
 
 void SP_target_crosslevel_trigger(edict_t *self)
 {
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
     self->use = trigger_crosslevel_trigger_use;
 }
 
@@ -640,7 +640,7 @@ void SP_target_crosslevel_target(edict_t *self)
 {
     if (!self->delay)
         self->delay = 1;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 
     self->think = target_crosslevel_target_think;
     self->nextthink = level.time + SEC(self->delay);
@@ -746,7 +746,7 @@ static void target_laser_on(edict_t *self)
     if (!self->activator)
         self->activator = self;
     self->spawnflags |= SPAWNFLAG_LASER_ZAP | SPAWNFLAG_LASER_ON;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->flags |= FL_TRAP;
     target_laser_think(self);
 }
@@ -754,7 +754,7 @@ static void target_laser_on(edict_t *self)
 void target_laser_off(edict_t *self)
 {
     self->spawnflags &= ~SPAWNFLAG_LASER_ON;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->flags &= ~FL_TRAP;
     self->nextthink = 0;
 }
@@ -937,7 +937,7 @@ void SP_target_lightramp(edict_t *self)
         return;
     }
 
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->use = target_lightramp_use;
     self->think = target_lightramp_think;
 
@@ -1033,7 +1033,7 @@ void SP_target_earthquake(edict_t *self)
     if (!self->speed)
         self->speed = 200;
 
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->think = target_earthquake_think;
     self->use = target_earthquake_use;
 
@@ -1262,7 +1262,7 @@ void SP_target_camera(edict_t *self)
     }
 
     self->use = use_target_camera;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 /*QUAKED target_gravity (1 0 0) (-8 -8 -8) (8 8 8) NOTRAIL NOEFFECTS
@@ -1422,7 +1422,7 @@ void SP_target_light(edict_t *self)
     self->s.renderfx = RF_CUSTOM_LIGHT;
     self->s.frame = st.radius ? st.radius : 150;
     self->count = self->s.skinnum;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->health = 0;
 
     if (self->target)
@@ -1507,7 +1507,7 @@ void SP_target_poi(edict_t *self)
         self->noise_index = gi.imageindex("friend");
 
     self->use = target_poi_use;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->think = target_poi_setup;
     self->nextthink = level.time + FRAME_TIME;
 
@@ -1695,7 +1695,7 @@ void SP_target_crossunit_trigger(edict_t *self)
         return;
     }
 
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
     self->use = trigger_crossunit_trigger_use;
 }
 
@@ -1722,7 +1722,7 @@ void SP_target_crossunit_target(edict_t *self)
 
     if (!self->delay)
         self->delay = 1;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 
     self->think = target_crossunit_target_think;
     self->nextthink = level.time + SEC(self->delay);

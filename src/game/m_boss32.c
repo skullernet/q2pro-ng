@@ -281,8 +281,8 @@ static void makron_spawn_torso(edict_t *self)
     edict_t *tempent = ThrowGib(self, "models/monsters/boss3/rider/tris.md2", 0, GIB_NONE);
     VectorCopy(self->s.origin, tempent->s.origin);
     VectorCopy(self->s.angles, tempent->s.angles);
-    self->maxs[2] -= tempent->maxs[2];
-    tempent->s.origin[2] += self->maxs[2] - 15;
+    self->r.maxs[2] -= tempent->r.maxs[2];
+    tempent->s.origin[2] += self->r.maxs[2] - 15;
     makron_torso(tempent);
 }
 
@@ -639,10 +639,10 @@ void MONSTERINFO_ATTACK(makron_attack)(edict_t *self)
 
 static void makron_dead(edict_t *self)
 {
-    VectorSet(self->mins, -60, -60, 0);
-    VectorSet(self->maxs, 60, 60, 24);
+    VectorSet(self->r.mins, -60, -60, 0);
+    VectorSet(self->r.maxs, 60, 60, 24);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
     monster_dead(self);
 }
@@ -725,10 +725,10 @@ void SP_monster_makron(edict_t *self)
     G_AddPrecache(MakronPrecache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
-    VectorSet(self->mins, -30, -30, 0);
-    VectorSet(self->maxs, 30, 30, 90);
+    VectorSet(self->r.mins, -30, -30, 0);
+    VectorSet(self->r.maxs, 30, 30, 90);
 
     self->health = 3000 * st.health_multiplier;
     self->gib_health = -2000;

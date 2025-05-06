@@ -108,19 +108,19 @@ static void landing_goal(edict_t *self)
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->solid = SOLID_BBOX;
-    ent->owner = self;
+    ent->r.solid = SOLID_BBOX;
+    ent->r.owner = self;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
-    VectorSet(ent->mins, -32, -32, -24);
-    VectorSet(ent->maxs, 32, 32, 24);
+    VectorSet(ent->r.mins, -32, -32, -24);
+    VectorSet(ent->r.maxs, 32, 32, 24);
 
     AngleVectors(self->s.angles, forward, right, up);
     VectorMA(self->s.origin, 32, forward, end); // FIXME
     VectorMA(self->s.origin, -8096, up, end);
 
-    gi.trace(&tr, self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
+    gi.trace(&tr, self->s.origin, ent->r.mins, ent->r.maxs, end, self, MASK_MONSTERSOLID);
 
     VectorCopy(tr.endpos, ent->s.origin);
 
@@ -137,19 +137,19 @@ static void takeoff_goal(edict_t *self)
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->solid = SOLID_BBOX;
-    ent->owner = self;
+    ent->r.solid = SOLID_BBOX;
+    ent->r.owner = self;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
-    VectorSet(ent->mins, -32, -32, -24);
-    VectorSet(ent->maxs, 32, 32, 24);
+    VectorSet(ent->r.mins, -32, -32, -24);
+    VectorSet(ent->r.maxs, 32, 32, 24);
 
     AngleVectors(self->s.angles, forward, right, up);
     VectorMA(self->s.origin, 32, forward, end); // FIXME
     VectorMA(self->s.origin, 128, up, end);
 
-    gi.trace(&tr, self->s.origin, ent->mins, ent->maxs, end, self, MASK_MONSTERSOLID);
+    gi.trace(&tr, self->s.origin, ent->r.mins, ent->r.maxs, end, self, MASK_MONSTERSOLID);
 
     VectorCopy(tr.endpos, ent->s.origin);
 
@@ -201,8 +201,8 @@ static void roam_goal(edict_t *self)
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->solid = SOLID_BBOX;
-    ent->owner = self;
+    ent->r.solid = SOLID_BBOX;
+    ent->r.owner = self;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
     gi.linkentity(ent);
@@ -1130,11 +1130,11 @@ void SP_monster_fixbot(edict_t *self)
 
     self->s.modelindex = gi.modelindex("models/monsters/fixbot/tris.md2");
 
-    VectorSet(self->mins, -32, -32, -24);
-    VectorSet(self->maxs, 32, 32, 24);
+    VectorSet(self->r.mins, -32, -32, -24);
+    VectorSet(self->r.maxs, 32, 32, 24);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 150 * st.health_multiplier;
     self->mass = 150;

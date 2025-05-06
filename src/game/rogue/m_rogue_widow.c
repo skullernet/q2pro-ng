@@ -245,7 +245,7 @@ static void WidowSpawn(edict_t *self)
                 designated_enemy = self->enemy;
         }
 
-        if ((designated_enemy->inuse) && (designated_enemy->health > 0)) {
+        if ((designated_enemy->r.inuse) && (designated_enemy->health > 0)) {
             ent->enemy = designated_enemy;
             FoundTarget(ent);
             ent->monsterinfo.attack(ent);
@@ -987,7 +987,7 @@ void WidowPowerups(edict_t *self)
         // in coop, check for pents, then quads, then doubles
         for (int player = 1; player <= game.maxclients; player++) {
             ent = &g_edicts[player];
-            if (!ent->inuse)
+            if (!ent->r.inuse)
                 continue;
             if (!ent->client)
                 continue;
@@ -999,7 +999,7 @@ void WidowPowerups(edict_t *self)
 
         for (int player = 1; player <= game.maxclients; player++) {
             ent = &g_edicts[player];
-            if (!ent->inuse)
+            if (!ent->r.inuse)
                 continue;
             if (!ent->client)
                 continue;
@@ -1011,7 +1011,7 @@ void WidowPowerups(edict_t *self)
 
         for (int player = 1; player <= game.maxclients; player++) {
             ent = &g_edicts[player];
-            if (!ent->inuse)
+            if (!ent->r.inuse)
                 continue;
             if (!ent->client)
                 continue;
@@ -1151,10 +1151,10 @@ void SP_monster_widow(edict_t *self)
     G_AddPrecache(widow_precache_global);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/blackwidow/tris.md2");
-    VectorSet(self->mins, -40, -40, 0);
-    VectorSet(self->maxs, 40, 40, 144);
+    VectorSet(self->r.mins, -40, -40, 0);
+    VectorSet(self->r.maxs, 40, 40, 144);
 
     self->health = (2000 + 1000 * skill->integer) * st.health_multiplier;
     if (coop->integer)

@@ -64,9 +64,9 @@ void USE(stationarymonster_triggered_spawn_use)(edict_t *self, edict_t *other, e
 
 static void stationarymonster_triggered_start(edict_t *self)
 {
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->movetype = MOVETYPE_NONE;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->nextthink = 0;
     self->use = stationarymonster_triggered_spawn_use;
 }

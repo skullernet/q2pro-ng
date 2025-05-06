@@ -312,15 +312,15 @@ void MONSTERINFO_SIGHT(infantry_sight)(edict_t *self, edict_t *other)
 
 static void infantry_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void infantry_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -875,13 +875,13 @@ void SP_monster_infantry(edict_t *self)
     self->monsterinfo.aiflags |= AI_STINKY;
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
 
     PrecacheGibs(infantry_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
 
     self->health = 100 * st.health_multiplier;
     self->gib_health = -65;

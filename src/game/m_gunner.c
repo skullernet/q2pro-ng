@@ -293,15 +293,15 @@ void MONSTERINFO_SETSKIN(gunner_setskin)(edict_t *self)
 
 static void gunner_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void gunner_shrink(edict_t *self)
 {
-    self->maxs[2] = -4;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = -4;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -831,13 +831,13 @@ void SP_monster_gunner(edict_t *self)
     gi.soundindex("gunner/gunatck3.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
 
     PrecacheGibs(gunner_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 36);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 36);
 
     self->health = 175 * st.health_multiplier;
     self->gib_health = -70;

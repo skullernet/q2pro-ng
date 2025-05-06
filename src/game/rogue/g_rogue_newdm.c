@@ -206,11 +206,11 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     VectorCopy(start, base->s.origin);
     VectorCopy(dir, base->s.angles);
     base->movetype = MOVETYPE_TOSS;
-    base->solid = SOLID_BBOX;
+    base->r.solid = SOLID_BBOX;
     base->s.renderfx |= RF_IR_VISIBLE;
     base->s.angles[PITCH] = 0;
-    VectorSet(base->mins, -16, -16, -24);
-    VectorSet(base->maxs, 16, 16, 32);
+    VectorSet(base->r.mins, -16, -16, -24);
+    VectorSet(base->r.maxs, 16, 16, 32);
     base->s.modelindex = gi.modelindex("models/objects/dopplebase/tris.md2");
     base->s.alpha = 0.1f;
     base->teammaster = ent;
@@ -246,7 +246,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     body->teammaster = base;
 
     // [Paril-KEX]
-    body->owner = ent;
+    body->r.owner = ent;
     gi.sound(body, CHAN_AUTO, gi.soundindex("medic_commander/monsterspawn1.wav"), 1, ATTN_NORM, 0);
 }
 

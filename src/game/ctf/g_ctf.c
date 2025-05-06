@@ -127,7 +127,7 @@ static bool loc_CanSee(edict_t *targ, edict_t *inflictor)
     if (targ->movetype == MOVETYPE_PUSH)
         return false; // bmodels not supported
 
-    loc_buildboxpoints(targpoints, targ->s.origin, targ->mins, targ->maxs);
+    loc_buildboxpoints(targpoints, targ->s.origin, targ->r.mins, targ->r.maxs);
 
     VectorCopy(inflictor->s.origin, viewpoint);
     viewpoint[2] += inflictor->viewheight;
@@ -268,7 +268,7 @@ void CTFAssignTeam(gclient_t *who)
 
     who->resp.ctf_state = 0;
 
-    if (!g_teamplay_force_join->integer && !(g_edicts[1 + (who - game.clients)].svflags & SVF_BOT)) {
+    if (!g_teamplay_force_join->integer && !(g_edicts[1 + (who - game.clients)].r.svflags & SVF_BOT)) {
         who->resp.ctf_team = CTF_NOTEAM;
         return;
     }
@@ -276,7 +276,7 @@ void CTFAssignTeam(gclient_t *who)
     for (int i = 1; i <= game.maxclients; i++) {
         player = &g_edicts[i];
 
-        if (!player->inuse || player->client == who)
+        if (!player->r.inuse || player->client == who)
             continue;
 
         switch (player->client->resp.ctf_team) {
@@ -423,7 +423,7 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         // field on the other team
         for (int i = 1; i <= game.maxclients; i++) {
             ent = g_edicts + i;
-            if (ent->inuse && ent->client->resp.ctf_team == otherteam)
+            if (ent->r.inuse && ent->client->resp.ctf_team == otherteam)
                 ent->client->resp.ctf_lasthurtcarrier = 0;
         }
         return;
@@ -470,7 +470,7 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
     // find attacker's team's flag carrier
     for (int i = 1; i <= game.maxclients; i++) {
         carrier = g_edicts + i;
-        if (carrier->inuse &&
+        if (carrier->r.inuse &&
             carrier->client->pers.inventory[flag_item])
             break;
         carrier = NULL;
@@ -488,7 +488,7 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         attacker->client->resp.ctf_team != targ->client->resp.ctf_team) {
         // we defended the base flag
         attacker->client->resp.score += CTF_FLAG_DEFENSE_BONUS;
-        if (flag->solid == SOLID_NOT)
+        if (flag->r.solid == SOLID_NOT)
             gi.bprintf(PRINT_MEDIUM, "%s defends the %s base.\n",
                        attacker->client->pers.netname,
                        CTFTeamName(attacker->client->resp.ctf_team));
@@ -559,8 +559,8 @@ void CTFResetFlag(ctfteam_t ctf_team)
         if (ent->spawnflags & SPAWNFLAG_ITEM_DROPPED)
             G_FreeEdict(ent);
         else {
-            ent->svflags &= ~SVF_NOCLIENT;
-            ent->solid = SOLID_TRIGGER;
+            ent->r.svflags &= ~SVF_NOCLIENT;
+            ent->r.solid = SOLID_TRIGGER;
             gi.linkentity(ent);
             ent->s.event = EV_ITEM_RESPAWN;
         }
@@ -625,7 +625,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                 // Ok, let's do the player loop, hand out the bonuses
                 for (int i = 1; i <= game.maxclients; i++) {
                     player = &g_edicts[i];
-                    if (!player->inuse)
+                    if (!player->r.inuse)
                         continue;
 
                     if (player->client->resp.ctf_team != other->client->resp.ctf_team)
@@ -674,8 +674,8 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
     // if it's dropped, it will be removed by the pickup caller
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED)) {
         ent->flags |= FL_RESPAWN;
-        ent->svflags |= SVF_NOCLIENT;
-        ent->solid = SOLID_NOT;
+        ent->r.svflags |= SVF_NOCLIENT;
+        ent->r.solid = SOLID_NOT;
     }
     return true;
 }
@@ -804,7 +804,7 @@ void CTFCalcScores(void)
 {
     ctfgame.total1 = ctfgame.total2 = 0;
     for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i + 1].inuse)
+        if (!g_edicts->r.inuse)
             continue;
         if (game.clients[i].resp.ctf_team == CTF_TEAM1)
             ctfgame.total1 += game.clients[i].resp.score;
@@ -827,7 +827,7 @@ void CTFCalcRankings(int player_ranks[MAX_CLIENTS])
 
     for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i + 1];
-        if (player->inuse && player->client->pers.spawned && player->client->resp.ctf_team != CTF_NOTEAM)
+        if (player->r.inuse && player->client->pers.spawned && player->client->resp.ctf_team != CTF_NOTEAM)
             player_ranks[i] = player->client->resp.ctf_team == winning_team ? 1 : 2;
     }
 }
@@ -882,7 +882,7 @@ static void CTFSetIDView(edict_t *ent)
     best = NULL;
     for (int i = 1; i <= game.maxclients; i++) {
         who = g_edicts + i;
-        if (!who->inuse || who->solid == SOLID_NOT)
+        if (!who->r.inuse || who->r.solid == SOLID_NOT)
             continue;
         VectorSubtract(who->s.origin, ent->s.origin, dir);
         VectorNormalize(dir);
@@ -977,12 +977,12 @@ void SetCTFStats(edict_t *ent)
         p1 = imageindex_i_ctf1;
         e = G_Find(NULL, FOFS(classname), "item_flag_team1");
         if (e != NULL) {
-            if (e->solid == SOLID_NOT) {
+            if (e->r.solid == SOLID_NOT) {
                 // not at base
                 // check if on player
                 p1 = imageindex_i_ctf1d; // default to dropped
                 for (i = 1; i <= game.maxclients; i++)
-                    if (g_edicts[i].inuse &&
+                    if (g_edicts->r.inuse &&
                         g_edicts[i].client->pers.inventory[IT_FLAG1]) {
                         // enemy has it
                         p1 = imageindex_i_ctf1t;
@@ -1005,12 +1005,12 @@ void SetCTFStats(edict_t *ent)
         p2 = imageindex_i_ctf2;
         e = G_Find(NULL, FOFS(classname), "item_flag_team2");
         if (e != NULL) {
-            if (e->solid == SOLID_NOT) {
+            if (e->r.solid == SOLID_NOT) {
                 // not at base
                 // check if on player
                 p2 = imageindex_i_ctf2d; // default to dropped
                 for (i = 1; i <= game.maxclients; i++)
-                    if (g_edicts[i].inuse &&
+                    if (g_edicts->r.inuse &&
                         g_edicts[i].client->pers.inventory[IT_FLAG2]) {
                         // enemy has it
                         p2 = imageindex_i_ctf2t;
@@ -1112,18 +1112,18 @@ void CTFPlayerResetGrapple(edict_t *ent)
 // self is grapple, not player
 void CTFResetGrapple(edict_t *self)
 {
-    if (!self->owner->client->ctf_grapple)
+    gclient_t *cl = self->r.owner->client;
+
+    if (!cl->ctf_grapple)
         return;
 
-    gi.sound(self->owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), self->owner->client->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
+    gi.sound(self->r.owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
 
-    gclient_t *cl;
-    cl = self->owner->client;
     cl->ctf_grapple = NULL;
     cl->ctf_grapplereleasetime = level.time + SEC(1);
     cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     cl->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-    self->owner->flags &= ~FL_NO_KNOCKBACK;
+    self->r.owner->flags &= ~FL_NO_KNOCKBACK;
     G_FreeEdict(self);
 }
 
@@ -1131,10 +1131,10 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 {
     float volume = 1.0f;
 
-    if (other == self->owner)
+    if (other == self->r.owner)
         return;
 
-    if (self->owner->client->ctf_grapplestate != CTF_GRAPPLE_STATE_FLY)
+    if (self->r.owner->client->ctf_grapplestate != CTF_GRAPPLE_STATE_FLY)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1144,21 +1144,21 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
     VectorClear(self->velocity);
 
-    PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+    PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         if (self->dmg)
-            T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
+            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
         CTFResetGrapple(self);
         return;
     }
 
-    self->owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_PULL; // we're on hook
+    self->r.owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_PULL; // we're on hook
     self->enemy = other;
 
     self->solid = SOLID_NOT;
 
-    if (self->owner->client->silencer_shots)
+    if (self->r.owner->client->silencer_shots)
         volume = 0.2f;
 
     gi.sound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM, 0);
@@ -1174,15 +1174,17 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 // draw beam between grapple and self
 static void CTFGrappleDrawCable(edict_t *self)
 {
-    if (self->owner->client->ctf_grapplestate == CTF_GRAPPLE_STATE_HANG)
+    gclient_t *cl = self->r.owner->client;
+
+    if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_HANG)
         return;
 
     vec3_t start, dir;
-    P_ProjectSource(self->owner, self->owner->client->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
+    P_ProjectSource(self->r.owner, cl->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_GRAPPLE_CABLE_2);
-    gi.WriteShort(self->owner - g_edicts);
+    gi.WriteShort(self->r.owner - g_edicts);
     gi.WritePosition(start);
     gi.WritePosition(self->s.origin);
     gi.multicast(self->s.origin, MULTICAST_PVS);
@@ -1193,15 +1195,16 @@ void SV_AddGravity(edict_t *ent);
 // pull the player toward the grapple
 void CTFGrapplePull(edict_t *self)
 {
+    gclient_t *cl = self->r.owner->client;
     vec3_t hookdir, v;
     float  vlen;
 
-    if (self->owner->client->pers.weapon && self->owner->client->pers.weapon->id == IT_WEAPON_GRAPPLE &&
-        !(self->owner->client->newweapon || ((self->owner->client->latched_buttons | self->owner->client->buttons) & BUTTON_HOLSTER)) &&
-        self->owner->client->weaponstate != WEAPON_FIRING &&
-        self->owner->client->weaponstate != WEAPON_ACTIVATING) {
-        if (!self->owner->client->newweapon)
-            self->owner->client->newweapon = self->owner->client->pers.weapon;
+    if (cl->pers.weapon && cl->pers.weapon->id == IT_WEAPON_GRAPPLE &&
+        !(cl->newweapon || ((cl->latched_buttons | cl->buttons) & BUTTON_HOLSTER)) &&
+        cl->weaponstate != WEAPON_FIRING &&
+        cl->weaponstate != WEAPON_ACTIVATING) {
+        if (!cl->newweapon)
+            cl->newweapon = cl->pers.weapon;
 
         CTFResetGrapple(self);
         return;
@@ -1227,27 +1230,26 @@ void CTFGrapplePull(edict_t *self)
 
     CTFGrappleDrawCable(self);
 
-    if (self->owner->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY) {
+    if (cl->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY) {
         // pull player toward grapple
         vec3_t forward, up;
 
-        AngleVectors(self->owner->client->v_angle, forward, NULL, up);
-        VectorCopy(self->owner->s.origin, v);
-        v[2] += self->owner->viewheight;
+        AngleVectors(cl->v_angle, forward, NULL, up);
+        VectorCopy(self->r.owner->s.origin, v);
+        v[2] += self->r.owner->viewheight;
         VectorSubtract(self->s.origin, v, hookdir);
 
         vlen = VectorNormalize(hookdir);
 
-        if (self->owner->client->ctf_grapplestate == CTF_GRAPPLE_STATE_PULL &&
-            vlen < 64) {
-            self->owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_HANG;
+        if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_PULL && vlen < 64) {
+            cl->ctf_grapplestate = CTF_GRAPPLE_STATE_HANG;
             self->s.sound = gi.soundindex("weapons/grapple/grhang.wav");
         }
 
-        VectorScale(hookdir, g_grapple_pull_speed->value, self->owner->velocity);
-        self->owner->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-        self->owner->flags |= FL_NO_KNOCKBACK;
-        SV_AddGravity(self->owner);
+        VectorScale(hookdir, g_grapple_pull_speed->value, self->r.owner->velocity);
+        cl->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+        self->r.owner->flags |= FL_NO_KNOCKBACK;
+        SV_AddGravity(self->r.owner);
     }
 }
 
@@ -1272,10 +1274,10 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         grapple->clipmask &= ~CONTENTS_PLAYER;
-    grapple->solid = SOLID_BBOX;
+    grapple->r.solid = SOLID_BBOX;
     grapple->s.effects |= effect;
     grapple->s.modelindex = gi.modelindex("models/weapons/grapple/hook/tris.md2");
-    grapple->owner = self;
+    grapple->r.owner = self;
     grapple->touch = CTFGrappleTouch;
     grapple->dmg = damage;
     grapple->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
@@ -1377,7 +1379,7 @@ void CTFDirtyTeamMenu(void)
 {
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (player->inuse && player->client->menu) {
+        if (player->r.inuse && player->client->menu) {
             player->client->menudirty = true;
             player->client->menutime = level.time;
         }
@@ -1407,7 +1409,7 @@ void CTFTeam_f(edict_t *ent)
     // [Paril-KEX] with force-join, don't allow us to switch
     // using this command.
     if (g_teamplay_force_join->integer) {
-        if (!(ent->svflags & SVF_BOT)) {
+        if (!(ent->r.svflags & SVF_BOT)) {
             gi.cprintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
             return;
         }
@@ -1429,7 +1431,7 @@ void CTFTeam_f(edict_t *ent)
     }
 
     ////
-    ent->svflags = SVF_NONE;
+    ent->r.svflags = SVF_NONE;
     ent->flags &= ~FL_GODMODE;
     ent->client->resp.ctf_team = desired_team;
     ent->client->resp.ctf_state = 0;
@@ -1439,7 +1441,7 @@ void CTFTeam_f(edict_t *ent)
     // if anybody has a menu open, update it immediately
     CTFDirtyTeamMenu();
 
-    if (ent->solid == SOLID_NOT) {
+    if (ent->r.solid == SOLID_NOT) {
         // spectator
         PutClientInServer(ent);
 
@@ -1491,7 +1493,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
     totalscore[0] = totalscore[1] = 0;
     for (i = 0; i < game.maxclients; i++) {
         cl_ent = g_edicts + 1 + i;
-        if (!cl_ent->inuse)
+        if (!cl_ent->r.inuse)
             continue;
         if (game.clients[i].resp.ctf_team == CTF_TEAM1)
             team = 0;
@@ -1604,8 +1606,8 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
         for (i = 0; i < game.maxclients; i++) {
             cl_ent = g_edicts + 1 + i;
             cl = &game.clients[i];
-            if (!cl_ent->inuse ||
-                cl_ent->solid != SOLID_NOT ||
+            if (!cl_ent->r.inuse ||
+                cl_ent->r.solid != SOLID_NOT ||
                 cl_ent->client->resp.ctf_team != CTF_NOTEAM)
                 continue;
 
@@ -1724,7 +1726,7 @@ void CTFDeadDropTech(edict_t *ent)
             dropped->velocity[1] = crandom_open() * 300;
             dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
             dropped->think = TechThink;
-            dropped->owner = NULL;
+            dropped->r.owner = NULL;
             ent->client->pers.inventory[tech_ids[i]] = 0;
         }
     }
@@ -1743,13 +1745,13 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     ent->s.effects = item->world_model_flags;
     ent->s.renderfx = RF_GLOW;
-    VectorSet(ent->mins, -15, -15, -15);
-    VectorSet(ent->maxs, 15, 15, 15);
+    VectorSet(ent->r.mins, -15, -15, -15);
+    VectorSet(ent->r.maxs, 15, 15, 15);
     gi.setmodel(ent, ent->item->world_model);
-    ent->solid = SOLID_TRIGGER;
+    ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
-    ent->owner = ent;
+    ent->r.owner = ent;
 
     angles[0] = 0;
     angles[1] = irandom1(360);
@@ -1814,7 +1816,7 @@ void CTFResetTech(void)
     int i;
 
     for (ent = g_edicts + 1, i = 1; i < globals.num_edicts; i++, ent++)
-        if (ent->inuse && ent->item && (ent->item->flags & IF_TECH))
+        if (ent->r.inuse && ent->item && (ent->item->flags & IF_TECH))
             G_FreeEdict(ent);
 
     SpawnTechs(NULL);
@@ -1942,7 +1944,7 @@ void CTFSay_Team(edict_t *who, const char *msg_in)
 
     for (int i = 0; i < game.maxclients; i++) {
         cl_ent = g_edicts + 1 + i;
-        if (!cl_ent->inuse)
+        if (!cl_ent->r.inuse)
             continue;
         if (cl_ent->client->resp.ctf_team == who->client->resp.ctf_team)
             gi.cprintf(cl_ent, PRINT_CHAT, "(%s): %s\n",
@@ -1966,7 +1968,7 @@ void THINK(misc_ctf_banner_think)(edict_t *ent)
 void SP_misc_ctf_banner(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.modelindex = gi.modelindex("models/ctf/banner/tris.md2");
     if (ent->spawnflags & SPAWNFLAG_CTF_BANNER_BLUE) // team2
         ent->s.skinnum = 1;
@@ -1985,7 +1987,7 @@ The banner is 124 tall.
 void SP_misc_ctf_small_banner(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.modelindex = gi.modelindex("models/ctf/banner/small.md2");
     if (ent->spawnflags & SPAWNFLAG_CTF_BANNER_BLUE) // team2
         ent->s.skinnum = 1;
@@ -2040,7 +2042,7 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     for (int i = 1; i <= game.maxclients; i++) {
         e = g_edicts + i;
         e->client->resp.voted = false;
-        if (e->inuse)
+        if (e->r.inuse)
             count++;
     }
 
@@ -2074,7 +2076,7 @@ static void CTFResetAllPlayers(void)
 
     for (i = 1; i <= game.maxclients; i++) {
         ent = g_edicts + i;
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
 
         if (ent->client->menu)
@@ -2087,7 +2089,7 @@ static void CTFResetAllPlayers(void)
         ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->resp.ready = false;
 
-        ent->svflags = SVF_NONE;
+        ent->r.svflags = SVF_NONE;
         ent->flags &= ~FL_GODMODE;
         PutClientInServer(ent);
     }
@@ -2097,8 +2099,8 @@ static void CTFResetAllPlayers(void)
     CTFResetFlags();
 
     for (ent = g_edicts + 1, i = 1; i < globals.num_edicts; i++, ent++) {
-        if (ent->inuse && !ent->client) {
-            if (ent->solid == SOLID_NOT && ent->think == DoRespawn &&
+        if (ent->r.inuse && !ent->client) {
+            if (ent->r.solid == SOLID_NOT && ent->think == DoRespawn &&
                 ent->nextthink >= level.time) {
                 ent->nextthink = 0;
                 DoRespawn(ent);
@@ -2151,7 +2153,7 @@ static void CTFStartMatch(void)
 
     for (int i = 1; i <= game.maxclients; i++) {
         ent = g_edicts + i;
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
 
         ent->client->resp.score = 0;
@@ -2164,7 +2166,7 @@ static void CTFStartMatch(void)
             // make up a ghost code
             CTFAssignGhost(ent);
             CTFPlayerResetGrapple(ent);
-            ent->svflags = SVF_NOCLIENT;
+            ent->r.svflags = SVF_NOCLIENT;
             ent->flags &= ~FL_GODMODE;
 
             ent->client->respawn_time = level.time + random_time_sec(1, 4);
@@ -2327,7 +2329,7 @@ void CTFReady(edict_t *ent)
     t1 = t2 = 0;
     for (j = 0, i = 1; i <= game.maxclients; i++) {
         e = g_edicts + i;
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (e->client->resp.ctf_team != CTF_NOTEAM && !e->client->resp.ready)
             j++;
@@ -2403,7 +2405,7 @@ void CTFGhost(edict_t *ent)
             ent->client->resp.score = ctfgame.ghosts[i].score;
             ent->client->resp.ctf_state = 0;
             ctfgame.ghosts[i].ent = ent;
-            ent->svflags = SVF_NONE;
+            ent->r.svflags = SVF_NONE;
             ent->flags &= ~FL_GODMODE;
             PutClientInServer(ent);
             gi.bprintf(PRINT_HIGH, "%s has been reinstated to %s team.\n",
@@ -2467,7 +2469,7 @@ static void CTFJoinTeam(edict_t *ent, ctfteam_t desired_team)
 {
     PMenu_Close(ent);
 
-    ent->svflags &= ~SVF_NOCLIENT;
+    ent->r.svflags &= ~SVF_NOCLIENT;
     ent->client->resp.ctf_team = desired_team;
     ent->client->resp.ctf_state = 0;
     char *value = Info_ValueForKey(ent->client->pers.userinfo, "skin");
@@ -2529,7 +2531,7 @@ static void CTFChaseCam(edict_t *ent, pmenuhnd_t *p)
 
     for (int i = 1; i <= game.maxclients; i++) {
         e = g_edicts + i;
-        if (e->inuse && e->solid != SOLID_NOT) {
+        if (e->r.inuse && e->r.solid != SOLID_NOT) {
             ent->client->chase_target = e;
             PMenu_Close(ent);
             ent->client->update_chase = true;
@@ -2611,7 +2613,7 @@ static void CTFUpdateJoinMenu(edict_t *ent)
 
     int num1 = 0, num2 = 0;
     for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i + 1].inuse)
+        if (!g_edicts[i + 1].r.inuse)
             continue;
         if (game.clients[i].resp.ctf_team == CTF_TEAM1)
             num1++;
@@ -2662,7 +2664,7 @@ void CTFOpenJoinMenu(edict_t *ent)
 {
     int num1 = 0, num2 = 0;
     for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i + 1].inuse)
+        if (!g_edicts[i + 1].r.inuse)
             continue;
         if (game.clients[i].resp.ctf_team == CTF_TEAM1)
             num1++;
@@ -2689,11 +2691,11 @@ bool CTFStartClient(edict_t *ent)
     if (ent->client->resp.ctf_team != CTF_NOTEAM)
         return false;
 
-    if ((!(ent->svflags & SVF_BOT) && !g_teamplay_force_join->integer) || ctfgame.match >= MATCH_SETUP) {
+    if ((!(ent->r.svflags & SVF_BOT) && !g_teamplay_force_join->integer) || ctfgame.match >= MATCH_SETUP) {
         // start as 'observer'
         ent->movetype = MOVETYPE_NOCLIP;
-        ent->solid = SOLID_NOT;
-        ent->svflags |= SVF_NOCLIENT;
+        ent->r.solid = SOLID_NOT;
+        ent->r.svflags |= SVF_NOCLIENT;
         ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->resp.spectator = true;
         ent->client->ps.gunindex = 0;
@@ -2719,8 +2721,8 @@ void CTFObserver(edict_t *ent)
 
     ent->deadflag = false;
     ent->movetype = MOVETYPE_NOCLIP;
-    ent->solid = SOLID_NOT;
-    ent->svflags |= SVF_NOCLIENT;
+    ent->r.solid = SOLID_NOT;
+    ent->r.svflags |= SVF_NOCLIENT;
     ent->client->resp.ctf_team = CTF_NOTEAM;
     ent->client->ps.gunindex = 0;
     ent->client->resp.score = 0;
@@ -2791,7 +2793,7 @@ bool CTFCheckRules(void)
         case MATCH_SETUP:
             for (j = 0, i = 1; i <= game.maxclients; i++) {
                 ent = g_edicts + i;
-                if (!ent->inuse)
+                if (!ent->r.inuse)
                     continue;
                 if (ent->client->resp.ctf_team != CTF_NOTEAM &&
                     !ent->client->resp.ready)
@@ -2841,7 +2843,7 @@ bool CTFCheckRules(void)
             // count up the team totals
             for (i = 1; i <= game.maxclients; i++) {
                 ent = g_edicts + i;
-                if (!ent->inuse)
+                if (!ent->r.inuse)
                     continue;
                 if (ent->client->resp.ctf_team == CTF_TEAM1)
                     team1++;
@@ -2953,8 +2955,8 @@ void SP_trigger_ctf_teleport(edict_t *ent)
         return;
     }
 
-    ent->svflags |= SVF_NOCLIENT;
-    ent->solid = SOLID_TRIGGER;
+    ent->r.svflags |= SVF_NOCLIENT;
+    ent->r.solid = SOLID_TRIGGER;
     ent->touch = old_teleporter_touch;
     gi.setmodel(ent, ent->model);
     gi.linkentity(ent);
@@ -2962,7 +2964,7 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     // noise maker and splash effect dude
     s = G_Spawn();
     ent->enemy = s;
-    VectorAvg(ent->mins, ent->maxs, s->s.origin);
+    VectorAvg(ent->r.mins, ent->r.maxs, s->s.origin);
     s->s.sound = gi.soundindex("world/hum1.wav");
     gi.linkentity(s);
 }
@@ -3317,7 +3319,7 @@ void CTFStats(edict_t *ent)
     if (ctfgame.match == MATCH_SETUP) {
         for (i = 1; i <= game.maxclients; i++) {
             e2 = g_edicts + i;
-            if (!e2->inuse)
+            if (!e2->r.inuse)
                 continue;
             if (!e2->client->resp.ready && e2->client->resp.ctf_team != CTF_NOTEAM) {
                 Q_snprintf(st, sizeof(st), "%s is not ready.\n", e2->client->pers.netname);
@@ -3381,7 +3383,7 @@ void CTFPlayerList(edict_t *ent)
     *text = 0;
     for (int i = 1; i <= game.maxclients; i++) {
         e2 = g_edicts + i;
-        if (!e2->inuse)
+        if (!e2->r.inuse)
             continue;
 
         int sec = TO_SEC(level.time - e2->client->resp.entertime);
@@ -3468,7 +3470,7 @@ void CTFBoot(edict_t *ent)
     }
 
     targ = g_edicts + i;
-    if (!targ->inuse) {
+    if (!targ->r.inuse) {
         gi.cprintf(ent, PRINT_HIGH, "That player number is not connected.\n");
         return;
     }

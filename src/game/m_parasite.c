@@ -263,8 +263,8 @@ static void parasite_break_wait(edict_t *self)
 static void proboscis_retract(edict_t *self)
 {
     // start retract animation
-    if (self->owner->monsterinfo.active_move == &parasite_move_fire_proboscis)
-        self->owner->monsterinfo.nextframe = FRAME_drain12;
+    if (self->r.owner->monsterinfo.active_move == &parasite_move_fire_proboscis)
+        self->r.owner->monsterinfo.nextframe = FRAME_drain12;
 
     // mark as retracting
     self->movetype = MOVETYPE_NONE;
@@ -569,21 +569,21 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     vectoangles(dir, tip->s.angles);
     tip->s.modelindex = gi.modelindex("models/monsters/parasite/tip/tris.md2");
     tip->movetype = MOVETYPE_FLYMISSILE;
-    tip->owner = self;
+    tip->r.owner = self;
     self->proboscus = tip;
     tip->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
     VectorCopy(start, tip->s.origin);
     VectorCopy(start, tip->s.old_origin);
     tip->speed = speed;
     VectorScale(dir, speed, tip->velocity);
-    tip->solid = SOLID_BBOX;
+    tip->r.solid = SOLID_BBOX;
     tip->takedamage = true;
     tip->flags |= FL_NO_DAMAGE_EFFECTS | FL_NO_KNOCKBACK;
     tip->die = proboscis_die;
     tip->touch = proboscis_touch;
     tip->think = proboscis_think;
     tip->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
-    tip->svflags |= SVF_PROJECTILE;
+    tip->r.svflags |= SVF_PROJECTILE;
 
     edict_t *segment = G_Spawn();
     segment->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
@@ -591,7 +591,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     segment->postthink = proboscis_segment_draw;
 
     tip->proboscus = segment;
-    segment->owner = tip;
+    segment->r.owner = tip;
 
     vec3_t pos;
     VectorMA(tip->s.origin, FRAME_TIME_SEC, tip->velocity, pos);
@@ -784,15 +784,15 @@ Death Stuff Starts
 
 static void parasite_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void parasite_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -930,10 +930,10 @@ void SP_monster_parasite(edict_t *self)
 
     PrecacheGibs(parasite_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 24);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 24);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 175 * st.health_multiplier;
     self->gib_health = -50;

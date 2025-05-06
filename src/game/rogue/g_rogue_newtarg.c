@@ -184,7 +184,7 @@ void SP_target_anger(edict_t *self)
     }
 
     self->use = target_anger_use;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 // ***********************************
@@ -238,7 +238,7 @@ When triggered, this will kill all the players on the map.
 void SP_target_killplayers(edict_t *self)
 {
     self->use = target_killplayers_use;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 /*QUAKED target_blacklight (1 0 1) (-16 -16 -24) (16 16 24)
@@ -260,8 +260,8 @@ void SP_target_blacklight(edict_t *ent)
         return;
     }
 
-    VectorClear(ent->mins);
-    VectorClear(ent->maxs);
+    VectorClear(ent->r.mins);
+    VectorClear(ent->r.maxs);
 
     ent->s.effects |= (EF_TRACKERTRAIL | EF_TRACKER);
     ent->think = blacklight_think;
@@ -283,8 +283,8 @@ void SP_target_orb(edict_t *ent)
         return;
     }
 
-    VectorClear(ent->mins);
-    VectorClear(ent->maxs);
+    VectorClear(ent->r.mins);
+    VectorClear(ent->r.maxs);
 
     //  ent->s.effects |= EF_TRACKERTRAIL;
     ent->think = blacklight_think;

@@ -24,9 +24,9 @@ bool blocked_checkplat(edict_t *self, float dist)
         return false;
 
     // check player's relative altitude
-    if (self->enemy->absmin[2] >= self->absmax[2])
+    if (self->enemy->absmin[2] >= self->r.absmax[2])
         playerPosition = 1;
-    else if (self->enemy->absmax[2] <= self->absmin[2])
+    else if (self->enemy->absmax[2] <= self->r.absmin[2])
         playerPosition = -1;
     else
         playerPosition = 0;
@@ -144,9 +144,9 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
 
     AngleVectors(self->s.angles, forward, NULL, up);
 
-    if (self->enemy->absmin[2] > (self->absmin[2] + STEPSIZE))
+    if (self->enemy->r.absmin[2] > (self->r.absmin[2] + STEPSIZE))
         playerPosition = 1;
-    else if (self->enemy->absmin[2] < (self->absmin[2] - STEPSIZE))
+    else if (self->enemy->r.absmin[2] < (self->r.absmin[2] - STEPSIZE))
         playerPosition = -1;
     else
         playerPosition = 0;
@@ -154,12 +154,12 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
     if (playerPosition == -1 && self->monsterinfo.drop_height) {
         // check to make sure we can even get to the spot we're going to "fall" from
         VectorMA(self->s.origin, 48, forward, pt1);
-        gi.trace(&trace, self->s.origin, self->mins, self->maxs, pt1, self, MASK_MONSTERSOLID);
+        gi.trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt1, self, MASK_MONSTERSOLID);
         if (trace.fraction < 1)
             return NO_JUMP;
 
         VectorCopy(pt1, pt2);
-        pt2[2] = self->absmin[2] - self->monsterinfo.drop_height - 1;
+        pt2[2] = self->r.absmin[2] - self->monsterinfo.drop_height - 1;
 
         gi.trace(&trace, pt1, NULL, NULL, pt2, self, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
@@ -176,7 +176,7 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
                     return NO_JUMP;
             }
 
-            if ((self->absmin[2] - trace.endpos[2]) >= 24 && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
+            if ((self->r.absmin[2] - trace.endpos[2]) >= 24 && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
                 if ((self->enemy->absmin[2] - trace.endpos[2]) > 32)
                     return NO_JUMP;
 
@@ -191,11 +191,11 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
     } else if (playerPosition == 1 && self->monsterinfo.jump_height) {
         VectorMA(self->s.origin, 48, forward, pt1);
         VectorCopy(pt1, pt2);
-        pt1[2] = self->absmax[2] + self->monsterinfo.jump_height;
+        pt1[2] = self->r.absmax[2] + self->monsterinfo.jump_height;
 
         gi.trace(&trace, pt1, NULL, NULL, pt2, self, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
-            if ((trace.endpos[2] - self->absmin[2]) <= self->monsterinfo.jump_height && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
+            if ((trace.endpos[2] - self->r.absmin[2]) <= self->monsterinfo.jump_height && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
                 face_wall(self);
 
                 monster_jump_start(self);
@@ -587,11 +587,11 @@ void SP_hint_path(edict_t *self)
         return;
     }
 
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->touch = hint_path_touch;
-    VectorSet(self->mins, -8, -8, -8);
-    VectorSet(self->maxs, 8, 8, 8);
-    self->svflags |= SVF_NOCLIENT;
+    VectorSet(self->r.mins, -8, -8, -8);
+    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.svflags |= SVF_NOCLIENT;
     gi.linkentity(self);
 }
 
@@ -728,11 +728,11 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
 
     badarea = G_Spawn();
     VectorCopy(origin, badarea->s.origin);
-    VectorSubtract(maxs, origin, badarea->maxs);
-    VectorSubtract(mins, origin, badarea->mins);
+    VectorSubtract(maxs, origin, badarea->r.maxs);
+    VectorSubtract(mins, origin, badarea->r.mins);
     badarea->touch = badarea_touch;
     badarea->movetype = MOVETYPE_NONE;
-    badarea->solid = SOLID_TRIGGER;
+    badarea->r.solid = SOLID_TRIGGER;
     badarea->classname = "bad_area";
     gi.linkentity(badarea);
 
@@ -741,7 +741,7 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
         badarea->nextthink = level.time + lifespan;
     }
     if (owner)
-        badarea->owner = owner;
+        badarea->r.owner = owner;
 
     return badarea;
 }
@@ -755,8 +755,8 @@ edict_t *CheckForBadArea(edict_t *ent)
     edict_t     *touch[MAX_EDICTS_OLD], *hit;
     vec3_t      mins, maxs;
 
-    VectorAdd(ent->s.origin, ent->mins, mins);
-    VectorAdd(ent->s.origin, ent->maxs, maxs);
+    VectorAdd(ent->s.origin, ent->r.mins, mins);
+    VectorAdd(ent->s.origin, ent->r.maxs, maxs);
 
     num = gi.BoxEdicts(mins, maxs, touch, q_countof(touch), AREA_TRIGGERS);
 
@@ -764,7 +764,7 @@ edict_t *CheckForBadArea(edict_t *ent)
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
         hit = touch[i];
-        if (!hit->inuse)
+        if (!hit->r.inuse)
             continue;
         if (hit->touch == badarea_touch)
             return hit;
@@ -802,12 +802,12 @@ bool MarkTeslaArea(edict_t *self, edict_t *tesla)
         edict_t *trigger = tesla->teamchain;
 
         if (tesla->air_finished)
-            area = SpawnBadArea(trigger->absmin, trigger->absmax, tesla->air_finished, tesla);
+            area = SpawnBadArea(trigger->r.absmin, trigger->r.absmax, tesla->air_finished, tesla);
         else
-            area = SpawnBadArea(trigger->absmin, trigger->absmax, tesla->nextthink, tesla);
+            area = SpawnBadArea(trigger->r.absmin, trigger->r.absmax, tesla->nextthink, tesla);
     // otherwise we just guess at how long it'll last.
     } else {
-        vec3_t mins = { -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, tesla->mins[2] };
+        vec3_t mins = { -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, tesla->r.mins[2] };
         vec3_t maxs = { TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS };
 
         VectorAdd(mins, tesla->s.origin, mins);
@@ -836,7 +836,7 @@ void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_s
     vec3_t dir, vec, aim;
     float  dist, time;
 
-    if (!target || !target->inuse) {
+    if (!target || !target->r.inuse) {
         VectorClear(aimdir);
         return;
     }
@@ -1090,7 +1090,7 @@ void monster_duck_down(edict_t *self)
 {
     self->monsterinfo.aiflags |= AI_DUCKED;
 
-    self->maxs[2] = self->monsterinfo.base_height - 32;
+    self->r.maxs[2] = self->monsterinfo.base_height - 32;
     self->takedamage = true;
     self->monsterinfo.next_duck_time = level.time + DUCK_INTERVAL;
     gi.linkentity(self);
@@ -1176,7 +1176,7 @@ edict_t *PickCoopTarget(edict_t *self)
 
     for (int player = 1; player <= game.maxclients; player++) {
         ent = &g_edicts[player];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         if (!ent->client)
             continue;
@@ -1202,7 +1202,7 @@ int CountPlayers(void)
 
     for (int player = 1; player <= game.maxclients; player++) {
         ent = &g_edicts[player];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         if (!ent->client)
             continue;
@@ -1240,7 +1240,7 @@ void BossExplode(edict_t *self)
         return;
 
     edict_t *exploder = G_Spawn();
-    exploder->owner = self;
+    exploder->r.owner = self;
     exploder->count = self->spawn_count;
     exploder->style = self->s.modelindex;
     exploder->think = BossExplode_think;

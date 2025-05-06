@@ -237,8 +237,8 @@ const mmove_t MMOVE_T(brain_move_duck) = { FRAME_duck01, FRAME_duck08, brain_fra
 
 static void brain_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -290,7 +290,7 @@ static void brain_swing_right(edict_t *self)
 
 static void brain_hit_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         gi.sound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
     else
@@ -304,7 +304,7 @@ static void brain_swing_left(edict_t *self)
 
 static void brain_hit_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         gi.sound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
     else
@@ -660,8 +660,8 @@ void MONSTERINFO_SETSKIN(brain_setskin)(edict_t *self)
 
 void brain_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
@@ -751,13 +751,13 @@ void SP_monster_brain(edict_t *self)
     G_AddPrecache(brain_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/brain/tris.md2");
 
     PrecacheGibs(brain_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
 
     self->health = 300 * st.health_multiplier;
     self->gib_health = -150;

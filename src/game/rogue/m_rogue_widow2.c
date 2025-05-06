@@ -181,7 +181,7 @@ static void Widow2Spawn(edict_t *self)
                 designated_enemy = self->enemy;
         }
 
-        if ((designated_enemy->inuse) && (designated_enemy->health > 0)) {
+        if ((designated_enemy->r.inuse) && (designated_enemy->health > 0)) {
             ent->enemy = designated_enemy;
             FoundTarget(ent);
             ent->monsterinfo.attack(ent);
@@ -627,8 +627,8 @@ static void widow2_keep_searching(edict_t *self)
 
 static void widow2_finaldeath(edict_t *self)
 {
-    VectorSet(self->mins, -70, -70, 0);
-    VectorSet(self->maxs, 70, 70, 80);
+    VectorSet(self->r.mins, -70, -70, 0);
+    VectorSet(self->r.maxs, 70, 70, 80);
     self->movetype = MOVETYPE_TOSS;
     self->takedamage = true;
     self->nextthink = 0;
@@ -822,7 +822,7 @@ static void KillChildren(edict_t *self)
 
     while ((ent = G_Find(ent, FOFS(classname), "monster_stalker")) != NULL) {
         // FIXME - may need to stagger
-        if ((ent->inuse) && (ent->health > 0))
+        if ((ent->r.inuse) && (ent->health > 0))
             T_Damage(ent, self, self, vec3_origin, self->enemy->s.origin, vec3_origin, (ent->health + 1), 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
     }
 }
@@ -939,10 +939,10 @@ void SP_monster_widow2(edict_t *self)
     //  self->s.sound = gi.soundindex ("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/blackwidow2/tris.md2");
-    VectorSet(self->mins, -70, -70, 0);
-    VectorSet(self->maxs, 70, 70, 144);
+    VectorSet(self->r.mins, -70, -70, 0);
+    VectorSet(self->r.maxs, 70, 70, 144);
 
     self->health = (2000 + 800 + 1000 * skill->integer) * st.health_multiplier;
     if (coop->integer)
@@ -1038,12 +1038,12 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     if (startpos)
         VectorCopy(startpos, gib->s.origin);
     else {
-        VectorScale(self->size, 0.5f, size);
-        VectorAvg(self->absmin, self->absmax, origin);
+        VectorScale(self->r.size, 0.5f, size);
+        VectorAvg(self->r.absmin, self->r.absmax, origin);
         VectorMA(origin, crandom(), size, gib->s.origin);
     }
 
-    gib->solid = SOLID_NOT;
+    gib->r.solid = SOLID_NOT;
     gib->s.effects |= EF_GIB;
     gib->flags |= FL_NO_KNOCKBACK;
     gib->takedamage = true;
@@ -1083,7 +1083,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
 
     if (sized) {
         gib->style = hitsound;
-        gib->solid = SOLID_BBOX;
+        gib->r.solid = SOLID_BBOX;
         frandom_vec(gib->avelocity, 400);
         if (gib->velocity[2] < 0)
             gib->velocity[2] = -gib->velocity[2];
@@ -1094,13 +1094,13 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         gib->velocity[2] = max(vscale, gib->velocity[2]);
         gib->gravity = 0.25f;
         gib->touch = widow_gib_touch;
-        gib->owner = self;
+        gib->r.owner = self;
         if (gib->s.modelindex == gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2")) {
-            VectorSet(gib->mins, -10, -10, 0);
-            VectorSet(gib->maxs, 10, 10, 10);
+            VectorSet(gib->r.mins, -10, -10, 0);
+            VectorSet(gib->r.maxs, 10, 10, 10);
         } else {
-            VectorSet(gib->mins, -5, -5, 0);
-            VectorSet(gib->maxs, 5, 5, 5);
+            VectorSet(gib->r.mins, -5, -5, 0);
+            VectorSet(gib->r.maxs, 5, 5, 5);
         }
     } else {
         gib->velocity[0] *= 2;

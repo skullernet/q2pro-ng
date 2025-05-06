@@ -50,19 +50,19 @@ static bool stalker_ok_to_transition(edict_t *self)
             return true;
 
         max_dist = -384;
-        margin = self->mins[2] - 8;
+        margin = self->r.mins[2] - 8;
     } else {
         // her stalkers are just better
         if (self->monsterinfo.commander && self->monsterinfo.commander->inuse && !strncmp(self->monsterinfo.commander->classname, "monster_widow", 13))
             max_dist = 256;
         else
             max_dist = 180;
-        margin = self->maxs[2] + 8;
+        margin = self->r.maxs[2] + 8;
     }
 
     VectorCopy(self->s.origin, pt);
     pt[2] += max_dist;
-    gi.trace(&trace, self->s.origin, self->mins, self->maxs, pt, self, MASK_MONSTERSOLID);
+    gi.trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt, self, MASK_MONSTERSOLID);
 
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.ent != world)) {
         if (STALKER_ON_CEILING(self)) {
@@ -77,8 +77,8 @@ static bool stalker_ok_to_transition(edict_t *self)
     end_height = trace.endpos[2];
 
     // check the four corners, tracing only to the endpoint of the center trace (vertically).
-    pt[0] = self->absmin[0];
-    pt[1] = self->absmin[1];
+    pt[0] = self->r.absmin[0];
+    pt[1] = self->r.absmin[1];
     pt[2] = trace.endpos[2] + margin; // give a little margin of error to allow slight inclines
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
@@ -88,8 +88,8 @@ static bool stalker_ok_to_transition(edict_t *self)
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
         return false;
 
-    pt[0] = self->absmax[0];
-    pt[1] = self->absmin[1];
+    pt[0] = self->r.absmax[0];
+    pt[1] = self->r.absmin[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
     gi.trace(&trace, start, NULL, NULL, pt, self, MASK_MONSTERSOLID);
@@ -98,8 +98,8 @@ static bool stalker_ok_to_transition(edict_t *self)
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
         return false;
 
-    pt[0] = self->absmax[0];
-    pt[1] = self->absmax[1];
+    pt[0] = self->r.absmax[0];
+    pt[1] = self->r.absmax[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
     gi.trace(&trace, start, NULL, NULL, pt, self, MASK_MONSTERSOLID);
@@ -108,8 +108,8 @@ static bool stalker_ok_to_transition(edict_t *self)
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
         return false;
 
-    pt[0] = self->absmin[0];
-    pt[1] = self->absmax[1];
+    pt[0] = self->r.absmin[0];
+    pt[1] = self->r.absmax[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
     gi.trace(&trace, start, NULL, NULL, pt, self, MASK_MONSTERSOLID);
@@ -836,8 +836,8 @@ void MONSTERINFO_PHYSCHANGED(stalker_physics_change)(edict_t *self)
 
 static void stalker_dead(edict_t *self)
 {
-    VectorSet(self->mins, -28, -28, -18);
-    VectorSet(self->maxs, 28, 28, -4);
+    VectorSet(self->r.mins, -28, -28, -18);
+    VectorSet(self->r.maxs, 28, 28, -4);
     monster_dead(self);
 }
 
@@ -933,10 +933,10 @@ void SP_monster_stalker(edict_t *self)
 
     PrecacheGibs(stalker_gibs);
 
-    VectorSet(self->mins, -28, -28, -18);
-    VectorSet(self->maxs, 28, 28, 18);
+    VectorSet(self->r.mins, -28, -28, -18);
+    VectorSet(self->r.maxs, 28, 28, 18);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 250 * st.health_multiplier;
     self->gib_health = -50;

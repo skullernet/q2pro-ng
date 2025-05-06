@@ -647,13 +647,13 @@ void SP_monster_floater(edict_t *self)
     self->monsterinfo.engine_sound = gi.soundindex("floater/fltsrch1.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/float/tris.md2");
 
     PrecacheGibs(floater_gibs);
 
-    VectorSet(self->mins, -24, -24, -24);
-    VectorSet(self->maxs, 24, 24, 48);
+    VectorSet(self->r.mins, -24, -24, -24);
+    VectorSet(self->r.maxs, 24, 24, 48);
 
     self->health = 200 * st.health_multiplier;
     self->gib_health = -80;

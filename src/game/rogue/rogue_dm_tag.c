@@ -43,7 +43,7 @@ static void Tag_KillItBonus(edict_t *self)
     armor->spawnflags |= SPAWNFLAG_ITEM_DROPPED;
     armor->item = GetItemByIndex(IT_ARMOR_BODY);
     Touch_Item(armor, self, &null_trace, true);
-    if (armor->inuse)
+    if (armor->r.inuse)
         G_FreeEdict(armor);
 }
 
@@ -154,17 +154,17 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     tag_token->s.effects = EF_ROTATE | EF_TAGTRAIL;
     tag_token->s.renderfx = RF_GLOW;
-    VectorSet(tag_token->mins, -15, -15, -15);
-    VectorSet(tag_token->maxs, 15, 15, 15);
+    VectorSet(tag_token->r.mins, -15, -15, -15);
+    VectorSet(tag_token->r.maxs, 15, 15, 15);
     gi.setmodel(tag_token, tag_token->item->world_model);
-    tag_token->solid = SOLID_TRIGGER;
+    tag_token->r.solid = SOLID_TRIGGER;
     tag_token->movetype = MOVETYPE_TOSS;
     tag_token->touch = NULL;
-    tag_token->owner = ent;
+    tag_token->r.owner = ent;
 
     AngleVectors(ent->client->v_angle, forward, right, NULL);
     G_ProjectSource(ent->s.origin, offset, forward, right, tag_token->s.origin);
-    gi.trace(&trace, ent->s.origin, tag_token->mins, tag_token->maxs,
+    gi.trace(&trace, ent->s.origin, tag_token->r.mins, tag_token->r.maxs,
              tag_token->s.origin, ent, CONTENTS_SOLID);
     VectorCopy(trace.endpos, tag_token->s.origin);
 

@@ -69,10 +69,10 @@ void Use_Doppleganger(edict_t *ent, const gitem_t *item)
 
     VectorMA(ent->s.origin, 48, forward, createPt);
 
-    if (!FindSpawnPoint(createPt, ent->mins, ent->maxs, spawnPt, 32, true))
+    if (!FindSpawnPoint(createPt, ent->r.mins, ent->r.maxs, spawnPt, 32, true))
         return;
 
-    if (!CheckGroundSpawnPoint(spawnPt, ent->mins, ent->maxs, 64, -1))
+    if (!CheckGroundSpawnPoint(spawnPt, ent->r.mins, ent->r.maxs, 64, -1))
         return;
 
     ent->client->pers.inventory[item->id]--;
@@ -209,6 +209,6 @@ void SetTriggeredSpawn(edict_t *ent)
     ent->think = NULL;
     ent->nextthink = 0;
     ent->use = Item_TriggeredSpawn;
-    ent->svflags |= SVF_NOCLIENT;
-    ent->solid = SOLID_NOT;
+    ent->r.svflags |= SVF_NOCLIENT;
+    ent->r.solid = SOLID_NOT;
 }

@@ -1361,13 +1361,13 @@ void ClientEndServerFrame(edict_t *ent)
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
 
-            if (!player->inuse)
+            if (!player->r.inuse)
                 continue;
             if (player == ent)
                 continue;
 
             trace_t clip;
-            gi.clip(&clip, ent->s.origin, ent->mins, ent->maxs, ent->s.origin, player, CONTENTS_MONSTER | CONTENTS_PLAYER);
+            gi.clip(&clip, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, player, CONTENTS_MONSTER | CONTENTS_PLAYER);
 
             if (clip.startsolid || clip.allsolid) {
                 clipped_player = true;

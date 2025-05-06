@@ -1301,15 +1301,15 @@ static void soldier_fire7(edict_t *self)
 
 static void soldier_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void soldier_death_shrink(edict_t *self)
 {
-    self->svflags |= SVF_DEADMONSTER;
-    self->maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
     gi.linkentity(self);
 }
 
@@ -1746,10 +1746,10 @@ static void SP_monster_soldier_x(edict_t *self)
 {
     self->s.modelindex = gi.modelindex("models/monsters/soldier/tris.md2");
     self->monsterinfo.scale = MODEL_SCALE;
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     G_AddPrecache(soldier_precache_x);
 

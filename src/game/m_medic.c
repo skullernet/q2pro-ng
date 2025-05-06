@@ -150,9 +150,9 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
             newEnt->monsterinfo.aiflags |= AI_DO_NOT_COUNT;
 
             ED_CallSpawn(newEnt);
-            if (newEnt->inuse) {
-                VectorCopy(newEnt->mins, r->mins);
-                VectorCopy(newEnt->maxs, r->maxs);
+            if (newEnt->r.inuse) {
+                VectorCopy(newEnt->r.mins, r->mins);
+                VectorCopy(newEnt->r.maxs, r->maxs);
                 r->radius = Distance(r->maxs, r->mins) * 0.5f;
                 G_FreeEdict(newEnt);
                 list->num_reinforcements++;
@@ -243,11 +243,11 @@ bool finishHeal(edict_t *self)
 
     vec3_t maxs;
 
-    VectorCopy(healee->maxs, maxs);
+    VectorCopy(healee->r.maxs, maxs);
     maxs[2] += 48; // compensate for change when they die
 
     trace_t tr;
-    gi.trace(&tr, healee->s.origin, healee->mins, maxs, healee->s.origin, healee, MASK_MONSTERSOLID);
+    gi.trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin, healee, MASK_MONSTERSOLID);
 
     if (tr.startsolid || tr.allsolid) {
         abortHeal(self, true, false);
@@ -351,7 +351,7 @@ edict_t *healFindMonster(edict_t *self, float radius)
     while ((ent = findradius(ent, self->s.origin, radius)) != NULL) {
         if (ent == self)
             continue;
-        if (!(ent->svflags & SVF_MONSTER))
+        if (!(ent->r.svflags & SVF_MONSTER))
             continue;
         if (ent->monsterinfo.aiflags & AI_GOOD_GUY)
             continue;
@@ -744,15 +744,15 @@ static void medic_fire_blaster(edict_t *self)
 
 static void medic_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void medic_shrink(edict_t *self)
 {
-    self->maxs[2] = -2;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = -2;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -1225,7 +1225,7 @@ static void medic_finish_spawn(edict_t *self)
                 designated_enemy = self->enemy;
         }
 
-        if ((designated_enemy) && (designated_enemy->inuse) && (designated_enemy->health > 0)) {
+        if ((designated_enemy) && (designated_enemy->r.inuse) && (designated_enemy->health > 0)) {
             ent->enemy = designated_enemy;
             FoundTarget(ent);
         } else {
@@ -1434,13 +1434,13 @@ void SP_monster_medic(edict_t *self)
     }
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/medic/tris.md2");
 
     PrecacheGibs(medic_gibs);
 
-    VectorSet(self->mins, -24, -24, -24);
-    VectorSet(self->maxs, 24, 24, 32);
+    VectorSet(self->r.mins, -24, -24, -24);
+    VectorSet(self->r.maxs, 24, 24, 32);
 
     // PMM
     if (strcmp(self->classname, "monster_medic_commander") == 0) {

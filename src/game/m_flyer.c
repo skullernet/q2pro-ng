@@ -253,7 +253,7 @@ static void flyer_kamikaze_check(edict_t *self)
     float dist;
 
     // PMM - this needed because we could have gone away before we get here (blocked code)
-    if (!self->inuse)
+    if (!self->r.inuse)
         return;
 
     if ((!self->enemy) || (!self->enemy->inuse)) {
@@ -443,7 +443,7 @@ const mmove_t MMOVE_T(flyer_move_attack3) = { FRAME_attak201, FRAME_attak217, fl
 
 static void flyer_slash_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], 0 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
@@ -451,7 +451,7 @@ static void flyer_slash_left(edict_t *self)
 
 static void flyer_slash_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->maxs[0], 0 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
@@ -717,11 +717,11 @@ void SP_monster_flyer(edict_t *self)
 
     PrecacheGibs(flyer_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
+    VectorSet(self->r.mins, -16, -16, -24);
     // PMM - shortened to 16 from 32
-    VectorSet(self->maxs, 16, 16, 16);
+    VectorSet(self->r.maxs, 16, 16, 16);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->viewheight = 12;
 

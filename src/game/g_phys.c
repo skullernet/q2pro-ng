@@ -33,9 +33,9 @@ contents_t G_GetClipMask(edict_t *ent)
 
     // default masks
     if (!mask) {
-        if (ent->svflags & SVF_MONSTER)
+        if (ent->r.svflags & SVF_MONSTER)
             mask = MASK_MONSTERSOLID;
-        else if (ent->svflags & SVF_PROJECTILE)
+        else if (ent->r.svflags & SVF_PROJECTILE)
             mask = MASK_PROJECTILE;
         else
             mask = MASK_SHOT & ~CONTENTS_DEADMONSTER;
@@ -43,12 +43,12 @@ contents_t G_GetClipMask(edict_t *ent)
 
     // non-solid objects (items, etc) shouldn't try to clip
     // against players/monsters
-    if (ent->solid == SOLID_NOT || ent->solid == SOLID_TRIGGER)
+    if (ent->r.solid == SOLID_NOT || ent->r.solid == SOLID_TRIGGER)
         mask &= ~(CONTENTS_MONSTER | CONTENTS_PLAYER);
 
     // monsters/players that are also dead shouldn't clip
     // against players/monsters
-    if ((ent->svflags & (SVF_MONSTER | SVF_PLAYER)) && (ent->svflags & SVF_DEADMONSTER))
+    if ((ent->r.svflags & (SVF_MONSTER | SVF_PLAYER)) && (ent->r.svflags & SVF_DEADMONSTER))
         mask &= ~(CONTENTS_MONSTER | CONTENTS_PLAYER);
 
     // remove special mask value
@@ -67,7 +67,7 @@ static edict_t *SV_TestEntityPosition(edict_t *ent)
 {
     trace_t    trace;
 
-    gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, G_GetClipMask(ent));
+    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent, G_GetClipMask(ent));
 
     if (trace.startsolid)
         return g_edicts;
@@ -125,10 +125,10 @@ void G_Impact(edict_t *e1, const trace_t *trace)
 {
     edict_t *e2 = trace->ent;
 
-    if (e1->touch && (e1->solid != SOLID_NOT || (e1->flags & FL_ALWAYS_TOUCH)))
+    if (e1->touch && (e1->r.solid != SOLID_NOT || (e1->flags & FL_ALWAYS_TOUCH)))
         e1->touch(e1, e2, trace, false);
 
-    if (e2->touch && (e2->solid != SOLID_NOT || (e2->flags & FL_ALWAYS_TOUCH)))
+    if (e2->touch && (e2->r.solid != SOLID_NOT || (e2->flags & FL_ALWAYS_TOUCH)))
         e2->touch(e2, e1, trace, true);
 }
 
@@ -173,8 +173,8 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
     ent->groundentity = NULL;
 
     touch_list_t touch;
-    PM_StepSlideMove_Generic(ent->s.origin, ent->velocity, time, ent->mins,
-                             ent->maxs, ent, mask, &touch, false, gi.trace);
+    PM_StepSlideMove_Generic(ent->s.origin, ent->velocity, time, ent->r.mins,
+                             ent->r.maxs, ent, mask, &touch, false, gi.trace);
 
     for (int i = 0; i < touch.num; i++) {
         trace_t *trace = &touch.traces[i];
@@ -235,7 +235,7 @@ static trace_t SV_PushEntity(edict_t *ent, const vec3_t push)
 
 retry:;
     trace_t trace;
-    gi.trace(&trace, start, ent->mins, ent->maxs, end, ent, G_GetClipMask(ent));
+    gi.trace(&trace, start, ent->r.mins, ent->r.maxs, end, ent, G_GetClipMask(ent));
 
     VectorMA(trace.endpos, 0.5f, trace.plane.normal, ent->s.origin);
     gi.linkentity(ent);
@@ -244,7 +244,7 @@ retry:;
         G_Impact(ent, &trace);
 
         // if the pushed entity went away and the pusher is still there
-        if (!trace.ent->inuse && ent->inuse) {
+        if (!trace.ent->inuse && ent->r.inuse) {
             // move the pusher back and try again
             VectorCopy(start, ent->s.origin);
             gi.linkentity(ent);
@@ -259,7 +259,7 @@ retry:;
     // PGM
     // ================
 
-    if (ent->inuse)
+    if (ent->r.inuse)
         G_TouchTriggers(ent);
 
     return trace;
@@ -300,8 +300,8 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
         move[i] = SnapToEights(move[i]);
 
     // find the bounding box
-    VectorAdd(pusher->absmin, move, mins);
-    VectorAdd(pusher->absmax, move, maxs);
+    VectorAdd(pusher->r.absmin, move, mins);
+    VectorAdd(pusher->r.absmax, move, maxs);
 
     // we need this for pushing things later
     VectorNegate(amove, org);
@@ -326,7 +326,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
     // see if any solid entities are inside the final position
     check = g_edicts + 1;
     for (int e = 1; e < globals.num_edicts; e++, check++) {
-        if (!check->inuse)
+        if (!check->r.inuse)
             continue;
         if (check->movetype == MOVETYPE_PUSH || check->movetype == MOVETYPE_STOP ||
             check->movetype == MOVETYPE_NONE || check->movetype == MOVETYPE_NOCLIP)
@@ -338,8 +338,8 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
         // if the entity is standing on the pusher, it will definitely be moved
         if (check->groundentity != pusher) {
             // see if the ent needs to be tested
-            if (check->absmin[0] >= maxs[0] || check->absmin[1] >= maxs[1] || check->absmin[2] >= maxs[2] ||
-                check->absmax[0] <= mins[0] || check->absmax[1] <= mins[1] || check->absmax[2] <= mins[2])
+            if (check->r.absmin[0] >= maxs[0] || check->r.absmin[1] >= maxs[1] || check->r.absmin[2] >= maxs[2] ||
+                check->r.absmax[0] <= mins[0] || check->r.absmax[1] <= mins[1] || check->r.absmax[2] <= mins[2])
                 continue;
 
             // see if the ent's bbox is inside the pusher's final position
@@ -478,13 +478,13 @@ retry:
         if (part->moveinfo.blocked)
             part->moveinfo.blocked(part, obstacle);
 
-        if (!obstacle->inuse)
+        if (!obstacle->r.inuse)
             goto retry;
     } else {
         // the move succeeded, so call all think functions
         for (part = ent; part; part = part->teamchain) {
             // prevent entities that are on trains that have gone away from thinking!
-            if (part->inuse)
+            if (part->r.inuse)
                 SV_RunThink(part);
         }
     }
@@ -515,7 +515,7 @@ A moving object that doesn't obey physics
 static void SV_Physics_Noclip(edict_t *ent)
 {
     // regular thinking
-    if (!SV_RunThink(ent) || !ent->inuse)
+    if (!SV_RunThink(ent) || !ent->r.inuse)
         return;
 
     VectorMA(ent->s.angles, FRAME_TIME_SEC, ent->avelocity, ent->s.angles);
@@ -552,7 +552,7 @@ static void SV_Physics_Toss(edict_t *ent)
     // regular thinking
     SV_RunThink(ent);
 
-    if (!ent->inuse)
+    if (!ent->r.inuse)
         return;
 
     // if not a team captain, so movement will be handled elsewhere
@@ -568,7 +568,7 @@ static void SV_Physics_Toss(edict_t *ent)
 
     // if onground, return without moving
     if (ent->groundentity && ent->gravity > 0.0f) { // PGM - gravity hack
-        if (ent->svflags & SVF_MONSTER) {
+        if (ent->r.svflags & SVF_MONSTER) {
             M_CategorizePosition(ent, ent->s.origin, &ent->waterlevel, &ent->watertype);
             M_WorldEffects(ent);
         }
@@ -604,7 +604,7 @@ static void SV_Physics_Toss(edict_t *ent)
         VectorScale(ent->velocity, time_left, move);
         trace = SV_PushEntity(ent, move);
 
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             return;
 
         if (trace.fraction == 1.0f)
@@ -677,7 +677,7 @@ static void SV_Physics_Toss(edict_t *ent)
     else
         ent->waterlevel = WATER_NONE;
 
-    if (ent->svflags & SVF_MONSTER) {
+    if (ent->r.svflags & SVF_MONSTER) {
         M_CategorizePosition(ent, ent->s.origin, &ent->waterlevel, &ent->watertype);
         M_WorldEffects(ent);
     } else {
@@ -854,17 +854,17 @@ static void SV_Physics_Step(edict_t *ent)
         if (!level.is_n64 || level.time > FRAME_TIME)
             G_TouchTriggers(ent);
 
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             return;
 
         if (ent->groundentity && !wasonground && hitsound)
             ent->s.event = EV_FOOTSTEP;
     }
 
-    if (!ent->inuse) // PGM g_touchtrigger free problem
+    if (!ent->r.inuse) // PGM g_touchtrigger free problem
         return;
 
-    if (ent->svflags & SVF_MONSTER) {
+    if (ent->r.svflags & SVF_MONSTER) {
         M_CategorizePosition(ent, ent->s.origin, &ent->waterlevel, &ent->watertype);
         M_WorldEffects(ent);
 
@@ -995,7 +995,7 @@ void G_RunEntity(edict_t *ent)
     if (has_previous_origin && ent->movetype == MOVETYPE_STEP) {
         // if we moved, check and fix origin if needed
         if (!VectorCompare(ent->s.origin, previous_origin)) {
-            gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, previous_origin, ent, G_GetClipMask(ent));
+            gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, previous_origin, ent, G_GetClipMask(ent));
             if (trace.allsolid || trace.startsolid)
                 VectorCopy(previous_origin, ent->s.origin);
         }

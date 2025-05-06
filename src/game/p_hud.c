@@ -56,7 +56,7 @@ void MoveClientToIntermission(edict_t *ent)
     ent->s.modelindex4 = 0;
     ent->s.effects = EF_NONE;
     ent->s.sound = 0;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NOCLIP;
 
     gi.linkentity(ent);
@@ -176,7 +176,7 @@ void G_EndOfUnitMessage(void)
     gi.multicast(vec3_origin, MULTICAST_ALL_R);
 
     for (int i = 0; i < game.maxclients; i++) {
-        if (g_edicts[i + 1].inuse)
+        if (g_edicts[i + 1].r.inuse)
             game.clients[i].showeou = true;
     }
 }
@@ -200,7 +200,7 @@ void BeginIntermission(edict_t *targ)
     // respawn any dead clients
     for (int i = 0; i < game.maxclients; i++) {
         client = g_edicts + 1 + i;
-        if (!client->inuse)
+        if (!client->r.inuse)
             continue;
         if (client->health <= 0) {
             // give us our max health back since it will reset
@@ -229,7 +229,7 @@ void BeginIntermission(edict_t *targ)
         if (coop->integer) {
             for (int i = 0; i < game.maxclients; i++) {
                 client = g_edicts + 1 + i;
-                if (!client->inuse)
+                if (!client->r.inuse)
                     continue;
                 // strip players of all keys between units
                 for (int n = 0; n < IT_TOTAL; n++)
@@ -283,7 +283,7 @@ void BeginIntermission(edict_t *targ)
     // move all clients to the intermission point
     for (int i = 0; i < game.maxclients; i++) {
         client = g_edicts + 1 + i;
-        if (!client->inuse)
+        if (!client->r.inuse)
             continue;
         MoveClientToIntermission(client);
     }
@@ -322,7 +322,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
     total = 0;
     for (i = 0; i < game.maxclients; i++) {
         cl_ent = g_edicts + 1 + i;
-        if (!cl_ent->inuse || game.clients[i].resp.spectator)
+        if (!cl_ent->r.inuse || game.clients[i].resp.spectator)
             continue;
         score = game.clients[i].resp.score;
         for (j = 0; j < total; j++) {
@@ -563,7 +563,7 @@ static int G_EncodeHealthBar(int bar)
     if (!ent)
         return 0;
 
-    if (!ent->inuse) {
+    if (!ent->r.inuse) {
         level.health_bar_entities[bar] = NULL;
         return 0;
     }
@@ -837,7 +837,7 @@ void G_CheckChaseStats(edict_t *ent)
 
     for (int i = 1; i <= game.maxclients; i++) {
         cl = g_edicts[i].client;
-        if (!g_edicts[i].inuse || cl->chase_target != ent)
+        if (!g_edicts[i].r.inuse || cl->chase_target != ent)
             continue;
         memcpy(cl->ps.stats, ent->client->ps.stats, sizeof(cl->ps.stats));
         G_SetSpectatorStats(g_edicts + i);

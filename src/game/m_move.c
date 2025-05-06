@@ -125,8 +125,8 @@ bool M_CheckBottom(edict_t *ent)
 {
     vec3_t mins, maxs;
 
-    VectorAdd(ent->s.origin, ent->mins, mins);
-    VectorAdd(ent->s.origin, ent->maxs, maxs);
+    VectorAdd(ent->s.origin, ent->r.mins, mins);
+    VectorAdd(ent->s.origin, ent->r.maxs, maxs);
 
     // if all of the points under the corners are solid world, don't bother
     // with the tougher checks
@@ -134,8 +134,10 @@ bool M_CheckBottom(edict_t *ent)
     if (M_CheckBottom_Fast_Generic(mins, maxs, ent->gravityVector[2] > 0))
         return true; // we got out easy
 
-    contents_t mask = (ent->svflags & SVF_MONSTER) ? MASK_MONSTERSOLID : (MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER);
-    return M_CheckBottom_Slow_Generic(ent->s.origin, ent->mins, ent->maxs, ent, mask, ent->gravityVector[2] > 0, ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP);
+    contents_t mask = (ent->r.svflags & SVF_MONSTER) ? MASK_MONSTERSOLID : (MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER);
+    return M_CheckBottom_Slow_Generic(ent->s.origin, ent->r.mins, ent->r.maxs,
+                                      ent, mask, ent->gravityVector[2] > 0,
+                                      ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP);
 }
 
 //============
@@ -197,18 +199,18 @@ static bool SV_flystep_testvisposition(vec3_t wanted_pos, bool bottom, edict_t *
     VectorCopy(ent->s.origin, end);
 
     if (bottom) {
-        start[2] += ent->mins[2];
-        end[2] += ent->mins[2] - ent->monsterinfo.fly_acceleration;
+        start[2] += ent->r.mins[2];
+        end[2] += ent->r.mins[2] - ent->monsterinfo.fly_acceleration;
     } else {
-        start[2] += ent->maxs[2];
-        end[2] += ent->maxs[2] + ent->monsterinfo.fly_acceleration;
+        start[2] += ent->r.maxs[2];
+        end[2] += ent->r.maxs[2] + ent->monsterinfo.fly_acceleration;
     }
 
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, wanted_pos, ent, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
     if (tr.fraction == 1.0f) {
-        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, end, ent, MASK_SOLID | CONTENTS_MONSTERCLIP);
+        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
         if (tr.fraction == 1.0f)
             return true;
@@ -311,7 +313,7 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
 
     VectorSubtract(wanted_pos, ent->s.origin, dest_diff);
 
-    if (dest_diff[2] > ent->mins[2] && dest_diff[2] < ent->maxs[2])
+    if (dest_diff[2] > ent->r.mins[2] && dest_diff[2] < ent->r.maxs[2])
         dest_diff[2] = 0;
 
     float dist_to_wanted;
@@ -328,7 +330,7 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
     // check if we're blocked from moving this way from where we are
     vec3_t end;
     VectorMA(ent->s.origin, ent->monsterinfo.fly_acceleration, wanted_dir, end);
-    gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, end, ent, MASK_SOLID | CONTENTS_MONSTERCLIP);
+    gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
     vec3_t aim_fwd, aim_rgt, aim_up;
     vec3_t yaw_angles = { 0, ent->s.angles[1], 0 };
@@ -345,8 +347,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
             vec3_t a, b;
 
             for (int i = 0; i < 3; i++) {
-                a[i] = ent->s.origin[i] + aim_fwd[i] * ent->maxs[i] - aim_rgt[i] * ent->maxs[i];
-                b[i] = ent->s.origin[i] + aim_fwd[i] * ent->maxs[i] + aim_rgt[i] * ent->maxs[i];
+                a[i] = ent->s.origin[i] + aim_fwd[i] * ent->r.maxs[i] - aim_rgt[i] * ent->r.maxs[i];
+                b[i] = ent->s.origin[i] + aim_fwd[i] * ent->r.maxs[i] + aim_rgt[i] * ent->r.maxs[i];
             }
 
             trace_t tra, trb;
@@ -562,14 +564,14 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
         VectorAdd(ent->s.origin, new_move, neworg);
 
         trace_t trace;
-        gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, neworg, ent, MASK_MONSTERSOLID);
+        gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, neworg, ent, MASK_MONSTERSOLID);
 
         // fly monsters don't enter water voluntarily
         if (ent->flags & FL_FLY) {
             if (!ent->waterlevel) {
                 vec3_t test;
                 VectorCopy(trace.endpos, test);
-                test[2] += ent->mins[2] + 1;
+                test[2] += ent->r.mins[2] + 1;
                 contents_t contents = gi.pointcontents(test);
                 if (contents & MASK_WATER)
                     return false;
@@ -581,7 +583,7 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
             if (ent->waterlevel < WATER_WAIST) {
                 vec3_t test;
                 VectorCopy(trace.endpos, test);
-                test[2] += ent->mins[2] + 1;
+                test[2] += ent->r.mins[2] + 1;
                 contents_t contents = gi.pointcontents(test);
                 if (!(contents & MASK_WATER))
                     return false;
@@ -679,24 +681,24 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
     stepsize += 0.75f;
 
-    contents_t mask = (ent->svflags & SVF_MONSTER) ? MASK_MONSTERSOLID : (MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER);
+    contents_t mask = (ent->r.svflags & SVF_MONSTER) ? MASK_MONSTERSOLID : (MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER);
 
     vec3_t start_up;
     VectorMA(oldorg, -1 * stepsize, ent->gravityVector, start_up);
 
     trace_t wtf_trace;
-    gi.trace(&wtf_trace, oldorg, ent->mins, ent->maxs, start_up, ent, mask);
+    gi.trace(&wtf_trace, oldorg, ent->r.mins, ent->r.maxs, start_up, ent, mask);
     VectorCopy(wtf_trace.endpos, start_up);
 
     vec3_t end_up;
     VectorAdd(start_up, move, end_up);
 
     trace_t up_trace;
-    gi.trace(&up_trace, start_up, ent->mins, ent->maxs, end_up, ent, mask);
+    gi.trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent, mask);
 
     if (up_trace.startsolid) {
         VectorMA(start_up, -1 * stepsize, ent->gravityVector, start_up);
-        gi.trace(&up_trace, start_up, ent->mins, ent->maxs, end_up, ent, mask);
+        gi.trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent, mask);
     }
 
     vec3_t start_fwd, end_fwd;
@@ -704,15 +706,15 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     VectorAdd(start_fwd, move, end_fwd);
 
     trace_t fwd_trace;
-    gi.trace(&fwd_trace, start_fwd, ent->mins, ent->maxs, end_fwd, ent, mask);
+    gi.trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent, mask);
 
     if (fwd_trace.startsolid) {
         VectorMA(start_up, -1 * stepsize, ent->gravityVector, start_up);
-        gi.trace(&fwd_trace, start_fwd, ent->mins, ent->maxs, end_fwd, ent, mask);
+        gi.trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent, mask);
     }
 
     // pick the one that went farther
-    trace_t *chosen_forward = (up_trace.fraction > fwd_trace.fraction) ? &up_trace : &fwd_trace;
+    const trace_t *chosen_forward = (up_trace.fraction > fwd_trace.fraction) ? &up_trace : &fwd_trace;
 
     if (chosen_forward->startsolid || chosen_forward->allsolid)
         return false;
@@ -727,7 +729,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     vec3_t end;
     VectorMA(chosen_forward->endpos, steps * stepsize, ent->gravityVector, end);
     trace_t trace;
-    gi.trace(&trace, chosen_forward->endpos, ent->mins, ent->maxs, end, ent, mask);
+    gi.trace(&trace, chosen_forward->endpos, ent->r.mins, ent->r.maxs, end, ent, mask);
 
     if (fabsf(ent->s.origin[2] - trace.endpos[2]) > 8)
         stepped = true;
@@ -794,14 +796,14 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         // use AI_BLOCKED to tell the calling layer that we're now mad at a tesla
         edict_t *new_bad = CheckForBadArea(ent);
         if (!current_bad && new_bad) {
-            if (new_bad->owner) {
-                if (!strcmp(new_bad->owner->classname, "tesla_mine")) {
+            if (new_bad->r.owner) {
+                if (!strcmp(new_bad->r.owner->classname, "tesla_mine")) {
                     if (!ent->enemy || !ent->enemy->inuse) {
-                        TargetTesla(ent, new_bad->owner);
+                        TargetTesla(ent, new_bad->r.owner);
                         ent->monsterinfo.aiflags |= AI_BLOCKED;
                     } else if (!strcmp(ent->enemy->classname, "tesla_mine")) {
                     } else if (!ent->enemy->client || !visible(ent, ent->enemy)) {
-                        TargetTesla(ent, new_bad->owner);
+                        TargetTesla(ent, new_bad->r.owner);
                         ent->monsterinfo.aiflags |= AI_BLOCKED;
                     }
                 }
@@ -952,7 +954,7 @@ static bool SV_StepDirection(edict_t *ent, float yaw, float dist, bool allow_no_
 {
     vec3_t move, oldorigin;
 
-    if (!ent->inuse)
+    if (!ent->r.inuse)
         return true; // PGM g_touchtrigger free problem
 
     float old_ideal_yaw = ent->ideal_yaw;
@@ -969,7 +971,7 @@ static bool SV_StepDirection(edict_t *ent, float yaw, float dist, bool allow_no_
     VectorCopy(ent->s.origin, oldorigin);
     if (SV_movestep(ent, move, false)) {
         ent->monsterinfo.aiflags &= ~AI_BLOCKED;
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             return true; // PGM g_touchtrigger free problem
 
         if (strncmp(ent->classname, "monster_widow", 13)) {
@@ -1059,7 +1061,7 @@ static bool SV_NewChaseDir(edict_t *actor, vec3_t pos, float dist)
 
     // ROGUE
     if (actor->monsterinfo.blocked) {
-        if ((actor->inuse) && (actor->health > 0) && !(actor->monsterinfo.aiflags & AI_TARGET_ANGER)) {
+        if ((actor->r.inuse) && (actor->health > 0) && !(actor->monsterinfo.aiflags & AI_TARGET_ANGER)) {
             // if block "succeeds", the actor will not move or turn.
             if (actor->monsterinfo.blocked(actor, dist)) {
                 actor->monsterinfo.move_block_counter = -2;
@@ -1118,9 +1120,9 @@ SV_CloseEnough
 bool SV_CloseEnough(edict_t *ent, edict_t *goal, float dist)
 {
     for (int i = 0; i < 3; i++) {
-        if (goal->absmin[i] > ent->absmax[i] + dist)
+        if (goal->r.absmin[i] > ent->r.absmax[i] + dist)
             return false;
-        if (goal->absmax[i] < ent->absmin[i] - dist)
+        if (goal->r.absmax[i] < ent->r.absmin[i] - dist)
             return false;
     }
     return true;
@@ -1134,7 +1136,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
     vec3_t ground_origin, mon_mins, mon_maxs;
 
     VectorCopy(self->s.origin, ground_origin);
-    ground_origin[2] += self->mins[2] - player_mins[2];
+    ground_origin[2] += self->r.mins[2] - player_mins[2];
 
     VectorAdd(ground_origin, player_mins, mon_mins);
     VectorAdd(ground_origin, player_maxs, mon_maxs);
@@ -1156,8 +1158,8 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
         VectorCopy(self->s.origin, request.start);
         request.pathFlags = PathFlags_Walk;
 
-        request.nodeSearch.minHeight = -(self->mins[2] * 2);
-        request.nodeSearch.maxHeight =  (self->maxs[2] * 2);
+        request.nodeSearch.minHeight = -(self->r.mins[2] * 2);
+        request.nodeSearch.maxHeight =  (self->r.maxs[2] * 2);
 
         // FIXME remove hardcoding
         if (!strcmp(self->classname, "monster_guardian"))
@@ -1208,11 +1210,11 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
     }
 
     if (!SV_StepDirection(self, yaw, dist, true)) {
-        if (!self->inuse)
+        if (!self->r.inuse)
             return false;
 
         if (self->monsterinfo.blocked && !(self->monsterinfo.aiflags & AI_TARGET_ANGER)) {
-            if ((self->inuse) && (self->health > 0)) {
+            if ((self->r.inuse) && (self->health > 0)) {
                 // if we're blocked, the blocked function will be deferred to for yaw
                 self->s.angles[YAW] = old_yaw;
                 self->ideal_yaw = old_ideal_yaw;
@@ -1238,7 +1240,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
                 return true;
             }
 
-            if (self->monsterinfo.random_change_time < level.time && self->inuse) {
+            if (self->monsterinfo.random_change_time < level.time && self->r.inuse) {
                 self->monsterinfo.random_change_time = level.time + SEC(1.5f);
                 if (SV_NewChaseDir(self, path_to, dist))
                     return true;
@@ -1289,7 +1291,7 @@ static bool M_MoveToPath(edict_t *self, float dist)
         } else if (style == COMBAT_MELEE) {
             // path pretty close to the enemy, then let normal Quake movement take over.
             if (range_to(self, self->enemy) > 240 ||
-                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->maxs[2], -self->mins[2])) {
+                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2])) {
                 if (M_NavPathToGoal(self, dist, self->enemy->s.origin))
                     return true;
                 self->monsterinfo.aiflags &= ~AI_TEMP_MELEE_COMBAT;
@@ -1300,7 +1302,7 @@ static bool M_MoveToPath(edict_t *self, float dist)
         } else if (style == COMBAT_MIXED) {
             // most mixed combat AI have fairly short range attacks, so try to path within mid range.
             if (range_to(self, self->enemy) > RANGE_NEAR ||
-                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->maxs[2], -self->mins[2]) * 2.0f) {
+                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2]) * 2.0f) {
                 if (M_NavPathToGoal(self, dist, self->enemy->s.origin))
                     return true;
             } else {
@@ -1313,7 +1315,7 @@ static bool M_MoveToPath(edict_t *self, float dist)
             return true;
     }
 
-    if (!self->inuse)
+    if (!self->r.inuse)
         return false;
 
     if (self->monsterinfo.nav_path.returnCode > PathReturnCode_StartPathErrors) {
@@ -1373,11 +1375,11 @@ void M_MoveToGoal(edict_t *ent, float dist)
         VectorCopy(goal->s.origin, p);
         p[2] = ent->s.origin[2];
 
-        if (boxes_intersect(ent->absmin, ent->absmax, p, p)) {
+        if (boxes_intersect(ent->r.absmin, ent->r.absmax, p, p)) {
             // mark this so we don't do it again later
             goal->flags |= FL_PARTIALGROUND;
 
-            if (!boxes_intersect(ent->absmin, ent->absmax, goal->s.origin, goal->s.origin)) {
+            if (!boxes_intersect(ent->r.absmin, ent->r.absmax, goal->s.origin, goal->s.origin)) {
                 // move it if we would have touched it if the corner was lower
                 goal->s.origin[2] = p[2];
                 gi.linkentity(goal);

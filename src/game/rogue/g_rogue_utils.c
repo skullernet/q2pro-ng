@@ -27,15 +27,15 @@ edict_t *findradius2(edict_t *from, const vec3_t org, float rad)
     else
         from++;
     for (; from < &g_edicts[globals.num_edicts]; from++) {
-        if (!from->inuse)
+        if (!from->r.inuse)
             continue;
-        if (from->solid == SOLID_NOT)
+        if (from->r.solid == SOLID_NOT)
             continue;
         if (!from->takedamage)
             continue;
         if (!(from->flags & FL_DAMAGEABLE))
             continue;
-        VectorAvg(from->mins, from->maxs, mid);
+        VectorAvg(from->r.mins, from->r.maxs, mid);
         VectorAdd(from->s.origin, mid, eorg);
         if (Distance(eorg, org) > rad)
             continue;

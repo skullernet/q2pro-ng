@@ -452,7 +452,7 @@ fire_heat
 static void heat_guardian_get_dist_vec(edict_t *heat, edict_t *target, float dist_to_target, vec3_t vec)
 {
     VectorCopy(target->s.origin, vec);
-    vec[2] += target->mins[2];
+    vec[2] += target->r.mins[2];
 
     float f = Q_clipf(dist_to_target / 500.0f, 0, 1) * 0.5f;
     VectorMA(vec, f, target->velocity, vec);
@@ -566,18 +566,18 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->movetype = MOVETYPE_FLYMISSILE;
     heat->clipmask = MASK_PROJECTILE;
     heat->flags |= FL_DAMAGEABLE;
-    heat->solid = SOLID_BBOX;
+    heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
     heat->s.scale = 1.5f;
-    heat->owner = self;
+    heat->r.owner = self;
     heat->touch = rocket_touch;
     heat->speed = speed / 2;
     heat->yaw_speed = speed * 2;
     heat->accel = turn_fraction;
     VectorCopy(rest_dir, heat->pos1);
-    VectorSet(heat->mins, -5, -5, -5);
-    VectorSet(heat->maxs, 5, 5, 5);
+    VectorSet(heat->r.mins, -5, -5, -5);
+    VectorSet(heat->r.maxs, 5, 5, 5);
     heat->health = 15;
     heat->takedamage = true;
     heat->die = guardian_heat_die;
@@ -751,8 +751,8 @@ static void guardian_explode(edict_t *self)
 {
     vec3_t pos;
 
-    VectorAdd(self->s.origin, self->mins, pos);
-    VectorMA(pos, frandom(), self->size, pos);
+    VectorAdd(self->s.origin, self->r.mins, pos);
+    VectorMA(pos, frandom(), self->r.size, pos);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1_BIG);
@@ -845,7 +845,7 @@ static void GuardianPowerups(edict_t *self)
     } else {
         for (int player = 1; player <= game.maxclients; player++) {
             ent = &g_edicts[player];
-            if (!ent->inuse)
+            if (!ent->r.inuse)
                 continue;
             if (!ent->client)
                 continue;
@@ -899,10 +899,10 @@ void SP_monster_guardian(edict_t *self)
     PrecacheGibs(guardian_gibs);
 
     self->s.modelindex = gi.modelindex("models/monsters/guardian/tris.md2");
-    VectorSet(self->mins, -78, -78, -66);
-    VectorSet(self->maxs, 78, 78, 76);
+    VectorSet(self->r.mins, -78, -78, -66);
+    VectorSet(self->r.maxs, 78, 78, 76);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 2500 * st.health_multiplier;
     self->gib_health = -200;

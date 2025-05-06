@@ -220,7 +220,7 @@ void MONSTERINFO_RUN(mutant_run)(edict_t *self)
 
 static void mutant_hit_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM, 0);
     else {
@@ -231,7 +231,7 @@ static void mutant_hit_left(edict_t *self)
 
 static void mutant_hit_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM, 0);
     else {
@@ -374,7 +374,7 @@ static bool mutant_check_jump(edict_t *self)
     //  return false;
 
     // don't jump if there's no way we can reach standing height
-    if (self->absmin[2] + 125 < self->enemy->absmin[2])
+    if (self->r.absmin[2] + 125 < self->enemy->absmin[2])
         return false;
 
     VectorSubtract(self->s.origin, self->enemy->s.origin, v);
@@ -489,8 +489,8 @@ void MONSTERINFO_SETSKIN(mutant_setskin)(edict_t *self)
 
 static void mutant_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -681,13 +681,13 @@ void SP_monster_mutant(edict_t *self)
     self->monsterinfo.aiflags |= AI_STINKY;
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/mutant/tris.md2");
 
     PrecacheGibs(mutant_gibs);
 
-    VectorSet(self->mins, -18, -18, -24);
-    VectorSet(self->maxs, 18, 18, 30);
+    VectorSet(self->r.mins, -18, -18, -24);
+    VectorSet(self->r.maxs, 18, 18, 30);
 
     self->health = 300 * st.health_multiplier;
     self->gib_health = -120;

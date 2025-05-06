@@ -638,13 +638,13 @@ void SP_monster_supertank(edict_t *self)
     gi.soundindex("tank/rocket.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/boss1/tris.md2");
 
     PrecacheGibs(supertank_gibs);
 
-    VectorSet(self->mins, -64, -64, 0);
-    VectorSet(self->maxs, 64, 64, 112);
+    VectorSet(self->r.mins, -64, -64, 0);
+    VectorSet(self->r.maxs, 64, 64, 112);
 
     self->health = 1500 * st.health_multiplier;
     self->gib_health = -500;

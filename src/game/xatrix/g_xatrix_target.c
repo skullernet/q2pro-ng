@@ -11,7 +11,7 @@ static void target_mal_laser_on(edict_t *self)
     if (!self->activator)
         self->activator = self;
     self->spawnflags |= SPAWNFLAG_LASER_ZAP | SPAWNFLAG_LASER_ON;
-    self->svflags &= ~SVF_NOCLIENT;
+    self->r.svflags &= ~SVF_NOCLIENT;
     self->flags |= FL_TRAP;
     // target_laser_think (self);
     self->nextthink = level.time + SEC(self->wait + self->delay);
@@ -47,7 +47,7 @@ void THINK(mal_laser_think)(edict_t *self)
 void SP_target_mal_laser(edict_t *self)
 {
     self->movetype = MOVETYPE_NONE;
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->s.renderfx |= RF_BEAM;
     self->s.modelindex = MODELINDEX_WORLD; // must be non-zero
     self->flags |= FL_TRAP_LASER_FIELD;
@@ -81,8 +81,8 @@ void SP_target_mal_laser(edict_t *self)
     if (!self->dmg)
         self->dmg = 5;
 
-    VectorSet(self->mins, -8, -8, -8);
-    VectorSet(self->maxs, 8, 8, 8);
+    VectorSet(self->r.mins, -8, -8, -8);
+    VectorSet(self->r.maxs, 8, 8, 8);
 
     self->nextthink = level.time + SEC(self->delay);
     self->think = mal_laser_think;

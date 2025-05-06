@@ -163,15 +163,15 @@ void SP_func_door_secret2(edict_t *ent)
 
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     gi.setmodel(ent, ent->model);
 
     if (ent->move_angles[1] == 0 || ent->move_angles[1] == 180) {
-        lrSize = ent->size[1];
-        fbSize = ent->size[0];
+        lrSize = ent->r.size[1];
+        fbSize = ent->r.size[0];
     } else if (ent->move_angles[1] == 90 || ent->move_angles[1] == 270) {
-        lrSize = ent->size[0];
-        fbSize = ent->size[1];
+        lrSize = ent->r.size[0];
+        fbSize = ent->r.size[1];
     } else {
         gi.dprintf("%s not at 0,90,180,270!\n", etos(ent));
         G_FreeEdict(ent);
@@ -261,20 +261,20 @@ void SP_func_force_wall(edict_t *ent)
 {
     gi.setmodel(ent, ent->model);
 
-    VectorAvg(ent->absmin, ent->absmax, ent->offset);
+    VectorAvg(ent->r.absmin, ent->r.absmax, ent->offset);
 
-    ent->pos1[2] = ent->absmax[2];
-    ent->pos2[2] = ent->absmax[2];
-    if (ent->size[0] > ent->size[1]) {
-        ent->pos1[0] = ent->absmin[0];
-        ent->pos2[0] = ent->absmax[0];
+    ent->pos1[2] = ent->r.absmax[2];
+    ent->pos2[2] = ent->r.absmax[2];
+    if (ent->r.size[0] > ent->r.size[1]) {
+        ent->pos1[0] = ent->r.absmin[0];
+        ent->pos2[0] = ent->r.absmax[0];
         ent->pos1[1] = ent->offset[1];
         ent->pos2[1] = ent->offset[1];
     } else {
         ent->pos1[0] = ent->offset[0];
         ent->pos2[0] = ent->offset[0];
-        ent->pos1[1] = ent->absmin[1];
-        ent->pos2[1] = ent->absmax[1];
+        ent->pos1[1] = ent->r.absmin[1];
+        ent->pos2[1] = ent->r.absmax[1];
     }
 
     if (!ent->style)
@@ -284,15 +284,15 @@ void SP_func_force_wall(edict_t *ent)
     ent->wait = 1;
 
     if (ent->spawnflags & SPAWNFLAG_FORCEWALL_START_ON) {
-        ent->solid = SOLID_BSP;
+        ent->r.solid = SOLID_BSP;
         ent->think = force_wall_think;
         ent->nextthink = level.time + HZ(10);
     } else
-        ent->solid = SOLID_NOT;
+        ent->r.solid = SOLID_NOT;
 
     ent->use = force_wall_use;
 
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
 
     gi.linkentity(ent);
 }

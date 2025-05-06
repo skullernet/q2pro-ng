@@ -606,33 +606,33 @@ static void turret_wall_spawn(edict_t *turret)
         angle = -2;
     switch (angle) {
     case -1:
-        VectorSet(ent->mins, -16, -16, -8);
-        VectorSet(ent->maxs, 16, 16, 0);
+        VectorSet(ent->r.mins, -16, -16, -8);
+        VectorSet(ent->r.maxs, 16, 16, 0);
         break;
     case -2:
-        VectorSet(ent->mins, -16, -16, 0);
-        VectorSet(ent->maxs, 16, 16, 8);
+        VectorSet(ent->r.mins, -16, -16, 0);
+        VectorSet(ent->r.maxs, 16, 16, 8);
         break;
     case 0:
-        VectorSet(ent->mins, -8, -16, -16);
-        VectorSet(ent->maxs, 0, 16, 16);
+        VectorSet(ent->r.mins, -8, -16, -16);
+        VectorSet(ent->r.maxs, 0, 16, 16);
         break;
     case 90:
-        VectorSet(ent->mins, -16, -8, -16);
-        VectorSet(ent->maxs, 16, 0, 16);
+        VectorSet(ent->r.mins, -16, -8, -16);
+        VectorSet(ent->r.maxs, 16, 0, 16);
         break;
     case 180:
-        VectorSet(ent->mins, 0, -16, -16);
-        VectorSet(ent->maxs, 8, 16, 16);
+        VectorSet(ent->r.mins, 0, -16, -16);
+        VectorSet(ent->r.maxs, 8, 16, 16);
         break;
     case 270:
-        VectorSet(ent->mins, -16, 0, -16);
-        VectorSet(ent->maxs, 16, 8, 16);
+        VectorSet(ent->r.mins, -16, 0, -16);
+        VectorSet(ent->r.maxs, 16, 8, 16);
         break;
     }
 
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
 
     ent->teammaster = turret;
     turret->flags |= FL_TEAMMASTER;
@@ -640,7 +640,7 @@ static void turret_wall_spawn(edict_t *turret)
     turret->teamchain = ent;
     ent->teamchain = NULL;
     ent->flags |= FL_TEAMSLAVE;
-    ent->owner = turret;
+    ent->r.owner = turret;
 
     ent->s.modelindex = gi.modelindex("models/monsters/turretbase/tris.md2");
 
@@ -841,10 +841,10 @@ void SP_monster_turret(edict_t *self)
 
     self->s.modelindex = gi.modelindex("models/monsters/turret/tris.md2");
 
-    VectorSet(self->mins, -12, -12, -12);
-    VectorSet(self->maxs, 12, 12, 12);
+    VectorSet(self->r.mins, -12, -12, -12);
+    VectorSet(self->r.maxs, 12, 12, 12);
     self->movetype = MOVETYPE_NONE;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 50 * st.health_multiplier;
     self->gib_health = -100;

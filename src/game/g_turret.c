@@ -213,7 +213,7 @@ void THINK(turret_breach_finish_init)(edict_t *self)
 
 void SP_turret_breach(edict_t *self)
 {
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     self->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
@@ -259,7 +259,7 @@ MUST be teamed with a turret_breach.
 
 void SP_turret_base(edict_t *self)
 {
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     self->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
@@ -409,10 +409,10 @@ void SP_turret_driver(edict_t *self)
     InfantryPrecache();
 
     self->movetype = MOVETYPE_PUSH;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
 
     self->health = self->max_health = 100;
     self->gib_health = -40;
@@ -429,7 +429,7 @@ void SP_turret_driver(edict_t *self)
         level.monsters_registered[level.total_monsters] = self;
     level.total_monsters++;
 
-    self->svflags |= SVF_MONSTER;
+    self->r.svflags |= SVF_MONSTER;
     self->takedamage = true;
     self->use = monster_use;
     self->clipmask = MASK_MONSTERSOLID;

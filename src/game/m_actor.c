@@ -251,10 +251,10 @@ static void actorMachineGun(edict_t *self)
 
 static void actor_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -384,10 +384,10 @@ void SP_misc_actor(edict_t *self)
     }
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("players/male/tris.md2");
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
 
     if (!self->health)
         self->health = 100;
@@ -512,11 +512,11 @@ void SP_target_actor(edict_t *self)
     if (!self->targetname)
         gi.dprintf("%s: no targetname\n", etos(self));
 
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->touch = target_actor_touch;
-    VectorSet(self->mins, -8, -8, -8);
-    VectorSet(self->maxs, 8, 8, 8);
-    self->svflags = SVF_NOCLIENT;
+    VectorSet(self->r.mins, -8, -8, -8);
+    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.svflags = SVF_NOCLIENT;
 
     if (self->spawnflags & SPAWNFLAG_TARGET_ACTOR_JUMP) {
         if (!self->speed)

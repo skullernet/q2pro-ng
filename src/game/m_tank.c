@@ -828,15 +828,15 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
 
 static void tank_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -16);
-    VectorSet(self->maxs, 16, 16, -0);
+    VectorSet(self->r.mins, -16, -16, -16);
+    VectorSet(self->r.maxs, 16, 16, -0);
     monster_dead(self);
 }
 
 static void tank_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -977,10 +977,10 @@ void SP_monster_tank(edict_t *self)
     }
 
     self->s.modelindex = gi.modelindex("models/monsters/tank/tris.md2");
-    VectorSet(self->mins, -32, -32, -16);
-    VectorSet(self->maxs, 32, 32, 64);
+    VectorSet(self->r.mins, -32, -32, -16);
+    VectorSet(self->r.maxs, 32, 32, 64);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     G_AddPrecache(tank_precache);
 
@@ -1071,7 +1071,7 @@ void SP_monster_tank_stand(edict_t *self)
     }
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->model = "models/monsters/tank/tris.md2";
     self->s.modelindex = gi.modelindex(self->model);
     self->s.frame = FRAME_stand01;
@@ -1079,14 +1079,14 @@ void SP_monster_tank_stand(edict_t *self)
 
     gi.soundindex("misc/bigtele.wav");
 
-    VectorSet(self->mins, -32, -32, -16);
-    VectorSet(self->maxs, 32, 32, 64);
+    VectorSet(self->r.mins, -32, -32, -16);
+    VectorSet(self->r.maxs, 32, 32, 64);
 
     if (!self->s.scale)
         self->s.scale = 1.5f;
 
-    VectorScale(self->mins, self->s.scale, self->mins);
-    VectorScale(self->maxs, self->s.scale, self->maxs);
+    VectorScale(self->r.mins, self->s.scale, self->r.mins);
+    VectorScale(self->r.maxs, self->s.scale, self->r.maxs);
 
     self->use = Use_Boss3;
     self->think = Think_TankStand;

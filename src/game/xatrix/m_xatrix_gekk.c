@@ -71,7 +71,7 @@ static bool gekk_check_jump(edict_t *self)
     vec3_t v;
 
     // don't jump if there's no way we can reach standing height
-    if (self->absmin[2] + 125 < self->enemy->absmin[2])
+    if (self->r.absmin[2] + 125 < self->enemy->absmin[2])
         return false;
 
     VectorSubtract(self->s.origin, self->enemy->s.origin, v);
@@ -94,7 +94,7 @@ static bool gekk_check_jump_close(edict_t *self)
     v[2] = 0;
 
     // don't do this if our head is below their feet
-    if (VectorLength(v) < 100 && self->absmax[2] <= self->enemy->absmin[2])
+    if (VectorLength(v) < 100 && self->r.absmax[2] <= self->enemy->absmin[2])
         return false;
 
     return true;
@@ -573,7 +573,7 @@ static void gekk_hit_left(edict_t *self)
     if (!self->enemy)
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM, 0);
     else {
@@ -587,7 +587,7 @@ static void gekk_hit_right(edict_t *self)
     if (!self->enemy)
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
         gi.sound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM, 0);
     else {
@@ -644,18 +644,18 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     VectorScale(dir, speed, loogie->velocity);
     loogie->movetype = MOVETYPE_FLYMISSILE;
     loogie->clipmask = MASK_PROJECTILE;
-    loogie->solid = SOLID_BBOX;
+    loogie->r.solid = SOLID_BBOX;
     // Paril: this was originally the wrong effect,
     // but it makes it look more acid-y.
     loogie->s.effects |= EF_BLASTER;
     loogie->s.renderfx |= RF_FULLBRIGHT;
     loogie->s.modelindex = gi.modelindex("models/objects/loogy/tris.md2");
-    loogie->owner = self;
+    loogie->r.owner = self;
     loogie->touch = loogie_touch;
     loogie->nextthink = level.time + SEC(2);
     loogie->think = G_FreeEdict;
     loogie->dmg = damage;
-    loogie->svflags |= SVF_PROJECTILE;
+    loogie->r.svflags |= SVF_PROJECTILE;
     gi.linkentity(loogie);
 
     gi.trace(&tr, self->s.origin, NULL, NULL, loogie->s.origin, loogie, MASK_PROJECTILE);
@@ -1078,8 +1078,8 @@ void PAIN(gekk_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
 static void gekk_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
@@ -1113,8 +1113,8 @@ static void isgibfest(edict_t *self)
 
 static void gekk_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -1505,10 +1505,10 @@ void SP_monster_gekk(edict_t *self)
     G_AddPrecache(gekk_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/gekk/tris.md2");
-    VectorSet(self->mins, -18, -18, -24);
-    VectorSet(self->maxs, 18, 18, 24);
+    VectorSet(self->r.mins, -18, -18, -24);
+    VectorSet(self->r.maxs, 18, 18, 24);
 
     PrecacheGibs(gekk_gibs);
 
@@ -1575,6 +1575,6 @@ static void land_to_water(edict_t *self)
 
     M_SetAnimation(self, &gekk_move_swim_start);
 
-    VectorSet(self->mins, -18, -18, -24);
-    VectorSet(self->maxs, 18, 18, 16);
+    VectorSet(self->r.mins, -18, -18, -24);
+    VectorSet(self->r.maxs, 18, 18, 16);
 }

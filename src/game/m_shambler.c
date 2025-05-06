@@ -73,7 +73,7 @@ static void shambler_windup(edict_t *self)
     edict_t *lightning = self->beam = G_Spawn();
     lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
-    lightning->owner = self;
+    lightning->r.owner = self;
     shambler_lightning_update(self);
 }
 
@@ -339,7 +339,7 @@ static void sham_smash10(edict_t *self)
     if (!CanDamage(self->enemy, self))
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
     bool hit = fire_hit(self, aim, irandom2(110, 120), 120); // Slower attack
 
     if (hit)
@@ -356,7 +356,7 @@ static void ShamClaw(edict_t *self)
     if (!CanDamage(self->enemy, self))
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
     bool hit = fire_hit(self, aim, irandom2(70, 80), 80); // Slower attack
 
     if (hit)
@@ -443,15 +443,15 @@ void MONSTERINFO_MELEE(shambler_melee)(edict_t *self)
 
 static void shambler_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -0);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -0);
     monster_dead(self);
 }
 
 static void shambler_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -530,10 +530,10 @@ void SP_monster_shambler(edict_t *self)
     }
 
     self->s.modelindex = gi.modelindex("models/monsters/shambler/tris.md2");
-    VectorSet(self->mins, -32, -32, -24);
-    VectorSet(self->maxs, 32, 32, 64);
+    VectorSet(self->r.mins, -32, -32, -24);
+    VectorSet(self->r.maxs, 32, 32, 64);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     gi.modelindex("models/proj/lightning/tris.md2");
 

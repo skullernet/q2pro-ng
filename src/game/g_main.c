@@ -460,7 +460,7 @@ static void ClientEndServerFrames(void)
     // and damage has been added
     for (int i = 0; i < game.maxclients; i++) {
         ent = g_edicts + 1 + i;
-        if (!ent->inuse || !ent->client)
+        if (!ent->r.inuse || !ent->client)
             continue;
         ClientEndServerFrame(ent);
     }
@@ -657,7 +657,7 @@ static void CheckDMRules(void)
 
         for (int i = 0; i < game.maxclients; i++) {
             cl = game.clients + i;
-            if (!g_edicts[i + 1].inuse)
+            if (!g_edicts[i + 1].r.inuse)
                 continue;
 
             if (cl->resp.score >= fraglimit->integer) {
@@ -717,7 +717,7 @@ static void ExitLevel(void)
         // give all players their lives back
         if (g_coop_enable_lives->integer) {
             for (int i = 0; i < game.maxclients; i++) {
-                if (g_edicts[i + 1].inuse)
+                if (g_edicts[i + 1].r.inuse)
                     game.clients[i].pers.lives = g_coop_num_lives->integer + 1;
             }
         }
@@ -757,7 +757,7 @@ static bool G_AnyDeadPlayersWithoutLives(void)
 {
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (player->inuse && player->health <= 0 && !player->client->pers.lives)
+        if (player->r.inuse && player->health <= 0 && !player->client->pers.lives)
             return true;
     }
 
@@ -786,7 +786,7 @@ static void G_RunFrame_(bool main_loop)
             float alpha = Q_clipf(1.3f - TO_SEC(level.intermission_fade_time - level.time), 0, 1);
 
             for (int i = 0; i < game.maxclients; i++) {
-                if (g_edicts[i + 1].inuse)
+                if (g_edicts[i + 1].r.inuse)
                     Vector4Set(game.clients[i].ps.screen_blend, 0, 0, 0, alpha);
             }
         } else {
@@ -822,7 +822,7 @@ static void G_RunFrame_(bool main_loop)
     if (coop->integer && (g_coop_enable_lives->integer || g_coop_squad_respawn->integer)) {
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
-            if (!player->inuse)
+            if (!player->r.inuse)
                 continue;
             if (player->client->respawn_time >= level.time)
                 player->client->coop_respawn_state = COOP_RESPAWN_WAITING;
@@ -841,7 +841,7 @@ static void G_RunFrame_(bool main_loop)
     //
     ent = &g_edicts[0];
     for (int i = 0; i < globals.num_edicts; i++, ent++) {
-        if (!ent->inuse) {
+        if (!ent->r.inuse) {
             // defer removing client info so that disconnected, etc works
             if (i > 0 && i <= game.maxclients) {
                 if (ent->timestamp && level.time < ent->timestamp) {
@@ -863,7 +863,7 @@ static void G_RunFrame_(bool main_loop)
         if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount)) {
             contents_t mask = G_GetClipMask(ent);
 
-            if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER)) {
+            if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->r.svflags & SVF_MONSTER)) {
                 ent->groundentity = NULL;
                 M_CheckGround(ent, mask);
             } else {
@@ -871,7 +871,7 @@ static void G_RunFrame_(bool main_loop)
                 vec3_t end;
                 VectorAdd(ent->s.origin, ent->gravityVector, end);
                 trace_t tr;
-                gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, end, ent, mask);
+                gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent, mask);
 
                 if (tr.startsolid || tr.allsolid || tr.ent != ent->groundentity)
                     ent->groundentity = NULL;
@@ -902,7 +902,7 @@ static void G_RunFrame_(bool main_loop)
 
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
-            if (player->inuse && player->health > 0) {
+            if (player->r.inuse && player->health > 0) {
                 reset_coop_respawn = false;
                 break;
             }
@@ -911,7 +911,7 @@ static void G_RunFrame_(bool main_loop)
         if (reset_coop_respawn) {
             for (int i = 1; i <= game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
-                if (player->inuse)
+                if (player->r.inuse)
                     player->client->coop_respawn_state = COOP_RESPAWN_NONE;
             }
         }
@@ -922,14 +922,14 @@ static void G_RunFrame_(bool main_loop)
 
     // [Paril-KEX] if not in intermission and player 1 is loaded in
     // the game as an entity, increase timer on current entry
-    if (level.entry && !level.intermissiontime && g_edicts[1].inuse && g_edicts[1].client->pers.connected)
+    if (level.entry && !level.intermissiontime && g_edicts[1].r.inuse && g_edicts[1].client->pers.connected)
         level.entry->time += FRAME_TIME;
 
     // [Paril-KEX] run monster pains now
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *e = &g_edicts[i];
 
-        if (!e->inuse || !(e->svflags & SVF_MONSTER))
+        if (!e->r.inuse || !(e->r.svflags & SVF_MONSTER))
             continue;
 
         M_ProcessPain(e);
@@ -942,7 +942,7 @@ static bool G_AnyPlayerSpawned(void)
 {
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (player->inuse && player->client && player->client->pers.spawned)
+        if (player->r.inuse && player->client && player->client->pers.spawned)
             return true;
     }
 

@@ -62,7 +62,7 @@ void USE(rotating_light_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_rotating_light(edict_t *self)
 {
     self->movetype = MOVETYPE_STOP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->s.modelindex = gi.modelindex("models/objects/light/tris.md2");
 
@@ -150,10 +150,10 @@ void THINK(object_repair_sparks)(edict_t *ent)
 void SP_object_repair(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
-    ent->solid = SOLID_BBOX;
+    ent->r.solid = SOLID_BBOX;
     ent->classname = "object_repair";
-    VectorSet(ent->mins, -8, -8, 8);
-    VectorSet(ent->maxs, 8, 8, 8);
+    VectorSet(ent->r.mins, -8, -8, 8);
+    VectorSet(ent->r.maxs, 8, 8, 8);
     ent->think = object_repair_sparks;
     ent->nextthink = level.time + SEC(1);
     ent->health = 100;

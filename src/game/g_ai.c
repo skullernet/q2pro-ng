@@ -36,13 +36,13 @@ edict_t *AI_GetSightClient(edict_t *self)
 
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (!player->inuse || player->health <= 0 || player->deadflag || !player->solid)
+        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
         if (player->flags & (FL_NOTARGET | FL_DISGUISED))
             continue;
 
         // if we're touching them, allow to pass through
-        if (!boxes_intersect(self->absmin, self->absmax, player->absmin, player->absmax))
+        if (!boxes_intersect(self->r.absmin, self->r.absmax, player->r.absmin, player->r.absmax))
             if ((!(self->monsterinfo.aiflags & AI_THIRD_EYE) && !infront(self, player)) || !visible(self, player))
                 continue;
 
@@ -92,7 +92,7 @@ void ai_stand(edict_t *self, float dist)
         // [Paril-KEX] check if we've been pushed out of our point_combat
         if (!(self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND) &&
             self->movetarget && self->movetarget->classname && !strcmp(self->movetarget->classname, "point_combat")) {
-            if (!boxes_intersect(self->absmin, self->absmax, self->movetarget->absmin, self->movetarget->absmax)) {
+            if (!boxes_intersect(self->r.absmin, self->r.absmax, self->movetarget->absmin, self->movetarget->absmax)) {
                 self->monsterinfo.aiflags &= ~AI_STAND_GROUND;
                 self->monsterinfo.aiflags |= AI_COMBAT_POINT;
                 self->goalentity = self->movetarget;
@@ -345,7 +345,8 @@ mid     infront and show hostile
 */
 float range_to(edict_t *self, edict_t *other)
 {
-    return distance_between_boxes(self->absmin, self->absmax, other->absmin, other->absmax);
+    return distance_between_boxes(self->r.absmin, self->r.absmax,
+                                  other->r.absmin, other->r.absmax);
 }
 
 /*
@@ -366,10 +367,10 @@ bool visible_ex(edict_t *self, edict_t *other, bool through_glass)
     if (other->client) {
         // always visible in rtest
         if (self->hackflags & HACKFLAG_ATTACK_PLAYER)
-            return self->inuse;
+            return self->r.inuse;
 
         // fix intermission
-        if (!other->solid)
+        if (!other->r.solid)
             return false;
 
         if (other->client->invisible_time > level.time) {
@@ -535,7 +536,7 @@ static edict_t *AI_GetMonsterAlertedByPlayers(edict_t *self)
         edict_t *player = &g_edicts[i];
 
         // dead
-        if (!player->inuse || player->health <= 0 || player->deadflag || !player->solid)
+        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
 
         // we didn't alert any other monster, or it wasn't recently
@@ -563,7 +564,7 @@ static edict_t *AI_GetSoundClient(edict_t *self, bool direct)
         edict_t *player = &g_edicts[i];
 
         // dead
-        if (!player->inuse || player->health <= 0 || player->deadflag || !player->solid)
+        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
 
         edict_t *sound = direct ? player->client->sound_entity : player->client->sound2_entity;
@@ -694,7 +695,7 @@ bool FindTarget(edict_t *self)
         return false; // no clients to get mad at
 
     // if the entity went away, forget it
-    if (!client->inuse)
+    if (!client->r.inuse)
         return false;
 
     if (client == self->enemy) {
@@ -726,14 +727,14 @@ bool FindTarget(edict_t *self)
         heardit = false;
     // ROGUE
 
-    if (client->svflags & SVF_MONSTER) {
+    if (client->r.svflags & SVF_MONSTER) {
         if (!client->enemy)
             return false;
         if (client->enemy->flags & FL_NOTARGET)
             return false;
     } else if (heardit) {
         // pgm - a little more paranoia won't hurt....
-        if ((client->owner) && (client->owner->flags & FL_NOTARGET))
+        if ((client->r.owner) && (client->r.owner->flags & FL_NOTARGET))
             return false;
     } else if (!client->client)
         return false;
@@ -1287,7 +1288,7 @@ void ai_run(edict_t *self, float dist)
 
         // nb: this is done from the centroid and not viewheight on purpose;
         vec3_t mid;
-        VectorAvg(self->absmax, self->absmin, mid);
+        VectorAvg(self->r.absmax, self->r.absmin, mid);
         trace_t tr;
         gi.trace(&tr, mid, trace_mins, trace_maxs, self->movetarget->s.origin, self, CONTENTS_SOLID);
 
@@ -1295,7 +1296,7 @@ void ai_run(edict_t *self, float dist)
         // from our path_corner, or we can't see it any more, assume all
         // is lost.
         vec3_t point;
-        closest_point_to_box(self->movetarget->s.origin, self->absmin, self->absmax, point);
+        closest_point_to_box(self->movetarget->s.origin, self->r.absmin, self->r.absmax, point);
         float dist = Distance(point, self->movetarget->s.origin);
         if ((dist > 160) || (tr.fraction < 1.0f && tr.plane.normal[2] <= 0.7f)) { // if we hit a climbable, ignore this result
             self->monsterinfo.aiflags &= ~AI_COMBAT_POINT;
@@ -1316,7 +1317,7 @@ void ai_run(edict_t *self, float dist)
     if (self->monsterinfo.aiflags & AI_HINT_PATH) {
         // determine direction to our destination hintpath.
         M_MoveToGoal(self, dist);
-        if (!self->inuse)
+        if (!self->r.inuse)
             return;
 
         // first off, make sure we're looking for the player, not a noise he made
@@ -1382,7 +1383,7 @@ void ai_run(edict_t *self, float dist)
         // ROGUE - prevent double moves for sound_targets
         alreadyMoved = true;
 
-        if (!self->inuse)
+        if (!self->r.inuse)
             return; // PGM - g_touchtrigger free problem
         // ROGUE
 
@@ -1450,7 +1451,7 @@ void ai_run(edict_t *self, float dist)
         // PMM - check for alreadyMoved
         if (!alreadyMoved)
             M_MoveToGoal(self, dist);
-        if (!self->inuse)
+        if (!self->r.inuse)
             return; // PGM - g_touchtrigger free problem
 
         if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
@@ -1550,7 +1551,7 @@ void ai_run(edict_t *self, float dist)
     }
 
     if (!(self->monsterinfo.aiflags & AI_PATHING) &&
-        boxes_intersect(self->monsterinfo.last_sighting, self->monsterinfo.last_sighting, self->absmin, self->absmax)) {
+        boxes_intersect(self->monsterinfo.last_sighting, self->monsterinfo.last_sighting, self->r.absmin, self->r.absmax)) {
         self->monsterinfo.aiflags |= AI_PURSUE_NEXT;
         dist = min(dist, Distance(self->s.origin, self->monsterinfo.last_sighting));
         // [Paril-KEX] this helps them navigate corners when two next pursuits
@@ -1561,7 +1562,8 @@ void ai_run(edict_t *self, float dist)
     VectorCopy(self->monsterinfo.last_sighting, self->goalentity->s.origin);
 
     if (newEnemy) {
-        gi.trace(&tr, self->s.origin, self->mins, self->maxs, self->monsterinfo.last_sighting, self, MASK_PLAYERSOLID);
+        gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                 self->monsterinfo.last_sighting, self, MASK_PLAYERSOLID);
         if (tr.fraction < 1) {
             VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
             d1 = VectorLength(v);
@@ -1573,12 +1575,14 @@ void ai_run(edict_t *self, float dist)
 
             VectorSet(v, d2, -16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, left_target);
-            gi.trace(&tr, self->s.origin, self->mins, self->maxs, left_target, self, MASK_PLAYERSOLID);
+            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                     left_target, self, MASK_PLAYERSOLID);
             left = tr.fraction;
 
             VectorSet(v, d2, 16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, right_target);
-            gi.trace(&tr, self->s.origin, self->mins, self->maxs, right_target, self, MASK_PLAYERSOLID);
+            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                     right_target, self, MASK_PLAYERSOLID);
             right = tr.fraction;
 
             center = (d1 * center) / d2;
@@ -1613,6 +1617,6 @@ void ai_run(edict_t *self, float dist)
 
     G_FreeEdict(tempgoal);
 
-    if (self->inuse)
+    if (self->r.inuse)
         self->goalentity = save;
 }

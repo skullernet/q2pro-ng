@@ -56,10 +56,10 @@ static void sphere_fly(edict_t *self)
         return;
     }
 
-    VectorCopy(self->owner->s.origin, dest);
-    dest[2] = self->owner->absmax[2] + 4;
+    VectorCopy(self->r.owner->s.origin, dest);
+    dest[2] = self->r.owner->absmax[2] + 4;
 
-    if (!(level.time % HZ(1)) && !visible(self, self->owner)) {
+    if (!(level.time % HZ(1)) && !visible(self, self->r.owner)) {
         VectorCopy(dest, self->s.origin);
         gi.linkentity(self);
         return;
@@ -167,10 +167,10 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
             return;
 
         self->takedamage = false;
-        self->owner = self->teammaster;
+        self->r.owner = self->teammaster;
         self->teammaster = NULL;
     } else {
-        if (other == self->owner)
+        if (other == self->r.owner)
             return;
         // PMM - don't blow up on bodies
         if (!strcmp(other->classname, "bodyque"))
@@ -182,12 +182,14 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
         return;
     }
 
-    if (self->owner) {
+    if (self->r.owner) {
         if (other->takedamage) {
-            T_Damage(other, self, self->owner, self->velocity, self->s.origin, tr->plane.normal,
+            T_Damage(other, self, self->r.owner, self->velocity,
+                     self->s.origin, tr->plane.normal,
                      10000, 1, DAMAGE_DESTROY_ARMOR, mod);
         } else {
-            T_RadiusDamage(self, self->owner, 512, self->owner, 256, DAMAGE_NONE, mod);
+            T_RadiusDamage(self, self->r.owner, 512, self->r.owner, 256,
+                           DAMAGE_NONE, mod);
         }
     }
 
@@ -231,10 +233,10 @@ static void defender_shoot(edict_t *self, edict_t *enemy)
     vec3_t dir;
     vec3_t start;
 
-    if (!enemy->inuse || enemy->health <= 0)
+    if (!enemy->r.inuse || enemy->health <= 0)
         return;
 
-    if (enemy == self->owner)
+    if (enemy == self->r.owner)
         return;
 
     if (self->monsterinfo.attack_finished > level.time)
@@ -248,7 +250,7 @@ static void defender_shoot(edict_t *self, edict_t *enemy)
 
     VectorCopy(self->s.origin, start);
     start[2] += 2;
-    fire_blaster2(self->owner, start, dir, 10, 1000, EF_BLASTER, 0);
+    fire_blaster2(self->r.owner, start, dir, 10, 1000, EF_BLASTER, 0);
 
     self->monsterinfo.attack_finished = level.time + SEC(0.4f);
 }
@@ -495,9 +497,9 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
 
     sphere = G_Spawn();
     VectorCopy(owner->s.origin, sphere->s.origin);
-    sphere->s.origin[2] = owner->absmax[2];
+    sphere->s.origin[2] = owner->r.absmax[2];
     sphere->s.angles[YAW] = owner->s.angles[YAW];
-    sphere->solid = SOLID_BBOX;
+    sphere->r.solid = SOLID_BBOX;
     sphere->clipmask = MASK_PROJECTILE;
     sphere->s.renderfx = RF_FULLBRIGHT | RF_IR_VISIBLE;
     sphere->movetype = MOVETYPE_FLYMISSILE;
@@ -505,7 +507,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
     if (spawnflags & SPHERE_DOPPLEGANGER)
         sphere->teammaster = owner->teammaster;
     else
-        sphere->owner = owner;
+        sphere->r.owner = owner;
 
     sphere->classname = "sphere";
     sphere->yaw_speed = 40;

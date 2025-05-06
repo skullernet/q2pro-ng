@@ -43,7 +43,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     VectorCopy(start, flechette->s.old_origin);
     vectoangles(dir, flechette->s.angles);
     VectorScale(dir, speed, flechette->velocity);
-    flechette->svflags |= SVF_PROJECTILE;
+    flechette->r.svflags |= SVF_PROJECTILE;
     flechette->movetype = MOVETYPE_FLYMISSILE;
     flechette->clipmask = MASK_PROJECTILE;
     flechette->flags |= FL_DODGE;
@@ -52,11 +52,11 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     if (self->client && !G_ShouldPlayersCollide(true))
         flechette->clipmask &= ~CONTENTS_PLAYER;
 
-    flechette->solid = SOLID_BBOX;
+    flechette->r.solid = SOLID_BBOX;
     flechette->s.renderfx = RF_FULLBRIGHT;
     flechette->s.modelindex = gi.modelindex("models/proj/flechette/tris.md2");
 
-    flechette->owner = self;
+    flechette->r.owner = self;
     flechette->touch = flechette_touch;
     flechette->nextthink = level.time + SEC(8000.0f / speed);
     flechette->think = G_FreeEdict;
@@ -197,7 +197,7 @@ void THINK(prox_seek)(edict_t *ent)
 
 static bool monster_or_player(edict_t *ent)
 {
-    return ((ent->svflags & SVF_MONSTER) || (deathmatch->integer && (ent->client || !strcmp(ent->classname, "prox_mine")))) && (ent->health > 0);
+    return ((ent->r.svflags & SVF_MONSTER) || (deathmatch->integer && (ent->client || !strcmp(ent->classname, "prox_mine")))) && (ent->health > 0);
 }
 
 bool player_start_point(edict_t *ent)
@@ -392,8 +392,8 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     VectorCopy(dir, prox->s.angles);
     prox->s.angles[PITCH] -= 90;
     prox->movetype = MOVETYPE_BOUNCE;
-    prox->solid = SOLID_BBOX;
-    prox->svflags |= SVF_PROJECTILE;
+    prox->r.solid = SOLID_BBOX;
+    prox->r.svflags |= SVF_PROJECTILE;
     prox->s.effects |= EF_GRENADE;
     prox->flags |= (FL_DODGE | FL_TRAP);
     prox->clipmask = MASK_PROJECTILE | CONTENTS_LAVA | CONTENTS_SLIME;
@@ -405,10 +405,10 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     prox->s.renderfx |= RF_IR_VISIBLE;
     // FIXME - this needs to be bigger.  Has other effects, though.  Maybe have to change origin to compensate
     //  so it sinks in correctly.  Also in lavacheck, might have to up the distance
-    VectorSet(prox->mins, -6, -6, -6);
-    VectorSet(prox->maxs, 6, 6, 6);
+    VectorSet(prox->r.mins, -6, -6, -6);
+    VectorSet(prox->r.maxs, 6, 6, 6);
     prox->s.modelindex = gi.modelindex("models/weapons/g_prox/tris.md2");
-    prox->owner = self;
+    prox->r.owner = self;
     prox->teammaster = self;
     prox->touch = prox_land;
     prox->think = Prox_Think;
@@ -445,8 +445,8 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
 {
     vec3_t mins, maxs;
     for (int i = 0; i < 3; i++) {
-        mins[i] = self->absmin[i] - reach + 1;
-        maxs[i] = self->absmax[i] + reach - 1;
+        mins[i] = self->r.absmin[i] - reach + 1;
+        maxs[i] = self->r.absmax[i] + reach - 1;
     }
 
     // find all the things we could maybe hit
@@ -458,15 +458,17 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
     for (int i = 0; i < count; i++) {
         edict_t *check = list[i];
 
-        if (check == self || !check->inuse || !check->takedamage)
+        if (check == self || !check->r.inuse || !check->takedamage)
             continue;
 
         // check distance
         vec3_t closest_point_to_check;
         vec3_t closest_point_to_self;
 
-        closest_point_to_box(start, check->absmin, check->absmax, closest_point_to_check);
-        closest_point_to_box(closest_point_to_check, self->absmin, self->absmax, closest_point_to_self);
+        closest_point_to_box(start, check->r.absmin, check->r.absmax,
+                             closest_point_to_check);
+        closest_point_to_box(closest_point_to_check, self->r.absmin,
+                             self->r.absmax, closest_point_to_self);
 
         if (Distance(closest_point_to_check, closest_point_to_self) > reach)
             continue;
@@ -475,15 +477,15 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
         static const vec3_t shrink = { 2, 2, 2 };
         vec3_t mins2, maxs2;
 
-        VectorAdd(self->absmin, shrink, mins);
-        VectorSubtract(self->absmax, shrink, maxs);
+        VectorAdd(self->r.absmin, shrink, mins);
+        VectorSubtract(self->r.absmax, shrink, maxs);
 
-        VectorAdd(check->absmin, shrink, mins2);
-        VectorSubtract(check->absmax, shrink, maxs2);
+        VectorAdd(check->r.absmin, shrink, mins2);
+        VectorSubtract(check->r.absmax, shrink, maxs2);
 
         if (!boxes_intersect(mins, maxs, mins2, maxs2)) {
             vec3_t point, dir;
-            VectorAvg(check->absmin, check->absmax, point);
+            VectorAvg(check->r.absmin, check->r.absmax, point);
             VectorSubtract(point, start, dir);
             VectorNormalize(dir);
             if (DotProduct(dir, aim) < 0.70f)
@@ -494,7 +496,7 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
             continue;
 
         // do the damage
-        if (check->svflags & SVF_MONSTER)
+        if (check->r.svflags & SVF_MONSTER)
             check->pain_debounce_time -= random_time_sec(0.005f, 0.075f);
 
         vec3_t normal;
@@ -576,7 +578,7 @@ static void Nuke_Explode(edict_t *ent)
     gi.multicast(ent->s.origin, MULTICAST_ALL);
 
     // become a quake
-    ent->svflags |= SVF_NOCLIENT;
+    ent->r.svflags |= SVF_NOCLIENT;
     ent->noise_index = gi.soundindex("world/rumble.wav");
     ent->think = Nuke_Quake;
     ent->speed = NUKE_QUAKE_STRENGTH;
@@ -700,13 +702,13 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
 
     nuke->movetype = MOVETYPE_BOUNCE;
     nuke->clipmask = MASK_PROJECTILE;
-    nuke->solid = SOLID_BBOX;
+    nuke->r.solid = SOLID_BBOX;
     nuke->s.effects |= EF_GRENADE;
     nuke->s.renderfx |= RF_IR_VISIBLE;
-    VectorSet(nuke->mins, -8, -8, 0);
-    VectorSet(nuke->maxs, 8, 8, 16);
+    VectorSet(nuke->r.mins, -8, -8, 0);
+    VectorSet(nuke->r.maxs, 8, 8, 16);
     nuke->s.modelindex = gi.modelindex("models/weapons/g_nuke/tris.md2");
-    nuke->owner = self;
+    nuke->r.owner = self;
     nuke->teammaster = self;
     nuke->nextthink = level.time + FRAME_TIME;
     nuke->timestamp = level.time + NUKE_DELAY + NUKE_TIME_TO_LIVE;
@@ -754,7 +756,7 @@ static void tesla_remove(edict_t *self)
     } else if (self->air_finished)
         gi.dprintf("tesla_mine without a field!\n");
 
-    self->owner = self->teammaster; // Going away, set the owner correctly.
+    self->r.owner = self->teammaster; // Going away, set the owner correctly.
     // PGM - grenade explode does damage to self->enemy
     self->enemy = NULL;
 
@@ -981,13 +983,13 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
 
     VectorClear(tesla->s.angles);
     tesla->movetype = MOVETYPE_BOUNCE;
-    tesla->solid = SOLID_BBOX;
+    tesla->r.solid = SOLID_BBOX;
     tesla->s.effects |= EF_GRENADE;
     tesla->s.renderfx |= RF_IR_VISIBLE;
-    VectorSet(tesla->mins, -12, -12, 0);
-    VectorSet(tesla->maxs, 12, 12, 20);
+    VectorSet(tesla->r.mins, -12, -12, 0);
+    VectorSet(tesla->r.maxs, 12, 12, 20);
     tesla->s.modelindex = gi.modelindex("models/weapons/g_tesla/tris.md2");
-    tesla->owner = self; // PGM - we don't want it owned by self YET.
+    tesla->r.owner = self; // PGM - we don't want it owned by self YET.
     tesla->teammaster = self;
     tesla->think = tesla_think;
     tesla->nextthink = level.time + TESLA_ACTIVATE_TIME;
@@ -1203,7 +1205,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     VectorCopy(start, bolt->s.old_origin);
     vectoangles(dir, bolt->s.angles);
     VectorScale(dir, speed, bolt->velocity);
-    bolt->svflags |= SVF_PROJECTILE;
+    bolt->r.svflags |= SVF_PROJECTILE;
     bolt->movetype = MOVETYPE_FLYMISSILE;
     bolt->clipmask = MASK_PROJECTILE;
     bolt->flags |= FL_DODGE;
@@ -1212,7 +1214,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     if (self->client && !G_ShouldPlayersCollide(true))
         bolt->clipmask &= ~CONTENTS_PLAYER;
 
-    bolt->solid = SOLID_BBOX;
+    bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     if (effect)
         bolt->s.effects |= EF_TRACKER;
@@ -1221,7 +1223,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
-    bolt->owner = self;
+    bolt->r.owner = self;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
@@ -1300,7 +1302,7 @@ static void tracker_pain_daemon_spawn(edict_t *owner, edict_t *enemy, int damage
     daemon->think = tracker_pain_daemon_think;
     daemon->nextthink = level.time;
     daemon->timestamp = level.time + TRACKER_DAMAGE_TIME;
-    daemon->owner = owner;
+    daemon->r.owner = owner;
     daemon->enemy = enemy;
     daemon->dmg = damage;
 }
@@ -1396,7 +1398,7 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     VectorCopy(start, bolt->s.old_origin);
     vectoangles(dir, bolt->s.angles);
     VectorScale(dir, speed, bolt->velocity);
-    bolt->svflags |= SVF_PROJECTILE;
+    bolt->r.svflags |= SVF_PROJECTILE;
     bolt->movetype = MOVETYPE_FLYMISSILE;
     bolt->clipmask = MASK_PROJECTILE;
 
@@ -1404,14 +1406,14 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     if (self->client && !G_ShouldPlayersCollide(true))
         bolt->clipmask &= ~CONTENTS_PLAYER;
 
-    bolt->solid = SOLID_BBOX;
+    bolt->r.solid = SOLID_BBOX;
     bolt->speed = speed;
     bolt->s.effects = EF_TRACKER;
     bolt->s.sound = gi.soundindex("weapons/disrupt.wav");
     bolt->s.modelindex = gi.modelindex("models/proj/disintegrator/tris.md2");
     bolt->touch = tracker_touch;
     bolt->enemy = enemy;
-    bolt->owner = self;
+    bolt->r.owner = self;
     bolt->dmg = damage;
     bolt->classname = "tracker";
     gi.linkentity(bolt);

@@ -510,16 +510,16 @@ edict_t *plat_spawn_inside_trigger(edict_t *ent)
     trigger = G_Spawn();
     trigger->touch = Touch_Plat_Center;
     trigger->movetype = MOVETYPE_NONE;
-    trigger->solid = SOLID_TRIGGER;
+    trigger->r.solid = SOLID_TRIGGER;
     trigger->enemy = ent;
 
-    tmin[0] = ent->mins[0] + 25;
-    tmin[1] = ent->mins[1] + 25;
-    tmin[2] = ent->mins[2];
+    tmin[0] = ent->r.mins[0] + 25;
+    tmin[1] = ent->r.mins[1] + 25;
+    tmin[2] = ent->r.mins[2];
 
-    tmax[0] = ent->maxs[0] - 25;
-    tmax[1] = ent->maxs[1] - 25;
-    tmax[2] = ent->maxs[2] + 8;
+    tmax[0] = ent->r.maxs[0] - 25;
+    tmax[1] = ent->r.maxs[1] - 25;
+    tmax[2] = ent->r.maxs[2] + 8;
 
     tmin[2] = tmax[2] - (ent->pos1[2] - ent->pos2[2] + st.lip);
 
@@ -527,16 +527,16 @@ edict_t *plat_spawn_inside_trigger(edict_t *ent)
         tmax[2] = tmin[2] + 8;
 
     if (tmax[0] - tmin[0] <= 0) {
-        tmin[0] = (ent->mins[0] + ent->maxs[0]) * 0.5f;
+        tmin[0] = (ent->r.mins[0] + ent->r.maxs[0]) * 0.5f;
         tmax[0] = tmin[0] + 1;
     }
     if (tmax[1] - tmin[1] <= 0) {
-        tmin[1] = (ent->mins[1] + ent->maxs[1]) * 0.5f;
+        tmin[1] = (ent->r.mins[1] + ent->r.maxs[1]) * 0.5f;
         tmax[1] = tmin[1] + 1;
     }
 
-    VectorCopy(tmin, trigger->mins);
-    VectorCopy(tmax, trigger->maxs);
+    VectorCopy(tmin, trigger->r.mins);
+    VectorCopy(tmax, trigger->r.maxs);
 
     gi.linkentity(trigger);
 
@@ -563,7 +563,7 @@ Set "sounds" to one of the following:
 void SP_func_plat(edict_t *ent)
 {
     VectorClear(ent->s.angles);
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
     gi.setmodel(ent, ent->model);
@@ -597,7 +597,7 @@ void SP_func_plat(edict_t *ent)
     if (st.height)
         ent->pos2[2] -= st.height;
     else
-        ent->pos2[2] -= (ent->maxs[2] - ent->mins[2]) - st.lip;
+        ent->pos2[2] -= (ent->r.maxs[2] - ent->r.mins[2]) - st.lip;
 
     ent->use = Use_Plat;
 
@@ -734,7 +734,7 @@ void USE(rotating_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_rotating(edict_t *ent)
 {
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     if (ent->spawnflags & SPAWNFLAG_ROTATING_STOP)
         ent->movetype = MOVETYPE_STOP;
     else
@@ -830,7 +830,7 @@ void THINK(func_spinning_think)(edict_t *ent)
 // [Paril-KEX]
 void SP_func_spinning(edict_t *ent)
 {
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
 
     if (!ent->speed)
         ent->speed = 100;
@@ -960,7 +960,7 @@ void SP_func_button(edict_t *ent)
 
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_STOP;
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     gi.setmodel(ent, ent->model);
 
     if (ent->sounds != 1)
@@ -984,7 +984,7 @@ void SP_func_button(edict_t *ent)
     abs_movedir[0] = fabsf(ent->movedir[0]);
     abs_movedir[1] = fabsf(ent->movedir[1]);
     abs_movedir[2] = fabsf(ent->movedir[2]);
-    dist = DotProduct(abs_movedir, ent->size) - st.lip;
+    dist = DotProduct(abs_movedir, ent->r.size) - st.lip;
     VectorMA(ent->pos1, dist, ent->movedir, ent->pos2);
 
     ent->use = button_use;
@@ -1072,7 +1072,7 @@ static void door_play_sound(edict_t *self, int sound)
 
     for (edict_t *t = self->teammaster; t; t = t->teamchain) {
         vec3_t mid;
-        VectorAvg(t->absmin, t->absmax, mid);
+        VectorAvg(t->r.absmin, t->r.absmax, mid);
         VectorAdd(p, mid, p);
         c++;
     }
@@ -1484,8 +1484,8 @@ void SP_func_door(edict_t *ent)
 
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
-    ent->svflags |= SVF_DOOR;
+    ent->r.solid = SOLID_BSP;
+    ent->r.svflags |= SVF_DOOR;
     gi.setmodel(ent, ent->model);
 
     ent->moveinfo.blocked = door_blocked;
@@ -1513,7 +1513,7 @@ void SP_func_door(edict_t *ent)
     abs_movedir[0] = fabsf(ent->movedir[0]);
     abs_movedir[1] = fabsf(ent->movedir[1]);
     abs_movedir[2] = fabsf(ent->movedir[2]);
-    ent->moveinfo.distance = DotProduct(abs_movedir, ent->size) - st.lip;
+    ent->moveinfo.distance = DotProduct(abs_movedir, ent->r.size) - st.lip;
     VectorMA(ent->pos1, ent->moveinfo.distance, ent->movedir, ent->pos2);
 
     // if it starts open, switch the positions
@@ -1649,8 +1649,8 @@ void SP_func_door_rotating(edict_t *ent)
     ent->moveinfo.distance = st.distance;
 
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
-    ent->svflags |= SVF_DOOR;
+    ent->r.solid = SOLID_BSP;
+    ent->r.svflags |= SVF_DOOR;
     gi.setmodel(ent, ent->model);
 
     ent->moveinfo.blocked = door_blocked;
@@ -1787,7 +1787,7 @@ void SP_func_water(edict_t *self)
 
     G_SetMovedir(self->s.angles, self->movedir);
     self->movetype = MOVETYPE_PUSH;
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     gi.setmodel(self, self->model);
 
     switch (self->sounds) {
@@ -1807,7 +1807,7 @@ void SP_func_water(edict_t *self)
     abs_movedir[0] = fabsf(self->movedir[0]);
     abs_movedir[1] = fabsf(self->movedir[1]);
     abs_movedir[2] = fabsf(self->movedir[2]);
-    self->moveinfo.distance = DotProduct(abs_movedir, self->size) - st.lip;
+    self->moveinfo.distance = DotProduct(abs_movedir, self->r.size) - st.lip;
     VectorMA(self->pos1, self->moveinfo.distance, self->movedir, self->pos2);
 
     // if it starts open, switch the positions
@@ -2052,7 +2052,7 @@ static void train_resume(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_TRAIN_USE_ORIGIN)
         VectorCopy(ent->s.origin, dest);
     else {
-        VectorSubtract(ent->s.origin, self->mins, dest);
+        VectorSubtract(ent->s.origin, self->r.mins, dest);
 
         if (self->spawnflags & SPAWNFLAG_TRAIN_FIX_OFFSET)
             for (int i = 0; i < 3; i++)
@@ -2150,7 +2150,7 @@ void SP_func_train(edict_t *self)
         self->dmg = 0;
     else if (!self->dmg)
         self->dmg = 100;
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     gi.setmodel(self, self->model);
 
     if (st.noise) {
@@ -2295,7 +2295,7 @@ void SP_func_timer(edict_t *self)
         self->activator = self;
     }
 
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 #define SPAWNFLAG_CONVEYOR_START_ON 1
@@ -2334,7 +2334,7 @@ void SP_func_conveyor(edict_t *self)
     self->use = func_conveyor_use;
 
     gi.setmodel(self, self->model);
-    self->solid = SOLID_BSP;
+    self->r.solid = SOLID_BSP;
     gi.linkentity(self);
 }
 
@@ -2453,8 +2453,8 @@ void SP_func_door_secret(edict_t *ent)
     ent->attenuation = ATTN_STATIC;
 
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
-    ent->svflags |= SVF_DOOR;
+    ent->r.solid = SOLID_BSP;
+    ent->r.svflags |= SVF_DOOR;
     gi.setmodel(ent, ent->model);
 
     ent->moveinfo.blocked = door_secret_blocked;
@@ -2482,10 +2482,10 @@ void SP_func_door_secret(edict_t *ent)
     VectorClear(ent->s.angles);
     side = 1.0f - ((ent->spawnflags & SPAWNFLAG_SECRET_1ST_LEFT) ? 2 : 0);
     if (ent->spawnflags & SPAWNFLAG_SECRET_1ST_DOWN)
-        width = fabsf(DotProduct(up, ent->size));
+        width = fabsf(DotProduct(up, ent->r.size));
     else
-        width = fabsf(DotProduct(right, ent->size));
-    length = fabsf(DotProduct(forward, ent->size));
+        width = fabsf(DotProduct(right, ent->r.size));
+    length = fabsf(DotProduct(forward, ent->r.size));
     if (ent->spawnflags & SPAWNFLAG_SECRET_1ST_DOWN)
         VectorMA(ent->s.origin, -1 * width, up, ent->pos1);
     else
@@ -2530,7 +2530,7 @@ void SP_func_killbox(edict_t *ent)
 {
     gi.setmodel(ent, ent->model);
     ent->use = use_killbox;
-    ent->svflags = SVF_NOCLIENT;
+    ent->r.svflags = SVF_NOCLIENT;
 }
 
 /*QUAKED func_eye (0 1 0) ?
@@ -2658,7 +2658,7 @@ void THINK(func_eye_setup)(edict_t *self)
 void SP_func_eye(edict_t *ent)
 {
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     gi.setmodel(ent, ent->model);
 
     if (!st.radius)

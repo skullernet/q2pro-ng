@@ -150,18 +150,18 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
     if (!who->mynoise) {
         noise = G_Spawn();
         noise->classname = "player_noise";
-        VectorSet(noise->mins, -8, -8, -8);
-        VectorSet(noise->maxs, 8, 8, 8);
-        noise->owner = who;
-        noise->svflags = SVF_NOCLIENT;
+        VectorSet(noise->r.mins, -8, -8, -8);
+        VectorSet(noise->r.maxs, 8, 8, 8);
+        noise->r.owner = who;
+        noise->r.svflags = SVF_NOCLIENT;
         who->mynoise = noise;
 
         noise = G_Spawn();
         noise->classname = "player_noise";
-        VectorSet(noise->mins, -8, -8, -8);
-        VectorSet(noise->maxs, 8, 8, 8);
-        noise->owner = who;
-        noise->svflags = SVF_NOCLIENT;
+        VectorSet(noise->r.mins, -8, -8, -8);
+        VectorSet(noise->r.maxs, 8, 8, 8);
+        noise->r.owner = who;
+        noise->r.svflags = SVF_NOCLIENT;
         who->mynoise2 = noise;
     }
 
@@ -570,7 +570,7 @@ void Drop_Weapon(edict_t *ent, const gitem_t *item)
 
     edict_t *drop = Drop_Item(ent, item);
     drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
-    drop->svflags &= ~SVF_INSTANCED;
+    drop->r.svflags &= ~SVF_INSTANCED;
     ent->client->pers.inventory[index]--;
 }
 

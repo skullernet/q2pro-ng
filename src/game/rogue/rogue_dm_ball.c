@@ -166,7 +166,7 @@ static void DBall_PostInitSetup(void)
     e = NULL;
     // turn teleporter destinations nonsolid.
     while ((e = G_Find(e, FOFS(classname), "misc_teleporter_dest"))) {
-        e->solid = SOLID_NOT;
+        e->r.solid = SOLID_NOT;
         gi.linkentity(e);
     }
 
@@ -489,9 +489,9 @@ void SP_dm_dball_ball(edict_t *self)
     //dball_ball_startpt = self->s.origin;
 
     self->s.modelindex = gi.modelindex("models/objects/dball/tris.md2");
-    VectorSet(self->mins, -32, -32, -32);
-    VectorSet(self->maxs, 32, 32, 32);
-    self->solid = SOLID_BBOX;
+    VectorSet(self->r.mins, -32, -32, -32);
+    VectorSet(self->r.maxs, 32, 32, 32);
+    self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_NEWTOSS;
     self->clipmask = MASK_MONSTERSOLID;
 
@@ -576,9 +576,9 @@ void SP_dm_dball_speed_change(edict_t *self)
         self->delay = 0.2f;
 
     self->touch = DBall_SpeedTouch;
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
 
     if (!VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);
@@ -612,9 +612,9 @@ void SP_dm_dball_goal(edict_t *self)
         self->wait = 10;
 
     self->touch = DBall_GoalTouch;
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
 
     if (!VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);

@@ -101,7 +101,7 @@ void ChaseNext(edict_t *ent)
         if (i > game.maxclients)
             i = 1;
         e = g_edicts + i;
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (!e->client->resp.spectator)
             break;
@@ -125,7 +125,7 @@ void ChasePrev(edict_t *ent)
         if (i < 1)
             i = game.maxclients;
         e = g_edicts + i;
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (!e->client->resp.spectator)
             break;
@@ -142,7 +142,7 @@ void GetChaseTarget(edict_t *ent)
 
     for (i = 1; i <= game.maxclients; i++) {
         other = g_edicts + i;
-        if (other->inuse && !other->client->resp.spectator) {
+        if (other->r.inuse && !other->client->resp.spectator) {
             ent->client->chase_target = other;
             ent->client->update_chase = true;
             UpdateChaseCam(ent);

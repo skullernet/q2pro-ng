@@ -484,8 +484,8 @@ void MONSTERINFO_SETSKIN(hover_setskin)(edict_t *self)
 
 static void hover_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->think = hover_deadthink;
     self->nextthink = level.time + FRAME_TIME;
@@ -570,13 +570,13 @@ void SP_monster_hover(edict_t *self)
     }
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/hover/tris.md2");
 
     PrecacheGibs(hover_gibs);
 
-    VectorSet(self->mins, -24, -24, -24);
-    VectorSet(self->maxs, 24, 24, 32);
+    VectorSet(self->r.mins, -24, -24, -24);
+    VectorSet(self->r.maxs, 24, 24, 32);
 
     self->health = 240 * st.health_multiplier;
     self->gib_health = -100;

@@ -81,7 +81,7 @@ static void CarrierCoopCheck(edict_t *self)
     // cycle through players
     for (int player = 1; player <= game.maxclients; player++) {
         ent = &g_edicts[player];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         if (!ent->client)
             continue;
@@ -269,7 +269,7 @@ static void CarrierSpawn(edict_t *self)
             ent->monsterinfo.attack_state = AS_STRAIGHT;
             M_SetAnimation(ent, &flyer_move_kamikaze);
             ent->monsterinfo.aiflags |= AI_CHARGING;
-            ent->owner = self;
+            ent->r.owner = self;
         } else if (!strcmp(ent->classname, "monster_flyer")) {
             if (brandom()) {
                 ent->monsterinfo.lefty = false;
@@ -921,13 +921,13 @@ void SP_monster_carrier(edict_t *self)
     self->monsterinfo.engine_sound = gi.soundindex("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/carrier/tris.md2");
 
     PrecacheGibs(carrier_gibs);
 
-    VectorSet(self->mins, -56, -56, -44);
-    VectorSet(self->maxs, 56, 56, 44);
+    VectorSet(self->r.mins, -56, -56, -44);
+    VectorSet(self->r.maxs, 56, 56, 44);
 
     // 2000 - 4000 health
     self->health = max(2000, 2000 + 1000 * (skill->integer - 1)) * st.health_multiplier;

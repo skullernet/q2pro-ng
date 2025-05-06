@@ -343,7 +343,7 @@ const mmove_t MMOVE_T(boss2_move_pain_light) = { FRAME_pain20, FRAME_pain23, bos
 
 static void boss2_shrink(edict_t *self)
 {
-    self->maxs[2] = 50;
+    self->r.maxs[2] = 50;
     gi.linkentity(self);
 }
 
@@ -586,13 +586,13 @@ void SP_monster_boss2(edict_t *self)
     self->monsterinfo.weapon_sound = gi.soundindex("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/boss2/tris.md2");
 
     PrecacheGibs(boss2_gibs);
 
-    VectorSet(self->mins, -56, -56, 0);
-    VectorSet(self->maxs, 56, 56, 80);
+    VectorSet(self->r.mins, -56, -56, 0);
+    VectorSet(self->r.maxs, 56, 56, 80);
 
     self->health = 2000 * st.health_multiplier;
     self->gib_health = -200;

@@ -69,11 +69,11 @@ void PlayerTrail_Destroy(edict_t *player)
 {
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
-        if (!ent->inuse || !ent->classname)
+        if (!ent->r.inuse || !ent->classname)
             continue;
         if (strcmp(ent->classname, "player_trail") && strcmp(ent->classname, "player_noise"))
             continue;
-        if (!player || ent->owner == player)
+        if (!player || ent->r.owner == player)
             G_FreeEdict(ent);
     }
 
@@ -98,7 +98,7 @@ void PlayerTrail_Add(edict_t *player)
     edict_t *trail = PlayerTrail_Spawn(player);
     VectorCopy(player->s.old_origin, trail->s.origin);
     trail->timestamp = level.time;
-    trail->owner = player;
+    trail->r.owner = player;
 }
 
 // pick a trail node that matches the player

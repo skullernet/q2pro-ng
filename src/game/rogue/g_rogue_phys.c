@@ -35,7 +35,7 @@ void SV_Physics_NewToss(edict_t *ent)
     // find out what we're sitting on.
     VectorCopy(ent->s.origin, move);
     move[2] -= 0.25f;
-    gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, move, ent, ent->clipmask);
+    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, move, ent, ent->clipmask);
     if (ent->groundentity && ent->groundentity->inuse)
         ent->groundentity = trace.ent;
     else

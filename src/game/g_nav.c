@@ -450,7 +450,7 @@ static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, c
 
     if (link->edict) {
         const edict_t *e = link->edict->game_edict;
-        if (e && e->inuse && e->s.modelindex == link->edict->model && !(e->svflags & SVF_DOOR))
+        if (e && e->r.inuse && e->s.modelindex == link->edict->model && !(e->r.svflags & SVF_DOOR))
             return false;
     }
 
@@ -922,9 +922,9 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
 
     if (link->edict) {
         const edict_t *e = link->edict->game_edict;
-        if (e && e->inuse) {
+        if (e && e->r.inuse) {
             vec3_t mid;
-            VectorAvg(e->absmin, e->absmax, mid);
+            VectorAvg(e->r.absmin, e->r.absmax, mid);
             draw->AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, FRAME_TIME, true);
         }
     }
@@ -1066,11 +1066,11 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
             const edict_t *e = &g_edicts[i];
 
-            if (!e->inuse)
+            if (!e->r.inuse)
                 continue;
 
             if (e->flags & FL_TRAP_LASER_FIELD) {
-                if (e->svflags & SVF_NOCLIENT)
+                if (e->r.svflags & SVF_NOCLIENT)
                     continue;
 
                 if (line_intersects_box(e->s.origin, e->s.old_origin, absmin, absmax)) {
@@ -1078,7 +1078,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
                     return;
                 }
             } else if (e->flags & FL_TRAP) {
-                if (boxes_intersect(e->absmin, e->absmax, absmin, absmax)) {
+                if (boxes_intersect(e->r.absmin, e->r.absmax, absmin, absmax)) {
                     node->flags |= NodeFlag_Disabled;
                     return;
                 }
@@ -1112,12 +1112,12 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
             const edict_t *edict = link->edict->game_edict;
             if (!edict)
                 continue;
-            if (!edict->inuse)
+            if (!edict->r.inuse)
                 continue;
             if (edict->s.modelindex != link->edict->model)
                 continue;
 
-            if (edict->svflags & SVF_DOOR && edict->flags & FL_LOCKED) {
+            if (edict->r.svflags & SVF_DOOR && edict->flags & FL_LOCKED) {
                 node->flags |= NodeFlag_Disabled;
                 return;
             }
@@ -1133,9 +1133,9 @@ static void Nav_SetupEntities(void)
         for (int n = 0; n < globals.num_edicts; n++) {
             const edict_t *game_e = &g_edicts[n];
 
-            if (!game_e->inuse)
+            if (!game_e->r.inuse)
                 continue;
-            if (game_e->solid != SOLID_TRIGGER && game_e->solid != SOLID_BSP)
+            if (game_e->r.solid != SOLID_TRIGGER && game_e->r.solid != SOLID_BSP)
                 continue;
 
             if (game_e->s.modelindex == e->model) {

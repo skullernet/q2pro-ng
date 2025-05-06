@@ -21,12 +21,12 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
     vec3_t inflictor_center;
 
     if (inflictor->area.next)
-        VectorAvg(inflictor->absmin, inflictor->absmax, inflictor_center);
+        VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
     else
         VectorCopy(inflictor->s.origin, inflictor_center);
 
-    if (targ->solid == SOLID_BSP) {
-        closest_point_to_box(inflictor_center, targ->absmin, targ->absmax, dest);
+    if (targ->r.solid == SOLID_BSP) {
+        closest_point_to_box(inflictor_center, targ->r.absmin, targ->r.absmax, dest);
 
         gi.trace(&trace, inflictor_center, NULL, NULL, dest, inflictor, MASK_SOLID | CONTENTS_PROJECTILECLIP);
         if (trace.fraction == 1.0f)
@@ -36,7 +36,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
     vec3_t targ_center;
 
     if (targ->area.next)
-        VectorAvg(targ->absmin, targ->absmax, targ_center);
+        VectorAvg(targ->r.absmin, targ->r.absmax, targ_center);
     else
         VectorCopy(targ->s.origin, targ_center);
 
@@ -67,7 +67,7 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
         targ->health = -999;
 
     // [Paril-KEX]
-    if ((targ->svflags & SVF_MONSTER) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
+    if ((targ->r.svflags & SVF_MONSTER) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
         if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
             cleanupHealTarget(targ->enemy);
 
@@ -78,7 +78,7 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
     targ->enemy = attacker;
 
     // [Paril-KEX] monsters call die in their damage handler
-    if (targ->svflags & SVF_MONSTER)
+    if (targ->r.svflags & SVF_MONSTER)
         return;
 
     targ->die(targ, inflictor, attacker, damage, point, mod);
@@ -149,7 +149,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     if (client) {
         power_armor_type = PowerArmorType(ent);
         power = &client->pers.inventory[IT_AMMO_CELLS];
-    } else if (ent->svflags & SVF_MONSTER) {
+    } else if (ent->r.svflags & SVF_MONSTER) {
         power_armor_type = ent->monsterinfo.power_armor_type;
         power = &ent->monsterinfo.power_armor_power;
     } else
@@ -285,7 +285,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     // pmm
     bool new_tesla;
 
-    if (!(attacker->client) && !(attacker->svflags & SVF_MONSTER))
+    if (!(attacker->client) && !(attacker->r.svflags & SVF_MONSTER))
         return;
 
     //=======
@@ -363,7 +363,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
             }
 
             // [Paril-KEX]
-            if ((targ->svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
+            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
                 if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
@@ -387,7 +387,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
                                     && !(targ->monsterinfo.aiflags & AI_IGNORE_SHOTS))) {
         if (targ->enemy != attacker) {
             // [Paril-KEX]
-            if ((targ->svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
+            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
                 if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
@@ -405,7 +405,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     } else if (attacker->enemy && attacker->enemy != targ && targ->enemy != attacker->enemy) {
         if (targ->enemy != attacker->enemy) {
             // [Paril-KEX]
-            if ((targ->svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
+            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
                 if (targ->enemy && targ->enemy->inuse && (targ->enemy->svflags & SVF_MONSTER)) // god, I hope so
                     cleanupHealTarget(targ->enemy);
 
@@ -506,7 +506,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     }
 
     // mal: just for debugging...
-    if (targ->svflags & SVF_MONSTER)
+    if (targ->r.svflags & SVF_MONSTER)
         damage *= ai_damage_scale->integer;
     else
         damage *= g_damage_scale->integer;
@@ -526,7 +526,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
         te_sparks = TE_SPARKS;
 
     // bonus damage for surprising a monster
-    if (!(dflags & DAMAGE_RADIUS) && (targ->svflags & SVF_MONSTER) && (attacker->client) &&
+    if (!(dflags & DAMAGE_RADIUS) && (targ->r.svflags & SVF_MONSTER) && (attacker->client) &&
         (!targ->enemy || targ->monsterinfo.surprise_time == level.time) && (targ->health > 0)) {
         damage *= 2;
         targ->monsterinfo.surprise_time = level.time;
@@ -577,7 +577,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     // ROGUE
     if (!(dflags & DAMAGE_NO_PROTECTION) &&
         (((client && client->invincible_time > level.time)) ||
-         ((targ->svflags & SVF_MONSTER) && targ->monsterinfo.invincible_time > level.time))) {
+         ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.invincible_time > level.time))) {
     // ROGUE
         if (targ->pain_debounce_time < level.time) {
             gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
@@ -622,7 +622,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
 
     // [Paril-KEX] player hit markers
     if (targ != attacker && attacker->client && targ->health > 0 &&
-        !(targ->svflags & SVF_DEADMONSTER) && !(targ->flags & FL_NO_DAMAGE_EFFECTS) && mod.id != MOD_TARGET_LASER)
+        !(targ->r.svflags & SVF_DEADMONSTER) && !(targ->flags & FL_NO_DAMAGE_EFFECTS) && mod.id != MOD_TARGET_LASER)
         attacker->client->damage_dealt += take + psave + asave;
 
     // do the damage
@@ -632,7 +632,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
             if (targ->flags & FL_MECHANICAL)
                 SpawnDamage(TE_ELECTRIC_SPARKS, point, normal, take);
             // ROGUE
-            else if ((targ->svflags & SVF_MONSTER) || (client)) {
+            else if ((targ->r.svflags & SVF_MONSTER) || (client)) {
                 // XATRIX
                 if (strcmp(targ->classname, "monster_gekk") == 0)
                     SpawnDamage(TE_GREENBLOOD, point, normal, take);
@@ -662,7 +662,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
         // PGM
 
         if (targ->health <= 0) {
-            if ((targ->svflags & SVF_MONSTER) || (client)) {
+            if ((targ->r.svflags & SVF_MONSTER) || (client)) {
                 targ->flags |= FL_ALIVE_KNOCKBACK_ONLY;
                 targ->dead_time = level.time;
             }
@@ -688,7 +688,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     if (targ->client)
         targ->client->last_attacker_time = level.time;
 
-    if (targ->svflags & SVF_MONSTER) {
+    if (targ->r.svflags & SVF_MONSTER) {
         if (damage > 0) {
             M_ReactToDamage(targ, attacker, inflictor);
 
@@ -732,7 +732,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
     vec3_t   inflictor_center;
 
     if (inflictor->area.next)
-        VectorAvg(inflictor->absmin, inflictor->absmax, inflictor_center);
+        VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
     else
         VectorCopy(inflictor->s.origin, inflictor_center);
 
@@ -742,10 +742,10 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         if (!ent->takedamage)
             continue;
 
-        if (ent->solid == SOLID_BSP && ent->area.next)
-            closest_point_to_box(inflictor_center, ent->absmin, ent->absmax, v);
+        if (ent->r.solid == SOLID_BSP && ent->r.linked)
+            closest_point_to_box(inflictor_center, ent->r.absmin, ent->r.absmax, v);
         else {
-            VectorAvg(ent->mins, ent->maxs, v);
+            VectorAvg(ent->r.mins, ent->r.maxs, v);
             VectorAdd(v, ent->s.origin, v);
         }
         points = damage - 0.5f * Distance(inflictor_center, v);
@@ -761,7 +761,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 
         // [Paril-KEX] use closest point on bbox to explosion position
         // to spawn damage effect
-        closest_point_to_box(inflictor_center, ent->absmin, ent->absmax, v);
+        closest_point_to_box(inflictor_center, ent->r.absmin, ent->r.absmax, v);
 
         T_Damage(ent, inflictor, attacker, dir, v, dir, points, points, dflags | DAMAGE_RADIUS, mod);
     }

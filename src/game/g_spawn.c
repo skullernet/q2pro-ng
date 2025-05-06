@@ -984,7 +984,7 @@ static void G_FixTeams(void)
 
     c = 0;
     for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (!e->team)
             continue;
@@ -1004,7 +1004,7 @@ static void G_FixTeams(void)
         for (j = 1, e2 = g_edicts + j; j < globals.num_edicts; j++, e2++) {
             if (e2 == e)
                 continue;
-            if (!e2->inuse)
+            if (!e2->r.inuse)
                 continue;
             if (!e2->team)
                 continue;
@@ -1033,7 +1033,7 @@ static void G_FindTeams(void)
     c = 0;
     c2 = 0;
     for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
-        if (!e->inuse)
+        if (!e->r.inuse)
             continue;
         if (!e->team)
             continue;
@@ -1045,7 +1045,7 @@ static void G_FindTeams(void)
         c++;
         c2++;
         for (j = i + 1, e2 = e + 1; j < globals.num_edicts; j++, e2++) {
-            if (!e2->inuse)
+            if (!e2->r.inuse)
                 continue;
             if (!e2->team)
                 continue;
@@ -1581,8 +1581,8 @@ Only used for the world.
 void SP_worldspawn(edict_t *ent)
 {
     ent->movetype = MOVETYPE_PUSH;
-    ent->solid = SOLID_BSP;
-    ent->inuse = true; // since the world doesn't use G_Spawn()
+    ent->r.solid = SOLID_BSP;
+    ent->r.inuse = true; // since the world doesn't use G_Spawn()
     ent->s.modelindex = MODELINDEX_WORLD;
     ent->gravity = 1.0f;
 

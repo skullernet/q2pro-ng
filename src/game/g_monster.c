@@ -190,7 +190,7 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     point[1] = ent->s.origin[1];
     point[2] = ent->s.origin[2] + (0.25f * ent->gravityVector[2]); // PGM
 
-    gi.trace(&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, mask);
+    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, point, ent, mask);
 
     // check steepness
     // PGM
@@ -226,9 +226,9 @@ void M_CategorizePosition(edict_t *self, const vec3_t in_point, water_level_t *w
     point[0] = in_point[0];
     point[1] = in_point[1];
     if (self->gravityVector[2] > 0)
-        point[2] = in_point[2] + self->maxs[2] - 1;
+        point[2] = in_point[2] + self->r.maxs[2] - 1;
     else
-        point[2] = in_point[2] + self->mins[2] + 1;
+        point[2] = in_point[2] + self->r.mins[2] + 1;
     cont = gi.pointcontents(point);
 
     if (!(cont & MASK_WATER)) {
@@ -306,7 +306,7 @@ void M_WorldEffects(edict_t *ent)
 
         if (!(ent->flags & FL_INWATER)) {
             if (ent->watertype & CONTENTS_LAVA) {
-                if ((ent->svflags & SVF_MONSTER) && ent->health > 0) {
+                if ((ent->r.svflags & SVF_MONSTER) && ent->health > 0) {
                     if (brandom())
                         gi.sound(ent, CHAN_BODY, gi.soundindex("player/lava1.wav"), 1, ATTN_NORM, 0);
                     else
@@ -359,11 +359,11 @@ bool M_droptofloor(edict_t *ent)
     contents_t mask = G_GetClipMask(ent);
 
     if (!(ent->spawnflags & SPAWNFLAG_MONSTER_NO_DROP)) {
-        if (!M_droptofloor_generic(ent->s.origin, ent->mins, ent->maxs, ent->gravityVector[2] > 0, ent, mask, true))
+        if (!M_droptofloor_generic(ent->s.origin, ent->r.mins, ent->r.maxs, ent->gravityVector[2] > 0, ent, mask, true))
             return false;
     } else {
         trace_t tr;
-        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, ent->s.origin, ent, mask);
+        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent, mask);
         if (tr.startsolid)
             return false;
     }
@@ -519,7 +519,7 @@ static void M_MoveFrame(edict_t *self)
                     move = self->monsterinfo.active_move;
 
                     // check for death
-                    if (self->svflags & SVF_DEADMONSTER)
+                    if (self->r.svflags & SVF_DEADMONSTER)
                         return;
                 }
             }
@@ -633,12 +633,12 @@ void M_ProcessPain(edict_t *e)
 
         if (dead_commander_check) {
             edict_t *commander = e->monsterinfo.commander;
-            if (commander && commander->inuse)
+            if (commander && commander->r.inuse)
                 commander->monsterinfo.monster_used = max(0, commander->monsterinfo.monster_used - e->monsterinfo.slots_from_commander);
             e->monsterinfo.commander = NULL;
         }
 
-        if (e->inuse && e->health > e->gib_health && e->s.frame == e->monsterinfo.active_move->lastframe) {
+        if (e->r.inuse && e->health > e->gib_health && e->s.frame == e->monsterinfo.active_move->lastframe) {
             e->s.frame -= irandom2(1, 3);
 
             if (e->groundentity && e->movetype == MOVETYPE_TOSS && !(e->flags & FL_STATIONARY))
@@ -647,7 +647,7 @@ void M_ProcessPain(edict_t *e)
     } else
         e->pain(e, e->monsterinfo.damage_attacker, e->monsterinfo.damage_knockback, e->monsterinfo.damage_blood, e->monsterinfo.damage_mod);
 
-    if (!e->inuse)
+    if (!e->r.inuse)
         return;
 
     if (e->monsterinfo.setskin)
@@ -701,7 +701,7 @@ void monster_dead(edict_t *self)
     self->think = monster_dead_think;
     self->nextthink = level.time + HZ(10);
     self->movetype = MOVETYPE_TOSS;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.svflags |= SVF_DEADMONSTER;
     self->monsterinfo.damage_blood = 0;
     self->fly_sound_debounce_time = 0;
     self->monsterinfo.aiflags &= ~AI_STUNK;
@@ -741,8 +741,8 @@ static void M_CheckDodge(edict_t *self)
 
     vec3_t mins, maxs;
     for (int i = 0; i < 3; i++) {
-        mins[i] = self->absmin[i] - 512;
-        maxs[i] = self->absmax[i] + 512;
+        mins[i] = self->r.absmin[i] - 512;
+        maxs[i] = self->r.absmax[i] + 512;
     }
 
     edict_t *list[MAX_EDICTS_OLD];
@@ -751,7 +751,7 @@ static void M_CheckDodge(edict_t *self)
         edict_t *ent = list[i];
 
         // not a valid projectile
-        if (!(ent->svflags & SVF_PROJECTILE) || !(ent->flags & FL_DODGE))
+        if (!(ent->r.svflags & SVF_PROJECTILE) || !(ent->flags & FL_DODGE))
             continue;
 
         // not moving
@@ -766,11 +766,12 @@ static void M_CheckDodge(edict_t *self)
         vec3_t pos;
         VectorAdd(ent->s.origin, ent->velocity, pos);
         trace_t tr;
-        gi.trace(&tr, ent->s.origin, ent->mins, ent->maxs, pos, ent, ent->clipmask);
+        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent, ent->clipmask);
 
         if (tr.ent == self) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
-            self->monsterinfo.dodge(self, ent->owner, eta, &tr, (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));
+            self->monsterinfo.dodge(self, ent->r.owner, eta, &tr,
+                                    (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));
             break;
         }
     }
@@ -908,16 +909,16 @@ static void monster_triggered_start(edict_t *self)
         FOFS(combattarget),
     };
 
-    self->solid = SOLID_NOT;
+    self->r.solid = SOLID_NOT;
     self->movetype = MOVETYPE_NONE;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->nextthink = 0;
     self->use = monster_triggered_spawn_use;
 
     if (self->targetname)
         for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
             edict_t *ent = &g_edicts[i];
-            if (!ent->inuse)
+            if (!ent->r.inuse)
                 continue;
             for (int j = 0; j < q_countof(offsets); j++) {
                 char *s = *(char **)((byte *)ent + offsets[j]);
@@ -997,7 +998,7 @@ void G_Monster_CheckCoopHealthScaling(void)
 {
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
-        if (ent->inuse && (ent->flags & FL_COOP_HEALTH_SCALE) && ent->health > 0)
+        if (ent->r.inuse && (ent->flags & FL_COOP_HEALTH_SCALE) && ent->health > 0)
             G_Monster_ScaleCoopHealth(ent);
     }
 }
@@ -1037,14 +1038,14 @@ bool monster_start(edict_t *self)
     }
 
     self->nextthink = level.time + FRAME_TIME;
-    self->svflags |= SVF_MONSTER;
+    self->r.svflags |= SVF_MONSTER;
     self->takedamage = true;
     self->air_finished = level.time + SEC(12);
     self->use = monster_use;
     self->max_health = self->health;
     self->clipmask = MASK_MONSTERSOLID;
     self->deadflag = false;
-    self->svflags &= ~SVF_DEADMONSTER;
+    self->r.svflags &= ~SVF_DEADMONSTER;
     self->flags &= ~FL_ALIVE_KNOCKBACK_ONLY;
     self->flags |= FL_COOP_HEALTH_SCALE;
     VectorCopy(self->s.origin, self->s.old_origin);
@@ -1059,13 +1060,13 @@ bool monster_start(edict_t *self)
 
     if (self->s.scale) {
         self->monsterinfo.scale *= self->s.scale;
-        VectorScale(self->mins, self->s.scale, self->mins);
-        VectorScale(self->maxs, self->s.scale, self->maxs);
+        VectorScale(self->r.mins, self->s.scale, self->r.mins);
+        VectorScale(self->r.maxs, self->s.scale, self->r.maxs);
         self->mass *= self->s.scale;
     }
 
     if (level.is_psx)
-        self->s.origin[2] -= self->mins[2] * (1 - PSX_PHYSICS_SCALAR);
+        self->s.origin[2] -= self->r.mins[2] * (1 - PSX_PHYSICS_SCALAR);
 
     // set combat style if unset
     if (self->monsterinfo.combat_style == COMBAT_UNKNOWN) {
@@ -1086,13 +1087,13 @@ bool monster_start(edict_t *self)
         self->s.frame = irandom2(self->monsterinfo.active_move->firstframe, self->monsterinfo.active_move->lastframe + 1);
 
     // PMM - get this so I don't have to do it in all of the monsters
-    self->monsterinfo.base_height = self->maxs[2];
+    self->monsterinfo.base_height = self->r.maxs[2];
 
     // Paril: monsters' old default viewheight (25)
     // is all messed up for certain monsters. Calculate
     // from maxs to make a bit more sense.
     if (!self->viewheight)
-        self->viewheight = self->maxs[2] - 8;
+        self->viewheight = self->r.maxs[2] - 8;
 
     // PMM - clear these
     self->monsterinfo.quad_time = 0;
@@ -1115,7 +1116,7 @@ bool monster_start(edict_t *self)
 
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 {
-    stuck_result_t result = G_FixStuckObject_Generic(check, self->mins, self->maxs, self, G_GetClipMask(self), gi.trace);
+    stuck_result_t result = G_FixStuckObject_Generic(check, self->r.mins, self->r.maxs, self, G_GetClipMask(self), gi.trace);
 
     if (result == NO_GOOD_POSITION)
         return result;
@@ -1144,7 +1145,7 @@ void monster_start_go(edict_t *self)
         trace_t tr;
 
         if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
-            gi.trace(&tr, self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID);
+            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs, self->s.origin, self, MASK_MONSTERSOLID);
             is_stuck = tr.startsolid;
         } else {
             is_stuck = !M_droptofloor(self) || !M_walkmove(self, 0, 0);
@@ -1173,7 +1174,7 @@ void monster_start_go(edict_t *self)
                         self->s.origin[2] = check[2] + adjust[z];
 
                         if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-                            gi.trace(&tr, self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID);
+                            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs, self->s.origin, self, MASK_MONSTERSOLID);
                             is_stuck = tr.startsolid;
 
                             if (!is_stuck)
@@ -1263,7 +1264,7 @@ void monster_start_go(edict_t *self)
         if (self->die)
             self->die(self, self, self, 0, vec3_origin, (mod_t) { MOD_SUICIDE });
 
-        if (!self->inuse)
+        if (!self->r.inuse)
             return;
 
         if (self->monsterinfo.setskin)
@@ -1279,14 +1280,14 @@ void monster_start_go(edict_t *self)
             if (move->frame[i - move->firstframe].thinkfunc)
                 move->frame[i - move->firstframe].thinkfunc(self);
 
-            if (!self->inuse)
+            if (!self->r.inuse)
                 return;
         }
 
         if (move->endfunc)
             move->endfunc(self);
 
-        if (!self->inuse)
+        if (!self->r.inuse)
             return;
 
         if (self->monsterinfo.start_frame)
@@ -1393,6 +1394,6 @@ void SP_trigger_health_relay(edict_t *self)
         return;
     }
 
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     self->use = trigger_health_relay_use;
 }

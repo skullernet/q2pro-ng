@@ -587,14 +587,14 @@ void SP_monster_jorg(edict_t *self)
     G_AddPrecache(jorg_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/boss3/jorg/tris.md2");
     self->s.modelindex2 = gi.modelindex("models/monsters/boss3/rider/tris.md2");
 
     PrecacheGibs(jorg_gibs);
 
-    VectorSet(self->mins, -80, -80, 0);
-    VectorSet(self->maxs, 80, 80, 140);
+    VectorSet(self->r.mins, -80, -80, 0);
+    VectorSet(self->r.maxs, 80, 80, 140);
 
     self->health = 8000 * st.health_multiplier;
     self->gib_health = -2000;

@@ -16,13 +16,13 @@ static void InitTrigger(edict_t *self)
     if (ED_WasKeySpecified("angle") || ED_WasKeySpecified("angles") || !VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);
 
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
     // [Paril-KEX] adjusted to allow mins/maxs to be defined
     // by hand instead
     if (self->model)
         gi.setmodel(self, self->model);
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 }
 
 // the wait time has passed, so set back up for another activation
@@ -187,23 +187,23 @@ void SP_trigger_multiple(edict_t *ent)
         return;
     }
 
-    if (ent->model || !VectorEmpty(ent->mins) || !VectorEmpty(ent->maxs))
+    if (ent->model || !VectorEmpty(ent->r.mins) || !VectorEmpty(ent->r.maxs))
         ent->touch = Touch_Multi;
 
     // PGM
     if (ent->spawnflags & (SPAWNFLAG_TRIGGER_TRIGGERED | SPAWNFLAG_TRIGGER_TOGGLE)) {
     // PGM
-        ent->solid = SOLID_NOT;
+        ent->r.solid = SOLID_NOT;
         ent->use = trigger_enable;
     } else {
-        ent->solid = SOLID_TRIGGER;
+        ent->r.solid = SOLID_TRIGGER;
         ent->use = Use_Multi;
     }
 
     gi.linkentity(ent);
 
     if (ent->spawnflags & SPAWNFLAG_TRIGGER_CLIP)
-        ent->svflags |= SVF_HULL;
+        ent->r.svflags |= SVF_HULL;
 }
 
 /*QUAKED trigger_once (.5 .5 .5) ? x x TRIGGERED
@@ -516,7 +516,7 @@ static void trigger_effect(edict_t *self)
     vec3_t origin;
     int    i;
 
-    VectorAvg(self->absmin, self->absmax, origin);
+    VectorAvg(self->r.absmin, self->r.absmax, origin);
 
     for (i = 0; i < 10; i++) {
         origin[2] += (self->speed * 0.01f) * (i + frandom());
@@ -591,12 +591,12 @@ void SP_trigger_push(edict_t *self)
     if (self->targetname) { // toggleable
         self->use = trigger_push_use;
         if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF)
-            self->solid = SOLID_NOT;
+            self->r.solid = SOLID_NOT;
     } else if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF) {
         gi.dprintf("trigger_push is START_OFF but not targeted.\n");
-        self->svflags = SVF_NONE;
+        self->r.svflags = SVF_NONE;
         self->touch = NULL;
-        self->solid = SOLID_BSP;
+        self->r.solid = SOLID_BSP;
         self->movetype = MOVETYPE_PUSH;
     }
     // PGM
@@ -604,7 +604,7 @@ void SP_trigger_push(edict_t *self)
     gi.linkentity(self);
 
     if (self->spawnflags & SPAWNFLAG_PUSH_CLIP)
-        self->svflags |= SVF_HULL;
+        self->r.svflags |= SVF_HULL;
 }
 
 /*
@@ -662,20 +662,20 @@ void USE(hurt_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 static bool can_hurt(edict_t *self, edict_t *other)
 {
-    if (!other->inuse)
+    if (!other->r.inuse)
         return false;
     if (!other->takedamage)
         return false;
-    if (!(other->svflags & SVF_MONSTER) && !(other->flags & FL_DAMAGEABLE) && (!other->client) && (strcmp(other->classname, "misc_explobox") != 0))
+    if (!(other->r.svflags & SVF_MONSTER) && !(other->flags & FL_DAMAGEABLE) && (!other->client) && (strcmp(other->classname, "misc_explobox") != 0))
         return false;
-    if ((self->spawnflags & SPAWNFLAG_HURT_NO_MONSTERS) && (other->svflags & SVF_MONSTER))
+    if ((self->spawnflags & SPAWNFLAG_HURT_NO_MONSTERS) && (other->r.svflags & SVF_MONSTER))
         return false;
     if ((self->spawnflags & SPAWNFLAG_HURT_NO_PLAYERS) && (other->client))
         return false;
 
     if (self->spawnflags & SPAWNFLAG_HURT_CLIPPED) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->mins, other->maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return false;
@@ -770,9 +770,9 @@ void SP_trigger_hurt(edict_t *self)
         self->dmg = 5;
 
     if (self->spawnflags & SPAWNFLAG_HURT_START_OFF)
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     else
-        self->solid = SOLID_TRIGGER;
+        self->r.solid = SOLID_TRIGGER;
 
     if (self->spawnflags & SPAWNFLAG_HURT_TOGGLE)
         self->use = hurt_use;
@@ -780,7 +780,7 @@ void SP_trigger_hurt(edict_t *self)
     gi.linkentity(self);
 
     if (self->spawnflags & SPAWNFLAG_HURT_CLIPPED)
-        self->svflags |= SVF_HULL;
+        self->r.svflags |= SVF_HULL;
 }
 
 /*
@@ -845,7 +845,7 @@ void SP_trigger_gravity(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_GRAVITY_START_OFF) {
         self->use = trigger_gravity_use;
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     }
 
     self->touch = trigger_gravity_touch;
@@ -854,7 +854,7 @@ void SP_trigger_gravity(edict_t *self)
     gi.linkentity(self);
 
     if (self->spawnflags & SPAWNFLAG_GRAVITY_CLIPPED)
-        self->svflags |= SVF_HULL;
+        self->r.svflags |= SVF_HULL;
 }
 
 /*
@@ -932,13 +932,13 @@ void SP_trigger_monsterjump(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_START_OFF) {
         self->use = trigger_monsterjump_use;
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
     }
 
     gi.linkentity(self);
 
     if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_CLIPPED)
-        self->svflags |= SVF_HULL;
+        self->r.svflags |= SVF_HULL;
 }
 
 /*
@@ -987,7 +987,7 @@ void SP_trigger_flashlight(edict_t *self)
     self->movedir[2] = st.height;
 
     if (self->spawnflags & SPAWNFLAG_FLASHLIGHT_CLIPPED)
-        self->svflags |= SVF_HULL;
+        self->r.svflags |= SVF_HULL;
     gi.linkentity(self);
 }
 
@@ -1148,7 +1148,7 @@ requiring to be fired by something else. Frees itself after firing.
 
 static bool trigger_coop_relay_ok(edict_t *player)
 {
-    return player->inuse && player->client && player->health > 0 &&
+    return player->r.inuse && player->client && player->health > 0 &&
         player->movetype != MOVETYPE_NOCLIP && player->s.modelindex == MODELINDEX_PLAYER;
 }
 
@@ -1169,7 +1169,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
         if (!trigger_coop_relay_ok(player))
             continue;
 
-        if (boxes_intersect(player->absmin, player->absmax, self->absmin, self->absmax))
+        if (boxes_intersect(player->r.absmin, player->r.absmax, self->r.absmin, self->r.absmax))
             continue;
 
         if (self->timestamp < level.time)
@@ -1264,7 +1264,7 @@ void SP_trigger_coop_relay(edict_t *self)
         self->nextthink = level.time + SEC(self->wait);
     } else
         self->use = trigger_coop_relay_use;
-    self->svflags |= SVF_NOCLIENT;
+    self->r.svflags |= SVF_NOCLIENT;
     gi.linkentity(self);
 }
 
@@ -1285,7 +1285,7 @@ void SP_trigger_safe_fall(edict_t *self)
 {
     InitTrigger(self);
     self->touch = trigger_safe_fall_touch;
-    self->svflags |= SVF_NOCLIENT;
-    self->solid = SOLID_TRIGGER;
+    self->r.svflags |= SVF_NOCLIENT;
+    self->r.solid = SOLID_TRIGGER;
     gi.linkentity(self);
 }

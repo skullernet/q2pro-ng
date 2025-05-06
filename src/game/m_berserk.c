@@ -181,7 +181,7 @@ const mmove_t MMOVE_T(berserk_move_attack_spike) = { FRAME_att_c1, FRAME_att_c8,
 
 static void berserk_attack_club(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
 
     if (!fire_hit(self, aim, irandom2(15, 21), 250)) // Slower attack
         self->monsterinfo.melee_debounce_time = level.time + SEC(2.5f);
@@ -227,7 +227,7 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
         if (ent->client && !ent->groundentity)
             continue;
 
-        closest_point_to_box(point, ent->absmin, ent->absmax, v);
+        closest_point_to_box(point, ent->r.absmin, ent->r.absmax, v);
 
         // calculate contribution amount
         float amount = 1.0f - Distance(v, point) / radius;
@@ -245,7 +245,7 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
         VectorNormalize(dir);
 
         // keep the point at their feet so they always get knocked up
-        point[2] = ent->absmin[2];
+        point[2] = ent->r.absmin[2];
         T_Damage(ent, inflictor, attacker, dir, point, dir, points, kick * amount, DAMAGE_RADIUS, mod);
 
         if (ent->client)
@@ -538,15 +538,15 @@ void MONSTERINFO_SETSKIN(berserk_setskin)(edict_t *self)
 
 static void berserk_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void berserk_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -795,10 +795,10 @@ void SP_monster_berserk(edict_t *self)
 
     PrecacheGibs(berserk_gibs);
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
 
     self->health = 240 * st.health_multiplier;
     self->gib_health = -60;

@@ -347,16 +347,16 @@ static void guncmdr_dead(edict_t *self)
     static const vec3_t mins = { -16, -16, -24 };
     static const vec3_t maxs = { 16, 16, -8 };
 
-    VectorScale(mins, self->s.scale, self->mins);
-    VectorScale(maxs, self->s.scale, self->maxs);
+    VectorScale(mins, self->s.scale, self->r.mins);
+    VectorScale(maxs, self->s.scale, self->r.maxs);
 
     monster_dead(self);
 }
 
 static void guncmdr_shrink(edict_t *self)
 {
-    self->maxs[2] = -4 * self->s.scale;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = -4 * self->s.scale;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -942,7 +942,7 @@ static void GunnerCmdrGrenade(edict_t *self)
         else if (pitch < -0.5f)
             pitch = -0.5f;
 
-        if ((self->enemy->absmin[2] - self->absmax[2]) > 16 && flash_number >= MZ2_GUNCMDR_GRENADE_MORTAR_1 && flash_number <= MZ2_GUNCMDR_GRENADE_MORTAR_3)
+        if ((self->enemy->r.absmin[2] - self->r.absmax[2]) > 16 && flash_number >= MZ2_GUNCMDR_GRENADE_MORTAR_1 && flash_number <= MZ2_GUNCMDR_GRENADE_MORTAR_3)
             pitch += 0.5f;
     }
     // PGM
@@ -1406,14 +1406,14 @@ void SP_monster_guncmdr(edict_t *self)
     gi.soundindex("guncmdr/gcdratck3.wav");
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
 
     PrecacheGibs(guncmdr_gibs);
 
     self->s.scale = 1.25f;
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 36);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 36);
     self->s.skinnum = 2;
 
     self->health = 325 * st.health_multiplier;

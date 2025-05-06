@@ -22,19 +22,20 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
         return false;
 
     // see if enemy is in range
-    range = distance_between_boxes(self->enemy->absmin, self->enemy->absmax, self->absmin, self->absmax);
+    range = distance_between_boxes(self->enemy->r.absmin, self->enemy->r.absmax,
+                                   self->r.absmin, self->r.absmax);
     if (range > aim[0])
         return false;
 
-    if (!(aim[1] > self->mins[0] && aim[1] < self->maxs[0])) {
+    if (!(aim[1] > self->r.mins[0] && aim[1] < self->r.maxs[0])) {
         // this is a side hit so adjust the "right" value out to the edge of their bbox
         if (aim[1] < 0)
-            aim[1] = self->enemy->mins[0];
+            aim[1] = self->enemy->r.mins[0];
         else
-            aim[1] = self->enemy->maxs[0];
+            aim[1] = self->enemy->r.maxs[0];
     }
 
-    closest_point_to_box(self->s.origin, self->enemy->absmin, self->enemy->absmax, point);
+    closest_point_to_box(self->s.origin, self->enemy->r.absmin, self->enemy->r.absmax, point);
 
     // check that we can hit the point on the bbox
     gi.trace(&tr, self->s.origin, NULL, NULL, point, self, MASK_PROJECTILE);
@@ -71,7 +72,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
         return false;
 
     // do our special form of knockback here
-    VectorAvg(self->enemy->absmin, self->enemy->absmax, v);
+    VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, v);
     VectorSubtract(v, point, v);
     VectorNormalize(v);
     VectorMA(self->enemy->velocity, kick, v, self->enemy->velocity);
@@ -305,7 +306,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     trace_t  tr;
 
     bolt = G_Spawn();
-    bolt->svflags = SVF_PROJECTILE;
+    bolt->r.svflags = SVF_PROJECTILE;
     VectorCopy(start, bolt->s.origin);
     VectorCopy(start, bolt->s.old_origin);
     vectoangles(dir, bolt->s.angles);
@@ -316,12 +317,12 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     if (self->client && !G_ShouldPlayersCollide(true))
         bolt->clipmask &= ~CONTENTS_PLAYER;
     bolt->flags |= FL_DODGE;
-    bolt->solid = SOLID_BBOX;
+    bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
     bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-    bolt->owner = self;
+    bolt->r.owner = self;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -352,8 +353,8 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
     vec3_t   origin;
     mod_id_t mod;
 
-    if (ent->owner->client)
-        PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+    if (ent->r.owner->client)
+        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
 
     // FIXME: if we are onground then raise our Z just a bit since we are a point?
     if (other) {
@@ -364,7 +365,8 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
             mod = MOD_HANDGRENADE;
         else
             mod = MOD_GRENADE;
-        T_Damage(other, ent, ent->owner, dir, ent->s.origin, normal, ent->dmg, ent->dmg, mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, (mod_t) { mod });
+        T_Damage(other, ent, ent->r.owner, dir, ent->s.origin, normal, ent->dmg, ent->dmg,
+                 mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, (mod_t) { mod });
     }
 
     if (ent->spawnflags & SPAWNFLAG_GRENADE_HELD)
@@ -373,7 +375,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
         mod = MOD_HG_SPLASH;
     else
         mod = MOD_G_SPLASH;
-    T_RadiusDamage(ent, ent->owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
+    T_RadiusDamage(ent, ent->r.owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
 
     VectorAdd(ent->s.origin, normal, origin);
     gi.WriteByte(svc_temp_entity);
@@ -469,8 +471,8 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         grenade->clipmask &= ~CONTENTS_PLAYER;
-    grenade->solid = SOLID_BBOX;
-    grenade->svflags |= SVF_PROJECTILE;
+    grenade->r.solid = SOLID_BBOX;
+    grenade->r.svflags |= SVF_PROJECTILE;
     grenade->flags |= (FL_DODGE | FL_TRAP);
     grenade->s.effects |= EF_GRENADE;
     grenade->speed = speed;
@@ -488,7 +490,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
         grenade->think = Grenade4_Think;
         grenade->s.renderfx |= RF_MINLIGHT;
     }
-    grenade->owner = self;
+    grenade->r.owner = self;
     grenade->touch = Grenade_Touch;
     grenade->dmg = damage;
     grenade->dmg_radius = damage_radius;
@@ -523,13 +525,13 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         grenade->clipmask &= ~CONTENTS_PLAYER;
-    grenade->solid = SOLID_BBOX;
-    grenade->svflags |= SVF_PROJECTILE;
+    grenade->r.solid = SOLID_BBOX;
+    grenade->r.svflags |= SVF_PROJECTILE;
     grenade->flags |= (FL_DODGE | FL_TRAP);
     grenade->s.effects |= EF_GRENADE;
 
     grenade->s.modelindex = gi.modelindex("models/objects/grenade3/tris.md2");
-    grenade->owner = self;
+    grenade->r.owner = self;
     grenade->touch = Grenade_Touch;
     grenade->nextthink = level.time + timer;
     grenade->think = Grenade_Explode;
@@ -603,16 +605,16 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     vectoangles(dir, rocket->s.angles);
     VectorScale(dir, speed, rocket->velocity);
     rocket->movetype = MOVETYPE_FLYMISSILE;
-    rocket->svflags |= SVF_PROJECTILE;
+    rocket->r.svflags |= SVF_PROJECTILE;
     rocket->flags |= FL_DODGE;
     rocket->clipmask = MASK_PROJECTILE;
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         rocket->clipmask &= ~CONTENTS_PLAYER;
-    rocket->solid = SOLID_BBOX;
+    rocket->r.solid = SOLID_BBOX;
     rocket->s.effects |= EF_ROCKET;
     rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    rocket->owner = self;
+    rocket->r.owner = self;
     rocket->touch = rocket_touch;
     rocket->nextthink = level.time + SEC(8000.0f / speed);
     rocket->think = G_FreeEdict;
@@ -725,7 +727,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     // a slightly different approach...
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (!player->inuse)
+        if (!player->r.inuse)
             continue;
 
         vec3_t org;
@@ -787,7 +789,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->s.frame = 3;
     laser->s.renderfx = RF_BEAM_LIGHTNING;
     laser->movetype = MOVETYPE_NONE;
-    laser->solid = SOLID_NOT;
+    laser->r.solid = SOLID_NOT;
     laser->s.modelindex = MODELINDEX_WORLD; // must be non-zero
     VectorCopy(self->s.origin, laser->s.origin);
     VectorCopy(tr.endpos, laser->s.old_origin);
@@ -795,7 +797,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
     laser->timestamp = level.time + SEC(0.3f);
-    laser->owner = self;
+    laser->r.owner = self;
     gi.linkentity(laser);
 }
 
@@ -997,14 +999,14 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
     VectorScale(dir, speed, bfg->velocity);
     bfg->movetype = MOVETYPE_FLYMISSILE;
     bfg->clipmask = MASK_PROJECTILE;
-    bfg->svflags = SVF_PROJECTILE;
+    bfg->r.svflags = SVF_PROJECTILE;
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         bfg->clipmask &= ~CONTENTS_PLAYER;
-    bfg->solid = SOLID_BBOX;
+    bfg->r.solid = SOLID_BBOX;
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->owner = self;
+    bfg->r.owner = self;
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
@@ -1052,13 +1054,13 @@ void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward,
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         bfg->clipmask &= ~CONTENTS_PLAYER;
-    bfg->solid = SOLID_BBOX;
+    bfg->r.solid = SOLID_BBOX;
     bfg->s.effects |= EF_TAGTRAIL | EF_ANIM_ALL;
     bfg->s.renderfx |= RF_TRANSLUCENT;
-    bfg->svflags |= SVF_PROJECTILE;
+    bfg->r.svflags |= SVF_PROJECTILE;
     bfg->flags |= FL_DODGE;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->owner = self;
+    bfg->r.owner = self;
     bfg->touch = disintegrator_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;

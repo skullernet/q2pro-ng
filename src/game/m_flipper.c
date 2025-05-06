@@ -223,8 +223,8 @@ void MONSTERINFO_SETSKIN(flipper_setskin)(edict_t *self)
 
 static void flipper_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -8);
-    VectorSet(self->maxs, 16, 16, 8);
+    VectorSet(self->r.mins, -16, -16, -8);
+    VectorSet(self->r.maxs, 16, 16, 8);
     monster_dead(self);
 }
 
@@ -360,10 +360,10 @@ void SP_monster_flipper(edict_t *self)
     G_AddPrecache(flipper_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/flipper/tris.md2");
-    VectorSet(self->mins, -16, -16, -8);
-    VectorSet(self->maxs, 16, 16, 20);
+    VectorSet(self->r.mins, -16, -16, -8);
+    VectorSet(self->r.maxs, 16, 16, 20);
 
     self->health = 50 * st.health_multiplier;
     self->gib_health = -30;

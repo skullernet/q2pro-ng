@@ -1734,7 +1734,7 @@ void WriteLevel(const char *filename)
     begin_block("entities");
     for (i = 0; i < globals.num_edicts; i++) {
         ent = &g_edicts[i];
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
         write_fields(va("%d", i), entityfields, q_countof(entityfields), ent);
     }
@@ -1809,14 +1809,14 @@ void ReadLevel(const char *filename)
             globals.num_edicts = entnum + 1;
 
         ent = &g_edicts[entnum];
-        if (ent->inuse)
+        if (ent->r.inuse)
             parse_error("duplicate entity: %d", entnum);
 
         G_InitEdict(ent);
         read_fields(entityfields, q_countof(entityfields), ent);
 
         if (line.version < SAVE_VERSION_PSX) {
-            if (ent->svflags & SVF_MONSTER)
+            if (ent->r.svflags & SVF_MONSTER)
                 ent->vision_cone = -2.0f;
             if (!strcmp(ent->classname, "func_plat2"))
                 ent->wait = 2.0f;
@@ -1841,7 +1841,7 @@ void ReadLevel(const char *filename)
     for (i = 0; i < globals.num_edicts; i++) {
         ent = &g_edicts[i];
 
-        if (!ent->inuse)
+        if (!ent->r.inuse)
             continue;
 
         Q_assert(ent->classname);

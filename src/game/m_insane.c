@@ -570,8 +570,8 @@ static void insane_dead(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_INSANE_CRUCIFIED) {
         self->flags |= FL_FLY;
     } else {
-        VectorSet(self->mins, -16, -16, -24);
-        VectorSet(self->maxs, 16, 16, -8);
+        VectorSet(self->r.mins, -16, -16, -24);
+        VectorSet(self->r.maxs, 16, 16, -8);
         self->movetype = MOVETYPE_TOSS;
     }
     monster_dead(self);
@@ -646,11 +646,11 @@ void SP_misc_insane(edict_t *self)
         G_AddPrecache(insane_precache2);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/insane/tris.md2");
 
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, 32);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, 32);
 
     self->health = 100 * st.health_multiplier;
     self->gib_health = -50;

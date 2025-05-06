@@ -185,7 +185,7 @@ static void SpawnGro_laser_pos(edict_t *ent, vec3_t pos)
         cosf(phi)
     };
 
-    VectorMA(ent->s.origin, ent->owner->s.scale * 9, d, pos);
+    VectorMA(ent->s.origin, ent->r.owner->s.scale * 9, d, pos);
 }
 
 void THINK(SpawnGro_laser_think)(edict_t *self)
@@ -210,7 +210,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     ent->avelocity[1] = frandom2(280, 360) * 2;
     ent->avelocity[2] = frandom2(280, 360) * 2;
 
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.renderfx |= RF_IR_VISIBLE;
     ent->movetype = MOVETYPE_NONE;
     ent->classname = "spawngro";
@@ -240,7 +240,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     beam->s.skinnum = 0x30303030;
     beam->classname = "spawngro_beam";
     beam->angle = end_size;
-    beam->owner = ent;
+    beam->r.owner = ent;
     VectorCopy(ent->s.origin, beam->s.origin);
     beam->think = SpawnGro_laser_think;
     beam->nextthink = level.time + FRAME_TIME;
@@ -345,7 +345,7 @@ void Widowlegs_Spawn(const vec3_t startpos, const vec3_t angles)
     ent = G_Spawn();
     VectorCopy(startpos, ent->s.origin);
     VectorCopy(angles, ent->s.angles);
-    ent->solid = SOLID_NOT;
+    ent->r.solid = SOLID_NOT;
     ent->s.renderfx = RF_IR_VISIBLE;
     ent->movetype = MOVETYPE_NONE;
     ent->classname = "widowlegs";

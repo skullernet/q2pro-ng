@@ -118,9 +118,9 @@ static void SpawnAndGiveItem(edict_t *ent, item_id_t id)
     it_ent->classname = it->classname;
     SpawnItem(it_ent, it);
 
-    if (it_ent->inuse) {
+    if (it_ent->r.inuse) {
         Touch_Item(it_ent, ent, &null_trace, true);
-        if (it_ent->inuse)
+        if (it_ent->r.inuse)
             G_FreeEdict(it_ent);
     }
 }
@@ -263,11 +263,11 @@ static void Cmd_Give_f(edict_t *ent)
         it_ent->classname = it->classname;
         SpawnItem(it_ent, it);
         // PMM - since some items don't actually spawn when you say to ..
-        if (!it_ent->inuse)
+        if (!it_ent->r.inuse)
             return;
         // pmm
         Touch_Item(it_ent, ent, &null_trace, true);
-        if (it_ent->inuse)
+        if (it_ent->r.inuse)
             G_FreeEdict(it_ent);
     }
 }
@@ -342,8 +342,8 @@ static void Cmd_Spawn_f(edict_t *ent)
     if (!G_CheatCheck(ent))
         return;
 
-    solid_t backup = ent->solid;
-    ent->solid = SOLID_NOT;
+    solid_t backup = ent->r.solid;
+    ent->r.solid = SOLID_NOT;
     gi.linkentity(ent);
 
     edict_t *other = G_Spawn();
@@ -363,7 +363,7 @@ static void Cmd_Spawn_f(edict_t *ent)
 
     ED_CallSpawn(other);
 
-    if (other->inuse) {
+    if (other->r.inuse) {
         vec3_t start, end;
 
         VectorCopy(ent->s.origin, start);
@@ -377,18 +377,19 @@ static void Cmd_Spawn_f(edict_t *ent)
 
         for (int i = 0; i < 3; i++) {
             if (tr.plane.normal[i] > 0)
-                other->s.origin[i] -= other->mins[i] * tr.plane.normal[i];
+                other->s.origin[i] -= other->r.mins[i] * tr.plane.normal[i];
             else
-                other->s.origin[i] += other->maxs[i] * -tr.plane.normal[i];
+                other->s.origin[i] += other->r.maxs[i] * -tr.plane.normal[i];
         }
 
         while (1) {
-            gi.trace(&tr, other->s.origin, other->mins, other->maxs, other->s.origin, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
+            gi.trace(&tr, other->s.origin, other->r.mins, other->r.maxs,
+                     other->s.origin, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
             if (!tr.startsolid)
                 break;
 
-            float dx = other->maxs[0] - other->mins[0];
-            float dy = other->maxs[1] - other->mins[1];
+            float dx = other->r.maxs[0] - other->r.mins[0];
+            float dy = other->r.maxs[1] - other->r.mins[1];
             float f = -sqrtf(dx * dx + dy * dy);
             vec3_t dir;
 
@@ -402,14 +403,14 @@ static void Cmd_Spawn_f(edict_t *ent)
             }
         }
 
-        if (other->inuse)
+        if (other->r.inuse)
             gi.linkentity(other);
 
-        if ((other->svflags & SVF_MONSTER) && other->think)
+        if ((other->r.svflags & SVF_MONSTER) && other->think)
             other->think(other);
     }
 
-    ent->solid = backup;
+    ent->r.solid = backup;
     gi.linkentity(ent);
 }
 
@@ -504,7 +505,7 @@ static void Cmd_AlertAll_f(edict_t *ent)
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *t = &g_edicts[i];
 
-        if (!t->inuse || t->health <= 0 || !(t->svflags & SVF_MONSTER))
+        if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
             continue;
 
         t->enemy = ent;
@@ -929,9 +930,9 @@ static void Cmd_Kill_AI_f(edict_t * ent)
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
-        if (!edict->inuse || edict == tr.ent)
+        if (!edict->r.inuse || edict == tr.ent)
             continue;
-        if (!(edict->svflags & SVF_MONSTER))
+        if (!(edict->r.svflags & SVF_MONSTER))
             continue;
         G_FreeEdict(edict);
     }
@@ -963,9 +964,9 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
-        if (!edict->inuse)
+        if (!edict->r.inuse)
             continue;
-        if (!(edict->svflags & SVF_MONSTER))
+        if (!(edict->r.svflags & SVF_MONSTER))
             continue;
         edict->monsterinfo.aiflags |= AI_FORGET_ENEMY;
     }
@@ -1111,7 +1112,7 @@ static void Cmd_Wave_f(edict_t *ent)
 
     for (int i = 1; i <= game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
-        if (!player->inuse || player == ent)
+        if (!player->r.inuse || player == ent)
             continue;
 
         VectorSubtract(player->s.origin, start, dir);
@@ -1178,7 +1179,7 @@ static void Cmd_Wave_f(edict_t *ent)
     if (cmd == GESTURE_POINT) {
         for (int i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
-            if (player->inuse && player != ent && OnSameTeam(ent, player)) {
+            if (player->r.inuse && player != ent && OnSameTeam(ent, player)) {
                 has_a_target = true;
                 break;
             }
@@ -1197,7 +1198,7 @@ static void Cmd_Wave_f(edict_t *ent)
             // send to all teammates
             for (int i = 1; i <= game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
-                if (!player->inuse)
+                if (!player->r.inuse)
                     continue;
                 if (player != ent && !OnSameTeam(ent, player))
                     continue;
@@ -1269,7 +1270,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
 
     for (j = 1; j <= game.maxclients; j++) {
         other = &g_edicts[j];
-        if (!other->inuse)
+        if (!other->r.inuse)
             continue;
         if (!other->client)
             continue;
@@ -1287,7 +1288,7 @@ static void Cmd_PlayerList_f(edict_t *ent)
     // connect time, ping, score, name
     *text = 0;
     for (i = 0, e2 = g_edicts + 1; i < game.maxclients; i++, e2++) {
-        if (!e2->inuse)
+        if (!e2->r.inuse)
             continue;
 
         int sec = TO_SEC(level.time - e2->client->resp.entertime);
@@ -1327,7 +1328,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
 
             // NB: we are counting ourselves in this one, unlike
             // the other assign team func
-            if (!player->inuse)
+            if (!player->r.inuse)
                 continue;
 
             switch (player->client->resp.ctf_team) {
@@ -1349,7 +1350,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
 
         if (ent->client->resp.ctf_team != best_team) {
             ////
-            ent->svflags = SVF_NONE;
+            ent->r.svflags = SVF_NONE;
             ent->flags &= ~FL_GODMODE;
             ent->client->resp.ctf_team = best_team;
             ent->client->resp.ctf_state = 0;
@@ -1358,7 +1359,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
             // if anybody has a menu open, update it immediately
             CTFDirtyTeamMenu();
 
-            if (ent->solid == SOLID_NOT) {
+            if (ent->r.solid == SOLID_NOT) {
                 // spectator
                 PutClientInServer(ent);
 
@@ -1402,9 +1403,9 @@ static void Cmd_ListMonsters_f(edict_t *ent)
     for (int i = 0; i < level.total_monsters; i++) {
         edict_t *e = level.monsters_registered[i];
 
-        if (!e || !e->inuse)
+        if (!e || !e->r.inuse)
             continue;
-        if (!(e->svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
+        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
             continue;
         if (e->deadflag)
             continue;
@@ -1438,7 +1439,7 @@ static void Cmd_ShowSecrets_f(edict_t *self)
         other = NULL;
         found = false;
         while ((other = G_Find(other, FOFS(target), ent->targetname))) {
-            draw->AddDebugBounds(other->absmin, other->absmax, U32_RED, 10000, false);
+            draw->AddDebugBounds(other->r.absmin, other->r.absmax, U32_RED, 10000, false);
             found = true;
         }
 

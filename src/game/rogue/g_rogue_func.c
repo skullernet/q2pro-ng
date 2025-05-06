@@ -19,9 +19,9 @@ void plat2_spawn_danger_area(edict_t *ent)
 {
     vec3_t mins, maxs;
 
-    VectorCopy(ent->mins, mins);
-    VectorCopy(ent->maxs, maxs);
-    maxs[2] = ent->mins[2] + 64;
+    VectorCopy(ent->r.mins, mins);
+    VectorCopy(ent->r.maxs, maxs);
+    maxs[2] = ent->r.mins[2] + 64;
 
     SpawnBadArea(mins, maxs, 0, ent);
 }
@@ -32,7 +32,7 @@ void plat2_kill_danger_area(edict_t *ent)
 
     t = NULL;
     while ((t = G_Find(t, FOFS(classname), "bad_area"))) {
-        if (t->owner == ent)
+        if (t->r.owner == ent)
             G_FreeEdict(t);
     }
 }
@@ -142,7 +142,7 @@ static void plat2_operate(edict_t *ent, edict_t *other)
     if ((ent->last_move_time + SEC(ent->wait)) > level.time)
         return;
 
-    platCenter = (trigger->absmin[2] + trigger->absmax[2]) / 2;
+    platCenter = (trigger->r.absmin[2] + trigger->r.absmax[2]) / 2;
 
     if (ent->moveinfo.state == STATE_TOP) {
         otherState = STATE_TOP;
@@ -150,7 +150,7 @@ static void plat2_operate(edict_t *ent, edict_t *other)
             if (platCenter > other->s.origin[2])
                 otherState = STATE_BOTTOM;
         } else {
-            if (trigger->absmax[2] > other->s.origin[2])
+            if (trigger->r.absmax[2] > other->s.origin[2])
                 otherState = STATE_BOTTOM;
         }
     } else {
@@ -294,7 +294,7 @@ void SP_func_plat2(edict_t *ent)
     edict_t *trigger;
 
     VectorClear(ent->s.angles);
-    ent->solid = SOLID_BSP;
+    ent->r.solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
     gi.setmodel(ent, ent->model);
@@ -336,7 +336,7 @@ void SP_func_plat2(edict_t *ent)
     if (st.height)
         ent->pos2[2] -= (st.height - st.lip);
     else
-        ent->pos2[2] -= (ent->maxs[2] - ent->mins[2]) - st.lip;
+        ent->pos2[2] -= (ent->r.maxs[2] - ent->r.mins[2]) - st.lip;
 
     ent->moveinfo.state = STATE_TOP;
 
@@ -348,10 +348,10 @@ void SP_func_plat2(edict_t *ent)
         trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
         // PGM - debugging??
-        trigger->maxs[0] += 10;
-        trigger->maxs[1] += 10;
-        trigger->mins[0] -= 10;
-        trigger->mins[1] -= 10;
+        trigger->r.maxs[0] += 10;
+        trigger->r.maxs[1] += 10;
+        trigger->r.mins[0] -= 10;
+        trigger->r.mins[1] -= 10;
 
         gi.linkentity(trigger);
 

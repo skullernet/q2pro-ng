@@ -105,7 +105,7 @@ void MONSTERINFO_RUN(gladiator_run)(edict_t *self)
 
 static void GladiatorMelee(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
     if (fire_hit(self, aim, irandom2(20, 25), 300))
         gi.sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
     else {
@@ -293,15 +293,15 @@ void MONSTERINFO_SETSKIN(gladiator_setskin)(edict_t *self)
 
 static void gladiator_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, -24);
-    VectorSet(self->maxs, 16, 16, -8);
+    VectorSet(self->r.mins, -16, -16, -24);
+    VectorSet(self->r.maxs, 16, 16, -8);
     monster_dead(self);
 }
 
 static void gladiator_shrink(edict_t *self)
 {
-    self->maxs[2] = 0;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -417,7 +417,7 @@ void SP_monster_gladiator(edict_t *self)
     G_AddPrecache(gladiator_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/gladiatr/tris.md2");
 
     PrecacheGibs(gladiator_gibs);
@@ -453,8 +453,8 @@ void SP_monster_gladiator(edict_t *self)
 
     self->gib_health = -175;
 
-    VectorSet(self->mins, -32, -32, -24);
-    VectorSet(self->maxs, 32, 32, 42);
+    VectorSet(self->r.mins, -32, -32, -24);
+    VectorSet(self->r.maxs, 32, 32, 42);
 
     self->pain = gladiator_pain;
     self->die = gladiator_die;

@@ -184,8 +184,8 @@ void SetRespawnEx(edict_t *ent, gtime_t delay, bool hide_self)
     ent->flags |= FL_RESPAWN;
 
     if (hide_self) {
-        ent->svflags |= (SVF_NOCLIENT | SVF_RESPAWNING);
-        ent->solid = SOLID_NOT;
+        ent->r.svflags |= (SVF_NOCLIENT | SVF_RESPAWNING);
+        ent->r.solid = SOLID_NOT;
         gi.linkentity(ent);
     }
 
@@ -263,7 +263,7 @@ static void Drop_General(edict_t *ent, const gitem_t *item)
 {
     edict_t *dropped = Drop_Item(ent, item);
     dropped->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
-    dropped->svflags &= ~SVF_INSTANCED;
+    dropped->r.svflags &= ~SVF_INSTANCED;
     ent->client->pers.inventory[item->id]--;
 }
 
@@ -594,7 +594,7 @@ static void Drop_Ammo(edict_t *ent, const gitem_t *item)
     item_id_t index = item->id;
     edict_t *dropped = Drop_Item(ent, item);
     dropped->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
-    dropped->svflags &= ~SVF_INSTANCED;
+    dropped->r.svflags &= ~SVF_INSTANCED;
 
     if (ent->client->pers.inventory[index] >= item->quantity)
         dropped->count = item->quantity;
@@ -670,10 +670,10 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
         } else {
             ent->think = MegaHealth_think;
             ent->nextthink = level.time + SEC(5);
-            ent->owner = other;
+            ent->r.owner = other;
             ent->flags |= FL_RESPAWN;
-            ent->svflags |= SVF_NOCLIENT;
-            ent->solid = SOLID_NOT;
+            ent->r.svflags |= SVF_NOCLIENT;
+            ent->r.solid = SOLID_NOT;
         }
     } else {
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch->integer)
@@ -687,7 +687,7 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
 
 item_id_t ArmorIndex(edict_t *ent)
 {
-    if (ent->svflags & SVF_MONSTER)
+    if (ent->r.svflags & SVF_MONSTER)
         return ent->monsterinfo.armor_type;
 
     if (ent->client) {
@@ -984,23 +984,23 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->s.effects = item->world_model_flags;
     gi.setmodel(dropped, dropped->item->world_model);
     dropped->s.renderfx = RF_GLOW | RF_IR_VISIBLE; // PGM
-    VectorSet(dropped->mins, -15, -15, -15);
-    VectorSet(dropped->maxs, 15, 15, 15);
-    dropped->solid = SOLID_TRIGGER;
+    VectorSet(dropped->r.mins, -15, -15, -15);
+    VectorSet(dropped->r.maxs, 15, 15, 15);
+    dropped->r.solid = SOLID_TRIGGER;
     dropped->movetype = MOVETYPE_TOSS;
     dropped->touch = drop_temp_touch;
-    dropped->owner = ent;
+    dropped->r.owner = ent;
 
     if (ent->client) {
         trace_t trace;
 
         AngleVectors(ent->client->v_angle, forward, right, NULL);
         G_ProjectSource(ent->s.origin, (const vec3_t) { 24, 0, -16 }, forward, right, dropped->s.origin);
-        gi.trace(&trace, ent->s.origin, dropped->mins, dropped->maxs, dropped->s.origin, ent, CONTENTS_SOLID);
+        gi.trace(&trace, ent->s.origin, dropped->r.mins, dropped->r.maxs, dropped->s.origin, ent, CONTENTS_SOLID);
         VectorCopy(trace.endpos, dropped->s.origin);
     } else {
         AngleVectors(ent->s.angles, forward, right, NULL);
-        VectorAvg(ent->absmin, ent->absmax, dropped->s.origin);
+        VectorAvg(ent->r.absmin, ent->r.absmax, dropped->s.origin);
     }
 
     G_FixStuckObject(dropped, dropped->s.origin);
@@ -1012,7 +1012,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->nextthink = level.time + SEC(1);
 
     if (coop->integer && P_UseCoopInstancedItems())
-        dropped->svflags |= SVF_INSTANCED;
+        dropped->r.svflags |= SVF_INSTANCED;
 
     gi.linkentity(dropped);
     return dropped;
@@ -1201,12 +1201,12 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
     // a few different times)
     if (item->flags & IF_KEY) {
         if (ent->spawnflags & SPAWNFLAG_ITEM_TRIGGER_SPAWN) {
-            ent->svflags |= SVF_NOCLIENT;
-            ent->solid = SOLID_NOT;
+            ent->r.svflags |= SVF_NOCLIENT;
+            ent->r.solid = SOLID_NOT;
             ent->use = Use_Item;
         }
         if (ent->spawnflags & SPAWNFLAG_ITEM_NO_TOUCH) {
-            ent->solid = SOLID_BBOX;
+            ent->r.solid = SOLID_BBOX;
             ent->touch = NULL;
             ent->s.effects &= ~(EF_ROTATE | EF_BOB);
             ent->s.renderfx &= ~RF_GLOW;
@@ -1337,7 +1337,7 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
 
     // mark all items as instanced
     if (coop->integer && P_UseCoopInstancedItems())
-        ent->svflags |= SVF_INSTANCED;
+        ent->r.svflags |= SVF_INSTANCED;
 
     ent->item = item;
     ent->nextthink = level.time + HZ(5); // items start after other solids

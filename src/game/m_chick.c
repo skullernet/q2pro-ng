@@ -275,15 +275,15 @@ void MONSTERINFO_SETSKIN(chick_setpain)(edict_t *self)
 
 static void chick_dead(edict_t *self)
 {
-    VectorSet(self->mins, -16, -16, 0);
-    VectorSet(self->maxs, 16, 16, 8);
+    VectorSet(self->r.mins, -16, -16, 0);
+    VectorSet(self->r.maxs, 16, 16, 8);
     monster_dead(self);
 }
 
 static void chick_shrink(edict_t *self)
 {
-    self->maxs[2] = 12;
-    self->svflags |= SVF_DEADMONSTER;
+    self->r.maxs[2] = 12;
+    self->r.svflags |= SVF_DEADMONSTER;
     gi.linkentity(self);
 }
 
@@ -383,7 +383,7 @@ const mmove_t MMOVE_T(chick_move_duck) = { FRAME_duck01, FRAME_duck07, chick_fra
 
 static void ChickSlash(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->mins[0], 10 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 10 };
     gi.sound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
     fire_hit(self, aim, irandom2(10, 16), 100);
 }
@@ -752,13 +752,13 @@ void SP_monster_chick(edict_t *self)
     G_AddPrecache(chick_precache);
 
     self->movetype = MOVETYPE_STEP;
-    self->solid = SOLID_BBOX;
+    self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/monsters/bitch/tris.md2");
 
     PrecacheGibs(chick_gibs);
 
-    VectorSet(self->mins, -16, -16, 0);
-    VectorSet(self->maxs, 16, 16, 56);
+    VectorSet(self->r.mins, -16, -16, 0);
+    VectorSet(self->r.maxs, 16, 16, 56);
 
     self->health = 175 * st.health_multiplier;
     self->gib_health = -70;

@@ -114,7 +114,7 @@ void SP_trigger_teleport(edict_t *self)
 
     self->touch = trigger_teleport_touch;
 
-    self->solid = SOLID_TRIGGER;
+    self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
 
     if (!VectorEmpty(self->s.angles))
@@ -167,14 +167,14 @@ void SP_trigger_disguise(edict_t *self)
         level.disguise_icon = gi.imageindex("i_disguise");
 
     if (self->spawnflags & SPAWNFLAG_DISGUISE_START_ON)
-        self->solid = SOLID_TRIGGER;
+        self->r.solid = SOLID_TRIGGER;
     else
-        self->solid = SOLID_NOT;
+        self->r.solid = SOLID_NOT;
 
     self->touch = trigger_disguise_touch;
     self->use = trigger_disguise_use;
     self->movetype = MOVETYPE_NONE;
-    self->svflags = SVF_NOCLIENT;
+    self->r.svflags = SVF_NOCLIENT;
 
     gi.setmodel(self, self->model);
     gi.linkentity(self);
