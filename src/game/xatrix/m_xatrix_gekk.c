@@ -616,7 +616,7 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }

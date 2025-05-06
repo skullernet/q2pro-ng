@@ -60,7 +60,7 @@ void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }
@@ -239,7 +239,7 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (other == ent->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(ent);
         return;
     }

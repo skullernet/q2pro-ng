@@ -1017,7 +1017,7 @@ static const mnode_t *find_face_node(const bsp_t *bsp, const mface_t *face)
 static bool is_removable_sky(const mface_t *face)
 {
     return face->drawflags & SURF_SKY &&
-        face->texinfo->c.flags & (SURF_LIGHT | SURF_NODRAW);
+        face->texinfo->flags & (SURF_LIGHT | SURF_NODRAW);
 }
 
 static void remove_fake_sky_faces(const bsp_t *bsp)
@@ -1110,7 +1110,7 @@ void GL_LoadWorld(const char *name)
 
     // register all texinfo
     for (i = 0, info = bsp->texinfo; i < bsp->numtexinfo; i++, info++) {
-        if (info->c.flags & SURF_SKY) {
+        if (info->flags & SURF_SKY) {
             if (!gl_static.use_cubemaps) {
                 info->image = R_NOTEXTURE;
             } else if (Q_stristr(info->name, "env/sky")) {
@@ -1122,10 +1122,10 @@ void GL_LoadWorld(const char *name)
             } else {
                 info->image = R_SKYTEXTURE;
             }
-        } else if (info->c.flags & SURF_NODRAW && bsp->has_bspx) {
+        } else if (info->flags & SURF_NODRAW && bsp->has_bspx) {
             info->image = R_NOTEXTURE;
         } else {
-            imageflags_t flags = (info->c.flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
+            imageflags_t flags = (info->flags & SURF_WARP) ? IF_TURBULENT : IF_NONE;
             Q_concat(buffer, sizeof(buffer), "textures/", info->name, ".wal");
             info->image = IMG_Find(buffer, IT_WALL, flags);
         }
@@ -1134,7 +1134,7 @@ void GL_LoadWorld(const char *name)
     // setup drawflags, etc
     for (i = n64surfs = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
         // hack surface flags into drawflags for faster access
-        surf->drawflags |= surf->texinfo->c.flags & ~DSURF_PLANEBACK;
+        surf->drawflags |= surf->texinfo->flags & ~DSURF_PLANEBACK;
 
         // clear statebits from previous load
         surf->statebits = GLS_DEFAULT;

@@ -887,28 +887,19 @@ typedef struct {
 #define PLANE_Z         2
 #define PLANE_NON_AXIAL 6
 
-typedef struct {
-    char        name[32];
-    int         flags;
-    int         value;
-    int         id;
-    char        material[16];
-} csurface_t;
-
 typedef int contents_t;
 
 // a trace is returned when a box is swept through the world
 typedef struct {
-    bool        allsolid;   // if true, plane is not valid
-    bool        startsolid; // if true, the initial point was in a solid area
-    float       fraction;   // time completed, 1.0 = didn't hit anything
-    vec3_t      endpos;     // final position
-    cplane_t    plane;      // surface normal at impact
-    csurface_t  *surface;   // surface hit
-    contents_t  contents;   // contents on other side of surface hit
-    struct edict_s  *ent;   // not set by CM_*() functions
-    cplane_t    plane2;     // second surface normal at impact
-    csurface_t *surface2;   // second surface hit
+    bool            allsolid;       // if true, plane is not valid
+    bool            startsolid;     // if true, the initial point was in a solid area
+    float           fraction;       // time completed, 1.0 = didn't hit anything
+    vec3_t          endpos;         // final position
+    cplane_t        plane;          // surface normal at impact
+    int             surface_flags;  // surface flags
+    int             surface_id;     // surface id
+    contents_t      contents;       // contents on other side of surface hit
+    struct edict_s  *ent;           // not set by CM_*() functions
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement

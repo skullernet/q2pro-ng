@@ -544,7 +544,8 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         if (enterfrac > -1 && enterfrac < trace->fraction) {
             trace->fraction = enterfrac;
             trace->plane = *clipplane;
-            trace->surface = &(leadside->texinfo->c);
+            trace->surface_flags = leadside->texinfo->flags;
+            trace->surface_id = leadside->texinfo->id;
             trace->contents = brush->contents;
         }
     }
@@ -755,7 +756,6 @@ void CM_BoxTrace(trace_t *trace,
     trace_trace = trace;
     memset(trace_trace, 0, sizeof(*trace_trace));
     trace_trace->fraction = 1;
-    trace_trace->surface = &(nulltexinfo.c);
 
     if (!headnode)
         return;
@@ -869,7 +869,8 @@ void CM_ClipEntity(trace_t *dst, const trace_t *src, struct edict_s *ent)
         dst->fraction = src->fraction;
         VectorCopy(src->endpos, dst->endpos);
         dst->plane = src->plane;
-        dst->surface = src->surface;
+        dst->surface_flags = src->surface_flags;
+        dst->surface_id = src->surface_id;
         dst->contents = src->contents;
         dst->ent = ent;
     }

@@ -46,10 +46,11 @@ enum {
 
 #endif
 
-typedef struct mtexinfo_s {  // used internally due to name len probs //ZOID
-    csurface_t          c;
+typedef struct mtexinfo_s {
     char                name[MAX_TEXNAME];
-
+    int                 flags;
+    int                 value;
+    int                 id;
 #if USE_REF
     vec3_t              axis[2];
     vec2_t              offset;

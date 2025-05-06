@@ -330,12 +330,9 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             VectorCopy(tr.endpos, water_start);
 
             if (!VectorCompare(start, tr.endpos)) {
-                if (tr.contents & CONTENTS_WATER) {
-                    if (strcmp(tr.surface->name, "*brwater") == 0)
-                        color = SPLASH_BROWN_WATER;
-                    else
-                        color = SPLASH_BLUE_WATER;
-                } else if (tr.contents & CONTENTS_SLIME)
+                if (tr.contents & CONTENTS_WATER)
+                    color = SPLASH_BLUE_WATER;
+                else if (tr.contents & CONTENTS_SLIME)
                     color = SPLASH_SLIME;
                 else if (tr.contents & CONTENTS_LAVA)
                     color = SPLASH_LAVA;
@@ -369,21 +366,19 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     }
 
     // send gun puff / flash
-    if (!((tr.surface) && (tr.surface->flags & SURF_SKY))) {
+    if (!(tr.surface_flags & SURF_SKY)) {
         if (tr.fraction < 1.0f) {
             if (tr.ent->takedamage) {
                 T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
-                if (!(tr.surface->flags & SURF_SKY)) {
-                    gi.WriteByte(svc_temp_entity);
-                    gi.WriteByte(te_impact);
-                    gi.WritePosition(tr.endpos);
-                    gi.WriteDir(tr.plane.normal);
-                    gi.multicast(tr.endpos, MULTICAST_PVS);
+                gi.WriteByte(svc_temp_entity);
+                gi.WriteByte(te_impact);
+                gi.WritePosition(tr.endpos);
+                gi.WriteDir(tr.plane.normal);
+                gi.multicast(tr.endpos, MULTICAST_PVS);
 
-                    if (self->client)
-                        PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
-                }
+                if (self->client)
+                    PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
             }
         }
     }

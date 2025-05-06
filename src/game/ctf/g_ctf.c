@@ -1137,7 +1137,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (self->owner->client->ctf_grapplestate != CTF_GRAPPLE_STATE_FLY)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         CTFResetGrapple(self);
         return;
     }

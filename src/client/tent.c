@@ -121,9 +121,9 @@ static int CL_FindFootstepSurface(int entnum)
         return footstep_id;
     }
 
-    if (tr.surface != &(nulltexinfo.c)) {
+    if (tr.surface_id) {
         // copy over the surfaces' step ID
-        footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+        footstep_id = cl.bsp->texinfo[tr.surface_id - 1].step_id;
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
         vec3_t new_end;
@@ -132,8 +132,8 @@ static int CL_FindFootstepSurface(int entnum)
 
         CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, NULL, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
-        if (tr.surface != &(nulltexinfo.c))
-            footstep_id = ((mtexinfo_t *)tr.surface)->step_id;
+        if (tr.surface_id)
+            footstep_id = cl.bsp->texinfo[tr.surface_id - 1].step_id;
     }
 
     return footstep_id;

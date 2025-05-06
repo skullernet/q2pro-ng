@@ -255,10 +255,11 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
             return;
         }
 
+#if 0
         // [Paril-KEX] experimental attempt to fix stray collisions on curved
         // surfaces; easiest to see on q2dm1 by running/jumping against the sides
         // of the curved map.
-        if (trace.surface2) {
+        if (trace.surface2_id) {
             vec3_t clipped_a, clipped_b;
             PM_ClipVelocity(velocity, trace.plane.normal, clipped_a, 1.01f);
             PM_ClipVelocity(velocity, trace.plane2.normal, clipped_b, 1.01f);
@@ -274,9 +275,11 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
 
             if (better) {
                 trace.plane = trace.plane2;
-                trace.surface = trace.surface2;
+                trace.surface_flags = trace.surface2_flags;
+                trace.surface_id = trace.surface2_id;
             }
         }
+#endif
 
         if (trace.fraction > 0) {
             // actually covered some distance
@@ -370,8 +373,8 @@ typedef struct {
     vec3_t forward, right, up;
     float  frametime;
 
-    csurface_t *groundsurface;
-    int         groundcontents;
+    int groundsurface_flags;
+    int groundcontents;
 
     vec3_t previous_origin;
     vec3_t start_velocity;
@@ -543,7 +546,7 @@ static void PM_Friction(void)
     drop = 0;
 
     // apply ground friction
-    if ((pm->groundentity && pml.groundsurface && !(pml.groundsurface->flags & SURF_SLICK)) || (pm->s.pm_flags & PMF_ON_LADDER)) {
+    if ((pm->groundentity && !(pml.groundsurface_flags & SURF_SLICK)) || (pm->s.pm_flags & PMF_ON_LADDER)) {
         friction = pm_friction;
         control = speed < pm_stopspeed ? pm_stopspeed : speed;
         drop += control * friction * pml.frametime;
@@ -917,7 +920,7 @@ static void PM_CategorizePosition(void)
     } else {
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, point, pml.clipmask);
         pm->groundplane = trace.plane;
-        pml.groundsurface = trace.surface;
+        pml.groundsurface_flags = trace.surface_flags;
         pml.groundcontents = trace.contents;
 
         // [Paril-KEX] to attempt to fix edge cases where you get stuck

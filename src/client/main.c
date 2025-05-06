@@ -2132,12 +2132,14 @@ static size_t CL_Surface_m(char *buffer, size_t size)
     trace_t trace;
     vec3_t end;
 
-    if (cls.state != ca_active)
-        return Q_strlcpy(buffer, "", size);
+    if (cls.state == ca_active) {
+        VectorMA(cl.refdef.vieworg, 8192, cl.v_forward, end);
+        CL_Trace(&trace, cl.refdef.vieworg, vec3_origin, vec3_origin, end, NULL, MASK_SOLID | MASK_WATER);
+        if (trace.surface_id)
+            return Q_snprintf(buffer, size, "%s %#x", cl.bsp->texinfo[trace.surface_id - 1].name, trace.surface_flags);
+    }
 
-    VectorMA(cl.refdef.vieworg, 8192, cl.v_forward, end);
-    CL_Trace(&trace, cl.refdef.vieworg, vec3_origin, vec3_origin, end, NULL, MASK_SOLID | MASK_WATER);
-    return Q_snprintf(buffer, size, "%s %#x", trace.surface->name, trace.surface->flags);
+    return Q_strlcpy(buffer, "", size);
 }
 
 /*

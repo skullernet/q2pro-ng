@@ -106,13 +106,9 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             if (te_impact != -1 && !VectorCompare(start, tr.endpos)) {
                 int color;
 
-                if (tr.contents & CONTENTS_WATER) {
-                    // FIXME: this effectively does nothing..
-                    if (strcmp(tr.surface->name, "brwater") == 0)
-                        color = SPLASH_BROWN_WATER;
-                    else
-                        color = SPLASH_BLUE_WATER;
-                } else if (tr.contents & CONTENTS_SLIME)
+                if (tr.contents & CONTENTS_WATER)
+                    color = SPLASH_BLUE_WATER;
+                else if (tr.contents & CONTENTS_SLIME)
                     color = SPLASH_SLIME;
                 else if (tr.contents & CONTENTS_LAVA)
                     color = SPLASH_LAVA;
@@ -159,7 +155,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
         } else {
             // send gun puff / flash
             // don't mark the sky
-            if (te_impact != -1 && !(tr.surface && ((tr.surface->flags & SURF_SKY) || strncmp(tr.surface->name, "sky", 3) == 0))) {
+            if (te_impact != -1 && !(tr.surface_flags & SURF_SKY)) {
                 gi.WriteByte(svc_temp_entity);
                 gi.WriteByte(te_impact);
                 gi.WritePosition(tr.endpos);
@@ -281,7 +277,7 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }
@@ -410,7 +406,7 @@ void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool 
     if (other == ent->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(ent);
         return;
     }
@@ -565,7 +561,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (other == ent->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(ent);
         return;
     }
@@ -579,8 +575,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (other->takedamage) {
         T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
-    } else if (!deathmatch->integer && !coop->integer && tr->surface &&
-               !(tr->surface->flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
+    } else if (!deathmatch->integer && !coop->integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
         while (n--)
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
@@ -867,7 +862,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }

@@ -2659,9 +2659,11 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         // touch other objects
         for (i = 0; i < pm.touch.num; i++) {
-            other = pm.touch.traces[i].ent;
+            trace_t *tr = &pm.touch.traces[i];
+            other = tr->ent;
+
             if (other->touch)
-                other->touch(other, ent, &null_trace, true);
+                other->touch(other, ent, tr, true);
         }
     }
 

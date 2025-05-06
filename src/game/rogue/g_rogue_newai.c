@@ -933,7 +933,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
             VectorCopy(tr.endpos, origin);
 
             if (tr.fraction < 1.0f) {
-                if (tr.surface->flags & SURF_SKY)
+                if (tr.surface_flags & SURF_SKY)
                     break;
 
                 VectorAdd(origin, tr.plane.normal, origin);

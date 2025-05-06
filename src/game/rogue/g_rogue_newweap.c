@@ -12,7 +12,7 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }
@@ -286,7 +286,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     // must turn off owner so owner can shoot it and set it off
     // moved to prox_open so owner can get away from it if fired at pointblank range into
     // wall
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(ent);
         return;
     }
@@ -670,7 +670,7 @@ void THINK(Nuke_Think)(edict_t *ent)
 
 void TOUCH(nuke_bounce)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (tr->surface) {
+    if (tr->surface_id) {
         if (brandom())
             gi.sound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
         else
@@ -1071,7 +1071,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         damage = damage / 2;
 
     // send gun puff / flash
-    if ((tr.fraction < 1.0f) && !((tr.surface) && (tr.surface->flags & SURF_SKY))) {
+    if ((tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
         if (tr.ent->takedamage) {
             T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, mod);
         } else if (!water) {
@@ -1150,7 +1150,7 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }
@@ -1322,7 +1322,7 @@ void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     if (other == self->owner)
         return;
 
-    if (tr->surface && (tr->surface->flags & SURF_SKY)) {
+    if (tr->surface_flags & SURF_SKY) {
         G_FreeEdict(self);
         return;
     }
