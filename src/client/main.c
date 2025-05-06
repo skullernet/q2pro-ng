@@ -2136,7 +2136,7 @@ static size_t CL_Surface_m(char *buffer, size_t size)
         return Q_strlcpy(buffer, "", size);
 
     VectorMA(cl.refdef.vieworg, 8192, cl.v_forward, end);
-    CL_Trace(&trace, cl.refdef.vieworg, end, vec3_origin, vec3_origin, MASK_SOLID | MASK_WATER);
+    CL_Trace(&trace, cl.refdef.vieworg, vec3_origin, vec3_origin, end, NULL, MASK_SOLID | MASK_WATER);
     return Q_snprintf(buffer, size, "%s %#x", trace.surface->name, trace.surface->flags);
 }
 

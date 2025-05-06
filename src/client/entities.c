@@ -752,7 +752,7 @@ static void CL_AddPacketEntities(void)
                 VectorCopy(ent.origin, start);
             }
 
-            CL_Trace(&trace, start, end, vec3_origin, vec3_origin, mask);
+            CL_Trace(&trace, start, vec3_origin, vec3_origin, end, NULL, mask);
             LerpVector(start, end, cent->flashlightfrac, end);
             V_AddLight(end, 256, 1, 1, 1);
 
