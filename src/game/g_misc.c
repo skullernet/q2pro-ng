@@ -644,7 +644,7 @@ void TOUCH(func_object_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         return;
 
     vec3_t pos;
-    closest_point_to_box(other->s.origin, self->absmin, self->absmax, pos);
+    closest_point_to_box(other->s.origin, self->r.absmin, self->r.absmax, pos);
     T_Damage(other, self, self, vec3_origin, pos, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     other->damage_debounce_time = level.time + HZ(10);
@@ -778,7 +778,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
 
     G_UseTargets(self, attacker);
 
-    VectorAvg(self->absmin, self->absmax, self->s.origin);
+    VectorAvg(self->r.absmin, self->r.absmax, self->s.origin);
 
     if (self->noise_index)
         gi.positioned_sound(self->s.origin, self, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
@@ -1354,7 +1354,7 @@ void TOUCH(misc_viper_bomb_touch)(edict_t *self, edict_t *other, const trace_t *
 {
     G_UseTargets(self, self->activator);
 
-    self->s.origin[2] = self->absmin[2] + 1;
+    self->s.origin[2] = self->r.absmin[2] + 1;
     T_RadiusDamage(self, self, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_BOMB });
     BecomeExplosion2(self);
 }

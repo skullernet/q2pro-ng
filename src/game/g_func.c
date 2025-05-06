@@ -1195,7 +1195,7 @@ void THINK(smart_water_go_up)(edict_t *self)
         return;
     }
 
-    if (self->health && self->absmax[2] >= self->health) {
+    if (self->health && self->r.absmax[2] >= self->health) {
         VectorClear(self->velocity);
         self->nextthink = 0;
         self->moveinfo.state = STATE_TOP;
@@ -1223,7 +1223,7 @@ void THINK(smart_water_go_up)(edict_t *self)
     if (!lowestPlayer)
         return;
 
-    distance = lowestPlayerPt - self->absmax[2];
+    distance = lowestPlayerPt - self->r.absmax[2];
 
     // for the calculations, make sure we intend to go up at least a little.
     if (distance < self->accel) {

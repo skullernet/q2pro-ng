@@ -1005,12 +1005,12 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
     float height;
 
     if (ducker && tr) {
-        height = self->absmax[2] - 32 - 1; // the -1 is because the absmax is s.origin + maxs + 1
+        height = self->r.absmax[2] - 32 - 1; // the -1 is because the absmax is s.origin + maxs + 1
 
         if ((!dodger) && ((tr->endpos[2] <= height) || (self->monsterinfo.aiflags & AI_DUCKED)))
             return;
     } else
-        height = self->absmax[2];
+        height = self->r.absmax[2];
 
     if (dodger) {
         // if we're already dodging, just finish the sequence, i.e. don't do anything else

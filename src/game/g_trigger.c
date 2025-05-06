@@ -126,7 +126,7 @@ void THINK(latched_trigger_think)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 
     edict_t *list[MAX_EDICTS_OLD];
-    int count = gi.BoxEdicts(self->absmin, self->absmax, list, q_countof(list), AREA_SOLID);
+    int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
     bool any_inside = false;
 
     for (int i = 0; i < count; i++) {
@@ -695,7 +695,7 @@ void THINK(hurt_think)(edict_t *self)
     else
         dflags = DAMAGE_NONE;
 
-    count = gi.BoxEdicts(self->absmin, self->absmax, list, q_countof(list), AREA_SOLID);
+    count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
 
     for (int i = 0; i < count; i++) {
         edict_t *other = list[i];
@@ -1066,7 +1066,7 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     if (self->spawnflags & SPAWNFLAG_FOG_BLEND) {
         vec3_t center, half_size, start, end, player_dist;
 
-        VectorAvg(self->absmin, self->absmax, center);
+        VectorAvg(self->r.absmin, self->r.absmax, center);
         VectorAvg(self->size, other->size, half_size);
         VectorVectorScale(half_size, self->movedir, end);
         VectorNegate(end, start);
@@ -1205,7 +1205,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
         if (trigger_coop_relay_ok(&g_edicts[i]))
             num_active++;
 
-    int count = gi.BoxEdicts(self->absmin, self->absmax, players, q_countof(players), AREA_SOLID);
+    int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, players, q_countof(players), AREA_SOLID);
     for (i = 0; i < count; i++) {
         edict_t *ent = players[i];
         if (trigger_coop_relay_ok(ent))
