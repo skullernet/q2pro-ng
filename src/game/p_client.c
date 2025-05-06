@@ -1852,7 +1852,7 @@ void PutClientInServer(edict_t *ent)
     ent->takedamage = true;
     ent->movetype = MOVETYPE_WALK;
     ent->viewheight = 22;
-    ent->inuse = qtrue;
+    ent->inuse = true;
     ent->classname = "player";
     ent->mass = 200;
     ent->solid = SOLID_BBOX;
@@ -2282,14 +2282,14 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
+bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 {
     // check to see if they are on the banned IP list
 #if 0
     value = Info_ValueForKey(userinfo, "ip");
     if (SV_FilterPacket(value)) {
         Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
-        return qfalse;
+        return false;
     }
 #endif
 
@@ -2303,7 +2303,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
             strcmp(spectator_password->string, "none") &&
             strcmp(spectator_password->string, value)) {
             Info_SetValueForKey(userinfo, "rejmsg", "Spectator password required or incorrect.");
-            return qfalse;
+            return false;
         }
 
         // count spectators
@@ -2313,7 +2313,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 
         if (numspec >= maxspectators->integer) {
             Info_SetValueForKey(userinfo, "rejmsg", "Server spectator limit is full.");
-            return qfalse;
+            return false;
         }
     } else {
         // check for a password ( if not a bot! )
@@ -2321,7 +2321,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
         if (*password->string && strcmp(password->string, "none") &&
             strcmp(password->string, value)) {
             Info_SetValueForKey(userinfo, "rejmsg", "Password required or incorrect.");
-            return qfalse;
+            return false;
         }
     }
 
@@ -2354,7 +2354,7 @@ qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     }
 
     ent->client->pers.connected = true;
-    return qtrue;
+    return true;
 }
 
 /*
@@ -2407,7 +2407,7 @@ void ClientDisconnect(edict_t *ent)
     gi.unlinkentity(ent);
     ent->s.modelindex = 0;
     ent->solid = SOLID_NOT;
-    ent->inuse = qfalse;
+    ent->inuse = false;
     ent->classname = "disconnected";
     ent->client->pers.connected = false;
     ent->client->pers.spawned = false;
@@ -2569,7 +2569,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         VectorCopy(ent->client->ps.viewoffset, pm.viewoffset);
 
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
-            pm.snapinitial = qtrue;
+            pm.snapinitial = true;
 
         pm.cmd = *ucmd;
         pm.trace = gi.trace;

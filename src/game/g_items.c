@@ -843,7 +843,7 @@ static void Drop_PowerArmor(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-qboolean G_EntityVisibleToClient(edict_t *client, edict_t *ent)
+bool G_EntityVisibleToClient(edict_t *client, edict_t *ent)
 {
     return !ent->item || !Q_IsBitSet(ent->item_picked_up_by, client->s.number - 1);
 }

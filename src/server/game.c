@@ -80,7 +80,7 @@ PF_Unicast
 Sends the contents of the mutlicast buffer to a single client.
 ===============
 */
-static void PF_Unicast(edict_t *ent, qboolean reliable)
+static void PF_Unicast(edict_t *ent, bool reliable)
 {
     client_t    *client;
     int         cmd, flags, clientNum;
@@ -424,7 +424,7 @@ static void PF_WriteFloat(float f)
     Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
 
-static qboolean PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
+static bool PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     const mleaf_t *leaf1, *leaf2;
     visrow_t mask;
@@ -610,12 +610,12 @@ static void PF_AddCommandString(const char *string)
     Cbuf_AddText(&cmd_buffer, string);
 }
 
-static void PF_SetAreaPortalState(int portalnum, qboolean open)
+static void PF_SetAreaPortalState(int portalnum, bool open)
 {
     CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
 
-static qboolean PF_AreasConnected(int area1, int area2)
+static bool PF_AreasConnected(int area1, int area2)
 {
     return CM_AreasConnected(&sv.cm, area1, area2);
 }

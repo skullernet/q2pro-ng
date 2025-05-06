@@ -1630,7 +1630,7 @@ A single player death will automatically restore from the
 last save position.
 ============
 */
-void WriteGame(const char *filename, qboolean autosave)
+void WriteGame(const char *filename, bool autosave)
 {
     int     i;
 
@@ -1869,19 +1869,19 @@ void G_CleanupSaves(void)
 }
 
 // [Paril-KEX]
-qboolean G_CanSave(void)
+bool G_CanSave(void)
 {
     if (game.maxclients == 1 && g_edicts[1].health <= 0) {
         gi.cprintf(&g_edicts[1], PRINT_HIGH, "Can't savegame while dead!\n");
-        return qfalse;
+        return false;
     }
 
     // don't allow saving during cameras/intermissions as this
     // causes the game to act weird when these are loaded
     if (level.intermissiontime) {
         gi.cprintf(&g_edicts[1], PRINT_HIGH, "Can't savegame during intermission!\n");
-        return qfalse;
+        return false;
     }
 
-    return qtrue;
+    return true;
 }

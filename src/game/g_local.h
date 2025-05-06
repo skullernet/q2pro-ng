@@ -1309,7 +1309,7 @@ bool      G_CanDropItem(const gitem_t *item);
 void      Touch_Item(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self);
 void      droptofloor(edict_t *ent);
 void      P_ToggleFlashlight(edict_t *ent, bool state);
-qboolean  G_EntityVisibleToClient(edict_t *client, edict_t *ent);
+bool      G_EntityVisibleToClient(edict_t *client, edict_t *ent);
 
 //
 // g_utils.c
@@ -1369,12 +1369,12 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 //
 // g_save.c
 //
-void WriteGame(const char *filename, qboolean autosave);
+void WriteGame(const char *filename, bool autosave);
 void ReadGame(const char *filename);
 void WriteLevel(const char *filename);
 void ReadLevel(const char *filename);
 void G_CleanupSaves(void);
-qboolean G_CanSave(void);
+bool G_CanSave(void);
 
 //
 // g_target.c
@@ -1690,7 +1690,7 @@ void InitClientResp(gclient_t *client);
 void InitBodyQue(void);
 void ClientBeginServerFrame(edict_t *ent);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
-qboolean ClientConnect(edict_t *ent, char *userinfo, char *conninfo);
+bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo);
 void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientUserinfoChanged(edict_t *ent, char *userinfo);
@@ -2338,7 +2338,7 @@ struct edict_s {
     // of gclient_t to be a player_state_t
     // but the rest of it is opaque
 
-    qboolean     inuse;
+    bool    inuse;
 
     // world linkage data
     int     linkcount;

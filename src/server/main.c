@@ -865,7 +865,7 @@ static void SVC_DirectConnect(void)
     conn_params_t   params;
     client_t        *newcl;
     int             number;
-    qboolean        allow;
+    bool            allow;
     char            *reason;
 
     memset(&params, 0, sizeof(params));

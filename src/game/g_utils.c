@@ -402,7 +402,7 @@ void G_InitEdict(edict_t *e)
         e->nextthink = 0;
     // ROGUE
 
-    e->inuse = qtrue;
+    e->inuse = true;
     e->classname = "noclass";
     e->gravity = 1.0f;
     e->s.number = e - g_edicts;
@@ -469,7 +469,7 @@ void THINK(G_FreeEdict)(edict_t *ed)
     ed->s.number = ed - g_edicts;
     ed->classname = "freed";
     ed->freetime = level.time;
-    ed->inuse = qfalse;
+    ed->inuse = false;
     ed->spawn_count = id;
 }
 

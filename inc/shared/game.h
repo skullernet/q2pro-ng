@@ -81,7 +81,7 @@ struct gclient_s {
 struct edict_s {
     entity_state_t  s;
     gclient_t   *client;
-    qboolean    inuse;
+    bool        inuse;
     int         linkcount;
 
     // FIXME: move these fields to a server private sv_entity_t
@@ -147,9 +147,9 @@ typedef struct {
     void (*trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, int contentmask);
     void (*clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
     int (*pointcontents)(const vec3_t point);
-    qboolean (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
-    void (*SetAreaPortalState)(int portalnum, qboolean open);
-    qboolean (*AreasConnected)(int area1, int area2);
+    bool (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
+    void (*SetAreaPortalState)(int portalnum, bool open);
+    bool (*AreasConnected)(int area1, int area2);
 
     // an entity will never be sent to a client or used for collision
     // if it is not passed to linkentity.  If the size, position, or
@@ -160,7 +160,7 @@ typedef struct {
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);
-    void (*unicast)(edict_t *ent, qboolean reliable);
+    void (*unicast)(edict_t *ent, bool reliable);
     void (*WriteChar)(int c);
     void (*WriteByte)(int c);
     void (*WriteShort)(int c);
@@ -215,7 +215,7 @@ typedef struct {
     // about the world state and the clients.
     // WriteGame is called every time a level is exited.
     // ReadGame is called on a loadgame.
-    void (*WriteGame)(const char *filename, qboolean autosave);
+    void (*WriteGame)(const char *filename, bool autosave);
     void (*ReadGame)(const char *filename);
 
     // ReadLevel is called after the default map information has been
@@ -223,9 +223,9 @@ typedef struct {
     void (*WriteLevel)(const char *filename);
     void (*ReadLevel)(const char *filename);
 
-    qboolean (*CanSave)(void);
+    bool (*CanSave)(void);
 
-    qboolean (*ClientConnect)(edict_t *ent, char *userinfo, char *conninfo);
+    bool (*ClientConnect)(edict_t *ent, char *userinfo, char *conninfo);
     void (*ClientBegin)(edict_t *ent);
     void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);
     void (*ClientDisconnect)(edict_t *ent);
@@ -242,8 +242,8 @@ typedef struct {
     // of the parameters
     void (*ServerCommand)(void);
 
-    qboolean (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, entity_state_t *temp); // if true is returned, `temp' must be initialized
-    qboolean (*EntityVisibleToClient)(edict_t *client, edict_t *ent);
+    bool (*CustomizeEntityToClient)(edict_t *client, edict_t *ent, entity_state_t *temp); // if true is returned, `temp' must be initialized
+    bool (*EntityVisibleToClient)(edict_t *client, edict_t *ent);
 
     void *(*GetExtension)(const char *name);
     void (*RestartFilesystem)(void); // called when fs_restart is issued
@@ -296,18 +296,18 @@ typedef struct {
 
 typedef struct {
     void (*ClearDebugLines)(void);
-    void (*AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, qboolean depth_test);
-    void (*AddDebugPoint)(const vec3_t point, float size, uint32_t color, uint32_t time, qboolean depth_test);
-    void (*AddDebugAxis)(const vec3_t origin, const vec3_t angles, float size, uint32_t time, qboolean depth_test);
-    void (*AddDebugBounds)(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, qboolean depth_test);
-    void (*AddDebugSphere)(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test);
-    void (*AddDebugCircle)(const vec3_t origin, float radius, uint32_t color, uint32_t time, qboolean depth_test);
+    void (*AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
+    void (*AddDebugPoint)(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
+    void (*AddDebugAxis)(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test);
+    void (*AddDebugBounds)(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test);
+    void (*AddDebugSphere)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+    void (*AddDebugCircle)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
     void (*AddDebugCylinder)(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
-                             qboolean depth_test);
+                             bool depth_test);
     void (*AddDebugArrow)(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
-                          uint32_t arrow_color, uint32_t time, qboolean depth_test);
+                          uint32_t arrow_color, uint32_t time, bool depth_test);
     void (*AddDebugCurveArrow)(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
-                               uint32_t line_color, uint32_t arrow_color, uint32_t time, qboolean depth_test);
+                               uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
     void (*AddDebugText)(const vec3_t origin, const vec3_t angles, const char *text,
-                         float size, uint32_t color, uint32_t time, qboolean depth_test);
+                         float size, uint32_t color, uint32_t time, bool depth_test);
 } debug_draw_api_v1_t;

@@ -603,7 +603,7 @@ static void CheckNeedPass(void)
             need |= 2;
 
         gi.cvar_set("needpass", va("%d", need));
-        password->modified = spectator_password->modified = qfalse;
+        password->modified = spectator_password->modified = false;
     }
 }
 
@@ -749,7 +749,7 @@ static void G_CheckCvars(void)
 {
     if (sv_gravity->modified) {
         level.gravity = sv_gravity->value;
-        sv_gravity->modified = qfalse;
+        sv_gravity->modified = false;
     }
 }
 

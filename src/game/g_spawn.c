@@ -1582,7 +1582,7 @@ void SP_worldspawn(edict_t *ent)
 {
     ent->movetype = MOVETYPE_PUSH;
     ent->solid = SOLID_BSP;
-    ent->inuse = qtrue; // since the world doesn't use G_Spawn()
+    ent->inuse = true; // since the world doesn't use G_Spawn()
     ent->s.modelindex = MODELINDEX_WORLD;
     ent->gravity = 1.0f;
 
