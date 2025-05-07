@@ -804,7 +804,7 @@ void CTFCalcScores(void)
 {
     ctfgame.total1 = ctfgame.total2 = 0;
     for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts->r.inuse)
+        if (!g_edicts[i + 1].r.inuse)
             continue;
         if (game.clients[i].resp.ctf_team == CTF_TEAM1)
             ctfgame.total1 += game.clients[i].resp.score;
@@ -982,7 +982,7 @@ void SetCTFStats(edict_t *ent)
                 // check if on player
                 p1 = imageindex_i_ctf1d; // default to dropped
                 for (i = 1; i <= game.maxclients; i++)
-                    if (g_edicts->r.inuse &&
+                    if (g_edicts[i].r.inuse &&
                         g_edicts[i].client->pers.inventory[IT_FLAG1]) {
                         // enemy has it
                         p1 = imageindex_i_ctf1t;
@@ -1010,7 +1010,7 @@ void SetCTFStats(edict_t *ent)
                 // check if on player
                 p2 = imageindex_i_ctf2d; // default to dropped
                 for (i = 1; i <= game.maxclients; i++)
-                    if (g_edicts->r.inuse &&
+                    if (g_edicts[i].r.inuse &&
                         g_edicts[i].client->pers.inventory[IT_FLAG2]) {
                         // enemy has it
                         p2 = imageindex_i_ctf2t;
