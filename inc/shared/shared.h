@@ -679,6 +679,11 @@ static inline int32_t SignExtend(uint32_t v, int bits)
     return (int32_t)(v << (32 - bits)) >> (32 - bits);
 }
 
+static inline int64_t SignExtend64(uint64_t v, int bits)
+{
+    return (int64_t)(v << (64 - bits)) >> (64 - bits);
+}
+
 #if USE_LITTLE_ENDIAN
 #define BigShort(x)     ShortSwap(x)
 #define BigLong(x)      LongSwap(x)

@@ -64,7 +64,8 @@ static const char *const z_tagnames[TAG_MAX] = {
     "server",
     "mvd",
     "sound",
-    "cmodel"
+    "cmodel",
+    "vm"
 };
 
 #define TAG_INDEX(tag)  ((tag) < TAG_MAX ? (tag) : TAG_FREE)

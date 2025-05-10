@@ -29,6 +29,8 @@ common_src = [
   'src/common/sizebuf.c',
   'src/common/system.c',
   'src/common/utils.c',
+  'src/common/vm/interp.c',
+  'src/common/vm/load.c',
   'src/common/zone.c',
   'src/shared/shared.c',
 ]
