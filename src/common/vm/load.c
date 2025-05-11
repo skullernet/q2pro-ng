@@ -94,24 +94,40 @@ static char *sz_read_string(sizebuf_t *sz)
     return dst;
 }
 
-static void run_init_expr(vm_t *m, uint8_t type, sizebuf_t *sz)
+static vm_value_t run_init_expr(vm_t *m, uint8_t type, sizebuf_t *sz)
 {
-    // Run the init_expr
-    vm_block_t block = {
-        .block_type = 0x01,
-        .type       = get_block_type(type),
-        .start_addr = sz->readcount
-    };
+    int opcode = SZ_ReadByte(sz);
+    vm_value_t ret;
+    uint32_t arg;
 
-    // WARNING: running code here to get initial value!
-    m->pc = sz->readcount;
-    VM_PushBlock(m, &block, m->sp);
-    VM_Interpret(m);
-    sz->readcount = m->pc;
+    switch (opcode) {
+    case GlobalGet:
+        arg = SZ_ReadLeb(sz);
+        ASSERT(arg < m->num_globals, "bad global");
+        ret = m->globals[arg];
+        break;
+    case I32_Const:
+        ret.value_type = I32;
+        ret.value.u32  = SZ_ReadSignedLeb(sz);
+        break;
+    case I64_Const:
+        ret.value_type = I64;
+        ret.value.u64  = SZ_ReadSignedLeb(sz);
+        break;
+    case F32_Const:
+        ret.value_type = F32;
+        ret.value.u32  = SZ_ReadLong(sz);
+        break;
+    case F64_Const:
+        ret.value_type = F64;
+        ret.value.u64  = SZ_ReadLong64(sz);
+        break;
+    default:
+        ASSERT(0, "init_expr not constant");
+    }
 
-    ASSERT(m->stack[m->sp].value_type == type,
-           "init_expr type mismatch 0x%x != 0x%x",
-           m->stack[m->sp].value_type, type);
+    ASSERT(ret.value_type == type, "init_expr type mismatch");
+    return ret;
 }
 
 static void parse_custom(vm_t *m, sizebuf_t *sb)
@@ -279,12 +295,9 @@ static void parse_globals(vm_t *m, sizebuf_t *sz)
         // TODO: use mutability
         uint8_t mutability = SZ_ReadByte(sz);
         (void)mutability;
-        m->globals[g].value_type = type;
 
         // Run the init_expr to get global value
-        run_init_expr(m, type, sz);
-
-        m->globals[g] = m->stack[m->sp--];
+        m->globals[g] = run_init_expr(m, type, sz);
     }
 }
 
@@ -338,9 +351,9 @@ static void parse_elements(vm_t *m, sizebuf_t *sz)
         ASSERT(index == 0, "Only 1 default table in MVP");
 
         // Run the init_expr to get offset
-        run_init_expr(m, I32, sz);
+        vm_value_t init = run_init_expr(m, I32, sz);
 
-        uint32_t offset = m->stack[m->sp--].value.u32;
+        uint32_t offset = init.value.u32;
         uint32_t num_elem = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + num_elem <= m->table.size, "table overflow");
         for (uint32_t n = 0; n < num_elem; n++)
@@ -356,10 +369,10 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
         ASSERT(index == 0, "Only 1 default memory in MVP %d",index);
 
         // Run the init_expr to get the offset
-        run_init_expr(m, I32, sz);
+        vm_value_t init = run_init_expr(m, I32, sz);
 
         // Copy the data to the memory offset
-        uint32_t offset = m->stack[m->sp--].value.u32;
+        uint32_t offset = init.value.u32;
         uint32_t size = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + size <= m->memory.pages * PAGE_SIZE, "memory overflow");
         memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
@@ -418,28 +431,24 @@ static void skip_immediates(sizebuf_t *sz, int opcode)
     case MemoryGrow:
         sz->readcount++;
         break;
+    case Block ... If:
     case Br:
     case BrIf:
     case Call:
     case LocalGet ... GlobalSet:
     case I32_Const:
+    case I64_Const:
         SZ_ReadLeb(sz);
         break;
     case CallIndirect:
         SZ_ReadLeb(sz);
         sz->readcount++;
         break;
-    case I64_Const:
-        SZ_ReadLeb64(sz);
-        break;
     case F32_Const:
         sz->readcount += 4;
         break;
     case F64_Const:
         sz->readcount += 8;
-        break;
-    case Block ... If:
-        SZ_ReadLeb(sz);
         break;
     case I32_Load ... I64_Store32:
         SZ_ReadLeb(sz);

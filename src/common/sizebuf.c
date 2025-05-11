@@ -166,27 +166,19 @@ int SZ_ReadLong(sizebuf_t *sb)
     return buf ? (int32_t)RL32(buf) : -1;
 }
 
+int64_t SZ_ReadLong64(sizebuf_t *sb)
+{
+    byte *buf = SZ_ReadData(sb, 8);
+    return buf ? (int64_t)RL64(buf) : -1;
+}
+
 float SZ_ReadFloat(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 4);
     return buf ? LongToFloat(RL32(buf)) : -1.0f;
 }
 
-uint32_t SZ_ReadLeb(sizebuf_t *sb)
-{
-    uint32_t v = 0;
-    int c, bits = 0;
-
-    do {
-        c = SZ_ReadByte(sb);
-        v |= (c & UINT32_C(0x7f)) << bits;
-        bits += 7;
-    } while (c & 0x80 && bits < 32);
-
-    return v;
-}
-
-uint64_t SZ_ReadLeb64(sizebuf_t *sb)
+uint64_t SZ_ReadLeb(sizebuf_t *sb)
 {
     uint64_t v = 0;
     int c, bits = 0;
@@ -197,5 +189,21 @@ uint64_t SZ_ReadLeb64(sizebuf_t *sb)
         bits += 7;
     } while (c & 0x80 && bits < 64);
 
+    return v;
+}
+
+int64_t SZ_ReadSignedLeb(sizebuf_t *sb)
+{
+    uint64_t v = 0;
+    int c, bits = 0;
+
+    do {
+        c = SZ_ReadByte(sb);
+        v |= (c & UINT64_C(0x7f)) << bits;
+        bits += 7;
+    } while (c & 0x80 && bits < 64);
+
+    if (bits < 64)
+        return SignExtend64(v, bits);
     return v;
 }
