@@ -42,6 +42,7 @@ static const uint8_t mem_load_size[I64_Store32 - I32_Load + 1] = {
 void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 {
     ASSERT(m->csp < CALLSTACK_SIZE - 1, "call stack exhausted");
+
     vm_frame_t *frame = &m->callstack[++m->csp];
     frame->block = block;
     frame->sp = sp;
@@ -51,6 +52,8 @@ void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 
 static const vm_block_t *VM_PopBlock(vm_t *m)
 {
+    ASSERT(m->csp >= 0, "call stack underflow");
+
     const vm_frame_t *frame = &m->callstack[m->csp--];
     const vm_type_t *t = frame->block->type;
 
@@ -86,6 +89,8 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 // Sets new pc value for the start of the function
 void VM_SetupCall(vm_t *m, uint32_t fidx)
 {
+    ASSERT(fidx < m->num_funcs, "Bad function index");
+
     const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
 
@@ -286,8 +291,7 @@ void VM_Interpret(vm_t *m)
 
         case BrTable:
             count = read_leb(m);
-            // TODO: check this prior to runtime
-            ASSERT(count <= BR_TABLE_SIZE, "br_table size exceeds max");
+            ASSERT(count <= BR_TABLE_SIZE, "BrTable size exceeds max");
             for (uint32_t i = 0; i < count; i++)
                 m->br_table[i] = read_leb(m);
 
@@ -325,7 +329,7 @@ void VM_Interpret(vm_t *m)
 
         case CallIndirect:
             tidx = read_leb(m);
-            m->pc++; // reserved immediate
+            m->pc++; // ignore default table
             val = stack[m->sp--].value.u32;
             ASSERT(val < m->table.maximum, "undefined element 0x%x (max: 0x%x) in table", val, m->table.maximum);
             fidx = m->table.entries[val];

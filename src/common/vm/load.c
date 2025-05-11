@@ -50,7 +50,7 @@ static const vm_type_t block_types[5] = {
     { .form = BLOCK, .num_results = 1, .results = { F64 } }
 };
 
-static const vm_type_t *get_block_type(uint8_t value_type)
+static const vm_type_t *get_block_type(uint64_t value_type)
 {
     switch (value_type) {
     case 0x40:
@@ -64,7 +64,7 @@ static const vm_type_t *get_block_type(uint8_t value_type)
     case F64:
         return &block_types[4];
     default:
-        ASSERT(0, "invalid block_type value_type: %d", value_type);
+        ASSERT(0, "invalid block_type value_type: %#"PRIx64"", value_type);
         return NULL;
     }
 }
@@ -94,7 +94,7 @@ static char *sz_read_string(sizebuf_t *sz)
     return dst;
 }
 
-static vm_value_t run_init_expr(vm_t *m, uint8_t type, sizebuf_t *sz)
+static vm_value_t run_init_expr(vm_t *m, uint32_t type, sizebuf_t *sz)
 {
     int opcode = SZ_ReadByte(sz);
     vm_value_t ret;
@@ -231,7 +231,7 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
-        ASSERT(tidx <= m->num_types, "Bad type index");
+        ASSERT(tidx < m->num_types, "Bad type index");
         m->funcs[f].fidx = f;
         m->funcs[f].type = &m->types[tidx];
     }
@@ -253,6 +253,7 @@ static void parse_tables(vm_t *m, sizebuf_t *sz)
     } else {
         m->table.maximum = 0x10000;
     }
+    ASSERT(m->table.size <= m->table.maximum, "Bad table size");
 
     // Allocate the table
     m->table.entries = VM_Malloc(m->table.size * sizeof(m->table.entries[0]));
@@ -277,6 +278,7 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
     if (flags & 0x8) {
         SZ_ReadLeb(sz); // Page size
     }
+    ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
     m->memory.bytes = VM_Malloc(m->memory.pages * PAGE_SIZE);
@@ -422,58 +424,16 @@ static void parse_code(vm_t *m, sizebuf_t *sz)
     }
 }
 
-static void skip_immediates(sizebuf_t *sz, int opcode)
-{
-    uint32_t count;
-
-    switch (opcode) {
-    case MemorySize:
-    case MemoryGrow:
-        sz->readcount++;
-        break;
-    case Block ... If:
-    case Br:
-    case BrIf:
-    case Call:
-    case LocalGet ... GlobalSet:
-    case I32_Const:
-    case I64_Const:
-        SZ_ReadLeb(sz);
-        break;
-    case CallIndirect:
-        SZ_ReadLeb(sz);
-        sz->readcount++;
-        break;
-    case F32_Const:
-        sz->readcount += 4;
-        break;
-    case F64_Const:
-        sz->readcount += 8;
-        break;
-    case I32_Load ... I64_Store32:
-        SZ_ReadLeb(sz);
-        SZ_ReadLeb(sz);
-        break;
-    case BrTable:
-        count = SZ_ReadLeb(sz); // target count
-        for (uint32_t i = 0; i < count; i++)
-            SZ_ReadLeb(sz);
-        SZ_ReadLeb(sz); // default target
-        break;
-    default:    // no immediates
-        break;
-    }
-}
-
-static void find_blocks(vm_t *m, vm_block_t *function, sizebuf_t *sz)
+static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
 {
     vm_block_t  *block;
     vm_block_t  *blockstack[BLOCKSTACK_SIZE];
     int          top = -1;
     int          opcode = Unreachable;
+    uint64_t     count, index;
 
-    sz->readcount = function->start_addr;
-    while (sz->readcount <= function->end_addr) {
+    sz->readcount = func->start_addr;
+    while (sz->readcount <= func->end_addr) {
         uint32_t pos = sz->readcount;
         opcode = SZ_ReadByte(sz);
         switch (opcode) {
@@ -495,7 +455,7 @@ static void find_blocks(vm_t *m, vm_block_t *function, sizebuf_t *sz)
             break;
 
         case End:
-            if (pos == function->end_addr)
+            if (pos == func->end_addr)
                 break;
             ASSERT(top >= 0, "blockstack underflow");
             block = blockstack[top--];
@@ -508,9 +468,82 @@ static void find_blocks(vm_t *m, vm_block_t *function, sizebuf_t *sz)
                 block->br_addr = pos;
             }
             break;
-        default:
-            skip_immediates(sz, opcode);
+
+        case Br:
+        case BrIf:
+            index = SZ_ReadLeb(sz);
+            ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
             break;
+
+        case BrTable:
+            count = SZ_ReadLeb(sz); // target count
+            ASSERT(count <= BR_TABLE_SIZE, "BrTable size exceeds max");
+            for (uint32_t i = 0; i < count; i++) {
+                index = SZ_ReadLeb(sz);
+                ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
+            }
+            index = SZ_ReadLeb(sz); // default target
+            ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
+            break;
+
+        case LocalGet:
+        case LocalSet:
+        case LocalTee:
+            index = SZ_ReadLeb(sz);
+            ASSERT(index < func->type->num_params + func->num_locals, "Bad local index");
+            break;
+
+        case GlobalGet:
+        case GlobalSet:
+            index = SZ_ReadLeb(sz);
+            ASSERT(index < m->num_globals, "Bad global index");
+            break;
+
+        case MemorySize:
+        case MemoryGrow:
+            sz->readcount++;
+            break;
+
+        case I32_Load ... I64_Store32:
+            SZ_ReadLeb(sz);
+            SZ_ReadLeb(sz);
+            break;
+
+        case I32_Const:
+        case I64_Const:
+            SZ_ReadLeb(sz);
+            break;
+
+        case Call:
+            index = SZ_ReadLeb(sz);
+            ASSERT(index < m->num_funcs, "Bad func index");
+            break;
+
+        case CallIndirect:
+            index = SZ_ReadLeb(sz);
+            ASSERT(index < m->num_types, "Bad type index");
+            index = SZ_ReadLeb(sz);
+            ASSERT(index == 0, "Only 1 table in MVP");
+            break;
+
+        case F32_Const:
+            sz->readcount += 4;
+            break;
+
+        case F64_Const:
+            sz->readcount += 8;
+            break;
+
+        case Unreachable:
+        case Nop:
+        case Return:
+        case Drop:
+        case Select:
+        case I32_Eqz ... I64_Extend32_s:
+            break;
+
+        default:
+            ASSERT(0, "unrecognized opcode 0x%x", opcode);
         }
     }
 
