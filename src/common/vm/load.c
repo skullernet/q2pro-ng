@@ -268,12 +268,12 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
     uint32_t pages = SZ_ReadLeb(sz); // Initial size
     m->memory.initial = pages;
     m->memory.pages = pages;
-    // Limit the maximum to 2GB
+    // Limit the maximum to 100MB
     if (flags & 0x1) {
         pages = SZ_ReadLeb(sz); // Max size
-        m->memory.maximum = min(0x8000, pages);
+        m->memory.maximum = min(0x600, pages);
     } else {
-        m->memory.maximum = 0x8000;
+        m->memory.maximum = 0x600;
     }
     if (flags & 0x8) {
         SZ_ReadLeb(sz); // Page size
