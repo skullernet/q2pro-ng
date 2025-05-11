@@ -60,3 +60,5 @@ int SZ_ReadShort(sizebuf_t *sb);
 int SZ_ReadWord(sizebuf_t *sb);
 int SZ_ReadLong(sizebuf_t *sb);
 float SZ_ReadFloat(sizebuf_t *sb);
+uint32_t SZ_ReadLeb(sizebuf_t *sb);
+uint64_t SZ_ReadLeb64(sizebuf_t *sb);

@@ -85,39 +85,9 @@ static uint64_t get_type_mask(vm_type_t *type)
     return mask;
 }
 
-static uint32_t sz_read_leb(sizebuf_t *sz)
-{
-    uint32_t v = 0;
-    int c, bits = 0;
-
-    do {
-        ASSERT(bits < 32, "LEB encoding too long");
-        c = SZ_ReadByte(sz);
-        v |= (c & UINT32_C(0x7f)) << bits;
-        bits += 7;
-    } while (c & 0x80);
-
-    return v;
-}
-
-static uint64_t sz_read_leb64(sizebuf_t *sz)
-{
-    uint64_t v = 0;
-    int c, bits = 0;
-
-    do {
-        ASSERT(bits < 64, "LEB encoding too long");
-        c = SZ_ReadByte(sz);
-        v |= (c & UINT64_C(0x7f)) << bits;
-        bits += 7;
-    } while (c & 0x80);
-
-    return v;
-}
-
 static char *sz_read_string(sizebuf_t *sz)
 {
-    uint32_t len = sz_read_leb(sz);
+    uint32_t len = SZ_ReadLeb(sz);
     char *src = SZ_ReadData(sz, len);
     char *dst = VM_Malloc(len + 1);
     memcpy(dst, src, len);
@@ -150,29 +120,29 @@ static void parse_custom(vm_t *m, sizebuf_t *sb)
 
 static void parse_types(vm_t *m, sizebuf_t *sz)
 {
-    m->num_types = sz_read_leb(sz);
+    m->num_types = SZ_ReadLeb(sz);
     ASSERT(m->num_types <= SZ_Remaining(sz) / 3, "Too many types");
     m->types = VM_Malloc(m->num_types * sizeof(m->types[0]));
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
         type->form = SZ_ReadByte(sz);
-        type->num_params = sz_read_leb(sz);
+        type->num_params = SZ_ReadLeb(sz);
         ASSERT(type->num_params <= SZ_Remaining(sz) / 3, "Too many parameters");
         type->params = VM_Malloc(type->num_params * sizeof(type->params[0]));
         for (uint32_t p = 0; p < type->num_params; p++)
-            type->params[p] = sz_read_leb(sz);
-        type->num_results = sz_read_leb(sz);
+            type->params[p] = SZ_ReadLeb(sz);
+        type->num_results = SZ_ReadLeb(sz);
         ASSERT(type->num_results <= MAX_RESULTS, "Too many results");
         for (uint32_t r = 0; r < type->num_results; r++)
-            type->results[r] = sz_read_leb(sz);
+            type->results[r] = SZ_ReadLeb(sz);
         type->mask = get_type_mask(type);
     }
 }
 
 static void parse_imports(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t num_imports = sz_read_leb(sz);
+    uint32_t num_imports = SZ_ReadLeb(sz);
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         char *import_module = sz_read_string(sz);
         char *import_field = sz_read_string(sz);
@@ -182,10 +152,10 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
 
         switch (kind) {
         case KIND_FUNCTION:
-            type_index = sz_read_leb(sz);
+            type_index = SZ_ReadLeb(sz);
             break;
         case KIND_GLOBAL:
-            content_type = sz_read_leb(sz);
+            content_type = SZ_ReadLeb(sz);
             // TODO: use mutability
             mutability = SZ_ReadByte(sz);
             (void)mutability;
@@ -238,13 +208,13 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
 
 static void parse_functions(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t count = sz_read_leb(sz);
+    uint32_t count = SZ_ReadLeb(sz);
     ASSERT(count <= SZ_Remaining(sz), "too many funcs");
     m->num_funcs += count;
     m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
-        uint32_t tidx = sz_read_leb(sz);
+        uint32_t tidx = SZ_ReadLeb(sz);
         ASSERT(tidx <= m->num_types, "Bad type index");
         m->funcs[f].fidx = f;
         m->funcs[f].type = &m->types[tidx];
@@ -253,16 +223,16 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
 
 static void parse_tables(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t table_count = sz_read_leb(sz);
+    uint32_t table_count = SZ_ReadLeb(sz);
     ASSERT(table_count == 1, "More than 1 table not supported %d",table_count);
 
     uint32_t flags = SZ_ReadByte(sz);
-    uint32_t tsize = sz_read_leb(sz); // Initial size
+    uint32_t tsize = SZ_ReadLeb(sz); // Initial size
     m->table.initial = tsize;
     m->table.size = tsize;
     // Limit maximum to 64K
     if (flags & 0x1) {
-        tsize = sz_read_leb(sz); // Max size
+        tsize = SZ_ReadLeb(sz); // Max size
         m->table.maximum = min(0x10000, tsize);
     } else {
         m->table.maximum = 0x10000;
@@ -274,22 +244,22 @@ static void parse_tables(vm_t *m, sizebuf_t *sz)
 
 static void parse_memory(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t memory_count = sz_read_leb(sz);
+    uint32_t memory_count = SZ_ReadLeb(sz);
     ASSERT(memory_count == 1, "More than 1 memory not supported\n");
 
     uint32_t flags = SZ_ReadByte(sz);
-    uint32_t pages = sz_read_leb(sz); // Initial size
+    uint32_t pages = SZ_ReadLeb(sz); // Initial size
     m->memory.initial = pages;
     m->memory.pages = pages;
     // Limit the maximum to 2GB
     if (flags & 0x1) {
-        pages = sz_read_leb(sz); // Max size
+        pages = SZ_ReadLeb(sz); // Max size
         m->memory.maximum = min(0x8000, pages);
     } else {
         m->memory.maximum = 0x8000;
     }
     if (flags & 0x8) {
-        sz_read_leb(sz); // Page size
+        SZ_ReadLeb(sz); // Page size
     }
 
     // Allocate memory
@@ -298,14 +268,14 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
 
 static void parse_globals(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t num_globals = sz_read_leb(sz);
+    uint32_t num_globals = SZ_ReadLeb(sz);
     ASSERT(num_globals <= SZ_Remaining(sz) / 2, "Too many globals");
     m->globals = VM_Malloc(num_globals * sizeof(m->globals[0]));
     m->num_globals = num_globals;
 
     for (uint32_t g = 0; g < num_globals; g++) {
         // Same allocation Import of global above
-        uint32_t type = sz_read_leb(sz);
+        uint32_t type = SZ_ReadLeb(sz);
         // TODO: use mutability
         uint8_t mutability = SZ_ReadByte(sz);
         (void)mutability;
@@ -320,7 +290,7 @@ static void parse_globals(vm_t *m, sizebuf_t *sz)
 
 static void parse_exports(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t num_exports = sz_read_leb(sz);
+    uint32_t num_exports = SZ_ReadLeb(sz);
     ASSERT(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
     m->exports = VM_Malloc(num_exports * sizeof(m->exports[0]));
     m->num_exports = num_exports;
@@ -329,7 +299,7 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
         vm_export_t *export = &m->exports[e];
         char *name = sz_read_string(sz);
         uint32_t kind = SZ_ReadByte(sz);
-        uint32_t index = sz_read_leb(sz);
+        uint32_t index = SZ_ReadLeb(sz);
         export->kind = kind;
         export->name = name;
 
@@ -356,33 +326,33 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
 
 static void parse_start(vm_t *m, sizebuf_t *sz)
 {
-    m->start_func = sz_read_leb(sz);
+    m->start_func = SZ_ReadLeb(sz);
     ASSERT(m->start_func < m->num_funcs, "Bad function index");
 }
 
 static void parse_elements(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t element_count = sz_read_leb(sz);
+    uint32_t element_count = SZ_ReadLeb(sz);
     for (uint32_t c = 0; c < element_count; c++) {
-        uint32_t index = sz_read_leb(sz);
+        uint32_t index = SZ_ReadLeb(sz);
         ASSERT(index == 0, "Only 1 default table in MVP");
 
         // Run the init_expr to get offset
         run_init_expr(m, I32, sz);
 
         uint32_t offset = m->stack[m->sp--].value.u32;
-        uint32_t num_elem = sz_read_leb(sz);
+        uint32_t num_elem = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + num_elem <= m->table.size, "table overflow");
         for (uint32_t n = 0; n < num_elem; n++)
-            m->table.entries[offset + n] = sz_read_leb(sz);
+            m->table.entries[offset + n] = SZ_ReadLeb(sz);
     }
 }
 
 static void parse_data(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t seg_count = sz_read_leb(sz);
+    uint32_t seg_count = SZ_ReadLeb(sz);
     for (uint32_t s = 0; s < seg_count; s++) {
-        uint32_t index = sz_read_leb(sz);
+        uint32_t index = SZ_ReadLeb(sz);
         ASSERT(index == 0, "Only 1 default memory in MVP %d",index);
 
         // Run the init_expr to get the offset
@@ -390,7 +360,7 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
 
         // Copy the data to the memory offset
         uint32_t offset = m->stack[m->sp--].value.u32;
-        uint32_t size = sz_read_leb(sz);
+        uint32_t size = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + size <= m->memory.pages * PAGE_SIZE, "memory overflow");
         memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
     }
@@ -398,25 +368,25 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
 
 static void parse_code(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t body_count = sz_read_leb(sz);
+    uint32_t body_count = SZ_ReadLeb(sz);
     ASSERT(body_count <= m->num_funcs - m->num_imports, "Too many functions");
 
     for (uint32_t b = 0; b < body_count; b++) {
         vm_block_t *func = &m->funcs[m->num_imports + b];
-        uint32_t body_size = sz_read_leb(sz);
+        uint32_t body_size = SZ_ReadLeb(sz);
         ASSERT(body_size <= SZ_Remaining(sz), "Function out of bounds");
         uint32_t payload_start = sz->readcount;
-        uint32_t num_locals = sz_read_leb(sz);
+        uint32_t num_locals = SZ_ReadLeb(sz);
         uint32_t save_pos, tidx, lidx, lecount;
 
         // Get number of locals for alloc
         save_pos = sz->readcount;
         func->num_locals = 0;
         for (uint32_t l = 0; l < num_locals; l++) {
-            lecount = sz_read_leb(sz);
+            lecount = SZ_ReadLeb(sz);
             ASSERT(lecount <= MAX_LOCALS - func->num_locals, "Too many locals");
             func->num_locals += lecount;
-            tidx = sz_read_leb(sz);
+            tidx = SZ_ReadLeb(sz);
             (void)tidx;
         }
         func->locals = VM_Malloc(func->num_locals * sizeof(func->locals[0]));
@@ -425,8 +395,8 @@ static void parse_code(vm_t *m, sizebuf_t *sz)
         sz->readcount = save_pos;
         lidx = 0;
         for (uint32_t l = 0; l < num_locals; l++) {
-            lecount = sz_read_leb(sz);
-            tidx = sz_read_leb(sz);
+            lecount = SZ_ReadLeb(sz);
+            tidx = SZ_ReadLeb(sz);
             for (uint32_t l = 0; l < lecount; l++)
                 func->locals[lidx++] = tidx;
         }
@@ -453,14 +423,14 @@ static void skip_immediates(sizebuf_t *sz, int opcode)
     case Call:
     case LocalGet ... GlobalSet:
     case I32_Const:
-        sz_read_leb(sz);
+        SZ_ReadLeb(sz);
         break;
     case CallIndirect:
-        sz_read_leb(sz);
+        SZ_ReadLeb(sz);
         sz->readcount++;
         break;
     case I64_Const:
-        sz_read_leb64(sz);
+        SZ_ReadLeb64(sz);
         break;
     case F32_Const:
         sz->readcount += 4;
@@ -469,17 +439,17 @@ static void skip_immediates(sizebuf_t *sz, int opcode)
         sz->readcount += 8;
         break;
     case Block ... If:
-        sz_read_leb(sz);
+        SZ_ReadLeb(sz);
         break;
     case I32_Load ... I64_Store32:
-        sz_read_leb(sz);
-        sz_read_leb(sz);
+        SZ_ReadLeb(sz);
+        SZ_ReadLeb(sz);
         break;
     case BrTable:
-        count = sz_read_leb(sz); // target count
+        count = SZ_ReadLeb(sz); // target count
         for (uint32_t i = 0; i < count; i++)
-            sz_read_leb(sz);
-        sz_read_leb(sz); // default target
+            SZ_ReadLeb(sz);
+        SZ_ReadLeb(sz); // default target
         break;
     default:    // no immediates
         break;
@@ -504,7 +474,7 @@ static void find_blocks(vm_t *m, vm_block_t *function, sizebuf_t *sz)
             ASSERT(top < BLOCKSTACK_SIZE - 1, "blockstack overflow");
             block = VM_Malloc(sizeof(*block));
             block->block_type = opcode;
-            block->type = get_block_type(sz_read_leb(sz));
+            block->type = get_block_type(SZ_ReadLeb(sz));
             block->start_addr = pos;
             blockstack[++top] = block;
             m->block_lookup[pos] = block;
@@ -603,7 +573,7 @@ vm_t *VM_Load(const char *name)
     vm_section_t sections[NUM_SECTIONS] = { 0 };
     while (sz.readcount < sz.cursize) {
         uint32_t id = SZ_ReadByte(&sz);
-        uint32_t len = sz_read_leb(&sz);
+        uint32_t len = SZ_ReadLeb(&sz);
         ASSERT(id < NUM_SECTIONS, "unknown section");
         ASSERT(len <= SZ_Remaining(&sz), "section out of bounds");
         sections[id].pos = sz.readcount;
