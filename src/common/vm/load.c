@@ -240,7 +240,7 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
 static void parse_tables(vm_t *m, sizebuf_t *sz)
 {
     uint32_t table_count = SZ_ReadLeb(sz);
-    ASSERT(table_count == 1, "More than 1 table not supported %d",table_count);
+    ASSERT(table_count == 1, "More than 1 table not supported");
 
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t tsize = SZ_ReadLeb(sz); // Initial size
@@ -262,7 +262,7 @@ static void parse_tables(vm_t *m, sizebuf_t *sz)
 static void parse_memory(vm_t *m, sizebuf_t *sz)
 {
     uint32_t memory_count = SZ_ReadLeb(sz);
-    ASSERT(memory_count == 1, "More than 1 memory not supported\n");
+    ASSERT(memory_count == 1, "More than 1 memory not supported");
 
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t pages = SZ_ReadLeb(sz); // Initial size
@@ -542,8 +542,22 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
         case I32_Eqz ... I64_Extend32_s:
             break;
 
+        case Extended:
+            opcode = SZ_ReadByte(sz);
+            switch (opcode) {
+            case MemoryCopy:
+                sz->readcount += 2;
+                break;
+            case MemoryFill:
+                sz->readcount += 1;
+                break;
+            default:
+               ASSERT(0, "unrecognized extended opcode %#x", opcode);
+            }
+            break;
+
         default:
-            ASSERT(0, "unrecognized opcode 0x%x", opcode);
+            ASSERT(0, "unrecognized opcode %#x", opcode);
         }
     }
 

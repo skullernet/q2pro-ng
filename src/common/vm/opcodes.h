@@ -198,3 +198,8 @@ typedef enum {
     I64_Extend32_s      = 0xC4,
     Extended            = 0xFC,
 } Opcode;
+
+typedef enum {
+    MemoryCopy          = 10,
+    MemoryFill          = 11,
+} ExtendedOpcode;

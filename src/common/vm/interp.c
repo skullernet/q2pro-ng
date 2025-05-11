@@ -198,7 +198,7 @@ void VM_Interpret(vm_t *m)
     const vm_block_t    *block;
     uint32_t     cur_pc;
     uint32_t     arg, val, fidx, tidx, cond, depth, count;
-    uint32_t     offset, addr;
+    uint32_t     offset, addr, dst, src, n;
     uint8_t     *maddr;
     uint8_t      opcode;
     uint32_t     a, b, c; // I32 math
@@ -404,6 +404,35 @@ void VM_Interpret(vm_t *m)
             }
             m->memory.pages += delta;
             m->memory.bytes = VM_Realloc(m->memory.bytes, m->memory.pages * PAGE_SIZE);
+            continue;
+
+        case Extended:
+            opcode = m->bytes[m->pc++];
+            switch (opcode) {
+            case MemoryCopy:
+                dst = stack[m->sp - 2].value.u32;
+                src = stack[m->sp - 1].value.u32;
+                n   = stack[m->sp    ].value.u32;
+                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE &&
+                       (uint64_t)src + n <= m->memory.pages * PAGE_SIZE, "memory copy out of bounds");
+                memmove(m->memory.bytes + dst, m->memory.bytes + src, n);
+                m->pc += 2;
+                m->sp -= 3;
+                continue;
+
+            case MemoryFill:
+                dst = stack[m->sp - 2].value.u32;
+                src = stack[m->sp - 1].value.u32;
+                n   = stack[m->sp    ].value.u32;
+                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE, "memory fill out of bounds");
+                memset(m->memory.bytes + dst, src, n);
+                m->pc += 1;
+                m->sp -= 3;
+                continue;
+
+            default:
+                ASSERT(0, "unrecognized extended opcode %#x", opcode);
+            }
             continue;
 
         // Memory load operators
@@ -1051,7 +1080,7 @@ void VM_Interpret(vm_t *m)
             break;
 
         default:
-            ASSERT(0, "unrecognized opcode 0x%x", opcode);
+            ASSERT(0, "unrecognized opcode %#x", opcode);
         }
     }
 }
