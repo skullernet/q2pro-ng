@@ -71,18 +71,18 @@ typedef struct {
 
 // A block or function
 typedef struct {
-    uint8_t    block_type;      // 0x00: function, 0x01: init_exp 0x02: block, 0x03: loop, 0x04: if
+    uint8_t    block_type;      // 0x00: function, 0x02: block, 0x03: loop, 0x04: if
     uint32_t   fidx;            // function only (index)
     uint32_t   num_locals;      // function only
     uint32_t  *locals;          // function only
     uint32_t   start_addr;
     uint32_t   end_addr;
-    uint32_t   else_addr;     // if block only
-    uint32_t   br_addr;       // blocks only
+    uint32_t   else_addr;       // if block only
+    uint32_t   br_addr;         // blocks only
     const vm_type_t *type;      // params/results type
-    char      *export_name;   // function only (exported)
-    char      *import_module; // function only (imported)
-    char      *import_field;  // function only (imported)
+    char      *export_name;     // function only (exported)
+    char      *import_module;   // function only (imported)
+    char      *import_field;    // function only (imported)
     void      *(*func_ptr)(void); // function only (imported)
 } vm_block_t;
 

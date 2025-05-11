@@ -257,17 +257,8 @@ void VM_Interpret(vm_t *m)
 
         case End:
             block = VM_PopBlock(m);
-            if (block->block_type == 0x00) { // Function
-                if (m->csp == -1) {
-                    return; // Return to top-level
-                } else {
-                    // Keep going at return address
-                }
-            } else if (block->block_type == 0x01) { // init_expr
-                return;
-            } else {
-                // End of block/loop/if, keep going
-            }
+            if (block->block_type == 0x00 && m->csp == -1)
+                return; // return to top-level from function
             continue;
 
         case Br:
