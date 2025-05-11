@@ -62,24 +62,24 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 typedef struct {
     uint32_t  form;
-    uint32_t  param_count;
+    uint32_t  num_params;
     uint32_t *params;
-    uint32_t  result_count;
+    uint32_t  num_results;
     uint32_t  results[MAX_RESULTS];
     uint64_t  mask; // unique mask value for each type
 } vm_type_t;
 
 // A block or function
 typedef struct {
-    uint8_t    block_type;    // 0x00: function, 0x01: init_exp 0x02: block, 0x03: loop, 0x04: if
-    uint32_t   fidx;          // function only (index)
-    const vm_type_t *type;          // params/results type
-    uint32_t   local_count;   // function only
-    uint32_t  *locals;        // function only
+    uint8_t    block_type;      // 0x00: function, 0x01: init_exp 0x02: block, 0x03: loop, 0x04: if
+    uint32_t   fidx;            // function only (index)
+    uint32_t   num_locals;      // function only
+    uint32_t  *locals;          // function only
     uint32_t   start_addr;
     uint32_t   end_addr;
     uint32_t   else_addr;     // if block only
     uint32_t   br_addr;       // blocks only
+    const vm_type_t *type;      // params/results type
     char      *export_name;   // function only (exported)
     char      *import_module; // function only (imported)
     char      *import_field;  // function only (imported)
@@ -130,26 +130,26 @@ typedef struct {
 typedef struct vm_s {
     char       *path;           // file path of the wasm module
 
-    uint32_t    byte_count;     // number of bytes in the module
+    uint32_t    num_bytes;      // number of bytes in the module
     uint8_t    *bytes;          // module content/bytes
 
-    uint32_t    type_count;     // number of function types
+    uint32_t    num_types;      // number of function types
     vm_type_t  *types;          // function types
 
-    uint32_t    import_count;   // number of leading imports in functions
-    uint32_t    function_count; // number of function (including imports)
-    vm_block_t  *functions;     // imported and locally defined functions
+    uint32_t    num_imports;    // number of leading imports in functions
+    uint32_t    num_funcs;      // number of function (including imports)
+    vm_block_t  *funcs;         // imported and locally defined functions
     vm_block_t  **block_lookup; // map of module byte position to Blocks
                                 // same length as byte_count
-    uint32_t    start_function; // function to run on module load
+    uint32_t    start_func;     // function to run on module load
 
     vm_table_t  table;
     vm_memory_t memory;
 
-    uint32_t    global_count;   // number of globals
+    uint32_t    num_globals;    // number of globals
     vm_value_t  *globals;       // globals
 
-    uint32_t    export_count;   // number of exports
+    uint32_t    num_exports;    // number of exports
     vm_export_t *exports;
 
     // Runtime state

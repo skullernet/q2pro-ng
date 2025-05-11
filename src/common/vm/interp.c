@@ -57,11 +57,11 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
     m->fp = frame->fp; // Restore frame pointer
 
     // Validate the return value
-    if (t->result_count == 1)
+    if (t->num_results == 1)
         ASSERT(m->stack[m->sp].value_type == t->results[0], "call type mismatch");
 
     // Restore stack pointer
-    if (t->result_count == 1) {
+    if (t->num_results == 1) {
         // Save top value as result
         if (frame->sp < m->sp) {
             m->stack[frame->sp + 1] = m->stack[m->sp];
@@ -86,18 +86,18 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 // Sets new pc value for the start of the function
 void VM_SetupCall(vm_t *m, uint32_t fidx)
 {
-    const vm_block_t  *func = &m->functions[fidx];
+    const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
 
     // Push current frame on the call stack
-    VM_PushBlock(m, func, m->sp - type->param_count);
+    VM_PushBlock(m, func, m->sp - type->num_params);
 
     // Push locals (dropping extras)
-    m->fp = m->sp - type->param_count + 1;
+    m->fp = m->sp - type->num_params + 1;
     // TODO: validate arguments vs formal params
 
     // Push function locals
-    for (uint32_t lidx = 0; lidx < func->local_count; lidx++) {
+    for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
         m->sp++;
         m->stack[m->sp].value_type = func->locals[lidx];
         m->stack[m->sp].value.u64 = 0; // Initialize whole union to 0
@@ -117,7 +117,7 @@ static uint32_t read_leb(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->byte_count, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "read out of bounds");
         ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
@@ -133,7 +133,7 @@ static int32_t read_leb_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->byte_count, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "read out of bounds");
         ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
@@ -151,7 +151,7 @@ static int64_t read_leb64_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->byte_count, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "read out of bounds");
         ASSERT(bits < 64, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT64_C(0x7f)) << bits;
@@ -201,7 +201,7 @@ void VM_Interpret(vm_t *m)
     float        g, h, i; // F32 math
     double       j, k, l; // F64 math
 
-    while (m->pc < m->byte_count) {
+    while (m->pc < m->num_bytes) {
         cur_pc = m->pc;
         opcode = m->bytes[m->pc++];
 
@@ -316,7 +316,7 @@ void VM_Interpret(vm_t *m)
         //
         case Call:
             fidx = read_leb(m);
-            if (fidx < m->import_count) {
+            if (fidx < m->num_imports) {
                 VM_ThunkOut(m, fidx);   // import/thunk call
             } else {
                 VM_SetupCall(m, fidx);  // regular function call
@@ -329,24 +329,24 @@ void VM_Interpret(vm_t *m)
             val = stack[m->sp--].value.u32;
             ASSERT(val < m->table.maximum, "undefined element 0x%x (max: 0x%x) in table", val, m->table.maximum);
             fidx = m->table.entries[val];
-            ASSERT(fidx < m->function_count, "Bad function index");
+            ASSERT(fidx < m->num_funcs, "Bad function index");
 
-            if (fidx < m->import_count) {
+            if (fidx < m->num_imports) {
                 VM_ThunkOut(m, fidx);   // import/thunk call
                 continue;
             }
 
-            const vm_block_t *func = &m->functions[fidx];
-            const vm_type_t *ftype = func->type;
+            const vm_block_t *func = &m->funcs[fidx];
+            const vm_type_t *type = func->type;
 
-            ASSERT(ftype->mask == m->types[tidx].mask, "indirect call function type differ");
+            ASSERT(type->mask == m->types[tidx].mask, "indirect call function type differ");
 
             VM_SetupCall(m, fidx);  // regular function call
 
             // Validate signatures match
-            ASSERT(ftype->param_count + func->local_count == m->sp - m->fp + 1, "indirect call param counts differ");
-            for (uint32_t f = 0; f < ftype->param_count; f++)
-                ASSERT(ftype->params[f] == m->stack[m->fp + f].value_type, "indirect call param types differ");
+            ASSERT(type->num_params + func->num_locals == m->sp - m->fp + 1, "indirect call param counts differ");
+            for (uint32_t f = 0; f < type->num_params; f++)
+                ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "indirect call param types differ");
             continue;
 
         //

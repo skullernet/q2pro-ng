@@ -31,7 +31,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 int VM_GetExport(vm_t *m, const char *name, uint32_t kind)
 {
-    for (uint32_t e = 0; e < m->export_count; e++) {
+    for (uint32_t e = 0; e < m->num_exports; e++) {
         const vm_export_t *export = &m->exports[e];
         if (export->kind != kind)
             continue;
@@ -43,11 +43,11 @@ int VM_GetExport(vm_t *m, const char *name, uint32_t kind)
 
 // Static definition of block_types
 static const vm_type_t block_types[5] = {
-    { .form = BLOCK, .result_count = 0, },
-    { .form = BLOCK, .result_count = 1, .results = { I32 } },
-    { .form = BLOCK, .result_count = 1, .results = { I64 } },
-    { .form = BLOCK, .result_count = 1, .results = { F32 } },
-    { .form = BLOCK, .result_count = 1, .results = { F64 } }
+    { .form = BLOCK, .num_results = 0, },
+    { .form = BLOCK, .num_results = 1, .results = { I32 } },
+    { .form = BLOCK, .num_results = 1, .results = { I64 } },
+    { .form = BLOCK, .num_results = 1, .results = { F32 } },
+    { .form = BLOCK, .num_results = 1, .results = { F64 } }
 };
 
 static const vm_type_t *get_block_type(uint8_t value_type)
@@ -74,11 +74,11 @@ static uint64_t get_type_mask(vm_type_t *type)
 {
     uint64_t mask = 0x80;
 
-    if (type->result_count == 1)
+    if (type->num_results == 1)
         mask |= 0x80 - type->results[0];
 
     mask = mask << 4;
-    for (uint32_t p = 0; p < type->param_count; p++) {
+    for (uint32_t p = 0; p < type->num_params; p++) {
         mask <<= 4;
         mask |= 0x80 - type->params[p];
     }
@@ -150,21 +150,21 @@ static void parse_custom(vm_t *m, sizebuf_t *sb)
 
 static void parse_types(vm_t *m, sizebuf_t *sz)
 {
-    m->type_count = sz_read_leb(sz);
-    ASSERT(m->type_count <= SZ_Remaining(sz) / 3, "Too many types");
-    m->types = VM_Malloc(m->type_count * sizeof(m->types[0]));
+    m->num_types = sz_read_leb(sz);
+    ASSERT(m->num_types <= SZ_Remaining(sz) / 3, "Too many types");
+    m->types = VM_Malloc(m->num_types * sizeof(m->types[0]));
 
-    for (uint32_t c = 0; c < m->type_count; c++) {
+    for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
         type->form = SZ_ReadByte(sz);
-        type->param_count = sz_read_leb(sz);
-        ASSERT(type->param_count <= SZ_Remaining(sz) / 3, "Too many parameters");
-        type->params = VM_Malloc(type->param_count * sizeof(type->params[0]));
-        for (uint32_t p = 0; p < type->param_count; p++)
+        type->num_params = sz_read_leb(sz);
+        ASSERT(type->num_params <= SZ_Remaining(sz) / 3, "Too many parameters");
+        type->params = VM_Malloc(type->num_params * sizeof(type->params[0]));
+        for (uint32_t p = 0; p < type->num_params; p++)
             type->params[p] = sz_read_leb(sz);
-        type->result_count = sz_read_leb(sz);
-        ASSERT(type->result_count <= MAX_RESULTS, "Too many results");
-        for (uint32_t r = 0; r < type->result_count; r++)
+        type->num_results = sz_read_leb(sz);
+        ASSERT(type->num_results <= MAX_RESULTS, "Too many results");
+        for (uint32_t r = 0; r < type->num_results; r++)
             type->results[r] = sz_read_leb(sz);
         type->mask = get_type_mask(type);
     }
@@ -172,8 +172,8 @@ static void parse_types(vm_t *m, sizebuf_t *sz)
 
 static void parse_imports(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t import_count = sz_read_leb(sz);
-    for (uint32_t gidx = 0; gidx < import_count; gidx++) {
+    uint32_t num_imports = sz_read_leb(sz);
+    for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         char *import_module = sz_read_string(sz);
         char *import_field = sz_read_string(sz);
         uint32_t kind = SZ_ReadByte(sz);
@@ -199,12 +199,12 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
         // Store in the right place
         switch (kind) {
         case KIND_FUNCTION:
-            fidx = m->function_count;
-            m->import_count++;
-            m->function_count++;
-            m->functions = VM_Realloc(m->functions, m->import_count * sizeof(m->functions[0]));
+            fidx = m->num_funcs;
+            m->num_imports++;
+            m->num_funcs++;
+            m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
 
-            vm_block_t *func = &m->functions[fidx];
+            vm_block_t *func = &m->funcs[fidx];
             func->import_module = import_module;
             func->import_field = import_field;
             func->type = &m->types[type_index];
@@ -212,9 +212,9 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
             break;
 
         case KIND_GLOBAL:
-            m->global_count++;
-            m->globals = VM_Realloc(m->globals, m->global_count * sizeof(m->globals[0]));
-            vm_value_t *glob = &m->globals[m->global_count - 1];
+            m->num_globals++;
+            m->globals = VM_Realloc(m->globals, m->num_globals * sizeof(m->globals[0]));
+            vm_value_t *glob = &m->globals[m->num_globals - 1];
             glob->value_type = content_type;
 
             switch (content_type) {
@@ -239,15 +239,15 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
 static void parse_functions(vm_t *m, sizebuf_t *sz)
 {
     uint32_t count = sz_read_leb(sz);
-    ASSERT(count <= SZ_Remaining(sz), "too many functions");
-    m->function_count += count;
-    m->functions = VM_Realloc(m->functions, m->function_count * sizeof(m->functions[0]));
+    ASSERT(count <= SZ_Remaining(sz), "too many funcs");
+    m->num_funcs += count;
+    m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
 
-    for (uint32_t f = m->import_count; f < m->function_count; f++) {
+    for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = sz_read_leb(sz);
-        ASSERT(tidx <= m->type_count, "Bad type index");
-        m->functions[f].fidx = f;
-        m->functions[f].type = &m->types[tidx];
+        ASSERT(tidx <= m->num_types, "Bad type index");
+        m->funcs[f].fidx = f;
+        m->funcs[f].type = &m->types[tidx];
     }
 }
 
@@ -298,12 +298,12 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
 
 static void parse_globals(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t global_count = sz_read_leb(sz);
-    ASSERT(global_count <= SZ_Remaining(sz) / 2, "Too many globals");
-    m->globals = VM_Malloc(global_count * sizeof(m->globals[0]));
-    m->global_count = global_count;
+    uint32_t num_globals = sz_read_leb(sz);
+    ASSERT(num_globals <= SZ_Remaining(sz) / 2, "Too many globals");
+    m->globals = VM_Malloc(num_globals * sizeof(m->globals[0]));
+    m->num_globals = num_globals;
 
-    for (uint32_t g = 0; g < global_count; g++) {
+    for (uint32_t g = 0; g < num_globals; g++) {
         // Same allocation Import of global above
         uint32_t type = sz_read_leb(sz);
         // TODO: use mutability
@@ -320,12 +320,12 @@ static void parse_globals(vm_t *m, sizebuf_t *sz)
 
 static void parse_exports(vm_t *m, sizebuf_t *sz)
 {
-    uint32_t export_count = sz_read_leb(sz);
-    ASSERT(export_count <= SZ_Remaining(sz) / 3, "Too many exports");
-    m->exports = VM_Malloc(export_count * sizeof(m->exports[0]));
-    m->export_count = export_count;
+    uint32_t num_exports = sz_read_leb(sz);
+    ASSERT(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
+    m->exports = VM_Malloc(num_exports * sizeof(m->exports[0]));
+    m->num_exports = num_exports;
 
-    for (uint32_t e = 0; e < export_count; e++) {
+    for (uint32_t e = 0; e < num_exports; e++) {
         vm_export_t *export = &m->exports[e];
         char *name = sz_read_string(sz);
         uint32_t kind = SZ_ReadByte(sz);
@@ -335,8 +335,8 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
 
         switch (kind) {
         case KIND_FUNCTION:
-            ASSERT(index < m->function_count, "Bad function index");
-            export->value = &m->functions[index];
+            ASSERT(index < m->num_funcs, "Bad function index");
+            export->value = &m->funcs[index];
             break;
         case KIND_TABLE:
             ASSERT(index == 0, "Only 1 table in MVP");
@@ -347,7 +347,7 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
             export->value = &m->memory;
             break;
         case KIND_GLOBAL:
-            ASSERT(index < m->global_count, "Bad global index");
+            ASSERT(index < m->num_globals, "Bad global index");
             export->value = &m->globals[index];
             break;
         }
@@ -356,8 +356,8 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
 
 static void parse_start(vm_t *m, sizebuf_t *sz)
 {
-    m->start_function = sz_read_leb(sz);
-    ASSERT(m->start_function < m->function_count, "Bad function index");
+    m->start_func = sz_read_leb(sz);
+    ASSERT(m->start_func < m->num_funcs, "Bad function index");
 }
 
 static void parse_elements(vm_t *m, sizebuf_t *sz)
@@ -399,43 +399,43 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
 static void parse_code(vm_t *m, sizebuf_t *sz)
 {
     uint32_t body_count = sz_read_leb(sz);
-    ASSERT(body_count <= m->function_count - m->import_count, "Too many functions");
+    ASSERT(body_count <= m->num_funcs - m->num_imports, "Too many functions");
 
     for (uint32_t b = 0; b < body_count; b++) {
-        vm_block_t *function = &m->functions[m->import_count + b];
+        vm_block_t *func = &m->funcs[m->num_imports + b];
         uint32_t body_size = sz_read_leb(sz);
-        ASSERT(body_size <= SZ_Remaining(sz), "function out of bounds");
+        ASSERT(body_size <= SZ_Remaining(sz), "Function out of bounds");
         uint32_t payload_start = sz->readcount;
-        uint32_t local_count = sz_read_leb(sz);
+        uint32_t num_locals = sz_read_leb(sz);
         uint32_t save_pos, tidx, lidx, lecount;
 
         // Get number of locals for alloc
         save_pos = sz->readcount;
-        function->local_count = 0;
-        for (uint32_t l = 0; l < local_count; l++) {
+        func->num_locals = 0;
+        for (uint32_t l = 0; l < num_locals; l++) {
             lecount = sz_read_leb(sz);
-            ASSERT(lecount <= MAX_LOCALS - function->local_count, "Too many locals");
-            function->local_count += lecount;
+            ASSERT(lecount <= MAX_LOCALS - func->num_locals, "Too many locals");
+            func->num_locals += lecount;
             tidx = sz_read_leb(sz);
             (void)tidx;
         }
-        function->locals = VM_Malloc(function->local_count * sizeof(function->locals[0]));
+        func->locals = VM_Malloc(func->num_locals * sizeof(func->locals[0]));
 
         // Restore position and read the locals
         sz->readcount = save_pos;
         lidx = 0;
-        for (uint32_t l = 0; l < local_count; l++) {
+        for (uint32_t l = 0; l < num_locals; l++) {
             lecount = sz_read_leb(sz);
             tidx = sz_read_leb(sz);
             for (uint32_t l = 0; l < lecount; l++)
-                function->locals[lidx++] = tidx;
+                func->locals[lidx++] = tidx;
         }
 
-        function->start_addr = sz->readcount;
-        function->end_addr = payload_start + body_size - 1;
-        function->br_addr = function->end_addr;
-        ASSERT(sz->data[function->end_addr] == End, "Function block doesn't end with End opcode");
-        sz->readcount = function->end_addr + 1;
+        func->start_addr = sz->readcount;
+        func->end_addr = payload_start + body_size - 1;
+        func->br_addr = func->end_addr;
+        ASSERT(sz->data[func->end_addr] == End, "Function block doesn't end with End opcode");
+        sz->readcount = func->end_addr + 1;
     }
 }
 
@@ -595,9 +595,9 @@ vm_t *VM_Load(const char *name)
     m->csp = -1;
 
     m->bytes = data;
-    m->byte_count = len;
-    m->block_lookup = VM_Malloc(m->byte_count * sizeof(m->block_lookup[0]));
-    m->start_function = -1;
+    m->num_bytes = len;
+    m->block_lookup = VM_Malloc(m->num_bytes * sizeof(m->block_lookup[0]));
+    m->start_func = -1;
 
     // Read the sections
     vm_section_t sections[NUM_SECTIONS] = { 0 };
@@ -618,12 +618,12 @@ vm_t *VM_Load(const char *name)
         parsefuncs[id](m, &sz);
     }
 
-    for (uint32_t f = m->import_count; f < m->function_count; f++)
-        find_blocks(m, &m->functions[f], &sz);
+    for (uint32_t f = m->num_imports; f < m->num_funcs; f++)
+        find_blocks(m, &m->funcs[f], &sz);
 
-    if (m->start_function != -1) {
-        uint32_t fidx = m->start_function;
-        if (fidx < m->import_count) {
+    if (m->start_func != -1) {
+        uint32_t fidx = m->start_func;
+        if (fidx < m->num_imports) {
             VM_ThunkOut(m, fidx);     // import/thunk call
         } else {
             VM_SetupCall(m, fidx);   // regular function call
@@ -641,20 +641,20 @@ void VM_Free(vm_t *m)
     if (!m)
         return;
 
-    for (i = 0; i < m->type_count; i++)
+    for (i = 0; i < m->num_types; i++)
         Z_Free(m->types[i].params);
 
-    for (i = 0; i < m->function_count; i++)
-        Z_Free(m->functions[i].locals);
+    for (i = 0; i < m->num_funcs; i++)
+        Z_Free(m->funcs[i].locals);
 
-    for (i = 0; i < m->export_count; i++)
+    for (i = 0; i < m->num_exports; i++)
         Z_Free(m->exports[i].name);
 
-    for (i = 0; i < m->byte_count; i++)
+    for (i = 0; i < m->num_bytes; i++)
         Z_Free(m->block_lookup[i]);
 
     Z_Free(m->types);
-    Z_Free(m->functions);
+    Z_Free(m->funcs);
     Z_Free(m->globals);
     Z_Free(m->exports);
     Z_Free(m->table.entries);
@@ -666,7 +666,7 @@ void VM_Free(vm_t *m)
 
 uint64_t VM_Call(vm_t *m, uint32_t e, ...)
 {
-    ASSERT(!(e < 0 || e >= m->export_count), "bad export");
+    ASSERT(!(e < 0 || e >= m->num_exports), "bad export");
 
     const vm_export_t *export = &m->exports[e];
     ASSERT(export->kind == KIND_FUNCTION, "not a function");
@@ -676,7 +676,7 @@ uint64_t VM_Call(vm_t *m, uint32_t e, ...)
     va_list ap;
 
     va_start(ap, e);
-    for (int i = 0; i < type->param_count; i++) {
+    for (int i = 0; i < type->num_params; i++) {
         vm_value_t *value = &m->stack[++m->sp];
         value->value_type = type->params[i];
         switch (type->params[i]) {
