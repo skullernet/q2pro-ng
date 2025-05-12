@@ -123,7 +123,7 @@ Two entities have touched, so run their touch functions
 */
 void G_Impact(edict_t *e1, const trace_t *trace)
 {
-    edict_t *e2 = trace->ent;
+    edict_t *e2 = g_edicts + trace->entnum;
 
     if (e1->touch && (e1->r.solid != SOLID_NOT || (e1->flags & FL_ALWAYS_TOUCH)))
         e1->touch(e1, e2, trace, false);
@@ -180,8 +180,8 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
         trace_t *trace = &touch.traces[i];
 
         if (trace->plane.normal[2] > 0.7f) {
-            ent->groundentity = trace->ent;
-            ent->groundentity_linkcount = trace->ent->r.linkcount;
+            ent->groundentity = g_edicts + trace->entnum;
+            ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         }
 
         //
@@ -244,7 +244,7 @@ retry:;
         G_Impact(ent, &trace);
 
         // if the pushed entity went away and the pusher is still there
-        if (!trace.ent->r.inuse && ent->r.inuse) {
+        if (!g_edicts[trace.entnum].r.inuse && ent->r.inuse) {
             // move the pusher back and try again
             VectorCopy(start, ent->s.origin);
             gi.linkentity(ent);
@@ -610,11 +610,13 @@ static void SV_Physics_Toss(edict_t *ent)
         if (trace.fraction == 1.0f)
             break;
 
+        edict_t *hit = g_edicts + trace.entnum;
+
         // [Paril-KEX] don't build up velocity if we're stuck.
         // just assume that the object we hit is our ground.
         if (trace.allsolid) {
-            ent->groundentity = trace.ent;
-            ent->groundentity_linkcount = trace.ent->r.linkcount;
+            ent->groundentity = hit;
+            ent->groundentity_linkcount = hit->r.linkcount;
             VectorClear(ent->velocity);
             VectorClear(ent->avelocity);
             break;
@@ -646,9 +648,9 @@ static void SV_Physics_Toss(edict_t *ent)
         if (trace.plane.normal[2] > 0.7f) {
             if ((ent->movetype == MOVETYPE_TOSS && VectorLength(ent->velocity) < 60) ||
                 (ent->movetype != MOVETYPE_TOSS && DotProduct(ent->velocity, trace.plane.normal) < 60)) {
-                if (!(ent->flags & FL_NO_STANDING) || trace.ent->r.solid == SOLID_BSP) {
-                    ent->groundentity = trace.ent;
-                    ent->groundentity_linkcount = trace.ent->r.linkcount;
+                if (!(ent->flags & FL_NO_STANDING) || hit->r.solid == SOLID_BSP) {
+                    ent->groundentity = hit;
+                    ent->groundentity_linkcount = hit->r.linkcount;
                 }
                 VectorClear(ent->velocity);
                 VectorClear(ent->avelocity);

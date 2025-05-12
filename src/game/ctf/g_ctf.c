@@ -855,7 +855,7 @@ static void CTFSetIDView(edict_t *ent)
 {
     vec3_t   forward, dir;
     trace_t  tr;
-    edict_t *who, *best;
+    edict_t *who, *best, *hit;
     float    bd = 0, d;
 
     // only check every few frames
@@ -869,11 +869,12 @@ static void CTFSetIDView(edict_t *ent)
     AngleVectors(ent->client->v_angle, forward, NULL, NULL);
     VectorMA(ent->s.origin, 1024, forward, forward);
     gi.trace(&tr, ent->s.origin, NULL, NULL, forward, ent, MASK_SOLID);
-    if (tr.fraction < 1 && tr.ent && tr.ent->client) {
-        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + (tr.ent - g_edicts) - 1;
-        if (tr.ent->client->resp.ctf_team == CTF_TEAM1)
+    hit = g_edicts + tr.entnum;
+    if (tr.fraction < 1 && hit->client) {
+        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + tr.entnum - 1;
+        if (hit->client->resp.ctf_team == CTF_TEAM1)
             ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = imageindex_sbfctf1;
-        else if (tr.ent->client->resp.ctf_team == CTF_TEAM2)
+        else if (hit->client->resp.ctf_team == CTF_TEAM2)
             ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = imageindex_sbfctf2;
         return;
     }
@@ -1294,7 +1295,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     gi.trace(&tr, self->s.origin, NULL, NULL, grapple->s.origin, grapple, grapple->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, grapple->s.origin);
-        grapple->touch(grapple, tr.ent, &tr, false);
+        grapple->touch(grapple, g_edicts + tr.entnum, &tr, false);
         return false;
     }
 

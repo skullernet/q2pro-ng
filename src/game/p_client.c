@@ -1195,29 +1195,32 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
 
     trace_t tr;
     gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
+    edict_t *hit = g_edicts + tr.entnum;
 
     // sometimes the spot is too close to the ground, give it a bit of slack
-    if (tr.startsolid && !tr.ent->client) {
+    if (tr.startsolid && !hit->client) {
         spot[2] += 1;
         gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
+        hit = g_edicts + tr.entnum;
     }
 
     // no idea why this happens in some maps..
-    if (tr.startsolid && !tr.ent->client) {
+    if (tr.startsolid && !hit->client) {
         // try a nudge
         if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, NULL, mask, gi.trace) == NO_GOOD_POSITION)
-            return tr.ent; // what do we do here...?
+            return hit; // what do we do here...?
 
         gi.trace(&tr, spot, player_mins, player_maxs, spot, NULL, mask);
+        hit = g_edicts + tr.entnum;
 
-        if (tr.startsolid && !tr.ent->client)
-            return tr.ent; // what do we do here...?
+        if (tr.startsolid && !hit->client)
+            return hit; // what do we do here...?
     }
 
     if (tr.fraction == 1.0f)
         return NULL;
-    if (check_players && tr.ent && tr.ent->client)
-        return tr.ent;
+    if (check_players && hit->client)
+        return hit;
 
     return NULL;
 }
@@ -2627,9 +2630,12 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         ent->waterlevel = pm.waterlevel;
         ent->watertype = pm.watertype;
-        ent->groundentity = pm.groundentity;
-        if (pm.groundentity)
-            ent->groundentity_linkcount = pm.groundentity->r.linkcount;
+        if (pm.groundentity == ENTITYNUM_NONE) {
+            ent->groundentity = NULL;
+        } else {
+            ent->groundentity = g_edicts + pm.groundentity;
+            ent->groundentity_linkcount = ent->groundentity->r.linkcount;
+        }
 
         if (ent->deadflag) {
             client->ps.viewangles[ROLL] = 40;
@@ -2660,7 +2666,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         // touch other objects
         for (i = 0; i < pm.touch.num; i++) {
             trace_t *tr = &pm.touch.traces[i];
-            other = tr->ent;
+            other = g_edicts + tr->entnum;
 
             if (other->touch)
                 other->touch(other, ent, tr, true);
@@ -2801,7 +2807,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         gi.trace(&tr, start, player_mins, player_maxs, end, player, mask);
 
         // stuck, or floating, or touching some other entity
-        if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)) || tr.fraction == 1.0f || tr.ent != world)
+        if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)) || tr.fraction == 1.0f || tr.entnum != ENTITYNUM_WORLD)
             continue;
 
         // don't spawn us *inside* liquids

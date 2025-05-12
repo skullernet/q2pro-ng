@@ -254,7 +254,7 @@ bool finishHeal(edict_t *self)
         return false;
     }
 
-    if (tr.ent != world) {
+    if (tr.entnum != ENTITYNUM_WORLD) {
         abortHeal(self, true, false);
         return false;
     }
@@ -960,8 +960,8 @@ static void medic_cable_attack(edict_t *self)
     }
 
     gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self, MASK_SOLID);
-    if (tr.fraction != 1.0f && tr.ent != self->enemy) {
-        if (tr.ent == world) {
+    if (tr.fraction != 1.0f && tr.entnum != self->enemy - g_edicts) {
+        if (tr.entnum == ENTITYNUM_WORLD) {
             // give up on second try
             if (self->monsterinfo.medicTries > 1) {
                 abortHeal(self, false, true);

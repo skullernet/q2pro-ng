@@ -112,7 +112,7 @@ bool CheckSpawnPoint(const vec3_t origin, const vec3_t mins, const vec3_t maxs)
     if (tr.startsolid || tr.allsolid)
         return false;
 
-    if (tr.ent != world)
+    if (tr.entnum != ENTITYNUM_WORLD)
         return false;
 
     return true;

@@ -34,7 +34,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, tr.ent, &tr, false);
+        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
     }
 }
 
@@ -112,7 +112,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     gi.trace(&tr, self->s.origin, NULL, NULL, ion->s.origin, ion, ion->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, ion->s.origin);
-        ion->touch(ion, tr.ent, &tr, false);
+        ion->touch(ion, g_edicts + tr.entnum, &tr, false);
     }
 }
 

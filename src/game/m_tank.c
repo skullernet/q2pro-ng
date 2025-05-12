@@ -447,7 +447,7 @@ static void TankRocket(edict_t *self)
         trace_t trace;
         gi.trace(&trace, start, NULL, NULL, vec, self, MASK_PROJECTILE);
 
-        if (trace.fraction > 0.5f || trace.ent->r.solid != SOLID_BSP) {
+        if (trace.fraction > 0.5f || g_edicts[trace.entnum].r.solid != SOLID_BSP) {
             if (self->spawnflags & SPAWNFLAG_TANK_COMMANDER_HEAT_SEEKING)
                 monster_fire_heat(self, start, dir, 50, rocketSpeed, flash_number, self->accel);
             else

@@ -178,7 +178,7 @@ void Weapon_ChainFist(edict_t *ent)
 static void weapon_tracker_fire(edict_t *self)
 {
     vec3_t   end;
-    edict_t *enemy = NULL;
+    edict_t *enemy = NULL, *hit;
     trace_t  tr;
     int      damage;
     contents_t mask = MASK_PROJECTILE;
@@ -203,11 +203,12 @@ static void weapon_tracker_fire(edict_t *self)
 
     // PMM - doing two traces .. one point and one box.
     gi.trace(&tr, start, NULL, NULL, end, self, mask);
-    if (tr.ent == world)
+    if (tr.entnum == ENTITYNUM_WORLD)
         gi.trace(&tr, start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self, mask);
 
-    if (tr.ent != world && ((tr.ent->r.svflags & SVF_MONSTER) || tr.ent->client || (tr.ent->flags & FL_DAMAGEABLE)) && tr.ent->health > 0)
-        enemy = tr.ent;
+    hit = g_edicts + tr.entnum;
+    if (hit != world && ((hit->r.svflags & SVF_MONSTER) || hit->client || (hit->flags & FL_DAMAGEABLE)) && hit->health > 0)
+        enemy = hit;
 
     P_AddWeaponKick(self, -2, -1);
 

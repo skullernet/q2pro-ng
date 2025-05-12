@@ -487,7 +487,7 @@ void THINK(turret_brain_think)(edict_t *self)
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
         gi.trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent, MASK_SHOT);
-        if (trace.fraction == 1 || trace.ent == self->enemy) {
+        if (trace.fraction == 1 || trace.entnum == self->enemy - g_edicts) {
             if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
                 self->monsterinfo.trail_time = level.time;
                 self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;

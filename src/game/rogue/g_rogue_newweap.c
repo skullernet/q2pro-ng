@@ -71,7 +71,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     gi.trace(&tr, self->s.origin, NULL, NULL, flechette->s.origin, flechette, flechette->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, flechette->s.origin);
-        flechette->touch(flechette, tr.ent, &tr, false);
+        flechette->touch(flechette, g_edicts + tr.entnum, &tr, false);
     }
 }
 
@@ -831,7 +831,7 @@ void THINK(tesla_think_active)(edict_t *self)
             continue;
 
         gi.trace(&tr, start, NULL, NULL, hit->s.origin, self, MASK_PROJECTILE);
-        if (tr.fraction == 1 || tr.ent == hit) {
+        if (tr.fraction == 1 || tr.entnum == hit - g_edicts) {
             VectorSubtract(hit->s.origin, start, dir);
 
             // PMM - play quad sound if it's above the "normal" damage
@@ -1075,10 +1075,12 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
     if (water)
         damage = damage / 2;
 
+    edict_t *hit = g_edicts + tr.entnum;
+
     // send gun puff / flash
     if ((tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
-        if (tr.ent->takedamage) {
-            T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, mod);
+        if (hit->takedamage) {
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, mod);
         } else if (!water) {
             // This is the truncated steam entry - uses 1+1+2 extra bytes of data
             gi.WriteByte(svc_temp_entity);
@@ -1102,7 +1104,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            gi.trace(&tr, pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, hit, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 
@@ -1231,7 +1233,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, tr.ent, &tr, false);
+        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
     }
 }
 
@@ -1429,6 +1431,6 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, tr.ent, &tr, false);
+        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
     }
 }

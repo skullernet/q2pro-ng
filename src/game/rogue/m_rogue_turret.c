@@ -401,7 +401,7 @@ static void TurretFire(edict_t *self)
         }
 
         gi.trace(&trace, start, NULL, NULL, end, self, MASK_PROJECTILE);
-        if (trace.ent == self->enemy || trace.ent == world) {
+        if (trace.entnum == self->enemy - g_edicts || trace.entnum == ENTITYNUM_WORLD) {
             if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER)
                 monster_fire_blaster(self, start, dir, TURRET_BLASTER_DAMAGE, rocketSpeed, MZ2_TURRET_BLASTER, EF_BLASTER);
             else if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) {
@@ -751,20 +751,22 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
         spot2[2] += self->enemy->viewheight;
 
         gi.trace(&tr, spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
+        edict_t *hit = g_edicts + tr.entnum;
 
         // do we have a clear shot?
-        if (tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
+        if (hit != self->enemy && !(hit->r.svflags & SVF_PLAYER)) {
             // PGM - we want them to go ahead and shoot at info_notnulls if they can.
             if (self->enemy->r.solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
-                if ((!(tr.ent->r.svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
+                if ((!(hit->r.svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
                     if ((self->monsterinfo.blindfire) && (self->monsterinfo.blind_fire_delay <= SEC(10))) {
                         if (level.time < (self->monsterinfo.trail_time + self->monsterinfo.blind_fire_delay))
                             // wait for our time
                             return false;
                         // make sure we're not going to shoot something we don't want to shoot
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self, CONTENTS_MONSTER | CONTENTS_PLAYER);
-                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER))))
+                        hit = g_edicts + tr.entnum;
+                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (hit != self->enemy && !(hit->r.svflags & SVF_PLAYER))))
                             return false;
                         self->monsterinfo.attack_state = AS_BLIND;
                         self->monsterinfo.attack_finished = level.time + random_time_sec(0.5f, 2.5f);

@@ -199,7 +199,7 @@ static void PM_RecordTrace(touch_list_t *touch, const trace_t *tr)
         return;
 
     for (int i = 0; i < touch->num; i++)
-        if (touch->traces[i].ent == tr->ent)
+        if (touch->traces[i].entnum == tr->entnum)
             return;
 
     touch->traces[touch->num++] = *tr;
@@ -546,7 +546,7 @@ static void PM_Friction(void)
     drop = 0;
 
     // apply ground friction
-    if ((pm->groundentity && !(pml.groundsurface_flags & SURF_SLICK)) || (pm->s.pm_flags & PMF_ON_LADDER)) {
+    if ((pm->groundentity != ENTITYNUM_NONE && !(pml.groundsurface_flags & SURF_SLICK)) || (pm->s.pm_flags & PMF_ON_LADDER)) {
         friction = pm_friction;
         control = speed < pm_stopspeed ? pm_stopspeed : speed;
         drop += control * friction * pml.frametime;
@@ -644,7 +644,7 @@ static void PM_AddCurrents(vec3_t wishvel)
             } else if (pm->cmd.forwardmove < 0) {
                 // if we haven't touched ground yet, remove x/y so we don't
                 // slide off of the ladder
-                if (!pm->groundentity)
+                if (pm->groundentity == ENTITYNUM_NONE)
                     wishvel[0] = wishvel[1] = 0;
 
                 wishvel[2] = ladder_speed;
@@ -654,7 +654,7 @@ static void PM_AddCurrents(vec3_t wishvel)
 
         // limit horizontal speed when on a ladder
         // [Paril-KEX] unless we're on the ground
-        if (!pm->groundentity) {
+        if (pm->groundentity == ENTITYNUM_NONE) {
             // [Paril-KEX] instead of left/right not doing anything,
             // have them move you perpendicular to the ladder plane
             if (pm->cmd.sidemove) {
@@ -712,7 +712,7 @@ static void PM_AddCurrents(vec3_t wishvel)
             v[2] -= 1;
 
         s = pm_waterspeed;
-        if ((pm->waterlevel == WATER_FEET) && (pm->groundentity))
+        if ((pm->waterlevel == WATER_FEET) && (pm->groundentity != ENTITYNUM_NONE))
             s /= 2;
 
         VectorMA(wishvel, s, v, wishvel);
@@ -722,7 +722,7 @@ static void PM_AddCurrents(vec3_t wishvel)
     // add conveyor belt velocities
     //
 
-    if (pm->groundentity) {
+    if (pm->groundentity != ENTITYNUM_NONE) {
         VectorClear(v);
 
         if (pml.groundcontents & CONTENTS_CURRENT_0)
@@ -762,7 +762,7 @@ static void PM_WaterMove(void)
 
     if (!pm->cmd.forwardmove && !pm->cmd.sidemove &&
         !(pm->cmd.buttons & (BUTTON_JUMP | BUTTON_CROUCH))) {
-        if (!pm->groundentity)
+        if (pm->groundentity == ENTITYNUM_NONE)
             wishvel[2] -= 60; // drift towards bottom
     } else {
         if (pm->cmd.buttons & BUTTON_CROUCH)
@@ -834,7 +834,7 @@ static void PM_AirMove(void)
             }
         }
         PM_StepSlideMove();
-    } else if (pm->groundentity) {
+    } else if (pm->groundentity != ENTITYNUM_NONE) {
         // walking on ground
         pml.velocity[2] = 0; //!!! this is before the accel
         PM_Accelerate(wishdir, wishspeed, pm_accelerate);
@@ -916,7 +916,7 @@ static void PM_CategorizePosition(void)
 
     if (pml.velocity[2] > 180 || pm->s.pm_type == PM_GRAPPLE) { //!!ZOID changed from 100 to 180 (ramp accel)
         pm->s.pm_flags &= ~PMF_ON_GROUND;
-        pm->groundentity = NULL;
+        pm->groundentity = ENTITYNUM_NONE;
     } else {
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, point, pml.clipmask);
         pm->groundplane = trace.plane;
@@ -939,10 +939,10 @@ static void PM_CategorizePosition(void)
         }
 
         if (trace.fraction == 1.0f || slanted_ground) {
-            pm->groundentity = NULL;
+            pm->groundentity = ENTITYNUM_NONE;
             pm->s.pm_flags &= ~PMF_ON_GROUND;
         } else {
-            pm->groundentity = trace.ent;
+            pm->groundentity = trace.entnum;
 
             // hitting solid ground will end a waterjump
             if (pm->s.pm_flags & PMF_TIME_WATERJUMP) {
@@ -1010,16 +1010,16 @@ static void PM_CheckJump(void)
 
     if (pm->waterlevel >= WATER_WAIST) {
         // swimming, not jumping
-        pm->groundentity = NULL;
+        pm->groundentity = ENTITYNUM_NONE;
         return;
     }
 
-    if (pm->groundentity == NULL)
+    if (pm->groundentity == ENTITYNUM_NONE)
         return; // in air, so no effect
 
     pm->s.pm_flags |= PMF_JUMP_HELD;
     pm->jump_sound = true;
-    pm->groundentity = NULL;
+    pm->groundentity = ENTITYNUM_NONE;
     pm->s.pm_flags &= ~PMF_ON_GROUND;
 
     float jump_height = 270.0f;
@@ -1115,7 +1115,7 @@ static void PM_CheckSpecialMovement(void)
         return;
 
     // we're currently standing on ground, and the snapped position is a step
-    if (pm->groundentity && fabsf(pml.origin[2] - trace.endpos[2]) <= STEPSIZE)
+    if (pm->groundentity != ENTITYNUM_NONE && fabsf(pml.origin[2] - trace.endpos[2]) <= STEPSIZE)
         return;
 
     water_level_t level;
@@ -1293,7 +1293,7 @@ static bool PM_CheckDuck(void)
             flags_changed = true;
         }
     } else if ((pm->cmd.buttons & BUTTON_CROUCH) &&
-               (pm->groundentity || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
+               (pm->groundentity != ENTITYNUM_NONE || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
                !(pm->s.pm_flags & PMF_ON_LADDER) &&
                !pm_config.n64_physics) {
         // duck
@@ -1335,7 +1335,7 @@ static void PM_DeadMove(void)
 {
     float forward;
 
-    if (!pm->groundentity)
+    if (pm->groundentity == ENTITYNUM_NONE)
         return;
 
     // extra friction
@@ -1471,7 +1471,7 @@ void Pmove(pmove_t *pmove)
     pm->touch.num = 0;
     VectorClear(pm->viewangles);
     pm->viewheight = 0;
-    pm->groundentity = NULL;
+    pm->groundentity = ENTITYNUM_NONE;
     pm->watertype = CONTENTS_NONE;
     pm->waterlevel = WATER_NONE;
     Vector4Clear(pm->screen_blend);

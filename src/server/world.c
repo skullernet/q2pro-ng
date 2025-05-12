@@ -532,7 +532,7 @@ static void SV_ClipMoveToEntities(trace_t *tr,
                                SV_HullForEntity(touch, false), contentmask,
                                touch->s.origin, touch->s.angles);
 
-        CM_ClipEntity(tr, &trace, touch);
+        CM_ClipEntity(tr, &trace, touch->s.number);
     }
 }
 
@@ -554,7 +554,7 @@ void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
 
     // clip to world
     CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
-    trace->ent = ge->edicts;
+    trace->entnum = ENTITYNUM_WORLD;
     if (trace->fraction == 0)
         return;     // blocked by the world
 
@@ -587,5 +587,5 @@ void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
         CM_TransformedBoxTrace(trace, start, end, mins, maxs,
                                SV_HullForEntity(clip, true), contentmask,
                                clip->s.origin, clip->s.angles);
-    trace->ent = clip;
+    trace->entnum = clip->s.number;
 }

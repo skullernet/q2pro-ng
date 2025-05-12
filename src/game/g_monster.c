@@ -129,14 +129,11 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
         return false;
 
     vec3_t f, r;
-
     vec3_t real_angles = { self->s.angles[0], self->ideal_yaw, 0 };
-
     AngleVectors(real_angles, f, r, NULL);
     M_ProjectFlashSource(self, offset, f, r, start);
 
     vec3_t target;
-
     bool is_blind = self->monsterinfo.attack_state == AS_BLIND || (self->monsterinfo.aiflags & (AI_MANUAL_STEERING | AI_LOST_SIGHT));
 
     if (is_blind)
@@ -148,14 +145,16 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
 
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, target, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+    edict_t *hit = g_edicts + tr.entnum;
 
-    if (tr.ent == self->enemy || tr.ent->client || (tr.fraction > 0.8f && !tr.startsolid))
+    if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
         return true;
 
     if (!is_blind) {
         gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+        hit = g_edicts + tr.entnum;
 
-        if (tr.ent == self->enemy || tr.ent->client || (tr.fraction > 0.8f && !tr.startsolid))
+        if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
             return true;
     }
 
@@ -209,8 +208,8 @@ void M_CheckGround(edict_t *ent, contents_t mask)
 
     if (!trace.startsolid && !trace.allsolid) {
         VectorCopy(trace.endpos, ent->s.origin);
-        ent->groundentity = trace.ent;
-        ent->groundentity_linkcount = trace.ent->r.linkcount;
+        ent->groundentity = g_edicts + trace.entnum;
+        ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         ent->velocity[2] = 0;
     }
 }
@@ -768,7 +767,7 @@ static void M_CheckDodge(edict_t *self)
         trace_t tr;
         gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent, ent->clipmask);
 
-        if (tr.ent == self) {
+        if (tr.entnum == self - g_edicts) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
             self->monsterinfo.dodge(self, g_edicts + ent->r.ownernum, eta, &tr,
                                     (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));

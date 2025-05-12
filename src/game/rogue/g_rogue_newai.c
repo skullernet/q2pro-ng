@@ -49,8 +49,8 @@ bool blocked_checkplat(edict_t *self, float dist)
         pt2[2] -= 384;
 
         gi.trace(&trace, pt1, NULL, NULL, pt2, self, MASK_MONSTERSOLID);
-        if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid && !strncmp(trace.ent->classname, "func_plat", 8))
-            plat = trace.ent;
+        if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid && !strncmp(g_edicts[trace.entnum].classname, "func_plat", 8))
+            plat = &g_edicts[trace.entnum];
     }
 
     // if we've found a plat, trigger it.
@@ -851,7 +851,7 @@ void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_s
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, vec, self, MASK_PROJECTILE);
 
-    if (tr.fraction < 1.0f && tr.ent != target) {
+    if (tr.fraction < 1.0f && tr.entnum != target - g_edicts) {
         eye_height = !eye_height;
         VectorSubtract(target->s.origin, start, dir);
         if (eye_height)
@@ -940,8 +940,9 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
                 ClipVelocity(velocity, tr.plane.normal, velocity, 1.6f);
 
                 float dist = DistanceSquared(origin, target);
+                edict_t *hit = g_edicts + tr.entnum;
 
-                if (tr.ent == self->enemy || tr.ent->client || (tr.plane.normal[2] >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
+                if (hit == self->enemy || hit->client || (tr.plane.normal[2] >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
                     best_pitch = pitch;
                     best_dist = dist;
                 }

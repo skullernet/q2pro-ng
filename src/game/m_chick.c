@@ -488,7 +488,7 @@ static void ChickRocket(edict_t *self)
             }
         }
     } else {
-        if (trace.fraction > 0.5f || trace.ent->r.solid != SOLID_BSP) {
+        if (trace.fraction > 0.5f || g_edicts[trace.entnum].r.solid != SOLID_BSP) {
             // RAFAEL
             if (self->s.skinnum > 1)
                 monster_fire_heat(self, start, dir, 50, rocketSpeed, MZ2_CHICK_ROCKET_1, 0.15f);

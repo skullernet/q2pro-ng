@@ -399,7 +399,7 @@ bool visible_ex(edict_t *self, edict_t *other, bool through_glass)
         mask |= CONTENTS_WINDOW;
 
     gi.trace(&trace, spot1, NULL, NULL, spot2, self, mask);
-    return trace.fraction == 1.0f || trace.ent == other; // PGM
+    return trace.fraction == 1.0f || trace.entnum == other - g_edicts; // PGM
 }
 
 /*
@@ -847,6 +847,8 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
         return false;
 
     if (self->enemy->health > 0) {
+        edict_t *hit;
+
         if (M_ClientInvisible(self->enemy))
             // can't see us at all after this time
             return false;
@@ -859,18 +861,19 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
             spot2[2] += self->enemy->viewheight;
 
             gi.trace(&tr, spot1, NULL, NULL, spot2, self, MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_PROJECTILECLIP);
+            hit = g_edicts + tr.entnum;
         } else {
-            tr.ent = world;
+            hit = world;
             tr.fraction = 0;
         }
 
         // do we have a clear shot?
-        if (!(self->hackflags & HACKFLAG_ATTACK_PLAYER) && tr.ent != self->enemy && !(tr.ent->r.svflags & SVF_PLAYER)) {
+        if (!(self->hackflags & HACKFLAG_ATTACK_PLAYER) && hit != self->enemy && !(hit->r.svflags & SVF_PLAYER)) {
             // ROGUE - we want them to go ahead and shoot at info_notnulls if they can.
             if (self->enemy->r.solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 // Paril - *and* we have at least seen them once
-                if (!(tr.ent->r.svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
+                if (!(hit->r.svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
                     if (self->monsterinfo.blindfire && (self->monsterinfo.blind_fire_delay <= SEC(20))) {
                         // ROGUE
                         if (level.time < self->monsterinfo.attack_finished)
@@ -881,7 +884,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
                             return false;
                         // make sure we're not going to shoot a monster
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self, CONTENTS_MONSTER);
-                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.ent != self->enemy)))
+                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (g_edicts + tr.entnum != self->enemy)))
                             return false;
 
                         self->monsterinfo.attack_state = AS_BLIND;

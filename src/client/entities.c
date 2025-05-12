@@ -1229,7 +1229,7 @@ static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
 
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
-    tr->ent = (struct edict_s *)cl_entities;
+    tr->entnum = ENTITYNUM_WORLD;
     if (tr->fraction == 0)
         return;     // blocked by the world
 
@@ -1251,7 +1251,7 @@ static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs, cmodel->headnode,
                                contentmask, org, ang);
 
-        CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
+        CM_ClipEntity(tr, &trace, ent->current.number);
     }
 }
 

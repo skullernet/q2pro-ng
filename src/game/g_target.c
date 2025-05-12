@@ -685,6 +685,7 @@ void THINK(target_laser_think)(edict_t *self)
 
     pierce_t pierce;
     trace_t tr;
+    edict_t *hit;
     bool damaged_thing = false;
 
     contents_t mask = (self->spawnflags & SPAWNFLAG_LASER_STOPWINDOW) ? MASK_SHOT : (CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
@@ -703,18 +704,20 @@ void THINK(target_laser_think)(edict_t *self)
         gi.trace(&tr, start, NULL, NULL, end, self, mask);
 
         // didn't hit anything, so we're done
-        if (!tr.ent || tr.fraction == 1.0f)
+        if (tr.fraction == 1.0f)
             break;
 
+        hit = g_edicts + tr.entnum;
+
         // hurt it if we can
-        if (self->dmg > 0 && (tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {
+        if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {
             damaged_thing = true;
-            T_Damage(tr.ent, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, dmg, (mod_t) { MOD_TARGET_LASER });
+            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, dmg, (mod_t) { MOD_TARGET_LASER });
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         // ROGUE
-        if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client) && !(tr.ent->flags & FL_DAMAGEABLE)) {
+        if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client) && !(hit->flags & FL_DAMAGEABLE)) {
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
@@ -728,7 +731,7 @@ void THINK(target_laser_think)(edict_t *self)
             }
             break;
         }
-    } while (pierce_mark(&pierce, tr.ent));
+    } while (pierce_mark(&pierce, hit));
 
     pierce_end(&pierce);
 

@@ -367,11 +367,13 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         }
     }
 
+    edict_t *hit = g_edicts + tr.entnum;
+
     // send gun puff / flash
     if (!(tr.surface_flags & SURF_SKY)) {
         if (tr.fraction < 1.0f) {
-            if (tr.ent->takedamage) {
-                T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
+            if (hit->takedamage) {
+                T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
                 gi.WriteByte(svc_temp_entity);
                 gi.WriteByte(te_impact);
@@ -395,7 +397,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            gi.trace(&tr, pos, NULL, NULL, water_start, tr.ent, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, hit, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 

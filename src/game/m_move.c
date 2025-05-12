@@ -834,7 +834,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
     if (ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP && ent->health > 0) {
         if (!ent->groundentity || ent->groundentity->r.solid == SOLID_BSP) {
-            if (!(trace.ent->r.solid == SOLID_BSP)) {
+            if (g_edicts[trace.entnum].r.solid != SOLID_BSP) {
                 // walked off an edge
                 VectorCopy(oldorg, ent->s.origin);
                 M_CheckGround(ent, G_GetClipMask(ent));
@@ -854,8 +854,8 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     }
 
     ent->flags &= ~FL_PARTIALGROUND;
-    ent->groundentity = trace.ent;
-    ent->groundentity_linkcount = trace.ent->r.linkcount;
+    ent->groundentity = g_edicts + trace.entnum;
+    ent->groundentity_linkcount = ent->groundentity->r.linkcount;
 
     // the move is ok
     if (relink) {
@@ -1399,7 +1399,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         trace_t tr;
         gi.trace(&tr, ent->s.origin, NULL, NULL, goal->s.origin, ent, MASK_MONSTERSOLID);
 
-        if (tr.fraction == 1.0f || tr.ent == goal) {
+        if (tr.fraction == 1.0f || tr.entnum == goal - g_edicts) {
             vec3_t v;
             VectorSubtract(goal->s.origin, ent->s.origin, v);
             if (SV_StepDirection(ent, vectoyaw(v), dist, false))

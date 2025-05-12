@@ -930,7 +930,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
-        if (!edict->r.inuse || edict == tr.ent)
+        if (!edict->r.inuse || i == tr.entnum)
             continue;
         if (!(edict->r.svflags & SVF_MONSTER))
             continue;

@@ -416,7 +416,7 @@ static void Widow2Tongue(edict_t *self)
     VectorCopy(self->enemy->s.origin, end);
 
     gi.trace(&tr, start, NULL, NULL, end, self, MASK_PROJECTILE);
-    if (tr.ent != self->enemy)
+    if (tr.entnum != self->enemy - g_edicts)
         return;
 
     gi.sound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);

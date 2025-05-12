@@ -522,19 +522,22 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
 
         if (tr.fraction == 1.0f)
             break;
-        if (!(tr.ent->r.svflags & SVF_PROJECTILE))
+
+        edict_t *hit = g_edicts + tr.entnum;
+
+        if (!(hit->r.svflags & SVF_PROJECTILE))
             break;
 
         // always skip this projectile since certain conditions may cause the projectile
         // to not disappear immediately
-        tr.ent->r.svflags &= ~SVF_PROJECTILE;
+        hit->r.svflags &= ~SVF_PROJECTILE;
 
         skip = &skipped[num_skipped++];
-        skip->projectile = tr.ent;
-        skip->spawn_count = tr.ent->spawn_count;
+        skip->projectile = hit;
+        skip->spawn_count = hit->spawn_count;
 
         // if we're both players and it's coop, allow the projectile to "pass" through
-        if (ent->client && tr.ent->r.ownernum && g_edicts[tr.ent->r.ownernum].client && !G_ShouldPlayersCollide(true))
+        if (ent->client && hit->r.ownernum && g_edicts[hit->r.ownernum].client && !G_ShouldPlayersCollide(true))
             continue;
 
         G_Impact(ent, &tr);

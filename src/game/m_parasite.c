@@ -606,9 +606,9 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     if (tr.startsolid) {
         VectorNegate(dir, tr.plane.normal);
         VectorCopy(start, tr.endpos);
-        tip->touch(tip, tr.ent, &tr, false);
+        tip->touch(tip, g_edicts + tr.entnum, &tr, false);
     } else if (tr.fraction < 1.0f)
-        tip->touch(tip, tr.ent, &tr, false);
+        tip->touch(tip, g_edicts + tr.entnum, &tr, false);
 
     vec3_t dir2;
     VectorCopy(start, segment->s.origin);

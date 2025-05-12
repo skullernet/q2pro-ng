@@ -909,7 +909,7 @@ typedef struct {
     int             surface_flags;  // surface flags
     int             surface_id;     // surface id
     contents_t      contents;       // contents on other side of surface hit
-    struct edict_s  *ent;           // not set by CM_*() functions
+    int             entnum;         // not set by CM_*() functions
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement
@@ -997,6 +997,8 @@ typedef struct {
     trace_t traces[MAXTOUCH];
 } touch_list_t;
 
+struct edict_s;
+
 typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, struct edict_s *passent, contents_t contentmask);
 typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
 
@@ -1016,7 +1018,7 @@ typedef struct {
 
     vec3_t      mins, maxs;         // bounding box size
 
-    struct edict_s  *groundentity;
+    int             groundentity;
     cplane_t        groundplane;
     contents_t      watertype;
     water_level_t   waterlevel;

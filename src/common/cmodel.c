@@ -861,7 +861,7 @@ void CM_TransformedBoxTrace(trace_t *trace,
     LerpVector(start, end, trace->fraction, trace->endpos);
 }
 
-void CM_ClipEntity(trace_t *dst, const trace_t *src, struct edict_s *ent)
+void CM_ClipEntity(trace_t *dst, const trace_t *src, int entnum)
 {
     dst->allsolid |= src->allsolid;
     dst->startsolid |= src->startsolid;
@@ -872,7 +872,7 @@ void CM_ClipEntity(trace_t *dst, const trace_t *src, struct edict_s *ent)
         dst->surface_flags = src->surface_flags;
         dst->surface_id = src->surface_id;
         dst->contents = src->contents;
-        dst->ent = ent;
+        dst->entnum = entnum;
     }
 }
 

@@ -30,6 +30,7 @@ void dabeam_update(edict_t *self, bool damage)
 
     pierce_t pierce;
     trace_t tr;
+    edict_t *hit;
 
     pierce_begin(&pierce);
 
@@ -37,29 +38,30 @@ void dabeam_update(edict_t *self, bool damage)
         gi.trace(&tr, start, NULL, NULL, end, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
 
         // didn't hit anything, so we're done
-        if (!tr.ent || tr.fraction == 1.0f)
+        if (tr.fraction == 1.0f)
             break;
+
+        hit = g_edicts + tr.entnum;
 
         if (damage) {
             edict_t *owner = g_edicts + self->r.ownernum;
 
             // hurt it if we can
-            if (self->dmg > 0 && (tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != owner))
-                T_Damage(tr.ent, self, owner, self->movedir,
-                         tr.endpos, vec3_origin, self->dmg, skill->integer,
-                         DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
+            if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
+                T_Damage(hit, self, owner, self->movedir, tr.endpos, vec3_origin,
+                         self->dmg, skill->integer, DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
 
             if (self->dmg < 0) { // healer ray
                 // when player is at 100 health
                 // just undo health fix
                 // keeping fx
-                if (tr.ent->health < tr.ent->max_health)
-                    tr.ent->health = min(tr.ent->max_health, tr.ent->health - self->dmg);
+                if (hit->health < hit->max_health)
+                    hit->health = min(hit->max_health, hit->health - self->dmg);
             }
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
-        if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client)) {
+        if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client)) {
             if (damage) {
                 gi.WriteByte(svc_temp_entity);
                 gi.WriteByte(TE_LASER_SPARKS);
@@ -71,7 +73,7 @@ void dabeam_update(edict_t *self, bool damage)
             }
             break;
         }
-    } while (pierce_mark(&pierce, tr.ent));
+    } while (pierce_mark(&pierce, hit));
 
     pierce_end(&pierce);
 

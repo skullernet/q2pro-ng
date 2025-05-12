@@ -17,6 +17,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     vec3_t  point;
     float   range;
     vec3_t  dir;
+    edict_t *hit;
 
     if (!self->enemy)
         return false;
@@ -39,24 +40,26 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 
     // check that we can hit the point on the bbox
     gi.trace(&tr, self->s.origin, NULL, NULL, point, self, MASK_PROJECTILE);
+    hit = g_edicts + tr.entnum;
 
     if (tr.fraction < 1) {
-        if (!tr.ent->takedamage)
+        if (!hit->takedamage)
             return false;
         // if it will hit any client/monster then hit the one we wanted to hit
-        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client))
-            tr.ent = self->enemy;
+        if ((hit->r.svflags & SVF_MONSTER) || (hit->client))
+            hit = self->enemy;
     }
 
     // check that we can hit the player from the point
     gi.trace(&tr, point, NULL, NULL, self->enemy->s.origin, self, MASK_PROJECTILE);
+    hit = g_edicts + tr.entnum;
 
     if (tr.fraction < 1) {
-        if (!tr.ent->takedamage)
+        if (!hit->takedamage)
             return false;
         // if it will hit any client/monster then hit the one we wanted to hit
-        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client))
-            tr.ent = self->enemy;
+        if ((hit->r.svflags & SVF_MONSTER) || (hit->client))
+            hit = self->enemy;
     }
 
     AngleVectors(self->s.angles, forward, right, up);
@@ -66,9 +69,9 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     VectorSubtract(point, self->enemy->s.origin, dir);
 
     // do the damage
-    T_Damage(tr.ent, self, self, dir, point, vec3_origin, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
+    T_Damage(hit, self, self, dir, point, vec3_origin, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
 
-    if (!(tr.ent->r.svflags & SVF_MONSTER) && (!tr.ent->client))
+    if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client))
         return false;
 
     // do our special form of knockback here
@@ -95,7 +98,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
         gi.trace(&tr, start, NULL, NULL, end, self, *mask);
 
         // didn't hit anything, so we're done
-        if (!tr.ent || tr.fraction == 1.0f)
+        if (tr.fraction == 1.0f)
             break;
 
         // see if we hit water
@@ -143,14 +146,16 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             continue;
         }
 
+        edict_t *hit = g_edicts + tr.entnum;
+
         // did we hit an hurtable entity?
-        if (tr.ent->takedamage) {
-            T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, mod.id == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
+        if (hit->takedamage) {
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, mod.id == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
 
             // only deadmonster is pierceable, or actual dead monsters
             // that haven't been made non-solid yet
-            if ((tr.ent->r.svflags & SVF_DEADMONSTER) || (tr.ent->health <= 0 && (tr.ent->r.svflags & SVF_MONSTER))) {
-                if (pierce_mark(&pierce, tr.ent))
+            if ((hit->r.svflags & SVF_DEADMONSTER) || (hit->health <= 0 && (hit->r.svflags & SVF_MONSTER))) {
+                if (pierce_mark(&pierce, hit))
                     continue;
             }
         } else {
@@ -228,7 +233,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            gi.trace(&tr, pos, NULL, NULL, water_start, tr.ent != world ? tr.ent : NULL, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, g_edicts + tr.entnum, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 
@@ -335,7 +340,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, tr.ent, &tr, false);
+        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
     }
 
     return bolt;
@@ -696,24 +701,26 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
         gi.trace(&tr, start, NULL, NULL, end, self, mask);
 
         // didn't hit anything, so we're done
-        if (!tr.ent || tr.fraction == 1.0f)
+        if (tr.fraction == 1.0f)
             break;
 
+        edict_t *hit = g_edicts + tr.entnum;
+
         // try to kill it first
-        if ((tr.ent != self) && (tr.ent->takedamage))
-            T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
+        if ((hit != self) && (hit->takedamage))
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
 
         // dead, so we don't need to care about checking pierce
-        if (!tr.ent->r.inuse || (!tr.ent->r.solid || tr.ent->r.solid == SOLID_TRIGGER))
+        if (!hit->r.inuse || (!hit->r.solid || hit->r.solid == SOLID_TRIGGER))
             continue;
 
         // ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
-        if ((tr.ent->r.svflags & SVF_MONSTER) || (tr.ent->client) ||
+        if ((hit->r.svflags & SVF_MONSTER) || (hit->client) ||
             // ROGUE
-            (tr.ent->flags & FL_DAMAGEABLE) ||
+            (hit->flags & FL_DAMAGEABLE) ||
             // ROGUE
-            (tr.ent->r.solid == SOLID_BBOX)) {
-            if (pierce_mark(&pierce, tr.ent))
+            (hit->r.solid == SOLID_BBOX)) {
+            if (pierce_mark(&pierce, hit))
                 continue;
         }
 
@@ -906,7 +913,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 
 void THINK(bfg_think)(edict_t *self)
 {
-    edict_t *ent, *owner;
+    edict_t *ent, *owner, *hit;
     vec3_t   point;
     vec3_t   dir;
     vec3_t   start;
@@ -966,12 +973,14 @@ void THINK(bfg_think)(edict_t *self)
             if (tr.fraction == 1.0f)
                 break;
 
-            // hurt it if we can
-            if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != owner))
-                T_Damage(tr.ent, self, owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+            hit = g_edicts + tr.entnum;
 
-            // if we tr.ent something that's not a monster or player we're done
-            if (!(tr.ent->r.svflags & SVF_MONSTER) && !(tr.ent->flags & FL_DAMAGEABLE) && (!tr.ent->client)) {
+            // hurt it if we can
+            if ((hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
+                T_Damage(hit, self, owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+
+            // if we hit something that's not a monster or player we're done
+            if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && (!hit->client)) {
                 vec3_t pos;
                 VectorAdd(tr.endpos, tr.plane.normal, pos);
 
@@ -984,7 +993,7 @@ void THINK(bfg_think)(edict_t *self)
                 gi.multicast(pos, MULTICAST_PVS);
                 break;
             }
-        } while (pierce_mark(&pierce, tr.ent));
+        } while (pierce_mark(&pierce, hit));
 
         pierce_end(&pierce);
 

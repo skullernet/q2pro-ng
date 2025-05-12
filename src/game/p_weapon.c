@@ -92,7 +92,7 @@ void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance,
 
     // if the point was damageable, use raw forward
     // so railgun pierces properly
-    if ((tr.startsolid || adjust_for_pierce) && tr.ent->takedamage)
+    if ((tr.startsolid || adjust_for_pierce) && g_edicts[tr.entnum].takedamage)
         VectorCopy(forward, result_dir);
     else {
         VectorSubtract(tr.endpos, result_start, result_dir);
