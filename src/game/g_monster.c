@@ -745,10 +745,10 @@ static void M_CheckDodge(edict_t *self)
         maxs[i] = self->r.absmax[i] + 512;
     }
 
-    edict_t *list[MAX_EDICTS_OLD];
+    int list[MAX_EDICTS_OLD];
     int count = gi.BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
     for (int i = 0; i < count; i++) {
-        edict_t *ent = list[i];
+        edict_t *ent = g_edicts + list[i];
 
         // not a valid projectile
         if (!(ent->r.svflags & SVF_PROJECTILE) || !(ent->flags & FL_DODGE))

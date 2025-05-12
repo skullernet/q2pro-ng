@@ -453,13 +453,13 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
     }
 
     // find all the things we could maybe hit
-    edict_t *list[MAX_EDICTS_OLD];
+    int list[MAX_EDICTS_OLD];
     int count = gi.BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
 
     bool was_hit = false;
 
     for (int i = 0; i < count; i++) {
-        edict_t *check = list[i];
+        edict_t *check = g_edicts + list[i];
 
         if (check == self || !check->r.inuse || !check->takedamage)
             continue;
@@ -789,7 +789,7 @@ void TOUCH(tesla_zap)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 void THINK(tesla_think_active)(edict_t *self)
 {
     int      i, num;
-    edict_t *touch[MAX_EDICTS_OLD];
+    int      touch[MAX_EDICTS_OLD];
     edict_t *hit;
     vec3_t   dir, start;
     trace_t  tr;
@@ -808,7 +808,7 @@ void THINK(tesla_think_active)(edict_t *self)
         if (!self->r.inuse)
             break;
 
-        hit = touch[i];
+        hit = g_edicts + touch[i];
         if (!hit->r.inuse)
             continue;
         if (hit == self)

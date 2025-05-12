@@ -43,7 +43,7 @@ static areanode_t   sv_areanodes[AREA_NODES];
 static int          sv_numareanodes;
 
 static const vec_t  *area_mins, *area_maxs;
-static edict_t      **area_list;
+static int          *area_list;
 static int          area_count, area_maxcount;
 static int          area_type;
 
@@ -363,7 +363,7 @@ static void SV_AreaEdicts_r(areanode_t *node)
             return;
         }
 
-        area_list[area_count] = check;
+        area_list[area_count] = sent - sv.entities;
         area_count++;
     }
 
@@ -383,7 +383,7 @@ SV_AreaEdicts
 ================
 */
 int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs,
-                  edict_t **list, int maxcount, int areatype)
+                  int *list, int maxcount, int areatype)
 {
     area_mins = mins;
     area_maxs = maxs;
@@ -449,7 +449,8 @@ SV_PointContents
 */
 contents_t SV_PointContents(const vec3_t p)
 {
-    edict_t     *touch[MAX_EDICTS_OLD], *hit;
+    int         touch[MAX_EDICTS_OLD];
+    edict_t     *hit;
     int         i, num;
     contents_t  contents;
 
@@ -460,7 +461,7 @@ contents_t SV_PointContents(const vec3_t p)
     num = SV_AreaEdicts(p, p, touch, q_countof(touch), AREA_SOLID);
 
     for (i = 0; i < num; i++) {
-        hit = touch[i];
+        hit = SV_EdictForNum(touch[i]);
 
         // might intersect, so do an exact clip
         contents |= CM_TransformedPointContents(p, SV_HullForEntity(hit, false),
@@ -482,7 +483,8 @@ static void SV_ClipMoveToEntities(trace_t *tr,
 {
     vec3_t      boxmins, boxmaxs;
     int         i, num, ownernum = ENTITYNUM_NONE;
-    edict_t     *touchlist[MAX_EDICTS], *touch;
+    int         touchlist[MAX_EDICTS];
+    edict_t     *touch;
     trace_t     trace;
 
     // create the bounding box of the entire move
@@ -504,17 +506,17 @@ static void SV_ClipMoveToEntities(trace_t *tr,
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
-        touch = touchlist[i];
+        touch = SV_EdictForNum(touchlist[i]);
         if (touch->r.solid == SOLID_NOT)
             continue;
         if (tr->allsolid)
             return;
         if (passent != ENTITYNUM_NONE) {
-            if (touch->s.number == passent)
+            if (touchlist[i] == passent)
                 continue;
             if (touch->r.ownernum == passent)
                 continue;    // don't clip against own missiles
-            if (touch->s.number == ownernum)
+            if (touchlist[i] == ownernum)
                 continue;    // don't clip against owner
         }
 
@@ -535,7 +537,7 @@ static void SV_ClipMoveToEntities(trace_t *tr,
                                SV_HullForEntity(touch, false), contentmask,
                                touch->s.origin, touch->s.angles);
 
-        CM_ClipEntity(tr, &trace, touch->s.number);
+        CM_ClipEntity(tr, &trace, touchlist[i]);
     }
 }
 

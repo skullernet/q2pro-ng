@@ -134,7 +134,7 @@ typedef struct {
     // solidity changes, it must be relinked.
     void (*linkentity)(edict_t *ent);
     void (*unlinkentity)(edict_t *ent);     // call before removing an interactive edict
-    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxcount, int areatype);
+    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
 
     // network messaging
     void (*multicast)(const vec3_t origin, multicast_t to);

@@ -484,7 +484,7 @@ G_TouchTriggers
 void G_TouchTriggers(edict_t *ent)
 {
     int      i, num;
-    edict_t *touch[MAX_EDICTS_OLD];
+    int      touch[MAX_EDICTS_OLD];
     edict_t *hit;
 
     // dead things don't activate triggers!
@@ -496,7 +496,7 @@ void G_TouchTriggers(edict_t *ent)
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
-        hit = touch[i];
+        hit = g_edicts + touch[i];
         if (!hit->r.inuse)
             continue;
         if (!hit->touch)
@@ -583,13 +583,13 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
         mask &= ~CONTENTS_PLAYER;
 
     int      i, num;
-    edict_t *touch[MAX_EDICTS_OLD];
+    int      touch[MAX_EDICTS_OLD];
     edict_t *hit;
 
     num = gi.BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
 
     for (i = 0; i < num; i++) {
-        hit = touch[i];
+        hit = g_edicts + touch[i];
 
         if (hit == ent)
             continue;

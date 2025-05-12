@@ -752,7 +752,8 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
 edict_t *CheckForBadArea(edict_t *ent)
 {
     int         i, num;
-    edict_t     *touch[MAX_EDICTS_OLD], *hit;
+    int         touch[MAX_EDICTS_OLD];
+    edict_t     *hit;
     vec3_t      mins, maxs;
 
     VectorAdd(ent->s.origin, ent->r.mins, mins);
@@ -763,7 +764,7 @@ edict_t *CheckForBadArea(edict_t *ent)
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
-        hit = touch[i];
+        hit = g_edicts + touch[i];
         if (!hit->r.inuse)
             continue;
         if (hit->touch == badarea_touch)

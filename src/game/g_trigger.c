@@ -125,12 +125,12 @@ void THINK(latched_trigger_think)(edict_t *self)
 {
     self->nextthink = level.time + FRAME_TIME;
 
-    edict_t *list[MAX_EDICTS_OLD];
+    int list[MAX_EDICTS_OLD];
     int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
     bool any_inside = false;
 
     for (int i = 0; i < count; i++) {
-        edict_t *other = list[i];
+        edict_t *other = g_edicts + list[i];
 
         if (other->client) {
             if (self->spawnflags & SPAWNFLAG_TRIGGER_NOT_PLAYER)
@@ -686,7 +686,7 @@ static bool can_hurt(edict_t *self, edict_t *other)
 
 void THINK(hurt_think)(edict_t *self)
 {
-    edict_t *list[MAX_EDICTS_OLD];
+    int list[MAX_EDICTS_OLD];
     damageflags_t dflags;
     int count;
 
@@ -698,7 +698,7 @@ void THINK(hurt_think)(edict_t *self)
     count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
 
     for (int i = 0; i < count; i++) {
-        edict_t *other = list[i];
+        edict_t *other = g_edicts + list[i];
         if (!can_hurt(self, other))
             continue;
 
@@ -1198,7 +1198,7 @@ void USE(trigger_coop_relay_use)(edict_t *self, edict_t *other, edict_t *activat
 
 void THINK(trigger_coop_relay_think)(edict_t *self)
 {
-    edict_t *players[MAX_EDICTS_OLD];
+    int players[MAX_EDICTS_OLD];
     int i, j, num_active = 0, num_present = 0;
 
     for (i = 1; i <= game.maxclients; i++)
@@ -1206,11 +1206,9 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
             num_active++;
 
     int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, players, q_countof(players), AREA_SOLID);
-    for (i = 0; i < count; i++) {
-        edict_t *ent = players[i];
-        if (trigger_coop_relay_ok(ent))
-            players[num_present++] = ent;
-    }
+    for (i = 0; i < count; i++)
+        if (trigger_coop_relay_ok(g_edicts + players[i]))
+            players[num_present++] = players[i];
 
     if (num_present == num_active) {
         const char *msg = self->message;
@@ -1224,14 +1222,14 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
 
     if (num_present && self->timestamp < level.time) {
         for (i = 0; i < num_present; i++)
-            gi.centerprintf(players[i], "%s", self->message);
+            gi.centerprintf(g_edicts + players[i], "%s", self->message);
 
         for (i = 1; i <= game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (!trigger_coop_relay_ok(player))
                 continue;
             for (j = 0; j < num_present; j++)
-                if (players[j] == player)
+                if (players[j] == i)
                     break;
             if (j == num_present)
                 gi.centerprintf(player, "%s", self->map);
