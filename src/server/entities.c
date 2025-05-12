@@ -327,6 +327,8 @@ void SV_BuildClientFrame(client_t *client)
         if (!ent->r.inuse)
             continue;
 
+        Q_assert_soft(ent->s.number == e);
+
         // ignore ents without visible models
         if (ent->r.svflags & SVF_NOCLIENT)
             continue;
@@ -381,8 +383,6 @@ void SV_BuildClientFrame(client_t *client)
             }
         }
 
-        SV_CheckEntityNumber(ent, e);
-
         // optionally skip it
         if (ge->EntityVisibleToClient && !ge->EntityVisibleToClient(clent, ent))
             continue;
@@ -414,7 +414,7 @@ void SV_BuildClientFrame(client_t *client)
 
         // optionally customize it
         if (ge->CustomizeEntityToClient && ge->CustomizeEntityToClient(clent, ent, &temp)) {
-            Q_assert(temp.number == e);
+            Q_assert_soft(temp.number == e);
             *state = temp;
         } else {
             *state = ent->s;

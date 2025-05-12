@@ -108,8 +108,10 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 #define Com_NPrintf(...) Com_LPrintf(PRINT_NOTICE, __VA_ARGS__)
 
 // an assertion that's ALWAYS enabled. `expr' may have side effects.
-#define Q_assert(expr) \
-    do { if (!(expr)) Com_Error(ERR_FATAL, "%s: assertion `%s' failed", __func__, #expr); } while (0)
+#define Q_assert_type(type, expr) \
+    do { if (!(expr)) Com_Error(type, "%s: assertion `%s' failed", __func__, #expr); } while (0)
+#define Q_assert_soft(expr) Q_assert_type(ERR_DROP, expr)
+#define Q_assert(expr) Q_assert_type(ERR_FATAL, expr)
 
 // game print flags
 enum {

@@ -62,11 +62,11 @@ static void SV_CreateBaselines(void)
             continue;
         }
 
+        Q_assert_soft(ent->s.number == i);
+
         if (!HAS_EFFECTS(ent)) {
             continue;
         }
-
-        SV_CheckEntityNumber(ent, i);
 
         chunk = &sv_client->baselines[i >> SV_BASELINES_SHIFT];
         if (*chunk == NULL) {
