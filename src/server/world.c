@@ -509,9 +509,9 @@ static void SV_ClipMoveToEntities(trace_t *tr,
         if (passedict) {
             if (touch == passedict)
                 continue;
-            if (touch->r.owner == passedict)
+            if (touch->r.ownernum == passedict->s.number)
                 continue;    // don't clip against own missiles
-            if (passedict->r.owner == touch)
+            if (passedict->r.ownernum == touch->s.number)
                 continue;    // don't clip against owner
         }
 
@@ -557,6 +557,9 @@ void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
     trace->ent = ge->edicts;
     if (trace->fraction == 0)
         return;     // blocked by the world
+
+    if (passedict == ge->edicts)
+        passedict = NULL;   // optimization
 
     // clip to other solid entities
     SV_ClipMoveToEntities(trace, start, end, mins, maxs, passedict, contentmask);

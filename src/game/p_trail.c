@@ -73,7 +73,7 @@ void PlayerTrail_Destroy(edict_t *player)
             continue;
         if (strcmp(ent->classname, "player_trail") && strcmp(ent->classname, "player_noise"))
             continue;
-        if (!player || ent->r.owner == player)
+        if (!player || ent->r.ownernum == player - g_edicts)
             G_FreeEdict(ent);
     }
 
@@ -98,7 +98,7 @@ void PlayerTrail_Add(edict_t *player)
     edict_t *trail = PlayerTrail_Spawn(player);
     VectorCopy(player->s.old_origin, trail->s.origin);
     trail->timestamp = level.time;
-    trail->r.owner = player;
+    trail->r.ownernum = player - g_edicts;
 }
 
 // pick a trail node that matches the player

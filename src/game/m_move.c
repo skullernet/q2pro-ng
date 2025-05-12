@@ -796,14 +796,15 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         // use AI_BLOCKED to tell the calling layer that we're now mad at a tesla
         edict_t *new_bad = CheckForBadArea(ent);
         if (!current_bad && new_bad) {
-            if (new_bad->r.owner) {
-                if (!strcmp(new_bad->r.owner->classname, "tesla_mine")) {
+            if (new_bad->r.ownernum) {
+                edict_t *owner = g_edicts + new_bad->r.ownernum;
+                if (!strcmp(owner->classname, "tesla_mine")) {
                     if (!ent->enemy || !ent->enemy->r.inuse) {
-                        TargetTesla(ent, new_bad->r.owner);
+                        TargetTesla(ent, owner);
                         ent->monsterinfo.aiflags |= AI_BLOCKED;
                     } else if (!strcmp(ent->enemy->classname, "tesla_mine")) {
                     } else if (!ent->enemy->client || !visible(ent, ent->enemy)) {
-                        TargetTesla(ent, new_bad->r.owner);
+                        TargetTesla(ent, owner);
                         ent->monsterinfo.aiflags |= AI_BLOCKED;
                     }
                 }

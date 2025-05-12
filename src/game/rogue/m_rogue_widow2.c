@@ -1094,7 +1094,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         gib->velocity[2] = max(vscale, gib->velocity[2]);
         gib->gravity = 0.25f;
         gib->touch = widow_gib_touch;
-        gib->r.owner = self;
+        gib->r.ownernum = self - g_edicts;
         if (gib->s.modelindex == gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2")) {
             VectorSet(gib->r.mins, -10, -10, 0);
             VectorSet(gib->r.maxs, 10, 10, 10);

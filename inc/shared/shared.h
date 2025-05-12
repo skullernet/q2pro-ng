@@ -75,6 +75,9 @@ typedef int qhandle_t;
 #define MODELINDEX_WORLD    0
 #define MODELINDEX_PLAYER   255
 
+#define ENTITYNUM_WORLD     0
+#define ENTITYNUM_NONE      0
+
 #define MAX_CLIENT_NAME     16
 
 typedef enum {

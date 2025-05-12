@@ -431,7 +431,7 @@ void SV_BuildClientFrame(client_t *client)
             state->modelindex = 0;
         }
 
-        if (ent->r.owner == clent) {
+        if (ent->r.ownernum == clent->s.number) {
             // don't mark players missiles as solid
             state->solid = 0;
         }

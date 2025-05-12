@@ -640,7 +640,7 @@ static void turret_wall_spawn(edict_t *turret)
     turret->teamchain = ent;
     ent->teamchain = NULL;
     ent->flags |= FL_TEAMSLAVE;
-    ent->r.owner = turret;
+    ent->r.ownernum = turret - g_edicts;
 
     ent->s.modelindex = gi.modelindex("models/monsters/turretbase/tris.md2");
 

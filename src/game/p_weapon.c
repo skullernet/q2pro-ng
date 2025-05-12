@@ -152,7 +152,7 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
         noise->classname = "player_noise";
         VectorSet(noise->r.mins, -8, -8, -8);
         VectorSet(noise->r.maxs, 8, 8, 8);
-        noise->r.owner = who;
+        noise->r.ownernum = who - g_edicts;
         noise->r.svflags = SVF_NOCLIENT;
         who->mynoise = noise;
 
@@ -160,7 +160,7 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
         noise->classname = "player_noise";
         VectorSet(noise->r.mins, -8, -8, -8);
         VectorSet(noise->r.maxs, 8, 8, 8);
-        noise->r.owner = who;
+        noise->r.ownernum = who - g_edicts;
         noise->r.svflags = SVF_NOCLIENT;
         who->mynoise2 = noise;
     }

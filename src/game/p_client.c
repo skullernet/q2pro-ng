@@ -1491,7 +1491,7 @@ static void CopyToBodyQue(edict_t *ent)
     body->r.svflags = ent->r.svflags;
     body->r.solid = ent->r.solid;
     body->clipmask = ent->clipmask;
-    body->r.owner = ent->r.owner;
+    body->r.ownernum = ent->r.ownernum;
     body->movetype = ent->movetype;
     body->health = ent->health;
     body->gib_health = ent->gib_health;

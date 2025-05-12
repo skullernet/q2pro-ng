@@ -160,7 +160,7 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->r.solid = SOLID_TRIGGER;
     tag_token->movetype = MOVETYPE_TOSS;
     tag_token->touch = NULL;
-    tag_token->r.owner = ent;
+    tag_token->r.ownernum = ent - g_edicts;
 
     AngleVectors(ent->client->v_angle, forward, right, NULL);
     G_ProjectSource(ent->s.origin, offset, forward, right, tag_token->s.origin);

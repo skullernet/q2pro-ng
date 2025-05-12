@@ -69,7 +69,7 @@ typedef struct {
     vec3_t      mins, maxs;
     vec3_t      absmin, absmax, size;
     solid_t     solid;
-    edict_t     *owner;
+    int         ownernum;
 } entity_shared_t;
 
 #ifndef GAME_INCLUDE

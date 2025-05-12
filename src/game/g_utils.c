@@ -534,7 +534,7 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
         skip->spawn_count = tr.ent->spawn_count;
 
         // if we're both players and it's coop, allow the projectile to "pass" through
-        if (ent->client && tr.ent->r.owner && tr.ent->r.owner->client && !G_ShouldPlayersCollide(true))
+        if (ent->client && tr.ent->r.ownernum && g_edicts[tr.ent->r.ownernum].client && !G_ShouldPlayersCollide(true))
             continue;
 
         G_Impact(ent, &tr);

@@ -741,7 +741,7 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
         badarea->nextthink = level.time + lifespan;
     }
     if (owner)
-        badarea->r.owner = owner;
+        badarea->r.ownernum = owner - g_edicts;
 
     return badarea;
 }
@@ -1214,15 +1214,17 @@ int CountPlayers(void)
 
 void THINK(BossExplode_think)(edict_t *self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
+
     // owner gone or changed
-    if (!self->r.owner->r.inuse || self->r.owner->s.modelindex != self->style || self->count != self->r.owner->spawn_count) {
+    if (!owner->r.inuse || owner->s.modelindex != self->style || self->count != owner->spawn_count) {
         G_FreeEdict(self);
         return;
     }
 
     vec3_t org;
-    VectorAdd(self->r.owner->s.origin, self->r.owner->r.mins, org);
-    VectorMA(org, frandom(), self->r.owner->r.size, org);
+    VectorAdd(owner->s.origin, owner->r.mins, org);
+    VectorMA(org, frandom(), owner->r.size, org);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(!(self->viewheight % 3) ? TE_EXPLOSION1 : TE_EXPLOSION1_NL);
@@ -1240,7 +1242,7 @@ void BossExplode(edict_t *self)
         return;
 
     edict_t *exploder = G_Spawn();
-    exploder->r.owner = self;
+    exploder->r.ownernum = self - g_edicts;
     exploder->count = self->spawn_count;
     exploder->style = self->s.modelindex;
     exploder->think = BossExplode_think;

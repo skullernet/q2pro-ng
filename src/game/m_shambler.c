@@ -73,7 +73,7 @@ static void shambler_windup(edict_t *self)
     edict_t *lightning = self->beam = G_Spawn();
     lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
-    lightning->r.owner = self;
+    lightning->r.ownernum = self - g_edicts;
     shambler_lightning_update(self);
 }
 

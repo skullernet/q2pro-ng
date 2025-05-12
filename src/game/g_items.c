@@ -616,14 +616,16 @@ static void Drop_Ammo(edict_t *ent, const gitem_t *item)
 
 void THINK(MegaHealth_think)(edict_t *self)
 {
-    if (self->r.owner->health > self->r.owner->max_health
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (owner->health > owner->max_health
         //ZOID
-        && !CTFHasRegeneration(self->r.owner)
+        && !CTFHasRegeneration(owner)
         //ZOID
        )
     {
         self->nextthink = level.time + SEC(1);
-        self->r.owner->health -= 1;
+        owner->health -= 1;
         return;
     }
 
@@ -670,7 +672,7 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
         } else {
             ent->think = MegaHealth_think;
             ent->nextthink = level.time + SEC(5);
-            ent->r.owner = other;
+            ent->r.ownernum = other - g_edicts;
             ent->flags |= FL_RESPAWN;
             ent->r.svflags |= SVF_NOCLIENT;
             ent->r.solid = SOLID_NOT;
@@ -956,7 +958,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
 
 void TOUCH(drop_temp_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == ent->r.owner)
+    if (other == g_edicts + ent->r.ownernum)
         return;
 
     Touch_Item(ent, other, tr, other_touching_self);
@@ -989,7 +991,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->r.solid = SOLID_TRIGGER;
     dropped->movetype = MOVETYPE_TOSS;
     dropped->touch = drop_temp_touch;
-    dropped->r.owner = ent;
+    dropped->r.ownernum = ent - g_edicts;
 
     if (ent->client) {
         trace_t trace;

@@ -613,7 +613,9 @@ static void gekk_check_refire(edict_t *self)
 
 void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->r.owner)
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -621,11 +623,11 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         return;
     }
 
-    if (self->r.owner->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
 
     gi.sound(self, CHAN_AUTO, loogie_hit, 1.0f, ATTN_NORM, 0);
 
@@ -650,7 +652,7 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     loogie->s.effects |= EF_BLASTER;
     loogie->s.renderfx |= RF_FULLBRIGHT;
     loogie->s.modelindex = gi.modelindex("models/objects/loogy/tris.md2");
-    loogie->r.owner = self;
+    loogie->r.ownernum = self - g_edicts;
     loogie->touch = loogie_touch;
     loogie->nextthink = level.time + SEC(2);
     loogie->think = G_FreeEdict;

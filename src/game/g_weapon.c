@@ -275,7 +275,9 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->r.owner)
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -283,12 +285,11 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         return;
     }
 
-    // PMM - crash prevention
-    if (self->r.owner && self->r.owner->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
     else {
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte((self->style != MOD_BLUEBLASTER) ? TE_BLASTER : TE_BLUEHYPERBLASTER_2);
@@ -322,7 +323,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
     bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-    bolt->r.owner = self;
+    bolt->r.ownernum = self - g_edicts;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -350,11 +351,12 @@ fire_grenade
 */
 static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 {
+    edict_t *owner = g_edicts + ent->r.ownernum;
     vec3_t   origin;
     mod_id_t mod;
 
-    if (ent->r.owner->client)
-        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     // FIXME: if we are onground then raise our Z just a bit since we are a point?
     if (other) {
@@ -365,7 +367,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
             mod = MOD_HANDGRENADE;
         else
             mod = MOD_GRENADE;
-        T_Damage(other, ent, ent->r.owner, dir, ent->s.origin, normal, ent->dmg, ent->dmg,
+        T_Damage(other, ent, owner, dir, ent->s.origin, normal, ent->dmg, ent->dmg,
                  mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, (mod_t) { mod });
     }
 
@@ -375,7 +377,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
         mod = MOD_HG_SPLASH;
     else
         mod = MOD_G_SPLASH;
-    T_RadiusDamage(ent, ent->r.owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
+    T_RadiusDamage(ent, owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
 
     VectorAdd(ent->s.origin, normal, origin);
     gi.WriteByte(svc_temp_entity);
@@ -405,7 +407,7 @@ void THINK(Grenade_Explode)(edict_t *ent)
 
 void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == ent->r.owner)
+    if (other == g_edicts + ent->r.ownernum)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -490,7 +492,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
         grenade->think = Grenade4_Think;
         grenade->s.renderfx |= RF_MINLIGHT;
     }
-    grenade->r.owner = self;
+    grenade->r.ownernum = self - g_edicts;
     grenade->touch = Grenade_Touch;
     grenade->dmg = damage;
     grenade->dmg_radius = damage_radius;
@@ -531,7 +533,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     grenade->s.effects |= EF_GRENADE;
 
     grenade->s.modelindex = gi.modelindex("models/objects/grenade3/tris.md2");
-    grenade->r.owner = self;
+    grenade->r.ownernum = self - g_edicts;
     grenade->touch = Grenade_Touch;
     grenade->nextthink = level.time + timer;
     grenade->think = Grenade_Explode;
@@ -558,9 +560,10 @@ fire_rocket
 */
 void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    vec3_t origin;
+    edict_t *owner = g_edicts + ent->r.ownernum;
+    vec3_t   origin;
 
-    if (other == ent->r.owner)
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -568,14 +571,14 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         return;
     }
 
-    if (ent->r.owner->client)
-        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     // calculate position for the explosion entity
     VectorAdd(ent->s.origin, tr->plane.normal, origin);
 
     if (other->takedamage) {
-        T_Damage(other, ent, ent->r.owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
+        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
     } else if (!deathmatch->integer && !coop->integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
@@ -583,7 +586,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
     }
 
-    T_RadiusDamage(ent, ent->r.owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
+    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
 
     gi.WriteByte(svc_temp_entity);
     if (ent->waterlevel)
@@ -614,7 +617,7 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     rocket->r.solid = SOLID_BBOX;
     rocket->s.effects |= EF_ROCKET;
     rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    rocket->r.owner = self;
+    rocket->r.ownernum = self - g_edicts;
     rocket->touch = rocket_touch;
     rocket->nextthink = level.time + SEC(8000.0f / speed);
     rocket->think = G_FreeEdict;
@@ -765,12 +768,14 @@ static void bfg_laser_pos(const vec3_t p, float dist, vec3_t out)
 
 void THINK(bfg_laser_update)(edict_t *self)
 {
-    if (level.time > self->timestamp || !self->r.owner->r.inuse) {
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (level.time > self->timestamp || !owner->r.inuse) {
         G_FreeEdict(self);
         return;
     }
 
-    VectorCopy(self->r.owner->s.origin, self->s.origin);
+    VectorCopy(owner->s.origin, self->s.origin);
     self->nextthink = level.time + FRAME_TIME;
     gi.linkentity(self);
 }
@@ -797,7 +802,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
     laser->timestamp = level.time + SEC(0.3f);
-    laser->r.owner = self;
+    laser->r.ownernum = self - g_edicts;
     gi.linkentity(laser);
 }
 
@@ -808,7 +813,7 @@ fire_bfg
 */
 void THINK(bfg_explode)(edict_t *self)
 {
-    edict_t *ent;
+    edict_t *ent, *owner;
     float    points;
     vec3_t   v;
     float    dist;
@@ -818,21 +823,22 @@ void THINK(bfg_explode)(edict_t *self)
     if (self->s.frame == 0) {
         // the BFG effect
         ent = NULL;
+        owner = g_edicts + self->r.ownernum;
         while ((ent = findradius(ent, self->s.origin, self->dmg_radius)) != NULL) {
             if (!ent->takedamage)
                 continue;
-            if (ent == self->r.owner)
+            if (ent == owner)
                 continue;
             if (!CanDamage(ent, self))
                 continue;
-            if (!CanDamage(ent, self->r.owner))
+            if (!CanDamage(ent, owner))
                 continue;
             // ROGUE - make tesla hurt by bfg
             if (!(ent->r.svflags & SVF_MONSTER) && !(ent->flags & FL_DAMAGEABLE) && (!ent->client) && (strcmp(ent->classname, "misc_explobox") != 0))
                 continue;
             // ZOID
             // don't target players in CTF
-            if (CheckTeamDamage(ent, self->r.owner))
+            if (CheckTeamDamage(ent, owner))
                 continue;
             // ZOID
 
@@ -842,7 +848,7 @@ void THINK(bfg_explode)(edict_t *self)
             dist = Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-            T_Damage(ent, self, self->r.owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
+            T_Damage(ent, self, owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
 
             // Paril: draw BFG lightning laser to enemies
             gi.WriteByte(svc_temp_entity);
@@ -861,7 +867,9 @@ void THINK(bfg_explode)(edict_t *self)
 
 void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->r.owner)
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -869,13 +877,13 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
         return;
     }
 
-    if (self->r.owner->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
-        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
-    T_RadiusDamage(self, self->r.owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+    T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
     gi.sound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
     self->r.solid = SOLID_NOT;
@@ -898,7 +906,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 
 void THINK(bfg_think)(edict_t *self)
 {
-    edict_t *ent;
+    edict_t *ent, *owner;
     vec3_t   point;
     vec3_t   dir;
     vec3_t   start;
@@ -914,11 +922,12 @@ void THINK(bfg_think)(edict_t *self)
     bfg_spawn_laser(self);
 
     ent = NULL;
+    owner = g_edicts + self->r.ownernum;
     while ((ent = findradius(ent, self->s.origin, 256)) != NULL) {
         if (ent == self)
             continue;
 
-        if (ent == self->r.owner)
+        if (ent == owner)
             continue;
 
         if (!ent->takedamage)
@@ -929,7 +938,7 @@ void THINK(bfg_think)(edict_t *self)
             continue;
         // ZOID
         // don't target players in CTF
-        if (CheckTeamDamage(ent, self->r.owner))
+        if (CheckTeamDamage(ent, owner))
             continue;
         // ZOID
 
@@ -954,14 +963,14 @@ void THINK(bfg_think)(edict_t *self)
             gi.trace(&tr, start, NULL, NULL, end, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER | CONTENTS_PROJECTILECLIP);
 
             // didn't hit anything, so we're done
-            if (!tr.ent || tr.fraction == 1.0f)
+            if (tr.fraction == 1.0f)
                 break;
 
             // hurt it if we can
-            if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->r.owner))
-                T_Damage(tr.ent, self, self->r.owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+            if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != owner))
+                T_Damage(tr.ent, self, owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
 
-            // if we hit something that's not a monster or player we're done
+            // if we tr.ent something that's not a monster or player we're done
             if (!(tr.ent->r.svflags & SVF_MONSTER) && !(tr.ent->flags & FL_DAMAGEABLE) && (!tr.ent->client)) {
                 vec3_t pos;
                 VectorAdd(tr.endpos, tr.plane.normal, pos);
@@ -1006,7 +1015,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
     bfg->r.solid = SOLID_BBOX;
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->r.owner = self;
+    bfg->r.ownernum = self - g_edicts;
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
@@ -1037,7 +1046,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
 
     if (other->r.svflags & (SVF_MONSTER | SVF_PLAYER)) {
         other->disintegrator_time += SEC(50);
-        other->disintegrator = self->r.owner;
+        other->disintegrator = g_edicts + self->r.ownernum;
     }
 }
 
@@ -1060,7 +1069,7 @@ void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward,
     bfg->r.svflags |= SVF_PROJECTILE;
     bfg->flags |= FL_DODGE;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->r.owner = self;
+    bfg->r.ownernum = self - g_edicts;
     bfg->touch = disintegrator_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;

@@ -1156,7 +1156,7 @@ void THINK(target_camera_dummy_think)(edict_t *self)
 {
     // bit of a hack, but this will let the dummy
     // move like a player
-    self->client = self->r.owner->client;
+    self->client = g_edicts[self->r.ownernum].client;
     xyspeed = sqrtf(self->velocity[0] * self->velocity[0] + self->velocity[1] * self->velocity[1]);
     G_SetClientFrame(self);
     self->client = NULL;
@@ -1190,7 +1190,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     // spawn fake player dummy where we were
     if (activator->client) {
         edict_t *dummy = self->enemy = G_Spawn();
-        dummy->r.owner = activator;
+        dummy->r.ownernum = activator - g_edicts;
         dummy->clipmask = activator->clipmask;
         VectorCopy(activator->s.origin, dummy->s.origin);
         VectorCopy(activator->s.angles, dummy->s.angles);

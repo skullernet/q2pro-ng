@@ -33,8 +33,8 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
     edict_t *attacker;
 
     if (other->takedamage) {
-        if (self->teammaster->r.owner)
-            attacker = self->teammaster->r.owner;
+        if (self->teammaster->r.ownernum)
+            attacker = g_edicts + self->teammaster->r.ownernum;
         else
             attacker = self->teammaster;
         T_Damage(other, self, attacker, vec3_origin, other->s.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
@@ -74,7 +74,8 @@ static void turret_breach_fire(edict_t *self)
     else
         damage = irandom2(100, 150);
     speed = 550 + 50 * skill->integer;
-    edict_t *rocket = fire_rocket(self->teammaster->r.owner->activator ? self->teammaster->r.owner->activator : self->teammaster->r.owner, start, f, damage, speed, 150, damage);
+    edict_t *owner = g_edicts + self->teammaster->r.ownernum;
+    edict_t *rocket = fire_rocket(owner->activator ? owner->activator : owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
 
     gi.positioned_sound(start, self, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
@@ -156,33 +157,34 @@ void THINK(turret_breach_think)(edict_t *self)
         ent->avelocity[1] = self->avelocity[1];
 
     // if we have a driver, adjust his velocities
-    if (self->r.owner) {
-        float  angle;
-        float  target_z;
-        float  diff;
-        vec3_t target;
-        vec3_t dir;
+    if (self->r.ownernum) {
+        edict_t *owner = g_edicts + self->r.ownernum;
+        float    angle;
+        float    target_z;
+        float    diff;
+        vec3_t   target;
+        vec3_t   dir;
 
         // angular is easy, just copy ours
-        self->r.owner->avelocity[0] = self->avelocity[0];
-        self->r.owner->avelocity[1] = self->avelocity[1];
+        owner->avelocity[0] = self->avelocity[0];
+        owner->avelocity[1] = self->avelocity[1];
 
         // x & y
-        angle = DEG2RAD(self->s.angles[1] + self->r.owner->move_origin[1]);
-        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * self->r.owner->move_origin[0]);
-        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * self->r.owner->move_origin[0]);
-        target[2] = self->r.owner->s.origin[2];
+        angle = DEG2RAD(self->s.angles[1] + owner->move_origin[1]);
+        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * owner->move_origin[0]);
+        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * owner->move_origin[0]);
+        target[2] = owner->s.origin[2];
 
-        VectorSubtract(target, self->r.owner->s.origin, dir);
-        self->r.owner->velocity[0] = dir[0] * 1.0f / FRAME_TIME_SEC;
-        self->r.owner->velocity[1] = dir[1] * 1.0f / FRAME_TIME_SEC;
+        VectorSubtract(target, owner->s.origin, dir);
+        owner->velocity[0] = dir[0] * 1.0f / FRAME_TIME_SEC;
+        owner->velocity[1] = dir[1] * 1.0f / FRAME_TIME_SEC;
 
         // z
         angle = DEG2RAD(self->s.angles[PITCH]);
-        target_z = SnapToEights(self->s.origin[2] + self->r.owner->move_origin[0] * tanf(angle) + self->r.owner->move_origin[2]);
+        target_z = SnapToEights(self->s.origin[2] + owner->move_origin[0] * tanf(angle) + owner->move_origin[2]);
 
-        diff = target_z - self->r.owner->s.origin[2];
-        self->r.owner->velocity[2] = diff * 1.0f / FRAME_TIME_SEC;
+        diff = target_z - owner->s.origin[2];
+        owner->velocity[2] = diff * 1.0f / FRAME_TIME_SEC;
 
         if (self->spawnflags & SPAWNFLAG_TURRET_BREACH_FIRE) {
             turret_breach_fire(self);
@@ -295,8 +297,8 @@ void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker
         self->teammaster = NULL;
         self->flags &= ~FL_TEAMSLAVE;
 
-        self->target_ent->r.owner = NULL;
-        self->target_ent->teammaster->r.owner = NULL;
+        self->target_ent->r.ownernum = ENTITYNUM_NONE;
+        self->target_ent->teammaster->r.ownernum = ENTITYNUM_NONE;
 
         self->target_ent->moveinfo.blocked = NULL;
 
@@ -373,8 +375,8 @@ void THINK(turret_driver_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->r.owner = self;
-    self->target_ent->teammaster->r.owner = self;
+    self->target_ent->r.ownernum = self - g_edicts;
+    self->target_ent->teammaster->r.ownernum = self - g_edicts;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
@@ -529,8 +531,8 @@ void THINK(turret_brain_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->r.owner = self;
-    self->target_ent->teammaster->r.owner = self;
+    self->target_ent->r.ownernum = self - g_edicts;
+    self->target_ent->teammaster->r.ownernum = self - g_edicts;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];

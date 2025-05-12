@@ -330,7 +330,7 @@ static const save_field_t entityfields[] = {
     V(r.mins),
     V(r.maxs),
     I(r.solid),
-    E(r.owner),
+    I(r.ownernum),
 
     I(spawn_count),
     I(movetype),

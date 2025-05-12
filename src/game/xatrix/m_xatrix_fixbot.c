@@ -40,7 +40,9 @@ const mmove_t fixbot_move_turn;
 // [Paril-KEX] clean up bot goals if we get interrupted
 void THINK(bot_goal_check)(edict_t *self)
 {
-    if (!self->r.owner || !self->r.owner->r.inuse || self->r.owner->goalentity != self) {
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (!self->r.ownernum || !owner->r.inuse || owner->goalentity != self) {
         G_FreeEdict(self);
         return;
     }
@@ -109,7 +111,7 @@ static void landing_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.owner = self;
+    ent->r.ownernum = self - g_edicts;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
@@ -138,7 +140,7 @@ static void takeoff_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.owner = self;
+    ent->r.ownernum = self - g_edicts;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
@@ -202,7 +204,7 @@ static void roam_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.owner = self;
+    ent->r.ownernum = self - g_edicts;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
     gi.linkentity(ent);
@@ -794,7 +796,7 @@ bool finishHeal(edict_t *self);
 
 void PRETHINK(fixbot_laser_update)(edict_t *laser)
 {
-    edict_t *self = laser->r.owner;
+    edict_t *self = g_edicts + laser->r.ownernum;
 
     vec3_t start, dir;
     AngleVectors(self->s.angles, dir, NULL, NULL);
@@ -910,7 +912,7 @@ static void weldstate(edict_t *self)
         M_SetAnimation(self, &fixbot_move_weld);
     else if (self->goalentity && self->s.frame == FRAME_weldmiddle_07) {
         if (self->goalentity->health <= 0) {
-            self->enemy->r.owner = NULL;
+            self->enemy->r.ownernum = ENTITYNUM_NONE;
             M_SetAnimation(self, &fixbot_move_weld_end);
         } else if (!(self->spawnflags & SPAWNFLAG_MONSTER_SCENIC))
             self->goalentity->health -= 10;

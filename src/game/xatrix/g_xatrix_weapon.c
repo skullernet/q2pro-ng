@@ -22,7 +22,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 1;
     bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-    bolt->r.owner = self;
+    bolt->r.ownernum = self - g_edicts;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -57,7 +57,9 @@ void THINK(ionripper_sparks)(edict_t *self)
 
 void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->r.owner)
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -65,13 +67,13 @@ void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    if (self->r.owner->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (!other->takedamage)
         return;
 
-    T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
+    T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
     G_FreeEdict(self);
 }
 
@@ -99,7 +101,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->s.renderfx |= RF_FULLBRIGHT;
     ion->s.modelindex = gi.modelindex("models/objects/boomrang/tris.md2");
     ion->s.sound = gi.soundindex("misc/lasfly.wav");
-    ion->r.owner = self;
+    ion->r.ownernum = self - g_edicts;
     ion->touch = ionripper_touch;
     ion->nextthink = level.time + SEC(3);
     ion->think = ionripper_sparks;
@@ -141,7 +143,7 @@ void THINK(heat_think)(edict_t *self)
     if (!acquire) {
         // acquire new target
         while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-            if (self->r.owner == target)
+            if (self->r.ownernum == target - g_edicts)
                 continue;
             if (!target->client)
                 continue;
@@ -207,7 +209,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
     heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    heat->r.owner = self;
+    heat->r.ownernum = self - g_edicts;
     heat->touch = rocket_touch;
     heat->speed = speed;
     heat->accel = turn_fraction;
@@ -234,9 +236,10 @@ fire_plasma
 
 void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
+    edict_t *owner = g_edicts + ent->r.ownernum;
     vec3_t origin;
 
-    if (other == ent->r.owner)
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -244,16 +247,16 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         return;
     }
 
-    if (ent->r.owner->client)
-        PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     // calculate position for the explosion entity
     VectorAdd(ent->s.origin, tr->plane.normal, origin);
 
     if (other->takedamage)
-        T_Damage(other, ent, ent->r.owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
+        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
-    T_RadiusDamage(ent, ent->r.owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
+    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_PLASMA_EXPLOSION);
@@ -282,7 +285,7 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
     plasma->r.solid = SOLID_BBOX;
     plasma->r.svflags |= SVF_PROJECTILE;
     plasma->flags |= FL_DODGE;
-    plasma->r.owner = self;
+    plasma->r.ownernum = self - g_edicts;
     plasma->touch = plasma_touch;
     plasma->nextthink = level.time + SEC(8000.0f / speed);
     plasma->think = G_FreeEdict;
@@ -299,7 +302,9 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
 
 void THINK(Trap_Gib_Think)(edict_t *ent)
 {
-    if (ent->r.owner->s.frame != 5) {
+    edict_t *owner = g_edicts + ent->r.ownernum;
+
+    if (owner->s.frame != 5) {
         G_FreeEdict(ent);
         return;
     }
@@ -307,18 +312,18 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
     vec3_t forward, right, up;
     vec3_t vec;
 
-    AngleVectors(ent->r.owner->s.angles, forward, right, up);
+    AngleVectors(owner->s.angles, forward, right, up);
 
     // rotate us around the center
-    float degrees = (150 * FRAME_TIME_SEC) + ent->r.owner->delay;
+    float degrees = (150 * FRAME_TIME_SEC) + owner->delay;
     vec3_t diff;
 
-    VectorSubtract(ent->r.owner->s.origin, ent->s.origin, diff);
+    VectorSubtract(owner->s.origin, ent->s.origin, diff);
     RotatePointAroundVector(vec, up, diff, degrees);
 
     ent->s.angles[1] += degrees;
 
-    VectorSubtract(ent->r.owner->s.origin, vec, vec);
+    VectorSubtract(owner->s.origin, vec, vec);
 
     trace_t tr;
     gi.trace(&tr, ent->s.origin, NULL, NULL, vec, ent, MASK_SOLID);
@@ -412,7 +417,7 @@ void THINK(Trap_Think)(edict_t *ent)
         ent->s.effects |= EF_TRAP;
         // clear the owner if in deathmatch
         if (deathmatch->integer)
-            ent->r.owner = NULL;
+            ent->r.ownernum = ENTITYNUM_NONE;
     }
 
     if (ent->s.frame < 4) {
@@ -518,7 +523,7 @@ void THINK(Trap_Think)(edict_t *ent)
         e->movetype = MOVETYPE_NONE;
         e->nextthink = level.time + FRAME_TIME;
         e->think = Trap_Gib_Think;
-        e->r.owner = ent;
+        e->r.ownernum = ent - g_edicts;
         Trap_Gib_Think(e);
     }
 }
@@ -552,7 +557,8 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     trap->die = trap_die;
     trap->health = 20;
     trap->s.modelindex = gi.modelindex("models/weapons/z_trap/tris.md2");
-    trap->r.owner = trap->teammaster = self;
+    trap->teammaster = self;
+    trap->r.ownernum = self - g_edicts;
     trap->nextthink = level.time + SEC(1);
     trap->think = Trap_Think;
     trap->classname = "food_cube_trap";

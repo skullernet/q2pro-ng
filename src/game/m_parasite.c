@@ -235,7 +235,7 @@ static void parasite_walk(edict_t *self)
 // hard reset on proboscis; like we never existed
 void THINK(proboscis_reset)(edict_t *self)
 {
-    self->r.owner->proboscus = NULL;
+    g_edicts[self->r.ownernum].proboscus = NULL;
     G_FreeEdict(self->proboscus);
     G_FreeEdict(self);
 }
@@ -262,9 +262,11 @@ static void parasite_break_wait(edict_t *self)
 
 static void proboscis_retract(edict_t *self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
+
     // start retract animation
-    if (self->r.owner->monsterinfo.active_move == &parasite_move_fire_proboscis)
-        self->r.owner->monsterinfo.nextframe = FRAME_drain12;
+    if (owner->monsterinfo.active_move == &parasite_move_fire_proboscis)
+        owner->monsterinfo.nextframe = FRAME_drain12;
 
     // mark as retracting
     self->movetype = MOVETYPE_NONE;
@@ -348,14 +350,15 @@ const mmove_t MMOVE_T(parasite_move_break) = { FRAME_break01, FRAME_break32, par
 
 void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
+    vec3_t   p;
+
     // owner isn't trying to probe any more, don't touch anything
-    if (self->r.owner->monsterinfo.active_move != &parasite_move_fire_proboscis)
+    if (owner->monsterinfo.active_move != &parasite_move_fire_proboscis)
         return;
 
-    vec3_t p;
-
     // hit what we want to succ
-    if ((other->r.svflags & SVF_PLAYER) || other == self->r.owner->enemy) {
+    if ((other->r.svflags & SVF_PLAYER) || other == owner->enemy) {
         if (tr->startsolid)
             VectorCopy(tr->endpos, p);
         else {
@@ -365,7 +368,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
             VectorMA(tr->endpos, -12, dir, p);
         }
 
-        self->r.owner->monsterinfo.nextframe = FRAME_drain06;
+        owner->monsterinfo.nextframe = FRAME_drain06;
         self->movetype = MOVETYPE_NONE;
         self->r.solid = SOLID_NOT;
         self->style = 1;
@@ -382,18 +385,18 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
             proboscis_retract(self);
         else {
             // hit wall; stick to it and do break animation
-            self->r.owner->monsterinfo.active_move = &parasite_move_break;
+            owner->monsterinfo.active_move = &parasite_move_break;
             self->movetype = MOVETYPE_NONE;
             self->r.solid = SOLID_NOT;
             self->style = 1;
-            self->r.owner->s.angles[YAW] = self->s.angles[YAW];
+            owner->s.angles[YAW] = self->s.angles[YAW];
         }
     }
 
     if (other->takedamage)
-        T_Damage(other, self, self->r.owner, tr->plane.normal, tr->endpos, tr->plane.normal, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+        T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.normal, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
-    gi.positioned_sound(tr->endpos, self->r.owner, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
+    gi.positioned_sound(tr->endpos, owner, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
 
     VectorCopy(p, self->s.origin);
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
@@ -458,6 +461,8 @@ static void parasite_get_proboscis_start(edict_t *self, vec3_t start)
 
 void THINK(proboscis_think)(edict_t *self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
+
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
 
     // retracting; keep pulling until we hit the parasite
@@ -465,7 +470,7 @@ void THINK(proboscis_think)(edict_t *self)
         vec3_t start, dir;
         float dist;
 
-        parasite_get_proboscis_start(self->r.owner, start);
+        parasite_get_proboscis_start(owner, start);
         VectorSubtract(self->s.origin, start, dir);
 
         dist = VectorNormalize(dir);
@@ -495,7 +500,7 @@ void THINK(proboscis_think)(edict_t *self)
             // update our position
             VectorAdd(self->enemy->s.origin, self->move_origin, self->s.origin);
 
-            parasite_get_proboscis_start(self->r.owner, start);
+            parasite_get_proboscis_start(owner, start);
             VectorSubtract(self->s.origin, start, dir);
 
             vectoangles(dir, self->s.angles);
@@ -511,9 +516,9 @@ void THINK(proboscis_think)(edict_t *self)
             } else {
                 // succ & drain
                 if (self->timestamp <= level.time) {
-                    T_Damage(self->enemy, self, self->r.owner, tr.plane.normal, tr.endpos, tr.plane.normal, 2, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
-                    self->r.owner->health = min(self->r.owner->max_health, self->r.owner->health + 2);
-                    self->r.owner->monsterinfo.setskin(self->r.owner);
+                    T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.normal, 2, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+                    owner->health = min(owner->max_health, owner->health + 2);
+                    owner->monsterinfo.setskin(owner);
                     self->timestamp = level.time + HZ(10);
                 }
             }
@@ -526,20 +531,20 @@ void THINK(proboscis_think)(edict_t *self)
         float dist_to_target;
 
         // owner gone away?
-        if (!self->r.owner->enemy || !self->r.owner->enemy->r.inuse || self->r.owner->enemy->health <= 0) {
+        if (!owner->enemy || !owner->enemy->r.inuse || owner->enemy->health <= 0) {
             proboscis_retract(self);
             return;
         }
 
         // if we're well behind our target and missed by 2x velocity,
         // be smart enough to pull in automatically
-        VectorSubtract(self->s.origin, self->r.owner->enemy->s.origin, to_target);
+        VectorSubtract(self->s.origin, owner->enemy->s.origin, to_target);
         dist_to_target = VectorNormalize(to_target);
 
         if (dist_to_target > (self->speed * 2) / 15.0f) {
             vec3_t from_owner;
 
-            VectorSubtract(self->s.origin, self->r.owner->s.origin, from_owner);
+            VectorSubtract(self->s.origin, owner->s.origin, from_owner);
             VectorNormalize(from_owner);
 
             if (DotProduct(to_target, from_owner) > 0) {
@@ -552,14 +557,15 @@ void THINK(proboscis_think)(edict_t *self)
 
 void PRETHINK(proboscis_segment_draw)(edict_t *self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
     vec3_t start, dir;
 
-    parasite_get_proboscis_start(self->r.owner->r.owner, start);
+    parasite_get_proboscis_start(g_edicts + owner->r.ownernum, start);
 
     VectorCopy(start, self->s.origin);
-    VectorSubtract(self->r.owner->s.origin, start, dir);
+    VectorSubtract(owner->s.origin, start, dir);
     VectorNormalize(dir);
-    VectorMA(self->r.owner->s.origin, -8, dir, self->s.old_origin);
+    VectorMA(owner->s.origin, -8, dir, self->s.old_origin);
     gi.linkentity(self);
 }
 
@@ -569,7 +575,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     vectoangles(dir, tip->s.angles);
     tip->s.modelindex = gi.modelindex("models/monsters/parasite/tip/tris.md2");
     tip->movetype = MOVETYPE_FLYMISSILE;
-    tip->r.owner = self;
+    tip->r.ownernum = self - g_edicts;
     self->proboscus = tip;
     tip->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
     VectorCopy(start, tip->s.origin);
@@ -591,7 +597,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     segment->postthink = proboscis_segment_draw;
 
     tip->proboscus = segment;
-    segment->r.owner = tip;
+    segment->r.ownernum = tip - g_edicts;
 
     vec3_t pos;
     VectorMA(tip->s.origin, FRAME_TIME_SEC, tip->velocity, pos);

@@ -365,9 +365,8 @@ static const vec3_t laser_positions[] = {
 void PRETHINK(guardian_fire_update)(edict_t *laser)
 {
     if (!(laser->spawnflags & SPAWNFLAG_DABEAM_SPAWNED)) {
-        edict_t *self = laser->r.owner;
+        edict_t *self = g_edicts + laser->r.ownernum;
         bool sec = laser->spawnflags & SPAWNFLAG_DABEAM_SECONDARY;
-
         vec3_t forward, right, target;
         vec3_t start;
 
@@ -491,7 +490,7 @@ void THINK(heat_guardian_think)(edict_t *self)
             edict_t *target = NULL;
 
             while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-                if (self->r.owner == target)
+                if (self->r.ownernum == target - g_edicts)
                     continue;
                 if (!target->client)
                     continue;
@@ -570,7 +569,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
     heat->s.scale = 1.5f;
-    heat->r.owner = self;
+    heat->r.ownernum = self - g_edicts;
     heat->touch = rocket_touch;
     heat->speed = speed / 2;
     heat->yaw_speed = speed * 2;

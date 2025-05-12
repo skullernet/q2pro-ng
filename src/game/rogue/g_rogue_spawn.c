@@ -185,7 +185,7 @@ static void SpawnGro_laser_pos(edict_t *ent, vec3_t pos)
         cosf(phi)
     };
 
-    VectorMA(ent->s.origin, ent->r.owner->s.scale * 9, d, pos);
+    VectorMA(ent->s.origin, g_edicts[ent->r.ownernum].s.scale * 9, d, pos);
 }
 
 void THINK(SpawnGro_laser_think)(edict_t *self)
@@ -240,7 +240,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     beam->s.skinnum = 0x30303030;
     beam->classname = "spawngro_beam";
     beam->angle = end_size;
-    beam->r.owner = ent;
+    beam->r.ownernum = ent - g_edicts;
     VectorCopy(ent->s.origin, beam->s.origin);
     beam->think = SpawnGro_laser_think;
     beam->nextthink = level.time + FRAME_TIME;

@@ -1761,6 +1761,7 @@ void SP_func_clock(edict_t *self)
 
 void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
     edict_t *dest;
 
     if (!other->client)
@@ -1790,10 +1791,10 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // draw the teleport splash at source and on the player
     if (!(self->spawnflags & SPAWNFLAG_TELEPORTER_NO_TELEPORT_EFFECT)) {
-        self->r.owner->s.event = EV_PLAYER_TELEPORT;
+        owner->s.event = EV_PLAYER_TELEPORT;
         other->s.event = EV_PLAYER_TELEPORT;
     } else {
-        self->r.owner->s.event = EV_OTHER_TELEPORT;
+        owner->s.event = EV_OTHER_TELEPORT;
         other->s.event = EV_OTHER_TELEPORT;
     }
 
@@ -1853,7 +1854,7 @@ void SP_misc_teleporter(edict_t *ent)
     trig->touch = teleporter_touch;
     trig->r.solid = SOLID_TRIGGER;
     trig->target = ent->target;
-    trig->r.owner = ent;
+    trig->r.ownernum = ent - g_edicts;
     VectorCopy(ent->s.origin, trig->s.origin);
     VectorSet(trig->r.mins, -8, -8, 8);
     VectorSet(trig->r.maxs, 8, 8, 24);

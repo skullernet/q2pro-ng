@@ -24,8 +24,10 @@ void hunter_touch(edict_t *self, edict_t *other, const trace_t *tr, bool other_t
 
 void THINK(sphere_think_explode)(edict_t *self)
 {
-    if (self->r.owner && self->r.owner->client && !(self->spawnflags & SPHERE_DOPPLEGANGER))
-        self->r.owner->client->owned_sphere = NULL;
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (owner->client && !(self->spawnflags & SPHERE_DOPPLEGANGER))
+        owner->client->owned_sphere = NULL;
 
     BecomeExplosion1(self);
 }
@@ -56,10 +58,11 @@ static void sphere_fly(edict_t *self)
         return;
     }
 
-    VectorCopy(self->r.owner->s.origin, dest);
-    dest[2] = self->r.owner->r.absmax[2] + 4;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    VectorCopy(owner->s.origin, dest);
+    dest[2] = owner->r.absmax[2] + 4;
 
-    if (!(level.time % HZ(1)) && !visible(self, self->r.owner)) {
+    if (!(level.time % HZ(1)) && !visible(self, owner)) {
         VectorCopy(dest, self->s.origin);
         gi.linkentity(self);
         return;
@@ -167,10 +170,10 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
             return;
 
         self->takedamage = false;
-        self->r.owner = self->teammaster;
+        self->r.ownernum = self->teammaster ? self->teammaster - g_edicts : ENTITYNUM_NONE;
         self->teammaster = NULL;
     } else {
-        if (other == self->r.owner)
+        if (other == g_edicts + self->r.ownernum)
             return;
         // PMM - don't blow up on bodies
         if (!strcmp(other->classname, "bodyque"))
@@ -182,14 +185,14 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
         return;
     }
 
-    if (self->r.owner) {
+    if (self->r.ownernum) {
+        edict_t *owner = g_edicts + self->r.ownernum;
+
         if (other->takedamage) {
-            T_Damage(other, self, self->r.owner, self->velocity,
-                     self->s.origin, tr->plane.normal,
-                     10000, 1, DAMAGE_DESTROY_ARMOR, mod);
+            T_Damage(other, self, owner, self->velocity, self->s.origin,
+                     tr->plane.normal, 10000, 1, DAMAGE_DESTROY_ARMOR, mod);
         } else {
-            T_RadiusDamage(self, self->r.owner, 512, self->r.owner, 256,
-                           DAMAGE_NONE, mod);
+            T_RadiusDamage(self, owner, 512, owner, 256, DAMAGE_NONE, mod);
         }
     }
 
@@ -212,9 +215,9 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (other == world)
         return;
 
-    if (self->r.owner) {
+    if (self->r.ownernum) {
         // if owner is flying with us, make sure they stop too.
-        owner = self->r.owner;
+        owner = g_edicts + self->r.ownernum;
         if (owner->flags & FL_SAM_RAIMI) {
             VectorClear(owner->velocity);
             owner->movetype = MOVETYPE_NONE;
@@ -230,13 +233,16 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
 
 static void defender_shoot(edict_t *self, edict_t *enemy)
 {
+    edict_t *owner;
     vec3_t dir;
     vec3_t start;
 
     if (!enemy->r.inuse || enemy->health <= 0)
         return;
 
-    if (enemy == self->r.owner)
+    owner = g_edicts + self->r.ownernum;
+
+    if (enemy == owner)
         return;
 
     if (self->monsterinfo.attack_finished > level.time)
@@ -250,7 +256,7 @@ static void defender_shoot(edict_t *self, edict_t *enemy)
 
     VectorCopy(self->s.origin, start);
     start[2] += 2;
-    fire_blaster2(self->r.owner, start, dir, 10, 1000, EF_BLASTER, 0);
+    fire_blaster2(owner, start, dir, 10, 1000, EF_BLASTER, 0);
 
     self->monsterinfo.attack_finished = level.time + SEC(0.4f);
 }
@@ -279,7 +285,7 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (self->enemy)
         return;
 
-    owner = self->r.owner;
+    owner = self->r.ownernum ? g_edicts + self->r.ownernum : NULL;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         if (owner && (owner->health > 0))
@@ -344,7 +350,7 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 void PAIN(defender_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
     // PMM
-    if (other == self->r.owner)
+    if (other == g_edicts + self->r.ownernum)
         return;
     // pmm
     self->enemy = other;
@@ -356,10 +362,11 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
         return;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
-        if (self->r.owner && self->r.owner->health >= 25)
+        edict_t *owner = g_edicts + self->r.ownernum;
+        if (self->r.ownernum && owner->health >= 25)
             return;
         // PMM
-        if (other == self->r.owner)
+        if (other == owner)
             return;
         // pmm
         self->timestamp = max(self->timestamp, level.time + MINIMUM_FLY_TIME);
@@ -378,7 +385,7 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
 
 void THINK(defender_think)(edict_t *self)
 {
-    if (!self->r.owner) {
+    if (!self->r.ownernum) {
         G_FreeEdict(self);
         return;
     }
@@ -389,7 +396,7 @@ void THINK(defender_think)(edict_t *self)
         return;
     }
 
-    if (self->r.owner->health <= 0) {
+    if (g_edicts[self->r.ownernum].health <= 0) {
         sphere_think_explode(self);
         return;
     }
@@ -419,7 +426,7 @@ void THINK(hunter_think)(edict_t *self)
         return;
     }
 
-    edict_t *owner = self->r.owner;
+    edict_t *owner = self->r.ownernum ? g_edicts + self->r.ownernum : NULL;
 
     if (!owner && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
@@ -473,7 +480,7 @@ void THINK(vengeance_think)(edict_t *self)
         return;
     }
 
-    if (!(self->r.owner) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
+    if (!(self->r.ownernum) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
         return;
     }
@@ -507,7 +514,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
     if (spawnflags & SPHERE_DOPPLEGANGER)
         sphere->teammaster = owner->teammaster;
     else
-        sphere->r.owner = owner;
+        sphere->r.ownernum = owner - g_edicts;
 
     sphere->classname = "sphere";
     sphere->yaw_speed = 40;

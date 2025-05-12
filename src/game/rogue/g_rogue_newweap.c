@@ -9,7 +9,9 @@ fire_flechette
 */
 void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == self->r.owner)
+    edict_t *owner = g_edicts + self->r.ownernum;
+
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -17,11 +19,11 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    if (self->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal,
                  self->dmg, self->dmg_radius, DAMAGE_NO_REG_ARMOR, (mod_t) { MOD_ETF_RIFLE });
     } else {
         gi.WriteByte(svc_temp_entity);
@@ -56,7 +58,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     flechette->s.renderfx = RF_FULLBRIGHT;
     flechette->s.modelindex = gi.modelindex("models/proj/flechette/tris.md2");
 
-    flechette->r.owner = self;
+    flechette->r.ownernum = self - g_edicts;
     flechette->touch = flechette_touch;
     flechette->nextthink = level.time + SEC(8000.0f / speed);
     flechette->think = G_FreeEdict;
@@ -93,7 +95,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
     // free the trigger field
 
     // PMM - changed teammaster to "mover" .. owner of the field is the prox
-    if (ent->teamchain && ent->teamchain->r.owner == ent)
+    if (ent->teamchain && ent->teamchain->r.ownernum == ent - g_edicts)
         G_FreeEdict(ent->teamchain);
 
     owner = ent;
@@ -155,7 +157,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
 
     // trigger the prox mine if it's still there, and still mine.
-    prox = ent->r.owner;
+    prox = g_edicts + ent->r.ownernum;
 
     // teammate avoidance
     if (CheckTeamDamage(prox->teammaster, other))
@@ -215,7 +217,7 @@ void THINK(prox_open)(edict_t *ent)
         // set the owner to NULL so the owner can walk through it.  needs to be done here so the owner
         // doesn't get stuck on it while it's opening if fired at point blank wall
         if (deathmatch->integer)
-            ent->r.owner = NULL;
+            ent->r.ownernum = ENTITYNUM_NONE;
 
         if (ent->teamchain)
             ent->teamchain->touch = Prox_Field_Touch;
@@ -334,7 +336,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     VectorSet(field->r.maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
     field->movetype = MOVETYPE_NONE;
     field->r.solid = SOLID_TRIGGER;
-    field->r.owner = ent;
+    field->r.ownernum = ent - g_edicts;
     field->classname = "prox_field";
     field->teammaster = ent;
     gi.linkentity(field);
@@ -408,7 +410,7 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     VectorSet(prox->r.mins, -6, -6, -6);
     VectorSet(prox->r.maxs, 6, 6, 6);
     prox->s.modelindex = gi.modelindex("models/weapons/g_prox/tris.md2");
-    prox->r.owner = self;
+    prox->r.ownernum = self - g_edicts;
     prox->teammaster = self;
     prox->touch = prox_land;
     prox->think = Prox_Think;
@@ -645,7 +647,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         ent->think = Nuke_Think;
         ent->nextthink = level.time + HZ(10);
         ent->health = 1;
-        ent->r.owner = NULL;
+        ent->r.ownernum = ENTITYNUM_NONE;
 
         gi.WriteByte(svc_muzzleflash);
         gi.WriteShort(ent - g_edicts);
@@ -708,7 +710,7 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     VectorSet(nuke->r.mins, -8, -8, 0);
     VectorSet(nuke->r.maxs, 8, 8, 16);
     nuke->s.modelindex = gi.modelindex("models/weapons/g_nuke/tris.md2");
-    nuke->r.owner = self;
+    nuke->r.ownernum = self - g_edicts;
     nuke->teammaster = self;
     nuke->nextthink = level.time + FRAME_TIME;
     nuke->timestamp = level.time + NUKE_DELAY + NUKE_TIME_TO_LIVE;
@@ -756,7 +758,7 @@ static void tesla_remove(edict_t *self)
     } else if (self->air_finished)
         gi.dprintf("tesla_mine without a field!\n");
 
-    self->r.owner = self->teammaster; // Going away, set the owner correctly.
+    self->r.ownernum = self->teammaster - g_edicts; // Going away, set the owner correctly.
     // PGM - grenade explode does damage to self->enemy
     self->enemy = NULL;
 
@@ -817,7 +819,7 @@ void THINK(tesla_think_active)(edict_t *self)
         if (hit->client) {
             if (!deathmatch->integer)
                 continue;
-            if (CheckTeamDamage(hit, self->teamchain->r.owner))
+            if (CheckTeamDamage(hit, g_edicts + self->teamchain->r.ownernum))
                 continue;
         }
 
@@ -898,7 +900,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorSet(trigger->r.maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
     trigger->movetype = MOVETYPE_NONE;
     trigger->r.solid = SOLID_TRIGGER;
-    trigger->r.owner = self;
+    trigger->r.ownernum = self - g_edicts;
     trigger->touch = tesla_zap;
     trigger->classname = "tesla trigger";
     // doesn't need to be marked as a teamslave since the move code for bounce looks for teamchains
@@ -907,7 +909,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorClear(self->s.angles);
     // clear the owner if in deathmatch
     if (deathmatch->integer)
-        self->r.owner = NULL;
+        self->r.ownernum = ENTITYNUM_NONE;
     self->teamchain = trigger;
     self->think = tesla_think_active;
     self->nextthink = level.time + FRAME_TIME;
@@ -934,8 +936,9 @@ void THINK(tesla_think)(edict_t *ent)
     } else {
         if (ent->s.frame > 9) {
             if (ent->s.frame == 10) {
-                if (ent->r.owner && ent->r.owner->client)
-                    PlayerNoise(ent->r.owner, ent->s.origin, PNOISE_WEAPON); // PGM
+                edict_t *owner = g_edicts + ent->r.ownernum;
+                if (owner->client)
+                    PlayerNoise(owner, ent->s.origin, PNOISE_WEAPON); // PGM
                 ent->s.skinnum = 1;
             } else if (ent->s.frame == 12)
                 ent->s.skinnum = 2;
@@ -989,7 +992,7 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     VectorSet(tesla->r.mins, -12, -12, 0);
     VectorSet(tesla->r.maxs, 12, 12, 20);
     tesla->s.modelindex = gi.modelindex("models/weapons/g_tesla/tris.md2");
-    tesla->r.owner = self; // PGM - we don't want it owned by self YET.
+    tesla->r.ownernum = self - g_edicts; // PGM - we don't want it owned by self YET.
     tesla->teammaster = self;
     tesla->think = tesla_think;
     tesla->nextthink = level.time + TESLA_ACTIVATE_TIME;
@@ -1146,10 +1149,11 @@ Fires a single green blaster bolt.  Used by monsters, generally.
 */
 void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    mod_t mod;
-    int   damagestat;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    mod_t    mod;
+    int      damagestat;
 
-    if (other == self->r.owner)
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1157,33 +1161,27 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
         return;
     }
 
-    if (self->r.owner && self->r.owner->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         // the only time players will be firing blaster2 bolts will be from the
         // defender sphere.
-        if (self->r.owner && self->r.owner->client)
+        if (owner->client)
             mod = (mod_t) { MOD_DEFENDER_SPHERE };
         else
             mod = (mod_t) { MOD_BLASTER2 };
 
-        if (self->r.owner) {
-            damagestat = self->r.owner->takedamage;
-            self->r.owner->takedamage = false;
-            if (self->dmg >= 5)
-                T_RadiusDamage(self, self->r.owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
-            self->r.owner->takedamage = damagestat;
-        } else {
-            if (self->dmg >= 5)
-                T_RadiusDamage(self, self->r.owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
-        }
+        damagestat = owner->takedamage;
+        owner->takedamage = false;
+        if (self->dmg >= 5)
+            T_RadiusDamage(self, owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
+        owner->takedamage = damagestat;
     } else {
         // PMM - yeowch this will get expensive
         if (self->dmg >= 5)
-            T_RadiusDamage(self, self->r.owner, self->dmg * 2, self->r.owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+            T_RadiusDamage(self, owner, self->dmg * 2, owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_BLASTER2);
@@ -1223,7 +1221,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
-    bolt->r.owner = self;
+    bolt->r.ownernum = self - g_edicts;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
@@ -1263,8 +1261,9 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
     vec3_t center;
     VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, center);
 
-    T_Damage(self->enemy, self, self->r.owner, vec3_origin, center, pain_normal,
-             self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
+    edict_t *owner = g_edicts + self->r.ownernum;
+    T_Damage(self->enemy, self, owner, vec3_origin, center,
+             pain_normal, self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
 
     // if we kill the player, we'll be removed.
     if (self->r.inuse) {
@@ -1277,7 +1276,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
             else
                 hurt = 500;
 
-            T_Damage(self->enemy, self, self->r.owner, vec3_origin, center,
+            T_Damage(self->enemy, self, owner, vec3_origin, center,
                      pain_normal, hurt, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
         }
 
@@ -1302,7 +1301,7 @@ static void tracker_pain_daemon_spawn(edict_t *owner, edict_t *enemy, int damage
     daemon->think = tracker_pain_daemon_think;
     daemon->nextthink = level.time;
     daemon->timestamp = level.time + TRACKER_DAMAGE_TIME;
-    daemon->r.owner = owner;
+    daemon->r.ownernum = owner - g_edicts;
     daemon->enemy = enemy;
     daemon->dmg = damage;
 }
@@ -1319,9 +1318,10 @@ static void tracker_explode(edict_t *self)
 
 void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    float damagetime;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    float    damagetime;
 
-    if (other == self->r.owner)
+    if (other == owner)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1329,28 +1329,28 @@ void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         return;
     }
 
-    if (self->client)
-        PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    if (owner->client)
+        PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         if ((other->r.svflags & SVF_MONSTER) || other->client) {
             if (other->health > 0) { // knockback only for living creatures
                 // PMM - kickback was times 4 .. reduced to 3
                 // now this does no damage, just knockback
-                T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
+                T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal,
                          0, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
 
                 if (!(other->flags & (FL_FLY | FL_SWIM)))
                     other->velocity[2] += 140;
 
                 damagetime = (self->dmg * 0.1f) / TRACKER_DAMAGE_TIME_SEC;
-                tracker_pain_daemon_spawn(self->r.owner, other, damagetime);
+                tracker_pain_daemon_spawn(owner, other, damagetime);
             } else { // lots of damage (almost autogib) for dead bodies
-                T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
+                T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal,
                          self->dmg * 4, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
             }
         } else { // full damage in one shot for inanimate objects
-            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal,
+            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal,
                      self->dmg, self->dmg * 3, TRACKER_IMPACT_FLAGS, (mod_t) { MOD_TRACKER });
         }
     }
@@ -1413,7 +1413,7 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     bolt->s.modelindex = gi.modelindex("models/proj/disintegrator/tris.md2");
     bolt->touch = tracker_touch;
     bolt->enemy = enemy;
-    bolt->r.owner = self;
+    bolt->r.ownernum = self - g_edicts;
     bolt->dmg = damage;
     bolt->classname = "tracker";
     gi.linkentity(bolt);

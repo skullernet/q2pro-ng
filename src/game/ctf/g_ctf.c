@@ -683,7 +683,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
 void TOUCH(CTFDropFlagTouch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     // owner (who dropped us) can't touch for two secs
-    if (other == ent->r.owner &&
+    if (other == g_edicts + ent->r.ownernum &&
         ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT - SEC(2))
         return;
 
@@ -1112,29 +1112,31 @@ void CTFPlayerResetGrapple(edict_t *ent)
 // self is grapple, not player
 void CTFResetGrapple(edict_t *self)
 {
-    gclient_t *cl = self->r.owner->client;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    gclient_t *cl = owner->client;
 
     if (!cl->ctf_grapple)
         return;
 
-    gi.sound(self->r.owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
+    gi.sound(owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
 
     cl->ctf_grapple = NULL;
     cl->ctf_grapplereleasetime = level.time + SEC(1);
     cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     cl->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
-    self->r.owner->flags &= ~FL_NO_KNOCKBACK;
+    owner->flags &= ~FL_NO_KNOCKBACK;
     G_FreeEdict(self);
 }
 
 void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
+    edict_t *owner = g_edicts + self->r.ownernum;
     float volume = 1.0f;
 
-    if (other == self->r.owner)
+    if (other == owner)
         return;
 
-    if (self->r.owner->client->ctf_grapplestate != CTF_GRAPPLE_STATE_FLY)
+    if (owner->client->ctf_grapplestate != CTF_GRAPPLE_STATE_FLY)
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -1144,21 +1146,21 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
     VectorClear(self->velocity);
 
-    PlayerNoise(self->r.owner, self->s.origin, PNOISE_IMPACT);
+    PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         if (self->dmg)
-            T_Damage(other, self, self->r.owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
+            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
         CTFResetGrapple(self);
         return;
     }
 
-    self->r.owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_PULL; // we're on hook
+    owner->client->ctf_grapplestate = CTF_GRAPPLE_STATE_PULL; // we're on hook
     self->enemy = other;
 
     self->r.solid = SOLID_NOT;
 
-    if (self->r.owner->client->silencer_shots)
+    if (owner->client->silencer_shots)
         volume = 0.2f;
 
     gi.sound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM, 0);
@@ -1174,17 +1176,18 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 // draw beam between grapple and self
 static void CTFGrappleDrawCable(edict_t *self)
 {
-    gclient_t *cl = self->r.owner->client;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    gclient_t *cl = owner->client;
 
     if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_HANG)
         return;
 
     vec3_t start, dir;
-    P_ProjectSource(self->r.owner, cl->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
+    P_ProjectSource(owner, cl->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_GRAPPLE_CABLE_2);
-    gi.WriteShort(self->r.owner - g_edicts);
+    gi.WriteShort(self->r.ownernum);
     gi.WritePosition(start);
     gi.WritePosition(self->s.origin);
     gi.multicast(self->s.origin, MULTICAST_PVS);
@@ -1195,7 +1198,8 @@ void SV_AddGravity(edict_t *ent);
 // pull the player toward the grapple
 void CTFGrapplePull(edict_t *self)
 {
-    gclient_t *cl = self->r.owner->client;
+    edict_t *owner = g_edicts + self->r.ownernum;
+    gclient_t *cl = owner->client;
     vec3_t hookdir, v;
     float  vlen;
 
@@ -1235,8 +1239,8 @@ void CTFGrapplePull(edict_t *self)
         vec3_t forward, up;
 
         AngleVectors(cl->v_angle, forward, NULL, up);
-        VectorCopy(self->r.owner->s.origin, v);
-        v[2] += self->r.owner->viewheight;
+        VectorCopy(owner->s.origin, v);
+        v[2] += owner->viewheight;
         VectorSubtract(self->s.origin, v, hookdir);
 
         vlen = VectorNormalize(hookdir);
@@ -1246,10 +1250,10 @@ void CTFGrapplePull(edict_t *self)
             self->s.sound = gi.soundindex("weapons/grapple/grhang.wav");
         }
 
-        VectorScale(hookdir, g_grapple_pull_speed->value, self->r.owner->velocity);
+        VectorScale(hookdir, g_grapple_pull_speed->value, owner->velocity);
         cl->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-        self->r.owner->flags |= FL_NO_KNOCKBACK;
-        SV_AddGravity(self->r.owner);
+        owner->flags |= FL_NO_KNOCKBACK;
+        SV_AddGravity(owner);
     }
 }
 
@@ -1277,7 +1281,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     grapple->r.solid = SOLID_BBOX;
     grapple->s.effects |= effect;
     grapple->s.modelindex = gi.modelindex("models/weapons/grapple/hook/tris.md2");
-    grapple->r.owner = self;
+    grapple->r.ownernum = self - g_edicts;
     grapple->touch = CTFGrappleTouch;
     grapple->dmg = damage;
     grapple->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
@@ -1726,7 +1730,7 @@ void CTFDeadDropTech(edict_t *ent)
             dropped->velocity[1] = crandom_open() * 300;
             dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
             dropped->think = TechThink;
-            dropped->r.owner = NULL;
+            dropped->r.ownernum = ENTITYNUM_NONE;
             ent->client->pers.inventory[tech_ids[i]] = 0;
         }
     }
@@ -1751,7 +1755,7 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
-    ent->r.owner = ent;
+    ent->r.ownernum = ent - g_edicts;
 
     angles[0] = 0;
     angles[1] = irandom1(360);
