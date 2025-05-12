@@ -40,9 +40,12 @@ const mmove_t fixbot_move_turn;
 // [Paril-KEX] clean up bot goals if we get interrupted
 void THINK(bot_goal_check)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = NULL;
 
-    if (!self->r.ownernum || !owner->r.inuse || owner->goalentity != self) {
+    if (self->r.ownernum != ENTITYNUM_NONE)
+        owner = g_edicts + self->r.ownernum;
+
+    if (!owner || !owner->r.inuse || owner->goalentity != self) {
         G_FreeEdict(self);
         return;
     }

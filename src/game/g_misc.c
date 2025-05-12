@@ -1761,7 +1761,6 @@ void SP_func_clock(edict_t *self)
 
 void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
     edict_t *dest;
 
     if (!other->client)
@@ -1788,6 +1787,8 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     VectorClear(other->velocity);
     other->client->ps.pmove.pm_time = 160 >> PM_TIME_SHIFT; // hold time
     other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+
+    edict_t *owner = g_edicts + self->r.ownernum;
 
     // draw the teleport splash at source and on the player
     if (!(self->spawnflags & SPAWNFLAG_TELEPORTER_NO_TELEPORT_EFFECT)) {

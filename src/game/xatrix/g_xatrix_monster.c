@@ -31,6 +31,7 @@ void dabeam_update(edict_t *self, bool damage)
     pierce_t pierce;
     trace_t tr;
     edict_t *hit;
+    edict_t *owner = g_edicts + self->r.ownernum;
 
     pierce_begin(&pierce);
 
@@ -44,8 +45,6 @@ void dabeam_update(edict_t *self, bool damage)
         hit = g_edicts + tr.entnum;
 
         if (damage) {
-            edict_t *owner = g_edicts + self->r.ownernum;
-
             // hurt it if we can
             if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
                 T_Damage(hit, self, owner, self->movedir, tr.endpos, vec3_origin,

@@ -33,7 +33,7 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
     edict_t *attacker;
 
     if (other->takedamage) {
-        if (self->teammaster->r.ownernum)
+        if (self->teammaster->r.ownernum != ENTITYNUM_NONE)
             attacker = g_edicts + self->teammaster->r.ownernum;
         else
             attacker = self->teammaster;
@@ -157,7 +157,7 @@ void THINK(turret_breach_think)(edict_t *self)
         ent->avelocity[1] = self->avelocity[1];
 
     // if we have a driver, adjust his velocities
-    if (self->r.ownernum) {
+    if (self->r.ownernum != ENTITYNUM_NONE) {
         edict_t *owner = g_edicts + self->r.ownernum;
         float    angle;
         float    target_z;

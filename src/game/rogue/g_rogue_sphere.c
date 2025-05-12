@@ -185,7 +185,7 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
         return;
     }
 
-    if (self->r.ownernum) {
+    if (self->r.ownernum != ENTITYNUM_NONE) {
         edict_t *owner = g_edicts + self->r.ownernum;
 
         if (other->takedamage) {
@@ -215,7 +215,7 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (other == world)
         return;
 
-    if (self->r.ownernum) {
+    if (self->r.ownernum != ENTITYNUM_NONE) {
         // if owner is flying with us, make sure they stop too.
         owner = g_edicts + self->r.ownernum;
         if (owner->flags & FL_SAM_RAIMI) {
@@ -279,13 +279,14 @@ static void body_gib(edict_t *self)
 
 void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
-    edict_t *owner;
+    edict_t *owner = NULL;
     float    dist;
 
     if (self->enemy)
         return;
 
-    owner = self->r.ownernum ? g_edicts + self->r.ownernum : NULL;
+    if (self->r.ownernum != ENTITYNUM_NONE)
+        owner = g_edicts + self->r.ownernum;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         if (owner && (owner->health > 0))
@@ -362,8 +363,12 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
         return;
 
     if (!(self->spawnflags & SPHERE_DOPPLEGANGER)) {
-        edict_t *owner = g_edicts + self->r.ownernum;
-        if (self->r.ownernum && owner->health >= 25)
+        edict_t *owner = NULL;
+
+        if (self->r.ownernum != ENTITYNUM_NONE)
+            owner = g_edicts + self->r.ownernum;
+
+        if (owner && owner->health >= 25)
             return;
         // PMM
         if (other == owner)
@@ -385,7 +390,7 @@ void PAIN(vengeance_pain)(edict_t *self, edict_t *other, float kick, int damage,
 
 void THINK(defender_think)(edict_t *self)
 {
-    if (!self->r.ownernum) {
+    if (self->r.ownernum == ENTITYNUM_NONE) {
         G_FreeEdict(self);
         return;
     }
@@ -426,7 +431,9 @@ void THINK(hunter_think)(edict_t *self)
         return;
     }
 
-    edict_t *owner = self->r.ownernum ? g_edicts + self->r.ownernum : NULL;
+    edict_t *owner = NULL;
+    if (self->r.ownernum != ENTITYNUM_NONE)
+        owner = g_edicts + self->r.ownernum;
 
     if (!owner && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
@@ -480,7 +487,7 @@ void THINK(vengeance_think)(edict_t *self)
         return;
     }
 
-    if (!(self->r.ownernum) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
+    if ((self->r.ownernum == ENTITYNUM_NONE) && !(self->spawnflags & SPHERE_DOPPLEGANGER)) {
         G_FreeEdict(self);
         return;
     }

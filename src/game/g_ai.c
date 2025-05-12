@@ -734,7 +734,7 @@ bool FindTarget(edict_t *self)
             return false;
     } else if (heardit) {
         // pgm - a little more paranoia won't hurt....
-        if ((client->r.ownernum) && (g_edicts[client->r.ownernum].flags & FL_NOTARGET))
+        if ((client->r.ownernum != ENTITYNUM_NONE) && (g_edicts[client->r.ownernum].flags & FL_NOTARGET))
             return false;
     } else if (!client->client)
         return false;
@@ -1328,7 +1328,7 @@ void ai_run(edict_t *self, float dist)
             if (self->enemy->r.inuse) {
                 if (strcmp(self->enemy->classname, "player_noise") != 0)
                     realEnemy = self->enemy;
-                else if (self->enemy->r.ownernum)
+                else if (self->enemy->r.ownernum != ENTITYNUM_NONE)
                     realEnemy = g_edicts + self->enemy->r.ownernum;
                 else { // uh oh, can't figure out enemy, bail
                     self->enemy = NULL;
