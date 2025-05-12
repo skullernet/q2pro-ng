@@ -41,7 +41,7 @@ static const uint8_t mem_load_size[I64_Store32 - I32_Load + 1] = {
 
 void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 {
-    ASSERT(m->csp < CALLSTACK_SIZE - 1, "call stack exhausted");
+    ASSERT(m->csp < CALLSTACK_SIZE - 1, "Call stack overflow");
 
     vm_frame_t *frame = &m->callstack[++m->csp];
     frame->block = block;
@@ -52,7 +52,7 @@ void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 
 static const vm_block_t *VM_PopBlock(vm_t *m)
 {
-    ASSERT(m->csp >= 0, "call stack underflow");
+    ASSERT(m->csp >= 0, "Call stack underflow");
 
     const vm_frame_t *frame = &m->callstack[m->csp--];
     const vm_type_t *t = frame->block->type;
@@ -61,7 +61,7 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 
     // Validate the return value
     if (t->num_results == 1)
-        ASSERT(m->stack[m->sp].value_type == t->results[0], "call type mismatch");
+        ASSERT(m->stack[m->sp].value_type == t->results[0], "Call type mismatch");
 
     // Restore stack pointer
     if (t->num_results == 1) {
@@ -122,7 +122,7 @@ static uint32_t read_leb(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
         ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
@@ -138,7 +138,7 @@ static int32_t read_leb_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
         ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
@@ -156,7 +156,7 @@ static int64_t read_leb64_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
         ASSERT(bits < 64, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT64_C(0x7f)) << bits;
@@ -215,7 +215,7 @@ void VM_Interpret(vm_t *m)
         // Control flow operators
         //
         case Unreachable:
-            ASSERT(0, "unreachable");
+            ASSERT(0, "Unreachable instruction");
             continue;
 
         case Nop:
@@ -263,7 +263,7 @@ void VM_Interpret(vm_t *m)
 
         case Br:
             depth = read_leb(m);
-            ASSERT(m->csp >= depth, "call stack underflow");
+            ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
             m->pc = m->callstack[m->csp].block->br_addr;
@@ -273,7 +273,7 @@ void VM_Interpret(vm_t *m)
             depth = read_leb(m);
             cond = stack[m->sp--].value.u32;
             if (cond) { // if true
-                ASSERT(m->csp >= depth, "call stack underflow");
+                ASSERT(m->csp >= depth, "Call stack underflow");
                 m->csp -= depth;
                 // set to end for VM_PopBlock
                 m->pc = m->callstack[m->csp].block->br_addr;
@@ -282,7 +282,7 @@ void VM_Interpret(vm_t *m)
 
         case BrTable:
             count = read_leb(m);
-            ASSERT(count <= BR_TABLE_SIZE, "BrTable size exceeds max");
+            ASSERT(count <= BR_TABLE_SIZE, "BrTable size too big");
             for (uint32_t i = 0; i < count; i++)
                 m->br_table[i] = read_leb(m);
 
@@ -292,7 +292,7 @@ void VM_Interpret(vm_t *m)
             if (didx >= 0 && didx < count)
                 depth = m->br_table[didx];
 
-            ASSERT(m->csp >= depth, "call stack underflow");
+            ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
             m->pc = m->callstack[m->csp].block->br_addr;
@@ -322,7 +322,7 @@ void VM_Interpret(vm_t *m)
             tidx = read_leb(m);
             m->pc++; // ignore default table
             val = stack[m->sp--].value.u32;
-            ASSERT(val < m->table.maximum, "undefined element 0x%x (max: 0x%x) in table", val, m->table.maximum);
+            ASSERT(val < m->table.maximum, "Undefined element %#x in table", val);
             fidx = m->table.entries[val];
             ASSERT(fidx < m->num_funcs, "Bad function index");
 
@@ -334,14 +334,14 @@ void VM_Interpret(vm_t *m)
             const vm_block_t *func = &m->funcs[fidx];
             const vm_type_t *type = func->type;
 
-            ASSERT(type->mask == m->types[tidx].mask, "indirect call function type differ");
+            ASSERT(type->mask == m->types[tidx].mask, "Indirect call function type differ");
 
             VM_SetupCall(m, fidx);  // regular function call
 
             // Validate signatures match
-            ASSERT(type->num_params + func->num_locals == m->sp - m->fp + 1, "indirect call param counts differ");
+            ASSERT(type->num_params + func->num_locals == m->sp - m->fp + 1, "Indirect call param counts differ");
             for (uint32_t f = 0; f < type->num_params; f++)
-                ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "indirect call param types differ");
+                ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Indirect call param types differ");
             continue;
 
         //
@@ -414,7 +414,7 @@ void VM_Interpret(vm_t *m)
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
                 ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE &&
-                       (uint64_t)src + n <= m->memory.pages * PAGE_SIZE, "memory copy out of bounds");
+                       (uint64_t)src + n <= m->memory.pages * PAGE_SIZE, "Memory copy out of bounds");
                 memmove(m->memory.bytes + dst, m->memory.bytes + src, n);
                 m->pc += 2;
                 m->sp -= 3;
@@ -424,14 +424,14 @@ void VM_Interpret(vm_t *m)
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
-                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE, "memory fill out of bounds");
+                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE, "Memory fill out of bounds");
                 memset(m->memory.bytes + dst, src, n);
                 m->pc += 1;
                 m->sp -= 3;
                 continue;
 
             default:
-                ASSERT(0, "unrecognized extended opcode %#x", opcode);
+                ASSERT(0, "Unrecognized extended opcode %#x", opcode);
             }
             continue;
 
@@ -441,7 +441,7 @@ void VM_Interpret(vm_t *m)
             offset = read_leb(m);
             addr = stack[m->sp--].value.u32;
             ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * PAGE_SIZE, "memory load out of bounds");
+                   <= m->memory.pages * PAGE_SIZE, "Memory load out of bounds");
             maddr = m->memory.bytes + offset + addr;
             stack[++m->sp].value.u64 = 0; // initialize to 0
 
@@ -512,7 +512,7 @@ void VM_Interpret(vm_t *m)
             vm_value_t *sval = &stack[m->sp--];
             addr = stack[m->sp--].value.u32;
             ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * PAGE_SIZE, "memory store out of bounds");
+                   <= m->memory.pages * PAGE_SIZE, "Memory store out of bounds");
             maddr = m->memory.bytes + offset + addr;
 
             switch (opcode) {
@@ -807,7 +807,7 @@ void VM_Interpret(vm_t *m)
             b = stack[m->sp].value.u32;
             m->sp--;
             if (opcode >= I32_Div_s && opcode <= I32_Rem_u)
-                ASSERT(b, "integer divide by zero");
+                ASSERT(b, "Integer divide by zero");
             switch (opcode) {
             case I32_Add:
                 c = a + b;
@@ -819,7 +819,7 @@ void VM_Interpret(vm_t *m)
                 c = a * b;
                 break;
             case I32_Div_s:
-                ASSERT(!(a == INT32_MIN && b == -1), "integer overflow");
+                ASSERT(!(a == INT32_MIN && b == -1), "Integer overflow");
                 c = (int32_t)a / (int32_t)b;
                 break;
             case I32_Div_u:
@@ -865,7 +865,7 @@ void VM_Interpret(vm_t *m)
             e = stack[m->sp].value.u64;
             m->sp--;
             if (opcode >= I64_Div_s && opcode <= I64_Rem_u)
-                ASSERT(e, "integer divide by zero");
+                ASSERT(e, "Integer divide by zero");
             switch (opcode) {
             case I64_Add:
                 f = d + e;
@@ -877,7 +877,7 @@ void VM_Interpret(vm_t *m)
                 f = d * e;
                 break;
             case I64_Div_s:
-                ASSERT(!(d == INT64_MIN && e == -1), "integer overflow");
+                ASSERT(!(d == INT64_MIN && e == -1), "Integer overflow");
                 f = (int64_t)d / (int64_t)e;
                 break;
             case I64_Div_u:
@@ -1080,7 +1080,7 @@ void VM_Interpret(vm_t *m)
             break;
 
         default:
-            ASSERT(0, "unrecognized opcode %#x", opcode);
+            ASSERT(0, "Unrecognized opcode %#x", opcode);
         }
     }
 }

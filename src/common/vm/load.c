@@ -64,7 +64,7 @@ static const vm_type_t *get_block_type(uint64_t value_type)
     case F64:
         return &block_types[4];
     default:
-        ASSERT(0, "invalid block_type value_type: %#"PRIx64"", value_type);
+        ASSERT(0, "Invalid block value_type: %#"PRIx64"", value_type);
         return NULL;
     }
 }
@@ -97,13 +97,13 @@ static char *sz_read_string(sizebuf_t *sz)
 static vm_value_t run_init_expr(vm_t *m, uint32_t type, sizebuf_t *sz)
 {
     int opcode = SZ_ReadByte(sz);
-    vm_value_t ret;
+    vm_value_t ret = { 0 };
     uint32_t arg;
 
     switch (opcode) {
     case GlobalGet:
         arg = SZ_ReadLeb(sz);
-        ASSERT(arg < m->num_globals, "bad global");
+        ASSERT(arg < m->num_globals, "Bad global index");
         ret = m->globals[arg];
         break;
     case I32_Const:
@@ -225,7 +225,7 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
 static void parse_functions(vm_t *m, sizebuf_t *sz)
 {
     uint32_t count = SZ_ReadLeb(sz);
-    ASSERT(count <= SZ_Remaining(sz), "too many funcs");
+    ASSERT(count <= SZ_Remaining(sz), "Too many functions");
     m->num_funcs += count;
     m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
 
@@ -324,11 +324,11 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
             export->value = &m->funcs[index];
             break;
         case KIND_TABLE:
-            ASSERT(index == 0, "Only 1 table in MVP");
+            ASSERT(index == 0, "Only 1 default table supported");
             export->value = &m->table;
             break;
         case KIND_MEMORY:
-            ASSERT(index == 0, "Only 1 memory in MVP");
+            ASSERT(index == 0, "Only 1 default memory supported");
             export->value = &m->memory;
             break;
         case KIND_GLOBAL:
@@ -350,14 +350,14 @@ static void parse_elements(vm_t *m, sizebuf_t *sz)
     uint32_t element_count = SZ_ReadLeb(sz);
     for (uint32_t c = 0; c < element_count; c++) {
         uint32_t index = SZ_ReadLeb(sz);
-        ASSERT(index == 0, "Only 1 default table in MVP");
+        ASSERT(index == 0, "Only 1 default table supported");
 
         // Run the init_expr to get offset
         vm_value_t init = run_init_expr(m, I32, sz);
 
         uint32_t offset = init.value.u32;
         uint32_t num_elem = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + num_elem <= m->table.size, "table overflow");
+        ASSERT((uint64_t)offset + num_elem <= m->table.size, "Table init out of bounds");
         for (uint32_t n = 0; n < num_elem; n++)
             m->table.entries[offset + n] = SZ_ReadLeb(sz);
     }
@@ -368,7 +368,7 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
     uint32_t seg_count = SZ_ReadLeb(sz);
     for (uint32_t s = 0; s < seg_count; s++) {
         uint32_t index = SZ_ReadLeb(sz);
-        ASSERT(index == 0, "Only 1 default memory in MVP %d",index);
+        ASSERT(index == 0, "Only 1 default memory supported");
 
         // Run the init_expr to get the offset
         vm_value_t init = run_init_expr(m, I32, sz);
@@ -376,7 +376,7 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
         // Copy the data to the memory offset
         uint32_t offset = init.value.u32;
         uint32_t size = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + size <= m->memory.pages * PAGE_SIZE, "memory overflow");
+        ASSERT((uint64_t)offset + size <= m->memory.pages * PAGE_SIZE, "Memory init out of bounds");
         memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
     }
 }
@@ -440,7 +440,7 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
         case Block:
         case Loop:
         case If:
-            ASSERT(top < BLOCKSTACK_SIZE - 1, "blockstack overflow");
+            ASSERT(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
             block = VM_Malloc(sizeof(*block));
             block->block_type = opcode;
             block->type = get_block_type(SZ_ReadLeb(sz));
@@ -450,14 +450,14 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
             break;
 
         case Else:
-            ASSERT(blockstack[top]->block_type == If, "else not matched with if");
+            ASSERT(blockstack[top]->block_type == If, "Else not matched with if");
             blockstack[top]->else_addr = pos + 1;
             break;
 
         case End:
             if (pos == func->end_addr)
                 break;
-            ASSERT(top >= 0, "blockstack underflow");
+            ASSERT(top >= 0, "Blockstack underflow");
             block = blockstack[top--];
             block->end_addr = pos;
             if (block->block_type == Loop) {
@@ -477,7 +477,7 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
 
         case BrTable:
             count = SZ_ReadLeb(sz); // target count
-            ASSERT(count <= BR_TABLE_SIZE, "BrTable size exceeds max");
+            ASSERT(count <= BR_TABLE_SIZE, "BrTable size too big");
             for (uint32_t i = 0; i < count; i++) {
                 index = SZ_ReadLeb(sz);
                 ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
@@ -523,7 +523,7 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
             index = SZ_ReadLeb(sz);
             ASSERT(index < m->num_types, "Bad type index");
             index = SZ_ReadLeb(sz);
-            ASSERT(index == 0, "Only 1 table in MVP");
+            ASSERT(index == 0, "Only 1 default table supported");
             break;
 
         case F32_Const:
@@ -552,12 +552,12 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
                 sz->readcount += 1;
                 break;
             default:
-               ASSERT(0, "unrecognized extended opcode %#x", opcode);
+               ASSERT(0, "Unrecognized extended opcode %#x", opcode);
             }
             break;
 
         default:
-            ASSERT(0, "unrecognized opcode %#x", opcode);
+            ASSERT(0, "Unrecognized opcode %#x", opcode);
         }
     }
 
@@ -630,8 +630,8 @@ vm_t *VM_Load(const char *name)
     while (sz.readcount < sz.cursize) {
         uint32_t id = SZ_ReadByte(&sz);
         uint32_t len = SZ_ReadLeb(&sz);
-        ASSERT(id < NUM_SECTIONS, "unknown section");
-        ASSERT(len <= SZ_Remaining(&sz), "section out of bounds");
+        ASSERT(id < NUM_SECTIONS, "Unknown section %u", id);
+        ASSERT(len <= SZ_Remaining(&sz), "Section %u out of bounds", id);
         sections[id].pos = sz.readcount;
         sections[id].len = len;
         sz.readcount += len;
@@ -692,10 +692,10 @@ void VM_Free(vm_t *m)
 
 uint64_t VM_Call(vm_t *m, uint32_t e, ...)
 {
-    ASSERT(!(e < 0 || e >= m->num_exports), "bad export");
+    ASSERT(!(e < 0 || e >= m->num_exports), "Bad export");
 
     const vm_export_t *export = &m->exports[e];
-    ASSERT(export->kind == KIND_FUNCTION, "not a function");
+    ASSERT(export->kind == KIND_FUNCTION, "Not a function");
 
     const vm_block_t *func = export->value;
     const vm_type_t *type = func->type;
@@ -719,7 +719,7 @@ uint64_t VM_Call(vm_t *m, uint32_t e, ...)
             value->value.f64 = va_arg(ap, double);
             break;
         default:
-            ASSERT(0, "bad param");
+            ASSERT(0, "Bad param");
         }
     }
     va_end(ap);
