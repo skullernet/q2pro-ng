@@ -26,6 +26,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "shared/shared.h"
+#include "common/intreadwrite.h"
 #include "common/vm.h"
 #include "common/zone.h"
 #include "opcodes.h"

@@ -69,7 +69,6 @@ static const vm_type_t *get_block_type(uint64_t value_type)
     }
 }
 
-// TODO: calculate this while parsing types
 static uint64_t get_type_mask(vm_type_t *type)
 {
     uint64_t mask = 0x80;
@@ -163,18 +162,16 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
         char *import_module = sz_read_string(sz);
         char *import_field = sz_read_string(sz);
         uint32_t kind = SZ_ReadByte(sz);
-        uint32_t type_index = 0, fidx;
-        uint8_t content_type = 0, mutability;
+        uint32_t type_index = 0, content_type = 0;
 
         switch (kind) {
         case KIND_FUNCTION:
             type_index = SZ_ReadLeb(sz);
+            ASSERT(type_index < m->num_types, "Bad type index");
             break;
         case KIND_GLOBAL:
             content_type = SZ_ReadLeb(sz);
-            // TODO: use mutability
-            mutability = SZ_ReadByte(sz);
-            (void)mutability;
+            SZ_ReadByte(sz); // mutability
             break;
         default:
             ASSERT(0, "Import of kind %d not supported", kind);
@@ -185,12 +182,11 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
         // Store in the right place
         switch (kind) {
         case KIND_FUNCTION:
-            fidx = m->num_funcs;
             m->num_imports++;
             m->num_funcs++;
             m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
 
-            vm_block_t *func = &m->funcs[fidx];
+            vm_block_t *func = &m->funcs[m->num_imports - 1];
             func->import_module = import_module;
             func->import_field = import_field;
             func->type = &m->types[type_index];
@@ -205,17 +201,15 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
 
             switch (content_type) {
             case I32:
-                memcpy(&glob->value.u32, val, 4);
+            case F32:
+                glob->value.u32 = RN32(val);
                 break;
             case I64:
-                memcpy(&glob->value.u64, val, 8);
-                break;
-            case F32:
-                memcpy(&glob->value.f32, val, 4);
-                break;
             case F64:
-                memcpy(&glob->value.f64, val, 8);
+                glob->value.u64 = RN64(val);
                 break;
+            default:
+                ASSERT(0, "Import of type %d not supported", content_type);
             }
             break;
         }
@@ -292,11 +286,8 @@ static void parse_globals(vm_t *m, sizebuf_t *sz)
     m->num_globals = num_globals;
 
     for (uint32_t g = 0; g < num_globals; g++) {
-        // Same allocation Import of global above
         uint32_t type = SZ_ReadLeb(sz);
-        // TODO: use mutability
-        uint8_t mutability = SZ_ReadByte(sz);
-        (void)mutability;
+        SZ_ReadByte(sz); // mutability
 
         // Run the init_expr to get global value
         m->globals[g] = run_init_expr(m, type, sz);

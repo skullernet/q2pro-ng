@@ -26,7 +26,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "vm.h"
-#include "common/intreadwrite.h"
 
 // Size of memory load.
 // This starts with the first memory load operator at opcode 0x28
@@ -206,7 +205,9 @@ void VM_Interpret(vm_t *m)
     float        g, h, i; // F32 math
     double       j, k, l; // F64 math
 
-    while (m->pc < m->num_bytes) {
+    while (1) {
+        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
+
         cur_pc = m->pc;
         opcode = m->bytes[m->pc++];
 
