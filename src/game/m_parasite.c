@@ -507,7 +507,7 @@ void THINK(proboscis_think)(edict_t *self)
 
             // see if we got cut by the world
             trace_t tr;
-            gi.trace(&tr, start, NULL, NULL, self->s.origin, NULL, MASK_SOLID);
+            gi.trace(&tr, start, NULL, NULL, self->s.origin, ENTITYNUM_NONE, MASK_SOLID);
 
             if (tr.fraction != 1.0f) {
                 // blocked, so retract
@@ -602,7 +602,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     vec3_t pos;
     VectorMA(tip->s.origin, FRAME_TIME_SEC, tip->velocity, pos);
     trace_t tr;
-    gi.trace(&tr, tip->s.origin, NULL, NULL, pos, self, tip->clipmask);
+    gi.trace(&tr, tip->s.origin, NULL, NULL, pos, self->s.number, tip->clipmask);
     if (tr.startsolid) {
         VectorNegate(dir, tr.plane.normal);
         VectorCopy(start, tr.endpos);

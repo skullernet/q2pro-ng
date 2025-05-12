@@ -637,12 +637,12 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, edict_t **list, int maxc
 //
 // functions that interact with everything appropriate
 //
-int SV_PointContents(const vec3_t p);
+contents_t SV_PointContents(const vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.
 // Quake 2 extends this to also check entities, to allow moving liquids
 
 void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
-              const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask);
+              const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -654,4 +654,4 @@ void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
 // passedict is explicitly excluded from clipping checks (normally NULL)
 
 void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
-             const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
+             const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask);

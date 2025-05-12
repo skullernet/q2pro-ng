@@ -867,7 +867,7 @@ static void G_RunFrame_(bool main_loop)
                 vec3_t end;
                 VectorAdd(ent->s.origin, ent->gravityVector, end);
                 trace_t tr;
-                gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent, mask);
+                gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
 
                 if (tr.startsolid || tr.allsolid || tr.entnum != ent->groundentity - g_edicts)
                     ent->groundentity = NULL;

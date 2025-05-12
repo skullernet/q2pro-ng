@@ -660,7 +660,8 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     loogie->r.svflags |= SVF_PROJECTILE;
     gi.linkentity(loogie);
 
-    gi.trace(&tr, self->s.origin, NULL, NULL, loogie->s.origin, loogie, MASK_PROJECTILE);
+    gi.trace(&tr, self->s.origin, NULL, NULL, loogie->s.origin,
+             loogie->s.number, MASK_PROJECTILE);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, loogie->s.origin);
         loogie->touch(loogie, g_edicts + tr.entnum, &tr, false);

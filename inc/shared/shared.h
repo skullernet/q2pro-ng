@@ -997,9 +997,7 @@ typedef struct {
     trace_t traces[MAXTOUCH];
 } touch_list_t;
 
-struct edict_s;
-
-typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, struct edict_s *passent, contents_t contentmask);
+typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
 typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
 
 typedef struct {
@@ -1030,7 +1028,7 @@ typedef struct {
 
     // [KEX] variables (in)
     vec3_t      viewoffset;
-    struct edict_s *player;
+    int         playernum;
 
     // [KEX] results (out)
     vec4_t      screen_blend;

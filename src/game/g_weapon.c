@@ -39,7 +39,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     closest_point_to_box(self->s.origin, self->enemy->r.absmin, self->enemy->r.absmax, point);
 
     // check that we can hit the point on the bbox
-    gi.trace(&tr, self->s.origin, NULL, NULL, point, self, MASK_PROJECTILE);
+    gi.trace(&tr, self->s.origin, NULL, NULL, point, self->s.number, MASK_PROJECTILE);
     hit = g_edicts + tr.entnum;
 
     if (tr.fraction < 1) {
@@ -51,7 +51,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     }
 
     // check that we can hit the player from the point
-    gi.trace(&tr, point, NULL, NULL, self->enemy->s.origin, self, MASK_PROJECTILE);
+    gi.trace(&tr, point, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_PROJECTILE);
     hit = g_edicts + tr.entnum;
 
     if (tr.fraction < 1) {
@@ -95,7 +95,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
     vec3_t end;
     VectorCopy(end_, end);
     while (1) {
-        gi.trace(&tr, start, NULL, NULL, end, self, *mask);
+        gi.trace(&tr, start, NULL, NULL, end, self->s.number, *mask);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -233,7 +233,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
         if (gi.pointcontents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
-            gi.trace(&tr, pos, NULL, NULL, water_start, g_edicts + tr.entnum, MASK_WATER);
+            gi.trace(&tr, pos, NULL, NULL, water_start, tr.entnum, MASK_WATER);
 
         VectorAvg(water_start, tr.endpos, pos);
 
@@ -337,7 +337,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->style = mod.id;
     gi.linkentity(bolt);
 
-    gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt, bolt->clipmask);
+    gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
         bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
@@ -698,7 +698,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     pierce_begin(&pierce);
 
     while (1) {
-        gi.trace(&tr, start, NULL, NULL, end, self, mask);
+        gi.trace(&tr, start, NULL, NULL, end, self->s.number, mask);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -792,7 +792,7 @@ static void bfg_spawn_laser(edict_t *self)
     vec3_t end;
     bfg_laser_pos(self->s.origin, 256, end);
     trace_t tr;
-    gi.trace(&tr, self->s.origin, NULL, NULL, end, self, MASK_OPAQUE | CONTENTS_PROJECTILECLIP);
+    gi.trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_OPAQUE | CONTENTS_PROJECTILECLIP);
 
     if (tr.fraction == 1.0f)
         return;
@@ -958,7 +958,7 @@ void THINK(bfg_think)(edict_t *self)
         VectorMA(start, 2048, dir, end);
 
         // [Paril-KEX] don't fire a laser if we're blocked by the world
-        gi.trace(&tr, start, NULL, NULL, point, NULL, MASK_SOLID | CONTENTS_PROJECTILECLIP);
+        gi.trace(&tr, start, NULL, NULL, point, ENTITYNUM_NONE, MASK_SOLID | CONTENTS_PROJECTILECLIP);
 
         if (tr.fraction < 1.0f)
             continue;
@@ -967,7 +967,8 @@ void THINK(bfg_think)(edict_t *self)
         pierce_begin(&pierce);
 
         do {
-            gi.trace(&tr, start, NULL, NULL, end, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER | CONTENTS_PROJECTILECLIP);
+            gi.trace(&tr, start, NULL, NULL, end, self->s.number,
+                     CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER | CONTENTS_PROJECTILECLIP);
 
             // didn't hit anything, so we're done
             if (tr.fraction == 1.0f)

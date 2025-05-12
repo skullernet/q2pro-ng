@@ -88,7 +88,7 @@ void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance,
         mask &= ~CONTENTS_PLAYER;
 
     trace_t tr;
-    gi.trace(&tr, eye_position, NULL, NULL, end, ent, mask);
+    gi.trace(&tr, eye_position, NULL, NULL, end, ent->s.number, mask);
 
     // if the point was damageable, use raw forward
     // so railgun pierces properly

@@ -82,7 +82,7 @@ void TOUCH(Touch_Multi)(edict_t *self, edict_t *other, const trace_t *tr, bool o
 
     if (self->spawnflags & SPAWNFLAG_TRIGGER_CLIP) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return;
@@ -459,7 +459,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 {
     if (self->spawnflags & SPAWNFLAG_PUSH_CLIP) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return;
@@ -675,7 +675,7 @@ static bool can_hurt(edict_t *self, edict_t *other)
 
     if (self->spawnflags & SPAWNFLAG_HURT_CLIPPED) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return false;
@@ -818,7 +818,7 @@ void TOUCH(trigger_gravity_touch)(edict_t *self, edict_t *other, const trace_t *
 {
     if (self->spawnflags & SPAWNFLAG_GRAVITY_CLIPPED) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return;
@@ -898,7 +898,7 @@ void TOUCH(trigger_monsterjump_touch)(edict_t *self, edict_t *other, const trace
 
     if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_CLIPPED) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return;
@@ -964,7 +964,7 @@ void TOUCH(trigger_flashlight_touch)(edict_t *self, edict_t *other, const trace_
 
     if (self->spawnflags & SPAWNFLAG_FLASHLIGHT_CLIPPED) {
         trace_t clip;
-        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self, G_GetClipMask(other));
+        gi.clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
 
         if (clip.fraction == 1.0f)
             return;

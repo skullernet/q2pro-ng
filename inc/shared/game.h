@@ -122,8 +122,8 @@ typedef struct {
     void (*setmodel)(edict_t *ent, const char *name);
 
     // collision detection
-    void (*trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *passent, int contentmask);
-    void (*clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask);
+    void (*trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, int contentmask);
+    void (*clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, int contentmask);
     int (*pointcontents)(const vec3_t point);
     bool (*inVIS)(const vec3_t p1, const vec3_t p2, vis_t vis);
     void (*SetAreaPortalState)(int portalnum, bool open);

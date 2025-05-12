@@ -247,7 +247,8 @@ bool finishHeal(edict_t *self)
     maxs[2] += 48; // compensate for change when they die
 
     trace_t tr;
-    gi.trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin, healee, MASK_MONSTERSOLID);
+    gi.trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin,
+             healee->s.number, MASK_MONSTERSOLID);
 
     if (tr.startsolid || tr.allsolid) {
         abortHeal(self, true, false);
@@ -959,7 +960,7 @@ static void medic_cable_attack(edict_t *self)
         return;
     }
 
-    gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self, MASK_SOLID);
+    gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_SOLID);
     if (tr.fraction != 1.0f && tr.entnum != self->enemy - g_edicts) {
         if (tr.entnum == ENTITYNUM_WORLD) {
             // give up on second try

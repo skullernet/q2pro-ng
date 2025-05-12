@@ -67,7 +67,8 @@ static edict_t *SV_TestEntityPosition(edict_t *ent)
 {
     trace_t    trace;
 
-    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent, G_GetClipMask(ent));
+    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin,
+             ent->s.number, G_GetClipMask(ent));
 
     if (trace.startsolid)
         return g_edicts;
@@ -174,7 +175,7 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
 
     touch_list_t touch;
     PM_StepSlideMove_Generic(ent->s.origin, ent->velocity, time, ent->r.mins,
-                             ent->r.maxs, ent, mask, &touch, false, gi.trace);
+                             ent->r.maxs, ent->s.number, mask, &touch, false, gi.trace);
 
     for (int i = 0; i < touch.num; i++) {
         trace_t *trace = &touch.traces[i];
@@ -235,7 +236,7 @@ static trace_t SV_PushEntity(edict_t *ent, const vec3_t push)
 
 retry:;
     trace_t trace;
-    gi.trace(&trace, start, ent->r.mins, ent->r.maxs, end, ent, G_GetClipMask(ent));
+    gi.trace(&trace, start, ent->r.mins, ent->r.maxs, end, ent->s.number, G_GetClipMask(ent));
 
     VectorMA(trace.endpos, 0.5f, trace.plane.normal, ent->s.origin);
     gi.linkentity(ent);
@@ -997,7 +998,8 @@ void G_RunEntity(edict_t *ent)
     if (has_previous_origin && ent->movetype == MOVETYPE_STEP) {
         // if we moved, check and fix origin if needed
         if (!VectorCompare(ent->s.origin, previous_origin)) {
-            gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, previous_origin, ent, G_GetClipMask(ent));
+            gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs,
+                     previous_origin, ent->s.number, G_GetClipMask(ent));
             if (trace.allsolid || trace.startsolid)
                 VectorCopy(previous_origin, ent->s.origin);
         }

@@ -701,7 +701,7 @@ void THINK(target_laser_think)(edict_t *self)
     pierce_begin(&pierce);
 
     do {
-        gi.trace(&tr, start, NULL, NULL, end, self, mask);
+        gi.trace(&tr, start, NULL, NULL, end, self->s.number, mask);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)

@@ -11,7 +11,7 @@ typedef struct {
 extern pm_config_t pm_config;
 
 void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
-                              edict_t *passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
+                              int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
 
 void Pmove(pmove_t *pmove);
 

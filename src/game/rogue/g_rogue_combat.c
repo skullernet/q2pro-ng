@@ -76,7 +76,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
     // cycle through players
     while (ent) {
         if ((ent->client) && (ent->client->nuke_time != level.time + SEC(2)) && (ent->r.inuse)) {
-            gi.trace(&tr, inflictor->s.origin, NULL, NULL, ent->s.origin, inflictor, MASK_SOLID);
+            gi.trace(&tr, inflictor->s.origin, NULL, NULL, ent->s.origin, inflictor->s.number, MASK_SOLID);
             if (tr.fraction == 1.0f)
                 ent->client->nuke_time = level.time + SEC(2);
             else {

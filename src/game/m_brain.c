@@ -429,7 +429,7 @@ static void brain_tounge_attack(edict_t *self)
     }
     VectorCopy(self->enemy->s.origin, end);
 
-    gi.trace(&tr, start, NULL, NULL, end, self, MASK_PROJECTILE);
+    gi.trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
     if (tr.entnum != self->enemy - g_edicts)
         return;
 

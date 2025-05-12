@@ -372,7 +372,7 @@ static void Cmd_Spawn_f(edict_t *ent)
         VectorMA(start, 8192, forward, end);
 
         trace_t tr;
-        gi.trace(&tr, start, NULL, NULL, end, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
+        gi.trace(&tr, start, NULL, NULL, end, other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
         VectorCopy(tr.endpos, other->s.origin);
 
         for (int i = 0; i < 3; i++) {
@@ -384,7 +384,7 @@ static void Cmd_Spawn_f(edict_t *ent)
 
         while (1) {
             gi.trace(&tr, other->s.origin, other->r.mins, other->r.maxs,
-                     other->s.origin, other, MASK_SHOT | CONTENTS_MONSTERCLIP);
+                     other->s.origin, other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
             if (!tr.startsolid)
                 break;
 
@@ -926,7 +926,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
     VectorMA(start, 1024, ent->client->v_forward, end);
 
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, end, ent, MASK_SHOT);
+    gi.trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
@@ -1191,7 +1191,7 @@ static void Cmd_Wave_f(edict_t *ent)
         vec3_t end;
         VectorMA(start, 2048, ent->client->v_forward, end);
         trace_t tr;
-        gi.trace(&tr, start, NULL, NULL, end, ent, MASK_SHOT & ~CONTENTS_WINDOW);
+        gi.trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT & ~CONTENTS_WINDOW);
         other_notify_msg = "%s pinged a location.\n";
 
         if (tr.fraction != 1.0f) {

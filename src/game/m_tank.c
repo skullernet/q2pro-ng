@@ -320,7 +320,7 @@ bool M_AdjustBlindfireTarget(edict_t *self, const vec3_t start, const vec3_t tar
             VectorMA(target, 20, right, end);
 
         trace_t trace;
-        gi.trace(&trace, start, NULL, NULL, end, self, MASK_PROJECTILE);
+        gi.trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
         // blindfire has different fail criteria for the trace
         if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
             VectorSubtract(end, start, out_dir);
@@ -445,7 +445,7 @@ static void TankRocket(edict_t *self)
         }
     } else {
         trace_t trace;
-        gi.trace(&trace, start, NULL, NULL, vec, self, MASK_PROJECTILE);
+        gi.trace(&trace, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
 
         if (trace.fraction > 0.5f || g_edicts[trace.entnum].r.solid != SOLID_BSP) {
             if (self->spawnflags & SPAWNFLAG_TANK_COMMANDER_HEAT_SEEKING)

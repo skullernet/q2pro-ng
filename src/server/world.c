@@ -447,11 +447,11 @@ static const mnode_t *SV_WorldNodes(void)
 SV_PointContents
 =============
 */
-int SV_PointContents(const vec3_t p)
+contents_t SV_PointContents(const vec3_t p)
 {
     edict_t     *touch[MAX_EDICTS_OLD], *hit;
     int         i, num;
-    int         contents;
+    contents_t  contents;
 
     // get base contents from world
     contents = CM_PointContents(p, SV_WorldNodes());
@@ -478,10 +478,10 @@ SV_ClipMoveToEntities
 static void SV_ClipMoveToEntities(trace_t *tr,
                                   const vec3_t start, const vec3_t end,
                                   const vec3_t mins, const vec3_t maxs,
-                                  edict_t *passedict, int contentmask)
+                                  int passent, contents_t contentmask)
 {
     vec3_t      boxmins, boxmaxs;
-    int         i, num;
+    int         i, num, ownernum = ENTITYNUM_NONE;
     edict_t     *touchlist[MAX_EDICTS], *touch;
     trace_t     trace;
 
@@ -498,6 +498,9 @@ static void SV_ClipMoveToEntities(trace_t *tr,
 
     num = SV_AreaEdicts(boxmins, boxmaxs, touchlist, q_countof(touchlist), AREA_SOLID);
 
+    if (passent != ENTITYNUM_NONE)
+        ownernum = SV_EdictForNum(passent)->r.ownernum;
+
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
     for (i = 0; i < num; i++) {
@@ -506,12 +509,12 @@ static void SV_ClipMoveToEntities(trace_t *tr,
             continue;
         if (tr->allsolid)
             return;
-        if (passedict) {
-            if (touch == passedict)
+        if (passent != ENTITYNUM_NONE) {
+            if (touch->s.number == passent)
                 continue;
-            if (touch->r.ownernum == passedict->s.number)
+            if (touch->r.ownernum == passent)
                 continue;    // don't clip against own missiles
-            if (passedict->r.ownernum == touch->s.number)
+            if (touch->s.number == ownernum)
                 continue;    // don't clip against owner
         }
 
@@ -545,7 +548,7 @@ Passedict and edicts owned by passedict are explicitly not checked.
 ==================
 */
 void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
-              const vec3_t maxs, const vec3_t end, edict_t *passedict, int contentmask)
+              const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask)
 {
     if (!mins)
         mins = vec3_origin;
@@ -558,11 +561,8 @@ void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
     if (trace->fraction == 0)
         return;     // blocked by the world
 
-    if (passedict == ge->edicts)
-        passedict = NULL;   // optimization
-
     // clip to other solid entities
-    SV_ClipMoveToEntities(trace, start, end, mins, maxs, passedict, contentmask);
+    SV_ClipMoveToEntities(trace, start, end, mins, maxs, passent, contentmask);
 }
 
 /*
@@ -574,18 +574,20 @@ Can be used to clip to SOLID_TRIGGER by its BSP tree.
 ==================
 */
 void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
-             const vec3_t maxs, const vec3_t end, edict_t *clip, int contentmask)
+             const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask)
 {
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
 
-    if (clip == ge->edicts)
+    if (clipent == ENTITYNUM_WORLD) {
         CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
-    else
+    } else {
+        edict_t *clip = SV_EdictForNum(clipent);
         CM_TransformedBoxTrace(trace, start, end, mins, maxs,
                                SV_HullForEntity(clip, true), contentmask,
                                clip->s.origin, clip->s.angles);
-    trace->entnum = clip->s.number;
+    }
+    trace->entnum = clipent;
 }

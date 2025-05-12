@@ -1539,7 +1539,7 @@ typedef enum {
 } stuck_result_t;
 
 stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
-                                        edict_t *ignore, contents_t mask, trace_func_t trace_func);
+                                        int ignore, contents_t mask, trace_func_t trace_func);
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check);
 
 // this is for the count of monsters

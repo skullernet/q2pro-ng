@@ -28,7 +28,7 @@ static const side_check_t side_checks[NUM_SIDE_CHECKS] = {
 
 // [Paril-KEX] generic code to detect & fix a stuck object
 stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
-                                        edict_t *ignore, contents_t mask, trace_func_t trace_func)
+                                        int ignore, contents_t mask, trace_func_t trace_func)
 {
     trace_t tr;
 
@@ -222,7 +222,7 @@ Does not modify any world state?
 
 // [Paril-KEX] made generic so you can run this without needing a pml/pm
 void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
-                              edict_t *passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func)
+                              int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func)
 {
     vec3_t  dir;
     float   d;
@@ -423,13 +423,13 @@ static void PM_Trace(trace_t *tr, const vec3_t start, const vec3_t mins,
     if (pm->s.pm_type == PM_SPECTATOR)
         pm->clip(tr, start, mins, maxs, end, MASK_SOLID);
     else
-        pm->trace(tr, start, mins, maxs, end, pm->player, mask);
+        pm->trace(tr, start, mins, maxs, end, pm->playernum, mask);
 }
 
 static inline void PM_StepSlideMove_(void)
 {
     PM_StepSlideMove_Generic(pml.origin, pml.velocity, pml.frametime, pm->mins, pm->maxs,
-                             pm->player, pml.clipmask, &pm->touch, pm->s.pm_time, pm->trace);
+                             pm->playernum, pml.clipmask, &pm->touch, pm->s.pm_time, pm->trace);
 }
 
 /*
@@ -1101,7 +1101,7 @@ static void PM_CheckSpecialMovement(void)
             has_time = false;
 
         PM_StepSlideMove_Generic(waterjump_origin, waterjump_vel, time, pm->mins, pm->maxs,
-                                 pm->player, pml.clipmask, NULL, has_time, pm->trace);
+                                 pm->playernum, pml.clipmask, NULL, has_time, pm->trace);
     }
 
     // snap down to ground
@@ -1261,11 +1261,11 @@ static bool PM_AboveWater(void)
     VectorCopy(pml.origin, below);
     below[2] -= 8;
 
-    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->player, MASK_SOLID);
+    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->playernum, MASK_SOLID);
     if (tr.fraction < 1.0f)
         return false;
 
-    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->player, MASK_WATER);
+    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->playernum, MASK_WATER);
     if (tr.fraction < 1.0f)
         return true;
 
@@ -1377,7 +1377,7 @@ static void PM_SnapPosition(void)
     if (PM_GoodPosition())
         return;
 
-    if (G_FixStuckObject_Generic(pm->s.origin, pm->mins, pm->maxs, pm->player, pml.clipmask, pm->trace) == NO_GOOD_POSITION) {
+    if (G_FixStuckObject_Generic(pm->s.origin, pm->mins, pm->maxs, pm->playernum, pml.clipmask, pm->trace) == NO_GOOD_POSITION) {
         VectorCopy(pml.previous_origin, pm->s.origin);
         return;
     }

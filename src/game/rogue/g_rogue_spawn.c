@@ -81,7 +81,7 @@ bool FindSpawnPoint(const vec3_t startpoint, const vec3_t mins, const vec3_t max
     VectorCopy(startpoint, spawnpoint);
 
     // fix stuck if we couldn't drop initially
-    if (G_FixStuckObject_Generic(spawnpoint, mins, maxs, NULL, MASK_MONSTERSOLID, gi.trace) == NO_GOOD_POSITION)
+    if (G_FixStuckObject_Generic(spawnpoint, mins, maxs, ENTITYNUM_NONE, MASK_MONSTERSOLID, gi.trace) == NO_GOOD_POSITION)
         return false;
 
     // fixed, so drop again
@@ -108,7 +108,7 @@ bool CheckSpawnPoint(const vec3_t origin, const vec3_t mins, const vec3_t maxs)
     if (VectorEmpty(mins) || VectorEmpty(maxs))
         return false;
 
-    gi.trace(&tr, origin, mins, maxs, origin, NULL, MASK_MONSTERSOLID);
+    gi.trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_MONSTERSOLID);
     if (tr.startsolid || tr.allsolid)
         return false;
 

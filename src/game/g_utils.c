@@ -520,7 +520,8 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
 
     while (num_skipped < q_countof(skipped)) {
         trace_t tr;
-        gi.trace(&tr, previous_origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent, ent->clipmask | CONTENTS_PROJECTILE);
+        gi.trace(&tr, previous_origin, ent->r.mins, ent->r.maxs,
+                 ent->s.origin, ent->s.number, ent->clipmask | CONTENTS_PROJECTILE);
 
         if (tr.fraction == 1.0f)
             break;
@@ -599,7 +600,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 
         if ((ent->r.solid == SOLID_BSP || (ent->r.svflags & SVF_HULL)) && bsp_clipping) {
             trace_t clip;
-            gi.clip(&clip, hit->s.origin, hit->r.mins, hit->r.maxs, hit->s.origin, ent, G_GetClipMask(hit));
+            gi.clip(&clip, hit->s.origin, hit->r.mins, hit->r.maxs, hit->s.origin, ent->s.number, G_GetClipMask(hit));
 
             if (clip.fraction == 1.0f)
                 continue;

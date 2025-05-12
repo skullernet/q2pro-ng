@@ -263,7 +263,7 @@ static void berserk_attack_slam(edict_t *self)
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, (const vec3_t) { 20.0f, -14.3f, -21.0f }, f, r, start);
     trace_t tr;
-    gi.trace(&tr, self->s.origin, NULL, NULL, start, self, MASK_SOLID);
+    gi.trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
     gi.WritePosition(tr.endpos);
     gi.WriteDir((const vec3_t) { 0, 0, 1 });
     gi.multicast(tr.endpos, MULTICAST_PHS);

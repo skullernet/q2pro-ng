@@ -1367,7 +1367,7 @@ void ClientEndServerFrame(edict_t *ent)
                 continue;
 
             trace_t clip;
-            gi.clip(&clip, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, player, CONTENTS_MONSTER | CONTENTS_PLAYER);
+            gi.clip(&clip, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, player->s.number, CONTENTS_MONSTER | CONTENTS_PLAYER);
 
             if (clip.startsolid || clip.allsolid) {
                 clipped_player = true;

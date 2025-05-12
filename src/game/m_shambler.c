@@ -277,7 +277,7 @@ static void ShamblerCastLightning(edict_t *self)
 
     VectorMA(start, 8192, dir, end);
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, end, self, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
+    gi.trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_LIGHTNING);

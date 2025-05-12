@@ -486,7 +486,7 @@ void THINK(turret_brain_think)(edict_t *self)
     VectorAvg(self->enemy->r.absmax, self->enemy->r.absmin, target);
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
-        gi.trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent, MASK_SHOT);
+        gi.trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent->s.number, MASK_SHOT);
         if (trace.fraction == 1 || trace.entnum == self->enemy - g_edicts) {
             if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
                 self->monsterinfo.trail_time = level.time;
