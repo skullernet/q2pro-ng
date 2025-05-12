@@ -729,7 +729,6 @@ static const save_field_t gamefields[] = {
     I(help2changed),
 
     I(maxclients),
-    I(maxentities),
 
     H(cross_level_flags),
     H(cross_unit_flags),
@@ -1535,7 +1534,7 @@ static void read_field(const save_field_t *field, void *base)
         break;
 
     case F_EDICT:
-        *(edict_t **)p = &g_edicts[parse_uint(game.maxentities - 1)];
+        *(edict_t **)p = &g_edicts[parse_uint(MAX_EDICTS - 1)];
         break;
     case F_CLIENT:
         *(gclient_t **)p = &game.clients[parse_uint(game.maxclients - 1)];
@@ -1680,7 +1679,6 @@ void ReadGame(const char *filename)
         gi.error("Savegame has bad version");
 
     int maxclients = game.maxclients;
-    int maxentities = game.maxentities;
 
     expect("game");
     read_fields(gamefields, q_countof(gamefields), &game);
@@ -1688,13 +1686,6 @@ void ReadGame(const char *filename)
     // should agree with server's version
     if (game.maxclients != maxclients)
         gi.error("Savegame has bad maxclients");
-
-    if (game.maxentities != maxentities)
-        gi.error("Savegame has bad maxentities");
-
-    g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
-    globals.edicts = g_edicts;
-    globals.max_edicts = game.maxentities;
 
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 
@@ -1794,7 +1785,7 @@ void ReadLevel(const char *filename)
         gi.error("Savegame has bad version");
 
     // wipe all the entities
-    memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
+    memset(g_edicts, 0, sizeof(g_edicts));
     globals.num_edicts = game.maxclients + 1;
 
     // load the level locals
@@ -1804,7 +1795,7 @@ void ReadLevel(const char *filename)
     // load all the entities
     expect("entities");
     expect("{");
-    while ((entnum = parse_array(game.maxentities)) != -1) {
+    while ((entnum = parse_array(MAX_EDICTS)) != -1) {
         if (entnum >= globals.num_edicts)
             globals.num_edicts = entnum + 1;
 

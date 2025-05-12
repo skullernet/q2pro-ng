@@ -1217,7 +1217,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     G_FreePrecaches();
 
     memset(&level, 0, sizeof(level));
-    memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
+    memset(g_edicts, 0, sizeof(g_edicts));
     level.is_spawning = true;
 
     // all other flags are not important atm

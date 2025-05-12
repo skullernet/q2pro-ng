@@ -76,7 +76,7 @@ typedef int qhandle_t;
 #define MODELINDEX_PLAYER   255
 
 #define ENTITYNUM_WORLD     0
-#define ENTITYNUM_NONE      0
+#define ENTITYNUM_NONE      (MAX_EDICTS - 1)
 
 #define MAX_CLIENT_NAME     16
 

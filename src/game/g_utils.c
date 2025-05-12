@@ -403,6 +403,7 @@ void G_InitEdict(edict_t *e)
     // ROGUE
 
     e->r.inuse = true;
+    e->r.ownernum = ENTITYNUM_NONE;
     e->classname = "noclass";
     e->gravity = 1.0f;
     e->s.number = e - g_edicts;
@@ -438,7 +439,7 @@ edict_t *G_Spawn(void)
         }
     }
 
-    if (i == game.maxentities)
+    if (i == MAX_EDICTS - 1)
         gi.error("ED_Alloc: no free edicts");
 
     globals.num_edicts++;
@@ -470,6 +471,7 @@ void THINK(G_FreeEdict)(edict_t *ed)
     ed->classname = "freed";
     ed->freetime = level.time;
     ed->r.inuse = false;
+    ed->r.ownernum = ENTITYNUM_NONE;
     ed->spawn_count = id;
 }
 

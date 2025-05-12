@@ -625,7 +625,6 @@ typedef struct {
 
     // store latched cvars here that we want to get at often
     int maxclients;
-    int maxentities;
 
     // cross level triggers
     int cross_level_flags, cross_unit_flags;
@@ -1049,8 +1048,6 @@ extern game_locals_t  game;
 extern level_locals_t level;
 extern game_export_t  globals;
 extern spawn_temp_t   st;
-
-extern edict_t *g_edicts;
 
 static inline float lerp(float a, float b, float f)
 {
@@ -2499,6 +2496,8 @@ struct edict_s {
     // NOTE: if adding new elements, make sure to add them
     // in g_save.cpp too!
 };
+
+extern edict_t g_edicts[MAX_EDICTS];
 
 //=============
 // ROGUE

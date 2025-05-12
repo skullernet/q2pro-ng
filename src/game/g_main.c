@@ -18,7 +18,7 @@ spawn_temp_t   st;
 
 const trace_t null_trace;
 
-edict_t *g_edicts;
+edict_t g_edicts[MAX_EDICTS];
 
 cvar_t *developer;
 cvar_t *deathmatch;
@@ -36,7 +36,6 @@ cvar_t      *spectator_password;
 cvar_t      *needpass;
 static cvar_t *maxclients;
 cvar_t      *maxspectators;
-static cvar_t *maxentities;
 cvar_t      *g_select_empty;
 cvar_t      *sv_dedicated;
 cvar_t      *sv_running;
@@ -251,7 +250,6 @@ static void InitGame(void)
 
     maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
     skill = gi.cvar("skill", "1", CVAR_LATCH);
-    maxentities = gi.cvar("maxentities", va("%d", MAX_EDICTS), CVAR_LATCH);
     gamerules = gi.cvar("gamerules", "0", CVAR_LATCH); // PGM
 
     // change anytime vars
@@ -329,10 +327,8 @@ static void InitGame(void)
     InitItems();
 
     // initialize all entities for this game
-    game.maxentities = Q_clip(maxentities->integer, maxclients->integer + 1, MAX_EDICTS);
-    g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
     globals.edicts = g_edicts;
-    globals.max_edicts = game.maxentities;
+    globals.max_edicts = q_countof(g_edicts);
 
     // initialize all clients for this game
     game.maxclients = maxclients->integer;
