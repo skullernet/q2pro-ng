@@ -420,8 +420,6 @@ void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
     if (!cl_muzzleflashes->integer)
         return;
-    if (mz.entity != cl.frame.ps.clientnum)
-        return;
 
     Q_assert(fx < q_countof(cl_mod_muzzles));
 

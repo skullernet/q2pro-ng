@@ -969,7 +969,7 @@ static void GunnerCmdrGrenade(edict_t *self)
             fire_ionripper(self, start, tmp, 15, 800, EF_IONRIPPER);
         }
 
-        monster_muzzleflash(self, start, flash_number);
+        G_AddEvent(self, EV_MUZZLEFLASH2, flash_number);
     } else {
         // mortar fires farther
         float speed = GRENADE_SPEED;

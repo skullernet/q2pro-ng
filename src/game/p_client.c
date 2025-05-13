@@ -1620,10 +1620,7 @@ static void spectator_respawn(edict_t *ent)
     // add a teleportation effect
     if (!ent->client->pers.spectator) {
         // send effect
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(MZ_LOGIN);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        G_AddEvent(ent, EV_MUZZLEFLASH, MZ_LOGIN);
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
@@ -2009,13 +2006,9 @@ static void ClientBeginDeathmatch(edict_t *ent)
     if (level.intermissiontime) {
         MoveClientToIntermission(ent);
     } else {
-        if (!(ent->r.svflags & SVF_NOCLIENT)) {
-            // send effect
-            gi.WriteByte(svc_muzzleflash);
-            gi.WriteShort(ent->s.number);
-            gi.WriteByte(MZ_LOGIN);
-            gi.multicast(ent->s.origin, MULTICAST_PVS);
-        }
+        // send effect
+        if (!(ent->r.svflags & SVF_NOCLIENT))
+            G_AddEvent(ent, EV_MUZZLEFLASH, MZ_LOGIN);
     }
 
     gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
@@ -2402,10 +2395,9 @@ void ClientDisconnect(edict_t *ent)
 
     // send effect
     if (!(ent->r.svflags & SVF_NOCLIENT)) {
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(MZ_LOGOUT);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        edict_t *te = G_TempEntity(ent->s.origin, EV_MUZZLEFLASH);
+        te->s.event_param = MZ_LOGOUT;
+        //te->s.clientnum = ent->s.number;
     }
 
     gi.unlinkentity(ent);
@@ -2596,7 +2588,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
             if (pm.s.pm_flags & PMF_ON_LADDER) {
                 if (!deathmatch->integer && client->last_ladder_sound < level.time) {
-                    ent->s.event = EV_LADDER_STEP;
+                    G_AddEvent(ent, EV_LADDER_STEP, 0);
                     client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
                 }
             }

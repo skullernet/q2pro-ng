@@ -678,12 +678,6 @@ typedef struct {
 } tent_params_t;
 
 typedef struct {
-    int entity;
-    int weapon;
-    bool silenced;
-} mz_params_t;
-
-typedef struct {
     int     flags;
     int     index;
     int     entity;
@@ -695,7 +689,6 @@ typedef struct {
 } snd_params_t;
 
 extern tent_params_t    te;
-extern mz_params_t      mz;
 extern snd_params_t     snd;
 
 void CL_ParseServerMessage(void);
@@ -854,8 +847,8 @@ void CL_BlasterTrail(centity_t *ent, const vec3_t end);
 void CL_OldRailTrail(void);
 void CL_BubbleTrail(const vec3_t start, const vec3_t end);
 void CL_FlagTrail(centity_t *ent, const vec3_t end, int color);
-void CL_MuzzleFlash(void);
-void CL_MuzzleFlash2(void);
+void CL_MuzzleFlash(centity_t *ent);
+void CL_MuzzleFlash2(centity_t *ent);
 void CL_TeleporterParticles(const vec3_t org);
 void CL_TeleportParticles(const vec3_t org);
 void CL_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count);

@@ -6,19 +6,19 @@
 void monster_fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
 {
     fire_blueblaster(self, start, dir, damage, speed, effect);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void monster_fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
 {
     fire_ionripper(self, start, dir, damage, speed, effect);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void monster_fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, float turn_fraction)
 {
     fire_heat(self, start, dir, damage, speed, (float) damage, damage, turn_fraction);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void dabeam_update(edict_t *self, bool damage)

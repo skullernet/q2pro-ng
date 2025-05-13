@@ -1443,6 +1443,8 @@ typedef enum {
     EV_OTHER_FOOTSTEP,
     EV_LADDER_STEP,
 // KEX
+    EV_MUZZLEFLASH,
+    EV_MUZZLEFLASH2
 } entity_event_t;
 
 // entity_state_t is the information conveyed from the server
@@ -1466,6 +1468,7 @@ typedef struct {
     uint32_t    event;      // impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
+    uint32_t    event_param;
     uint32_t    morefx;
     float       alpha;
     float       scale;

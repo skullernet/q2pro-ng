@@ -32,10 +32,7 @@ static void weapon_ionripper_fire(edict_t *ent)
     fire_ionripper(ent, start, dir, damage, 500, EF_IONRIPPER);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_IONRIPPER | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_IONRIPPER | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -82,10 +79,7 @@ static void weapon_phalanx_fire(edict_t *ent)
         fire_plasma(ent, start, dir, damage, 725, damage_radius, radius_damage);
 
         // send muzzle flash
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(MZ_PHALANX2 | is_silenced);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PHALANX2 | is_silenced);
 
         G_RemoveAmmo(ent);
     } else {
@@ -95,10 +89,7 @@ static void weapon_phalanx_fire(edict_t *ent)
         fire_plasma(ent, start, dir, damage, 725, damage_radius, radius_damage);
 
         // send muzzle flash
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(MZ_PHALANX | is_silenced);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PHALANX | is_silenced);
 
         PlayerNoise(ent, start, PNOISE_WEAPON);
     }

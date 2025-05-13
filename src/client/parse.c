@@ -526,7 +526,6 @@ ACTION MESSAGES
 */
 
 tent_params_t   te;
-mz_params_t     mz;
 snd_params_t    snd;
 
 static void CL_ParseTEntPacket(void)
@@ -666,29 +665,6 @@ static void CL_ParseTEntPacket(void)
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
-}
-
-static void CL_ParseMuzzleFlashPacket(int mask)
-{
-    int entity, weapon;
-
-    entity = MSG_ReadWord();
-    weapon = MSG_ReadByte();
-
-    if (!mask) {
-        weapon |= entity >> ENTITYNUM_BITS << 8;
-        entity &= ENTITYNUM_MASK;
-    }
-
-    if (entity < 0 || entity >= ENTITYNUM_WORLD)
-        Com_Error(ERR_DROP, "%s: bad entity", __func__);
-
-    if (!mask && weapon >= q_countof(monster_flash_offset))
-        Com_Error(ERR_DROP, "%s: bad weapon", __func__);
-
-    mz.silenced = weapon & mask;
-    mz.weapon = weapon & ~mask;
-    mz.entity = entity;
 }
 
 static void CL_ParseStartSoundPacket(void)
@@ -1110,16 +1086,6 @@ void CL_ParseServerMessage(void)
             CL_ParseTEnt();
             break;
 
-        case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED);
-            CL_MuzzleFlash();
-            break;
-
-        case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0);
-            CL_MuzzleFlash2();
-            break;
-
         case svc_download:
             CL_ParseDownload(cmd);
             continue;
@@ -1250,14 +1216,6 @@ bool CL_SeekDemoMessage(void)
 
         case svc_temp_entity:
             CL_ParseTEntPacket();
-            break;
-
-        case svc_muzzleflash:
-            CL_ParseMuzzleFlashPacket(MZ_SILENCED);
-            break;
-
-        case svc_muzzleflash2:
-            CL_ParseMuzzleFlashPacket(0);
             break;
 
         case svc_frame:

@@ -5,33 +5,26 @@
 //
 // monster weapons
 //
-void monster_muzzleflash(edict_t *self, const vec3_t start, monster_muzzleflash_id_t id)
-{
-    gi.WriteByte(svc_muzzleflash2);
-    gi.WriteShort(self->s.number | id >> 8 << ENTITYNUM_BITS);
-    gi.WriteByte(id & 255);
-    gi.multicast(start, MULTICAST_PHS);
-}
 
 void monster_fire_bullet(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int kick, int hspread,
                          int vspread, monster_muzzleflash_id_t flashtype)
 {
     fire_bullet(self, start, dir, damage, kick, hspread, vspread, (mod_t) { MOD_UNKNOWN });
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void monster_fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread,
                           int vspread, int count, monster_muzzleflash_id_t flashtype)
 {
     fire_shotgun(self, start, aimdir, damage, kick, hspread, vspread, count, (mod_t) { MOD_UNKNOWN });
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 edict_t *monster_fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed,
                               monster_muzzleflash_id_t flashtype, effects_t effect)
 {
     edict_t *e = fire_blaster(self, start, dir, damage, speed, effect, (mod_t) { MOD_UNKNOWN });
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
     return e;
 }
 
@@ -39,21 +32,21 @@ void monster_fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir,
                             monster_muzzleflash_id_t flashtype)
 {
     fire_flechette(self, start, dir, damage, speed, damage / 2);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void monster_fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed,
                           monster_muzzleflash_id_t flashtype, float right_adjust, float up_adjust)
 {
     fire_grenade(self, start, aimdir, damage, speed, SEC(2.5f), damage + 40, right_adjust, up_adjust, true);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void monster_fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed,
                          monster_muzzleflash_id_t flashtype)
 {
     fire_rocket(self, start, dir, damage, speed, damage + 20, damage);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 bool monster_fire_railgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick,
@@ -63,7 +56,7 @@ bool monster_fire_railgun(edict_t *self, const vec3_t start, const vec3_t aimdir
         return false;
 
     bool hit = fire_rail(self, start, aimdir, damage, kick);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
     return hit;
 }
 
@@ -71,7 +64,7 @@ void monster_fire_bfg(edict_t *self, const vec3_t start, const vec3_t aimdir, in
                       float damage_radius, monster_muzzleflash_id_t flashtype)
 {
     fire_bfg(self, start, aimdir, damage, speed, damage_radius);
-    monster_muzzleflash(self, start, flashtype);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
 void M_BossPredictiveRocket(edict_t *self, const float *offset, float speed, monster_muzzleflash_id_t mz)

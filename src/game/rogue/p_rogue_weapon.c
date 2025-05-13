@@ -18,10 +18,7 @@ static void weapon_prox_fire(edict_t *ent)
 
     fire_prox(ent, start, dir, damage_multiplier, 600);
 
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_PROX | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PROX | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -215,10 +212,7 @@ static void weapon_tracker_fire(edict_t *self)
     fire_tracker(self, start, dir, damage, 1000, enemy);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(self->s.number);
-    gi.WriteByte(MZ_TRACKER | is_silenced);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    G_AddEvent(self, EV_MUZZLEFLASH, MZ_TRACKER | is_silenced);
 
     PlayerNoise(self, start, PNOISE_WEAPON);
 
@@ -294,10 +288,7 @@ static void weapon_etf_rifle_fire(edict_t *ent)
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte((ent->client->ps.gunframe == 6 ? MZ_ETF_RIFLE : MZ_ETF_RIFLE_2) | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, (ent->client->ps.gunframe == 6 ? MZ_ETF_RIFLE : MZ_ETF_RIFLE_2) | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -383,10 +374,7 @@ static void Heatbeam_Fire(edict_t *ent)
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_HEATBEAM | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_HEATBEAM | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 

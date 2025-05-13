@@ -622,3 +622,22 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 
     return true; // all clear
 }
+
+void G_AddEvent(edict_t *ent, int event, int param)
+{
+    ent->s.event       = event;
+    ent->s.event_param = param;
+}
+
+edict_t *G_TempEntity(const vec3_t origin, int event)
+{
+    edict_t *ent;
+
+    ent = G_Spawn();
+    VectorCopy(origin, ent->s.origin);
+    ent->s.event = event;
+    ent->think = G_FreeEdict;
+    ent->nextthink = level.time + FRAME_TIME;
+
+    return ent;
+}

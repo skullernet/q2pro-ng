@@ -1348,6 +1348,9 @@ static inline bool KillBox(edict_t *ent, bool from_spawning)
     return KillBoxEx(ent, from_spawning, MOD_TELEFRAG, true, false);
 }
 
+void G_AddEvent(edict_t *ent, int event, int param);
+edict_t *G_TempEntity(const vec3_t origin, int event);
+
 //
 // g_spawn.c
 //
@@ -1454,7 +1457,6 @@ void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *d
 // g_monster.c
 //
 
-void monster_muzzleflash(edict_t *self, const vec3_t start, monster_muzzleflash_id_t id);
 void monster_fire_bullet(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int kick, int hspread,
                          int vspread, monster_muzzleflash_id_t flashtype);
 void monster_fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread,

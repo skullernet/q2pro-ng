@@ -861,7 +861,7 @@ static void SV_Physics_Step(edict_t *ent)
             return;
 
         if (ent->groundentity && !wasonground && hitsound)
-            ent->s.event = EV_FOOTSTEP;
+            G_AddEvent(ent, EV_FOOTSTEP, 0);
     }
 
     if (!ent->r.inuse) // PGM g_touchtrigger free problem

@@ -649,11 +649,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         ent->nextthink = level.time + HZ(10);
         ent->health = 1;
         ent->r.ownernum = ENTITYNUM_NONE;
-
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(muzzleflash);
-        gi.multicast(ent->s.origin, MULTICAST_PHS);
+        G_AddEvent(ent, EV_MUZZLEFLASH, muzzleflash);
 
         if (ent->pain_debounce_time <= level.time) {
             if (remaining <= (NUKE_TIME_TO_LIVE / 2.0f)) {

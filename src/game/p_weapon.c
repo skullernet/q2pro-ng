@@ -1115,10 +1115,7 @@ static void weapon_grenadelauncher_fire(edict_t *ent)
 
     fire_grenade(ent, start, dir, damage, 600, SEC(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f), false);
 
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_GRENADE | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_GRENADE | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1162,10 +1159,7 @@ static void Weapon_RocketLauncher_Fire(edict_t *ent)
     P_AddWeaponKick(ent, -2, -1);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_ROCKET | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_ROCKET | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1209,13 +1203,7 @@ static void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool h
     fire_blaster(ent, start, dir, damage, speed, effect, (mod_t) { hyper ? MOD_HYPERBLASTER : MOD_BLASTER });
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    if (hyper)
-        gi.WriteByte(MZ_HYPERBLASTER | is_silenced);
-    else
-        gi.WriteByte(MZ_BLASTER | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, (hyper ? MZ_HYPERBLASTER : MZ_BLASTER) | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 }
@@ -1357,10 +1345,7 @@ static void Machinegun_Fire(edict_t *ent)
     fire_bullet(ent, start, dir, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, (mod_t) { MOD_MACHINEGUN });
     Weapon_PowerupSound(ent);
 
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_MACHINEGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_MACHINEGUN | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1476,10 +1461,7 @@ static void Chaingun_Fire(edict_t *ent)
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte((MZ_CHAINGUN1 + shots - 1) | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, (MZ_CHAINGUN1 + shots - 1) | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1523,10 +1505,7 @@ static void weapon_shotgun_fire(edict_t *ent)
         fire_shotgun(ent, start, dir, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, (mod_t) { MOD_SHOTGUN });
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_SHOTGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_SHOTGUN | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1565,10 +1544,7 @@ static void weapon_supershotgun_fire(edict_t *ent)
     P_AddWeaponKick(ent, -2, -2);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_SSHOTGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_SSHOTGUN | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1616,10 +1592,7 @@ static void weapon_railgun_fire(edict_t *ent)
     P_AddWeaponKick(ent, -3, -3);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_RAILGUN | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_RAILGUN | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1654,10 +1627,7 @@ static void weapon_bfg_fire(edict_t *ent)
 
     if (ent->client->ps.gunframe == 9) {
         // send muzzle flash
-        gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte(MZ_BFG | is_silenced);
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
+        G_AddEvent(ent, EV_MUZZLEFLASH, MZ_BFG | is_silenced);
 
         PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
         return;
@@ -1681,10 +1651,7 @@ static void weapon_bfg_fire(edict_t *ent)
     ent->client->kick.time = level.time + ent->client->kick.total;
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent->s.number);
-    gi.WriteByte(MZ_BFG2 | is_silenced);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_MUZZLEFLASH, MZ_BFG2 | is_silenced);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 
@@ -1711,10 +1678,7 @@ static void weapon_disint_fire(edict_t *self)
     fire_disintegrator(self, start, dir, 800);
 
     // send muzzle flash
-    gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(self->s.number);
-    gi.WriteByte(MZ_BLASTER2);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    G_AddEvent(self, EV_MUZZLEFLASH, MZ_BLASTER2);
 
     PlayerNoise(self, start, PNOISE_WEAPON);
 

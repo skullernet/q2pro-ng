@@ -384,6 +384,7 @@ static const netfield_t entity_state_fields[] = {
     NETF(frame, 16),
     NETF(sound, 13),
     NETF(event, 8),
+    NETF(event_param, -1),
     NETF(alpha, 0),
     NETF(scale, 0),
     NETF(loop_volume, 0),
@@ -937,7 +938,6 @@ void MSG_ParseDeltaEntity(entity_state_t *to, int number)
     Q_assert(number >= 0 && number < ENTITYNUM_WORLD);
 
     to->number = number;
-    to->event = 0;
 
     int nc = MSG_ReadBits(5);
     if (nc > q_countof(entity_state_fields))

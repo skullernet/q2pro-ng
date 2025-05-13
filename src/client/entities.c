@@ -184,7 +184,7 @@ static void parse_entity_update(const entity_state_t *state)
 // an entity has just been parsed that has an event value
 static void parse_entity_event(int number)
 {
-    const centity_t *cent = &cl_entities[number];
+    centity_t *cent = &cl_entities[number];
 
     if (CL_FRAMESYNC) {
         // EF_TELEPORTER acts like an event, but is not cleared each frame
@@ -232,6 +232,12 @@ static void parse_entity_event(int number)
         break;
     case EV_FALLFAR:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+        break;
+    case EV_MUZZLEFLASH:
+        CL_MuzzleFlash(cent);
+        break;
+    case EV_MUZZLEFLASH2:
+        CL_MuzzleFlash2(cent);
         break;
     }
 }

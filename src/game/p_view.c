@@ -644,7 +644,7 @@ static void P_FallingDamage(edict_t *ent)
 
     if (delta < 15) {
         if (!(ent->client->ps.pmove.pm_flags & PMF_ON_LADDER))
-            ent->s.event = EV_FOOTSTEP;
+            G_AddEvent(ent, EV_FOOTSTEP, 0);
         return;
     }
 
@@ -941,13 +941,13 @@ static void G_SetClientEvent(edict_t *ent)
         if (!deathmatch->integer &&
             current_client->last_ladder_sound < level.time &&
             Distance(current_client->last_ladder_pos, ent->s.origin) > 48) {
-            ent->s.event = EV_LADDER_STEP;
+            G_AddEvent(ent, EV_LADDER_STEP, 0);
             VectorCopy(ent->s.origin, current_client->last_ladder_pos);
             current_client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
         }
     } else if (ent->groundentity && xyspeed > 225) {
         if ((int)(current_client->bobtime + bobmove) != bobcycle_run)
-            ent->s.event = EV_FOOTSTEP;
+            G_AddEvent(ent, EV_FOOTSTEP, 0);
     }
 }
 
