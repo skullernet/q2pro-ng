@@ -583,10 +583,10 @@ void G_MonsterKilled(edict_t *self)
         }
 
         if (!found)
-            gi.centerprintf(&g_edicts[1], "found missing monster?");
+            gi.centerprintf(&g_edicts[0], "found missing monster?");
 
         if (level.killed_monsters == level.total_monsters)
-            gi.centerprintf(&g_edicts[1], "all monsters dead");
+            gi.centerprintf(&g_edicts[0], "all monsters dead");
     }
 }
 
@@ -788,8 +788,8 @@ void THINK(monster_think)(edict_t *self)
         return;
 
     if (self->hackflags & HACKFLAG_ATTACK_PLAYER) {
-        if (!self->enemy && g_edicts[1].r.inuse) {
-            self->enemy = &g_edicts[1];
+        if (!self->enemy && g_edicts[0].r.inuse) {
+            self->enemy = &g_edicts[0];
             FoundTarget(self);
         }
     }

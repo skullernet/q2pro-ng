@@ -268,7 +268,7 @@ void CTFAssignTeam(gclient_t *who)
 
     who->resp.ctf_state = 0;
 
-    if (!g_teamplay_force_join->integer && !(g_edicts[1 + (who - game.clients)].r.svflags & SVF_BOT)) {
+    if (!g_teamplay_force_join->integer && !(g_edicts[who - game.clients].r.svflags & SVF_BOT)) {
         who->resp.ctf_team = CTF_NOTEAM;
         return;
     }

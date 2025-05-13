@@ -395,7 +395,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
     if (level.intermissiontime)
         return; // already activated
 
-    if (!deathmatch->integer && !coop->integer && g_edicts[1].health <= 0)
+    if (!deathmatch->integer && !coop->integer && g_edicts[0].health <= 0)
         return;
 
     // if noexit, do a ton of damage to other

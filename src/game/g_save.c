@@ -1863,14 +1863,14 @@ void G_CleanupSaves(void)
 bool G_CanSave(void)
 {
     if (game.maxclients == 1 && g_edicts[0].health <= 0) {
-        gi.cprintf(&g_edicts[1], PRINT_HIGH, "Can't savegame while dead!\n");
+        gi.cprintf(&g_edicts[0], PRINT_HIGH, "Can't savegame while dead!\n");
         return false;
     }
 
     // don't allow saving during cameras/intermissions as this
     // causes the game to act weird when these are loaded
     if (level.intermissiontime) {
-        gi.cprintf(&g_edicts[1], PRINT_HIGH, "Can't savegame during intermission!\n");
+        gi.cprintf(&g_edicts[0], PRINT_HIGH, "Can't savegame during intermission!\n");
         return false;
     }
 
