@@ -707,7 +707,7 @@ void THINK(target_laser_think)(edict_t *self)
         if (tr.fraction == 1.0f)
             break;
 
-        hit = g_edicts + tr.entnum;
+        hit = &g_edicts[tr.entnum];
 
         // hurt it if we can
         if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {

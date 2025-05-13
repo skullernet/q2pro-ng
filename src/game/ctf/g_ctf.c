@@ -869,7 +869,7 @@ static void CTFSetIDView(edict_t *ent)
     AngleVectors(ent->client->v_angle, forward, NULL, NULL);
     VectorMA(ent->s.origin, 1024, forward, forward);
     gi.trace(&tr, ent->s.origin, NULL, NULL, forward, ent->s.number, MASK_SOLID);
-    hit = g_edicts + tr.entnum;
+    hit = &g_edicts[tr.entnum];
     if (tr.fraction < 1 && hit->client) {
         ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + tr.entnum;
         if (hit->client->resp.ctf_team == CTF_TEAM1)
@@ -1296,7 +1296,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
              grapple->s.number, grapple->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, grapple->s.origin);
-        grapple->touch(grapple, g_edicts + tr.entnum, &tr, false);
+        grapple->touch(grapple, &g_edicts[tr.entnum], &tr, false);
         return false;
     }
 

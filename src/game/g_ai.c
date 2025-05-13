@@ -862,7 +862,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
 
             gi.trace(&tr, spot1, NULL, NULL, spot2, self->s.number,
                      MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_PROJECTILECLIP);
-            hit = g_edicts + tr.entnum;
+            hit = &g_edicts[tr.entnum];
         } else {
             hit = world;
             tr.fraction = 0;
@@ -885,7 +885,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
                             return false;
                         // make sure we're not going to shoot a monster
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER);
-                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (g_edicts + tr.entnum != self->enemy)))
+                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.entnum != self->enemy - g_edicts)))
                             return false;
 
                         self->monsterinfo.attack_state = AS_BLIND;

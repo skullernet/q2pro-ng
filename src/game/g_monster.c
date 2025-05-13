@@ -145,7 +145,7 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
 
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, target, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
-    edict_t *hit = g_edicts + tr.entnum;
+    edict_t *hit = &g_edicts[tr.entnum];
 
     if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
         return true;
@@ -153,7 +153,7 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
     if (!is_blind) {
         gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin,
                  self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
-        hit = g_edicts + tr.entnum;
+        hit = &g_edicts[tr.entnum];
 
         if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
             return true;
@@ -209,7 +209,7 @@ void M_CheckGround(edict_t *ent, contents_t mask)
 
     if (!trace.startsolid && !trace.allsolid) {
         VectorCopy(trace.endpos, ent->s.origin);
-        ent->groundentity = g_edicts + trace.entnum;
+        ent->groundentity = &g_edicts[trace.entnum];
         ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         ent->velocity[2] = 0;
     }

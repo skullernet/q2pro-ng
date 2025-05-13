@@ -860,7 +860,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     }
 
     ent->flags &= ~FL_PARTIALGROUND;
-    ent->groundentity = g_edicts + trace.entnum;
+    ent->groundentity = &g_edicts[trace.entnum];
     ent->groundentity_linkcount = ent->groundentity->r.linkcount;
 
     // the move is ok

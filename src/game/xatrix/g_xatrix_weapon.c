@@ -34,7 +34,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
+        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
     }
 }
 

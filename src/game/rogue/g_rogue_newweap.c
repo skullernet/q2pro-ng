@@ -72,7 +72,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
              flechette->s.number, flechette->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, flechette->s.origin);
-        flechette->touch(flechette, g_edicts + tr.entnum, &tr, false);
+        flechette->touch(flechette, &g_edicts[tr.entnum], &tr, false);
     }
 }
 
@@ -1076,7 +1076,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
     if (water)
         damage = damage / 2;
 
-    edict_t *hit = g_edicts + tr.entnum;
+    edict_t *hit = &g_edicts[tr.entnum];
 
     // send gun puff / flash
     if ((tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
@@ -1234,7 +1234,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
+        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
     }
 }
 
@@ -1432,6 +1432,6 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
+        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
     }
 }

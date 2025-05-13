@@ -43,7 +43,7 @@ void dabeam_update(edict_t *self, bool damage)
         if (tr.fraction == 1.0f)
             break;
 
-        hit = g_edicts + tr.entnum;
+        hit = &g_edicts[tr.entnum];
 
         if (damage) {
             // hurt it if we can

@@ -664,7 +664,7 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
              loogie->s.number, MASK_PROJECTILE);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, loogie->s.origin);
-        loogie->touch(loogie, g_edicts + tr.entnum, &tr, false);
+        loogie->touch(loogie, &g_edicts[tr.entnum], &tr, false);
     }
 }
 

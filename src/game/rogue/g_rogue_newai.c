@@ -941,7 +941,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
                 ClipVelocity(velocity, tr.plane.normal, velocity, 1.6f);
 
                 float dist = DistanceSquared(origin, target);
-                edict_t *hit = g_edicts + tr.entnum;
+                edict_t *hit = &g_edicts[tr.entnum];
 
                 if (hit == self->enemy || hit->client || (tr.plane.normal[2] >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
                     best_pitch = pitch;

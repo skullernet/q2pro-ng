@@ -525,7 +525,7 @@ void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
         if (tr.fraction == 1.0f)
             break;
 
-        edict_t *hit = g_edicts + tr.entnum;
+        edict_t *hit = &g_edicts[tr.entnum];
 
         if (!(hit->r.svflags & SVF_PROJECTILE))
             break;

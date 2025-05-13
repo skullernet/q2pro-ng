@@ -124,7 +124,7 @@ Two entities have touched, so run their touch functions
 */
 void G_Impact(edict_t *e1, const trace_t *trace)
 {
-    edict_t *e2 = g_edicts + trace->entnum;
+    edict_t *e2 = &g_edicts[trace->entnum];
 
     if (e1->touch && (e1->r.solid != SOLID_NOT || (e1->flags & FL_ALWAYS_TOUCH)))
         e1->touch(e1, e2, trace, false);
@@ -181,7 +181,7 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
         trace_t *trace = &touch.traces[i];
 
         if (trace->plane.normal[2] > 0.7f) {
-            ent->groundentity = g_edicts + trace->entnum;
+            ent->groundentity = &g_edicts[trace->entnum];
             ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         }
 
@@ -611,7 +611,7 @@ static void SV_Physics_Toss(edict_t *ent)
         if (trace.fraction == 1.0f)
             break;
 
-        edict_t *hit = g_edicts + trace.entnum;
+        edict_t *hit = &g_edicts[trace.entnum];
 
         // [Paril-KEX] don't build up velocity if we're stuck.
         // just assume that the object we hit is our ground.

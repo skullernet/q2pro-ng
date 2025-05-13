@@ -40,7 +40,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 
     // check that we can hit the point on the bbox
     gi.trace(&tr, self->s.origin, NULL, NULL, point, self->s.number, MASK_PROJECTILE);
-    hit = g_edicts + tr.entnum;
+    hit = &g_edicts[tr.entnum];
 
     if (tr.fraction < 1) {
         if (!hit->takedamage)
@@ -52,7 +52,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 
     // check that we can hit the player from the point
     gi.trace(&tr, point, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_PROJECTILE);
-    hit = g_edicts + tr.entnum;
+    hit = &g_edicts[tr.entnum];
 
     if (tr.fraction < 1) {
         if (!hit->takedamage)
@@ -146,7 +146,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             continue;
         }
 
-        edict_t *hit = g_edicts + tr.entnum;
+        edict_t *hit = &g_edicts[tr.entnum];
 
         // did we hit an hurtable entity?
         if (hit->takedamage) {
@@ -340,7 +340,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     gi.trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
         VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, g_edicts + tr.entnum, &tr, false);
+        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
     }
 
     return bolt;
@@ -704,7 +704,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
         if (tr.fraction == 1.0f)
             break;
 
-        edict_t *hit = g_edicts + tr.entnum;
+        edict_t *hit = &g_edicts[tr.entnum];
 
         // try to kill it first
         if ((hit != self) && (hit->takedamage))
@@ -974,7 +974,7 @@ void THINK(bfg_think)(edict_t *self)
             if (tr.fraction == 1.0f)
                 break;
 
-            hit = g_edicts + tr.entnum;
+            hit = &g_edicts[tr.entnum];
 
             // hurt it if we can
             if ((hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))

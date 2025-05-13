@@ -1195,13 +1195,13 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
 
     trace_t tr;
     gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
-    edict_t *hit = g_edicts + tr.entnum;
+    edict_t *hit = &g_edicts[tr.entnum];
 
     // sometimes the spot is too close to the ground, give it a bit of slack
     if (tr.startsolid && !hit->client) {
         spot[2] += 1;
         gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
-        hit = g_edicts + tr.entnum;
+        hit = &g_edicts[tr.entnum];
     }
 
     // no idea why this happens in some maps..
@@ -1211,7 +1211,7 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
             return hit; // what do we do here...?
 
         gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
-        hit = g_edicts + tr.entnum;
+        hit = &g_edicts[tr.entnum];
 
         if (tr.startsolid && !hit->client)
             return hit; // what do we do here...?
@@ -2667,7 +2667,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         // touch other objects
         for (i = 0; i < pm.touch.num; i++) {
             trace_t *tr = &pm.touch.traces[i];
-            other = g_edicts + tr->entnum;
+            other = &g_edicts[tr->entnum];
 
             if (other->touch)
                 other->touch(other, ent, tr, true);

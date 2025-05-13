@@ -206,7 +206,7 @@ static void weapon_tracker_fire(edict_t *self)
     if (tr.entnum == ENTITYNUM_WORLD)
         gi.trace(&tr, start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self->s.number, mask);
 
-    hit = g_edicts + tr.entnum;
+    hit = &g_edicts[tr.entnum];
     if (hit != world && ((hit->r.svflags & SVF_MONSTER) || hit->client || (hit->flags & FL_DAMAGEABLE)) && hit->health > 0)
         enemy = hit;
 

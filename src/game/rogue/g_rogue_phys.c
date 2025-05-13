@@ -37,7 +37,7 @@ void SV_Physics_NewToss(edict_t *ent)
     move[2] -= 0.25f;
     gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, move, ent->s.number, ent->clipmask);
     if (ent->groundentity && ent->groundentity->r.inuse)
-        ent->groundentity = g_edicts + trace.entnum;
+        ent->groundentity = &g_edicts[trace.entnum];
     else
         ent->groundentity = NULL;
 

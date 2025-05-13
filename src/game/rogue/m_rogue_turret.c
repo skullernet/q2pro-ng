@@ -751,7 +751,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
         spot2[2] += self->enemy->viewheight;
 
         gi.trace(&tr, spot1, NULL, NULL, spot2, self->s.number, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
-        edict_t *hit = g_edicts + tr.entnum;
+        edict_t *hit = &g_edicts[tr.entnum];
 
         // do we have a clear shot?
         if (hit != self->enemy && !(hit->r.svflags & SVF_PLAYER)) {
@@ -765,7 +765,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
                             return false;
                         // make sure we're not going to shoot something we don't want to shoot
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER | CONTENTS_PLAYER);
-                        hit = g_edicts + tr.entnum;
+                        hit = &g_edicts[tr.entnum];
                         if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (hit != self->enemy && !(hit->r.svflags & SVF_PLAYER))))
                             return false;
                         self->monsterinfo.attack_state = AS_BLIND;

@@ -370,7 +370,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         }
     }
 
-    edict_t *hit = g_edicts + tr.entnum;
+    edict_t *hit = &g_edicts[tr.entnum];
 
     // send gun puff / flash
     if (!(tr.surface_flags & SURF_SKY)) {
