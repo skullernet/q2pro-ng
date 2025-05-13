@@ -451,14 +451,14 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
 {
     if (!to) {
         Q_assert(from);
-        Q_assert(from->number > 0 && from->number < MAX_EDICTS);
+        Q_assert(from->number >= 0 && from->number < ENTITYNUM_WORLD);
 
         MSG_WriteBits(from->number, ENTITYNUM_BITS);
         MSG_WriteBit(1);    // removed
         return;
     }
 
-    Q_assert(to->number > 0 && to->number < MAX_EDICTS);
+    Q_assert(to->number >= 0 && to->number < ENTITYNUM_WORLD);
 
     if (!from)
         from = &nullEntityState;
@@ -933,7 +933,7 @@ Can go from either a baseline or a previous packet_entity
 void MSG_ParseDeltaEntity(entity_state_t *to, int number)
 {
     Q_assert(to);
-    Q_assert(number > 0 && number < MAX_EDICTS);
+    Q_assert(number >= 0 && number < ENTITYNUM_WORLD);
 
     to->number = number;
     to->event = 0;

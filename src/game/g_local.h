@@ -1255,7 +1255,7 @@ extern cvar_t *ai_allow_dm_spawn;
 extern cvar_t *ai_movement_disabled;
 extern cvar_t *g_monster_footsteps;
 
-#define world (&g_edicts[0])
+#define world (&g_edicts[ENTITYNUM_WORLD])
 
 // item spawnflags
 #define SPAWNFLAG_ITEM_TRIGGER_SPAWN    0x00000001

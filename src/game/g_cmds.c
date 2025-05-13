@@ -502,7 +502,7 @@ static void Cmd_AlertAll_f(edict_t *ent)
     if (!G_CheatCheck(ent))
         return;
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
         edict_t *t = &g_edicts[i];
 
         if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
@@ -928,7 +928,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse || i == tr.entnum)
             continue;
@@ -962,7 +962,7 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
         return;
     }
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse)
             continue;
@@ -1110,7 +1110,7 @@ static void Cmd_Wave_f(edict_t *ent)
     edict_t *aiming_at = NULL;
     float best_dist = -9999;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (!player->r.inuse || player == ent)
             continue;
@@ -1177,7 +1177,7 @@ static void Cmd_Wave_f(edict_t *ent)
     bool has_a_target = false;
 
     if (cmd == GESTURE_POINT) {
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (player->r.inuse && player != ent && OnSameTeam(ent, player)) {
                 has_a_target = true;
@@ -1196,7 +1196,7 @@ static void Cmd_Wave_f(edict_t *ent)
 
         if (tr.fraction != 1.0f) {
             // send to all teammates
-            for (int i = 1; i <= game.maxclients; i++) {
+            for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (!player->r.inuse)
                     continue;
@@ -1268,7 +1268,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
     if (sv_dedicated->integer)
         gi.cprintf(NULL, PRINT_CHAT, "%s", text);
 
-    for (j = 1; j <= game.maxclients; j++) {
+    for (j = 0; j < game.maxclients; j++) {
         other = &g_edicts[j];
         if (!other->r.inuse)
             continue;
@@ -1287,7 +1287,7 @@ static void Cmd_PlayerList_f(edict_t *ent)
 
     // connect time, ping, score, name
     *text = 0;
-    for (i = 0, e2 = g_edicts + 1; i < game.maxclients; i++, e2++) {
+    for (i = 0, e2 = g_edicts; i < game.maxclients; i++, e2++) {
         if (!e2->r.inuse)
             continue;
 
@@ -1323,7 +1323,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
         int team1count = 0, team2count = 0;
         ctfteam_t best_team;
 
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             player = &g_edicts[i];
 
             // NB: we are counting ourselves in this one, unlike

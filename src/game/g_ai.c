@@ -34,7 +34,7 @@ edict_t *AI_GetSightClient(edict_t *self)
     edict_t *visible_players[MAX_CLIENTS];
     int num_visible = 0;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
@@ -532,7 +532,7 @@ void FoundTarget(edict_t *self)
 // check them & get mad at them even around corners
 static edict_t *AI_GetMonsterAlertedByPlayers(edict_t *self)
 {
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
 
         // dead
@@ -560,7 +560,7 @@ static edict_t *AI_GetSoundClient(edict_t *self, bool direct)
     edict_t *best_sound = NULL;
     float best_distance = FLT_MAX;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
 
         // dead

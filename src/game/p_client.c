@@ -688,7 +688,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
             bool allPlayersDead = true;
 
-            for (int i = 1; i <= game.maxclients; i++) {
+            for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (!player->r.inuse)
                     continue;
@@ -701,7 +701,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             if (allPlayersDead) { // allow respawns for telefrags and weird shit
                 level.coop_level_restart_time = level.time + SEC(5);
 
-                for (int i = 1; i <= game.maxclients; i++) {
+                for (int i = 0; i < game.maxclients; i++) {
                     edict_t *player = &g_edicts[i];
                     if (player->r.inuse)
                         gi.centerprintf(player, "Everyone is dead. You lose.\nRestarting level...");
@@ -794,7 +794,7 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
         bool taken_loadout = false;
 
         if (coop->integer) {
-            for (int i = 1; i <= game.maxclients; i++) {
+            for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (!player->r.inuse || player == ent || !player->client->pers.spawned ||
                     player->client->resp.spectator || player->movetype == MOVETYPE_NOCLIP)
@@ -908,7 +908,7 @@ void SaveClientData(void)
     edict_t *ent;
 
     for (int i = 0; i < game.maxclients; i++) {
-        ent = &g_edicts[1 + i];
+        ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
         game.clients[i].pers.health = ent->health;
@@ -951,7 +951,7 @@ float PlayersRangeFromSpot(edict_t *spot)
 
     bestplayerdistance = 9999999;
 
-    for (int n = 1; n <= game.maxclients; n++) {
+    for (int n = 0; n < game.maxclients; n++) {
         player = &g_edicts[n];
 
         if (!player->r.inuse)
@@ -1477,7 +1477,7 @@ static void CopyToBodyQue(edict_t *ent)
     edict_t *body;
 
     // grab a body que and cycle to the next one
-    body = &g_edicts[game.maxclients + level.body_que + 1];
+    body = &g_edicts[game.maxclients + level.body_que];
     level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
     // FIXME: send an effect on the removed body
@@ -1576,7 +1576,7 @@ static void spectator_respawn(edict_t *ent)
         }
 
         // count spectators
-        for (i = 1, numspec = 0; i <= game.maxclients; i++)
+        for (i = 0, numspec = 0; i < game.maxclients; i++)
             if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
@@ -1701,7 +1701,7 @@ void PutClientInServer(edict_t *ent)
     client_persistent_t saved;
     client_respawn_t    resp;
 
-    index = ent - g_edicts - 1;
+    index = ent - g_edicts;
     client = ent->client;
 
     // clear velocity now, since landmark may change it
@@ -2127,7 +2127,7 @@ to be placed into the game.  This will happen every level load.
 */
 void ClientBegin(edict_t *ent)
 {
-    ent->client = game.clients + (ent - g_edicts - 1);
+    ent->client = game.clients + (ent - g_edicts);
     ent->client->awaiting_respawn = false;
     ent->client->respawn_timeout = 0;
 
@@ -2218,7 +2218,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     if (!*val)
         val = "male/grunt";
 
-    int playernum = ent - g_edicts - 1;
+    int playernum = ent - g_edicts;
 
     // combine name and skin into a configstring
     // ZOID
@@ -2311,7 +2311,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
 
         // count spectators
         for (i = numspec = 0; i < game.maxclients; i++)
-            if (g_edicts[i + 1].r.inuse && g_edicts[i + 1].client->pers.spectator)
+            if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
         if (numspec >= maxspectators->integer) {
@@ -2329,7 +2329,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     }
 
     // they can connect
-    ent->client = game.clients + (ent - g_edicts - 1);
+    ent->client = game.clients + (ent - g_edicts);
 
     // set up userinfo early
     ClientUserinfoChanged(ent, userinfo);
@@ -2418,7 +2418,7 @@ void ClientDisconnect(edict_t *ent)
 
     // update active scoreboards
     if (deathmatch->integer) {
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (player->r.inuse && player->client->showscores)
                 player->client->menutime = level.time;
@@ -2713,7 +2713,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     }
 
     // update chase cam if being followed
-    for (i = 1; i <= game.maxclients; i++) {
+    for (i = 0; i < game.maxclients; i++) {
         other = g_edicts + i;
         if (other->r.inuse && other->client->chase_target == ent)
             UpdateChaseCam(other);
@@ -2722,7 +2722,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 static bool G_MonstersSearchingFor(edict_t *player)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
         if (!ent->r.inuse || !(ent->r.svflags & SVF_MONSTER) || ent->health <= 0)
             continue;
@@ -2862,7 +2862,7 @@ static edict_t *G_FindSquadRespawnTarget(vec3_t spot)
 {
     bool monsters_searching_for_anybody = G_MonstersSearchingFor(NULL);
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         // no dead players
         if (!player->r.inuse || player->deadflag)
@@ -2947,7 +2947,7 @@ static bool G_CoopRespawn(edict_t *ent)
         if (g_coop_squad_respawn->integer) {
             bool allDead = true;
 
-            for (int i = 1; i <= game.maxclients; i++) {
+            for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (player->r.inuse && player->health > 0) {
                     allDead = false;

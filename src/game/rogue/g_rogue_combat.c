@@ -72,7 +72,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
             T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, points, points, DAMAGE_RADIUS, mod);
         }
     }
-    ent = g_edicts + 1; // skip the worldspawn
+    ent = g_edicts; // skip the worldspawn
     // cycle through players
     while (ent) {
         if ((ent->client) && (ent->client->nuke_time != level.time + SEC(2)) && (ent->r.inuse)) {

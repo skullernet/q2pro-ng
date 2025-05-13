@@ -1176,7 +1176,7 @@ edict_t *PickCoopTarget(edict_t *self)
     if (!coop->integer)
         return NULL;
 
-    for (int player = 1; player <= game.maxclients; player++) {
+    for (int player = 0; player < game.maxclients; player++) {
         ent = &g_edicts[player];
         if (!ent->r.inuse)
             continue;
@@ -1202,7 +1202,7 @@ int CountPlayers(void)
     if (!coop->integer)
         return 1;
 
-    for (int player = 1; player <= game.maxclients; player++) {
+    for (int player = 0; player < game.maxclients; player++) {
         ent = &g_edicts[player];
         if (!ent->r.inuse)
             continue;

@@ -419,8 +419,8 @@ static sfx_t *S_RegisterSexedSound(int entnum, const char *base)
     char            buffer[MAX_QPATH];
 
     // determine what model the client is using
-    if (entnum > 0 && entnum <= MAX_CLIENTS)
-        model = cl.clientinfo[entnum - 1].model_name;
+    if (entnum < MAX_CLIENTS)
+        model = cl.clientinfo[entnum].model_name;
     else
         model = cl.baseclientinfo.model_name;
 
@@ -466,7 +466,7 @@ static void S_RegisterSexedSounds(void)
 
     // register sounds for baseclientinfo and other valid clientinfos
     for (i = 0; i <= MAX_CLIENTS; i++) {
-        if (i > 0 && !cl.clientinfo[i - 1].model_name[0])
+        if (i > 0 && !cl.clientinfo[i].model_name[0])
             continue;
         for (j = 0; j < total; j++) {
             sfx = &known_sfx[sounds[j]];
@@ -909,7 +909,7 @@ void S_Update(void)
     if (cls.state != ca_active) {
         listener_entnum = -1;
     } else {
-        listener_entnum = cl.frame.clientNum + 1;
+        listener_entnum = cl.frame.ps.clientnum;
     }
 
     OGG_Update();

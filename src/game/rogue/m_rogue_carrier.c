@@ -79,7 +79,7 @@ static void CarrierCoopCheck(edict_t *self)
         return;
 
     // cycle through players
-    for (int player = 1; player <= game.maxclients; player++) {
+    for (int player = 0; player < game.maxclients; player++) {
         ent = &g_edicts[player];
         if (!ent->r.inuse)
             continue;

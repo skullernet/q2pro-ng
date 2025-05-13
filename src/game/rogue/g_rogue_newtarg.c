@@ -207,7 +207,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
             continue;
 
         for (int i = 0; i < game.maxclients; i++) {
-            player = &g_edicts[1 + i];
+            player = &g_edicts[i];
             if (!player->r.inuse)
                 continue;
 
@@ -221,7 +221,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 
     // kill the players
     for (int i = 0; i < game.maxclients; i++) {
-        player = &g_edicts[1 + i];
+        player = &g_edicts[i];
         if (!player->r.inuse)
             continue;
 

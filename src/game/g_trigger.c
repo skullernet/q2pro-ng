@@ -300,7 +300,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
                 if (activator->client->pers.power_cubes & (1 << cube))
                     break;
 
-            for (int player = 1; player <= game.maxclients; player++) {
+            for (int player = 0; player < game.maxclients; player++) {
                 ent = &g_edicts[player];
                 if (!ent->r.inuse)
                     continue;
@@ -319,7 +319,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
                 }
             }
         } else {
-            for (int player = 1; player <= game.maxclients; player++) {
+            for (int player = 0; player < game.maxclients; player++) {
                 ent = &g_edicts[player];
                 if (!ent->r.inuse)
                     continue;
@@ -1162,7 +1162,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
     // to those in/out of range
     bool can_use = true;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
 
         // dead or spectator, don't count them
@@ -1201,7 +1201,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
     int players[MAX_EDICTS_OLD];
     int i, j, num_active = 0, num_present = 0;
 
-    for (i = 1; i <= game.maxclients; i++)
+    for (i = 0; i < game.maxclients; i++)
         if (trigger_coop_relay_ok(&g_edicts[i]))
             num_active++;
 
@@ -1224,7 +1224,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
         for (i = 0; i < num_present; i++)
             gi.centerprintf(g_edicts + players[i], "%s", self->message);
 
-        for (i = 1; i <= game.maxclients; i++) {
+        for (i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (!trigger_coop_relay_ok(player))
                 continue;

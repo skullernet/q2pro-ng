@@ -55,7 +55,7 @@ static void SV_CreateBaselines(void)
         }
     }
 
-    for (i = 1; i < ge->num_edicts; i++) {
+    for (i = 0; i < ge->num_edicts; i++) {
         ent = SV_EdictForNum(i);
 
         if (!ent->r.inuse) {

@@ -1358,7 +1358,7 @@ void ClientEndServerFrame(edict_t *ent)
     if (coop->integer && G_ShouldPlayersCollide(false) && !(ent->clipmask & CONTENTS_PLAYER) && ent->takedamage) {
         bool clipped_player = false;
 
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
 
             if (!player->r.inuse)

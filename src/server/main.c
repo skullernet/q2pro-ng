@@ -894,7 +894,7 @@ static void SVC_DirectConnect(void)
     newcl->protocol = params.protocol;
     newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
-    newcl->edict = SV_EdictForNum(number + 1);
+    newcl->edict = SV_EdictForNum(number);
 #if USE_FPS
     newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;

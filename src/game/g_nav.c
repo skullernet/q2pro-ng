@@ -1064,7 +1064,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         VectorAdd(origin, mins, absmin);
         VectorAdd(origin, maxs, absmax);
 
-        for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+        for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
             const edict_t *e = &g_edicts[i];
 
             if (!e->r.inuse)

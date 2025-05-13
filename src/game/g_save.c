@@ -1786,7 +1786,7 @@ void ReadLevel(const char *filename)
 
     // wipe all the entities
     memset(g_edicts, 0, sizeof(g_edicts));
-    globals.num_edicts = game.maxclients + 1;
+    globals.num_edicts = game.maxclients;
 
     // load the level locals
     expect("level");
@@ -1795,7 +1795,7 @@ void ReadLevel(const char *filename)
     // load all the entities
     expect("entities");
     expect("{");
-    while ((entnum = parse_array(MAX_EDICTS)) != -1) {
+    while ((entnum = parse_array(ENTITYNUM_WORLD)) != -1) {
         if (entnum >= globals.num_edicts)
             globals.num_edicts = entnum + 1;
 
@@ -1822,7 +1822,7 @@ void ReadLevel(const char *filename)
 
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {
-        ent = &g_edicts[i + 1];
+        ent = &g_edicts[i];
         ent->client = game.clients + i;
         ent->client->pers.connected = false;
         ent->client->pers.spawned = false;
@@ -1862,7 +1862,7 @@ void G_CleanupSaves(void)
 // [Paril-KEX]
 bool G_CanSave(void)
 {
-    if (game.maxclients == 1 && g_edicts[1].health <= 0) {
+    if (game.maxclients == 1 && g_edicts[0].health <= 0) {
         gi.cprintf(&g_edicts[1], PRINT_HIGH, "Can't savegame while dead!\n");
         return false;
     }

@@ -229,8 +229,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 
 void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    edict_t *trigger;
-    int      i;
+    int i;
 
     if (ent->moveinfo.state > STATE_BOTTOM)
         return;
@@ -238,7 +237,8 @@ void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
     //if ((ent->last_move_time + SEC(2)) > level.time)
     //  return;
 
-    for (i = 1, trigger = g_edicts + 1; i < globals.num_edicts; i++, trigger++) {
+    for (i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+        edict_t *trigger = g_edicts + i;
         if (!trigger->r.inuse)
             continue;
         if (trigger->touch == Touch_Plat_Center2 && trigger->enemy == ent) {

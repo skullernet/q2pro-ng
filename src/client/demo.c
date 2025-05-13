@@ -133,7 +133,7 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
         }
     }
 
-    MSG_WriteShort(0);      // end of packetentities
+    MSG_WriteShort(ENTITYNUM_NONE);     // end of packetentities
 }
 
 static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to,
@@ -399,7 +399,7 @@ static void CL_Record_f(void)
     }
 
     // baselines
-    for (i = 1; i < MAX_EDICTS; i++) {
+    for (i = 0; i < ENTITYNUM_WORLD; i++) {
         ent = &cl.baselines[i];
         if (!ent->number)
             continue;

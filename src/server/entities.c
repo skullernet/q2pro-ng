@@ -101,7 +101,7 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, 
         }
     }
 
-    MSG_WriteBits(0, ENTITYNUM_BITS);   // end of packetentities
+    MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);   // end of packetentities
 }
 
 static client_frame_t *get_last_frame(client_t *client)
@@ -319,8 +319,10 @@ void SV_BuildClientFrame(client_t *client)
     frame->num_entities = 0;
     frame->first_entity = client->next_entity;
 
+    Q_assert_soft(ge->num_edicts <= ENTITYNUM_WORLD);
+
     num_edicts = 0;
-    for (e = 1; e < ge->num_edicts; e++) {
+    for (e = 0; e < ge->num_edicts; e++) {
         ent = SV_EdictForNum(e);
 
         // ignore entities not in use
@@ -427,7 +429,7 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         // hide POV entity from renderer, unless this is player's own entity
-        if (e == frame->ps.client_num + 1 && ent != clent && !Q2PRO_OPTIMIZE(client)) {
+        if (e == frame->ps.clientnum && ent != clent && !Q2PRO_OPTIMIZE(client)) {
             state->modelindex = 0;
         }
 

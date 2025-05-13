@@ -451,7 +451,7 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
     other->goalentity = other->movetarget = NULL;
 
     if (self->message) {
-        for (int n = 1; n <= game.maxclients; n++) {
+        for (int n = 0; n < game.maxclients; n++) {
             edict_t *ent = &g_edicts[n];
             if (!ent->r.inuse)
                 continue;

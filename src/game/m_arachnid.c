@@ -200,7 +200,7 @@ static void arachnid_rail_real(edict_t *self, monster_muzzleflash_id_t id)
         int num_players = 0;
 
         for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i + 1];
+            edict_t *player = &g_edicts[i];
 
             if (!player->r.inuse)
                 continue;

@@ -92,7 +92,7 @@ static void PF_Unicast(edict_t *ent, bool reliable)
     if (msg_write.overflowed)
         Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
 
-    clientNum = SV_NumForEdict(ent) - 1;
+    clientNum = SV_NumForEdict(ent);
     if (clientNum < 0 || clientNum >= svs.maxclients) {
         Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         goto clear;
@@ -236,7 +236,7 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
         return;
     }
 
-    clientNum = SV_NumForEdict(ent) - 1;
+    clientNum = SV_NumForEdict(ent);
     if (clientNum < 0 || clientNum >= svs.maxclients) {
         Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
         return;
@@ -278,8 +278,8 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
     }
 
     n = SV_NumForEdict(ent);
-    if (n < 1 || n > svs.maxclients) {
-        Com_DWPrintf("%s to a non-client %d\n", __func__, n - 1);
+    if (n < 0 || n >= svs.maxclients) {
+        Com_DWPrintf("%s to a non-client %d\n", __func__, n);
         return;
     }
 

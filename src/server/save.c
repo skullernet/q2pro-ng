@@ -502,7 +502,7 @@ void SV_AutoSaveBegin(const mapcmd_t *cmd)
     // when the level is re-entered, the clients will spawn
     // at spawn points instead of occupying body shells
     for (i = 0; i < svs.maxclients; i++) {
-        ent = SV_EdictForNum(i + 1);
+        ent = SV_EdictForNum(i);
         if (ent->r.inuse) {
             Q_SetBit(bitmap, i);
             ent->r.inuse = false;
@@ -515,7 +515,7 @@ void SV_AutoSaveBegin(const mapcmd_t *cmd)
 
     // we must restore these for clients to transfer over correctly
     for (i = 0; i < svs.maxclients; i++) {
-        ent = SV_EdictForNum(i + 1);
+        ent = SV_EdictForNum(i);
         ent->r.inuse = Q_IsBitSet(bitmap, i);
     }
 }

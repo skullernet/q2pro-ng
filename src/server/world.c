@@ -261,22 +261,25 @@ void PF_LinkEdict(edict_t *ent)
 {
     server_entity_t *sent;
     areanode_t *node;
+    int entnum;
 
     if (!ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
 
     PF_UnlinkEdict(ent);    // unlink from old position
 
-    if (ent == ge->edicts)
-        return;        // don't add the world
-
-    if (!ent->r.inuse) {
-        Com_DPrintf("%s: entity %d is not in use\n", __func__, SV_NumForEdict(ent));
+    if (!ent->r.inuse)
         return;
-    }
 
     if (!sv.cm.cache)
         return;
+
+    entnum = SV_NumForEdict(ent);
+
+    if (entnum >= ENTITYNUM_WORLD)
+        return;        // don't add the world
+
+    Q_assert_soft(ent->s.number == entnum);
 
     // encode the size into the entity_state for client prediction
     switch (ent->r.solid) {
@@ -294,7 +297,8 @@ void PF_LinkEdict(edict_t *ent)
         break;
     }
 
-    sent = SV_SentForEdict(ent);
+    sent = sv.entities + entnum;
+
     SV_LinkEdict(&sv.cm, ent, sent);
 
     // if first time, make sure old_origin is valid

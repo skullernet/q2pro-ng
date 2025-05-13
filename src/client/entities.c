@@ -35,7 +35,7 @@ FRAME PARSING
 // returns true if origin/angles update has been optimized out
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    return state->number == cl.frame.clientNum + 1 && cl.frame.ps.pmove.pm_type < PM_DEAD;
+    return state->number == cl.frame.ps.clientnum && cl.frame.ps.pmove.pm_type < PM_DEAD;
 }
 
 static inline void
@@ -143,7 +143,7 @@ static void parse_entity_update(const entity_state_t *state)
     vec3_t origin_v;
 
     // if entity is solid, decode mins/maxs and add to the list
-    if (state->solid && state->number != cl.frame.clientNum + 1
+    if (state->solid && state->number != cl.frame.ps.clientnum
         && cl.numSolidEntities < MAX_PACKET_ENTITIES)
         cl.solidEntities[cl.numSolidEntities++] = ent;
 
@@ -317,7 +317,7 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
     }
 
     // no lerping if player entity was teleported (event check)
-    ent = &cl_entities[frame->clientNum + 1];
+    ent = &cl_entities[frame->ps.clientnum];
     if (ent->serverframe > oldnum &&
         ent->serverframe <= frame->number &&
 #if USE_FPS
@@ -334,7 +334,7 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
         goto dup;
 
     // no lerping if POV number changed
-    if (oldframe->clientNum != frame->clientNum)
+    if (oldframe->ps.clientnum != frame->ps.clientnum)
         goto dup;
 
     // developer option
@@ -385,7 +385,7 @@ void CL_DeltaFrame(void)
     // initialize position of the player's own entity from playerstate.
     // this is needed in situations when player entity is invisible, but
     // server sends an effect referencing it's origin (such as MZ_LOGIN, etc)
-    ent = &cl_entities[cl.frame.clientNum + 1];
+    ent = &cl_entities[cl.frame.ps.clientnum];
     Com_PlayerToEntityState(&cl.frame.ps, &ent->current);
 
     // set current and prev, unpack solid, etc
@@ -432,7 +432,7 @@ void CL_CheckEntityPresent(int entnum, const char *what)
 {
     const centity_t *e;
 
-    if (entnum == cl.frame.clientNum + 1) {
+    if (entnum == cl.frame.ps.clientnum) {
         return; // player entity = current
     }
 
@@ -572,7 +572,7 @@ static void CL_AddPacketEntities(void)
             LerpVector(cent->prev.old_origin, cent->current.old_origin,
                        cl.lerpfrac, ent.oldorigin);
         } else {
-            if (s1->number == cl.frame.clientNum + 1) {
+            if (s1->number == cl.frame.ps.clientnum) {
                 // use predicted origin
                 VectorCopy(cl.playerEntityOrigin, ent.origin);
                 VectorCopy(cl.playerEntityOrigin, ent.oldorigin);
@@ -728,7 +728,7 @@ static void CL_AddPacketEntities(void)
             AngleVectors(ent.angles, forward, NULL, NULL);
             VectorMA(ent.origin, 64, forward, start);
             V_AddLight(start, 100, 1, 0, 0);
-        } else if (s1->number == cl.frame.clientNum + 1) {
+        } else if (s1->number == cl.frame.ps.clientnum) {
             VectorCopy(cl.playerEntityAngles, ent.angles);      // use predicted angles
         } else { // interpolate angles
             LerpAngles(cent->prev.angles, cent->current.angles,
@@ -743,7 +743,7 @@ static void CL_AddPacketEntities(void)
             trace_t trace;
             const int mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER;
 
-            if (s1->number == cl.frame.clientNum + 1) {
+            if (s1->number == cl.frame.ps.clientnum) {
                 VectorMA(cl.refdef.vieworg, 256, cl.v_forward, end);
                 VectorCopy(cl.refdef.vieworg, start);
             } else {
@@ -763,7 +763,7 @@ static void CL_AddPacketEntities(void)
         if (s1->morefx & EFX_GRENADE_LIGHT)
             V_AddLight(ent.origin, 100, 1, 1, 0);
 
-        if (s1->number == cl.frame.clientNum + 1 && !cl.thirdPersonView) {
+        if (s1->number == cl.frame.ps.clientnum && !cl.thirdPersonView) {
             if (effects & EF_FLAG1)
                 V_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
             else if (effects & EF_FLAG2)
@@ -807,7 +807,7 @@ static void CL_AddPacketEntities(void)
             has_alpha = true;
         }
 
-        if (s1->number == cl.frame.clientNum + 1 && cl.thirdPersonView && cl.thirdPersonAlpha != 1.0f) {
+        if (s1->number == cl.frame.ps.clientnum && cl.thirdPersonView && cl.thirdPersonAlpha != 1.0f) {
             custom_alpha *= cl.thirdPersonAlpha;
             has_alpha = true;
         }
@@ -1051,7 +1051,7 @@ skip:
 
 static const centity_t *get_player_entity(void)
 {
-    const centity_t *ent = &cl_entities[cl.frame.clientNum + 1];
+    const centity_t *ent = &cl_entities[cl.frame.ps.clientnum];
 
     if (ent->serverframe != cl.frame.number)
         return NULL;
@@ -1492,10 +1492,10 @@ void CL_GetEntitySoundOrigin(unsigned entnum, vec3_t org)
     const mmodel_t  *mod;
     vec3_t          mid;
 
-    if (entnum >= MAX_EDICTS)
+    if (entnum >= ENTITYNUM_WORLD)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
-    if (!entnum || entnum == listener_entnum) {
+    if (entnum == listener_entnum) {
         // should this ever happen?
         VectorCopy(listener_origin, org);
         return;

@@ -314,7 +314,7 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
         level.goal_num++;
         game.help1changed++;
 
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (player->r.inuse)
                 G_PlayerNotifyGoal(player);
@@ -977,7 +977,7 @@ void THINK(target_earthquake_think)(edict_t *self)
         }
     }
 
-    for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
         if (!e->r.inuse)
             continue;
         e->client->quake_time = level.time + SEC(1);
@@ -993,7 +993,7 @@ void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activato
         int      i;
         edict_t *e;
 
-        for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
+        for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
             if (!e->r.inuse)
                 continue;
             e->client->v_dmg_pitch = -self->speed * 0.1f;
@@ -1059,7 +1059,7 @@ void THINK(update_target_camera)(edict_t *self)
     // only allow skipping after 2 seconds
     if ((self->hackflags & HACKFLAG_SKIPPABLE) && level.time > SEC(2)) {
         for (int i = 0; i < game.maxclients; i++) {
-            edict_t *client = g_edicts + 1 + i;
+            edict_t *client = g_edicts + i;
             if (!client->r.inuse || !client->client->pers.connected)
                 continue;
 
@@ -1119,7 +1119,7 @@ void THINK(update_target_camera)(edict_t *self)
 
         // move all clients to the intermission point
         for (int i = 0; i < game.maxclients; i++) {
-            edict_t *client = g_edicts + 1 + i;
+            edict_t *client = g_edicts + i;
             if (client->r.inuse)
                 MoveClientToIntermission(client);
         }
@@ -1226,7 +1226,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
 
     // move all clients to the intermission point
     for (int i = 0; i < game.maxclients; i++) {
-        edict_t *client = g_edicts + 1 + i;
+        edict_t *client = g_edicts + i;
         if (!client->r.inuse)
             continue;
 

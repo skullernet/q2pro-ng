@@ -75,7 +75,7 @@ typedef int qhandle_t;
 #define MODELINDEX_WORLD    0
 #define MODELINDEX_PLAYER   255
 
-#define ENTITYNUM_WORLD     0
+#define ENTITYNUM_WORLD     (MAX_EDICTS - 2)
 #define ENTITYNUM_NONE      (MAX_EDICTS - 1)
 
 #define MAX_CLIENT_NAME     16
@@ -1499,7 +1499,7 @@ typedef struct {
     pmove_state_t   pmove;  // for prediction
 
     // these fields do not need to be communicated bit-precise
-    int         client_num;     // current POV number
+    int         clientnum;      // current POV number
 
     vec3_t      viewangles;     // for fixed views
     vec3_t      viewoffset;     // add to pmovestate->origin

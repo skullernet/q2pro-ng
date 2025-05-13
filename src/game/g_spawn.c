@@ -625,6 +625,9 @@ void ED_CallSpawn(edict_t *ent)
         return;
     }
 
+    if (ent == world && strcmp(ent->classname, "worldspawn"))
+        gi.error("ED_CallSpawn: first entity must be worldspawn");
+
     // PGM - do this before calling the spawn function so it can be overridden.
     VectorSet(ent->gravityVector, 0, 0, -1);
     // PGM
@@ -983,7 +986,7 @@ static void G_FixTeams(void)
     int c;
 
     c = 0;
-    for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
         if (!e->r.inuse)
             continue;
         if (!e->team)
@@ -1001,7 +1004,7 @@ static void G_FixTeams(void)
         e->flags &= ~FL_TEAMSLAVE;
         e->flags |= FL_TEAMMASTER;
         c++;
-        for (j = 1, e2 = g_edicts + j; j < globals.num_edicts; j++, e2++) {
+        for (j = 0, e2 = g_edicts + j; j < globals.num_edicts; j++, e2++) {
             if (e2 == e)
                 continue;
             if (!e2->r.inuse)
@@ -1032,7 +1035,7 @@ static void G_FindTeams(void)
 
     c = 0;
     c2 = 0;
-    for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
         if (!e->r.inuse)
             continue;
         if (!e->team)
@@ -1234,7 +1237,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
     // set client fields on player ents
     for (int i = 0; i < game.maxclients; i++) {
-        g_edicts[i + 1].client = game.clients + i;
+        g_edicts[i].client = game.clients + i;
 
         // "disconnect" all players since the level is switching
         game.clients[i].pers.connected = false;
@@ -1257,13 +1260,13 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
             gi.error("ED_LoadFromFile: found \"%s\" when expecting {", com_token);
 
         if (!ent)
-            ent = g_edicts;
+            ent = world;
         else
             ent = G_Spawn();
         entities = ED_ParseEdict(entities, ent);
 
         // remove things (except the world) from different skill levels or deathmatch
-        if (ent != g_edicts) {
+        if (ent != world) {
             if (G_InhibitEntity(ent)) {
                 G_FreeEdict(ent);
                 inhibit++;
@@ -1272,9 +1275,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
             ent->spawnflags &= ~SPAWNFLAG_EDITOR_MASK;
         }
-
-        if (!ent)
-            gi.error("invalid/empty entity string!");
 
         ED_CallSpawn(ent);
 

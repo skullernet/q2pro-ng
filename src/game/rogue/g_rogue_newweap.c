@@ -538,7 +538,7 @@ void THINK(Nuke_Quake)(edict_t *self)
         self->last_move_time = level.time + SEC(0.5f);
     }
 
-    for (i = 1, e = g_edicts + i; i <= game.maxclients; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
         if (!e->r.inuse)
             continue;
         if (!e->client)

@@ -1894,7 +1894,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             Q_snprintf(buffer, sizeof(buffer), "%3d %3d %-12.12s",
                        score, ping, ci->name);
-            if (value == cl.frame.clientNum) {
+            if (value == cl.frame.ps.clientnum) {
                 HUD_DrawAltString(x, y, buffer);
             } else {
                 HUD_DrawString(x, y, buffer);

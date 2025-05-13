@@ -82,12 +82,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
         uint32_t readcount = msg_read.readcount;
 #endif
         newnum = MSG_ReadBits(ENTITYNUM_BITS);
-        if (newnum < 0 || newnum >= MAX_EDICTS) {
-            Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
-        }
-
-        if (!newnum) {
+        if (newnum == ENTITYNUM_NONE) {
             break;
+        }
+        if (newnum < 0 || newnum >= ENTITYNUM_WORLD) {
+            Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
         }
 
         removed = MSG_ReadBit();
@@ -366,7 +365,7 @@ static void CL_ParseConfigstring(int index)
 
 static void CL_ParseBaseline(int index)
 {
-    if (index < 1 || index >= MAX_EDICTS) {
+    if (index < 0 || index >= ENTITYNUM_WORLD) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
@@ -681,7 +680,7 @@ static void CL_ParseMuzzleFlashPacket(int mask)
         entity &= ENTITYNUM_MASK;
     }
 
-    if (entity < 1 || entity >= MAX_EDICTS)
+    if (entity < 0 || entity >= ENTITYNUM_WORLD)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
     if (!mask && weapon >= q_countof(monster_flash_offset))
@@ -725,7 +724,7 @@ static void CL_ParseStartSoundPacket(void)
         // entity relative
         channel = MSG_ReadWord();
         entity = channel >> 3;
-        if (entity < 0 || entity >= MAX_EDICTS)
+        if (entity < 0 || entity >= ENTITYNUM_WORLD)
             Com_Error(ERR_DROP, "%s: bad entity: %d", __func__, entity);
         snd.entity = entity;
         snd.channel = channel & 7;

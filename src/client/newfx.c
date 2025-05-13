@@ -905,7 +905,7 @@ void CL_PowerSplash(void)
     vec3_t      org, dir, mid;
     centity_t   *ent;
 
-    if ((unsigned)te.entity1 >= MAX_EDICTS)
+    if (te.entity1 < 0 || te.entity1 >= ENTITYNUM_WORLD)
         Com_Error(ERR_DROP, "%s: bad entity", __func__);
 
     ent = &cl_entities[te.entity1];

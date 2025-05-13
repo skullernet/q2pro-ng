@@ -1211,7 +1211,7 @@ void THINK(smart_water_go_up)(edict_t *self)
     lowestPlayerPt = 999999;
     lowestPlayer = NULL;
     for (int i = 0; i < game.maxclients; i++) {
-        ent = &g_edicts[1 + i];
+        ent = &g_edicts[i];
 
         // don't count dead or unused player slots
         if ((ent->r.inuse) && (ent->health > 0) && (ent->r.absmin[2] < lowestPlayerPt)) {
@@ -2555,7 +2555,7 @@ void THINK(func_eye_think)(edict_t *self)
     float closest_dist = FLT_MAX;
     edict_t *closest_player = NULL;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (!player->r.inuse)
             continue;

@@ -325,8 +325,8 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
         return true;
 
     // see if any solid entities are inside the final position
-    check = g_edicts + 1;
-    for (int e = 1; e < globals.num_edicts; e++, check++) {
+    check = g_edicts;
+    for (int e = 0; e < globals.num_edicts; e++, check++) {
         if (!check->r.inuse)
             continue;
         if (check->movetype == MOVETYPE_PUSH || check->movetype == MOVETYPE_STOP ||

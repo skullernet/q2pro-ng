@@ -420,7 +420,7 @@ void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
     if (!cl_muzzleflashes->integer)
         return;
-    if (mz.entity != cl.frame.clientNum + 1)
+    if (mz.entity != cl.frame.ps.clientnum)
         return;
 
     Q_assert(fx < q_countof(cl_mod_muzzles));
@@ -833,7 +833,7 @@ static void CL_AddBeams(void)
             continue;
 
         // if coming from the player, update the start position
-        if (b->entity == cl.frame.clientNum + 1)
+        if (b->entity == cl.frame.ps.clientnum)
             VectorAdd(cl.playerEntityOrigin, b->offset, org);
         else
             VectorAdd(b->start, b->offset, org);
@@ -880,7 +880,7 @@ static void CL_AddPlayerBeams(void)
             continue;
 
         // if coming from the player, update the start position
-        if (b->entity == cl.frame.clientNum + 1) {
+        if (b->entity == cl.frame.ps.clientnum) {
             // set up gun position
             ps = CL_KEYPS;
             ops = CL_OLDKEYPS;
@@ -963,7 +963,7 @@ static void CL_AddPlayerBeams(void)
         }
 
         // correction for grapple cable model, which has origin in the middle
-        if (b->entity == cl.frame.clientNum + 1 && b->model == cl_mod_grapple_cable && hand_multiplier) {
+        if (b->entity == cl.frame.ps.clientnum && b->model == cl_mod_grapple_cable && hand_multiplier) {
             VectorMA(org, model_length * 0.5f, dist, org);
             d -= model_length * 0.5f;
         }

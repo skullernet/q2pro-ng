@@ -735,7 +735,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
 
     // [Paril-KEX] this often makes double noise, so trying
     // a slightly different approach...
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (!player->r.inuse)
             continue;

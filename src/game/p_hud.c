@@ -176,7 +176,7 @@ void G_EndOfUnitMessage(void)
     gi.multicast(vec3_origin, MULTICAST_ALL_R);
 
     for (int i = 0; i < game.maxclients; i++) {
-        if (g_edicts[i + 1].r.inuse)
+        if (g_edicts[i].r.inuse)
             game.clients[i].showeou = true;
     }
 }
@@ -199,7 +199,7 @@ void BeginIntermission(edict_t *targ)
 
     // respawn any dead clients
     for (int i = 0; i < game.maxclients; i++) {
-        client = g_edicts + 1 + i;
+        client = g_edicts + i;
         if (!client->r.inuse)
             continue;
         if (client->health <= 0) {
@@ -228,7 +228,7 @@ void BeginIntermission(edict_t *targ)
     if (strstr(level.changemap, "*")) {
         if (coop->integer) {
             for (int i = 0; i < game.maxclients; i++) {
-                client = g_edicts + 1 + i;
+                client = g_edicts + i;
                 if (!client->r.inuse)
                     continue;
                 // strip players of all keys between units
@@ -282,7 +282,7 @@ void BeginIntermission(edict_t *targ)
 
     // move all clients to the intermission point
     for (int i = 0; i < game.maxclients; i++) {
-        client = g_edicts + 1 + i;
+        client = g_edicts + i;
         if (!client->r.inuse)
             continue;
         MoveClientToIntermission(client);
@@ -321,7 +321,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
     // sort the clients by score
     total = 0;
     for (i = 0; i < game.maxclients; i++) {
-        cl_ent = g_edicts + 1 + i;
+        cl_ent = g_edicts + i;
         if (!cl_ent->r.inuse || game.clients[i].resp.spectator)
             continue;
         score = game.clients[i].resp.score;
@@ -347,7 +347,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 
     for (i = 0; i < total; i++) {
         cl = &game.clients[sorted[i]];
-        cl_ent = g_edicts + 1 + sorted[i];
+        cl_ent = g_edicts + sorted[i];
 
         x = (i >= 8) ? 130 : -72;
         y = 0 + 32 * (i % 8);
@@ -835,7 +835,7 @@ void G_CheckChaseStats(edict_t *ent)
 {
     gclient_t *cl;
 
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         cl = g_edicts[i].client;
         if (!g_edicts[i].r.inuse || cl->chase_target != ent)
             continue;
@@ -866,7 +866,7 @@ void G_SetSpectatorStats(edict_t *ent)
         cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
 
     if (cl->chase_target && cl->chase_target->r.inuse)
-        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + (cl->chase_target - g_edicts) - 1;
+        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + (cl->chase_target - g_edicts);
     else
         cl->ps.stats[STAT_CHASE] = 0;
 }

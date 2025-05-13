@@ -842,7 +842,7 @@ static void GuardianPowerups(edict_t *self)
     if (!coop->integer) {
         GuardianRespondPowerup(self, self->enemy);
     } else {
-        for (int player = 1; player <= game.maxclients; player++) {
+        for (int player = 0; player < game.maxclients; player++) {
             ent = &g_edicts[player];
             if (!ent->r.inuse)
                 continue;

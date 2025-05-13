@@ -985,7 +985,7 @@ void WidowPowerups(edict_t *self)
         WidowRespondPowerup(self, self->enemy);
     } else {
         // in coop, check for pents, then quads, then doubles
-        for (int player = 1; player <= game.maxclients; player++) {
+        for (int player = 0; player < game.maxclients; player++) {
             ent = &g_edicts[player];
             if (!ent->r.inuse)
                 continue;
@@ -997,7 +997,7 @@ void WidowPowerups(edict_t *self)
             }
         }
 
-        for (int player = 1; player <= game.maxclients; player++) {
+        for (int player = 0; player < game.maxclients; player++) {
             ent = &g_edicts[player];
             if (!ent->r.inuse)
                 continue;
@@ -1009,7 +1009,7 @@ void WidowPowerups(edict_t *self)
             }
         }
 
-        for (int player = 1; player <= game.maxclients; player++) {
+        for (int player = 0; player < game.maxclients; player++) {
             ent = &g_edicts[player];
             if (!ent->r.inuse)
                 continue;

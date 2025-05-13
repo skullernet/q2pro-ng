@@ -333,7 +333,7 @@ static void InitGame(void)
     // initialize all clients for this game
     game.maxclients = maxclients->integer;
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
-    globals.num_edicts = game.maxclients + 1;
+    globals.num_edicts = game.maxclients;
 
 #if USE_FPS
     // variable FPS support
@@ -455,7 +455,7 @@ static void ClientEndServerFrames(void)
     // calc the player views now that all pushing
     // and damage has been added
     for (int i = 0; i < game.maxclients; i++) {
-        ent = g_edicts + 1 + i;
+        ent = g_edicts + i;
         if (!ent->r.inuse || !ent->client)
             continue;
         ClientEndServerFrame(ent);
@@ -653,7 +653,7 @@ static void CheckDMRules(void)
 
         for (int i = 0; i < game.maxclients; i++) {
             cl = game.clients + i;
-            if (!g_edicts[i + 1].r.inuse)
+            if (!g_edicts[i].r.inuse)
                 continue;
 
             if (cl->resp.score >= fraglimit->integer) {
@@ -699,7 +699,7 @@ static void ExitLevel(void)
 
             memset(&client->pers, 0, sizeof(client->pers));
             memset(&client->resp.coop_respawn, 0, sizeof(client->resp.coop_respawn));
-            g_edicts[i + 1].health = 0; // this should trip the power armor, etc to reset as well
+            g_edicts[i].health = 0; // this should trip the power armor, etc to reset as well
 
             Q_strlcpy(client->pers.userinfo, userinfo, sizeof(client->pers.userinfo));
             Q_strlcpy(client->resp.coop_respawn.userinfo, userinfo, sizeof(client->resp.coop_respawn.userinfo));
@@ -713,7 +713,7 @@ static void ExitLevel(void)
         // give all players their lives back
         if (g_coop_enable_lives->integer) {
             for (int i = 0; i < game.maxclients; i++) {
-                if (g_edicts[i + 1].r.inuse)
+                if (g_edicts[i].r.inuse)
                     game.clients[i].pers.lives = g_coop_num_lives->integer + 1;
             }
         }
@@ -751,7 +751,7 @@ static void G_CheckCvars(void)
 
 static bool G_AnyDeadPlayersWithoutLives(void)
 {
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (player->r.inuse && player->health <= 0 && !player->client->pers.lives)
             return true;
@@ -782,7 +782,7 @@ static void G_RunFrame_(bool main_loop)
             float alpha = Q_clipf(1.3f - TO_SEC(level.intermission_fade_time - level.time), 0, 1);
 
             for (int i = 0; i < game.maxclients; i++) {
-                if (g_edicts[i + 1].r.inuse)
+                if (g_edicts[i].r.inuse)
                     Vector4Set(game.clients[i].ps.screen_blend, 0, 0, 0, alpha);
             }
         } else {
@@ -816,7 +816,7 @@ static void G_RunFrame_(bool main_loop)
     // early since it may be set multiple times for different
     // players
     if (coop->integer && (g_coop_enable_lives->integer || g_coop_squad_respawn->integer)) {
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (!player->r.inuse)
                 continue;
@@ -835,14 +835,13 @@ static void G_RunFrame_(bool main_loop)
     // treat each object in turn
     // even the world gets a chance to think
     //
-    ent = &g_edicts[0];
+    ent = g_edicts;
     for (int i = 0; i < globals.num_edicts; i++, ent++) {
         if (!ent->r.inuse) {
             // defer removing client info so that disconnected, etc works
-            if (i > 0 && i <= game.maxclients) {
+            if (i < game.maxclients) {
                 if (ent->timestamp && level.time < ent->timestamp) {
-                    int playernum = ent - g_edicts - 1;
-                    gi.configstring(CS_PLAYERSKINS + playernum, "");
+                    gi.configstring(CS_PLAYERSKINS + i, "");
                     ent->timestamp = 0;
                 }
             }
@@ -876,7 +875,7 @@ static void G_RunFrame_(bool main_loop)
             }
         }
 
-        if (i > 0 && i <= game.maxclients) {
+        if (i < game.maxclients) {
             ClientBeginServerFrame(ent);
             continue;
         }
@@ -896,7 +895,7 @@ static void G_RunFrame_(bool main_loop)
         // back to empty
         bool reset_coop_respawn = true;
 
-        for (int i = 1; i <= game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (player->r.inuse && player->health > 0) {
                 reset_coop_respawn = false;
@@ -905,7 +904,7 @@ static void G_RunFrame_(bool main_loop)
         }
 
         if (reset_coop_respawn) {
-            for (int i = 1; i <= game.maxclients; i++) {
+            for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (player->r.inuse)
                     player->client->coop_respawn_state = COOP_RESPAWN_NONE;
@@ -918,11 +917,11 @@ static void G_RunFrame_(bool main_loop)
 
     // [Paril-KEX] if not in intermission and player 1 is loaded in
     // the game as an entity, increase timer on current entry
-    if (level.entry && !level.intermissiontime && g_edicts[1].r.inuse && g_edicts[1].client->pers.connected)
+    if (level.entry && !level.intermissiontime && g_edicts[0].r.inuse && g_edicts[0].client->pers.connected)
         level.entry->time += FRAME_TIME;
 
     // [Paril-KEX] run monster pains now
-    for (int i = game.maxclients + BODY_QUEUE_SIZE + 1; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
         edict_t *e = &g_edicts[i];
 
         if (!e->r.inuse || !(e->r.svflags & SVF_MONSTER))
@@ -936,7 +935,7 @@ static void G_RunFrame_(bool main_loop)
 
 static bool G_AnyPlayerSpawned(void)
 {
-    for (int i = 1; i <= game.maxclients; i++) {
+    for (int i = 0; i < game.maxclients; i++) {
         edict_t *player = &g_edicts[i];
         if (player->r.inuse && player->client && player->client->pers.spawned)
             return true;

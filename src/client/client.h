@@ -112,7 +112,6 @@ typedef struct {
     int             areabytes;
 
     player_state_t  ps;
-    int             clientNum;
 
     int             numEntities;
     unsigned        firstEntity;

@@ -360,7 +360,7 @@ A brand new game has been started.
 */
 void SV_InitGame(void)
 {
-    int     i, entnum;
+    int     i;
     edict_t *ent;
     client_t *client;
 
@@ -444,9 +444,8 @@ void SV_InitGame(void)
 
     for (i = 0; i < svs.maxclients; i++) {
         client = svs.client_pool + i;
-        entnum = i + 1;
-        ent = SV_EdictForNum(entnum);
-        ent->s.number = entnum;
+        ent = SV_EdictForNum(i);
+        ent->s.number = i;
         client->edict = ent;
         client->number = i;
     }
