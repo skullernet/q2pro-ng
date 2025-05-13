@@ -262,7 +262,7 @@ static void parasite_break_wait(edict_t *self)
 
 static void proboscis_retract(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     // start retract animation
     if (owner->monsterinfo.active_move == &parasite_move_fire_proboscis)
@@ -350,7 +350,7 @@ const mmove_t MMOVE_T(parasite_move_break) = { FRAME_break01, FRAME_break32, par
 
 void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     vec3_t   p;
 
     // owner isn't trying to probe any more, don't touch anything
@@ -461,7 +461,7 @@ static void parasite_get_proboscis_start(edict_t *self, vec3_t start)
 
 void THINK(proboscis_think)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
 
@@ -557,10 +557,10 @@ void THINK(proboscis_think)(edict_t *self)
 
 void PRETHINK(proboscis_segment_draw)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     vec3_t start, dir;
 
-    parasite_get_proboscis_start(g_edicts + owner->r.ownernum, start);
+    parasite_get_proboscis_start(&g_edicts[owner->r.ownernum], start);
 
     VectorCopy(start, self->s.origin);
     VectorSubtract(owner->s.origin, start, dir);

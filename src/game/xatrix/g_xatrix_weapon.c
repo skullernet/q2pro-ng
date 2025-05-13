@@ -57,7 +57,7 @@ void THINK(ionripper_sparks)(edict_t *self)
 
 void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other == owner)
         return;
@@ -236,7 +236,7 @@ fire_plasma
 
 void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + ent->r.ownernum;
+    edict_t *owner = &g_edicts[ent->r.ownernum];
     vec3_t origin;
 
     if (other == owner)
@@ -302,7 +302,7 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
 
 void THINK(Trap_Gib_Think)(edict_t *ent)
 {
-    edict_t *owner = g_edicts + ent->r.ownernum;
+    edict_t *owner = &g_edicts[ent->r.ownernum];
 
     if (owner->s.frame != 5) {
         G_FreeEdict(ent);

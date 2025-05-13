@@ -803,7 +803,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         edict_t *new_bad = CheckForBadArea(ent);
         if (!current_bad && new_bad) {
             if (new_bad->r.ownernum != ENTITYNUM_NONE) {
-                edict_t *owner = g_edicts + new_bad->r.ownernum;
+                edict_t *owner = &g_edicts[new_bad->r.ownernum];
                 if (!strcmp(owner->classname, "tesla_mine")) {
                     if (!ent->enemy || !ent->enemy->r.inuse) {
                         TargetTesla(ent, owner);

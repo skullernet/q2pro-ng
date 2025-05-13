@@ -613,7 +613,7 @@ static void gekk_check_refire(edict_t *self)
 
 void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other == owner)
         return;

@@ -770,7 +770,7 @@ static void M_CheckDodge(edict_t *self)
 
         if (tr.entnum == self - g_edicts) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
-            self->monsterinfo.dodge(self, g_edicts + ent->r.ownernum, eta, &tr,
+            self->monsterinfo.dodge(self, &g_edicts[ent->r.ownernum], eta, &tr,
                                     (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));
             break;
         }

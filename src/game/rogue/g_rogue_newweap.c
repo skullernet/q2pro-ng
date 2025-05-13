@@ -9,7 +9,7 @@ fire_flechette
 */
 void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other == owner)
         return;
@@ -158,7 +158,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
 
     // trigger the prox mine if it's still there, and still mine.
-    prox = g_edicts + ent->r.ownernum;
+    prox = &g_edicts[ent->r.ownernum];
 
     // teammate avoidance
     if (CheckTeamDamage(prox->teammaster, other))
@@ -820,7 +820,7 @@ void THINK(tesla_think_active)(edict_t *self)
         if (hit->client) {
             if (!deathmatch->integer)
                 continue;
-            if (CheckTeamDamage(hit, g_edicts + self->teamchain->r.ownernum))
+            if (CheckTeamDamage(hit, &g_edicts[self->teamchain->r.ownernum]))
                 continue;
         }
 
@@ -937,7 +937,7 @@ void THINK(tesla_think)(edict_t *ent)
     } else {
         if (ent->s.frame > 9) {
             if (ent->s.frame == 10) {
-                edict_t *owner = g_edicts + ent->r.ownernum;
+                edict_t *owner = &g_edicts[ent->r.ownernum];
                 if (owner->client)
                     PlayerNoise(owner, ent->s.origin, PNOISE_WEAPON); // PGM
                 ent->s.skinnum = 1;
@@ -1152,7 +1152,7 @@ Fires a single green blaster bolt.  Used by monsters, generally.
 */
 void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     mod_t    mod;
     int      damagestat;
 
@@ -1264,7 +1264,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
     vec3_t center;
     VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, center);
 
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     T_Damage(self->enemy, self, owner, vec3_origin, center,
              pain_normal, self->dmg, 0, TRACKER_DAMAGE_FLAGS, (mod_t) { MOD_TRACKER });
 
@@ -1321,7 +1321,7 @@ static void tracker_explode(edict_t *self)
 
 void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     float    damagetime;
 
     if (other == owner)

@@ -43,7 +43,7 @@ void THINK(bot_goal_check)(edict_t *self)
     edict_t *owner = NULL;
 
     if (self->r.ownernum != ENTITYNUM_NONE)
-        owner = g_edicts + self->r.ownernum;
+        owner = &g_edicts[self->r.ownernum];
 
     if (!owner || !owner->r.inuse || owner->goalentity != self) {
         G_FreeEdict(self);
@@ -801,7 +801,7 @@ bool finishHeal(edict_t *self);
 
 void PRETHINK(fixbot_laser_update)(edict_t *laser)
 {
-    edict_t *self = g_edicts + laser->r.ownernum;
+    edict_t *self = &g_edicts[laser->r.ownernum];
 
     vec3_t start, dir;
     AngleVectors(self->s.angles, dir, NULL, NULL);

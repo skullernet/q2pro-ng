@@ -31,7 +31,7 @@ void dabeam_update(edict_t *self, bool damage)
     pierce_t pierce;
     trace_t tr;
     edict_t *hit;
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     pierce_begin(&pierce);
 
@@ -83,7 +83,7 @@ void dabeam_update(edict_t *self, bool damage)
 
 void THINK(beam_think)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     if (self->spawnflags & SPAWNFLAG_DABEAM_SECONDARY)
         owner->beam2 = NULL;
     else

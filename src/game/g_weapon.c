@@ -280,7 +280,7 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other == owner)
         return;
@@ -356,7 +356,7 @@ fire_grenade
 */
 static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 {
-    edict_t *owner = g_edicts + ent->r.ownernum;
+    edict_t *owner = &g_edicts[ent->r.ownernum];
     vec3_t   origin;
     mod_id_t mod;
 
@@ -412,7 +412,7 @@ void THINK(Grenade_Explode)(edict_t *ent)
 
 void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == g_edicts + ent->r.ownernum)
+    if (other == &g_edicts[ent->r.ownernum])
         return;
 
     if (tr->surface_flags & SURF_SKY) {
@@ -565,7 +565,7 @@ fire_rocket
 */
 void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + ent->r.ownernum;
+    edict_t *owner = &g_edicts[ent->r.ownernum];
     vec3_t   origin;
 
     if (other == owner)
@@ -775,7 +775,7 @@ static void bfg_laser_pos(const vec3_t p, float dist, vec3_t out)
 
 void THINK(bfg_laser_update)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (level.time > self->timestamp || !owner->r.inuse) {
         G_FreeEdict(self);
@@ -830,7 +830,7 @@ void THINK(bfg_explode)(edict_t *self)
     if (self->s.frame == 0) {
         // the BFG effect
         ent = NULL;
-        owner = g_edicts + self->r.ownernum;
+        owner = &g_edicts[self->r.ownernum];
         while ((ent = findradius(ent, self->s.origin, self->dmg_radius)) != NULL) {
             if (!ent->takedamage)
                 continue;
@@ -874,7 +874,7 @@ void THINK(bfg_explode)(edict_t *self)
 
 void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other == owner)
         return;
@@ -929,7 +929,7 @@ void THINK(bfg_think)(edict_t *self)
     bfg_spawn_laser(self);
 
     ent = NULL;
-    owner = g_edicts + self->r.ownernum;
+    owner = &g_edicts[self->r.ownernum];
     while ((ent = findradius(ent, self->s.origin, 256)) != NULL) {
         if (ent == self)
             continue;
@@ -1056,7 +1056,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
 
     if (other->r.svflags & (SVF_MONSTER | SVF_PLAYER)) {
         other->disintegrator_time += SEC(50);
-        other->disintegrator = g_edicts + self->r.ownernum;
+        other->disintegrator = &g_edicts[self->r.ownernum];
     }
 }
 

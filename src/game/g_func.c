@@ -1302,7 +1302,7 @@ void USE(door_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void TOUCH(Touch_DoorTrigger)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (other->health <= 0)
         return;

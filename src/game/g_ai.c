@@ -1330,7 +1330,7 @@ void ai_run(edict_t *self, float dist)
                 if (strcmp(self->enemy->classname, "player_noise") != 0)
                     realEnemy = self->enemy;
                 else if (self->enemy->r.ownernum != ENTITYNUM_NONE)
-                    realEnemy = g_edicts + self->enemy->r.ownernum;
+                    realEnemy = &g_edicts[self->enemy->r.ownernum];
                 else { // uh oh, can't figure out enemy, bail
                     self->enemy = NULL;
                     hintpath_stop(self);

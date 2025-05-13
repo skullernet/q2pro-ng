@@ -683,7 +683,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
 void TOUCH(CTFDropFlagTouch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     // owner (who dropped us) can't touch for two secs
-    if (other == g_edicts + ent->r.ownernum &&
+    if (other == &g_edicts[ent->r.ownernum] &&
         ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT - SEC(2))
         return;
 
@@ -1113,7 +1113,7 @@ void CTFPlayerResetGrapple(edict_t *ent)
 // self is grapple, not player
 void CTFResetGrapple(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     gclient_t *cl = owner->client;
 
     if (!cl->ctf_grapple)
@@ -1131,7 +1131,7 @@ void CTFResetGrapple(edict_t *self)
 
 void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     float volume = 1.0f;
 
     if (other == owner)
@@ -1177,7 +1177,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 // draw beam between grapple and self
 static void CTFGrappleDrawCable(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     gclient_t *cl = owner->client;
 
     if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_HANG)
@@ -1199,7 +1199,7 @@ void SV_AddGravity(edict_t *ent);
 // pull the player toward the grapple
 void CTFGrapplePull(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
     gclient_t *cl = owner->client;
     vec3_t hookdir, v;
     float  vlen;

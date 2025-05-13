@@ -34,7 +34,7 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
 
     if (other->takedamage) {
         if (self->teammaster->r.ownernum != ENTITYNUM_NONE)
-            attacker = g_edicts + self->teammaster->r.ownernum;
+            attacker = &g_edicts[self->teammaster->r.ownernum];
         else
             attacker = self->teammaster;
         T_Damage(other, self, attacker, vec3_origin, other->s.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
@@ -74,7 +74,7 @@ static void turret_breach_fire(edict_t *self)
     else
         damage = irandom2(100, 150);
     speed = 550 + 50 * skill->integer;
-    edict_t *owner = g_edicts + self->teammaster->r.ownernum;
+    edict_t *owner = &g_edicts[self->teammaster->r.ownernum];
     edict_t *rocket = fire_rocket(owner->activator ? owner->activator : owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
 
@@ -158,7 +158,7 @@ void THINK(turret_breach_think)(edict_t *self)
 
     // if we have a driver, adjust his velocities
     if (self->r.ownernum != ENTITYNUM_NONE) {
-        edict_t *owner = g_edicts + self->r.ownernum;
+        edict_t *owner = &g_edicts[self->r.ownernum];
         float    angle;
         float    target_z;
         float    diff;

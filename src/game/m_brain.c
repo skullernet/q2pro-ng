@@ -485,7 +485,7 @@ static const vec3_t brain_leye[] = {
 
 void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 {
-    edict_t *self = g_edicts + laser->r.ownernum;
+    edict_t *self = &g_edicts[laser->r.ownernum];
     vec3_t start, axis[3], dir;
 
     // rotate into worlds frame of reference
@@ -506,7 +506,7 @@ void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 
 void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 {
-    edict_t *self = g_edicts + laser->r.ownernum;
+    edict_t *self = &g_edicts[laser->r.ownernum];
     vec3_t start, axis[3], dir;
 
     // rotate into worlds frame of reference

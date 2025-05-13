@@ -616,7 +616,7 @@ static void Drop_Ammo(edict_t *ent, const gitem_t *item)
 
 void THINK(MegaHealth_think)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     if (owner->health > owner->max_health
         //ZOID
@@ -958,7 +958,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
 
 void TOUCH(drop_temp_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (other == g_edicts + ent->r.ownernum)
+    if (other == &g_edicts[ent->r.ownernum])
         return;
 
     Touch_Item(ent, other, tr, other_touching_self);

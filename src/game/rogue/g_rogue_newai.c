@@ -1216,7 +1216,7 @@ int CountPlayers(void)
 
 void THINK(BossExplode_think)(edict_t *self)
 {
-    edict_t *owner = g_edicts + self->r.ownernum;
+    edict_t *owner = &g_edicts[self->r.ownernum];
 
     // owner gone or changed
     if (!owner->r.inuse || owner->s.modelindex != self->style || self->count != owner->spawn_count) {
