@@ -242,7 +242,7 @@ void MSG_WriteBit(bool value)
     msg_write.bits_left--;
 }
 
-static void MSG_WriteVarInt32(uint32_t v)
+static void MSG_WriteLeb32(uint32_t v)
 {
     while (v) {
         MSG_WriteBit(1);
@@ -252,7 +252,7 @@ static void MSG_WriteVarInt32(uint32_t v)
     MSG_WriteBit(0);
 }
 
-static void MSG_WriteVarInt64(uint64_t v)
+static void MSG_WriteLeb64(uint64_t v)
 {
     while (v) {
         MSG_WriteBit(1);
@@ -441,7 +441,7 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
                 }
             }
         } else if (f->bits == -1) {
-            MSG_WriteVarInt32(to_v);
+            MSG_WriteLeb32(to_v);
         } else {
             MSG_WriteBits(to_v, f->bits);
         }
@@ -572,7 +572,7 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
     MSG_WriteBits(nc, 6);
     MSG_WriteDeltaFields(player_state_fields, nc, from, to);
 
-    MSG_WriteVarInt64(statbits);
+    MSG_WriteLeb64(statbits);
     if (statbits)
         for (int i = 0; i < MAX_STATS; i++)
             if (statbits & BIT_ULL(i))
@@ -864,7 +864,7 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 #if USE_CLIENT
 
-static uint32_t MSG_ReadVarInt32(void)
+static uint32_t MSG_ReadLeb32(void)
 {
     uint32_t v = 0;
     int bits = 0;
@@ -879,7 +879,7 @@ static uint32_t MSG_ReadVarInt32(void)
     return v;
 }
 
-static uint64_t MSG_ReadVarInt64(void)
+static uint64_t MSG_ReadLeb64(void)
 {
     uint64_t v = 0;
     int bits = 0;
@@ -914,7 +914,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             }
             SHOWNET(3, "%s:%f ", f->name, LongToFloat(to_v));
         } else if (f->bits == -1) {
-            to_v = MSG_ReadVarInt32();
+            to_v = MSG_ReadLeb32();
             SHOWNET(3, "%s:%#x ", f->name, to_v);
         } else {
             to_v = MSG_ReadBits(f->bits);
@@ -964,7 +964,7 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
 
     MSG_ReadDeltaFields(player_state_fields, nc, to);
 
-    uint64_t statbits = MSG_ReadVarInt64();
+    uint64_t statbits = MSG_ReadLeb64();
     if (statbits)
         for (int i = 0; i < MAX_STATS; i++)
             if (statbits & BIT_ULL(i))
