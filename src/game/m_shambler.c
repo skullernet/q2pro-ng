@@ -73,7 +73,7 @@ static void shambler_windup(edict_t *self)
     edict_t *lightning = self->beam = G_Spawn();
     lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
-    lightning->r.ownernum = self - g_edicts;
+    lightning->r.ownernum = self->s.number;
     shambler_lightning_update(self);
 }
 
@@ -281,8 +281,8 @@ static void ShamblerCastLightning(edict_t *self)
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_LIGHTNING);
-    gi.WriteShort(self - g_edicts); // source entity
-    gi.WriteShort(world - g_edicts); // destination entity
+    gi.WriteShort(self->s.number); // source entity
+    gi.WriteShort(ENTITYNUM_WORLD); // destination entity
     gi.WritePosition(start);
     gi.WritePosition(tr.endpos);
     gi.multicast(start, MULTICAST_PVS);

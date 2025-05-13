@@ -672,7 +672,7 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
         } else {
             ent->think = MegaHealth_think;
             ent->nextthink = level.time + SEC(5);
-            ent->r.ownernum = other - g_edicts;
+            ent->r.ownernum = other->s.number;
             ent->flags |= FL_RESPAWN;
             ent->r.svflags |= SVF_NOCLIENT;
             ent->r.solid = SOLID_NOT;
@@ -991,7 +991,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->r.solid = SOLID_TRIGGER;
     dropped->movetype = MOVETYPE_TOSS;
     dropped->touch = drop_temp_touch;
-    dropped->r.ownernum = ent - g_edicts;
+    dropped->r.ownernum = ent->s.number;
 
     if (ent->client) {
         trace_t trace;

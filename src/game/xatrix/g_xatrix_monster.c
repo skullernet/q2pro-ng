@@ -102,7 +102,7 @@ void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*updat
         beam->r.solid = SOLID_NOT;
         beam->s.renderfx |= RF_BEAM;
         beam->s.modelindex = MODELINDEX_WORLD;
-        beam->r.ownernum = self - g_edicts;
+        beam->r.ownernum = self->s.number;
         beam->dmg = damage;
         beam->s.frame = 2;
         beam->spawnflags = secondary ? SPAWNFLAG_DABEAM_SECONDARY : SPAWNFLAG_NONE;

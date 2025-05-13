@@ -490,7 +490,7 @@ void THINK(heat_guardian_think)(edict_t *self)
             edict_t *target = NULL;
 
             while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-                if (self->r.ownernum == target - g_edicts)
+                if (self->r.ownernum == target->s.number)
                     continue;
                 if (!target->client)
                     continue;
@@ -569,7 +569,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
     heat->s.scale = 1.5f;
-    heat->r.ownernum = self - g_edicts;
+    heat->r.ownernum = self->s.number;
     heat->touch = rocket_touch;
     heat->speed = speed / 2;
     heat->yaw_speed = speed * 2;

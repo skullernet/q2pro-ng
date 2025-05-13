@@ -1389,7 +1389,7 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     other = G_Spawn();
     VectorCopy(mins, other->r.mins);
     VectorCopy(maxs, other->r.maxs);
-    other->r.ownernum = ent - g_edicts;
+    other->r.ownernum = ent->s.number;
     other->r.solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
     other->touch = Touch_DoorTrigger;

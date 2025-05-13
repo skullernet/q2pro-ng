@@ -240,7 +240,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     beam->s.skinnum = 0x30303030;
     beam->classname = "spawngro_beam";
     beam->angle = end_size;
-    beam->r.ownernum = ent - g_edicts;
+    beam->r.ownernum = ent->s.number;
     VectorCopy(ent->s.origin, beam->s.origin);
     beam->think = SpawnGro_laser_think;
     beam->nextthink = level.time + FRAME_TIME;

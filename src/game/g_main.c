@@ -868,7 +868,7 @@ static void G_RunFrame_(bool main_loop)
                 trace_t tr;
                 gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
 
-                if (tr.startsolid || tr.allsolid || tr.entnum != ent->groundentity - g_edicts)
+                if (tr.startsolid || tr.allsolid || tr.entnum != ent->groundentity->s.number)
                     ent->groundentity = NULL;
                 else
                     ent->groundentity_linkcount = ent->groundentity->r.linkcount;

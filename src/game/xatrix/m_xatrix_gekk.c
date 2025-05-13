@@ -652,7 +652,7 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     loogie->s.effects |= EF_BLASTER;
     loogie->s.renderfx |= RF_FULLBRIGHT;
     loogie->s.modelindex = gi.modelindex("models/objects/loogy/tris.md2");
-    loogie->r.ownernum = self - g_edicts;
+    loogie->r.ownernum = self->s.number;
     loogie->touch = loogie_touch;
     loogie->nextthink = level.time + SEC(2);
     loogie->think = G_FreeEdict;

@@ -170,7 +170,7 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
             return;
 
         self->takedamage = false;
-        self->r.ownernum = self->teammaster ? self->teammaster - g_edicts : ENTITYNUM_NONE;
+        self->r.ownernum = self->teammaster ? self->teammaster->s.number : ENTITYNUM_NONE;
         self->teammaster = NULL;
     } else {
         if (other == &g_edicts[self->r.ownernum])
@@ -521,7 +521,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
     if (spawnflags & SPHERE_DOPPLEGANGER)
         sphere->teammaster = owner->teammaster;
     else
-        sphere->r.ownernum = owner - g_edicts;
+        sphere->r.ownernum = owner->s.number;
 
     sphere->classname = "sphere";
     sphere->yaw_speed = 40;

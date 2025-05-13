@@ -375,8 +375,8 @@ void THINK(turret_driver_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->r.ownernum = self - g_edicts;
-    self->target_ent->teammaster->r.ownernum = self - g_edicts;
+    self->target_ent->r.ownernum = self->s.number;
+    self->target_ent->teammaster->r.ownernum = self->s.number;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
@@ -487,7 +487,7 @@ void THINK(turret_brain_think)(edict_t *self)
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
         gi.trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent->s.number, MASK_SHOT);
-        if (trace.fraction == 1 || trace.entnum == self->enemy - g_edicts) {
+        if (trace.fraction == 1 || trace.entnum == self->enemy->s.number) {
             if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
                 self->monsterinfo.trail_time = level.time;
                 self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
@@ -531,8 +531,8 @@ void THINK(turret_brain_link)(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-    self->target_ent->r.ownernum = self - g_edicts;
-    self->target_ent->teammaster->r.ownernum = self - g_edicts;
+    self->target_ent->r.ownernum = self->s.number;
+    self->target_ent->teammaster->r.ownernum = self->s.number;
     VectorCopy(self->target_ent->s.angles, self->s.angles);
 
     vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];

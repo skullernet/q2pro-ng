@@ -7,9 +7,8 @@
 //
 void monster_muzzleflash(edict_t *self, const vec3_t start, monster_muzzleflash_id_t id)
 {
-    int entnum = self - g_edicts;
     gi.WriteByte(svc_muzzleflash2);
-    gi.WriteShort(entnum | id >> 8 << ENTITYNUM_BITS);
+    gi.WriteShort(self->s.number | id >> 8 << ENTITYNUM_BITS);
     gi.WriteByte(id & 255);
     gi.multicast(start, MULTICAST_PHS);
 }
@@ -768,7 +767,7 @@ static void M_CheckDodge(edict_t *self)
         trace_t tr;
         gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent->s.number, ent->clipmask);
 
-        if (tr.entnum == self - g_edicts) {
+        if (tr.entnum == self->s.number) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
             self->monsterinfo.dodge(self, &g_edicts[ent->r.ownernum], eta, &tr,
                                     (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));

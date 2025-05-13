@@ -225,7 +225,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
 
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_POWER_SPLASH);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte((power_armor_type == IT_ITEM_POWER_SCREEN) ? 1 : 0);
         gi.multicast(ent->s.origin, MULTICAST_PHS);
     }

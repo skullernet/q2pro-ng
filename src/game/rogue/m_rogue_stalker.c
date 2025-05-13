@@ -447,7 +447,7 @@ static void stalker_shoot_attack(edict_t *self)
     }
 
     gi.trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
-    if (trace.entnum == self->enemy - g_edicts || trace.entnum == ENTITYNUM_WORLD)
+    if (trace.entnum == self->enemy->s.number || trace.entnum == ENTITYNUM_WORLD)
         monster_fire_blaster2(self, start, dir, 5, 800, MZ2_STALKER_BLASTER, EF_BLASTER);
 }
 

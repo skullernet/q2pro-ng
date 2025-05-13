@@ -961,7 +961,7 @@ static void medic_cable_attack(edict_t *self)
     }
 
     gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_SOLID);
-    if (tr.fraction != 1.0f && tr.entnum != self->enemy - g_edicts) {
+    if (tr.fraction != 1.0f && tr.entnum != self->enemy->s.number) {
         if (tr.entnum == ENTITYNUM_WORLD) {
             // give up on second try
             if (self->monsterinfo.medicTries > 1) {
@@ -1011,7 +1011,7 @@ static void medic_cable_attack(edict_t *self)
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_MEDIC_CABLE_ATTACK);
-    gi.WriteShort(self - g_edicts);
+    gi.WriteShort(self->s.number);
     gi.WritePosition(start);
     gi.WritePosition(end);
     gi.multicast(self->s.origin, MULTICAST_PVS);

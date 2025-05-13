@@ -575,7 +575,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     vectoangles(dir, tip->s.angles);
     tip->s.modelindex = gi.modelindex("models/monsters/parasite/tip/tris.md2");
     tip->movetype = MOVETYPE_FLYMISSILE;
-    tip->r.ownernum = self - g_edicts;
+    tip->r.ownernum = self->s.number;
     self->proboscus = tip;
     tip->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
     VectorCopy(start, tip->s.origin);
@@ -597,7 +597,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     segment->postthink = proboscis_segment_draw;
 
     tip->proboscus = segment;
-    segment->r.ownernum = tip - g_edicts;
+    segment->r.ownernum = tip->s.number;
 
     vec3_t pos;
     VectorMA(tip->s.origin, FRAME_TIME_SEC, tip->velocity, pos);

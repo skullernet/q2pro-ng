@@ -237,7 +237,6 @@ static int CTFOtherTeam(ctfteam_t team)
 
 void CTFAssignSkin(edict_t *ent, const char *s)
 {
-    int  playernum = ent - g_edicts;
     char t[MAX_QPATH], *p;
 
     Q_strlcpy(t, s, sizeof(t));
@@ -258,7 +257,7 @@ void CTFAssignSkin(edict_t *ent, const char *s)
         break;
     }
 
-    gi.configstring(CS_PLAYERSKINS + playernum, p);
+    gi.configstring(CS_PLAYERSKINS + ent->s.number, p);
 }
 
 void CTFAssignTeam(gclient_t *who)
@@ -899,7 +898,7 @@ static void CTFSetIDView(edict_t *ent)
         }
     }
     if (bd > 0.90f) {
-        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + (best - g_edicts);
+        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + best->s.number;
         if (best->client->resp.ctf_team == CTF_TEAM1)
             ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = imageindex_sbfctf1;
         else if (best->client->resp.ctf_team == CTF_TEAM2)
@@ -1282,7 +1281,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     grapple->r.solid = SOLID_BBOX;
     grapple->s.effects |= effect;
     grapple->s.modelindex = gi.modelindex("models/weapons/grapple/hook/tris.md2");
-    grapple->r.ownernum = self - g_edicts;
+    grapple->r.ownernum = self->s.number;
     grapple->touch = CTFGrappleTouch;
     grapple->dmg = damage;
     grapple->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
@@ -1757,7 +1756,7 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
-    ent->r.ownernum = ent - g_edicts;
+    ent->r.ownernum = ent->s.number;
 
     angles[0] = 0;
     angles[1] = irandom1(360);

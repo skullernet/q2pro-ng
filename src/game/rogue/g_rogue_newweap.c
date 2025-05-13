@@ -58,7 +58,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     flechette->s.renderfx = RF_FULLBRIGHT;
     flechette->s.modelindex = gi.modelindex("models/proj/flechette/tris.md2");
 
-    flechette->r.ownernum = self - g_edicts;
+    flechette->r.ownernum = self->s.number;
     flechette->touch = flechette_touch;
     flechette->nextthink = level.time + SEC(8000.0f / speed);
     flechette->think = G_FreeEdict;
@@ -96,7 +96,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
     // free the trigger field
 
     // PMM - changed teammaster to "mover" .. owner of the field is the prox
-    if (ent->teamchain && ent->teamchain->r.ownernum == ent - g_edicts)
+    if (ent->teamchain && ent->teamchain->r.ownernum == ent->s.number)
         G_FreeEdict(ent->teamchain);
 
     owner = ent;
@@ -337,7 +337,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     VectorSet(field->r.maxs, PROX_BOUND_SIZE, PROX_BOUND_SIZE, PROX_BOUND_SIZE);
     field->movetype = MOVETYPE_NONE;
     field->r.solid = SOLID_TRIGGER;
-    field->r.ownernum = ent - g_edicts;
+    field->r.ownernum = ent->s.number;
     field->classname = "prox_field";
     field->teammaster = ent;
     gi.linkentity(field);
@@ -411,7 +411,7 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     VectorSet(prox->r.mins, -6, -6, -6);
     VectorSet(prox->r.maxs, 6, 6, 6);
     prox->s.modelindex = gi.modelindex("models/weapons/g_prox/tris.md2");
-    prox->r.ownernum = self - g_edicts;
+    prox->r.ownernum = self->s.number;
     prox->teammaster = self;
     prox->touch = prox_land;
     prox->think = Prox_Think;
@@ -651,7 +651,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         ent->r.ownernum = ENTITYNUM_NONE;
 
         gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte(muzzleflash);
         gi.multicast(ent->s.origin, MULTICAST_PHS);
 
@@ -711,7 +711,7 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     VectorSet(nuke->r.mins, -8, -8, 0);
     VectorSet(nuke->r.maxs, 8, 8, 16);
     nuke->s.modelindex = gi.modelindex("models/weapons/g_nuke/tris.md2");
-    nuke->r.ownernum = self - g_edicts;
+    nuke->r.ownernum = self->s.number;
     nuke->teammaster = self;
     nuke->nextthink = level.time + FRAME_TIME;
     nuke->timestamp = level.time + NUKE_DELAY + NUKE_TIME_TO_LIVE;
@@ -759,7 +759,7 @@ static void tesla_remove(edict_t *self)
     } else if (self->air_finished)
         gi.dprintf("tesla_mine without a field!\n");
 
-    self->r.ownernum = self->teammaster - g_edicts; // Going away, set the owner correctly.
+    self->r.ownernum = self->teammaster->s.number; // Going away, set the owner correctly.
     // PGM - grenade explode does damage to self->enemy
     self->enemy = NULL;
 
@@ -832,7 +832,7 @@ void THINK(tesla_think_active)(edict_t *self)
             continue;
 
         gi.trace(&tr, start, NULL, NULL, hit->s.origin, self->s.number, MASK_PROJECTILE);
-        if (tr.fraction == 1 || tr.entnum == hit - g_edicts) {
+        if (tr.fraction == 1 || tr.entnum == hit->s.number) {
             VectorSubtract(hit->s.origin, start, dir);
 
             // PMM - play quad sound if it's above the "normal" damage
@@ -849,8 +849,8 @@ void THINK(tesla_think_active)(edict_t *self)
 
             gi.WriteByte(svc_temp_entity);
             gi.WriteByte(TE_LIGHTNING);
-            gi.WriteShort(self - g_edicts); // source entity
-            gi.WriteShort(hit - g_edicts); // destination entity
+            gi.WriteShort(self->s.number); // source entity
+            gi.WriteShort(hit->s.number); // destination entity
             gi.WritePosition(start);
             gi.WritePosition(tr.endpos);
             gi.multicast(start, MULTICAST_PVS);
@@ -901,7 +901,7 @@ void THINK(tesla_activate)(edict_t *self)
     VectorSet(trigger->r.maxs, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS);
     trigger->movetype = MOVETYPE_NONE;
     trigger->r.solid = SOLID_TRIGGER;
-    trigger->r.ownernum = self - g_edicts;
+    trigger->r.ownernum = self->s.number;
     trigger->touch = tesla_zap;
     trigger->classname = "tesla trigger";
     // doesn't need to be marked as a teamslave since the move code for bounce looks for teamchains
@@ -993,7 +993,7 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     VectorSet(tesla->r.mins, -12, -12, 0);
     VectorSet(tesla->r.maxs, 12, 12, 20);
     tesla->s.modelindex = gi.modelindex("models/weapons/g_tesla/tris.md2");
-    tesla->r.ownernum = self - g_edicts; // PGM - we don't want it owned by self YET.
+    tesla->r.ownernum = self->s.number; // PGM - we don't want it owned by self YET.
     tesla->teammaster = self;
     tesla->think = tesla_think;
     tesla->nextthink = level.time + TESLA_ACTIVATE_TIME;
@@ -1118,7 +1118,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(te_beam);
-    gi.WriteShort(self - g_edicts);
+    gi.WriteShort(self->s.number);
     gi.WritePosition(start);
     gi.WritePosition(endpoint);
     gi.multicast(self->s.origin, MULTICAST_ALL);
@@ -1224,7 +1224,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
-    bolt->r.ownernum = self - g_edicts;
+    bolt->r.ownernum = self->s.number;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
@@ -1304,7 +1304,7 @@ static void tracker_pain_daemon_spawn(edict_t *owner, edict_t *enemy, int damage
     daemon->think = tracker_pain_daemon_think;
     daemon->nextthink = level.time;
     daemon->timestamp = level.time + TRACKER_DAMAGE_TIME;
-    daemon->r.ownernum = owner - g_edicts;
+    daemon->r.ownernum = owner->s.number;
     daemon->enemy = enemy;
     daemon->dmg = damage;
 }
@@ -1416,7 +1416,7 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     bolt->s.modelindex = gi.modelindex("models/proj/disintegrator/tris.md2");
     bolt->touch = tracker_touch;
     bolt->enemy = enemy;
-    bolt->r.ownernum = self - g_edicts;
+    bolt->r.ownernum = self->s.number;
     bolt->dmg = damage;
     bolt->classname = "tracker";
     gi.linkentity(bolt);

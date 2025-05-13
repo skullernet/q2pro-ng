@@ -741,7 +741,7 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
         badarea->nextthink = level.time + lifespan;
     }
     if (owner)
-        badarea->r.ownernum = owner - g_edicts;
+        badarea->r.ownernum = owner->s.number;
 
     return badarea;
 }
@@ -852,7 +852,7 @@ void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_s
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
 
-    if (tr.fraction < 1.0f && tr.entnum != target - g_edicts) {
+    if (tr.fraction < 1.0f && tr.entnum != target->s.number) {
         eye_height = !eye_height;
         VectorSubtract(target->s.origin, start, dir);
         if (eye_height)
@@ -1244,7 +1244,7 @@ void BossExplode(edict_t *self)
         return;
 
     edict_t *exploder = G_Spawn();
-    exploder->r.ownernum = self - g_edicts;
+    exploder->r.ownernum = self->s.number;
     exploder->count = self->spawn_count;
     exploder->style = self->s.modelindex;
     exploder->think = BossExplode_think;

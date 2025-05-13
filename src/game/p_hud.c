@@ -26,7 +26,7 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->ps.screen_blend[3] = 0;
     ent->client->ps.damage_blend[3] = 0;
     ent->client->ps.rdflags = RDF_NONE;
-    ent->client->ps.clientnum = ent - g_edicts;
+    ent->client->ps.clientnum = ent->s.number;
 
     // clean up powerup info
     ent->client->quad_time = 0;
@@ -867,7 +867,7 @@ void G_SetSpectatorStats(edict_t *ent)
         cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
 
     if (cl->chase_target && cl->chase_target->r.inuse)
-        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + (cl->chase_target - g_edicts);
+        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + cl->chase_target->s.number;
     else
         cl->ps.stats[STAT_CHASE] = 0;
 }

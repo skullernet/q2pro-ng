@@ -204,7 +204,7 @@ void PAIN(actor_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
             M_SetAnimation(self, &actor_move_flipoff);
         else
             M_SetAnimation(self, &actor_move_taunt);
-        name = actor_names[(self - g_edicts) % q_countof(actor_names)];
+        name = actor_names[self->s.number % q_countof(actor_names)];
         gi.cprintf(other, PRINT_CHAT, "%s: %s!\n", name, random_element(messages));
         return;
     }
@@ -455,7 +455,7 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             edict_t *ent = &g_edicts[n];
             if (!ent->r.inuse)
                 continue;
-            gi.cprintf(ent, PRINT_CHAT, "%s: %s\n", actor_names[(other - g_edicts) % q_countof(actor_names)], self->message);
+            gi.cprintf(ent, PRINT_CHAT, "%s: %s\n", actor_names[other->s.number % q_countof(actor_names)], self->message);
         }
     }
 

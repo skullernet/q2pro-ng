@@ -328,7 +328,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
     bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-    bolt->r.ownernum = self - g_edicts;
+    bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -497,7 +497,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
         grenade->think = Grenade4_Think;
         grenade->s.renderfx |= RF_MINLIGHT;
     }
-    grenade->r.ownernum = self - g_edicts;
+    grenade->r.ownernum = self->s.number;
     grenade->touch = Grenade_Touch;
     grenade->dmg = damage;
     grenade->dmg_radius = damage_radius;
@@ -538,7 +538,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     grenade->s.effects |= EF_GRENADE;
 
     grenade->s.modelindex = gi.modelindex("models/objects/grenade3/tris.md2");
-    grenade->r.ownernum = self - g_edicts;
+    grenade->r.ownernum = self->s.number;
     grenade->touch = Grenade_Touch;
     grenade->nextthink = level.time + timer;
     grenade->think = Grenade_Explode;
@@ -622,7 +622,7 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     rocket->r.solid = SOLID_BBOX;
     rocket->s.effects |= EF_ROCKET;
     rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    rocket->r.ownernum = self - g_edicts;
+    rocket->r.ownernum = self->s.number;
     rocket->touch = rocket_touch;
     rocket->nextthink = level.time + SEC(8000.0f / speed);
     rocket->think = G_FreeEdict;
@@ -809,7 +809,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
     laser->timestamp = level.time + SEC(0.3f);
-    laser->r.ownernum = self - g_edicts;
+    laser->r.ownernum = self->s.number;
     gi.linkentity(laser);
 }
 
@@ -1025,7 +1025,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
     bfg->r.solid = SOLID_BBOX;
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->r.ownernum = self - g_edicts;
+    bfg->r.ownernum = self->s.number;
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
@@ -1079,7 +1079,7 @@ void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward,
     bfg->r.svflags |= SVF_PROJECTILE;
     bfg->flags |= FL_DODGE;
     bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-    bfg->r.ownernum = self - g_edicts;
+    bfg->r.ownernum = self->s.number;
     bfg->touch = disintegrator_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;

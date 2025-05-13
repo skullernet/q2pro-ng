@@ -33,7 +33,7 @@ static void weapon_ionripper_fire(edict_t *ent)
 
     // send muzzle flash
     gi.WriteByte(svc_muzzleflash);
-    gi.WriteShort(ent - g_edicts);
+    gi.WriteShort(ent->s.number);
     gi.WriteByte(MZ_IONRIPPER | is_silenced);
     gi.multicast(ent->s.origin, MULTICAST_PVS);
 
@@ -83,7 +83,7 @@ static void weapon_phalanx_fire(edict_t *ent)
 
         // send muzzle flash
         gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte(MZ_PHALANX2 | is_silenced);
         gi.multicast(ent->s.origin, MULTICAST_PVS);
 
@@ -96,7 +96,7 @@ static void weapon_phalanx_fire(edict_t *ent)
 
         // send muzzle flash
         gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte(MZ_PHALANX | is_silenced);
         gi.multicast(ent->s.origin, MULTICAST_PVS);
 

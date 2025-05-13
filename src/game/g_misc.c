@@ -1855,7 +1855,7 @@ void SP_misc_teleporter(edict_t *ent)
     trig->touch = teleporter_touch;
     trig->r.solid = SOLID_TRIGGER;
     trig->target = ent->target;
-    trig->r.ownernum = ent - g_edicts;
+    trig->r.ownernum = ent->s.number;
     VectorCopy(ent->s.origin, trig->s.origin);
     VectorSet(trig->r.mins, -8, -8, 8);
     VectorSet(trig->r.maxs, 8, 8, 24);

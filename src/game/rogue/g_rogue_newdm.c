@@ -246,7 +246,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     body->teammaster = base;
 
     // [Paril-KEX]
-    body->r.ownernum = ent - g_edicts;
+    body->r.ownernum = ent->s.number;
     gi.sound(body, CHAN_AUTO, gi.soundindex("medic_commander/monsterspawn1.wav"), 1, ATTN_NORM, 0);
 }
 

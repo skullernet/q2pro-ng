@@ -401,7 +401,7 @@ static void TurretFire(edict_t *self)
         }
 
         gi.trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
-        if (trace.entnum == self->enemy - g_edicts || trace.entnum == ENTITYNUM_WORLD) {
+        if (trace.entnum == self->enemy->s.number || trace.entnum == ENTITYNUM_WORLD) {
             if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER)
                 monster_fire_blaster(self, start, dir, TURRET_BLASTER_DAMAGE, rocketSpeed, MZ2_TURRET_BLASTER, EF_BLASTER);
             else if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) {
@@ -640,7 +640,7 @@ static void turret_wall_spawn(edict_t *turret)
     turret->teamchain = ent;
     ent->teamchain = NULL;
     ent->flags |= FL_TEAMSLAVE;
-    ent->r.ownernum = turret - g_edicts;
+    ent->r.ownernum = turret->s.number;
 
     ent->s.modelindex = gi.modelindex("models/monsters/turretbase/tris.md2");
 

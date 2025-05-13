@@ -1193,7 +1193,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     // spawn fake player dummy where we were
     if (activator->client) {
         edict_t *dummy = self->enemy = G_Spawn();
-        dummy->r.ownernum = activator - g_edicts;
+        dummy->r.ownernum = activator->s.number;
         dummy->clipmask = activator->clipmask;
         VectorCopy(activator->s.origin, dummy->s.origin);
         VectorCopy(activator->s.angles, dummy->s.angles);

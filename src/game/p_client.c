@@ -1621,7 +1621,7 @@ static void spectator_respawn(edict_t *ent)
     if (!ent->client->pers.spectator) {
         // send effect
         gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte(MZ_LOGIN);
         gi.multicast(ent->s.origin, MULTICAST_PVS);
 
@@ -1701,7 +1701,7 @@ void PutClientInServer(edict_t *ent)
     client_persistent_t saved;
     client_respawn_t    resp;
 
-    index = ent - g_edicts;
+    index = ent->s.number;
     client = ent->client;
 
     // clear velocity now, since landmark may change it
@@ -2012,7 +2012,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
         if (!(ent->r.svflags & SVF_NOCLIENT)) {
             // send effect
             gi.WriteByte(svc_muzzleflash);
-            gi.WriteShort(ent - g_edicts);
+            gi.WriteShort(ent->s.number);
             gi.WriteByte(MZ_LOGIN);
             gi.multicast(ent->s.origin, MULTICAST_PVS);
         }
@@ -2219,7 +2219,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     if (!*val)
         val = "male/grunt";
 
-    int playernum = ent - g_edicts;
+    int playernum = ent->s.number;
 
     // combine name and skin into a configstring
     // ZOID
@@ -2403,7 +2403,7 @@ void ClientDisconnect(edict_t *ent)
     // send effect
     if (!(ent->r.svflags & SVF_NOCLIENT)) {
         gi.WriteByte(svc_muzzleflash);
-        gi.WriteShort(ent - g_edicts);
+        gi.WriteShort(ent->s.number);
         gi.WriteByte(MZ_LOGOUT);
         gi.multicast(ent->s.origin, MULTICAST_PVS);
     }

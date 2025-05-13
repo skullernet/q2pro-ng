@@ -269,7 +269,7 @@ static void CarrierSpawn(edict_t *self)
             ent->monsterinfo.attack_state = AS_STRAIGHT;
             M_SetAnimation(ent, &flyer_move_kamikaze);
             ent->monsterinfo.aiflags |= AI_CHARGING;
-            ent->r.ownernum = self - g_edicts;
+            ent->r.ownernum = self->s.number;
         } else if (!strcmp(ent->classname, "monster_flyer")) {
             if (brandom()) {
                 ent->monsterinfo.lefty = false;

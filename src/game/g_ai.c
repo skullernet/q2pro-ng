@@ -399,7 +399,7 @@ bool visible_ex(edict_t *self, edict_t *other, bool through_glass)
         mask |= CONTENTS_WINDOW;
 
     gi.trace(&trace, spot1, NULL, NULL, spot2, self->s.number, mask);
-    return trace.fraction == 1.0f || trace.entnum == other - g_edicts; // PGM
+    return trace.fraction == 1.0f || trace.entnum == other->s.number; // PGM
 }
 
 /*
@@ -885,7 +885,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
                             return false;
                         // make sure we're not going to shoot a monster
                         gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER);
-                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.entnum != self->enemy - g_edicts)))
+                        if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.entnum != self->enemy->s.number)))
                             return false;
 
                         self->monsterinfo.attack_state = AS_BLIND;

@@ -22,7 +22,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 1;
     bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-    bolt->r.ownernum = self - g_edicts;
+    bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -101,7 +101,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->s.renderfx |= RF_FULLBRIGHT;
     ion->s.modelindex = gi.modelindex("models/objects/boomrang/tris.md2");
     ion->s.sound = gi.soundindex("misc/lasfly.wav");
-    ion->r.ownernum = self - g_edicts;
+    ion->r.ownernum = self->s.number;
     ion->touch = ionripper_touch;
     ion->nextthink = level.time + SEC(3);
     ion->think = ionripper_sparks;
@@ -143,7 +143,7 @@ void THINK(heat_think)(edict_t *self)
     if (!acquire) {
         // acquire new target
         while ((target = findradius(target, self->s.origin, 1024)) != NULL) {
-            if (self->r.ownernum == target - g_edicts)
+            if (self->r.ownernum == target->s.number)
                 continue;
             if (!target->client)
                 continue;
@@ -209,7 +209,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
     heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
-    heat->r.ownernum = self - g_edicts;
+    heat->r.ownernum = self->s.number;
     heat->touch = rocket_touch;
     heat->speed = speed;
     heat->accel = turn_fraction;
@@ -285,7 +285,7 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
     plasma->r.solid = SOLID_BBOX;
     plasma->r.svflags |= SVF_PROJECTILE;
     plasma->flags |= FL_DODGE;
-    plasma->r.ownernum = self - g_edicts;
+    plasma->r.ownernum = self->s.number;
     plasma->touch = plasma_touch;
     plasma->nextthink = level.time + SEC(8000.0f / speed);
     plasma->think = G_FreeEdict;
@@ -523,7 +523,7 @@ void THINK(Trap_Think)(edict_t *ent)
         e->movetype = MOVETYPE_NONE;
         e->nextthink = level.time + FRAME_TIME;
         e->think = Trap_Gib_Think;
-        e->r.ownernum = ent - g_edicts;
+        e->r.ownernum = ent->s.number;
         Trap_Gib_Think(e);
     }
 }
@@ -558,7 +558,7 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     trap->health = 20;
     trap->s.modelindex = gi.modelindex("models/weapons/z_trap/tris.md2");
     trap->teammaster = self;
-    trap->r.ownernum = self - g_edicts;
+    trap->r.ownernum = self->s.number;
     trap->nextthink = level.time + SEC(1);
     trap->think = Trap_Think;
     trap->classname = "food_cube_trap";

@@ -416,14 +416,14 @@ static void Widow2Tongue(edict_t *self)
     VectorCopy(self->enemy->s.origin, end);
 
     gi.trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
-    if (tr.entnum != self->enemy - g_edicts)
+    if (tr.entnum != self->enemy->s.number)
         return;
 
     gi.sound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_PARASITE_ATTACK);
-    gi.WriteShort(self - g_edicts);
+    gi.WriteShort(self->s.number);
     gi.WritePosition(start);
     gi.WritePosition(end);
     gi.multicast(self->s.origin, MULTICAST_PVS);
@@ -1094,7 +1094,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         gib->velocity[2] = max(vscale, gib->velocity[2]);
         gib->gravity = 0.25f;
         gib->touch = widow_gib_touch;
-        gib->r.ownernum = self - g_edicts;
+        gib->r.ownernum = self->s.number;
         if (gib->s.modelindex == gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2")) {
             VectorSet(gib->r.mins, -10, -10, 0);
             VectorSet(gib->r.maxs, 10, 10, 10);

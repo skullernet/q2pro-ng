@@ -114,7 +114,7 @@ static void landing_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.ownernum = self - g_edicts;
+    ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
@@ -143,7 +143,7 @@ static void takeoff_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.ownernum = self - g_edicts;
+    ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     gi.linkentity(ent);
 
@@ -207,7 +207,7 @@ static void roam_goal(edict_t *self)
     ent = G_Spawn();
     ent->classname = "bot_goal";
     ent->r.solid = SOLID_BBOX;
-    ent->r.ownernum = self - g_edicts;
+    ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
     gi.linkentity(ent);

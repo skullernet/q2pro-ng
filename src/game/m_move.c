@@ -1405,7 +1405,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         trace_t tr;
         gi.trace(&tr, ent->s.origin, NULL, NULL, goal->s.origin, ent->s.number, MASK_MONSTERSOLID);
 
-        if (tr.fraction == 1.0f || tr.entnum == goal - g_edicts) {
+        if (tr.fraction == 1.0f || tr.entnum == goal->s.number) {
             vec3_t v;
             VectorSubtract(goal->s.origin, ent->s.origin, v);
             if (SV_StepDirection(ent, vectoyaw(v), dist, false))

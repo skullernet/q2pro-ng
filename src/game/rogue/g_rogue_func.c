@@ -32,7 +32,7 @@ void plat2_kill_danger_area(edict_t *ent)
 
     t = NULL;
     while ((t = G_Find(t, FOFS(classname), "bad_area"))) {
-        if (t->r.ownernum == ent - g_edicts)
+        if (t->r.ownernum == ent->s.number)
             G_FreeEdict(t);
     }
 }
