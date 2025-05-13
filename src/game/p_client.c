@@ -1877,6 +1877,7 @@ void PutClientInServer(edict_t *ent)
 
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
+    client->ps.clientnum = index;
 
     char *val = Info_ValueForKey(ent->client->pers.userinfo, "fov");
     ent->client->ps.fov = Q_clip(Q_atoi(val), 1, 160);

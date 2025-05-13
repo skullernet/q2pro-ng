@@ -26,6 +26,7 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->ps.screen_blend[3] = 0;
     ent->client->ps.damage_blend[3] = 0;
     ent->client->ps.rdflags = RDF_NONE;
+    ent->client->ps.clientnum = ent - g_edicts;
 
     // clean up powerup info
     ent->client->quad_time = 0;
