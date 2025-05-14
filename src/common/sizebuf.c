@@ -178,32 +178,40 @@ float SZ_ReadFloat(sizebuf_t *sb)
     return buf ? LongToFloat(RL32(buf)) : -1.0f;
 }
 
-uint64_t SZ_ReadLeb(sizebuf_t *sb)
+uint32_t SZ_ReadLeb(sizebuf_t *sb)
 {
-    uint64_t v = 0;
+    uint32_t v = 0;
     int c, bits = 0;
 
     do {
+        if (bits >= 32)
+            return -1;
         c = SZ_ReadByte(sb);
-        v |= (c & UINT64_C(0x7f)) << bits;
+        if (c == -1)
+            return -1;
+        v |= (c & UINT32_C(0x7f)) << bits;
         bits += 7;
-    } while (c & 0x80 && bits < 64);
+    } while (c & 0x80);
 
     return v;
 }
 
-int64_t SZ_ReadSignedLeb(sizebuf_t *sb)
+int64_t SZ_ReadSignedLeb(sizebuf_t *sb, int len)
 {
     uint64_t v = 0;
     int c, bits = 0;
 
     do {
+        if (bits >= len)
+            return -1;
         c = SZ_ReadByte(sb);
+        if (c == -1)
+            return -1;
         v |= (c & UINT64_C(0x7f)) << bits;
         bits += 7;
-    } while (c & 0x80 && bits < 64);
+    } while (c & 0x80);
 
-    if (bits < 64)
+    if (bits < len)
         return SignExtend64(v, bits);
     return v;
 }

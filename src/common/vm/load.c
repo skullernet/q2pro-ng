@@ -50,7 +50,7 @@ static const vm_type_t block_types[5] = {
     { .form = BLOCK, .num_results = 1, .results = { F64 } }
 };
 
-static const vm_type_t *get_block_type(uint64_t value_type)
+static const vm_type_t *get_block_type(uint32_t value_type)
 {
     switch (value_type) {
     case 0x40:
@@ -64,7 +64,7 @@ static const vm_type_t *get_block_type(uint64_t value_type)
     case F64:
         return &block_types[4];
     default:
-        ASSERT(0, "Invalid block value_type: %#"PRIx64"", value_type);
+        ASSERT(0, "Invalid block value_type: %#x", value_type);
         return NULL;
     }
 }
@@ -107,11 +107,11 @@ static vm_value_t run_init_expr(vm_t *m, uint32_t type, sizebuf_t *sz)
         break;
     case I32_Const:
         ret.value_type = I32;
-        ret.value.u32  = SZ_ReadSignedLeb(sz);
+        ret.value.u32  = SZ_ReadSignedLeb(sz, 32);
         break;
     case I64_Const:
         ret.value_type = I64;
-        ret.value.u64  = SZ_ReadSignedLeb(sz);
+        ret.value.u64  = SZ_ReadSignedLeb(sz, 64);
         break;
     case F32_Const:
         ret.value_type = F32;
@@ -421,7 +421,7 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
     vm_block_t  *blockstack[BLOCKSTACK_SIZE];
     int          top = -1;
     int          opcode = Unreachable;
-    uint64_t     count, index;
+    uint32_t     count, index;
 
     sz->readcount = func->start_addr;
     while (sz->readcount <= func->end_addr) {
@@ -501,13 +501,16 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
             break;
 
         case I32_Const:
+            SZ_ReadSignedLeb(sz, 32);
+            break;
+
         case I64_Const:
-            SZ_ReadLeb(sz);
+            SZ_ReadSignedLeb(sz, 64);
             break;
 
         case Call:
             index = SZ_ReadLeb(sz);
-            ASSERT(index < m->num_funcs, "Bad func index");
+            ASSERT(index < m->num_funcs, "Bad func index %d",index);
             break;
 
         case CallIndirect:
