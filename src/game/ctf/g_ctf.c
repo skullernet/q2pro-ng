@@ -1123,7 +1123,6 @@ void CTFResetGrapple(edict_t *self)
     cl->ctf_grapple = NULL;
     cl->ctf_grapplereleasetime = level.time + SEC(1);
     cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
-    cl->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
     owner->flags &= ~FL_NO_KNOCKBACK;
     G_FreeEdict(self);
 }
@@ -1251,7 +1250,6 @@ void CTFGrapplePull(edict_t *self)
         }
 
         VectorScale(hookdir, g_grapple_pull_speed->value, owner->velocity);
-        cl->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
         owner->flags |= FL_NO_KNOCKBACK;
         SV_AddGravity(owner);
     }
@@ -2530,7 +2528,6 @@ static void CTFChaseCam(edict_t *ent, pmenuhnd_t *p)
 
     if (ent->client->chase_target) {
         ent->client->chase_target = NULL;
-        ent->client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
         PMenu_Close(ent);
         return;
     }

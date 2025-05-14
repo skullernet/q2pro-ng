@@ -128,6 +128,13 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
     CL_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
 }
 
+static void CL_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
+                    const vec3_t end, int clipent, contents_t contentmask)
+{
+    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    tr->entnum = ENTITYNUM_WORLD;
+}
+
 static int CL_PointContents(const vec3_t point)
 {
     const centity_t *ent;
@@ -206,6 +213,7 @@ void CL_PredictMovement(void)
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
     pm.trace = CL_Trace;
+    pm.clip = CL_Clip;
     pm.pointcontents = CL_PointContents;
     pm.s = cl.frame.ps.pmove;
     VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);

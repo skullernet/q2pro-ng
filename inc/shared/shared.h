@@ -941,6 +941,7 @@ typedef enum {
 #define PMF_NO_ANGULAR_PREDICTION       BIT(8)
 #define PMF_IGNORE_PLAYER_COLLISION     BIT(9)
 #define PMF_TIME_TRICK                  BIT(10)
+#define PMF_NO_GROUND_SEEK              BIT(11)
 //KEX
 
 #define PM_TIME_SHIFT       0
@@ -998,7 +999,7 @@ typedef struct {
 } touch_list_t;
 
 typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
-typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, contents_t contentmask);
+typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask);
 
 typedef struct {
     // state (in / out)

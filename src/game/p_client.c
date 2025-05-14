@@ -2529,12 +2529,18 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
                 // [Paril-KEX] handle menu movement
                 HandleMenuMovement(ent, ucmd);
-            } else
+            } else if (ent->client->awaiting_respawn)
+                client->ps.pmove.pm_type = PM_FREEZE;
+            else if (ent->client->resp.spectator || (G_TeamplayEnabled() && ent->client->resp.ctf_team == CTF_NOTEAM))
                 client->ps.pmove.pm_type = PM_SPECTATOR;
+            else
+                client->ps.pmove.pm_type = PM_NOCLIP;
         } else if (ent->s.modelindex != MODELINDEX_PLAYER)
             client->ps.pmove.pm_type = PM_GIB;
         else if (ent->deadflag)
             client->ps.pmove.pm_type = PM_DEAD;
+        else if (ent->client->ctf_grapplestate >= CTF_GRAPPLE_STATE_PULL)
+            client->ps.pmove.pm_type = PM_GRAPPLE;
         else
             client->ps.pmove.pm_type = PM_NORMAL;
 
@@ -2551,10 +2557,10 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         // PGM  trigger_gravity support
         if (ent->no_gravity_time > level.time) {
             client->ps.pmove.gravity = 0;
-            //client->ps.pmove.pm_flags |= PMF_NO_GROUND_SEEK;
+            client->ps.pmove.pm_flags |= PMF_NO_GROUND_SEEK;
         } else {
             client->ps.pmove.gravity = (int)(level.gravity * ent->gravity);
-            //client->ps.pmove.pm_flags &= ~PMF_NO_GROUND_SEEK;
+            client->ps.pmove.pm_flags &= ~PMF_NO_GROUND_SEEK;
         }
 
         pm.s = client->ps.pmove;
@@ -2569,6 +2575,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         pm.cmd = *ucmd;
         pm.trace = gi.trace;
+        pm.clip = gi.clip;
         pm.pointcontents = gi.pointcontents;
 
         // perform a pmove

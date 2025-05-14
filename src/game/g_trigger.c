@@ -472,8 +472,6 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
                 float speed_adjust = max_speed * FRAME_TIME_SEC * 2;
                 VectorMA(other->velocity, speed_adjust, self->movedir, other->velocity);
                 other->no_gravity_time = level.time + SEC(0.1f);
-                if (self->movedir[2] > 0 && other->groundentity)
-                    other->velocity[2] = max(other->velocity[2], 181);
             }
         } else
             VectorScale(self->movedir, self->speed * 10, other->velocity);

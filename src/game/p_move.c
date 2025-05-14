@@ -421,7 +421,7 @@ static void PM_Trace(trace_t *tr, const vec3_t start, const vec3_t mins,
                      const vec3_t maxs, const vec3_t end, contents_t mask)
 {
     if (pm->s.pm_type == PM_SPECTATOR)
-        pm->clip(tr, start, mins, maxs, end, MASK_SOLID);
+        pm->clip(tr, start, mins, maxs, end, ENTITYNUM_WORLD, MASK_SOLID);
     else
         pm->trace(tr, start, mins, maxs, end, pm->playernum, mask);
 }
@@ -914,7 +914,7 @@ static void PM_CategorizePosition(void)
     point[1] = pml.origin[1];
     point[2] = pml.origin[2] - 0.25f;
 
-    if (pml.velocity[2] > 180 || pm->s.pm_type == PM_GRAPPLE) { //!!ZOID changed from 100 to 180 (ramp accel)
+    if ((pm->s.pm_flags & PMF_NO_GROUND_SEEK) || pml.velocity[2] > 180 || pm->s.pm_type == PM_GRAPPLE) { //!!ZOID changed from 100 to 180 (ramp accel)
         pm->s.pm_flags &= ~PMF_ON_GROUND;
         pm->groundentity = ENTITYNUM_NONE;
     } else {
