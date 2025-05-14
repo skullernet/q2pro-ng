@@ -23,9 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_MAGIC2     "SAV2"
 
 #define SAVE_VERSION_MINIMUM            1
-#define SAVE_VERSION_PLAYERSTATE_EXT    2
-#define SAVE_VERSION_PSX                3
-#define SAVE_VERSION_CURRENT            3
+#define SAVE_VERSION_CURRENT            1
 
 #if USE_ZLIB
 #include <zlib.h>
@@ -1445,11 +1443,6 @@ static void read_max_ammo(int16_t *max_ammo)
 
 static void read_stats(int16_t *stats)
 {
-    if (line.version < SAVE_VERSION_PLAYERSTATE_EXT) {
-        parse_short_v(stats, 32);
-        return;
-    }
-
     expect("{");
     while (1) {
         const char *tok = parse();
@@ -1803,13 +1796,6 @@ void ReadLevel(const char *filename)
 
         G_InitEdict(ent);
         read_fields(entityfields, q_countof(entityfields), ent);
-
-        if (line.version < SAVE_VERSION_PSX) {
-            if (ent->r.svflags & SVF_MONSTER)
-                ent->vision_cone = -2.0f;
-            if (!strcmp(ent->classname, "func_plat2"))
-                ent->wait = 2.0f;
-        }
 
         // let the server rebuild world links for this ent
         gi.linkentity(ent);
