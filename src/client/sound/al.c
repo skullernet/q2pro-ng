@@ -414,7 +414,7 @@ static void AL_MergeLoopSounds(void)
         ent = &cl.entityStates[num];
 
         vol = S_GetEntityLoopVolume(ent);
-        att = S_GetEntityLoopDistMult(ent);
+        att = Com_GetEntityLoopDistMult(ent);
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);
@@ -432,7 +432,7 @@ static void AL_MergeLoopSounds(void)
             CL_GetEntitySoundOrigin(ent->number, origin);
             S_SpatializeOrigin(origin,
                                S_GetEntityLoopVolume(ent),
-                               S_GetEntityLoopDistMult(ent),
+                               Com_GetEntityLoopDistMult(ent),
                                &left, &right,
                                S_GetEntityLoopStereoPan(ent));
             left_total += left;
@@ -544,7 +544,7 @@ static void AL_AddLoopSounds(void)
         ch->sfx = sfx;
         ch->entnum = ent->number;
         ch->master_vol = S_GetEntityLoopVolume(ent);
-        ch->dist_mult = S_GetEntityLoopDistMult(ent);
+        ch->dist_mult = Com_GetEntityLoopDistMult(ent);
         ch->end = s_paintedtime + sc->length;
 
         AL_PlayChannel(ch);

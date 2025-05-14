@@ -15,6 +15,7 @@ typedef enum {
     F_COLOR,
     F_L10N_STRING,
     F_POWER_ARMOR,
+    F_ATTENUATION,
 } fieldtype_t;
 
 typedef struct {
@@ -493,7 +494,7 @@ static const spawn_field_t entity_fields[] = {
     { "dmg", FOFS(dmg), F_INT },
     { "mass", FOFS(mass), F_INT },
     { "volume", FOFS(volume), F_FLOAT },
-    { "attenuation", FOFS(attenuation), F_FLOAT },
+    { "attenuation", FOFS(attenuation), F_ATTENUATION },
     { "map", FOFS(map), F_LSTRING },
     { "origin", FOFS(s.origin), F_VECTOR },
     { "angles", FOFS(s.angles), F_VECTOR },
@@ -760,6 +761,17 @@ static int ED_ParsePowerArmor(const char *value)
     }
 }
 
+static int ED_ParseAttenuation(const char *value)
+{
+    float attenuation = Q_atof(value);
+
+    if (attenuation == -1)
+        return ATTN_NONE;
+    if (attenuation == 0)
+        return ATTN_STATIC;
+    return attenuation;
+}
+
 static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
 {
     uint64_t l;
@@ -803,6 +815,9 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
         break;
     case F_POWER_ARMOR:
         *(int *)(b + f->ofs) = ED_ParsePowerArmor(value);
+        break;
+    case F_ATTENUATION:
+        *(float *)(b + f->ofs) = ED_ParseAttenuation(value);
         break;
     default:
         gi.error("%s: bad field type", __func__);

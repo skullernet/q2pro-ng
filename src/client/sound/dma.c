@@ -720,7 +720,7 @@ static void AddLoopSounds(void)
         ent = &cl.entityStates[num];
 
         vol = S_GetEntityLoopVolume(ent);
-        att = S_GetEntityLoopDistMult(ent);
+        att = Com_GetEntityLoopDistMult(ent);
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);
@@ -737,7 +737,7 @@ static void AddLoopSounds(void)
             CL_GetEntitySoundOrigin(ent->number, origin);
             S_SpatializeOrigin(origin,
                                S_GetEntityLoopVolume(ent),
-                               S_GetEntityLoopDistMult(ent),
+                               Com_GetEntityLoopDistMult(ent),
                                &left, &right, GET_STEREO(ent));
             left_total += left;
             right_total += right;

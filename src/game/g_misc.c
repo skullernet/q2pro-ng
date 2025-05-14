@@ -1068,10 +1068,8 @@ void SP_misc_blackhole(edict_t *ent)
     ent->think = misc_blackhole_think;
     ent->nextthink = level.time + HZ(5);
 
-    if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE) {
-        ent->s.sound = gi.soundindex("world/blackhole.wav");
-        ent->s.loop_attenuation = ATTN_NORM;
-    }
+    if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE)
+        ent->s.sound = G_EncodeSound(gi.soundindex("world/blackhole.wav"), CHAN_AUTO, 1, ATTN_NORM);
 
     gi.linkentity(ent);
 }

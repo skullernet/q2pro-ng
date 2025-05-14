@@ -824,8 +824,8 @@ int S_BuildSoundList(int *sounds)
         } else if (s_ambient->integer == 3 && ent->number != listener_entnum) {
             sounds[i] = 0;
         } else {
-            sounds[i] = ent->sound;
-            if (ent->sound)
+            sounds[i] = ent->sound & (MAX_SOUNDS - 1);
+            if (sounds[i])
                 count++;
         }
     }

@@ -54,7 +54,7 @@ void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es);
 #define SOUND_LOOPATTENUATE         (ATTN_STATIC * 0.001f)
 #define SOUND_LOOPATTENUATE_MULT    0.0006f
 
-float Com_GetEntityLoopDistMult(float attenuation);
+float Com_GetEntityLoopDistMult(const entity_state_t *ent);
 
 bool Com_ParseMapName(char *out, const char *in, size_t size);
 

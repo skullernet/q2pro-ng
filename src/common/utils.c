@@ -298,15 +298,14 @@ Com_GetEntityLoopDistMult
 Converts remaster autosound attenuation into distance multiplier.
 ================
 */
-float Com_GetEntityLoopDistMult(float attenuation)
+float Com_GetEntityLoopDistMult(const entity_state_t *ent)
 {
-    if (attenuation == ATTN_LOOP_NONE)
+    int att = (ent->sound >> 16) & 255;
+    if (att == ATTN_ESCAPE_CODE)
         return 0;
-
-    if (attenuation > 0 && attenuation != ATTN_STATIC)
-        return attenuation * SOUND_LOOPATTENUATE_MULT;
-
-    return SOUND_LOOPATTENUATE;
+    if (att == 0)
+        return SOUND_LOOPATTENUATE;
+    return att * (SOUND_LOOPATTENUATE_MULT / 64.0f);
 }
 
 /*

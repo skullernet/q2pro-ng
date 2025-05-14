@@ -207,7 +207,7 @@ static bool SV_EntityVisible(const client_t *client, int e, const visrow_t *mask
 
 static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 {
-    float mult = Com_GetEntityLoopDistMult(ent->s.loop_attenuation);
+    float mult = Com_GetEntityLoopDistMult(&ent->s);
     float dist = Distance(org, ent->s.origin) - SOUND_FULLVOLUME;
 
     return dist * mult > 1.0f;

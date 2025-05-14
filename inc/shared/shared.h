@@ -1303,8 +1303,10 @@ typedef enum {
     CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
 } soundchan_t;
 
+// hack to encode ATTN_STATIC more efficiently
+#define ATTN_ESCAPE_CODE    (ATTN_STATIC * 64)
+
 // sound attenuation values
-#define ATTN_LOOP_NONE          -1  // ugly hack for remaster
 #define ATTN_NONE               0   // full volume the entire level
 #define ATTN_NORM               1
 #define ATTN_IDLE               2
@@ -1473,8 +1475,6 @@ typedef struct {
     uint32_t    morefx;
     float       alpha;
     float       scale;
-    float       loop_volume;
-    float       loop_attenuation;
 } entity_state_t;
 
 //==============================================

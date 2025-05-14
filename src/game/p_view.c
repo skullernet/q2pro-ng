@@ -968,11 +968,9 @@ static void G_SetClientSound(edict_t *ent)
 
     // reset defaults
     ent->s.sound = 0;
-    ent->s.loop_attenuation = 0;
-    ent->s.loop_volume = 0;
 
     if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME))) {
-        ent->s.sound = level.snd_fry;
+        ent->s.sound = G_EncodeSound(level.snd_fry, CHAN_AUTO, 1, ATTN_STATIC);
         return;
     }
 
@@ -1003,7 +1001,7 @@ static void G_SetClientSound(edict_t *ent)
     }
 
     // weapon sounds play at a higher attn
-    ent->s.loop_attenuation = ATTN_NORM;
+    ent->s.sound = G_EncodeSound(ent->s.sound, CHAN_AUTO, 1, ATTN_NORM);
 }
 
 /*

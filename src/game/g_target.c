@@ -54,7 +54,7 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
         if (ent->s.sound)
             ent->s.sound = 0; // turn it off
         else
-            ent->s.sound = ent->noise_index; // start it
+            ent->s.sound = G_EncodeSound(ent->noise_index, CHAN_AUTO, ent->volume, ent->attenuation); // start it
     } else {
         // normal sound
         if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE)
@@ -81,28 +81,20 @@ void SP_target_speaker(edict_t *ent)
 
     if (!ent->volume)
         ent->volume = 1;
-    if (ent->volume != 1)
-        ent->s.loop_volume = ent->volume;
 
-    if (!ent->attenuation) {
+    if (!ED_WasKeySpecified("attenuation")) {
         if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
             ent->attenuation = ATTN_STATIC;
         else
             ent->attenuation = ATTN_NORM;
-    } else if (ent->attenuation == -1) { // use -1 so 0 defaults to 1
-        if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON)) {
-            ent->attenuation = ATTN_LOOP_NONE;
+    } else if (ent->attenuation == ATTN_NONE) {
+        if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
             ent->r.svflags |= SVF_NOCULL;
-        } else
-            ent->attenuation = ATTN_NONE;
     }
-
-    if (ent->attenuation != ATTN_STATIC)
-        ent->s.loop_attenuation = ent->attenuation;
 
     // check for prestarted looping sound
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
-        ent->s.sound = ent->noise_index;
+        ent->s.sound = G_EncodeSound(ent->noise_index, CHAN_AUTO, ent->volume, ent->attenuation);
 
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_NO_STEREO)
         ent->s.renderfx |= RF_NO_STEREO;

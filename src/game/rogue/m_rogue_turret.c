@@ -727,8 +727,7 @@ void USE(turret_activate)(edict_t *self, edict_t *other, edict_t *activator)
         VectorMA(self->teamchain->s.origin, 32, forward, endpos);
         Move_Calc(self->teamchain, endpos, turret_wake);
 
-        base->s.sound = sound_moving;
-        base->s.loop_attenuation = ATTN_NORM;
+        base->s.sound = G_EncodeSound(sound_moving, CHAN_AUTO, 1, ATTN_NORM);
     }
 }
 

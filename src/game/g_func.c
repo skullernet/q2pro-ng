@@ -51,25 +51,25 @@
 #define SPAWNFLAG_DOOR_ROTATING_NO_COLLISION 0x40000
 
 // support routine for setting moveinfo sounds
-static int G_GetMoveinfoSoundIndex(edict_t *self, const char *default_value, const char *wanted_value)
+static int G_GetMoveinfoSound(edict_t *self, const char *default_value, const char *wanted_value)
 {
     if (!wanted_value) {
         if (default_value)
-            return gi.soundindex(default_value);
+            return G_EncodeSound(gi.soundindex(default_value), CHAN_AUTO, 1, self->attenuation);
         return 0;
     }
 
     if (!*wanted_value || *wanted_value == '0' || *wanted_value == ' ')
         return 0;
 
-    return gi.soundindex(wanted_value);
+    return G_EncodeSound(gi.soundindex(wanted_value), CHAN_AUTO, 1, self->attenuation);
 }
 
 void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *default_mid, const char *default_end)
 {
-    self->moveinfo.sound_start = G_GetMoveinfoSoundIndex(self, default_start, st.noise_start);
-    self->moveinfo.sound_middle = G_GetMoveinfoSoundIndex(self, default_mid, st.noise_middle);
-    self->moveinfo.sound_end = G_GetMoveinfoSoundIndex(self, default_end, st.noise_end);
+    self->moveinfo.sound_start = G_GetMoveinfoSound(self, default_start, st.noise_start);
+    self->moveinfo.sound_middle = G_GetMoveinfoSound(self, default_mid, st.noise_middle);
+    self->moveinfo.sound_end = G_GetMoveinfoSound(self, default_end, st.noise_end);
 }
 
 //
@@ -718,7 +718,7 @@ void USE(rotating_use)(edict_t *self, edict_t *other, edict_t *activator)
         }
         // PGM
     } else {
-        self->s.sound = self->moveinfo.sound_middle;
+        self->s.sound = G_EncodeSound(self->moveinfo.sound_middle, CHAN_AUTO, 1, self->attenuation);
         // PGM
         if (self->spawnflags & SPAWNFLAG_ROTATING_ACCEL) // accelerate
             rotating_accel(self);
@@ -740,19 +740,8 @@ void SP_func_rotating(edict_t *ent)
     else
         ent->movetype = MOVETYPE_PUSH;
 
-    if (st.noise) {
+    if (st.noise)
         ent->moveinfo.sound_middle = gi.soundindex(st.noise);
-
-        // [Paril-KEX] for rhangar1 doors
-        if (!ED_WasKeySpecified("attenuation")) {
-            ent->attenuation = ATTN_STATIC;
-        } else if (ent->attenuation == -1) {
-            ent->s.loop_attenuation = ATTN_LOOP_NONE;
-            ent->attenuation = ATTN_NONE;
-        } else if (ent->attenuation != ATTN_STATIC) {
-            ent->s.loop_attenuation = ent->attenuation;
-        }
-    }
 
     // set the axis of rotation
     VectorClear(ent->movedir);
@@ -1474,16 +1463,6 @@ void SP_func_door(edict_t *ent)
     else
         G_SetMoveinfoSounds(ent, NULL, NULL, NULL);
 
-    // [Paril-KEX] for rhangar1 doors
-    if (!ED_WasKeySpecified("attenuation")) {
-        ent->attenuation = ATTN_STATIC;
-    } else if (ent->attenuation == -1) {
-        ent->s.loop_attenuation = ATTN_LOOP_NONE;
-        ent->attenuation = ATTN_NONE;
-    } else if (ent->attenuation != ATTN_STATIC) {
-        ent->s.loop_attenuation = ent->attenuation;
-    }
-
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
@@ -1674,16 +1653,6 @@ void SP_func_door_rotating(edict_t *ent)
         G_SetMoveinfoSounds(ent, "doors/dr1_strt.wav", "doors/dr1_mid.wav", "doors/dr1_end.wav");
     else
         G_SetMoveinfoSounds(ent, NULL, NULL, NULL);
-
-    // [Paril-KEX] for rhangar1 doors
-    if (!ED_WasKeySpecified("attenuation")) {
-        ent->attenuation = ATTN_STATIC;
-    } else if (ent->attenuation == -1) {
-        ent->s.loop_attenuation = ATTN_LOOP_NONE;
-        ent->attenuation = ATTN_NONE;
-    } else if (ent->attenuation != ATTN_STATIC) {
-        ent->s.loop_attenuation = ent->attenuation;
-    }
 
     // if it starts open, switch the positions
     if (ent->spawnflags & SPAWNFLAG_DOOR_START_OPEN) {
@@ -2155,19 +2124,8 @@ void SP_func_train(edict_t *self)
     self->r.solid = SOLID_BSP;
     gi.setmodel(self, self->model);
 
-    if (st.noise) {
+    if (st.noise)
         self->moveinfo.sound_middle = gi.soundindex(st.noise);
-
-        // [Paril-KEX] for rhangar1 doors
-        if (!ED_WasKeySpecified("attenuation")) {
-            self->attenuation = ATTN_STATIC;
-        } else if (self->attenuation == -1) {
-            self->s.loop_attenuation = ATTN_LOOP_NONE;
-            self->attenuation = ATTN_NONE;
-        } else if (self->attenuation != ATTN_STATIC) {
-            self->s.loop_attenuation = self->attenuation;
-        }
-    }
 
     if (!self->speed)
         self->speed = 100;

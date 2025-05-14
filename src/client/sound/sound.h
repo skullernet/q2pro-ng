@@ -180,8 +180,12 @@ extern cvar_t       *s_underwater_gain_hf;
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
-#define S_GetEntityLoopVolume(ent)      ((ent)->loop_volume ? (ent)->loop_volume : 1.0f)
-#define S_GetEntityLoopDistMult(ent)    Com_GetEntityLoopDistMult((ent)->loop_attenuation)
+static inline float S_GetEntityLoopVolume(const entity_state_t *ent)
+{
+    int vol = (ent->sound >> 24) & 255;
+    return vol ? vol / 255.0f : 1.0f;
+}
+
 #define S_GetEntityLoopStereoPan(ent)   !((ent)->renderfx & RF_NO_STEREO)
 
 sfx_t *S_SfxForHandle(qhandle_t hSfx);

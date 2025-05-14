@@ -373,16 +373,14 @@ void M_SetEffects(edict_t *ent)
     ent->s.renderfx &= ~(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE);
 
     ent->s.sound = 0;
-    ent->s.loop_attenuation = 0;
 
     // we're gibbed
     if (ent->s.renderfx & RF_LOW_PRIORITY)
         return;
 
-    if (ent->monsterinfo.weapon_sound && ent->health > 0) {
-        ent->s.sound = ent->monsterinfo.weapon_sound;
-        ent->s.loop_attenuation = ATTN_NORM;
-    } else if (ent->monsterinfo.engine_sound)
+    if (ent->monsterinfo.weapon_sound && ent->health > 0)
+        ent->s.sound = G_EncodeSound(ent->monsterinfo.weapon_sound, CHAN_AUTO, 1, ATTN_NORM);
+    else if (ent->monsterinfo.engine_sound)
         ent->s.sound = ent->monsterinfo.engine_sound;
 
     if (ent->monsterinfo.aiflags & AI_RESURRECTING) {

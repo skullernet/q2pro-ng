@@ -382,13 +382,11 @@ static const netfield_t entity_state_fields[] = {
     NETF(solid, 32),
     NETF(morefx, -1),
     NETF(frame, 16),
-    NETF(sound, 13),
+    NETF(sound, -1),
     NETF(event, 8),
     NETF(event_param, -1),
     NETF(alpha, 0),
     NETF(scale, 0),
-    NETF(loop_volume, 0),
-    NETF(loop_attenuation, 0)
 };
 
 #undef NETF

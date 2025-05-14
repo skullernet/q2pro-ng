@@ -320,8 +320,6 @@ static const save_field_t entityfields[] = {
     H(s.morefx),
     F(s.alpha),
     F(s.scale),
-    F(s.loop_volume),
-    F(s.loop_attenuation),
 
     // [...]
 

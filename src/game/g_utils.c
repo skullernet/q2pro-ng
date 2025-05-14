@@ -406,6 +406,7 @@ void G_InitEdict(edict_t *e)
     e->r.ownernum = ENTITYNUM_NONE;
     e->classname = "noclass";
     e->gravity = 1.0f;
+    e->attenuation = ATTN_STATIC;
     e->s.number = e - g_edicts;
 
     // PGM - do this before calling the spawn function so it can be overridden.
@@ -621,6 +622,31 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     }
 
     return true; // all clear
+}
+
+uint32_t G_EncodeSound(uint32_t index, soundchan_t channel, float volume, float attenuation)
+{
+    uint32_t vol, att;
+
+    if (!index)
+        return 0;
+
+    Q_assert(index < MAX_SOUNDS);
+    Q_assert(channel < 8);
+
+    vol = Q_clip(volume * 255, 1, 255);
+    if (vol == 255)
+        vol = 0;
+
+    if (attenuation == ATTN_NONE) {
+        att = ATTN_ESCAPE_CODE;
+    } else {
+        att = Q_clip(attenuation * 64, 1, 255);
+        if (att == ATTN_ESCAPE_CODE)
+            att = 0;
+    }
+
+    return vol << 24 | att << 16 | channel << 13 | index;
 }
 
 void G_AddEvent(edict_t *ent, int event, int param)
