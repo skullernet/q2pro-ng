@@ -1097,10 +1097,6 @@ bool monster_start(edict_t *self)
     // [Paril-KEX] co-op health scale
     G_Monster_ScaleCoopHealth(self);
 
-    // set vision cone
-    if (!ED_WasKeySpecified("vision_cone"))
-        self->vision_cone = -2.0f; // special value to use old algorithm
-
     return true;
 }
 

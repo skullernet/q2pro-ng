@@ -407,6 +407,7 @@ void G_InitEdict(edict_t *e)
     e->classname = "noclass";
     e->gravity = 1.0f;
     e->attenuation = ATTN_STATIC;
+    e->vision_cone = -2.0f; // special value to use old algorithm
     e->s.number = e - g_edicts;
 
     // PGM - do this before calling the spawn function so it can be overridden.

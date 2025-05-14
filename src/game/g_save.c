@@ -41,14 +41,13 @@ int gzprintf(gzFile, const char *, ...) q_printf(2, 3);
 
 typedef enum {
     F_BYTE,
-    F_SHORT,
+    F_INT16,
     F_INT,
     F_UINT,         // hexadecimal
     F_INT64,
     F_UINT64,       // hexadecimal
     F_BOOL,
     F_FLOAT,
-    F_GRAVITY,
     F_LSTRING,      // string on disk, pointer in memory, TAG_LEVEL
     F_GSTRING,      // string on disk, pointer in memory, TAG_GAME
     F_ZSTRING,      // string on disk, string in memory
@@ -57,49 +56,69 @@ typedef enum {
     F_CLIENT,       // index on disk, pointer in memory
     F_ITEM,
     F_POINTER,
-    F_CLIENT_PERSISTENT,
+    F_STRUCT,
+
+    // these use custom writing methods
     F_INVENTORY,
     F_MAX_AMMO,
     F_STATS,
-    F_MOVEINFO,
-    F_MONSTERINFO,
     F_REINFORCEMENTS,
-    F_BMODEL_ANIM,
-    F_PLAYER_FOG,
-    F_PLAYER_HEIGHTFOG,
-    F_LEVEL_ENTRY,
 } fieldtype_t;
 
-typedef struct {
+typedef struct save_field_s {
     const char *name;
     uint32_t ofs;
-    uint16_t size;
-    uint16_t type;
+    uint32_t size;
+    uint16_t count;
+    uint8_t kind;
+    uint8_t ptrtyp;
+    const struct save_field_s *fields;  // for structs
 } save_field_t;
 
-#define FA_(type, name, size) { #name, _OFS(name), size, type }
-#define F_(type, name) FA_(type, name, 1)
-#define SZ(name, size) FA_(F_ZSTRING, name, size)
-#define BA(name, size) FA_(F_BYTE, name, size)
-#define B(name) BA(name, 1)
-#define SA(name, size) FA_(F_SHORT, name, size)
-#define S(name) SA(name, 1)
-#define IA(name, size) FA_(F_INT, name, size)
-#define I(name) IA(name, 1)
-#define H(name) F_(F_UINT, name)
-#define H64(name) F_(F_UINT64, name)
-#define O(name) F_(F_BOOL, name)
-#define FA(name, size) FA_(F_FLOAT, name, size)
-#define F(name) FA(name, 1)
-#define L(name) F_(F_LSTRING, name)
-#define G(name) F_(F_GSTRING, name)
-#define V(name) F_(F_VECTOR, name)
-#define M(name) F_(F_ITEM, name)
-#define E(name) F_(F_EDICT, name)
-#define T(name) F_(F_INT64, name)
-#define P(name, type) FA_(F_POINTER, name, type)
+// generic array
+#define GA_(kind, type, name, count) \
+    { #name, _OFS(name), sizeof(type), count, kind, 0, NULL }
 
-static const save_field_t moveinfo_fields[] = {
+// generic field
+#define GF_(kind, type, name) GA_(kind, type, name, 1)
+
+// custom field (size unknown)
+#define CF_(kind, name) \
+    { #name, _OFS(name), 0, 0, kind, 0, NULL }
+
+// function or moveinfo pointer
+#define P(name, ptrtyp) \
+    { #name, _OFS(name), sizeof(void *), 1, F_POINTER, ptrtyp, NULL }
+
+// array of structs
+#define RA(type, name, count) \
+    { #name, _OFS(name), sizeof(type), count, F_STRUCT, 0, type##_fields }
+
+// arrays
+#define FA(name, count) GA_(F_FLOAT,   float,   name, count)
+#define SZ(name, count) GA_(F_ZSTRING, char,    name, count)
+#define BA(name, count) GA_(F_BYTE,    byte,    name, count)
+#define SA(name, count) GA_(F_INT16,   int16_t, name, count)
+#define IA(name, count) GA_(F_INT,     int,     name, count)
+
+// single fields
+#define F(name) FA(name, 1)
+#define B(name) BA(name, 1)
+#define S(name) SA(name, 1)
+#define I(name) IA(name, 1)
+#define R(type, name) RA(type, name, 1)
+
+#define H(name)   GF_(F_UINT,    int,       name)
+#define H64(name) GF_(F_UINT64,  uint64_t,  name)
+#define O(name)   GF_(F_BOOL,    bool,      name)
+#define L(name)   GF_(F_LSTRING, char *,    name)
+#define G(name)   GF_(F_GSTRING, char *,    name)
+#define V(name)   GF_(F_VECTOR,  vec3_t,    name)
+#define M(name)   GF_(F_ITEM,    gitem_t *, name)
+#define E(name)   GF_(F_EDICT,   edict_t *, name)
+#define T(name)   GF_(F_INT64,   gtime_t,   name)
+
+static const save_field_t moveinfo_t_fields[] = {
 #define _OFS(x) offsetof(moveinfo_t, x)
     V(start_origin),
     V(start_angles),
@@ -130,9 +149,10 @@ static const save_field_t moveinfo_fields[] = {
     P(endfunc, P_moveinfo_endfunc),
     P(blocked, P_moveinfo_blocked),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t reinforcement_fields[] = {
+static const save_field_t reinforcement_t_fields[] = {
 #define _OFS(x) offsetof(reinforcement_t, x)
     L(classname),
     I(strength),
@@ -140,9 +160,10 @@ static const save_field_t reinforcement_fields[] = {
     V(mins),
     V(maxs),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t monsterinfo_fields[] = {
+static const save_field_t monsterinfo_t_fields[] = {
 #define _OFS(x) offsetof(monsterinfo_t, x)
     P(active_move, P_mmove_t),
     P(next_move, P_mmove_t),
@@ -256,14 +277,15 @@ static const save_field_t monsterinfo_fields[] = {
     T(move_block_change_time),
     T(react_to_damage_time),
 
-    F_(F_REINFORCEMENTS, reinforcements),
+    CF_(F_REINFORCEMENTS, reinforcements),
     BA(chosen_reinforcements, MAX_REINFORCEMENTS),
 
     T(jump_time),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t bmodel_anim_fields[] = {
+static const save_field_t bmodel_anim_t_fields[] = {
 #define _OFS(x) offsetof(bmodel_anim_t, x)
     I(params[0].start),
     I(params[0].end),
@@ -280,17 +302,19 @@ static const save_field_t bmodel_anim_fields[] = {
     O(currently_alternate),
     T(next_tick),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t player_fog_fields[] = {
+static const save_field_t player_fog_t_fields[] = {
 #define _OFS(x) offsetof(player_fog_t, x)
     V(color),
     F(density),
     F(sky_factor),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t player_heightfog_fields[] = {
+static const save_field_t player_heightfog_t_fields[] = {
 #define _OFS(x) offsetof(player_heightfog_t, x)
     V(start.color),
     F(start.dist),
@@ -299,9 +323,10 @@ static const save_field_t player_heightfog_fields[] = {
     F(density),
     F(falloff),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t entityfields[] = {
+static const save_field_t edict_t_fields[] = {
 #define _OFS FOFS
     V(s.origin),
     V(s.angles),
@@ -366,7 +391,7 @@ static const save_field_t entityfields[] = {
     V(avelocity),
     I(mass),
     T(air_finished),
-    F_(F_GRAVITY, gravity),
+    F(gravity),
 
     E(goalentity),
     E(movetarget),
@@ -439,12 +464,12 @@ static const save_field_t entityfields[] = {
 
     M(item),
 
-    F_(F_MOVEINFO, moveinfo),
-    F_(F_MONSTERINFO, monsterinfo),
+    R(moveinfo_t, moveinfo),
+    R(monsterinfo_t, monsterinfo),
 
     H(plat2flags),
     V(offset),
-    FA_(F_GRAVITY, gravityVector, 3),
+    V(gravityVector),
     E(bad_area),
     E(hint_chain),
     E(monster_hint_chain),
@@ -461,16 +486,16 @@ static const save_field_t entityfields[] = {
     T(disintegrator_time),
     H(hackflags),
 
-    F_(F_PLAYER_FOG, fog_off),
-    F_(F_PLAYER_FOG, fog),
+    R(player_fog_t, fog_off),
+    R(player_fog_t, fog),
 
-    F_(F_PLAYER_HEIGHTFOG, heightfog_off),
-    F_(F_PLAYER_HEIGHTFOG, heightfog),
+    R(player_heightfog_t, heightfog_off),
+    R(player_heightfog_t, heightfog),
 
     BA(item_picked_up_by, MAX_CLIENTS / 8),
     T(slime_debounce_time),
 
-    F_(F_BMODEL_ANIM, bmodel_anim),
+    R(bmodel_anim_t, bmodel_anim),
 
     L(style_on),
     L(style_off),
@@ -479,9 +504,10 @@ static const save_field_t entityfields[] = {
     T(no_gravity_time),
     F(vision_cone),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t levelfields[] = {
+static const save_field_t level_locals_t_fields[] = {
 #define _OFS(x) offsetof(level_locals_t, x)
     T(time),
 
@@ -541,9 +567,10 @@ static const save_field_t levelfields[] = {
     F(skyrotate),
     I(skyautorotate),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t client_persistent_fields[] = {
+static const save_field_t client_persistent_t_fields[] = {
 #define _OFS(x) offsetof(client_persistent_t, x)
     SZ(userinfo, MAX_INFO_STRING),
     SZ(netname, 16),
@@ -557,9 +584,9 @@ static const save_field_t client_persistent_fields[] = {
 
     I(selected_item),
     T(selected_item_time),
-    F_(F_INVENTORY, inventory),
+    GA_(F_INVENTORY, int, inventory, IT_TOTAL),
 
-    F_(F_MAX_AMMO, max_ammo),
+    GA_(F_MAX_AMMO, int16_t, max_ammo, AMMO_MAX),
 
     M(weapon),
     M(lastweapon),
@@ -578,14 +605,15 @@ static const save_field_t client_persistent_fields[] = {
     T(megahealth_time),
     I(lives),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t clientfields[] = {
+static const save_field_t gclient_t_fields[] = {
 #define _OFS CLOFS
     I(ps.pmove.pm_type),
 
-    FA(ps.pmove.origin, 3),
-    FA(ps.pmove.velocity, 3),
+    V(ps.pmove.origin),
+    V(ps.pmove.velocity),
     I(ps.pmove.pm_flags),
     I(ps.pmove.pm_time),
     I(ps.pmove.gravity),
@@ -603,15 +631,15 @@ static const save_field_t clientfields[] = {
     FA(ps.screen_blend, 4),
     FA(ps.damage_blend, 4),
 
-    F(ps.fov),
+    I(ps.fov),
 
     I(ps.rdflags),
 
-    F_(F_STATS, ps.stats),
+    CF_(F_STATS, ps.stats),
 
-    F_(F_CLIENT_PERSISTENT, pers),
+    R(client_persistent_t, pers),
 
-    F_(F_CLIENT_PERSISTENT, resp.coop_respawn),
+    R(client_persistent_t, resp.coop_respawn),
 
     T(resp.entertime),
     I(resp.score),
@@ -697,14 +725,15 @@ static const save_field_t clientfields[] = {
     E(sound2_entity),
     T(sound2_entity_time),
 
-    F_(F_PLAYER_FOG, wanted_fog),
-    F_(F_PLAYER_HEIGHTFOG, wanted_heightfog),
+    R(player_fog_t, wanted_fog),
+    R(player_heightfog_t, wanted_heightfog),
 
     T(last_firing_time),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t level_entry_fields[] = {
+static const save_field_t level_entry_t_fields[] = {
 #define _OFS(x) offsetof(level_entry_t, x)
     SZ(map_name, MAX_QPATH),
     SZ(pretty_name, MAX_QPATH),
@@ -715,9 +744,10 @@ static const save_field_t level_entry_fields[] = {
     T(time),
     I(visit_order),
 #undef _OFS
+    { 0 }
 };
 
-static const save_field_t gamefields[] = {
+static const save_field_t game_locals_t_fields[] = {
 #define _OFS(x) offsetof(game_locals_t, x)
     SZ(helpmessage1, MAX_TOKEN_CHARS),
     SZ(helpmessage2, MAX_TOKEN_CHARS),
@@ -731,8 +761,9 @@ static const save_field_t gamefields[] = {
 
     O(autosaved),
 
-    FA_(F_LEVEL_ENTRY, level_entries, MAX_LEVELS_PER_UNIT),
+    RA(level_entry_t, level_entries, MAX_LEVELS_PER_UNIT),
 #undef _OFS
+    { 0 }
 };
 
 //=========================================================
@@ -744,15 +775,10 @@ static gzFile fp;
 //
 
 static const union {
-    client_persistent_t client_pers;
-    moveinfo_t moveinfo;
-    monsterinfo_t monsterinfo;
-    bmodel_anim_t bmodel_anim;
-    player_fog_t player_fog;
-    player_heightfog_t player_heightfog;
-    level_entry_t level_entries[MAX_LEVELS_PER_UNIT];
-    int inventory[IT_TOTAL];
-    int16_t max_ammo[AMMO_MAX];
+    level_locals_t level;
+    game_locals_t game;
+    gclient_t client;
+    reinforcement_t reinforcement;
 } empty;
 
 static struct {
@@ -801,7 +827,7 @@ static void write_uint64_hex(const char *name, uint64_t v)
     gzprintf(fp, "%*s %#"PRIx64"\n", indent(name), v);
 }
 
-static void write_short_v(const char *name, const int16_t *v, int n)
+static void write_int16_v(const char *name, const int16_t *v, int n)
 {
     gzprintf(fp, "%*s ", indent(name));
     for (int i = 0; i < n; i++)
@@ -913,7 +939,7 @@ static void write_stats(const int16_t *stats)
     end_block();
 }
 
-static void write_fields(const char *name, const save_field_t *fields, int count, const void *base);
+static void write_fields(const char *name, const save_field_t *field, const void *from, const void *to);
 
 static void write_reinforcements(const reinforcement_list_t *list)
 {
@@ -922,158 +948,112 @@ static void write_reinforcements(const reinforcement_list_t *list)
 
     begin_block(va("reinforcements %d", list->num_reinforcements));
     for (int i = 0; i < list->num_reinforcements; i++)
-        write_fields(va("%d", i), reinforcement_fields, q_countof(reinforcement_fields), &list->reinforcements[i]);
+        write_fields(va("%d", i), reinforcement_t_fields, &empty.reinforcement, &list->reinforcements[i]);
     end_block();
 }
 
-static void write_level_entries(const level_entry_t *entries)
+static void write_struct(const save_field_t *field, const byte *from, const byte *to)
 {
-    if (!memcmp(entries, &empty.level_entries, sizeof(empty.level_entries)))
+    if (field->count == 1) {
+        write_fields(field->name, field->fields, from, to);
+        return;
+    }
+
+    begin_block(field->name);
+    for (int i = 0; i < field->count; i++)
+        write_fields(va("%d", i), field->fields, from + i * field->size, to + i * field->size);
+    end_block();
+}
+
+static void write_field(const save_field_t *field, const void *from, const void *to)
+{
+    const void *e = (const byte *)from + field->ofs;
+    const void *p = (const byte *)to   + field->ofs;
+    size_t size = field->size * field->count;
+
+    if (size && !memcmp(e, p, size))
         return;
 
-    begin_block("level_entries");
-    for (int i = 0; i < MAX_LEVELS_PER_UNIT; i++)
-        if (memcmp(&entries[i], &empty.level_entries[0], sizeof(empty.level_entries[0])))
-            write_fields(va("%d", i), level_entry_fields, q_countof(level_entry_fields), &entries[i]);
-    end_block();
-}
-
-static const vec3_t default_gravity = { 0, 0, -1 };
-
-static void write_field(const save_field_t *field, const void *base)
-{
-    const void *p = (const byte *)base + field->ofs;
-
-    switch (field->type) {
+    switch (field->kind) {
     case F_BYTE:
-        if (memcmp(p, &empty, field->size))
-            write_byte_v(field->name, p, field->size);
+        write_byte_v(field->name, p, field->count);
         break;
-    case F_SHORT:
-        if (memcmp(p, &empty, field->size * sizeof(int16_t)))
-            write_short_v(field->name, p, field->size);
+    case F_INT16:
+        write_int16_v(field->name, p, field->count);
         break;
     case F_INT:
-        if (memcmp(p, &empty, field->size * sizeof(int)))
-            write_int_v(field->name, p, field->size);
+        write_int_v(field->name, p, field->count);
         break;
     case F_UINT:
-        if (*(unsigned *)p)
-            write_uint_hex(field->name, *(unsigned *)p);
+        write_uint_hex(field->name, *(unsigned *)p);
         break;
     case F_INT64:
-        if (*(int64_t *)p)
-            write_int64(field->name, *(int64_t *)p);
+        write_int64(field->name, *(int64_t *)p);
         break;
     case F_UINT64:
-        if (*(uint64_t *)p)
-            write_uint64_hex(field->name, *(uint64_t *)p);
+        write_uint64_hex(field->name, *(uint64_t *)p);
         break;
     case F_BOOL:
-        if (*(bool *)p)
-            gzprintf(fp, "%*s\n", indent(field->name));
+        gzprintf(fp, "%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
         break;
     case F_FLOAT:
-        if (memcmp(p, &empty, field->size * sizeof(float)))
-            write_float_v(field->name, p, field->size);
-        break;
-    case F_GRAVITY:
-        if ((field->size == 1 && *(float *)p != 1.0f) ||
-            (field->size == 3 && !VectorCompare((float *)p, default_gravity)))
-            write_float_v(field->name, p, field->size);
+        write_float_v(field->name, p, field->count);
         break;
     case F_VECTOR:
-        if (memcmp(p, &empty, sizeof(vec3_t)))
-            write_vector(field->name, p);
+        write_vector(field->name, p);
         break;
 
     case F_ZSTRING:
-        if (*(const char *)p)
-            write_string(field->name, (const char *)p);
+        write_string(field->name, (const char *)p);
         break;
     case F_LSTRING:
     case F_GSTRING:
-        if (*(char **)p)
-            write_string(field->name, *(char **)p);
+        write_string(field->name, *(char **)p);
         break;
 
     case F_EDICT:
-        if (*(edict_t **)p)
-            write_int(field->name, *(edict_t **)p - g_edicts);
+        write_int(field->name, *(edict_t **)p - g_edicts);
         break;
     case F_CLIENT:
-        if (*(gclient_t **)p)
-            write_int(field->name, *(gclient_t **)p - game.clients);
+        write_int(field->name, *(gclient_t **)p - game.clients);
         break;
 
     case F_ITEM:
-        if (*(gitem_t **)p)
-            write_tok(field->name, (*(gitem_t **)p)->classname);
+        write_tok(field->name, (*(gitem_t **)p)->classname);
         break;
     case F_POINTER:
-        if (*(void **)p)
-            write_pointer(field->name, *(void **)p, field->size);
+        write_pointer(field->name, *(void **)p, field->ptrtyp);
         break;
 
-    case F_CLIENT_PERSISTENT:
-        if (memcmp(p, &empty.client_pers, sizeof(empty.client_pers)))
-            write_fields(field->name, client_persistent_fields, q_countof(client_persistent_fields), p);
+    case F_STRUCT:
+        write_struct(field, e, p);
         break;
 
     case F_INVENTORY:
-        if (memcmp(p, empty.inventory, sizeof(empty.inventory)))
-            write_inventory(p);
+        write_inventory(p);
         break;
 
     case F_MAX_AMMO:
-        if (memcmp(p, empty.max_ammo, sizeof(empty.max_ammo)))
-            write_max_ammo(p);
+        write_max_ammo(p);
         break;
 
     case F_STATS:
         write_stats((const int16_t *)p);
         break;
 
-    case F_MOVEINFO:
-        if (memcmp(p, &empty.moveinfo, sizeof(empty.moveinfo)))
-            write_fields(field->name, moveinfo_fields, q_countof(moveinfo_fields), p);
-        break;
-
-    case F_MONSTERINFO:
-        if (memcmp(p, &empty.monsterinfo, sizeof(empty.monsterinfo)))
-            write_fields(field->name, monsterinfo_fields, q_countof(monsterinfo_fields), p);
-        break;
-
     case F_REINFORCEMENTS:
         write_reinforcements(p);
-        break;
-
-    case F_BMODEL_ANIM:
-        if (memcmp(p, &empty.bmodel_anim, sizeof(empty.bmodel_anim)))
-            write_fields(field->name, bmodel_anim_fields, q_countof(bmodel_anim_fields), p);
-        break;
-
-    case F_PLAYER_FOG:
-        if (memcmp(p, &empty.player_fog, sizeof(empty.player_fog)))
-            write_fields(field->name, player_fog_fields, q_countof(player_fog_fields), p);
-        break;
-
-    case F_PLAYER_HEIGHTFOG:
-        if (memcmp(p, &empty.player_heightfog, sizeof(empty.player_heightfog)))
-            write_fields(field->name, player_heightfog_fields, q_countof(player_heightfog_fields), p);
-        break;
-
-    case F_LEVEL_ENTRY:
-        write_level_entries(p);
         break;
     }
 }
 
-static void write_fields(const char *name, const save_field_t *fields, int count, const void *base)
+static void write_fields(const char *name, const save_field_t *field, const void *from, const void *to)
 {
     begin_block(name);
-    for (int i = 0; i < count; i++)
-        write_field(&fields[i], base);
+    while (field->name) {
+        write_field(field, from, to);
+        field++;
+    }
     end_block();
 }
 
@@ -1319,7 +1299,7 @@ static uint64_t parse_uint64(void)
     return v;
 }
 
-static void parse_short_v(int16_t *v, int n)
+static void parse_int16_v(int16_t *v, int n)
 {
     for (int i = 0; i < n; i++)
         v[i] = parse_int16();
@@ -1355,6 +1335,16 @@ static void parse_byte_v(byte *v, int n)
             parse_error("not a hex character");
         v[i] = (c1 << 4) | c2;
     }
+}
+
+static bool parse_bool(void)
+{
+    char *tok = parse();
+    if (!strcmp(tok, "false"))
+        return false;
+    if (!strcmp(tok, "true"))
+        return true;
+    parse_error("expected bool, got %s", COM_MakePrintable(tok));
 }
 
 static char *read_string(int tag)
@@ -1459,7 +1449,7 @@ static void read_stats(int16_t *stats)
     }
 }
 
-static void read_fields(const save_field_t *fields, int count, void *base);
+static void read_fields(const save_field_t *field, void *base);
 
 static void read_reinforcements(reinforcement_list_t *list)
 {
@@ -1470,31 +1460,36 @@ static void read_reinforcements(reinforcement_list_t *list)
     list->num_reinforcements = count;
     list->reinforcements = gi.TagMalloc(sizeof(list->reinforcements[0]) * count, TAG_LEVEL);
     while ((num = parse_array(count)) != -1)
-        read_fields(reinforcement_fields, q_countof(reinforcement_fields), &list->reinforcements[num]);
+        read_fields(reinforcement_t_fields, &list->reinforcements[num]);
 }
 
-static void read_level_entries(level_entry_t *entries)
+static void read_struct(const save_field_t *field, byte *base)
 {
     int num;
 
+    if (field->count == 1) {
+        read_fields(field->fields, base);
+        return;
+    }
+
     expect("{");
-    while ((num = parse_array(MAX_LEVELS_PER_UNIT)) != -1)
-        read_fields(level_entry_fields, q_countof(level_entry_fields), &entries[num]);
+    while ((num = parse_array(field->count)) != -1)
+        read_fields(field->fields, base + num * field->size);
 }
 
 static void read_field(const save_field_t *field, void *base)
 {
     void *p = (byte *)base + field->ofs;
 
-    switch (field->type) {
+    switch (field->kind) {
     case F_BYTE:
-        parse_byte_v(p, field->size);
+        parse_byte_v(p, field->count);
         break;
-    case F_SHORT:
-        parse_short_v(p, field->size);
+    case F_INT16:
+        parse_int16_v(p, field->count);
         break;
     case F_INT:
-        parse_int_v(p, field->size);
+        parse_int_v(p, field->count);
         break;
     case F_UINT:
         *(unsigned *)p = parse_uint(UINT32_MAX);
@@ -1504,11 +1499,10 @@ static void read_field(const save_field_t *field, void *base)
         *(uint64_t *)p = parse_uint64();
         break;
     case F_BOOL:
-        *(bool *)p = true;
+        *(bool *)p = parse_bool();
         break;
     case F_FLOAT:
-    case F_GRAVITY:
-        parse_float_v(p, field->size);
+        parse_float_v(p, field->count);
         break;
     case F_VECTOR:
         read_vector((vec_t *)p);
@@ -1521,7 +1515,7 @@ static void read_field(const save_field_t *field, void *base)
         *(char **)p = read_string(TAG_GAME);
         break;
     case F_ZSTRING:
-        read_zstring(p, field->size);
+        read_zstring(p, field->count);
         break;
 
     case F_EDICT:
@@ -1535,11 +1529,11 @@ static void read_field(const save_field_t *field, void *base)
         *(const gitem_t **)p = read_item();
         break;
     case F_POINTER:
-        *(void **)p = read_pointer(field->size);
+        *(void **)p = read_pointer(field->ptrtyp);
         break;
 
-    case F_CLIENT_PERSISTENT:
-        read_fields(client_persistent_fields, q_countof(client_persistent_fields), p);
+    case F_STRUCT:
+        read_struct(field, p);
         break;
 
     case F_INVENTORY:
@@ -1552,54 +1546,28 @@ static void read_field(const save_field_t *field, void *base)
         read_stats(p);
         break;
 
-    case F_MOVEINFO:
-        read_fields(moveinfo_fields, q_countof(moveinfo_fields), p);
-        break;
-
-    case F_MONSTERINFO:
-        read_fields(monsterinfo_fields, q_countof(monsterinfo_fields), p);
-        break;
-
     case F_REINFORCEMENTS:
         read_reinforcements(p);
-        break;
-
-    case F_BMODEL_ANIM:
-        read_fields(bmodel_anim_fields, q_countof(bmodel_anim_fields), p);
-        break;
-
-    case F_PLAYER_FOG:
-        read_fields(player_fog_fields, q_countof(player_fog_fields), p);
-        break;
-
-    case F_PLAYER_HEIGHTFOG:
-        read_fields(player_heightfog_fields, q_countof(player_heightfog_fields), p);
-        break;
-
-    case F_LEVEL_ENTRY:
-        read_level_entries(p);
         break;
     }
 }
 
-static void read_fields(const save_field_t *fields, int count, void *base)
+static void read_fields(const save_field_t *field, void *base)
 {
-    const save_field_t *f;
-    const char *tok;
-    int i;
-
     expect("{");
     while (1) {
-        tok = parse();
+        const char *tok = parse();
         if (!strcmp(tok, "}"))
             break;
-        for (i = 0, f = fields; i < count; i++, f++)
-            if (!strcmp(f->name, tok))
+        while (field->name) {
+            if (!strcmp(field->name, tok))
                 break;
-        if (i == count)
-            unknown("field");
+            field++;
+        }
+        if (field->name)
+            read_field(field, base);
         else
-            read_field(f, base);
+            unknown("field");
     }
 }
 
@@ -1635,12 +1603,12 @@ void WriteGame(const char *filename, bool autosave)
     gzprintf(fp, SAVE_MAGIC1 " version %d\n", SAVE_VERSION_CURRENT);
 
     game.autosaved = autosave;
-    write_fields("game", gamefields, q_countof(gamefields), &game);
+    write_fields("game", game_locals_t_fields, &empty.game, &game);
     game.autosaved = false;
 
     begin_block("clients");
     for (i = 0; i < game.maxclients; i++)
-        write_fields(va("%d", i), clientfields, q_countof(clientfields), &game.clients[i]);
+        write_fields(va("%d", i), gclient_t_fields, &empty.client, &game.clients[i]);
     end_block();
 
     i = gzclose(fp);
@@ -1672,7 +1640,7 @@ void ReadGame(const char *filename)
     int maxclients = game.maxclients;
 
     expect("game");
-    read_fields(gamefields, q_countof(gamefields), &game);
+    read_fields(game_locals_t_fields, &game);
 
     // should agree with server's version
     if (game.maxclients != maxclients)
@@ -1683,7 +1651,7 @@ void ReadGame(const char *filename)
     expect("clients");
     expect("{");
     while ((num = parse_array(game.maxclients)) != -1)
-        read_fields(clientfields, q_countof(clientfields), &game.clients[num]);
+        read_fields(gclient_t_fields, &game.clients[num]);
 
     gzclose(fp);
     fp = NULL;
@@ -1700,7 +1668,7 @@ WriteLevel
 void WriteLevel(const char *filename)
 {
     int     i;
-    edict_t *ent;
+    edict_t *ent, *nullent;
 
     fp = gzopen(filename, "wb");
     if (!fp)
@@ -1710,7 +1678,11 @@ void WriteLevel(const char *filename)
     gzprintf(fp, SAVE_MAGIC2 " version %d\n", SAVE_VERSION_CURRENT);
 
     // write out level_locals_t
-    write_fields("level", levelfields, q_countof(levelfields), &level);
+    write_fields("level", level_locals_t_fields, &empty.level, &level);
+
+    // init dummy entity to get default values
+    nullent = &g_edicts[ENTITYNUM_NONE];
+    G_InitEdict(nullent);
 
     // write out all the entities
     begin_block("entities");
@@ -1718,9 +1690,11 @@ void WriteLevel(const char *filename)
         ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
-        write_fields(va("%d", i), entityfields, q_countof(entityfields), ent);
+        write_fields(va("%d", i), edict_t_fields, nullent, ent);
     }
     end_block();
+
+    memset(nullent, 0, sizeof(*nullent));
 
     i = gzclose(fp);
     fp = NULL;
@@ -1755,11 +1729,9 @@ void ReadLevel(const char *filename)
     gi.FreeTags(TAG_LEVEL);
 
     // clear old pointers
-    for (i = 0; i < q_countof(levelfields); i++) {
-        const save_field_t *f = &levelfields[i];
-        if (f->type == F_LSTRING)
+    for (const save_field_t *f = level_locals_t_fields; f->name; f++)
+        if (f->kind == F_LSTRING)
             *(char **)((byte *)&level + f->ofs) = NULL;
-    }
 
     fp = gzopen(filename, "rb");
     if (!fp)
@@ -1781,7 +1753,7 @@ void ReadLevel(const char *filename)
 
     // load the level locals
     expect("level");
-    read_fields(levelfields, q_countof(levelfields), &level);
+    read_fields(level_locals_t_fields, &level);
 
     // load all the entities
     expect("entities");
@@ -1795,7 +1767,7 @@ void ReadLevel(const char *filename)
             parse_error("duplicate entity: %d", entnum);
 
         G_InitEdict(ent);
-        read_fields(entityfields, q_countof(entityfields), ent);
+        read_fields(edict_t_fields, ent);
 
         // let the server rebuild world links for this ent
         gi.linkentity(ent);
