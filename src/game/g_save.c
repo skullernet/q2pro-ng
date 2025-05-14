@@ -1784,8 +1784,8 @@ void ReadLevel(const char *filename)
     if (line.version < SAVE_VERSION_MINIMUM || line.version > SAVE_VERSION_CURRENT)
         gi.error("Savegame has bad version");
 
-    // wipe all the entities
-    memset(g_edicts, 0, sizeof(g_edicts));
+    // wipe all the entities except world
+    memset(g_edicts, 0, sizeof(g_edicts[0]) * ENTITYNUM_WORLD);
     globals.num_edicts = game.maxclients;
 
     // load the level locals
