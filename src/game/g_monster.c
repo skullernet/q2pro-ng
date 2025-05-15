@@ -379,7 +379,7 @@ void M_SetEffects(edict_t *ent)
         return;
 
     if (ent->monsterinfo.weapon_sound && ent->health > 0)
-        ent->s.sound = G_EncodeSound(ent->monsterinfo.weapon_sound, CHAN_AUTO, 1, ATTN_NORM);
+        ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->monsterinfo.weapon_sound, 1, ATTN_NORM);
     else if (ent->monsterinfo.engine_sound)
         ent->s.sound = ent->monsterinfo.engine_sound;
 

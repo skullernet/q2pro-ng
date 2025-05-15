@@ -55,14 +55,14 @@ static int G_GetMoveinfoSound(edict_t *self, const char *default_value, const ch
 {
     if (!wanted_value) {
         if (default_value)
-            return G_EncodeSound(gi.soundindex(default_value), CHAN_AUTO, 1, self->attenuation);
+            return G_EncodeSound(CHAN_AUTO, gi.soundindex(default_value), 1, self->attenuation);
         return 0;
     }
 
     if (!*wanted_value || *wanted_value == '0' || *wanted_value == ' ')
         return 0;
 
-    return G_EncodeSound(gi.soundindex(wanted_value), CHAN_AUTO, 1, self->attenuation);
+    return G_EncodeSound(CHAN_AUTO, gi.soundindex(wanted_value), 1, self->attenuation);
 }
 
 void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *default_mid, const char *default_end)
@@ -718,7 +718,7 @@ void USE(rotating_use)(edict_t *self, edict_t *other, edict_t *activator)
         }
         // PGM
     } else {
-        self->s.sound = G_EncodeSound(self->moveinfo.sound_middle, CHAN_AUTO, 1, self->attenuation);
+        self->s.sound = G_EncodeSound(CHAN_AUTO, self->moveinfo.sound_middle, 1, self->attenuation);
         // PGM
         if (self->spawnflags & SPAWNFLAG_ROTATING_ACCEL) // accelerate
             rotating_accel(self);

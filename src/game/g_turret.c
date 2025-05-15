@@ -142,7 +142,7 @@ void THINK(turret_breach_think)(edict_t *self)
     for (ent = self->teammaster; ent; ent = ent->teamchain) {
         if (ent->noise_index) {
             if (delta[0] || delta[1])
-                ent->s.sound = G_EncodeSound(ent->noise_index, CHAN_AUTO, 1, ATTN_NORM);
+                ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
             else
                 ent->s.sound = 0;
         }

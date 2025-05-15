@@ -628,15 +628,15 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
 {
     edict_t *te = G_TempEntity(origin, EV_SOUND);
-    te->s.event_param = G_EncodeSound(index, channel & 7, volume, attenuation);
+    te->s.event_param = G_EncodeSound(channel & 7, index, volume, attenuation);
 }
 
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
 {
-    G_AddEvent(ent, EV_SOUND, G_EncodeSound(index, channel & 7, volume, attenuation));
+    G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
 }
 
-uint32_t G_EncodeSound(int index, soundchan_t channel, float volume, float attenuation)
+uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation)
 {
     uint32_t vol, att;
 

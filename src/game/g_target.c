@@ -54,7 +54,7 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
         if (ent->s.sound)
             ent->s.sound = 0; // turn it off
         else
-            ent->s.sound = G_EncodeSound(ent->noise_index, CHAN_AUTO, ent->volume, ent->attenuation); // start it
+            ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, ent->volume, ent->attenuation); // start it
     } else {
         // normal sound
         if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE)
@@ -92,7 +92,7 @@ void SP_target_speaker(edict_t *ent)
 
     // check for prestarted looping sound
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
-        ent->s.sound = G_EncodeSound(ent->noise_index, CHAN_AUTO, ent->volume, ent->attenuation);
+        ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, ent->volume, ent->attenuation);
 
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_NO_STEREO)
         ent->s.renderfx |= RF_NO_STEREO;

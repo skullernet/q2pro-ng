@@ -970,7 +970,7 @@ static void G_SetClientSound(edict_t *ent)
     ent->s.sound = 0;
 
     if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME))) {
-        ent->s.sound = G_EncodeSound(level.snd_fry, CHAN_AUTO, 1, ATTN_STATIC);
+        ent->s.sound = G_EncodeSound(CHAN_AUTO, level.snd_fry, 1, ATTN_STATIC);
         return;
     }
 
@@ -1001,7 +1001,7 @@ static void G_SetClientSound(edict_t *ent)
     }
 
     // weapon sounds play at a higher attn
-    ent->s.sound = G_EncodeSound(ent->s.sound, CHAN_AUTO, 1, ATTN_NORM);
+    ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->s.sound, 1, ATTN_NORM);
 }
 
 /*
