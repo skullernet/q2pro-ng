@@ -29,17 +29,17 @@ void flyer_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 
 void MONSTERINFO_SIGHT(flyer_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_IDLE(flyer_idle)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
 }
 
 static void flyer_pop_blades(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sproing, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sproing, 1, ATTN_NORM);
 }
 
 static const mframe_t flyer_frames_stand[] = {
@@ -446,7 +446,7 @@ static void flyer_slash_left(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
-    G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
 }
 
 static void flyer_slash_right(edict_t *self)
@@ -454,7 +454,7 @@ static void flyer_slash_right(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
-    G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
 }
 
 static const mframe_t flyer_frames_start_melee[] = {
@@ -589,11 +589,11 @@ void PAIN(flyer_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     n = irandom1(3);
     if (n == 0)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else if (n == 1)
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -628,7 +628,7 @@ static const gib_def_t flyer_gibs[] = {
 
 void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1);

@@ -120,7 +120,7 @@ Mal's amb4 loop entity
 void THINK(amb4_think)(edict_t *ent)
 {
     ent->nextthink = level.time + SEC(2.7f);
-    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NONE, 0);
+    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NONE);
 }
 
 void SP_misc_amb4(edict_t *ent)

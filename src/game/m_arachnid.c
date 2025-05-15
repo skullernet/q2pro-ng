@@ -23,7 +23,7 @@ static int sound_pissed;
 
 void MONSTERINFO_SIGHT(arachnid_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 //
@@ -58,7 +58,7 @@ void MONSTERINFO_STAND(arachnid_stand)(edict_t *self)
 
 static void arachnid_footstep(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_step, 0.5f, ATTN_IDLE, 0.0f);
+    G_StartSound(self, CHAN_BODY, sound_step, 0.5f, ATTN_IDLE);
 }
 
 static const mframe_t arachnid_frames_walk[] = {
@@ -137,7 +137,7 @@ void PAIN(arachnid_pain)(edict_t *self, edict_t *other, float kick, int damage, 
         return;
 
     self->pain_debounce_time = level.time + SEC(3);
-    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -155,7 +155,7 @@ static void arachnid_charge_rail(edict_t *self, monster_muzzleflash_id_t mz)
     if (!self->enemy || !self->enemy->r.inuse)
         return;
 
-    G_StartSound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM);
 
     vec3_t forward, right, start;
     AngleVectors(self->s.angles, forward, right, NULL);
@@ -307,7 +307,7 @@ const mmove_t MMOVE_T(arachnid_attack_up1) = { FRAME_rails_up1, FRAME_rails_up16
 
 static void arachnid_melee_charge(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_melee, 1.f, ATTN_NORM, 0.f);
+    G_StartSound(self, CHAN_WEAPON, sound_melee, 1.f, ATTN_NORM);
 }
 
 static void arachnid_melee_hit(edict_t *self)
@@ -455,7 +455,7 @@ static void arachnid_spawn(edict_t *self)
         ent->monsterinfo.slots_from_commander = reinforcement->strength;
         self->monsterinfo.monster_used += reinforcement->strength;
 
-        G_StartSound(ent, CHAN_BODY, sound_spawn, 1, ATTN_NONE, 0);
+        G_StartSound(ent, CHAN_BODY, sound_spawn, 1, ATTN_NONE);
 
         if ((self->enemy->r.inuse) && (self->enemy->health > 0)) {
             ent->enemy = self->enemy;
@@ -505,7 +505,7 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
              (M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL1]) || M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL2])))
     {
         M_SetAnimation(self, &arachnid_taunt);
-        G_StartSound(self, CHAN_VOICE, sound_pissed, 1, 0.25f, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pissed, 1, 0.25f);
         self->count = 0;
         self->pain_debounce_time = level.time + SEC(4.5f);
         self->last_move_time = level.time + SEC(10);
@@ -579,7 +579,7 @@ void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
         self->deadflag = true;
         return;
@@ -589,7 +589,7 @@ void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
 

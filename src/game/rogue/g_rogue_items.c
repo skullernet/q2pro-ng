@@ -33,7 +33,7 @@ void Use_IR(edict_t *ent, const gitem_t *item)
 
     ent->client->ir_time = max(level.time, ent->client->ir_time) + SEC(60);
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ir_start.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ir_start.wav"), 1, ATTN_NORM);
 }
 
 void Use_Double(edict_t *ent, const gitem_t *item)
@@ -42,7 +42,7 @@ void Use_Double(edict_t *ent, const gitem_t *item)
 
     ent->client->double_time = max(level.time, ent->client->double_time) + SEC(30);
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage1.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage1.wav"), 1, ATTN_NORM);
 }
 
 void Use_Nuke(edict_t *ent, const gitem_t *item)

@@ -138,16 +138,16 @@ static void gekk_step(edict_t *self)
 {
     int n = irandom1(3);
     if (n == 0)
-        G_StartSound(self, CHAN_VOICE, sound_step1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_step1, 1, ATTN_NORM);
     else if (n == 1)
-        G_StartSound(self, CHAN_VOICE, sound_step2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_step2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_step3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_step3, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SIGHT(gekk_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(gekk_search)(edict_t *self)
@@ -157,13 +157,13 @@ void MONSTERINFO_SEARCH(gekk_search)(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_GEKK_CHANT) {
         r = frandom();
         if (r < 0.33f)
-            G_StartSound(self, CHAN_VOICE, sound_chantlow, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_chantlow, 1, ATTN_NORM);
         else if (r < 0.66f)
-            G_StartSound(self, CHAN_VOICE, sound_chantmid, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_chantmid, 1, ATTN_NORM);
         else
-            G_StartSound(self, CHAN_VOICE, sound_chanthigh, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_chanthigh, 1, ATTN_NORM);
     } else
-        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 
     self->health += irandom2(10, 20);
     if (self->health > self->max_health)
@@ -503,7 +503,7 @@ void MONSTERINFO_IDLE(gekk_idle)(edict_t *self)
         M_SetAnimation(self, &gekk_move_idle);
     else
         M_SetAnimation(self, &gekk_move_swim_start);
-    // G_StartSound (self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    // G_StartSound (self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
 }
 
 //
@@ -575,9 +575,9 @@ static void gekk_hit_left(edict_t *self)
 
     vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
-        G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM);
     else {
-        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     }
 }
@@ -589,9 +589,9 @@ static void gekk_hit_right(edict_t *self)
 
     vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
-        G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM);
     else {
-        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     }
 }
@@ -629,7 +629,7 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (other->takedamage)
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
 
-    G_StartSound(self, CHAN_AUTO, loogie_hit, 1.0f, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_AUTO, loogie_hit, 1.0f, ATTN_NORM);
 
     G_FreeEdict(self);
 };
@@ -690,7 +690,7 @@ static void loogie(edict_t *self)
 
     fire_loogie(self, start, dir, 5, 550);
 
-    G_StartSound(self, CHAN_BODY, sound_speet, 1.0f, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_speet, 1.0f, ATTN_NORM);
 }
 
 static void reloogie(edict_t *self)
@@ -811,7 +811,7 @@ static void gekk_bite(edict_t *self)
 static void gekk_preattack(edict_t *self)
 {
     // underwater attack sound
-    // G_StartSound (self, CHAN_WEAPON, something something underwater sound, 1, ATTN_NORM, 0);
+    // G_StartSound (self, CHAN_WEAPON, something something underwater sound, 1, ATTN_NORM);
     return;
 }
 
@@ -889,7 +889,7 @@ static void gekk_jump_takeoff(edict_t *self)
 {
     vec3_t forward;
 
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
     AngleVectors(self->s.angles, forward, NULL, NULL);
     self->s.origin[2] += 1;
 
@@ -914,7 +914,7 @@ static void gekk_jump_takeoff2(edict_t *self)
 {
     vec3_t forward;
 
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
     AngleVectors(self->s.angles, forward, NULL, NULL);
     self->s.origin[2] = self->enemy->s.origin[2];
 
@@ -943,7 +943,7 @@ static void gekk_stop_skid(edict_t *self)
 static void gekk_check_landing(edict_t *self)
 {
     if (self->groundentity) {
-        G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM);
         self->monsterinfo.attack_finished = 0;
 
         if (self->monsterinfo.unduck)
@@ -1057,7 +1057,7 @@ void PAIN(gekk_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
     self->pain_debounce_time = level.time + SEC(3);
 
-    G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
 
     if (self->waterlevel >= WATER_WAIST) {
         if (!(self->flags & FL_SWIM)) {
@@ -1098,7 +1098,7 @@ static const gib_def_t gekk_gibs[] = {
 
 static void gekk_gib(edict_t *self, int damage)
 {
-    G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, damage, gekk_gibs);
 }
 
@@ -1247,7 +1247,7 @@ void DIE(gekk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
     if (self->deadflag)
         return;
 
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
 

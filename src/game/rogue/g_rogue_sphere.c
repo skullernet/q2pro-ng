@@ -273,7 +273,7 @@ static const gib_def_t sphere_gibs[] = {
 
 static void body_gib(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, 50, sphere_gibs);
 }
 

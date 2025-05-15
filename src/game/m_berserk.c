@@ -26,15 +26,15 @@ static int sound_jump;
 
 void MONSTERINFO_SIGHT(berserk_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(berserk_search)(edict_t *self)
 {
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_idle2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 }
 
 static void berserk_fidget(edict_t *self);
@@ -87,7 +87,7 @@ static void berserk_fidget(edict_t *self)
         return;
 
     M_SetAnimation(self, &berserk_move_stand_fidget);
-    G_StartSound(self, CHAN_WEAPON, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_idle, 1, ATTN_IDLE);
 }
 
 static const mframe_t berserk_frames_walk[] = {
@@ -164,7 +164,7 @@ static void berserk_attack_spike(edict_t *self)
 
 static void berserk_swing(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_punch, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_punch, 1, ATTN_NORM);
 }
 
 static const mframe_t berserk_frames_attack_spike[] = {
@@ -255,8 +255,8 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
 
 static void berserk_attack_slam(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM, 0);
-    G_StartSound(self, CHAN_AUTO, sound_explod, 0.75f, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_AUTO, sound_explod, 0.75f, ATTN_NORM);
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_BERSERK_SLAM);
     vec3_t f, r, start;
@@ -461,7 +461,7 @@ void MONSTERINFO_ATTACK(berserk_attack)(edict_t *self)
     } else if (!(self->spawnflags & SPAWNFLAG_BERSERK_NOJUMPING) && (self->timestamp < level.time && brandom()) && range_to(self, self->enemy) > 150) {
         M_SetAnimation(self, &berserk_move_attack_strike);
         // don't do this for a while, otherwise we just keep doing it
-        G_StartSound(self, CHAN_WEAPON, sound_jump, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_jump, 1, ATTN_NORM);
         self->timestamp = level.time + SEC(5);
     } else if (self->monsterinfo.active_move == &berserk_move_run1 && (range_to(self, self->enemy) <= RANGE_NEAR)) {
         M_SetAnimation(self, &berserk_move_run_attack1);
@@ -515,7 +515,7 @@ void PAIN(berserk_pain)(edict_t *self, edict_t *other, float kick, int damage, m
         return;
 
     self->pain_debounce_time = level.time + SEC(3);
-    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -593,7 +593,7 @@ static const gib_def_t berserk_gibs[] = {
 void DIE(berserk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum = 0;
         ThrowGibs(self, damage, berserk_gibs);
         self->deadflag = true;
@@ -603,7 +603,7 @@ void DIE(berserk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
     if (self->deadflag)
         return;
 
-    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
 

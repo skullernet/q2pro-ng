@@ -181,9 +181,9 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
         // [Paril-KEX] allow non-noisy centerprints
         if (ent->noise_index >= 0) {
             if (ent->noise_index)
-                G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
+                G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
             else
-                G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+                G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM);
         }
     }
 }
@@ -625,18 +625,18 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     return true; // all clear
 }
 
-void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
+void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
 {
     edict_t *te = G_TempEntity(origin, EV_SOUND);
     te->s.event_param = G_EncodeSound(channel & 7, index, volume, attenuation);
 }
 
-void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
+void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
     G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
 }
 
-void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
+void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
     // TODO: make this local
     G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));

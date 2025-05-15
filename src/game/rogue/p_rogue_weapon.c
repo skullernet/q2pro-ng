@@ -101,7 +101,7 @@ static void weapon_chainfist_fire(edict_t *ent)
     if (fire_player_melee(ent, start, dir, CHAINFIST_REACH, damage, 100, (mod_t) { MOD_CHAINFIST })) {
         if (ent->client->empty_click_sound < level.time) {
             ent->client->empty_click_sound = level.time + SEC(0.5f);
-            G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/sawslice.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/sawslice.wav"), 1, ATTN_NORM);
         }
     }
 

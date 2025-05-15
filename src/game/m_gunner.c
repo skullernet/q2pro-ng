@@ -21,17 +21,17 @@ static int sound_sight;
 
 static void gunner_idlesound(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
 }
 
 void MONSTERINFO_SIGHT(gunner_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(gunner_search)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 }
 
 static void GunnerGrenade(edict_t *self);
@@ -262,9 +262,9 @@ void PAIN(gunner_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     self->pain_debounce_time = level.time + SEC(3);
 
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -335,7 +335,7 @@ void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, gunner_gibs);
         self->deadflag = true;
@@ -346,7 +346,7 @@ void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     M_SetAnimation(self, &gunner_move_death);
@@ -370,7 +370,7 @@ const mmove_t MMOVE_T(gunner_move_duck) = { FRAME_duck01, FRAME_duck08, gunner_f
 
 static void gunner_opengun(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE);
 }
 
 static void GunnerFire(edict_t *self)

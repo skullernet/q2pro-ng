@@ -34,7 +34,7 @@ void MakronPrecache(void);
 static void jorg_attack1_end_sound(edict_t *self)
 {
     if (self->monsterinfo.weapon_sound) {
-        G_StartSound(self, CHAN_WEAPON, sound_attack1_end, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_attack1_end, 1, ATTN_NORM);
         self->monsterinfo.weapon_sound = 0;
     }
 }
@@ -44,11 +44,11 @@ void MONSTERINFO_SEARCH(jorg_search)(edict_t *self)
     float r = frandom();
 
     if (r <= 0.3f)
-        G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM);
     else if (r <= 0.6f)
-        G_StartSound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_search3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search3, 1, ATTN_NORM);
 }
 
 static void jorg_dead(edict_t *self);
@@ -122,22 +122,22 @@ const mmove_t MMOVE_T(jorg_move_stand) = { FRAME_stand01, FRAME_stand51, jorg_fr
 
 static void jorg_idle(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_NORM);
 }
 
 static void jorg_death_hit(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_death_hit, 1, ATTN_NORM);
 }
 
 static void jorg_step_left(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_step_left, 1, ATTN_NORM);
 }
 
 static void jorg_step_right(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_step_right, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_STAND(jorg_stand)(edict_t *self)
@@ -423,11 +423,11 @@ void PAIN(jorg_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
     if (damage > 50) {
         if (damage <= 100) {
-            G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
         } else {
             if (frandom() <= 0.3f) {
                 do_pain3 = true;
-                G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+                G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM);
             }
         }
     }
@@ -467,7 +467,7 @@ static void jorgBFG(edict_t *self)
     vec[2] += self->enemy->viewheight;
     VectorSubtract(vec, start, dir);
     VectorNormalize(dir);
-    G_StartSound(self, CHAN_WEAPON, sound_bfg_fire, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_bfg_fire, 1, ATTN_NORM);
     monster_fire_bfg(self, start, dir, 50, 300, 100, 200, MZ2_JORG_BFG_1);
 }
 
@@ -498,11 +498,11 @@ static void jorg_firebullet(edict_t *self)
 void MONSTERINFO_ATTACK(jorg_attack)(edict_t *self)
 {
     if (frandom() <= 0.75f) {
-        G_StartSound(self, CHAN_WEAPON, sound_attack1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_attack1, 1, ATTN_NORM);
         self->monsterinfo.weapon_sound = gi.soundindex("boss3/w_loop.wav");
         M_SetAnimation(self, &jorg_move_start_attack1);
     } else {
-        G_StartSound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM);
         M_SetAnimation(self, &jorg_move_attack2);
     }
 }
@@ -538,7 +538,7 @@ static void jorg_dead(edict_t *self)
 
 void DIE(jorg_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     jorg_attack1_end_sound(self);
     self->deadflag = true;
     self->takedamage = false;

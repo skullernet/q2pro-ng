@@ -136,7 +136,7 @@ void USE(guardian_use)(edict_t *self, edict_t *other, edict_t *activator)
     self->spawnflags &= ~SPAWNFLAG_GUARDIAN_SLEEPY;
     M_SetAnimation(self, &guardian_move_wake);
     self->use = monster_use;
-    G_StartSound(self, CHAN_BODY, sound_sight, 1, 0.1f, 0);
+    G_StartSound(self, CHAN_BODY, sound_sight, 1, 0.1f);
 }
 
 //
@@ -145,7 +145,7 @@ void USE(guardian_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 static void guardian_footstep(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_step, 1, 0.1f, 0);
+    G_StartSound(self, CHAN_BODY, sound_step, 1, 0.1f);
 }
 
 static const mframe_t guardian_frames_walk[] = {
@@ -249,9 +249,9 @@ void PAIN(guardian_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     self->pain_debounce_time = level.time + SEC(3);
 
     if (brandom())
-        G_StartSound(self, CHAN_BODY, sound_pain1, 1, 0.1f, 0);
+        G_StartSound(self, CHAN_BODY, sound_pain1, 1, 0.1f);
     else
-        G_StartSound(self, CHAN_BODY, sound_pain2, 1, 0.1f, 0);
+        G_StartSound(self, CHAN_BODY, sound_pain2, 1, 0.1f);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -277,7 +277,7 @@ static void guardian_atk1_finish(edict_t *self)
 static void guardian_atk1_charge(edict_t *self)
 {
     self->monsterinfo.weapon_sound = sound_spin_loop;
-    G_StartSound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM);
 }
 
 static void guardian_fire_blaster(edict_t *self)
@@ -386,7 +386,7 @@ void PRETHINK(guardian_fire_update)(edict_t *laser)
 
 static void guardian_laser_fire(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_laser, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_laser, 1, ATTN_NORM);
     monster_fire_dabeam(self, 15, self->s.frame & 1, guardian_fire_update);
 }
 
@@ -523,7 +523,7 @@ void THINK(heat_guardian_think)(edict_t *self)
 
     if (acquire) {
         if (self->enemy != acquire) {
-            G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f, 0);
+            G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
             self->enemy = acquire;
         }
     } else
@@ -592,7 +592,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     if (visible(heat, self->enemy)) {
         heat->oldenemy = self->enemy;
         heat->timestamp = level.time + SEC(0.6f);
-        G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f, 0);
+        G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
     }
 
     gi.linkentity(heat);
@@ -612,7 +612,7 @@ static void guardian_fire_rocket(edict_t *self, float offset)
     AngleVectors((vec3_t) { 20.0f, self->s.angles[1] - offset, 0 }, forward, NULL, NULL);
 
     fire_guardian_heat(self, start, up, forward, 20, 250, 150, 35, 0.085f);
-    G_StartSound(self, CHAN_WEAPON, sound_pew, 1.f, 0.5f, 0.0f);
+    G_StartSound(self, CHAN_WEAPON, sound_pew, 1.f, 0.5f);
 }
 
 static void guardian_fire_rocket_l(edict_t *self)
@@ -818,7 +818,7 @@ void DIE(guardian_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
     self->takedamage = true;
 
     M_SetAnimation(self, &guardian_move_death);
-    G_StartSound(self, CHAN_BODY, sound_death, 1, 0.1f, 0);
+    G_StartSound(self, CHAN_BODY, sound_death, 1, 0.1f);
 }
 
 static void GuardianPowerArmor(edict_t *self)

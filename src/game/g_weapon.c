@@ -422,11 +422,11 @@ void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool 
 
     if (!other->takedamage) {
         if (!(ent->spawnflags & SPAWNFLAG_GRENADE_HAND))
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/grenlb1b.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/grenlb1b.wav"), 1, ATTN_NORM);
         else if (brandom())
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
         else
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
         return;
     }
 
@@ -553,7 +553,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     if (timer <= 0)
         Grenade_Explode(grenade);
     else {
-        G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/hgrent1a.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/hgrent1a.wav"), 1, ATTN_NORM);
         gi.linkentity(grenade);
     }
 }
@@ -892,7 +892,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
     T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
-    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
     self->r.solid = SOLID_NOT;
     self->touch = NULL;
     VectorMA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity, self->s.origin);

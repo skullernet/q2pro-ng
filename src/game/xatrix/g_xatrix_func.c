@@ -21,7 +21,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
         self->think = NULL;
         self->nextthink = 0;
     } else {
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC);
         self->nextthink = level.time + SEC(1);
     }
 }

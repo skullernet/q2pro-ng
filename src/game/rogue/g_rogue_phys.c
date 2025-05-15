@@ -86,9 +86,9 @@ void SV_Physics_NewToss(edict_t *ent)
         ent->waterlevel = WATER_NONE;
 
     if (!wasinwater && isinwater)
-        G_PositionedSound(old_origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, 1, 0);
+        G_PositionedSound(old_origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, ATTN_NORM);
     else if (wasinwater && !isinwater)
-        G_PositionedSound(ent->s.origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, 1, 0);
+        G_PositionedSound(ent->s.origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, ATTN_NORM);
 
     // move teamslaves
     for (slave = ent->teamchain; slave; slave = slave->teamchain) {

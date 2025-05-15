@@ -331,7 +331,7 @@ void MONSTERINFO_RUN(turret_run)(edict_t *self)
 
         if (self->monsterinfo.weapon_sound) {
             self->monsterinfo.weapon_sound = 0;
-            G_StartSound(self, CHAN_WEAPON, sound_moved, 1.0f, ATTN_NORM, 0.0f);
+            G_StartSound(self, CHAN_WEAPON, sound_moved, 1.0f, ATTN_NORM);
         }
     }
 }
@@ -409,7 +409,7 @@ static void TurretFire(edict_t *self)
                     self->monsterinfo.aiflags |= AI_HOLD_FRAME;
                     self->monsterinfo.duck_wait_time = level.time + SEC(2 + frandom1(skill->value));
                     self->monsterinfo.next_duck_time = level.time + SEC(1);
-                    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/chngnu1a.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/chngnu1a.wav"), 1, ATTN_NORM);
                 } else {
                     if (self->monsterinfo.next_duck_time < level.time &&
                         self->monsterinfo.melee_debounce_time <= level.time) {

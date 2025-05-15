@@ -781,7 +781,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     VectorAvg(self->r.absmin, self->r.absmax, self->s.origin);
 
     if (self->noise_index)
-        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
+        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
 
     if (self->dmg)
         BecomeExplosion1(self);
@@ -1165,14 +1165,14 @@ void THINK(commander_body_think)(edict_t *self)
         self->nextthink = 0;
 
     if (self->s.frame == 22)
-        G_StartSound(self, CHAN_BODY, gi.soundindex("tank/thud.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_BODY, gi.soundindex("tank/thud.wav"), 1, ATTN_NORM);
 }
 
 void USE(commander_body_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->think = commander_body_think;
     self->nextthink = level.time + HZ(10);
-    G_StartSound(self, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM);
 }
 
 void THINK(commander_body_drop)(edict_t *self)
@@ -1247,7 +1247,7 @@ void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attac
     if (self->health > -30)
         return;
 
-    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, damage, deadsoldier_gibs);
 }
 

@@ -119,7 +119,7 @@ void MONSTERINFO_IDLE(infantry_fidget)(edict_t *self)
         return;
 
     M_SetAnimation(self, &infantry_move_fidget);
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
 }
 
 static const mframe_t infantry_frames_walk[] = {
@@ -217,9 +217,9 @@ void PAIN(infantry_pain)(edict_t *self, edict_t *other, float kick, int damage, 
 
     n = brandom();
     if (n == 0)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     if (self->think != monster_think)
         return;
@@ -305,9 +305,9 @@ static void InfantryMachineGun(edict_t *self)
 void MONSTERINFO_SIGHT(infantry_sight)(edict_t *self, edict_t *other)
 {
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 }
 
 static void infantry_dead(edict_t *self)
@@ -419,7 +419,7 @@ void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -445,13 +445,13 @@ void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     if (n == 0) {
         M_SetAnimation(self, &infantry_move_death1);
-        G_StartSound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM);
     } else if (n == 1) {
         M_SetAnimation(self, &infantry_move_death2);
-        G_StartSound(self, CHAN_VOICE, sound_die1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_die1, 1, ATTN_NORM);
     } else {
         M_SetAnimation(self, &infantry_move_death3);
-        G_StartSound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM);
     }
 
     // don't always pop a head gib, it gets old
@@ -497,7 +497,7 @@ static void infantry_set_firetime(edict_t *self)
 
 static void infantry_cock_gun(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_weapon_cock, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_weapon_cock, 1, ATTN_NORM);
 
     // gun cocked
     self->count = 1;
@@ -627,7 +627,7 @@ static void infantry_fire(edict_t *self)
 
 static void infantry_swing(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_punch_swing, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_punch_swing, 1, ATTN_NORM);
 }
 
 static void infantry_smack(edict_t *self)
@@ -635,7 +635,7 @@ static void infantry_smack(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, 0, 0 };
 
     if (fire_hit(self, aim, irandom2(5, 10), 50))
-        G_StartSound(self, CHAN_WEAPON, sound_punch_hit, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_punch_hit, 1, ATTN_NORM);
     else
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
 }

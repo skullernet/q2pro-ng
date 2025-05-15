@@ -28,12 +28,12 @@ static int sound_melee3;
 
 void MONSTERINFO_SIGHT(brain_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(brain_search)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 }
 
 void brain_run(edict_t *self);
@@ -128,7 +128,7 @@ const mmove_t MMOVE_T(brain_move_idle) = { FRAME_stand31, FRAME_stand60, brain_f
 
 void MONSTERINFO_IDLE(brain_idle)(edict_t *self)
 {
-    G_StartSound(self, CHAN_AUTO, sound_idle3, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_AUTO, sound_idle3, 1, ATTN_IDLE);
     M_SetAnimation(self, &brain_move_idle);
 }
 
@@ -285,28 +285,28 @@ const mmove_t MMOVE_T(brain_move_death1) = { FRAME_death101, FRAME_death118, bra
 
 static void brain_swing_right(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_melee1, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_melee1, 1, ATTN_NORM);
 }
 
 static void brain_hit_right(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
-        G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
         self->monsterinfo.melee_debounce_time = level.time + SEC(3);
 }
 
 static void brain_swing_left(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, sound_melee2, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_melee2, 1, ATTN_NORM);
 }
 
 static void brain_hit_left(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
-        G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
         self->monsterinfo.melee_debounce_time = level.time + SEC(3);
 }
@@ -337,7 +337,7 @@ static void brain_chest_open(edict_t *self)
 {
     self->count = 0;
     self->monsterinfo.power_armor_type = IT_NULL;
-    G_StartSound(self, CHAN_BODY, sound_chest_open, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_chest_open, 1, ATTN_NORM);
 }
 
 static void brain_tentacle_attack(edict_t *self)
@@ -347,7 +347,7 @@ static void brain_tentacle_attack(edict_t *self)
         self->count = 1;
     else
         self->monsterinfo.melee_debounce_time = level.time + SEC(3);
-    G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM);
 }
 
 static void brain_chest_closed(edict_t *self)
@@ -434,7 +434,7 @@ static void brain_tounge_attack(edict_t *self)
         return;
 
     damage = 5;
-    G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_PARASITE_ATTACK);
@@ -627,11 +627,11 @@ void PAIN(brain_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     r = frandom();
 
     if (r < 0.33f)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else if (r < 0.66f)
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -682,7 +682,7 @@ void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -704,7 +704,7 @@ void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     if (brandom())

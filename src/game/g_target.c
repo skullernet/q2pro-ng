@@ -63,7 +63,7 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
             chan = CHAN_VOICE;
         // use a positioned_sound, because this entity won't normally be
         // sent to any clients because it is invisible
-        G_StartSound(ent, chan, ent->noise_index, ent->volume, ent->attenuation, 0);
+        G_StartSound(ent, chan, ent->noise_index, ent->volume, ent->attenuation);
     }
 }
 
@@ -164,7 +164,7 @@ These are single use targets.
 */
 void USE(use_target_secret)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM);
 
     level.found_secrets++;
 
@@ -254,7 +254,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (player->client->pers.game_help1changed != game.help1changed) {
             gi.cprintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
-            G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk.wav"), 1.0f, ATTN_NONE, 0.0f);
+            G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk.wav"), 1.0f, ATTN_NONE);
 
             player->client->pers.game_help1changed = game.help1changed;
         }
@@ -292,7 +292,7 @@ These are single use targets.
 
 void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM);
 
     level.found_goals++;
 
@@ -578,7 +578,7 @@ void USE(use_target_blaster)(edict_t *self, edict_t *other, edict_t *activator)
         effect = EF_BLASTER;
 
     fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, (mod_t) { MOD_TARGET_BLASTER });
-    G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM);
 }
 
 void SP_target_blaster(edict_t *self)
@@ -962,7 +962,7 @@ void THINK(target_earthquake_think)(edict_t *self)
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) {
     // PGM
         if (self->last_move_time < level.time) {
-            G_StartSound(self, CHAN_VOICE, self->noise_index, 1.0f, ATTN_NONE, 0);
+            G_StartSound(self, CHAN_VOICE, self->noise_index, 1.0f, ATTN_NONE);
             self->last_move_time = level.time + SEC(6.5f);
         }
     }
@@ -1283,7 +1283,7 @@ void SP_target_gravity(edict_t *self)
 
 void THINK(update_target_soundfx)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, self->noise_index, self->volume, self->attenuation, 0);
+    G_StartSound(self, CHAN_VOICE, self->noise_index, self->volume, self->attenuation);
 }
 
 void USE(use_target_soundfx)(edict_t *self, edict_t *other, edict_t *activator)

@@ -21,12 +21,12 @@ static int sound_sight;
 
 void MONSTERINFO_SIGHT(floater_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_IDLE(floater_idle)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
 }
 
 //static void floater_dead(edict_t *self);
@@ -480,7 +480,7 @@ void MONSTERINFO_WALK(floater_walk)(edict_t *self)
 static void floater_wham(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, 0, 0 };
-    G_StartSound(self, CHAN_WEAPON, sound_attack3, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_attack3, 1, ATTN_NORM);
 
     if (!fire_hit(self, aim, irandom2(5, 11), -50))
         self->monsterinfo.melee_debounce_time = level.time + SEC(3);
@@ -500,7 +500,7 @@ static void floater_zap(edict_t *self)
     VectorSet(offset, 18.5f, -0.9f, 10);
     M_ProjectFlashSource(self, offset, forward, right, origin);
 
-    G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM);
 
     // FIXME use the flash, Luke
     gi.WriteByte(svc_temp_entity);
@@ -549,9 +549,9 @@ void PAIN(floater_pain)(edict_t *self, edict_t *other, float kick, int damage, m
 
     n = irandom1(3);
     if (n == 0)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     self->pain_debounce_time = level.time + SEC(3);
 
@@ -596,7 +596,7 @@ static const gib_def_t floater_gibs[] = {
 
 void DIE(floater_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1);

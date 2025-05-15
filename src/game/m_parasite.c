@@ -36,33 +36,33 @@ static void parasite_refidget(edict_t *self);
 
 static void parasite_launch(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_launch, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_launch, 1, ATTN_NORM);
 }
 
 static void parasite_reel_in(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_reelin, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_reelin, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SIGHT(parasite_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_sight, 1, ATTN_NORM);
 }
 
 static void parasite_tap(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_tap, 0.75f, 2.75f, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_tap, 0.75f, 2.75f);
 }
 
 static void parasite_scratch(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_scratch, 0.75f, 2.75f, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_scratch, 0.75f, 2.75f);
 }
 
 #if 0
 static void parasite_search(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_search, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_search, 1, ATTN_IDLE);
 }
 #endif
 
@@ -287,9 +287,9 @@ static void parasite_break_retract(edict_t *self)
 static void parasite_break_sound(edict_t *self)
 {
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     self->pain_debounce_time = level.time + SEC(3);
 }
@@ -309,7 +309,7 @@ static void parasite_charge_proboscis(edict_t *self, float dist)
 
 static void parasite_break_noise(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
 }
 
 static const mframe_t parasite_frames_break[] = {
@@ -376,7 +376,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         VectorSubtract(p, other->s.origin, self->move_origin);
         self->enemy = other;
         self->s.alpha = 0.35f;
-        G_StartSound(self, CHAN_WEAPON, sound_suck, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_suck, 1, ATTN_NORM);
     } else {
         VectorAdd(tr->endpos, tr->plane.normal, p);
         // hit monster, don't suck but do small damage
@@ -396,7 +396,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other->takedamage)
         T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.normal, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
-    G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
+    G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM);
 
     VectorCopy(p, self->s.origin);
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
@@ -830,7 +830,7 @@ void DIE(parasite_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, parasite_gibs);
         self->deadflag = true;
@@ -841,7 +841,7 @@ void DIE(parasite_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     M_SetAnimation(self, &parasite_move_death);
@@ -883,9 +883,9 @@ void PAIN(parasite_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     self->pain_debounce_time = level.time + SEC(3);
 
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare

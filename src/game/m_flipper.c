@@ -157,7 +157,7 @@ static void flipper_bite(edict_t *self)
 
 static void flipper_preattack(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_chomp, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_chomp, 1, ATTN_NORM);
 }
 
 static const mframe_t flipper_frames_attack[] = {
@@ -200,9 +200,9 @@ void PAIN(flipper_pain)(edict_t *self, edict_t *other, float kick, int damage, m
 
     n = brandom();
     if (n == 0)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -295,7 +295,7 @@ const mmove_t MMOVE_T(flipper_move_death) = { FRAME_flpdth01, FRAME_flpdth56, fl
 
 void MONSTERINFO_SIGHT(flipper_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 static const gib_def_t flipper_gibs[] = {
@@ -309,7 +309,7 @@ void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, flipper_gibs);
         self->deadflag = true;
         return;
@@ -319,7 +319,7 @@ void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     self->r.svflags |= SVF_DEADMONSTER;

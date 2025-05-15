@@ -123,7 +123,7 @@ static bool stalker_ok_to_transition(edict_t *self)
 
 void MONSTERINFO_SIGHT(stalker_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 // ******************
@@ -132,7 +132,7 @@ void MONSTERINFO_SIGHT(stalker_sight)(edict_t *self, edict_t *other)
 
 static void stalker_idle_noise(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 0.5f, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 0.5f, ATTN_IDLE);
 }
 
 static const mframe_t stalker_frames_idle[] = {
@@ -395,7 +395,7 @@ void PAIN(stalker_pain)(edict_t *self, edict_t *other, float kick, int damage, m
 
     self->pain_debounce_time = level.time + SEC(3);
 
-    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
     if (mod.id == MOD_CHAINFIST || damage > 10) { // don't react unless the damage was significant
         // stalker should dodge jump periodically to help avoid damage.
@@ -490,9 +490,9 @@ static void stalker_swing_attack(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, 0, 0 };
     if (fire_hit(self, aim, irandom2(5, 10), 50)) {
         if (self->s.frame < FRAME_attack08)
-            G_StartSound(self, CHAN_WEAPON, sound_punch_hit2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_punch_hit2, 1, ATTN_NORM);
         else
-            G_StartSound(self, CHAN_WEAPON, sound_punch_hit1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_punch_hit1, 1, ATTN_NORM);
     } else
         self->monsterinfo.melee_debounce_time = level.time + SEC(0.8f);
 }
@@ -877,7 +877,7 @@ void DIE(stalker_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, stalker_gibs);
         self->deadflag = true;
@@ -888,7 +888,7 @@ void DIE(stalker_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     M_SetAnimation(self, &stalker_move_death);

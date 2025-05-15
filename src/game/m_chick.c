@@ -36,9 +36,9 @@ static int sound_search;
 static void ChickMoan(edict_t *self)
 {
     if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE);
     else
-        G_StartSound(self, CHAN_VOICE, sound_idle2, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle2, 1, ATTN_IDLE);
 }
 
 static const mframe_t chick_frames_fidget[] = {
@@ -241,11 +241,11 @@ void PAIN(chick_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     r = frandom();
     if (r < 0.33f)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
     else if (r < 0.66f)
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -345,7 +345,7 @@ void DIE(chick_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, chick_gibs);
         self->deadflag = true;
@@ -361,10 +361,10 @@ void DIE(chick_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     if (brandom()) {
         M_SetAnimation(self, &chick_move_death1);
-        G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM);
     } else {
         M_SetAnimation(self, &chick_move_death2);
-        G_StartSound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM);
     }
 }
 
@@ -384,7 +384,7 @@ const mmove_t MMOVE_T(chick_move_duck) = { FRAME_duck01, FRAME_duck07, chick_fra
 static void ChickSlash(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 10 };
-    G_StartSound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM);
     fire_hit(self, aim, irandom2(10, 16), 100);
 }
 
@@ -501,7 +501,7 @@ static void ChickRocket(edict_t *self)
 
 static void Chick_PreAttack1(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM);
 
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
         vec3_t aim;
@@ -512,7 +512,7 @@ static void Chick_PreAttack1(edict_t *self)
 
 static void ChickReload(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_missile_reload, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_missile_reload, 1, ATTN_NORM);
 }
 
 static const mframe_t chick_frames_start_attack1[] = {
@@ -678,7 +678,7 @@ void MONSTERINFO_ATTACK(chick_attack)(edict_t *self)
 
 void MONSTERINFO_SIGHT(chick_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
 //===========
