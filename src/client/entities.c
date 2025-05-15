@@ -254,6 +254,9 @@ static void parse_entity_event(int number)
         S_StartSound(NULL, number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
         break;
     }
+    case EV_BERSERK_SLAM:
+        CL_BerserkSlam(cent);
+        break;
     }
 }
 

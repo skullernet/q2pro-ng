@@ -1586,20 +1586,6 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_BERSERK_SLAM:
-        CL_BerserkSlamParticles(te.pos1, te.dir);
-
-        ex = CL_AllocExplosion();
-        VectorCopy(te.pos1, ex->ent.origin);
-        dirtoangles(ex->ent.angles);
-        ex->type = ex_misc;
-        ex->ent.model = cl_mod_explode;
-        ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
-        ex->ent.scale = 3;
-        ex->ent.skinnum = 2;
-        ex->start = cl.servertime - CL_FRAMETIME;
-        ex->light = 550;
-        VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
-        ex->frames = 4;
         break;
 
     case TE_GRAPPLE_CABLE_2:
@@ -1628,6 +1614,52 @@ void CL_ParseTEnt(void)
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
+}
+
+static void CL_ProjectFlashSource(centity_t *cent, const vec3_t offset, vec3_t origin)
+{
+    vec3_t  forward, right, ofs;
+    float   scale;
+
+    // locate the origin
+    AngleVectors(cent->current.angles, forward, right, NULL);
+
+    scale = cent->current.scale;
+    if (!scale)
+        scale = 1.0f;
+
+    VectorScale(offset, scale, ofs);
+    origin[0] = cent->current.origin[0] + forward[0] * ofs[0] + right[0] * ofs[1];
+    origin[1] = cent->current.origin[1] + forward[1] * ofs[0] + right[1] * ofs[1];
+    origin[2] = cent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
+}
+
+void CL_BerserkSlam(centity_t *cent)
+{
+    S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
+    S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
+
+    vec3_t start;
+    CL_ProjectFlashSource(cent, (const vec3_t) { 20.0f, -14.3f, -21.0f }, start);
+
+    trace_t tr;
+    CL_Trace(&tr, cent->current.origin, NULL, NULL, start, cent->current.number, MASK_SOLID);
+
+    VectorSet(te.dir, 0, 0, 1);
+    CL_BerserkSlamParticles(tr.endpos, te.dir);
+
+    explosion_t *ex = CL_AllocExplosion();
+    VectorCopy(tr.endpos, ex->ent.origin);
+    dirtoangles(ex->ent.angles);
+    ex->type = ex_misc;
+    ex->ent.model = cl_mod_explode;
+    ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
+    ex->ent.scale = 3;
+    ex->ent.skinnum = 2;
+    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->light = 550;
+    VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
+    ex->frames = 4;
 }
 
 /*

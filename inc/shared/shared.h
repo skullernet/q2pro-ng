@@ -1448,7 +1448,8 @@ typedef enum {
 // KEX
     EV_MUZZLEFLASH,
     EV_MUZZLEFLASH2,
-    EV_SOUND
+    EV_SOUND,
+    EV_BERSERK_SLAM
 } entity_event_t;
 
 // entity_state_t is the information conveyed from the server

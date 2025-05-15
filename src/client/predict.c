@@ -118,6 +118,11 @@ CL_Trace
 void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
               const vec3_t end, int passent, contents_t contentmask)
 {
+    if (!mins)
+        mins = vec3_origin;
+    if (!maxs)
+        maxs = vec3_origin;
+
     // check against world
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
     tr->entnum = ENTITYNUM_WORLD;

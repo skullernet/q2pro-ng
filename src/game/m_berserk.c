@@ -255,18 +255,13 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
 
 static void berserk_attack_slam(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM);
-    G_StartSound(self, CHAN_AUTO, sound_explod, 0.75f, ATTN_NORM);
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_BERSERK_SLAM);
     vec3_t f, r, start;
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, (const vec3_t) { 20.0f, -14.3f, -21.0f }, f, r, start);
     trace_t tr;
     gi.trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
-    gi.WritePosition(tr.endpos);
-    gi.WriteDir((const vec3_t) { 0, 0, 1 });
-    gi.multicast(tr.endpos, MULTICAST_PHS);
+
+    G_AddEvent(self, EV_BERSERK_SLAM, 0);
     self->gravity = 1.0f;
     VectorClear(self->velocity);
     self->flags |= FL_KILL_VELOCITY;
