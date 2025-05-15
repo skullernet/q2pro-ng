@@ -781,7 +781,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     VectorAvg(self->r.absmin, self->r.absmax, self->s.origin);
 
     if (self->noise_index)
-        gi.positioned_sound(self->s.origin, self, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
+        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
 
     if (self->dmg)
         BecomeExplosion1(self);

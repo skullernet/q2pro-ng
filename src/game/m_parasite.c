@@ -396,7 +396,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other->takedamage)
         T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.normal, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
-    gi.positioned_sound(tr->endpos, owner, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
+    G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
 
     VectorCopy(p, self->s.origin);
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame

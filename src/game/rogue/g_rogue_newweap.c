@@ -534,7 +534,7 @@ void THINK(Nuke_Quake)(edict_t *self)
     edict_t *e;
 
     if (self->last_move_time < level.time) {
-        gi.positioned_sound(self->s.origin, self, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE, 0);
+        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE, 0);
         self->last_move_time = level.time + SEC(0.5f);
     }
 

@@ -2348,7 +2348,7 @@ void CTFReady(edict_t *ent)
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
         ctfgame.countdown = false;
-        gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE, 0);
+        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE, 0);
     }
 }
 
@@ -2773,13 +2773,13 @@ bool CTFCheckRules(void)
             case MATCH_PREGAME:
                 // match started!
                 CTFStartMatch();
-                gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/tele_up.wav"), 1, ATTN_NONE, 0);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/tele_up.wav"), 1, ATTN_NONE, 0);
                 return false;
 
             case MATCH_GAME:
                 // match ended!
                 CTFEndMatch();
-                gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/bigtele.wav"), 1, ATTN_NONE, 0);
                 return false;
 
             default:
@@ -2817,7 +2817,7 @@ bool CTFCheckRules(void)
 
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE, 0);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE, 0);
             }
             break;
 
@@ -2826,7 +2826,7 @@ bool CTFCheckRules(void)
             gi.configstring(CONFIG_CTF_MATCH, text);
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE, 0);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE, 0);
             }
             break;
 
@@ -3206,7 +3206,7 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
         gi.bprintf(PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
-        gi.positioned_sound(world->s.origin, world, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE, 0);
+        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE, 0);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
         gi.bprintf(PRINT_CHAT, "Match has been forced to terminate.\n");

@@ -1078,7 +1078,7 @@ static void door_play_sound(edict_t *self, int sound)
         return;
     }
 
-    gi.positioned_sound(p, self, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation, 0);
+    G_PositionedSound(p, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation, 0);
 }
 
 void MOVEINFO_ENDFUNC(door_hit_top)(edict_t *self)
@@ -1761,6 +1761,8 @@ void SP_func_water(edict_t *self)
     self->r.solid = SOLID_BSP;
     gi.setmodel(self, self->model);
 
+    self->attenuation = ATTN_STATIC;
+
     switch (self->sounds) {
     default:
         G_SetMoveinfoSounds(self, NULL, NULL, NULL);
@@ -1770,8 +1772,6 @@ void SP_func_water(edict_t *self)
         G_SetMoveinfoSounds(self, "world/mov_watr.wav", NULL, "world/stp_watr.wav");
         break;
     }
-
-    self->attenuation = ATTN_STATIC;
 
     // calculate second position
     VectorCopy(self->s.origin, self->pos1);
@@ -2408,9 +2408,9 @@ void SP_func_door_secret(edict_t *ent)
     float  width;
     float  length;
 
-    G_SetMoveinfoSounds(ent, "doors/dr1_strt.wav", "doors/dr1_mid.wav", "doors/dr1_end.wav");
-
     ent->attenuation = ATTN_STATIC;
+
+    G_SetMoveinfoSounds(ent, "doors/dr1_strt.wav", "doors/dr1_mid.wav", "doors/dr1_end.wav");
 
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;

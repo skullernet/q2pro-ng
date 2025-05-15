@@ -63,7 +63,7 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
             chan = CHAN_VOICE;
         // use a positioned_sound, because this entity won't normally be
         // sent to any clients because it is invisible
-        gi.positioned_sound(ent->s.origin, ent, chan, ent->noise_index, ent->volume, ent->attenuation, 0);
+        G_StartSound(ent, chan, ent->noise_index, ent->volume, ent->attenuation, 0);
     }
 }
 
@@ -87,10 +87,8 @@ void SP_target_speaker(edict_t *ent)
             ent->attenuation = ATTN_STATIC;
         else
             ent->attenuation = ATTN_NORM;
-    } else if (ent->attenuation == ATTN_NONE) {
-        if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
-            ent->r.svflags |= SVF_NOCULL;
-    }
+    } else if (ent->attenuation == ATTN_NONE)
+        ent->r.svflags |= SVF_NOCULL;
 
     // check for prestarted looping sound
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
@@ -964,7 +962,7 @@ void THINK(target_earthquake_think)(edict_t *self)
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) {
     // PGM
         if (self->last_move_time < level.time) {
-            gi.positioned_sound(self->s.origin, self, CHAN_VOICE, self->noise_index, 1.0f, ATTN_NONE, 0);
+            G_StartSound(self, CHAN_VOICE, self->noise_index, 1.0f, ATTN_NONE, 0);
             self->last_move_time = level.time + SEC(6.5f);
         }
     }
@@ -1028,12 +1026,15 @@ void SP_target_earthquake(edict_t *self)
     if (!self->speed)
         self->speed = 200;
 
-    self->r.svflags |= SVF_NOCLIENT;
     self->think = target_earthquake_think;
     self->use = target_earthquake_use;
 
-    if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) // PGM
+    if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) { // PGM
         self->noise_index = gi.soundindex("world/quake.wav");
+        gi.linkentity(self);
+    } else {
+        self->r.svflags |= SVF_NOCLIENT;
+    }
 }
 
 /*QUAKED target_camera (1 0 0) (-8 -8 -8) (8 8 8)
@@ -1282,7 +1283,7 @@ void SP_target_gravity(edict_t *self)
 
 void THINK(update_target_soundfx)(edict_t *self)
 {
-    gi.positioned_sound(self->s.origin, self, CHAN_VOICE, self->noise_index, self->volume, self->attenuation, 0);
+    G_StartSound(self, CHAN_VOICE, self->noise_index, self->volume, self->attenuation, 0);
 }
 
 void USE(use_target_soundfx)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1296,10 +1297,10 @@ void SP_target_soundfx(edict_t *self)
     if (!self->volume)
         self->volume = 1.0f;
 
-    if (!self->attenuation)
-        self->attenuation = 1.0f;
-    else if (self->attenuation == -1) // use -1 so 0 defaults to 1
-        self->attenuation = 0;
+    if (!ED_WasKeySpecified("atteniation"))
+        self->attenuation = ATTN_NORM;
+    else if (self->attenuation == ATTN_NONE)
+        self->r.svflags |= SVF_NOCULL;
 
     self->noise_index = Q_atoi(st.noise);
 
@@ -1325,6 +1326,8 @@ void SP_target_soundfx(edict_t *self)
     }
 
     self->use = use_target_soundfx;
+
+    gi.linkentity(self);
 }
 
 /*QUAKED target_light (1 0 0) (-8 -8 -8) (8 8 8) START_ON NO_LERP FLICKER

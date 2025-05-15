@@ -1348,6 +1348,7 @@ static inline bool KillBox(edict_t *ent, bool from_spawning)
     return KillBoxEx(ent, from_spawning, MOD_TELEFRAG, true, false);
 }
 
+void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation, float timeofs);
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs);
 uint32_t G_EncodeSound(int index, soundchan_t channel, float volume, float attenuation);
 void G_AddEvent(edict_t *ent, int event, int param);
