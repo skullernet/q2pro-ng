@@ -715,23 +715,6 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     List_Append(&sort->entry, &ps->entry);
 }
 
-void S_ParseStartSound(void)
-{
-    qhandle_t handle = cl.sound_precache[snd.index];
-
-    if (!handle)
-        return;
-
-#if USE_DEBUG
-    if (developer->integer && !(snd.flags & SND_POS))
-        CL_CheckEntityPresent(snd.entity, "sound");
-#endif
-
-    S_StartSound((snd.flags & SND_POS) ? snd.pos : NULL,
-                 snd.entity, snd.channel, handle,
-                 snd.volume, snd.attenuation, snd.timeofs);
-}
-
 /*
 ==================
 S_StartLocalSound

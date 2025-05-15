@@ -526,7 +526,6 @@ ACTION MESSAGES
 */
 
 tent_params_t   te;
-snd_params_t    snd;
 
 static void CL_ParseTEntPacket(void)
 {
@@ -665,55 +664,6 @@ static void CL_ParseTEntPacket(void)
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
-}
-
-static void CL_ParseStartSoundPacket(void)
-{
-    int flags, channel, entity;
-
-    snd.flags = flags = MSG_ReadByte();
-
-    if (flags & SND_INDEX16)
-        snd.index = MSG_ReadWord();
-    else
-        snd.index = MSG_ReadByte();
-
-    if (snd.index >= MAX_SOUNDS)
-        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, snd.index);
-
-    if (flags & SND_VOLUME)
-        snd.volume = MSG_ReadByte() / 255.0f;
-    else
-        snd.volume = DEFAULT_SOUND_PACKET_VOLUME;
-
-    if (flags & SND_ATTENUATION)
-        snd.attenuation = MSG_ReadByte() / 64.0f;
-    else
-        snd.attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
-
-    if (flags & SND_OFFSET)
-        snd.timeofs = MSG_ReadByte() / 1000.0f;
-    else
-        snd.timeofs = 0;
-
-    if (flags & SND_ENT) {
-        // entity relative
-        channel = MSG_ReadWord();
-        entity = channel >> 3;
-        if (entity < 0 || entity >= ENTITYNUM_WORLD)
-            Com_Error(ERR_DROP, "%s: bad entity: %d", __func__, entity);
-        snd.entity = entity;
-        snd.channel = channel & 7;
-    } else {
-        snd.entity = 0;
-        snd.channel = 0;
-    }
-
-    // positioned in space
-    if (flags & SND_POS)
-        MSG_ReadPos(snd.pos);
-
-    SHOWNET(3, "    %s\n", cl.configstrings[CS_SOUNDS + snd.index]);
 }
 
 static void CL_ParseReconnect(void)
@@ -1071,11 +1021,6 @@ void CL_ParseServerMessage(void)
             CL_ParseConfigstring(index);
             break;
 
-        case svc_sound:
-            CL_ParseStartSoundPacket();
-            S_ParseStartSound();
-            break;
-
         case svc_spawnbaseline:
             index = MSG_ReadBits(ENTITYNUM_BITS);
             CL_ParseBaseline(index);
@@ -1203,10 +1148,6 @@ bool CL_SeekDemoMessage(void)
         case svc_configstring:
             index = MSG_ReadWord();
             CL_ParseConfigstring(index);
-            break;
-
-        case svc_sound:
-            CL_ParseStartSoundPacket();
             break;
 
         case svc_spawnbaseline:

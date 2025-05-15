@@ -132,19 +132,6 @@ typedef enum {
 
 //==============================================
 
-// a sound without an ent or pos will be a local only sound
-#define SND_VOLUME          BIT(0)  // a byte
-#define SND_ATTENUATION     BIT(1)  // a byte
-#define SND_POS             BIT(2)  // three coordinates
-#define SND_ENT             BIT(3)  // a short 0-2: channel, 3-15: entity
-#define SND_OFFSET          BIT(4)  // a byte, msec offset from frame start
-#define SND_INDEX16         BIT(5)  // index is 16-bit
-
-#define DEFAULT_SOUND_PACKET_VOLUME         1.0f
-#define DEFAULT_SOUND_PACKET_ATTENUATION    1.0f
-
-//==============================================
-
 // a client with this number will never be included in MVD stream
 #define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
 
