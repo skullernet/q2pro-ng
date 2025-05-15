@@ -56,7 +56,7 @@ qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 qhandle_t   cl_img_flare;
 
 static cvar_t   *cl_muzzleflashes;
-static cvar_t   *cl_hit_markers;
+cvar_t   *cl_hit_markers;
 
 #define MAX_FOOTSTEP_SFX    15
 
@@ -1603,12 +1603,6 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_DAMAGE_DEALT:
-        if (te.count > 0 && cl_hit_markers->integer > 0) {
-            cl.hit_marker_time = cls.realtime;
-            cl.hit_marker_count = te.count;
-            if (cl_hit_markers->integer > 1)
-                S_StartSound(NULL, listener_entnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
-        }
         break;
 
     default:

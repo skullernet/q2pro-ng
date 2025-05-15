@@ -1332,6 +1332,7 @@ enum {
     STAT_FLASHES,           // cleared each frame, 1 = health, 2 = armor
     STAT_CHASE,
     STAT_SPECTATOR,
+    STAT_HITS = 24
 };
 
 #define MAX_STATS   64

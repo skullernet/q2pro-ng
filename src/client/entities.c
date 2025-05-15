@@ -445,6 +445,18 @@ void CL_DeltaFrame(void)
         check_player_lerp(&cl.oldkeyframe, &cl.keyframe, cl.frametime.div);
 #endif
 
+    if (cl.frame.ps.stats[STAT_HITS] > cl.oldframe.ps.stats[STAT_HITS]) {
+        extern cvar_t *cl_hit_markers;
+        extern qhandle_t cl_sfx_hit_marker;
+
+        if (cl_hit_markers->integer > 0) {
+            cl.hit_marker_count = cl.frame.ps.stats[STAT_HITS] - cl.oldframe.ps.stats[STAT_HITS];
+            cl.hit_marker_time = cls.realtime;
+            if (cl_hit_markers->integer > 1)
+                S_StartSound(NULL, listener_entnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
+        }
+    }
+
     CL_CheckPredictionError();
 
     SCR_SetCrosshairColor();
