@@ -636,6 +636,12 @@ void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, fl
     G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
 }
 
+void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
+{
+    // TODO: make this local
+    G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
+}
+
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation)
 {
     uint32_t vol, att;
