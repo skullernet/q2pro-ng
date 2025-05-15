@@ -27,7 +27,7 @@ static int sound_boom;
 
 void MONSTERINFO_SIGHT(shambler_sight)(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 static const vec3_t lightning_left_hand[] = {
@@ -68,7 +68,7 @@ static void shambler_lightning_update(edict_t *self)
 
 static void shambler_windup(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
 
     edict_t *lightning = self->beam = G_Spawn();
     lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
@@ -79,13 +79,13 @@ static void shambler_windup(edict_t *self)
 
 void MONSTERINFO_IDLE(shambler_idle)(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 static void shambler_maybe_idle(edict_t *self)
 {
     if (frandom() > 0.8f)
-        gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 //
@@ -194,7 +194,7 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
         return;
 
     self->timestamp = level.time + FRAME_TIME;
-    gi.sound(self, CHAN_AUTO, sound_pain, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_AUTO, sound_pain, 1, ATTN_NORM, 0);
 
     if (mod.id != MOD_CHAINFIST && damage <= 30 && frandom() > 0.2f)
         return;
@@ -238,7 +238,7 @@ static void ShamblerSaveLoc(edict_t *self)
     self->pos1[2] += self->enemy->viewheight;
     self->monsterinfo.nextframe = FRAME_magic09;
 
-    gi.sound(self, CHAN_WEAPON, sound_boom, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_boom, 1, ATTN_NORM, 0);
     shambler_lightning_update(self);
 }
 
@@ -318,12 +318,12 @@ void MONSTERINFO_ATTACK(shambler_attack)(edict_t *self)
 
 static void shambler_melee1(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_melee1, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_melee1, 1, ATTN_NORM, 0);
 }
 
 static void shambler_melee2(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_melee2, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_melee2, 1, ATTN_NORM, 0);
 }
 
 static void sham_swingl9(edict_t *self);
@@ -343,7 +343,7 @@ static void sham_smash10(edict_t *self)
     bool hit = fire_hit(self, aim, irandom2(110, 120), 120); // Slower attack
 
     if (hit)
-        gi.sound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM, 0);
 }
 
 static void ShamClaw(edict_t *self)
@@ -360,7 +360,7 @@ static void ShamClaw(edict_t *self)
     bool hit = fire_hit(self, aim, irandom2(70, 80), 80); // Slower attack
 
     if (hit)
-        gi.sound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM, 0);
 }
 
 static const mframe_t shambler_frames_smash[] = {
@@ -492,7 +492,7 @@ void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         ThrowGibs(self, damage, shambler_gibs);
         self->deadflag = true;
         return;
@@ -502,7 +502,7 @@ void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         return;
 
     // regular death
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     self->deadflag = true;
     self->takedamage = true;
 

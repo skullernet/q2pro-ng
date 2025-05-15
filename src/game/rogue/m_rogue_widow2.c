@@ -85,7 +85,7 @@ static void pauseme(edict_t *self)
 void MONSTERINFO_SEARCH(widow2_search)(edict_t *self)
 {
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NONE, 0);
 }
 
 static void Widow2Beam(edict_t *self)
@@ -217,7 +217,7 @@ static void widow2_ready_spawn(edict_t *self)
 
 static void widow2_step(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, gi.soundindex("widow/bwstep1.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep1.wav"), 1, ATTN_NORM, 0);
 }
 
 static const mframe_t widow2_frames_stand[] = {
@@ -419,7 +419,7 @@ static void Widow2Tongue(edict_t *self)
     if (tr.entnum != self->enemy->s.number)
         return;
 
-    gi.sound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM, 0);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_PARASITE_ATTACK);
@@ -784,11 +784,11 @@ void PAIN(widow2_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     self->pain_debounce_time = level.time + SEC(5);
 
     if (damage < 15)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
     else if (damage < 75)
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -836,7 +836,7 @@ void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag && M_CheckGib(self, mod)) {
         clipped = min(damage, 100);
 
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         for (n = 0; n < 2; n++)
             ThrowWidowGibLoc(self, "models/objects/gibs/bone/tris.md2", clipped, GIB_NONE, NULL, false);
         for (n = 0; n < 3; n++)
@@ -857,7 +857,7 @@ void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag)
         return;
 
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
     self->deadflag = true;
     self->takedamage = false;
     self->count = 0;
@@ -1004,7 +1004,7 @@ void TOUCH(widow_gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     VectorClear(self->avelocity);
 
     if (self->style)
-        gi.sound(self, CHAN_VOICE, self->style, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, self->style, 1, ATTN_NORM, 0);
 }
 
 static void ThrowWidowGib(edict_t *self, const char *gibname, int damage, gib_type_t type)

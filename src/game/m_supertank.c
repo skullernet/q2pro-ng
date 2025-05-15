@@ -24,15 +24,15 @@ static int sound_tread;
 
 static void TreadSound(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_tread, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_tread, 1, ATTN_NORM, 0);
 }
 
 void MONSTERINFO_SEARCH(supertank_search)(edict_t *self)
 {
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
 }
 
 static void supertank_dead(edict_t *self);
@@ -413,11 +413,11 @@ void PAIN(supertank_pain)(edict_t *self, edict_t *other, float kick, int damage,
     }
 
     if (damage <= 10)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else if (damage <= 25)
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
     self->pain_debounce_time = level.time + SEC(3);
 
@@ -585,7 +585,7 @@ void DIE(supertank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
         if (self->deadflag)
             return;
     } else {
-        gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
         self->deadflag = true;
         self->takedamage = false;
     }

@@ -34,9 +34,9 @@ void MONSTERINFO_SIGHT(hover_sight)(edict_t *self, edict_t *other)
 {
     // PMM - daedalus sounds
     if (self->mass < 225)
-        gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, daed_sound_sight, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, daed_sound_sight, 1, ATTN_NORM, 0);
 }
 
 void MONSTERINFO_SEARCH(hover_search)(edict_t *self)
@@ -44,14 +44,14 @@ void MONSTERINFO_SEARCH(hover_search)(edict_t *self)
     // PMM - daedalus sounds
     if (self->mass < 225) {
         if (brandom())
-            gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM, 0);
     } else {
         if (brandom())
-            gi.sound(self, CHAN_VOICE, daed_sound_search1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_search1, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, daed_sound_search2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_search2, 1, ATTN_NORM, 0);
     }
 }
 
@@ -441,15 +441,15 @@ void PAIN(hover_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (brandom()) {
         // PMM - daedalus sounds
         if (self->mass < 225)
-            gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, daed_sound_pain1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_pain1, 1, ATTN_NORM, 0);
     } else {
         // PMM - daedalus sounds
         if (self->mass < 225)
-            gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, daed_sound_pain2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_pain2, 1, ATTN_NORM, 0);
     }
     // PGM
     //====
@@ -510,14 +510,14 @@ void DIE(hover_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
     // PMM - daedalus sounds
     if (self->mass < 225) {
         if (brandom())
-            gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
     } else {
         if (brandom())
-            gi.sound(self, CHAN_VOICE, daed_sound_death1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_death1, 1, ATTN_NORM, 0);
         else
-            gi.sound(self, CHAN_VOICE, daed_sound_death2, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, daed_sound_death2, 1, ATTN_NORM, 0);
     }
     self->deadflag = true;
     self->takedamage = true;

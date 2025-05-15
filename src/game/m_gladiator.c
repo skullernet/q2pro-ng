@@ -26,22 +26,22 @@ static int sound_sight;
 
 void MONSTERINFO_IDLE(gladiator_idle)(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 void MONSTERINFO_SIGHT(gladiator_sight)(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 void MONSTERINFO_SEARCH(gladiator_search)(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
 static void gladiator_cleaver_swing(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
 }
 
 static const mframe_t gladiator_frames_stand[] = {
@@ -107,9 +107,9 @@ static void GladiatorMelee(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
     if (fire_hit(self, aim, irandom2(20, 25), 300))
-        gi.sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
     else {
-        gi.sound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM, 0);
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     }
 }
@@ -231,11 +231,11 @@ void MONSTERINFO_ATTACK(gladiator_attack)(edict_t *self)
     self->pos1[2] += self->enemy->viewheight;
     // RAFAEL
     if (self->style == 1) {
-        gi.sound(self, CHAN_WEAPON, sound_gunb, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_gunb, 1, ATTN_NORM, 0);
         M_SetAnimation(self, &gladb_move_attack_gun);
     } else {
         // RAFAEL
-        gi.sound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
         M_SetAnimation(self, &gladiator_move_attack_gun);
         // RAFAEL
     }
@@ -270,9 +270,9 @@ void PAIN(gladiator_pain)(edict_t *self, edict_t *other, float kick, int damage,
     self->pain_debounce_time = level.time + SEC(3);
 
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -345,7 +345,7 @@ void DIE(gladiator_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
 
         self->s.skinnum /= 2;
 
@@ -358,10 +358,10 @@ void DIE(gladiator_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
         return;
 
     // regular death
-    gi.sound(self, CHAN_BODY, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_die, 1, ATTN_NORM, 0);
 
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_die2, 1, ATTN_NORM, 0);
 
     self->deadflag = true;
     self->takedamage = true;

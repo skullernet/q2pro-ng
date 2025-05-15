@@ -285,11 +285,11 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
             return;
         self->touch_debounce_time = level.time + SEC(5);
         gi.centerprintf(activator, "You need %s", self->item->pickup_name_definite);
-        gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/keytry.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/keytry.wav"), 1, ATTN_NORM, 0);
         return;
     }
 
-    gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/keyuse.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/keyuse.wav"), 1, ATTN_NORM, 0);
     if (coop->integer) {
         edict_t *ent;
 
@@ -397,14 +397,14 @@ void USE(trigger_counter_use)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->count) {
         if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
             gi.centerprintf(activator, "%d more to go...", self->count);
-            gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
         }
         return;
     }
 
     if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
         gi.centerprintf(activator, "Sequence completed!");
-        gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
     }
     self->activator = activator;
     multi_trigger(self);
@@ -482,7 +482,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             other->client->oldgroundentity = other->groundentity;
             if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT) && (other->fly_sound_debounce_time < level.time)) {
                 other->fly_sound_debounce_time = level.time + SEC(1.5f);
-                gi.sound(other, CHAN_AUTO, gi.soundindex("misc/windfly.wav"), 1, ATTN_NORM, 0);
+                G_StartSound(other, CHAN_AUTO, gi.soundindex("misc/windfly.wav"), 1, ATTN_NORM, 0);
             }
         }
     }
@@ -702,7 +702,7 @@ void THINK(hurt_think)(edict_t *self)
 
         if (!(self->spawnflags & SPAWNFLAG_HURT_SILENT)) {
             if (self->fly_sound_debounce_time < level.time) {
-                gi.sound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
+                G_StartSound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
                 self->fly_sound_debounce_time = level.time + SEC(1);
             }
         }
@@ -733,7 +733,7 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
 
     if (!(self->spawnflags & SPAWNFLAG_HURT_SILENT)) {
         if (self->fly_sound_debounce_time < level.time) {
-            gi.sound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
+            G_StartSound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM, 0);
             self->fly_sound_debounce_time = level.time + SEC(1);
         }
     }

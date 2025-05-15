@@ -192,7 +192,7 @@ void PAIN(actor_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
         return;
 
     self->pain_debounce_time = level.time + SEC(3);
-    //  gi.sound (self, CHAN_VOICE, actor.sound_pain, 1, ATTN_NORM, 0);
+    //  G_StartSound (self, CHAN_VOICE, actor.sound_pain, 1, ATTN_NORM, 0);
 
     if ((other->client) && (frandom() < 0.4f)) {
         vec3_t      v;
@@ -298,7 +298,7 @@ void DIE(actor_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 {
     // check for gib
     if (self->health <= -80) {
-        // gi.sound (self, CHAN_VOICE, actor.sound_gib, 1, ATTN_NORM, 0);
+        // G_StartSound (self, CHAN_VOICE, actor.sound_gib, 1, ATTN_NORM, 0);
         ThrowGibs(self, damage, actor_gibs);
         self->deadflag = true;
         return;
@@ -308,7 +308,7 @@ void DIE(actor_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         return;
 
     // regular death
-    //  gi.sound (self, CHAN_VOICE, actor.sound_die, 1, ATTN_NORM, 0);
+    //  G_StartSound (self, CHAN_VOICE, actor.sound_die, 1, ATTN_NORM, 0);
     self->deadflag = true;
     self->takedamage = true;
 
@@ -466,7 +466,7 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
         if (other->groundentity) {
             other->groundentity = NULL;
             other->velocity[2] = self->movedir[2];
-            gi.sound(other, CHAN_VOICE, gi.soundindex("player/male/jump1.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(other, CHAN_VOICE, gi.soundindex("player/male/jump1.wav"), 1, ATTN_NORM, 0);
         }
     }
 

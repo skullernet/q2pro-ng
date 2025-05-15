@@ -1447,7 +1447,8 @@ typedef enum {
     EV_LADDER_STEP,
 // KEX
     EV_MUZZLEFLASH,
-    EV_MUZZLEFLASH2
+    EV_MUZZLEFLASH2,
+    EV_SOUND
 } entity_event_t;
 
 // entity_state_t is the information conveyed from the server

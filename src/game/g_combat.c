@@ -221,7 +221,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     if (ent->client)
         G_CheckPowerArmor(ent);
     else if (!*power) {
-        gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
 
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_POWER_SPLASH);
@@ -583,7 +583,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
          ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.invincible_time > level.time))) {
     // ROGUE
         if (targ->pain_debounce_time < level.time) {
-            gi.sound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM, 0);
             targ->pain_debounce_time = level.time + SEC(2);
         }
         take = 0;

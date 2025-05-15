@@ -1165,14 +1165,14 @@ void THINK(commander_body_think)(edict_t *self)
         self->nextthink = 0;
 
     if (self->s.frame == 22)
-        gi.sound(self, CHAN_BODY, gi.soundindex("tank/thud.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_BODY, gi.soundindex("tank/thud.wav"), 1, ATTN_NORM, 0);
 }
 
 void USE(commander_body_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->think = commander_body_think;
     self->nextthink = level.time + HZ(10);
-    gi.sound(self, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM, 0);
 }
 
 void THINK(commander_body_drop)(edict_t *self)
@@ -1247,7 +1247,7 @@ void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attac
     if (self->health > -30)
         return;
 
-    gi.sound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
     ThrowGibs(self, damage, deadsoldier_gibs);
 }
 

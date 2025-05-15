@@ -166,7 +166,7 @@ These are single use targets.
 */
 void USE(use_target_secret)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    gi.sound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
 
     level.found_secrets++;
 
@@ -294,7 +294,7 @@ These are single use targets.
 
 void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    gi.sound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
 
     level.found_goals++;
 
@@ -580,7 +580,7 @@ void USE(use_target_blaster)(edict_t *self, edict_t *other, edict_t *activator)
         effect = EF_BLASTER;
 
     fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, (mod_t) { MOD_TARGET_BLASTER });
-    gi.sound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
 }
 
 void SP_target_blaster(edict_t *self)

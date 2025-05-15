@@ -169,7 +169,7 @@ static void P_DamageFeedback(edict_t *player)
 
         l |= brandom();
 
-        gi.sound(player, CHAN_VOICE, gi.soundindex(pain_sounds[l]), 1, ATTN_NORM, 0);
+        G_StartSound(player, CHAN_VOICE, gi.soundindex(pain_sounds[l]), 1, ATTN_NORM, 0);
         // Paril: pain noises alert monsters
         PlayerNoise(player, player->s.origin, PNOISE_SELF);
     }
@@ -497,14 +497,14 @@ static void SV_CalcBlend(edict_t *ent)
     if (ent->client->quad_time > level.time) {
         remaining = ent->client->quad_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(0, 0, 1, 0.08f, ent->client->ps.screen_blend);
     // RAFAEL
     } else if (ent->client->quadfire_time > level.time) {
         remaining = ent->client->quadfire_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/quadfire2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/quadfire2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(1, 0.2f, 0.5f, 0.08f, ent->client->ps.screen_blend);
     // RAFAEL
@@ -512,32 +512,32 @@ static void SV_CalcBlend(edict_t *ent)
     } else if (ent->client->double_time > level.time) {
         remaining = ent->client->double_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(0.9f, 0.7f, 0, 0.08f, ent->client->ps.screen_blend);
     // PMM
     } else if (ent->client->invincible_time > level.time) {
         remaining = ent->client->invincible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(1, 1, 0, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->invisible_time > level.time) {
         remaining = ent->client->invisible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect2.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->enviro_time > level.time) {
         remaining = ent->client->enviro_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(0, 1, 0, 0.08f, ent->client->ps.screen_blend);
     } else if (ent->client->breather_time > level.time) {
         remaining = ent->client->breather_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/airout.wav"), 1, ATTN_NORM, 0);
         if (G_PowerUpExpiringRelative(remaining))
             G_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.screen_blend);
     }
@@ -705,11 +705,11 @@ static void P_WorldEffects(void)
     if (!old_waterlevel && waterlevel) {
         PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
         if (current_player->watertype & CONTENTS_LAVA)
-            gi.sound(current_player, CHAN_BODY, gi.soundindex("player/lava_in.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(current_player, CHAN_BODY, gi.soundindex("player/lava_in.wav"), 1, ATTN_NORM, 0);
         else if (current_player->watertype & CONTENTS_SLIME)
-            gi.sound(current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
         else if (current_player->watertype & CONTENTS_WATER)
-            gi.sound(current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(current_player, CHAN_BODY, gi.soundindex("player/watr_in.wav"), 1, ATTN_NORM, 0);
         current_player->flags |= FL_INWATER;
 
         // clear damage_debounce, so the pain sound will play immediately
@@ -721,7 +721,7 @@ static void P_WorldEffects(void)
     //
     if (old_waterlevel && !waterlevel) {
         PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
-        gi.sound(current_player, CHAN_BODY, gi.soundindex("player/watr_out.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(current_player, CHAN_BODY, gi.soundindex("player/watr_out.wav"), 1, ATTN_NORM, 0);
         current_player->flags &= ~FL_INWATER;
     }
 
@@ -729,7 +729,7 @@ static void P_WorldEffects(void)
     // check for head just going under water
     //
     if (old_waterlevel != WATER_UNDER && waterlevel == WATER_UNDER) {
-        gi.sound(current_player, CHAN_BODY, gi.soundindex("player/watr_un.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(current_player, CHAN_BODY, gi.soundindex("player/watr_un.wav"), 1, ATTN_NORM, 0);
     }
 
     //
@@ -738,11 +738,11 @@ static void P_WorldEffects(void)
     if (current_player->health > 0 && old_waterlevel == WATER_UNDER && waterlevel != WATER_UNDER) {
         if (current_player->air_finished < level.time) {
             // gasp for air
-            gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/gasp1.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(current_player, CHAN_VOICE, gi.soundindex("player/gasp1.wav"), 1, ATTN_NORM, 0);
             PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
         } else if (current_player->air_finished < level.time + SEC(11)) {
             // just break surface
-            gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/gasp2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(current_player, CHAN_VOICE, gi.soundindex("player/gasp2.wav"), 1, ATTN_NORM, 0);
         }
     }
 
@@ -756,9 +756,9 @@ static void P_WorldEffects(void)
 
             if (((current_client->breather_time - level.time) % SEC(2.5f)) == 0) {
                 if (!current_client->breather_sound)
-                    gi.sound(current_player, CHAN_AUTO, gi.soundindex("player/u_breath1.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_AUTO, gi.soundindex("player/u_breath1.wav"), 1, ATTN_NORM, 0);
                 else
-                    gi.sound(current_player, CHAN_AUTO, gi.soundindex("player/u_breath2.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_AUTO, gi.soundindex("player/u_breath2.wav"), 1, ATTN_NORM, 0);
                 current_client->breather_sound ^= 1;
                 PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
                 // FIXME: release a bubble?
@@ -778,11 +778,11 @@ static void P_WorldEffects(void)
 
                 // play a gurp sound instead of a normal pain sound
                 if (current_player->health <= current_player->dmg)
-                    gi.sound(current_player, CHAN_VOICE, gi.soundindex("*drown1.wav"), 1, ATTN_NORM, 0); // [Paril-KEX]
+                    G_StartSound(current_player, CHAN_VOICE, gi.soundindex("*drown1.wav"), 1, ATTN_NORM, 0); // [Paril-KEX]
                 else if (brandom())
-                    gi.sound(current_player, CHAN_VOICE, gi.soundindex("*gurp1.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_VOICE, gi.soundindex("*gurp1.wav"), 1, ATTN_NORM, 0);
                 else
-                    gi.sound(current_player, CHAN_VOICE, gi.soundindex("*gurp2.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_VOICE, gi.soundindex("*gurp2.wav"), 1, ATTN_NORM, 0);
 
                 current_player->pain_debounce_time = level.time;
 
@@ -792,14 +792,14 @@ static void P_WorldEffects(void)
         } else if (current_player->air_finished <= level.time + SEC(3)) {
             if (current_player->client->next_drown_time < level.time) {
                 const char *fmt = use_psx_assets ? "player/breathout%d.wav" : "player/wade%d.wav";
-                gi.sound(current_player, CHAN_VOICE, gi.soundindex(va(fmt, 1 + ((int)TO_SEC(level.time) % 3))), 1, ATTN_NORM, 0);
+                G_StartSound(current_player, CHAN_VOICE, gi.soundindex(va(fmt, 1 + ((int)TO_SEC(level.time) % 3))), 1, ATTN_NORM, 0);
                 current_player->client->next_drown_time = level.time + SEC(1);
             }
         }
     } else {
         if (waterlevel == WATER_WAIST && level.is_psx)
             if ((int)(current_client->bobtime + bobmove) != bobcycle_run)
-                gi.sound(current_player, CHAN_VOICE, gi.soundindex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM, 0);
+                G_StartSound(current_player, CHAN_VOICE, gi.soundindex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM, 0);
 
         current_player->air_finished = level.time + SEC(12);
         current_player->dmg = 2;
@@ -812,9 +812,9 @@ static void P_WorldEffects(void)
         if (current_player->watertype & CONTENTS_LAVA) {
             if (current_player->health > 0 && current_player->pain_debounce_time <= level.time && current_client->invincible_time < level.time) {
                 if (brandom())
-                    gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/burn1.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_VOICE, gi.soundindex("player/burn1.wav"), 1, ATTN_NORM, 0);
                 else
-                    gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/burn2.wav"), 1, ATTN_NORM, 0);
+                    G_StartSound(current_player, CHAN_VOICE, gi.soundindex("player/burn2.wav"), 1, ATTN_NORM, 0);
                 current_player->pain_debounce_time = level.time + SEC(1);
             }
 
@@ -961,7 +961,7 @@ static void G_SetClientSound(edict_t *ent)
     // help beep (no more than three times)
     if (ent->client->pers.helpchanged && ent->client->pers.helpchanged <= 3 && ent->client->pers.help_time < level.time) {
         if (ent->client->pers.helpchanged == 1) // [KEX] haleyjd: once only
-            gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/pc_up.wav"), 1, ATTN_STATIC, 0);
+            G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/pc_up.wav"), 1, ATTN_STATIC, 0);
         ent->client->pers.helpchanged++;
         ent->client->pers.help_time = level.time + SEC(5);
     }

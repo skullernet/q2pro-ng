@@ -24,13 +24,13 @@ static int sound_scream[8];
 
 static void insane_fist(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_fist, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_fist, 1, ATTN_IDLE, 0);
 }
 
 static void insane_shake(edict_t *self)
 {
     if (!(self->spawnflags & SPAWNFLAG_INSANE_QUIET))
-        gi.sound(self, CHAN_VOICE, sound_shake, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_shake, 1, ATTN_IDLE, 0);
 }
 
 const mmove_t insane_move_cross;
@@ -43,7 +43,7 @@ static void insane_moan(edict_t *self)
 
     // Paril: don't moan every second
     if (self->monsterinfo.attack_finished < level.time) {
-        gi.sound(self, CHAN_VOICE, sound_moan, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_moan, 1, ATTN_IDLE, 0);
         self->monsterinfo.attack_finished = level.time + random_time_sec(1, 3);
     }
 }
@@ -55,7 +55,7 @@ static void insane_scream(edict_t *self)
 
     // Paril: don't moan every second
     if (self->monsterinfo.attack_finished < level.time) {
-        gi.sound(self, CHAN_VOICE, random_element(sound_scream), 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, random_element(sound_scream), 1, ATTN_IDLE, 0);
         self->monsterinfo.attack_finished = level.time + random_time_sec(1, 3);
     }
 }
@@ -496,7 +496,7 @@ void PAIN(insane_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
         l = 75;
     else
         l = 100;
-    gi.sound(self, CHAN_VOICE, gi.soundindex(va("player/male/pain%d_%d.wav", l, r)), 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, gi.soundindex(va("player/male/pain%d_%d.wav", l, r)), 1, ATTN_IDLE, 0);
 
     // Don't go into pain frames if crucified.
     if (self->spawnflags & SPAWNFLAG_INSANE_CRUCIFIED) {
@@ -587,7 +587,7 @@ static const gib_def_t insane_gibs[] = {
 void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_IDLE, 0);
         ThrowGibs(self, damage, insane_gibs);
         self->deadflag = true;
         return;
@@ -596,7 +596,7 @@ void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag)
         return;
 
-    gi.sound(self, CHAN_VOICE, gi.soundindex(va("player/male/death%d.wav", irandom2(1, 5))), 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, gi.soundindex(va("player/male/death%d.wav", irandom2(1, 5))), 1, ATTN_IDLE, 0);
 
     self->deadflag = true;
     self->takedamage = true;

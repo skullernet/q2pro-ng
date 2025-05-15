@@ -281,7 +281,7 @@ static void widow_ready_spawn(edict_t *self)
 
 static void widow_step(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, gi.soundindex("widow/bwstep3.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep3.wav"), 1, ATTN_NORM, 0);
 }
 
 static const mframe_t widow_frames_stand[] = {
@@ -335,7 +335,7 @@ const mmove_t MMOVE_T(widow_move_run) = { FRAME_walk01, FRAME_walk13, widow_fram
 
 static void widow_stepshoot(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, gi.soundindex("widow/bwstep2.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep2.wav"), 1, ATTN_NORM, 0);
     WidowBlaster(self);
 }
 
@@ -597,7 +597,7 @@ static void spawn_out_start(edict_t *self)
 {
     vec3_t startpoint, f, r, u;
 
-    //  gi.sound (self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
+    //  G_StartSound (self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
     AngleVectors(self->s.angles, f, r, u);
 
     G_ProjectSource2(self->s.origin, beameffects[0], f, r, u, startpoint);
@@ -614,7 +614,7 @@ static void spawn_out_start(edict_t *self)
     gi.WritePosition(startpoint);
     gi.multicast(startpoint, MULTICAST_ALL);
 
-    gi.sound(self, CHAN_VOICE, gi.soundindex("misc/bwidowbeamout.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/bwidowbeamout.wav"), 1, ATTN_NORM, 0);
 }
 
 static void spawn_out_do(edict_t *self)
@@ -705,7 +705,7 @@ const mmove_t MMOVE_T(widow_move_attack_kick) = { FRAME_kick01, FRAME_kick08, wi
 
 void MONSTERINFO_STAND(widow_stand)(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, gi.soundindex("widow/laugh.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, gi.soundindex("widow/laugh.wav"), 1, ATTN_NORM, 0);
     M_SetAnimation(self, &widow_move_stand);
 }
 
@@ -748,7 +748,7 @@ void MONSTERINFO_ATTACK(widow_attack)(edict_t *self)
         if ((frandom() < 0.1f) || (level.time < self->timestamp))
             M_SetAnimation(self, &widow_move_attack_pre_blaster);
         else {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &widow_move_attack_pre_rail);
         }
         return;
@@ -795,7 +795,7 @@ void MONSTERINFO_ATTACK(widow_attack)(edict_t *self)
 
     if (rail_frames) {
         if (!(level.time < self->timestamp)) {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &widow_move_attack_pre_rail);
         }
     }
@@ -808,7 +808,7 @@ void MONSTERINFO_ATTACK(widow_attack)(edict_t *self)
         if ((luck <= 0.40f) && (self->monsterinfo.fire_wait + BLASTER_TIME <= level.time))
             M_SetAnimation(self, &widow_move_attack_pre_blaster);
         else if ((luck <= 0.7f) && !(level.time < self->timestamp)) {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &widow_move_attack_pre_rail);
         } else
             M_SetAnimation(self, &widow_move_spawn);
@@ -816,7 +816,7 @@ void MONSTERINFO_ATTACK(widow_attack)(edict_t *self)
         if (level.time < self->timestamp)
             M_SetAnimation(self, &widow_move_attack_pre_blaster);
         else if ((luck <= 0.50f) || (level.time + BLASTER_TIME >= self->monsterinfo.fire_wait)) {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &widow_move_attack_pre_rail);
         } else // holdout to blaster
             M_SetAnimation(self, &widow_move_attack_pre_blaster);
@@ -856,11 +856,11 @@ void PAIN(widow_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     self->pain_debounce_time = level.time + SEC(5);
 
     if (damage < 15)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
     else if (damage < 75)
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare

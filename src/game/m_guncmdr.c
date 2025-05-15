@@ -23,17 +23,17 @@ static int sound_sight;
 
 static void guncmdr_idlesound(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 void MONSTERINFO_SIGHT(guncmdr_sight)(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 void MONSTERINFO_SEARCH(guncmdr_search)(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
 static void guncmdr_fire_chain(edict_t *self);
@@ -465,9 +465,9 @@ void PAIN(guncmdr_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     self->pain_debounce_time = level.time + SEC(3);
 
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
     if (!M_ShouldReactToPain(self, mod)) {
         if (frandom() < 0.3f)
@@ -686,7 +686,7 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
 
         self->s.skinnum /= 2;
 
@@ -705,7 +705,7 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
         return;
 
     // regular death
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     self->deadflag = true;
     self->takedamage = true;
 
@@ -762,7 +762,7 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
 static void guncmdr_opengun(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE, 0);
 }
 
 static void GunnerCmdrFire(edict_t *self)

@@ -416,9 +416,9 @@ void MONSTERINFO_IDLE(medic_idle)(edict_t *self)
 
     // PMM - commander sounds
     if (self->mass == 400)
-        gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
     else
-        gi.sound(self, CHAN_VOICE, commander_sound_idle1, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, commander_sound_idle1, 1, ATTN_IDLE, 0);
 
     if (!self->oldenemy) {
         ent = medic_FindDeadMonster(self);
@@ -438,9 +438,9 @@ void MONSTERINFO_SEARCH(medic_search)(edict_t *self)
 
     // PMM - commander sounds
     if (self->mass == 400)
-        gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_IDLE, 0);
     else
-        gi.sound(self, CHAN_VOICE, commander_sound_search, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, commander_sound_search, 1, ATTN_IDLE, 0);
 
     if (!self->oldenemy) {
         ent = medic_FindDeadMonster(self);
@@ -458,9 +458,9 @@ void MONSTERINFO_SIGHT(medic_sight)(edict_t *self, edict_t *other)
 {
     // PMM - commander sounds
     if (self->mass == 400)
-        gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, commander_sound_sight, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, commander_sound_sight, 1, ATTN_NORM, 0);
 }
 
 static const mframe_t medic_frames_stand[] = {
@@ -655,17 +655,17 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     if (self->mass > 400) {
         if (damage < 35) {
-            gi.sound(self, CHAN_VOICE, commander_sound_pain1, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_VOICE, commander_sound_pain1, 1, ATTN_NORM, 0);
 
             if (mod.id != MOD_CHAINFIST)
                 return;
         }
 
-        gi.sound(self, CHAN_VOICE, commander_sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, commander_sound_pain2, 1, ATTN_NORM, 0);
     } else if (r < 0.5f)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -808,7 +808,7 @@ void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, medic_gibs);
         self->deadflag = true;
@@ -821,9 +821,9 @@ void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
     // regular death
     //  PMM
     if (self->mass == 400)
-        gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, commander_sound_die, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, commander_sound_die, 1, ATTN_NORM, 0);
     //
     self->deadflag = true;
     self->takedamage = true;
@@ -909,9 +909,9 @@ static void medic_hook_launch(edict_t *self)
 {
     // PMM - commander sounds
     if (self->mass == 400)
-        gi.sound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_WEAPON, commander_sound_hook_launch, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, commander_sound_hook_launch, 1, ATTN_NORM, 0);
 }
 
 static const vec3_t medic_cable_offsets[] = {
@@ -981,9 +981,9 @@ static void medic_cable_attack(edict_t *self)
     if (self->s.frame == FRAME_attack43) {
         // PMM - commander sounds
         if (self->mass == 400)
-            gi.sound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM, 0);
+            G_StartSound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM, 0);
         else
-            gi.sound(self->enemy, CHAN_AUTO, commander_sound_hook_hit, 1, ATTN_NORM, 0);
+            G_StartSound(self->enemy, CHAN_AUTO, commander_sound_hook_hit, 1, ATTN_NORM, 0);
 
         self->enemy->monsterinfo.aiflags |= AI_RESURRECTING;
         self->enemy->takedamage = false;
@@ -996,9 +996,9 @@ static void medic_cable_attack(edict_t *self)
         if (self->s.frame == FRAME_attack44) {
             // PMM - medic commander sounds
             if (self->mass == 400)
-                gi.sound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM, 0);
+                G_StartSound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM, 0);
             else
-                gi.sound(self, CHAN_WEAPON, commander_sound_hook_heal, 1, ATTN_NORM, 0);
+                G_StartSound(self, CHAN_WEAPON, commander_sound_hook_heal, 1, ATTN_NORM, 0);
         }
     }
 
@@ -1020,9 +1020,9 @@ static void medic_cable_attack(edict_t *self)
 static void medic_hook_retract(edict_t *self)
 {
     if (self->mass == 400)
-        gi.sound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM, 0);
 
     self->monsterinfo.aiflags &= ~AI_MEDIC;
 
@@ -1058,7 +1058,7 @@ const mmove_t MMOVE_T(medic_move_attackCable) = { FRAME_attack37, FRAME_attack55
 
 static void medic_start_spawn(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, commander_sound_spawn, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, commander_sound_spawn, 1, ATTN_NORM, 0);
     self->monsterinfo.nextframe = FRAME_attack48;
 }
 

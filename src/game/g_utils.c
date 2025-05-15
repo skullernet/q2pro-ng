@@ -181,9 +181,9 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
         // [Paril-KEX] allow non-noisy centerprints
         if (ent->noise_index >= 0) {
             if (ent->noise_index)
-                gi.sound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
+                G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM, 0);
             else
-                gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
+                G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM, 0);
         }
     }
 }
@@ -625,7 +625,13 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     return true; // all clear
 }
 
-uint32_t G_EncodeSound(uint32_t index, soundchan_t channel, float volume, float attenuation)
+void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation, float timeofs)
+{
+    channel &= 7;
+    G_AddEvent(ent, EV_SOUND, G_EncodeSound(index, channel, volume, attenuation));
+}
+
+uint32_t G_EncodeSound(int index, soundchan_t channel, float volume, float attenuation)
 {
     uint32_t vol, att;
 
@@ -652,6 +658,8 @@ uint32_t G_EncodeSound(uint32_t index, soundchan_t channel, float volume, float 
 
 void G_AddEvent(edict_t *ent, int event, int param)
 {
+    if (ent->s.event && (event == EV_FOOTSTEP || event == EV_OTHER_FOOTSTEP || event == EV_LADDER_STEP))
+        return;
     ent->s.event       = event;
     ent->s.event_param = param;
 }

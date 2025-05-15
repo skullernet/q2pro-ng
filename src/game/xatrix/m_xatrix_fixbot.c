@@ -1009,11 +1009,11 @@ static void fixbot_fire_welder(edict_t *self)
         r = frandom();
 
         if (r < 0.33f)
-            gi.sound(self, CHAN_VOICE, sound_weld1, 1, ATTN_IDLE, 0);
+            G_StartSound(self, CHAN_VOICE, sound_weld1, 1, ATTN_IDLE, 0);
         else if (r < 0.66f)
-            gi.sound(self, CHAN_VOICE, sound_weld2, 1, ATTN_IDLE, 0);
+            G_StartSound(self, CHAN_VOICE, sound_weld2, 1, ATTN_IDLE, 0);
         else
-            gi.sound(self, CHAN_VOICE, sound_weld3, 1, ATTN_IDLE, 0);
+            G_StartSound(self, CHAN_VOICE, sound_weld3, 1, ATTN_IDLE, 0);
     }
 }
 
@@ -1082,7 +1082,7 @@ void PAIN(fixbot_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
     fixbot_set_fly_parameters(self, FB_NONE);
     self->pain_debounce_time = level.time + SEC(3);
-    gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
 
     if (damage <= 10)
         M_SetAnimation(self, &fixbot_move_pain3);
@@ -1108,7 +1108,7 @@ static void fixbot_dead(edict_t *self)
 
 void DIE(fixbot_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     BecomeExplosion1(self);
 
     // shards

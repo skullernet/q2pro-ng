@@ -614,7 +614,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                 else
                     ctfgame.team2++;
 
-                gi.sound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagcap.wav"), 1, ATTN_NONE, 0);
+                G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagcap.wav"), 1, ATTN_NONE, 0);
 
                 // other gets another 10 frag bonus
                 other->client->resp.score += CTF_CAPTURE_BONUS;
@@ -654,7 +654,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                    other->client->pers.netname, CTFTeamName(ctf_team));
         other->client->resp.score += CTF_RECOVERY_BONUS;
         other->client->resp.ctf_lastreturnedflag = level.time;
-        gi.sound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
+        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
         // CTFResetFlag will remove this entity!  We must return false
         CTFResetFlag(ctf_team);
         return false;
@@ -703,7 +703,7 @@ void THINK(CTFDropFlagThink)(edict_t *ent)
                    CTFTeamName(CTF_TEAM2));
     }
 
-    gi.sound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
+    G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
 }
 
 // Called from PlayerDie, to drop the flag from a dying player
@@ -996,7 +996,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM1);
                         gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM1));
-                        gi.sound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
+                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -1024,7 +1024,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM2);
                         gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM2));
-                        gi.sound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
+                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE, 0);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -1118,7 +1118,7 @@ void CTFResetGrapple(edict_t *self)
     if (!cl->ctf_grapple)
         return;
 
-    gi.sound(owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
+    G_StartSound(owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM, 0);
 
     cl->ctf_grapple = NULL;
     cl->ctf_grapplereleasetime = level.time + SEC(1);
@@ -1162,7 +1162,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (owner->client->silencer_shots)
         volume = 0.2f;
 
-    gi.sound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM, 0);
     self->s.sound = gi.soundindex("weapons/grapple/grpull.wav");
 
     gi.WriteByte(svc_temp_entity);
@@ -1317,7 +1317,7 @@ static void CTFGrappleFire(edict_t *ent, const vec3_t g_offset, int damage, effe
         volume = 0.2f;
 
     if (CTFFireGrapple(ent, start, dir, damage, g_grapple_fly_speed->value, effect))
-        gi.sound(ent, CHAN_WEAPON, gi.soundindex("weapons/grapple/grfire.wav"), volume, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/grapple/grfire.wav"), volume, ATTN_NORM, 0);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 }
@@ -1836,7 +1836,7 @@ int CTFApplyResistance(edict_t *ent, int dmg)
 
     if (dmg && ent->client && ent->client->pers.inventory[IT_TECH_RESISTANCE]) {
         // make noise
-        gi.sound(ent, CHAN_AUX, gi.soundindex("ctf/tech1.wav"), volume, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech1.wav"), volume, ATTN_NORM, 0);
         return dmg / 2;
     }
     return dmg;
@@ -1861,9 +1861,9 @@ bool CTFApplyStrengthSound(edict_t *ent)
         if (ent->client->ctf_techsndtime < level.time) {
             ent->client->ctf_techsndtime = level.time + SEC(1);
             if (ent->client->quad_time > level.time)
-                gi.sound(ent, CHAN_AUX, gi.soundindex("ctf/tech2x.wav"), volume, ATTN_NORM, 0);
+                G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech2x.wav"), volume, ATTN_NORM, 0);
             else
-                gi.sound(ent, CHAN_AUX, gi.soundindex("ctf/tech2.wav"), volume, ATTN_NORM, 0);
+                G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech2.wav"), volume, ATTN_NORM, 0);
         }
         return true;
     }
@@ -1886,7 +1886,7 @@ void CTFApplyHasteSound(edict_t *ent)
         ent->client->pers.inventory[IT_TECH_HASTE] &&
         ent->client->ctf_techsndtime < level.time) {
         ent->client->ctf_techsndtime = level.time + SEC(1);
-        gi.sound(ent, CHAN_AUX, gi.soundindex("ctf/tech3.wav"), volume, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech3.wav"), volume, ATTN_NORM, 0);
     }
 }
 
@@ -1925,7 +1925,7 @@ void CTFApplyRegeneration(edict_t *ent)
         }
         if (noise && ent->client->ctf_techsndtime < level.time) {
             ent->client->ctf_techsndtime = level.time + SEC(1);
-            gi.sound(ent, CHAN_AUX, gi.soundindex("ctf/tech4.wav"), volume, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech4.wav"), volume, ATTN_NORM, 0);
         }
     }
 }

@@ -277,7 +277,7 @@ static void Use_Adrenaline(edict_t *ent, const gitem_t *item)
     if (ent->health < ent->max_health)
         ent->health = ent->max_health;
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/n_health.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/n_health.wav"), 1, ATTN_NORM, 0);
 
     ent->client->pers.inventory[item->id]--;
 }
@@ -308,7 +308,7 @@ void G_CheckPowerArmor(edict_t *ent)
         if (!has_enough_cells) {
             // ran out of cells for power armor
             ent->flags &= ~FL_POWER_ARMOR;
-            gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
         }
     } else {
         // special case for power armor, for auto-shields
@@ -316,7 +316,7 @@ void G_CheckPowerArmor(edict_t *ent)
             has_enough_cells && (ent->client->pers.inventory[IT_ITEM_POWER_SCREEN] ||
                                  ent->client->pers.inventory[IT_ITEM_POWER_SHIELD])) {
             ent->flags |= FL_POWER_ARMOR;
-            gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
         }
     }
 }
@@ -416,7 +416,7 @@ static void Use_Quad(edict_t *ent, const gitem_t *item)
 
     ent->client->quad_time = max(level.time, ent->client->quad_time) + timeout;
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 // =====================================================================
 
@@ -436,7 +436,7 @@ static void Use_QuadFire(edict_t *ent, const gitem_t *item)
 
     ent->client->quadfire_time = max(level.time, ent->client->quadfire_time) + timeout;
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/quadfire1.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/quadfire1.wav"), 1, ATTN_NORM, 0);
 }
 // RAFAEL
 
@@ -448,7 +448,7 @@ static void Use_Breather(edict_t *ent, const gitem_t *item)
 
     ent->client->breather_time = max(level.time, ent->client->breather_time) + SEC(30);
 
-    //  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -459,7 +459,7 @@ static void Use_Envirosuit(edict_t *ent, const gitem_t *item)
 
     ent->client->enviro_time = max(level.time, ent->client->enviro_time) + SEC(30);
 
-    //  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -470,7 +470,7 @@ static void Use_Invulnerability(edict_t *ent, const gitem_t *item)
 
     ent->client->invincible_time = max(level.time, ent->client->invincible_time) + SEC(30);
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
 }
 
 static void Use_Invisibility(edict_t *ent, const gitem_t *item)
@@ -479,7 +479,7 @@ static void Use_Invisibility(edict_t *ent, const gitem_t *item)
 
     ent->client->invisible_time = max(level.time, ent->client->invisible_time) + SEC(30);
 
-    gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
+    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -489,7 +489,7 @@ static void Use_Silencer(edict_t *ent, const gitem_t *item)
     ent->client->pers.inventory[item->id]--;
     ent->client->silencer_shots += 30;
 
-    //  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -799,7 +799,7 @@ static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
 {
     if (ent->flags & FL_POWER_ARMOR) {
         ent->flags &= ~(FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR);
-        gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
     } else {
         if (!ent->client->pers.inventory[IT_AMMO_CELLS]) {
             gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
@@ -812,7 +812,7 @@ static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
             ent->client->pers.inventory[IT_AMMO_CELLS] > ent->client->pers.autoshield)
             ent->flags |= FL_WANTS_POWER_ARMOR;
 
-        gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
     }
 }
 
@@ -895,9 +895,9 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
         }
 
         if (ent->noise_index)
-            gi.sound(other, CHAN_ITEM, ent->noise_index, 1, ATTN_NORM, 0);
+            G_StartSound(other, CHAN_ITEM, ent->noise_index, 1, ATTN_NORM, 0);
         else if (ent->item->pickup_sound)
-            gi.sound(other, CHAN_ITEM, gi.soundindex(ent->item->pickup_sound), 1, ATTN_NORM, 0);
+            G_StartSound(other, CHAN_ITEM, gi.soundindex(ent->item->pickup_sound), 1, ATTN_NORM, 0);
 
         if (coop->integer && P_UseCoopInstancedItems()) {
             Q_SetBit(ent->item_picked_up_by, other->s.number);
@@ -1369,7 +1369,7 @@ void P_ToggleFlashlight(edict_t *ent, bool state)
 
     ent->flags ^= FL_FLASHLIGHT;
 
-    gi.sound(ent, CHAN_AUTO, gi.soundindex(ent->flags & FL_FLASHLIGHT ? "items/flashlight_on.wav" : "items/flashlight_off.wav"), 1, ATTN_STATIC, 0);
+    G_StartSound(ent, CHAN_AUTO, gi.soundindex(ent->flags & FL_FLASHLIGHT ? "items/flashlight_on.wav" : "items/flashlight_off.wav"), 1, ATTN_STATIC, 0);
 }
 
 static void Use_Flashlight(edict_t *ent, const gitem_t *inv)

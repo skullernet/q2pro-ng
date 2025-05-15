@@ -40,7 +40,7 @@ void plat2_kill_danger_area(edict_t *ent)
 void MOVEINFO_ENDFUNC(plat2_hit_top)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_end)
-        gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
     ent->s.sound = 0;
     ent->moveinfo.state = STATE_TOP;
 
@@ -70,7 +70,7 @@ void MOVEINFO_ENDFUNC(plat2_hit_top)(edict_t *ent)
 void MOVEINFO_ENDFUNC(plat2_hit_bottom)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_end)
-        gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
+        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC, 0);
     ent->s.sound = 0;
     ent->moveinfo.state = STATE_BOTTOM;
 
@@ -101,7 +101,7 @@ void MOVEINFO_ENDFUNC(plat2_hit_bottom)(edict_t *ent)
 void THINK(plat2_go_down)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_start)
-        gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
 
     ent->s.sound = ent->moveinfo.sound_middle;
 
@@ -114,7 +114,7 @@ void THINK(plat2_go_down)(edict_t *ent)
 void THINK(plat2_go_up)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_start)
-        gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
+        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC, 0);
 
     ent->s.sound = ent->moveinfo.sound_middle;
 

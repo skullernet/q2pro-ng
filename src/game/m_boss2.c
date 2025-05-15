@@ -39,7 +39,7 @@ static void boss2_set_fly_parameters(edict_t *self, bool firing)
 void MONSTERINFO_SEARCH(boss2_search)(edict_t *self)
 {
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_search1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NONE, 0);
 }
 
 void boss2_run(edict_t *self);
@@ -454,11 +454,11 @@ void PAIN(boss2_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     // American wanted these at no attenuation
     if (damage < 10)
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
     else if (damage < 30)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -539,7 +539,7 @@ void DIE(boss2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         if (self->deadflag)
             return;
     } else {
-        gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
         self->deadflag = true;
         self->takedamage = false;
         self->count = 0;

@@ -33,27 +33,27 @@ static int sound_strike;
 
 void MONSTERINFO_SIGHT(tank_sight)(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 static void tank_footstep(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_step, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_step, 1, ATTN_NORM, 0);
 }
 
 static void tank_thud(edict_t *self)
 {
-    gi.sound(self, CHAN_BODY, sound_thud, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_BODY, sound_thud, 1, ATTN_NORM, 0);
 }
 
 static void tank_windup(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM, 0);
 }
 
 void MONSTERINFO_IDLE(tank_idle)(edict_t *self)
 {
-    gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 //
@@ -279,9 +279,9 @@ void PAIN(tank_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
     self->pain_debounce_time = level.time + SEC(3);
 
     if (self->count)
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -372,7 +372,7 @@ static void TankBlaster(edict_t *self)
 
 static void TankStrike(edict_t *self)
 {
-    gi.sound(self, CHAN_WEAPON, sound_strike, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_WEAPON, sound_strike, 1, ATTN_NORM, 0);
 }
 
 static void TankRocket(edict_t *self)
@@ -891,7 +891,7 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
 
         self->s.skinnum /= 2;
 
@@ -930,7 +930,7 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
     }
 
     // regular death
-    gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
     self->deadflag = true;
     self->takedamage = true;
 

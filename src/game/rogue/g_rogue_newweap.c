@@ -113,7 +113,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 
     // play quad sound if appopriate
     if (ent->dmg > PROX_DAMAGE * PROX_DAMAGE_OPEN_MULT)
-        gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
 
     ent->takedamage = false;
     T_RadiusDamage(ent, owner, ent->dmg, other, PROX_DAMAGE_RADIUS, DAMAGE_NONE, (mod_t) { MOD_PROX });
@@ -174,7 +174,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
 
     if (prox->teamchain == ent) {
-        gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM, 0);
         prox->think = Prox_Explode;
         prox->nextthink = level.time + PROX_TIME_DELAY;
         return;
@@ -242,7 +242,7 @@ void THINK(prox_open)(edict_t *ent)
             if (!visible(search, ent))
                 continue;
 
-            gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM, 0);
             Prox_Explode(ent);
             return;
         }
@@ -271,7 +271,7 @@ void THINK(prox_open)(edict_t *ent)
         ent->nextthink = level.time + SEC(0.2f);
     } else {
         if (ent->s.frame == 0) {
-            gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/proxopen.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxopen.wav"), 1, ATTN_NORM, 0);
             ent->dmg *= PROX_DAMAGE_OPEN_MULT;
         }
         ent->s.frame++;
@@ -566,9 +566,9 @@ static void Nuke_Explode(edict_t *ent)
     T_RadiusNukeDamage(ent, ent->teammaster, ent->dmg, ent, ent->dmg_radius, (mod_t) { MOD_NUKE });
 
     if (ent->dmg > NUKE_DAMAGE)
-        gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
 
-    gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/grenlx1a.wav"), 1, ATTN_NONE, 0);
+    G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/grenlx1a.wav"), 1, ATTN_NONE, 0);
 
     gi.WriteByte(svc_temp_entity);
     gi.WriteByte(TE_EXPLOSION1_BIG);
@@ -653,16 +653,16 @@ void THINK(Nuke_Think)(edict_t *ent)
 
         if (ent->pain_debounce_time <= level.time) {
             if (remaining <= (NUKE_TIME_TO_LIVE / 2.0f)) {
-                gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
+                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
                 ent->pain_debounce_time = level.time + SEC(0.3f);
             } else {
-                gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
+                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
                 ent->pain_debounce_time = level.time + SEC(0.5f);
             }
         }
     } else {
         if (ent->pain_debounce_time <= level.time) {
-            gi.sound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
+            G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation, 0);
             ent->pain_debounce_time = level.time + SEC(1);
         }
         ent->nextthink = level.time + FRAME_TIME;
@@ -673,9 +673,9 @@ void TOUCH(nuke_bounce)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
 {
     if (tr->surface_id) {
         if (brandom())
-            gi.sound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
         else
-            gi.sound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM, 0);
     }
 }
 
@@ -761,7 +761,7 @@ static void tesla_remove(edict_t *self)
 
     // play quad sound if quadded and an underwater explosion
     if ((self->dmg_radius) && (self->dmg > (TESLA_DAMAGE * TESLA_EXPLOSION_DAMAGE_MULT)))
-        gi.sound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
 
     Grenade_Explode(self);
 }
@@ -833,7 +833,7 @@ void THINK(tesla_think_active)(edict_t *self)
 
             // PMM - play quad sound if it's above the "normal" damage
             if (self->dmg > TESLA_DAMAGE)
-                gi.sound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
+                G_StartSound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM, 0);
 
             // PGM - don't do knockback to walking monsters
             if ((hit->r.svflags & SVF_MONSTER) && !(hit->flags & (FL_FLY | FL_SWIM)))
@@ -923,7 +923,7 @@ void THINK(tesla_think)(edict_t *ent)
     VectorClear(ent->s.angles);
 
     if (ent->s.frame == 0)
-        gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/teslaopen.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/teslaopen.wav"), 1, ATTN_NORM, 0);
 
     ent->s.frame++;
     if (ent->s.frame > 14) {
@@ -956,9 +956,9 @@ void TOUCH(tesla_lava)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
 
     if (!VectorEmpty(ent->velocity)) {
         if (brandom())
-            gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM, 0);
         else
-            gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM, 0);
     }
 }
 

@@ -53,7 +53,7 @@ static void CarrierRocket(edict_t *self);
 
 void MONSTERINFO_SIGHT(carrier_sight)(edict_t *self, edict_t *other)
 {
-    gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
+    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
 //
@@ -250,7 +250,7 @@ static void CarrierSpawn(edict_t *self)
     if (!ent)
         return;
 
-    gi.sound(self, CHAN_BODY, sound_spawn, 1, ATTN_NONE, 0);
+    G_StartSound(self, CHAN_BODY, sound_spawn, 1, ATTN_NONE, 0);
 
     ent->nextthink = level.time;
     ent->think(ent);
@@ -420,7 +420,7 @@ const mmove_t MMOVE_T(carrier_move_run) = { FRAME_search01, FRAME_search13, carr
 static void CarrierSpool(edict_t *self)
 {
     CarrierCoopCheck(self);
-    gi.sound(self, CHAN_BODY, sound_cg_up, 1, 0.5f, 0);
+    G_StartSound(self, CHAN_BODY, sound_cg_up, 1, 0.5f, 0);
 
     self->monsterinfo.weapon_sound = sound_cg_loop;
 }
@@ -628,7 +628,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
         else if ((frandom() < 0.1f) || (level.time < self->monsterinfo.attack_finished))
             M_SetAnimation(self, &carrier_move_attack_pre_mg);
         else {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &carrier_move_attack_rail);
         }
         return;
@@ -643,7 +643,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
         if ((frandom() < 0.1f) || (level.time < self->monsterinfo.attack_finished))
             M_SetAnimation(self, &carrier_move_attack_pre_mg);
         else {
-            gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
             M_SetAnimation(self, &carrier_move_attack_rail);
         }
         return;
@@ -655,7 +655,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
             if ((frandom() < 0.8f) || (level.time < self->monsterinfo.attack_finished))
                 M_SetAnimation(self, &carrier_move_attack_pre_mg);
             else {
-                gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+                G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
                 M_SetAnimation(self, &carrier_move_attack_rail);
             }
         } else if (range < 600) {
@@ -666,7 +666,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
                 else if (luck <= 0.40f)
                     M_SetAnimation(self, &carrier_move_attack_pre_gren);
                 else if ((luck <= 0.7f) && !(level.time < self->monsterinfo.attack_finished)) {
-                    gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+                    G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
                     M_SetAnimation(self, &carrier_move_attack_rail);
                 } else
                     M_SetAnimation(self, &carrier_move_spawn);
@@ -676,7 +676,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
                 else if (luck <= 0.65f)
                     M_SetAnimation(self, &carrier_move_attack_pre_gren);
                 else if (level.time >= self->monsterinfo.attack_finished) {
-                    gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+                    G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
                     M_SetAnimation(self, &carrier_move_attack_rail);
                 } else
                     M_SetAnimation(self, &carrier_move_attack_pre_mg);
@@ -687,7 +687,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
                 if (luck < 0.3f)
                     M_SetAnimation(self, &carrier_move_attack_pre_mg);
                 else if ((luck < 0.65f) && !(level.time < self->monsterinfo.attack_finished)) {
-                    gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+                    G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
                     VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
                     self->pos1[2] += self->enemy->viewheight;
                     M_SetAnimation(self, &carrier_move_attack_rail);
@@ -697,7 +697,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
                 if ((luck < 0.45f) || (level.time < self->monsterinfo.attack_finished))
                     M_SetAnimation(self, &carrier_move_attack_pre_mg);
                 else {
-                    gi.sound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
+                    G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM, 0);
                     M_SetAnimation(self, &carrier_move_attack_rail);
                 }
             }
@@ -732,7 +732,7 @@ static void carrier_reattack_mg(edict_t *self)
 
     M_SetAnimation(self, &carrier_move_attack_post_mg);
     self->monsterinfo.weapon_sound = 0;
-    gi.sound(self, CHAN_BODY, sound_cg_down, 1, 0.5f, 0);
+    G_StartSound(self, CHAN_BODY, sound_cg_down, 1, 0.5f, 0);
 }
 
 static void carrier_attack_gren(edict_t *self)
@@ -761,11 +761,11 @@ void PAIN(carrier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     self->pain_debounce_time = level.time + SEC(5);
 
     if (damage < 10)
-        gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
     else if (damage < 30)
-        gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NONE, 0);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -833,7 +833,7 @@ static void carrier_dead(edict_t *self)
 
 void DIE(carrier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
+    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
     self->deadflag = true;
     self->takedamage = false;
     self->count = 0;

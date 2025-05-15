@@ -183,7 +183,7 @@ void THINK(heat_think)(edict_t *self)
         vectoangles(self->movedir, self->s.angles);
 
         if (self->enemy != acquire) {
-            gi.sound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f, 0);
+            G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f, 0);
             self->enemy = acquire;
         }
     } else
@@ -224,7 +224,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
 
     if (visible(heat, self->enemy)) {
         heat->enemy = self->enemy;
-        gi.sound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1.f, 0.25f, 0);
+        G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1.f, 0.25f, 0);
     }
 
     gi.linkentity(heat);
@@ -378,7 +378,7 @@ void THINK(Trap_Think)(edict_t *ent)
             ent->wait -= 2;
 
             if (spawn)
-                gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/trapdown.wav"), 1, ATTN_IDLE, 0);
+                G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/trapdown.wav"), 1, ATTN_IDLE, 0);
 
             ent->delay += 2;
 
@@ -405,7 +405,7 @@ void THINK(Trap_Think)(edict_t *ent)
             cube->nextthink = 0;
             gi.linkentity(cube);
 
-            gi.sound(best, CHAN_AUTO, gi.soundindex("misc/fhit3.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(best, CHAN_AUTO, gi.soundindex("misc/fhit3.wav"), 1, ATTN_NORM, 0);
 
             return;
         }

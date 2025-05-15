@@ -44,15 +44,15 @@ static void soldier_stop_charge(edict_t *self)
 static void soldier_idle(edict_t *self)
 {
     if (frandom() > 0.8f)
-        gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
 static void soldier_cock(edict_t *self)
 {
     if (self->s.frame == FRAME_stand322)
-        gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
     else
-        gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_WEAPON, sound_cock, 1, ATTN_NORM, 0);
 
     // [Paril-KEX] reset cockness
     self->dmg = 0;
@@ -69,7 +69,7 @@ static void soldierh_hyper_sound_end(edict_t *self)
 {
     if (self->monsterinfo.weapon_sound) {
         if (soldier_style() == BlueHyper)
-            gi.sound(self, CHAN_AUTO, gi.soundindex("weapons/hyprbd1a.wav"), 1, ATTN_NORM, 0);
+            G_StartSound(self, CHAN_AUTO, gi.soundindex("weapons/hyprbd1a.wav"), 1, ATTN_NORM, 0);
 
         self->monsterinfo.weapon_sound = 0;
     }
@@ -430,11 +430,11 @@ void PAIN(soldier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     self->pain_debounce_time = level.time + SEC(3);
 
     if (is_light())
-        gi.sound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM, 0);
     else if (is_blitz())
-        gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_pain_ss, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_pain_ss, 1, ATTN_NORM, 0);
 
     if (self->velocity[2] > 100) {
         // PMM - clear duck flag
@@ -1145,9 +1145,9 @@ void MONSTERINFO_ATTACK(soldier_attack)(edict_t *self)
 void MONSTERINFO_SIGHT(soldier_sight)(edict_t *self, edict_t *other)
 {
     if (brandom())
-        gi.sound(self, CHAN_VOICE, sound_sight1, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_sight1, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_sight2, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_sight2, 1, ATTN_NORM, 0);
 
     // Paril: don't run-shoot if we can't see them
     if (self->enemy && (range_to(self, self->enemy) >= RANGE_NEAR) && visible(self, self->enemy)) {
@@ -1576,7 +1576,7 @@ void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        gi.sound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
 
         self->s.skinnum /= 2;
 
@@ -1598,11 +1598,11 @@ void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
     self->takedamage = true;
 
     if (is_light())
-        gi.sound(self, CHAN_VOICE, sound_death_light, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death_light, 1, ATTN_NORM, 0);
     else if (is_blitz())
-        gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
     else
-        gi.sound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM, 0);
+        G_StartSound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM, 0);
 
     if (fabsf((self->s.origin[2] + self->viewheight) - point[2]) <= 4 && self->velocity[2] < 65) {
         // head shot

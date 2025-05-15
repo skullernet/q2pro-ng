@@ -239,6 +239,21 @@ static void parse_entity_event(int number)
     case EV_MUZZLEFLASH2:
         CL_MuzzleFlash2(cent);
         break;
+    case EV_SOUND: {
+        uint32_t param = cent->current.event_param;
+        int channel = (param >> 13) & 7;
+        int index = param & (MAX_SOUNDS - 1);
+        int vol = (param >> 24) & 255;
+        int att = (param >> 16) & 255;
+        if (vol == 0)
+            vol = 255;
+        if (att == ATTN_ESCAPE_CODE)
+            att = 0;
+        else if (att == 0)
+            att = ATTN_ESCAPE_CODE;
+        S_StartSound(NULL, number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+        break;
+    }
     }
 }
 
