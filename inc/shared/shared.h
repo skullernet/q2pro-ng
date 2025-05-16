@@ -72,7 +72,7 @@ typedef int qhandle_t;
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
-#define MODELINDEX_WORLD    0
+#define MODELINDEX_WORLD    1
 #define MODELINDEX_PLAYER   255
 
 #define ENTITYNUM_WORLD     (MAX_EDICTS - 2)
