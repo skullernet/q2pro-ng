@@ -763,9 +763,8 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
 
 void CL_SmokeAndFlash(const vec3_t origin);
 void CL_DrawBeam(const vec3_t org, const vec3_t end, qhandle_t model);
-void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation);
 
-void CL_BerserkSlam(centity_t *cent);
+void CL_EntityEvent(centity_t *cent);
 
 void CL_RegisterTEntSounds(void);
 void CL_RegisterTEntModels(void);

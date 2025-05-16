@@ -144,7 +144,7 @@ static int CL_FindFootstepSurface(int entnum)
 CL_PlayFootstepSfx
 =================
 */
-void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation)
+static void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation)
 {
     const cl_footstep_sfx_t *sfx;
     qhandle_t footstep_sfx;
@@ -1628,7 +1628,7 @@ static void CL_ProjectFlashSource(centity_t *cent, const vec3_t offset, vec3_t o
     origin[2] = cent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
 }
 
-void CL_BerserkSlam(centity_t *cent)
+static void CL_BerserkSlam(centity_t *cent)
 {
     S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
     S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
@@ -1654,6 +1654,89 @@ void CL_BerserkSlam(centity_t *cent)
     ex->light = 550;
     VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
     ex->frames = 4;
+}
+
+static void CL_SoundEvent(centity_t *cent)
+{
+    uint32_t param = cent->current.event_param;
+    int channel = (param >> 13) & 7;
+    int index = param & (MAX_SOUNDS - 1);
+    int vol = (param >> 24) & 255;
+    int att = (param >> 16) & 255;
+    if (vol == 0)
+        vol = 255;
+    if (att == ATTN_ESCAPE_CODE)
+        att = 0;
+    else if (att == 0)
+        att = ATTN_ESCAPE_CODE;
+    S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+}
+
+// an entity has just been parsed that has an event value
+void CL_EntityEvent(centity_t *cent)
+{
+    int number = cent->current.number;
+
+    if (CL_FRAMESYNC) {
+        // EF_TELEPORTER acts like an event, but is not cleared each frame
+        if (cent->current.effects & EF_TELEPORTER)
+            CL_TeleporterParticles(cent->current.origin);
+
+        if (cent->current.morefx & EFX_TELEPORTER2)
+            CL_TeleporterParticles2(cent->current.origin);
+
+        if (cent->current.morefx & EFX_BARREL_EXPLODING)
+            CL_BarrelExplodingParticles(cent->current.origin);
+    }
+
+#if USE_FPS
+    if (cent->event_frame != cl.frame.number)
+        return;
+#endif
+
+    switch (cent->current.event) {
+    case EV_ITEM_RESPAWN:
+        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
+        CL_ItemRespawnParticles(cent->current.origin);
+        break;
+    case EV_PLAYER_TELEPORT:
+        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
+        CL_TeleportParticles(cent->current.origin);
+        break;
+    case EV_FOOTSTEP:
+        if (cl_footsteps->integer)
+            CL_PlayFootstepSfx(-1, number, 1.0f, ATTN_NORM);
+        break;
+    case EV_OTHER_FOOTSTEP:
+        if (cl_footsteps->integer)
+            CL_PlayFootstepSfx(-1, number, 0.5f, ATTN_IDLE);
+        break;
+    case EV_LADDER_STEP:
+        if (cl_footsteps->integer)
+            CL_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
+        break;
+    case EV_FALLSHORT:
+        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
+        break;
+    case EV_FALL:
+        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
+        break;
+    case EV_FALLFAR:
+        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+        break;
+    case EV_MUZZLEFLASH:
+        CL_MuzzleFlash(cent);
+        break;
+    case EV_MUZZLEFLASH2:
+        CL_MuzzleFlash2(cent);
+        break;
+    case EV_SOUND:
+        CL_SoundEvent(cent);
+        break;
+    case EV_BERSERK_SLAM:
+        CL_BerserkSlam(cent);
+        break;
+    }
 }
 
 /*

@@ -181,85 +181,6 @@ static void parse_entity_update(const entity_state_t *state)
     }
 }
 
-// an entity has just been parsed that has an event value
-static void parse_entity_event(int number)
-{
-    centity_t *cent = &cl_entities[number];
-
-    if (CL_FRAMESYNC) {
-        // EF_TELEPORTER acts like an event, but is not cleared each frame
-        if (cent->current.effects & EF_TELEPORTER)
-            CL_TeleporterParticles(cent->current.origin);
-
-        if (cent->current.morefx & EFX_TELEPORTER2)
-            CL_TeleporterParticles2(cent->current.origin);
-
-        if (cent->current.morefx & EFX_BARREL_EXPLODING)
-            CL_BarrelExplodingParticles(cent->current.origin);
-    }
-
-#if USE_FPS
-    if (cent->event_frame != cl.frame.number)
-        return;
-#endif
-
-    switch (cent->current.event) {
-    case EV_ITEM_RESPAWN:
-        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
-        CL_ItemRespawnParticles(cent->current.origin);
-        break;
-    case EV_PLAYER_TELEPORT:
-        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
-        CL_TeleportParticles(cent->current.origin);
-        break;
-    case EV_FOOTSTEP:
-        if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(-1, number, 1.0f, ATTN_NORM);
-        break;
-    case EV_OTHER_FOOTSTEP:
-        if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(-1, number, 0.5f, ATTN_IDLE);
-        break;
-    case EV_LADDER_STEP:
-        if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
-        break;
-    case EV_FALLSHORT:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
-        break;
-    case EV_FALL:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
-        break;
-    case EV_FALLFAR:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
-        break;
-    case EV_MUZZLEFLASH:
-        CL_MuzzleFlash(cent);
-        break;
-    case EV_MUZZLEFLASH2:
-        CL_MuzzleFlash2(cent);
-        break;
-    case EV_SOUND: {
-        uint32_t param = cent->current.event_param;
-        int channel = (param >> 13) & 7;
-        int index = param & (MAX_SOUNDS - 1);
-        int vol = (param >> 24) & 255;
-        int att = (param >> 16) & 255;
-        if (vol == 0)
-            vol = 255;
-        if (att == ATTN_ESCAPE_CODE)
-            att = 0;
-        else if (att == 0)
-            att = ATTN_ESCAPE_CODE;
-        S_StartSound(NULL, number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
-        break;
-    }
-    case EV_BERSERK_SLAM:
-        CL_BerserkSlam(cent);
-        break;
-    }
-}
-
 static void set_active_state(void)
 {
     cls.state = ca_active;
@@ -421,7 +342,9 @@ void CL_DeltaFrame(void)
     // fire events. due to footstep tracing this must be after updating entities.
     for (i = 0; i < cl.frame.numEntities; i++) {
         j = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
-        parse_entity_event(cl.entityStates[j].number);
+        ent = &cl_entities[cl.entityStates[j].number];
+        if (ent->current.event)
+            CL_EntityEvent(ent);
     }
 
     if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking && CL_FRAMESYNC) {
