@@ -688,7 +688,7 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event)
     return ent;
 }
 
-edict_t *G_TempBeam(const vec3_t start, const vec3_t end, entity_event_t event)
+edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event)
 {
     edict_t *ent;
 

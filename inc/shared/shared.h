@@ -1455,6 +1455,10 @@ typedef enum {
     EV_BERSERK_SLAM,
     EV_RAILTRAIL,
     EV_RAILTRAIL2,
+    EV_BUBBLETRAIL,
+    EV_BUBBLETRAIL2,
+    EV_BFG_LASER,
+    EV_BFG_ZAP
 } entity_event_t;
 
 // entity_state_t is the information conveyed from the server

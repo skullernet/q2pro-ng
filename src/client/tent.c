@@ -654,7 +654,7 @@ static void CL_AddLasers(void)
     }
 }
 
-static void CL_ParseLaser(unsigned colors)
+static void CL_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
 {
     laser_t *l;
 
@@ -662,8 +662,8 @@ static void CL_ParseLaser(unsigned colors)
     if (!l)
         return;
 
-    VectorCopy(te.pos1, l->start);
-    VectorCopy(te.pos2, l->end);
+    VectorCopy(start, l->start);
+    VectorCopy(end, l->end);
     l->lifetime = 100;
     l->color = (colors >> ((Q_rand() % 4) * 8)) & 0xff;
     l->width = 4;
@@ -1243,19 +1243,6 @@ void CL_ParseTEnt(void)
         CL_BFGExplosionParticles(te.pos1);
         break;
 
-    case TE_BFG_LASER:
-        CL_ParseLaser(0xd0d1d2d3);
-        break;
-
-    case TE_BFG_ZAP:
-        CL_ParseLaser(0xd0d1d2d3);
-        CL_BFGExplosion(te.pos2);
-        break;
-
-    case TE_BUBBLETRAIL:
-        CL_BubbleTrail(te.pos1, te.pos2);
-        break;
-
     case TE_BOSSTPORT:          // boss teleporting to station
         CL_BigTeleportParticles(te.pos1);
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
@@ -1308,11 +1295,6 @@ void CL_ParseTEnt(void)
 
     case TE_HEATBEAM_STEAM:
         CL_ParticleSteamEffect(te.pos1, te.dir, 0xE0, 20, 60);
-        S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
-        break;
-
-    case TE_BUBBLETRAIL2:
-        CL_BubbleTrail2(te.pos1, te.pos2, 8);
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
@@ -1434,27 +1416,29 @@ static void CL_SoundEvent(centity_t *cent)
 // an entity has just been parsed that has an event value
 void CL_EntityEvent(centity_t *cent)
 {
-    int number = cent->current.number;
+    entity_state_t *s = &cent->current;
+    vec_t *start = s->old_origin;
+    int number = s->number;
 
     if (CL_FRAMESYNC) {
         // EF_TELEPORTER acts like an event, but is not cleared each frame
-        if (cent->current.effects & EF_TELEPORTER)
-            CL_TeleporterParticles(cent->current.origin);
+        if (s->effects & EF_TELEPORTER)
+            CL_TeleporterParticles(s->origin);
 
-        if (cent->current.morefx & EFX_TELEPORTER2)
-            CL_TeleporterParticles2(cent->current.origin);
+        if (s->morefx & EFX_TELEPORTER2)
+            CL_TeleporterParticles2(s->origin);
 
-        if (cent->current.morefx & EFX_BARREL_EXPLODING)
-            CL_BarrelExplodingParticles(cent->current.origin);
+        if (s->morefx & EFX_BARREL_EXPLODING)
+            CL_BarrelExplodingParticles(s->origin);
 
-        if (cent->current.morefx & EFX_STEAM) {
-            uint32_t param = cent->current.skinnum;
+        if (s->morefx & EFX_STEAM) {
+            uint32_t param = s->skinnum;
             int color = (param >> 8) & 0xff;
             int count = (param >> 16) & 0xff;
             int magnitude = (param >> 24) & 0xff;
             vec3_t dir;
             ByteToDir(param & 0xff, dir);
-            CL_ParticleSteamEffect(cent->current.origin, dir, color, count, magnitude);
+            CL_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
         }
     }
 
@@ -1463,14 +1447,14 @@ void CL_EntityEvent(centity_t *cent)
         return;
 #endif
 
-    switch (cent->current.event) {
+    switch (s->event) {
     case EV_ITEM_RESPAWN:
         S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
-        CL_ItemRespawnParticles(cent->current.origin);
+        CL_ItemRespawnParticles(s->origin);
         break;
     case EV_PLAYER_TELEPORT:
         S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
-        CL_TeleportParticles(cent->current.origin);
+        CL_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
         if (cl_footsteps->integer)
@@ -1505,10 +1489,29 @@ void CL_EntityEvent(centity_t *cent)
     case EV_BERSERK_SLAM:
         CL_BerserkSlam(cent);
         break;
+
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
-        CL_RailTrail(cent->current.old_origin, cent->current.origin, cent->current.event);
-        S_StartSound(cent->current.origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
+        CL_RailTrail(start, s->origin, s->event);
+        S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
+        break;
+
+    case EV_BUBBLETRAIL:
+        CL_BubbleTrail(start, s->origin);
+        break;
+
+    case EV_BUBBLETRAIL2:
+        CL_BubbleTrail2(start, s->origin, 8);
+        S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        break;
+
+    case EV_BFG_LASER:
+        CL_ParseLaser(start, s->origin, 0xd0d1d2d3);
+        break;
+
+    case EV_BFG_ZAP:
+        CL_ParseLaser(start, s->origin, 0xd0d1d2d3);
+        CL_BFGExplosion(s->origin);
         break;
     }
 }

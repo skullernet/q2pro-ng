@@ -1129,13 +1129,7 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         else
             gi.trace(&tr, pos, NULL, NULL, water_start, hit->s.number, MASK_WATER);
 
-        VectorAvg(water_start, tr.endpos, pos);
-
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_BUBBLETRAIL2);
-        gi.WritePosition(water_start);
-        gi.WritePosition(tr.endpos);
-        gi.multicast(pos, MULTICAST_PVS);
+        G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL2);
     }
 
     edict_t *te = self->beam;

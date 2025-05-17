@@ -235,13 +235,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
         else
             gi.trace(&tr, pos, NULL, NULL, water_start, tr.entnum, MASK_WATER);
 
-        VectorAvg(water_start, tr.endpos, pos);
-
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_BUBBLETRAIL);
-        gi.WritePosition(water_start);
-        gi.WritePosition(tr.endpos);
-        gi.multicast(pos, MULTICAST_PVS);
+        G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL);
     }
 }
 
@@ -693,7 +687,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
 
     // send gun puff / flash
     entity_event_t te = (deathmatch->integer && g_instagib->integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
-    G_TempBeam(start, tr.endpos, te);
+    G_SpawnTrail(start, tr.endpos, te);
 
     if (self->client)
         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -800,11 +794,7 @@ void THINK(bfg_explode)(edict_t *self)
             T_Damage(ent, self, owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
 
             // Paril: draw BFG lightning laser to enemies
-            gi.WriteByte(svc_temp_entity);
-            gi.WriteByte(TE_BFG_ZAP);
-            gi.WritePosition(self->s.origin);
-            gi.WritePosition(centroid);
-            gi.multicast(self->s.origin, MULTICAST_PHS);
+            G_SpawnTrail(self->s.origin, centroid, EV_BFG_ZAP);
         }
     }
 
@@ -940,11 +930,7 @@ void THINK(bfg_think)(edict_t *self)
 
         pierce_end(&pierce);
 
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_BFG_LASER);
-        gi.WritePosition(self->s.origin);
-        gi.WritePosition(tr.endpos);
-        gi.multicast(self->s.origin, MULTICAST_PHS);
+        G_SpawnTrail(self->s.origin, tr.endpos, EV_BFG_LASER);
     }
 
     self->nextthink = level.time + HZ(10);
