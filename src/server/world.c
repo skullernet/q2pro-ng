@@ -155,6 +155,10 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
             ent->r.absmin[i] = ent->s.origin[i] - max;
             ent->r.absmax[i] = ent->s.origin[i] + max;
         }
+    } else if (ent->r.solid == SOLID_NOT && ent->s.renderfx & RF_BEAM) {
+        ClearBounds(ent->r.absmin, ent->r.absmax);
+        AddPointToBounds(ent->s.origin, ent->r.absmin, ent->r.absmax);
+        AddPointToBounds(ent->s.old_origin, ent->r.absmin, ent->r.absmax);
     } else {
         // normal
         VectorAdd(ent->s.origin, ent->r.mins, ent->r.absmin);

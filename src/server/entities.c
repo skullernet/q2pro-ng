@@ -189,7 +189,9 @@ Build a client frame structure
 =============================================================================
 */
 
-static bool SV_EntityVisible(const client_t *client, int e, const visrow_t *mask)
+static vec3_t clientorg;
+
+static bool SV_EntityVisible(int e, const visrow_t *mask)
 {
     const server_entity_t *ent = &sv.entities[e];
 
@@ -205,10 +207,10 @@ static bool SV_EntityVisible(const client_t *client, int e, const visrow_t *mask
     return false;
 }
 
-static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
+static bool SV_EntityAttenuatedAway(const edict_t *ent)
 {
     float mult = Com_GetEntityLoopDistMult(&ent->s);
-    float dist = Distance(org, ent->s.origin) - SOUND_FULLVOLUME;
+    float dist = Distance(clientorg, ent->s.origin) - SOUND_FULLVOLUME;
 
     return dist * mult > 1.0f;
 }
@@ -224,8 +226,6 @@ static bool SV_EntityAttenuatedAway(const vec3_t org, const edict_t *ent)
 
 #define IS_LO_PRIO(ent) \
     (IS_GIB(ent) || (!ent->s.modelindex && !ent->s.effects))
-
-static vec3_t clientorg;
 
 static int entpriocmp(const void *p1, const void *p2)
 {
@@ -267,7 +267,6 @@ copies off the playerstat and areabits.
 void SV_BuildClientFrame(client_t *client)
 {
     int         i, e;
-    vec3_t      org;
     edict_t     *ent;
     edict_t     *clent;
     client_frame_t  *frame;
@@ -296,9 +295,9 @@ void SV_BuildClientFrame(client_t *client)
     client->frames_sent++;
 
     // find the client's PVS
-    SV_GetClient_ViewOrg(client, org);
+    SV_GetClient_ViewOrg(client, clientorg);
 
-    leaf = CM_PointLeaf(&sv.cm, org);
+    leaf = CM_PointLeaf(&sv.cm, clientorg);
     clientarea = leaf->area;
     clientcluster = leaf->cluster;
 
@@ -312,7 +311,7 @@ void SV_BuildClientFrame(client_t *client)
     max_packet_entities =
         sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer : MAX_PACKET_ENTITIES;
 
-    CM_FatPVS(&sv.cm, &clientpvs, org);
+    CM_FatPVS(&sv.cm, &clientpvs, clientorg);
     BSP_ClusterVis(sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
 
     // build up the list of visible entities
@@ -362,25 +361,18 @@ void SV_BuildClientFrame(client_t *client)
                 }
             }
 
-            // beams just check one point for PHS
-            bool beam_cull = ent->s.renderfx & RF_BEAM;
-
-            // remaster uses different sound culling rules
-            bool sound_cull = ent->s.sound;
-
-            if (!SV_EntityVisible(client, e, (beam_cull || sound_cull) ? &clientphs : &clientpvs))
-                continue;
-
-            // don't send sounds if they will be attenuated away
-            if (sound_cull) {
-                if (SV_EntityAttenuatedAway(org, ent)) {
+            if (ent->s.sound) {
+                if (!SV_EntityVisible(e, &clientphs))
+                    continue;
+                // don't send sounds if they will be attenuated away
+                if (SV_EntityAttenuatedAway(ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!beam_cull && !SV_EntityVisible(client, e, &clientpvs))
+                    if (!SV_EntityVisible(e, &clientpvs))
                         continue;
                 }
-            } else if (!ent->s.modelindex) {
-                if (DistanceSquared(org, ent->s.origin) > 400 * 400)
+            } else {
+                if (!SV_EntityVisible(e, &clientpvs))
                     continue;
             }
         }
@@ -397,7 +389,6 @@ void SV_BuildClientFrame(client_t *client)
 
     // prioritize entities on overflow
     if (num_edicts > max_packet_entities) {
-        VectorCopy(org, clientorg);
         sv_client = client;
         sv_player = client->edict;
         qsort(edicts, num_edicts, sizeof(edicts[0]), entpriocmp);
