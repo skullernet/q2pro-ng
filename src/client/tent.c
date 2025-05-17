@@ -677,83 +677,6 @@ BEAM MANAGEMENT
 ==============================================================
 */
 
-#define MAX_BEAMS   128
-
-typedef struct {
-    int         entity;
-    int         dest_entity;
-    qhandle_t   model;
-    int         endtime;
-    vec3_t      offset;
-    vec3_t      start, end;
-} beam_t;
-
-static beam_t   cl_beams[MAX_BEAMS];
-static beam_t   cl_playerbeams[MAX_BEAMS];
-
-static void CL_ClearBeams(void)
-{
-    memset(cl_beams, 0, sizeof(cl_beams));
-    memset(cl_playerbeams, 0, sizeof(cl_playerbeams));
-}
-
-static void CL_ParseBeam(qhandle_t model)
-{
-    beam_t  *b;
-    int     i;
-
-// override any beam with the same source AND destination entities
-    for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++)
-        if (b->entity == te.entity1 && b->dest_entity == te.entity2)
-            goto override;
-
-// find a free beam
-    for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time) {
-override:
-            b->entity = te.entity1;
-            b->dest_entity = te.entity2;
-            b->model = model;
-            b->endtime = cl.time + 200;
-            VectorCopy(te.pos1, b->start);
-            VectorCopy(te.pos2, b->end);
-            VectorCopy(te.offset, b->offset);
-            return;
-        }
-    }
-}
-
-static void CL_ParsePlayerBeam(qhandle_t model)
-{
-    beam_t  *b;
-    int     i;
-
-// override any beam with the same entity
-    for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (b->entity == te.entity1) {
-            b->model = model;
-            b->endtime = cl.time + 200;
-            VectorCopy(te.pos1, b->start);
-            VectorCopy(te.pos2, b->end);
-            VectorCopy(te.offset, b->offset);
-            return;
-        }
-    }
-
-// find a free beam
-    for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time) {
-            b->entity = te.entity1;
-            b->model = model;
-            b->endtime = cl.time + 100;     // PMM - this needs to be 100 to prevent multiple heatbeams
-            VectorCopy(te.pos1, b->start);
-            VectorCopy(te.pos2, b->end);
-            VectorCopy(te.offset, b->offset);
-            return;
-        }
-    }
-}
-
 void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entnum)
 {
     int         i, steps;
@@ -923,208 +846,6 @@ void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entn
         VectorAdd(ent.origin, dist, ent.origin);
     }
 }
-
-/*
-=================
-CL_AddBeams
-=================
-*/
-static void CL_AddBeams(void)
-{
-    int         i;
-    beam_t      *b;
-    vec3_t      org;
-
-// update beams
-    for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time)
-            continue;
-
-        // if coming from the player, update the start position
-        if (b->entity == cl.frame.ps.clientnum)
-            VectorAdd(cl.playerEntityOrigin, b->offset, org);
-        else
-            VectorAdd(b->start, b->offset, org);
-
-        CL_DrawBeam(org, b->end, b->model, ENTITYNUM_NONE);
-    }
-}
-
-/*
-=================
-CL_AddPlayerBeams
-
-Draw player locked beams.
-=================
-*/
-static void CL_AddPlayerBeams(void)
-{
-    int         i, j, steps;
-    beam_t      *b;
-    vec3_t      dist, org;
-    float       x, y, z, d;
-    entity_t    ent;
-    vec3_t      angles;
-    float       len;
-    int         framenum;
-    float       model_length;
-    float       hand_multiplier;
-    player_state_t  *ps, *ops;
-
-    if (cl_gun->integer == 3)
-        hand_multiplier = -1;
-    else if (cl_gun->integer == 2)
-        hand_multiplier = 1;
-    else if (info_hand->integer == 2)
-        hand_multiplier = 0;
-    else if (info_hand->integer == 1)
-        hand_multiplier = -1;
-    else
-        hand_multiplier = 1;
-
-// update beams
-    for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time)
-            continue;
-
-        // if coming from the player, update the start position
-        if (b->entity == cl.frame.ps.clientnum) {
-            // set up gun position
-            ps = CL_KEYPS;
-            ops = CL_OLDKEYPS;
-
-            for (j = 0; j < 3; j++)
-                b->start[j] = cl.refdef.vieworg[j] + ops->gunoffset[j] +
-                    CL_KEYLERPFRAC * (ps->gunoffset[j] - ops->gunoffset[j]);
-
-            x = b->offset[0];
-            y = b->offset[1];
-            z = b->offset[2];
-
-            // adjust offset for gun fov
-            if (cl_gunfov->value > 0) {
-                float fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
-                float fov_y = V_CalcFov(fov_x, 4, 3);
-
-                x *= tanf(cl.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
-                z *= tanf(cl.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
-            }
-
-            VectorMA(b->start, hand_multiplier * x, cl.v_right, org);
-            VectorMA(org, y, cl.v_forward, org);
-            VectorMA(org, z, cl.v_up, org);
-            if (hand_multiplier == 0)
-                VectorMA(org, -1, cl.v_up, org);
-
-            // calculate pitch and yaw
-            VectorSubtract(b->end, org, dist);
-
-            if (b->model != cl_mod_grapple_cable) {
-                d = VectorLength(dist);
-                VectorScale(cl.v_forward, d, dist);
-            }
-
-            // FIXME: use cl.refdef.viewangles?
-            vectoangles2(dist, angles);
-
-            // if it's the heatbeam, draw the particle effect
-            if (b->model == cl_mod_heatbeam && !sv_paused->integer)
-                CL_Heatbeam(org, dist);
-
-            framenum = 1;
-        } else {
-            VectorCopy(b->start, org);
-
-            // calculate pitch and yaw
-            VectorSubtract(b->end, org, dist);
-            vectoangles2(dist, angles);
-
-            // if it's a non-origin offset, it's a player, so use the hardcoded player offset
-            if (!VectorEmpty(b->offset)) {
-                vec3_t  tmp, f, r, u;
-
-                tmp[0] = -angles[0];
-                tmp[1] = angles[1] + 180.0f;
-                tmp[2] = 0;
-                AngleVectors(tmp, f, r, u);
-
-                VectorMA(org, -b->offset[0] + 1, r, org);
-                VectorMA(org, -b->offset[1], f, org);
-                VectorMA(org, -b->offset[2] - 10, u, org);
-            } else if (b->model == cl_mod_heatbeam) {
-                // if it's a monster, do the particle effect
-                CL_MonsterPlasma_Shell(b->start);
-            }
-
-            framenum = 2;
-        }
-
-        // add new entities for the beams
-        d = VectorNormalize(dist);
-        if (b->model == cl_mod_heatbeam) {
-            model_length = 32.0f;
-        } else if (b->model == cl_mod_lightning) {
-            model_length = 35.0f;
-            d -= 20.0f; // correction so it doesn't end in middle of tesla
-        } else {
-            model_length = 30.0f;
-        }
-
-        // correction for grapple cable model, which has origin in the middle
-        if (b->entity == cl.frame.ps.clientnum && b->model == cl_mod_grapple_cable && hand_multiplier) {
-            VectorMA(org, model_length * 0.5f, dist, org);
-            d -= model_length * 0.5f;
-        }
-
-        steps = ceilf(d / model_length);
-
-        memset(&ent, 0, sizeof(ent));
-        ent.model = b->model;
-
-        // PMM - special case for lightning model .. if the real length is shorter than the model,
-        // flip it around & draw it from the end to the start.  This prevents the model from going
-        // through the tesla mine (instead it goes through the target)
-        if ((b->model == cl_mod_lightning) && (steps <= 1)) {
-            VectorCopy(b->end, ent.origin);
-            ent.flags = RF_FULLBRIGHT;
-            ent.angles[0] = angles[0];
-            ent.angles[1] = angles[1];
-            ent.angles[2] = Com_SlowRand() % 360;
-            V_AddEntity(&ent);
-            continue;
-        }
-
-        if (steps > 1) {
-            len = (d - model_length) / (steps - 1);
-            VectorScale(dist, len, dist);
-        }
-
-        if (b->model == cl_mod_heatbeam) {
-            ent.frame = framenum;
-            ent.flags = RF_FULLBRIGHT;
-            ent.angles[0] = -angles[0];
-            ent.angles[1] = angles[1] + 180.0f;
-            ent.angles[2] = cl.time % 360;
-        } else if (b->model == cl_mod_lightning) {
-            ent.flags = RF_FULLBRIGHT;
-            ent.angles[0] = -angles[0];
-            ent.angles[1] = angles[1] + 180.0f;
-        } else {
-            ent.flags = RF_NOSHADOW;
-            ent.angles[0] = angles[0];
-            ent.angles[1] = angles[1];
-        }
-
-        VectorCopy(org, ent.origin);
-        for (j = 0; j < steps; j++) {
-            if (b->model != cl_mod_heatbeam)
-                ent.angles[2] = Com_SlowRand() % 360;
-            V_AddEntity(&ent);
-            VectorAdd(ent.origin, dist, ent.origin);
-        }
-    }
-}
-
 
 /*
 ==============================================================
@@ -1565,21 +1286,9 @@ void CL_ParseTEnt(void)
         CL_BubbleTrail(te.pos1, te.pos2);
         break;
 
-    case TE_PARASITE_ATTACK:
-    case TE_MEDIC_CABLE_ATTACK:
-        VectorClear(te.offset);
-        te.entity2 = 0;
-        CL_ParseBeam(cl_mod_parasite_segment);
-        break;
-
     case TE_BOSSTPORT:          // boss teleporting to station
         CL_BigTeleportParticles(te.pos1);
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
-        break;
-
-    case TE_GRAPPLE_CABLE:
-        te.entity2 = 0;
-        CL_ParseBeam(cl_mod_grapple_cable);
         break;
 
     case TE_WELDING_SPARKS:
@@ -1606,12 +1315,6 @@ void CL_ParseTEnt(void)
         CL_ParticleEffect3(te.pos1, te.dir, te.color, te.count);
         break;
 
-    case TE_LIGHTNING:
-        S_StartSound(NULL, te.entity1, CHAN_WEAPON, cl_sfx_lightning, 1, ATTN_NORM, 0);
-        VectorClear(te.offset);
-        CL_ParseBeam(cl_mod_lightning);
-        break;
-
     case TE_DEBUGTRAIL:
         CL_DebugTrail(te.pos1, te.pos2);
         break;
@@ -1626,16 +1329,6 @@ void CL_ParseTEnt(void)
 
     case TE_FORCEWALL:
         CL_ForceWall(te.pos1, te.pos2, te.color);
-        break;
-
-    case TE_HEATBEAM:
-        VectorSet(te.offset, 2, 7, -3);
-        CL_ParsePlayerBeam(cl_mod_heatbeam);
-        break;
-
-    case TE_MONSTER_HEATBEAM:
-        VectorClear(te.offset);
-        CL_ParsePlayerBeam(cl_mod_heatbeam);
         break;
 
     case TE_HEATBEAM_SPARKS:
@@ -1696,16 +1389,6 @@ void CL_ParseTEnt(void)
         break;
 
     case TE_BERSERK_SLAM:
-        break;
-
-    case TE_GRAPPLE_CABLE_2:
-        VectorSet(te.offset, 9, 12, -3);
-        CL_ParsePlayerBeam(cl_mod_grapple_cable);
-        break;
-
-    case TE_LIGHTNING_BEAM:
-        VectorSet(te.offset, 0, 12, -12);
-        CL_ParsePlayerBeam(cl_mod_lightning);
         break;
 
     case TE_POWER_SPLASH:
@@ -1856,8 +1539,6 @@ CL_AddTEnts
 */
 void CL_AddTEnts(void)
 {
-    CL_AddBeams();
-    CL_AddPlayerBeams();
     CL_AddExplosions();
     CL_ProcessSustain();
     CL_AddLasers();
@@ -1870,7 +1551,6 @@ CL_ClearTEnts
 */
 void CL_ClearTEnts(void)
 {
-    CL_ClearBeams();
     CL_ClearExplosions();
     CL_ClearLasers();
     CL_ClearSustains();
