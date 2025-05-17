@@ -960,6 +960,7 @@ void Qcommon_Init(int argc, char **argv)
 #endif
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
+    Cmd_AddCommand("changevectors", MSG_ChangeVectors_f);
 
     //Cmd_AddCommand("setenv", Com_Setenv_f);
 

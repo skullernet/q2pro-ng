@@ -390,9 +390,11 @@ static const netfield_t entity_state_fields[] = {
     NETF(othernum, ENTITYNUM_BITS),
 };
 
+static unsigned entity_state_counts[q_countof(entity_state_fields)];
+
 #undef NETF
 
-static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, const void *to)
+static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, const void *to, unsigned *counts)
 {
     int nc = 0;
 
@@ -400,8 +402,11 @@ static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, co
         uint32_t from_v = RN32((const byte *)from + f->offset);
         uint32_t to_v   = RN32((const byte *)to   + f->offset);
 
-        if (from_v != to_v)
-            nc = i + 1;
+        if (from_v == to_v)
+            continue;
+
+        counts[i]++;
+        nc = i + 1;
     }
 
     return nc;
@@ -463,7 +468,7 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
     if (!from)
         from = &nullEntityState;
 
-    int nc = MSG_CountDeltaFields(entity_state_fields, q_countof(entity_state_fields), from, to);
+    int nc = MSG_CountDeltaFields(entity_state_fields, q_countof(entity_state_fields), from, to, entity_state_counts);
     if (!nc) {
         if (!force)
             return;     // nothing to send!
@@ -547,6 +552,8 @@ static const netfield_t player_state_fields[] = {
     NETF(heightfog.falloff, 0),
 };
 
+static unsigned player_state_counts[q_countof(player_state_fields)];
+
 #undef NETF
 
 void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t *to)
@@ -561,7 +568,7 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
         if (to->stats[i] != from->stats[i])
             statbits |= BIT_ULL(i);
 
-    int nc = MSG_CountDeltaFields(player_state_fields, q_countof(player_state_fields), from, to);
+    int nc = MSG_CountDeltaFields(player_state_fields, q_countof(player_state_fields), from, to, player_state_counts);
     if (!nc && !statbits) {
         MSG_WriteBit(0);
         return;
@@ -1021,3 +1028,14 @@ const char *MSG_ServerCommandString(int cmd)
 }
 
 #endif // USE_CLIENT && USE_DEBUG
+
+void MSG_ChangeVectors_f(void)
+{
+    Com_Printf("\n");
+    for (int i = 0; i < q_countof(entity_state_fields); i++)
+        Com_Printf("%s: %u\n", entity_state_fields[i].name, entity_state_counts[i]);
+
+    Com_Printf("\n");
+    for (int i = 0; i < q_countof(player_state_fields); i++)
+        Com_Printf("%s: %u\n", player_state_fields[i].name, player_state_counts[i]);
+}

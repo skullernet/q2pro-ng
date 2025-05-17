@@ -99,6 +99,7 @@ const char *MSG_ServerCommandString(int cmd);
 #endif
 #endif // USE_CLIENT
 
+void MSG_ChangeVectors_f(void);
 
 //============================================================================
 
