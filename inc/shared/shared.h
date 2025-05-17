@@ -1478,6 +1478,7 @@ typedef struct {
     uint32_t    morefx;
     float       alpha;
     float       scale;
+    uint32_t    othernum;
 } entity_state_t;
 
 //==============================================

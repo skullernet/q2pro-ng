@@ -617,7 +617,7 @@ static void CL_AddPacketEntities(void)
         }
 
         if (renderfx & RF_BEAM && s1->modelindex > 1) {
-            CL_DrawBeam(ent.oldorigin, ent.origin, cl.model_draw[s1->modelindex]);
+            CL_DrawBeam(ent.oldorigin, ent.origin, cl.model_draw[s1->modelindex], s1->othernum);
             goto skip;
         }
 

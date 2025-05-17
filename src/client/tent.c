@@ -754,25 +754,128 @@ static void CL_ParsePlayerBeam(qhandle_t model)
     }
 }
 
-void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model)
+void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entnum)
 {
     int         i, steps;
-    vec3_t      dist, angles;
+    vec3_t      dist, org, offset = { 0 };
+    float       x, y, z, d;
     entity_t    ent;
-    float       d, len, model_length;
+    vec3_t      angles;
+    float       len;
+    int         framenum;
+    float       model_length;
+    float       hand_multiplier = 0;
+    player_state_t  *ps, *ops;
 
-    // calculate pitch and yaw
-    VectorSubtract(end, start, dist);
-    vectoangles2(dist, angles);
+    if (entnum < cl.maxclients) {
+        if (model == cl_mod_heatbeam)
+            VectorSet(offset, 2, 7, -3);
+        else if (model == cl_mod_grapple_cable)
+            VectorSet(offset, 9, 12, -3);
+        else if (model == cl_mod_lightning)
+            VectorSet(offset, 0, 12, -12);
+    }
+
+    // if coming from the player, update the start position
+    if (entnum == cl.frame.ps.clientnum) {
+        if (cl_gun->integer == 3)
+            hand_multiplier = -1;
+        else if (cl_gun->integer == 2)
+            hand_multiplier = 1;
+        else if (info_hand->integer == 2)
+            hand_multiplier = 0;
+        else if (info_hand->integer == 1)
+            hand_multiplier = -1;
+        else
+            hand_multiplier = 1;
+
+        // set up gun position
+        ps = CL_KEYPS;
+        ops = CL_OLDKEYPS;
+
+        for (i = 0; i < 3; i++)
+            org[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] +
+                CL_KEYLERPFRAC * (ps->gunoffset[i] - ops->gunoffset[i]);
+
+        x = offset[0];
+        y = offset[1];
+        z = offset[2];
+
+        // adjust offset for gun fov
+        if (cl_gunfov->value > 0) {
+            float fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
+            float fov_y = V_CalcFov(fov_x, 4, 3);
+
+            x *= tanf(cl.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
+            z *= tanf(cl.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
+        }
+
+        VectorMA(org, hand_multiplier * x, cl.v_right, org);
+        VectorMA(org, y, cl.v_forward, org);
+        VectorMA(org, z, cl.v_up, org);
+        if (hand_multiplier == 0)
+            VectorMA(org, -1, cl.v_up, org);
+
+        // calculate pitch and yaw
+        VectorSubtract(end, org, dist);
+
+        if (model != cl_mod_grapple_cable) {
+            d = VectorLength(dist);
+            VectorScale(cl.v_forward, d, dist);
+        }
+
+        // FIXME: use cl.refdef.viewangles?
+        vectoangles2(dist, angles);
+
+        // if it's the heatbeam, draw the particle effect
+        if (model == cl_mod_heatbeam && !sv_paused->integer)
+            CL_Heatbeam(org, dist);
+
+        framenum = 1;
+    } else {
+        VectorCopy(start, org);
+
+        // calculate pitch and yaw
+        VectorSubtract(end, org, dist);
+        vectoangles2(dist, angles);
+
+        // if it's a player, use the hardcoded player offset
+        if (entnum < cl.maxclients) {
+            vec3_t  tmp, f, r, u;
+
+            tmp[0] = -angles[0];
+            tmp[1] = angles[1] + 180.0f;
+            tmp[2] = 0;
+            AngleVectors(tmp, f, r, u);
+
+            VectorMA(org, -offset[0] + 1, r, org);
+            VectorMA(org, -offset[1], f, org);
+            VectorMA(org, -offset[2] - 10, u, org);
+        } else if (model == cl_mod_heatbeam) {
+            // if it's a monster, do the particle effect
+            CL_MonsterPlasma_Shell(start);
+        }
+
+        framenum = 2;
+    }
 
     // add new entities for the beams
     d = VectorNormalize(dist);
-    if (model == cl_mod_lightning) {
+    if (model == cl_mod_heatbeam) {
+        model_length = 32.0f;
+    } else if (model == cl_mod_lightning) {
         model_length = 35.0f;
         d -= 20.0f; // correction so it doesn't end in middle of tesla
     } else {
         model_length = 30.0f;
     }
+
+    // correction for grapple cable model, which has origin in the middle
+    if (entnum == cl.frame.ps.clientnum && model == cl_mod_grapple_cable && hand_multiplier) {
+        VectorMA(org, model_length * 0.5f, dist, org);
+        d -= model_length * 0.5f;
+    }
+
     steps = ceilf(d / model_length);
 
     memset(&ent, 0, sizeof(ent));
@@ -796,7 +899,13 @@ void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model)
         VectorScale(dist, len, dist);
     }
 
-    if (model == cl_mod_lightning) {
+    if (model == cl_mod_heatbeam) {
+        ent.frame = framenum;
+        ent.flags = RF_FULLBRIGHT;
+        ent.angles[0] = -angles[0];
+        ent.angles[1] = angles[1] + 180.0f;
+        ent.angles[2] = cl.time % 360;
+    } else if (model == cl_mod_lightning) {
         ent.flags = RF_FULLBRIGHT;
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
@@ -806,9 +915,10 @@ void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model)
         ent.angles[1] = angles[1];
     }
 
-    VectorCopy(start, ent.origin);
+    VectorCopy(org, ent.origin);
     for (i = 0; i < steps; i++) {
-        ent.angles[2] = Com_SlowRand() % 360;
+        if (model != cl_mod_heatbeam)
+            ent.angles[2] = Com_SlowRand() % 360;
         V_AddEntity(&ent);
         VectorAdd(ent.origin, dist, ent.origin);
     }
@@ -836,7 +946,7 @@ static void CL_AddBeams(void)
         else
             VectorAdd(b->start, b->offset, org);
 
-        CL_DrawBeam(org, b->end, b->model);
+        CL_DrawBeam(org, b->end, b->model, ENTITYNUM_NONE);
     }
 }
 

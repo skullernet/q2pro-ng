@@ -593,6 +593,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
 
     edict_t *segment = G_Spawn();
     segment->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+    segment->s.othernum = ENTITYNUM_NONE;
     segment->s.renderfx = RF_BEAM;
     segment->postthink = proboscis_segment_draw;
 

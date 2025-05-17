@@ -436,12 +436,15 @@ static void brain_tounge_attack(edict_t *self)
     damage = 5;
     G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_PARASITE_ATTACK);
-    gi.WriteShort(self->s.number);
-    gi.WritePosition(start);
-    gi.WritePosition(end);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    edict_t *te = G_Spawn();
+    te->s.renderfx = RF_BEAM;
+    te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+    te->s.othernum = ENTITYNUM_NONE;
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(end, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    te->think = G_FreeEdict;
+    gi.linkentity(te);
 
     VectorSubtract(start, end, dir);
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_BRAINTENTACLE });

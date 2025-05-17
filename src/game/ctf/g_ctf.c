@@ -1124,6 +1124,9 @@ void CTFResetGrapple(edict_t *self)
     cl->ctf_grapplereleasetime = level.time + SEC(1);
     cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     owner->flags &= ~FL_NO_KNOCKBACK;
+
+    if (self->beam)
+        G_FreeEdict(self->beam);
     G_FreeEdict(self);
 }
 
@@ -1172,6 +1175,12 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     gi.multicast(self->s.origin, MULTICAST_PVS);
 }
 
+void THINK(CTFGrappleCableThink)(edict_t *self)
+{
+    g_edicts[self->r.ownernum].beam = NULL;
+    G_FreeEdict(self);
+}
+
 // draw beam between grapple and self
 static void CTFGrappleDrawCable(edict_t *self)
 {
@@ -1184,12 +1193,20 @@ static void CTFGrappleDrawCable(edict_t *self)
     vec3_t start, dir;
     P_ProjectSource(owner, cl->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_GRAPPLE_CABLE_2);
-    gi.WriteShort(self->r.ownernum);
-    gi.WritePosition(start);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    edict_t *te = self->beam;
+    if (!te) {
+        self->beam = te = G_Spawn();
+        te->s.renderfx = RF_BEAM;
+        te->s.modelindex = gi.modelindex("models/ctf/segment/tris.md2");
+        te->s.othernum = self->r.ownernum;
+        te->r.ownernum = self->s.number;
+        te->think = CTFGrappleCableThink;
+    }
+
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(self->s.origin, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    gi.linkentity(te);
 }
 
 void SV_AddGravity(edict_t *ent);

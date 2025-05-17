@@ -73,6 +73,7 @@ static void shambler_windup(edict_t *self)
     edict_t *lightning = self->beam = G_Spawn();
     lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
+    lightning->s.othernum = ENTITYNUM_NONE;
     lightning->r.ownernum = self->s.number;
     shambler_lightning_update(self);
 }
@@ -257,6 +258,12 @@ static void FindShamblerOffset(edict_t *self, vec3_t offset)
     VectorSet(offset, 0, 0, 48);
 }
 
+void THINK(shambler_lightning_think)(edict_t *self)
+{
+    g_edicts[self->r.ownernum].beam2 = NULL;
+    G_FreeEdict(self);
+}
+
 static void ShamblerCastLightning(edict_t *self)
 {
     if (!self->enemy)
@@ -279,13 +286,21 @@ static void ShamblerCastLightning(edict_t *self)
     trace_t tr;
     gi.trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_LIGHTNING);
-    gi.WriteShort(self->s.number); // source entity
-    gi.WriteShort(ENTITYNUM_WORLD); // destination entity
-    gi.WritePosition(start);
-    gi.WritePosition(tr.endpos);
-    gi.multicast(start, MULTICAST_PVS);
+    edict_t *te = self->beam2;
+    if (!te) {
+        self->beam2 = te = G_Spawn();
+        te->s.renderfx = RF_BEAM;
+        te->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
+        te->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("weapons/tesla.wav"), 1, ATTN_NORM);
+        te->s.othernum = ENTITYNUM_NONE;
+        te->r.ownernum = self->s.number;
+        te->think = shambler_lightning_think;
+    }
+
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(tr.endpos, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    gi.linkentity(te);
 
     fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, (mod_t) { MOD_TESLA });
 }

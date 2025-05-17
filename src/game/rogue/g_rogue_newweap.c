@@ -778,6 +778,17 @@ static void tesla_blow(edict_t *self)
     tesla_remove(self);
 }
 
+static edict_t *tesla_find_beam(edict_t *self, edict_t *hit)
+{
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+        edict_t *ent = &g_edicts[i];
+        if (ent->r.inuse && ent->r.ownernum == self->s.number && ent->enemy == hit)
+            return ent;
+    }
+
+    return NULL;
+}
+
 void TOUCH(tesla_zap)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
 }
@@ -843,13 +854,22 @@ void THINK(tesla_think_active)(edict_t *self)
                 T_Damage(hit, self, self->teammaster, dir, tr.endpos, tr.plane.normal,
                          self->dmg, TESLA_KNOCKBACK, DAMAGE_NONE, (mod_t) { MOD_TESLA });
 
-            gi.WriteByte(svc_temp_entity);
-            gi.WriteByte(TE_LIGHTNING);
-            gi.WriteShort(self->s.number); // source entity
-            gi.WriteShort(hit->s.number); // destination entity
-            gi.WritePosition(start);
-            gi.WritePosition(tr.endpos);
-            gi.multicast(start, MULTICAST_PVS);
+            edict_t *te = tesla_find_beam(self, hit);
+            if (!te) {
+                te = G_Spawn();
+                te->s.renderfx = RF_BEAM;
+                te->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
+                te->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("weapons/tesla.wav"), 1, ATTN_NORM);
+                te->s.othernum = ENTITYNUM_NONE;
+                te->r.ownernum = self->s.number;
+                te->enemy = hit;
+                te->think = G_FreeEdict;
+            }
+
+            VectorCopy(start, te->s.old_origin);
+            VectorCopy(tr.endpos, te->s.origin);
+            te->nextthink = level.time + SEC(0.2f);
+            gi.linkentity(te);
         }
     }
 
@@ -1023,6 +1043,12 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
 //  HEATBEAM
 // *************************
 
+void THINK(heatbeam_think)(edict_t *self)
+{
+    g_edicts[self->r.ownernum].beam = NULL;
+    G_FreeEdict(self);
+}
+
 static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, const vec3_t offset, int damage, int kick, int te_beam, int te_impact, mod_t mod)
 {
     trace_t    tr;
@@ -1112,12 +1138,20 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         gi.multicast(pos, MULTICAST_PVS);
     }
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(te_beam);
-    gi.WriteShort(self->s.number);
-    gi.WritePosition(start);
-    gi.WritePosition(endpoint);
-    gi.multicast(self->s.origin, MULTICAST_ALL);
+    edict_t *te = self->beam;
+    if (!te) {
+        self->beam = te = G_Spawn();
+        te->s.renderfx = RF_BEAM;
+        te->s.modelindex = gi.modelindex("models/proj/beam/tris.md2");
+        te->s.othernum = self->s.number;
+        te->r.ownernum = self->s.number;
+        te->think = heatbeam_think;
+    }
+
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(endpoint, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    gi.linkentity(te);
 }
 
 /*

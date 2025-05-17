@@ -387,6 +387,7 @@ static const netfield_t entity_state_fields[] = {
     NETF(event_param, -1),
     NETF(alpha, 0),
     NETF(scale, 0),
+    NETF(othernum, ENTITYNUM_BITS),
 };
 
 #undef NETF

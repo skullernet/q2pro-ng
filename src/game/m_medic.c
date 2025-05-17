@@ -927,6 +927,12 @@ static const vec3_t medic_cable_offsets[] = {
     { 32.7f, -19.7f, 10.4f }
 };
 
+void THINK(medic_cable_think)(edict_t *self)
+{
+    g_edicts[self->r.ownernum].beam = NULL;
+    G_FreeEdict(self);
+}
+
 static void medic_cable_attack(edict_t *self)
 {
     vec3_t  start, end, f, r;
@@ -1009,12 +1015,20 @@ static void medic_cable_attack(edict_t *self)
     VectorCopy(self->enemy->s.origin, end);
     end[2] = (self->enemy->r.absmin[2] + self->enemy->r.absmax[2]) / 2;
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_MEDIC_CABLE_ATTACK);
-    gi.WriteShort(self->s.number);
-    gi.WritePosition(start);
-    gi.WritePosition(end);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    edict_t *te = self->beam;
+    if (!te) {
+        self->beam = te = G_Spawn();
+        te->s.renderfx = RF_BEAM;
+        te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+        te->s.othernum = ENTITYNUM_NONE;
+        te->r.ownernum = self->s.number;
+        te->think = medic_cable_think;
+    }
+
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(end, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    gi.linkentity(te);
 }
 
 static void medic_hook_retract(edict_t *self)

@@ -395,6 +395,12 @@ static bool widow2_tongue_attack_ok(const vec3_t start, const vec3_t end, float 
     return true;
 }
 
+void THINK(widow2_tongue_think)(edict_t *self)
+{
+    g_edicts[self->r.ownernum].beam = NULL;
+    G_FreeEdict(self);
+}
+
 static void Widow2Tongue(edict_t *self)
 {
     vec3_t  f, r, u;
@@ -421,12 +427,20 @@ static void Widow2Tongue(edict_t *self)
 
     G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_PARASITE_ATTACK);
-    gi.WriteShort(self->s.number);
-    gi.WritePosition(start);
-    gi.WritePosition(end);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    edict_t *te = self->beam;
+    if (!te) {
+        self->beam = te = G_Spawn();
+        te->s.renderfx = RF_BEAM;
+        te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+        te->s.othernum = ENTITYNUM_NONE;
+        te->r.ownernum = self->s.number;
+        te->think = widow2_tongue_think;
+    }
+
+    VectorCopy(start, te->s.old_origin);
+    VectorCopy(end, te->s.origin);
+    te->nextthink = level.time + SEC(0.2f);
+    gi.linkentity(te);
 
     VectorSubtract(start, end, dir);
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 2, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });

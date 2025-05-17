@@ -762,7 +762,7 @@ void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale);
 void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale);
 
 void CL_SmokeAndFlash(const vec3_t origin);
-void CL_DrawBeam(const vec3_t org, const vec3_t end, qhandle_t model);
+void CL_DrawBeam(const vec3_t org, const vec3_t end, qhandle_t model, int entnum);
 
 void CL_EntityEvent(centity_t *cent);
 
