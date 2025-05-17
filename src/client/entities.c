@@ -575,6 +575,8 @@ static void CL_AddPacketEntities(void)
 
         if (s1->morefx & EFX_STEAM)
             goto skip;
+        if ((renderfx & RF_BEAM_TEMP) == RF_BEAM_TEMP)
+            goto skip;
 
         // create a new entity
         if (renderfx & RF_FLARE) {

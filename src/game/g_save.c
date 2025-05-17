@@ -503,6 +503,7 @@ static const save_field_t edict_t_fields[] = {
     H(crosslevel_flags),
     T(no_gravity_time),
     F(vision_cone),
+    O(free_after_event),
 #undef _OFS
     { 0 }
 };

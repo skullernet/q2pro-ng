@@ -952,7 +952,7 @@ static void cl_railspiral_color_changed(cvar_t *self)
     }
 }
 
-static void CL_RailCore(void)
+static void CL_RailCore(const vec3_t start, const vec3_t end)
 {
     laser_t *l;
 
@@ -960,15 +960,15 @@ static void CL_RailCore(void)
     if (!l)
         return;
 
-    VectorCopy(te.pos1, l->start);
-    VectorCopy(te.pos2, l->end);
+    VectorCopy(start, l->start);
+    VectorCopy(end, l->end);
     l->color = -1;
     l->lifetime = cl_railtrail_time->integer;
     l->width = cl_railcore_width->integer;
     l->rgba = railcore_color;
 }
 
-static void CL_RailSpiral(void)
+static void CL_RailSpiral(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -980,8 +980,8 @@ static void CL_RailSpiral(void)
     float       d, c, s;
     vec3_t      dir;
 
-    VectorCopy(te.pos1, move);
-    VectorSubtract(te.pos2, te.pos1, vec);
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
     len = VectorNormalize(vec);
 
     MakeNormalVectors(vec, right, up);
@@ -1014,16 +1014,16 @@ static void CL_RailSpiral(void)
     }
 }
 
-static void CL_RailTrail(void)
+static void CL_RailTrail(const vec3_t start, const vec3_t end, entity_event_t event)
 {
-    if (!cl_railtrail_type->integer && te.type != TE_RAILTRAIL2) {
-        CL_OldRailTrail();
+    if (!cl_railtrail_type->integer && event != EV_RAILTRAIL2) {
+        CL_OldRailTrail(start, end);
     } else {
         if (cl_railcore_width->integer > 0) {
-            CL_RailCore();
+            CL_RailCore(start, end);
         }
         if (cl_railtrail_type->integer > 1) {
-            CL_RailSpiral();
+            CL_RailSpiral(start, end);
         }
     }
 }
@@ -1162,12 +1162,6 @@ void CL_ParseTEnt(void)
         ex->ent.model = cl_mod_explode;
         ex->frames = 4;
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
-        break;
-
-    case TE_RAILTRAIL:          // railgun effect
-    case TE_RAILTRAIL2:
-        CL_RailTrail();
-        S_StartSound(te.pos2, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
 
     case TE_GRENADE_EXPLOSION:
@@ -1510,6 +1504,11 @@ void CL_EntityEvent(centity_t *cent)
         break;
     case EV_BERSERK_SLAM:
         CL_BerserkSlam(cent);
+        break;
+    case EV_RAILTRAIL:
+    case EV_RAILTRAIL2:
+        CL_RailTrail(cent->current.old_origin, cent->current.origin, cent->current.event);
+        S_StartSound(cent->current.origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
     }
 }

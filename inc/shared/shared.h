@@ -1134,6 +1134,7 @@ typedef struct {
 #define RF_FLARE_LOCK_ANGLE RF_MINLIGHT
 #define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
 //KEX
+#define RF_BEAM_TEMP        (RF_BEAM | RF_MINLIGHT)
 
 // player_state_t->refdef flags
 #define RDF_NONE            0U
@@ -1451,7 +1452,9 @@ typedef enum {
     EV_MUZZLEFLASH,
     EV_MUZZLEFLASH2,
     EV_SOUND,
-    EV_BERSERK_SLAM
+    EV_BERSERK_SLAM,
+    EV_RAILTRAIL,
+    EV_RAILTRAIL2,
 } entity_event_t;
 
 // entity_state_t is the information conveyed from the server

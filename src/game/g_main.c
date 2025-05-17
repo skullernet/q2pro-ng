@@ -965,8 +965,12 @@ player processing happens outside RunFrame
 */
 static void G_PrepFrame(void)
 {
-    for (int i = 0; i < globals.num_edicts; i++)
-        g_edicts[i].s.event = EV_NONE;
+    for (int i = 0; i < globals.num_edicts; i++) {
+        edict_t *ent = &g_edicts[i];
+        ent->s.event = EV_NONE;
+        if (ent->free_after_event)
+            G_FreeEdict(ent);
+    }
 }
 
 #ifndef GAME_HARD_LINKED

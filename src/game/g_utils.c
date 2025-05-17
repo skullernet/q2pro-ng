@@ -667,7 +667,7 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
     return vol << 24 | att << 16 | channel << 13 | index;
 }
 
-void G_AddEvent(edict_t *ent, int event, int param)
+void G_AddEvent(edict_t *ent, entity_event_t event, int param)
 {
     if (ent->s.event && (event == EV_FOOTSTEP || event == EV_OTHER_FOOTSTEP || event == EV_LADDER_STEP))
         return;
@@ -675,15 +675,30 @@ void G_AddEvent(edict_t *ent, int event, int param)
     ent->s.event_param = param;
 }
 
-edict_t *G_TempEntity(const vec3_t origin, int event)
+edict_t *G_TempEntity(const vec3_t origin, entity_event_t event)
 {
     edict_t *ent;
 
     ent = G_Spawn();
     VectorCopy(origin, ent->s.origin);
     ent->s.event = event;
-    ent->think = G_FreeEdict;
-    ent->nextthink = level.time + FRAME_TIME;
+    ent->free_after_event = true;
+    gi.linkentity(ent);
+
+    return ent;
+}
+
+edict_t *G_TempBeam(const vec3_t start, const vec3_t end, entity_event_t event)
+{
+    edict_t *ent;
+
+    ent = G_Spawn();
+    ent->s.renderfx = RF_BEAM_TEMP;
+    VectorCopy(start, ent->s.old_origin);
+    VectorCopy(end, ent->s.origin);
+    ent->s.event = event;
+    ent->free_after_event = true;
+    gi.linkentity(ent);
 
     return ent;
 }

@@ -637,45 +637,6 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     return rocket;
 }
 
-typedef bool (*search_callback_t)(const vec3_t p1, const vec3_t p2);
-
-static bool binary_positional_search_r(const vec3_t viewer, const vec3_t start, const vec3_t end, search_callback_t cb, int split_num)
-{
-    // check half-way point
-    vec3_t mid;
-    VectorAvg(start, end, mid);
-
-    if (cb(viewer, mid))
-        return true;
-
-    // no more splits
-    if (!split_num)
-        return false;
-
-    // recursively check both sides
-    if (binary_positional_search_r(viewer, start, mid, cb, split_num - 1))
-        return true;
-
-    return binary_positional_search_r(viewer, mid, end, cb, split_num - 1);
-}
-
-// [Paril-KEX] simple binary search through a line to see if any points along
-// the line (in a binary split) pass the callback
-static bool binary_positional_search(const vec3_t viewer, const vec3_t start, const vec3_t end, search_callback_t cb, int num_splits)
-{
-    // check start/end first
-    if (cb(viewer, start) || cb(viewer, end))
-        return true;
-
-    // recursive split
-    return binary_positional_search_r(viewer, start, end, cb, num_splits);
-}
-
-static bool in_phs_cb(const vec3_t p1, const vec3_t p2)
-{
-    return gi.inVIS(p1, p2, VIS_PHS);
-}
-
 /*
 =================
 fire_rail
@@ -731,27 +692,8 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     pierce_end(&pierce);
 
     // send gun puff / flash
-    temp_event_t te = (deathmatch->integer && g_instagib->integer) ? TE_RAILTRAIL2 : TE_RAILTRAIL;
-
-    // [Paril-KEX] this often makes double noise, so trying
-    // a slightly different approach...
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (!player->r.inuse)
-            continue;
-
-        vec3_t org;
-        VectorAdd(player->s.origin, player->client->ps.viewoffset, org);
-
-        if (!binary_positional_search(org, start, tr.endpos, in_phs_cb, 3))
-            continue;
-
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(te);
-        gi.WritePosition(start);
-        gi.WritePosition(tr.endpos);
-        gi.unicast(player, false);
-    }
+    entity_event_t te = (deathmatch->integer && g_instagib->integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
+    G_TempBeam(start, tr.endpos, te);
 
     if (self->client)
         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);

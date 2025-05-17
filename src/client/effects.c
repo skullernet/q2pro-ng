@@ -1424,7 +1424,7 @@ CL_RailTrail
 
 ===============
 */
-void CL_OldRailTrail(void)
+void CL_OldRailTrail(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1437,8 +1437,8 @@ void CL_OldRailTrail(void)
     float       d, c, s;
     vec3_t      dir;
 
-    VectorCopy(te.pos1, move);
-    VectorSubtract(te.pos2, te.pos1, vec);
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
     len = VectorNormalize(vec);
 
     MakeNormalVectors(vec, right, up);
@@ -1471,7 +1471,7 @@ void CL_OldRailTrail(void)
 
     dec = 0.75f;
     VectorScale(vec, dec, vec);
-    VectorCopy(te.pos1, move);
+    VectorCopy(start, move);
 
     while (len > 0) {
         len -= dec;

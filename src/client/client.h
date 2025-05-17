@@ -833,7 +833,7 @@ void CL_BlasterParticles(const vec3_t org, const vec3_t dir);
 void CL_ExplosionParticles(const vec3_t org);
 void CL_BFGExplosionParticles(const vec3_t org);
 void CL_BlasterTrail(centity_t *ent, const vec3_t end);
-void CL_OldRailTrail(void);
+void CL_OldRailTrail(const vec3_t start, const vec3_t end);
 void CL_BubbleTrail(const vec3_t start, const vec3_t end);
 void CL_FlagTrail(centity_t *ent, const vec3_t end, int color);
 void CL_MuzzleFlash(centity_t *ent);
