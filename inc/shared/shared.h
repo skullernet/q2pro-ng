@@ -1093,6 +1093,7 @@ typedef struct {
 #define EFX_TELEPORTER2         BIT(4)
 #define EFX_GRENADE_LIGHT       BIT(5)
 //KEX
+#define EFX_STEAM               BIT(6)
 
 // entity_state_t->renderfx flags
 #define RF_NONE             0U

@@ -28,24 +28,23 @@ Creates a steam effect (particles w/ velocity in a line).
   232 - blood
 */
 
+void THINK(target_steam_think)(edict_t *self)
+{
+    self->s.morefx = EFX_NONE;
+    self->s.modelindex = 0;
+}
+
 void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    // FIXME - this needs to be a global
-    static int nextid;
-    vec3_t     point;
-
-    if (nextid > 20000)
-        nextid = nextid % 20000;
-
-    nextid++;
+    vec3_t point;
 
     // automagically set wait from func_timer unless they set it already, or
-    // default to 1000 if not called by a func_timer (eek!)
+    // default to 1 second if not called by a func_timer (eek!)
     if (!self->wait) {
         if (other)
-            self->wait = other->wait * 1000;
+            self->wait = other->wait + FRAME_TIME_SEC;
         else
-            self->wait = 1000;
+            self->wait = 1.0f;
     }
 
     if (self->enemy) {
@@ -56,28 +55,12 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
 
     VectorMA(self->s.origin, self->style * 0.5f, self->movedir, point);
 
-    if (self->wait > 100) {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_STEAM);
-        gi.WriteShort(nextid);
-        gi.WriteByte(self->count);
-        gi.WritePosition(self->s.origin);
-        gi.WriteDir(self->movedir);
-        gi.WriteByte(self->sounds);
-        gi.WriteShort(self->style);
-        gi.WriteLong(self->wait);
-        gi.multicast(self->s.origin, MULTICAST_PVS);
-    } else {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_STEAM);
-        gi.WriteShort(-1);
-        gi.WriteByte(self->count);
-        gi.WritePosition(self->s.origin);
-        gi.WriteDir(self->movedir);
-        gi.WriteByte(self->sounds);
-        gi.WriteShort(self->style);
-        gi.multicast(self->s.origin, MULTICAST_PVS);
-    }
+    self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, gi.DirToByte(self->movedir));
+    self->s.morefx = EFX_STEAM;
+    self->s.modelindex = MODELINDEX_WORLD;
+
+    self->nextthink = level.time + SEC(self->wait);
+    self->think = target_steam_think;
 }
 
 void THINK(target_steam_start)(edict_t *self)
@@ -101,21 +84,18 @@ void THINK(target_steam_start)(edict_t *self)
         self->style = 75;
     if (!self->sounds)
         self->sounds = 8;
-    if (self->wait)
-        self->wait *= 1000; // we want it in milliseconds, not seconds
 
     // paranoia is good
     self->sounds &= 0xff;
     self->count &= 0xff;
-
-    self->r.svflags = SVF_NOCLIENT;
+    self->style &= 0xff;
 
     gi.linkentity(self);
 }
 
 void SP_target_steam(edict_t *self)
 {
-    self->style = self->speed;
+    self->style = Q_clip_uint8(self->speed);
 
     if (self->target) {
         self->think = target_steam_start;

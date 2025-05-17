@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // sv_game.c -- interface to the game dll
 
 #include "server.h"
+#include "common/math.h"
 
 const game_export_t     *ge;
 
@@ -594,6 +595,7 @@ static const game_import_t game_import = {
     .WritePosition = MSG_WritePos,
     .WriteDir = MSG_WriteDir,
     .WriteAngle = MSG_WriteAngle,
+    .DirToByte = DirToByte,
 
     .TagMalloc = PF_TagMalloc,
     .TagRealloc = PF_TagRealloc,

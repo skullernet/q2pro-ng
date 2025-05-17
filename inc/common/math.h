@@ -27,7 +27,7 @@ void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up);
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 
 int DirToByte(const vec3_t dir);
-//void ByteToDir(int index, vec3_t dir);
+void ByteToDir(int index, vec3_t dir);
 
 void SetPlaneType(cplane_t *plane);
 void SetPlaneSignbits(cplane_t *plane);

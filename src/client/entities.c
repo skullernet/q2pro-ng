@@ -343,8 +343,7 @@ void CL_DeltaFrame(void)
     for (i = 0; i < cl.frame.numEntities; i++) {
         j = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
         ent = &cl_entities[cl.entityStates[j].number];
-        if (ent->current.event)
-            CL_EntityEvent(ent);
+        CL_EntityEvent(ent);
     }
 
     if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking && CL_FRAMESYNC) {
@@ -573,6 +572,9 @@ static void CL_AddPacketEntities(void)
             if (effects & EF_GREENGIB)
                 goto skip;
         }
+
+        if (s1->morefx & EFX_STEAM)
+            goto skip;
 
         // create a new entity
         if (renderfx & RF_FLARE) {

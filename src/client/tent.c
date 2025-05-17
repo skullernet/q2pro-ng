@@ -892,30 +892,6 @@ static void CL_ProcessSustain(void)
     }
 }
 
-static void CL_ParseSteam(void)
-{
-    cl_sustain_t    *s;
-
-    if (te.entity1 == -1) {
-        CL_ParticleSteamEffect(te.pos1, te.dir, te.color & 0xff, te.count, te.entity2);
-        return;
-    }
-
-    s = CL_AllocSustain();
-    if (!s)
-        return;
-
-    s->id = te.entity1;
-    s->count = te.count;
-    VectorCopy(te.pos1, s->org);
-    VectorCopy(te.dir, s->dir);
-    s->color = te.color & 0xff;
-    s->magnitude = te.entity2;
-    s->endtime = cl.time + te.time;
-    s->think = CL_ParticleSteamEffect2;
-    s->nextthink = cl.time;
-}
-
 static void CL_ParseWidow(void)
 {
     cl_sustain_t    *s;
@@ -1341,10 +1317,6 @@ void CL_ParseTEnt(void)
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
-    case TE_STEAM:
-        CL_ParseSteam();
-        break;
-
     case TE_BUBBLETRAIL2:
         CL_BubbleTrail2(te.pos1, te.pos2, 8);
         S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
@@ -1480,6 +1452,16 @@ void CL_EntityEvent(centity_t *cent)
 
         if (cent->current.morefx & EFX_BARREL_EXPLODING)
             CL_BarrelExplodingParticles(cent->current.origin);
+
+        if (cent->current.morefx & EFX_STEAM) {
+            uint32_t param = cent->current.skinnum;
+            int color = (param >> 8) & 0xff;
+            int count = (param >> 16) & 0xff;
+            int magnitude = (param >> 24) & 0xff;
+            vec3_t dir;
+            ByteToDir(param & 0xff, dir);
+            CL_ParticleSteamEffect(cent->current.origin, dir, color, count, magnitude);
+        }
     }
 
 #if USE_FPS
