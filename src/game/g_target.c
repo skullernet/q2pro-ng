@@ -471,13 +471,7 @@ Set "sounds" to one of the following:
 
 void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_SPLASH);
-    gi.WriteByte(self->count);
-    gi.WritePosition(self->s.origin);
-    gi.WriteDir(self->movedir);
-    gi.WriteByte(self->sounds);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    self->s.event = EV_SPLASH;
 
     if (self->dmg)
         T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_SPLASH });
@@ -495,7 +489,8 @@ void SP_target_splash(edict_t *self)
     if (level.is_n64 && self->sounds == SPLASH_SPARKS)
         self->sounds = SPLASH_ELECTRIC_N64;
 
-    self->r.svflags = SVF_NOCLIENT;
+    self->s.event_param = MakeBigLong(0, self->count, self->sounds, gi.DirToByte(self->movedir));
+    gi.linkentity(self);
 }
 
 //==========================================================

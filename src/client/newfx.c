@@ -891,23 +891,15 @@ CL_PowerSplash
 TODO: differentiate screen/shield
 ===============
 */
-void CL_PowerSplash(void)
+void CL_PowerSplash(const centity_t *cent)
 {
     static const byte   colortable[4] = {208, 209, 210, 211};
     int         i;
     cparticle_t *p;
     vec3_t      org, dir, mid;
-    centity_t   *ent;
 
-    if (te.entity1 < 0 || te.entity1 >= ENTITYNUM_WORLD)
-        Com_Error(ERR_DROP, "%s: bad entity", __func__);
-
-    ent = &cl_entities[te.entity1];
-    if (ent->serverframe != cl.frame.number)
-        return;
-
-    VectorAvg(ent->mins, ent->maxs, mid);
-    VectorAdd(ent->current.origin, mid, org);
+    VectorAvg(cent->mins, cent->maxs, mid);
+    VectorAdd(cent->current.origin, mid, org);
 
     for (i = 0; i < 256; i++) {
         p = CL_AllocParticle();
@@ -918,7 +910,7 @@ void CL_PowerSplash(void)
         p->color = colortable[Q_rand() & 3];
 
         RandomDir(dir);
-        VectorMA(org, ent->radius, dir, p->org);
+        VectorMA(org, cent->radius, dir, p->org);
         VectorScale(dir, 40.0f, p->vel);
 
         VectorClear(p->accel);

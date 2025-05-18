@@ -90,6 +90,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 {
     trace_t tr;
     pierce_t pierce;
+    edict_t *te;
     pierce_begin(&pierce);
 
     vec3_t end;
@@ -120,13 +121,8 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
                     color = SPLASH_UNKNOWN;
 
                 if (color != SPLASH_UNKNOWN) {
-                    gi.WriteByte(svc_temp_entity);
-                    gi.WriteByte(TE_SPLASH);
-                    gi.WriteByte(8);
-                    gi.WritePosition(tr.endpos);
-                    gi.WriteDir(tr.plane.normal);
-                    gi.WriteByte(color);
-                    gi.multicast(tr.endpos, MULTICAST_PVS);
+                    te = G_TempEntity(tr.endpos, EV_SPLASH);
+                    te->s.event_param = MakeLittleLong(0, 8, color, gi.DirToByte(tr.plane.normal));
                 }
 
                 // change bullet's course when it enters water

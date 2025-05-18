@@ -220,15 +220,8 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     // check power armor turn-off states
     if (ent->client)
         G_CheckPowerArmor(ent);
-    else if (!*power) {
-        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/mon_power2.wav"), 1, ATTN_NORM);
-
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_POWER_SPLASH);
-        gi.WriteShort(ent->s.number);
-        gi.WriteByte((power_armor_type == IT_ITEM_POWER_SCREEN) ? 1 : 0);
-        gi.multicast(ent->s.origin, MULTICAST_PHS);
-    }
+    else if (!*power)
+        G_AddEvent(ent, EV_POWER_SPLASH, power_armor_type);
 
     return save;
 }

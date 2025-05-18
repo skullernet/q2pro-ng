@@ -1046,7 +1046,6 @@ static void dirtoangles(const vec3_t dir, vec3_t angles)
 CL_ParseTEnt
 =================
 */
-static const byte splash_color[] = {0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8};
 
 void CL_ParseTEnt(void)
 {
@@ -1094,30 +1093,6 @@ void CL_ParseTEnt(void)
     case TE_SHOTGUN:            // bullet hitting wall
         CL_ParticleEffect(te.pos1, te.dir, 0, 20);
         CL_SmokeAndFlash(te.pos1);
-        break;
-
-    case TE_SPLASH:         // bullet hitting water
-        if (te.color == SPLASH_ELECTRIC_N64) {
-            CL_ParticleEffect(te.pos1, te.dir, 0x6c, te.count / 2);
-            CL_ParticleEffect(te.pos1, te.dir, 0xb0, (te.count + 1) / 2);
-            te.color = SPLASH_SPARKS;
-        } else {
-            if (te.color >= q_countof(splash_color))
-                r = 0x00;
-            else
-                r = splash_color[te.color];
-            CL_ParticleEffect(te.pos1, te.dir, r, te.count);
-        }
-
-        if (te.color == SPLASH_SPARKS) {
-            r = Q_rand() & 3;
-            if (r == 0)
-                S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark5, 1, ATTN_STATIC, 0);
-            else if (r == 1)
-                S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark6, 1, ATTN_STATIC, 0);
-            else
-                S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark7, 1, ATTN_STATIC, 0);
-        }
         break;
 
     case TE_LASER_SPARKS:
@@ -1336,16 +1311,6 @@ void CL_ParseTEnt(void)
         CL_WidowSplash();
         break;
 
-    case TE_BERSERK_SLAM:
-        break;
-
-    case TE_POWER_SPLASH:
-        CL_PowerSplash();
-        break;
-
-    case TE_DAMAGE_DEALT:
-        break;
-
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
@@ -1410,6 +1375,41 @@ static void CL_SoundEvent(centity_t *cent)
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
     S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+}
+
+static void CL_SplashEvent(centity_t *cent)
+{
+    uint32_t param = cent->current.event_param;
+    int count = (param >> 16) & 255;
+    int color = (param >>  8) & 255;
+    vec_t *pos = cent->current.origin;
+    int r;
+
+    vec3_t dir;
+    ByteToDir(param & 255, dir);
+
+    if (color == SPLASH_ELECTRIC_N64) {
+        CL_ParticleEffect(pos, dir, 0x6c, count / 2);
+        CL_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
+        color = SPLASH_SPARKS;
+    } else {
+        static const byte splash_color[] = { 0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8 };
+        if (color >= q_countof(splash_color))
+            r = 0x00;
+        else
+            r = splash_color[color];
+        CL_ParticleEffect(pos, dir, r, count);
+    }
+
+    if (color == SPLASH_SPARKS) {
+        r = Q_rand() & 3;
+        if (r == 0)
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark5, 1, ATTN_STATIC, 0);
+        else if (r == 1)
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark6, 1, ATTN_STATIC, 0);
+        else
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark7, 1, ATTN_STATIC, 0);
+    }
 }
 
 // an entity has just been parsed that has an event value
@@ -1512,6 +1512,15 @@ void CL_EntityEvent(centity_t *cent)
     case EV_BFG_ZAP:
         CL_ParseLaser(start, s->origin, 0xd0d1d2d3);
         CL_BFGExplosion(s->origin);
+        break;
+
+    case EV_SPLASH:
+        CL_SplashEvent(cent);
+        break;
+
+    case EV_POWER_SPLASH:
+        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
+        CL_PowerSplash(cent);
         break;
     }
 }

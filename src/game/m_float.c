@@ -503,13 +503,8 @@ static void floater_zap(edict_t *self)
     G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM);
 
     // FIXME use the flash, Luke
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_SPLASH);
-    gi.WriteByte(32);
-    gi.WritePosition(origin);
-    gi.WriteDir(dir);
-    gi.WriteByte(SPLASH_SPARKS);
-    gi.multicast(origin, MULTICAST_PVS);
+    edict_t *te = G_TempEntity(origin, EV_SPLASH);
+    te->s.event_param = MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir));
 
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 }
