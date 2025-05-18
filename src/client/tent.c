@@ -1028,14 +1028,14 @@ static void CL_RailTrail(const vec3_t start, const vec3_t end, entity_event_t ev
     }
 }
 
-static void dirtoangles(vec3_t angles)
+static void dirtoangles(const vec3_t dir, vec3_t angles)
 {
-    angles[0] = RAD2DEG(acosf(te.dir[2]));
-    if (te.dir[0])
-        angles[1] = RAD2DEG(atan2f(te.dir[1], te.dir[0]));
-    else if (te.dir[1] > 0)
+    angles[0] = RAD2DEG(acosf(dir[2]));
+    if (dir[0])
+        angles[1] = RAD2DEG(atan2f(dir[1], dir[0]));
+    else if (dir[1] > 0)
         angles[1] = 90;
-    else if (te.dir[1] < 0)
+    else if (dir[1] < 0)
         angles[1] = 270;
     else
         angles[1] = 0;
@@ -1137,7 +1137,7 @@ void CL_ParseTEnt(void)
     case TE_FLECHETTE:          // flechette
         ex = CL_AllocExplosion();
         VectorCopy(te.pos1, ex->ent.origin);
-        dirtoangles(ex->ent.angles);
+        dirtoangles(te.dir, ex->ent.angles);
         ex->type = ex_misc;
         ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
         switch (te.type) {
@@ -1351,41 +1351,40 @@ void CL_ParseTEnt(void)
     }
 }
 
-static void CL_ProjectFlashSource(centity_t *cent, const vec3_t offset, vec3_t origin)
+static void CL_BerserkSlam(centity_t *cent)
 {
-    vec3_t  forward, right, ofs;
+    vec3_t  forward, right, ofs, dir, origin;
     float   scale;
 
-    // locate the origin
     AngleVectors(cent->current.angles, forward, right, NULL);
+
+    if (cent->current.event == EV_BERSERK_SLAM) {
+        S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
+        S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
+        VectorSet(ofs, 20.0f, -14.3f, -21.0f);
+        VectorSet(dir, 0, 0, 1);
+    } else {
+        VectorSet(ofs, 20, 0, 14);
+        VectorCopy(forward, dir);
+    }
 
     scale = cent->current.scale;
     if (!scale)
         scale = 1.0f;
 
-    VectorScale(offset, scale, ofs);
+    VectorScale(ofs, scale, ofs);
     origin[0] = cent->current.origin[0] + forward[0] * ofs[0] + right[0] * ofs[1];
     origin[1] = cent->current.origin[1] + forward[1] * ofs[0] + right[1] * ofs[1];
     origin[2] = cent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
-}
-
-static void CL_BerserkSlam(centity_t *cent)
-{
-    S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
-    S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
-
-    vec3_t start;
-    CL_ProjectFlashSource(cent, (const vec3_t) { 20.0f, -14.3f, -21.0f }, start);
 
     trace_t tr;
-    CL_Trace(&tr, cent->current.origin, NULL, NULL, start, cent->current.number, MASK_SOLID);
+    CL_Trace(&tr, cent->current.origin, NULL, NULL, origin, cent->current.number, MASK_SOLID);
 
-    VectorSet(te.dir, 0, 0, 1);
-    CL_BerserkSlamParticles(tr.endpos, te.dir);
+    CL_BerserkSlamParticles(tr.endpos, dir);
 
     explosion_t *ex = CL_AllocExplosion();
     VectorCopy(tr.endpos, ex->ent.origin);
-    dirtoangles(ex->ent.angles);
+    dirtoangles(dir, ex->ent.angles);
     ex->type = ex_misc;
     ex->ent.model = cl_mod_explode;
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
@@ -1487,6 +1486,7 @@ void CL_EntityEvent(centity_t *cent)
         CL_SoundEvent(cent);
         break;
     case EV_BERSERK_SLAM:
+    case EV_GUNCMDR_SLAM:
         CL_BerserkSlam(cent);
         break;
 

@@ -1270,11 +1270,7 @@ static void GunnerCmdrCounter(edict_t *self)
     trace_t tr;
     gi.trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_BERSERK_SLAM);
-    gi.WritePosition(tr.endpos);
-    gi.WriteDir(f);
-    gi.multicast(tr.endpos, MULTICAST_PHS);
+    G_AddEvent(self, EV_GUNCMDR_SLAM, 0);
 
     T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, 200, (mod_t) { MOD_UNKNOWN });
 }
