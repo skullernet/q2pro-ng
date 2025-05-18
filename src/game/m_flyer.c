@@ -680,7 +680,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
         VectorScale(dir, 500, ent->velocity);
 
         edict_t *te = G_TempEntity(tr->endpos, EV_SPLASH);
-        te->s.event_param = MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir));
+        te->s.event_param[0] = MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir));
     }
 }
 

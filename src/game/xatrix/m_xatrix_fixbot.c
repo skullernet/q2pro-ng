@@ -347,7 +347,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
 
                 if (color != SPLASH_UNKNOWN) {
                     te = G_TempEntity(tr.endpos, EV_SPLASH);
-                    te->s.event_param = MakeLittleLong(0, 8, color, gi.DirToByte(tr.plane.normal));
+                    te->s.event_param[0] = MakeLittleLong(0, 8, color, gi.DirToByte(tr.plane.normal));
                 }
 
                 // change bullet's course when it enters water

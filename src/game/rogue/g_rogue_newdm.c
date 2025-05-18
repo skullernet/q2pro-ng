@@ -231,7 +231,8 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     number = body->s.number;
     body->s = ent->s;
     body->s.sound = 0;
-    body->s.event = EV_NONE;
+    body->s.event[0] = EV_NONE;
+    body->s.event[1] = EV_NONE;
     body->s.number = number;
     body->yaw_speed = 30;
     body->ideal_yaw = 0;

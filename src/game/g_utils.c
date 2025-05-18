@@ -628,7 +628,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
 {
     edict_t *te = G_TempEntity(origin, EV_SOUND);
-    te->s.event_param = G_EncodeSound(channel & 7, index, volume, attenuation);
+    te->s.event_param[0] = G_EncodeSound(channel & 7, index, volume, attenuation);
 }
 
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
@@ -669,10 +669,19 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
 
 void G_AddEvent(edict_t *ent, entity_event_t event, int param)
 {
-    if (ent->s.event && (event == EV_FOOTSTEP || event == EV_OTHER_FOOTSTEP || event == EV_LADDER_STEP))
-        return;
-    ent->s.event       = event;
-    ent->s.event_param = param;
+    if (ent->s.event[0]) {
+        if (ent->s.event[1]) {
+            extern cvar_t *sv_running;
+            if (sv_running->integer >= 2)
+                gi.dprintf("Too many events for %s: %d, %d, %d\n", etos(ent), ent->s.event[0], ent->s.event[1], event);
+            return;
+        }
+        ent->s.event[1] = event;
+        ent->s.event_param[1] = param;
+    } else {
+        ent->s.event[0] = event;
+        ent->s.event_param[0] = param;
+    }
 }
 
 edict_t *G_TempEntity(const vec3_t origin, entity_event_t event)
@@ -681,7 +690,7 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event)
 
     ent = G_Spawn();
     VectorCopy(origin, ent->s.origin);
-    ent->s.event = event;
+    ent->s.event[0] = event;
     ent->free_after_event = true;
     gi.linkentity(ent);
 
@@ -696,7 +705,7 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
     ent->s.renderfx = RF_BEAM_TEMP;
     VectorCopy(start, ent->s.old_origin);
     VectorCopy(end, ent->s.origin);
-    ent->s.event = event;
+    ent->s.event[0] = event;
     ent->free_after_event = true;
     gi.linkentity(ent);
 

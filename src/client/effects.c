@@ -176,16 +176,15 @@ void CL_AddDLights(void)
 CL_MuzzleFlash
 ==============
 */
-void CL_MuzzleFlash(centity_t *pl)
+void CL_MuzzleFlash(centity_t *pl, int weapon)
 {
     vec3_t      fv, rv;
     cdlight_t   *dl;
     float       volume;
     char        soundname[MAX_QPATH];
     bool        silenced, local;
-    int         weapon, entnum;
+    int         entnum;
 
-    weapon = pl->current.event_param;
     silenced = weapon & MZ_SILENCED;
     weapon &= ~MZ_SILENCED;
 
@@ -405,14 +404,14 @@ void CL_MuzzleFlash(centity_t *pl)
 CL_MuzzleFlash2
 ==============
 */
-void CL_MuzzleFlash2(centity_t *ent)
+void CL_MuzzleFlash2(centity_t *ent, int weapon)
 {
     vec3_t      ofs, origin, flash_origin;
     cdlight_t   *dl;
     vec3_t      forward, right;
     char        soundname[MAX_QPATH];
     float       scale;
-    int         weapon, entnum;
+    int         entnum;
 
     // locate the origin
     AngleVectors(ent->current.angles, forward, right, NULL);
@@ -421,7 +420,6 @@ void CL_MuzzleFlash2(centity_t *ent)
     if (!scale)
         scale = 1.0f;
 
-    weapon = ent->current.event_param;
     if (weapon >= q_countof(monster_flash_offset))
         Com_Error(ERR_DROP, "%s: bad weapon", __func__);
 

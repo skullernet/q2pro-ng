@@ -504,7 +504,7 @@ static void floater_zap(edict_t *self)
 
     // FIXME use the flash, Luke
     edict_t *te = G_TempEntity(origin, EV_SPLASH);
-    te->s.event_param = MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir));
+    te->s.event_param[0] = MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir));
 
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 }

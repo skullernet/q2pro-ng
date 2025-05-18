@@ -1316,14 +1316,14 @@ void CL_ParseTEnt(void)
     }
 }
 
-static void CL_BerserkSlam(centity_t *cent)
+static void CL_BerserkSlam(centity_t *cent, entity_event_t event)
 {
     vec3_t  forward, right, ofs, dir, origin;
     float   scale;
 
     AngleVectors(cent->current.angles, forward, right, NULL);
 
-    if (cent->current.event == EV_BERSERK_SLAM) {
+    if (event == EV_BERSERK_SLAM) {
         S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
         S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
         VectorSet(ofs, 20.0f, -14.3f, -21.0f);
@@ -1361,9 +1361,8 @@ static void CL_BerserkSlam(centity_t *cent)
     ex->frames = 4;
 }
 
-static void CL_SoundEvent(centity_t *cent)
+static void CL_SoundEvent(centity_t *cent, uint32_t param)
 {
-    uint32_t param = cent->current.event_param;
     int channel = (param >> 13) & 7;
     int index = param & (MAX_SOUNDS - 1);
     int vol = (param >> 24) & 255;
@@ -1377,9 +1376,8 @@ static void CL_SoundEvent(centity_t *cent)
     S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
-static void CL_SplashEvent(centity_t *cent)
+static void CL_SplashEvent(centity_t *cent, uint32_t param)
 {
-    uint32_t param = cent->current.event_param;
     int count = (param >> 16) & 255;
     int color = (param >>  8) & 255;
     vec_t *pos = cent->current.origin;
@@ -1413,40 +1411,13 @@ static void CL_SplashEvent(centity_t *cent)
 }
 
 // an entity has just been parsed that has an event value
-void CL_EntityEvent(centity_t *cent)
+static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
     entity_state_t *s = &cent->current;
     vec_t *start = s->old_origin;
     int number = s->number;
 
-    if (CL_FRAMESYNC) {
-        // EF_TELEPORTER acts like an event, but is not cleared each frame
-        if (s->effects & EF_TELEPORTER)
-            CL_TeleporterParticles(s->origin);
-
-        if (s->morefx & EFX_TELEPORTER2)
-            CL_TeleporterParticles2(s->origin);
-
-        if (s->morefx & EFX_BARREL_EXPLODING)
-            CL_BarrelExplodingParticles(s->origin);
-
-        if (s->morefx & EFX_STEAM) {
-            uint32_t param = s->skinnum;
-            int color = (param >> 8) & 0xff;
-            int count = (param >> 16) & 0xff;
-            int magnitude = (param >> 24) & 0xff;
-            vec3_t dir;
-            ByteToDir(param & 0xff, dir);
-            CL_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
-        }
-    }
-
-#if USE_FPS
-    if (cent->event_frame != cl.frame.number)
-        return;
-#endif
-
-    switch (s->event) {
+    switch (event) {
     case EV_ITEM_RESPAWN:
         S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
         CL_ItemRespawnParticles(s->origin);
@@ -1477,22 +1448,22 @@ void CL_EntityEvent(centity_t *cent)
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_MUZZLEFLASH:
-        CL_MuzzleFlash(cent);
+        CL_MuzzleFlash(cent, param);
         break;
     case EV_MUZZLEFLASH2:
-        CL_MuzzleFlash2(cent);
+        CL_MuzzleFlash2(cent, param);
         break;
     case EV_SOUND:
-        CL_SoundEvent(cent);
+        CL_SoundEvent(cent, param);
         break;
     case EV_BERSERK_SLAM:
     case EV_GUNCMDR_SLAM:
-        CL_BerserkSlam(cent);
+        CL_BerserkSlam(cent, event);
         break;
 
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
-        CL_RailTrail(start, s->origin, s->event);
+        CL_RailTrail(start, s->origin, event);
         S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
 
@@ -1515,14 +1486,51 @@ void CL_EntityEvent(centity_t *cent)
         break;
 
     case EV_SPLASH:
-        CL_SplashEvent(cent);
+        CL_SplashEvent(cent, param);
         break;
 
     case EV_POWER_SPLASH:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
         CL_PowerSplash(cent);
         break;
+    default:
+        break;
     }
+}
+
+void CL_EntityEvents(centity_t *cent)
+{
+    entity_state_t *s = &cent->current;
+
+    if (CL_FRAMESYNC) {
+        // EF_TELEPORTER acts like an event, but is not cleared each frame
+        if (s->effects & EF_TELEPORTER)
+            CL_TeleporterParticles(s->origin);
+
+        if (s->morefx & EFX_TELEPORTER2)
+            CL_TeleporterParticles2(s->origin);
+
+        if (s->morefx & EFX_BARREL_EXPLODING)
+            CL_BarrelExplodingParticles(s->origin);
+
+        if (s->morefx & EFX_STEAM) {
+            uint32_t param = s->skinnum;
+            int color = (param >> 8) & 0xff;
+            int count = (param >> 16) & 0xff;
+            int magnitude = (param >> 24) & 0xff;
+            vec3_t dir;
+            ByteToDir(param & 0xff, dir);
+            CL_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
+        }
+    }
+
+#if USE_FPS
+    if (cent->event_frame != cl.frame.number)
+        return;
+#endif
+
+    CL_EntityEvent(cent, s->event[0], s->event_param[0]);
+    CL_EntityEvent(cent, s->event[1], s->event_param[1]);
 }
 
 /*

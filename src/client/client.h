@@ -764,7 +764,7 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
 void CL_SmokeAndFlash(const vec3_t origin);
 void CL_DrawBeam(const vec3_t org, const vec3_t end, qhandle_t model, int entnum);
 
-void CL_EntityEvent(centity_t *cent);
+void CL_EntityEvents(centity_t *cent);
 
 void CL_RegisterTEntSounds(void);
 void CL_RegisterTEntModels(void);
@@ -836,8 +836,8 @@ void CL_BlasterTrail(centity_t *ent, const vec3_t end);
 void CL_OldRailTrail(const vec3_t start, const vec3_t end);
 void CL_BubbleTrail(const vec3_t start, const vec3_t end);
 void CL_FlagTrail(centity_t *ent, const vec3_t end, int color);
-void CL_MuzzleFlash(centity_t *ent);
-void CL_MuzzleFlash2(centity_t *ent);
+void CL_MuzzleFlash(centity_t *ent, int weapon);
+void CL_MuzzleFlash2(centity_t *ent, int weapon);
 void CL_TeleporterParticles(const vec3_t org);
 void CL_TeleportParticles(const vec3_t org);
 void CL_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count);

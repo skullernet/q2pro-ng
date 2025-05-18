@@ -1482,10 +1482,10 @@ typedef struct {
     uint32_t    solid;      // for client side prediction,
                             // gi.linkentity sets this properly
     uint32_t    sound;      // for looping sounds, to guarantee shutoff
-    uint32_t    event;      // impulse events -- muzzle flashes, footsteps, etc
+    uint32_t    event[2];   // impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
-    uint32_t    event_param;
+    uint32_t    event_param[2];
     uint32_t    morefx;
     float       alpha;
     float       scale;

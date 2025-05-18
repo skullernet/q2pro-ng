@@ -84,7 +84,7 @@ static void SV_CreateBaselines(void)
         }
 
         // don't ever transmit event
-        base->event = 0;
+        base->event[0] = base->event[1] = 0;
     }
 }
 

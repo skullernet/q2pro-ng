@@ -344,9 +344,9 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         // clear footsteps
-        if (client->settings[CLS_NOFOOTSTEPS] && (state->event == EV_FOOTSTEP ||
-            state->event == EV_OTHER_FOOTSTEP || state->event == EV_LADDER_STEP)) {
-            state->event = 0;
+        if (client->settings[CLS_NOFOOTSTEPS] && (state->event[0] == EV_FOOTSTEP ||
+            state->event[0] == EV_OTHER_FOOTSTEP || state->event[0] == EV_LADDER_STEP)) {
+            state->event[0] = 0;
         }
 
         // hide POV entity from renderer, unless this is player's own entity

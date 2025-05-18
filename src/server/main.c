@@ -1489,7 +1489,7 @@ static void SV_PrepWorldFrame(void)
         ent = SV_EdictForNum(i);
 
         // events only last for a single keyframe
-        ent->s.event = 0;
+        ent->s.event[0] = ent->s.event[1] = 0;
     }
 }
 

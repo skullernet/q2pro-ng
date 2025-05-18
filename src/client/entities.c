@@ -51,8 +51,8 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
     ent->event_frame = cl.frame.number;
 #endif
 
-    if (state->event == EV_PLAYER_TELEPORT ||
-        state->event == EV_OTHER_TELEPORT ||
+    if (state->event[0] == EV_PLAYER_TELEPORT ||
+        state->event[0] == EV_OTHER_TELEPORT ||
         (state->renderfx & RF_BEAM)) {
         // no lerping if teleported
         VectorCopy(origin, ent->lerp_origin);
@@ -68,7 +68,7 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
 static inline void
 entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
-    int event = state->event;
+    int event = state->event[0];
 
 #if USE_FPS
     // check for new event
@@ -269,8 +269,8 @@ check_player_lerp(server_frame_t *oldframe, server_frame_t *frame, int framediv)
         ent->event_frame > oldnum &&
         ent->event_frame <= frame->number &&
 #endif
-        (ent->current.event == EV_PLAYER_TELEPORT
-         || ent->current.event == EV_OTHER_TELEPORT)) {
+        (ent->current.event[0] == EV_PLAYER_TELEPORT
+         || ent->current.event[0] == EV_OTHER_TELEPORT)) {
         goto dup;
     }
 
@@ -343,7 +343,7 @@ void CL_DeltaFrame(void)
     for (i = 0; i < cl.frame.numEntities; i++) {
         j = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
         ent = &cl_entities[cl.entityStates[j].number];
-        CL_EntityEvent(ent);
+        CL_EntityEvents(ent);
     }
 
     if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking && CL_FRAMESYNC) {

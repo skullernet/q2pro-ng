@@ -1498,7 +1498,8 @@ static void CopyToBodyQue(edict_t *ent)
     body->movetype = ent->movetype;
     body->health = ent->health;
     body->gib_health = ent->gib_health;
-    body->s.event = EV_OTHER_TELEPORT;
+    body->s.event[0] = EV_OTHER_TELEPORT;
+    body->s.event[1] = 0;
     VectorCopy(ent->velocity, body->velocity);
     VectorCopy(ent->avelocity, body->avelocity);
     body->groundentity = ent->groundentity;
@@ -2396,7 +2397,7 @@ void ClientDisconnect(edict_t *ent)
     // send effect
     if (!(ent->r.svflags & SVF_NOCLIENT)) {
         edict_t *te = G_TempEntity(ent->s.origin, EV_MUZZLEFLASH);
-        te->s.event_param = MZ_LOGOUT;
+        te->s.event_param[0] = MZ_LOGOUT;
         //te->s.clientnum = ent->s.number;
     }
 

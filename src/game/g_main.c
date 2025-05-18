@@ -967,7 +967,7 @@ static void G_PrepFrame(void)
 {
     for (int i = 0; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
-        ent->s.event = EV_NONE;
+        ent->s.event[0] = ent->s.event[1] = EV_NONE;
         if (ent->free_after_event)
             G_FreeEdict(ent);
     }
