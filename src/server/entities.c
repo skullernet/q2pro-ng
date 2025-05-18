@@ -215,47 +215,6 @@ static bool SV_EntityAttenuatedAway(const edict_t *ent)
     return dist * mult > 1.0f;
 }
 
-#define IS_MONSTER(ent) \
-    ((ent->r.svflags & (SVF_MONSTER | SVF_DEADMONSTER)) == SVF_MONSTER || (ent->s.renderfx & RF_FRAMELERP))
-
-#define IS_HI_PRIO(ent) \
-    (ent->s.number <= svs.maxclients || IS_MONSTER(ent) || ent->r.solid == SOLID_BSP)
-
-#define IS_GIB(ent) \
-    (ent->s.renderfx & RF_LOW_PRIORITY)
-
-#define IS_LO_PRIO(ent) \
-    (IS_GIB(ent) || (!ent->s.modelindex && !ent->s.effects))
-
-static int entpriocmp(const void *p1, const void *p2)
-{
-    const edict_t *a = *(const edict_t **)p1;
-    const edict_t *b = *(const edict_t **)p2;
-
-    bool hi_a = IS_HI_PRIO(a);
-    bool hi_b = IS_HI_PRIO(b);
-    if (hi_a != hi_b)
-        return hi_b - hi_a;
-
-    bool lo_a = IS_LO_PRIO(a);
-    bool lo_b = IS_LO_PRIO(b);
-    if (lo_a != lo_b)
-        return lo_a - lo_b;
-
-    float dist_a = DistanceSquared(a->s.origin, clientorg);
-    float dist_b = DistanceSquared(b->s.origin, clientorg);
-    if (dist_a > dist_b)
-        return 1;
-    return -1;
-}
-
-static int entnumcmp(const void *p1, const void *p2)
-{
-    const edict_t *a = *(const edict_t **)p1;
-    const edict_t *b = *(const edict_t **)p2;
-    return a->s.number - b->s.number;
-}
-
 /*
 =============
 SV_BuildClientFrame
@@ -266,7 +225,7 @@ copies off the playerstat and areabits.
 */
 void SV_BuildClientFrame(client_t *client)
 {
-    int         i, e;
+    int         e;
     edict_t     *ent;
     edict_t     *clent;
     client_frame_t  *frame;
@@ -275,9 +234,6 @@ void SV_BuildClientFrame(client_t *client)
     int         clientarea, clientcluster;
     visrow_t    clientphs;
     visrow_t    clientpvs;
-    int         max_packet_entities;
-    edict_t     *edicts[MAX_EDICTS];
-    int         num_edicts;
     entity_state_t temp;
 
     clent = client->edict;
@@ -307,10 +263,6 @@ void SV_BuildClientFrame(client_t *client)
     // grab the current player_state_t
     frame->ps = clent->client->ps;
 
-    // limit maximum number of entities in client frame
-    max_packet_entities =
-        sv_max_packet_entities->integer > 0 ? sv_max_packet_entities->integer : MAX_PACKET_ENTITIES;
-
     CM_FatPVS(&sv.cm, &clientpvs, clientorg);
     BSP_ClusterVis(sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
 
@@ -320,7 +272,6 @@ void SV_BuildClientFrame(client_t *client)
 
     Q_assert_soft(ge->num_edicts <= ENTITYNUM_WORLD);
 
-    num_edicts = 0;
     for (e = 0; e < ge->num_edicts; e++) {
         ent = SV_EdictForNum(e);
 
@@ -381,27 +332,6 @@ void SV_BuildClientFrame(client_t *client)
         if (ge->EntityVisibleToClient && !ge->EntityVisibleToClient(clent, ent))
             continue;
 
-        edicts[num_edicts++] = ent;
-
-        if (num_edicts == max_packet_entities && !sv_prioritize_entities->integer)
-            break;
-    }
-
-    // prioritize entities on overflow
-    if (num_edicts > max_packet_entities) {
-        sv_client = client;
-        sv_player = client->edict;
-        qsort(edicts, num_edicts, sizeof(edicts[0]), entpriocmp);
-        sv_client = NULL;
-        sv_player = NULL;
-        num_edicts = max_packet_entities;
-        qsort(edicts, num_edicts, sizeof(edicts[0]), entnumcmp);
-    }
-
-    for (i = 0; i < num_edicts; i++) {
-        ent = edicts[i];
-        e = ent->s.number;
-
         // add it to the circular client_entities array
         state = &client->entities[client->next_entity & (client->num_entities - 1)];
 
@@ -431,5 +361,8 @@ void SV_BuildClientFrame(client_t *client)
 
         frame->num_entities++;
         client->next_entity++;
+
+        if (frame->num_entities == MAX_PACKET_ENTITIES)
+            break;
     }
 }
