@@ -1168,11 +1168,8 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM);
     self->s.sound = gi.soundindex("weapons/grapple/grpull.wav");
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_SPARKS);
-    gi.WritePosition(self->s.origin);
-    gi.WriteDir(tr->plane.normal);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    edict_t *te = G_TempEntity(self->s.origin, EV_DAMAGE);
+    te->s.event_param[0] = MakeBigLong(0, 0, DE_SPARKS, gi.DirToByte(tr->plane.normal));
 }
 
 void THINK(CTFGrappleCableThink)(edict_t *self)

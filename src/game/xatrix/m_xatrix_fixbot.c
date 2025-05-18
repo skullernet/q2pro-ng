@@ -293,7 +293,7 @@ static void use_scanner(edict_t *self)
     decend translated along the z the current
     frames are at 10fps
 */
-static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int te_impact, int hspread, int vspread)
+static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, damage_effect_t te_impact, int hspread, int vspread)
 {
     trace_t    tr;
     vec3_t     dir;
@@ -347,7 +347,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
 
                 if (color != SPLASH_UNKNOWN) {
                     te = G_TempEntity(tr.endpos, EV_SPLASH);
-                    te->s.event_param[0] = MakeLittleLong(0, 8, color, gi.DirToByte(tr.plane.normal));
+                    te->s.event_param[0] = MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal));
                 }
 
                 // change bullet's course when it enters water
@@ -374,11 +374,8 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             if (hit->takedamage) {
                 T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
-                gi.WriteByte(svc_temp_entity);
-                gi.WriteByte(te_impact);
-                gi.WritePosition(tr.endpos);
-                gi.WriteDir(tr.plane.normal);
-                gi.multicast(tr.endpos, MULTICAST_PVS);
+                te = G_TempEntity(tr.endpos, EV_DAMAGE);
+                te->s.event_param[0] = MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal));
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -429,7 +426,7 @@ static void fly_vertical(edict_t *self)
     VectorCopy(self->s.origin, start);
 
     for (i = 0; i < 10; i++)
-        blastoff(self, start, forward, 2, 1, TE_SHOTGUN, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD);
+        blastoff(self, start, forward, 2, 1, DE_SHOTGUN, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD);
 
     // needs sound
 }

@@ -1054,8 +1054,6 @@ void CL_ParseTEnt(void)
 
     switch (te.type) {
     case TE_BLOOD:          // bullet hitting flesh
-        if (!(cl_disable_particles->integer & NOPART_BLOOD))
-            CL_ParticleEffect(te.pos1, te.dir, 0xe8, 60);
         break;
 
     case TE_GUNSHOT:            // bullet hitting wall
@@ -1380,7 +1378,7 @@ static void CL_SplashEvent(centity_t *cent, uint32_t param)
 {
     int count = (param >> 16) & 255;
     int color = (param >>  8) & 255;
-    vec_t *pos = cent->current.origin;
+    const vec_t *pos = cent->current.origin;
     int r;
 
     vec3_t dir;
@@ -1410,11 +1408,72 @@ static void CL_SplashEvent(centity_t *cent, uint32_t param)
     }
 }
 
+static void CL_DamageEvent(centity_t *cent, uint32_t param)
+{
+    damage_effect_t type = (param >> 8) & 255;
+    const vec_t *pos = cent->current.origin;
+    vec3_t dir;
+
+    if (cl_disable_particles->integer & NOPART_BLOOD && type < DE_GUNSHOT)
+        return;
+
+    ByteToDir(param & 255, dir);
+
+    switch (type) {
+    case DE_NONE:
+        return;
+    case DE_BLOOD:
+        CL_ParticleEffect(pos, dir, 0xe8, 60);
+        break;
+    case DE_MORE_BLOOD:
+        CL_ParticleEffect(pos, dir, 0xe8, 250);
+        break;
+    case DE_GREEN_BLOOD:
+        CL_ParticleEffect2(pos, dir, 0xdf, 30);
+        break;
+    case DE_GUNSHOT:
+        CL_ParticleEffect(pos, dir, 0, 40);
+        break;
+    case DE_SHOTGUN:
+        CL_ParticleEffect(pos, dir, 0, 20);
+        break;
+    case DE_SPARKS:
+    case DE_BULLET_SPARKS:
+        CL_ParticleEffect(pos, dir, 0xe0, 6);
+        break;
+    case DE_SCREEN_SPARKS:
+        CL_ParticleEffect(pos, dir, 0xd0, 40);
+        break;
+    case DE_SHIELD_SPARKS:
+        CL_ParticleEffect(pos, dir, 0xb0, 40);
+        break;
+    case DE_ELECTRIC_SPARKS:
+        CL_ParticleEffect(pos, dir, 0x75, 40);
+        break;
+    }
+
+    if (type == DE_GUNSHOT || type == DE_SHOTGUN || type == DE_BULLET_SPARKS)
+        CL_SmokeAndFlash(pos);
+
+    if (type == DE_GUNSHOT || type == DE_BULLET_SPARKS) {
+        int r = Q_rand() & 15;
+        if (r == 1)
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric1, 1, ATTN_NORM, 0);
+        else if (r == 2)
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric2, 1, ATTN_NORM, 0);
+        else if (r == 3)
+            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
+    }
+
+    if (type >= DE_SCREEN_SPARKS)
+        S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
+}
+
 // an entity has just been parsed that has an event value
 static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
     entity_state_t *s = &cent->current;
-    vec_t *start = s->old_origin;
+    const vec_t *start = s->old_origin;
     int number = s->number;
 
     switch (event) {
@@ -1493,6 +1552,11 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
         CL_PowerSplash(cent);
         break;
+
+    case EV_DAMAGE:
+        CL_DamageEvent(cent, param);
+        break;
+
     default:
         break;
     }

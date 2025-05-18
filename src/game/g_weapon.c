@@ -85,8 +85,8 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 }
 
 static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t end_, const vec3_t aimdir,
-                                int damage, int kick, int te_impact, int hspread, int vspread, mod_t mod,
-                                contents_t *mask, bool *water, vec3_t water_start)
+                                int damage, int kick, damage_effect_t te_impact, int hspread, int vspread,
+                                mod_t mod, contents_t *mask, bool *water, vec3_t water_start)
 {
     trace_t tr;
     pierce_t pierce;
@@ -108,7 +108,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             VectorCopy(tr.endpos, water_start);
 
             // CHECK: is this compare ever true?
-            if (te_impact != -1 && !VectorCompare(start, tr.endpos)) {
+            if (te_impact != DE_NONE && !VectorCompare(start, tr.endpos)) {
                 int color;
 
                 if (tr.contents & CONTENTS_WATER)
@@ -122,7 +122,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 
                 if (color != SPLASH_UNKNOWN) {
                     te = G_TempEntity(tr.endpos, EV_SPLASH);
-                    te->s.event_param[0] = MakeLittleLong(0, 8, color, gi.DirToByte(tr.plane.normal));
+                    te->s.event_param[0] = MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal));
                 }
 
                 // change bullet's course when it enters water
@@ -157,12 +157,9 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
         } else {
             // send gun puff / flash
             // don't mark the sky
-            if (te_impact != -1 && !(tr.surface_flags & SURF_SKY)) {
-                gi.WriteByte(svc_temp_entity);
-                gi.WriteByte(te_impact);
-                gi.WritePosition(tr.endpos);
-                gi.WriteDir(tr.plane.normal);
-                gi.multicast(tr.endpos, MULTICAST_PVS);
+            if (te_impact != DE_NONE && !(tr.surface_flags & SURF_SKY)) {
+                te = G_TempEntity(tr.endpos, EV_DAMAGE);
+                te->s.event_param[0] = MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal));
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -184,7 +181,7 @@ fire_lead
 This is an internal support routine used for bullet/pellet based weapons.
 =================
 */
-static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int te_impact, int hspread, int vspread, mod_t mod)
+static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, damage_effect_t te_impact, int hspread, int vspread, mod_t mod)
 {
     contents_t   mask = MASK_PROJECTILE | MASK_WATER;
     bool         water = false;
@@ -220,7 +217,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
     }
 
     // if went through water, determine where the end is and make a bubble trail
-    if (water && te_impact != -1) {
+    if (water && te_impact != DE_NONE) {
         vec3_t pos, dir;
 
         VectorSubtract(tr.endpos, water_start, dir);
@@ -245,7 +242,7 @@ pistols, rifles, etc....
 */
 void fire_bullet(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, mod_t mod)
 {
-    fire_lead(self, start, aimdir, damage, kick, mod.id == MOD_TESLA ? -1 : TE_GUNSHOT, hspread, vspread, mod);
+    fire_lead(self, start, aimdir, damage, kick, mod.id == MOD_TESLA ? DE_NONE : DE_GUNSHOT, hspread, vspread, mod);
 }
 
 /*
@@ -258,7 +255,7 @@ Shoots shotgun pellets.  Used by shotgun and super shotgun.
 void fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, mod_t mod)
 {
     while (count--)
-        fire_lead(self, start, aimdir, damage, kick, TE_SHOTGUN, hspread, vspread, mod);
+        fire_lead(self, start, aimdir, damage, kick, DE_SHOTGUN, hspread, vspread, mod);
 }
 
 /*
