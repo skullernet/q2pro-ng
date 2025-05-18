@@ -44,15 +44,7 @@ fire_ionripper
 
 void THINK(ionripper_sparks)(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WELDING_SPARKS);
-    gi.WriteByte(0);
-    gi.WritePosition(self->s.origin);
-    gi.WriteDir(vec3_origin);
-    gi.WriteByte(irandom2(0xe4, 0xe8));
-    gi.multicast(self->s.origin, MULTICAST_PVS);
-
-    G_FreeEdict(self);
+    G_BecomeEvent(self, EV_DAMAGE, MakeBigLong(0, 0, DE_WELDING_SPARKS, 0));
 }
 
 void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)

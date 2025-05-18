@@ -702,13 +702,7 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                gi.WriteByte(svc_temp_entity);
-                gi.WriteByte(TE_LASER_SPARKS);
-                gi.WriteByte(count);
-                gi.WritePosition(tr.endpos);
-                gi.WriteDir(tr.plane.normal);
-                gi.WriteByte(self->s.skinnum);
-                gi.multicast(tr.endpos, MULTICAST_PVS);
+                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(count, self->s.skinnum & 255, DE_LASER_SPARKS, gi.DirToByte(tr.plane.normal)));
             }
             break;
         }

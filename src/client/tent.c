@@ -1052,30 +1052,6 @@ void CL_ParseTEnt(void)
     explosion_t *ex;
 
     switch (te.type) {
-    case TE_LASER_SPARKS:
-        CL_ParticleEffect2(te.pos1, te.dir, te.color, te.count);
-        break;
-
-    case TE_WELDING_SPARKS:
-        CL_ParticleEffect2(te.pos1, te.dir, te.color, te.count);
-
-        ex = CL_AllocExplosion();
-        VectorCopy(te.pos1, ex->ent.origin);
-        ex->type = ex_flash;
-        // note to self
-        // we need a better no draw flag
-        ex->ent.flags = RF_BEAM;
-        ex->start = cl.servertime - CL_FRAMETIME;
-        ex->light = 100 + (Q_rand() % 75);
-        VectorSet(ex->lightcolor, 1.0f, 1.0f, 0.3f);
-        ex->ent.model = cl_mod_flash;
-        ex->frames = 2;
-        break;
-
-    case TE_TUNNEL_SPARKS:
-        CL_ParticleEffect3(te.pos1, te.dir, te.color, te.count);
-        break;
-
     case TE_DEBUGTRAIL:
         CL_DebugTrail(te.pos1, te.pos2);
         break;
@@ -1222,6 +1198,8 @@ static void CL_SplashEvent(centity_t *cent, uint32_t param)
 static void CL_DamageEvent(centity_t *cent, uint32_t param)
 {
     damage_effect_t type = (param >> 8) & 255;
+    int color = (param >> 16) & 255;
+    int count = (param >> 24) & 255;
     const vec_t *pos = cent->current.origin;
     vec3_t dir;
 
@@ -1261,6 +1239,13 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
     case DE_ELECTRIC_SPARKS:
         CL_ParticleEffect(pos, dir, 0x75, 40);
         break;
+    case DE_LASER_SPARKS:
+    case DE_WELDING_SPARKS:
+        CL_ParticleEffect2(pos, dir, color, count);
+        break;
+    case DE_TUNNEL_SPARKS:
+        CL_ParticleEffect3(pos, dir, color, count);
+        break;
     }
 
     if (type == DE_GUNSHOT || type == DE_SHOTGUN || type == DE_BULLET_SPARKS)
@@ -1276,8 +1261,16 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
     }
 
-    if (type >= DE_SCREEN_SPARKS)
+    if (type >= DE_SCREEN_SPARKS && type <= DE_ELECTRIC_SPARKS)
         S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
+
+    if (type == DE_WELDING_SPARKS) {
+        explosion_t *ex = CL_PlainExplosion(pos);
+        ex->type = ex_light;
+        ex->light = 100 + (Q_rand() % 75);
+        VectorSet(ex->lightcolor, 1.0f, 1.0f, 0.3f);
+        ex->frames = 2;
+    }
 }
 
 static void CL_ExplosionEvent(centity_t *cent, uint32_t param)

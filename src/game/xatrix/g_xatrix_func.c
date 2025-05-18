@@ -28,19 +28,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
 
 void DIE(rotating_light_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WELDING_SPARKS);
-    gi.WriteByte(30);
-    gi.WritePosition(self->s.origin);
-    gi.WriteDir(vec3_origin);
-    gi.WriteByte(irandom2(0xe0, 0xe8));
-    gi.multicast(self->s.origin, MULTICAST_PVS);
-
-    self->s.effects &= ~EF_SPINNINGLIGHTS;
-    self->use = NULL;
-
-    self->think = G_FreeEdict;
-    self->nextthink = level.time + FRAME_TIME;
+    G_BecomeEvent(self, EV_DAMAGE, MakeBigLong(30, irandom2(0xe0, 0xe8), DE_WELDING_SPARKS, 0));
 }
 
 void USE(rotating_light_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -110,15 +98,8 @@ void THINK(object_repair_fx)(edict_t *ent)
 
     if (ent->health <= 100)
         ent->health++;
-    else {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_WELDING_SPARKS);
-        gi.WriteByte(10);
-        gi.WritePosition(ent->s.origin);
-        gi.WriteDir(vec3_origin);
-        gi.WriteByte(irandom2(0xe0, 0xe8));
-        gi.multicast(ent->s.origin, MULTICAST_PVS);
-    }
+    else
+        G_AddEvent(ent, EV_DAMAGE, MakeBigLong(10, irandom2(0xe0, 0xe8), DE_WELDING_SPARKS, 0));
 }
 
 void THINK(object_repair_dead)(edict_t *ent)
@@ -138,19 +119,13 @@ void THINK(object_repair_sparks)(edict_t *ent)
 
     ent->nextthink = level.time + SEC(ent->delay);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WELDING_SPARKS);
-    gi.WriteByte(10);
-    gi.WritePosition(ent->s.origin);
-    gi.WriteDir(vec3_origin);
-    gi.WriteByte(irandom2(0xe0, 0xe8));
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    G_AddEvent(ent, EV_DAMAGE, MakeBigLong(10, irandom2(0xe0, 0xe8), DE_WELDING_SPARKS, 0));
 }
 
 void SP_object_repair(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
-    ent->r.solid = SOLID_BBOX;
+    ent->r.solid = SOLID_NOT;
     ent->classname = "object_repair";
     VectorSet(ent->r.mins, -8, -8, 8);
     VectorSet(ent->r.maxs, 8, 8, 8);
@@ -159,4 +134,5 @@ void SP_object_repair(edict_t *ent)
     ent->health = 100;
     if (!ent->delay)
         ent->delay = 1.0f;
+    gi.linkentity(ent);
 }

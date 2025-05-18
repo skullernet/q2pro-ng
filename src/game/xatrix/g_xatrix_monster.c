@@ -62,15 +62,8 @@ void dabeam_update(edict_t *self, bool damage)
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client)) {
-            if (damage) {
-                gi.WriteByte(svc_temp_entity);
-                gi.WriteByte(TE_LASER_SPARKS);
-                gi.WriteByte(10);
-                gi.WritePosition(tr.endpos);
-                gi.WriteDir(tr.plane.normal);
-                gi.WriteByte(self->s.skinnum);
-                gi.multicast(tr.endpos, MULTICAST_PVS);
-            }
+            if (damage)
+                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(10, self->s.skinnum & 255, DE_LASER_SPARKS, gi.DirToByte(tr.plane.normal)));
             break;
         }
     } while (pierce_mark(&pierce, hit));

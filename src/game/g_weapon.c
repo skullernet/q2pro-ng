@@ -877,13 +877,7 @@ void THINK(bfg_think)(edict_t *self)
                 vec3_t pos;
                 VectorAdd(tr.endpos, tr.plane.normal, pos);
 
-                gi.WriteByte(svc_temp_entity);
-                gi.WriteByte(TE_LASER_SPARKS);
-                gi.WriteByte(4);
-                gi.WritePosition(pos);
-                gi.WriteDir(tr.plane.normal);
-                gi.WriteByte(208);
-                gi.multicast(pos, MULTICAST_PVS);
+                G_TempEntity(pos, EV_DAMAGE, MakeBigLong(4, 208, DE_LASER_SPARKS, gi.DirToByte(tr.plane.normal)));
                 break;
             }
         } while (pierce_mark(&pierce, hit));

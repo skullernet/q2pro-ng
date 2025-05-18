@@ -980,13 +980,7 @@ static void fixbot_fire_welder(edict_t *self)
     AngleVectors(self->s.angles, forward, right, up);
     M_ProjectFlashSource(self, vec, forward, right, start);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WELDING_SPARKS);
-    gi.WriteByte(10);
-    gi.WritePosition(start);
-    gi.WriteDir(vec3_origin);
-    gi.WriteByte(irandom2(0xe0, 0xe8));
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    G_AddEvent(self, EV_DAMAGE, MakeBigLong(10, irandom2(0xe0, 0xe8), DE_WELDING_SPARKS, 0));
 
     if (frandom() > 0.8f) {
         r = frandom();

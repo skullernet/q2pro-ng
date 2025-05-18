@@ -1478,6 +1478,9 @@ typedef enum {
     DE_SCREEN_SPARKS,
     DE_SHIELD_SPARKS,
     DE_ELECTRIC_SPARKS,
+    DE_LASER_SPARKS,
+    DE_WELDING_SPARKS,
+    DE_TUNNEL_SPARKS,
 } damage_effect_t;
 
 typedef enum {
