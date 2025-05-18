@@ -270,10 +270,7 @@ void THINK(widowlegs_think)(edict_t *self)
         VectorSet(offset, 11.77f, -7.24f, 23.31f);
         AngleVectors(self->s.angles, f, r, u);
         G_ProjectSource2(self->s.origin, offset, f, r, u, point);
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_EXPLOSION1);
-        gi.WritePosition(point);
-        gi.multicast(point, MULTICAST_ALL);
+        G_TempEntity(point, EV_EXPLOSION, EX_EXPLOSION1);
         ThrowSmallStuff(self, point);
     }
 
@@ -291,10 +288,7 @@ void THINK(widowlegs_think)(edict_t *self)
 
         VectorSet(offset, -65.6f, -8.44f, 28.59f);
         G_ProjectSource2(self->s.origin, offset, f, r, u, point);
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_EXPLOSION1);
-        gi.WritePosition(point);
-        gi.multicast(point, MULTICAST_ALL);
+        G_TempEntity(point, EV_EXPLOSION, EX_EXPLOSION1);
         ThrowSmallStuff(self, point);
 
         ThrowWidowGibSized(self, "models/monsters/blackwidow/gib1/tris.md2", 80 + frandom1(20.0f), GIB_METALLIC, point, 0, true);
@@ -302,10 +296,7 @@ void THINK(widowlegs_think)(edict_t *self)
 
         VectorSet(offset, -1.04f, -51.18f, 7.04f);
         G_ProjectSource2(self->s.origin, offset, f, r, u, point);
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_EXPLOSION1);
-        gi.WritePosition(point);
-        gi.multicast(point, MULTICAST_ALL);
+        G_TempEntity(point, EV_EXPLOSION, EX_EXPLOSION1);
         ThrowSmallStuff(self, point);
 
         ThrowWidowGibSized(self, "models/monsters/blackwidow/gib1/tris.md2", 80 + frandom1(20.0f), GIB_METALLIC, point, 0, true);
@@ -322,17 +313,11 @@ void THINK(widowlegs_think)(edict_t *self)
 
         VectorSet(offset, 31, -88.7f, 10.96f);
         G_ProjectSource2(self->s.origin, offset, f, r, u, point);
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_EXPLOSION1);
-        gi.WritePosition(point);
-        gi.multicast(point, MULTICAST_ALL);
+        G_TempEntity(point, EV_EXPLOSION, EX_EXPLOSION1);
 
         VectorSet(offset, -12.67f, -4.39f, 15.68f);
         G_ProjectSource2(self->s.origin, offset, f, r, u, point);
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_EXPLOSION1);
-        gi.WritePosition(point);
-        gi.multicast(point, MULTICAST_ALL);
+        G_TempEntity(point, EV_EXPLOSION, EX_EXPLOSION1);
     }
 
     self->nextthink = level.time + HZ(10);

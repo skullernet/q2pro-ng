@@ -525,147 +525,6 @@ ACTION MESSAGES
 =====================================================================
 */
 
-tent_params_t   te;
-
-static void CL_ParseTEntPacket(void)
-{
-    te.type = MSG_ReadByte();
-
-    switch (te.type) {
-    case TE_BLOOD:
-    case TE_GUNSHOT:
-    case TE_SPARKS:
-    case TE_BULLET_SPARKS:
-    case TE_SCREEN_SPARKS:
-    case TE_SHIELD_SPARKS:
-    case TE_SHOTGUN:
-    case TE_BLASTER:
-    case TE_GREENBLOOD:
-    case TE_BLASTER2:
-    case TE_FLECHETTE:
-    case TE_HEATBEAM_SPARKS:
-    case TE_HEATBEAM_STEAM:
-    case TE_MOREBLOOD:
-    case TE_ELECTRIC_SPARKS:
-    case TE_BLUEHYPERBLASTER_2:
-    case TE_BERSERK_SLAM:
-        MSG_ReadPos(te.pos1);
-        MSG_ReadDir(te.dir);
-        break;
-
-    case TE_SPLASH:
-    case TE_LASER_SPARKS:
-    case TE_WELDING_SPARKS:
-    case TE_TUNNEL_SPARKS:
-        te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadDir(te.dir);
-        te.color = MSG_ReadByte();
-        break;
-
-    case TE_BLUEHYPERBLASTER:
-    case TE_RAILTRAIL:
-    case TE_RAILTRAIL2:
-    case TE_BUBBLETRAIL:
-    case TE_DEBUGTRAIL:
-    case TE_BUBBLETRAIL2:
-    case TE_BFG_LASER:
-    case TE_BFG_ZAP:
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        break;
-
-    case TE_GRENADE_EXPLOSION:
-    case TE_GRENADE_EXPLOSION_WATER:
-    case TE_EXPLOSION2:
-    case TE_PLASMA_EXPLOSION:
-    case TE_ROCKET_EXPLOSION:
-    case TE_ROCKET_EXPLOSION_WATER:
-    case TE_EXPLOSION1:
-    case TE_EXPLOSION1_NP:
-    case TE_EXPLOSION1_BIG:
-    case TE_BFG_EXPLOSION:
-    case TE_BFG_BIGEXPLOSION:
-    case TE_BOSSTPORT:
-    case TE_PLAIN_EXPLOSION:
-    case TE_CHAINFIST_SMOKE:
-    case TE_TRACKER_EXPLOSION:
-    case TE_TELEPORT_EFFECT:
-    case TE_DBALL_GOAL:
-    case TE_WIDOWSPLASH:
-    case TE_NUKEBLAST:
-    case TE_EXPLOSION1_NL:
-    case TE_EXPLOSION2_NL:
-        MSG_ReadPos(te.pos1);
-        break;
-
-    case TE_PARASITE_ATTACK:
-    case TE_MEDIC_CABLE_ATTACK:
-    case TE_HEATBEAM:
-    case TE_MONSTER_HEATBEAM:
-    case TE_GRAPPLE_CABLE_2:
-    case TE_LIGHTNING_BEAM:
-        te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        break;
-
-    case TE_GRAPPLE_CABLE:
-        te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        MSG_ReadPos(te.offset);
-        break;
-
-    case TE_LIGHTNING:
-        te.entity1 = MSG_ReadShort();
-        te.entity2 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        break;
-
-    case TE_FLASHLIGHT:
-        MSG_ReadPos(te.pos1);
-        te.entity1 = MSG_ReadShort();
-        break;
-
-    case TE_FORCEWALL:
-        MSG_ReadPos(te.pos1);
-        MSG_ReadPos(te.pos2);
-        te.color = MSG_ReadByte();
-        break;
-
-    case TE_STEAM:
-        te.entity1 = MSG_ReadShort();
-        te.count = MSG_ReadByte();
-        MSG_ReadPos(te.pos1);
-        MSG_ReadDir(te.dir);
-        te.color = MSG_ReadByte();
-        te.entity2 = MSG_ReadShort();
-        if (te.entity1 != -1) {
-            te.time = MSG_ReadLong();
-        }
-        break;
-
-    case TE_WIDOWBEAMOUT:
-        te.entity1 = MSG_ReadShort();
-        MSG_ReadPos(te.pos1);
-        break;
-
-    case TE_POWER_SPLASH:
-        te.entity1 = MSG_ReadShort();
-        te.count = MSG_ReadByte();
-        break;
-
-    case TE_DAMAGE_DEALT:
-        te.count = MSG_ReadShort();
-        break;
-
-    default:
-        Com_Error(ERR_DROP, "%s: bad type", __func__);
-    }
-}
-
 static void CL_ParseReconnect(void)
 {
     if (cls.demo.playback) {
@@ -1026,11 +885,6 @@ void CL_ParseServerMessage(void)
             CL_ParseBaseline(index);
             break;
 
-        case svc_temp_entity:
-            CL_ParseTEntPacket();
-            CL_ParseTEnt();
-            break;
-
         case svc_download:
             CL_ParseDownload(cmd);
             continue;
@@ -1153,10 +1007,6 @@ bool CL_SeekDemoMessage(void)
         case svc_spawnbaseline:
             index = MSG_ReadBits(ENTITYNUM_BITS);
             CL_ParseBaseline(index);
-            break;
-
-        case svc_temp_entity:
-            CL_ParseTEntPacket();
             break;
 
         case svc_frame:

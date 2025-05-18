@@ -386,10 +386,7 @@ void PAIN(DBall_BallPain)(edict_t *self, edict_t *other, float kick, int damage,
 void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     // do the splash effect
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_DBALL_GOAL);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    G_AddEvent(self, EV_TELEPORT_EFFECT, 0);
 
     VectorClear(self->s.angles);
     VectorClear(self->velocity);
@@ -408,10 +405,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     edict_t *start;
 
     // do the splash effect
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_DBALL_GOAL);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PVS);
+    G_AddEvent(self, EV_TELEPORT_EFFECT, 0);
 
     // move the ball and stop it
     start = PickBallStart(self);

@@ -554,17 +554,7 @@ static void Nuke_Explode(edict_t *ent)
     if (ent->dmg > NUKE_DAMAGE)
         G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
 
-    G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/grenlx1a.wav"), 1, ATTN_NONE);
-
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1_BIG);
-    gi.WritePosition(ent->s.origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
-
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_NUKEBLAST);
-    gi.WritePosition(ent->s.origin);
-    gi.multicast(ent->s.origin, MULTICAST_ALL);
+    G_TempEntity(ent->s.origin, EV_NUKEBLAST, 0)->r.svflags |= SVF_NOCULL;
 
     // become a quake
     ent->r.svflags |= SVF_NOCLIENT;

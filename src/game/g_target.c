@@ -6,12 +6,54 @@
 Fire an origin based temp entity event to the clients.
 "style"     type byte
 */
+
+static const byte events_remap[] = {
+    [TE_BOSSTPORT]       = EV_BOSSTPORT,
+    [TE_CHAINFIST_SMOKE] = EV_CHAINFIST_SMOKE,
+    [TE_TELEPORT_EFFECT] = EV_TELEPORT_EFFECT,
+    [TE_WIDOWSPLASH]     = EV_WIDOWSPLASH,
+    [TE_NUKEBLAST]       = EV_NUKEBLAST,
+    [TE_DBALL_GOAL]      = EV_TELEPORT_EFFECT,
+};
+
+static const byte explosions_remap[] = {
+    [TE_PLAIN_EXPLOSION]         = EX_PLAIN,
+    [TE_PLASMA_EXPLOSION]        = EX_EXPLOSION1,
+    [TE_EXPLOSION1]              = EX_EXPLOSION1,
+    [TE_EXPLOSION1_NL]           = EX_EXPLOSION1_NL,
+    [TE_EXPLOSION1_NP]           = EX_EXPLOSION1_NP,
+    [TE_EXPLOSION1_BIG]          = EX_EXPLOSION1_BIG,
+    [TE_EXPLOSION2]              = EX_EXPLOSION2,
+    [TE_EXPLOSION2_NL]           = EX_EXPLOSION2_NL,
+    [TE_GRENADE_EXPLOSION]       = EX_GRENADE,
+    [TE_GRENADE_EXPLOSION_WATER] = EX_GRENADE_WATER,
+    [TE_ROCKET_EXPLOSION]        = EX_ROCKET,
+    [TE_ROCKET_EXPLOSION_WATER]  = EX_ROCKET_WATER,
+    [TE_BFG_EXPLOSION]           = EX_BFG,
+    [TE_BFG_BIGEXPLOSION]        = EX_BFG_BIG,
+    [TE_TRACKER_EXPLOSION]       = EX_TRACKER,
+};
+
 void USE(Use_Target_Tent)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(ent->style);
-    gi.WritePosition(ent->s.origin);
-    gi.multicast(ent->s.origin, MULTICAST_PVS);
+    if (ent->style < q_countof(events_remap)) {
+        entity_event_t event = events_remap[ent->style];
+        if (event) {
+            G_AddEvent(ent, event, 0);
+            return;
+        }
+    }
+
+    if (ent->style < q_countof(explosions_remap)) {
+        explosion_effect_t effect = explosions_remap[ent->style];
+        if (effect) {
+            G_AddEvent(ent, EV_EXPLOSION, effect);
+            return;
+        }
+    }
+
+    gi.dprintf("%s has bad style\n", etos(ent));
+    G_FreeEdict(ent);
 }
 
 void SP_target_temp_entity(edict_t *ent)
@@ -20,6 +62,7 @@ void SP_target_temp_entity(edict_t *ent)
         ent->style = TE_TELEPORT_EFFECT;
 
     ent->use = Use_Target_Tent;
+    gi.linkentity(ent);
 }
 
 //==========================================================

@@ -47,10 +47,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
         return;
     }
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_TELEPORT_EFFECT);
-    gi.WritePosition(other->s.origin);
-    gi.multicast(other->s.origin, MULTICAST_PVS);
+    G_TempEntity(other->s.origin, EV_TELEPORT_EFFECT, 0);
 
     VectorCopy(dest->s.origin, other->s.origin);
     VectorCopy(dest->s.origin, other->s.old_origin);

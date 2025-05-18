@@ -450,7 +450,7 @@ void CL_Nukeblast(cl_sustain_t *self)
     }
 }
 
-void CL_WidowSplash(void)
+void CL_WidowSplash(const vec3_t pos)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     int         i;
@@ -466,7 +466,7 @@ void CL_WidowSplash(void)
         p->color = colortable[Q_rand() & 3];
 
         RandomDir(dir);
-        VectorMA(te.pos1, 45.0f, dir, p->org);
+        VectorMA(pos, 45.0f, dir, p->org);
         VectorScale(dir, 40.0f, p->vel);
 
         VectorClear(p->accel);

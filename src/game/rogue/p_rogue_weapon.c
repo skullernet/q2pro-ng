@@ -138,10 +138,8 @@ static void chainfist_smoke(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -4 }, start, dir, false);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_CHAINFIST_SMOKE);
-    gi.WritePosition(start);
-    gi.unicast(ent, 0);
+    // TODO: unicast!!!
+    G_TempEntity(start, EV_CHAINFIST_SMOKE, 0);
 }
 
 void Weapon_ChainFist(edict_t *ent)

@@ -753,10 +753,7 @@ static void guardian_explode(edict_t *self)
     VectorAdd(self->s.origin, self->r.mins, pos);
     VectorMA(pos, frandom(), self->r.size, pos);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1_BIG);
-    gi.WritePosition(pos);
-    gi.multicast(self->s.origin, MULTICAST_ALL);
+    G_TempEntity(pos, EV_EXPLOSION, EX_EXPLOSION1_BIG);
 }
 
 static const gib_def_t guardian_gibs[] = {

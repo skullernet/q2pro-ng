@@ -219,12 +219,15 @@ void SP_func_door_secret2(edict_t *ent)
 void THINK(force_wall_think)(edict_t *self)
 {
     if (!self->wait) {
+        // TODO!!!
+#if 0
         gi.WriteByte(svc_temp_entity);
         gi.WriteByte(TE_FORCEWALL);
         gi.WritePosition(self->pos1);
         gi.WritePosition(self->pos2);
         gi.WriteByte(self->style);
         gi.multicast(self->offset, MULTICAST_PVS);
+#endif
     }
 
     self->think = force_wall_think;

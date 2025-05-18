@@ -883,16 +883,16 @@ static void CL_ProcessSustain(void)
     int             i;
 
     for (i = 0, s = cl_sustains; i < MAX_SUSTAINS; i++, s++) {
-        if (s->id) {
+        if (s->think) {
             if ((s->endtime >= cl.time) && (cl.time >= s->nextthink))
                 s->think(s);
             else if (s->endtime < cl.time)
-                s->id = 0;
+                s->think = NULL;
         }
     }
 }
 
-static void CL_ParseWidow(void)
+static void CL_ParseWidow(const vec3_t pos)
 {
     cl_sustain_t    *s;
 
@@ -900,23 +900,29 @@ static void CL_ParseWidow(void)
     if (!s)
         return;
 
-    s->id = te.entity1;
-    VectorCopy(te.pos1, s->org);
+    VectorCopy(pos, s->org);
     s->endtime = cl.time + 2100;
     s->think = CL_Widowbeamout;
     s->nextthink = cl.time;
 }
 
-static void CL_ParseNuke(void)
+static void CL_ParseNuke(const vec3_t pos)
 {
+    explosion_t     *ex;
     cl_sustain_t    *s;
+
+    S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cl_sfx_grenexp, 1, ATTN_NONE, 0);
+    S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+
+    ex = CL_PlainExplosion(pos);
+    ex->ent.model = cl_mod_explo4;
+    ex->ent.scale = 2.0f;
 
     s = CL_AllocSustain();
     if (!s)
         return;
 
-    s->id = 21000;
-    VectorCopy(te.pos1, s->org);
+    VectorCopy(pos, s->org);
     s->endtime = cl.time + 1000;
     s->think = CL_Nukeblast;
     s->nextthink = cl.time;
@@ -1039,54 +1045,6 @@ static void dirtoangles(const vec3_t dir, vec3_t angles)
         angles[1] = 270;
     else
         angles[1] = 0;
-}
-
-/*
-=================
-CL_ParseTEnt
-=================
-*/
-
-void CL_ParseTEnt(void)
-{
-    switch (te.type) {
-    case TE_DEBUGTRAIL:
-        CL_DebugTrail(te.pos1, te.pos2);
-        break;
-
-    case TE_FLASHLIGHT:
-        CL_Flashlight(te.entity1, te.pos1);
-        break;
-
-    case TE_FORCEWALL:
-        CL_ForceWall(te.pos1, te.pos2, te.color);
-        break;
-
-    case TE_CHAINFIST_SMOKE:
-        VectorSet(te.dir, 0, 0, 1);
-        CL_ParticleSmokeEffect(te.pos1, te.dir, 0, 20, 20);
-        break;
-
-    case TE_TELEPORT_EFFECT:
-    case TE_DBALL_GOAL:
-        CL_TeleportParticles(te.pos1);
-        break;
-
-    case TE_WIDOWBEAMOUT:
-        CL_ParseWidow();
-        break;
-
-    case TE_NUKEBLAST:
-        CL_ParseNuke();
-        break;
-
-    case TE_WIDOWSPLASH:
-        CL_WidowSplash();
-        break;
-
-    default:
-        Com_Error(ERR_DROP, "%s: bad type", __func__);
-    }
 }
 
 static void CL_BerserkSlam(centity_t *cent, entity_event_t event)
@@ -1414,11 +1372,6 @@ static void CL_ExplosionEvent(centity_t *cent, uint32_t param)
         CL_ColorExplosionParticles(pos, 0, 1);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_disrexp, 1, ATTN_NORM, 0);
         break;
-
-    case EX_BOSSTPORT:          // boss teleporting to station
-        CL_BigTeleportParticles(pos);
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
-        break;
     }
 }
 
@@ -1428,6 +1381,7 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     entity_state_t *s = &cent->current;
     const vec_t *start = s->old_origin;
     int number = s->number;
+    vec3_t dir;
 
     switch (event) {
     case EV_ITEM_RESPAWN:
@@ -1512,6 +1466,32 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
 
     case EV_EXPLOSION:
         CL_ExplosionEvent(cent, param);
+        break;
+
+    case EV_BOSSTPORT:          // boss teleporting to station
+        CL_BigTeleportParticles(s->origin);
+        S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+        break;
+
+    case EV_NUKEBLAST:
+        CL_ParseNuke(s->origin);
+        break;
+
+    case EV_CHAINFIST_SMOKE:
+        VectorSet(dir, 0, 0, 1);
+        CL_ParticleSmokeEffect(s->origin, dir, 0, 20, 20);
+        break;
+
+    case EV_TELEPORT_EFFECT:
+        CL_TeleportParticles(s->origin);
+        break;
+
+    case EV_WIDOWBEAMOUT:
+        CL_ParseWidow(s->origin);
+        break;
+
+    case EV_WIDOWSPLASH:
+        CL_WidowSplash(s->origin);
         break;
 
     default:

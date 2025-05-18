@@ -13,7 +13,7 @@ boss3
 
 void USE(Use_Boss3)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    G_AddEvent(self, EV_EXPLOSION, EX_BOSSTPORT);
+    G_AddEvent(self, EV_BOSSTPORT, 0);
 
     // just hide, don't kill ent so we can trigger it again
     self->s.modelindex = 0;

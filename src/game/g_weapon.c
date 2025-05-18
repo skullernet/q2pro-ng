@@ -929,10 +929,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
     vec3_t pos;
     VectorMA(self->s.origin, -0.01f, self->velocity, pos);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WIDOWSPLASH);
-    gi.WritePosition(pos);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_TempEntity(pos, EV_WIDOWSPLASH, 0);
 
     G_FreeEdict(self);
 

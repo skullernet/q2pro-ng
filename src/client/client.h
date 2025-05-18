@@ -664,21 +664,6 @@ void CL_SendCmd(void);
 #define CL_ES_EXTENDED_MASK_2 (CL_ES_EXTENDED_MASK | MSG_ES_EXTENSIONS_2)
 #define CL_PS_EXTENDED_MASK_2 (MSG_PS_EXTENSIONS | MSG_PS_EXTENSIONS_2 | MSG_PS_MOREBITS)
 
-typedef struct {
-    int type;
-    vec3_t pos1;
-    vec3_t pos2;
-    vec3_t offset;
-    vec3_t dir;
-    int count;
-    int color;
-    int entity1;
-    int entity2;
-    int time;
-} tent_params_t;
-
-extern tent_params_t    te;
-
 void CL_ParseServerMessage(void);
 bool CL_SeekDemoMessage(void);
 
@@ -768,7 +753,6 @@ void CL_EntityEvents(centity_t *cent);
 
 void CL_RegisterTEntSounds(void);
 void CL_RegisterTEntModels(void);
-void CL_ParseTEnt(void);
 void CL_AddTEnts(void);
 void CL_ClearTEnts(void);
 void CL_InitTEnts(void);
@@ -870,7 +854,7 @@ void CL_ColorExplosionParticles(const vec3_t org, int color, int run);
 void CL_ParticleSmokeEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude);
 void CL_Widowbeamout(cl_sustain_t *self);
 void CL_Nukeblast(cl_sustain_t *self);
-void CL_WidowSplash(void);
+void CL_WidowSplash(const vec3_t pos);
 void CL_IonripperTrail(centity_t *ent, const vec3_t end);
 void CL_TrapParticles(centity_t *ent, const vec3_t origin);
 void CL_ParticleEffect3(const vec3_t org, const vec3_t dir, int color, int count);

@@ -1464,6 +1464,12 @@ typedef enum {
     EV_POWER_SPLASH,
     EV_DAMAGE,
     EV_EXPLOSION,
+    EV_BOSSTPORT,
+    EV_TELEPORT_EFFECT,
+    EV_CHAINFIST_SMOKE,
+    EV_NUKEBLAST,
+    EV_WIDOWBEAMOUT,
+    EV_WIDOWSPLASH,
 } entity_event_t;
 
 typedef enum {
@@ -1505,7 +1511,6 @@ typedef enum {
     EX_BFG,
     EX_BFG_BIG,
     EX_TRACKER,
-    EX_BOSSTPORT,
 } explosion_effect_t;
 
 // entity_state_t is the information conveyed from the server

@@ -597,22 +597,13 @@ static void spawn_out_start(edict_t *self)
 {
     vec3_t startpoint, f, r, u;
 
-    //  G_StartSound (self, CHAN_VOICE, sound_death, 1, ATTN_NONE);
     AngleVectors(self->s.angles, f, r, u);
 
     G_ProjectSource2(self->s.origin, beameffects[0], f, r, u, startpoint);
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WIDOWBEAMOUT);
-    gi.WriteShort(20001);
-    gi.WritePosition(startpoint);
-    gi.multicast(startpoint, MULTICAST_ALL);
+    G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
     G_ProjectSource2(self->s.origin, beameffects[1], f, r, u, startpoint);
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WIDOWBEAMOUT);
-    gi.WriteShort(20002);
-    gi.WritePosition(startpoint);
-    gi.multicast(startpoint, MULTICAST_ALL);
+    G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
     G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/bwidowbeamout.wav"), 1, ATTN_NORM);
 }
@@ -623,23 +614,14 @@ static void spawn_out_do(edict_t *self)
 
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, beameffects[0], f, r, u, startpoint);
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WIDOWSPLASH);
-    gi.WritePosition(startpoint);
-    gi.multicast(startpoint, MULTICAST_ALL);
+    G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
     G_ProjectSource2(self->s.origin, beameffects[1], f, r, u, startpoint);
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_WIDOWSPLASH);
-    gi.WritePosition(startpoint);
-    gi.multicast(startpoint, MULTICAST_ALL);
+    G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
     VectorCopy(self->s.origin, startpoint);
     startpoint[2] += 36;
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_BOSSTPORT);
-    gi.WritePosition(startpoint);
-    gi.multicast(startpoint, MULTICAST_PHS);
+    G_TempEntity(startpoint, EV_BOSSTPORT, 0);
 
     Widowlegs_Spawn(self->s.origin, self->s.angles);
 
