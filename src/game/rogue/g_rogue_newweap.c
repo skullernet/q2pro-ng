@@ -1035,7 +1035,14 @@ void THINK(heatbeam_think)(edict_t *self)
     G_FreeEdict(self);
 }
 
-static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, const vec3_t offset, int damage, int kick, int te_beam, int te_impact, mod_t mod)
+/*
+=================
+fire_heat
+
+Fires a single heat beam.  Zap.
+=================
+*/
+void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const vec3_t offset, int damage, int kick, bool monster)
 {
     trace_t    tr;
     vec3_t     dir;
@@ -1067,13 +1074,8 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
         water = true;
         VectorCopy(tr.endpos, water_start);
 
-        if (!VectorCompare(start, tr.endpos)) {
-            gi.WriteByte(svc_temp_entity);
-            gi.WriteByte(TE_HEATBEAM_SPARKS);
-            gi.WritePosition(water_start);
-            gi.WriteDir(tr.plane.normal);
-            gi.multicast(tr.endpos, MULTICAST_PVS);
-        }
+        if (!VectorCompare(start, tr.endpos))
+            G_TempEntity(water_start, EV_DAMAGE, MakeBigLong(0, 0, DE_HEATBEAM_SPARKS, gi.DirToByte(tr.plane.normal)));
 
         // re-trace ignoring water this time
         gi.trace(&tr, water_start, NULL, NULL, end, self->s.number, content_mask & ~MASK_WATER);
@@ -1089,14 +1091,9 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
     // send gun puff / flash
     if ((tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
         if (hit->takedamage) {
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, mod);
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, (mod_t) { MOD_HEATBEAM });
         } else if (!water) {
-            // This is the truncated steam entry - uses 1+1+2 extra bytes of data
-            gi.WriteByte(svc_temp_entity);
-            gi.WriteByte(TE_HEATBEAM_STEAM);
-            gi.WritePosition(tr.endpos);
-            gi.WriteDir(tr.plane.normal);
-            gi.multicast(tr.endpos, MULTICAST_PVS);
+            G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(0, 0, DE_HEATBEAM_STEAM, gi.DirToByte(tr.plane.normal)));
 
             if (self->client)
                 PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -1132,21 +1129,6 @@ static void fire_beams(edict_t *self, const vec3_t start, const vec3_t aimdir, c
     VectorCopy(endpoint, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     gi.linkentity(te);
-}
-
-/*
-=================
-fire_heat
-
-Fires a single heat beam.  Zap.
-=================
-*/
-void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const vec3_t offset, int damage, int kick, bool monster)
-{
-    if (monster)
-        fire_beams(self, start, aimdir, offset, damage, kick, TE_MONSTER_HEATBEAM, TE_HEATBEAM_SPARKS, (mod_t) { MOD_HEATBEAM });
-    else
-        fire_beams(self, start, aimdir, offset, damage, kick, TE_HEATBEAM, TE_HEATBEAM_SPARKS, (mod_t) { MOD_HEATBEAM });
 }
 
 // *************************

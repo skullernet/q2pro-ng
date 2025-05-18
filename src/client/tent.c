@@ -1049,8 +1049,6 @@ CL_ParseTEnt
 
 void CL_ParseTEnt(void)
 {
-    explosion_t *ex;
-
     switch (te.type) {
     case TE_DEBUGTRAIL:
         CL_DebugTrail(te.pos1, te.pos2);
@@ -1062,16 +1060,6 @@ void CL_ParseTEnt(void)
 
     case TE_FORCEWALL:
         CL_ForceWall(te.pos1, te.pos2, te.color);
-        break;
-
-    case TE_HEATBEAM_SPARKS:
-        CL_ParticleSteamEffect(te.pos1, te.dir, 0x8, 50, 60);
-        S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
-        break;
-
-    case TE_HEATBEAM_STEAM:
-        CL_ParticleSteamEffect(te.pos1, te.dir, 0xE0, 20, 60);
-        S_StartSound(te.pos1, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case TE_CHAINFIST_SMOKE:
@@ -1230,6 +1218,12 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
     case DE_BULLET_SPARKS:
         CL_ParticleEffect(pos, dir, 0xe0, 6);
         break;
+    case DE_HEATBEAM_SPARKS:
+        CL_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
+        break;
+    case DE_HEATBEAM_STEAM:
+        CL_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
+        break;
     case DE_SCREEN_SPARKS:
         CL_ParticleEffect(pos, dir, 0xd0, 40);
         break;
@@ -1248,8 +1242,24 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
         break;
     }
 
-    if (type == DE_GUNSHOT || type == DE_SHOTGUN || type == DE_BULLET_SPARKS)
+    switch (type) {
+    case DE_GUNSHOT:
+    case DE_SHOTGUN:
+    case DE_BULLET_SPARKS:
         CL_SmokeAndFlash(pos);
+        break;
+    case DE_HEATBEAM_SPARKS:
+    case DE_HEATBEAM_STEAM:
+        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        break;
+    case DE_SCREEN_SPARKS:
+    case DE_SHIELD_SPARKS:
+    case DE_ELECTRIC_SPARKS:
+        S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        break;
+    default:
+        break;
+    }
 
     if (type == DE_GUNSHOT || type == DE_BULLET_SPARKS) {
         int r = Q_rand() & 15;
@@ -1260,9 +1270,6 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
         else if (r == 3)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
     }
-
-    if (type >= DE_SCREEN_SPARKS && type <= DE_ELECTRIC_SPARKS)
-        S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
 
     if (type == DE_WELDING_SPARKS) {
         explosion_t *ex = CL_PlainExplosion(pos);
