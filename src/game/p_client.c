@@ -2395,11 +2395,8 @@ void ClientDisconnect(edict_t *ent)
     //============
 
     // send effect
-    if (!(ent->r.svflags & SVF_NOCLIENT)) {
-        edict_t *te = G_TempEntity(ent->s.origin, EV_MUZZLEFLASH);
-        te->s.event_param[0] = MZ_LOGOUT;
-        //te->s.clientnum = ent->s.number;
-    }
+    if (!(ent->r.svflags & SVF_NOCLIENT))
+        G_TempEntity(ent->s.origin, EV_MUZZLEFLASH, MZ_LOGOUT);
 
     gi.unlinkentity(ent);
     ent->s.modelindex = 0;

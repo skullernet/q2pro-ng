@@ -627,8 +627,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
 {
-    edict_t *te = G_TempEntity(origin, EV_SOUND);
-    te->s.event_param[0] = G_EncodeSound(channel & 7, index, volume, attenuation);
+    G_TempEntity(origin, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
 }
 
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
@@ -684,13 +683,14 @@ void G_AddEvent(edict_t *ent, entity_event_t event, int param)
     }
 }
 
-edict_t *G_TempEntity(const vec3_t origin, entity_event_t event)
+edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param)
 {
     edict_t *ent;
 
     ent = G_Spawn();
     VectorCopy(origin, ent->s.origin);
     ent->s.event[0] = event;
+    ent->s.event_param[0] = param;
     ent->free_after_event = true;
     gi.linkentity(ent);
 

@@ -97,8 +97,7 @@ SpawnDamage
 */
 static void SpawnDamage(damage_effect_t type, const vec3_t origin, const vec3_t normal, int damage)
 {
-    edict_t *te = G_TempEntity(origin, EV_DAMAGE);
-    te->s.event_param[0] = MakeBigLong(0, 0, type, gi.DirToByte(normal));
+    G_TempEntity(origin, EV_DAMAGE, MakeBigLong(0, 0, type, gi.DirToByte(normal)));
 }
 
 /*

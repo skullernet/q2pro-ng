@@ -90,7 +90,6 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 {
     trace_t tr;
     pierce_t pierce;
-    edict_t *te;
     pierce_begin(&pierce);
 
     vec3_t end;
@@ -120,10 +119,8 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
                 else
                     color = SPLASH_UNKNOWN;
 
-                if (color != SPLASH_UNKNOWN) {
-                    te = G_TempEntity(tr.endpos, EV_SPLASH);
-                    te->s.event_param[0] = MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal));
-                }
+                if (color != SPLASH_UNKNOWN)
+                    G_TempEntity(tr.endpos, EV_SPLASH, MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal)));
 
                 // change bullet's course when it enters water
                 vec3_t dir, forward, right, up;
@@ -158,8 +155,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             // send gun puff / flash
             // don't mark the sky
             if (te_impact != DE_NONE && !(tr.surface_flags & SURF_SKY)) {
-                te = G_TempEntity(tr.endpos, EV_DAMAGE);
-                te->s.event_param[0] = MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal));
+                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal)));
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);

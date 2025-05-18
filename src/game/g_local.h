@@ -1353,7 +1353,7 @@ void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, fl
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation);
 void G_AddEvent(edict_t *ent, entity_event_t event, int param);
-edict_t *G_TempEntity(const vec3_t origin, entity_event_t event);
+edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param);
 edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event);
 void G_BecomeEvent(edict_t *ent, entity_event_t event, int param);
 void G_BecomeExplosion(edict_t *ent, explosion_effect_t effect, const vec3_t normal);
