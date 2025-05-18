@@ -33,8 +33,7 @@ static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
 {
     entity_state_t  *state;
 
-    // suck up to MAX_EDICTS for servers that don't cap at MAX_PACKET_ENTITIES
-    if (frame->numEntities >= MAX_EDICTS) {
+    if (frame->numEntities >= MAX_PACKET_ENTITIES) {
         Com_Error(ERR_DROP, "%s: too many entities", __func__);
     }
 
@@ -50,7 +49,8 @@ static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
 
     if (changed)
         MSG_ParseDeltaEntity(state, newnum);
-
+    else
+        state->number = newnum;
 }
 
 static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_t *frame)
