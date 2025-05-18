@@ -733,8 +733,17 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
     gi.linkentity(ent);
 }
 
-void G_BecomeExplosion(edict_t *ent, explosion_effect_t effect, const vec3_t normal)
+void G_BecomeExplosion(edict_t *ent, entity_event_t event, const vec3_t normal)
 {
-    int dir = normal ? gi.DirToByte(normal) : 0;
-    G_BecomeEvent(ent, EV_EXPLOSION, effect | dir << 8);
+    G_BecomeEvent(ent, event, normal ? gi.DirToByte(normal) : 0);
+}
+
+void G_SnapVectorTowards(vec3_t v, const vec3_t to)
+{
+    for (int i = 0; i < 3; i++) {
+        if (v[i] >= to[i])
+            v[i] = (int)v[i];
+        else
+            v[i] = (int)v[i] + 1;
+    }
 }

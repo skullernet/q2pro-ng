@@ -1239,9 +1239,9 @@ void THINK(WidowExplode)(edict_t *self)
 
     self->count++;
     if (self->count >= 9 && self->count <= 12)
-        G_TempEntity(org, EV_EXPLOSION, EX_EXPLOSION1_BIG);
+        G_TempEntity(org, EV_EXPLOSION1_BIG, 0);
     else
-        G_TempEntity(org, EV_EXPLOSION, (self->count & 1) ? EX_EXPLOSION1 : EX_EXPLOSION1_NP);
+        G_TempEntity(org, (self->count & 1) ? EV_EXPLOSION1 : EV_EXPLOSION1_NP, 0);
 
     self->nextthink = level.time + HZ(10);
 }
@@ -1255,7 +1255,7 @@ static void WidowExplosion1(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1274,7 +1274,7 @@ static void WidowExplosion2(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1293,7 +1293,7 @@ static void WidowExplosion3(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1312,7 +1312,7 @@ static void WidowExplosion4(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1331,7 +1331,7 @@ static void WidowExplosion5(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1350,7 +1350,7 @@ static void WidowExplosion6(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1369,7 +1369,7 @@ static void WidowExplosion7(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     for (n = 0; n < 1; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
@@ -1388,7 +1388,7 @@ static void WidowExplosionLeg(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1_BIG);
+    G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", 200, GIB_METALLIC, startpoint,
                        gi.soundindex("misc/fhit3.wav"), false);
@@ -1397,7 +1397,7 @@ static void WidowExplosionLeg(edict_t *self)
 
     G_ProjectSource2(self->s.origin, offset2, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1);
+    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib1/tris.md2", 300, GIB_METALLIC, startpoint,
                        gi.soundindex("misc/fhit3.wav"), false);
@@ -1414,7 +1414,7 @@ static void ThrowArm1(edict_t *self)
     AngleVectors(self->s.angles, f, r, u);
     G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
 
-    G_TempEntity(startpoint, EV_EXPLOSION, EX_EXPLOSION1_BIG);
+    G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
     for (n = 0; n < 2; n++)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);

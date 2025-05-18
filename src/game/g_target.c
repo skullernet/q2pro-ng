@@ -8,30 +8,27 @@ Fire an origin based temp entity event to the clients.
 */
 
 static const byte events_remap[] = {
-    [TE_BOSSTPORT]       = EV_BOSSTPORT,
-    [TE_CHAINFIST_SMOKE] = EV_CHAINFIST_SMOKE,
-    [TE_TELEPORT_EFFECT] = EV_TELEPORT_EFFECT,
-    [TE_WIDOWSPLASH]     = EV_WIDOWSPLASH,
-    [TE_NUKEBLAST]       = EV_NUKEBLAST,
-    [TE_DBALL_GOAL]      = EV_TELEPORT_EFFECT,
-};
-
-static const byte explosions_remap[] = {
-    [TE_PLAIN_EXPLOSION]         = EX_PLAIN,
-    [TE_PLASMA_EXPLOSION]        = EX_EXPLOSION1,
-    [TE_EXPLOSION1]              = EX_EXPLOSION1,
-    [TE_EXPLOSION1_NL]           = EX_EXPLOSION1_NL,
-    [TE_EXPLOSION1_NP]           = EX_EXPLOSION1_NP,
-    [TE_EXPLOSION1_BIG]          = EX_EXPLOSION1_BIG,
-    [TE_EXPLOSION2]              = EX_EXPLOSION2,
-    [TE_EXPLOSION2_NL]           = EX_EXPLOSION2_NL,
-    [TE_GRENADE_EXPLOSION]       = EX_GRENADE,
-    [TE_GRENADE_EXPLOSION_WATER] = EX_GRENADE_WATER,
-    [TE_ROCKET_EXPLOSION]        = EX_ROCKET,
-    [TE_ROCKET_EXPLOSION_WATER]  = EX_ROCKET_WATER,
-    [TE_BFG_EXPLOSION]           = EX_BFG,
-    [TE_BFG_BIGEXPLOSION]        = EX_BFG_BIG,
-    [TE_TRACKER_EXPLOSION]       = EX_TRACKER,
+    [TE_PLAIN_EXPLOSION]         = EV_EXPLOSION_PLAIN,
+    [TE_PLASMA_EXPLOSION]        = EV_EXPLOSION1,
+    [TE_EXPLOSION1]              = EV_EXPLOSION1,
+    [TE_EXPLOSION1_NL]           = EV_EXPLOSION1_NL,
+    [TE_EXPLOSION1_NP]           = EV_EXPLOSION1_NP,
+    [TE_EXPLOSION1_BIG]          = EV_EXPLOSION1_BIG,
+    [TE_EXPLOSION2]              = EV_EXPLOSION2,
+    [TE_EXPLOSION2_NL]           = EV_EXPLOSION2_NL,
+    [TE_GRENADE_EXPLOSION]       = EV_GRENADE_EXPLOSION,
+    [TE_GRENADE_EXPLOSION_WATER] = EV_GRENADE_EXPLOSION_WATER,
+    [TE_ROCKET_EXPLOSION]        = EV_ROCKET_EXPLOSION,
+    [TE_ROCKET_EXPLOSION_WATER]  = EV_ROCKET_EXPLOSION_WATER,
+    [TE_BFG_EXPLOSION]           = EV_BFG_EXPLOSION,
+    [TE_BFG_BIGEXPLOSION]        = EV_BFG_EXPLOSION_BIG,
+    [TE_TRACKER_EXPLOSION]       = EV_TRACKER_EXPLOSION,
+    [TE_BOSSTPORT]               = EV_BOSSTPORT,
+    [TE_CHAINFIST_SMOKE]         = EV_CHAINFIST_SMOKE,
+    [TE_TELEPORT_EFFECT]         = EV_TELEPORT_EFFECT,
+    [TE_WIDOWSPLASH]             = EV_WIDOWSPLASH,
+    [TE_NUKEBLAST]               = EV_NUKEBLAST,
+    [TE_DBALL_GOAL]              = EV_TELEPORT_EFFECT,
 };
 
 void USE(Use_Target_Tent)(edict_t *ent, edict_t *other, edict_t *activator)
@@ -40,14 +37,6 @@ void USE(Use_Target_Tent)(edict_t *ent, edict_t *other, edict_t *activator)
         entity_event_t event = events_remap[ent->style];
         if (event) {
             G_AddEvent(ent, event, 0);
-            return;
-        }
-    }
-
-    if (ent->style < q_countof(explosions_remap)) {
-        explosion_effect_t effect = explosions_remap[ent->style];
-        if (effect) {
-            G_AddEvent(ent, EV_EXPLOSION, effect);
             return;
         }
     }
@@ -386,7 +375,7 @@ void THINK(target_explosion_explode)(edict_t *self)
 {
     float save;
 
-    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1);
+    G_AddEvent(self, EV_EXPLOSION1, 0);
 
     T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
 
@@ -509,9 +498,20 @@ Set "sounds" to one of the following:
         useful for lava/sparks
 */
 
+static const byte splash_events[] = {
+    EV_SPLASH_UNKNOWN,
+    EV_SPLASH_SPARKS,
+    EV_SPLASH_BLUE_WATER,
+    EV_SPLASH_BROWN_WATER,
+    EV_SPLASH_SLIME,
+    EV_SPLASH_LAVA,
+    EV_SPLASH_BLOOD,
+    EV_SPLASH_ELECTRIC_N64,
+};
+
 void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    G_AddEvent(self, EV_SPLASH, MakeBigLong(0, self->count, self->sounds, gi.DirToByte(self->movedir)));
+    G_AddEvent(self, self->sounds, self->count);
 
     if (self->dmg)
         T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_SPLASH });
@@ -528,6 +528,14 @@ void SP_target_splash(edict_t *self)
     // N64 "sparks" are blue, not yellow.
     if (level.is_n64 && self->sounds == SPLASH_SPARKS)
         self->sounds = SPLASH_ELECTRIC_N64;
+
+    if (self->sounds >= q_countof(splash_events)) {
+        gi.dprintf("%s has bad sounds", etos(self));
+        self->sounds = 0;
+    }
+
+    self->sounds = splash_events[self->sounds];
+    self->count  = MakeLittleShort(gi.DirToByte(self->movedir), self->count & 255);
 
     gi.linkentity(self);
 }
@@ -745,7 +753,7 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(count, self->s.skinnum & 255, DE_LASER_SPARKS, gi.DirToByte(tr.plane.normal)));
+                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(gi.DirToByte(tr.plane.normal), self->s.skinnum & 255, count, 0));
             }
             break;
         }

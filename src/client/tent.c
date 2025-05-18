@@ -1107,30 +1107,29 @@ static void CL_SoundEvent(centity_t *cent, uint32_t param)
     S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
-static void CL_SplashEvent(centity_t *cent, uint32_t param)
+static void CL_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
 {
-    int count = (param >> 16) & 255;
-    int color = (param >>  8) & 255;
+    int count = (param >> 8) & 255;
     const vec_t *pos = cent->current.origin;
+    vec3_t dir;
     int r;
 
-    vec3_t dir;
     ByteToDir(param & 255, dir);
 
-    if (color == SPLASH_ELECTRIC_N64) {
+    if (color == EV_SPLASH_ELECTRIC_N64) {
         CL_ParticleEffect(pos, dir, 0x6c, count / 2);
         CL_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
-        color = SPLASH_SPARKS;
+        color = EV_SPLASH_SPARKS;
     } else {
         static const byte splash_color[] = { 0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8 };
-        if (color >= q_countof(splash_color))
+        if (color - EV_SPLASH_UNKNOWN >= q_countof(splash_color))
             r = 0x00;
         else
-            r = splash_color[color];
+            r = splash_color[color - EV_SPLASH_UNKNOWN];
         CL_ParticleEffect(pos, dir, r, count);
     }
 
-    if (color == SPLASH_SPARKS) {
+    if (color == EV_SPLASH_SPARKS) {
         r = Q_rand() & 3;
         if (r == 0)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark5, 1, ATTN_STATIC, 0);
@@ -1141,85 +1140,84 @@ static void CL_SplashEvent(centity_t *cent, uint32_t param)
     }
 }
 
-static void CL_DamageEvent(centity_t *cent, uint32_t param)
+static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t param)
 {
-    damage_effect_t type = (param >> 8) & 255;
-    int color = (param >> 16) & 255;
-    int count = (param >> 24) & 255;
+    int color = (param >>  8) & 255;
+    int count = (param >> 16) & 255;
     const vec_t *pos = cent->current.origin;
     vec3_t dir;
 
-    if (cl_disable_particles->integer & NOPART_BLOOD && type < DE_GUNSHOT)
+    if (cl_disable_particles->integer & NOPART_BLOOD && type < EV_GUNSHOT)
         return;
 
     ByteToDir(param & 255, dir);
 
     switch (type) {
-    case DE_NONE:
-        return;
-    case DE_BLOOD:
+    case EV_BLOOD:
         CL_ParticleEffect(pos, dir, 0xe8, 60);
         break;
-    case DE_MORE_BLOOD:
+    case EV_MORE_BLOOD:
         CL_ParticleEffect(pos, dir, 0xe8, 250);
         break;
-    case DE_GREEN_BLOOD:
+    case EV_GREEN_BLOOD:
         CL_ParticleEffect2(pos, dir, 0xdf, 30);
         break;
-    case DE_GUNSHOT:
+    case EV_GUNSHOT:
         CL_ParticleEffect(pos, dir, 0, 40);
         break;
-    case DE_SHOTGUN:
+    case EV_SHOTGUN:
         CL_ParticleEffect(pos, dir, 0, 20);
         break;
-    case DE_SPARKS:
-    case DE_BULLET_SPARKS:
+    case EV_SPARKS:
+    case EV_BULLET_SPARKS:
         CL_ParticleEffect(pos, dir, 0xe0, 6);
         break;
-    case DE_HEATBEAM_SPARKS:
+    case EV_HEATBEAM_SPARKS:
         CL_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
         break;
-    case DE_HEATBEAM_STEAM:
+    case EV_HEATBEAM_STEAM:
         CL_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
         break;
-    case DE_SCREEN_SPARKS:
+    case EV_SCREEN_SPARKS:
         CL_ParticleEffect(pos, dir, 0xd0, 40);
         break;
-    case DE_SHIELD_SPARKS:
+    case EV_SHIELD_SPARKS:
         CL_ParticleEffect(pos, dir, 0xb0, 40);
         break;
-    case DE_ELECTRIC_SPARKS:
+    case EV_ELECTRIC_SPARKS:
         CL_ParticleEffect(pos, dir, 0x75, 40);
         break;
-    case DE_LASER_SPARKS:
-    case DE_WELDING_SPARKS:
+    case EV_LASER_SPARKS:
+    case EV_WELDING_SPARKS:
         CL_ParticleEffect2(pos, dir, color, count);
         break;
-    case DE_TUNNEL_SPARKS:
+    case EV_TUNNEL_SPARKS:
         CL_ParticleEffect3(pos, dir, color, count);
+        break;
+    default:
         break;
     }
 
     switch (type) {
-    case DE_GUNSHOT:
-    case DE_SHOTGUN:
-    case DE_BULLET_SPARKS:
+    case EV_GUNSHOT:
+    case EV_SHOTGUN:
+    case EV_BULLET_SPARKS:
         CL_SmokeAndFlash(pos);
         break;
-    case DE_HEATBEAM_SPARKS:
-    case DE_HEATBEAM_STEAM:
+    case EV_HEATBEAM_SPARKS:
+    case EV_HEATBEAM_STEAM:
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
-    case DE_SCREEN_SPARKS:
-    case DE_SHIELD_SPARKS:
-    case DE_ELECTRIC_SPARKS:
+    case EV_SCREEN_SPARKS:
+    case EV_SHIELD_SPARKS:
+    case EV_ELECTRIC_SPARKS:
         S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
     default:
         break;
     }
 
-    if (type == DE_GUNSHOT || type == DE_BULLET_SPARKS) {
+    if (type == EV_GUNSHOT || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
         if (r == 1)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric1, 1, ATTN_NORM, 0);
@@ -1229,7 +1227,7 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
     }
 
-    if (type == DE_WELDING_SPARKS) {
+    if (type == EV_WELDING_SPARKS) {
         explosion_t *ex = CL_PlainExplosion(pos);
         ex->type = ex_light;
         ex->light = 100 + (Q_rand() % 75);
@@ -1238,68 +1236,65 @@ static void CL_DamageEvent(centity_t *cent, uint32_t param)
     }
 }
 
-static void CL_ExplosionEvent(centity_t *cent, uint32_t param)
+static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
 {
-    explosion_effect_t type = param & 255;
-    explosion_t *ex;
     const vec_t *pos = cent->current.origin;
+    explosion_t *ex;
     vec3_t dir;
 
-    ByteToDir((param >> 8) & 255, dir);
+    ByteToDir(param & 255, dir);
 
     switch (type) {
-    case EX_NONE:
-        break;
-    case EX_PLAIN:
+    case EV_EXPLOSION_PLAIN:
         CL_PlainExplosion(pos);
         break;
-    case EX_EXPLOSION1:
-    case EX_EXPLOSION1_NL:
+    case EV_EXPLOSION1:
+    case EV_EXPLOSION1_NL:
         ex = CL_PlainExplosion(pos);
-        if (type == EX_EXPLOSION1_NL)
+        if (type == EV_EXPLOSION1_NL)
             ex->light = 0;
         CL_ExplosionParticles(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_EXPLOSION1_NP:
+    case EV_EXPLOSION1_NP:
         CL_PlainExplosion(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_EXPLOSION1_BIG:
+    case EV_EXPLOSION1_BIG:
         ex = CL_PlainExplosion(pos);
         ex->ent.model = cl_mod_explo4;
         ex->ent.scale = 2.0f;
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_EXPLOSION2:
-    case EX_EXPLOSION2_NL:
+    case EV_EXPLOSION2:
+    case EV_EXPLOSION2_NL:
         ex = CL_PlainExplosion(pos);
         ex->frames = 19;
         ex->baseframe = 30;
-        if (type == EX_EXPLOSION2_NL)
+        if (type == EV_EXPLOSION2_NL)
             ex->light = 0;
         CL_ExplosionParticles(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_BLASTER:            // blaster hitting wall
-    case EX_BLASTER2:           // green blaster hitting wall
-    case EX_FLECHETTE:          // flechette
+    case EV_BLASTER:            // blaster hitting wall
+    case EV_BLASTER2:           // green blaster hitting wall
+    case EV_FLECHETTE:          // flechette
         ex = CL_AllocExplosion();
         VectorCopy(pos, ex->ent.origin);
         dirtoangles(dir, ex->ent.angles);
         ex->type = ex_misc;
         ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
         switch (type) {
-        case EX_BLASTER:
+        case EV_BLASTER:
             CL_BlasterParticles(pos, dir);
             ex->lightcolor[0] = 1;
             ex->lightcolor[1] = 1;
             break;
-        case EX_BLASTER2:
+        case EV_BLASTER2:
             CL_BlasterParticles2(pos, dir, 0xd0);
             ex->ent.skinnum = 1;
             ex->lightcolor[1] = 1;
@@ -1317,12 +1312,12 @@ static void CL_ExplosionEvent(centity_t *cent, uint32_t param)
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
-    case EX_BLUEHYPERBLASTER:
+    case EV_BLUEHYPERBLASTER:
         CL_BlasterParticles(pos, dir);
         break;
 
-    case EX_GRENADE:
-    case EX_GRENADE_WATER:
+    case EV_GRENADE_EXPLOSION:
+    case EV_GRENADE_EXPLOSION_WATER:
         ex = CL_PlainExplosion(pos);
         ex->frames = 19;
         ex->baseframe = 30;
@@ -1335,14 +1330,14 @@ static void CL_ExplosionEvent(centity_t *cent, uint32_t param)
         if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
 
-        if (type == EX_GRENADE_WATER)
+        if (type == EV_GRENADE_EXPLOSION_WATER)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
         else
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_ROCKET:
-    case EX_ROCKET_WATER:
+    case EV_ROCKET_EXPLOSION:
+    case EV_ROCKET_EXPLOSION_WATER:
         ex = CL_PlainExplosion(pos);
         if (cl_disable_explosions->integer & NOEXP_ROCKET)
             ex->type = ex_light;
@@ -1353,24 +1348,27 @@ static void CL_ExplosionEvent(centity_t *cent, uint32_t param)
         if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
 
-        if (type == EX_ROCKET_WATER)
+        if (type == EV_ROCKET_EXPLOSION_WATER)
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
         else
             S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
-    case EX_BFG:
+    case EV_BFG_EXPLOSION:
         CL_BFGExplosion(pos);
         break;
 
-    case EX_BFG_BIG:
+    case EV_BFG_EXPLOSION_BIG:
         CL_BFGExplosionParticles(pos);
         break;
 
-    case EX_TRACKER:
+    case EV_TRACKER_EXPLOSION:
         CL_ColorFlash(pos, 0, 150, -1, -1, -1);
         CL_ColorExplosionParticles(pos, 0, 1);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_disrexp, 1, ATTN_NORM, 0);
+        break;
+
+    default:
         break;
     }
 }
@@ -1451,21 +1449,21 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         CL_BFGExplosion(s->origin);
         break;
 
-    case EV_SPLASH:
-        CL_SplashEvent(cent, param);
+    case EV_SPLASH_UNKNOWN ... EV_SPLASH_ELECTRIC_N64:
+        CL_SplashEvent(cent, event, param);
+        break;
+
+    case EV_BLOOD ... EV_TUNNEL_SPARKS:
+        CL_DamageEvent(cent, event, param);
+        break;
+
+    case EV_EXPLOSION_PLAIN ... EV_TRACKER_EXPLOSION:
+        CL_ExplosionEvent(cent, event, param);
         break;
 
     case EV_POWER_SPLASH:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
         CL_PowerSplash(cent);
-        break;
-
-    case EV_DAMAGE:
-        CL_DamageEvent(cent, param);
-        break;
-
-    case EV_EXPLOSION:
-        CL_ExplosionEvent(cent, param);
         break;
 
     case EV_BOSSTPORT:          // boss teleporting to station

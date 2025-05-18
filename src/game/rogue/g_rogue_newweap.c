@@ -27,7 +27,7 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
                  self->dmg, self->dmg_radius, DAMAGE_NO_REG_ARMOR, (mod_t) { MOD_ETF_RIFLE });
         G_FreeEdict(self);
     } else {
-        G_BecomeExplosion(self, EX_FLECHETTE, tr->plane.normal);
+        G_BecomeExplosion(self, EV_FLECHETTE, tr->plane.normal);
     }
 }
 
@@ -113,7 +113,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
     T_RadiusDamage(ent, owner, ent->dmg, other, PROX_DAMAGE_RADIUS, DAMAGE_NONE, (mod_t) { MOD_PROX });
 
     VectorAdd(ent->s.origin, normal, ent->s.origin);
-    G_BecomeExplosion(ent, ent->groundentity ? EX_GRENADE : EX_ROCKET, NULL);
+    G_BecomeExplosion(ent, ent->groundentity ? EV_GRENADE_EXPLOSION : EV_ROCKET_EXPLOSION, NULL);
 }
 
 void THINK(Prox_Explode)(edict_t *ent)
@@ -1065,7 +1065,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         VectorCopy(tr.endpos, water_start);
 
         if (!VectorCompare(start, tr.endpos))
-            G_TempEntity(water_start, EV_DAMAGE, MakeBigLong(0, 0, DE_HEATBEAM_SPARKS, gi.DirToByte(tr.plane.normal)));
+            G_TempEntity(water_start, EV_HEATBEAM_SPARKS, gi.DirToByte(tr.plane.normal));
 
         // re-trace ignoring water this time
         gi.trace(&tr, water_start, NULL, NULL, end, self->s.number, content_mask & ~MASK_WATER);
@@ -1083,7 +1083,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         if (hit->takedamage) {
             T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, (mod_t) { MOD_HEATBEAM });
         } else if (!water) {
-            G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(0, 0, DE_HEATBEAM_STEAM, gi.DirToByte(tr.plane.normal)));
+            G_TempEntity(tr.endpos, EV_HEATBEAM_STEAM, gi.DirToByte(tr.plane.normal));
 
             if (self->client)
                 PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -1168,7 +1168,7 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
         // PMM - yeowch this will get expensive
         if (self->dmg >= 5)
             T_RadiusDamage(self, owner, self->dmg * 2, owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-        G_BecomeExplosion(self, EX_BLASTER2, tr->plane.normal);
+        G_BecomeExplosion(self, EV_BLASTER2, tr->plane.normal);
     }
 }
 
@@ -1287,7 +1287,7 @@ static void tracker_pain_daemon_spawn(edict_t *owner, edict_t *enemy, int damage
 
 static void tracker_explode(edict_t *self)
 {
-    G_BecomeExplosion(self, EX_TRACKER, NULL);
+    G_BecomeExplosion(self, EV_TRACKER_EXPLOSION, NULL);
 }
 
 void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)

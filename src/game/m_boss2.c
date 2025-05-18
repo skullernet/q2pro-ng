@@ -501,7 +501,7 @@ static const gib_def_t boss2_gibs[] = {
 
 static void boss2_gib(edict_t *self)
 {
-    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1_BIG);
+    G_AddEvent(self, EV_EXPLOSION1_BIG, 0);
 
     self->s.sound = 0;
     self->s.skinnum /= 2;

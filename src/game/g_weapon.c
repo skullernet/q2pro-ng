@@ -85,7 +85,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 }
 
 static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t end_, const vec3_t aimdir,
-                                int damage, int kick, damage_effect_t te_impact, int hspread, int vspread,
+                                int damage, int kick, entity_event_t te_impact, int hspread, int vspread,
                                 mod_t mod, contents_t *mask, bool *water, vec3_t water_start)
 {
     trace_t tr;
@@ -107,20 +107,20 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             VectorCopy(tr.endpos, water_start);
 
             // CHECK: is this compare ever true?
-            if (te_impact != DE_NONE && !VectorCompare(start, tr.endpos)) {
-                int color;
+            if (te_impact != EV_NONE && !VectorCompare(start, tr.endpos)) {
+                entity_event_t color;
 
                 if (tr.contents & CONTENTS_WATER)
-                    color = SPLASH_BLUE_WATER;
+                    color = EV_SPLASH_BLUE_WATER;
                 else if (tr.contents & CONTENTS_SLIME)
-                    color = SPLASH_SLIME;
+                    color = EV_SPLASH_SLIME;
                 else if (tr.contents & CONTENTS_LAVA)
-                    color = SPLASH_LAVA;
+                    color = EV_SPLASH_LAVA;
                 else
-                    color = SPLASH_UNKNOWN;
+                    color = EV_SPLASH_UNKNOWN;
 
-                if (color != SPLASH_UNKNOWN)
-                    G_TempEntity(tr.endpos, EV_SPLASH, MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal)));
+                if (color != EV_SPLASH_UNKNOWN)
+                    G_TempEntity(tr.endpos, color, MakeLittleShort(gi.DirToByte(tr.plane.normal), 8));
 
                 // change bullet's course when it enters water
                 vec3_t dir, forward, right, up;
@@ -154,8 +154,8 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
         } else {
             // send gun puff / flash
             // don't mark the sky
-            if (te_impact != DE_NONE && !(tr.surface_flags & SURF_SKY)) {
-                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal)));
+            if (te_impact != EV_NONE && !(tr.surface_flags & SURF_SKY)) {
+                G_TempEntity(tr.endpos, te_impact, gi.DirToByte(tr.plane.normal));
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -177,7 +177,7 @@ fire_lead
 This is an internal support routine used for bullet/pellet based weapons.
 =================
 */
-static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, damage_effect_t te_impact, int hspread, int vspread, mod_t mod)
+static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread, mod_t mod)
 {
     contents_t   mask = MASK_PROJECTILE | MASK_WATER;
     bool         water = false;
@@ -213,7 +213,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
     }
 
     // if went through water, determine where the end is and make a bubble trail
-    if (water && te_impact != DE_NONE) {
+    if (water && te_impact != EV_NONE) {
         vec3_t pos, dir;
 
         VectorSubtract(tr.endpos, water_start, dir);
@@ -238,7 +238,7 @@ pistols, rifles, etc....
 */
 void fire_bullet(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, mod_t mod)
 {
-    fire_lead(self, start, aimdir, damage, kick, mod.id == MOD_TESLA ? DE_NONE : DE_GUNSHOT, hspread, vspread, mod);
+    fire_lead(self, start, aimdir, damage, kick, mod.id == MOD_TESLA ? EV_NONE : EV_GUNSHOT, hspread, vspread, mod);
 }
 
 /*
@@ -251,7 +251,7 @@ Shoots shotgun pellets.  Used by shotgun and super shotgun.
 void fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, mod_t mod)
 {
     while (count--)
-        fire_lead(self, start, aimdir, damage, kick, DE_SHOTGUN, hspread, vspread, mod);
+        fire_lead(self, start, aimdir, damage, kick, EV_SHOTGUN, hspread, vspread, mod);
 }
 
 /*
@@ -280,8 +280,8 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
         G_FreeEdict(self);
     } else {
-        explosion_effect_t effect = (self->style != MOD_BLUEBLASTER) ? EX_BLASTER : EX_BLUEHYPERBLASTER;
-        G_BecomeExplosion(self, effect, tr->plane.normal);
+        entity_event_t event = (self->style != MOD_BLUEBLASTER) ? EV_BLASTER : EV_BLUEHYPERBLASTER;
+        G_BecomeExplosion(self, event, tr->plane.normal);
     }
 }
 
@@ -337,7 +337,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
 {
     edict_t *owner = &g_edicts[ent->r.ownernum];
     mod_id_t mod;
-    explosion_effect_t effect;
+    entity_event_t event;
 
     if (owner->client)
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
@@ -365,10 +365,10 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
 
     VectorAdd(ent->s.origin, normal, ent->s.origin);
     if (ent->waterlevel)
-        effect = ent->groundentity ? EX_GRENADE_WATER : EX_ROCKET_WATER;
+        event = ent->groundentity ? EV_GRENADE_EXPLOSION_WATER : EV_ROCKET_EXPLOSION_WATER;
     else
-        effect = ent->groundentity ? EX_GRENADE : EX_ROCKET;
-    G_BecomeExplosion(ent, effect, NULL);
+        event = ent->groundentity ? EV_GRENADE_EXPLOSION : EV_ROCKET_EXPLOSION;
+    G_BecomeExplosion(ent, event, NULL);
 }
 
 void THINK(Grenade_Explode)(edict_t *ent)
@@ -558,7 +558,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
 
     VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
-    G_BecomeExplosion(ent, ent->waterlevel ? EX_ROCKET_WATER : EX_ROCKET, NULL);
+    G_BecomeExplosion(ent, ent->waterlevel ? EV_ROCKET_EXPLOSION_WATER : EV_ROCKET_EXPLOSION, NULL);
 }
 
 edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
@@ -800,7 +800,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     self->nextthink = level.time + HZ(10);
     self->enemy = other;
 
-    G_AddEvent(self, EV_EXPLOSION, EX_BFG_BIG);
+    G_AddEvent(self, EV_BFG_EXPLOSION_BIG, 0);
 }
 
 void THINK(bfg_think)(edict_t *self)
@@ -877,7 +877,7 @@ void THINK(bfg_think)(edict_t *self)
                 vec3_t pos;
                 VectorAdd(tr.endpos, tr.plane.normal, pos);
 
-                G_TempEntity(pos, EV_DAMAGE, MakeBigLong(4, 208, DE_LASER_SPARKS, gi.DirToByte(tr.plane.normal)));
+                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(gi.DirToByte(tr.plane.normal), 208, 4, 0));
                 break;
             }
         } while (pierce_mark(&pierce, hit));

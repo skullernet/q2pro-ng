@@ -293,7 +293,7 @@ static void use_scanner(edict_t *self)
     decend translated along the z the current
     frames are at 10fps
 */
-static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, damage_effect_t te_impact, int hspread, int vspread)
+static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread)
 {
     trace_t    tr;
     vec3_t     dir;
@@ -329,23 +329,23 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
 
         // see if we hit water
         if (tr.contents & MASK_WATER) {
-            int color;
+            entity_event_t color;
 
             water = true;
             VectorCopy(tr.endpos, water_start);
 
             if (!VectorCompare(start, tr.endpos)) {
                 if (tr.contents & CONTENTS_WATER)
-                    color = SPLASH_BLUE_WATER;
+                    color = EV_SPLASH_BLUE_WATER;
                 else if (tr.contents & CONTENTS_SLIME)
-                    color = SPLASH_SLIME;
+                    color = EV_SPLASH_SLIME;
                 else if (tr.contents & CONTENTS_LAVA)
-                    color = SPLASH_LAVA;
+                    color = EV_SPLASH_LAVA;
                 else
-                    color = SPLASH_UNKNOWN;
+                    color = EV_SPLASH_UNKNOWN;
 
-                if (color != SPLASH_UNKNOWN)
-                    G_TempEntity(tr.endpos, EV_SPLASH, MakeBigLong(0, 8, color, gi.DirToByte(tr.plane.normal)));
+                if (color != EV_SPLASH_UNKNOWN)
+                    G_TempEntity(tr.endpos, color, MakeLittleShort(gi.DirToByte(tr.plane.normal), 8));
 
                 // change bullet's course when it enters water
                 VectorSubtract(end, start, dir);
@@ -371,7 +371,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             if (hit->takedamage) {
                 T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
-                G_TempEntity(tr.endpos, EV_DAMAGE, MakeBigLong(0, 0, te_impact, gi.DirToByte(tr.plane.normal)));
+                G_TempEntity(tr.endpos, te_impact, gi.DirToByte(tr.plane.normal));
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -422,7 +422,7 @@ static void fly_vertical(edict_t *self)
     VectorCopy(self->s.origin, start);
 
     for (i = 0; i < 10; i++)
-        blastoff(self, start, forward, 2, 1, DE_SHOTGUN, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD);
+        blastoff(self, start, forward, 2, 1, EV_SHOTGUN, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD);
 
     // needs sound
 }
@@ -980,7 +980,7 @@ static void fixbot_fire_welder(edict_t *self)
     AngleVectors(self->s.angles, forward, right, up);
     M_ProjectFlashSource(self, vec, forward, right, start);
 
-    G_AddEvent(self, EV_DAMAGE, MakeBigLong(10, irandom2(0xe0, 0xe8), DE_WELDING_SPARKS, 0));
+    G_AddEvent(self, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
 
     if (frandom() > 0.8f) {
         r = frandom();

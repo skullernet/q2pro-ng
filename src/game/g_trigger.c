@@ -518,7 +518,7 @@ static void trigger_effect(edict_t *self)
 
     for (i = 0; i < 10; i++) {
         origin[2] += (self->speed * 0.01f) * (i + frandom());
-        G_TempEntity(origin, EV_DAMAGE, MakeBigLong(1, irandom2(0x74, 0x7C), DE_TUNNEL_SPARKS, 0));
+        G_TempEntity(origin, EV_TUNNEL_SPARKS, MakeLittleLong(0, irandom2(0x74, 0x7C), 1, 0));
     }
 }
 

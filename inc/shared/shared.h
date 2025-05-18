@@ -711,7 +711,10 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
 #error Unknown byte order
 #endif
 
+#define MakeLittleShort(b1,b2) (((uint32_t)(b2)<<8)|(uint32_t)(b1))
 #define MakeLittleLong(b1,b2,b3,b4) (((uint32_t)(b4)<<24)|((uint32_t)(b3)<<16)|((uint32_t)(b2)<<8)|(uint32_t)(b1))
+
+#define MakeBigShort(b1,b2) (((uint32_t)(b1)<<8)|(uint32_t)(b2))
 #define MakeBigLong(b1,b2,b3,b4) (((uint32_t)(b1)<<24)|((uint32_t)(b2)<<16)|((uint32_t)(b3)<<8)|(uint32_t)(b4))
 
 #define LittleVector(a,b) \
@@ -1278,7 +1281,7 @@ typedef enum {
     TE_NUM_ENTITIES
 } temp_event_t;
 
-enum {
+typedef enum {
     SPLASH_UNKNOWN,
     SPLASH_SPARKS,
     SPLASH_BLUE_WATER,
@@ -1287,7 +1290,7 @@ enum {
     SPLASH_LAVA,
     SPLASH_BLOOD,
     SPLASH_ELECTRIC_N64, // KEX
-};
+} splash_color_t;
 
 // sound channels
 // channel 0 never willingly overrides
@@ -1445,10 +1448,8 @@ typedef enum {
     EV_FALLFAR,
     EV_PLAYER_TELEPORT,
     EV_OTHER_TELEPORT,
-// KEX
     EV_OTHER_FOOTSTEP,
     EV_LADDER_STEP,
-// KEX
     EV_MUZZLEFLASH,
     EV_MUZZLEFLASH2,
     EV_SOUND,
@@ -1460,10 +1461,52 @@ typedef enum {
     EV_BUBBLETRAIL2,
     EV_BFG_LASER,
     EV_BFG_ZAP,
-    EV_SPLASH,
+
+    EV_SPLASH_UNKNOWN,
+    EV_SPLASH_SPARKS,
+    EV_SPLASH_BLUE_WATER,
+    EV_SPLASH_BROWN_WATER,
+    EV_SPLASH_SLIME,
+    EV_SPLASH_LAVA,
+    EV_SPLASH_BLOOD,
+    EV_SPLASH_ELECTRIC_N64,
+
+    EV_BLOOD,
+    EV_MORE_BLOOD,
+    EV_GREEN_BLOOD,
+    EV_GUNSHOT,
+    EV_SHOTGUN,
+    EV_SPARKS,
+    EV_BULLET_SPARKS,
+    EV_HEATBEAM_SPARKS,
+    EV_HEATBEAM_STEAM,
+    EV_SCREEN_SPARKS,
+    EV_SHIELD_SPARKS,
+    EV_ELECTRIC_SPARKS,
+    EV_LASER_SPARKS,
+    EV_WELDING_SPARKS,
+    EV_TUNNEL_SPARKS,
+
+    EV_EXPLOSION_PLAIN,
+    EV_EXPLOSION1,
+    EV_EXPLOSION1_NL,
+    EV_EXPLOSION1_NP,
+    EV_EXPLOSION1_BIG,
+    EV_EXPLOSION2,
+    EV_EXPLOSION2_NL,
+    EV_BLASTER,
+    EV_BLASTER2,
+    EV_FLECHETTE,
+    EV_BLUEHYPERBLASTER,
+    EV_GRENADE_EXPLOSION,
+    EV_GRENADE_EXPLOSION_WATER,
+    EV_ROCKET_EXPLOSION,
+    EV_ROCKET_EXPLOSION_WATER,
+    EV_BFG_EXPLOSION,
+    EV_BFG_EXPLOSION_BIG,
+    EV_TRACKER_EXPLOSION,
+
     EV_POWER_SPLASH,
-    EV_DAMAGE,
-    EV_EXPLOSION,
     EV_BOSSTPORT,
     EV_TELEPORT_EFFECT,
     EV_CHAINFIST_SMOKE,
@@ -1471,47 +1514,6 @@ typedef enum {
     EV_WIDOWBEAMOUT,
     EV_WIDOWSPLASH,
 } entity_event_t;
-
-typedef enum {
-    DE_NONE,
-    DE_BLOOD,
-    DE_MORE_BLOOD,
-    DE_GREEN_BLOOD,
-    DE_GUNSHOT,
-    DE_SHOTGUN,
-    DE_SPARKS,
-    DE_BULLET_SPARKS,
-    DE_HEATBEAM_SPARKS,
-    DE_HEATBEAM_STEAM,
-    DE_SCREEN_SPARKS,
-    DE_SHIELD_SPARKS,
-    DE_ELECTRIC_SPARKS,
-    DE_LASER_SPARKS,
-    DE_WELDING_SPARKS,
-    DE_TUNNEL_SPARKS,
-} damage_effect_t;
-
-typedef enum {
-    EX_NONE,
-    EX_PLAIN,
-    EX_EXPLOSION1,
-    EX_EXPLOSION1_NL,
-    EX_EXPLOSION1_NP,
-    EX_EXPLOSION1_BIG,
-    EX_EXPLOSION2,
-    EX_EXPLOSION2_NL,
-    EX_BLASTER,
-    EX_BLASTER2,
-    EX_FLECHETTE,
-    EX_BLUEHYPERBLASTER,
-    EX_GRENADE,
-    EX_GRENADE_WATER,
-    EX_ROCKET,
-    EX_ROCKET_WATER,
-    EX_BFG,
-    EX_BFG_BIG,
-    EX_TRACKER,
-} explosion_effect_t;
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will

@@ -95,9 +95,9 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
 SpawnDamage
 ================
 */
-static void SpawnDamage(damage_effect_t type, const vec3_t origin, const vec3_t normal, int damage)
+static void SpawnDamage(entity_event_t type, const vec3_t origin, const vec3_t normal, int damage)
 {
-    G_TempEntity(origin, EV_DAMAGE, MakeBigLong(0, 0, type, gi.DirToByte(normal)));
+    G_TempEntity(origin, type, gi.DirToByte(normal));
 }
 
 /*
@@ -130,7 +130,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     int        save;
     item_id_t  power_armor_type;
     int        damagePerCell;
-    damage_effect_t   pa_te_type;
+    entity_event_t  pa_te_type;
     int       *power;
     int        power_used;
 
@@ -170,14 +170,14 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
             return 0;
 
         damagePerCell = 1;
-        pa_te_type = DE_SCREEN_SPARKS;
+        pa_te_type = EV_SCREEN_SPARKS;
         damage = damage / 3;
     } else {
         if (ctf->integer)
             damagePerCell = 1; // power armor is weaker in CTF
         else
             damagePerCell = 2;
-        pa_te_type = DE_SCREEN_SPARKS;
+        pa_te_type = EV_SCREEN_SPARKS;
         damage = (2 * damage) / 3;
     }
 
@@ -222,7 +222,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     return save;
 }
 
-static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int damage, damage_effect_t te_sparks, damageflags_t dflags)
+static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int damage, entity_event_t te_sparks, damageflags_t dflags)
 {
     gclient_t     *client;
     int            save;
@@ -451,7 +451,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     int        save;
     int        asave;
     int        psave;
-    damage_effect_t te_sparks;
+    entity_event_t te_sparks;
     bool       sphere_notified; // PGM
 
     if (!targ->takedamage)
@@ -513,9 +513,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     }
 
     if (dflags & DAMAGE_BULLET)
-        te_sparks = DE_BULLET_SPARKS;
+        te_sparks = EV_BULLET_SPARKS;
     else
-        te_sparks = DE_SPARKS;
+        te_sparks = EV_SPARKS;
 
     // bonus damage for surprising a monster
     if (!(dflags & DAMAGE_RADIUS) && (targ->r.svflags & SVF_MONSTER) && (attacker->client) &&
@@ -622,19 +622,19 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
         if (!(targ->flags & FL_NO_DAMAGE_EFFECTS)) {
             // ROGUE
             if (targ->flags & FL_MECHANICAL)
-                SpawnDamage(DE_ELECTRIC_SPARKS, point, normal, take);
+                SpawnDamage(EV_ELECTRIC_SPARKS, point, normal, take);
             // ROGUE
             else if ((targ->r.svflags & SVF_MONSTER) || (client)) {
                 // XATRIX
                 if (strcmp(targ->classname, "monster_gekk") == 0)
-                    SpawnDamage(DE_GREEN_BLOOD, point, normal, take);
+                    SpawnDamage(EV_GREEN_BLOOD, point, normal, take);
                 // XATRIX
                 // ROGUE
                 else if (mod.id == MOD_CHAINFIST)
-                    SpawnDamage(DE_MORE_BLOOD, point, normal, 255);
+                    SpawnDamage(EV_MORE_BLOOD, point, normal, 255);
                 // ROGUE
                 else
-                    SpawnDamage(DE_BLOOD, point, normal, take);
+                    SpawnDamage(EV_BLOOD, point, normal, take);
             } else
                 SpawnDamage(te_sparks, point, normal, take);
         }

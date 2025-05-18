@@ -630,7 +630,7 @@ void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 {
     G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
 
-    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1);
+    G_AddEvent(self, EV_EXPLOSION1, 0);
 
     self->s.skinnum /= 2;
 
@@ -676,7 +676,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
         VectorNormalize(dir);
         VectorScale(dir, 500, ent->velocity);
 
-        G_TempEntity(tr->endpos, EV_SPLASH, MakeBigLong(0, 32, SPLASH_SPARKS, gi.DirToByte(dir)));
+        G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, MakeLittleShort(gi.DirToByte(dir), 32));
     }
 }
 

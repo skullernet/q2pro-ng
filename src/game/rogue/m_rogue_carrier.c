@@ -818,7 +818,7 @@ static const gib_def_t carrier_gibs[] = {
 
 static void carrier_dead(edict_t *self)
 {
-    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1_BIG);
+    G_AddEvent(self, EV_EXPLOSION1_BIG, 0);
 
     self->s.sound = 0;
     self->s.skinnum /= 2;

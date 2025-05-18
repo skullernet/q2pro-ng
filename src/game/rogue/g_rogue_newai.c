@@ -1228,7 +1228,7 @@ void THINK(BossExplode_think)(edict_t *self)
     VectorAdd(owner->s.origin, owner->r.mins, org);
     VectorMA(org, frandom(), owner->r.size, org);
 
-    G_TempEntity(org, EV_EXPLOSION, !(self->viewheight % 3) ? EX_EXPLOSION1 : EX_EXPLOSION1_NL);
+    G_TempEntity(org, !(self->viewheight % 3) ? EV_EXPLOSION1 : EV_EXPLOSION1_NL, 0);
 
     self->viewheight++;
     self->nextthink = level.time + random_time_sec(0.05f, 0.2f);

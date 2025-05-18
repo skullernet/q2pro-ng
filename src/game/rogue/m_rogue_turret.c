@@ -550,7 +550,7 @@ void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         ThrowGib(self, "models/objects/debris1/tris.md2", 1, GIB_METALLIC | GIB_DEBRIS);
     }
 
-    G_AddEvent(self, EV_EXPLOSION, EX_PLAIN);
+    G_AddEvent(self, EV_EXPLOSION_PLAIN, 0);
 
     if (self->teamchain) {
         base = self->teamchain;
