@@ -343,10 +343,7 @@ void THINK(target_explosion_explode)(edict_t *self)
 {
     float save;
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1);
 
     T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
 
@@ -372,7 +369,7 @@ void USE(use_target_explosion)(edict_t *self, edict_t *other, edict_t *activator
 void SP_target_explosion(edict_t *ent)
 {
     ent->use = use_target_explosion;
-    ent->r.svflags = SVF_NOCLIENT;
+    gi.linkentity(ent);
 }
 
 //==========================================================

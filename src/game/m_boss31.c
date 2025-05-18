@@ -523,10 +523,7 @@ static const gib_def_t jorg_gibs[] = {
 
 static void jorg_dead(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1_BIG);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1_BIG);
 
     self->s.sound = 0;
     self->s.skinnum /= 2;

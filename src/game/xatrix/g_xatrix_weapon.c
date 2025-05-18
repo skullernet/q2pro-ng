@@ -237,7 +237,6 @@ fire_plasma
 void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     edict_t *owner = &g_edicts[ent->r.ownernum];
-    vec3_t origin;
 
     if (other == owner)
         return;
@@ -250,20 +249,13 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (owner->client)
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
-    // calculate position for the explosion entity
-    VectorAdd(ent->s.origin, tr->plane.normal, origin);
-
     if (other->takedamage)
         T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_PLASMA_EXPLOSION);
-    gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(ent);
+    VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
+    G_BecomeExplosion(ent, EX_EXPLOSION1, NULL);
 }
 
 void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)

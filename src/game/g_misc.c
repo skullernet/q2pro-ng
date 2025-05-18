@@ -254,22 +254,12 @@ void PrecacheGibs(const gib_def_t *gibs)
 
 void BecomeExplosion1(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(self);
+    G_BecomeExplosion(self, EX_EXPLOSION1, NULL);
 }
 
 static void BecomeExplosion2(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION2);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(self);
+    G_BecomeExplosion(self, EX_EXPLOSION2, NULL);
 }
 
 /*QUAKED path_corner (.5 .3 0) (-8 -8 -8) (8 8 8) TELEPORT
@@ -1031,12 +1021,6 @@ model="models/objects/black/tris.md2"
 
 void USE(misc_blackhole_use)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    /*
-    gi.WriteByte (svc_temp_entity);
-    gi.WriteByte (TE_BOSSTPORT);
-    gi.WritePosition (ent->s.origin);
-    gi.multicast (ent->s.origin, MULTICAST_PVS);
-    */
     G_FreeEdict(ent);
 }
 

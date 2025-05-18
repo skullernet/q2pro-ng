@@ -630,10 +630,7 @@ void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 {
     G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1);
 
     self->s.skinnum /= 2;
 

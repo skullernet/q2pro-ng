@@ -1463,6 +1463,7 @@ typedef enum {
     EV_SPLASH,
     EV_POWER_SPLASH,
     EV_DAMAGE,
+    EV_EXPLOSION,
 } entity_event_t;
 
 typedef enum {
@@ -1478,6 +1479,29 @@ typedef enum {
     DE_SHIELD_SPARKS,
     DE_ELECTRIC_SPARKS,
 } damage_effect_t;
+
+typedef enum {
+    EX_NONE,
+    EX_PLAIN,
+    EX_EXPLOSION1,
+    EX_EXPLOSION1_NL,
+    EX_EXPLOSION1_NP,
+    EX_EXPLOSION1_BIG,
+    EX_EXPLOSION2,
+    EX_EXPLOSION2_NL,
+    EX_BLASTER,
+    EX_BLASTER2,
+    EX_FLECHETTE,
+    EX_BLUEHYPERBLASTER,
+    EX_GRENADE,
+    EX_GRENADE_WATER,
+    EX_ROCKET,
+    EX_ROCKET_WATER,
+    EX_BFG,
+    EX_BFG_BIG,
+    EX_TRACKER,
+    EX_BOSSTPORT,
+} explosion_effect_t;
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will

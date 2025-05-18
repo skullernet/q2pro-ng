@@ -246,10 +246,7 @@ static const gib_def_t hover_gibs[] = {
 
 static void hover_gib(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_EXPLOSION1);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_EXPLOSION1);
 
     self->s.skinnum /= 2;
 
@@ -276,10 +273,7 @@ static void hover_dying(edict_t *self)
     if (brandom())
         return;
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_PLAIN_EXPLOSION);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_PLAIN);
 
     if (brandom())
         ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", 120, GIB_NONE);

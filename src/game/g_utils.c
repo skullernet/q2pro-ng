@@ -711,3 +711,29 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
 
     return ent;
 }
+
+void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
+{
+    ent->r.solid = SOLID_NOT;
+    ent->r.svflags = SVF_NONE;
+
+    ent->s.modelindex = 0;
+    ent->s.modelindex2 = 0;
+    ent->s.effects = 0;
+    ent->s.renderfx = 0;
+    ent->s.sound = 0;
+    ent->s.morefx = 0;
+    ent->think = NULL;
+    ent->nextthink = 0;
+
+    G_AddEvent(ent, event, param);
+
+    ent->free_after_event = true;
+    gi.linkentity(ent);
+}
+
+void G_BecomeExplosion(edict_t *ent, explosion_effect_t effect, const vec3_t normal)
+{
+    int dir = normal ? gi.DirToByte(normal) : 0;
+    G_BecomeEvent(ent, EV_EXPLOSION, effect | dir << 8);
+}

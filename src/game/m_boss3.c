@@ -13,14 +13,13 @@ boss3
 
 void USE(Use_Boss3)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_BOSSTPORT);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_BOSSTPORT);
 
     // just hide, don't kill ent so we can trigger it again
-    self->r.svflags |= SVF_NOCLIENT;
+    self->s.modelindex = 0;
     self->r.solid = SOLID_NOT;
+
+    gi.linkentity(self);
 }
 
 void THINK(Think_Boss3Stand)(edict_t *self)
@@ -45,8 +44,7 @@ void SP_monster_boss3_stand(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->model = "models/monsters/boss3/rider/tris.md2";
-    self->s.modelindex = gi.modelindex(self->model);
+    self->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
     self->s.frame = FRAME_stand201;
 
     gi.soundindex("misc/bigtele.wav");

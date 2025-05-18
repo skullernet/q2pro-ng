@@ -25,15 +25,10 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other->takedamage) {
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal,
                  self->dmg, self->dmg_radius, DAMAGE_NO_REG_ARMOR, (mod_t) { MOD_ETF_RIFLE });
+        G_FreeEdict(self);
     } else {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_FLECHETTE);
-        gi.WritePosition(self->s.origin);
-        gi.WriteDir(tr->plane.normal);
-        gi.multicast(self->s.origin, MULTICAST_PHS);
+        G_BecomeExplosion(self, EX_FLECHETTE, tr->plane.normal);
     }
-
-    G_FreeEdict(self);
 }
 
 void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, int kick)
@@ -90,7 +85,6 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
 
 static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 {
-    vec3_t   origin;
     edict_t *owner;
 
     // free the trigger field
@@ -118,16 +112,8 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
     ent->takedamage = false;
     T_RadiusDamage(ent, owner, ent->dmg, other, PROX_DAMAGE_RADIUS, DAMAGE_NONE, (mod_t) { MOD_PROX });
 
-    VectorAdd(ent->s.origin, normal, origin);
-    gi.WriteByte(svc_temp_entity);
-    if (ent->groundentity)
-        gi.WriteByte(TE_GRENADE_EXPLOSION);
-    else
-        gi.WriteByte(TE_ROCKET_EXPLOSION);
-    gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(ent);
+    VectorAdd(ent->s.origin, normal, ent->s.origin);
+    G_BecomeExplosion(ent, ent->groundentity ? EX_GRENADE : EX_ROCKET, NULL);
 }
 
 void THINK(Prox_Explode)(edict_t *ent)
@@ -1205,19 +1191,13 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
             T_RadiusDamage(self, owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, mod);
         owner->takedamage = damagestat;
+        G_FreeEdict(self);
     } else {
         // PMM - yeowch this will get expensive
         if (self->dmg >= 5)
             T_RadiusDamage(self, owner, self->dmg * 2, owner, self->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
-
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte(TE_BLASTER2);
-        gi.WritePosition(self->s.origin);
-        gi.WriteDir(tr->plane.normal);
-        gi.multicast(self->s.origin, MULTICAST_PHS);
+        G_BecomeExplosion(self, EX_BLASTER2, tr->plane.normal);
     }
-
-    G_FreeEdict(self);
 }
 
 void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, bool hyper)
@@ -1335,12 +1315,7 @@ static void tracker_pain_daemon_spawn(edict_t *owner, edict_t *enemy, int damage
 
 static void tracker_explode(edict_t *self)
 {
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_TRACKER_EXPLOSION);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(self);
+    G_BecomeExplosion(self, EX_TRACKER, NULL);
 }
 
 void TOUCH(tracker_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)

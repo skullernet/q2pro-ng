@@ -280,17 +280,13 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     if (owner->client)
         PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
-    if (other->takedamage)
+    if (other->takedamage) {
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
-    else {
-        gi.WriteByte(svc_temp_entity);
-        gi.WriteByte((self->style != MOD_BLUEBLASTER) ? TE_BLASTER : TE_BLUEHYPERBLASTER_2);
-        gi.WritePosition(self->s.origin);
-        gi.WriteDir(tr->plane.normal);
-        gi.multicast(self->s.origin, MULTICAST_PHS);
+        G_FreeEdict(self);
+    } else {
+        explosion_effect_t effect = (self->style != MOD_BLUEBLASTER) ? EX_BLASTER : EX_BLUEHYPERBLASTER;
+        G_BecomeExplosion(self, effect, tr->plane.normal);
     }
-
-    G_FreeEdict(self);
 }
 
 edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
@@ -344,8 +340,8 @@ fire_grenade
 static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 {
     edict_t *owner = &g_edicts[ent->r.ownernum];
-    vec3_t   origin;
     mod_id_t mod;
+    explosion_effect_t effect;
 
     if (owner->client)
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
@@ -371,23 +367,12 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
         mod = MOD_G_SPLASH;
     T_RadiusDamage(ent, owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
 
-    VectorAdd(ent->s.origin, normal, origin);
-    gi.WriteByte(svc_temp_entity);
-    if (ent->waterlevel) {
-        if (ent->groundentity)
-            gi.WriteByte(TE_GRENADE_EXPLOSION_WATER);
-        else
-            gi.WriteByte(TE_ROCKET_EXPLOSION_WATER);
-    } else {
-        if (ent->groundentity)
-            gi.WriteByte(TE_GRENADE_EXPLOSION);
-        else
-            gi.WriteByte(TE_ROCKET_EXPLOSION);
-    }
-    gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(ent);
+    VectorAdd(ent->s.origin, normal, ent->s.origin);
+    if (ent->waterlevel)
+        effect = ent->groundentity ? EX_GRENADE_WATER : EX_ROCKET_WATER;
+    else
+        effect = ent->groundentity ? EX_GRENADE : EX_ROCKET;
+    G_BecomeExplosion(ent, effect, NULL);
 }
 
 void THINK(Grenade_Explode)(edict_t *ent)
@@ -553,7 +538,6 @@ fire_rocket
 void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     edict_t *owner = &g_edicts[ent->r.ownernum];
-    vec3_t   origin;
 
     if (other == owner)
         return;
@@ -566,9 +550,6 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (owner->client)
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
-    // calculate position for the explosion entity
-    VectorAdd(ent->s.origin, tr->plane.normal, origin);
-
     if (other->takedamage) {
         T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
@@ -580,15 +561,8 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
 
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
 
-    gi.WriteByte(svc_temp_entity);
-    if (ent->waterlevel)
-        gi.WriteByte(TE_ROCKET_EXPLOSION_WATER);
-    else
-        gi.WriteByte(TE_ROCKET_EXPLOSION);
-    gi.WritePosition(origin);
-    gi.multicast(ent->s.origin, MULTICAST_PHS);
-
-    G_FreeEdict(ent);
+    VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
+    G_BecomeExplosion(ent, ent->waterlevel ? EX_ROCKET_WATER : EX_ROCKET, NULL);
 }
 
 edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
@@ -830,10 +804,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     self->nextthink = level.time + HZ(10);
     self->enemy = other;
 
-    gi.WriteByte(svc_temp_entity);
-    gi.WriteByte(TE_BFG_BIGEXPLOSION);
-    gi.WritePosition(self->s.origin);
-    gi.multicast(self->s.origin, MULTICAST_PHS);
+    G_AddEvent(self, EV_EXPLOSION, EX_BFG_BIG);
 }
 
 void THINK(bfg_think)(edict_t *self)
