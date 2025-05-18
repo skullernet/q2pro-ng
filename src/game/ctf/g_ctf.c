@@ -561,7 +561,7 @@ void CTFResetFlag(ctfteam_t ctf_team)
             ent->r.svflags &= ~SVF_NOCLIENT;
             ent->r.solid = SOLID_TRIGGER;
             gi.linkentity(ent);
-            ent->s.event = EV_ITEM_RESPAWN;
+            G_AddEvent(ent, EV_ITEM_RESPAWN, 0);
         }
     }
 }
@@ -2930,8 +2930,8 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
     // draw the teleport splash at source and on the player
-    self->enemy->s.event = EV_PLAYER_TELEPORT;
-    other->s.event = EV_PLAYER_TELEPORT;
+    G_AddEvent(self->enemy, EV_PLAYER_TELEPORT, 0);
+    G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
 
     // set angles
     for (int i = 0; i < 3; i++)

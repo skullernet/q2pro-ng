@@ -1945,7 +1945,7 @@ again:
         }
 
         VectorCopy(self->s.origin, self->s.old_origin);
-        self->s.event = EV_OTHER_TELEPORT;
+        G_AddEvent(self, EV_OTHER_TELEPORT, 0);
         gi.linkentity(self);
         goto again;
     }

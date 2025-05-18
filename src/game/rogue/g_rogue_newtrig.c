@@ -64,7 +64,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
         other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
         // draw the teleport splash at source and on the player
-        other->s.event = EV_PLAYER_TELEPORT;
+        G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
 
         // set angles
         for (int i = 0; i < 3; i++)

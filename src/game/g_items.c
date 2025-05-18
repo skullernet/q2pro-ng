@@ -156,7 +156,7 @@ void THINK(DoRespawn)(edict_t *ent)
     gi.linkentity(ent);
 
     // send an effect
-    ent->s.event = EV_ITEM_RESPAWN;
+    G_AddEvent(ent, EV_ITEM_RESPAWN, 0);
 
     // ROGUE
     if (g_dm_random_items->integer) {

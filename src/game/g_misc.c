@@ -83,7 +83,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
 
     if (type & GIB_HEAD) {
         gib = self;
-        gib->s.event = EV_OTHER_TELEPORT;
+        G_AddEvent(gib, EV_OTHER_TELEPORT, 0);
         // remove setskin so that it doesn't set the skin wrongly later
         self->monsterinfo.setskin = NULL;
     } else
@@ -313,7 +313,7 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         v[2] -= other->r.mins[2];
         VectorCopy(v, other->s.origin);
         next = G_PickTarget(next->target);
-        other->s.event = EV_OTHER_TELEPORT;
+        G_AddEvent(other, EV_OTHER_TELEPORT, 0);
     }
 
     other->goalentity = other->movetarget = next;
@@ -1790,11 +1790,11 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // draw the teleport splash at source and on the player
     if (!(self->spawnflags & SPAWNFLAG_TELEPORTER_NO_TELEPORT_EFFECT)) {
-        owner->s.event = EV_PLAYER_TELEPORT;
-        other->s.event = EV_PLAYER_TELEPORT;
+        G_AddEvent(owner, EV_PLAYER_TELEPORT, 0);
+        G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
     } else {
-        owner->s.event = EV_OTHER_TELEPORT;
-        other->s.event = EV_OTHER_TELEPORT;
+        G_AddEvent(owner, EV_OTHER_TELEPORT, 0);
+        G_AddEvent(other, EV_OTHER_TELEPORT, 0);
     }
 
     // set angles

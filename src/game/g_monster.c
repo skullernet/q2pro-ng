@@ -701,7 +701,7 @@ void monster_dead(edict_t *self)
 void monster_footstep(edict_t *self)
 {
     if (self->groundentity && g_monster_footsteps->integer)
-        self->s.event = EV_OTHER_FOOTSTEP;
+        G_AddEvent(self, EV_OTHER_FOOTSTEP, 0);
 }
 
 /*

@@ -1524,7 +1524,7 @@ void G_PostRespawn(edict_t *self)
         return;
 
     // add a teleportation effect
-    self->s.event = EV_PLAYER_TELEPORT;
+    G_AddEvent(self, EV_PLAYER_TELEPORT, 0);
 
     // hold in place briefly
     self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;

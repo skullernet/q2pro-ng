@@ -657,9 +657,9 @@ static void P_FallingDamage(edict_t *ent)
         static const vec3_t dir = { 0, 0, 1 };
 
         if (delta >= 55)
-            ent->s.event = EV_FALLFAR;
+            G_AddEvent(ent, EV_FALLFAR, 0);
         else
-            ent->s.event = EV_FALL;
+            G_AddEvent(ent, EV_FALL, 0);
 
         ent->pain_debounce_time = level.time + FRAME_TIME; // no normal pain sound
         damage = (int)((delta - 30) / 2);
@@ -669,7 +669,7 @@ static void P_FallingDamage(edict_t *ent)
         if (!deathmatch->integer || !g_dm_no_fall_damage->integer)
             T_Damage(ent, world, world, dir, ent->s.origin, vec3_origin, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
     } else
-        ent->s.event = EV_FALLSHORT;
+        G_AddEvent(ent, EV_FALLSHORT, 0);
 
     // Paril: falling damage noises alert monsters
     if (ent->health)
@@ -934,9 +934,6 @@ G_SetClientEvent
 */
 static void G_SetClientEvent(edict_t *ent)
 {
-    if (ent->s.event)
-        return;
-
     if (ent->client->ps.pmove.pm_flags & PMF_ON_LADDER) {
         if (!deathmatch->integer &&
             current_client->last_ladder_sound < level.time &&

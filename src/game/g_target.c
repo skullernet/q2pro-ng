@@ -471,7 +471,7 @@ Set "sounds" to one of the following:
 
 void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->s.event = EV_SPLASH;
+    G_AddEvent(self, EV_SPLASH, MakeBigLong(0, self->count, self->sounds, gi.DirToByte(self->movedir)));
 
     if (self->dmg)
         T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_SPLASH });
@@ -489,7 +489,6 @@ void SP_target_splash(edict_t *self)
     if (level.is_n64 && self->sounds == SPLASH_SPARKS)
         self->sounds = SPLASH_ELECTRIC_N64;
 
-    self->s.event_param = MakeBigLong(0, self->count, self->sounds, gi.DirToByte(self->movedir));
     gi.linkentity(self);
 }
 
@@ -1064,7 +1063,7 @@ void THINK(update_target_camera)(edict_t *self)
         if (self->moveinfo.remaining_distance <= 0) {
             if (self->movetarget->hackflags & HACKFLAG_TELEPORT_OUT) {
                 if (self->enemy) {
-                    self->enemy->s.event = EV_PLAYER_TELEPORT;
+                    G_AddEvent(self->enemy, EV_PLAYER_TELEPORT, 0);
                     self->enemy->hackflags = HACKFLAG_TELEPORT_OUT;
                     self->enemy->pain_debounce_time = self->enemy->timestamp = SEC(self->movetarget->wait);
                 }

@@ -426,7 +426,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
 
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = gi.modelindex("models/objects/dball/tris.md2");
-    self->s.event = EV_PLAYER_TELEPORT;
+    G_AddEvent(self, EV_PLAYER_TELEPORT, 0);
     self->groundentity = NULL;
 
     gi.linkentity(self);

@@ -17,7 +17,7 @@ void MoveClientToIntermission(edict_t *ent)
 {
     // [Paril-KEX]
     if (ent->client->ps.pmove.pm_type != PM_FREEZE)
-        ent->s.event = EV_OTHER_TELEPORT;
+        G_AddEvent(ent, EV_OTHER_TELEPORT, 0);
     VectorCopy(level.intermission_origin, ent->s.origin);
     VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
