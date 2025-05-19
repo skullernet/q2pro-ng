@@ -65,14 +65,14 @@ typedef int qhandle_t;
 #define MAX_CLIENTS         256     // absolute limit
 #define MAX_EDICTS_OLD      1024
 #define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
-#define MAX_MODELS          8192    // half is reserved for inline BSP models
+#define MAX_MODELS          4096
 #define MAX_SOUNDS          2048
 #define MAX_IMAGES          2048
 #define MAX_LIGHTSTYLES     256
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
-#define MODELINDEX_WORLD    1
+#define MODELINDEX_DUMMY    1   // dummy index for beams
 #define MODELINDEX_PLAYER   255
 
 #define ENTITYNUM_WORLD     (MAX_EDICTS - 2)

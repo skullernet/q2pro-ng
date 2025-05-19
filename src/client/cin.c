@@ -770,9 +770,6 @@ void SCR_PlayCinematic(const char *name)
         return;
     }
 
-    // save picture name for reloading
-    Q_strlcpy(cl.mapname, name, sizeof(cl.mapname));
-
     cls.state = ca_cinematic;
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque

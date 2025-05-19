@@ -1598,7 +1598,6 @@ void SP_worldspawn(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     ent->r.inuse = true; // since the world doesn't use G_Spawn()
-    ent->s.modelindex = MODELINDEX_WORLD;
     ent->gravity = 1.0f;
 
     if (st.hub_map) {

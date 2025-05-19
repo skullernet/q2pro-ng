@@ -920,7 +920,7 @@ static void Con_DrawSolidConsole(void)
         // draw loading state
         switch (con.loadstate) {
         case LOAD_MAP:
-            text = cl.configstrings[CS_MODELS + 1];
+            text = va("maps/%s.bsp", cl.mapname);
             break;
         case LOAD_MODELS:
             text = "models";

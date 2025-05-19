@@ -229,7 +229,7 @@ BSP_LOAD(SubModels)
     mmodel_t    *out;
 
     BSP_ENSURE(count > 0, "Map with no models");
-    BSP_ENSURE(count <= MAX_MODELS - 2, "Too many models");
+    BSP_ENSURE(count <= MAX_MODELS, "Too many models");
 
     bsp->nummodels = count;
     bsp->models = out = BSP_ALLOC(sizeof(*out) * count);

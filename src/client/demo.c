@@ -1086,8 +1086,6 @@ static void parse_info_string(demoInfo_t *info, int clientNum, int index)
                 *p = 0;
             }
         }
-    } else if (index == CS_MODELS + 1) {
-        Com_ParseMapName(info->map, string, sizeof(info->map));
     }
 }
 
@@ -1123,6 +1121,7 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
     MSG_ReadByte();
     MSG_ReadString(NULL, 0);
     clientNum = MSG_ReadShort();
+    MSG_ReadString(info->map, sizeof(info->map));
     MSG_ReadString(NULL, 0);
 
     while (1) {

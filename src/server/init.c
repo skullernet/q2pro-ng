@@ -99,7 +99,7 @@ clients along with it.
 */
 void SV_SpawnServer(const mapcmd_t *cmd)
 {
-    int         i, j;
+    int         i;
     client_t    *client;
 
     SCR_BeginLoadingPlaque();           // for local system
@@ -145,18 +145,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     if (cmd->state == ss_game) {
         sv.cm = cmd->cm;
         sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", sv.cm.checksum);
-
-        // model indices 0 and 255 are reserved
-        if (sv.cm.cache->nummodels > MAX_MODELS - 2)
-            Com_Error(ERR_DROP, "Too many inline models");
-
-        // set inline model names
-        Q_concat(sv.configstrings[CS_MODELS + 1], MAX_QPATH, "maps/", cmd->server, ".bsp");
-        for (i = 1, j = 2; i < sv.cm.cache->nummodels; i++, j++) {
-            if (j == MODELINDEX_PLAYER)
-                j++;    // skip reserved index
-            sprintf(sv.configstrings[CS_MODELS + j], "*%d", i);
-        }
     } else {
         // no real map
         strcpy(sv.configstrings[CS_MAPCHECKSUM], "0");

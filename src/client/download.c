@@ -674,12 +674,14 @@ void CL_RequestNextDownload(void)
     switch (precache_check) {
     case PRECACHE_MODELS:
         // confirm map
-        if (allow_download_maps->integer)
-            check_file(cl.configstrings[CS_MODELS + 1], DL_MAP);
+        if (allow_download_maps->integer) {
+            len = Q_snprintf(fn, sizeof(fn), "maps/%s.bsp", cl.mapname);
+            check_file_len(fn, len, DL_MAP);
+        }
 
         // checking for models
         if (allow_download_models->integer) {
-            for (i = 2; i < MAX_MODELS; i++) {
+            for (i = 1; i < MAX_MODELS; i++) {
                 name = cl.configstrings[CS_MODELS + i];
                 if (!name[0] && i != MODELINDEX_PLAYER) {
                     break;
@@ -702,7 +704,7 @@ void CL_RequestNextDownload(void)
                 return;
             }
 
-            for (i = 2; i < MAX_MODELS; i++) {
+            for (i = 1; i < MAX_MODELS; i++) {
                 name = cl.configstrings[CS_MODELS + i];
                 if (!name[0] && i != MODELINDEX_PLAYER) {
                     break;

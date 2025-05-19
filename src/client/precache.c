@@ -219,12 +219,9 @@ Registers main BSP file and inline models
 */
 void CL_RegisterBspModels(void)
 {
-    char *name = cl.configstrings[CS_MODELS + 1];
-    int i, ret;
+    char *name = va("maps/%s.bsp", cl.mapname);
+    int ret;
 
-    if (!name[0]) {
-        Com_Error(ERR_DROP, "%s: no map set", __func__);
-    }
     ret = BSP_Load(name, &cl.bsp);
     if (cl.bsp == NULL) {
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
@@ -238,17 +235,6 @@ void CL_RegisterBspModels(void)
             Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
                       cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
         }
-    }
-
-    for (i = 2; i < MAX_MODELS; i++) {
-        name = cl.configstrings[CS_MODELS + i];
-        if (!name[0] && i != MODELINDEX_PLAYER) {
-            break;
-        }
-        if (name[0] == '*')
-            cl.model_clip[i] = BSP_InlineModel(cl.bsp, name);
-        else
-            cl.model_clip[i] = NULL;
     }
 }
 
@@ -272,7 +258,7 @@ void CL_RegisterVWepModels(void)
         return;
     }
 
-    for (i = 2; i < MAX_MODELS; i++) {
+    for (i = 1; i < MAX_MODELS; i++) {
         name = cl.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
@@ -362,7 +348,7 @@ void CL_PrepRefresh(void)
 
     CL_RegisterTEntModels();
 
-    for (i = 2; i < MAX_MODELS; i++) {
+    for (i = 1; i < MAX_MODELS; i++) {
         name = cl.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
@@ -429,12 +415,6 @@ void CL_UpdateConfigstring(int index)
         return;
     }
 
-    if (index == CS_MODELS + 1) {
-        if (!Com_ParseMapName(cl.mapname, s, sizeof(cl.mapname)))
-            Com_Error(ERR_DROP, "%s: bad world model: %s", __func__, s);
-        return;
-    }
-
     if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
         CL_SetLightStyle(index - CS_LIGHTS, s);
         return;
@@ -444,14 +424,8 @@ void CL_UpdateConfigstring(int index)
         return;
     }
 
-    if (index >= CS_MODELS + 2 && index < CS_MODELS + MAX_MODELS) {
-        int i = index - CS_MODELS;
-
-        cl.model_draw[i] = R_RegisterModel(s);
-        if (*s == '*')
-            cl.model_clip[i] = BSP_InlineModel(cl.bsp, s);
-        else
-            cl.model_clip[i] = NULL;
+    if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
+        cl.model_draw[index - CS_MODELS] = R_RegisterModel(s);
         return;
     }
 

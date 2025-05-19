@@ -223,7 +223,7 @@ static void TurretAim(edict_t *self)
     // Paril: improved turrets; draw lasersight
     if (!self->target_ent) {
         self->target_ent = G_Spawn();
-        self->target_ent->s.modelindex = MODELINDEX_WORLD;
+        self->target_ent->s.modelindex = MODELINDEX_DUMMY;
         self->target_ent->s.renderfx = RF_BEAM;
         self->target_ent->s.frame = 1;
         self->target_ent->s.skinnum = 0xf0f0f0f0;

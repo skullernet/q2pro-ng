@@ -337,6 +337,5 @@ const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uin
 
 void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p);
-const mmodel_t *BSP_InlineModel(const bsp_t *bsp, const char *name);
 
 void BSP_Init(void);

@@ -45,8 +45,6 @@ void        CM_LoadOverride(cm_t *cm, char *server, size_t server_size);
 const mnode_t   *CM_NodeNum(const cm_t *cm, int number);
 const mleaf_t   *CM_LeafNum(const cm_t *cm, int number);
 
-#define CM_InlineModel(cm, name) BSP_InlineModel((cm)->cache, name)
-
 #define CM_NumNode(cm, node) ((node) ? ((node) - (cm)->cache->nodes) : -1)
 #define CM_NumLeaf(cm, leaf) ((cm)->cache ? ((leaf) - (cm)->cache->leafs) : 0)
 

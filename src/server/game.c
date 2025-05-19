@@ -327,18 +327,30 @@ Also sets mins and maxs for inline bmodels
 */
 static void PF_setmodel(edict_t *ent, const char *name)
 {
-    if (!ent || !name)
-        Com_Error(ERR_DROP, "PF_setmodel: NULL");
+    const bsp_t *bsp = sv.cm.cache;
+    const mmodel_t *mod;
+    int num;
 
-    ent->s.modelindex = PF_ModelIndex(name);
+    if (!ent || !name)
+        Com_Error(ERR_DROP, "%s: NULL", __func__);
+
+    if (name[0] != '*')
+        Com_Error(ERR_DROP, "%s: not an inline model: %s", __func__, name);
+
+    if (!bsp)
+        Com_Error(ERR_DROP, "%s: no map loaded", __func__);
+
+    num = Q_atoi(name + 1);
+    if (num < 1 || num >= bsp->nummodels)
+        Com_Error(ERR_DROP, "%s: bad inline model: %d", __func__, num);
+
+    ent->s.modelindex = num;
+    mod = &bsp->models[num];
 
 // if it is an inline model, get the size information for it
-    if (name[0] == '*') {
-        const mmodel_t *mod = CM_InlineModel(&sv.cm, name);
-        VectorCopy(mod->mins, ent->r.mins);
-        VectorCopy(mod->maxs, ent->r.maxs);
-        PF_LinkEdict(ent);
-    }
+    VectorCopy(mod->mins, ent->r.mins);
+    VectorCopy(mod->maxs, ent->r.maxs);
+    PF_LinkEdict(ent);
 }
 
 /*

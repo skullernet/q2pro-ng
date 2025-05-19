@@ -804,7 +804,7 @@ void THINK(target_laser_start)(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_NOT;
     self->s.renderfx |= RF_BEAM;
-    self->s.modelindex = MODELINDEX_WORLD; // must be non-zero
+    self->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
 
     // [Sam-KEX] On Q2N64, spawnflag of 128 turns it into a lightning bolt
     if (level.is_n64) {

@@ -223,6 +223,7 @@ void SV_New_f(void)
         MSG_WriteShort(-1);
     else
         MSG_WriteShort(sv_client->number);
+    MSG_WriteString(sv.name);
     MSG_WriteString(sv.configstrings[CS_NAME]);
 
     // send protocol specific stuff

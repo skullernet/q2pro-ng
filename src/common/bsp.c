@@ -1136,27 +1136,6 @@ const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p)
     return (const mleaf_t *)node;
 }
 
-/*
-==================
-BSP_InlineModel
-==================
-*/
-const mmodel_t *BSP_InlineModel(const bsp_t *bsp, const char *name)
-{
-    int     num;
-
-    Q_assert(bsp);
-    Q_assert(name);
-    Q_assert(name[0] == '*');
-
-    num = Q_atoi(name + 1);
-    if (num < 1 || num >= bsp->nummodels) {
-        Com_Error(ERR_DROP, "%s: bad number: %d", __func__, num);
-    }
-
-    return &bsp->models[num];
-}
-
 void BSP_Init(void)
 {
     map_visibility_patch = Cvar_Get("map_visibility_patch", "1", 0);

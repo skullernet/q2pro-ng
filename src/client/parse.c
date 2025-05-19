@@ -465,6 +465,9 @@ static void CL_ParseServerData(void)
     // parse player entity number
     cl.clientNum = MSG_ReadShort();
 
+    // get the map name
+    MSG_ReadString(cl.mapname, sizeof(cl.mapname));
+
     // get the full level name
     MSG_ReadString(levelname, sizeof(levelname));
 
@@ -493,7 +496,7 @@ static void CL_ParseServerData(void)
     i = MSG_ReadWord();
 
     if (cinematic) {
-        SCR_PlayCinematic(levelname);
+        SCR_PlayCinematic(cl.mapname);
     } else {
         // separate the printfs so the server message can have a color
         Con_Printf(

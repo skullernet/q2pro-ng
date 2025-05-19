@@ -633,7 +633,11 @@ static void CL_AddPacketEntities(void)
             ent.model = 0;
         } else {
             // set skin
-            if (s1->modelindex == MODELINDEX_PLAYER) {
+            if (s1->solid == PACKED_BSP) {
+                ent.skinnum = 0;
+                ent.skin = 0;
+                ent.model = ~s1->modelindex;
+            } else if (s1->modelindex == MODELINDEX_PLAYER) {
                 // use custom player skin
                 ent.skinnum = 0;
                 ci = &cl.clientinfo[s1->skinnum & 0xff];
@@ -697,7 +701,7 @@ static void CL_AddPacketEntities(void)
             LerpAngles(cent->prev.angles, cent->current.angles,
                        cl.lerpfrac, ent.angles);
             // mimic original ref_gl "leaning" bug (uuugly!)
-            if (s1->modelindex == MODELINDEX_PLAYER && cl_rollhack->integer)
+            if (s1->solid != PACKED_BSP && s1->modelindex == MODELINDEX_PLAYER && cl_rollhack->integer)
                 ent.angles[ROLL] = -ent.angles[ROLL];
         }
 
@@ -1204,9 +1208,7 @@ static void CL_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         if (ent->current.solid != PACKED_BSP)
             continue;
 
-        cmodel = cl.model_clip[ent->current.modelindex];
-        if (!cmodel)
-            continue;
+        cmodel = CL_InlineModel(ent->current.modelindex);
 
         LerpVector(ent->prev.origin, ent->current.origin, cl.lerpfrac, org);
         LerpAngles(ent->prev.angles, ent->current.angles, cl.lerpfrac, ang);
@@ -1471,10 +1473,8 @@ void CL_GetEntitySoundOrigin(unsigned entnum, vec3_t org)
 
     // offset the origin for BSP models
     if (ent->current.solid == PACKED_BSP) {
-        mod = cl.model_clip[ent->current.modelindex];
-        if (mod) {
-            VectorAvg(mod->mins, mod->maxs, mid);
-            VectorAdd(org, mid, org);
-        }
+        mod = CL_InlineModel(ent->current.modelindex);
+        VectorAvg(mod->mins, mod->maxs, mid);
+        VectorAdd(org, mid, org);
     }
 }

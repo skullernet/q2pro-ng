@@ -57,7 +57,7 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
 
     self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, gi.DirToByte(self->movedir));
     self->s.morefx = EFX_STEAM;
-    self->s.modelindex = MODELINDEX_WORLD;
+    self->s.modelindex = MODELINDEX_DUMMY;
 
     self->nextthink = level.time + SEC(self->wait);
     self->think = target_steam_think;

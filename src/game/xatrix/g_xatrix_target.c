@@ -49,7 +49,7 @@ void SP_target_mal_laser(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_NOT;
     self->s.renderfx |= RF_BEAM;
-    self->s.modelindex = MODELINDEX_WORLD; // must be non-zero
+    self->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
     self->flags |= FL_TRAP_LASER_FIELD;
 
     // set the beam diameter

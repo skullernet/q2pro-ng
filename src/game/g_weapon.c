@@ -701,7 +701,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->s.renderfx = RF_BEAM_LIGHTNING;
     laser->movetype = MOVETYPE_NONE;
     laser->r.solid = SOLID_NOT;
-    laser->s.modelindex = MODELINDEX_WORLD; // must be non-zero
+    laser->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
     VectorCopy(self->s.origin, laser->s.origin);
     VectorCopy(tr.endpos, laser->s.old_origin);
     laser->s.skinnum = 0xD0D0D0D0;

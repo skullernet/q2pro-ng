@@ -70,6 +70,14 @@ void CL_CheckPredictionError(void)
     VectorCopy(delta, cl.prediction_error);
 }
 
+const mmodel_t *CL_InlineModel(int index)
+{
+    if (index <= 0 || index >= cl.bsp->nummodels)
+        Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, index);
+
+    return &cl.bsp->models[index];
+}
+
 /*
 ====================
 CL_ClipMoveToEntities
@@ -81,7 +89,6 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     trace_t     trace;
     const mnode_t   *headnode;
     const centity_t *ent;
-    const mmodel_t  *cmodel;
 
     for (i = 0; i < cl.numSolidEntities; i++) {
         ent = cl.solidEntities[i];
@@ -91,10 +98,7 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 
         if (ent->current.solid == PACKED_BSP) {
             // special value for bmodel
-            cmodel = cl.model_clip[ent->current.modelindex];
-            if (!cmodel)
-                continue;
-            headnode = cmodel->headnode;
+            headnode = CL_InlineModel(ent->current.modelindex)->headnode;
         } else {
             headnode = CM_HeadnodeForBox(ent->mins, ent->maxs);
         }
@@ -154,10 +158,7 @@ static int CL_PointContents(const vec3_t point)
         if (ent->current.solid != PACKED_BSP) // special value for bmodel
             continue;
 
-        cmodel = cl.model_clip[ent->current.modelindex];
-        if (!cmodel)
-            continue;
-
+        cmodel = CL_InlineModel(ent->current.modelindex);
         contents |= CM_TransformedPointContents(point, cmodel->headnode, ent->current.origin, ent->current.angles);
     }
 

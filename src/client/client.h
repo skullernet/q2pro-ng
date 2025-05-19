@@ -271,7 +271,6 @@ typedef struct {
     bsp_t        *bsp;
 
     qhandle_t model_draw[MAX_MODELS];
-    const mmodel_t *model_clip[MAX_MODELS];
 
     qhandle_t sound_precache[MAX_SOUNDS];
     qhandle_t image_precache[MAX_IMAGES];
@@ -766,6 +765,7 @@ void CL_PredictMovement(void);
 void CL_CheckPredictionError(void);
 void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
               const vec3_t end, int passent, contents_t contentmask);
+const mmodel_t *CL_InlineModel(int index);
 
 
 //

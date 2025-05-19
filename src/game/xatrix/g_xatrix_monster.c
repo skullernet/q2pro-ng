@@ -94,7 +94,7 @@ void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*updat
         beam->movetype = MOVETYPE_NONE;
         beam->r.solid = SOLID_NOT;
         beam->s.renderfx |= RF_BEAM;
-        beam->s.modelindex = MODELINDEX_WORLD;
+        beam->s.modelindex = MODELINDEX_DUMMY;
         beam->r.ownernum = self->s.number;
         beam->dmg = damage;
         beam->s.frame = 2;
