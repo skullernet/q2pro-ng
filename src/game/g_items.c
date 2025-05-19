@@ -169,7 +169,7 @@ void THINK(DoRespawn)(edict_t *ent)
 
             ent->classname = ent->item->classname;
             ent->s.effects = ent->item->world_model_flags;
-            gi.setmodel(ent, ent->item->world_model);
+            ent->s.modelindex = gi.modelindex(ent->item->world_model);
         }
     }
     // ROGUE
@@ -984,7 +984,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     dropped->classname = item->classname;
     dropped->s.effects = item->world_model_flags;
-    gi.setmodel(dropped, dropped->item->world_model);
+    dropped->s.modelindex = gi.modelindex(dropped->item->world_model);
     dropped->s.renderfx = RF_GLOW | RF_IR_VISIBLE; // PGM
     VectorSet(dropped->r.mins, -15, -15, -15);
     VectorSet(dropped->r.maxs, 15, 15, 15);
@@ -1049,8 +1049,9 @@ droptofloor
 */
 void THINK(droptofloor)(edict_t *ent)
 {
-    trace_t tr;
-    vec3_t  dest;
+    trace_t     tr;
+    vec3_t      dest;
+    const char *model;
 
     // [Paril-KEX] scale foodcube based on how much we ingested
     if (strcmp(ent->classname, "item_foodcube") == 0) {
@@ -1062,9 +1063,10 @@ void THINK(droptofloor)(edict_t *ent)
     }
 
     if (ent->model)
-        gi.setmodel(ent, ent->model);
+        model = ent->model;
     else
-        gi.setmodel(ent, ent->item->world_model);
+        model = ent->item->world_model;
+    ent->s.modelindex = gi.modelindex(model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;

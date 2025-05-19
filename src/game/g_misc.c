@@ -204,7 +204,7 @@ void ThrowClientHead(edict_t *self, int damage)
 
     self->s.origin[2] += 32;
     self->s.frame = 0;
-    gi.setmodel(self, gibname);
+    self->s.modelindex = gi.modelindex(gibname);
     VectorSet(self->r.mins, -16, -16, 0);
     VectorSet(self->r.maxs, 16, 16, 16);
 
@@ -1492,7 +1492,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_arm(edict_t *ent)
 {
-    gi.setmodel(ent, "models/objects/gibs/arm/tris.md2");
+    ent->s.modelindex = gi.modelindex("models/objects/gibs/arm/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1510,7 +1510,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_leg(edict_t *ent)
 {
-    gi.setmodel(ent, "models/objects/gibs/leg/tris.md2");
+    ent->s.modelindex = gi.modelindex("models/objects/gibs/leg/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1528,7 +1528,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_head(edict_t *ent)
 {
-    gi.setmodel(ent, "models/objects/gibs/head/tris.md2");
+    ent->s.modelindex = gi.modelindex("models/objects/gibs/head/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1814,7 +1814,7 @@ void SP_misc_teleporter(edict_t *ent)
 {
     edict_t *trig;
 
-    gi.setmodel(ent, "models/objects/dmspot/tris.md2");
+    ent->s.modelindex = gi.modelindex("models/objects/dmspot/tris.md2");
     ent->s.skinnum = 1;
     if (level.is_n64 || (ent->spawnflags & SPAWNFLAG_TEMEPORTER_N64_EFFECT))
         ent->s.morefx = EFX_TELEPORTER2;
@@ -1853,7 +1853,7 @@ void SP_misc_teleporter_dest(edict_t *ent)
     if (level.is_n64)
         return;
 
-    gi.setmodel(ent, "models/objects/dmspot/tris.md2");
+    ent->s.modelindex = gi.modelindex("models/objects/dmspot/tris.md2");
     ent->s.skinnum = 0;
     ent->s.renderfx |= RF_NOSHADOW;
     ent->r.solid = SOLID_BBOX;
@@ -1974,7 +1974,7 @@ void THINK(fire_fly)(edict_t *self)
     fireball->velocity[2] = (self->speed * 1.75f) + (frandom() * 200);
     crandom_vec(fireball->avelocity, 360);
     fireball->classname = "fireball";
-    gi.setmodel(fireball, "models/objects/gibs/sm_meat/tris.md2");
+    fireball->s.modelindex = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
     VectorCopy(self->s.origin, fireball->s.origin);
     fireball->nextthink = level.time + SEC(5);
     fireball->think = G_FreeEdict;
@@ -2235,7 +2235,7 @@ void USE(misc_model_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_misc_model(edict_t *ent)
 {
     if (ent->model && ent->model[0])
-        gi.setmodel(ent, ent->model);
+        ent->s.modelindex = gi.modelindex(ent->model);
 
     if (ent->spawnflags & SPAWNFLAG_MODEL_TOGGLE) {
         ent->use = misc_model_use;

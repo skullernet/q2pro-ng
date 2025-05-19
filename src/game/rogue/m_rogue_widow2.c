@@ -1093,7 +1093,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     VectorMA(self->velocity, vscale, vd, gib->velocity);
     ClipGibVelocity(gib);
 
-    gi.setmodel(gib, gibname);
+    gib->s.modelindex = gi.modelindex(gibname);
 
     if (sized) {
         gib->style = hitsound;

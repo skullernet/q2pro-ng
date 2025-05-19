@@ -747,16 +747,18 @@ void THINK(CTFFlagThink)(edict_t *ent)
 
 void THINK(CTFFlagSetup)(edict_t *ent)
 {
-    trace_t tr;
-    vec3_t  dest;
+    trace_t     tr;
+    vec3_t      dest;
+    const char *model;
 
     VectorSet(ent->r.mins, -15, -15, -15);
     VectorSet(ent->r.maxs, 15, 15, 15);
 
     if (ent->model)
-        gi.setmodel(ent, ent->model);
+        model = ent->model;
     else
-        gi.setmodel(ent, ent->item->world_model);
+        model = ent->item->world_model;
+    ent->s.modelindex = gi.modelindex(model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -1763,7 +1765,7 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->s.renderfx = RF_GLOW;
     VectorSet(ent->r.mins, -15, -15, -15);
     VectorSet(ent->r.maxs, 15, 15, 15);
-    gi.setmodel(ent, ent->item->world_model);
+    ent->s.modelindex = gi.modelindex(ent->item->world_model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
