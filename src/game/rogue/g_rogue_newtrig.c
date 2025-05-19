@@ -111,6 +111,7 @@ void SP_trigger_teleport(edict_t *self)
 
     self->touch = trigger_teleport_touch;
 
+    self->r.svflags = SVF_NOCLIENT;
     self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
 
