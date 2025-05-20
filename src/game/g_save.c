@@ -1386,24 +1386,26 @@ static const gitem_t *read_item(void)
     return item;
 }
 
-static int saveptrcmp(const void *p1, const void *p2)
-{
-    return strcmp(((const save_ptr_t *)p1)->name, ((const save_ptr_t *)p2)->name);
-}
-
 static void *read_pointer(ptr_type_t type)
 {
-    const save_ptr_t *ptr;
+    const save_ptr_t *ptrs = save_ptrs[type];
+    const char *name = parse();
+    int left = 0;
+    int right = num_save_ptrs[type] - 1;
 
-    save_ptr_t k = { .name = parse() };
-    ptr = bsearch(&k, save_ptrs[type], num_save_ptrs[type], sizeof(save_ptr_t), saveptrcmp);
-
-    if (!ptr) {
-        unknown("pointer");
-        return NULL;
+    while (left <= right) {
+        int i = (left + right) / 2;
+        int r = strcmp(name, ptrs[i].name);
+        if (r < 0)
+            right = i - 1;
+        else if (r > 0)
+            left = i + 1;
+        else
+            return (void *)ptrs[i].ptr;
     }
 
-    return (void *)ptr->ptr;
+    unknown("pointer");
+    return NULL;
 }
 
 static void read_inventory(int *inven)

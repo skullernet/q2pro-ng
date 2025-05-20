@@ -107,7 +107,19 @@ void G_LoadL10nFile(void)
 
 const char *G_GetL10nString(const char *key)
 {
-    message_t k = { key };
-    message_t *m = bsearch(&k, messages, nb_messages, sizeof(messages[0]), messagecmp);
-    return m ? m->value : NULL;
+    int left = 0;
+    int right = nb_messages - 1;
+
+    while (left <= right) {
+        int i = (left + right) / 2;
+        int r = strcmp(key, messages[i].key);
+        if (r < 0)
+            right = i - 1;
+        else if (r > 0)
+            left = i + 1;
+        else
+            return messages[i].value;
+    }
+
+    return NULL;
 }
