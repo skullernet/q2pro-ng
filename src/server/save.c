@@ -46,7 +46,6 @@ static bool have_enhanced_savegames(void);
 
 static int write_server_file(savetype_t autosave)
 {
-    char        name[MAX_OSPATH];
     cvar_t      *var;
     int         ret;
 
@@ -90,16 +89,20 @@ static int write_server_file(savetype_t autosave)
         return -1;
 
     // write game state
-    if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/game.ssv", fs_gamedir) >= MAX_OSPATH)
+    FS_OpenFile("save/" SAVE_CURRENT "/game.ssv", &svs.savefile, FS_MODE_WRITE | FS_FLAG_GZIP);
+    if (!svs.savefile)
         return -1;
 
-    ge->WriteGame(name, autosave == SAVE_LEVEL_START);
-    return 0;
+    ge->WriteGame(svs.savefile, autosave == SAVE_LEVEL_START);
+
+    ret = FS_CloseFile(svs.savefile);
+    svs.savefile = 0;
+    return ret;
 }
 
 static int write_level_file(void)
 {
-    char        name[MAX_OSPATH];
+    char        name[MAX_QPATH];
     int         i, ret;
     char        *s;
     size_t      len;
@@ -147,11 +150,18 @@ static int write_level_file(void)
         return -1;
 
     // write game level
-    if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/%s.sav", fs_gamedir, sv.name) >= MAX_OSPATH)
+    if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sav", sv.name) >= MAX_QPATH)
         return -1;
 
-    ge->WriteLevel(name);
-    return 0;
+    FS_OpenFile(name, &svs.savefile, FS_MODE_WRITE | FS_FLAG_GZIP);
+    if (!svs.savefile)
+        return -1;
+
+    ge->WriteLevel(svs.savefile);
+
+    ret = FS_CloseFile(svs.savefile);
+    svs.savefile = 0;
+    return ret;
 }
 
 static int copy_file(const char *src, const char *dst, const char *name)
@@ -329,7 +339,7 @@ static void abort_func(void *arg)
 
 static int read_server_file(void)
 {
-    char        name[MAX_OSPATH], string[MAX_STRING_CHARS];
+    char        name[MAX_QPATH], string[MAX_STRING_CHARS];
     mapcmd_t    cmd;
 
     // errors like missing file, bad version, etc are
@@ -392,10 +402,14 @@ static int read_server_file(void)
         Com_Error(ERR_DROP, "Game does not support enhanced savegames");
 
     // read game state
-    if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/game.ssv", fs_gamedir) >= MAX_OSPATH)
-        Com_Error(ERR_DROP, "Savegame path too long");
+    FS_OpenFile("save/" SAVE_CURRENT "/game.ssv", &svs.savefile, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
+    if (!svs.savefile)
+        return -1;
 
-    ge->ReadGame(name);
+    ge->ReadGame(svs.savefile, "save/" SAVE_CURRENT "/game.ssv");
+
+    FS_CloseFile(svs.savefile);
+    svs.savefile = 0;
 
     // clear pending CM
     Com_AbortFunc(NULL, NULL);
@@ -407,7 +421,7 @@ static int read_server_file(void)
 
 static int read_level_file(void)
 {
-    char    name[MAX_OSPATH];
+    char    name[MAX_QPATH];
     size_t  len, maxlen;
     int     index;
     void    *data;
@@ -460,10 +474,17 @@ static int read_level_file(void)
     FS_FreeFile(data);
 
     // read game level
-    if (Q_snprintf(name, MAX_OSPATH, "%s/save/" SAVE_CURRENT "/%s.sav", fs_gamedir, sv.name) >= MAX_OSPATH)
+    if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sav", sv.name) >= MAX_QPATH)
         Com_Error(ERR_DROP, "Savegame path too long");
 
-    ge->ReadLevel(name);
+    FS_OpenFile(name, &svs.savefile, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
+    if (!svs.savefile)
+        return -1;
+
+    ge->ReadLevel(svs.savefile, name);
+
+    FS_CloseFile(svs.savefile);
+    svs.savefile = 0;
     return 0;
 }
 

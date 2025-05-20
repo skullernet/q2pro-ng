@@ -379,7 +379,6 @@ static void ShutdownGame(void)
 
     Nav_Shutdown();
     G_FreeL10nFile();
-    G_CleanupSaves();
 }
 
 static void *G_GetExtension(const char *name)

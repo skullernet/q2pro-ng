@@ -25,20 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_VERSION_MINIMUM            1
 #define SAVE_VERSION_CURRENT            1
 
-#if USE_ZLIB
-#include <zlib.h>
-#ifdef __GNUC__
-int gzprintf(gzFile, const char *, ...) q_printf(2, 3);
-#endif
-#else
-#define gzopen(name, mode)          fopen(name, mode)
-#define gzclose(file)               fclose(file)
-#define gzprintf(file, ...)         fprintf(file, __VA_ARGS__)
-#define gzgets(file, buf, size)     fgets(buf, size, file)
-#define gzbuffer(file, size)        (void)0
-#define gzFile                      FILE *
-#endif
-
 typedef enum {
     F_BYTE,
     F_INT16,
@@ -769,7 +755,7 @@ static const save_field_t game_locals_t_fields[] = {
 
 //=========================================================
 
-static gzFile fp;
+static qhandle_t g_savefile;
 
 //
 // writing
@@ -788,68 +774,85 @@ static struct {
 
 #define indent(s)   (int)(block.indent * 2 + strlen(s)), s
 
+q_printf(1, 2)
+static void write_str(const char *fmt, ...)
+{
+    va_list     argptr;
+    char        text[MAX_STRING_CHARS * 4];
+    size_t      len;
+
+    va_start(argptr, fmt);
+    len = Q_vsnprintf(text, sizeof(text), fmt, argptr);
+    va_end(argptr);
+
+    if (len >= sizeof(text))
+        gi.error("oversize line");
+
+    fs->WriteFile(text, len, g_savefile);
+}
+
 static void begin_block(const char *name)
 {
-    gzprintf(fp, "%*s {\n", indent(name));
+    write_str("%*s {\n", indent(name));
     block.indent++;
 }
 
 static void end_block(void)
 {
     block.indent--;
-    gzprintf(fp, "%*s}\n", indent(""));
+    write_str("%*s}\n", indent(""));
 }
 
 static void write_tok(const char *name, const char *tok)
 {
-    gzprintf(fp, "%*s %s\n", indent(name), tok);
+    write_str("%*s %s\n", indent(name), tok);
 }
 
 static void write_int(const char *name, int v)
 {
-    gzprintf(fp, "%*s %d\n", indent(name), v);
+    write_str("%*s %d\n", indent(name), v);
 }
 
 static void write_uint_hex(const char *name, unsigned v)
 {
     if (v < 256)
-        gzprintf(fp, "%*s %u\n", indent(name), v);
+        write_str("%*s %u\n", indent(name), v);
     else
-        gzprintf(fp, "%*s %#x\n", indent(name), v);
+        write_str("%*s %#x\n", indent(name), v);
 }
 
 static void write_int64(const char *name, int64_t v)
 {
-    gzprintf(fp, "%*s %"PRId64"\n", indent(name), v);
+    write_str("%*s %"PRId64"\n", indent(name), v);
 }
 
 static void write_uint64_hex(const char *name, uint64_t v)
 {
-    gzprintf(fp, "%*s %#"PRIx64"\n", indent(name), v);
+    write_str("%*s %#"PRIx64"\n", indent(name), v);
 }
 
 static void write_int16_v(const char *name, const int16_t *v, int n)
 {
-    gzprintf(fp, "%*s ", indent(name));
+    write_str("%*s ", indent(name));
     for (int i = 0; i < n; i++)
-        gzprintf(fp, "%d ", v[i]);
-    gzprintf(fp, "\n");
+        write_str("%d ", v[i]);
+    write_str("\n");
 }
 
 static void write_int_v(const char *name, const int *v, int n)
 {
-    gzprintf(fp, "%*s ", indent(name));
+    write_str("%*s ", indent(name));
     for (int i = 0; i < n; i++)
-        gzprintf(fp, "%d ", v[i]);
-    gzprintf(fp, "\n");
+        write_str("%d ", v[i]);
+    write_str("\n");
 }
 
 static void write_float_v(const char *name, const float *v, int n)
 {
-    gzprintf(fp, "%*s ", indent(name));
+    write_str("%*s ", indent(name));
     for (int i = 0; i < n; i++)
-        gzprintf(fp, "%.6g ", v[i]);
-    gzprintf(fp, "\n");
+        write_str("%.6g ", v[i]);
+    write_str("\n");
 }
 
 static void write_string(const char *name, const char *s)
@@ -857,7 +860,7 @@ static void write_string(const char *name, const char *s)
     char buffer[MAX_STRING_CHARS * 4];
 
     COM_EscapeString(buffer, s, sizeof(buffer));
-    gzprintf(fp, "%*s \"%s\"\n", indent(name), buffer);
+    write_str("%*s \"%s\"\n", indent(name), buffer);
 }
 
 static void write_byte_v(const char *name, const byte *p, int n)
@@ -867,15 +870,15 @@ static void write_byte_v(const char *name, const byte *p, int n)
         return;
     }
 
-    gzprintf(fp, "%*s ", indent(name));
+    write_str("%*s ", indent(name));
     for (int i = 0; i < n; i++)
-        gzprintf(fp, "%02x", p[i]);
-    gzprintf(fp, "\n");
+        write_str("%02x", p[i]);
+    write_str("\n");
 }
 
 static void write_vector(const char *name, const vec_t *v)
 {
-    gzprintf(fp, "%*s %.6g %.6g %.6g\n", indent(name), v[0], v[1], v[2]);
+    write_str("%*s %.6g %.6g %.6g\n", indent(name), v[0], v[1], v[2]);
 }
 
 static void write_pointer(const char *name, const void *p, ptr_type_t type)
@@ -995,7 +998,7 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_uint64_hex(field->name, *(uint64_t *)p);
         break;
     case F_BOOL:
-        gzprintf(fp, "%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
+        write_str("%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
         break;
     case F_FLOAT:
         write_float_v(field->name, p, field->count);
@@ -1074,10 +1077,11 @@ static struct {
 
 static const char *read_line(void)
 {
-    line.number++;
-    line.ptr = gzgets(fp, line.data, sizeof(line.data));
-    if (!line.ptr)
+    int ret = fs->ReadLine(g_savefile, line.data, sizeof(line.data));
+    if (ret < 0)
         gi.error("%s: error reading input file", line.filename);
+    line.ptr = line.data;
+    line.number++;
     return line.ptr;
 }
 
@@ -1589,49 +1593,36 @@ A single player death will automatically restore from the
 last save position.
 ============
 */
-void WriteGame(const char *filename, bool autosave)
+void WriteGame(qhandle_t handle, bool autosave)
 {
-    int     i;
-
     if (!autosave)
         SaveClientData();
 
-    fp = gzopen(filename, "wb");
-    if (!fp)
-        gi.error("Couldn't open %s", filename);
+    g_savefile = handle;
 
     memset(&block, 0, sizeof(block));
-    gzprintf(fp, SAVE_MAGIC1 " version %d\n", SAVE_VERSION_CURRENT);
+    write_str(SAVE_MAGIC1 " version %d\n", SAVE_VERSION_CURRENT);
 
     game.autosaved = autosave;
     write_fields("game", game_locals_t_fields, &empty.game, &game);
     game.autosaved = false;
 
     begin_block("clients");
-    for (i = 0; i < game.maxclients; i++)
+    for (int i = 0; i < game.maxclients; i++)
         write_fields(va("%d", i), gclient_t_fields, &empty.client, &game.clients[i]);
     end_block();
-
-    i = gzclose(fp);
-    fp = NULL;
-    if (i)
-        gi.error("Couldn't write %s", filename);
 }
 
-void ReadGame(const char *filename)
+void ReadGame(qhandle_t handle, const char *filename)
 {
     int num;
 
     gi.FreeTags(TAG_GAME);
 
-    fp = gzopen(filename, "rb");
-    if (!fp)
-        gi.error("Couldn't open %s", filename);
-
-    gzbuffer(fp, 65536);
+    g_savefile = handle;
 
     memset(&line, 0, sizeof(line));
-    line.filename = COM_SkipPath(filename);
+    line.filename = filename;
     expect(SAVE_MAGIC1);
     expect("version");
     line.version = parse_int32();
@@ -1653,9 +1644,6 @@ void ReadGame(const char *filename)
     expect("{");
     while ((num = parse_array(game.maxclients)) != -1)
         read_fields(gclient_t_fields, &game.clients[num]);
-
-    gzclose(fp);
-    fp = NULL;
 }
 
 //==========================================================
@@ -1666,17 +1654,15 @@ WriteLevel
 
 =================
 */
-void WriteLevel(const char *filename)
+void WriteLevel(qhandle_t handle)
 {
     int     i;
     edict_t *ent, *nullent;
 
-    fp = gzopen(filename, "wb");
-    if (!fp)
-        gi.error("Couldn't open %s", filename);
+    g_savefile = handle;
 
     memset(&block, 0, sizeof(block));
-    gzprintf(fp, SAVE_MAGIC2 " version %d\n", SAVE_VERSION_CURRENT);
+    write_str(SAVE_MAGIC2 " version %d\n", SAVE_VERSION_CURRENT);
 
     // write out level_locals_t
     write_fields("level", level_locals_t_fields, &empty.level, &level);
@@ -1696,11 +1682,6 @@ void WriteLevel(const char *filename)
     end_block();
 
     memset(nullent, 0, sizeof(*nullent));
-
-    i = gzclose(fp);
-    fp = NULL;
-    if (i)
-        gi.error("Couldn't write %s", filename);
 }
 
 /*
@@ -1719,7 +1700,7 @@ calling ReadLevel.
 No clients are connected yet.
 =================
 */
-void ReadLevel(const char *filename)
+void ReadLevel(qhandle_t handle, const char *filename)
 {
     int     entnum;
     int     i;
@@ -1734,14 +1715,10 @@ void ReadLevel(const char *filename)
         if (f->kind == F_LSTRING)
             *(char **)((byte *)&level + f->ofs) = NULL;
 
-    fp = gzopen(filename, "rb");
-    if (!fp)
-        gi.error("Couldn't open %s", filename);
-
-    gzbuffer(fp, 65536);
+    g_savefile = handle;
 
     memset(&line, 0, sizeof(line));
-    line.filename = COM_SkipPath(filename);
+    line.filename = filename;
     expect(SAVE_MAGIC2);
     expect("version");
     line.version = parse_int32();
@@ -1774,9 +1751,6 @@ void ReadLevel(const char *filename)
         gi.linkentity(ent);
     }
 
-    gzclose(fp);
-    fp = NULL;
-
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {
         ent = &g_edicts[i];
@@ -1805,15 +1779,6 @@ void ReadLevel(const char *filename)
 
     // refresh global precache indices
     G_RefreshPrecaches();
-}
-
-// clean up if error was thrown mid-save
-void G_CleanupSaves(void)
-{
-    if (fp) {
-        gzclose(fp);
-        fp = NULL;
-    }
 }
 
 // [Paril-KEX]

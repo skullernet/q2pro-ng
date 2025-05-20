@@ -2083,6 +2083,10 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     SV_MasterShutdown();
     SV_ShutdownGameProgs();
 
+#if USE_SAVEGAMES
+    FS_CloseFile(svs.savefile);
+#endif
+
     // free current level
     CM_FreeMap(&sv.cm);
     memset(&sv, 0, sizeof(sv));

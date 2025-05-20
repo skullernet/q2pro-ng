@@ -1377,11 +1377,10 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 //
 // g_save.c
 //
-void WriteGame(const char *filename, bool autosave);
-void ReadGame(const char *filename);
-void WriteLevel(const char *filename);
-void ReadLevel(const char *filename);
-void G_CleanupSaves(void);
+void WriteGame(qhandle_t handle, bool autosave);
+void ReadGame(qhandle_t handle, const char *filename);
+void WriteLevel(qhandle_t handle);
+void ReadLevel(qhandle_t handle, const char *filename);
 bool G_CanSave(void);
 
 //

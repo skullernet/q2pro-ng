@@ -361,6 +361,7 @@ typedef struct {
 
 #if USE_SAVEGAMES
     int             gamedetecthack;
+    qhandle_t       savefile;
 #endif
 
     unsigned        last_heartbeat;
