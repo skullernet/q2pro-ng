@@ -121,6 +121,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     // free current level
     CM_FreeMap(&sv.cm);
+    Nav_Unload();
 
     // wipe the entire per-level structure
     memset(&sv, 0, sizeof(sv));
@@ -163,6 +164,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // precache and static commands can be issued during
     // map initialization
     SV_SetState(ss_loading);
+
+    Nav_Load();
 
     // load and spawn all other entities
     ge->SpawnEntities(sv.name, sv.cm.entitystring, cmd->spawnpoint);

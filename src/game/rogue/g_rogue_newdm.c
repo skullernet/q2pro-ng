@@ -214,7 +214,8 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     base->s.modelindex = gi.modelindex("models/objects/dopplebase/tris.md2");
     base->s.alpha = 0.1f;
     base->teammaster = ent;
-    base->flags |= (FL_DAMAGEABLE | FL_TRAP);
+    base->flags |= FL_DAMAGEABLE;
+    base->r.svflags |= SVF_TRAP;
     base->takedamage = true;
     base->health = 30;
     base->pain = doppleganger_pain;

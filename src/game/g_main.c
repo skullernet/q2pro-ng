@@ -360,8 +360,6 @@ static void InitGame(void)
 
     G_LoadL10nFile();
 
-    Nav_Init();
-
     cv = gi.cvar("game", NULL, 0);
     use_psx_assets = cv && !strncmp(cv->string, "psx", 3);
 }
@@ -377,7 +375,6 @@ static void ShutdownGame(void)
     gi.FreeTags(TAG_LEVEL);
     gi.FreeTags(TAG_GAME);
 
-    Nav_Shutdown();
     G_FreeL10nFile();
 }
 
@@ -389,9 +386,6 @@ static void *G_GetExtension(const char *name)
 static void G_RestartFilesystem(void)
 {
     G_LoadL10nFile();
-
-    Nav_Unload();
-    Nav_Load(level.mapname);
 }
 
 /*
@@ -773,8 +767,6 @@ static void G_RunFrame_(bool main_loop)
     G_CheckCvars();
 
     level.time += FRAME_TIME;
-
-    Nav_Frame();
 
     if (level.intermission_fading) {
         if (level.intermission_fade_time > level.time) {

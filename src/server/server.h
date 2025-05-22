@@ -583,6 +583,15 @@ void SV_RegisterSavegames(void);
 #endif
 
 //
+// sv_nav.c
+//
+void Nav_Register(void);
+void Nav_Load(void);
+void Nav_Unload(void);
+void Nav_Frame(void);
+bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info);
+
+//
 // ugly gclient_(old|new)_t accessors
 //
 

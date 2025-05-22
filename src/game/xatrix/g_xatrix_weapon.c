@@ -550,8 +550,9 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     trap->s.sound = gi.soundindex("weapons/traploop.wav");
     // END 16-APR-98
 
-    trap->flags |= (FL_DAMAGEABLE | FL_MECHANICAL | FL_TRAP);
+    trap->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
     trap->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
+    trap->r.svflags |= SVF_TRAP;
 
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))

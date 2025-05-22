@@ -776,7 +776,7 @@ static void target_laser_on(edict_t *self)
         self->activator = self;
     self->spawnflags |= SPAWNFLAG_LASER_ZAP | SPAWNFLAG_LASER_ON;
     self->r.svflags &= ~SVF_NOCLIENT;
-    self->flags |= FL_TRAP;
+    self->r.svflags |= SVF_TRAP;
     target_laser_think(self);
 }
 
@@ -784,7 +784,7 @@ void target_laser_off(edict_t *self)
 {
     self->spawnflags &= ~SPAWNFLAG_LASER_ON;
     self->r.svflags |= SVF_NOCLIENT;
-    self->flags &= ~FL_TRAP;
+    self->r.svflags &= ~SVF_TRAP;
     self->nextthink = 0;
 }
 
@@ -888,7 +888,7 @@ void SP_target_laser(edict_t *self)
 
     // let everything else get spawned before we start firing
     self->think = target_laser_start;
-    self->flags |= FL_TRAP_LASER_FIELD;
+    self->r.svflags |= SVF_LASER_FIELD;
     self->nextthink = level.time + SEC(1);
 }
 

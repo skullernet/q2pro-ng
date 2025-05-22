@@ -2,11 +2,10 @@
 // Licensed under the GNU General Public License 2.0.
 // nav.c -- Kex navigation node support
 
-#include "g_local.h"
-#include "g_nav.h"
-#include "shared/files.h"
-#include "shared/list.h"
+#include "server.h"
 #include <float.h>
+
+#define NAV_DEBUG (USE_REF && USE_DEBUG)
 
 // magic file header
 #define NAV_MAGIC   MakeLittleLong('N', 'A', 'V', '3')
@@ -184,123 +183,79 @@ static struct {
     bool        setup_entities;
 } nav_data;
 
+static const float NavFloorDistance = 96.0f;
+
 static cvar_t *nav_enable;
+
+#if NAV_DEBUG
 static cvar_t *nav_debug;
 static cvar_t *nav_debug_range;
+#endif
 
 static void Nav_AllocContext(nav_ctx_t *ctx)
 {
-    ctx->g_score   = gi.TagMalloc(sizeof(ctx->g_score  [0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->came_from = gi.TagMalloc(sizeof(ctx->came_from[0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->went_to   = gi.TagMalloc(sizeof(ctx->went_to  [0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->open_set  = gi.TagMalloc(sizeof(ctx->open_set [0]) * nav_data.num_nodes, TAG_NAV);
+    ctx->g_score   = Z_TagMalloc(sizeof(ctx->g_score  [0]) * nav_data.num_nodes, TAG_NAV);
+    ctx->came_from = Z_TagMalloc(sizeof(ctx->came_from[0]) * nav_data.num_nodes, TAG_NAV);
+    ctx->went_to   = Z_TagMalloc(sizeof(ctx->went_to  [0]) * nav_data.num_nodes, TAG_NAV);
+    ctx->open_set  = Z_TagMalloc(sizeof(ctx->open_set [0]) * nav_data.num_nodes, TAG_NAV);
 }
 
-typedef struct {
-    const byte *ptr, *end;
-} nav_buffer_t;
-
-#define RL32(p) MakeLittleLong((p)[0], (p)[1], (p)[2], (p)[3])
-
-static uint32_t Nav_ReadUint32(nav_buffer_t *b)
+static void Nav_ReadVector(sizebuf_t *b, vec3_t v)
 {
-    if (b->end - b->ptr < 4) {
-        b->ptr = b->end;
-        return 0xffffffff;
-    }
-    uint32_t v = RL32(b->ptr);
-    b->ptr += 4;
-    return v;
-}
-
-static uint16_t Nav_ReadUint16(nav_buffer_t *b)
-{
-    if (b->end - b->ptr < 2) {
-        b->ptr = b->end;
-        return 0xffff;
-    }
-    uint16_t v = b->ptr[0] | b->ptr[1] << 8;
-    b->ptr += 2;
-    return v;
-}
-
-static uint8_t Nav_ReadUint8(nav_buffer_t *b)
-{
-    if (b->ptr >= b->end)
-        return 0xff;
-    return *b->ptr++;
-}
-
-static float Nav_ReadFloat(nav_buffer_t *b)
-{
-    if (b->end - b->ptr < 4) {
-        b->ptr = b->end;
-        return 0;
-    }
-    uint32_t v = RL32(b->ptr);
-    b->ptr += 4;
-    return LongToFloat(v);
-}
-
-static void Nav_ReadVector(nav_buffer_t *b, vec3_t v)
-{
-    v[0] = Nav_ReadFloat(b);
-    v[1] = Nav_ReadFloat(b);
-    v[2] = Nav_ReadFloat(b);
+    v[0] = SZ_ReadFloat(b);
+    v[1] = SZ_ReadFloat(b);
+    v[2] = SZ_ReadFloat(b);
 }
 
 #define NAV_VERIFY(condition, error) \
     if (!(condition)) { err = error; goto fail; }
 
-void Nav_Load(const char *mapname)
+void Nav_Load(void)
 {
     Q_assert(!nav_data.nodes);
 
-    if (!fs)
-        return;
+    if (!sv.cm.cache)
+        return; // no real map
     if (!nav_enable->integer)
         return;
-    if (deathmatch->integer)
-        return;
-    if (!*mapname)
+    if (Cvar_VariableInteger("deathmatch"))
         return;
 
     const char *err = NULL;
 
     char filename[MAX_QPATH];
-    if (Q_snprintf(filename, sizeof(filename), "bots/navigation/%s.nav", mapname) >= sizeof(filename))
+    if (Q_snprintf(filename, sizeof(filename), "bots/navigation/%s.nav", sv.name) >= sizeof(filename))
         return;
 
     void *data;
-    int len = fs->LoadFile(filename, &data, 0, TAG_NAV);
+    int len = FS_LoadFile(filename, &data);
     if (!data)
         return;
 
     NAV_VERIFY(len >= 7*4, "File too small");
 
-    nav_buffer_t b;
-    b.ptr = data;
-    b.end = b.ptr + len + 1;    // +1 for terminating NUL
+    sizebuf_t b;
+    SZ_InitRead(&b, data, len + 1); // +1 for terminating NUL
 
-    uint32_t v = Nav_ReadUint32(&b);
+    uint32_t v = SZ_ReadLong(&b);
     NAV_VERIFY(v == NAV_MAGIC, "Bad magic");
 
-    v = Nav_ReadUint32(&b);
+    v = SZ_ReadLong(&b);
     NAV_VERIFY(v >= NAV_VERSION_2 && v <= NAV_VERSION_6, "Bad version");
 
-    nav_data.num_nodes      = Nav_ReadUint32(&b);
-    nav_data.num_links      = Nav_ReadUint32(&b);
-    nav_data.num_traversals = Nav_ReadUint32(&b);
-    nav_data.heuristic      = Nav_ReadFloat(&b);
+    nav_data.num_nodes      = SZ_ReadLong(&b);
+    nav_data.num_links      = SZ_ReadLong(&b);
+    nav_data.num_traversals = SZ_ReadLong(&b);
+    nav_data.heuristic      = SZ_ReadFloat(&b);
     NAV_VERIFY(nav_data.num_nodes > 0, "No nodes");
     NAV_VERIFY(nav_data.num_links > 0, "No links");
     NAV_VERIFY(nav_data.num_nodes <= INVALID_ID, "Too many nodes");
     NAV_VERIFY(nav_data.num_links <= INVALID_ID, "Too many links");
     NAV_VERIFY(nav_data.num_traversals <= INVALID_ID, "Too many traversals");
 
-    nav_data.nodes      = gi.TagMalloc(sizeof(nav_data.nodes[0]) * nav_data.num_nodes, TAG_NAV);
-    nav_data.links      = gi.TagMalloc(sizeof(nav_data.links[0]) * nav_data.num_links, TAG_NAV);
-    nav_data.traversals = gi.TagMalloc(sizeof(nav_data.traversals[0]) * nav_data.num_traversals, TAG_NAV);
+    nav_data.nodes      = Z_TagMalloc(sizeof(nav_data.nodes[0]) * nav_data.num_nodes, TAG_NAV);
+    nav_data.links      = Z_TagMalloc(sizeof(nav_data.links[0]) * nav_data.num_links, TAG_NAV);
+    nav_data.traversals = Z_TagMalloc(sizeof(nav_data.traversals[0]) * nav_data.num_traversals, TAG_NAV);
 
     nav_data.num_conditional_nodes = 0;
 
@@ -308,18 +263,19 @@ void Nav_Load(const char *mapname)
         nav_node_t *node = nav_data.nodes + i;
 
         node->id        = i;
-        node->flags     = Nav_ReadUint16(&b);
-        node->num_links = Nav_ReadUint16(&b);
-        int first_link  = Nav_ReadUint16(&b);
+        node->flags     = SZ_ReadWord(&b);
+        node->num_links = SZ_ReadWord(&b);
+        int first_link  = SZ_ReadWord(&b);
+        NAV_VERIFY(first_link != -1, "Read past end of file");
         NAV_VERIFY(first_link + node->num_links <= nav_data.num_links, "Bad node links");
         node->links     = &nav_data.links[first_link];
-        node->radius    = Nav_ReadUint16(&b);
+        node->radius    = SZ_ReadWord(&b);
 
         if (node->flags & NodeFlag_ConditionalMask)
             nav_data.num_conditional_nodes++;
     }
 
-    nav_data.conditional_nodes = gi.TagMalloc(sizeof(nav_data.conditional_nodes[0]) * nav_data.num_conditional_nodes, TAG_NAV);
+    nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_data.conditional_nodes[0]) * nav_data.num_conditional_nodes, TAG_NAV);
 
     for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
@@ -333,11 +289,11 @@ void Nav_Load(const char *mapname)
     for (int i = 0; i < nav_data.num_links; i++) {
         nav_link_t *link = nav_data.links + i;
 
-        int target   = Nav_ReadUint16(&b);
+        int target   = SZ_ReadWord(&b);
         NAV_VERIFY(target < nav_data.num_nodes, "Bad link target");
         link->target = &nav_data.nodes[target];
-        link->type   = Nav_ReadUint8(&b);
-        link->flags  = Nav_ReadUint8(&b);
+        link->type   = SZ_ReadByte(&b);
+        link->flags  = SZ_ReadByte(&b);
 
         if (v < NAV_VERSION_3)
             link->flags = NavLinkFlag_AllTeams;
@@ -347,7 +303,7 @@ void Nav_Load(const char *mapname)
 
         link->traversal = NULL;
         link->edict     = NULL;
-        int traversal   = Nav_ReadUint16(&b);
+        int traversal   = SZ_ReadWord(&b);
         if (traversal != INVALID_ID) {
             NAV_VERIFY(traversal < nav_data.num_traversals, "Bad link traversal");
             link->traversal = &nav_data.traversals[traversal];
@@ -365,42 +321,43 @@ void Nav_Load(const char *mapname)
             Nav_ReadVector(&b, traversal->ladder_plane);
     }
 
-    nav_data.num_edicts = Nav_ReadUint32(&b);
+    nav_data.num_edicts = SZ_ReadLong(&b);
     NAV_VERIFY(nav_data.num_edicts <= MAX_EDICTS, "Too many edicts");
 
-    nav_data.edicts = gi.TagMalloc(sizeof(nav_data.edicts[0]) * nav_data.num_edicts, TAG_NAV);
+    nav_data.edicts = Z_TagMalloc(sizeof(nav_data.edicts[0]) * nav_data.num_edicts, TAG_NAV);
 
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *edict = nav_data.edicts + i;
 
-        int link = Nav_ReadUint16(&b);
+        int link = SZ_ReadWord(&b);
         NAV_VERIFY(link < nav_data.num_links, "Bad edict link");
         edict->link = &nav_data.links[link];
         edict->link->edict = edict;
         edict->game_edict = NULL;
-        edict->model = Nav_ReadUint32(&b);
+        edict->model = SZ_ReadLong(&b) - 1; // inline models start at modelindex 1 now
         Nav_ReadVector(&b, edict->mins);
         Nav_ReadVector(&b, edict->maxs);
     }
 
     // must not have consumed terminating NUL
-    NAV_VERIFY(b.ptr < b.end, "Read past end of file");
+    NAV_VERIFY(b.readcount < b.cursize, "Read past end of file");
 
-    gi.dprintf("Loaded %s (version %d): %u nodes, %u links, %u traversals, %u edicts\n",
+    Com_Printf("Loaded %s (version %d): %u nodes, %u links, %u traversals, %u edicts\n",
                filename, v, nav_data.num_nodes, nav_data.num_links, nav_data.num_traversals, nav_data.num_edicts);
 
-    gi.TagFree(data);
+    FS_FreeFile(data);
     Nav_AllocContext(&nav_data.ctx);
     return;
 
 fail:
-    gi.dprintf("Couldn't load %s: %s\n", filename, err);
+    FS_FreeFile(data);
+    Com_Printf("Couldn't load %s: %s\n", filename, err);
     Nav_Unload();
 }
 
 void Nav_Unload(void)
 {
-    gi.FreeTags(TAG_NAV);
+    Z_FreeTags(TAG_NAV);
     memset(&nav_data, 0, sizeof(nav_data));
 }
 
@@ -512,7 +469,7 @@ static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, const vec3_t p)
         vec3_t end = { 0, 0, 32 };
         VectorAdd(end, node->origin, end);
         trace_t tr;
-        gi.trace(&tr, p, NULL, NULL, end, ENTITYNUM_NONE,
+        SV_Trace(&tr, p, NULL, NULL, end, ENTITYNUM_NONE,
                  MASK_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP);
         if (tr.fraction < 1.0f)
             continue;
@@ -703,11 +660,11 @@ static void Nav_Path(nav_path_t *path)
     }
 
     if (!request->nodeSearch.ignoreNodeFlags) {
-        if (gi.pointcontents(request->start) & MASK_SOLID) {
+        if (SV_PointContents(request->start) & MASK_SOLID) {
             info->returnCode = PathReturnCode_InvalidStart;
             return;
         }
-        if (gi.pointcontents(request->goal) & MASK_SOLID) {
+        if (SV_PointContents(request->goal) & MASK_SOLID) {
             info->returnCode = PathReturnCode_InvalidGoal;
             return;
         }
@@ -774,35 +731,34 @@ static void Nav_Path(nav_path_t *path)
 
 static void Nav_DebugPath(const PathRequest *request, const PathInfo *path)
 {
-    if (!draw)
-        return;
-
+#if NAV_DEBUG
     uint32_t time = request->debugging.drawTime * 1000;
 
-    draw->AddDebugSphere(request->start, 8.0f, U32_YELLOW, time, false);
-    draw->AddDebugSphere(request->goal, 8.0f, U32_YELLOW, time, false);
+    R_AddDebugSphere(request->start, 8.0f, U32_YELLOW, time, false);
+    R_AddDebugSphere(request->goal, 8.0f, U32_YELLOW, time, false);
 
     int count = min(path->numPathPoints, request->pathPoints.count);
 
     if (count > 0) {
-        draw->AddDebugArrow(request->start, request->pathPoints.posArray[0],
-                            8.0f, U32_YELLOW, U32_YELLOW, time, false);
+        R_AddDebugArrow(request->start, request->pathPoints.posArray[0],
+                        8.0f, U32_YELLOW, U32_YELLOW, time, false);
 
         for (int i = 0; i < count - 1; i++)
-            draw->AddDebugArrow(request->pathPoints.posArray[i    ],
-                                request->pathPoints.posArray[i + 1],
-                                8.0f, U32_YELLOW, U32_YELLOW, time, false);
+            R_AddDebugArrow(request->pathPoints.posArray[i    ],
+                            request->pathPoints.posArray[i + 1],
+                            8.0f, U32_YELLOW, U32_YELLOW, time, false);
 
-        draw->AddDebugArrow(request->pathPoints.posArray[count - 1],
-                            request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
+        R_AddDebugArrow(request->pathPoints.posArray[count - 1],
+                        request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
     } else {
-        draw->AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
+        R_AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
     }
 
     if (path->returnCode == PathReturnCode_TraversalPending || path->returnCode == PathReturnCode_InProgress) {
-        draw->AddDebugSphere(path->firstMovePoint, 16.0f, U32_RED, time, false);
-        draw->AddDebugArrow(path->firstMovePoint, path->secondMovePoint, 16.0f, U32_RED, U32_RED, time, false);
+        R_AddDebugSphere(path->firstMovePoint, 16.0f, U32_RED, time, false);
+        R_AddDebugArrow(path->firstMovePoint, path->secondMovePoint, 16.0f, U32_RED, U32_RED, time, false);
     }
+#endif
 }
 
 bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info)
@@ -835,6 +791,8 @@ static void Nav_GetNodeTraceOrigin(const nav_node_t *node, vec3_t origin)
     origin[2] += 24.0f;
 }
 
+#if NAV_DEBUG
+
 #define A_RED       MakeColor(255,   0,   0, alpha)
 #define A_GREEN     MakeColor(  0, 255,   0, alpha)
 #define A_BLUE      MakeColor(  0,   0, 255, alpha)
@@ -858,12 +816,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
 
         // simple link
         if (!link->traversal && !other_link->traversal) {
-            draw->AddDebugLine(s, e, link_disabled ? A_RED : A_WHITE, FRAME_TIME, true);
+            R_AddDebugLine(s, e, link_disabled ? A_RED : A_WHITE, SV_FRAMETIME, true);
         } else {
             // one or both are traversals
             // render a->b
             if (!link->traversal) {
-                draw->AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, FRAME_TIME, true);
+                R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, SV_FRAMETIME, true);
             } else {
                 vec3_t ctrl;
 
@@ -875,12 +833,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                     ctrl[2] = e[2];
                 }
 
-                draw->AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, FRAME_TIME, true);
+                R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
             }
 
             // render b->a
             if (!other_link->traversal) {
-                draw->AddDebugArrow(e, s, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, FRAME_TIME, true);
+                R_AddDebugArrow(e, s, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, SV_FRAMETIME, true);
             } else {
                 vec3_t ctrl;
 
@@ -897,7 +855,7 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                 ctrl[2] += 32;
                 e[2] += 32;
 
-                draw->AddDebugCurveArrow(e, ctrl, s, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, FRAME_TIME, true);
+                R_AddDebugCurveArrow(e, ctrl, s, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
 
                 s[2] -= 32;
                 e[2] -= 32;
@@ -916,9 +874,9 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                 ctrl[2] = e[2];
             }
 
-            draw->AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, FRAME_TIME, true);
+            R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
         } else {
-            draw->AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_CYAN, A_RED, FRAME_TIME, true);
+            R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_CYAN, A_RED, SV_FRAMETIME, true);
         }
     }
 
@@ -927,12 +885,10 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
         if (e && e->r.inuse) {
             vec3_t mid;
             VectorAvg(e->r.absmin, e->r.absmax, mid);
-            draw->AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, FRAME_TIME, true);
+            R_AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, SV_FRAMETIME, true);
         }
     }
 }
-
-static const float NavFloorDistance = 96.0f;
 
 static const char *const nodeflags[] = {
     "TELEPORTER", "PUSHER", "ELEVATOR", "LADDER", "UNDERWATER", "CHECK HAZARD",
@@ -942,14 +898,14 @@ static const char *const nodeflags[] = {
 
 static void Nav_DrawNode(const nav_node_t *node)
 {
-    float dist = Distance(node->origin, g_edicts[1].s.origin);
+    float dist = Distance(node->origin, ge->edicts[0].s.origin);
 
     if (dist > nav_debug_range->value)
         return;
 
     int alpha = Q_clip_uint8((1.0f - ((dist - 32) / (nav_debug_range->value - 32))) * 255);
 
-    draw->AddDebugCircle(node->origin, node->radius, A_CYAN, FRAME_TIME, true);
+    R_AddDebugCircle(node->origin, node->radius, A_CYAN, SV_FRAMETIME, true);
 
     vec3_t mins, maxs, origin;
     Nav_GetNodeBounds(node, mins, maxs);
@@ -958,7 +914,7 @@ static void Nav_DrawNode(const nav_node_t *node)
     VectorAdd(mins, origin, mins);
     VectorAdd(maxs, origin, maxs);
 
-    draw->AddDebugBounds(mins, maxs, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, FRAME_TIME, true);
+    R_AddDebugBounds(mins, maxs, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, SV_FRAMETIME, true);
 
     if (node->flags & NodeFlag_CheckHasFloor) {
         vec3_t floormins, floormaxs;
@@ -969,13 +925,13 @@ static void Nav_DrawNode(const nav_node_t *node)
         floormins[2] = origin[2] - NavFloorDistance;
         floormaxs[2] = mins_z;
 
-        draw->AddDebugBounds(floormins, floormaxs, A_RED, FRAME_TIME, true);
+        R_AddDebugBounds(floormins, floormaxs, A_RED, SV_FRAMETIME, true);
     }
 
-    draw->AddDebugLine(node->origin, origin, A_CYAN, FRAME_TIME, true);
+    R_AddDebugLine(node->origin, origin, A_CYAN, SV_FRAMETIME, true);
 
     origin[2] += 40;
-    draw->AddDebugText(origin, NULL, va("%d", node->id), 5.0f, A_CYAN, FRAME_TIME, true);
+    R_AddDebugText(origin, NULL, va("%d", node->id), 5.0f, A_CYAN, SV_FRAMETIME, true);
 
     char node_text_buffer[128];
     *node_text_buffer = 0;
@@ -986,7 +942,7 @@ static void Nav_DrawNode(const nav_node_t *node)
 
     if (*node_text_buffer) {
         origin[2] -= 18;
-        draw->AddDebugText(origin, NULL, node_text_buffer, 2.5f, A_GREEN, FRAME_TIME, true);
+        R_AddDebugText(origin, NULL, node_text_buffer, 2.5f, A_GREEN, SV_FRAMETIME, true);
     }
 
     for (int i = 0; i < node->num_links; i++)
@@ -995,17 +951,16 @@ static void Nav_DrawNode(const nav_node_t *node)
 
 static void Nav_Debug(void)
 {
-    if (!draw)
-        return;
-
     if (!nav_debug->integer)
         return;
 
-    draw->ClearDebugLines();
+    R_ClearDebugLines();
 
     for (int i = 0; i < nav_data.num_nodes; i++)
         Nav_DrawNode(&nav_data.nodes[i]);
 }
+
+#endif
 
 static bool line_intersects_box(const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs)
 {
@@ -1025,6 +980,18 @@ static bool line_intersects_box(const vec3_t start, const vec3_t end, const vec3
     return enter < leave;
 }
 
+static bool boxes_intersect(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2)
+{
+    for (int i = 0; i < 3; i++) {
+        if (mins1[i] > maxs2[i])
+            return false;
+        if (maxs1[i] < mins2[i])
+            return false;
+    }
+
+    return true;
+}
+
 static void Nav_UpdateConditionalNode(nav_node_t *node)
 {
     trace_t tr;
@@ -1036,7 +1003,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     Nav_GetNodeTraceOrigin(node, origin);
 
     if (node->flags & NodeFlag_CheckInSolid) {
-        gi.trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_SOLID);
+        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_SOLID);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1045,7 +1012,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckInLiquid) {
-        gi.trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_WATER);
+        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_WATER);
 
         if (!(tr.startsolid || tr.allsolid)) {
             node->flags |= NodeFlag_Disabled;
@@ -1054,7 +1021,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckForHazard) {
-        gi.trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, CONTENTS_SLIME | CONTENTS_LAVA);
+        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, CONTENTS_SLIME | CONTENTS_LAVA);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1065,21 +1032,21 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         VectorAdd(origin, mins, absmin);
         VectorAdd(origin, maxs, absmax);
 
-        for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
-            const edict_t *e = &g_edicts[i];
+        for (int i = svs.maxclients; i < ge->num_edicts; i++) {
+            const edict_t *e = SV_EdictForNum(i);
 
             if (!e->r.inuse)
                 continue;
 
-            if (e->flags & FL_TRAP_LASER_FIELD) {
+            if (e->r.svflags & SVF_LASER_FIELD) {
                 if (e->r.svflags & SVF_NOCLIENT)
                     continue;
 
-                if (line_intersects_box(e->s.origin, e->s.old_origin, absmin, absmax)) {
+                if (line_intersects_box(e->s.old_origin, e->s.origin, absmin, absmax)) {
                     node->flags |= NodeFlag_Disabled;
                     return;
                 }
-            } else if (e->flags & FL_TRAP) {
+            } else if (e->r.svflags & SVF_TRAP) {
                 if (boxes_intersect(e->r.absmin, e->r.absmax, absmin, absmax)) {
                     node->flags |= NodeFlag_Disabled;
                     return;
@@ -1096,7 +1063,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         VectorCopy(origin, floor_end);
         floor_end[2] -= NavFloorDistance;
 
-        gi.trace(&tr, origin, flat_mins, flat_maxs, floor_end, ENTITYNUM_NONE, MASK_SOLID);
+        SV_Trace(&tr, origin, flat_mins, flat_maxs, floor_end, ENTITYNUM_NONE, MASK_SOLID);
 
         if (tr.fraction == 1.0f) {
             node->flags |= NodeFlag_Disabled;
@@ -1119,7 +1086,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
             if (edict->s.modelindex != link->edict->model)
                 continue;
 
-            if (edict->r.svflags & SVF_DOOR && edict->flags & FL_LOCKED) {
+            if (edict->r.svflags & SVF_LOCKED) {
                 node->flags |= NodeFlag_Disabled;
                 return;
             }
@@ -1132,8 +1099,8 @@ static void Nav_SetupEntities(void)
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *e = &nav_data.edicts[i];
 
-        for (int n = 0; n < globals.num_edicts; n++) {
-            const edict_t *game_e = &g_edicts[n];
+        for (int n = svs.maxclients; n < ge->num_edicts; n++) {
+            const edict_t *game_e = SV_EdictForNum(n);
 
             if (!game_e->r.inuse)
                 continue;
@@ -1147,13 +1114,13 @@ static void Nav_SetupEntities(void)
         }
 
         if (!e->game_edict)
-            gi.dprintf("Nav entity %i appears to be missing (needs entity with model %i)\n", i, e->model);
+            Com_Printf("Nav entity %i appears to be missing (needs entity with model %i)\n", i, e->model);
     }
 }
 
 void Nav_Frame(void)
 {
-    if (!nav_data.setup_entities && level.time >= SEC(1)) {
+    if (!nav_data.setup_entities && sv.framenum >= SV_FRAMERATE) {
         Nav_SetupEntities();
         nav_data.setup_entities = true;
     }
@@ -1161,17 +1128,16 @@ void Nav_Frame(void)
     for (int i = 0; i < nav_data.num_conditional_nodes; i++)
         Nav_UpdateConditionalNode(nav_data.conditional_nodes[i]);
 
+#if NAV_DEBUG
     Nav_Debug();
+#endif
 }
 
-void Nav_Init(void)
+void Nav_Register(void)
 {
-    nav_enable = gi.cvar("nav_enable", "1", 0);
-    nav_debug = gi.cvar("nav_debug", "0", 0);
-    nav_debug_range = gi.cvar("nav_debug_range", "512", 0);
-}
-
-void Nav_Shutdown(void)
-{
-    Nav_Unload();
+    nav_enable = Cvar_Get("nav_enable", "1", 0);
+#if NAV_DEBUG
+    nav_debug = Cvar_Get("nav_debug", "0", 0);
+    nav_debug_range = Cvar_Get("nav_debug_range", "512", 0);
+#endif
 }

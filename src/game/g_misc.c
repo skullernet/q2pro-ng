@@ -994,7 +994,7 @@ void SP_misc_explobox(edict_t *self)
 
     self->die = barrel_delay;
     self->takedamage = true;
-    self->flags |= FL_TRAP;
+    self->r.svflags |= SVF_TRAP;
 
     if (self->spawnflags & SPAWNFLAG_EXPLOBOX_NO_MOVE)
         self->flags |= FL_NO_KNOCKBACK;
@@ -2257,7 +2257,7 @@ void USE(info_nav_lock_use)(edict_t *self, edict_t *other, edict_t *activator)
             continue;
         }
 
-        n->flags ^= FL_LOCKED;
+        n->r.svflags ^= SVF_LOCKED;
     }
 }
 

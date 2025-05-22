@@ -10,7 +10,6 @@ game_src += files(
   'g_main.c',
   'g_misc.c',
   'g_monster.c',
-  'g_nav.c',
   'g_phys.c',
   'g_save.c',
   'g_spawn.c',

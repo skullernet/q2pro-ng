@@ -1515,7 +1515,7 @@ void SP_func_door(edict_t *ent)
             gi.soundindex("misc/talk.wav");
             ent->touch = door_touch;
         }
-        ent->flags |= FL_LOCKED;
+        ent->r.svflags |= SVF_LOCKED;
     }
 
     ent->moveinfo.speed = ent->speed;

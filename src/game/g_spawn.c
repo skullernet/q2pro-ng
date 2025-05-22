@@ -1221,8 +1221,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
     gi.FreeTags(TAG_LEVEL);
 
-    Nav_Unload();
-
     G_FreePrecaches();
 
     memset(&level, 0, sizeof(level));
@@ -1300,8 +1298,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     // ZOID
     CTFSpawn();
     // ZOID
-
-    Nav_Load(level.mapname);
 
     // ROGUE
     if (deathmatch->integer) {

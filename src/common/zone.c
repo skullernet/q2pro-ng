@@ -65,6 +65,7 @@ static const char *const z_tagnames[TAG_MAX] = {
     "mvd",
     "sound",
     "cmodel",
+    "nav",
     "vm"
 };
 

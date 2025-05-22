@@ -447,8 +447,8 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     if (self->client && !G_ShouldPlayersCollide(true))
         grenade->clipmask &= ~CONTENTS_PLAYER;
     grenade->r.solid = SOLID_BBOX;
-    grenade->r.svflags |= SVF_PROJECTILE;
-    grenade->flags |= (FL_DODGE | FL_TRAP);
+    grenade->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
+    grenade->flags |= FL_DODGE;
     grenade->s.effects |= EF_GRENADE;
     grenade->speed = speed;
     if (monster) {
@@ -501,8 +501,8 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     if (self->client && !G_ShouldPlayersCollide(true))
         grenade->clipmask &= ~CONTENTS_PLAYER;
     grenade->r.solid = SOLID_BBOX;
-    grenade->r.svflags |= SVF_PROJECTILE;
-    grenade->flags |= (FL_DODGE | FL_TRAP);
+    grenade->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
+    grenade->flags |= FL_DODGE;
     grenade->s.effects |= EF_GRENADE;
 
     grenade->s.modelindex = gi.modelindex("models/objects/grenade3/tris.md2");

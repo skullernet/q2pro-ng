@@ -382,9 +382,9 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     prox->s.angles[PITCH] -= 90;
     prox->movetype = MOVETYPE_BOUNCE;
     prox->r.solid = SOLID_BBOX;
-    prox->r.svflags |= SVF_PROJECTILE;
+    prox->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
     prox->s.effects |= EF_GRENADE;
-    prox->flags |= (FL_DODGE | FL_TRAP);
+    prox->flags |= FL_DODGE;
     prox->clipmask = MASK_PROJECTILE | CONTENTS_LAVA | CONTENTS_SLIME;
 
     // [Paril-KEX]
@@ -811,7 +811,7 @@ void THINK(tesla_think_active)(edict_t *self)
             continue;
 
         // don't hit other teslas in SP/coop
-        if (!deathmatch->integer && hit->classname && (hit->flags & FL_TRAP))
+        if (!deathmatch->integer && hit->classname && (hit->r.svflags & SVF_TRAP))
             continue;
 
         gi.trace(&tr, start, NULL, NULL, hit->s.origin, self->s.number, MASK_PROJECTILE);
@@ -1003,14 +1003,13 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     tesla->die = tesla_die;
     tesla->dmg = TESLA_DAMAGE * tesla_damage_multiplier;
     tesla->classname = "tesla_mine";
-    tesla->flags |= (FL_DAMAGEABLE | FL_TRAP);
+    tesla->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
     tesla->clipmask = (MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA) & ~CONTENTS_DEADMONSTER;
+    tesla->r.svflags |= SVF_TRAP;
 
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         tesla->clipmask &= ~CONTENTS_PLAYER;
-
-    tesla->flags |= FL_MECHANICAL;
 
     gi.linkentity(tesla);
 }

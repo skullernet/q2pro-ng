@@ -628,6 +628,7 @@ static const game_import_t game_import = {
     .AreasConnected = PF_AreasConnected,
 
     .GetExtension = PF_GetExtension,
+    .GetPathToGoal = Nav_GetPathToGoal,
 };
 
 static void *game_library;

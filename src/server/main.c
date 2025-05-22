@@ -1688,6 +1688,8 @@ unsigned SV_Frame(unsigned msec)
         // give the clients some timeslices
         SV_GiveMsec();
 
+        Nav_Frame();
+
         // let everything in the world think and move
         SV_RunGameFrame();
 
@@ -1799,6 +1801,8 @@ void SV_RestartFilesystem(void)
 {
     if (ge && ge->RestartFilesystem)
         ge->RestartFilesystem();
+    Nav_Unload();
+    Nav_Load();
 }
 
 #if USE_SYSCON
@@ -1887,6 +1891,8 @@ void SV_Init(void)
     SV_InitOperatorCommands();
 
     SV_RegisterSavegames();
+
+    Nav_Register();
 
     Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_MAJOR), CVAR_SERVERINFO | CVAR_ROM);
 
@@ -2089,6 +2095,7 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 
     // free current level
     CM_FreeMap(&sv.cm);
+    Nav_Unload();
     memset(&sv, 0, sizeof(sv));
 
     // free server static data

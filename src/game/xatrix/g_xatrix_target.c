@@ -12,7 +12,7 @@ static void target_mal_laser_on(edict_t *self)
         self->activator = self;
     self->spawnflags |= SPAWNFLAG_LASER_ZAP | SPAWNFLAG_LASER_ON;
     self->r.svflags &= ~SVF_NOCLIENT;
-    self->flags |= FL_TRAP;
+    self->r.svflags |= SVF_TRAP;
     // target_laser_think (self);
     self->nextthink = level.time + SEC(self->wait + self->delay);
 }
@@ -50,7 +50,7 @@ void SP_target_mal_laser(edict_t *self)
     self->r.solid = SOLID_NOT;
     self->s.renderfx |= RF_BEAM;
     self->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
-    self->flags |= FL_TRAP_LASER_FIELD;
+    self->r.svflags |= SVF_LASER_FIELD;
 
     // set the beam diameter
     if (self->spawnflags & SPAWNFLAG_LASER_FAT)

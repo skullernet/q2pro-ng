@@ -6,7 +6,6 @@
 
 #include "shared/shared.h"
 #include "shared/m_flash.h"
-#include "g_nav.h"
 
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
@@ -278,15 +277,12 @@ typedef enum {
 #define FL_NOVISIBLE            BIT_ULL(24) // super invisibility
 #define FL_DODGE                BIT_ULL(25) // monster should try to dodge this
 #define FL_TEAMMASTER           BIT_ULL(26) // is a team master (only here so that entities abusing teammaster/teamchain for stuff don't break)
-#define FL_LOCKED               BIT_ULL(27) // entity is locked for the purposes of navigation
-#define FL_ALWAYS_TOUCH         BIT_ULL(28) // always touch, even if we normally wouldn't
-#define FL_NO_STANDING          BIT_ULL(29) // don't allow "standing" on non-brush entities
-#define FL_WANTS_POWER_ARMOR    BIT_ULL(30) // for players, auto-shield
+#define FL_ALWAYS_TOUCH         BIT_ULL(27) // always touch, even if we normally wouldn't
+#define FL_NO_STANDING          BIT_ULL(28) // don't allow "standing" on non-brush entities
+#define FL_WANTS_POWER_ARMOR    BIT_ULL(20) // for players, auto-shield
 
-#define FL_RESPAWN              BIT_ULL(31) // used for item respawning
-#define FL_TRAP                 BIT_ULL(32) // entity is a trap of some kind
-#define FL_TRAP_LASER_FIELD     BIT_ULL(33) // enough of a special case to get it's own flag...
-#define FL_IMMORTAL             BIT_ULL(34) // never go below 1hp
+#define FL_RESPAWN              BIT_ULL(30) // used for item respawning
+#define FL_IMMORTAL             BIT_ULL(31) // never go below 1hp
 
 // gitem_t->flags
 typedef enum {
