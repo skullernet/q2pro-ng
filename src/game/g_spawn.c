@@ -717,11 +717,14 @@ char *ED_NewString(const char *string)
 
 static int ED_ParseColor(const char *value)
 {
-    vec4_t v = { 0, 0, 0, 1.0f };
+    vec4_t v;
     int i, n;
 
-    // space means rgba as values
-    n = sscanf(value, "%f %f %f %f", &v[0], &v[1], &v[2], &v[3]);
+    // parse rgba as values
+    const char *s = value;
+    for (n = 0; n < 4 && s; n++)
+        v[n] = Q_atof(COM_Parse(&s));
+
     if (n < 2)
         return strtoul(value, NULL, 0); // integral
 
@@ -729,14 +732,14 @@ static int ED_ParseColor(const char *value)
         if (v[i] > 1.0f)
             break;
 
-    if (i == n)
-        for (i = 0; i < 4; i++)
-            v[i] *= 255;
-    else if (n < 4)
-        v[3] = 255;
+    float scale = i < n ? 1.0f : 255.0f;
+    int c[4] = { 0, 0, 0, 255 };
+
+    for (i = 0; i < n; i++)
+        c[i] = Q_clip_uint8(v[i] * scale);
 
     // 0xRRGGBBAA encoding
-    return MakeBigLong(v[0], v[1], v[2], v[3]);
+    return MakeBigLong(c[0], c[1], c[2], c[3]);
 }
 
 static char *ED_ParseL10nString(const char *value)
