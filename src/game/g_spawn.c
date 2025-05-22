@@ -697,7 +697,7 @@ char *ED_NewString(const char *string)
 
     l = strlen(string) + 1;
 
-    newb = gi.TagMalloc(l, TAG_LEVEL);
+    newb = G_Malloc(l);
 
     new_p = newb;
 
@@ -747,7 +747,7 @@ static char *ED_ParseL10nString(const char *value)
     if (*value == '$') {
         const char *s = G_GetL10nString(value + 1);
         if (s)
-            return G_CopyString(s, TAG_LEVEL);
+            return G_CopyString(s);
     }
     return ED_NewString(value);
 }
@@ -1219,8 +1219,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
     SaveClientData();
 
-    gi.FreeTags(TAG_LEVEL);
-
+    G_FreeMemory();
     G_FreePrecaches();
 
     memset(&level, 0, sizeof(level));

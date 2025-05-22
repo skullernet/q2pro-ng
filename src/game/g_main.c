@@ -375,6 +375,7 @@ static void ShutdownGame(void)
     gi.FreeTags(TAG_LEVEL);
     gi.FreeTags(TAG_GAME);
 
+    G_FreeMemory();
     G_FreeL10nFile();
 }
 

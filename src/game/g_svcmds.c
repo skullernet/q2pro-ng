@@ -285,6 +285,8 @@ void ServerCommand(void)
         SVCmd_WriteIP_f();
     else if (Q_strcasecmp(cmd, "nextmap") == 0)
         SVCmd_NextMap_f();
+    else if (Q_strcasecmp(cmd, "meminfo") == 0)
+        G_MemoryInfo_f();
     else
         gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
 }

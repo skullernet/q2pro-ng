@@ -97,8 +97,6 @@ typedef int svflags_t;
 enum {
     TAG_GAME = 765, // clear when unloading the dll
     TAG_LEVEL,      // clear when loading a new level
-    TAG_L10N,       // localization strings
-    TAG_NAV,        // bot navigation data
 };
 
 #define MELEE_DISTANCE  50
@@ -1327,7 +1325,10 @@ void     G_FreeEdict(edict_t *e);
 void G_TouchTriggers(edict_t *ent);
 void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin);
 
-char *G_CopyString(const char *in, int tag);
+void G_FreeMemory(void);
+void *G_Malloc(size_t len);
+char *G_CopyString(const char *in);
+void G_MemoryInfo_f(void);
 
 // ROGUE
 edict_t *findradius2(edict_t *from, const vec3_t org, float rad);

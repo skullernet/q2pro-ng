@@ -4,6 +4,9 @@
 
 #include "g_local.h"
 
+static byte g_mem_pool[0x100000];
+static int  g_mem_used;
+
 void G_ProjectSource(const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, vec3_t result)
 {
     result[0] = point[0] + forward[0] * distance[0] + right[0] * distance[1];
@@ -381,14 +384,36 @@ void vectoangles(const vec3_t value1, vec3_t angles)
     angles[ROLL] = 0;
 }
 
-char *G_CopyString(const char *in, int tag)
+void G_FreeMemory(void)
+{
+    g_mem_used = 0;
+}
+
+void *G_Malloc(size_t len)
+{
+    if (len > sizeof(g_mem_pool))
+        gi.error("Bad alloc size");
+    len = Q_ALIGN(len, 8);
+    if (len > sizeof(g_mem_pool) - g_mem_used)
+        gi.error("Out of memory");
+    void *out = g_mem_pool + g_mem_used;
+    g_mem_used += len;
+    return out;
+}
+
+char *G_CopyString(const char *in)
 {
     if (!in)
         return NULL;
     size_t len = strlen(in) + 1;
-    char *out = gi.TagMalloc(len, tag);
+    char *out = G_Malloc(len);
     memcpy(out, in, len);
     return out;
+}
+
+void G_MemoryInfo_f(void)
+{
+    gi.dprintf("%d bytes allocated (%.1f%%)\n", g_mem_used, g_mem_used * 100.0f / sizeof(g_mem_pool));
 }
 
 void G_InitEdict(edict_t *e)

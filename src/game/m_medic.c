@@ -123,7 +123,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
         gi.error("Too many reinforcements");
 
     // allocate
-    list->reinforcements = gi.TagMalloc(sizeof(list->reinforcements[0]) * count, TAG_LEVEL);
+    list->reinforcements = G_Malloc(sizeof(list->reinforcements[0]) * count);
 
     // parse
     ED_InitSpawnVars();
@@ -142,7 +142,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
             Q_assert(list->num_reinforcements < count);
             reinforcement_t *r = &list->reinforcements[list->num_reinforcements];
 
-            r->classname = G_CopyString(token, TAG_LEVEL);
+            r->classname = G_CopyString(token);
             r->strength = Q_atoi(COM_Parse(&s));
 
             edict_t *newEnt = G_Spawn();

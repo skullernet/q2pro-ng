@@ -34,7 +34,7 @@ typedef enum {
     F_UINT64,       // hexadecimal
     F_BOOL,
     F_FLOAT,
-    F_LSTRING,      // string on disk, pointer in memory, TAG_LEVEL
+    F_LSTRING,      // string on disk, pointer in memory
     F_ZSTRING,      // string on disk, string in memory
     F_VECTOR,
     F_EDICT,        // index on disk, pointer in memory
@@ -1354,7 +1354,7 @@ static char *read_string(void)
     char *s;
 
     parse();
-    s = gi.TagMalloc(line.len + 1, TAG_LEVEL);
+    s = G_Malloc(line.len + 1);
     memcpy(s, line.token, line.len + 1);
 
     return s;
@@ -1462,7 +1462,7 @@ static void read_reinforcements(reinforcement_list_t *list)
 
     expect("{");
     list->num_reinforcements = count;
-    list->reinforcements = gi.TagMalloc(sizeof(list->reinforcements[0]) * count, TAG_LEVEL);
+    list->reinforcements = G_Malloc(sizeof(list->reinforcements[0]) * count);
     while ((num = parse_array(count)) != -1)
         read_fields(reinforcement_t_fields, &list->reinforcements[num]);
 }
@@ -1704,7 +1704,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
 
     // free any dynamic memory allocated by loading the level
     // base state
-    gi.FreeTags(TAG_LEVEL);
+    G_FreeMemory();
 
     // clear old pointers
     for (const save_field_t *f = level_locals_t_fields; f->name; f++)

@@ -2169,7 +2169,7 @@ static void SetupMannequinModel(edict_t *self, int model_type, const char *weapo
     if (!skin)
         skin = default_skin;
 
-    self->model = G_CopyString(va("players/%s/tris.md2", model_name), TAG_LEVEL);
+    self->model = G_CopyString(va("players/%s/tris.md2", model_name));
     self->s.modelindex2 = gi.modelindex(va("players/%s/%s.md2", model_name, weapon));
     gi.configstring(CS_PLAYERSKINS + self->s.skinnum, va("mannequin\\%s/%s", model_name, skin));
 }
