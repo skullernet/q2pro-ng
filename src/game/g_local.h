@@ -602,10 +602,9 @@ typedef struct {
     int visit_order;
 } level_entry_t;
 
-typedef struct precache_s {
-    struct precache_s   *next;
-    void                (*func)(void);
-} precache_t;
+#define MAX_PRECACHES   64
+
+typedef void (*precache_t)(void);
 
 //
 // this structure is left intact through an entire game
@@ -634,7 +633,8 @@ typedef struct {
     // [Paril-KEX]
     level_entry_t level_entries[MAX_LEVELS_PER_UNIT];
 
-    precache_t *precaches;
+    precache_t precaches[MAX_PRECACHES];
+    int num_precaches;
 
 #if USE_FPS
     int tick_rate;
@@ -1369,7 +1369,7 @@ bool ED_WasKeySpecified(const char *key);
 void ED_SetKeySpecified(const char *key);
 void ED_InitSpawnVars(void);
 const char *G_GetLightStyle(int style);
-void G_AddPrecache(void (*func)(void));
+void G_AddPrecache(precache_t func);
 void G_RefreshPrecaches(void);
 void G_PrecacheInventoryItems(void);
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);

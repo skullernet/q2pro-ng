@@ -1160,20 +1160,17 @@ G_AddPrecache
 Register new global precache function and call it (once).
 ==============
 */
-void G_AddPrecache(void (*func)(void))
+void G_AddPrecache(precache_t func)
 {
-    precache_t *prec;
-
-    for (prec = game.precaches; prec; prec = prec->next)
-        if (prec->func == func)
+    for (int i = 0; i < game.num_precaches; i++)
+        if (game.precaches[i] == func)
             return;
 
-    prec = gi.TagMalloc(sizeof(*prec), TAG_GAME);
-    prec->func = func;
-    prec->next = game.precaches;
-    game.precaches = prec;
+    if (game.num_precaches == q_countof(game.precaches))
+        gi.error("Too many precaches");
 
-    prec->func();
+    game.precaches[game.num_precaches++] = func;
+    func();
 }
 
 /*
@@ -1186,10 +1183,8 @@ spawn functions.
 */
 void G_RefreshPrecaches(void)
 {
-    precache_t *prec;
-
-    for (prec = game.precaches; prec; prec = prec->next)
-        prec->func();
+    for (int i = 0; i < game.num_precaches; i++)
+        game.precaches[i]();
 }
 
 /*
@@ -1201,14 +1196,7 @@ Free precache functions from previous level.
 */
 static void G_FreePrecaches(void)
 {
-    precache_t *prec, *next;
-
-    for (prec = game.precaches; prec; prec = next) {
-        next = prec->next;
-        gi.TagFree(prec);
-    }
-
-    game.precaches = NULL;
+    game.num_precaches = 0;
 }
 
 /*
