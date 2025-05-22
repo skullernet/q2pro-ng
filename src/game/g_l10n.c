@@ -4,8 +4,6 @@
 #include "g_local.h"
 #include "shared/files.h"
 
-#define MIN_MESSAGES    1024
-
 #define L10N_FILE   "localization/loc_english.txt"
 
 typedef struct {
@@ -13,12 +11,29 @@ typedef struct {
     const char *value;
 } message_t;
 
-static message_t *messages;
+static message_t messages[4096];
 static int nb_messages;
+
+static char message_data[0x80000];
+static int message_size;
 
 static int messagecmp(const void *p1, const void *p2)
 {
     return strcmp(((const message_t *)p1)->key, ((const message_t *)p2)->key);
+}
+
+static char *copy_string(const char *s)
+{
+    size_t len = strlen(s) + 1;
+
+    if (len > sizeof(message_data) - message_size)
+        gi.error("Message data overflow");
+
+    char *d = message_data + message_size;
+    message_size += len;
+
+    memcpy(d, s, len);
+    return d;
 }
 
 static void parse_line(const char *data)
@@ -30,13 +45,6 @@ static void parse_line(const char *data)
     val = COM_Parse(&data);
     if (!data || strcmp(p, "="))
         return;
-
-    if (!messages) {
-        messages = gi.TagMalloc(MIN_MESSAGES * sizeof(messages[0]), TAG_L10N);
-    } else if (!(nb_messages & (MIN_MESSAGES - 1))) {
-        Q_assert(nb_messages < INT_MAX / sizeof(messages[0]) - MIN_MESSAGES);
-        messages = gi.TagRealloc(messages, (nb_messages + MIN_MESSAGES) * sizeof(messages[0]));
-    }
 
     // remove %junk%%junk% prefixes
     while (*val == '%') {
@@ -57,16 +65,18 @@ static void parse_line(const char *data)
     }
     *p = 0;
 
+    if (nb_messages == q_countof(messages))
+        gi.error("Too many messages");
+
     message_t *m = &messages[nb_messages++];
-    m->key = G_CopyString(key, TAG_L10N);
-    m->value = G_CopyString(val, TAG_L10N);
+    m->key = copy_string(key);
+    m->value = copy_string(val);
 }
 
 void G_FreeL10nFile(void)
 {
-    gi.FreeTags(TAG_L10N);
-    messages = NULL;
     nb_messages = 0;
+    message_size = 0;
 }
 
 void G_LoadL10nFile(void)
@@ -78,27 +88,26 @@ void G_LoadL10nFile(void)
         return;
     }
 
-    char *data;
-    int ret = fs->LoadFile(L10N_FILE, (void **)&data, 0, TAG_L10N);
-    if (!data) {
-        gi.dprintf("Couldn't load %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+    qhandle_t f;
+    int ret = fs->OpenFile(L10N_FILE, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    if (!f) {
+        gi.dprintf("Couldn't open %s: %s\n", L10N_FILE, fs->ErrorString(ret));
         return;
     }
 
-    char *s = data;
-    while (*s) {
-        char *p = strchr(s, '\n');
-        if (p)
-            *p = 0;
-
-        parse_line(s);
-
-        if (!p)
+    while (1) {
+        char line[MAX_STRING_CHARS];
+        ret = fs->ReadLine(f, line, sizeof(line));
+        if (ret == 0)
             break;
-        s = p + 1;
+        if (ret < 0) {
+            gi.dprintf("Couldn't read %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+            break;
+        }
+        parse_line(line);
     }
 
-    gi.TagFree(data);
+    fs->CloseFile(f);
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 
