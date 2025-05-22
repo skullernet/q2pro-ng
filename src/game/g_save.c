@@ -1019,7 +1019,7 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_int(field->name, *(edict_t **)p - g_edicts);
         break;
     case F_CLIENT:
-        write_int(field->name, *(gclient_t **)p - game.clients);
+        write_int(field->name, *(gclient_t **)p - g_clients);
         break;
 
     case F_ITEM:
@@ -1529,7 +1529,7 @@ static void read_field(const save_field_t *field, void *base)
         *(edict_t **)p = &g_edicts[parse_uint(MAX_EDICTS - 1)];
         break;
     case F_CLIENT:
-        *(gclient_t **)p = &game.clients[parse_uint(game.maxclients - 1)];
+        *(gclient_t **)p = &g_clients[parse_uint(game.maxclients - 1)];
         break;
 
     case F_ITEM:
@@ -1611,7 +1611,7 @@ void WriteGame(qhandle_t handle, bool autosave)
 
     begin_block("clients");
     for (int i = 0; i < game.maxclients; i++)
-        write_fields(va("%d", i), gclient_t_fields, &empty.client, &game.clients[i]);
+        write_fields(va("%d", i), gclient_t_fields, &empty.client, &g_clients[i]);
     end_block();
 }
 
@@ -1640,12 +1640,12 @@ void ReadGame(qhandle_t handle, const char *filename)
     if (game.maxclients != maxclients)
         gi.error("Savegame has bad maxclients");
 
-    game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+    memset(g_clients, 0, sizeof(g_clients[0]) * game.maxclients);
 
     expect("clients");
     expect("{");
     while ((num = parse_array(game.maxclients)) != -1)
-        read_fields(gclient_t_fields, &game.clients[num]);
+        read_fields(gclient_t_fields, &g_clients[num]);
 }
 
 //==========================================================
@@ -1756,7 +1756,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {
         ent = &g_edicts[i];
-        ent->client = game.clients + i;
+        ent->client = g_clients + i;
         ent->client->pers.connected = false;
         ent->client->pers.spawned = false;
     }

@@ -80,7 +80,7 @@ void PlayerTrail_Destroy(edict_t *player)
     if (player)
         player->client->trail_head = player->client->trail_tail = NULL;
     else for (int i = 0; i < game.maxclients; i++)
-        game.clients[i].trail_head = game.clients[i].trail_tail = NULL;
+        g_clients[i].trail_head = g_clients[i].trail_tail = NULL;
 }
 
 // check to see if we can add a new player trail spot

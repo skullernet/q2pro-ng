@@ -911,11 +911,11 @@ void SaveClientData(void)
         ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
-        game.clients[i].pers.health = ent->health;
-        game.clients[i].pers.max_health = ent->max_health;
-        game.clients[i].pers.savedFlags = (ent->flags & (FL_FLASHLIGHT | FL_GODMODE | FL_NOTARGET | FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR));
+        g_clients[i].pers.health = ent->health;
+        g_clients[i].pers.max_health = ent->max_health;
+        g_clients[i].pers.savedFlags = (ent->flags & (FL_FLASHLIGHT | FL_GODMODE | FL_NOTARGET | FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR));
         if (coop->integer)
-            game.clients[i].pers.score = ent->client->resp.score;
+            g_clients[i].pers.score = ent->client->resp.score;
     }
 }
 
@@ -1646,7 +1646,7 @@ void P_AssignClientSkinnum(edict_t *ent)
     if (ent->s.modelindex != MODELINDEX_PLAYER)
         return;
 
-    int client_num = ent->client - game.clients;
+    int client_num = ent->client - g_clients;
     int vwep_index = 0;
     const gitem_t *item = ent->client->pers.weapon;
     if (item)
@@ -1849,7 +1849,7 @@ void PutClientInServer(edict_t *ent)
 
     // clear entity values
     ent->groundentity = NULL;
-    ent->client = &game.clients[index];
+    ent->client = &g_clients[index];
     ent->takedamage = true;
     ent->movetype = MOVETYPE_WALK;
     ent->viewheight = 22;
@@ -2058,7 +2058,7 @@ static void G_SetLevelEntry(void)
         // give all of the clients an extra life back
         if (g_coop_enable_lives->integer)
             for (int i = 0; i < game.maxclients; i++)
-                game.clients[i].pers.lives = min(g_coop_num_lives->integer + 1, game.clients[i].pers.lives + 1);
+                g_clients[i].pers.lives = min(g_coop_num_lives->integer + 1, g_clients[i].pers.lives + 1);
     }
 
     // scan for all new maps we can go to, for secret levels
@@ -2122,7 +2122,7 @@ to be placed into the game.  This will happen every level load.
 */
 void ClientBegin(edict_t *ent)
 {
-    ent->client = game.clients + (ent - g_edicts);
+    ent->client = g_clients + (ent - g_edicts);
     ent->client->awaiting_respawn = false;
     ent->client->respawn_timeout = 0;
 
@@ -2324,7 +2324,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     }
 
     // they can connect
-    ent->client = game.clients + (ent - g_edicts);
+    ent->client = g_clients + (ent - g_edicts);
 
     // set up userinfo early
     ClientUserinfoChanged(ent, userinfo);

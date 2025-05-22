@@ -616,8 +616,6 @@ typedef struct {
     char    helpmessage2[MAX_TOKEN_CHARS];
     int     help1changed, help2changed;
 
-    gclient_t *clients; // [maxclients]
-
     // can't store spawnpoint in level, because
     // it would get overwritten by the savegame restore
     char spawnpoint[MAX_TOKEN_CHARS]; // needed for coop respawns
@@ -2324,6 +2322,8 @@ struct gclient_s {
     // saved - for coop; last time we were in a firing state
     gtime_t  last_firing_time;
 };
+
+extern gclient_t g_clients[MAX_CLIENTS];
 
 // ==========================================
 // PLAT 2

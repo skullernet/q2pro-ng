@@ -999,8 +999,8 @@ static int PlayerSort(const void *a, const void *b)
     anum = *(const int *)a;
     bnum = *(const int *)b;
 
-    anum = game.clients[anum].ps.stats[STAT_FRAGS];
-    bnum = game.clients[bnum].ps.stats[STAT_FRAGS];
+    anum = g_clients[anum].ps.stats[STAT_FRAGS];
+    bnum = g_clients[bnum].ps.stats[STAT_FRAGS];
 
     if (anum < bnum)
         return -1;
@@ -1026,7 +1026,7 @@ static void Cmd_Players_f(edict_t *ent)
 
     count = 0;
     for (i = 0; i < game.maxclients; i++)
-        if (game.clients[i].pers.connected) {
+        if (g_clients[i].pers.connected) {
             index[count] = i;
             count++;
         }
@@ -1039,8 +1039,8 @@ static void Cmd_Players_f(edict_t *ent)
 
     for (i = 0; i < count; i++) {
         Q_snprintf(small, sizeof(small), "%3i %s\n",
-                   game.clients[index[i]].ps.stats[STAT_FRAGS],
-                   game.clients[index[i]].pers.netname);
+                   g_clients[index[i]].ps.stats[STAT_FRAGS],
+                   g_clients[index[i]].pers.netname);
         if (strlen(small) + strlen(large) > sizeof(large) - 50) {
             // can't print all of them in one packet
             strcat(large, "...\n");

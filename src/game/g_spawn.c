@@ -1115,7 +1115,7 @@ void G_PrecacheInventoryItems(void)
         return;
 
     for (int i = 0; i < game.maxclients; i++) {
-        gclient_t *cl = &game.clients[i];
+        gclient_t *cl = &g_clients[i];
         for (item_id_t id = IT_NULL; id < IT_TOTAL; id++)
             if (cl->pers.inventory[id])
                 PrecacheItem(GetItemByIndex(id));
@@ -1243,11 +1243,11 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
     // set client fields on player ents
     for (int i = 0; i < game.maxclients; i++) {
-        g_edicts[i].client = game.clients + i;
+        g_edicts[i].client = g_clients + i;
 
         // "disconnect" all players since the level is switching
-        game.clients[i].pers.connected = false;
-        game.clients[i].pers.spawned = false;
+        g_clients[i].pers.connected = false;
+        g_clients[i].pers.spawned = false;
     }
 
     ent = NULL;
@@ -1599,8 +1599,8 @@ void SP_worldspawn(edict_t *ent)
         *game.helpmessage1 = *game.helpmessage2 = '\0';
 
         for (int i = 0; i < game.maxclients; i++) {
-            game.clients[i].pers.game_help1changed = game.clients[i].pers.game_help2changed = 0;
-            game.clients[i].resp.coop_respawn.game_help1changed = game.clients[i].resp.coop_respawn.game_help2changed = 0;
+            g_clients[i].pers.game_help1changed = g_clients[i].pers.game_help2changed = 0;
+            g_clients[i].resp.coop_respawn.game_help1changed = g_clients[i].resp.coop_respawn.game_help2changed = 0;
         }
     }
 

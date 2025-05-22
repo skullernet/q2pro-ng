@@ -267,7 +267,7 @@ void CTFAssignTeam(gclient_t *who)
 
     who->resp.ctf_state = 0;
 
-    if (!g_teamplay_force_join->integer && !(g_edicts[who - game.clients].r.svflags & SVF_BOT)) {
+    if (!g_teamplay_force_join->integer && !(g_edicts[who - g_clients].r.svflags & SVF_BOT)) {
         who->resp.ctf_team = CTF_NOTEAM;
         return;
     }
@@ -807,10 +807,10 @@ void CTFCalcScores(void)
     for (int i = 0; i < game.maxclients; i++) {
         if (!g_edicts[i].r.inuse)
             continue;
-        if (game.clients[i].resp.ctf_team == CTF_TEAM1)
-            ctfgame.total1 += game.clients[i].resp.score;
-        else if (game.clients[i].resp.ctf_team == CTF_TEAM2)
-            ctfgame.total2 += game.clients[i].resp.score;
+        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
+            ctfgame.total1 += g_clients[i].resp.score;
+        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
+            ctfgame.total2 += g_clients[i].resp.score;
     }
 }
 
@@ -1513,14 +1513,14 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
         cl_ent = g_edicts + i;
         if (!cl_ent->r.inuse)
             continue;
-        if (game.clients[i].resp.ctf_team == CTF_TEAM1)
+        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
             team = 0;
-        else if (game.clients[i].resp.ctf_team == CTF_TEAM2)
+        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
             team = 1;
         else
             continue; // unknown team?
 
-        score = game.clients[i].resp.score;
+        score = g_clients[i].resp.score;
         for (j = 0; j < total[team]; j++) {
             if (score > sortedscores[team][j])
                 break;
@@ -1579,7 +1579,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
 
         // left side
         if (i < total[0]) {
-            cl = &game.clients[sorted[0][i]];
+            cl = &g_clients[sorted[0][i]];
             cl_ent = g_edicts + sorted[0][i];
 
             Q_snprintf(entry, sizeof(entry), "ctf -40 %d %d %d %d ",
@@ -1596,7 +1596,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
 
         // right side
         if (i < total[1]) {
-            cl = &game.clients[sorted[1][i]];
+            cl = &g_clients[sorted[1][i]];
             cl_ent = g_edicts + sorted[1][i];
 
             Q_snprintf(entry, sizeof(entry), "ctf 200 %d %d %d %d ",
@@ -1623,7 +1623,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
     if (strlen(string) < MAX_CTF_STAT_LENGTH - 50) {
         for (i = 0; i < game.maxclients; i++) {
             cl_ent = g_edicts + i;
-            cl = &game.clients[i];
+            cl = &g_clients[i];
             if (!cl_ent->r.inuse ||
                 cl_ent->r.solid != SOLID_NOT ||
                 cl_ent->client->resp.ctf_team != CTF_NOTEAM)
@@ -2633,9 +2633,9 @@ static void CTFUpdateJoinMenu(edict_t *ent)
     for (int i = 0; i < game.maxclients; i++) {
         if (!g_edicts[i].r.inuse)
             continue;
-        if (game.clients[i].resp.ctf_team == CTF_TEAM1)
+        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
             num1++;
-        else if (game.clients[i].resp.ctf_team == CTF_TEAM2)
+        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
             num2++;
     }
 
@@ -2684,9 +2684,9 @@ void CTFOpenJoinMenu(edict_t *ent)
     for (int i = 0; i < game.maxclients; i++) {
         if (!g_edicts[i].r.inuse)
             continue;
-        if (game.clients[i].resp.ctf_team == CTF_TEAM1)
+        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
             num1++;
-        else if (game.clients[i].resp.ctf_team == CTF_TEAM2)
+        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
             num2++;
     }
 

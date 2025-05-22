@@ -19,6 +19,7 @@ spawn_temp_t   st;
 const trace_t null_trace;
 
 edict_t g_edicts[MAX_EDICTS];
+gclient_t g_clients[MAX_CLIENTS];
 
 cvar_t *developer;
 cvar_t *deathmatch;
@@ -332,7 +333,6 @@ static void InitGame(void)
 
     // initialize all clients for this game
     game.maxclients = maxclients->integer;
-    game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
     globals.num_edicts = game.maxclients;
 
 #if USE_FPS
@@ -651,7 +651,7 @@ static void CheckDMRules(void)
         }
 
         for (int i = 0; i < game.maxclients; i++) {
-            cl = game.clients + i;
+            cl = g_clients + i;
             if (!g_edicts[i].r.inuse)
                 continue;
 
@@ -690,7 +690,7 @@ static void ExitLevel(void)
         level.intermission_clear = false;
 
         for (int i = 0; i < game.maxclients; i++) {
-            gclient_t *client = &game.clients[i];
+            gclient_t *client = &g_clients[i];
 
             // [Kex] Maintain user info to keep the player skin.
             char userinfo[MAX_INFO_STRING];
@@ -713,7 +713,7 @@ static void ExitLevel(void)
         if (g_coop_enable_lives->integer) {
             for (int i = 0; i < game.maxclients; i++) {
                 if (g_edicts[i].r.inuse)
-                    game.clients[i].pers.lives = g_coop_num_lives->integer + 1;
+                    g_clients[i].pers.lives = g_coop_num_lives->integer + 1;
             }
         }
     }
@@ -782,7 +782,7 @@ static void G_RunFrame_(bool main_loop)
 
             for (int i = 0; i < game.maxclients; i++) {
                 if (g_edicts[i].r.inuse)
-                    Vector4Set(game.clients[i].ps.screen_blend, 0, 0, 0, alpha);
+                    Vector4Set(g_clients[i].ps.screen_blend, 0, 0, 0, alpha);
             }
         } else {
             level.intermission_fade = false;

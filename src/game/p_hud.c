@@ -178,7 +178,7 @@ void G_EndOfUnitMessage(void)
 
     for (int i = 0; i < game.maxclients; i++) {
         if (g_edicts[i].r.inuse)
-            game.clients[i].showeou = true;
+            g_clients[i].showeou = true;
     }
 }
 
@@ -323,9 +323,9 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
     total = 0;
     for (i = 0; i < game.maxclients; i++) {
         cl_ent = g_edicts + i;
-        if (!cl_ent->r.inuse || game.clients[i].resp.spectator)
+        if (!cl_ent->r.inuse || g_clients[i].resp.spectator)
             continue;
-        score = game.clients[i].resp.score;
+        score = g_clients[i].resp.score;
         for (j = 0; j < total; j++) {
             if (score > sortedscores[j])
                 break;
@@ -347,7 +347,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
         total = 16;
 
     for (i = 0; i < total; i++) {
-        cl = &game.clients[sorted[i]];
+        cl = &g_clients[sorted[i]];
         cl_ent = g_edicts + sorted[i];
 
         x = (i >= 8) ? 130 : -72;
