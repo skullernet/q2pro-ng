@@ -6,6 +6,7 @@
 #include "g_nav.h"
 #include "shared/files.h"
 #include "shared/list.h"
+#include <float.h>
 
 // magic file header
 #define NAV_MAGIC   MakeLittleLong('N', 'A', 'V', '3')

@@ -2413,7 +2413,7 @@ void CTFGhost(edict_t *ent)
         return;
     }
 
-    n = atoi(gi.argv(1));
+    n = Q_atoi(gi.argv(1));
 
     for (i = 0; i < MAX_CLIENTS; i++) {
         if (ctfgame.ghosts[i].code && ctfgame.ghosts[i].code == n) {

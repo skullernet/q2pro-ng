@@ -1298,7 +1298,7 @@ static bool M_MoveToPath(edict_t *self, float dist)
         } else if (style == COMBAT_MELEE) {
             // path pretty close to the enemy, then let normal Quake movement take over.
             if (range_to(self, self->enemy) > 240 ||
-                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2])) {
+                fabsf(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2])) {
                 if (M_NavPathToGoal(self, dist, self->enemy->s.origin))
                     return true;
                 self->monsterinfo.aiflags &= ~AI_TEMP_MELEE_COMBAT;
@@ -1309,7 +1309,7 @@ static bool M_MoveToPath(edict_t *self, float dist)
         } else if (style == COMBAT_MIXED) {
             // most mixed combat AI have fairly short range attacks, so try to path within mid range.
             if (range_to(self, self->enemy) > RANGE_NEAR ||
-                fabs(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2]) * 2.0f) {
+                fabsf(self->s.origin[2] - self->enemy->s.origin[2]) > max(self->r.maxs[2], -self->r.mins[2]) * 2.0f) {
                 if (M_NavPathToGoal(self, dist, self->enemy->s.origin))
                     return true;
             } else {
