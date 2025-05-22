@@ -22,18 +22,22 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // shared.h -- included first by ALL program modules
 //
 
-#include <ctype.h>
-#include <inttypes.h>
 #include <limits.h>
-#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef Q2_VM
+#include "shared/bg_lib.h"
+#else
+#include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#endif
 
 #if HAVE_CONFIG_H
 #include "config.h"

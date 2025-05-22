@@ -22,6 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#ifndef Q2_VM
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -30,6 +32,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <direct.h>
 #else
 #include <unistd.h>
+#endif
+
 #endif
 
 #ifdef _WIN32
