@@ -58,6 +58,7 @@ client_src = [
   'src/client/tent.c',
   'src/client/view.c',
   'src/common/async.c',
+  'src/game/p_move.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/game.c',

@@ -28,8 +28,6 @@ enum {
     svc_stufftext = 11
 };
 
-#define STEPSIZE    18.0f
-
 //==================================================================
 
 extern const vec3_t player_mins;
@@ -1536,14 +1534,6 @@ void stationarymonster_start(edict_t *self);
 void monster_done_dodge(edict_t *self);
 // ROGUE
 
-typedef enum {
-    GOOD_POSITION,
-    STUCK_FIXED,
-    NO_GOOD_POSITION
-} stuck_result_t;
-
-stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
-                                        int ignore, contents_t mask, trace_func_t trace_func);
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check);
 
 // this is for the count of monsters

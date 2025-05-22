@@ -17,6 +17,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "client.h"
+#include "../game/bg_local.h"
+
+void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
+{
+    if (a <= 0)
+        return;
+
+    float a2 = v_blend[3] + (1 - v_blend[3]) * a; // new total alpha
+    float a3 = v_blend[3] / a2; // fraction of color from old
+
+    v_blend[0] = v_blend[0] * a3 + r * (1 - a3);
+    v_blend[1] = v_blend[1] * a3 + g * (1 - a3);
+    v_blend[2] = v_blend[2] * a3 + b * (1 - a3);
+    v_blend[3] = a2;
+}
 
 /*
 ===================
@@ -228,7 +243,7 @@ void CL_PredictMovement(void)
     // run frames
     while (++ack <= current) {
         pm.cmd = cl.cmds[ack & CMD_MASK];
-        cge->Pmove(&pm);
+        Pmove(&pm);
         pm.snapinitial = false;
 
         // save for debug checking
@@ -241,7 +256,7 @@ void CL_PredictMovement(void)
         pm.cmd.forwardmove = cl.localmove[0];
         pm.cmd.sidemove = cl.localmove[1];
         pm.cmd.upmove = cl.localmove[2];
-        cge->Pmove(&pm);
+        Pmove(&pm);
         frame = current;
 
         // save for debug checking

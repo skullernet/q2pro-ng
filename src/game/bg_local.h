@@ -1,7 +1,18 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 
+#define STEPSIZE    18.0f
+
 #define STOP_EPSILON 0.1f
+
+typedef enum {
+    GOOD_POSITION,
+    STUCK_FIXED,
+    NO_GOOD_POSITION
+} stuck_result_t;
+
+stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
+                                        int ignore, contents_t mask, trace_func_t trace_func);
 
 typedef struct {
     float airaccel;
