@@ -427,7 +427,7 @@ void SP_turret_driver(edict_t *self)
     self->flags |= FL_NO_KNOCKBACK;
 
     if (g_debug_monster_kills->integer)
-        level.monsters_registered[level.total_monsters] = self;
+        level.monsters_registered[level.total_monsters] = self->s.number;
     level.total_monsters++;
 
     self->r.svflags |= SVF_MONSTER;

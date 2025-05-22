@@ -564,9 +564,9 @@ void G_MonsterKilled(edict_t *self)
         bool found = false;
 
         for (int i = 0; i < level.total_monsters; i++) {
-            edict_t *ent = level.monsters_registered[i];
+            edict_t *ent = &g_edicts[level.monsters_registered[i]];
             if (ent == self) {
-                level.monsters_registered[i] = NULL;
+                level.monsters_registered[i] = ENTITYNUM_NONE;
                 found = true;
                 break;
             }
@@ -1023,7 +1023,7 @@ bool monster_start(edict_t *self)
     if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(self->spawnflags & SPAWNFLAG_MONSTER_DEAD)) {
     // ROGUE
         if (g_debug_monster_kills->integer)
-            level.monsters_registered[level.total_monsters] = self;
+            level.monsters_registered[level.total_monsters] = self->s.number;
         level.total_monsters++;
     }
 

@@ -683,7 +683,7 @@ typedef struct {
     int found_goals;
 
     int total_monsters;
-    edict_t *monsters_registered[MAX_EDICTS]; // only for debug
+    uint16_t monsters_registered[MAX_EDICTS]; // only for debug
     int killed_monsters;
 
     edict_t *current_entity; // entity running from G_RunFrame

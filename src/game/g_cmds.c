@@ -1401,7 +1401,7 @@ static void Cmd_ListMonsters_f(edict_t *ent)
         return;
 
     for (int i = 0; i < level.total_monsters; i++) {
-        edict_t *e = level.monsters_registered[i];
+        edict_t *e = &g_edicts[level.monsters_registered[i]];
 
         if (!e || !e->r.inuse)
             continue;
