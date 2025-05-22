@@ -13,6 +13,7 @@
 #define GAME_INCLUDE
 #include "shared/game.h"
 
+#include "g_syscalls.h"
 #include "bg_local.h"
 
 // the "gameversion" client command will print this plus compile date

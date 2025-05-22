@@ -27,7 +27,7 @@ void SP_info_player_start(edict_t *self)
 {
     // fix stuck spawn points
     trace_t tr;
-    gi.trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
+    trap_Trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
     if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 
@@ -81,7 +81,7 @@ void SP_info_player_coop_lava(edict_t *self)
 
     // fix stuck spawn points
     trace_t tr;
-    gi.trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
+    trap_Trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
     if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 }
@@ -977,7 +977,7 @@ bool SpawnPointClear(edict_t *spot)
     VectorCopy(spot->s.origin, p);
     p[2] += 9;
 
-    gi.trace(&tr, p, player_mins, player_maxs, p, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER);
+    trap_Trace(&tr, p, player_mins, player_maxs, p, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER);
     return !tr.startsolid;
 }
 
@@ -1194,23 +1194,23 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
         mask &= ~CONTENTS_PLAYER;
 
     trace_t tr;
-    gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+    trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
     edict_t *hit = &g_edicts[tr.entnum];
 
     // sometimes the spot is too close to the ground, give it a bit of slack
     if (tr.startsolid && !hit->client) {
         spot[2] += 1;
-        gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+        trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
         hit = &g_edicts[tr.entnum];
     }
 
     // no idea why this happens in some maps..
     if (tr.startsolid && !hit->client) {
         // try a nudge
-        if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, ENTITYNUM_NONE, mask, gi.trace) == NO_GOOD_POSITION)
+        if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, ENTITYNUM_NONE, mask, trap_Trace) == NO_GOOD_POSITION)
             return hit; // what do we do here...?
 
-        gi.trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+        trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
         hit = &g_edicts[tr.entnum];
 
         if (tr.startsolid && !hit->client)
@@ -1348,7 +1348,7 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
 
     // sometimes, landmark spawns can cause slight inconsistencies in collision;
     // we'll do a bit of tracing to make sure the bbox is clear
-    if (G_FixStuckObject_Generic(point, player_mins, player_maxs, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, gi.trace) == NO_GOOD_POSITION)
+    if (G_FixStuckObject_Generic(point, player_mins, player_maxs, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, trap_Trace) == NO_GOOD_POSITION)
         return false;
 
     VectorCopy(point, origin);
@@ -2572,7 +2572,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             pm.snapinitial = true;
 
         pm.cmd = *ucmd;
-        pm.trace = gi.trace;
+        pm.trace = trap_Trace;
         pm.clip = gi.clip;
         pm.pointcontents = gi.pointcontents;
 
@@ -2752,8 +2752,8 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
     // sanity check; make sure there's enough room for ourselves.
     // (crouching in a small area, etc)
     trace_t tr;
-    gi.trace(&tr, player->s.origin, player_mins, player_maxs,
-             player->s.origin, player->s.number, MASK_PLAYERSOLID);
+    trap_Trace(&tr, player->s.origin, player_mins, player_maxs,
+               player->s.origin, player->s.number, MASK_PLAYERSOLID);
 
     if (tr.startsolid || tr.allsolid)
         return false;
@@ -2780,7 +2780,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(player->s.origin, end);
         end[2] += up_distance;
 
-        gi.trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
@@ -2792,7 +2792,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(tr.endpos, start);
         VectorMA(start, back_distance, fwd, end);
 
-        gi.trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
@@ -2803,7 +2803,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(tr.endpos, end);
         end[2] -= up_distance * 4;
 
-        gi.trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
 
         // stuck, or floating, or touching some other entity
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)) || tr.fraction == 1.0f || tr.entnum != ENTITYNUM_WORLD)
@@ -2830,7 +2830,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
 
         // if we went up or down 1 step, make sure we can still see their origin and their head
         if (z_diff > STEPSIZE) {
-            gi.trace(&tr, player->s.origin, NULL, NULL, tr.endpos, player->s.number, mask);
+            trap_Trace(&tr, player->s.origin, NULL, NULL, tr.endpos, player->s.number, mask);
 
             if (tr.fraction != 1.0f)
                 continue;
@@ -2841,7 +2841,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
             VectorCopy(tr.endpos, end);
             end[2] += player_viewheight;
 
-            gi.trace(&tr, start, NULL, NULL, end, player->s.number, mask);
+            trap_Trace(&tr, start, NULL, NULL, end, player->s.number, mask);
 
             if (tr.fraction != 1.0f)
                 continue;

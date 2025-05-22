@@ -136,15 +136,15 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
     }
 
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, target, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+    trap_Trace(&tr, start, NULL, NULL, target, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
     edict_t *hit = &g_edicts[tr.entnum];
 
     if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
         return true;
 
     if (!is_blind) {
-        gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin,
-                 self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+        trap_Trace(&tr, start, NULL, NULL, self->enemy->s.origin,
+                   self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
         hit = &g_edicts[tr.entnum];
 
         if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
@@ -182,7 +182,7 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     point[1] = ent->s.origin[1];
     point[2] = ent->s.origin[2] + (0.25f * ent->gravityVector[2]); // PGM
 
-    gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, point, ent->s.number, mask);
+    trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, point, ent->s.number, mask);
 
     // check steepness
     // PGM
@@ -322,7 +322,7 @@ bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, 
     trace_t trace;
 
     // PGM
-    gi.trace(&trace, origin, mins, maxs, origin, ignore->s.number, mask);
+    trap_Trace(&trace, origin, mins, maxs, origin, ignore->s.number, mask);
     if (trace.startsolid) {
         if (!ceiling)
             origin[2] += 1;
@@ -337,7 +337,7 @@ bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, 
         end[2] += 256;
     // PGM
 
-    gi.trace(&trace, origin, mins, maxs, end, ignore->s.number, mask);
+    trap_Trace(&trace, origin, mins, maxs, end, ignore->s.number, mask);
 
     if (trace.fraction == 1 || trace.allsolid || (!allow_partial && trace.startsolid))
         return false;
@@ -355,7 +355,7 @@ bool M_droptofloor(edict_t *ent)
             return false;
     } else {
         trace_t tr;
-        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent->s.number, mask);
+        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent->s.number, mask);
         if (tr.startsolid)
             return false;
     }
@@ -756,7 +756,7 @@ static void M_CheckDodge(edict_t *self)
         vec3_t pos;
         VectorAdd(ent->s.origin, ent->velocity, pos);
         trace_t tr;
-        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent->s.number, ent->clipmask);
+        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent->s.number, ent->clipmask);
 
         if (tr.entnum == self->s.number) {
             gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
@@ -1102,7 +1102,7 @@ bool monster_start(edict_t *self)
 
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 {
-    stuck_result_t result = G_FixStuckObject_Generic(check, self->r.mins, self->r.maxs, self->s.number, G_GetClipMask(self), gi.trace);
+    stuck_result_t result = G_FixStuckObject_Generic(check, self->r.mins, self->r.maxs, self->s.number, G_GetClipMask(self), trap_Trace);
 
     if (result == NO_GOOD_POSITION)
         return result;
@@ -1131,7 +1131,7 @@ void monster_start_go(edict_t *self)
         trace_t tr;
 
         if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
-            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
                      self->s.origin, self->s.number, MASK_MONSTERSOLID);
             is_stuck = tr.startsolid;
         } else {
@@ -1161,8 +1161,8 @@ void monster_start_go(edict_t *self)
                         self->s.origin[2] = check[2] + adjust[z];
 
                         if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-                            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                                     self->s.origin, self->s.number, MASK_MONSTERSOLID);
+                            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                                       self->s.origin, self->s.number, MASK_MONSTERSOLID);
                             is_stuck = tr.startsolid;
 
                             if (!is_stuck)

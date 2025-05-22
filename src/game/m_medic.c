@@ -247,8 +247,8 @@ bool finishHeal(edict_t *self)
     maxs[2] += 48; // compensate for change when they die
 
     trace_t tr;
-    gi.trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin,
-             healee->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin,
+               healee->s.number, MASK_MONSTERSOLID);
 
     if (tr.startsolid || tr.allsolid) {
         abortHeal(self, true, false);
@@ -339,7 +339,7 @@ static bool canReach(edict_t *self, edict_t *other)
     spot1[2] += self->viewheight;
     VectorCopy(other->s.origin, spot2);
     spot2[2] += other->viewheight;
-    gi.trace(&trace, spot1, NULL, NULL, spot2, self, MASK_PROJECTILE | MASK_WATER);
+    trap_Trace(&trace, spot1, NULL, NULL, spot2, self, MASK_PROJECTILE | MASK_WATER);
     return trace.fraction == 1.0f || trace.ent == other;
 }
 #endif
@@ -966,7 +966,7 @@ static void medic_cable_attack(edict_t *self)
         return;
     }
 
-    gi.trace(&tr, start, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_SOLID);
+    trap_Trace(&tr, start, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_SOLID);
     if (tr.fraction != 1.0f && tr.entnum != self->enemy->s.number) {
         if (tr.entnum == ENTITYNUM_WORLD) {
             // give up on second try

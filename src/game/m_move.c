@@ -70,7 +70,7 @@ bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const ve
     vec3_t maxs_no_z = { maxs[0], maxs[1] };
 
     trace_t trace;
-    gi.trace(&trace, start, mins_no_z, maxs_no_z, stop, ignore->s.number, mask);
+    trap_Trace(&trace, start, mins_no_z, maxs_no_z, stop, ignore->s.number, mask);
 
     if (trace.fraction == 1.0f)
         return false;
@@ -104,8 +104,8 @@ bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const ve
             VectorCopy(quadrant_start, quadrant_end);
             quadrant_end[2] = stop[2];
 
-            gi.trace(&trace, quadrant_start, half_step_quadrant_mins,
-                     half_step_quadrant, quadrant_end, ignore->s.number, mask);
+            trap_Trace(&trace, quadrant_start, half_step_quadrant_mins,
+                       half_step_quadrant, quadrant_end, ignore->s.number, mask);
 
             // PGM
             //  FIXME - this will only handle 0,0,1 and 0,0,-1 gravity vectors
@@ -208,12 +208,12 @@ static bool SV_flystep_testvisposition(vec3_t wanted_pos, bool bottom, edict_t *
     }
 
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, wanted_pos, ent->s.number,
-             MASK_SOLID | CONTENTS_MONSTERCLIP);
+    trap_Trace(&tr, start, NULL, NULL, wanted_pos, ent->s.number,
+               MASK_SOLID | CONTENTS_MONSTERCLIP);
 
     if (tr.fraction == 1.0f) {
-        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end,
-                 ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
+        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end,
+                   ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
         if (tr.fraction == 1.0f)
             return true;
@@ -307,8 +307,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
 
     // find a place we can fit in from here
     trace_t tr;
-    gi.trace(&tr, towards_origin, trace_mins, trace_maxs, wanted_pos,
-             ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
+    trap_Trace(&tr, towards_origin, trace_mins, trace_maxs, wanted_pos,
+               ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
     if (!tr.allsolid)
         VectorCopy(tr.endpos, wanted_pos);
@@ -334,8 +334,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
     // check if we're blocked from moving this way from where we are
     vec3_t end;
     VectorMA(ent->s.origin, ent->monsterinfo.fly_acceleration, wanted_dir, end);
-    gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent->s.number,
-             MASK_SOLID | CONTENTS_MONSTERCLIP);
+    trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent->s.number,
+               MASK_SOLID | CONTENTS_MONSTERCLIP);
 
     vec3_t aim_fwd, aim_rgt, aim_up;
     vec3_t yaw_angles = { 0, ent->s.angles[1], 0 };
@@ -357,8 +357,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
             }
 
             trace_t tra, trb;
-            gi.trace(&tra, a, NULL, NULL, wanted_pos, ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
-            gi.trace(&trb, b, NULL, NULL, wanted_pos, ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
+            trap_Trace(&tra, a, NULL, NULL, wanted_pos, ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
+            trap_Trace(&trb, b, NULL, NULL, wanted_pos, ent->s.number, MASK_SOLID | CONTENTS_MONSTERCLIP);
 
             bool left_visible = tra.fraction == 1.0f;
             bool right_visible = trb.fraction == 1.0f;
@@ -569,8 +569,8 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
         VectorAdd(ent->s.origin, new_move, neworg);
 
         trace_t trace;
-        gi.trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, neworg,
-                 ent->s.number, MASK_MONSTERSOLID);
+        trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, neworg,
+                   ent->s.number, MASK_MONSTERSOLID);
 
         // fly monsters don't enter water voluntarily
         if (ent->flags & FL_FLY) {
@@ -693,18 +693,18 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     VectorMA(oldorg, -1 * stepsize, ent->gravityVector, start_up);
 
     trace_t wtf_trace;
-    gi.trace(&wtf_trace, oldorg, ent->r.mins, ent->r.maxs, start_up, ent->s.number, mask);
+    trap_Trace(&wtf_trace, oldorg, ent->r.mins, ent->r.maxs, start_up, ent->s.number, mask);
     VectorCopy(wtf_trace.endpos, start_up);
 
     vec3_t end_up;
     VectorAdd(start_up, move, end_up);
 
     trace_t up_trace;
-    gi.trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent->s.number, mask);
+    trap_Trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent->s.number, mask);
 
     if (up_trace.startsolid) {
         VectorMA(start_up, -1 * stepsize, ent->gravityVector, start_up);
-        gi.trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent->s.number, mask);
+        trap_Trace(&up_trace, start_up, ent->r.mins, ent->r.maxs, end_up, ent->s.number, mask);
     }
 
     vec3_t start_fwd, end_fwd;
@@ -712,11 +712,11 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     VectorAdd(start_fwd, move, end_fwd);
 
     trace_t fwd_trace;
-    gi.trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent->s.number, mask);
+    trap_Trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent->s.number, mask);
 
     if (fwd_trace.startsolid) {
         VectorMA(start_up, -1 * stepsize, ent->gravityVector, start_up);
-        gi.trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent->s.number, mask);
+        trap_Trace(&fwd_trace, start_fwd, ent->r.mins, ent->r.maxs, end_fwd, ent->s.number, mask);
     }
 
     // pick the one that went farther
@@ -735,7 +735,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     vec3_t end;
     VectorMA(chosen_forward->endpos, steps * stepsize, ent->gravityVector, end);
     trace_t trace;
-    gi.trace(&trace, chosen_forward->endpos, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
+    trap_Trace(&trace, chosen_forward->endpos, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
 
     if (fabsf(ent->s.origin[2] - trace.endpos[2]) > 8)
         stepped = true;
@@ -1403,7 +1403,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         }
 
         trace_t tr;
-        gi.trace(&tr, ent->s.origin, NULL, NULL, goal->s.origin, ent->s.number, MASK_MONSTERSOLID);
+        trap_Trace(&tr, ent->s.origin, NULL, NULL, goal->s.origin, ent->s.number, MASK_MONSTERSOLID);
 
         if (tr.fraction == 1.0f || tr.entnum == goal->s.number) {
             vec3_t v;

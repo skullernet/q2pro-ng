@@ -48,7 +48,7 @@ bool blocked_checkplat(edict_t *self, float dist)
         VectorCopy(pt1, pt2);
         pt2[2] -= 384;
 
-        gi.trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
+        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid && !strncmp(g_edicts[trace.entnum].classname, "func_plat", 8))
             plat = &g_edicts[trace.entnum];
     }
@@ -154,19 +154,19 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
     if (playerPosition == -1 && self->monsterinfo.drop_height) {
         // check to make sure we can even get to the spot we're going to "fall" from
         VectorMA(self->s.origin, 48, forward, pt1);
-        gi.trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt1, self->s.number, MASK_MONSTERSOLID);
+        trap_Trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt1, self->s.number, MASK_MONSTERSOLID);
         if (trace.fraction < 1)
             return NO_JUMP;
 
         VectorCopy(pt1, pt2);
         pt2[2] = self->r.absmin[2] - self->monsterinfo.drop_height - 1;
 
-        gi.trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
+        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
             // check how deep the water is
             if (trace.contents & CONTENTS_WATER) {
                 trace_t deep;
-                gi.trace(&deep, trace.endpos, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
+                trap_Trace(&deep, trace.endpos, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
 
                 water_level_t waterlevel;
                 contents_t watertype;
@@ -193,7 +193,7 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
         VectorCopy(pt1, pt2);
         pt1[2] = self->r.absmax[2] + self->monsterinfo.jump_height;
 
-        gi.trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
+        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
             if ((trace.endpos[2] - self->r.absmin[2]) <= self->monsterinfo.jump_height && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
                 face_wall(self);
@@ -697,7 +697,7 @@ bool face_wall(edict_t *self)
 
     AngleVectors(self->s.angles, forward, NULL, NULL);
     VectorMA(self->s.origin, 64, forward, pt);
-    gi.trace(&tr, self->s.origin, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&tr, self->s.origin, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
     if (tr.fraction < 1 && !tr.allsolid && !tr.startsolid) {
         vectoangles(tr.plane.normal, ang);
         self->ideal_yaw = ang[YAW] + 180;
@@ -850,7 +850,7 @@ void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_s
 
     // [Paril-KEX] if our current attempt is blocked, try the opposite one
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+    trap_Trace(&tr, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
 
     if (tr.fraction < 1.0f && tr.entnum != target->s.number) {
         eye_height = !eye_height;
@@ -876,7 +876,7 @@ void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_s
         VectorCopy(target->s.origin, vec);
     // if the shot is going to impact a nearby wall from our prediction, just fire it straight.
     else {
-        gi.trace(&tr, start, NULL, NULL, vec, ENTITYNUM_NONE, MASK_SOLID);
+        trap_Trace(&tr, start, NULL, NULL, vec, ENTITYNUM_NONE, MASK_SOLID);
         if (tr.fraction < 0.9f)
             VectorCopy(target->s.origin, vec);
     }
@@ -930,7 +930,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
             VectorMA(origin, sim_time, velocity, end);
 
             trace_t tr;
-            gi.trace(&tr, origin, NULL, NULL, end, ENTITYNUM_NONE, MASK_SHOT);
+            trap_Trace(&tr, origin, NULL, NULL, end, ENTITYNUM_NONE, MASK_SHOT);
             VectorCopy(tr.endpos, origin);
 
             if (tr.fraction < 1.0f) {

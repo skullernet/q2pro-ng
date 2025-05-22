@@ -284,7 +284,7 @@ static void ShamblerCastLightning(edict_t *self)
 
     VectorMA(start, 8192, dir, end);
     trace_t tr;
-    gi.trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
+    trap_Trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
 
     edict_t *te = self->beam2;
     if (!te) {

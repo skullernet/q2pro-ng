@@ -398,7 +398,7 @@ bool visible_ex(edict_t *self, edict_t *other, bool through_glass)
     if (!through_glass)
         mask |= CONTENTS_WINDOW;
 
-    gi.trace(&trace, spot1, NULL, NULL, spot2, self->s.number, mask);
+    trap_Trace(&trace, spot1, NULL, NULL, spot2, self->s.number, mask);
     return trace.fraction == 1.0f || trace.entnum == other->s.number; // PGM
 }
 
@@ -860,8 +860,8 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
             VectorCopy(self->enemy->s.origin, spot2);
             spot2[2] += self->enemy->viewheight;
 
-            gi.trace(&tr, spot1, NULL, NULL, spot2, self->s.number,
-                     MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_PROJECTILECLIP);
+            trap_Trace(&tr, spot1, NULL, NULL, spot2, self->s.number,
+                       MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_PROJECTILECLIP);
             hit = &g_edicts[tr.entnum];
         } else {
             hit = world;
@@ -884,7 +884,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
                             // wait for our time
                             return false;
                         // make sure we're not going to shoot a monster
-                        gi.trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER);
+                        trap_Trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER);
                         if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (tr.entnum != self->enemy->s.number)))
                             return false;
 
@@ -1294,7 +1294,7 @@ void ai_run(edict_t *self, float dist)
         vec3_t mid;
         VectorAvg(self->r.absmax, self->r.absmin, mid);
         trace_t tr;
-        gi.trace(&tr, mid, trace_mins, trace_maxs, self->movetarget->s.origin, self->s.number, CONTENTS_SOLID);
+        trap_Trace(&tr, mid, trace_mins, trace_maxs, self->movetarget->s.origin, self->s.number, CONTENTS_SOLID);
 
         // [Paril-KEX] special case: if we're stand ground & knocked way too far away
         // from our path_corner, or we can't see it any more, assume all
@@ -1566,9 +1566,9 @@ void ai_run(edict_t *self, float dist)
     VectorCopy(self->monsterinfo.last_sighting, self->goalentity->s.origin);
 
     if (newEnemy) {
-        gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                 self->monsterinfo.last_sighting, self->s.number,
-                 MASK_PLAYERSOLID);
+        trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                   self->monsterinfo.last_sighting, self->s.number,
+                   MASK_PLAYERSOLID);
         if (tr.fraction < 1) {
             VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
             d1 = VectorLength(v);
@@ -1580,14 +1580,14 @@ void ai_run(edict_t *self, float dist)
 
             VectorSet(v, d2, -16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, left_target);
-            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                     left_target, self->s.number, MASK_PLAYERSOLID);
+            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                       left_target, self->s.number, MASK_PLAYERSOLID);
             left = tr.fraction;
 
             VectorSet(v, d2, 16, 0);
             G_ProjectSource(self->s.origin, v, v_forward, v_right, right_target);
-            gi.trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                     right_target, self->s.number, MASK_PLAYERSOLID);
+            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                       right_target, self->s.number, MASK_PLAYERSOLID);
             right = tr.fraction;
 
             center = (d1 * center) / d2;

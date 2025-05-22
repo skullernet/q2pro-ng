@@ -62,7 +62,7 @@ static bool stalker_ok_to_transition(edict_t *self)
 
     VectorCopy(self->s.origin, pt);
     pt[2] += max_dist;
-    gi.trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt, self->s.number, MASK_MONSTERSOLID);
 
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.entnum != ENTITYNUM_WORLD)) {
         if (STALKER_ON_CEILING(self)) {
@@ -82,7 +82,7 @@ static bool stalker_ok_to_transition(edict_t *self)
     pt[2] = trace.endpos[2] + margin; // give a little margin of error to allow slight inclines
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
-    gi.trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.entnum != ENTITYNUM_WORLD))
         return false;
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
@@ -92,7 +92,7 @@ static bool stalker_ok_to_transition(edict_t *self)
     pt[1] = self->r.absmin[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
-    gi.trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.entnum != ENTITYNUM_WORLD))
         return false;
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
@@ -102,7 +102,7 @@ static bool stalker_ok_to_transition(edict_t *self)
     pt[1] = self->r.absmax[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
-    gi.trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.entnum != ENTITYNUM_WORLD))
         return false;
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
@@ -112,7 +112,7 @@ static bool stalker_ok_to_transition(edict_t *self)
     pt[1] = self->r.absmax[1];
     VectorCopy(pt, start);
     start[2] = self->s.origin[2];
-    gi.trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    trap_Trace(&trace, start, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
     if (trace.fraction == 1.0f || !(trace.contents & CONTENTS_SOLID) || (trace.entnum != ENTITYNUM_WORLD))
         return false;
     if (fabsf(end_height + margin - trace.endpos[2]) > 8)
@@ -446,7 +446,7 @@ static void stalker_shoot_attack(edict_t *self)
         VectorNormalize(dir);
     }
 
-    gi.trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+    trap_Trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
     if (trace.entnum == self->enemy->s.number || trace.entnum == ENTITYNUM_WORLD)
         monster_fire_blaster2(self, start, dir, 5, 800, MZ2_STALKER_BLASTER, EF_BLASTER);
 }

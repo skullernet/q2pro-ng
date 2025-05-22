@@ -259,7 +259,7 @@ static void berserk_attack_slam(edict_t *self)
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, (const vec3_t) { 20.0f, -14.3f, -21.0f }, f, r, start);
     trace_t tr;
-    gi.trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
+    trap_Trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
 
     G_AddEvent(self, EV_BERSERK_SLAM, 0);
     self->gravity = 1.0f;

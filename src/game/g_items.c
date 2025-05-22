@@ -998,8 +998,8 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
 
         AngleVectors(ent->client->v_angle, forward, right, NULL);
         G_ProjectSource(ent->s.origin, (const vec3_t) { 24, 0, -16 }, forward, right, dropped->s.origin);
-        gi.trace(&trace, ent->s.origin, dropped->r.mins, dropped->r.maxs,
-                 dropped->s.origin, ent->s.number, CONTENTS_SOLID);
+        trap_Trace(&trace, ent->s.origin, dropped->r.mins, dropped->r.maxs,
+                   dropped->s.origin, ent->s.number, CONTENTS_SOLID);
         VectorCopy(trace.endpos, dropped->s.origin);
     } else {
         AngleVectors(ent->s.angles, forward, right, NULL);
@@ -1075,7 +1075,7 @@ void THINK(droptofloor)(edict_t *ent)
         VectorCopy(ent->s.origin, dest);
         dest[2] -= 128;
 
-        gi.trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
+        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
         if (tr.startsolid) {
             if (G_FixStuckObject(ent, ent->s.origin) == NO_GOOD_POSITION) {
                 // RAFAEL

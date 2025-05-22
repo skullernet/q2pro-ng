@@ -1268,7 +1268,7 @@ static void GunnerCmdrCounter(edict_t *self)
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, (const vec3_t) { 20, 0, 14 }, f, r, start);
     trace_t tr;
-    gi.trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
+    trap_Trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
 
     G_AddEvent(self, EV_GUNCMDR_SLAM, 0);
 
