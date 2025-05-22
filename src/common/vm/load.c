@@ -122,8 +122,11 @@ static vm_value_t run_init_expr(vm_t *m, uint32_t type, sizebuf_t *sz)
         ret.value.u64  = SZ_ReadLong64(sz);
         break;
     default:
-        ASSERT(0, "init_expr not constant");
+        ASSERT(0, "init_expr not constant (opcode = %x)", opcode);
     }
+
+    opcode = SZ_ReadByte(sz);
+    ASSERT(opcode == End, "init_expr End opcode expected");
 
     ASSERT(ret.value_type == type, "init_expr type mismatch");
     return ret;
@@ -236,6 +239,9 @@ static void parse_tables(vm_t *m, sizebuf_t *sz)
     uint32_t table_count = SZ_ReadLeb(sz);
     ASSERT(table_count == 1, "More than 1 table not supported");
 
+    uint32_t type = SZ_ReadByte(sz);
+    ASSERT(type == 0x70, "Must be funcref");
+
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t tsize = SZ_ReadLeb(sz); // Initial size
     m->table.initial = tsize;
@@ -336,12 +342,21 @@ static void parse_start(vm_t *m, sizebuf_t *sz)
     ASSERT(m->start_func < m->num_funcs, "Bad function index");
 }
 
+#define SEG_PASSIVE BIT(0)
+#define SEG_INDEX   BIT(1)
+#define SEG_EXPR    BIT(2)
+
 static void parse_elements(vm_t *m, sizebuf_t *sz)
 {
     uint32_t element_count = SZ_ReadLeb(sz);
     for (uint32_t c = 0; c < element_count; c++) {
-        uint32_t index = SZ_ReadLeb(sz);
-        ASSERT(index == 0, "Only 1 default table supported");
+        uint32_t flags = SZ_ReadLeb(sz);
+        ASSERT(flags == 0, "Flags must be 0");
+
+        if ((flags & (SEG_PASSIVE | SEG_INDEX)) == SEG_INDEX) {
+            uint32_t index = SZ_ReadLeb(sz);
+            ASSERT(index == 0, "Only 1 default table supported");
+        }
 
         // Run the init_expr to get offset
         vm_value_t init = run_init_expr(m, I32, sz);
@@ -358,8 +373,13 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
 {
     uint32_t seg_count = SZ_ReadLeb(sz);
     for (uint32_t s = 0; s < seg_count; s++) {
-        uint32_t index = SZ_ReadLeb(sz);
-        ASSERT(index == 0, "Only 1 default memory supported");
+        uint32_t flags = SZ_ReadLeb(sz);
+        ASSERT(flags == 0, "Flags must be 0");
+
+        if (flags & SEG_INDEX) {
+            uint32_t index = SZ_ReadLeb(sz);
+            ASSERT(index == 0, "Only 1 default memory supported");
+        }
 
         // Run the init_expr to get the offset
         vm_value_t init = run_init_expr(m, I32, sz);
