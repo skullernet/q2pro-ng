@@ -35,7 +35,6 @@ typedef enum {
     F_BOOL,
     F_FLOAT,
     F_LSTRING,      // string on disk, pointer in memory, TAG_LEVEL
-    F_GSTRING,      // string on disk, pointer in memory, TAG_GAME
     F_ZSTRING,      // string on disk, string in memory
     F_VECTOR,
     F_EDICT,        // index on disk, pointer in memory
@@ -98,7 +97,6 @@ typedef struct save_field_s {
 #define H64(name) GF_(F_UINT64,  uint64_t,  name)
 #define O(name)   GF_(F_BOOL,    bool,      name)
 #define L(name)   GF_(F_LSTRING, char *,    name)
-#define G(name)   GF_(F_GSTRING, char *,    name)
 #define V(name)   GF_(F_VECTOR,  vec3_t,    name)
 #define M(name)   GF_(F_ITEM,    gitem_t *, name)
 #define E(name)   GF_(F_EDICT,   edict_t *, name)
@@ -697,7 +695,7 @@ static const save_field_t gclient_t_fields[] = {
     E(trail_tail),
 
     O(landmark_free_fall),
-    G(landmark_name),
+    SZ(landmark_name, MAX_QPATH),
     V(landmark_rel_pos),
     T(landmark_noise_time),
 
@@ -1011,7 +1009,6 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_string(field->name, (const char *)p);
         break;
     case F_LSTRING:
-    case F_GSTRING:
         write_string(field->name, *(char **)p);
         break;
 
@@ -1352,12 +1349,12 @@ static bool parse_bool(void)
     parse_error("expected bool, got %s", COM_MakePrintable(tok));
 }
 
-static char *read_string(int tag)
+static char *read_string(void)
 {
     char *s;
 
     parse();
-    s = gi.TagMalloc(line.len + 1, tag);
+    s = gi.TagMalloc(line.len + 1, TAG_LEVEL);
     memcpy(s, line.token, line.len + 1);
 
     return s;
@@ -1516,10 +1513,7 @@ static void read_field(const save_field_t *field, void *base)
         break;
 
     case F_LSTRING:
-        *(char **)p = read_string(TAG_LEVEL);
-        break;
-    case F_GSTRING:
-        *(char **)p = read_string(TAG_GAME);
+        *(char **)p = read_string();
         break;
     case F_ZSTRING:
         read_zstring(p, field->count);

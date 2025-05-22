@@ -440,15 +440,12 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
     if (activator && activator->client && !deathmatch->integer) {
         gclient_t *client = activator->client;
 
-        if (client->landmark_name) {
-            gi.TagFree(client->landmark_name);
-            client->landmark_name = NULL;
-        }
+        client->landmark_name[0] = 0;
         VectorClear(client->landmark_rel_pos);
 
         self->target_ent = G_PickTarget(self->target);
         if (self->target_ent) {
-            client->landmark_name = G_CopyString(self->target_ent->targetname, TAG_GAME);
+            Q_strlcpy(client->landmark_name, self->target_ent->targetname, sizeof(client->landmark_name));
 
             // get relative vector to landmark pos, and unrotate by the landmark angles in preparation to be
             // rotated by the next map

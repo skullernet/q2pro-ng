@@ -2280,7 +2280,7 @@ struct gclient_s {
 
     // seamless level transitions
     bool landmark_free_fall;
-    char *landmark_name;
+    char landmark_name[MAX_QPATH];
     vec3_t landmark_rel_pos; // position relative to landmark, un-rotated from landmark angle
     gtime_t landmark_noise_time;
 

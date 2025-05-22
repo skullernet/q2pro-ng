@@ -1326,7 +1326,7 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
 {
     // if transitioning from another level with a landmark seamless transition
     // just set the location here
-    if (!ent->client->landmark_name || !ent->client->landmark_name[0])
+    if (!ent->client->landmark_name[0])
         return false;
 
     edict_t *landmark = G_PickTarget(ent->client->landmark_name);
@@ -1703,7 +1703,7 @@ void PutClientInServer(edict_t *ent)
     client = ent->client;
 
     // clear velocity now, since landmark may change it
-    if (client->landmark_name)
+    if (client->landmark_name[0])
         VectorCopy(client->oldvelocity, ent->velocity);
     else
         VectorClear(ent->velocity);
