@@ -185,8 +185,8 @@ typedef struct {
     // and misc data like the sky definition and cdtrack.
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
-    void (*configstring)(int num, const char *string);
-    const char *(*get_configstring)(int index);
+    void (*configstring)(int index, const char *str);
+    size_t (*get_configstring)(int index, char *buf, size_t size);
 
     void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
 

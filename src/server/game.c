@@ -424,12 +424,12 @@ static void PF_configstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
-static const char *PF_GetConfigstring(int index)
+static size_t PF_GetConfigstring(int index, char *buf, size_t size)
 {
     if (index < 0 || index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
-    return sv.configstrings[index];
+    return Q_strlcpy(buf, sv.configstrings[index], size);
 }
 
 static void PF_WriteFloat(float f)

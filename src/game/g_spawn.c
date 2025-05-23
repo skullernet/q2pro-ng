@@ -1513,7 +1513,7 @@ static void G_InitStatusbar(void)
         sb_endif();
     }
 
-    gi.configstring(CS_STATUSBAR, sb_buffer());
+    trap_SetConfigstring(CS_STATUSBAR, sb_buffer());
 }
 
 static const char *const lightstyles[] = {
@@ -1613,34 +1613,34 @@ void SP_worldspawn(edict_t *ent)
     // make some data visible to the server
 
     if (ent->message && ent->message[0]) {
-        gi.configstring(CS_NAME, ent->message);
+        trap_SetConfigstring(CS_NAME, ent->message);
         Q_strlcpy(level.level_name, ent->message, sizeof(level.level_name));
     } else
         Q_strlcpy(level.level_name, level.mapname, sizeof(level.level_name));
 
     if (st.sky && st.sky[0])
-        gi.configstring(CS_SKY, st.sky);
+        trap_SetConfigstring(CS_SKY, st.sky);
     else
-        gi.configstring(CS_SKY, "unit1_");
+        trap_SetConfigstring(CS_SKY, "unit1_");
 
-    gi.configstring(CS_SKYROTATE, va("%f %d", st.skyrotate, st.skyautorotate));
+    trap_SetConfigstring(CS_SKYROTATE, va("%f %d", st.skyrotate, st.skyautorotate));
     level.skyrotate = st.skyrotate;
     level.skyautorotate = st.skyautorotate;
 
-    gi.configstring(CS_SKYAXIS, va("%f %f %f", st.skyaxis[0], st.skyaxis[1], st.skyaxis[2]));
+    trap_SetConfigstring(CS_SKYAXIS, va("%f %f %f", st.skyaxis[0], st.skyaxis[1], st.skyaxis[2]));
 
     if (st.music && st.music[0])
-        gi.configstring(CS_CDTRACK, st.music);
+        trap_SetConfigstring(CS_CDTRACK, st.music);
     else
-        gi.configstring(CS_CDTRACK, va("%d", ent->sounds));
+        trap_SetConfigstring(CS_CDTRACK, va("%d", ent->sounds));
 
 #if 0
     if (level.is_n64)
-        gi.configstring(CS_CD_LOOP_COUNT, "0");
+        trap_SetConfigstring(CS_CD_LOOP_COUNT, "0");
     else if (ED_WasKeySpecified("loop_count"))
-        gi.configstring(CS_CD_LOOP_COUNT, va("%d", st.loop_count));
+        trap_SetConfigstring(CS_CD_LOOP_COUNT, va("%d", st.loop_count));
     else
-        gi.configstring(CS_CD_LOOP_COUNT, "");
+        trap_SetConfigstring(CS_CD_LOOP_COUNT, "");
 #endif
 
     level.instantitems = st.instantitems > 0 || level.is_n64;
@@ -1657,7 +1657,7 @@ void SP_worldspawn(edict_t *ent)
     if (st.no_grapple)
         level.no_grapple = st.no_grapple;
 
-    gi.configstring(CS_MAXCLIENTS, va("%d", game.maxclients));
+    trap_SetConfigstring(CS_MAXCLIENTS, va("%d", game.maxclients));
 
 #define DEF_STR(a, b)   ((a) && *(a) ? (a) : (b))
     level.primary_objective_string   = DEF_STR(st.primary_objective_string,   "Primary Objective:\n{}");
@@ -1790,12 +1790,12 @@ void SP_worldspawn(edict_t *ent)
     //
 
     for (int i = 0; i < q_countof(lightstyles); i++)
-        gi.configstring(CS_LIGHTS + i, lightstyles[i]);
+        trap_SetConfigstring(CS_LIGHTS + i, lightstyles[i]);
 
     // styles 32-62 are assigned by the light program for switchable lights
 
     // 63 testing
-    gi.configstring(CS_LIGHTS + 63, "a");
+    trap_SetConfigstring(CS_LIGHTS + 63, "a");
 
     // coop respawn strings
     if (coop->integer) {
@@ -1808,6 +1808,6 @@ void SP_worldspawn(edict_t *ent)
         };
 
         for (int i = 0; i < q_countof(str); i++)
-            gi.configstring(CONFIG_COOP_RESPAWN_STRING + i, str[i]);
+            trap_SetConfigstring(CONFIG_COOP_RESPAWN_STRING + i, str[i]);
     }
 }

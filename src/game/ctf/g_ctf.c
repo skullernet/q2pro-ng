@@ -257,7 +257,7 @@ void CTFAssignSkin(edict_t *ent, const char *s)
         break;
     }
 
-    gi.configstring(CS_PLAYERSKINS + ent->s.number, p);
+    trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, p);
 }
 
 void CTFAssignTeam(gclient_t *who)
@@ -2823,12 +2823,12 @@ bool CTFCheckRules(void)
             else
                 Q_snprintf(text, sizeof(text), "SETUP: %d not ready", j);
 
-            gi.configstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
             break;
 
         case MATCH_PREGAME:
             Q_snprintf(text, sizeof(text), "%02d:%02d UNTIL START", t / 60, t % 60);
-            gi.configstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
 
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
@@ -2838,7 +2838,7 @@ bool CTFCheckRules(void)
 
         case MATCH_GAME:
             Q_snprintf(text, sizeof(text), "%02d:%02d MATCH", t / 60, t % 60);
-            gi.configstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
                 G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE);
@@ -2872,12 +2872,12 @@ bool CTFCheckRules(void)
             if (team1 - team2 >= 2 && team2 >= 2) {
                 if (ctfgame.warnactive != CTF_TEAM1) {
                     ctfgame.warnactive = CTF_TEAM1;
-                    gi.configstring(CONFIG_CTF_TEAMINFO, "WARNING: Red has too many players");
+                    trap_SetConfigstring(CONFIG_CTF_TEAMINFO, "WARNING: Red has too many players");
                 }
             } else if (team2 - team1 >= 2 && team1 >= 2) {
                 if (ctfgame.warnactive != CTF_TEAM2) {
                     ctfgame.warnactive = CTF_TEAM2;
-                    gi.configstring(CONFIG_CTF_TEAMINFO, "WARNING: Blue has too many players");
+                    trap_SetConfigstring(CONFIG_CTF_TEAMINFO, "WARNING: Blue has too many players");
                 }
             } else
                 ctfgame.warnactive = 0;

@@ -329,7 +329,7 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
     level.found_goals++;
 
     if (level.found_goals == level.total_goals && !(ent->spawnflags & SPAWNFLAG_GOAL_KEEP_MUSIC))
-        gi.configstring(CS_CDTRACK, va("%d", ent->sounds));
+        trap_SetConfigstring(CS_CDTRACK, va("%d", ent->sounds));
 
     // [Paril-KEX] n64 goals
     if (level.goals) {
@@ -906,7 +906,7 @@ void THINK(target_lightramp_think)(edict_t *self)
     style[0] = (char)('a' + self->movedir[0] + diff * self->movedir[2]);
     style[1] = 0;
 
-    gi.configstring(CS_LIGHTS + self->enemy->style, style);
+    trap_SetConfigstring(CS_LIGHTS + self->enemy->style, style);
 
     if (diff < self->speed) {
         self->nextthink = level.time + FRAME_TIME;
@@ -1203,7 +1203,7 @@ void THINK(target_camera_dummy_think)(edict_t *self)
 void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
 {
     if (self->sounds)
-        gi.configstring(CS_CDTRACK, va("%d", self->sounds));
+        trap_SetConfigstring(CS_CDTRACK, va("%d", self->sounds));
 
     if (!self->target)
         return;
@@ -1556,7 +1556,7 @@ Change music when used
 
 void USE(use_target_music)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    gi.configstring(CS_CDTRACK, va("%d", ent->sounds));
+    trap_SetConfigstring(CS_CDTRACK, va("%d", ent->sounds));
 }
 
 void SP_target_music(edict_t *self)
@@ -1590,7 +1590,7 @@ void USE(use_target_healthbar)(edict_t *ent, edict_t *other, edict_t *activator)
 
         ent->enemy = target;
         level.health_bar_entities[i] = ent;
-        gi.configstring(CONFIG_HEALTH_BAR_NAME, ent->message);
+        trap_SetConfigstring(CONFIG_HEALTH_BAR_NAME, ent->message);
         return;
     }
 
@@ -1673,7 +1673,7 @@ void SP_target_autosave(edict_t *self)
 void USE(use_target_sky)(edict_t *self, edict_t *other, edict_t *activator)
 {
     if (self->map)
-        gi.configstring(CS_SKY, self->map);
+        trap_SetConfigstring(CS_SKY, self->map);
 
     if (self->count & 3) {
         if (self->count & 1)
@@ -1682,11 +1682,11 @@ void USE(use_target_sky)(edict_t *self, edict_t *other, edict_t *activator)
         if (self->count & 2)
             level.skyautorotate = self->style;
 
-        gi.configstring(CS_SKYROTATE, va("%f %d", level.skyrotate, level.skyautorotate));
+        trap_SetConfigstring(CS_SKYROTATE, va("%f %d", level.skyrotate, level.skyautorotate));
     }
 
     if (self->count & 4)
-        gi.configstring(CS_SKYAXIS, va("%f %f %f", self->movedir[0], self->movedir[1], self->movedir[2]));
+        trap_SetConfigstring(CS_SKYAXIS, va("%f %f %f", self->movedir[0], self->movedir[1], self->movedir[2]));
 }
 
 void SP_target_sky(edict_t *self)

@@ -833,7 +833,7 @@ static void G_RunFrame_(bool main_loop)
             // defer removing client info so that disconnected, etc works
             if (i < game.maxclients) {
                 if (ent->timestamp && level.time < ent->timestamp) {
-                    gi.configstring(CS_PLAYERSKINS + i, "");
+                    trap_SetConfigstring(CS_PLAYERSKINS + i, "");
                     ent->timestamp = 0;
                 }
             }

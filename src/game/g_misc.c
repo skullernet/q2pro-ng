@@ -452,10 +452,10 @@ Default _cone value is 10 (used to set size of light for spotlights)
 void USE(light_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     if (self->spawnflags & SPAWNFLAG_LIGHT_START_OFF) {
-        gi.configstring(CS_LIGHTS + self->style, self->style_on);
+        trap_SetConfigstring(CS_LIGHTS + self->style, self->style_on);
         self->spawnflags &= ~SPAWNFLAG_LIGHT_START_OFF;
     } else {
-        gi.configstring(CS_LIGHTS + self->style, self->style_off);
+        trap_SetConfigstring(CS_LIGHTS + self->style, self->style_off);
         self->spawnflags |= SPAWNFLAG_LIGHT_START_OFF;
     }
 }
@@ -498,9 +498,9 @@ void SP_light(edict_t *self)
             self->style_off = G_GetLightStyle(Q_atoi(self->style_off));
 
         if (self->spawnflags & SPAWNFLAG_LIGHT_START_OFF)
-            gi.configstring(CS_LIGHTS + self->style, self->style_off);
+            trap_SetConfigstring(CS_LIGHTS + self->style, self->style_off);
         else
-            gi.configstring(CS_LIGHTS + self->style, self->style_on);
+            trap_SetConfigstring(CS_LIGHTS + self->style, self->style_on);
     }
 }
 
@@ -2171,7 +2171,7 @@ static void SetupMannequinModel(edict_t *self, int model_type, const char *weapo
 
     self->model = G_CopyString(va("players/%s/tris.md2", model_name));
     self->s.modelindex2 = gi.modelindex(va("players/%s/%s.md2", model_name, weapon));
-    gi.configstring(CS_PLAYERSKINS + self->s.skinnum, va("mannequin\\%s/%s", model_name, skin));
+    trap_SetConfigstring(CS_PLAYERSKINS + self->s.skinnum, va("mannequin\\%s/%s", model_name, skin));
 }
 
 /*QUAKED misc_player_mannequin (1.0 1.0 0.0) (-32 -32 -32) (32 32 32)

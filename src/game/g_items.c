@@ -3153,5 +3153,5 @@ Called by worldspawn
 void SetItemNames(void)
 {
     for (item_id_t i = IT_NULL; i < IT_TOTAL; i++)
-        gi.configstring(CS_ITEMS + i, itemlist[i].pickup_name);
+        trap_SetConfigstring(CS_ITEMS + i, itemlist[i].pickup_name);
 }

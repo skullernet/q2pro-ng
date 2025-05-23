@@ -2221,12 +2221,12 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
         CTFAssignSkin(ent, val);
     else
     // ZOID
-        gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, val));
+        trap_SetConfigstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, val));
 
     // ZOID
     //  set player name field (used in id_state view)
     if (G_TeamplayEnabled())
-        gi.configstring(CONFIG_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
+        trap_SetConfigstring(CONFIG_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
     // ZOID
 
     // fov
