@@ -532,7 +532,7 @@ void SP_target_splash(edict_t *self)
     }
 
     self->sounds = splash_events[self->sounds];
-    self->count  = MakeLittleShort(gi.DirToByte(self->movedir), self->count & 255);
+    self->count  = MakeLittleShort(trap_DirToByte(self->movedir), self->count & 255);
 
     trap_LinkEntity(self);
 }
@@ -750,7 +750,7 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(gi.DirToByte(tr.plane.normal), self->s.skinnum & 255, count, 0));
+                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(trap_DirToByte(tr.plane.normal), self->s.skinnum & 255, count, 0));
             }
             break;
         }
@@ -1647,7 +1647,7 @@ void USE(use_target_autosave)(edict_t *ent, edict_t *other, edict_t *activator)
     gtime_t save_time = SEC(gi.cvar("g_athena_auto_save_min_time", "60", CVAR_NOSET)->value);
 
     if (level.time - level.next_auto_save > save_time) {
-        gi.AddCommandString("autosave\n");
+        trap_AddCommandString("autosave\n");
         level.next_auto_save = level.time;
     }
 }

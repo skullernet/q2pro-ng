@@ -97,7 +97,7 @@ SpawnDamage
 */
 static void SpawnDamage(entity_event_t type, const vec3_t origin, const vec3_t normal, int damage)
 {
-    G_TempEntity(origin, type, gi.DirToByte(normal));
+    G_TempEntity(origin, type, trap_DirToByte(normal));
 }
 
 /*

@@ -1190,7 +1190,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
             request.pathFlags |= PathFlags_LongJump;
         }
 
-        if (!gi.GetPathToGoal(&request, &self->monsterinfo.nav_path)) {
+        if (!trap_GetPathToGoal(&request, &self->monsterinfo.nav_path)) {
             // fatal error, don't bother ever trying nodes
             if (self->monsterinfo.nav_path.returnCode == PathReturnCode_NoNavAvailable)
                 self->monsterinfo.aiflags |= AI_NO_PATH_FINDING;

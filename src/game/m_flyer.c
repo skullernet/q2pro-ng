@@ -676,7 +676,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
         VectorNormalize(dir);
         VectorScale(dir, 500, ent->velocity);
 
-        G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, MakeLittleShort(gi.DirToByte(dir), 32));
+        G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, MakeLittleShort(trap_DirToByte(dir), 32));
     }
 }
 

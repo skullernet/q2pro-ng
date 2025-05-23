@@ -1170,7 +1170,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     G_StartSound(self, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grhit.wav"), volume, ATTN_NORM);
     self->s.sound = G_SoundIndex("weapons/grapple/grpull.wav");
 
-    G_TempEntity(self->s.origin, EV_SPARKS, gi.DirToByte(tr->plane.normal));
+    G_TempEntity(self->s.origin, EV_SPARKS, trap_DirToByte(tr->plane.normal));
 }
 
 void THINK(CTFGrappleCableThink)(edict_t *self)
@@ -3492,7 +3492,7 @@ void CTFBoot(edict_t *ent)
         return;
     }
 
-    gi.AddCommandString(va("kick %d\n", i));
+    trap_AddCommandString(va("kick %d\n", i));
 }
 
 void CTFSetPowerUpEffect(edict_t *ent, effects_t def)

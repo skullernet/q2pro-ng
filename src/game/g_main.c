@@ -728,9 +728,9 @@ static void ExitLevel(void)
     if (strlen(level.changemap) > (6 + start_offset) &&
         !Q_strncasecmp(level.changemap + start_offset, "victor", 6) &&
         !Q_strncasecmp(level.changemap + strlen(level.changemap) - 4, ".pcx", 4))
-        gi.AddCommandString(va("gamemap \"!%s\"\n", level.changemap));
+        trap_AddCommandString(va("gamemap \"!%s\"\n", level.changemap));
     else
-        gi.AddCommandString(va("gamemap \"%s\"\n", level.changemap));
+        trap_AddCommandString(va("gamemap \"%s\"\n", level.changemap));
 
     level.changemap = NULL;
 }
@@ -801,7 +801,7 @@ static void G_RunFrame_(bool main_loop)
     // reload the map start save if restart time is set (all players are dead)
     if (level.coop_level_restart_time > 0 && level.time > level.coop_level_restart_time) {
         ClientEndServerFrames();
-        gi.AddCommandString("restart_level\n");
+        trap_AddCommandString("restart_level\n");
     }
 
     // clear client coop respawn states; this is done
