@@ -282,7 +282,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
 
     if (!VectorEmpty(tr->plane.normal)) {
         VectorMA(ent->s.origin, -10.0f, tr->plane.normal, land_point);
-        if (gi.pointcontents(land_point) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
+        if (trap_PointContents(land_point) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
             Prox_Explode(ent);
             return;
         }
@@ -312,7 +312,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
         movetype = MOVETYPE_BOUNCE;
     }
 
-    if (gi.pointcontents(ent->s.origin) & (CONTENTS_LAVA | CONTENTS_SLIME)) {
+    if (trap_PointContents(ent->s.origin) & (CONTENTS_LAVA | CONTENTS_SLIME)) {
         Prox_Explode(ent);
         return;
     }
@@ -616,7 +616,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         if (ent->s.frame > 11)
             ent->s.frame = 6;
 
-        if (gi.pointcontents(ent->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
+        if (trap_PointContents(ent->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
             Nuke_Explode(ent);
             return;
         }
@@ -860,7 +860,7 @@ void THINK(tesla_activate)(edict_t *self)
     edict_t *trigger;
     edict_t *search;
 
-    if (gi.pointcontents(self->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WATER)) {
+    if (trap_PointContents(self->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WATER)) {
         tesla_blow(self);
         return;
     }
@@ -911,7 +911,7 @@ void THINK(tesla_activate)(edict_t *self)
 
 void THINK(tesla_think)(edict_t *ent)
 {
-    if (gi.pointcontents(ent->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
+    if (trap_PointContents(ent->s.origin) & (CONTENTS_SLIME | CONTENTS_LAVA)) {
         tesla_remove(ent);
         return;
     }
@@ -1050,7 +1050,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
 
     VectorMA(start, 8192, forward, end);
 
-    if (gi.pointcontents(start) & MASK_WATER) {
+    if (trap_PointContents(start) & MASK_WATER) {
         underwater = true;
         VectorCopy(start, water_start);
         content_mask &= ~MASK_WATER;
@@ -1096,7 +1096,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         VectorSubtract(tr.endpos, water_start, dir);
         VectorNormalize(dir);
         VectorMA(tr.endpos, -2, dir, pos);
-        if (gi.pointcontents(pos) & MASK_WATER)
+        if (trap_PointContents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
             trap_Trace(&tr, pos, NULL, NULL, water_start, hit->s.number, MASK_WATER);

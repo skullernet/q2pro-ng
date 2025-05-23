@@ -1107,7 +1107,7 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
 
         VectorAvg(lava->r.absmin, lava->r.absmax, center);
 
-        if ((lava->spawnflags & SPAWNFLAG_WATER_SMART) && (gi.pointcontents(center) & MASK_WATER)) {
+        if ((lava->spawnflags & SPAWNFLAG_WATER_SMART) && (trap_PointContents(center) & MASK_WATER)) {
             if (lava->r.absmax[2] > lavatop) {
                 lavatop = lava->r.absmax[2];
                 highestlava = lava;
@@ -2574,7 +2574,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         pm.cmd = *ucmd;
         pm.trace = trap_Trace;
         pm.clip = trap_Clip;
-        pm.pointcontents = gi.pointcontents;
+        pm.pointcontents = trap_PointContents;
 
         // perform a pmove
         Pmove(&pm);
@@ -2813,7 +2813,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
         VectorCopy(tr.endpos, end);
         end[2] += player_viewheight;
 
-        if (gi.pointcontents(end) & MASK_WATER)
+        if (trap_PointContents(end) & MASK_WATER)
             continue;
 
         // don't spawn us on steep slopes

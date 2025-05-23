@@ -95,7 +95,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
         VectorMA(origin, crandom() * 0.5f, self->r.size, gib->s.origin);
 
         // try 3 times to get a good, non-solid position
-        if (!(gi.pointcontents(gib->s.origin) & MASK_SOLID))
+        if (!(trap_PointContents(gib->s.origin) & MASK_SOLID))
             break;
     }
 
@@ -179,7 +179,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
 
     trap_LinkEntity(gib);
 
-    gib->watertype = gi.pointcontents(gib->s.origin);
+    gib->watertype = trap_PointContents(gib->s.origin);
 
     if (gib->watertype & MASK_WATER)
         gib->waterlevel = WATER_FEET;
@@ -1955,7 +1955,7 @@ void TOUCH(fire_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     if (other->takedamage)
         T_Damage(other, self, self, vec3_origin, self->s.origin, vec3_origin, 20, 0, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
 
-    if (gi.pointcontents(self->s.origin) & CONTENTS_LAVA)
+    if (trap_PointContents(self->s.origin) & CONTENTS_LAVA)
         G_FreeEdict(self);
     else
         BecomeExplosion1(self);

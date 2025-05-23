@@ -131,7 +131,7 @@ void THINK(Tag_MakeTouchable)(edict_t *ent)
     tag_token->think = Tag_Respawn;
 
     // check here to see if it's in lava or slime. if so, do a respawn sooner
-    if (gi.pointcontents(ent->s.origin) & (CONTENTS_LAVA | CONTENTS_SLIME))
+    if (trap_PointContents(ent->s.origin) & (CONTENTS_LAVA | CONTENTS_SLIME))
         tag_token->nextthink = level.time + SEC(3);
     else
         tag_token->nextthink = level.time + SEC(30);

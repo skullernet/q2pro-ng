@@ -317,7 +317,7 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
     VectorNormalize(diff);
     VectorMA(ent->s.origin, 15.0f * FRAME_TIME_SEC, diff, ent->s.origin);
 
-    ent->watertype = gi.pointcontents(ent->s.origin);
+    ent->watertype = trap_PointContents(ent->s.origin);
     if (ent->watertype & MASK_WATER)
         ent->waterlevel = WATER_FEET;
 

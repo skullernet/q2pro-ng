@@ -77,7 +77,7 @@ void SV_Physics_NewToss(edict_t *ent)
 
     // check for water transition
     wasinwater = (ent->watertype & MASK_WATER);
-    ent->watertype = gi.pointcontents(ent->s.origin);
+    ent->watertype = trap_PointContents(ent->s.origin);
     isinwater = ent->watertype & MASK_WATER;
 
     if (isinwater)

@@ -319,7 +319,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         VectorMA(end, r, right, end);
         VectorMA(end, u, up, end);
 
-        if (gi.pointcontents(start) & MASK_WATER) {
+        if (trap_PointContents(start) & MASK_WATER) {
             water = true;
             VectorCopy(start, water_start);
             content_mask &= ~MASK_WATER;
@@ -386,7 +386,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
         VectorSubtract(tr.endpos, water_start, dir);
         VectorNormalize(dir);
         VectorMA(tr.endpos, -2, dir, pos);
-        if (gi.pointcontents(pos) & MASK_WATER)
+        if (trap_PointContents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
             trap_Trace(&tr, pos, NULL, NULL, water_start, hit->s.number, MASK_WATER);

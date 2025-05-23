@@ -188,7 +188,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
         mask &= ~CONTENTS_PLAYER;
 
     // special case: we started in water.
-    if (gi.pointcontents(start) & MASK_WATER) {
+    if (trap_PointContents(start) & MASK_WATER) {
         water = true;
         VectorCopy(start, water_start);
         mask &= ~MASK_WATER;
@@ -219,7 +219,7 @@ static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, in
         VectorSubtract(tr.endpos, water_start, dir);
         VectorNormalize(dir);
         VectorMA(tr.endpos, -2, dir, pos);
-        if (gi.pointcontents(pos) & MASK_WATER)
+        if (trap_PointContents(pos) & MASK_WATER)
             VectorCopy(pos, tr.endpos);
         else
             trap_Trace(&tr, pos, NULL, NULL, water_start, tr.entnum, MASK_WATER);

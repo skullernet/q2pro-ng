@@ -1073,7 +1073,7 @@ static void door_play_sound(edict_t *self, int sound)
 
     VectorScale(p, 1.0f / c, p);
 
-    if (gi.pointcontents(p) & CONTENTS_SOLID) {
+    if (trap_PointContents(p) & CONTENTS_SOLID) {
         G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation);
         return;
     }
@@ -1272,7 +1272,7 @@ void USE(door_use)(edict_t *self, edict_t *other, edict_t *activator)
     // PGM
     //  smart water is different
     VectorAvg(self->r.mins, self->r.maxs, center);
-    if ((strcmp(self->classname, "func_water") == 0) && (gi.pointcontents(center) & MASK_WATER) && (self->spawnflags & SPAWNFLAG_WATER_SMART)) {
+    if ((strcmp(self->classname, "func_water") == 0) && (trap_PointContents(center) & MASK_WATER) && (self->spawnflags & SPAWNFLAG_WATER_SMART)) {
         self->message = NULL;
         self->touch = NULL;
         self->enemy = activator;

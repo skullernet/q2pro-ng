@@ -52,7 +52,7 @@ void monster_fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, in
 bool monster_fire_railgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick,
                           monster_muzzleflash_id_t flashtype)
 {
-    if (gi.pointcontents(start) & MASK_SOLID)
+    if (trap_PointContents(start) & MASK_SOLID)
         return false;
 
     bool hit = fire_rail(self, start, aimdir, damage, kick);
@@ -221,7 +221,7 @@ void M_CategorizePosition(edict_t *self, const vec3_t in_point, water_level_t *w
         point[2] = in_point[2] + self->r.maxs[2] - 1;
     else
         point[2] = in_point[2] + self->r.mins[2] + 1;
-    cont = gi.pointcontents(point);
+    cont = trap_PointContents(point);
 
     if (!(cont & MASK_WATER)) {
         *waterlevel = WATER_NONE;
@@ -232,13 +232,13 @@ void M_CategorizePosition(edict_t *self, const vec3_t in_point, water_level_t *w
     *watertype = cont;
     *waterlevel = WATER_FEET;
     point[2] += 26;
-    cont = gi.pointcontents(point);
+    cont = trap_PointContents(point);
     if (!(cont & MASK_WATER))
         return;
 
     *waterlevel = WATER_WAIST;
     point[2] += 22;
-    cont = gi.pointcontents(point);
+    cont = trap_PointContents(point);
     if (cont & MASK_WATER)
         *waterlevel = WATER_UNDER;
 }

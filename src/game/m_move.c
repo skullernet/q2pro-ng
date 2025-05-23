@@ -28,7 +28,7 @@ bool M_CheckBottom_Fast_Generic(const vec3_t absmins, const vec3_t absmaxs, bool
         for (int y = 0; y <= 1; y++) {
             start[0] = x ? absmaxs[0] : absmins[0];
             start[1] = y ? absmaxs[1] : absmins[1];
-            if (gi.pointcontents(start) != CONTENTS_SOLID)
+            if (trap_PointContents(start) != CONTENTS_SOLID)
                 return false;
         }
 
@@ -411,9 +411,9 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
     {
         VectorMA(ent->s.origin, current_speed, wanted_dir, end);
         if (ent->flags & FL_SWIM)
-            bad_movement_direction = !(gi.pointcontents(end) & CONTENTS_WATER);
+            bad_movement_direction = !(trap_PointContents(end) & CONTENTS_WATER);
         else if ((ent->flags & FL_FLY) && ent->waterlevel < WATER_UNDER)
-            bad_movement_direction = gi.pointcontents(end) & CONTENTS_WATER;
+            bad_movement_direction = trap_PointContents(end) & CONTENTS_WATER;
     }
 
     if (bad_movement_direction) {
@@ -578,7 +578,7 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
                 vec3_t test;
                 VectorCopy(trace.endpos, test);
                 test[2] += ent->r.mins[2] + 1;
-                contents_t contents = gi.pointcontents(test);
+                contents_t contents = trap_PointContents(test);
                 if (contents & MASK_WATER)
                     return false;
             }
@@ -590,7 +590,7 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
                 vec3_t test;
                 VectorCopy(trace.endpos, test);
                 test[2] += ent->r.mins[2] + 1;
-                contents_t contents = gi.pointcontents(test);
+                contents_t contents = trap_PointContents(test);
                 if (!(contents & MASK_WATER))
                     return false;
             }

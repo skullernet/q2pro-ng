@@ -1121,7 +1121,7 @@ void THINK(droptofloor)(edict_t *ent)
         ent->use = Use_Item;
     }
 
-    ent->watertype = gi.pointcontents(ent->s.origin);
+    ent->watertype = trap_PointContents(ent->s.origin);
     trap_LinkEntity(ent);
 }
 

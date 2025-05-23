@@ -536,7 +536,7 @@ void MONSTERINFO_MELEE(stalker_attack_melee)(edict_t *self)
 
 static bool stalker_check_lz(edict_t *self, edict_t *target, const vec3_t dest)
 {
-    if ((gi.pointcontents(dest) & MASK_WATER) || (target->waterlevel))
+    if ((trap_PointContents(dest) & MASK_WATER) || (target->waterlevel))
         return false;
 
     if (!target->groundentity)
@@ -549,22 +549,22 @@ static bool stalker_check_lz(edict_t *self, edict_t *target, const vec3_t dest)
     jumpLZ[0] = self->enemy->r.mins[0];
     jumpLZ[1] = self->enemy->r.mins[1];
     jumpLZ[2] = self->enemy->r.mins[2] - 0.25f;
-    if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
+    if (!(trap_PointContents(jumpLZ) & MASK_SOLID))
         return false;
 
     jumpLZ[0] = self->enemy->r.maxs[0];
     jumpLZ[1] = self->enemy->r.mins[1];
-    if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
+    if (!(trap_PointContents(jumpLZ) & MASK_SOLID))
         return false;
 
     jumpLZ[0] = self->enemy->r.maxs[0];
     jumpLZ[1] = self->enemy->r.maxs[1];
-    if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
+    if (!(trap_PointContents(jumpLZ) & MASK_SOLID))
         return false;
 
     jumpLZ[0] = self->enemy->r.mins[0];
     jumpLZ[1] = self->enemy->r.maxs[1];
-    if (!(gi.pointcontents(jumpLZ) & MASK_SOLID))
+    if (!(trap_PointContents(jumpLZ) & MASK_SOLID))
         return false;
 
     return true;
