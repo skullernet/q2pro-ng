@@ -164,7 +164,7 @@ void SP_func_door_secret2(edict_t *ent)
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     if (ent->move_angles[1] == 0 || ent->move_angles[1] == 180) {
         lrSize = ent->r.size[1];
@@ -262,7 +262,7 @@ style - color of particles to use.
 */
 void SP_func_force_wall(edict_t *ent)
 {
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     VectorAvg(ent->r.absmin, ent->r.absmax, ent->offset);
 

@@ -579,7 +579,7 @@ void SP_dm_dball_speed_change(edict_t *self)
     else
         VectorSet(self->movedir, 1, 0, 0);
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);
 }
 
@@ -613,7 +613,7 @@ void SP_dm_dball_goal(edict_t *self)
     if (!VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);
 }
 

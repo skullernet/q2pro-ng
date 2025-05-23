@@ -21,7 +21,7 @@ static void InitTrigger(edict_t *self)
     // [Paril-KEX] adjusted to allow mins/maxs to be defined
     // by hand instead
     if (self->model)
-        gi.setmodel(self, self->model);
+        trap_SetBrushModel(self, self->model);
     self->r.svflags = SVF_NOCLIENT;
 }
 

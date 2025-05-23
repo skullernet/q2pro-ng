@@ -566,7 +566,7 @@ void SP_func_plat(edict_t *ent)
     ent->r.solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     ent->moveinfo.blocked = plat_blocked;
 
@@ -787,7 +787,7 @@ void SP_func_rotating(edict_t *ent)
     }
     // PGM
 
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
     trap_LinkEntity(ent);
 }
 
@@ -832,7 +832,7 @@ void SP_func_spinning(edict_t *ent)
     ent->nextthink = level.time + FRAME_TIME;
     ent->think = func_spinning_think;
 
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
     trap_LinkEntity(ent);
 }
 
@@ -950,7 +950,7 @@ void SP_func_button(edict_t *ent)
     G_SetMovedir(ent->s.angles, ent->movedir);
     ent->movetype = MOVETYPE_STOP;
     ent->r.solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     if (ent->sounds != 1)
         G_SetMoveinfoSounds(ent, "switches/butn2.wav", NULL, NULL);
@@ -1467,7 +1467,7 @@ void SP_func_door(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     ent->r.svflags |= SVF_DOOR;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     ent->moveinfo.blocked = door_blocked;
     ent->use = door_use;
@@ -1632,7 +1632,7 @@ void SP_func_door_rotating(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     ent->r.svflags |= SVF_DOOR;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     ent->moveinfo.blocked = door_blocked;
     ent->use = door_use;
@@ -1759,7 +1759,7 @@ void SP_func_water(edict_t *self)
     G_SetMovedir(self->s.angles, self->movedir);
     self->movetype = MOVETYPE_PUSH;
     self->r.solid = SOLID_BSP;
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     self->attenuation = ATTN_STATIC;
 
@@ -2122,7 +2122,7 @@ void SP_func_train(edict_t *self)
     else if (!self->dmg)
         self->dmg = 100;
     self->r.solid = SOLID_BSP;
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     if (st.noise)
         self->moveinfo.sound_middle = gi.soundindex(st.noise);
@@ -2293,7 +2293,7 @@ void SP_func_conveyor(edict_t *self)
 
     self->use = func_conveyor_use;
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     self->r.solid = SOLID_BSP;
     trap_LinkEntity(self);
 }
@@ -2415,7 +2415,7 @@ void SP_func_door_secret(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     ent->r.svflags |= SVF_DOOR;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     ent->moveinfo.blocked = door_secret_blocked;
     ent->use = door_secret_use;
@@ -2488,7 +2488,7 @@ void USE(use_killbox)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_killbox(edict_t *ent)
 {
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
     ent->use = use_killbox;
     ent->r.svflags = SVF_NOCLIENT;
 }
@@ -2619,7 +2619,7 @@ void SP_func_eye(edict_t *ent)
 {
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     if (!st.radius)
         ent->dmg_radius = 512;

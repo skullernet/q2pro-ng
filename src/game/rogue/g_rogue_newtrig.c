@@ -118,7 +118,7 @@ void SP_trigger_teleport(edict_t *self)
     if (!VectorEmpty(self->s.angles))
         G_SetMovedir(self->s.angles, self->movedir);
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);
 }
 
@@ -174,6 +174,6 @@ void SP_trigger_disguise(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.svflags = SVF_NOCLIENT;
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);
 }

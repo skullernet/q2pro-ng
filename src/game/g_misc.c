@@ -545,7 +545,7 @@ void USE(func_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_func_wall(edict_t *self)
 {
     self->movetype = MOVETYPE_PUSH;
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     if (self->spawnflags & SPAWNFLAG_WALL_ANIMATED)
         self->s.effects |= EF_ANIM_ALL;
@@ -603,7 +603,7 @@ void SP_func_animation(edict_t *self)
     }
 
     self->movetype = MOVETYPE_PUSH;
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     self->r.solid = SOLID_BSP;
 
     self->use = func_animation_use;
@@ -657,7 +657,7 @@ void USE(func_object_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_object(edict_t *self)
 {
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     self->r.mins[0] += 1;
     self->r.mins[1] += 1;
@@ -831,7 +831,7 @@ void SP_func_explosive(edict_t *self)
     gi.modelindex("models/objects/debris1/tris.md2");
     gi.modelindex("models/objects/debris2/tris.md2");
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     if (self->spawnflags & SPAWNFLAGS_EXPLOSIVE_TRIGGER_SPAWN) {
         self->r.svflags |= SVF_NOCLIENT;
@@ -1551,7 +1551,7 @@ used with target_string (must be on same "team")
 void SP_target_character(edict_t *self)
 {
     self->movetype = MOVETYPE_PUSH;
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     self->r.solid = SOLID_BSP;
     self->s.frame = 12;
     trap_LinkEntity(self);

@@ -220,7 +220,7 @@ void SP_turret_breach(edict_t *self)
     if (st.noise)
         self->noise_index = gi.soundindex(st.noise);
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
 
     if (!self->speed)
         self->speed = 50;
@@ -266,7 +266,7 @@ void SP_turret_base(edict_t *self)
     if (st.noise)
         self->noise_index = gi.soundindex(st.noise);
 
-    gi.setmodel(self, self->model);
+    trap_SetBrushModel(self, self->model);
     self->moveinfo.blocked = turret_blocked;
     trap_LinkEntity(self);
 }

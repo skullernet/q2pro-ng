@@ -2976,7 +2976,7 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     ent->r.svflags |= SVF_NOCLIENT;
     ent->r.solid = SOLID_TRIGGER;
     ent->touch = old_teleporter_touch;
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
     trap_LinkEntity(ent);
 
     // noise maker and splash effect dude

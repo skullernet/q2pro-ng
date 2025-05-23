@@ -297,7 +297,7 @@ void SP_func_plat2(edict_t *ent)
     ent->r.solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
-    gi.setmodel(ent, ent->model);
+    trap_SetBrushModel(ent, ent->model);
 
     ent->moveinfo.blocked = plat2_blocked;
 
