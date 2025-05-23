@@ -438,7 +438,7 @@ static void brain_tounge_attack(edict_t *self)
 
     edict_t *te = G_Spawn();
     te->s.renderfx = RF_BEAM;
-    te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+    te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
     te->s.othernum = ENTITYNUM_NONE;
     VectorCopy(start, te->s.old_origin);
     VectorCopy(end, te->s.origin);
@@ -685,7 +685,7 @@ void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -724,20 +724,20 @@ bool MONSTERINFO_DUCK(brain_duck)(edict_t *self, gtime_t eta)
 
 static void brain_precache(void)
 {
-    sound_chest_open = gi.soundindex("brain/brnatck1.wav");
-    sound_tentacles_extend = gi.soundindex("brain/brnatck2.wav");
-    sound_tentacles_retract = gi.soundindex("brain/brnatck3.wav");
-    sound_death = gi.soundindex("brain/brndeth1.wav");
-    sound_idle1 = gi.soundindex("brain/brnidle1.wav");
-    sound_idle2 = gi.soundindex("brain/brnidle2.wav");
-    sound_idle3 = gi.soundindex("brain/brnlens1.wav");
-    sound_pain1 = gi.soundindex("brain/brnpain1.wav");
-    sound_pain2 = gi.soundindex("brain/brnpain2.wav");
-    sound_sight = gi.soundindex("brain/brnsght1.wav");
-    sound_search = gi.soundindex("brain/brnsrch1.wav");
-    sound_melee1 = gi.soundindex("brain/melee1.wav");
-    sound_melee2 = gi.soundindex("brain/melee2.wav");
-    sound_melee3 = gi.soundindex("brain/melee3.wav");
+    sound_chest_open = G_SoundIndex("brain/brnatck1.wav");
+    sound_tentacles_extend = G_SoundIndex("brain/brnatck2.wav");
+    sound_tentacles_retract = G_SoundIndex("brain/brnatck3.wav");
+    sound_death = G_SoundIndex("brain/brndeth1.wav");
+    sound_idle1 = G_SoundIndex("brain/brnidle1.wav");
+    sound_idle2 = G_SoundIndex("brain/brnidle2.wav");
+    sound_idle3 = G_SoundIndex("brain/brnlens1.wav");
+    sound_pain1 = G_SoundIndex("brain/brnpain1.wav");
+    sound_pain2 = G_SoundIndex("brain/brnpain2.wav");
+    sound_sight = G_SoundIndex("brain/brnsght1.wav");
+    sound_search = G_SoundIndex("brain/brnsrch1.wav");
+    sound_melee1 = G_SoundIndex("brain/melee1.wav");
+    sound_melee2 = G_SoundIndex("brain/melee2.wav");
+    sound_melee3 = G_SoundIndex("brain/melee3.wav");
 }
 
 /*QUAKED monster_brain (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -753,7 +753,7 @@ void SP_monster_brain(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/brain/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/brain/tris.md2");
 
     PrecacheGibs(brain_gibs);
 

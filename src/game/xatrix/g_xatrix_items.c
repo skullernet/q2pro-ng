@@ -20,11 +20,11 @@ void SP_item_foodcube(edict_t *self)
 
     // Paril: set pickup noise for foodcube based on amount
     if (self->count < 10)
-        self->noise_index = gi.soundindex("items/s_health.wav");
+        self->noise_index = G_SoundIndex("items/s_health.wav");
     else if (self->count < 25)
-        self->noise_index = gi.soundindex("items/n_health.wav");
+        self->noise_index = G_SoundIndex("items/n_health.wav");
     else if (self->count < 50)
-        self->noise_index = gi.soundindex("items/l_health.wav");
+        self->noise_index = G_SoundIndex("items/l_health.wav");
     else
-        self->noise_index = gi.soundindex("items/m_health.wav");
+        self->noise_index = G_SoundIndex("items/m_health.wav");
 }

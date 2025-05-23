@@ -101,7 +101,7 @@ static void weapon_chainfist_fire(edict_t *ent)
     if (fire_player_melee(ent, start, dir, CHAINFIST_REACH, damage, 100, (mod_t) { MOD_CHAINFIST })) {
         if (ent->client->empty_click_sound < level.time) {
             ent->client->empty_click_sound = level.time + SEC(0.5f);
-            G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/sawslice.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/sawslice.wav"), 1, ATTN_NORM);
         }
     }
 
@@ -159,11 +159,11 @@ void Weapon_ChainFist(edict_t *ent)
 
     // set the appropriate weapon sound.
     if (ent->client->weaponstate == WEAPON_FIRING)
-        ent->client->weapon_sound = gi.soundindex("weapons/sawhit.wav");
+        ent->client->weapon_sound = G_SoundIndex("weapons/sawhit.wav");
     else if (ent->client->weaponstate == WEAPON_DROPPING)
         ent->client->weapon_sound = 0;
     else if (ent->client->pers.weapon->id == IT_WEAPON_CHAINFIST)
-        ent->client->weapon_sound = gi.soundindex("weapons/sawidle.wav");
+        ent->client->weapon_sound = G_SoundIndex("weapons/sawidle.wav");
 }
 
 //
@@ -338,7 +338,7 @@ static void Heatbeam_Fire(edict_t *ent)
         ent->client->ps.gunframe = 8;
 
     // play weapon sound for firing
-    ent->client->weapon_sound = gi.soundindex("weapons/bfg__l1a.wav");
+    ent->client->weapon_sound = G_SoundIndex("weapons/bfg__l1a.wav");
     ent->client->ps.gunindex |= BIT(GUNINDEX_BITS); // alternate skin
 
     int damage;

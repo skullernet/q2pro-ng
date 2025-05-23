@@ -245,7 +245,7 @@ void SP_target_blacklight(edict_t *ent)
 
     ent->s.effects |= (EF_TRACKERTRAIL | EF_TRACKER);
     ent->think = blacklight_think;
-    ent->s.modelindex = gi.modelindex("models/items/spawngro3/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/items/spawngro3/tris.md2");
     ent->s.scale = 6;
     ent->s.skinnum = 0;
     ent->nextthink = level.time + FRAME_TIME;
@@ -270,7 +270,7 @@ void SP_target_orb(edict_t *ent)
     ent->think = blacklight_think;
     ent->nextthink = level.time + HZ(10);
     ent->s.skinnum = 1;
-    ent->s.modelindex = gi.modelindex("models/items/spawngro3/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/items/spawngro3/tris.md2");
     ent->s.frame = 2;
     ent->s.scale = 8;
     ent->s.effects |= EF_SPHERETRANS;

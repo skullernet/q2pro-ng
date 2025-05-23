@@ -19,7 +19,7 @@ void SP_misc_crashviper(edict_t *ent)
 
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ships/bigviper/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ships/bigviper/tris.md2");
     VectorSet(ent->r.mins, -16, -16, 0);
     VectorSet(ent->r.maxs, 16, 16, 32);
 
@@ -71,7 +71,7 @@ void SP_misc_viper_missile(edict_t *self)
     if (!self->dmg)
         self->dmg = 250;
 
-    self->s.modelindex = gi.modelindex("models/objects/bomb/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/objects/bomb/tris.md2");
 
     self->use = misc_viper_missile_use;
     self->r.svflags |= SVF_NOCLIENT;
@@ -96,7 +96,7 @@ void SP_misc_transport(edict_t *ent)
 
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/objects/ship/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/ship/tris.md2");
 
     VectorSet(ent->r.mins, -16, -16, 0);
     VectorSet(ent->r.maxs, 16, 16, 32);
@@ -127,7 +127,7 @@ void SP_misc_amb4(edict_t *ent)
 {
     ent->think = amb4_think;
     ent->nextthink = level.time + SEC(1);
-    ent->noise_index = gi.soundindex("world/amb4.wav");
+    ent->noise_index = G_SoundIndex("world/amb4.wav");
     trap_LinkEntity(ent);
 }
 

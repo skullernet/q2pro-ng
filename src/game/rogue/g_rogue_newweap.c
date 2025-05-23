@@ -51,7 +51,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
 
     flechette->r.solid = SOLID_BBOX;
     flechette->s.renderfx = RF_FULLBRIGHT;
-    flechette->s.modelindex = gi.modelindex("models/proj/flechette/tris.md2");
+    flechette->s.modelindex = G_ModelIndex("models/proj/flechette/tris.md2");
 
     flechette->r.ownernum = self->s.number;
     flechette->touch = flechette_touch;
@@ -107,7 +107,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
 
     // play quad sound if appopriate
     if (ent->dmg > PROX_DAMAGE * PROX_DAMAGE_OPEN_MULT)
-        G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
     ent->takedamage = false;
     T_RadiusDamage(ent, owner, ent->dmg, other, PROX_DAMAGE_RADIUS, DAMAGE_NONE, (mod_t) { MOD_PROX });
@@ -160,7 +160,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
         return;
 
     if (prox->teamchain == ent) {
-        G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/proxwarn.wav"), 1, ATTN_NORM);
         prox->think = Prox_Explode;
         prox->nextthink = level.time + PROX_TIME_DELAY;
         return;
@@ -228,7 +228,7 @@ void THINK(prox_open)(edict_t *ent)
             if (!visible(search, ent))
                 continue;
 
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxwarn.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/proxwarn.wav"), 1, ATTN_NORM);
             Prox_Explode(ent);
             return;
         }
@@ -257,7 +257,7 @@ void THINK(prox_open)(edict_t *ent)
         ent->nextthink = level.time + SEC(0.2f);
     } else {
         if (ent->s.frame == 0) {
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/proxopen.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/proxopen.wav"), 1, ATTN_NORM);
             ent->dmg *= PROX_DAMAGE_OPEN_MULT;
         }
         ent->s.frame++;
@@ -396,7 +396,7 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     //  so it sinks in correctly.  Also in lavacheck, might have to up the distance
     VectorSet(prox->r.mins, -6, -6, -6);
     VectorSet(prox->r.maxs, 6, 6, 6);
-    prox->s.modelindex = gi.modelindex("models/weapons/g_prox/tris.md2");
+    prox->s.modelindex = G_ModelIndex("models/weapons/g_prox/tris.md2");
     prox->r.ownernum = self->s.number;
     prox->teammaster = self;
     prox->touch = prox_land;
@@ -552,13 +552,13 @@ static void Nuke_Explode(edict_t *ent)
     T_RadiusNukeDamage(ent, ent->teammaster, ent->dmg, ent, ent->dmg_radius, (mod_t) { MOD_NUKE });
 
     if (ent->dmg > NUKE_DAMAGE)
-        G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
     G_TempEntity(ent->s.origin, EV_NUKEBLAST, 0)->r.svflags |= SVF_NOCULL;
 
     // become a quake
     ent->r.svflags |= SVF_NOCLIENT;
-    ent->noise_index = gi.soundindex("world/rumble.wav");
+    ent->noise_index = G_SoundIndex("world/rumble.wav");
     ent->think = Nuke_Quake;
     ent->speed = NUKE_QUAKE_STRENGTH;
     ent->timestamp = level.time + NUKE_QUAKE_TIME;
@@ -629,16 +629,16 @@ void THINK(Nuke_Think)(edict_t *ent)
 
         if (ent->pain_debounce_time <= level.time) {
             if (remaining <= (NUKE_TIME_TO_LIVE / 2.0f)) {
-                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation);
+                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
                 ent->pain_debounce_time = level.time + SEC(0.3f);
             } else {
-                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation);
+                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
                 ent->pain_debounce_time = level.time + SEC(0.5f);
             }
         }
     } else {
         if (ent->pain_debounce_time <= level.time) {
-            G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, gi.soundindex("weapons/nukewarn2.wav"), 1, attenuation);
+            G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
             ent->pain_debounce_time = level.time + SEC(1);
         }
         ent->nextthink = level.time + FRAME_TIME;
@@ -649,9 +649,9 @@ void TOUCH(nuke_bounce)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
 {
     if (tr->surface_id) {
         if (brandom())
-            G_StartSound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_BODY, G_SoundIndex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
         else
-            G_StartSound(ent, CHAN_BODY, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_BODY, G_SoundIndex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
     }
 }
 
@@ -682,7 +682,7 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     nuke->s.renderfx |= RF_IR_VISIBLE;
     VectorSet(nuke->r.mins, -8, -8, 0);
     VectorSet(nuke->r.maxs, 8, 8, 16);
-    nuke->s.modelindex = gi.modelindex("models/weapons/g_nuke/tris.md2");
+    nuke->s.modelindex = G_ModelIndex("models/weapons/g_nuke/tris.md2");
     nuke->r.ownernum = self->s.number;
     nuke->teammaster = self;
     nuke->nextthink = level.time + FRAME_TIME;
@@ -737,7 +737,7 @@ static void tesla_remove(edict_t *self)
 
     // play quad sound if quadded and an underwater explosion
     if ((self->dmg_radius) && (self->dmg > (TESLA_DAMAGE * TESLA_EXPLOSION_DAMAGE_MULT)))
-        G_StartSound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
     Grenade_Explode(self);
 }
@@ -820,7 +820,7 @@ void THINK(tesla_think_active)(edict_t *self)
 
             // PMM - play quad sound if it's above the "normal" damage
             if (self->dmg > TESLA_DAMAGE)
-                G_StartSound(self, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
+                G_StartSound(self, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
             // PGM - don't do knockback to walking monsters
             if ((hit->r.svflags & SVF_MONSTER) && !(hit->flags & (FL_FLY | FL_SWIM)))
@@ -834,8 +834,8 @@ void THINK(tesla_think_active)(edict_t *self)
             if (!te) {
                 te = G_Spawn();
                 te->s.renderfx = RF_BEAM;
-                te->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
-                te->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("weapons/tesla.wav"), 1, ATTN_NORM);
+                te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
+                te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
                 te->s.othernum = ENTITYNUM_NONE;
                 te->r.ownernum = self->s.number;
                 te->enemy = hit;
@@ -919,7 +919,7 @@ void THINK(tesla_think)(edict_t *ent)
     VectorClear(ent->s.angles);
 
     if (ent->s.frame == 0)
-        G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/teslaopen.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/teslaopen.wav"), 1, ATTN_NORM);
 
     ent->s.frame++;
     if (ent->s.frame > 14) {
@@ -952,9 +952,9 @@ void TOUCH(tesla_lava)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
 
     if (!VectorEmpty(ent->velocity)) {
         if (brandom())
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
         else
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
     }
 }
 
@@ -984,7 +984,7 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     tesla->s.renderfx |= RF_IR_VISIBLE;
     VectorSet(tesla->r.mins, -12, -12, 0);
     VectorSet(tesla->r.maxs, 12, 12, 20);
-    tesla->s.modelindex = gi.modelindex("models/weapons/g_tesla/tris.md2");
+    tesla->s.modelindex = G_ModelIndex("models/weapons/g_tesla/tris.md2");
     tesla->r.ownernum = self->s.number; // PGM - we don't want it owned by self YET.
     tesla->teammaster = self;
     tesla->think = tesla_think;
@@ -1108,7 +1108,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
     if (!te) {
         self->beam = te = G_Spawn();
         te->s.renderfx = RF_BEAM;
-        te->s.modelindex = gi.modelindex("models/proj/beam/tris.md2");
+        te->s.modelindex = G_ModelIndex("models/proj/beam/tris.md2");
         te->s.othernum = self->s.number;
         te->r.ownernum = self->s.number;
         te->think = heatbeam_think;
@@ -1195,7 +1195,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     if (effect)
         bolt->s.effects |= EF_TRACKER;
     bolt->dmg_radius = 128;
-    bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
+    bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
@@ -1382,8 +1382,8 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     bolt->r.solid = SOLID_BBOX;
     bolt->speed = speed;
     bolt->s.effects = EF_TRACKER;
-    bolt->s.sound = gi.soundindex("weapons/disrupt.wav");
-    bolt->s.modelindex = gi.modelindex("models/proj/disintegrator/tris.md2");
+    bolt->s.sound = G_SoundIndex("weapons/disrupt.wav");
+    bolt->s.modelindex = G_ModelIndex("models/proj/disintegrator/tris.md2");
     bolt->touch = tracker_touch;
     bolt->enemy = enemy;
     bolt->r.ownernum = self->s.number;

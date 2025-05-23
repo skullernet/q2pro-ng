@@ -651,7 +651,7 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     // but it makes it look more acid-y.
     loogie->s.effects |= EF_BLASTER;
     loogie->s.renderfx |= RF_FULLBRIGHT;
-    loogie->s.modelindex = gi.modelindex("models/objects/loogy/tris.md2");
+    loogie->s.modelindex = G_ModelIndex("models/objects/loogy/tris.md2");
     loogie->r.ownernum = self->s.number;
     loogie->touch = loogie_touch;
     loogie->nextthink = level.time + SEC(2);
@@ -1098,7 +1098,7 @@ static const gib_def_t gekk_gibs[] = {
 
 static void gekk_gib(edict_t *self, int damage)
 {
-    G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, damage, gekk_gibs);
 }
 
@@ -1477,23 +1477,23 @@ bool MONSTERINFO_BLOCKED(gekk_blocked)(edict_t *self, float dist)
 
 static void gekk_precache(void)
 {
-    sound_swing = gi.soundindex("gek/gk_atck1.wav");
-    sound_hit = gi.soundindex("gek/gk_atck2.wav");
-    sound_hit2 = gi.soundindex("gek/gk_atck3.wav");
-    sound_speet = gi.soundindex("gek/gk_atck4.wav");
-    loogie_hit = gi.soundindex("gek/loogie_hit.wav");
-    sound_death = gi.soundindex("gek/gk_deth1.wav");
-    sound_pain1 = gi.soundindex("gek/gk_pain1.wav");
-    sound_sight = gi.soundindex("gek/gk_sght1.wav");
-    sound_search = gi.soundindex("gek/gk_idle1.wav");
-    sound_step1 = gi.soundindex("gek/gk_step1.wav");
-    sound_step2 = gi.soundindex("gek/gk_step2.wav");
-    sound_step3 = gi.soundindex("gek/gk_step3.wav");
-    sound_thud = gi.soundindex("mutant/thud1.wav");
+    sound_swing = G_SoundIndex("gek/gk_atck1.wav");
+    sound_hit = G_SoundIndex("gek/gk_atck2.wav");
+    sound_hit2 = G_SoundIndex("gek/gk_atck3.wav");
+    sound_speet = G_SoundIndex("gek/gk_atck4.wav");
+    loogie_hit = G_SoundIndex("gek/loogie_hit.wav");
+    sound_death = G_SoundIndex("gek/gk_deth1.wav");
+    sound_pain1 = G_SoundIndex("gek/gk_pain1.wav");
+    sound_sight = G_SoundIndex("gek/gk_sght1.wav");
+    sound_search = G_SoundIndex("gek/gk_idle1.wav");
+    sound_step1 = G_SoundIndex("gek/gk_step1.wav");
+    sound_step2 = G_SoundIndex("gek/gk_step2.wav");
+    sound_step3 = G_SoundIndex("gek/gk_step3.wav");
+    sound_thud = G_SoundIndex("mutant/thud1.wav");
 
-    sound_chantlow = gi.soundindex("gek/gek_low.wav");
-    sound_chantmid = gi.soundindex("gek/gek_mid.wav");
-    sound_chanthigh = gi.soundindex("gek/gek_high.wav");
+    sound_chantlow = G_SoundIndex("gek/gek_low.wav");
+    sound_chantmid = G_SoundIndex("gek/gek_mid.wav");
+    sound_chanthigh = G_SoundIndex("gek/gek_high.wav");
 }
 
 /*QUAKED monster_gekk (1 .5 0) (-16 -16 -24) (16 16 24) Ambush Trigger_Spawn Sight Chant NoJumping
@@ -1509,7 +1509,7 @@ void SP_monster_gekk(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/gekk/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/gekk/tris.md2");
     VectorSet(self->r.mins, -18, -18, -24);
     VectorSet(self->r.maxs, 18, 18, 24);
 

@@ -169,7 +169,7 @@ void THINK(DoRespawn)(edict_t *ent)
 
             ent->classname = ent->item->classname;
             ent->s.effects = ent->item->world_model_flags;
-            ent->s.modelindex = gi.modelindex(ent->item->world_model);
+            ent->s.modelindex = G_ModelIndex(ent->item->world_model);
         }
     }
     // ROGUE
@@ -277,7 +277,7 @@ static void Use_Adrenaline(edict_t *ent, const gitem_t *item)
     if (ent->health < ent->max_health)
         ent->health = ent->max_health;
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/n_health.wav"), 1, ATTN_NORM);
+    G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/n_health.wav"), 1, ATTN_NORM);
 
     ent->client->pers.inventory[item->id]--;
 }
@@ -308,7 +308,7 @@ void G_CheckPowerArmor(edict_t *ent)
         if (!has_enough_cells) {
             // ran out of cells for power armor
             ent->flags &= ~FL_POWER_ARMOR;
-            G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/power2.wav"), 1, ATTN_NORM);
         }
     } else {
         // special case for power armor, for auto-shields
@@ -316,7 +316,7 @@ void G_CheckPowerArmor(edict_t *ent)
             has_enough_cells && (ent->client->pers.inventory[IT_ITEM_POWER_SCREEN] ||
                                  ent->client->pers.inventory[IT_ITEM_POWER_SHIELD])) {
             ent->flags |= FL_POWER_ARMOR;
-            G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/power1.wav"), 1, ATTN_NORM);
         }
     }
 }
@@ -416,7 +416,7 @@ static void Use_Quad(edict_t *ent, const gitem_t *item)
 
     ent->client->quad_time = max(level.time, ent->client->quad_time) + timeout;
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM);
+    G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
 // =====================================================================
 
@@ -436,7 +436,7 @@ static void Use_QuadFire(edict_t *ent, const gitem_t *item)
 
     ent->client->quadfire_time = max(level.time, ent->client->quadfire_time) + timeout;
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/quadfire1.wav"), 1, ATTN_NORM);
+    G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/quadfire1.wav"), 1, ATTN_NORM);
 }
 // RAFAEL
 
@@ -448,7 +448,7 @@ static void Use_Breather(edict_t *ent, const gitem_t *item)
 
     ent->client->breather_time = max(level.time, ent->client->breather_time) + SEC(30);
 
-    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM);
+    //  G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
 
 //======================================================================
@@ -459,7 +459,7 @@ static void Use_Envirosuit(edict_t *ent, const gitem_t *item)
 
     ent->client->enviro_time = max(level.time, ent->client->enviro_time) + SEC(30);
 
-    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM);
+    //  G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
 
 //======================================================================
@@ -470,7 +470,7 @@ static void Use_Invulnerability(edict_t *ent, const gitem_t *item)
 
     ent->client->invincible_time = max(level.time, ent->client->invincible_time) + SEC(30);
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM);
+    G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect.wav"), 1, ATTN_NORM);
 }
 
 static void Use_Invisibility(edict_t *ent, const gitem_t *item)
@@ -479,7 +479,7 @@ static void Use_Invisibility(edict_t *ent, const gitem_t *item)
 
     ent->client->invisible_time = max(level.time, ent->client->invisible_time) + SEC(30);
 
-    G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM);
+    G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect.wav"), 1, ATTN_NORM);
 }
 
 //======================================================================
@@ -489,7 +489,7 @@ static void Use_Silencer(edict_t *ent, const gitem_t *item)
     ent->client->pers.inventory[item->id]--;
     ent->client->silencer_shots += 30;
 
-    //  G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM);
+    //  G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
 
 //======================================================================
@@ -799,7 +799,7 @@ static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
 {
     if (ent->flags & FL_POWER_ARMOR) {
         ent->flags &= ~(FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR);
-        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/power2.wav"), 1, ATTN_NORM);
     } else {
         if (!ent->client->pers.inventory[IT_AMMO_CELLS]) {
             gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
@@ -812,7 +812,7 @@ static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
             ent->client->pers.inventory[IT_AMMO_CELLS] > ent->client->pers.autoshield)
             ent->flags |= FL_WANTS_POWER_ARMOR;
 
-        G_StartSound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/power1.wav"), 1, ATTN_NORM);
     }
 }
 
@@ -884,7 +884,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
         other->client->bonus_alpha = 0.25f;
 
         // show icon and name on status bar
-        other->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->item->icon);
+        other->client->ps.stats[STAT_PICKUP_ICON] = G_ImageIndex(ent->item->icon);
         other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ent->item->id;
         other->client->pickup_msg_time = level.time + SEC(3);
 
@@ -897,7 +897,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
         if (ent->noise_index)
             G_StartSound(other, CHAN_ITEM, ent->noise_index, 1, ATTN_NORM);
         else if (ent->item->pickup_sound)
-            G_StartSound(other, CHAN_ITEM, gi.soundindex(ent->item->pickup_sound), 1, ATTN_NORM);
+            G_StartSound(other, CHAN_ITEM, G_SoundIndex(ent->item->pickup_sound), 1, ATTN_NORM);
 
         if (coop->integer && P_UseCoopInstancedItems()) {
             Q_SetBit(ent->item_picked_up_by, other->s.number);
@@ -984,7 +984,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     dropped->classname = item->classname;
     dropped->s.effects = item->world_model_flags;
-    dropped->s.modelindex = gi.modelindex(dropped->item->world_model);
+    dropped->s.modelindex = G_ModelIndex(dropped->item->world_model);
     dropped->s.renderfx = RF_GLOW | RF_IR_VISIBLE; // PGM
     VectorSet(dropped->r.mins, -15, -15, -15);
     VectorSet(dropped->r.maxs, 15, 15, 15);
@@ -1066,7 +1066,7 @@ void THINK(droptofloor)(edict_t *ent)
         model = ent->model;
     else
         model = ent->item->world_model;
-    ent->s.modelindex = gi.modelindex(model);
+    ent->s.modelindex = G_ModelIndex(model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -1144,13 +1144,13 @@ void PrecacheItem(const gitem_t *it)
         return;
 
     if (it->pickup_sound)
-        gi.soundindex(it->pickup_sound);
+        G_SoundIndex(it->pickup_sound);
     if (it->world_model)
-        gi.modelindex(it->world_model);
+        G_ModelIndex(it->world_model);
     if (it->view_model)
-        gi.modelindex(it->view_model);
+        G_ModelIndex(it->view_model);
     if (it->icon)
-        gi.imageindex(it->icon);
+        G_ImageIndex(it->icon);
 
     // parse everything for its ammo
     if (it->ammo) {
@@ -1179,13 +1179,13 @@ void PrecacheItem(const gitem_t *it)
 
         // determine type based on extension
         if (!strcmp(data + len - 3, "md2"))
-            gi.modelindex(data);
+            G_ModelIndex(data);
         else if (!strcmp(data + len - 3, "sp2"))
-            gi.modelindex(data);
+            G_ModelIndex(data);
         else if (!strcmp(data + len - 3, "wav"))
-            gi.soundindex(data);
+            G_SoundIndex(data);
         else if (!strcmp(data + len - 3, "pcx"))
-            gi.imageindex(data);
+            G_ImageIndex(data);
     }
 }
 
@@ -1352,7 +1352,7 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
     if (!(level.is_spawning && ED_WasKeySpecified("renderfx")) && !ent->s.renderfx)
         ent->s.renderfx = RF_GLOW;
     if (ent->model)
-        gi.modelindex(ent->model);
+        G_ModelIndex(ent->model);
 
     if (ent->spawnflags & SPAWNFLAG_ITEM_TRIGGER_SPAWN)
         SetTriggeredSpawn(ent);
@@ -1371,7 +1371,7 @@ void P_ToggleFlashlight(edict_t *ent, bool state)
 
     ent->flags ^= FL_FLASHLIGHT;
 
-    G_StartSound(ent, CHAN_AUTO, gi.soundindex(ent->flags & FL_FLASHLIGHT ? "items/flashlight_on.wav" : "items/flashlight_off.wav"), 1, ATTN_STATIC);
+    G_StartSound(ent, CHAN_AUTO, G_SoundIndex(ent->flags & FL_FLASHLIGHT ? "items/flashlight_on.wav" : "items/flashlight_off.wav"), 1, ATTN_STATIC);
 }
 
 static void Use_Flashlight(edict_t *ent, const gitem_t *inv)

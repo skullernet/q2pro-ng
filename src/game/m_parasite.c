@@ -573,7 +573,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
 {
     edict_t *tip = G_Spawn();
     vectoangles(dir, tip->s.angles);
-    tip->s.modelindex = gi.modelindex("models/monsters/parasite/tip/tris.md2");
+    tip->s.modelindex = G_ModelIndex("models/monsters/parasite/tip/tris.md2");
     tip->movetype = MOVETYPE_FLYMISSILE;
     tip->r.ownernum = self->s.number;
     self->proboscus = tip;
@@ -592,7 +592,7 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     tip->r.svflags |= SVF_PROJECTILE;
 
     edict_t *segment = G_Spawn();
-    segment->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+    segment->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
     segment->s.othernum = ENTITYNUM_NONE;
     segment->s.renderfx = RF_BEAM;
     segment->postthink = proboscis_segment_draw;
@@ -831,7 +831,7 @@ void DIE(parasite_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, parasite_gibs);
         self->deadflag = true;
@@ -904,17 +904,17 @@ void MONSTERINFO_SETSKIN(parasite_setskin)(edict_t *self)
 
 static void parasite_precache(void)
 {
-    sound_pain1 = gi.soundindex("parasite/parpain1.wav");
-    sound_pain2 = gi.soundindex("parasite/parpain2.wav");
-    sound_die = gi.soundindex("parasite/pardeth1.wav");
-    sound_launch = gi.soundindex("parasite/paratck1.wav");
-    sound_impact = gi.soundindex("parasite/paratck2.wav");
-    sound_suck = gi.soundindex("parasite/paratck3.wav");
-    sound_reelin = gi.soundindex("parasite/paratck4.wav");
-    sound_sight = gi.soundindex("parasite/parsght1.wav");
-    sound_tap = gi.soundindex("parasite/paridle1.wav");
-    sound_scratch = gi.soundindex("parasite/paridle2.wav");
-    sound_search = gi.soundindex("parasite/parsrch1.wav");
+    sound_pain1 = G_SoundIndex("parasite/parpain1.wav");
+    sound_pain2 = G_SoundIndex("parasite/parpain2.wav");
+    sound_die = G_SoundIndex("parasite/pardeth1.wav");
+    sound_launch = G_SoundIndex("parasite/paratck1.wav");
+    sound_impact = G_SoundIndex("parasite/paratck2.wav");
+    sound_suck = G_SoundIndex("parasite/paratck3.wav");
+    sound_reelin = G_SoundIndex("parasite/paratck4.wav");
+    sound_sight = G_SoundIndex("parasite/parsght1.wav");
+    sound_tap = G_SoundIndex("parasite/paridle1.wav");
+    sound_scratch = G_SoundIndex("parasite/paridle2.wav");
+    sound_search = G_SoundIndex("parasite/parsrch1.wav");
 }
 
 #define SPAWNFLAG_PARASITE_NOJUMPING    8
@@ -930,10 +930,10 @@ void SP_monster_parasite(edict_t *self)
 
     G_AddPrecache(parasite_precache);
 
-    gi.modelindex("models/monsters/parasite/tip/tris.md2");
-    gi.modelindex("models/monsters/parasite/segment/tris.md2");
+    G_ModelIndex("models/monsters/parasite/tip/tris.md2");
+    G_ModelIndex("models/monsters/parasite/segment/tris.md2");
 
-    self->s.modelindex = gi.modelindex("models/monsters/parasite/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/parasite/tris.md2");
 
     PrecacheGibs(parasite_gibs);
 

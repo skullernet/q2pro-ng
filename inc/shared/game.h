@@ -191,9 +191,7 @@ typedef struct {
     void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
 
     // the *index functions create configstrings and some internal server state
-    int (*modelindex)(const char *name);
-    int (*soundindex)(const char *name);
-    int (*imageindex)(const char *name);
+    int (*findindex)(const char *name, int start, int max, int skip);
 
     void (*setmodel)(edict_t *ent, const char *name);
 

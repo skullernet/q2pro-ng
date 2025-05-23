@@ -409,7 +409,7 @@ static void TurretFire(edict_t *self)
                     self->monsterinfo.aiflags |= AI_HOLD_FRAME;
                     self->monsterinfo.duck_wait_time = level.time + SEC(2 + frandom1(skill->value));
                     self->monsterinfo.next_duck_time = level.time + SEC(1);
-                    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/chngnu1a.wav"), 1, ATTN_NORM);
+                    G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/chngnu1a.wav"), 1, ATTN_NORM);
                 } else {
                     if (self->monsterinfo.next_duck_time < level.time &&
                         self->monsterinfo.melee_debounce_time <= level.time) {
@@ -639,7 +639,7 @@ static void turret_wall_spawn(edict_t *turret)
     ent->flags |= FL_TEAMSLAVE;
     ent->r.ownernum = turret->s.number;
 
-    ent->s.modelindex = gi.modelindex("models/monsters/turretbase/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/turretbase/tris.md2");
 
     trap_LinkEntity(ent);
 }
@@ -812,8 +812,8 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 
 static void turret_precache(void)
 {
-    sound_moved = gi.soundindex("turret/moved.wav");
-    sound_moving = gi.soundindex("turret/moving.wav");
+    sound_moved = G_SoundIndex("turret/moved.wav");
+    sound_moving = G_SoundIndex("turret/moving.wav");
 }
 
 /*QUAKED monster_turret (1 .5 0) (-16 -16 -16) (16 16 16) Ambush Trigger_Spawn Sight Blaster MachineGun Rocket Heatbeam WallUnit
@@ -835,9 +835,9 @@ void SP_monster_turret(edict_t *self)
     // pre-caches
     G_AddPrecache(turret_precache);
 
-    gi.modelindex("models/objects/debris1/tris.md2");
+    G_ModelIndex("models/objects/debris1/tris.md2");
 
-    self->s.modelindex = gi.modelindex("models/monsters/turret/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/turret/tris.md2");
 
     VectorSet(self->r.mins, -12, -12, -12);
     VectorSet(self->r.maxs, 12, 12, 12);
@@ -935,24 +935,24 @@ void SP_monster_turret(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) {
-        gi.soundindex("infantry/infatck1.wav");
-        gi.soundindex("weapons/chngnu1a.wav");
+        G_SoundIndex("infantry/infatck1.wav");
+        G_SoundIndex("weapons/chngnu1a.wav");
         self->s.skinnum = 1;
 
         self->spawnflags &= ~SPAWNFLAG_TURRET_WEAPONCHOICE;
         self->spawnflags |= SPAWNFLAG_TURRET_MACHINEGUN;
     } else if (self->spawnflags & SPAWNFLAG_TURRET_ROCKET) {
-        gi.soundindex("weapons/rockfly.wav");
-        gi.modelindex("models/objects/rocket/tris.md2");
-        gi.soundindex("chick/chkatck2.wav");
+        G_SoundIndex("weapons/rockfly.wav");
+        G_ModelIndex("models/objects/rocket/tris.md2");
+        G_SoundIndex("chick/chkatck2.wav");
         self->s.skinnum = 2;
 
         self->spawnflags &= ~SPAWNFLAG_TURRET_WEAPONCHOICE;
         self->spawnflags |= SPAWNFLAG_TURRET_ROCKET;
     } else {
-        gi.modelindex("models/objects/laser/tris.md2");
-        gi.soundindex("misc/lasfly.wav");
-        gi.soundindex("soldier/solatck2.wav");
+        G_ModelIndex("models/objects/laser/tris.md2");
+        G_SoundIndex("misc/lasfly.wav");
+        G_SoundIndex("soldier/solatck2.wav");
 
         self->spawnflags &= ~SPAWNFLAG_TURRET_WEAPONCHOICE;
         self->spawnflags |= SPAWNFLAG_TURRET_BLASTER;

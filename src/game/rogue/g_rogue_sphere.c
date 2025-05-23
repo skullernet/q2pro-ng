@@ -90,7 +90,7 @@ static void sphere_chase(edict_t *self, int stupidChase)
     if (visible(self, self->enemy) || stupidChase) {
         // if moving, hunter sphere uses active sound
         if (!stupidChase)
-            self->s.sound = gi.soundindex("spheres/h_active.wav");
+            self->s.sound = G_SoundIndex("spheres/h_active.wav");
 
         VectorSubtract(dest, self->s.origin, dir);
         VectorNormalize(dir);
@@ -102,7 +102,7 @@ static void sphere_chase(edict_t *self, int stupidChase)
         vectoangles(dir, self->s.angles);
 
         // if lurking, hunter sphere uses lurking sound
-        self->s.sound = gi.soundindex("spheres/h_lurk.wav");
+        self->s.sound = G_SoundIndex("spheres/h_lurk.wav");
         VectorClear(self->velocity);
     } else {
         VectorSubtract(self->monsterinfo.saved_goal, self->s.origin, dir);
@@ -120,14 +120,14 @@ static void sphere_chase(edict_t *self, int stupidChase)
 
             // if moving, hunter sphere uses active sound
             if (!stupidChase)
-                self->s.sound = gi.soundindex("spheres/h_active.wav");
+                self->s.sound = G_SoundIndex("spheres/h_active.wav");
         } else {
             VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
             vectoangles(dir, self->s.angles);
 
             // if not moving, hunter sphere uses lurk sound
             if (!stupidChase)
-                self->s.sound = gi.soundindex("spheres/h_lurk.wav");
+                self->s.sound = G_SoundIndex("spheres/h_lurk.wav");
 
             VectorClear(self->velocity);
         }
@@ -273,7 +273,7 @@ static const gib_def_t sphere_gibs[] = {
 
 static void body_gib(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, 50, sphere_gibs);
 }
 
@@ -532,25 +532,25 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
 
     switch (spawnflags & SPHERE_TYPE) {
     case SPHERE_DEFENDER:
-        sphere->s.modelindex = gi.modelindex("models/items/defender/tris.md2");
-        sphere->s.modelindex2 = gi.modelindex("models/items/shell/tris.md2");
-        sphere->s.sound = gi.soundindex("spheres/d_idle.wav");
+        sphere->s.modelindex = G_ModelIndex("models/items/defender/tris.md2");
+        sphere->s.modelindex2 = G_ModelIndex("models/items/shell/tris.md2");
+        sphere->s.sound = G_SoundIndex("spheres/d_idle.wav");
         sphere->pain = defender_pain;
         sphere->timestamp = level.time + DEFENDER_LIFESPAN;
         sphere->die = sphere_explode;
         sphere->think = defender_think;
         break;
     case SPHERE_HUNTER:
-        sphere->s.modelindex = gi.modelindex("models/items/hunter/tris.md2");
-        sphere->s.sound = gi.soundindex("spheres/h_idle.wav");
+        sphere->s.modelindex = G_ModelIndex("models/items/hunter/tris.md2");
+        sphere->s.sound = G_SoundIndex("spheres/h_idle.wav");
         sphere->timestamp = level.time + HUNTER_LIFESPAN;
         sphere->pain = hunter_pain;
         sphere->die = sphere_if_idle_die;
         sphere->think = hunter_think;
         break;
     case SPHERE_VENGEANCE:
-        sphere->s.modelindex = gi.modelindex("models/items/vengnce/tris.md2");
-        sphere->s.sound = gi.soundindex("spheres/v_idle.wav");
+        sphere->s.modelindex = G_ModelIndex("models/items/vengnce/tris.md2");
+        sphere->s.sound = G_SoundIndex("spheres/v_idle.wav");
         sphere->timestamp = level.time + VENGEANCE_LIFESPAN;
         sphere->pain = vengeance_pain;
         sphere->die = sphere_if_idle_die;

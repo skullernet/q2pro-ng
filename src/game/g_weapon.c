@@ -305,8 +305,8 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     bolt->s.renderfx |= RF_NOSHADOW;
-    bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
-    bolt->s.sound = gi.soundindex("misc/lasfly.wav");
+    bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
+    bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
     bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
@@ -390,11 +390,11 @@ void TOUCH(Grenade_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool 
 
     if (!other->takedamage) {
         if (!(ent->spawnflags & SPAWNFLAG_GRENADE_HAND))
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/grenlb1b.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/grenlb1b.wav"), 1, ATTN_NORM);
         else if (brandom())
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/hgrenb1a.wav"), 1, ATTN_NORM);
         else
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/hgrenb2a.wav"), 1, ATTN_NORM);
         return;
     }
 
@@ -453,12 +453,12 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     grenade->speed = speed;
     if (monster) {
         crandom_vec(grenade->avelocity, 360);
-        grenade->s.modelindex = gi.modelindex("models/objects/grenade/tris.md2");
+        grenade->s.modelindex = G_ModelIndex("models/objects/grenade/tris.md2");
         grenade->nextthink = level.time + timer;
         grenade->think = Grenade_Explode;
         grenade->s.morefx |= EFX_GRENADE_LIGHT;
     } else {
-        grenade->s.modelindex = gi.modelindex("models/objects/grenade4/tris.md2");
+        grenade->s.modelindex = G_ModelIndex("models/objects/grenade4/tris.md2");
         vectoangles(grenade->velocity, grenade->s.angles);
         grenade->nextthink = level.time + FRAME_TIME;
         grenade->timestamp = level.time + timer;
@@ -505,7 +505,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     grenade->flags |= FL_DODGE;
     grenade->s.effects |= EF_GRENADE;
 
-    grenade->s.modelindex = gi.modelindex("models/objects/grenade3/tris.md2");
+    grenade->s.modelindex = G_ModelIndex("models/objects/grenade3/tris.md2");
     grenade->r.ownernum = self->s.number;
     grenade->touch = Grenade_Touch;
     grenade->nextthink = level.time + timer;
@@ -516,12 +516,12 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     grenade->spawnflags = SPAWNFLAG_GRENADE_HAND;
     if (held)
         grenade->spawnflags |= SPAWNFLAG_GRENADE_HELD;
-    grenade->s.sound = gi.soundindex("weapons/hgrenc1b.wav");
+    grenade->s.sound = G_SoundIndex("weapons/hgrenc1b.wav");
 
     if (timer <= 0)
         Grenade_Explode(grenade);
     else {
-        G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/hgrent1a.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, G_SoundIndex("weapons/hgrent1a.wav"), 1, ATTN_NORM);
         trap_LinkEntity(grenade);
     }
 }
@@ -578,7 +578,7 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
         rocket->clipmask &= ~CONTENTS_PLAYER;
     rocket->r.solid = SOLID_BBOX;
     rocket->s.effects |= EF_ROCKET;
-    rocket->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
+    rocket->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
     rocket->r.ownernum = self->s.number;
     rocket->touch = rocket_touch;
     rocket->nextthink = level.time + SEC(8000.0f / speed);
@@ -586,7 +586,7 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     rocket->dmg = damage;
     rocket->radius_dmg = radius_damage;
     rocket->dmg_radius = damage_radius;
-    rocket->s.sound = gi.soundindex("weapons/rockfly.wav");
+    rocket->s.sound = G_SoundIndex("weapons/rockfly.wav");
     rocket->classname = "rocket";
 
     trap_LinkEntity(rocket);
@@ -787,12 +787,12 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
     T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
-    G_StartSound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
     self->r.solid = SOLID_NOT;
     self->touch = NULL;
     VectorMA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity, self->s.origin);
     VectorClear(self->velocity);
-    self->s.modelindex = gi.modelindex("sprites/s_bfg3.sp2");
+    self->s.modelindex = G_ModelIndex("sprites/s_bfg3.sp2");
     self->s.frame = 0;
     self->s.sound = 0;
     self->s.effects &= ~EF_ANIM_ALLFAST;
@@ -906,7 +906,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
         bfg->clipmask &= ~CONTENTS_PLAYER;
     bfg->r.solid = SOLID_BBOX;
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
-    bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+    bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
     bfg->r.ownernum = self->s.number;
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
@@ -914,7 +914,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
     bfg->radius_dmg = damage;
     bfg->dmg_radius = damage_radius;
     bfg->classname = "bfg blast";
-    bfg->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
+    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
 
     bfg->think = bfg_think;
     bfg->nextthink = level.time + FRAME_TIME;
@@ -957,13 +957,13 @@ void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward,
     bfg->s.renderfx |= RF_TRANSLUCENT;
     bfg->r.svflags |= SVF_PROJECTILE;
     bfg->flags |= FL_DODGE;
-    bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+    bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
     bfg->r.ownernum = self->s.number;
     bfg->touch = disintegrator_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
     bfg->classname = "disint ball";
-    bfg->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
+    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
 
     trap_LinkEntity(bfg);
 }

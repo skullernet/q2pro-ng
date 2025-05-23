@@ -30,7 +30,7 @@ PF_FindIndex
 
 ================
 */
-static int PF_FindIndex(const char *name, int start, int max, int skip, const char *func)
+static int PF_FindIndex(const char *name, int start, int max, int skip)
 {
     char *string;
     int i;
@@ -52,26 +52,11 @@ static int PF_FindIndex(const char *name, int start, int max, int skip, const ch
     }
 
     if (i == max)
-        Com_Error(ERR_DROP, "%s(%s): overflow", func, name);
+        Com_Error(ERR_DROP, "%s(%s): overflow", __func__, name);
 
     PF_configstring(i + start, name);
 
     return i;
-}
-
-static int PF_ModelIndex(const char *name)
-{
-    return PF_FindIndex(name, CS_MODELS, MAX_MODELS, MODELINDEX_PLAYER, __func__);
-}
-
-static int PF_SoundIndex(const char *name)
-{
-    return PF_FindIndex(name, CS_SOUNDS, MAX_SOUNDS, 0, __func__);
-}
-
-static int PF_ImageIndex(const char *name)
-{
-    return PF_FindIndex(name, CS_IMAGES, MAX_IMAGES, 0, __func__);
 }
 
 /*
@@ -591,10 +576,7 @@ static const game_import_t game_import = {
     .setmodel = PF_setmodel,
     .inVIS = PF_inVIS,
 
-    .modelindex = PF_ModelIndex,
-    .soundindex = PF_SoundIndex,
-    .imageindex = PF_ImageIndex,
-
+    .findindex = PF_FindIndex,
     .configstring = PF_configstring,
     .get_configstring = PF_GetConfigstring,
 

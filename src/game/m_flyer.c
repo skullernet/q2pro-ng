@@ -682,13 +682,13 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
 
 static void flyer_precache(void)
 {
-    sound_sight = gi.soundindex("flyer/flysght1.wav");
-    sound_idle = gi.soundindex("flyer/flysrch1.wav");
-    sound_pain1 = gi.soundindex("flyer/flypain1.wav");
-    sound_pain2 = gi.soundindex("flyer/flypain2.wav");
-    sound_slash = gi.soundindex("flyer/flyatck2.wav");
-    sound_sproing = gi.soundindex("flyer/flyatck1.wav");
-    sound_die = gi.soundindex("flyer/flydeth1.wav");
+    sound_sight = G_SoundIndex("flyer/flysght1.wav");
+    sound_idle = G_SoundIndex("flyer/flysrch1.wav");
+    sound_pain1 = G_SoundIndex("flyer/flypain1.wav");
+    sound_pain2 = G_SoundIndex("flyer/flypain2.wav");
+    sound_slash = G_SoundIndex("flyer/flyatck2.wav");
+    sound_sproing = G_SoundIndex("flyer/flyatck1.wav");
+    sound_die = G_SoundIndex("flyer/flydeth1.wav");
 }
 
 /*QUAKED monster_flyer (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -702,9 +702,9 @@ void SP_monster_flyer(edict_t *self)
 
     G_AddPrecache(flyer_precache);
 
-    gi.soundindex("flyer/flyatck3.wav");
+    G_SoundIndex("flyer/flyatck3.wav");
 
-    self->s.modelindex = gi.modelindex("models/monsters/flyer/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/flyer/tris.md2");
 
     PrecacheGibs(flyer_gibs);
 
@@ -716,7 +716,7 @@ void SP_monster_flyer(edict_t *self)
 
     self->viewheight = 12;
 
-    self->monsterinfo.engine_sound = gi.soundindex("flyer/flyidle1.wav");
+    self->monsterinfo.engine_sound = G_SoundIndex("flyer/flyidle1.wav");
 
     self->health = 50 * st.health_multiplier;
     self->mass = 50;

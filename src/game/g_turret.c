@@ -78,7 +78,7 @@ static void turret_breach_fire(edict_t *self)
     edict_t *rocket = fire_rocket(owner->activator ? owner->activator : owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
 
-    G_PositionedSound(start, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM);
+    G_PositionedSound(start, CHAN_WEAPON, G_SoundIndex("weapons/rocklf1a.wav"), 1, ATTN_NORM);
 }
 
 void THINK(turret_breach_think)(edict_t *self)
@@ -218,7 +218,7 @@ void SP_turret_breach(edict_t *self)
     self->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
-        self->noise_index = gi.soundindex(st.noise);
+        self->noise_index = G_SoundIndex(st.noise);
 
     trap_SetBrushModel(self, self->model);
 
@@ -264,7 +264,7 @@ void SP_turret_base(edict_t *self)
     self->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
-        self->noise_index = gi.soundindex(st.noise);
+        self->noise_index = G_SoundIndex(st.noise);
 
     trap_SetBrushModel(self, self->model);
     self->moveinfo.blocked = turret_blocked;
@@ -411,7 +411,7 @@ void SP_turret_driver(edict_t *self)
 
     self->movetype = MOVETYPE_PUSH;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/infantry/tris.md2");
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 32);
 

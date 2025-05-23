@@ -1203,7 +1203,7 @@ static void Cmd_Wave_f(edict_t *ent)
                 if (player != ent && !OnSameTeam(ent, player))
                     continue;
 
-                G_LocalSound(player, CHAN_AUTO, gi.soundindex("misc/help_marker.wav"), 1.0f, ATTN_NONE);
+                G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/help_marker.wav"), 1.0f, ATTN_NONE);
                 gi.cprintf(player, PRINT_HIGH, other_notify_msg, ent->client->pers.netname);
             }
         }

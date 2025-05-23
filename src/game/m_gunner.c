@@ -335,7 +335,7 @@ void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, gunner_gibs);
         self->deadflag = true;
@@ -806,13 +806,13 @@ bool MONSTERINFO_SIDESTEP(gunner_sidestep)(edict_t *self)
 
 static void gunner_precache(void)
 {
-    sound_death = gi.soundindex("gunner/death1.wav");
-    sound_pain = gi.soundindex("gunner/gunpain2.wav");
-    sound_pain2 = gi.soundindex("gunner/gunpain1.wav");
-    sound_idle = gi.soundindex("gunner/gunidle1.wav");
-    sound_open = gi.soundindex("gunner/gunatck1.wav");
-    sound_search = gi.soundindex("gunner/gunsrch1.wav");
-    sound_sight = gi.soundindex("gunner/sight1.wav");
+    sound_death = G_SoundIndex("gunner/death1.wav");
+    sound_pain = G_SoundIndex("gunner/gunpain2.wav");
+    sound_pain2 = G_SoundIndex("gunner/gunpain1.wav");
+    sound_idle = G_SoundIndex("gunner/gunidle1.wav");
+    sound_open = G_SoundIndex("gunner/gunatck1.wav");
+    sound_search = G_SoundIndex("gunner/gunsrch1.wav");
+    sound_sight = G_SoundIndex("gunner/sight1.wav");
 }
 
 /*QUAKED monster_gunner (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight NoJumping
@@ -827,12 +827,12 @@ void SP_monster_gunner(edict_t *self)
 
     G_AddPrecache(gunner_precache);
 
-    gi.soundindex("gunner/gunatck2.wav");
-    gi.soundindex("gunner/gunatck3.wav");
+    G_SoundIndex("gunner/gunatck2.wav");
+    G_SoundIndex("gunner/gunatck3.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
 
     PrecacheGibs(gunner_gibs);
 

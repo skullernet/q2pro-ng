@@ -279,7 +279,7 @@ void ChangeWeapon(edict_t *ent)
         ent->client->pers.lastweapon = ent->client->pers.weapon;
 
         if (ent->client->newweapon && ent->client->newweapon != ent->client->pers.weapon)
-            G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/change.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/change.wav"), 1, ATTN_NORM);
     }
 
     ent->client->pers.weapon = ent->client->newweapon;
@@ -297,7 +297,7 @@ void ChangeWeapon(edict_t *ent)
 
     ent->client->weaponstate = WEAPON_ACTIVATING;
     ent->client->ps.gunframe = 0;
-    ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
+    ent->client->ps.gunindex = G_ModelIndex(ent->client->pers.weapon->view_model);
     ent->client->weapon_sound = 0;
 
     ent->client->anim_priority = ANIM_PAIN;
@@ -324,7 +324,7 @@ NoAmmoWeaponChange
 void NoAmmoWeaponChange(edict_t *ent, bool sound)
 {
     if (sound && level.time >= ent->client->empty_click_sound) {
-        G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM);
+        G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/noammo.wav"), 1, ATTN_NORM);
         ent->client->empty_click_sound = level.time + SEC(1);
     }
 
@@ -378,7 +378,7 @@ void G_RemoveAmmoEx(edict_t *ent, int quantity)
                         ent->client->pers.weapon->quantity_warn;
 
     if (!pre_warning && post_warning)
-        G_LocalSound(ent, CHAN_AUTO, gi.soundindex("weapons/lowammo.wav"), 1, ATTN_NORM);
+        G_LocalSound(ent, CHAN_AUTO, G_SoundIndex("weapons/lowammo.wav"), 1, ATTN_NORM);
 
     if (ent->client->pers.weapon->ammo == IT_AMMO_CELLS)
         G_CheckPowerArmor(ent);
@@ -578,15 +578,15 @@ void Weapon_PowerupSound(edict_t *ent)
 {
     if (!CTFApplyStrengthSound(ent)) {
         if (ent->client->quad_time > level.time && ent->client->double_time > level.time)
-            G_StartSound(ent, CHAN_ITEM, gi.soundindex("ctf/tech2x.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_ITEM, G_SoundIndex("ctf/tech2x.wav"), 1, ATTN_NORM);
         else if (ent->client->quad_time > level.time)
-            G_StartSound(ent, CHAN_ITEM, gi.soundindex("items/damage3.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
         else if (ent->client->double_time > level.time)
-            G_StartSound(ent, CHAN_ITEM, gi.soundindex("misc/ddamage3.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ddamage3.wav"), 1, ATTN_NORM);
         else if (ent->client->quadfire_time > level.time
                  && ent->client->ctf_techsndtime < level.time) {
             ent->client->ctf_techsndtime = level.time + SEC(1);
-            G_StartSound(ent, CHAN_ITEM, gi.soundindex("ctf/tech3.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_ITEM, G_SoundIndex("ctf/tech3.wav"), 1, ATTN_NORM);
         }
     }
 
@@ -976,7 +976,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
 
         if (ent->client->weapon_think_time <= level.time) {
             if (prime_sound && ent->client->ps.gunframe == FRAME_PRIME_SOUND)
-                G_StartSound(ent, CHAN_WEAPON, gi.soundindex(prime_sound), 1, ATTN_NORM);
+                G_StartSound(ent, CHAN_WEAPON, G_SoundIndex(prime_sound), 1, ATTN_NORM);
 
             // [Paril-KEX] dualfire/time accel
             gtime_t grenade_wait_time = SEC(1);
@@ -991,7 +991,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
                     ent->client->grenade_time = level.time + SEC(GRENADE_TIMER_SEC + 0.2f);
 
                 if (primed_sound && !ent->client->grenade_blew_up)
-                    ent->client->weapon_sound = gi.soundindex(primed_sound);
+                    ent->client->weapon_sound = G_SoundIndex(primed_sound);
 
                 // they waited too long, detonate it in their hand
                 if (explode && !ent->client->grenade_blew_up && level.time >= ent->client->grenade_time) {
@@ -1241,12 +1241,12 @@ static void Weapon_HyperBlaster_Fire(edict_t *ent)
         if (ent->client->pers.inventory[ent->client->pers.weapon->ammo] && (ent->client->buttons & BUTTON_ATTACK))
             ent->client->ps.gunframe = 6;
         else
-            G_StartSound(ent, CHAN_AUTO, gi.soundindex("weapons/hyprbd1a.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_AUTO, G_SoundIndex("weapons/hyprbd1a.wav"), 1, ATTN_NORM);
     }
 
     // play weapon sound for firing loop
     if (ent->client->ps.gunframe >= 6 && ent->client->ps.gunframe <= 11)
-        ent->client->weapon_sound = gi.soundindex("weapons/hyprbl1a.wav");
+        ent->client->weapon_sound = G_SoundIndex("weapons/hyprbl1a.wav");
     else
         ent->client->weapon_sound = 0;
 
@@ -1384,7 +1384,7 @@ static void Chaingun_Fire(edict_t *ent)
 
     if (ent->client->ps.gunframe > 31) {
         ent->client->ps.gunframe = 5;
-        G_StartSound(ent, CHAN_AUTO, gi.soundindex("weapons/chngnu1a.wav"), 1, ATTN_IDLE);
+        G_StartSound(ent, CHAN_AUTO, G_SoundIndex("weapons/chngnu1a.wav"), 1, ATTN_IDLE);
     } else if ((ent->client->ps.gunframe == 14) && !(ent->client->buttons & BUTTON_ATTACK)) {
         ent->client->ps.gunframe = 32;
         ent->client->weapon_sound = 0;
@@ -1397,13 +1397,13 @@ static void Chaingun_Fire(edict_t *ent)
 
     if (ent->client->ps.gunframe == 22) {
         ent->client->weapon_sound = 0;
-        G_StartSound(ent, CHAN_AUTO, gi.soundindex("weapons/chngnd1a.wav"), 1, ATTN_IDLE);
+        G_StartSound(ent, CHAN_AUTO, G_SoundIndex("weapons/chngnd1a.wav"), 1, ATTN_IDLE);
     }
 
     if (ent->client->ps.gunframe < 5 || ent->client->ps.gunframe > 21)
         return;
 
-    ent->client->weapon_sound = gi.soundindex("weapons/chngnl1a.wav");
+    ent->client->weapon_sound = G_SoundIndex("weapons/chngnl1a.wav");
 
     ent->client->anim_priority = ANIM_ATTACK;
     if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {

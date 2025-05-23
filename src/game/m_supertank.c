@@ -608,13 +608,13 @@ bool MONSTERINFO_BLOCKED(supertank_blocked)(edict_t *self, float dist)
 
 static void supertank_precache(void)
 {
-    sound_pain1 = gi.soundindex("bosstank/btkpain1.wav");
-    sound_pain2 = gi.soundindex("bosstank/btkpain2.wav");
-    sound_pain3 = gi.soundindex("bosstank/btkpain3.wav");
-    sound_death = gi.soundindex("bosstank/btkdeth1.wav");
-    sound_search1 = gi.soundindex("bosstank/btkunqv1.wav");
-    sound_search2 = gi.soundindex("bosstank/btkunqv2.wav");
-    sound_tread = gi.soundindex("bosstank/btkengn1.wav");
+    sound_pain1 = G_SoundIndex("bosstank/btkpain1.wav");
+    sound_pain2 = G_SoundIndex("bosstank/btkpain2.wav");
+    sound_pain3 = G_SoundIndex("bosstank/btkpain3.wav");
+    sound_death = G_SoundIndex("bosstank/btkdeth1.wav");
+    sound_search1 = G_SoundIndex("bosstank/btkunqv1.wav");
+    sound_search2 = G_SoundIndex("bosstank/btkunqv2.wav");
+    sound_tread = G_SoundIndex("bosstank/btkengn1.wav");
 }
 
 // RAFAEL (Powershield)
@@ -630,13 +630,13 @@ void SP_monster_supertank(edict_t *self)
 
     G_AddPrecache(supertank_precache);
 
-    gi.soundindex("gunner/gunatck3.wav");
-    gi.soundindex("infantry/infatck1.wav");
-    gi.soundindex("tank/rocket.wav");
+    G_SoundIndex("gunner/gunatck3.wav");
+    G_SoundIndex("infantry/infatck1.wav");
+    G_SoundIndex("tank/rocket.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss1/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/boss1/tris.md2");
 
     PrecacheGibs(supertank_gibs);
 
@@ -698,6 +698,6 @@ void SP_monster_boss5(edict_t *self)
 {
     self->spawnflags |= SPAWNFLAG_SUPERTANK_POWERSHIELD;
     SP_monster_supertank(self);
-    gi.soundindex("weapons/railgr1a.wav");
+    G_SoundIndex("weapons/railgr1a.wav");
     self->s.skinnum = 2;
 }

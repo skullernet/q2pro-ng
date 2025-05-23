@@ -19,9 +19,9 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->clipmask = MASK_PROJECTILE;
     bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
-    bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
+    bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 1;
-    bolt->s.sound = gi.soundindex("misc/lasfly.wav");
+    bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
     bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
@@ -91,8 +91,8 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->r.svflags |= SVF_PROJECTILE;
     ion->flags |= FL_DODGE;
     ion->s.renderfx |= RF_FULLBRIGHT;
-    ion->s.modelindex = gi.modelindex("models/objects/boomrang/tris.md2");
-    ion->s.sound = gi.soundindex("misc/lasfly.wav");
+    ion->s.modelindex = G_ModelIndex("models/objects/boomrang/tris.md2");
+    ion->s.sound = G_SoundIndex("misc/lasfly.wav");
     ion->r.ownernum = self->s.number;
     ion->touch = ionripper_touch;
     ion->nextthink = level.time + SEC(3);
@@ -175,7 +175,7 @@ void THINK(heat_think)(edict_t *self)
         vectoangles(self->movedir, self->s.angles);
 
         if (self->enemy != acquire) {
-            G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
+            G_StartSound(self, CHAN_WEAPON, G_SoundIndex("weapons/railgr1a.wav"), 1, 0.25f);
             self->enemy = acquire;
         }
     } else
@@ -200,7 +200,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
     heat->clipmask = MASK_PROJECTILE;
     heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
-    heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
+    heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
     heat->r.ownernum = self->s.number;
     heat->touch = rocket_touch;
     heat->speed = speed;
@@ -212,11 +212,11 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
     heat->dmg = damage;
     heat->radius_dmg = radius_damage;
     heat->dmg_radius = damage_radius;
-    heat->s.sound = gi.soundindex("weapons/rockfly.wav");
+    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
 
     if (visible(heat, self->enemy)) {
         heat->enemy = self->enemy;
-        G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1.f, 0.25f);
+        G_StartSound(heat, CHAN_WEAPON, G_SoundIndex("weapons/railgr1a.wav"), 1.f, 0.25f);
     }
 
     trap_LinkEntity(heat);
@@ -276,9 +276,9 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
     plasma->dmg = damage;
     plasma->radius_dmg = radius_damage;
     plasma->dmg_radius = damage_radius;
-    plasma->s.sound = gi.soundindex("weapons/rockfly.wav");
+    plasma->s.sound = G_SoundIndex("weapons/rockfly.wav");
 
-    plasma->s.modelindex = gi.modelindex("sprites/s_photon.sp2");
+    plasma->s.modelindex = G_ModelIndex("sprites/s_photon.sp2");
     plasma->s.effects |= EF_PLASMA | EF_ANIM_ALLFAST;
 
     trap_LinkEntity(plasma);
@@ -362,7 +362,7 @@ void THINK(Trap_Think)(edict_t *ent)
             ent->wait -= 2;
 
             if (spawn)
-                G_StartSound(ent, CHAN_VOICE, gi.soundindex("weapons/trapdown.wav"), 1, ATTN_IDLE);
+                G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/trapdown.wav"), 1, ATTN_IDLE);
 
             ent->delay += 2;
 
@@ -389,7 +389,7 @@ void THINK(Trap_Think)(edict_t *ent)
             cube->nextthink = 0;
             trap_LinkEntity(cube);
 
-            G_StartSound(best, CHAN_AUTO, gi.soundindex("misc/fhit3.wav"), 1, ATTN_NORM);
+            G_StartSound(best, CHAN_AUTO, G_SoundIndex("misc/fhit3.wav"), 1, ATTN_NORM);
 
             return;
         }
@@ -460,7 +460,7 @@ void THINK(Trap_Think)(edict_t *ent)
 
     VectorMA(best->velocity, speed, vec, best->velocity);
 
-    ent->s.sound = gi.soundindex("weapons/trapsuck.wav");
+    ent->s.sound = G_SoundIndex("weapons/trapsuck.wav");
 
     if (len >= 48)
         return;
@@ -540,14 +540,14 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     VectorSet(trap->r.maxs, 4, 4, 8);
     trap->die = trap_die;
     trap->health = 20;
-    trap->s.modelindex = gi.modelindex("models/weapons/z_trap/tris.md2");
+    trap->s.modelindex = G_ModelIndex("models/weapons/z_trap/tris.md2");
     trap->teammaster = self;
     trap->r.ownernum = self->s.number;
     trap->nextthink = level.time + SEC(1);
     trap->think = Trap_Think;
     trap->classname = "food_cube_trap";
     // RAFAEL 16-APR-98
-    trap->s.sound = gi.soundindex("weapons/traploop.wav");
+    trap->s.sound = G_SoundIndex("weapons/traploop.wav");
     // END 16-APR-98
 
     trap->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);

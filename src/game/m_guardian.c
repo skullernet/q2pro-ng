@@ -523,7 +523,7 @@ void THINK(heat_guardian_think)(edict_t *self)
 
     if (acquire) {
         if (self->enemy != acquire) {
-            G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
+            G_StartSound(self, CHAN_WEAPON, G_SoundIndex("weapons/railgr1a.wav"), 1, 0.25f);
             self->enemy = acquire;
         }
     } else
@@ -567,7 +567,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->flags |= FL_DAMAGEABLE;
     heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
-    heat->s.modelindex = gi.modelindex("models/objects/rocket/tris.md2");
+    heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
     heat->s.scale = 1.5f;
     heat->r.ownernum = self->s.number;
     heat->touch = rocket_touch;
@@ -587,12 +587,12 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->dmg = damage;
     heat->radius_dmg = radius_damage;
     heat->dmg_radius = damage_radius;
-    heat->s.sound = gi.soundindex("weapons/rockfly.wav");
+    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
 
     if (visible(heat, self->enemy)) {
         heat->oldenemy = self->enemy;
         heat->timestamp = level.time + SEC(0.6f);
-        G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
+        G_StartSound(heat, CHAN_WEAPON, G_SoundIndex("weapons/railgr1a.wav"), 1, 0.25f);
     }
 
     trap_LinkEntity(heat);
@@ -870,15 +870,15 @@ void MONSTERINFO_SETSKIN(guardian_setskin)(edict_t *self)
 
 static void guadian_precache(void)
 {
-    sound_step = gi.soundindex("zortemp/step.wav");
-    sound_charge = gi.soundindex("weapons/hyprbu1a.wav");
-    sound_spin_loop = gi.soundindex("weapons/hyprbl1a.wav");
-    sound_laser = gi.soundindex("weapons/laser2.wav");
-    sound_pew = gi.soundindex("makron/blaster.wav");
-    sound_sight = gi.soundindex("guardian/sight.wav");
-    sound_pain1 = gi.soundindex ("guardian/pain1.wav");
-    sound_pain2 = gi.soundindex("guardian/pain2.wav");
-    sound_death = gi.soundindex("guardian/death.wav");
+    sound_step = G_SoundIndex("zortemp/step.wav");
+    sound_charge = G_SoundIndex("weapons/hyprbu1a.wav");
+    sound_spin_loop = G_SoundIndex("weapons/hyprbl1a.wav");
+    sound_laser = G_SoundIndex("weapons/laser2.wav");
+    sound_pew = G_SoundIndex("makron/blaster.wav");
+    sound_sight = G_SoundIndex("guardian/sight.wav");
+    sound_pain1 = G_SoundIndex ("guardian/pain1.wav");
+    sound_pain2 = G_SoundIndex("guardian/pain2.wav");
+    sound_death = G_SoundIndex("guardian/death.wav");
 }
 
 /*QUAKED monster_guardian (1 .5 0) (-96 -96 -66) (96 96 62) Ambush Trigger_Spawn Sight
@@ -894,7 +894,7 @@ void SP_monster_guardian(edict_t *self)
 
     PrecacheGibs(guardian_gibs);
 
-    self->s.modelindex = gi.modelindex("models/monsters/guardian/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/guardian/tris.md2");
     VectorSet(self->r.mins, -78, -78, -66);
     VectorSet(self->r.maxs, 78, 78, 76);
     self->movetype = MOVETYPE_STEP;

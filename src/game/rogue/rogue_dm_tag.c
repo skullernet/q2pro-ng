@@ -156,7 +156,7 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->s.renderfx = RF_GLOW;
     VectorSet(tag_token->r.mins, -15, -15, -15);
     VectorSet(tag_token->r.maxs, 15, 15, 15);
-    tag_token->s.modelindex = gi.modelindex(tag_token->item->world_model);
+    tag_token->s.modelindex = G_ModelIndex(tag_token->item->world_model);
     tag_token->r.solid = SOLID_TRIGGER;
     tag_token->movetype = MOVETYPE_TOSS;
     tag_token->touch = NULL;

@@ -891,7 +891,7 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -955,13 +955,13 @@ bool MONSTERINFO_BLOCKED(tank_blocked)(edict_t *self, float dist)
 
 static void tank_precache(void)
 {
-    sound_thud = gi.soundindex("tank/tnkdeth2.wav");
-    sound_idle = gi.soundindex("tank/tnkidle1.wav");
-    sound_die = gi.soundindex("tank/death.wav");
-    sound_step = gi.soundindex("tank/step.wav");
-    sound_windup = gi.soundindex("tank/tnkatck4.wav");
-    sound_strike = gi.soundindex("tank/tnkatck5.wav");
-    sound_sight = gi.soundindex("tank/sight1.wav");
+    sound_thud = G_SoundIndex("tank/tnkdeth2.wav");
+    sound_idle = G_SoundIndex("tank/tnkidle1.wav");
+    sound_die = G_SoundIndex("tank/death.wav");
+    sound_step = G_SoundIndex("tank/step.wav");
+    sound_windup = G_SoundIndex("tank/tnkatck4.wav");
+    sound_strike = G_SoundIndex("tank/tnkatck5.wav");
+    sound_sight = G_SoundIndex("tank/sight1.wav");
 }
 
 /*QUAKED monster_tank (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight
@@ -976,7 +976,7 @@ void SP_monster_tank(edict_t *self)
         return;
     }
 
-    self->s.modelindex = gi.modelindex("models/monsters/tank/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
     VectorSet(self->r.mins, -32, -32, -16);
     VectorSet(self->r.maxs, 32, 32, 64);
     self->movetype = MOVETYPE_STEP;
@@ -984,13 +984,13 @@ void SP_monster_tank(edict_t *self)
 
     G_AddPrecache(tank_precache);
 
-    gi.soundindex("tank/tnkatck1.wav");
-    gi.soundindex("tank/tnkatk2a.wav");
-    gi.soundindex("tank/tnkatk2b.wav");
-    gi.soundindex("tank/tnkatk2c.wav");
-    gi.soundindex("tank/tnkatk2d.wav");
-    gi.soundindex("tank/tnkatk2e.wav");
-    gi.soundindex("tank/tnkatck3.wav");
+    G_SoundIndex("tank/tnkatck1.wav");
+    G_SoundIndex("tank/tnkatk2a.wav");
+    G_SoundIndex("tank/tnkatk2b.wav");
+    G_SoundIndex("tank/tnkatk2c.wav");
+    G_SoundIndex("tank/tnkatk2d.wav");
+    G_SoundIndex("tank/tnkatk2e.wav");
+    G_SoundIndex("tank/tnkatck3.wav");
 
     PrecacheGibs(tank_gibs);
 
@@ -998,11 +998,11 @@ void SP_monster_tank(edict_t *self)
         self->health = 1000 * st.health_multiplier;
         self->gib_health = -225;
         self->count = 1;
-        sound_pain2 = gi.soundindex("tank/pain.wav");
+        sound_pain2 = G_SoundIndex("tank/pain.wav");
     } else {
         self->health = 750 * st.health_multiplier;
         self->gib_health = -200;
-        sound_pain = gi.soundindex("tank/tnkpain2.wav");
+        sound_pain = G_SoundIndex("tank/tnkpain2.wav");
     }
 
     self->monsterinfo.scale = MODEL_SCALE;
@@ -1073,11 +1073,11 @@ void SP_monster_tank_stand(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->model = "models/monsters/tank/tris.md2";
-    self->s.modelindex = gi.modelindex(self->model);
+    self->s.modelindex = G_ModelIndex(self->model);
     self->s.frame = FRAME_stand01;
     self->s.skinnum = 2;
 
-    gi.soundindex("misc/bigtele.wav");
+    G_SoundIndex("misc/bigtele.wav");
 
     VectorSet(self->r.mins, -32, -32, -16);
     VectorSet(self->r.maxs, 32, 32, 64);

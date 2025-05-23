@@ -496,7 +496,7 @@ void PAIN(insane_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
         l = 75;
     else
         l = 100;
-    G_StartSound(self, CHAN_VOICE, gi.soundindex(va("player/male/pain%d_%d.wav", l, r)), 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, G_SoundIndex(va("player/male/pain%d_%d.wav", l, r)), 1, ATTN_IDLE);
 
     // Don't go into pain frames if crucified.
     if (self->spawnflags & SPAWNFLAG_INSANE_CRUCIFIED) {
@@ -587,7 +587,7 @@ static const gib_def_t insane_gibs[] = {
 void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_IDLE);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_IDLE);
         ThrowGibs(self, damage, insane_gibs);
         self->deadflag = true;
         return;
@@ -596,7 +596,7 @@ void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag)
         return;
 
-    G_StartSound(self, CHAN_VOICE, gi.soundindex(va("player/male/death%d.wav", irandom2(1, 5))), 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, G_SoundIndex(va("player/male/death%d.wav", irandom2(1, 5))), 1, ATTN_IDLE);
 
     self->deadflag = true;
     self->takedamage = true;
@@ -614,21 +614,21 @@ void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
 static void insane_precache1(void)
 {
-    sound_fist = gi.soundindex("insane/insane11.wav");
+    sound_fist = G_SoundIndex("insane/insane11.wav");
 }
 
 static void insane_precache2(void)
 {
-    sound_shake = gi.soundindex("insane/insane5.wav");
-    sound_moan = gi.soundindex("insane/insane7.wav");
-    sound_scream[0] = gi.soundindex("insane/insane1.wav");
-    sound_scream[1] = gi.soundindex("insane/insane2.wav");
-    sound_scream[2] = gi.soundindex("insane/insane3.wav");
-    sound_scream[3] = gi.soundindex("insane/insane4.wav");
-    sound_scream[4] = gi.soundindex("insane/insane6.wav");
-    sound_scream[5] = gi.soundindex("insane/insane8.wav");
-    sound_scream[6] = gi.soundindex("insane/insane9.wav");
-    sound_scream[7] = gi.soundindex("insane/insane10.wav");
+    sound_shake = G_SoundIndex("insane/insane5.wav");
+    sound_moan = G_SoundIndex("insane/insane7.wav");
+    sound_scream[0] = G_SoundIndex("insane/insane1.wav");
+    sound_scream[1] = G_SoundIndex("insane/insane2.wav");
+    sound_scream[2] = G_SoundIndex("insane/insane3.wav");
+    sound_scream[3] = G_SoundIndex("insane/insane4.wav");
+    sound_scream[4] = G_SoundIndex("insane/insane6.wav");
+    sound_scream[5] = G_SoundIndex("insane/insane8.wav");
+    sound_scream[6] = G_SoundIndex("insane/insane9.wav");
+    sound_scream[7] = G_SoundIndex("insane/insane10.wav");
 }
 
 /*QUAKED misc_insane (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn CRAWL CRUCIFIED STAND_GROUND ALWAYS_STAND QUIET
@@ -647,7 +647,7 @@ void SP_misc_insane(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/insane/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/insane/tris.md2");
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 32);

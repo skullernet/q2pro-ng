@@ -106,7 +106,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
         return NULL;
     }
 
-    gib->s.modelindex = gi.modelindex(gibname);
+    gib->s.modelindex = G_ModelIndex(gibname);
     gib->s.modelindex2 = 0;
     gib->s.scale = scale;
     gib->s.alpha = self->s.alpha;
@@ -204,7 +204,7 @@ void ThrowClientHead(edict_t *self, int damage)
 
     self->s.origin[2] += 32;
     self->s.frame = 0;
-    self->s.modelindex = gi.modelindex(gibname);
+    self->s.modelindex = G_ModelIndex(gibname);
     VectorSet(self->r.mins, -16, -16, 0);
     VectorSet(self->r.maxs, 16, 16, 16);
 
@@ -249,7 +249,7 @@ void ThrowGibs(edict_t *self, int damage, const gib_def_t *gibs)
 void PrecacheGibs(const gib_def_t *gibs)
 {
     for (const gib_def_t *gib = gibs; gib->gibname; gib++)
-        gi.modelindex(gib->gibname);
+        G_ModelIndex(gib->gibname);
 }
 
 void BecomeExplosion1(edict_t *self)
@@ -828,8 +828,8 @@ void SP_func_explosive(edict_t *self)
 
     self->movetype = MOVETYPE_PUSH;
 
-    gi.modelindex("models/objects/debris1/tris.md2");
-    gi.modelindex("models/objects/debris2/tris.md2");
+    G_ModelIndex("models/objects/debris1/tris.md2");
+    G_ModelIndex("models/objects/debris2/tris.md2");
 
     trap_SetBrushModel(self, self->model);
 
@@ -865,7 +865,7 @@ void SP_func_explosive(edict_t *self)
 
     if (self->sounds) {
         if (self->sounds == 1)
-            self->noise_index = gi.soundindex("world/brkglas.wav");
+            self->noise_index = G_SoundIndex("world/brkglas.wav");
         else
             gi.dprintf("%s: invalid \"sounds\" %d\n", etos(self), self->sounds);
     }
@@ -920,7 +920,7 @@ void THINK(barrel_burn)(edict_t *self)
         self->think = barrel_explode;
 
     self->s.morefx |= EFX_BARREL_EXPLODING;
-    self->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
+    self->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     self->nextthink = level.time + FRAME_TIME;
 }
 
@@ -975,13 +975,13 @@ void SP_misc_explobox(edict_t *self)
     }
 
     PrecacheGibs(barrel_gibs);
-    gi.soundindex("weapons/bfg__l1a.wav");
+    G_SoundIndex("weapons/bfg__l1a.wav");
 
     self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_STEP;
 
     self->model = "models/objects/barrels/tris.md2";
-    self->s.modelindex = gi.modelindex(self->model);
+    self->s.modelindex = G_ModelIndex(self->model);
     VectorSet(self->r.mins, -16, -16, 0);
     VectorSet(self->r.maxs, 16, 16, 40);
 
@@ -1046,14 +1046,14 @@ void SP_misc_blackhole(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     VectorSet(ent->r.mins, -64, -64, 0);
     VectorSet(ent->r.maxs, 64, 64, 8);
-    ent->s.modelindex = gi.modelindex("models/objects/black/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/black/tris.md2");
     ent->s.renderfx = RF_TRANSLUCENT | RF_NOSHADOW;
     ent->use = misc_blackhole_use;
     ent->think = misc_blackhole_think;
     ent->nextthink = level.time + HZ(5);
 
     if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE)
-        ent->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("world/blackhole.wav"), 1, ATTN_NORM);
+        ent->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("world/blackhole.wav"), 1, ATTN_NORM);
 
     trap_LinkEntity(ent);
 }
@@ -1077,7 +1077,7 @@ void SP_misc_eastertank(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -32, -32, -16);
     VectorSet(ent->r.maxs, 32, 32, 32);
-    ent->s.modelindex = gi.modelindex("models/monsters/tank/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
     ent->s.frame = 254;
     ent->think = misc_eastertank_think;
     ent->nextthink = level.time + HZ(5);
@@ -1103,7 +1103,7 @@ void SP_misc_easterchick(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -32, -32, 0);
     VectorSet(ent->r.maxs, 32, 32, 32);
-    ent->s.modelindex = gi.modelindex("models/monsters/bitch/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 208;
     ent->think = misc_easterchick_think;
     ent->nextthink = level.time + HZ(5);
@@ -1129,7 +1129,7 @@ void SP_misc_easterchick2(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -32, -32, 0);
     VectorSet(ent->r.maxs, 32, 32, 32);
-    ent->s.modelindex = gi.modelindex("models/monsters/bitch/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 248;
     ent->think = misc_easterchick2_think;
     ent->nextthink = level.time + HZ(5);
@@ -1149,14 +1149,14 @@ void THINK(commander_body_think)(edict_t *self)
         self->nextthink = 0;
 
     if (self->s.frame == 22)
-        G_StartSound(self, CHAN_BODY, gi.soundindex("tank/thud.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_BODY, G_SoundIndex("tank/thud.wav"), 1, ATTN_NORM);
 }
 
 void USE(commander_body_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->think = commander_body_think;
     self->nextthink = level.time + HZ(10);
-    G_StartSound(self, CHAN_BODY, gi.soundindex("tank/pain.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("tank/pain.wav"), 1, ATTN_NORM);
 }
 
 void THINK(commander_body_drop)(edict_t *self)
@@ -1170,7 +1170,7 @@ void SP_monster_commander_body(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_BBOX;
     self->model = "models/monsters/commandr/tris.md2";
-    self->s.modelindex = gi.modelindex(self->model);
+    self->s.modelindex = G_ModelIndex(self->model);
     VectorSet(self->r.mins, -32, -32, 0);
     VectorSet(self->r.maxs, 32, 32, 48);
     self->use = commander_body_use;
@@ -1178,8 +1178,8 @@ void SP_monster_commander_body(edict_t *self)
     self->flags = FL_GODMODE;
     trap_LinkEntity(self);
 
-    gi.soundindex("tank/thud.wav");
-    gi.soundindex("tank/pain.wav");
+    G_SoundIndex("tank/thud.wav");
+    G_SoundIndex("tank/pain.wav");
 
     self->think = commander_body_drop;
     self->nextthink = level.time + HZ(2);
@@ -1200,7 +1200,7 @@ void SP_misc_banner(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/banner/tris.md2");
     ent->s.frame = irandom1(16);
     ent->s.renderfx |= RF_NOSHADOW;
     trap_LinkEntity(ent);
@@ -1231,7 +1231,7 @@ void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attac
     if (self->health > -30)
         return;
 
-    G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
     ThrowGibs(self, damage, deadsoldier_gibs);
 }
 
@@ -1245,7 +1245,7 @@ void SP_misc_deadsoldier(edict_t *ent)
 
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    ent->s.modelindex = gi.modelindex("models/deadbods/dude/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/deadbods/dude/tris.md2");
 
     // Defaults to frame 0
     if (ent->spawnflags & SPAWNFLAGS_DEADSOLDIER_ON_STOMACH)
@@ -1303,7 +1303,7 @@ void SP_misc_viper(edict_t *ent)
 
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ships/viper/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ships/viper/tris.md2");
     VectorSet(ent->r.mins, -16, -16, 0);
     VectorSet(ent->r.maxs, 16, 16, 32);
 
@@ -1325,7 +1325,7 @@ void SP_misc_bigviper(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -176, -120, -24);
     VectorSet(ent->r.maxs, 176, 120, 72);
-    ent->s.modelindex = gi.modelindex("models/ships/bigviper/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ships/bigviper/tris.md2");
     trap_LinkEntity(ent);
 }
 
@@ -1386,7 +1386,7 @@ void SP_misc_viper_bomb(edict_t *self)
     VectorSet(self->r.mins, -8, -8, -8);
     VectorSet(self->r.maxs, 8, 8, 8);
 
-    self->s.modelindex = gi.modelindex("models/objects/bomb/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/objects/bomb/tris.md2");
 
     if (!self->dmg)
         self->dmg = 1000;
@@ -1424,7 +1424,7 @@ void SP_misc_strogg_ship(edict_t *ent)
 
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ships/strogg1/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ships/strogg1/tris.md2");
     VectorSet(ent->r.mins, -16, -16, 0);
     VectorSet(ent->r.maxs, 16, 16, 32);
 
@@ -1460,7 +1460,7 @@ void SP_misc_satellite_dish(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -64, -64, 0);
     VectorSet(ent->r.maxs, 64, 64, 128);
-    ent->s.modelindex = gi.modelindex("models/objects/satellite/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/satellite/tris.md2");
     ent->use = misc_satellite_dish_use;
     trap_LinkEntity(ent);
 }
@@ -1472,7 +1472,7 @@ void SP_light_mine1(edict_t *ent)
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
     ent->r.svflags = SVF_DEADMONSTER;
-    ent->s.modelindex = gi.modelindex("models/objects/minelite/light1/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/minelite/light1/tris.md2");
     trap_LinkEntity(ent);
 }
 
@@ -1483,7 +1483,7 @@ void SP_light_mine2(edict_t *ent)
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
     ent->r.svflags = SVF_DEADMONSTER;
-    ent->s.modelindex = gi.modelindex("models/objects/minelite/light2/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/minelite/light2/tris.md2");
     trap_LinkEntity(ent);
 }
 
@@ -1492,7 +1492,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_arm(edict_t *ent)
 {
-    ent->s.modelindex = gi.modelindex("models/objects/gibs/arm/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/gibs/arm/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1510,7 +1510,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_leg(edict_t *ent)
 {
-    ent->s.modelindex = gi.modelindex("models/objects/gibs/leg/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/gibs/leg/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1528,7 +1528,7 @@ Intended for use with the target_spawner
 */
 void SP_misc_gib_head(edict_t *ent)
 {
-    ent->s.modelindex = gi.modelindex("models/objects/gibs/head/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/gibs/head/tris.md2");
     ent->r.solid = SOLID_NOT;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
@@ -1814,7 +1814,7 @@ void SP_misc_teleporter(edict_t *ent)
 {
     edict_t *trig;
 
-    ent->s.modelindex = gi.modelindex("models/objects/dmspot/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/dmspot/tris.md2");
     ent->s.skinnum = 1;
     if (level.is_n64 || (ent->spawnflags & SPAWNFLAG_TEMEPORTER_N64_EFFECT))
         ent->s.morefx = EFX_TELEPORTER2;
@@ -1822,7 +1822,7 @@ void SP_misc_teleporter(edict_t *ent)
         ent->s.effects = EF_TELEPORTER;
     ent->s.renderfx |= RF_NOSHADOW;
     if (!(ent->spawnflags & SPAWNFLAG_TELEPORTER_NO_SOUND))
-        ent->s.sound = gi.soundindex("world/amb10.wav");
+        ent->s.sound = G_SoundIndex("world/amb10.wav");
     ent->r.solid = SOLID_BBOX;
 
     VectorSet(ent->r.mins, -32, -32, -24);
@@ -1853,7 +1853,7 @@ void SP_misc_teleporter_dest(edict_t *ent)
     if (level.is_n64)
         return;
 
-    ent->s.modelindex = gi.modelindex("models/objects/dmspot/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/objects/dmspot/tris.md2");
     ent->s.skinnum = 0;
     ent->s.renderfx |= RF_NOSHADOW;
     ent->r.solid = SOLID_BBOX;
@@ -1898,7 +1898,7 @@ void SP_misc_flare(edict_t *ent)
 
     if (st.image && *st.image) {
         ent->s.renderfx |= RF_CUSTOMSKIN;
-        ent->s.frame = gi.imageindex(st.image);
+        ent->s.frame = G_ImageIndex(st.image);
     }
 
     VectorSet(ent->r.mins, -32, -32, -32);
@@ -1926,7 +1926,7 @@ Ship hologram seen in the N64 version.
 void SP_misc_hologram(edict_t *ent)
 {
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ships/strogg1/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ships/strogg1/tris.md2");
     VectorSet(ent->r.mins, -16, -16, 0);
     VectorSet(ent->r.maxs, 16, 16, 32);
     ent->s.morefx = EFX_HOLOGRAM;
@@ -1974,7 +1974,7 @@ void THINK(fire_fly)(edict_t *self)
     fireball->velocity[2] = (self->speed * 1.75f) + (frandom() * 200);
     crandom_vec(fireball->avelocity, 360);
     fireball->classname = "fireball";
-    fireball->s.modelindex = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
+    fireball->s.modelindex = G_ModelIndex("models/objects/gibs/sm_meat/tris.md2");
     VectorCopy(self->s.origin, fireball->s.origin);
     fireball->nextthink = level.time + SEC(5);
     fireball->think = G_FreeEdict;
@@ -2170,7 +2170,7 @@ static void SetupMannequinModel(edict_t *self, int model_type, const char *weapo
         skin = default_skin;
 
     self->model = G_CopyString(va("players/%s/tris.md2", model_name));
-    self->s.modelindex2 = gi.modelindex(va("players/%s/%s.md2", model_name, weapon));
+    self->s.modelindex2 = G_ModelIndex(va("players/%s/%s.md2", model_name, weapon));
     trap_SetConfigstring(CS_PLAYERSKINS + self->s.skinnum, va("mannequin\\%s/%s", model_name, skin));
 }
 
@@ -2235,7 +2235,7 @@ void USE(misc_model_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_misc_model(edict_t *ent)
 {
     if (ent->model && ent->model[0])
-        ent->s.modelindex = gi.modelindex(ent->model);
+        ent->s.modelindex = G_ModelIndex(ent->model);
 
     if (ent->spawnflags & SPAWNFLAG_MODEL_TOGGLE) {
         ent->use = misc_model_use;

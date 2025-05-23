@@ -106,7 +106,7 @@ void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*updat
             beam->s.skinnum = 0xf2f2f0f0;
 
         beam->think = beam_think;
-        beam->s.sound = gi.soundindex("misc/lasfly.wav");
+        beam->s.sound = G_SoundIndex("misc/lasfly.wav");
         beam->postthink = update_func;
         if (secondary)
             self->beam2 = beam;

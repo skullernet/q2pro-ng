@@ -1353,6 +1353,10 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param);
 void G_BecomeExplosion(edict_t *ent, entity_event_t event, const vec3_t normal);
 void G_SnapVectorTowards(vec3_t v, const vec3_t to);
 
+int G_ModelIndex(const char *name);
+int G_SoundIndex(const char *name);
+int G_ImageIndex(const char *name);
+
 //
 // g_spawn.c
 //

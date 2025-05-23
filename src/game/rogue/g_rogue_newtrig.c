@@ -162,7 +162,7 @@ void USE(trigger_disguise_use)(edict_t *self, edict_t *other, edict_t *activator
 void SP_trigger_disguise(edict_t *self)
 {
     if (!level.disguise_icon)
-        level.disguise_icon = gi.imageindex("i_disguise");
+        level.disguise_icon = G_ImageIndex("i_disguise");
 
     if (self->spawnflags & SPAWNFLAG_DISGUISE_START_ON)
         self->r.solid = SOLID_TRIGGER;

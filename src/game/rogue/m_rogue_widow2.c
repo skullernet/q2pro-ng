@@ -217,7 +217,7 @@ static void widow2_ready_spawn(edict_t *self)
 
 static void widow2_step(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep1.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("widow/bwstep1.wav"), 1, ATTN_NORM);
 }
 
 static const mframe_t widow2_frames_stand[] = {
@@ -431,7 +431,7 @@ static void Widow2Tongue(edict_t *self)
     if (!te) {
         self->beam = te = G_Spawn();
         te->s.renderfx = RF_BEAM;
-        te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+        te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
         te->s.othernum = ENTITYNUM_NONE;
         te->r.ownernum = self->s.number;
         te->think = widow2_tongue_think;
@@ -850,14 +850,14 @@ void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag && M_CheckGib(self, mod)) {
         clipped = min(damage, 100);
 
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         for (n = 0; n < 2; n++)
             ThrowWidowGibLoc(self, "models/objects/gibs/bone/tris.md2", clipped, GIB_NONE, NULL, false);
         for (n = 0; n < 3; n++)
             ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", clipped, GIB_NONE, NULL, false);
         for (n = 0; n < 3; n++) {
             ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib1/tris.md2", clipped, GIB_METALLIC, NULL, 0, false);
-            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", clipped, GIB_METALLIC, NULL, gi.soundindex("misc/fhit3.wav"), false);
+            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", clipped, GIB_METALLIC, NULL, G_SoundIndex("misc/fhit3.wav"), false);
         }
         for (n = 0; n < 2; n++) {
             ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib3/tris.md2", clipped, GIB_METALLIC, NULL, 0, false);
@@ -901,42 +901,42 @@ bool MONSTERINFO_CHECKATTACK(Widow2_CheckAttack)(edict_t *self)
 static void Widow2Precache(void)
 {
     // cache in all of the stalker stuff, widow stuff, spawngro stuff, gibs
-    gi.soundindex("parasite/parpain1.wav");
-    gi.soundindex("parasite/parpain2.wav");
-    gi.soundindex("parasite/pardeth1.wav");
-    gi.soundindex("parasite/paratck1.wav");
-    gi.soundindex("parasite/parsght1.wav");
-    gi.soundindex("infantry/melee2.wav");
-    gi.soundindex("misc/fhit3.wav");
+    G_SoundIndex("parasite/parpain1.wav");
+    G_SoundIndex("parasite/parpain2.wav");
+    G_SoundIndex("parasite/pardeth1.wav");
+    G_SoundIndex("parasite/paratck1.wav");
+    G_SoundIndex("parasite/parsght1.wav");
+    G_SoundIndex("infantry/melee2.wav");
+    G_SoundIndex("misc/fhit3.wav");
 
-    gi.soundindex("tank/tnkatck3.wav");
-    gi.soundindex("weapons/disrupt.wav");
-    gi.soundindex("weapons/disint2.wav");
+    G_SoundIndex("tank/tnkatck3.wav");
+    G_SoundIndex("weapons/disrupt.wav");
+    G_SoundIndex("weapons/disint2.wav");
 
-    gi.modelindex("models/monsters/stalker/tris.md2");
-    gi.modelindex("models/items/spawngro3/tris.md2");
-    gi.modelindex("models/objects/gibs/sm_metal/tris.md2");
-    gi.modelindex("models/objects/laser/tris.md2");
-    gi.modelindex("models/proj/disintegrator/tris.md2");
+    G_ModelIndex("models/monsters/stalker/tris.md2");
+    G_ModelIndex("models/items/spawngro3/tris.md2");
+    G_ModelIndex("models/objects/gibs/sm_metal/tris.md2");
+    G_ModelIndex("models/objects/laser/tris.md2");
+    G_ModelIndex("models/proj/disintegrator/tris.md2");
 
-    gi.modelindex("models/monsters/blackwidow/gib1/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib2/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib3/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib4/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib1/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib3/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib4/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib1/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib2/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib3/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib4/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib1/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib2/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib3/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib4/tris.md2");
 }
 
 static void window2_precache_global(void)
 {
-    sound_pain1 = gi.soundindex("widow/bw2pain1.wav");
-    sound_pain2 = gi.soundindex("widow/bw2pain2.wav");
-    sound_pain3 = gi.soundindex("widow/bw2pain3.wav");
-    sound_death = gi.soundindex("widow/death.wav");
-    sound_search1 = gi.soundindex("bosshovr/bhvunqv1.wav");
-    sound_tentacles_retract = gi.soundindex("brain/brnatck3.wav");
+    sound_pain1 = G_SoundIndex("widow/bw2pain1.wav");
+    sound_pain2 = G_SoundIndex("widow/bw2pain2.wav");
+    sound_pain3 = G_SoundIndex("widow/bw2pain3.wav");
+    sound_death = G_SoundIndex("widow/death.wav");
+    sound_search1 = G_SoundIndex("bosshovr/bhvunqv1.wav");
+    sound_tentacles_retract = G_SoundIndex("brain/brnatck3.wav");
 }
 
 /*QUAKED monster_widow2 (1 .5 0) (-70 -70 0) (70 70 144) Ambush Trigger_Spawn Sight
@@ -950,11 +950,11 @@ void SP_monster_widow2(edict_t *self)
 
     G_AddPrecache(window2_precache_global);
 
-    //  self->s.sound = gi.soundindex ("bosshovr/bhvengn1.wav");
+    //  self->s.sound = G_SoundIndex ("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/blackwidow2/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/blackwidow2/tris.md2");
     VectorSet(self->r.mins, -70, -70, 0);
     VectorSet(self->r.maxs, 70, 70, 144);
 
@@ -1093,7 +1093,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     VectorMA(self->velocity, vscale, vd, gib->velocity);
     ClipGibVelocity(gib);
 
-    gib->s.modelindex = gi.modelindex(gibname);
+    gib->s.modelindex = G_ModelIndex(gibname);
 
     if (sized) {
         gib->style = hitsound;
@@ -1109,7 +1109,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         gib->gravity = 0.25f;
         gib->touch = widow_gib_touch;
         gib->r.ownernum = self->s.number;
-        if (gib->s.modelindex == gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2")) {
+        if (gib->s.modelindex == G_ModelIndex("models/monsters/blackwidow2/gib2/tris.md2")) {
             VectorSet(gib->r.mins, -10, -10, 0);
             VectorSet(gib->r.maxs, 10, 10, 10);
         } else {
@@ -1391,7 +1391,7 @@ static void WidowExplosionLeg(edict_t *self)
     G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", 200, GIB_METALLIC, startpoint,
-                       gi.soundindex("misc/fhit3.wav"), false);
+                       G_SoundIndex("misc/fhit3.wav"), false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
 
@@ -1400,7 +1400,7 @@ static void WidowExplosionLeg(edict_t *self)
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib1/tris.md2", 300, GIB_METALLIC, startpoint,
-                       gi.soundindex("misc/fhit3.wav"), false);
+                       G_SoundIndex("misc/fhit3.wav"), false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
 }
@@ -1429,6 +1429,6 @@ static void ThrowArm2(edict_t *self)
     G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib4/tris.md2", 200, GIB_METALLIC, startpoint,
-                       gi.soundindex("misc/fhit3.wav"), false);
+                       G_SoundIndex("misc/fhit3.wav"), false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
 }

@@ -555,11 +555,11 @@ bool MONSTERINFO_CHECKATTACK(Boss2_CheckAttack)(edict_t *self)
 
 static void boss2_precache(void)
 {
-    sound_pain1 = gi.soundindex("bosshovr/bhvpain1.wav");
-    sound_pain2 = gi.soundindex("bosshovr/bhvpain2.wav");
-    sound_pain3 = gi.soundindex("bosshovr/bhvpain3.wav");
-    sound_death = gi.soundindex("bosshovr/bhvdeth1.wav");
-    sound_search1 = gi.soundindex("bosshovr/bhvunqv1.wav");
+    sound_pain1 = G_SoundIndex("bosshovr/bhvpain1.wav");
+    sound_pain2 = G_SoundIndex("bosshovr/bhvpain2.wav");
+    sound_pain3 = G_SoundIndex("bosshovr/bhvpain3.wav");
+    sound_death = G_SoundIndex("bosshovr/bhvdeth1.wav");
+    sound_search1 = G_SoundIndex("bosshovr/bhvunqv1.wav");
 }
 
 /*QUAKED monster_boss2 (1 .5 0) (-56 -56 0) (56 56 80) Ambush Trigger_Spawn Sight Hyperblaster
@@ -573,18 +573,18 @@ void SP_monster_boss2(edict_t *self)
 
     G_AddPrecache(boss2_precache);
 
-    gi.soundindex("tank/rocket.wav");
+    G_SoundIndex("tank/rocket.wav");
 
     if (self->spawnflags & SPAWNFLAG_BOSS2_N64)
-        gi.soundindex("flyer/flyatck3.wav");
+        G_SoundIndex("flyer/flyatck3.wav");
     else
-        gi.soundindex("infantry/infatck1.wav");
+        G_SoundIndex("infantry/infatck1.wav");
 
-    self->monsterinfo.weapon_sound = gi.soundindex("bosshovr/bhvengn1.wav");
+    self->monsterinfo.weapon_sound = G_SoundIndex("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss2/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/boss2/tris.md2");
 
     PrecacheGibs(boss2_gibs);
 

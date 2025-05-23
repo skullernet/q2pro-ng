@@ -52,7 +52,7 @@ void SP_rotating_light(edict_t *self)
     self->movetype = MOVETYPE_STOP;
     self->r.solid = SOLID_BBOX;
 
-    self->s.modelindex = gi.modelindex("models/objects/light/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/objects/light/tris.md2");
 
     self->s.frame = 0;
 
@@ -81,7 +81,7 @@ void SP_rotating_light(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_ROTATING_LIGHT_ALARM)
-        self->moveinfo.sound_start = gi.soundindex("misc/alarm.wav");
+        self->moveinfo.sound_start = G_SoundIndex("misc/alarm.wav");
 
     trap_LinkEntity(self);
 }

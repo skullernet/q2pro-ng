@@ -164,13 +164,13 @@ void SP_trigger_multiple(edict_t *ent)
 {
     // [Paril-KEX] PSX
     if (st.noise && *st.noise)
-        ent->noise_index = gi.soundindex(st.noise);
+        ent->noise_index = G_SoundIndex(st.noise);
     else if (ent->sounds == 1)
-        ent->noise_index = gi.soundindex("misc/secret.wav");
+        ent->noise_index = G_SoundIndex("misc/secret.wav");
     else if (ent->sounds == 2)
-        ent->noise_index = gi.soundindex("misc/talk.wav");
+        ent->noise_index = G_SoundIndex("misc/talk.wav");
     else if (ent->sounds == 3)
-        ent->noise_index = gi.soundindex("misc/trigger1.wav");
+        ent->noise_index = G_SoundIndex("misc/trigger1.wav");
 
     if (!ent->wait)
         ent->wait = 0.2f;
@@ -285,11 +285,11 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
             return;
         self->touch_debounce_time = level.time + SEC(5);
         gi.centerprintf(activator, "You need %s", self->item->pickup_name_definite);
-        G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/keytry.wav"), 1, ATTN_NORM);
+        G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keytry.wav"), 1, ATTN_NORM);
         return;
     }
 
-    G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/keyuse.wav"), 1, ATTN_NORM);
+    G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keyuse.wav"), 1, ATTN_NORM);
     if (coop->integer) {
         edict_t *ent;
 
@@ -363,8 +363,8 @@ void SP_trigger_key(edict_t *self)
         return;
     }
 
-    gi.soundindex("misc/keytry.wav");
-    gi.soundindex("misc/keyuse.wav");
+    G_SoundIndex("misc/keytry.wav");
+    G_SoundIndex("misc/keyuse.wav");
 
     self->use = trigger_key_use;
 }
@@ -397,14 +397,14 @@ void USE(trigger_counter_use)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->count) {
         if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
             gi.centerprintf(activator, "%d more to go...", self->count);
-            G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM);
+            G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
         }
         return;
     }
 
     if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
         gi.centerprintf(activator, "Sequence completed!");
-        G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM);
+        G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
     }
     self->activator = activator;
     multi_trigger(self);
@@ -482,7 +482,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             other->client->oldgroundentity = other->groundentity;
             if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT) && (other->fly_sound_debounce_time < level.time)) {
                 other->fly_sound_debounce_time = level.time + SEC(1.5f);
-                G_StartSound(other, CHAN_AUTO, gi.soundindex("misc/windfly.wav"), 1, ATTN_NORM);
+                G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/windfly.wav"), 1, ATTN_NORM);
             }
         }
     }
@@ -562,7 +562,7 @@ void SP_trigger_push(edict_t *self)
 {
     InitTrigger(self);
     if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT))
-        gi.soundindex("misc/windfly.wav");
+        G_SoundIndex("misc/windfly.wav");
     self->touch = trigger_push_touch;
 
     // RAFAEL
@@ -744,7 +744,7 @@ void SP_trigger_hurt(edict_t *self)
 {
     InitTrigger(self);
 
-    self->noise_index = gi.soundindex("world/electro.wav");
+    self->noise_index = G_SoundIndex("world/electro.wav");
 
     if (self->spawnflags & SPAWNFLAG_HURT_PASSIVE) {
         self->think = hurt_think;

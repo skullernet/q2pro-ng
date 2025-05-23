@@ -572,7 +572,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
          ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.invincible_time > level.time))) {
     // ROGUE
         if (targ->pain_debounce_time < level.time) {
-            G_StartSound(targ, CHAN_ITEM, gi.soundindex("items/protect4.wav"), 1, ATTN_NORM);
+            G_StartSound(targ, CHAN_ITEM, G_SoundIndex("items/protect4.wav"), 1, ATTN_NORM);
             targ->pain_debounce_time = level.time + SEC(2);
         }
         take = 0;

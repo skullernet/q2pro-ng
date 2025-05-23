@@ -211,7 +211,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     base->s.angles[PITCH] = 0;
     VectorSet(base->r.mins, -16, -16, -24);
     VectorSet(base->r.maxs, 16, 16, 32);
-    base->s.modelindex = gi.modelindex("models/objects/dopplebase/tris.md2");
+    base->s.modelindex = G_ModelIndex("models/objects/dopplebase/tris.md2");
     base->s.alpha = 0.1f;
     base->teammaster = ent;
     base->flags |= FL_DAMAGEABLE;
@@ -249,7 +249,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
 
     // [Paril-KEX]
     body->r.ownernum = ent->s.number;
-    G_StartSound(body, CHAN_AUTO, gi.soundindex("medic_commander/monsterspawn1.wav"), 1, ATTN_NORM);
+    G_StartSound(body, CHAN_AUTO, G_SoundIndex("medic_commander/monsterspawn1.wav"), 1, ATTN_NORM);
 }
 
 // ****************************

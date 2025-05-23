@@ -648,7 +648,7 @@ void G_SetStats(edict_t *ent)
         item = GetItemByIndex(ent->client->pers.weapon->ammo);
 
         if (!G_CheckInfiniteAmmo(item)) {
-            ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
+            ent->client->ps.stats[STAT_AMMO_ICON] = G_ImageIndex(item->icon);
             ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->pers.weapon->ammo];
         }
     }
@@ -663,11 +663,11 @@ void G_SetStats(edict_t *ent)
     index = ArmorIndex(ent);
     if (power_armor_type && (!index || (TO_MSEC(level.time) % 3000) < 1500)) {
         // flash between power armor and other armor icon
-        ent->client->ps.stats[STAT_ARMOR_ICON] = power_armor_type == IT_ITEM_POWER_SHIELD ? gi.imageindex("i_powershield") : gi.imageindex("i_powerscreen");
+        ent->client->ps.stats[STAT_ARMOR_ICON] = power_armor_type == IT_ITEM_POWER_SHIELD ? G_ImageIndex("i_powershield") : G_ImageIndex("i_powerscreen");
         ent->client->ps.stats[STAT_ARMOR] = cells;
     } else if (index) {
         item = GetItemByIndex(index);
-        ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex(item->icon);
+        ent->client->ps.stats[STAT_ARMOR_ICON] = G_ImageIndex(item->icon);
         ent->client->ps.stats[STAT_ARMOR] = ent->client->pers.inventory[index];
     } else {
         ent->client->ps.stats[STAT_ARMOR_ICON] = 0;
@@ -691,13 +691,13 @@ void G_SetStats(edict_t *ent)
     // PGM
     if (ent->client->owned_sphere) {
         if (ent->client->owned_sphere->spawnflags == SPHERE_DEFENDER) // defender
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_defender");
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("p_defender");
         else if (ent->client->owned_sphere->spawnflags == SPHERE_HUNTER) // hunter
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_hunter");
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("p_hunter");
         else if (ent->client->owned_sphere->spawnflags == SPHERE_VENGEANCE) // vengeance
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_vengeance");
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("p_vengeance");
         else // error case
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("i_fixme");
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("i_fixme");
 
         ent->client->ps.stats[STAT_TIMER] = ceilf(TO_SEC(ent->client->owned_sphere->timestamp - level.time));
     } else {
@@ -718,10 +718,10 @@ void G_SetStats(edict_t *ent)
         }
 
         if (best_powerup) {
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex(GetItemByIndex(best_powerup->item)->icon);
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex(GetItemByIndex(best_powerup->item)->icon);
             ent->client->ps.stats[STAT_TIMER] = ceilf(TO_SEC(best_time - level.time));
         } else if (ent->client->silencer_shots) {
-            ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex(GetItemByIndex(IT_ITEM_SILENCER)->icon);
+            ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex(GetItemByIndex(IT_ITEM_SILENCER)->icon);
             ent->client->ps.stats[STAT_TIMER] = ent->client->silencer_shots;
         }
     }
@@ -735,7 +735,7 @@ void G_SetStats(edict_t *ent)
     if (ent->client->pers.selected_item == IT_NULL)
         ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
     else {
-        ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
+        ent->client->ps.stats[STAT_SELECTED_ICON] = G_ImageIndex(itemlist[ent->client->pers.selected_item].icon);
 
         if (ent->client->pers.selected_item_time < level.time)
             ent->client->ps.stats[STAT_SELECTED_ITEM_NAME] = 0;
@@ -799,7 +799,7 @@ void G_SetStats(edict_t *ent)
             key_offset = TO_SEC(level.time) / 5;
 
         for (int i = 0; i < min(num_keys_held, 3); i++)
-            ent->client->ps.stats[STAT_KEY_A + i] = gi.imageindex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);
+            ent->client->ps.stats[STAT_KEY_A + i] = G_ImageIndex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);
     }
 
     //
@@ -811,9 +811,9 @@ void G_SetStats(edict_t *ent)
     // help icon / current weapon if not shown
     //
     if (ent->client->pers.helpchanged >= 1 && ent->client->pers.helpchanged <= 2 && (TO_MSEC(level.time) % 1000) < 500) // haleyjd: time-limited
-        ent->client->ps.stats[STAT_HELPICON] = gi.imageindex("i_help");
+        ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex("i_help");
     else if ((ent->client->pers.hand == CENTER_HANDED) && ent->client->pers.weapon)
-        ent->client->ps.stats[STAT_HELPICON] = gi.imageindex(ent->client->pers.weapon->icon);
+        ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex(ent->client->pers.weapon->icon);
     else
         ent->client->ps.stats[STAT_HELPICON] = 0;
 

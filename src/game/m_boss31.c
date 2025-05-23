@@ -499,7 +499,7 @@ void MONSTERINFO_ATTACK(jorg_attack)(edict_t *self)
 {
     if (frandom() <= 0.75f) {
         G_StartSound(self, CHAN_WEAPON, sound_attack1, 1, ATTN_NORM);
-        self->monsterinfo.weapon_sound = gi.soundindex("boss3/w_loop.wav");
+        self->monsterinfo.weapon_sound = G_SoundIndex("boss3/w_loop.wav");
         M_SetAnimation(self, &jorg_move_start_attack1);
     } else {
         G_StartSound(self, CHAN_VOICE, sound_attack2, 1, ATTN_NORM);
@@ -551,23 +551,23 @@ bool MONSTERINFO_CHECKATTACK(Jorg_CheckAttack)(edict_t *self)
 
 static void jorg_precache(void)
 {
-    sound_pain1 = gi.soundindex("boss3/bs3pain1.wav");
-    sound_pain2 = gi.soundindex("boss3/bs3pain2.wav");
-    sound_pain3 = gi.soundindex("boss3/bs3pain3.wav");
-    sound_death = gi.soundindex("boss3/bs3deth1.wav");
-    sound_attack1 = gi.soundindex("boss3/bs3atck1.wav");
-    sound_attack1_loop = gi.soundindex("boss3/bs3atck1_loop.wav");
-    sound_attack1_end = gi.soundindex("boss3/bs3atck1_end.wav");
-    sound_attack2 = gi.soundindex("boss3/bs3atck2.wav");
-    sound_search1 = gi.soundindex("boss3/bs3srch1.wav");
-    sound_search2 = gi.soundindex("boss3/bs3srch2.wav");
-    sound_search3 = gi.soundindex("boss3/bs3srch3.wav");
-    sound_idle = gi.soundindex("boss3/bs3idle1.wav");
-    sound_step_left = gi.soundindex("boss3/step1.wav");
-    sound_step_right = gi.soundindex("boss3/step2.wav");
-    sound_firegun = gi.soundindex("boss3/xfire.wav");
-    sound_death_hit = gi.soundindex("boss3/d_hit.wav");
-    sound_bfg_fire = gi.soundindex("makron/bfg_fire.wav");
+    sound_pain1 = G_SoundIndex("boss3/bs3pain1.wav");
+    sound_pain2 = G_SoundIndex("boss3/bs3pain2.wav");
+    sound_pain3 = G_SoundIndex("boss3/bs3pain3.wav");
+    sound_death = G_SoundIndex("boss3/bs3deth1.wav");
+    sound_attack1 = G_SoundIndex("boss3/bs3atck1.wav");
+    sound_attack1_loop = G_SoundIndex("boss3/bs3atck1_loop.wav");
+    sound_attack1_end = G_SoundIndex("boss3/bs3atck1_end.wav");
+    sound_attack2 = G_SoundIndex("boss3/bs3atck2.wav");
+    sound_search1 = G_SoundIndex("boss3/bs3srch1.wav");
+    sound_search2 = G_SoundIndex("boss3/bs3srch2.wav");
+    sound_search3 = G_SoundIndex("boss3/bs3srch3.wav");
+    sound_idle = G_SoundIndex("boss3/bs3idle1.wav");
+    sound_step_left = G_SoundIndex("boss3/step1.wav");
+    sound_step_right = G_SoundIndex("boss3/step2.wav");
+    sound_firegun = G_SoundIndex("boss3/xfire.wav");
+    sound_death_hit = G_SoundIndex("boss3/d_hit.wav");
+    sound_bfg_fire = G_SoundIndex("makron/bfg_fire.wav");
 
     MakronPrecache();
 }
@@ -585,8 +585,8 @@ void SP_monster_jorg(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss3/jorg/tris.md2");
-    self->s.modelindex2 = gi.modelindex("models/monsters/boss3/rider/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/boss3/jorg/tris.md2");
+    self->s.modelindex2 = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
 
     PrecacheGibs(jorg_gibs);
 

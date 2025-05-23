@@ -685,9 +685,9 @@ static void SV_Physics_Toss(edict_t *ent)
         M_WorldEffects(ent);
     } else {
         if (!wasinwater && isinwater)
-            G_PositionedSound(old_origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, ATTN_NORM);
+            G_PositionedSound(old_origin, CHAN_AUTO, G_SoundIndex("misc/h2ohit1.wav"), 1, ATTN_NORM);
         else if (wasinwater && !isinwater)
-            G_PositionedSound(ent->s.origin, CHAN_AUTO, gi.soundindex("misc/h2ohit1.wav"), 1, ATTN_NORM);
+            G_PositionedSound(ent->s.origin, CHAN_AUTO, G_SoundIndex("misc/h2ohit1.wav"), 1, ATTN_NORM);
     }
 
     // prevent softlocks from keys falling into slime/lava

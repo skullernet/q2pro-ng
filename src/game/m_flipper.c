@@ -309,7 +309,7 @@ void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, flipper_gibs);
         self->deadflag = true;
         return;
@@ -338,14 +338,14 @@ static void flipper_set_fly_parameters(edict_t *self)
 
 static void flipper_precache(void)
 {
-    sound_pain1 = gi.soundindex("flipper/flppain1.wav");
-    sound_pain2 = gi.soundindex("flipper/flppain2.wav");
-    sound_death = gi.soundindex("flipper/flpdeth1.wav");
-    sound_chomp = gi.soundindex("flipper/flpatck1.wav");
-    sound_attack = gi.soundindex("flipper/flpatck2.wav");
-    sound_idle = gi.soundindex("flipper/flpidle1.wav");
-    sound_search = gi.soundindex("flipper/flpsrch1.wav");
-    sound_sight = gi.soundindex("flipper/flpsght1.wav");
+    sound_pain1 = G_SoundIndex("flipper/flppain1.wav");
+    sound_pain2 = G_SoundIndex("flipper/flppain2.wav");
+    sound_death = G_SoundIndex("flipper/flpdeth1.wav");
+    sound_chomp = G_SoundIndex("flipper/flpatck1.wav");
+    sound_attack = G_SoundIndex("flipper/flpatck2.wav");
+    sound_idle = G_SoundIndex("flipper/flpidle1.wav");
+    sound_search = G_SoundIndex("flipper/flpsrch1.wav");
+    sound_sight = G_SoundIndex("flipper/flpsght1.wav");
 }
 
 /*QUAKED monster_flipper (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -361,7 +361,7 @@ void SP_monster_flipper(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/flipper/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/flipper/tris.md2");
     VectorSet(self->r.mins, -16, -16, -8);
     VectorSet(self->r.maxs, 16, 16, 20);
 

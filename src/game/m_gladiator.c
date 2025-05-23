@@ -345,7 +345,7 @@ void DIE(gladiator_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -383,26 +383,26 @@ bool MONSTERINFO_BLOCKED(gladiator_blocked)(edict_t *self, float dist)
 
 static void gladiator_precache(void)
 {
-    sound_pain1 = gi.soundindex("gladiator/pain.wav");
-    sound_pain2 = gi.soundindex("gladiator/gldpain2.wav");
-    sound_die = gi.soundindex("gladiator/glddeth2.wav");
-    sound_die2 = gi.soundindex("gladiator/death.wav");
-    sound_cleaver_swing = gi.soundindex("gladiator/melee1.wav");
-    sound_cleaver_hit = gi.soundindex("gladiator/melee2.wav");
-    sound_cleaver_miss = gi.soundindex("gladiator/melee3.wav");
-    sound_idle = gi.soundindex("gladiator/gldidle1.wav");
-    sound_search = gi.soundindex("gladiator/gldsrch1.wav");
-    sound_sight = gi.soundindex("gladiator/sight.wav");
+    sound_pain1 = G_SoundIndex("gladiator/pain.wav");
+    sound_pain2 = G_SoundIndex("gladiator/gldpain2.wav");
+    sound_die = G_SoundIndex("gladiator/glddeth2.wav");
+    sound_die2 = G_SoundIndex("gladiator/death.wav");
+    sound_cleaver_swing = G_SoundIndex("gladiator/melee1.wav");
+    sound_cleaver_hit = G_SoundIndex("gladiator/melee2.wav");
+    sound_cleaver_miss = G_SoundIndex("gladiator/melee3.wav");
+    sound_idle = G_SoundIndex("gladiator/gldidle1.wav");
+    sound_search = G_SoundIndex("gladiator/gldsrch1.wav");
+    sound_sight = G_SoundIndex("gladiator/sight.wav");
 }
 
 static void gladiator_precache_a(void)
 {
-    sound_gun = gi.soundindex("gladiator/railgun.wav");
+    sound_gun = G_SoundIndex("gladiator/railgun.wav");
 }
 
 static void gladiator_precache_b(void)
 {
-    sound_gunb = gi.soundindex("weapons/plasshot.wav");
+    sound_gunb = G_SoundIndex("weapons/plasshot.wav");
 }
 
 /*QUAKED monster_gladiator (1 .5 0) (-32 -32 -24) (32 32 64) Ambush Trigger_Spawn Sight
@@ -418,7 +418,7 @@ void SP_monster_gladiator(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/gladiatr/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/gladiatr/tris.md2");
 
     PrecacheGibs(gladiator_gibs);
 
@@ -438,7 +438,7 @@ void SP_monster_gladiator(edict_t *self)
 
         self->style = 1;
 
-        self->monsterinfo.weapon_sound = gi.soundindex("weapons/phaloop.wav");
+        self->monsterinfo.weapon_sound = G_SoundIndex("weapons/phaloop.wav");
     } else {
         // RAFAEL
         G_AddPrecache(gladiator_precache_a);
@@ -447,7 +447,7 @@ void SP_monster_gladiator(edict_t *self)
         self->mass = 400;
         // RAFAEL
 
-        self->monsterinfo.weapon_sound = gi.soundindex("weapons/rg_hum.wav");
+        self->monsterinfo.weapon_sound = G_SoundIndex("weapons/rg_hum.wav");
     }
     // RAFAEL
 

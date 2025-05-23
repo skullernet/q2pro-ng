@@ -419,7 +419,7 @@ void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -844,19 +844,19 @@ bool MONSTERINFO_SIDESTEP(infantry_sidestep)(edict_t *self)
 
 void InfantryPrecache(void)
 {
-    sound_pain1 = gi.soundindex("infantry/infpain1.wav");
-    sound_pain2 = gi.soundindex("infantry/infpain2.wav");
-    sound_die1 = gi.soundindex("infantry/infdeth1.wav");
-    sound_die2 = gi.soundindex("infantry/infdeth2.wav");
+    sound_pain1 = G_SoundIndex("infantry/infpain1.wav");
+    sound_pain2 = G_SoundIndex("infantry/infpain2.wav");
+    sound_die1 = G_SoundIndex("infantry/infdeth1.wav");
+    sound_die2 = G_SoundIndex("infantry/infdeth2.wav");
 
-    sound_gunshot = gi.soundindex("infantry/infatck1.wav");
-    sound_weapon_cock = gi.soundindex("infantry/infatck3.wav");
-    sound_punch_swing = gi.soundindex("infantry/infatck2.wav");
-    sound_punch_hit = gi.soundindex("infantry/melee2.wav");
+    sound_gunshot = G_SoundIndex("infantry/infatck1.wav");
+    sound_weapon_cock = G_SoundIndex("infantry/infatck3.wav");
+    sound_punch_swing = G_SoundIndex("infantry/infatck2.wav");
+    sound_punch_hit = G_SoundIndex("infantry/melee2.wav");
 
-    sound_sight = gi.soundindex("infantry/infsght1.wav");
-    sound_search = gi.soundindex("infantry/infsrch1.wav");
-    sound_idle = gi.soundindex("infantry/infidle1.wav");
+    sound_sight = G_SoundIndex("infantry/infsght1.wav");
+    sound_search = G_SoundIndex("infantry/infsrch1.wav");
+    sound_idle = G_SoundIndex("infantry/infidle1.wav");
 }
 
 #define SPAWNFLAG_INFANTRY_NOJUMPING    8
@@ -876,7 +876,7 @@ void SP_monster_infantry(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/infantry/tris.md2");
 
     PrecacheGibs(infantry_gibs);
 

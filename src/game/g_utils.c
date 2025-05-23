@@ -186,7 +186,7 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
             if (ent->noise_index)
                 G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
             else
-                G_StartSound(activator, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM);
+                G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
         }
     }
 }
@@ -771,4 +771,19 @@ void G_SnapVectorTowards(vec3_t v, const vec3_t to)
         else
             v[i] = (int)v[i] + 1;
     }
+}
+
+int G_ModelIndex(const char *name)
+{
+    return trap_FindIndex(name, CS_MODELS, MAX_MODELS, MODELINDEX_PLAYER);
+}
+
+int G_SoundIndex(const char *name)
+{
+    return trap_FindIndex(name, CS_SOUNDS, MAX_SOUNDS, 0);
+}
+
+int G_ImageIndex(const char *name)
+{
+    return trap_FindIndex(name, CS_IMAGES, MAX_IMAGES, 0);
 }

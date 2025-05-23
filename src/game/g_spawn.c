@@ -1672,10 +1672,10 @@ void SP_worldspawn(edict_t *ent)
     //---------------
 
     // help icon for statusbar
-    gi.imageindex("i_help");
-    level.pic_health = gi.imageindex("i_health");
-    gi.imageindex("help");
-    gi.imageindex("field_3");
+    G_ImageIndex("i_help");
+    level.pic_health = G_ImageIndex("i_health");
+    G_ImageIndex("help");
+    G_ImageIndex("field_3");
 
     if (!st.gravity) {
         level.gravity = 800;
@@ -1685,7 +1685,7 @@ void SP_worldspawn(edict_t *ent)
         gi.cvar_set("sv_gravity", st.gravity);
     }
 
-    level.snd_fry = gi.soundindex("player/fry.wav"); // standing in lava / slime
+    level.snd_fry = G_SoundIndex("player/fry.wav"); // standing in lava / slime
 
     PrecacheItem(GetItemByIndex(IT_WEAPON_BLASTER));
 
@@ -1693,37 +1693,37 @@ void SP_worldspawn(edict_t *ent)
         for (item_id_t i = IT_NULL + 1; i < IT_TOTAL; i++)
             PrecacheItem(GetItemByIndex(i));
 
-    gi.soundindex("player/lava1.wav");
-    gi.soundindex("player/lava2.wav");
+    G_SoundIndex("player/lava1.wav");
+    G_SoundIndex("player/lava2.wav");
 
-    gi.soundindex("misc/pc_up.wav");
-    gi.soundindex("misc/talk1.wav");
+    G_SoundIndex("misc/pc_up.wav");
+    G_SoundIndex("misc/talk1.wav");
 
     // gibs
-    gi.soundindex("misc/udeath.wav");
+    G_SoundIndex("misc/udeath.wav");
 
-    gi.soundindex("items/respawn1.wav");
-    gi.soundindex("misc/mon_power2.wav");
+    G_SoundIndex("items/respawn1.wav");
+    G_SoundIndex("misc/mon_power2.wav");
 
     // sexed sounds
-    gi.soundindex("*death1.wav");
-    gi.soundindex("*death2.wav");
-    gi.soundindex("*death3.wav");
-    gi.soundindex("*death4.wav");
-    gi.soundindex("*fall1.wav");
-    gi.soundindex("*fall2.wav");
-    gi.soundindex("*gurp1.wav"); // drowning damage
-    gi.soundindex("*gurp2.wav");
-    gi.soundindex("*jump1.wav"); // player jump
-    gi.soundindex("*pain25_1.wav");
-    gi.soundindex("*pain25_2.wav");
-    gi.soundindex("*pain50_1.wav");
-    gi.soundindex("*pain50_2.wav");
-    gi.soundindex("*pain75_1.wav");
-    gi.soundindex("*pain75_2.wav");
-    gi.soundindex("*pain100_1.wav");
-    gi.soundindex("*pain100_2.wav");
-    gi.soundindex("*drown1.wav"); // [Paril-KEX]
+    G_SoundIndex("*death1.wav");
+    G_SoundIndex("*death2.wav");
+    G_SoundIndex("*death3.wav");
+    G_SoundIndex("*death4.wav");
+    G_SoundIndex("*fall1.wav");
+    G_SoundIndex("*fall2.wav");
+    G_SoundIndex("*gurp1.wav"); // drowning damage
+    G_SoundIndex("*gurp2.wav");
+    G_SoundIndex("*jump1.wav"); // player jump
+    G_SoundIndex("*pain25_1.wav");
+    G_SoundIndex("*pain25_2.wav");
+    G_SoundIndex("*pain50_1.wav");
+    G_SoundIndex("*pain50_2.wav");
+    G_SoundIndex("*pain75_1.wav");
+    G_SoundIndex("*pain75_2.wav");
+    G_SoundIndex("*pain100_1.wav");
+    G_SoundIndex("*pain100_2.wav");
+    G_SoundIndex("*drown1.wav"); // [Paril-KEX]
 
     // sexed models
     for (item_id_t id = IT_NULL; id < IT_TOTAL; id++) {
@@ -1732,7 +1732,7 @@ void SP_worldspawn(edict_t *ent)
         if (!item->vwep_model)
             continue;
 
-        int model = gi.modelindex(item->vwep_model);
+        int model = G_ModelIndex(item->vwep_model);
 
         if (!level.vwep_offset)
             level.vwep_offset = model;
@@ -1740,50 +1740,50 @@ void SP_worldspawn(edict_t *ent)
 
     //-------------------
 
-    gi.soundindex("player/gasp1.wav"); // gasping for air
-    gi.soundindex("player/gasp2.wav"); // head breaking surface, not gasping
+    G_SoundIndex("player/gasp1.wav"); // gasping for air
+    G_SoundIndex("player/gasp2.wav"); // head breaking surface, not gasping
 
-    gi.soundindex("player/watr_in.wav");  // feet hitting water
-    gi.soundindex("player/watr_out.wav"); // feet leaving water
+    G_SoundIndex("player/watr_in.wav");  // feet hitting water
+    G_SoundIndex("player/watr_out.wav"); // feet leaving water
 
-    gi.soundindex("player/watr_un.wav"); // head going underwater
+    G_SoundIndex("player/watr_un.wav"); // head going underwater
 
-    gi.soundindex("player/u_breath1.wav");
-    gi.soundindex("player/u_breath2.wav");
+    G_SoundIndex("player/u_breath1.wav");
+    G_SoundIndex("player/u_breath2.wav");
 
-    gi.soundindex("player/wade1.wav");
-    gi.soundindex("player/wade2.wav");
-    gi.soundindex("player/wade3.wav");
+    G_SoundIndex("player/wade1.wav");
+    G_SoundIndex("player/wade2.wav");
+    G_SoundIndex("player/wade3.wav");
 
     if (use_psx_assets) {
-        gi.soundindex("player/breathout1.wav");
-        gi.soundindex("player/breathout2.wav");
-        gi.soundindex("player/breathout3.wav");
+        G_SoundIndex("player/breathout1.wav");
+        G_SoundIndex("player/breathout2.wav");
+        G_SoundIndex("player/breathout3.wav");
     }
 
-    gi.soundindex("items/pkup.wav");   // bonus item pickup
-    gi.soundindex("world/land.wav");   // landing thud
-    gi.soundindex("misc/h2ohit1.wav"); // landing splash
+    G_SoundIndex("items/pkup.wav");   // bonus item pickup
+    G_SoundIndex("world/land.wav");   // landing thud
+    G_SoundIndex("misc/h2ohit1.wav"); // landing splash
 
-    gi.soundindex("items/damage.wav");
-    gi.soundindex("items/protect.wav");
-    gi.soundindex("items/protect4.wav");
-    gi.soundindex("weapons/noammo.wav");
-    gi.soundindex("weapons/lowammo.wav");
-    gi.soundindex("weapons/change.wav");
+    G_SoundIndex("items/damage.wav");
+    G_SoundIndex("items/protect.wav");
+    G_SoundIndex("items/protect4.wav");
+    G_SoundIndex("weapons/noammo.wav");
+    G_SoundIndex("weapons/lowammo.wav");
+    G_SoundIndex("weapons/change.wav");
 
-    gi.soundindex("infantry/inflies1.wav");
+    G_SoundIndex("infantry/inflies1.wav");
 
-    gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
-    gi.modelindex("models/objects/gibs/arm/tris.md2");
-    gi.modelindex("models/objects/gibs/bone/tris.md2");
-    gi.modelindex("models/objects/gibs/bone2/tris.md2");
-    gi.modelindex("models/objects/gibs/chest/tris.md2");
-    gi.modelindex("models/objects/gibs/skull/tris.md2");
-    gi.modelindex("models/objects/gibs/head2/tris.md2");
-    gi.modelindex("models/objects/gibs/sm_metal/tris.md2");
+    G_ModelIndex("models/objects/gibs/sm_meat/tris.md2");
+    G_ModelIndex("models/objects/gibs/arm/tris.md2");
+    G_ModelIndex("models/objects/gibs/bone/tris.md2");
+    G_ModelIndex("models/objects/gibs/bone2/tris.md2");
+    G_ModelIndex("models/objects/gibs/chest/tris.md2");
+    G_ModelIndex("models/objects/gibs/skull/tris.md2");
+    G_ModelIndex("models/objects/gibs/head2/tris.md2");
+    G_ModelIndex("models/objects/gibs/sm_metal/tris.md2");
 
-    //gi.imageindex("loc_ping");
+    //G_ImageIndex("loc_ping");
 
     //
     // Setup light animation tables. 'a' is total darkness, 'z' is doublebright.

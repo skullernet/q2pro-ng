@@ -75,7 +75,7 @@ static cvar_t *allow_admin;
 static cvar_t *warp_list;
 static cvar_t *warn_unbalanced;
 
-// Index for various CTF pics, this saves us from calling gi.imageindex
+// Index for various CTF pics, this saves us from calling G_ImageIndex
 // all the time and saves a few CPU cycles since we don't have to do
 // a bunch of string compares all the time.
 // These are set in CTFPrecache() called from worldspawn
@@ -175,19 +175,19 @@ void CTFInit(void)
 
 void CTFPrecache(void)
 {
-    imageindex_i_ctf1 = gi.imageindex("i_ctf1");
-    imageindex_i_ctf2 = gi.imageindex("i_ctf2");
-    imageindex_i_ctf1d = gi.imageindex("i_ctf1d");
-    imageindex_i_ctf2d = gi.imageindex("i_ctf2d");
-    imageindex_i_ctf1t = gi.imageindex("i_ctf1t");
-    imageindex_i_ctf2t = gi.imageindex("i_ctf2t");
-    imageindex_i_ctfj = gi.imageindex("i_ctfj");
-    imageindex_sbfctf1 = gi.imageindex("sbfctf1");
-    imageindex_sbfctf2 = gi.imageindex("sbfctf2");
-    imageindex_ctfsb1 = gi.imageindex("tag4");
-    imageindex_ctfsb2 = gi.imageindex("tag5");
-    modelindex_flag1 = gi.modelindex("players/male/flag1.md2");
-    modelindex_flag2 = gi.modelindex("players/male/flag2.md2");
+    imageindex_i_ctf1 = G_ImageIndex("i_ctf1");
+    imageindex_i_ctf2 = G_ImageIndex("i_ctf2");
+    imageindex_i_ctf1d = G_ImageIndex("i_ctf1d");
+    imageindex_i_ctf2d = G_ImageIndex("i_ctf2d");
+    imageindex_i_ctf1t = G_ImageIndex("i_ctf1t");
+    imageindex_i_ctf2t = G_ImageIndex("i_ctf2t");
+    imageindex_i_ctfj = G_ImageIndex("i_ctfj");
+    imageindex_sbfctf1 = G_ImageIndex("sbfctf1");
+    imageindex_sbfctf2 = G_ImageIndex("sbfctf2");
+    imageindex_ctfsb1 = G_ImageIndex("tag4");
+    imageindex_ctfsb2 = G_ImageIndex("tag5");
+    modelindex_flag1 = G_ModelIndex("players/male/flag1.md2");
+    modelindex_flag2 = G_ModelIndex("players/male/flag2.md2");
 
     PrecacheItem(GetItemByIndex(IT_WEAPON_GRAPPLE));
 }
@@ -614,7 +614,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                 else
                     ctfgame.team2++;
 
-                G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagcap.wav"), 1, ATTN_NONE);
+                G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagcap.wav"), 1, ATTN_NONE);
 
                 // other gets another 10 frag bonus
                 other->client->resp.score += CTF_CAPTURE_BONUS;
@@ -654,7 +654,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                    other->client->pers.netname, CTFTeamName(ctf_team));
         other->client->resp.score += CTF_RECOVERY_BONUS;
         other->client->resp.ctf_lastreturnedflag = level.time;
-        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE);
+        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
         // CTFResetFlag will remove this entity!  We must return false
         CTFResetFlag(ctf_team);
         return false;
@@ -703,7 +703,7 @@ void THINK(CTFDropFlagThink)(edict_t *ent)
                    CTFTeamName(CTF_TEAM2));
     }
 
-    G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE);
+    G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
 }
 
 // Called from PlayerDie, to drop the flag from a dying player
@@ -758,7 +758,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
         model = ent->model;
     else
         model = ent->item->world_model;
-    ent->s.modelindex = gi.modelindex(model);
+    ent->s.modelindex = G_ModelIndex(model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -965,7 +965,7 @@ void SetCTFStats(edict_t *ent)
     ent->client->ps.stats[STAT_CTF_TECH] = 0;
     for (i = 0; i < q_countof(tech_ids); i++) {
         if (ent->client->pers.inventory[tech_ids[i]]) {
-            ent->client->ps.stats[STAT_CTF_TECH] = gi.imageindex(GetItemByIndex(tech_ids[i])->icon);
+            ent->client->ps.stats[STAT_CTF_TECH] = G_ImageIndex(GetItemByIndex(tech_ids[i])->icon);
             break;
         }
     }
@@ -998,7 +998,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM1);
                         gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM1));
-                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE);
+                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -1026,7 +1026,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM2);
                         gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM2));
-                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, gi.soundindex("ctf/flagret.wav"), 1, ATTN_NONE);
+                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -1120,7 +1120,7 @@ void CTFResetGrapple(edict_t *self)
     if (!cl->ctf_grapple)
         return;
 
-    G_StartSound(owner, CHAN_WEAPON, gi.soundindex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM);
+    G_StartSound(owner, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM);
 
     cl->ctf_grapple = NULL;
     cl->ctf_grapplereleasetime = level.time + SEC(1);
@@ -1167,8 +1167,8 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (owner->client->silencer_shots)
         volume = 0.2f;
 
-    G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/grapple/grhit.wav"), volume, ATTN_NORM);
-    self->s.sound = gi.soundindex("weapons/grapple/grpull.wav");
+    G_StartSound(self, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grhit.wav"), volume, ATTN_NORM);
+    self->s.sound = G_SoundIndex("weapons/grapple/grpull.wav");
 
     G_TempEntity(self->s.origin, EV_SPARKS, gi.DirToByte(tr->plane.normal));
 }
@@ -1195,7 +1195,7 @@ static void CTFGrappleDrawCable(edict_t *self)
     if (!te) {
         self->beam = te = G_Spawn();
         te->s.renderfx = RF_BEAM;
-        te->s.modelindex = gi.modelindex("models/ctf/segment/tris.md2");
+        te->s.modelindex = G_ModelIndex("models/ctf/segment/tris.md2");
         te->s.othernum = self->r.ownernum;
         te->r.ownernum = self->s.number;
         te->think = CTFGrappleCableThink;
@@ -1261,7 +1261,7 @@ void CTFGrapplePull(edict_t *self)
 
         if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_PULL && vlen < 64) {
             cl->ctf_grapplestate = CTF_GRAPPLE_STATE_HANG;
-            self->s.sound = gi.soundindex("weapons/grapple/grhang.wav");
+            self->s.sound = G_SoundIndex("weapons/grapple/grhang.wav");
         }
 
         VectorScale(hookdir, g_grapple_pull_speed->value, owner->velocity);
@@ -1293,7 +1293,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
         grapple->clipmask &= ~CONTENTS_PLAYER;
     grapple->r.solid = SOLID_BBOX;
     grapple->s.effects |= effect;
-    grapple->s.modelindex = gi.modelindex("models/weapons/grapple/hook/tris.md2");
+    grapple->s.modelindex = G_ModelIndex("models/weapons/grapple/hook/tris.md2");
     grapple->r.ownernum = self->s.number;
     grapple->touch = CTFGrappleTouch;
     grapple->dmg = damage;
@@ -1312,7 +1312,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
         return false;
     }
 
-    grapple->s.sound = gi.soundindex("weapons/grapple/grfly.wav");
+    grapple->s.sound = G_SoundIndex("weapons/grapple/grfly.wav");
 
     return true;
 }
@@ -1332,7 +1332,7 @@ static void CTFGrappleFire(edict_t *ent, const vec3_t g_offset, int damage, effe
         volume = 0.2f;
 
     if (CTFFireGrapple(ent, start, dir, damage, g_grapple_fly_speed->value, effect))
-        G_StartSound(ent, CHAN_WEAPON, gi.soundindex("weapons/grapple/grfire.wav"), volume, ATTN_NORM);
+        G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grfire.wav"), volume, ATTN_NORM);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
 }
@@ -1765,7 +1765,7 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->s.renderfx = RF_GLOW;
     VectorSet(ent->r.mins, -15, -15, -15);
     VectorSet(ent->r.maxs, 15, 15, 15);
-    ent->s.modelindex = gi.modelindex(ent->item->world_model);
+    ent->s.modelindex = G_ModelIndex(ent->item->world_model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -1851,7 +1851,7 @@ int CTFApplyResistance(edict_t *ent, int dmg)
 
     if (dmg && ent->client && ent->client->pers.inventory[IT_TECH_RESISTANCE]) {
         // make noise
-        G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech1.wav"), volume, ATTN_NORM);
+        G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech1.wav"), volume, ATTN_NORM);
         return dmg / 2;
     }
     return dmg;
@@ -1876,9 +1876,9 @@ bool CTFApplyStrengthSound(edict_t *ent)
         if (ent->client->ctf_techsndtime < level.time) {
             ent->client->ctf_techsndtime = level.time + SEC(1);
             if (ent->client->quad_time > level.time)
-                G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech2x.wav"), volume, ATTN_NORM);
+                G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech2x.wav"), volume, ATTN_NORM);
             else
-                G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech2.wav"), volume, ATTN_NORM);
+                G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech2.wav"), volume, ATTN_NORM);
         }
         return true;
     }
@@ -1901,7 +1901,7 @@ void CTFApplyHasteSound(edict_t *ent)
         ent->client->pers.inventory[IT_TECH_HASTE] &&
         ent->client->ctf_techsndtime < level.time) {
         ent->client->ctf_techsndtime = level.time + SEC(1);
-        G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech3.wav"), volume, ATTN_NORM);
+        G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech3.wav"), volume, ATTN_NORM);
     }
 }
 
@@ -1940,7 +1940,7 @@ void CTFApplyRegeneration(edict_t *ent)
         }
         if (noise && ent->client->ctf_techsndtime < level.time) {
             ent->client->ctf_techsndtime = level.time + SEC(1);
-            G_StartSound(ent, CHAN_AUX, gi.soundindex("ctf/tech4.wav"), volume, ATTN_NORM);
+            G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech4.wav"), volume, ATTN_NORM);
         }
     }
 }
@@ -1989,7 +1989,7 @@ void SP_misc_ctf_banner(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ctf/banner/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/ctf/banner/tris.md2");
     if (ent->spawnflags & SPAWNFLAG_CTF_BANNER_BLUE) // team2
         ent->s.skinnum = 1;
 
@@ -2008,7 +2008,7 @@ void SP_misc_ctf_small_banner(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
-    ent->s.modelindex = gi.modelindex("models/ctf/banner/small.md2");
+    ent->s.modelindex = G_ModelIndex("models/ctf/banner/small.md2");
     if (ent->spawnflags & SPAWNFLAG_CTF_BANNER_BLUE) // team2
         ent->s.skinnum = 1;
 
@@ -2363,7 +2363,7 @@ void CTFReady(edict_t *ent)
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
         ctfgame.countdown = false;
-        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE);
+        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
     }
 }
 
@@ -2788,13 +2788,13 @@ bool CTFCheckRules(void)
             case MATCH_PREGAME:
                 // match started!
                 CTFStartMatch();
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/tele_up.wav"), 1, ATTN_NONE);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/tele_up.wav"), 1, ATTN_NONE);
                 return false;
 
             case MATCH_GAME:
                 // match ended!
                 CTFEndMatch();
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/bigtele.wav"), 1, ATTN_NONE);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/bigtele.wav"), 1, ATTN_NONE);
                 return false;
 
             default:
@@ -2832,7 +2832,7 @@ bool CTFCheckRules(void)
 
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
             }
             break;
 
@@ -2841,7 +2841,7 @@ bool CTFCheckRules(void)
             trap_SetConfigstring(CONFIG_CTF_MATCH, text);
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("world/10_0.wav"), 1, ATTN_NONE);
+                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
             }
             break;
 
@@ -2983,7 +2983,7 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     s = G_Spawn();
     ent->enemy = s;
     VectorAvg(ent->r.mins, ent->r.maxs, s->s.origin);
-    s->s.sound = gi.soundindex("world/hum1.wav");
+    s->s.sound = G_SoundIndex("world/hum1.wav");
     trap_LinkEntity(s);
 }
 
@@ -3221,7 +3221,7 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
         gi.bprintf(PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
-        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk1.wav"), 1, ATTN_NONE);
+        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
         gi.bprintf(PRINT_CHAT, "Match has been forced to terminate.\n");

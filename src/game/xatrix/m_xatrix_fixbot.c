@@ -1093,12 +1093,12 @@ void DIE(fixbot_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
 static void fixbot_precache(void)
 {
-    sound_pain1 = gi.soundindex("flyer/flypain1.wav");
-    sound_die = gi.soundindex("flyer/flydeth1.wav");
+    sound_pain1 = G_SoundIndex("flyer/flypain1.wav");
+    sound_die = G_SoundIndex("flyer/flydeth1.wav");
 
-    sound_weld1 = gi.soundindex("misc/welder1.wav");
-    sound_weld2 = gi.soundindex("misc/welder2.wav");
-    sound_weld3 = gi.soundindex("misc/welder3.wav");
+    sound_weld1 = G_SoundIndex("misc/welder1.wav");
+    sound_weld2 = G_SoundIndex("misc/welder2.wav");
+    sound_weld3 = G_SoundIndex("misc/welder3.wav");
 }
 
 /*QUAKED monster_fixbot (1 .5 0) (-32 -32 -24) (32 32 24) Ambush Trigger_Spawn Fixit Takeoff Landing
@@ -1112,7 +1112,7 @@ void SP_monster_fixbot(edict_t *self)
 
     G_AddPrecache(fixbot_precache);
 
-    self->s.modelindex = gi.modelindex("models/monsters/fixbot/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/fixbot/tris.md2");
 
     VectorSet(self->r.mins, -32, -32, -24);
     VectorSet(self->r.maxs, 32, 32, 24);

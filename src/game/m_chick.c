@@ -345,7 +345,7 @@ void DIE(chick_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, chick_gibs);
         self->deadflag = true;
@@ -723,21 +723,21 @@ bool MONSTERINFO_SIDESTEP(chick_sidestep)(edict_t *self)
 
 static void chick_precache(void)
 {
-    sound_missile_prelaunch = gi.soundindex("chick/chkatck1.wav");
-    sound_missile_launch = gi.soundindex("chick/chkatck2.wav");
-    sound_melee_swing = gi.soundindex("chick/chkatck3.wav");
-    sound_melee_hit = gi.soundindex("chick/chkatck4.wav");
-    sound_missile_reload = gi.soundindex("chick/chkatck5.wav");
-    sound_death1 = gi.soundindex("chick/chkdeth1.wav");
-    sound_death2 = gi.soundindex("chick/chkdeth2.wav");
-    sound_fall_down = gi.soundindex("chick/chkfall1.wav");
-    sound_idle1 = gi.soundindex("chick/chkidle1.wav");
-    sound_idle2 = gi.soundindex("chick/chkidle2.wav");
-    sound_pain1 = gi.soundindex("chick/chkpain1.wav");
-    sound_pain2 = gi.soundindex("chick/chkpain2.wav");
-    sound_pain3 = gi.soundindex("chick/chkpain3.wav");
-    sound_sight = gi.soundindex("chick/chksght1.wav");
-    sound_search = gi.soundindex("chick/chksrch1.wav");
+    sound_missile_prelaunch = G_SoundIndex("chick/chkatck1.wav");
+    sound_missile_launch = G_SoundIndex("chick/chkatck2.wav");
+    sound_melee_swing = G_SoundIndex("chick/chkatck3.wav");
+    sound_melee_hit = G_SoundIndex("chick/chkatck4.wav");
+    sound_missile_reload = G_SoundIndex("chick/chkatck5.wav");
+    sound_death1 = G_SoundIndex("chick/chkdeth1.wav");
+    sound_death2 = G_SoundIndex("chick/chkdeth2.wav");
+    sound_fall_down = G_SoundIndex("chick/chkfall1.wav");
+    sound_idle1 = G_SoundIndex("chick/chkidle1.wav");
+    sound_idle2 = G_SoundIndex("chick/chkidle2.wav");
+    sound_pain1 = G_SoundIndex("chick/chkpain1.wav");
+    sound_pain2 = G_SoundIndex("chick/chkpain2.wav");
+    sound_pain3 = G_SoundIndex("chick/chkpain3.wav");
+    sound_sight = G_SoundIndex("chick/chksght1.wav");
+    sound_search = G_SoundIndex("chick/chksrch1.wav");
 }
 
 /*QUAKED monster_chick (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -753,7 +753,7 @@ void SP_monster_chick(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/bitch/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
 
     PrecacheGibs(chick_gibs);
 
@@ -800,6 +800,6 @@ void SP_monster_chick_heat(edict_t *self)
 {
     SP_monster_chick(self);
     self->s.skinnum = 2;
-    gi.soundindex("weapons/railgr1a.wav");
+    G_SoundIndex("weapons/railgr1a.wav");
 }
 // RAFAEL

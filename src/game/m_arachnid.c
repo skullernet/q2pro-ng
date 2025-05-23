@@ -579,7 +579,7 @@ void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
         self->deadflag = true;
         return;
@@ -615,17 +615,17 @@ void MONSTERINFO_SETSKIN(arachnid_setskin)(edict_t *self)
 
 static void arachnid_precache(void)
 {
-    sound_step      = gi.soundindex("insane/insane11.wav");
-    sound_charge    = gi.soundindex("gladiator/railgun.wav");
-    sound_melee     = gi.soundindex("gladiator/melee3.wav");
-    sound_melee_hit = gi.soundindex("gladiator/melee2.wav");
-    sound_pain      = gi.soundindex("arachnid/pain.wav");
-    sound_death     = gi.soundindex("arachnid/death.wav");
-    sound_sight     = gi.soundindex("arachnid/sight.wav");
-    sound_pissed    = gi.soundindex("arachnid/angry.wav");
+    sound_step      = G_SoundIndex("insane/insane11.wav");
+    sound_charge    = G_SoundIndex("gladiator/railgun.wav");
+    sound_melee     = G_SoundIndex("gladiator/melee3.wav");
+    sound_melee_hit = G_SoundIndex("gladiator/melee2.wav");
+    sound_pain      = G_SoundIndex("arachnid/pain.wav");
+    sound_death     = G_SoundIndex("arachnid/death.wav");
+    sound_sight     = G_SoundIndex("arachnid/sight.wav");
+    sound_pissed    = G_SoundIndex("arachnid/angry.wav");
 
     if (skill->integer >= 3)
-        sound_spawn = gi.soundindex("medic_commander/monsterspawn1.wav");
+        sound_spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
 }
 
 /*QUAKED monster_arachnid (1 .5 0) (-40 -40 -20) (40 40 48) Ambush Trigger_Spawn Sight
@@ -653,7 +653,7 @@ void SP_monster_arachnid(edict_t *self)
             M_SetupReinforcements(reinforcements, &self->monsterinfo.reinforcements);
     }
 
-    self->s.modelindex = gi.modelindex("models/monsters/arachnid/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/arachnid/tris.md2");
     VectorSet(self->r.mins, -40, -40, -20);
     VectorSet(self->r.maxs, 40, 40, 48);
     self->movetype = MOVETYPE_STEP;

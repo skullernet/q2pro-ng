@@ -623,7 +623,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             int count;
 
             // gib
-            G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+            G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
             // more meaty gibs for your dollar!
             if (deathmatch->integer && (self->health < -80))
@@ -674,7 +674,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
                 "*death3.wav",
                 "*death4.wav"
             };
-            G_StartSound(self, CHAN_VOICE, gi.soundindex(random_element(death_sounds)), 1, ATTN_NORM);
+            G_StartSound(self, CHAN_VOICE, G_SoundIndex(random_element(death_sounds)), 1, ATTN_NORM);
             self->client->anim_time = 0;
         }
     }
@@ -1451,7 +1451,7 @@ void InitBodyQue(void)
 void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (self->s.modelindex == MODELINDEX_PLAYER && self->health < self->gib_health) {
-        G_StartSound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         for (int n = 0; n < 4; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_NONE);
         self->s.origin[2] -= 48;
@@ -1650,7 +1650,7 @@ void P_AssignClientSkinnum(edict_t *ent)
     int vwep_index = 0;
     const gitem_t *item = ent->client->pers.weapon;
     if (item)
-        vwep_index = gi.modelindex(item->vwep_model) - level.vwep_offset + 1;
+        vwep_index = G_ModelIndex(item->vwep_model) - level.vwep_offset + 1;
 
     ent->s.skinnum = client_num | (vwep_index << 8);
 }
@@ -1885,7 +1885,7 @@ void PutClientInServer(edict_t *ent)
 
     // PGM
     if (client->pers.weapon)
-        client->ps.gunindex = gi.modelindex(client->pers.weapon->view_model);
+        client->ps.gunindex = G_ModelIndex(client->pers.weapon->view_model);
     else
         client->ps.gunindex = 0;
     // PGM
@@ -2600,7 +2600,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         }
 
         if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
-            G_StartSound(ent, CHAN_VOICE, gi.soundindex("*jump1.wav"), 1, ATTN_NORM);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("*jump1.wav"), 1, ATTN_NORM);
             // Paril: removed to make ambushes more effective and to
             // not have monsters around corners come to jumps
             // PlayerNoise(ent, ent->s.origin, PNOISE_SELF);

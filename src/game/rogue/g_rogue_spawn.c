@@ -215,7 +215,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     ent->movetype = MOVETYPE_NONE;
     ent->classname = "spawngro";
 
-    ent->s.modelindex = gi.modelindex("models/items/spawngro3/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/items/spawngro3/tris.md2");
     ent->s.skinnum = 1;
 
     ent->accel = start_size;
@@ -335,7 +335,7 @@ void Widowlegs_Spawn(const vec3_t startpos, const vec3_t angles)
     ent->movetype = MOVETYPE_NONE;
     ent->classname = "widowlegs";
 
-    ent->s.modelindex = gi.modelindex("models/monsters/legs/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/legs/tris.md2");
     ent->think = widowlegs_think;
 
     ent->nextthink = level.time + HZ(10);

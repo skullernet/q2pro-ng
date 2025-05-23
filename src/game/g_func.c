@@ -55,14 +55,14 @@ static int G_GetMoveinfoSound(edict_t *self, const char *default_value, const ch
 {
     if (!wanted_value) {
         if (default_value)
-            return G_EncodeSound(CHAN_AUTO, gi.soundindex(default_value), 1, self->attenuation);
+            return G_EncodeSound(CHAN_AUTO, G_SoundIndex(default_value), 1, self->attenuation);
         return 0;
     }
 
     if (!*wanted_value || *wanted_value == '0' || *wanted_value == ' ')
         return 0;
 
-    return G_EncodeSound(CHAN_AUTO, gi.soundindex(wanted_value), 1, self->attenuation);
+    return G_EncodeSound(CHAN_AUTO, G_SoundIndex(wanted_value), 1, self->attenuation);
 }
 
 void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *default_mid, const char *default_end)
@@ -741,7 +741,7 @@ void SP_func_rotating(edict_t *ent)
         ent->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
-        ent->moveinfo.sound_middle = gi.soundindex(st.noise);
+        ent->moveinfo.sound_middle = G_SoundIndex(st.noise);
 
     // set the axis of rotation
     VectorClear(ent->movedir);
@@ -1441,7 +1441,7 @@ void TOUCH(door_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     self->touch_debounce_time = level.time + SEC(5);
 
     gi.centerprintf(other, "%s", self->message);
-    G_StartSound(other, CHAN_AUTO, gi.soundindex("misc/talk1.wav"), 1, ATTN_NORM);
+    G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
 }
 
 void THINK(Think_DoorActivateAreaPortal)(edict_t *ent)
@@ -1512,7 +1512,7 @@ void SP_func_door(edict_t *ent)
         ent->max_health = ent->health;
     } else if (ent->targetname) {
         if (ent->message) {
-            gi.soundindex("misc/talk.wav");
+            G_SoundIndex("misc/talk.wav");
             ent->touch = door_touch;
         }
         ent->r.svflags |= SVF_LOCKED;
@@ -1677,7 +1677,7 @@ void SP_func_door_rotating(edict_t *ent)
     }
 
     if (ent->targetname && ent->message) {
-        gi.soundindex("misc/talk.wav");
+        G_SoundIndex("misc/talk.wav");
         ent->touch = door_touch;
     }
 
@@ -2125,7 +2125,7 @@ void SP_func_train(edict_t *self)
     trap_SetBrushModel(self, self->model);
 
     if (st.noise)
-        self->moveinfo.sound_middle = gi.soundindex(st.noise);
+        self->moveinfo.sound_middle = G_SoundIndex(st.noise);
 
     if (!self->speed)
         self->speed = 100;
@@ -2457,7 +2457,7 @@ void SP_func_door_secret(edict_t *ent)
         ent->die = door_killed;
         ent->max_health = ent->health;
     } else if (ent->targetname && ent->message) {
-        gi.soundindex("misc/talk.wav");
+        G_SoundIndex("misc/talk.wav");
         ent->touch = door_touch;
     }
 

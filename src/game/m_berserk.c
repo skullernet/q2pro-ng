@@ -588,7 +588,7 @@ static const gib_def_t berserk_gibs[] = {
 void DIE(berserk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum = 0;
         ThrowGibs(self, damage, berserk_gibs);
         self->deadflag = true;
@@ -762,16 +762,16 @@ bool MONSTERINFO_DUCK(berserk_duck)(edict_t *self, gtime_t eta)
 
 static void berserk_precache(void)
 {
-    sound_pain   = gi.soundindex("berserk/berpain2.wav");
-    sound_die    = gi.soundindex("berserk/berdeth2.wav");
-    sound_idle   = gi.soundindex("berserk/beridle1.wav");
-    sound_idle2  = gi.soundindex("berserk/idle.wav");
-    sound_punch  = gi.soundindex("berserk/attack.wav");
-    sound_search = gi.soundindex("berserk/bersrch1.wav");
-    sound_sight  = gi.soundindex("berserk/sight.wav");
-    sound_thud   = gi.soundindex("mutant/thud1.wav");
-    sound_explod = gi.soundindex("world/explod2.wav");
-    sound_jump   = gi.soundindex("berserk/jump.wav");
+    sound_pain   = G_SoundIndex("berserk/berpain2.wav");
+    sound_die    = G_SoundIndex("berserk/berdeth2.wav");
+    sound_idle   = G_SoundIndex("berserk/beridle1.wav");
+    sound_idle2  = G_SoundIndex("berserk/idle.wav");
+    sound_punch  = G_SoundIndex("berserk/attack.wav");
+    sound_search = G_SoundIndex("berserk/bersrch1.wav");
+    sound_sight  = G_SoundIndex("berserk/sight.wav");
+    sound_thud   = G_SoundIndex("mutant/thud1.wav");
+    sound_explod = G_SoundIndex("world/explod2.wav");
+    sound_jump   = G_SoundIndex("berserk/jump.wav");
 }
 
 /*QUAKED monster_berserk (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -786,7 +786,7 @@ void SP_monster_berserk(edict_t *self)
     // pre-caches
     G_AddPrecache(berserk_precache);
 
-    self->s.modelindex = gi.modelindex("models/monsters/berserk/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/berserk/tris.md2");
 
     PrecacheGibs(berserk_gibs);
 

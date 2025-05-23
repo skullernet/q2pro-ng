@@ -877,7 +877,7 @@ void DIE(stalker_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, stalker_gibs);
         self->deadflag = true;
@@ -900,12 +900,12 @@ void DIE(stalker_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
 static void stalker_precache(void)
 {
-    sound_pain = gi.soundindex("stalker/pain.wav");
-    sound_die = gi.soundindex("stalker/death.wav");
-    sound_sight = gi.soundindex("stalker/sight.wav");
-    sound_punch_hit1 = gi.soundindex("stalker/melee1.wav");
-    sound_punch_hit2 = gi.soundindex("stalker/melee2.wav");
-    sound_idle = gi.soundindex("stalker/idle.wav");
+    sound_pain = G_SoundIndex("stalker/pain.wav");
+    sound_die = G_SoundIndex("stalker/death.wav");
+    sound_sight = G_SoundIndex("stalker/sight.wav");
+    sound_punch_hit1 = G_SoundIndex("stalker/melee1.wav");
+    sound_punch_hit2 = G_SoundIndex("stalker/melee2.wav");
+    sound_idle = G_SoundIndex("stalker/idle.wav");
 }
 
 /*QUAKED monster_stalker (1 .5 0) (-28 -28 -18) (28 28 18) Ambush Trigger_Spawn Sight OnRoof NoJumping
@@ -927,9 +927,9 @@ void SP_monster_stalker(edict_t *self)
     G_AddPrecache(stalker_precache);
 
     // PMM - precache bolt2
-    gi.modelindex("models/objects/laser/tris.md2");
+    G_ModelIndex("models/objects/laser/tris.md2");
 
-    self->s.modelindex = gi.modelindex("models/monsters/stalker/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/stalker/tris.md2");
 
     PrecacheGibs(stalker_gibs);
 

@@ -71,7 +71,7 @@ static void shambler_windup(edict_t *self)
     G_StartSound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM);
 
     edict_t *lightning = self->beam = G_Spawn();
-    lightning->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
+    lightning->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
     lightning->s.othernum = ENTITYNUM_NONE;
     lightning->r.ownernum = self->s.number;
@@ -290,8 +290,8 @@ static void ShamblerCastLightning(edict_t *self)
     if (!te) {
         self->beam2 = te = G_Spawn();
         te->s.renderfx = RF_BEAM;
-        te->s.modelindex = gi.modelindex("models/proj/lightning/tris.md2");
-        te->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("weapons/tesla.wav"), 1, ATTN_NORM);
+        te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
+        te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
         te->s.othernum = ENTITYNUM_NONE;
         te->r.ownernum = self->s.number;
         te->think = shambler_lightning_think;
@@ -507,7 +507,7 @@ void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, shambler_gibs);
         self->deadflag = true;
         return;
@@ -526,15 +526,15 @@ void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
 static void shambler_precache(void)
 {
-    sound_pain = gi.soundindex("shambler/shurt2.wav");
-    sound_idle = gi.soundindex("shambler/sidle.wav");
-    sound_die = gi.soundindex("shambler/sdeath.wav");
-    sound_windup = gi.soundindex("shambler/sattck1.wav");
-    sound_melee1 = gi.soundindex("shambler/melee1.wav");
-    sound_melee2 = gi.soundindex("shambler/melee2.wav");
-    sound_sight = gi.soundindex("shambler/ssight.wav");
-    sound_smack = gi.soundindex("shambler/smack.wav");
-    sound_boom = gi.soundindex("shambler/sboom.wav");
+    sound_pain = G_SoundIndex("shambler/shurt2.wav");
+    sound_idle = G_SoundIndex("shambler/sidle.wav");
+    sound_die = G_SoundIndex("shambler/sdeath.wav");
+    sound_windup = G_SoundIndex("shambler/sattck1.wav");
+    sound_melee1 = G_SoundIndex("shambler/melee1.wav");
+    sound_melee2 = G_SoundIndex("shambler/melee2.wav");
+    sound_sight = G_SoundIndex("shambler/ssight.wav");
+    sound_smack = G_SoundIndex("shambler/smack.wav");
+    sound_boom = G_SoundIndex("shambler/sboom.wav");
 }
 
 void SP_monster_shambler(edict_t *self)
@@ -544,13 +544,13 @@ void SP_monster_shambler(edict_t *self)
         return;
     }
 
-    self->s.modelindex = gi.modelindex("models/monsters/shambler/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/shambler/tris.md2");
     VectorSet(self->r.mins, -32, -32, -24);
     VectorSet(self->r.maxs, 32, 32, 64);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 
-    gi.modelindex("models/proj/lightning/tris.md2");
+    G_ModelIndex("models/proj/lightning/tris.md2");
 
     G_AddPrecache(shambler_precache);
 

@@ -808,7 +808,7 @@ void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, medic_gibs);
         self->deadflag = true;
@@ -1019,7 +1019,7 @@ static void medic_cable_attack(edict_t *self)
     if (!te) {
         self->beam = te = G_Spawn();
         te->s.renderfx = RF_BEAM;
-        te->s.modelindex = gi.modelindex("models/monsters/parasite/segment/tris.md2");
+        te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
         te->s.othernum = ENTITYNUM_NONE;
         te->r.ownernum = self->s.number;
         te->think = medic_cable_think;
@@ -1409,31 +1409,31 @@ bool MONSTERINFO_BLOCKED(medic_blocked)(edict_t *self, float dist)
 
 static void medic_precache_cmdr(void)
 {
-    commander_sound_idle1 = gi.soundindex("medic_commander/medidle.wav");
-    commander_sound_pain1 = gi.soundindex("medic_commander/medpain1.wav");
-    commander_sound_pain2 = gi.soundindex("medic_commander/medpain2.wav");
-    commander_sound_die = gi.soundindex("medic_commander/meddeth.wav");
-    commander_sound_sight = gi.soundindex("medic_commander/medsght.wav");
-    commander_sound_search = gi.soundindex("medic_commander/medsrch.wav");
-    commander_sound_hook_launch = gi.soundindex("medic_commander/medatck2c.wav");
-    commander_sound_hook_hit = gi.soundindex("medic_commander/medatck3a.wav");
-    commander_sound_hook_heal = gi.soundindex("medic_commander/medatck4a.wav");
-    commander_sound_hook_retract = gi.soundindex("medic_commander/medatck5a.wav");
-    commander_sound_spawn = gi.soundindex("medic_commander/monsterspawn1.wav");
+    commander_sound_idle1 = G_SoundIndex("medic_commander/medidle.wav");
+    commander_sound_pain1 = G_SoundIndex("medic_commander/medpain1.wav");
+    commander_sound_pain2 = G_SoundIndex("medic_commander/medpain2.wav");
+    commander_sound_die = G_SoundIndex("medic_commander/meddeth.wav");
+    commander_sound_sight = G_SoundIndex("medic_commander/medsght.wav");
+    commander_sound_search = G_SoundIndex("medic_commander/medsrch.wav");
+    commander_sound_hook_launch = G_SoundIndex("medic_commander/medatck2c.wav");
+    commander_sound_hook_hit = G_SoundIndex("medic_commander/medatck3a.wav");
+    commander_sound_hook_heal = G_SoundIndex("medic_commander/medatck4a.wav");
+    commander_sound_hook_retract = G_SoundIndex("medic_commander/medatck5a.wav");
+    commander_sound_spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
 }
 
 static void medic_precache(void)
 {
-    sound_idle1 = gi.soundindex("medic/idle.wav");
-    sound_pain1 = gi.soundindex("medic/medpain1.wav");
-    sound_pain2 = gi.soundindex("medic/medpain2.wav");
-    sound_die = gi.soundindex("medic/meddeth1.wav");
-    sound_sight = gi.soundindex("medic/medsght1.wav");
-    sound_search = gi.soundindex("medic/medsrch1.wav");
-    sound_hook_launch = gi.soundindex("medic/medatck2.wav");
-    sound_hook_hit = gi.soundindex("medic/medatck3.wav");
-    sound_hook_heal = gi.soundindex("medic/medatck4.wav");
-    sound_hook_retract = gi.soundindex("medic/medatck5.wav");
+    sound_idle1 = G_SoundIndex("medic/idle.wav");
+    sound_pain1 = G_SoundIndex("medic/medpain1.wav");
+    sound_pain2 = G_SoundIndex("medic/medpain2.wav");
+    sound_die = G_SoundIndex("medic/meddeth1.wav");
+    sound_sight = G_SoundIndex("medic/medsght1.wav");
+    sound_search = G_SoundIndex("medic/medsrch1.wav");
+    sound_hook_launch = G_SoundIndex("medic/medatck2.wav");
+    sound_hook_hit = G_SoundIndex("medic/medatck3.wav");
+    sound_hook_heal = G_SoundIndex("medic/medatck4.wav");
+    sound_hook_retract = G_SoundIndex("medic/medatck5.wav");
 }
 
 /*QUAKED monster_medic_commander (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -1450,7 +1450,7 @@ void SP_monster_medic(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/medic/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/medic/tris.md2");
 
     PrecacheGibs(medic_gibs);
 
@@ -1463,7 +1463,7 @@ void SP_monster_medic(edict_t *self)
         self->gib_health = -130;
         self->mass = 600;
         self->yaw_speed = 40; // default is 20
-        gi.modelindex("models/items/spawngro3/tris.md2");
+        G_ModelIndex("models/items/spawngro3/tris.md2");
     } else {
         // PMM
         self->health = 300 * st.health_multiplier;
@@ -1507,7 +1507,7 @@ void SP_monster_medic(edict_t *self)
 
         // commander sounds
         G_AddPrecache(medic_precache_cmdr);
-        gi.soundindex("tank/tnkatck3.wav");
+        G_SoundIndex("tank/tnkatck3.wav");
 
         const char *reinforcements = DEFAULT_REINFORCEMENTS;
 
@@ -1524,7 +1524,7 @@ void SP_monster_medic(edict_t *self)
         }
     } else {
         G_AddPrecache(medic_precache);
-        gi.soundindex("medic/medatck1.wav");
+        G_SoundIndex("medic/medatck1.wav");
 
         self->s.skinnum = 0;
     }

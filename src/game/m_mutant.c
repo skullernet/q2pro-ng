@@ -545,7 +545,7 @@ static const gib_def_t mutant_gibs[] = {
 void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
         ThrowGibs(self, damage, mutant_gibs);
         self->deadflag = true;
@@ -650,19 +650,19 @@ bool MONSTERINFO_BLOCKED(mutant_blocked)(edict_t *self, float dist)
 
 static void mutant_precache(void)
 {
-    sound_swing = gi.soundindex("mutant/mutatck1.wav");
-    sound_hit = gi.soundindex("mutant/mutatck2.wav");
-    sound_hit2 = gi.soundindex("mutant/mutatck3.wav");
-    sound_death = gi.soundindex("mutant/mutdeth1.wav");
-    sound_idle = gi.soundindex("mutant/mutidle1.wav");
-    sound_pain1 = gi.soundindex("mutant/mutpain1.wav");
-    sound_pain2 = gi.soundindex("mutant/mutpain2.wav");
-    sound_sight = gi.soundindex("mutant/mutsght1.wav");
-    sound_search = gi.soundindex("mutant/mutsrch1.wav");
-    sound_step1 = gi.soundindex("mutant/step1.wav");
-    sound_step2 = gi.soundindex("mutant/step2.wav");
-    sound_step3 = gi.soundindex("mutant/step3.wav");
-    sound_thud = gi.soundindex("mutant/thud1.wav");
+    sound_swing = G_SoundIndex("mutant/mutatck1.wav");
+    sound_hit = G_SoundIndex("mutant/mutatck2.wav");
+    sound_hit2 = G_SoundIndex("mutant/mutatck3.wav");
+    sound_death = G_SoundIndex("mutant/mutdeth1.wav");
+    sound_idle = G_SoundIndex("mutant/mutidle1.wav");
+    sound_pain1 = G_SoundIndex("mutant/mutpain1.wav");
+    sound_pain2 = G_SoundIndex("mutant/mutpain2.wav");
+    sound_sight = G_SoundIndex("mutant/mutsght1.wav");
+    sound_search = G_SoundIndex("mutant/mutsrch1.wav");
+    sound_step1 = G_SoundIndex("mutant/step1.wav");
+    sound_step2 = G_SoundIndex("mutant/step2.wav");
+    sound_step3 = G_SoundIndex("mutant/step3.wav");
+    sound_thud = G_SoundIndex("mutant/thud1.wav");
 
 }
 
@@ -682,7 +682,7 @@ void SP_monster_mutant(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/mutant/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/mutant/tris.md2");
 
     PrecacheGibs(mutant_gibs);
 

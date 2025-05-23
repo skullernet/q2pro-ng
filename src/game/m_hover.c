@@ -531,24 +531,24 @@ static void hover_set_fly_parameters(edict_t *self)
 
 static void daed_precache(void)
 {
-    daed_sound_pain1 = gi.soundindex("daedalus/daedpain1.wav");
-    daed_sound_pain2 = gi.soundindex("daedalus/daedpain2.wav");
-    daed_sound_death1 = gi.soundindex("daedalus/daeddeth1.wav");
-    daed_sound_death2 = gi.soundindex("daedalus/daeddeth2.wav");
-    daed_sound_sight = gi.soundindex("daedalus/daedsght1.wav");
-    daed_sound_search1 = gi.soundindex("daedalus/daedsrch1.wav");
-    daed_sound_search2 = gi.soundindex("daedalus/daedsrch2.wav");
+    daed_sound_pain1 = G_SoundIndex("daedalus/daedpain1.wav");
+    daed_sound_pain2 = G_SoundIndex("daedalus/daedpain2.wav");
+    daed_sound_death1 = G_SoundIndex("daedalus/daeddeth1.wav");
+    daed_sound_death2 = G_SoundIndex("daedalus/daeddeth2.wav");
+    daed_sound_sight = G_SoundIndex("daedalus/daedsght1.wav");
+    daed_sound_search1 = G_SoundIndex("daedalus/daedsrch1.wav");
+    daed_sound_search2 = G_SoundIndex("daedalus/daedsrch2.wav");
 }
 
 static void hover_precache(void)
 {
-    sound_pain1 = gi.soundindex("hover/hovpain1.wav");
-    sound_pain2 = gi.soundindex("hover/hovpain2.wav");
-    sound_death1 = gi.soundindex("hover/hovdeth1.wav");
-    sound_death2 = gi.soundindex("hover/hovdeth2.wav");
-    sound_sight = gi.soundindex("hover/hovsght1.wav");
-    sound_search1 = gi.soundindex("hover/hovsrch1.wav");
-    sound_search2 = gi.soundindex("hover/hovsrch2.wav");
+    sound_pain1 = G_SoundIndex("hover/hovpain1.wav");
+    sound_pain2 = G_SoundIndex("hover/hovpain2.wav");
+    sound_death1 = G_SoundIndex("hover/hovdeth1.wav");
+    sound_death2 = G_SoundIndex("hover/hovdeth2.wav");
+    sound_sight = G_SoundIndex("hover/hovsght1.wav");
+    sound_search1 = G_SoundIndex("hover/hovsrch1.wav");
+    sound_search2 = G_SoundIndex("hover/hovsrch2.wav");
 }
 
 /*QUAKED monster_hover (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -565,7 +565,7 @@ void SP_monster_hover(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/hover/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/hover/tris.md2");
 
     PrecacheGibs(hover_gibs);
 
@@ -597,16 +597,16 @@ void SP_monster_hover(edict_t *self)
         if (!ED_WasKeySpecified("power_armor_power"))
             self->monsterinfo.power_armor_power = 100;
         // PMM - daedalus sounds
-        self->monsterinfo.engine_sound = gi.soundindex("daedalus/daedidle1.wav");
+        self->monsterinfo.engine_sound = G_SoundIndex("daedalus/daedidle1.wav");
         G_AddPrecache(daed_precache);
-        gi.soundindex("tank/tnkatck3.wav");
+        G_SoundIndex("tank/tnkatck3.wav");
         // pmm
     } else {
         self->yaw_speed = 18;
         G_AddPrecache(hover_precache);
-        gi.soundindex("hover/hovatck1.wav");
+        G_SoundIndex("hover/hovatck1.wav");
 
-        self->monsterinfo.engine_sound = gi.soundindex("hover/hovidle1.wav");
+        self->monsterinfo.engine_sound = G_SoundIndex("hover/hovidle1.wav");
     }
     // PGM
 

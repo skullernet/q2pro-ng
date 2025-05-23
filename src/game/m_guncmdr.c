@@ -686,7 +686,7 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
         self->s.skinnum /= 2;
 
@@ -1377,13 +1377,13 @@ bool MONSTERINFO_BLOCKED(guncmdr_blocked)(edict_t *self, float dist)
 
 static void guncmdr_precache(void)
 {
-    sound_death = gi.soundindex("guncmdr/gcdrdeath1.wav");
-    sound_pain = gi.soundindex("guncmdr/gcdrpain2.wav");
-    sound_pain2 = gi.soundindex("guncmdr/gcdrpain1.wav");
-    sound_idle = gi.soundindex("guncmdr/gcdridle1.wav");
-    sound_open = gi.soundindex("guncmdr/gcdratck1.wav");
-    sound_search = gi.soundindex("guncmdr/gcdrsrch1.wav");
-    sound_sight = gi.soundindex("guncmdr/sight1.wav");
+    sound_death = G_SoundIndex("guncmdr/gcdrdeath1.wav");
+    sound_pain = G_SoundIndex("guncmdr/gcdrpain2.wav");
+    sound_pain2 = G_SoundIndex("guncmdr/gcdrpain1.wav");
+    sound_idle = G_SoundIndex("guncmdr/gcdridle1.wav");
+    sound_open = G_SoundIndex("guncmdr/gcdratck1.wav");
+    sound_search = G_SoundIndex("guncmdr/gcdrsrch1.wav");
+    sound_sight = G_SoundIndex("guncmdr/sight1.wav");
 }
 
 /*QUAKED monster_guncmdr (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight NoJumping
@@ -1398,12 +1398,12 @@ void SP_monster_guncmdr(edict_t *self)
 
     G_AddPrecache(guncmdr_precache);
 
-    gi.soundindex("guncmdr/gcdratck2.wav");
-    gi.soundindex("guncmdr/gcdratck3.wav");
+    G_SoundIndex("guncmdr/gcdratck2.wav");
+    G_SoundIndex("guncmdr/gcdratck3.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
 
     PrecacheGibs(guncmdr_gibs);
 

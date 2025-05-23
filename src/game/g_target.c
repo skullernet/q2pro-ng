@@ -107,9 +107,9 @@ void SP_target_speaker(edict_t *ent)
     }
 
     if (!strstr(st.noise, ".wav"))
-        ent->noise_index = gi.soundindex(va("%s.wav", st.noise));
+        ent->noise_index = G_SoundIndex(va("%s.wav", st.noise));
     else
-        ent->noise_index = gi.soundindex(st.noise);
+        ent->noise_index = G_SoundIndex(st.noise);
 
     if (!ent->volume)
         ent->volume = 1;
@@ -182,9 +182,9 @@ void SP_target_help(edict_t *ent)
 
     if (ent->spawnflags & SPAWNFLAG_SET_POI) {
         if (st.image)
-            ent->noise_index = gi.imageindex(st.image);
+            ent->noise_index = G_ImageIndex(st.image);
         else
-            ent->noise_index = gi.imageindex("friend");
+            ent->noise_index = G_ImageIndex("friend");
     }
 }
 
@@ -226,7 +226,7 @@ void SP_target_secret(edict_t *ent)
     ent->use = use_target_secret;
     if (!st.noise)
         st.noise = "misc/secret.wav";
-    ent->noise_index = gi.soundindex(st.noise);
+    ent->noise_index = G_SoundIndex(st.noise);
     ent->r.svflags = SVF_NOCLIENT;
     level.total_secrets++;
 }
@@ -286,7 +286,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (player->client->pers.game_help1changed != game.help1changed) {
             gi.cprintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
-            G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, gi.soundindex("misc/talk.wav"), 1.0f, ATTN_NONE);
+            G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk.wav"), 1.0f, ATTN_NONE);
 
             player->client->pers.game_help1changed = game.help1changed;
         }
@@ -358,7 +358,7 @@ void SP_target_goal(edict_t *ent)
     ent->use = use_target_goal;
     if (!st.noise)
         st.noise = "misc/secret.wav";
-    ent->noise_index = gi.soundindex(st.noise);
+    ent->noise_index = G_SoundIndex(st.noise);
     ent->r.svflags = SVF_NOCLIENT;
     level.total_goals++;
 }
@@ -624,7 +624,7 @@ void SP_target_blaster(edict_t *self)
 {
     self->use = use_target_blaster;
     G_SetMovedir(self->s.angles, self->movedir);
-    self->noise_index = gi.soundindex("weapons/laser2.wav");
+    self->noise_index = G_SoundIndex("weapons/laser2.wav");
 
     if (!self->dmg)
         self->dmg = 15;
@@ -1063,7 +1063,7 @@ void SP_target_earthquake(edict_t *self)
     self->use = target_earthquake_use;
 
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) { // PGM
-        self->noise_index = gi.soundindex("world/quake.wav");
+        self->noise_index = G_SoundIndex("world/quake.wav");
         trap_LinkEntity(self);
     } else {
         self->r.svflags |= SVF_NOCLIENT;
@@ -1339,19 +1339,19 @@ void SP_target_soundfx(edict_t *self)
 
     switch (self->noise_index) {
     case 1:
-        self->noise_index = gi.soundindex("world/x_alarm.wav");
+        self->noise_index = G_SoundIndex("world/x_alarm.wav");
         break;
     case 2:
-        self->noise_index = gi.soundindex("world/flyby1.wav");
+        self->noise_index = G_SoundIndex("world/flyby1.wav");
         break;
     case 4:
-        self->noise_index = gi.soundindex("world/amb12.wav");
+        self->noise_index = G_SoundIndex("world/amb12.wav");
         break;
     case 5:
-        self->noise_index = gi.soundindex("world/amb17.wav");
+        self->noise_index = G_SoundIndex("world/amb17.wav");
         break;
     case 7:
-        self->noise_index = gi.soundindex("world/bigpump2.wav");
+        self->noise_index = G_SoundIndex("world/bigpump2.wav");
         break;
     default:
         gi.dprintf("%s: unknown noise %d\n", etos(self), self->noise_index);
@@ -1533,9 +1533,9 @@ void SP_target_poi(edict_t *self)
     }
 
     if (st.image)
-        self->noise_index = gi.imageindex(st.image);
+        self->noise_index = G_ImageIndex(st.image);
     else
-        self->noise_index = gi.imageindex("friend");
+        self->noise_index = G_ImageIndex("friend");
 
     self->use = target_poi_use;
     self->r.svflags |= SVF_NOCLIENT;

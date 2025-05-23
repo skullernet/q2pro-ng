@@ -419,7 +419,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     VectorClear(self->avelocity);
 
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/objects/dball/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/objects/dball/tris.md2");
     G_AddEvent(self, EV_PLAYER_TELEPORT, 0);
     self->groundentity = NULL;
 
@@ -482,7 +482,7 @@ void SP_dm_dball_ball(edict_t *self)
     dball_ball_entity = self;
     //dball_ball_startpt = self->s.origin;
 
-    self->s.modelindex = gi.modelindex("models/objects/dball/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/objects/dball/tris.md2");
     VectorSet(self->r.mins, -32, -32, -32);
     VectorSet(self->r.maxs, 32, 32, 32);
     self->r.solid = SOLID_BBOX;

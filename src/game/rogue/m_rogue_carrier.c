@@ -865,43 +865,43 @@ bool MONSTERINFO_CHECKATTACK(Carrier_CheckAttack)(edict_t *self)
 
 static void CarrierPrecache(void)
 {
-    gi.soundindex("flyer/flysght1.wav");
-    gi.soundindex("flyer/flysrch1.wav");
-    gi.soundindex("flyer/flypain1.wav");
-    gi.soundindex("flyer/flypain2.wav");
-    gi.soundindex("flyer/flyatck2.wav");
-    gi.soundindex("flyer/flyatck1.wav");
-    gi.soundindex("flyer/flydeth1.wav");
-    gi.soundindex("flyer/flyatck3.wav");
-    gi.soundindex("flyer/flyidle1.wav");
-    gi.soundindex("weapons/rockfly.wav");
-    gi.soundindex("infantry/infatck1.wav");
-    gi.soundindex("gunner/gunatck3.wav");
-    gi.soundindex("weapons/grenlb1b.wav");
-    gi.soundindex("tank/rocket.wav");
+    G_SoundIndex("flyer/flysght1.wav");
+    G_SoundIndex("flyer/flysrch1.wav");
+    G_SoundIndex("flyer/flypain1.wav");
+    G_SoundIndex("flyer/flypain2.wav");
+    G_SoundIndex("flyer/flyatck2.wav");
+    G_SoundIndex("flyer/flyatck1.wav");
+    G_SoundIndex("flyer/flydeth1.wav");
+    G_SoundIndex("flyer/flyatck3.wav");
+    G_SoundIndex("flyer/flyidle1.wav");
+    G_SoundIndex("weapons/rockfly.wav");
+    G_SoundIndex("infantry/infatck1.wav");
+    G_SoundIndex("gunner/gunatck3.wav");
+    G_SoundIndex("weapons/grenlb1b.wav");
+    G_SoundIndex("tank/rocket.wav");
 
-    gi.modelindex("models/monsters/flyer/tris.md2");
-    gi.modelindex("models/objects/rocket/tris.md2");
-    gi.modelindex("models/objects/debris2/tris.md2");
-    gi.modelindex("models/objects/grenade/tris.md2");
-    gi.modelindex("models/items/spawngro3/tris.md2");
-    gi.modelindex("models/objects/gibs/sm_metal/tris.md2");
-    gi.modelindex("models/objects/gibs/gear/tris.md2");
+    G_ModelIndex("models/monsters/flyer/tris.md2");
+    G_ModelIndex("models/objects/rocket/tris.md2");
+    G_ModelIndex("models/objects/debris2/tris.md2");
+    G_ModelIndex("models/objects/grenade/tris.md2");
+    G_ModelIndex("models/items/spawngro3/tris.md2");
+    G_ModelIndex("models/objects/gibs/sm_metal/tris.md2");
+    G_ModelIndex("models/objects/gibs/gear/tris.md2");
 }
 
 static void carrier_precache_global(void)
 {
-    sound_pain1 = gi.soundindex("carrier/pain_md.wav");
-    sound_pain2 = gi.soundindex("carrier/pain_lg.wav");
-    sound_pain3 = gi.soundindex("carrier/pain_sm.wav");
-    sound_death = gi.soundindex("carrier/death.wav");
-    sound_rail = gi.soundindex("gladiator/railgun.wav");
-    sound_sight = gi.soundindex("carrier/sight.wav");
-    sound_spawn = gi.soundindex("medic_commander/monsterspawn1.wav");
+    sound_pain1 = G_SoundIndex("carrier/pain_md.wav");
+    sound_pain2 = G_SoundIndex("carrier/pain_lg.wav");
+    sound_pain3 = G_SoundIndex("carrier/pain_sm.wav");
+    sound_death = G_SoundIndex("carrier/death.wav");
+    sound_rail = G_SoundIndex("gladiator/railgun.wav");
+    sound_sight = G_SoundIndex("carrier/sight.wav");
+    sound_spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
 
-    sound_cg_down = gi.soundindex("weapons/chngnd1a.wav");
-    sound_cg_loop = gi.soundindex("weapons/chngnl1a.wav");
-    sound_cg_up = gi.soundindex("weapons/chngnu1a.wav");
+    sound_cg_down = G_SoundIndex("weapons/chngnd1a.wav");
+    sound_cg_loop = G_SoundIndex("weapons/chngnl1a.wav");
+    sound_cg_up = G_SoundIndex("weapons/chngnu1a.wav");
 }
 
 /*QUAKED monster_carrier (1 .5 0) (-56 -56 -44) (56 56 44) Ambush Trigger_Spawn Sight
@@ -915,11 +915,11 @@ void SP_monster_carrier(edict_t *self)
 
     G_AddPrecache(carrier_precache_global);
 
-    self->monsterinfo.engine_sound = gi.soundindex("bosshovr/bhvengn1.wav");
+    self->monsterinfo.engine_sound = G_SoundIndex("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/carrier/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/carrier/tris.md2");
 
     PrecacheGibs(carrier_gibs);
 

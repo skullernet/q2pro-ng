@@ -259,11 +259,11 @@ void THINK(makron_torso_think)(edict_t *self)
 static void makron_torso(edict_t *ent)
 {
     ent->s.frame = 346;
-    ent->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
+    ent->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
     ent->s.skinnum = 1;
     ent->think = makron_torso_think;
     ent->nextthink = level.time + HZ(10);
-    ent->s.sound = gi.soundindex("makron/spine.wav");
+    ent->s.sound = G_SoundIndex("makron/spine.wav");
     ent->movetype = MOVETYPE_TOSS;
     ent->s.effects = EF_GIB;
     vec3_t forward, up;
@@ -660,7 +660,7 @@ void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
     // check for gib
     if (M_CheckGib(self, mod)) {
-        G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         ThrowGibs(self, damage, makron_gibs);
         self->deadflag = true;
         return;
@@ -695,22 +695,22 @@ bool MONSTERINFO_CHECKATTACK(Makron_CheckAttack)(edict_t *self)
 
 void MakronPrecache(void)
 {
-    sound_pain4 = gi.soundindex("makron/pain3.wav");
-    sound_pain5 = gi.soundindex("makron/pain2.wav");
-    sound_pain6 = gi.soundindex("makron/pain1.wav");
-    sound_death = gi.soundindex("makron/death.wav");
-    sound_step_left = gi.soundindex("makron/step1.wav");
-    sound_step_right = gi.soundindex("makron/step2.wav");
-    sound_attack_bfg = gi.soundindex("makron/bfg_fire.wav");
-    sound_brainsplorch = gi.soundindex("makron/brain1.wav");
-    sound_prerailgun = gi.soundindex("makron/rail_up.wav");
-    sound_popup = gi.soundindex("makron/popup.wav");
-    sound_taunt1 = gi.soundindex("makron/voice4.wav");
-    sound_taunt2 = gi.soundindex("makron/voice3.wav");
-    sound_taunt3 = gi.soundindex("makron/voice.wav");
-    sound_hit = gi.soundindex("makron/bhit.wav");
+    sound_pain4 = G_SoundIndex("makron/pain3.wav");
+    sound_pain5 = G_SoundIndex("makron/pain2.wav");
+    sound_pain6 = G_SoundIndex("makron/pain1.wav");
+    sound_death = G_SoundIndex("makron/death.wav");
+    sound_step_left = G_SoundIndex("makron/step1.wav");
+    sound_step_right = G_SoundIndex("makron/step2.wav");
+    sound_attack_bfg = G_SoundIndex("makron/bfg_fire.wav");
+    sound_brainsplorch = G_SoundIndex("makron/brain1.wav");
+    sound_prerailgun = G_SoundIndex("makron/rail_up.wav");
+    sound_popup = G_SoundIndex("makron/popup.wav");
+    sound_taunt1 = G_SoundIndex("makron/voice4.wav");
+    sound_taunt2 = G_SoundIndex("makron/voice3.wav");
+    sound_taunt3 = G_SoundIndex("makron/voice.wav");
+    sound_hit = G_SoundIndex("makron/bhit.wav");
 
-    gi.modelindex("models/monsters/boss3/rider/tris.md2");
+    G_ModelIndex("models/monsters/boss3/rider/tris.md2");
 }
 
 /*QUAKED monster_makron (1 .5 0) (-30 -30 0) (30 30 90) Ambush Trigger_Spawn Sight
@@ -726,7 +726,7 @@ void SP_monster_makron(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
     VectorSet(self->r.mins, -30, -30, 0);
     VectorSet(self->r.maxs, 30, 30, 90);
 

@@ -611,13 +611,13 @@ static void float_set_fly_parameters(edict_t *self)
 
 static void floater_precache(void)
 {
-    sound_attack2 = gi.soundindex("floater/fltatck2.wav");
-    sound_attack3 = gi.soundindex("floater/fltatck3.wav");
-    sound_death1 = gi.soundindex("floater/fltdeth1.wav");
-    sound_idle = gi.soundindex("floater/fltidle1.wav");
-    sound_pain1 = gi.soundindex("floater/fltpain1.wav");
-    sound_pain2 = gi.soundindex("floater/fltpain2.wav");
-    sound_sight = gi.soundindex("floater/fltsght1.wav");
+    sound_attack2 = G_SoundIndex("floater/fltatck2.wav");
+    sound_attack3 = G_SoundIndex("floater/fltatck3.wav");
+    sound_death1 = G_SoundIndex("floater/fltdeth1.wav");
+    sound_idle = G_SoundIndex("floater/fltidle1.wav");
+    sound_pain1 = G_SoundIndex("floater/fltpain1.wav");
+    sound_pain2 = G_SoundIndex("floater/fltpain2.wav");
+    sound_sight = G_SoundIndex("floater/fltsght1.wav");
 }
 
 #define SPAWNFLAG_FLOATER_DISGUISE  8
@@ -633,13 +633,13 @@ void SP_monster_floater(edict_t *self)
 
     G_AddPrecache(floater_precache);
 
-    gi.soundindex("floater/fltatck1.wav");
+    G_SoundIndex("floater/fltatck1.wav");
 
-    self->monsterinfo.engine_sound = gi.soundindex("floater/fltsrch1.wav");
+    self->monsterinfo.engine_sound = G_SoundIndex("floater/fltsrch1.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/float/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/float/tris.md2");
 
     PrecacheGibs(floater_gibs);
 

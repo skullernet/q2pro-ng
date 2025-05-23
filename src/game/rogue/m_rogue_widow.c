@@ -281,7 +281,7 @@ static void widow_ready_spawn(edict_t *self)
 
 static void widow_step(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep3.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("widow/bwstep3.wav"), 1, ATTN_NORM);
 }
 
 static const mframe_t widow_frames_stand[] = {
@@ -335,7 +335,7 @@ const mmove_t MMOVE_T(widow_move_run) = { FRAME_walk01, FRAME_walk13, widow_fram
 
 static void widow_stepshoot(edict_t *self)
 {
-    G_StartSound(self, CHAN_BODY, gi.soundindex("widow/bwstep2.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, G_SoundIndex("widow/bwstep2.wav"), 1, ATTN_NORM);
     WidowBlaster(self);
 }
 
@@ -605,7 +605,7 @@ static void spawn_out_start(edict_t *self)
     G_ProjectSource2(self->s.origin, beameffects[1], f, r, u, startpoint);
     G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
-    G_StartSound(self, CHAN_VOICE, gi.soundindex("misc/bwidowbeamout.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/bwidowbeamout.wav"), 1, ATTN_NORM);
 }
 
 static void spawn_out_do(edict_t *self)
@@ -687,7 +687,7 @@ const mmove_t MMOVE_T(widow_move_attack_kick) = { FRAME_kick01, FRAME_kick08, wi
 
 void MONSTERINFO_STAND(widow_stand)(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, gi.soundindex("widow/laugh.wav"), 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, G_SoundIndex("widow/laugh.wav"), 1, ATTN_NORM);
     M_SetAnimation(self, &widow_move_stand);
 }
 
@@ -1082,43 +1082,43 @@ void WidowCalcSlots(edict_t *self)
 static void WidowPrecache(void)
 {
     // cache in all of the stalker stuff, widow stuff, spawngro stuff, gibs
-    gi.soundindex("stalker/pain.wav");
-    gi.soundindex("stalker/death.wav");
-    gi.soundindex("stalker/sight.wav");
-    gi.soundindex("stalker/melee1.wav");
-    gi.soundindex("stalker/melee2.wav");
-    gi.soundindex("stalker/idle.wav");
+    G_SoundIndex("stalker/pain.wav");
+    G_SoundIndex("stalker/death.wav");
+    G_SoundIndex("stalker/sight.wav");
+    G_SoundIndex("stalker/melee1.wav");
+    G_SoundIndex("stalker/melee2.wav");
+    G_SoundIndex("stalker/idle.wav");
 
-    gi.soundindex("tank/tnkatck3.wav");
-    gi.modelindex("models/objects/laser/tris.md2");
+    G_SoundIndex("tank/tnkatck3.wav");
+    G_ModelIndex("models/objects/laser/tris.md2");
 
-    gi.modelindex("models/monsters/stalker/tris.md2");
-    gi.modelindex("models/items/spawngro3/tris.md2");
-    gi.modelindex("models/objects/gibs/sm_metal/tris.md2");
-    gi.modelindex("models/objects/gibs/gear/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib1/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib2/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib3/tris.md2");
-    gi.modelindex("models/monsters/blackwidow/gib4/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib1/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib2/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib3/tris.md2");
-    gi.modelindex("models/monsters/blackwidow2/gib4/tris.md2");
-    gi.modelindex("models/monsters/legs/tris.md2");
-    gi.soundindex("misc/bwidowbeamout.wav");
+    G_ModelIndex("models/monsters/stalker/tris.md2");
+    G_ModelIndex("models/items/spawngro3/tris.md2");
+    G_ModelIndex("models/objects/gibs/sm_metal/tris.md2");
+    G_ModelIndex("models/objects/gibs/gear/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib1/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib2/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib3/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow/gib4/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib1/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib2/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib3/tris.md2");
+    G_ModelIndex("models/monsters/blackwidow2/gib4/tris.md2");
+    G_ModelIndex("models/monsters/legs/tris.md2");
+    G_SoundIndex("misc/bwidowbeamout.wav");
 
-    gi.soundindex("misc/bigtele.wav");
-    gi.soundindex("widow/bwstep3.wav");
-    gi.soundindex("widow/bwstep2.wav");
-    gi.soundindex("widow/bwstep1.wav");
+    G_SoundIndex("misc/bigtele.wav");
+    G_SoundIndex("widow/bwstep3.wav");
+    G_SoundIndex("widow/bwstep2.wav");
+    G_SoundIndex("widow/bwstep1.wav");
 }
 
 static void widow_precache_global(void)
 {
-    sound_pain1 = gi.soundindex("widow/bw1pain1.wav");
-    sound_pain2 = gi.soundindex("widow/bw1pain2.wav");
-    sound_pain3 = gi.soundindex("widow/bw1pain3.wav");
-    sound_rail = gi.soundindex("gladiator/railgun.wav");
+    sound_pain1 = G_SoundIndex("widow/bw1pain1.wav");
+    sound_pain2 = G_SoundIndex("widow/bw1pain2.wav");
+    sound_pain3 = G_SoundIndex("widow/bw1pain3.wav");
+    sound_rail = G_SoundIndex("gladiator/railgun.wav");
 }
 
 /*QUAKED monster_widow (1 .5 0) (-40 -40 0) (40 40 144) Ambush Trigger_Spawn Sight
@@ -1134,7 +1134,7 @@ void SP_monster_widow(edict_t *self)
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = gi.modelindex("models/monsters/blackwidow/tris.md2");
+    self->s.modelindex = G_ModelIndex("models/monsters/blackwidow/tris.md2");
     VectorSet(self->r.mins, -40, -40, 0);
     VectorSet(self->r.maxs, 40, 40, 144);
 
