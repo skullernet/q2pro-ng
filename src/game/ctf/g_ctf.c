@@ -1409,10 +1409,10 @@ void CTFTeam_f(edict_t *ent)
     if (!G_TeamplayEnabled())
         return;
 
-    const char *t;
+    char t[MAX_QPATH];
     ctfteam_t   desired_team;
 
-    t = gi.args();
+    trap_Args(t, sizeof(t));
     if (!*t) {
         G_ClientPrintf(ent, PRINT_HIGH, "You are on the %s team.\n",
                        CTFTeamName(ent->client->resp.ctf_team));
@@ -1949,7 +1949,7 @@ bool CTFHasRegeneration(edict_t *ent)
     return ent->client && ent->client->pers.inventory[IT_TECH_REGENERATION];
 }
 
-void CTFSay_Team(edict_t *who, const char *msg_in)
+void CTFSay_Team(edict_t *who)
 {
     edict_t *cl_ent;
     char outmsg[256];
@@ -1957,8 +1957,7 @@ void CTFSay_Team(edict_t *who, const char *msg_in)
     if (CheckFlood(who))
         return;
 
-    Q_strlcpy(outmsg, msg_in, sizeof(outmsg));
-
+    trap_Args(outmsg, sizeof(outmsg));
     char *msg = COM_StripQuotes(outmsg);
 
     for (int i = 0; i < game.maxclients; i++) {
@@ -2398,7 +2397,7 @@ void CTFGhost(edict_t *ent)
     int i;
     int n;
 
-    if (gi.argc() < 2) {
+    if (trap_Argc() < 2) {
         G_ClientPrintf(ent, PRINT_HIGH, "Usage:  ghost <code>\n");
         return;
     }
@@ -2412,7 +2411,9 @@ void CTFGhost(edict_t *ent)
         return;
     }
 
-    n = Q_atoi(gi.argv(1));
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+    n = Q_atoi(buf);
 
     for (i = 0; i < MAX_CLIENTS; i++) {
         if (ctfgame.ghosts[i].code && ctfgame.ghosts[i].code == n) {
@@ -3300,8 +3301,11 @@ void CTFAdmin(edict_t *ent)
         return;
     }
 
-    if (gi.argc() > 1 && admin_password->string && *admin_password->string &&
-        !ent->client->resp.admin && strcmp(admin_password->string, gi.argv(1)) == 0) {
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
+    if (trap_Argc() > 1 && admin_password->string && *admin_password->string &&
+        !ent->client->resp.admin && strcmp(admin_password->string, buf) == 0) {
         ent->client->resp.admin = true;
         G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ent->client->pers.netname);
         G_ClientPrintf(ent, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
@@ -3430,16 +3434,19 @@ void CTFWarp(edict_t *ent)
 {
     char *token;
 
-    if (gi.argc() < 2) {
+    if (trap_Argc() < 2) {
         G_ClientPrintf(ent, PRINT_HIGH, "Where do you want to warp to?\n");
         G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
         return;
     }
 
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
     const char *mlist = warp_list->string;
 
     while (*(token = COM_Parse(&mlist)))
-        if (Q_strcasecmp(token, gi.argv(1)) == 0)
+        if (Q_strcasecmp(token, buf) == 0)
             break;
 
     if (!*token) {
@@ -3450,15 +3457,15 @@ void CTFWarp(edict_t *ent)
 
     if (ent->client->resp.admin) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s is warping to level %s.\n",
-                       ent->client->pers.netname, gi.argv(1));
-        Q_strlcpy(level.forcemap, gi.argv(1), sizeof(level.forcemap));
+                       ent->client->pers.netname, buf);
+        Q_strlcpy(level.forcemap, buf, sizeof(level.forcemap));
         EndDMLevel();
         return;
     }
 
     if (CTFBeginElection(ent, ELECT_MAP, va("%s has requested warping to level %s.\n",
-                         ent->client->pers.netname, gi.argv(1))))
-        Q_strlcpy(ctfgame.elevel, gi.argv(1), sizeof(ctfgame.elevel));
+                         ent->client->pers.netname, buf)))
+        Q_strlcpy(ctfgame.elevel, buf, sizeof(ctfgame.elevel));
 }
 
 void CTFBoot(edict_t *ent)
@@ -3470,17 +3477,20 @@ void CTFBoot(edict_t *ent)
         return;
     }
 
-    if (gi.argc() < 2) {
+    if (trap_Argc() < 2) {
         G_ClientPrintf(ent, PRINT_HIGH, "Who do you want to kick?\n");
         return;
     }
 
-    if (*gi.argv(1) < '0' && *gi.argv(1) > '9') {
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
+    if (!COM_IsUint(buf)) {
         G_ClientPrintf(ent, PRINT_HIGH, "Specify the player number to kick.\n");
         return;
     }
 
-    int i = Q_atoi(gi.argv(1));
+    int i = Q_atoi(buf);
     if (i < 0 || i >= game.maxclients) {
         G_ClientPrintf(ent, PRINT_HIGH, "Invalid player number.\n");
         return;

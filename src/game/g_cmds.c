@@ -134,26 +134,28 @@ Give items to a client
 */
 static void Cmd_Give_f(edict_t *ent)
 {
-    const char    *name;
+    char           name[MAX_QPATH];
+    char           count[MAX_QPATH];
     const gitem_t *it;
-    item_id_t index;
-    int       i;
-    bool      give_all;
-    edict_t *it_ent;
+    item_id_t      index;
+    int            i;
+    bool           give_all;
+    edict_t       *it_ent;
 
     if (!G_CheatCheck(ent))
         return;
 
-    name = gi.args();
+    trap_Argv(1, name, sizeof(name));
+    trap_Argv(2, count, sizeof(count));
 
     if (Q_strcasecmp(name, "all") == 0)
         give_all = true;
     else
         give_all = false;
 
-    if (give_all || Q_strcasecmp(gi.argv(1), "health") == 0) {
-        if (gi.argc() == 3)
-            ent->health = Q_atoi(gi.argv(2));
+    if (give_all || Q_strcasecmp(name, "health") == 0) {
+        if (trap_Argc() == 3)
+            ent->health = Q_atoi(count);
         else
             ent->health = ent->max_health;
         if (!give_all)
@@ -227,12 +229,12 @@ static void Cmd_Give_f(edict_t *ent)
     }
 
     it = FindItem(name);
-    if (!it) {
-        name = gi.argv(1);
-        it = FindItem(name);
-    }
     if (!it)
         it = FindItemByClassname(name);
+    if (!it) {
+        trap_Args(name, sizeof(name));
+        it = FindItem(COM_StripQuotes(name));
+    }
 
     if (!it) {
         G_ClientPrintf(ent, PRINT_HIGH, "Unknown item\n");
@@ -254,8 +256,8 @@ static void Cmd_Give_f(edict_t *ent)
     }
 
     if (it->flags & IF_AMMO) {
-        if (gi.argc() == 3)
-            ent->client->pers.inventory[index] = Q_atoi(gi.argv(2));
+        if (trap_Argc() == 3)
+            ent->client->pers.inventory[index] = Q_atoi(count);
         else
             ent->client->pers.inventory[index] += it->quantity;
     } else {
@@ -278,7 +280,10 @@ static void Cmd_Target_f(edict_t *ent)
     if (!G_CheatCheck(ent))
         return;
 
-    ent->target = gi.argv(1);
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
+    ent->target = buf;
     G_UseTargets(ent, ent);
     ent->target = NULL;
 }
@@ -342,12 +347,15 @@ static void Cmd_Spawn_f(edict_t *ent)
     if (!G_CheatCheck(ent))
         return;
 
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
     solid_t backup = ent->r.solid;
     ent->r.solid = SOLID_NOT;
     trap_LinkEntity(ent);
 
     edict_t *other = G_Spawn();
-    other->classname = gi.argv(1);
+    other->classname = G_CopyString(buf);
 
     vec3_t forward;
     AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -357,9 +365,16 @@ static void Cmd_Spawn_f(edict_t *ent)
 
     ED_InitSpawnVars();
 
-    if (gi.argc() > 3)
-        for (int i = 2; i < gi.argc(); i += 2)
-            ED_ParseField(gi.argv(i), gi.argv(i + 1), other);
+    int argc = trap_Argc();
+    if (argc > 3) {
+        char key[MAX_QPATH];
+        char val[MAX_QPATH];
+        for (int i = 2; i < argc; i += 2) {
+            trap_Argv(i, key, sizeof(key));
+            trap_Argv(i + 1, val, sizeof(val));
+            ED_ParseField(key, val, other);
+        }
+    }
 
     ED_CallSpawn(other);
 
@@ -428,25 +443,31 @@ argv(3) z
 */
 static void Cmd_Teleport_f(edict_t *ent)
 {
+    char buf[MAX_QPATH];
+    int i;
+
     if (!G_CheatCheck(ent))
         return;
 
-    if (gi.argc() < 4) {
+    if (trap_Argc() < 4) {
         G_ClientPrintf(ent, PRINT_HIGH, "Not enough args; teleport x y z\n");
         return;
     }
 
-    ent->s.origin[0] = Q_atof(gi.argv(1));
-    ent->s.origin[1] = Q_atof(gi.argv(2));
-    ent->s.origin[2] = Q_atof(gi.argv(3));
+    for (i = 0; i < 3; i++) {
+        trap_Argv(1 + i, buf, sizeof(buf));
+        ent->s.origin[i] = Q_atof(buf);
+    }
 
-    if (gi.argc() > 4) {
-        float pitch = Q_atof(gi.argv(4));
-        float yaw = Q_atof(gi.argv(5));
-        float roll = Q_atof(gi.argv(6));
-        vec3_t ang = { pitch, yaw, roll };
+    if (trap_Argc() > 4) {
+        vec3_t ang;
 
-        for (int i = 0; i < 3; i++)
+        for (i = 0; i < 3; i++) {
+            trap_Argv(4 + i, buf, sizeof(buf));
+            ang[i] = Q_atof(buf);
+        }
+
+        for (i = 0; i < 3; i++)
             ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ang[i] - ent->client->resp.cmd_angles[i]);
         VectorCopy(ang, ent->client->ps.viewangles);
         VectorCopy(ang, ent->client->v_angle);
@@ -541,19 +562,20 @@ Cmd_Use_f
 Use an inventory item
 ==================
 */
-static void Cmd_Use_f(edict_t *ent)
+static void Cmd_Use_f(edict_t *ent, bool use_index, bool no_chains)
 {
     item_id_t index;
     const gitem_t *it;
     const char *s;
+    char buf[MAX_QPATH];
 
     if (ent->health <= 0 || ent->deadflag)
         return;
 
-    s = gi.args();
+    trap_Args(buf, sizeof(buf));
+    s = COM_StripQuotes(buf);
 
-    const char *cmd = gi.argv(0);
-    if (!Q_strcasecmp(cmd, "use_index") || !Q_strcasecmp(cmd, "use_index_only"))
+    if (use_index)
         it = GetItemByIndex(Q_atoi(s));
     else
         it = FindItem(s);
@@ -575,7 +597,7 @@ static void Cmd_Use_f(edict_t *ent)
     }
 
     // allow weapon chains for use
-    ent->client->no_weapon_chains = !!strcmp(gi.argv(0), "use") && !!strcmp(gi.argv(0), "use_index");
+    ent->client->no_weapon_chains = no_chains;
 
     it->use(ent, it);
 
@@ -589,17 +611,21 @@ Cmd_Drop_f
 Drop an inventory item
 ==================
 */
-static void Cmd_Drop_f(edict_t *ent)
+static void Cmd_Drop_f(edict_t *ent, bool drop_index)
 {
     item_id_t index;
     const gitem_t *it;
     const char *s;
+    char buf[MAX_QPATH];
 
     if (ent->health <= 0 || ent->deadflag)
         return;
 
+    trap_Args(buf, sizeof(buf));
+    s = COM_StripQuotes(buf);
+
     // ZOID--special case for tech powerups
-    if (Q_strcasecmp(gi.args(), "tech") == 0) {
+    if (Q_strcasecmp(s, "tech") == 0) {
         it = CTFWhat_Tech(ent);
 
         if (it) {
@@ -611,11 +637,7 @@ static void Cmd_Drop_f(edict_t *ent)
     }
     // ZOID
 
-    s = gi.args();
-
-    const char *cmd = gi.argv(0);
-
-    if (!Q_strcasecmp(cmd, "drop_index"))
+    if (drop_index)
         it = GetItemByIndex(Q_atoi(s));
     else
         it = FindItem(s);
@@ -1088,7 +1110,10 @@ Cmd_Wave_f
 */
 static void Cmd_Wave_f(edict_t *ent)
 {
-    int cmd = Q_atoi(gi.argv(1));
+    char buf[MAX_QPATH];
+
+    trap_Argv(1, buf, sizeof(buf));
+    int cmd = Q_atoi(buf);
 
     // no dead or noclip waving
     if (ent->deadflag || ent->movetype == MOVETYPE_NOCLIP)
@@ -1240,9 +1265,10 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
 {
     int     j;
     edict_t *other;
-    char    text[2048];
+    char    text[152];
+    char    buf[152];
 
-    if (gi.argc() < 2 && !arg0)
+    if (trap_Argc() < 2 && !arg0)
         return;
 
     if (CheckFlood(ent))
@@ -1251,16 +1277,18 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
     Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
 
     if (arg0) {
-        Q_strlcat(text, gi.argv(0), sizeof(text));
+        trap_Argv(0, buf, sizeof(buf));
+        Q_strlcat(text, buf, sizeof(text));
         Q_strlcat(text, " ", sizeof(text));
-        Q_strlcat(text, gi.args(), sizeof(text));
+        trap_Args(buf, sizeof(buf));
+        Q_strlcat(text, buf, sizeof(text));
     } else {
-        Q_strlcat(text, COM_StripQuotes(gi.args()), sizeof(text));
+        trap_Args(buf, sizeof(buf));
+        Q_strlcat(text, COM_StripQuotes(buf), sizeof(text));
     }
 
     // don't let text be too long for malicious reasons
-    if (strlen(text) > 150)
-        text[150] = 0;
+    text[150] = 0;
 
     Q_strlcat(text, "\n", sizeof(text));
 
@@ -1456,12 +1484,12 @@ ClientCommand
 */
 void ClientCommand(edict_t *ent)
 {
-    const char *cmd;
+    char cmd[MAX_QPATH];
 
     if (!ent->client)
         return; // not fully in game yet
 
-    cmd = gi.argv(0);
+    trap_Argv(0, cmd, sizeof(cmd));
 
     if (Q_strcasecmp(cmd, "players") == 0) {
         Cmd_Players_f(ent);
@@ -1473,7 +1501,7 @@ void ClientCommand(edict_t *ent)
     }
     if (Q_strcasecmp(cmd, "say_team") == 0 || Q_strcasecmp(cmd, "steam") == 0) {
         if (G_TeamplayEnabled())
-            CTFSay_Team(ent, gi.args());
+            CTFSay_Team(ent);
         else
             Cmd_Say_f(ent, false);
         return;
@@ -1500,12 +1528,18 @@ void ClientCommand(edict_t *ent)
 
     if (Q_strcasecmp(cmd, "target") == 0)
         Cmd_Target_f(ent);
-    else if (Q_strcasecmp(cmd, "use") == 0 || Q_strcasecmp(cmd, "use_only") == 0 ||
-             Q_strcasecmp(cmd, "use_index") == 0 || Q_strcasecmp(cmd, "use_index_only") == 0)
-        Cmd_Use_f(ent);
-    else if (Q_strcasecmp(cmd, "drop") == 0 ||
-             Q_strcasecmp(cmd, "drop_index") == 0)
-        Cmd_Drop_f(ent);
+    else if (Q_strcasecmp(cmd, "use") == 0)
+        Cmd_Use_f(ent, false, false);
+    else if (Q_strcasecmp(cmd, "use_only") == 0)
+        Cmd_Use_f(ent, false, true);
+    else if (Q_strcasecmp(cmd, "use_index") == 0)
+        Cmd_Use_f(ent, true, false);
+    else if (Q_strcasecmp(cmd, "use_index_only") == 0)
+        Cmd_Use_f(ent, true, true);
+    else if (Q_strcasecmp(cmd, "drop") == 0)
+        Cmd_Drop_f(ent, false);
+    else if (Q_strcasecmp(cmd, "drop_index") == 0)
+        Cmd_Drop_f(ent, true);
     else if (Q_strcasecmp(cmd, "give") == 0)
         Cmd_Give_f(ent);
     else if (Q_strcasecmp(cmd, "god") == 0)

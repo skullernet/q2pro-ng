@@ -94,7 +94,7 @@ void        CTFDeadDropFlag(edict_t *self);
 void        CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable);
 void        CTFTeam_f(edict_t *ent);
 void        CTFID_f(edict_t *ent);
-void        CTFSay_Team(edict_t *who, const char *msg);
+void        CTFSay_Team(edict_t *who);
 void        CTFFlagSetup(edict_t *ent);
 void        CTFResetFlag(ctfteam_t ctf_team);
 void        CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker);

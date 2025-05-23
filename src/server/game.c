@@ -302,7 +302,7 @@ static void PF_configstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
-static size_t PF_GetConfigstring(int index, char *buf, size_t size)
+static unsigned PF_GetConfigstring(int index, char *buf, unsigned size)
 {
     if (index < 0 || index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
@@ -347,6 +347,16 @@ static void PF_AddCommandString(const char *string)
         string = "pushmenu loadgame\n";
 #endif
     Cbuf_AddText(&cmd_buffer, string);
+}
+
+static unsigned PF_Argv(int arg, char *buf, unsigned size)
+{
+    return Q_strlcpy(buf, Cmd_Argv(arg), size);
+}
+
+static unsigned PF_Args(char *buf, unsigned size)
+{
+    return Q_strlcpy(buf, Cmd_RawArgs(), size);
 }
 
 static void PF_SetAreaPortalState(int portalnum, bool open)
@@ -479,8 +489,8 @@ static const game_import_t game_import = {
     .cvar_forceset = Cvar_Set,
 
     .argc = Cmd_Argc,
-    .argv = Cmd_Argv,
-    .args = Cmd_RawArgs,
+    .argv = PF_Argv,
+    .args = PF_Args,
     .AddCommandString = PF_AddCommandString,
 
     .DebugGraph = SCR_DebugGraph,

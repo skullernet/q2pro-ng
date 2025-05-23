@@ -181,7 +181,7 @@ typedef struct {
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
     void (*configstring)(int index, const char *str);
-    size_t (*get_configstring)(int index, char *buf, size_t size);
+    unsigned (*get_configstring)(int index, char *buf, unsigned size);
 
     void (* q_noreturn_ptr error)(const char *msg);
 
@@ -224,8 +224,8 @@ typedef struct {
 
     // ClientCommand and ServerCommand parameter access
     int (*argc)(void);
-    char *(*argv)(int n);
-    char *(*args)(void);     // concatenation of all argv >= 1
+    unsigned (*argv)(int arg, char *buf, unsigned size);
+    unsigned (*args)(char *buf, unsigned size);     // concatenation of all argv >= 1
 
     // add commands to the server console as if they were typed in
     // for map changing, etc
