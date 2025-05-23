@@ -357,7 +357,7 @@ static void guncmdr_shrink(edict_t *self)
 {
     self->r.maxs[2] = -4 * self->s.scale;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t guncmdr_frames_death6[] = {
@@ -738,7 +738,7 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
             VectorScale(dir, 100, head->velocity);
             head->velocity[2] = 200;
             VectorScale(head->avelocity, 0.15f, head->avelocity);
-            gi.linkentity(head);
+            trap_LinkEntity(head);
         }
     // damage came from behind; use backwards death
     } else if (DotProduct(dif, forward) < -0.4f) {
@@ -1435,7 +1435,7 @@ void SP_monster_guncmdr(edict_t *self)
     self->monsterinfo.search = guncmdr_search;
     self->monsterinfo.setskin = guncmdr_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &guncmdr_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

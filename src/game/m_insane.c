@@ -76,7 +76,7 @@ static void insane_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 #endif
 
@@ -668,7 +668,7 @@ void SP_misc_insane(edict_t *self)
     self->monsterinfo.sight = NULL;
     self->monsterinfo.aiflags |= AI_GOOD_GUY;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_INSANE_STAND_GROUND) // Stand Ground
         self->monsterinfo.aiflags |= AI_STAND_GROUND;

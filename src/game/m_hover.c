@@ -484,7 +484,7 @@ static void hover_dead(edict_t *self)
     self->think = hover_deadthink;
     self->nextthink = level.time + FRAME_TIME;
     self->timestamp = level.time + SEC(15);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void DIE(hover_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
@@ -610,7 +610,7 @@ void SP_monster_hover(edict_t *self)
     }
     // PGM
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &hover_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

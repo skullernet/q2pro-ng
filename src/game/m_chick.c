@@ -284,7 +284,7 @@ static void chick_shrink(edict_t *self)
 {
     self->r.maxs[2] = 12;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t chick_frames_death2[] = {
@@ -782,7 +782,7 @@ void SP_monster_chick(edict_t *self)
     self->monsterinfo.sight = chick_sight;
     self->monsterinfo.setskin = chick_setpain;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &chick_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

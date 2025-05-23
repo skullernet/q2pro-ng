@@ -302,7 +302,7 @@ static void gladiator_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t gladiator_frames_death[] = {
@@ -471,7 +471,7 @@ void SP_monster_gladiator(edict_t *self)
     self->monsterinfo.blocked = gladiator_blocked; // PGM
     self->monsterinfo.setskin = gladiator_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
     M_SetAnimation(self, &gladiator_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

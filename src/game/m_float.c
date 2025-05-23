@@ -574,7 +574,7 @@ static void floater_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 #endif
 
@@ -662,7 +662,7 @@ void SP_monster_floater(edict_t *self)
     self->monsterinfo.idle = floater_idle;
     self->monsterinfo.setskin = floater_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_FLOATER_DISGUISE)
         M_SetAnimation(self, &floater_move_disguise);

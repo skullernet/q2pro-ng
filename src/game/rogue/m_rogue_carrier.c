@@ -952,7 +952,7 @@ void SP_monster_carrier(edict_t *self)
     self->monsterinfo.sight = carrier_sight;
     self->monsterinfo.checkattack = Carrier_CheckAttack;
     self->monsterinfo.setskin = carrier_setskin;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &carrier_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

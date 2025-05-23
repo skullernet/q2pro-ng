@@ -609,7 +609,7 @@ void SP_monster_jorg(edict_t *self)
     self->monsterinfo.sight = NULL;
     self->monsterinfo.checkattack = Jorg_CheckAttack;
     self->monsterinfo.setskin = jorg_setskin;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &jorg_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

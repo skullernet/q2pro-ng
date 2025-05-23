@@ -344,7 +344,7 @@ const mmove_t MMOVE_T(boss2_move_pain_light) = { FRAME_pain20, FRAME_pain23, bos
 static void boss2_shrink(edict_t *self)
 {
     self->r.maxs[2] = 50;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t boss2_frames_death[] = {
@@ -609,7 +609,7 @@ void SP_monster_boss2(edict_t *self)
     self->monsterinfo.search = boss2_search;
     self->monsterinfo.checkattack = Boss2_CheckAttack;
     self->monsterinfo.setskin = boss2_setskin;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &boss2_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

@@ -60,7 +60,7 @@ void MoveClientToIntermission(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NOCLIP;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     // add the layout
 

@@ -116,7 +116,7 @@ static void landing_goal(edict_t *self)
     ent->r.solid = SOLID_BBOX;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     VectorSet(ent->r.mins, -32, -32, -24);
     VectorSet(ent->r.maxs, 32, 32, 24);
@@ -145,7 +145,7 @@ static void takeoff_goal(edict_t *self)
     ent->r.solid = SOLID_BBOX;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     VectorSet(ent->r.mins, -32, -32, -24);
     VectorSet(ent->r.maxs, 32, 32, 24);
@@ -210,7 +210,7 @@ static void roam_goal(edict_t *self)
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     oldlen = 0;
 
@@ -801,7 +801,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
 
     VectorCopy(start, laser->s.origin);
     VectorCopy(dir, laser->movedir);
-    gi.linkentity(laser);
+    trap_LinkEntity(laser);
     dabeam_update(laser, true);
 }
 
@@ -1079,7 +1079,7 @@ static void fixbot_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 #endif
 
@@ -1131,7 +1131,7 @@ void SP_monster_fixbot(edict_t *self)
     self->monsterinfo.run = fixbot_run;
     self->monsterinfo.attack = fixbot_attack;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &fixbot_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

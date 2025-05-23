@@ -71,7 +71,7 @@ void SV_Physics_NewToss(edict_t *ent)
     VectorScale(ent->velocity, newspeed, ent->velocity);
 
     SV_FlyMove(ent, FRAME_TIME_SEC, ent->clipmask);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     G_TouchTriggers(ent);
 
@@ -93,7 +93,7 @@ void SV_Physics_NewToss(edict_t *ent)
     // move teamslaves
     for (slave = ent->teamchain; slave; slave = slave->teamchain) {
         VectorCopy(ent->s.origin, slave->s.origin);
-        gi.linkentity(slave);
+        trap_LinkEntity(slave);
     }
 }
 

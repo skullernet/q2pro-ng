@@ -837,7 +837,7 @@ static void tank_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t tank_frames_death1[] = {
@@ -926,7 +926,7 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
         VectorCopy(self->s.angles, arm->s.angles);
         arm->s.angles[2] = -90;
         arm->s.skinnum /= 2;
-        gi.linkentity(arm);
+        trap_LinkEntity(arm);
     }
 
     // regular death
@@ -1033,7 +1033,7 @@ void SP_monster_tank(edict_t *self)
     self->monsterinfo.blocked = tank_blocked; // PGM
     self->monsterinfo.setskin = tank_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &tank_move_stand);
 
@@ -1091,5 +1091,5 @@ void SP_monster_tank_stand(edict_t *self)
     self->use = Use_Boss3;
     self->think = Think_TankStand;
     self->nextthink = level.time + HZ(10);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }

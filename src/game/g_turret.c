@@ -250,7 +250,7 @@ void SP_turret_breach(edict_t *self)
 
     self->think = turret_breach_finish_init;
     self->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED turret_base (0 0 0) ?
@@ -268,7 +268,7 @@ void SP_turret_base(edict_t *self)
 
     gi.setmodel(self, self->model);
     self->moveinfo.blocked = turret_blocked;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED turret_driver (1 .5 0) (-16 -16 -24) (16 16 32)
@@ -447,7 +447,7 @@ void SP_turret_driver(edict_t *self)
     self->think = turret_driver_link;
     self->nextthink = level.time + FRAME_TIME;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 //============
@@ -614,7 +614,7 @@ void SP_turret_invisible_brain(edict_t *self)
     }
 
     self->movetype = MOVETYPE_PUSH;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // ROGUE

@@ -606,7 +606,7 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
                 VectorCopy(oldorg, ent->s.origin);
             else {
                 if (relink) {
-                    gi.linkentity(ent);
+                    trap_LinkEntity(ent);
                     G_TouchTriggers(ent);
                 }
 
@@ -759,7 +759,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         if (ent->flags & FL_PARTIALGROUND) {
             VectorAdd(ent->s.origin, move, ent->s.origin);
             if (relink) {
-                gi.linkentity(ent);
+                trap_LinkEntity(ent);
                 G_TouchTriggers(ent);
             }
             ent->groundentity = NULL;
@@ -827,7 +827,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             // entity had floor mostly pulled out from underneath it
             // and is trying to correct
             if (relink) {
-                gi.linkentity(ent);
+                trap_LinkEntity(ent);
                 G_TouchTriggers(ent);
             }
             return true;
@@ -865,7 +865,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
     // the move is ok
     if (relink) {
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
 
         // [Paril-KEX] this is something N64 does to avoid doors opening
         // at the start of a level, which triggers some monsters to spawn.
@@ -901,7 +901,7 @@ bool ai_check_move(edict_t *self, float dist)
         return false;
 
     VectorCopy(old_origin, self->s.origin);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
     return true;
 }
 
@@ -990,12 +990,12 @@ static bool SV_StepDirection(edict_t *ent, float yaw, float dist, bool allow_no_
                 return allow_no_turns; // [Paril-KEX]
             }
         }
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
         G_TouchTriggers(ent);
         G_TouchProjectiles(ent, oldorigin);
         return true;
     }
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
     G_TouchTriggers(ent);
     ent->ideal_yaw = old_ideal_yaw;
     ent->s.angles[YAW] = old_current_yaw;
@@ -1389,7 +1389,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
             if (!boxes_intersect(ent->r.absmin, ent->r.absmax, goal->s.origin, goal->s.origin)) {
                 // move it if we would have touched it if the corner was lower
                 goal->s.origin[2] = p[2];
-                gi.linkentity(goal);
+                trap_LinkEntity(goal);
             }
         }
     }

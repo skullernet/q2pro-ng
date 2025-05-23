@@ -15,7 +15,7 @@ void THINK(info_player_start_drop)(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     VectorCopy(player_mins, self->r.mins);
     VectorCopy(player_maxs, self->r.maxs);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 #define SPAWNFLAG_SPAWN_RIDE    1
@@ -717,7 +717,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
     self->deadflag = true;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 //=======================================================================
@@ -1464,7 +1464,7 @@ void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
         self->takedamage = false;
         self->r.solid = SOLID_NOT;
         self->movetype = MOVETYPE_NOCLIP;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
     }
 }
 
@@ -1482,8 +1482,8 @@ static void CopyToBodyQue(edict_t *ent)
 
     // FIXME: send an effect on the removed body
 
-    gi.unlinkentity(ent);
-    gi.unlinkentity(body);
+    trap_UnlinkEntity(ent);
+    trap_UnlinkEntity(body);
 
     body->s = ent->s;
     body->s.number = body - g_edicts;
@@ -1516,7 +1516,7 @@ static void CopyToBodyQue(edict_t *ent)
     body->die = body_die;
     body->takedamage = true;
 
-    gi.linkentity(body);
+    trap_LinkEntity(body);
 }
 
 void G_PostRespawn(edict_t *self)
@@ -1776,7 +1776,7 @@ void PutClientInServer(edict_t *ent)
         ent->s.modelindex = 0;
         ent->r.svflags |= SVF_NOCLIENT;
         //ent->client->ps.team_id = ent->client->resp.ctf_team;
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
 
         return;
     }
@@ -1921,7 +1921,7 @@ void PutClientInServer(edict_t *ent)
         ent->r.solid = SOLID_NOT;
         ent->r.svflags |= SVF_NOCLIENT;
         ent->client->ps.gunindex = 0;
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
         return;
     }
 
@@ -1934,7 +1934,7 @@ void PutClientInServer(edict_t *ent)
             edict_t *collision = G_UnsafeSpawnPosition(ent->s.origin, true);
 
             if (collision) {
-                gi.linkentity(ent);
+                trap_LinkEntity(ent);
 
                 if (collision->client) {
                     // we spawned in somebody else, so we're going to change their spawn position
@@ -1950,7 +1950,7 @@ void PutClientInServer(edict_t *ent)
         ent->client->landmark_free_fall = true;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     if (!KillBoxEx(ent, true, MOD_TELEFRAG_SPAWN, false, false)) {
         // could't spawn in?
@@ -2398,7 +2398,7 @@ void ClientDisconnect(edict_t *ent)
     if (!(ent->r.svflags & SVF_NOCLIENT))
         G_TempEntity(ent->s.origin, EV_MUZZLEFLASH, MZ_LOGOUT);
 
-    gi.unlinkentity(ent);
+    trap_UnlinkEntity(ent);
     ent->s.modelindex = 0;
     ent->r.solid = SOLID_NOT;
     ent->r.inuse = false;
@@ -2650,7 +2650,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             CTFGrapplePull(client->ctf_grapple);
         // ZOID
 
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
 
         // PGM trigger_gravity support
         ent->gravity = 1.0f;
@@ -3007,7 +3007,7 @@ static bool G_CoopRespawn(edict_t *ent)
             ent->client->ps.rdflags = RDF_NONE;
             ent->movetype = MOVETYPE_NOCLIP;
             // TODO: check if anything else needs to be reset
-            gi.linkentity(ent);
+            trap_LinkEntity(ent);
             GetChaseTarget(ent);
         }
     }

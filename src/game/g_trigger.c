@@ -61,7 +61,7 @@ void USE(Use_Multi)(edict_t *ent, edict_t *other, edict_t *activator)
             ent->r.solid = SOLID_NOT;
         else
             ent->r.solid = SOLID_TRIGGER;
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
     } else {
         ent->activator = activator;
         multi_trigger(ent);
@@ -118,7 +118,7 @@ void USE(trigger_enable)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->r.solid = SOLID_TRIGGER;
     self->use = Use_Multi;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void THINK(latched_trigger_think)(edict_t *self)
@@ -200,7 +200,7 @@ void SP_trigger_multiple(edict_t *ent)
         ent->use = Use_Multi;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     if (ent->spawnflags & SPAWNFLAG_TRIGGER_CLIP)
         ent->r.svflags |= SVF_HULL;
@@ -501,7 +501,7 @@ void USE(trigger_push_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->r.solid = SOLID_TRIGGER;
     else
         self->r.solid = SOLID_NOT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 // PGM
 //======
@@ -593,7 +593,7 @@ void SP_trigger_push(edict_t *self)
     }
     // PGM
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_PUSH_CLIP)
         self->r.svflags |= SVF_HULL;
@@ -636,7 +636,7 @@ void USE(hurt_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->r.solid = SOLID_TRIGGER;
     else
         self->r.solid = SOLID_NOT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (!(self->spawnflags & SPAWNFLAG_HURT_TOGGLE))
         self->use = NULL;
@@ -769,7 +769,7 @@ void SP_trigger_hurt(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_HURT_TOGGLE)
         self->use = hurt_use;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_HURT_CLIPPED)
         self->r.svflags |= SVF_HULL;
@@ -802,7 +802,7 @@ void USE(trigger_gravity_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->r.solid = SOLID_TRIGGER;
     else
         self->r.solid = SOLID_NOT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 // PGM
 
@@ -843,7 +843,7 @@ void SP_trigger_gravity(edict_t *self)
     self->touch = trigger_gravity_touch;
     // PGM
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_GRAVITY_CLIPPED)
         self->r.svflags |= SVF_HULL;
@@ -876,7 +876,7 @@ void USE(trigger_monsterjump_use)(edict_t *self, edict_t *other, edict_t *activa
         self->r.solid = SOLID_TRIGGER;
     else
         self->r.solid = SOLID_NOT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void TOUCH(trigger_monsterjump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -927,7 +927,7 @@ void SP_trigger_monsterjump(edict_t *self)
         self->r.solid = SOLID_NOT;
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_CLIPPED)
         self->r.svflags |= SVF_HULL;
@@ -980,7 +980,7 @@ void SP_trigger_flashlight(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_FLASHLIGHT_CLIPPED)
         self->r.svflags |= SVF_HULL;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 
@@ -1255,7 +1255,7 @@ void SP_trigger_coop_relay(edict_t *self)
     } else
         self->use = trigger_coop_relay_use;
     self->r.svflags |= SVF_NOCLIENT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED trigger_safe_fall (.5 .5 .5) ?
@@ -1277,5 +1277,5 @@ void SP_trigger_safe_fall(edict_t *self)
     self->touch = trigger_safe_fall_touch;
     self->r.svflags |= SVF_NOCLIENT;
     self->r.solid = SOLID_TRIGGER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }

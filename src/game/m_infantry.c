@@ -321,7 +321,7 @@ static void infantry_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static void infantry_shrink2(edict_t *self)
@@ -469,7 +469,7 @@ void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
             head->velocity[2] = 200;
             VectorScale(head->avelocity, 0.15f, head->avelocity);
             head->s.skinnum = 0;
-            gi.linkentity(head);
+            trap_LinkEntity(head);
         }
     }
 }
@@ -908,7 +908,7 @@ void SP_monster_infantry(edict_t *self)
     self->monsterinfo.idle = infantry_fidget;
     self->monsterinfo.setskin = infantry_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &infantry_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

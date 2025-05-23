@@ -592,7 +592,7 @@ void SP_hint_path(edict_t *self)
     VectorSet(self->r.mins, -8, -8, -8);
     VectorSet(self->r.maxs, 8, 8, 8);
     self->r.svflags |= SVF_NOCLIENT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // ============
@@ -734,7 +734,7 @@ edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, ed
     badarea->movetype = MOVETYPE_NONE;
     badarea->r.solid = SOLID_TRIGGER;
     badarea->classname = "bad_area";
-    gi.linkentity(badarea);
+    trap_LinkEntity(badarea);
 
     if (lifespan) {
         badarea->think = G_FreeEdict;
@@ -1095,7 +1095,7 @@ void monster_duck_down(edict_t *self)
     self->r.maxs[2] = self->monsterinfo.base_height - 32;
     self->takedamage = true;
     self->monsterinfo.next_duck_time = level.time + DUCK_INTERVAL;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void monster_duck_hold(edict_t *self)
@@ -1117,7 +1117,7 @@ void MONSTERINFO_UNDUCK(monster_duck_up)(edict_t *self)
     // we finished a duck-up successfully, so cut the time remaining in half
     if (self->monsterinfo.next_duck_time > level.time)
         self->monsterinfo.next_duck_time = level.time + ((self->monsterinfo.next_duck_time - level.time) / 2);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 bool has_valid_enemy(edict_t *self)

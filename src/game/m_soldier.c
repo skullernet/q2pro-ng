@@ -523,7 +523,7 @@ void PRETHINK(soldierh_laser_update)(edict_t *laser)
 
     VectorCopy(start, laser->s.origin);
     VectorCopy(axis[0], laser->movedir);
-    gi.linkentity(laser);
+    trap_LinkEntity(laser);
     dabeam_update(laser, false);
 }
 
@@ -1310,7 +1310,7 @@ static void soldier_death_shrink(edict_t *self)
 {
     self->r.svflags |= SVF_DEADMONSTER;
     self->r.maxs[2] = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t soldier_frames_death1[] = {
@@ -1781,7 +1781,7 @@ static void SP_monster_soldier_x(edict_t *self)
     // ROGUE
     //=====
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     self->monsterinfo.stand(self);
 

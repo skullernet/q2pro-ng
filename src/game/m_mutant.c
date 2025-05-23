@@ -491,7 +491,7 @@ static void mutant_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // [Paril-KEX]
@@ -709,7 +709,7 @@ void SP_monster_mutant(edict_t *self)
     self->monsterinfo.blocked = mutant_blocked; // PGM
     self->monsterinfo.setskin = mutant_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &mutant_move_stand);
 

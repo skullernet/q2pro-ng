@@ -63,7 +63,7 @@ static void shambler_lightning_update(edict_t *self)
     AngleVectors(self->s.angles, f, r, NULL);
     M_ProjectFlashSource(self, lightning_left_hand[self->s.frame - FRAME_magic01], f, r, lightning->s.origin);
     M_ProjectFlashSource(self, lightning_right_hand[self->s.frame - FRAME_magic01], f, r, lightning->s.old_origin);
-    gi.linkentity(lightning);
+    trap_LinkEntity(lightning);
 }
 
 static void shambler_windup(edict_t *self)
@@ -300,7 +300,7 @@ static void ShamblerCastLightning(edict_t *self)
     VectorCopy(start, te->s.old_origin);
     VectorCopy(tr.endpos, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 
     fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, (mod_t) { MOD_TESLA });
 }
@@ -467,7 +467,7 @@ static void shambler_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t shambler_frames_death[] = {
@@ -572,7 +572,7 @@ void SP_monster_shambler(edict_t *self)
     self->monsterinfo.blocked = NULL;
     self->monsterinfo.setskin = shambler_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_SHAMBLER_PRECISE)
         self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;

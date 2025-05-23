@@ -239,7 +239,7 @@ retry:;
     trap_Trace(&trace, start, ent->r.mins, ent->r.maxs, end, ent->s.number, G_GetClipMask(ent));
 
     VectorMA(trace.endpos, 0.5f, trace.plane.normal, ent->s.origin);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     if (trace.fraction != 1.0f || trace.startsolid) {
         G_Impact(ent, &trace);
@@ -248,7 +248,7 @@ retry:;
         if (!g_edicts[trace.entnum].r.inuse && ent->r.inuse) {
             // move the pusher back and try again
             VectorCopy(start, ent->s.origin);
-            gi.linkentity(ent);
+            trap_LinkEntity(ent);
             goto retry;
         }
     }
@@ -318,7 +318,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
     // move the pusher to it's final position
     VectorAdd(pusher->s.origin, move, pusher->s.origin);
     VectorAdd(pusher->s.angles, amove, pusher->s.angles);
-    gi.linkentity(pusher);
+    trap_LinkEntity(pusher);
 
     // no clip mask, so it won't move anything
     if (!G_GetClipMask(pusher))
@@ -394,7 +394,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 
             if (!block) {
                 // pushed ok
-                gi.linkentity(check);
+                trap_LinkEntity(check);
                 // impact?
                 continue;
             }
@@ -425,7 +425,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
                 //else
                 p->ent->s.angles[YAW] = p->yaw;
             }
-            gi.linkentity(p->ent);
+            trap_LinkEntity(p->ent);
         }
         return false;
     }
@@ -522,7 +522,7 @@ static void SV_Physics_Noclip(edict_t *ent)
     VectorMA(ent->s.angles, FRAME_TIME_SEC, ent->avelocity, ent->s.angles);
     VectorMA(ent->s.origin, FRAME_TIME_SEC, ent->velocity, ent->s.origin);
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*
@@ -701,7 +701,7 @@ static void SV_Physics_Toss(edict_t *ent)
     // move teamslaves
     for (slave = ent->teamchain; slave; slave = slave->teamchain) {
         VectorCopy(ent->s.origin, slave->s.origin);
-        gi.linkentity(slave);
+        trap_LinkEntity(slave);
     }
 }
 
@@ -844,7 +844,7 @@ static void SV_Physics_Step(edict_t *ent)
 
         M_CheckGround(ent, mask);
 
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
 
         // ========
         // PGM - reset this every time they move.

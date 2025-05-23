@@ -314,7 +314,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->dmg = damage;
     bolt->classname = "bolt";
     bolt->style = mod.id;
-    gi.linkentity(bolt);
+    trap_LinkEntity(bolt);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
@@ -471,7 +471,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     grenade->dmg_radius = damage_radius;
     grenade->classname = "grenade";
 
-    gi.linkentity(grenade);
+    trap_LinkEntity(grenade);
 }
 
 void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed, gtime_t timer, float damage_radius, bool held)
@@ -522,7 +522,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
         Grenade_Explode(grenade);
     else {
         G_StartSound(self, CHAN_WEAPON, gi.soundindex("weapons/hgrent1a.wav"), 1, ATTN_NORM);
-        gi.linkentity(grenade);
+        trap_LinkEntity(grenade);
     }
 }
 
@@ -589,7 +589,7 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
     rocket->s.sound = gi.soundindex("weapons/rockfly.wav");
     rocket->classname = "rocket";
 
-    gi.linkentity(rocket);
+    trap_LinkEntity(rocket);
 
     return rocket;
 }
@@ -683,7 +683,7 @@ void THINK(bfg_laser_update)(edict_t *self)
 
     VectorCopy(owner->s.origin, self->s.origin);
     self->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static void bfg_spawn_laser(edict_t *self)
@@ -709,7 +709,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->nextthink = level.time + FRAME_TIME;
     laser->timestamp = level.time + SEC(0.3f);
     laser->r.ownernum = self->s.number;
-    gi.linkentity(laser);
+    trap_LinkEntity(laser);
 }
 
 /*
@@ -921,7 +921,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
     bfg->teammaster = bfg;
     bfg->teamchain = NULL;
 
-    gi.linkentity(bfg);
+    trap_LinkEntity(bfg);
 }
 
 void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -965,5 +965,5 @@ void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward,
     bfg->classname = "disint ball";
     bfg->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
 
-    gi.linkentity(bfg);
+    trap_LinkEntity(bfg);
 }

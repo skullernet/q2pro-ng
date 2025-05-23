@@ -538,7 +538,7 @@ edict_t *plat_spawn_inside_trigger(edict_t *ent)
     VectorCopy(tmin, trigger->r.mins);
     VectorCopy(tmax, trigger->r.maxs);
 
-    gi.linkentity(trigger);
+    trap_LinkEntity(trigger);
 
     return trigger; // PGM 11/17/97
 }
@@ -607,7 +607,7 @@ void SP_func_plat(edict_t *ent)
         ent->moveinfo.state = STATE_UP;
     } else {
         VectorCopy(ent->pos2, ent->s.origin);
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
         ent->moveinfo.state = STATE_BOTTOM;
     }
 
@@ -788,7 +788,7 @@ void SP_func_rotating(edict_t *ent)
     // PGM
 
     gi.setmodel(ent, ent->model);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void THINK(func_spinning_think)(edict_t *ent)
@@ -833,7 +833,7 @@ void SP_func_spinning(edict_t *ent)
     ent->think = func_spinning_think;
 
     gi.setmodel(ent, ent->model);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*
@@ -999,7 +999,7 @@ void SP_func_button(edict_t *ent)
     VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
     VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*
@@ -1382,7 +1382,7 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
     other->r.solid = SOLID_TRIGGER;
     other->movetype = MOVETYPE_NONE;
     other->touch = Touch_DoorTrigger;
-    gi.linkentity(other);
+    trap_LinkEntity(other);
 
     Think_CalcMoveSpeed(ent);
 }
@@ -1536,7 +1536,7 @@ void SP_func_door(edict_t *ent)
     if (!ent->team)
         ent->teammaster = ent;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->nextthink = level.time + FRAME_TIME;
 
@@ -1699,7 +1699,7 @@ void SP_func_door_rotating(edict_t *ent)
     if (!ent->team)
         ent->teammaster = ent;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->nextthink = level.time + FRAME_TIME;
     if (ent->health || ent->targetname)
@@ -1818,7 +1818,7 @@ void SP_func_water(edict_t *self)
     if (self->wait == -1)
         self->spawnflags |= SPAWNFLAG_DOOR_TOGGLE;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 #define SPAWNFLAG_TRAIN_TOGGLE          2
@@ -1946,7 +1946,7 @@ again:
 
         VectorCopy(self->s.origin, self->s.old_origin);
         G_AddEvent(self, EV_OTHER_TELEPORT, 0);
-        gi.linkentity(self);
+        trap_LinkEntity(self);
         goto again;
     }
 
@@ -2080,7 +2080,7 @@ void THINK(func_train_find)(edict_t *self)
                 self->s.origin[i] -= 1;
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     // if not triggered, start immediately
     if (!self->targetname)
@@ -2135,7 +2135,7 @@ void SP_func_train(edict_t *self)
 
     self->use = train_use;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->target) {
         // start trains on the second frame, to make sure their targets have had
@@ -2295,7 +2295,7 @@ void SP_func_conveyor(edict_t *self)
 
     gi.setmodel(self, self->model);
     self->r.solid = SOLID_BSP;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED func_door_secret (0 .5 .8) ? always_shoot 1st_left 1st_down
@@ -2461,7 +2461,7 @@ void SP_func_door_secret(edict_t *ent)
         ent->touch = door_touch;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED func_killbox (1 0 0) ?
@@ -2476,12 +2476,12 @@ void USE(use_killbox)(edict_t *self, edict_t *other, edict_t *activator)
         level.deadly_kill_box = true;
 
     self->r.solid = SOLID_TRIGGER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     KillBoxEx(self, false, MOD_TELEFRAG, self->spawnflags & SPAWNFLAG_KILLBOX_EXACT_COLLISION, false);
 
     self->r.solid = SOLID_NOT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     level.deadly_kill_box = false;
 }
@@ -2658,5 +2658,5 @@ void SP_func_eye(edict_t *ent)
         VectorMA(ent->move_origin, move_origin[2], up, ent->move_origin);
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }

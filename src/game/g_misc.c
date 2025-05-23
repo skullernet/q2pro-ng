@@ -177,7 +177,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
     else
         gib->nextthink = level.time + random_time_sec(10, 20);
 
-    gi.linkentity(gib);
+    trap_LinkEntity(gib);
 
     gib->watertype = gi.pointcontents(gib->s.origin);
 
@@ -230,7 +230,7 @@ void ThrowClientHead(edict_t *self, int damage)
         self->nextthink = 0;
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void ThrowGibs(edict_t *self, int damage, const gib_def_t *gibs)
@@ -342,7 +342,7 @@ void SP_path_corner(edict_t *self)
     VectorSet(self->r.mins, -8, -8, -8);
     VectorSet(self->r.maxs, 8, 8, 8);
     self->r.svflags |= SVF_NOCLIENT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED point_combat (0.5 0.3 0) (-8 -8 -8) (8 8 8) Hold
@@ -418,7 +418,7 @@ void SP_point_combat(edict_t *self)
     VectorSet(self->r.mins, -8, -8, -16);
     VectorSet(self->r.maxs, 8, 8, 16);
     self->r.svflags = SVF_NOCLIENT;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED info_null (0 0.5 0) (-4 -4 -4) (4 4 4)
@@ -530,12 +530,12 @@ void USE(func_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->r.solid == SOLID_NOT) {
         self->r.solid = SOLID_BSP;
         self->r.svflags &= ~SVF_NOCLIENT;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
         KillBoxEx(self, false, MOD_TELEFRAG, true, self->spawnflags & SPAWNFLAG_SAFE_APPEAR);
     } else {
         self->r.solid = SOLID_NOT;
         self->r.svflags |= SVF_NOCLIENT;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
     }
 
     if (!(self->spawnflags & SPAWNFLAG_WALL_TOGGLE))
@@ -555,7 +555,7 @@ void SP_func_wall(edict_t *self)
     // just a wall
     if (!(self->spawnflags & (SPAWNFLAG_WALL_TRIGGER_SPAWN | SPAWNFLAG_WALL_TOGGLE | SPAWNFLAG_WALL_START_ON))) {
         self->r.solid = SOLID_BSP;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
         return;
     }
 
@@ -576,7 +576,7 @@ void SP_func_wall(edict_t *self)
         self->r.solid = SOLID_NOT;
         self->r.svflags |= SVF_NOCLIENT;
     }
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // [Paril-KEX]
@@ -610,7 +610,7 @@ void SP_func_animation(edict_t *self)
     self->bmodel_anim.alternate = self->spawnflags & SPAWNFLAG_ANIMATION_START_ON;
     self->s.frame = self->bmodel_anim.params[self->bmodel_anim.alternate].start;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED func_object (0 .5 .8) ? TRIGGER_SPAWN ANIMATED ANIMATED_FAST
@@ -689,7 +689,7 @@ void SP_func_object(edict_t *self)
     self->clipmask = MASK_MONSTERSOLID;
     self->flags |= FL_NO_STANDING;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED func_explosive (0 .5 .8) ? Trigger_Spawn ANIMATED ANIMATED_FAST INACTIVE ALWAYS_SHOOTABLE
@@ -814,7 +814,7 @@ void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator
     self->r.solid = SOLID_BSP;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
     KillBox(self, false);
 }
 
@@ -870,7 +870,7 @@ void SP_func_explosive(edict_t *self)
             gi.dprintf("%s: invalid \"sounds\" %d\n", etos(self), self->sounds);
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED misc_explobox (0 .5 .8) (-16 -16 0) (16 16 40)
@@ -1006,7 +1006,7 @@ void SP_misc_explobox(edict_t *self)
     self->nextthink = level.time + HZ(5);
     // PGM
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 //
@@ -1055,7 +1055,7 @@ void SP_misc_blackhole(edict_t *ent)
     if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE)
         ent->s.sound = G_EncodeSound(CHAN_AUTO, gi.soundindex("world/blackhole.wav"), 1, ATTN_NORM);
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_eastertank (1 .5 0) (-32 -32 -16) (32 32 32)
@@ -1081,7 +1081,7 @@ void SP_misc_eastertank(edict_t *ent)
     ent->s.frame = 254;
     ent->think = misc_eastertank_think;
     ent->nextthink = level.time + HZ(5);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_easterchick (1 .5 0) (-32 -32 0) (32 32 32)
@@ -1107,7 +1107,7 @@ void SP_misc_easterchick(edict_t *ent)
     ent->s.frame = 208;
     ent->think = misc_easterchick_think;
     ent->nextthink = level.time + HZ(5);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_easterchick2 (1 .5 0) (-32 -32 0) (32 32 32)
@@ -1133,7 +1133,7 @@ void SP_misc_easterchick2(edict_t *ent)
     ent->s.frame = 248;
     ent->think = misc_easterchick2_think;
     ent->nextthink = level.time + HZ(5);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED monster_commander_body (1 .5 0) (-32 -32 0) (32 32 48)
@@ -1176,7 +1176,7 @@ void SP_monster_commander_body(edict_t *self)
     self->use = commander_body_use;
     self->takedamage = true;
     self->flags = FL_GODMODE;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     gi.soundindex("tank/thud.wav");
     gi.soundindex("tank/pain.wav");
@@ -1203,7 +1203,7 @@ void SP_misc_banner(edict_t *ent)
     ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
     ent->s.frame = irandom1(16);
     ent->s.renderfx |= RF_NOSHADOW;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->think = misc_banner_think;
     ent->nextthink = level.time + HZ(10);
@@ -1272,7 +1272,7 @@ void SP_misc_deadsoldier(edict_t *ent)
     ent->die = misc_deadsoldier_die;
     ent->monsterinfo.aiflags |= AI_GOOD_GUY | AI_DO_NOT_COUNT;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_viper (1 .5 0) (-16 -16 0) (16 16 32)
@@ -1313,7 +1313,7 @@ void SP_misc_viper(edict_t *ent)
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_bigviper (1 .5 0) (-176 -120 -24) (176 120 72)
@@ -1326,7 +1326,7 @@ void SP_misc_bigviper(edict_t *ent)
     VectorSet(ent->r.mins, -176, -120, -24);
     VectorSet(ent->r.maxs, 176, 120, 72);
     ent->s.modelindex = gi.modelindex("models/ships/bigviper/tris.md2");
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_viper_bomb (1 0 0) (-8 -8 -8) (8 8 8)
@@ -1394,7 +1394,7 @@ void SP_misc_viper_bomb(edict_t *self)
     self->use = misc_viper_bomb_use;
     self->r.svflags |= SVF_NOCLIENT;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED misc_strogg_ship (1 .5 0) (-16 -16 0) (16 16 32)
@@ -1434,7 +1434,7 @@ void SP_misc_strogg_ship(edict_t *ent)
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_satellite_dish (1 .5 0) (-64 -64 0) (64 64 128)
@@ -1462,7 +1462,7 @@ void SP_misc_satellite_dish(edict_t *ent)
     VectorSet(ent->r.maxs, 64, 64, 128);
     ent->s.modelindex = gi.modelindex("models/objects/satellite/tris.md2");
     ent->use = misc_satellite_dish_use;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED light_mine1 (0 1 0) (-2 -2 -12) (2 2 12)
@@ -1473,7 +1473,7 @@ void SP_light_mine1(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     ent->r.svflags = SVF_DEADMONSTER;
     ent->s.modelindex = gi.modelindex("models/objects/minelite/light1/tris.md2");
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED light_mine2 (0 1 0) (-2 -2 -12) (2 2 12)
@@ -1484,7 +1484,7 @@ void SP_light_mine2(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     ent->r.svflags = SVF_DEADMONSTER;
     ent->s.modelindex = gi.modelindex("models/objects/minelite/light2/tris.md2");
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_gib_arm (1 0 0) (-8 -8 -8) (8 8 8)
@@ -1502,7 +1502,7 @@ void SP_misc_gib_arm(edict_t *ent)
     frandom_vec(ent->avelocity, 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_gib_leg (1 0 0) (-8 -8 -8) (8 8 8)
@@ -1520,7 +1520,7 @@ void SP_misc_gib_leg(edict_t *ent)
     frandom_vec(ent->avelocity, 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_gib_head (1 0 0) (-8 -8 -8) (8 8 8)
@@ -1538,7 +1538,7 @@ void SP_misc_gib_head(edict_t *ent)
     frandom_vec(ent->avelocity, 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 //=====================================================
@@ -1554,7 +1554,7 @@ void SP_target_character(edict_t *self)
     gi.setmodel(self, self->model);
     self->r.solid = SOLID_BSP;
     self->s.frame = 12;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED target_string (0 0 1) (-8 -8 -8) (8 8 8)
@@ -1759,7 +1759,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     // ZOID
 
     // unlink to make sure it can't possibly interfere with KillBox
-    gi.unlinkentity(other);
+    trap_UnlinkEntity(other);
 
     VectorCopy(dest->s.origin, other->s.origin);
     VectorCopy(dest->s.origin, other->s.old_origin);
@@ -1790,7 +1790,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     VectorCopy(dest->s.angles, other->client->v_angle);
     AngleVectors(other->client->v_angle, other->client->v_forward, NULL, NULL);
 
-    gi.linkentity(other);
+    trap_LinkEntity(other);
 
     // kill anything at the destination
     KillBox(other, !!other->client);
@@ -1801,7 +1801,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
         VectorCopy(other->s.origin, sphere->s.origin);
         sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
-        gi.linkentity(sphere);
+        trap_LinkEntity(sphere);
     }
 }
 
@@ -1827,7 +1827,7 @@ void SP_misc_teleporter(edict_t *ent)
 
     VectorSet(ent->r.mins, -32, -32, -24);
     VectorSet(ent->r.maxs, 32, 32, -16);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     // N64 has some of these for visual effects
     if (!ent->target)
@@ -1841,7 +1841,7 @@ void SP_misc_teleporter(edict_t *ent)
     VectorCopy(ent->s.origin, trig->s.origin);
     VectorSet(trig->r.mins, -8, -8, 8);
     VectorSet(trig->r.maxs, 8, 8, 24);
-    gi.linkentity(trig);
+    trap_LinkEntity(trig);
 }
 
 /*QUAKED misc_teleporter_dest (1 0 0) (-32 -32 -24) (32 32 -16)
@@ -1859,7 +1859,7 @@ void SP_misc_teleporter_dest(edict_t *ent)
     ent->r.solid = SOLID_BBOX;
     VectorSet(ent->r.mins, -32, -32, -24);
     VectorSet(ent->r.maxs, 32, 32, -16);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_flare (1.0 1.0 0.0) (-32 -32 -32) (32 32 32) RED GREEN BLUE LOCK_ANGLE
@@ -1874,7 +1874,7 @@ Creates a flare seen in the N64 version.
 void USE(misc_flare_use)(edict_t *ent, edict_t *other, edict_t *activator)
 {
     ent->r.svflags ^= SVF_NOCLIENT;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void SP_misc_flare(edict_t *ent)
@@ -1910,7 +1910,7 @@ void SP_misc_flare(edict_t *ent)
     if (ent->targetname)
         ent->use = misc_flare_use;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void THINK(misc_hologram_think)(edict_t *ent)
@@ -1934,7 +1934,7 @@ void SP_misc_hologram(edict_t *ent)
     ent->nextthink = level.time + FRAME_TIME;
     ent->s.alpha = frandom2(0.2f, 0.6f);
     ent->s.scale = 0.75f;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 
@@ -1980,7 +1980,7 @@ void THINK(fire_fly)(edict_t *self)
     fireball->think = G_FreeEdict;
     fireball->touch = fire_touch;
     fireball->spawnflags = self->spawnflags;
-    gi.linkentity(fireball);
+    trap_LinkEntity(fireball);
     self->nextthink = level.time + random_time_sec(0, 5);
 }
 
@@ -2219,7 +2219,7 @@ void SP_misc_player_mannequin(edict_t *self)
     if (self->targetname)
         self->use = misc_player_mannequin_use;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 #define SPAWNFLAG_MODEL_TOGGLE      1
@@ -2244,7 +2244,7 @@ void SP_misc_model(edict_t *ent)
             ent->r.svflags |= SVF_NOCLIENT;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void USE(info_nav_lock_use)(edict_t *self, edict_t *other, edict_t *activator)

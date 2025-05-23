@@ -121,7 +121,7 @@ void THINK(Tag_Respawn)(edict_t *ent)
     }
 
     VectorCopy(spot->s.origin, ent->s.origin);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void THINK(Tag_MakeTouchable)(edict_t *ent)
@@ -174,7 +174,7 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->think = Tag_MakeTouchable;
     tag_token->nextthink = level.time + SEC(1);
 
-    gi.linkentity(tag_token);
+    trap_LinkEntity(tag_token);
 
     //  tag_token = Drop_Item (ent, item);
     ent->client->pers.inventory[item->id]--;

@@ -71,7 +71,7 @@ void dabeam_update(edict_t *self, bool damage)
     pierce_end(&pierce);
 
     VectorAdd(tr.endpos, tr.plane.normal, self->s.old_origin);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void THINK(beam_think)(edict_t *self)

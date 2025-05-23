@@ -64,7 +64,7 @@ static void sphere_fly(edict_t *self)
 
     if (!(level.time % HZ(1)) && !visible(self, owner)) {
         VectorCopy(dest, self->s.origin);
-        gi.linkentity(self);
+        trap_LinkEntity(self);
         return;
     }
 
@@ -221,7 +221,7 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         if (owner->flags & FL_SAM_RAIMI) {
             VectorClear(owner->velocity);
             owner->movetype = MOVETYPE_NONE;
-            gi.linkentity(owner);
+            trap_LinkEntity(owner);
         }
     }
 
@@ -342,10 +342,10 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     owner->viewheight = 8;
     owner->r.solid = SOLID_NOT;
     owner->flags |= FL_SAM_RAIMI;
-    gi.linkentity(owner);
+    trap_LinkEntity(owner);
 
     self->r.solid = SOLID_BBOX;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void PAIN(defender_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
@@ -465,11 +465,11 @@ void THINK(hunter_think)(edict_t *self)
                 VectorCopy(self->velocity, owner->velocity);
                 VectorClear(owner->r.mins);
                 VectorClear(owner->r.maxs);
-                gi.linkentity(owner);
+                trap_LinkEntity(owner);
             } else { // sphere timed out
                 VectorClear(owner->velocity);
                 owner->movetype = MOVETYPE_NONE;
-                gi.linkentity(owner);
+                trap_LinkEntity(owner);
             }
         }
     } else
@@ -565,7 +565,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
 
     sphere->nextthink = level.time + HZ(10);
 
-    gi.linkentity(sphere);
+    trap_LinkEntity(sphere);
 
     return sphere;
 }

@@ -19,7 +19,7 @@ void USE(Use_Boss3)(edict_t *self, edict_t *other, edict_t *activator)
     self->s.modelindex = 0;
     self->r.solid = SOLID_NOT;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void THINK(Think_Boss3Stand)(edict_t *self)
@@ -55,5 +55,5 @@ void SP_monster_boss3_stand(edict_t *self)
     self->use = Use_Boss3;
     self->think = Think_Boss3Stand;
     self->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }

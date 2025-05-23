@@ -660,7 +660,7 @@ void SP_monster_supertank(edict_t *self)
     self->monsterinfo.blocked = supertank_blocked; // PGM
     self->monsterinfo.setskin = supertank_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &supertank_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

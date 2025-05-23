@@ -1744,7 +1744,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
         read_fields(edict_t_fields, ent);
 
         // let the server rebuild world links for this ent
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
     }
 
     // mark all clients as unconnected

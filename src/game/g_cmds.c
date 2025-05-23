@@ -344,7 +344,7 @@ static void Cmd_Spawn_f(edict_t *ent)
 
     solid_t backup = ent->r.solid;
     ent->r.solid = SOLID_NOT;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     edict_t *other = G_Spawn();
     other->classname = gi.argv(1);
@@ -404,14 +404,14 @@ static void Cmd_Spawn_f(edict_t *ent)
         }
 
         if (other->r.inuse)
-            gi.linkentity(other);
+            trap_LinkEntity(other);
 
         if ((other->r.svflags & SVF_MONSTER) && other->think)
             other->think(other);
     }
 
     ent->r.solid = backup;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*
@@ -452,7 +452,7 @@ static void Cmd_Teleport_f(edict_t *ent)
         VectorCopy(ang, ent->client->v_angle);
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*

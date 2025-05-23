@@ -83,7 +83,7 @@ void SP_rotating_light(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_ROTATING_LIGHT_ALARM)
         self->moveinfo.sound_start = gi.soundindex("misc/alarm.wav");
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED func_object_repair (1 .5 0) (-8 -8 -8) (8 8 8)
@@ -134,5 +134,5 @@ void SP_object_repair(edict_t *ent)
     ent->health = 100;
     if (!ent->delay)
         ent->delay = 1.0f;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }

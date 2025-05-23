@@ -73,7 +73,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
 
     VectorCopy(dest->s.angles, other->s.angles);
 
-    gi.linkentity(other);
+    trap_LinkEntity(other);
 
     // kill anything at the destination
     KillBox(other, !!other->client);
@@ -84,7 +84,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
         VectorCopy(other->s.origin, sphere->s.origin);
         sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
-        gi.linkentity(sphere);
+        trap_LinkEntity(sphere);
     }
 }
 
@@ -119,7 +119,7 @@ void SP_trigger_teleport(edict_t *self)
         G_SetMovedir(self->s.angles, self->movedir);
 
     gi.setmodel(self, self->model);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // ***************************
@@ -156,7 +156,7 @@ void USE(trigger_disguise_use)(edict_t *self, edict_t *other, edict_t *activator
     else
         self->r.solid = SOLID_NOT;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void SP_trigger_disguise(edict_t *self)
@@ -175,5 +175,5 @@ void SP_trigger_disguise(edict_t *self)
     self->r.svflags = SVF_NOCLIENT;
 
     gi.setmodel(self, self->model);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }

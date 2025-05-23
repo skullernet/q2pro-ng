@@ -51,7 +51,7 @@ void SP_target_temp_entity(edict_t *ent)
         ent->style = TE_TELEPORT_EFFECT;
 
     ent->use = Use_Target_Tent;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 //==========================================================
@@ -133,7 +133,7 @@ void SP_target_speaker(edict_t *ent)
 
     // must link the entity so we get areas and clusters so
     // the server can determine who to send updates to
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 //==========================================================
@@ -401,7 +401,7 @@ void USE(use_target_explosion)(edict_t *self, edict_t *other, edict_t *activator
 void SP_target_explosion(edict_t *ent)
 {
     ent->use = use_target_explosion;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 //==========================================================
@@ -534,7 +534,7 @@ void SP_target_splash(edict_t *self)
     self->sounds = splash_events[self->sounds];
     self->count  = MakeLittleShort(gi.DirToByte(self->movedir), self->count & 255);
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 //==========================================================
@@ -572,7 +572,7 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
 
     ED_InitSpawnVars();
     ED_CallSpawn(ent);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     if (ent->r.solid == SOLID_BBOX || (G_GetClipMask(ent) & (CONTENTS_PLAYER)))
         KillBox(ent, false);
@@ -764,7 +764,7 @@ void THINK(target_laser_think)(edict_t *self)
         self->damage_debounce_time = level.time + HZ(10);
 
     self->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static void target_laser_on(edict_t *self)
@@ -859,7 +859,7 @@ void THINK(target_laser_start)(edict_t *self)
 
     VectorSet(self->r.mins, -8, -8, -8);
     VectorSet(self->r.maxs, 8, 8, 8);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_LASER_ON)
         target_laser_on(self);
@@ -1064,7 +1064,7 @@ void SP_target_earthquake(edict_t *self)
 
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) { // PGM
         self->noise_index = gi.soundindex("world/quake.wav");
-        gi.linkentity(self);
+        trap_LinkEntity(self);
     } else {
         self->r.svflags |= SVF_NOCLIENT;
     }
@@ -1236,7 +1236,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         VectorCopy(activator->velocity, dummy->velocity);
         dummy->s.renderfx = RF_MINLIGHT;
         dummy->s.frame = activator->s.frame;
-        gi.linkentity(dummy);
+        trap_LinkEntity(dummy);
     }
 
     if (self->pathtarget) {
@@ -1360,7 +1360,7 @@ void SP_target_soundfx(edict_t *self)
 
     self->use = use_target_soundfx;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED target_light (1 0 0) (-8 -8 -8) (8 8 8) START_ON NO_LERP FLICKER
@@ -1472,7 +1472,7 @@ void SP_target_light(edict_t *self)
 
     self->use = target_light_use;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED target_poi (1 0 0) (-4 -4 -4) (4 4 4) NEAREST DUMMY DYNAMIC

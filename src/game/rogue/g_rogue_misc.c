@@ -19,7 +19,7 @@ toggles visible/not visible. starts visible.
 void SP_misc_nuke_core(edict_t *ent)
 {
     ent->s.modelindex = gi.modelindex("models/objects/core/tris.md2");
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->use = misc_nuke_core_use;
 }

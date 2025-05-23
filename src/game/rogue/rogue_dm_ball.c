@@ -167,7 +167,7 @@ static void DBall_PostInitSetup(void)
     // turn teleporter destinations nonsolid.
     while ((e = G_Find(e, FOFS(classname), "misc_teleporter_dest"))) {
         e->r.solid = SOLID_NOT;
-        gi.linkentity(e);
+        trap_LinkEntity(e);
     }
 
     // count the ball start points
@@ -397,7 +397,7 @@ void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
     //  self->s.modelindex = 0;
     self->think = DBall_BallRespawn;
     self->nextthink = level.time + SEC(2);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void THINK(DBall_BallRespawn)(edict_t *self)
@@ -423,7 +423,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     G_AddEvent(self, EV_PLAYER_TELEPORT, 0);
     self->groundentity = NULL;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     // kill anything at the destination
     KillBox(self, false);
@@ -497,7 +497,7 @@ void SP_dm_dball_ball(edict_t *self)
     self->die = DBall_BallDie;
     self->touch = DBall_BallTouch;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED dm_dball_team1_start (1 .5 .5) (-16 -16 -24) (16 16 32)
@@ -580,7 +580,7 @@ void SP_dm_dball_speed_change(edict_t *self)
         VectorSet(self->movedir, 1, 0, 0);
 
     gi.setmodel(self, self->model);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 /*QUAKED dm_dball_goal (1 .5 .5) ? TEAM1 TEAM2
@@ -614,7 +614,7 @@ void SP_dm_dball_goal(edict_t *self)
         G_SetMovedir(self->s.angles, self->movedir);
 
     gi.setmodel(self, self->model);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 const dm_game_rt DMGame_DBall = {

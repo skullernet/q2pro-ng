@@ -542,7 +542,7 @@ static void berserk_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t berserk_frames_death1[] = {
@@ -826,7 +826,7 @@ void SP_monster_berserk(edict_t *self)
     self->monsterinfo.drop_height = 256;
     self->monsterinfo.jump_height = 40;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     walkmonster_start(self);
 }

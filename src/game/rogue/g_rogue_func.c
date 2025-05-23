@@ -261,7 +261,7 @@ void USE(plat2_activate)(edict_t *ent, edict_t *other, edict_t *activator)
     trigger->r.mins[0] -= 10;
     trigger->r.mins[1] -= 10;
 
-    gi.linkentity(trigger);
+    trap_LinkEntity(trigger);
 
     trigger->touch = Touch_Plat_Center2; // Override trigger touch function
 
@@ -353,7 +353,7 @@ void SP_func_plat2(edict_t *ent)
         trigger->r.mins[0] -= 10;
         trigger->r.mins[1] -= 10;
 
-        gi.linkentity(trigger);
+        trap_LinkEntity(trigger);
 
         trigger->touch = Touch_Plat_Center2; // Override trigger touch function
 
@@ -363,7 +363,7 @@ void SP_func_plat2(edict_t *ent)
         }
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->moveinfo.speed = ent->speed;
     ent->moveinfo.accel = ent->accel;

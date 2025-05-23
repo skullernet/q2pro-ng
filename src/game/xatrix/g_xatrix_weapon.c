@@ -29,7 +29,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->dmg = damage;
     bolt->classname = "bolt";
     bolt->style = MOD_BLUEBLASTER;
-    gi.linkentity(bolt);
+    trap_LinkEntity(bolt);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
@@ -99,7 +99,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->think = ionripper_sparks;
     ion->dmg = damage;
     ion->dmg_radius = 100;
-    gi.linkentity(ion);
+    trap_LinkEntity(ion);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, ion->s.origin, ion->s.number, ion->clipmask);
     if (tr.fraction < 1.0f) {
@@ -219,7 +219,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
         G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1.f, 0.25f);
     }
 
-    gi.linkentity(heat);
+    trap_LinkEntity(heat);
 }
 
 /*
@@ -281,7 +281,7 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
     plasma->s.modelindex = gi.modelindex("sprites/s_photon.sp2");
     plasma->s.effects |= EF_PLASMA | EF_ANIM_ALLFAST;
 
-    gi.linkentity(plasma);
+    trap_LinkEntity(plasma);
 }
 
 void THINK(Trap_Gib_Think)(edict_t *ent)
@@ -322,7 +322,7 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
         ent->waterlevel = WATER_FEET;
 
     ent->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void DIE(trap_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
@@ -387,7 +387,7 @@ void THINK(Trap_Think)(edict_t *ent)
             cube->velocity[2] = 400;
             cube->think(cube);
             cube->nextthink = 0;
-            gi.linkentity(cube);
+            trap_LinkEntity(cube);
 
             G_StartSound(best, CHAN_AUTO, gi.soundindex("misc/fhit3.wav"), 1, ATTN_NORM);
 
@@ -558,7 +558,7 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     if (self->client && !G_ShouldPlayersCollide(true))
         trap->clipmask &= ~CONTENTS_PLAYER;
 
-    gi.linkentity(trap);
+    trap_LinkEntity(trap);
 
     trap->timestamp = level.time + SEC(30);
 }

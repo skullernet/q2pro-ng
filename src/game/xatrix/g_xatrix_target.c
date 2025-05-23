@@ -89,7 +89,7 @@ void SP_target_mal_laser(edict_t *self)
 
     self->use = target_mal_laser_use;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_LASER_ON)
         target_mal_laser_on(self);

@@ -560,7 +560,7 @@ void CTFResetFlag(ctfteam_t ctf_team)
         else {
             ent->r.svflags &= ~SVF_NOCLIENT;
             ent->r.solid = SOLID_TRIGGER;
-            gi.linkentity(ent);
+            trap_LinkEntity(ent);
             G_AddEvent(ent, EV_ITEM_RESPAWN, 0);
         }
     }
@@ -776,7 +776,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
 
     VectorCopy(tr.endpos, ent->s.origin);
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->nextthink = level.time + HZ(10);
     ent->think = CTFFlagThink;
@@ -1204,7 +1204,7 @@ static void CTFGrappleDrawCable(edict_t *self)
     VectorCopy(start, te->s.old_origin);
     VectorCopy(self->s.origin, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 }
 
 void SV_AddGravity(edict_t *ent);
@@ -1235,7 +1235,7 @@ void CTFGrapplePull(edict_t *self)
         }
         if (self->enemy->r.solid == SOLID_BBOX) {
             VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, self->s.origin);
-            gi.linkentity(self);
+            trap_LinkEntity(self);
         } else
             VectorCopy(self->enemy->velocity, self->velocity);
 
@@ -1302,7 +1302,7 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     grapple->die = grapple_die;
     self->client->ctf_grapple = grapple;
     self->client->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
-    gi.linkentity(grapple);
+    trap_LinkEntity(grapple);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, grapple->s.origin,
                grapple->s.number, grapple->clipmask);
@@ -1784,7 +1784,7 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->nextthink = level.time + CTF_TECH_TIMEOUT;
     ent->think = TechThink;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void THINK(SpawnTechs)(edict_t *ent)
@@ -1994,7 +1994,7 @@ void SP_misc_ctf_banner(edict_t *ent)
         ent->s.skinnum = 1;
 
     ent->s.frame = irandom1(16);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
     ent->nextthink = level.time + HZ(10);
@@ -2013,7 +2013,7 @@ void SP_misc_ctf_small_banner(edict_t *ent)
         ent->s.skinnum = 1;
 
     ent->s.frame = irandom1(16);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
     ent->nextthink = level.time + HZ(10);
@@ -2196,7 +2196,7 @@ static void CTFStartMatch(void)
             ent->deadflag = true;
             ent->movetype = MOVETYPE_NOCLIP;
             ent->client->ps.gunindex = 0;
-            gi.linkentity(ent);
+            trap_LinkEntity(ent);
         }
     }
 }
@@ -2717,7 +2717,7 @@ bool CTFStartClient(edict_t *ent)
         ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->resp.spectator = true;
         ent->client->ps.gunindex = 0;
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
 
         CTFOpenJoinMenu(ent);
         return true;
@@ -2916,7 +2916,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     // ZOID
 
     // unlink to make sure it can't possibly interfere with KillBox
-    gi.unlinkentity(other);
+    trap_UnlinkEntity(other);
 
     VectorCopy(dest->s.origin, other->s.origin);
     VectorCopy(dest->s.origin, other->s.old_origin);
@@ -2945,7 +2945,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     AngleVectors(other->client->v_angle, forward, NULL, NULL);
     VectorScale(forward, 200, other->velocity);
 
-    gi.linkentity(other);
+    trap_LinkEntity(other);
 
     // kill anything at the destination
     KillBox(other, true);
@@ -2956,7 +2956,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
         VectorCopy(other->s.origin, sphere->s.origin);
         sphere->s.origin[2] = other->r.absmax[2];
         sphere->s.angles[YAW] = other->s.angles[YAW];
-        gi.linkentity(sphere);
+        trap_LinkEntity(sphere);
     }
 }
 
@@ -2977,14 +2977,14 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     ent->r.solid = SOLID_TRIGGER;
     ent->touch = old_teleporter_touch;
     gi.setmodel(ent, ent->model);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     // noise maker and splash effect dude
     s = G_Spawn();
     ent->enemy = s;
     VectorAvg(ent->r.mins, ent->r.maxs, s->s.origin);
     s->s.sound = gi.soundindex("world/hum1.wav");
-    gi.linkentity(s);
+    trap_LinkEntity(s);
 }
 
 /*QUAKED info_ctf_teleport_destination (0.5 0.5 0.5) (-16 -16 -24) (16 16 32)

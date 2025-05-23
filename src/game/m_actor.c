@@ -256,7 +256,7 @@ static void actor_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t actor_frames_death1[] = {
@@ -406,7 +406,7 @@ void SP_misc_actor(edict_t *self)
 
     self->monsterinfo.aiflags |= AI_GOOD_GUY;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &actor_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
@@ -529,5 +529,5 @@ void SP_target_actor(edict_t *self)
         self->movedir[2] = st.height;
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }

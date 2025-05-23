@@ -360,7 +360,7 @@ bool M_droptofloor(edict_t *ent)
             return false;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
     M_CheckGround(ent, mask);
     M_CategorizePosition(ent, ent->s.origin, &ent->waterlevel, &ent->watertype);
 
@@ -695,7 +695,7 @@ void monster_dead(edict_t *self)
     self->monsterinfo.damage_blood = 0;
     self->fly_sound_debounce_time = 0;
     self->monsterinfo.aiflags &= ~AI_STUNK;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void monster_footstep(edict_t *self)
@@ -834,7 +834,7 @@ void THINK(monster_triggered_spawn)(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.svflags &= ~SVF_NOCLIENT;
     self->air_finished = level.time + SEC(12);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     KillBox(self, false);
 
@@ -1284,7 +1284,7 @@ void monster_start_go(edict_t *self)
             self->s.frame = move->lastframe;
 
         VectorCopy(tmp, self->s.origin);
-        gi.linkentity(self);
+        trap_LinkEntity(self);
 
         self->monsterinfo.aiflags &= ~AI_SPAWNED_DEAD;
     } else {

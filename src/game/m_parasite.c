@@ -275,7 +275,7 @@ static void proboscis_retract(edict_t *self)
     if (self->style != 2)
         self->speed *= PARASITE_PROBOSCIS_RETRACT_MODIFIER;
     self->style = 2;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static void parasite_break_retract(edict_t *self)
@@ -400,7 +400,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
     VectorCopy(p, self->s.origin);
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // from break01
@@ -479,13 +479,13 @@ void THINK(proboscis_think)(edict_t *self)
             self->style = 3;
             self->think = proboscis_reset;
             VectorCopy(start, self->s.origin);
-            gi.linkentity(self);
+            trap_LinkEntity(self);
             return;
         }
 
         // pull us in
         VectorMA(self->s.origin, -(self->speed * FRAME_TIME_SEC), dir, self->s.origin);
-        gi.linkentity(self);
+        trap_LinkEntity(self);
     // stuck on target; do damage, suck health
     // and check if target goes away
     } else if (self->style == 1) {
@@ -523,7 +523,7 @@ void THINK(proboscis_think)(edict_t *self)
                 }
             }
 
-            gi.linkentity(self);
+            trap_LinkEntity(self);
         }
     // flying
     } else if (self->style == 0) {
@@ -566,7 +566,7 @@ void PRETHINK(proboscis_segment_draw)(edict_t *self)
     VectorSubtract(owner->s.origin, start, dir);
     VectorNormalize(dir);
     VectorMA(owner->s.origin, -8, dir, self->s.old_origin);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
@@ -617,8 +617,8 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     VectorNormalize(dir2);
     VectorMA(tip->s.origin, 8, dir2, segment->s.old_origin);
 
-    gi.linkentity(tip);
-    gi.linkentity(segment);
+    trap_LinkEntity(tip);
+    trap_LinkEntity(segment);
 }
 
 static void parasite_fire_proboscis(edict_t *self)
@@ -800,7 +800,7 @@ static void parasite_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t parasite_frames_death[] = {
@@ -958,7 +958,7 @@ void SP_monster_parasite(edict_t *self)
     self->monsterinfo.blocked = parasite_blocked; // PGM
     self->monsterinfo.setskin = parasite_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &parasite_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

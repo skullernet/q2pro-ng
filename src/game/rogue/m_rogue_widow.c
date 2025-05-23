@@ -880,7 +880,7 @@ static void widow_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 #endif
 
@@ -1170,7 +1170,7 @@ void SP_monster_widow(edict_t *self)
     self->monsterinfo.setskin = widow_setskin;
     self->monsterinfo.blocked = widow_blocked;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &widow_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

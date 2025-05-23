@@ -527,7 +527,7 @@ static void arachnid_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t arachnid_frames_death1[] = {
@@ -677,7 +677,7 @@ void SP_monster_arachnid(edict_t *self)
 
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &arachnid_move_stand);
 

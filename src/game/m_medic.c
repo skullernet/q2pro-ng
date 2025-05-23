@@ -754,7 +754,7 @@ static void medic_shrink(edict_t *self)
 {
     self->r.maxs[2] = -2;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t medic_frames_death[] = {
@@ -1028,7 +1028,7 @@ static void medic_cable_attack(edict_t *self)
     VectorCopy(start, te->s.old_origin);
     VectorCopy(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 }
 
 static void medic_hook_retract(edict_t *self)
@@ -1492,7 +1492,7 @@ void SP_monster_medic(edict_t *self)
     self->monsterinfo.checkattack = medic_checkattack;
     self->monsterinfo.setskin = medic_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &medic_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

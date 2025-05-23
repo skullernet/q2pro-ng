@@ -302,7 +302,7 @@ static void gunner_shrink(edict_t *self)
 {
     self->r.maxs[2] = -4;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t gunner_frames_death[] = {
@@ -862,7 +862,7 @@ void SP_monster_gunner(edict_t *self)
     self->monsterinfo.search = gunner_search;
     self->monsterinfo.setskin = gunner_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &gunner_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

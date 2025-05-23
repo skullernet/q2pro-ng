@@ -378,7 +378,7 @@ void PRETHINK(guardian_fire_update)(edict_t *laser)
         forward[0] += crandom() * 0.02f;
         forward[1] += crandom() * 0.02f;
         VectorNormalize2(forward, laser->movedir);
-        gi.linkentity(laser);
+        trap_LinkEntity(laser);
     }
 
     dabeam_update(laser, false);
@@ -595,7 +595,7 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
         G_StartSound(heat, CHAN_WEAPON, gi.soundindex("weapons/railgr1a.wav"), 1, 0.25f);
     }
 
-    gi.linkentity(heat);
+    trap_LinkEntity(heat);
 }
 // RAFAEL
 
@@ -924,7 +924,7 @@ void SP_monster_guardian(edict_t *self)
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     self->monsterinfo.blindfire = true;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     guardian_stand(self);
 

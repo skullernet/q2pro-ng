@@ -254,7 +254,7 @@ static void TurretAim(edict_t *self)
     trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_SOLID);
 
     VectorCopy(tr.endpos, self->target_ent->s.old_origin);
-    gi.linkentity(self->target_ent);
+    trap_LinkEntity(self->target_ent);
 }
 
 void MONSTERINFO_SIGHT(turret_sight)(edict_t *self, edict_t *other)
@@ -561,7 +561,7 @@ void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         base->teamchain = NULL;
         base->flags &= ~FL_TEAMSLAVE;
         base->flags |= FL_TEAMMASTER;
-        gi.linkentity(base);
+        trap_LinkEntity(base);
 
         self->teammaster = self->teamchain = NULL;
         self->flags &= ~(FL_TEAMSLAVE | FL_TEAMMASTER);
@@ -641,7 +641,7 @@ static void turret_wall_spawn(edict_t *turret)
 
     ent->s.modelindex = gi.modelindex("models/monsters/turretbase/tris.md2");
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void MOVEINFO_ENDFUNC(turret_wake)(edict_t *ent)
@@ -667,7 +667,7 @@ void MOVEINFO_ENDFUNC(turret_wake)(edict_t *ent)
     // prevent counting twice
     ent->monsterinfo.aiflags |= AI_DO_NOT_COUNT;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     stationarymonster_start(ent);
 
@@ -914,7 +914,7 @@ void SP_monster_turret(edict_t *self)
         break;
     }
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_TURRET_WALL_UNIT) {
         if (!self->targetname) {

@@ -138,7 +138,7 @@ void THINK(DoRespawn)(edict_t *ent)
             // ZOID
             ent->r.svflags |= SVF_NOCLIENT;
             ent->r.solid = SOLID_NOT;
-            gi.linkentity(ent);
+            trap_LinkEntity(ent);
 
             for (count = 0, ent = master; ent; ent = ent->chain, count++)
                 ;
@@ -153,7 +153,7 @@ void THINK(DoRespawn)(edict_t *ent)
     ent->r.svflags &= ~SVF_NOCLIENT;
     ent->r.svflags &= ~SVF_RESPAWNING;
     ent->r.solid = SOLID_TRIGGER;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     // send an effect
     G_AddEvent(ent, EV_ITEM_RESPAWN, 0);
@@ -186,7 +186,7 @@ void SetRespawnEx(edict_t *ent, gtime_t delay, bool hide_self)
     if (hide_self) {
         ent->r.svflags |= (SVF_NOCLIENT | SVF_RESPAWNING);
         ent->r.solid = SOLID_NOT;
-        gi.linkentity(ent);
+        trap_LinkEntity(ent);
     }
 
     ent->nextthink = level.time + delay;
@@ -1017,7 +1017,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     if (coop->integer && P_UseCoopInstancedItems())
         dropped->r.svflags |= SVF_INSTANCED;
 
-    gi.linkentity(dropped);
+    trap_LinkEntity(dropped);
     return dropped;
 }
 
@@ -1034,7 +1034,7 @@ void USE(Use_Item)(edict_t *ent, edict_t *other, edict_t *activator)
         ent->touch = Touch_Item;
     }
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 //======================================================================
@@ -1122,7 +1122,7 @@ void THINK(droptofloor)(edict_t *ent)
     }
 
     ent->watertype = gi.pointcontents(ent->s.origin);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*

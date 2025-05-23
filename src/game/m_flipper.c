@@ -379,7 +379,7 @@ void SP_monster_flipper(edict_t *self)
     self->monsterinfo.sight = flipper_sight;
     self->monsterinfo.setskin = flipper_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &flipper_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

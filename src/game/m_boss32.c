@@ -273,7 +273,7 @@ static void makron_torso(edict_t *ent)
     VectorMA(ent->s.origin, -10, forward, ent->s.origin);
     ent->s.angles[0] = 90;
     VectorClear(ent->avelocity);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 static void makron_spawn_torso(edict_t *self)
@@ -643,7 +643,7 @@ static void makron_dead(edict_t *self)
     VectorSet(self->r.maxs, 60, 60, 24);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
     monster_dead(self);
 }
 
@@ -746,7 +746,7 @@ void SP_monster_makron(edict_t *self)
     self->monsterinfo.checkattack = Makron_CheckAttack;
     self->monsterinfo.setskin = makron_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     //  M_SetAnimation(self, &makron_move_stand);
     M_SetAnimation(self, &makron_move_sight);

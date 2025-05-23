@@ -440,7 +440,7 @@ static void Widow2Tongue(edict_t *self)
     VectorCopy(start, te->s.old_origin);
     VectorCopy(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 
     VectorSubtract(start, end, dir);
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 2, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
@@ -646,7 +646,7 @@ static void widow2_finaldeath(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->takedamage = true;
     self->nextthink = 0;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void MONSTERINFO_STAND(widow2_stand)(edict_t *self)
@@ -988,7 +988,7 @@ void SP_monster_widow2(edict_t *self)
     self->monsterinfo.search = widow2_search;
     self->monsterinfo.checkattack = Widow2_CheckAttack;
     self->monsterinfo.setskin = widow2_setskin;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &widow2_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
@@ -1122,7 +1122,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         frandom_vec(gib->avelocity, 600);
     }
 
-    gi.linkentity(gib);
+    trap_LinkEntity(gib);
 }
 
 void ThrowSmallStuff(edict_t *self, const vec3_t point)

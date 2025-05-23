@@ -90,7 +90,7 @@ void THINK(target_steam_start)(edict_t *self)
     self->count &= 0xff;
     self->style &= 0xff;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 void SP_target_steam(edict_t *self)
@@ -249,7 +249,7 @@ void SP_target_blacklight(edict_t *ent)
     ent->s.scale = 6;
     ent->s.skinnum = 0;
     ent->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED target_orb (1 0 1) (-16 -16 -24) (16 16 24)
@@ -274,5 +274,5 @@ void SP_target_orb(edict_t *ent)
     ent->s.frame = 2;
     ent->s.scale = 8;
     ent->s.effects |= EF_SPHERETRANS;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }

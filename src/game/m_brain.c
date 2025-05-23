@@ -239,7 +239,7 @@ static void brain_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t brain_frames_death2[] = {
@@ -444,7 +444,7 @@ static void brain_tounge_attack(edict_t *self)
     VectorCopy(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     te->think = G_FreeEdict;
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 
     VectorSubtract(start, end, dir);
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_BRAINTENTACLE });
@@ -504,7 +504,7 @@ void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 
     VectorCopy(start, laser->s.origin);
     VectorCopy(dir, laser->movedir);
-    gi.linkentity(laser);
+    trap_LinkEntity(laser);
 }
 
 void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
@@ -525,7 +525,7 @@ void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 
     VectorCopy(start, laser->s.origin);
     VectorCopy(dir, laser->movedir);
-    gi.linkentity(laser);
+    trap_LinkEntity(laser);
     dabeam_update(laser, false);
 }
 
@@ -789,7 +789,7 @@ void SP_monster_brain(edict_t *self)
     if (!ED_WasKeySpecified("power_armor_power"))
         self->monsterinfo.power_armor_power = 100;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &brain_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

@@ -486,7 +486,7 @@ void THINK(G_FreeEdict)(edict_t *ed)
     if (!ed->r.inuse)
         return;
 
-    gi.unlinkentity(ed); // unlink from world
+    trap_UnlinkEntity(ed); // unlink from world
 
     if ((ed - g_edicts) < (game.maxclients + BODY_QUEUE_SIZE))
         return;
@@ -717,7 +717,7 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param)
     ent->s.event[0] = event;
     ent->s.event_param[0] = param;
     ent->free_after_event = true;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     return ent;
 }
@@ -732,7 +732,7 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
     VectorCopy(end, ent->s.origin);
     ent->s.event[0] = event;
     ent->free_after_event = true;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     return ent;
 }
@@ -755,7 +755,7 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
     G_AddEvent(ent, event, param);
 
     ent->free_after_event = true;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void G_BecomeExplosion(edict_t *ent, entity_event_t event, const vec3_t normal)

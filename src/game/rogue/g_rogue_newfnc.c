@@ -209,7 +209,7 @@ void SP_func_door_secret2(edict_t *ent)
     if (!ent->wait)
         ent->wait = 5; // 5 seconds before closing
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 // ==================================================
@@ -241,13 +241,13 @@ void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->think = NULL;
         self->nextthink = 0;
         self->r.solid = SOLID_NOT;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
     } else {
         self->wait = 0;
         self->think = force_wall_think;
         self->nextthink = level.time + HZ(10);
         self->r.solid = SOLID_BSP;
-        gi.linkentity(self);
+        trap_LinkEntity(self);
         KillBox(self, false); // Is this appropriate?
     }
 }
@@ -297,5 +297,5 @@ void SP_func_force_wall(edict_t *ent)
 
     ent->r.svflags = SVF_NOCLIENT;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }

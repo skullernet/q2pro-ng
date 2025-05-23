@@ -658,7 +658,7 @@ static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int
     loogie->think = G_FreeEdict;
     loogie->dmg = damage;
     loogie->r.svflags |= SVF_PROJECTILE;
-    gi.linkentity(loogie);
+    trap_LinkEntity(loogie);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, loogie->s.origin,
                loogie->s.number, MASK_PROJECTILE);
@@ -1118,7 +1118,7 @@ static void gekk_shrink(edict_t *self)
 {
     self->r.maxs[2] = 0;
     self->r.svflags |= SVF_DEADMONSTER;
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 static const mframe_t gekk_frames_death1[] = {
@@ -1535,7 +1535,7 @@ void SP_monster_gekk(edict_t *self)
     self->monsterinfo.checkattack = gekk_checkattack;
     self->monsterinfo.setskin = gekk_setskin;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 
     M_SetAnimation(self, &gekk_move_stand);
 

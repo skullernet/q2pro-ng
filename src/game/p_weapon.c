@@ -177,7 +177,7 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
 
     VectorCopy(where, noise->s.origin);
     noise->teleport_time = level.time;
-    gi.linkentity(noise);
+    trap_LinkEntity(noise);
 }
 
 static bool G_WeaponShouldStay(void)

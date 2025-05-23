@@ -191,7 +191,7 @@ static void SpawnGro_laser_pos(edict_t *ent, vec3_t pos)
 void THINK(SpawnGro_laser_think)(edict_t *self)
 {
     SpawnGro_laser_pos(self, self->s.old_origin);
-    gi.linkentity(self);
+    trap_LinkEntity(self);
     self->nextthink = level.time + FRAME_TIME;
 }
 
@@ -230,7 +230,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
 
     ent->nextthink = level.time + FRAME_TIME;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 
     // [Paril-KEX]
     edict_t *beam = ent->target_ent = G_Spawn();
@@ -245,7 +245,7 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     beam->think = SpawnGro_laser_think;
     beam->nextthink = level.time + FRAME_TIME;
     SpawnGro_laser_pos(beam, beam->s.old_origin);
-    gi.linkentity(beam);
+    trap_LinkEntity(beam);
 }
 
 // ****************************
@@ -339,5 +339,5 @@ void Widowlegs_Spawn(const vec3_t startpos, const vec3_t angles)
     ent->think = widowlegs_think;
 
     ent->nextthink = level.time + HZ(10);
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }

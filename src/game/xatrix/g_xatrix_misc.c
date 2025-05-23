@@ -29,7 +29,7 @@ void SP_misc_crashviper(edict_t *ent)
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 // RAFAEL
@@ -76,7 +76,7 @@ void SP_misc_viper_missile(edict_t *self)
     self->use = misc_viper_missile_use;
     self->r.svflags |= SVF_NOCLIENT;
 
-    gi.linkentity(self);
+    trap_LinkEntity(self);
 }
 
 // RAFAEL 17-APR-98
@@ -110,7 +110,7 @@ void SP_misc_transport(edict_t *ent)
     if (!(ent->spawnflags & SPAWNFLAG_TRAIN_START_ON))
         ent->spawnflags |= SPAWNFLAG_TRAIN_START_ON;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 // END 17-APR-98
 
@@ -128,7 +128,7 @@ void SP_misc_amb4(edict_t *ent)
     ent->think = amb4_think;
     ent->nextthink = level.time + SEC(1);
     ent->noise_index = gi.soundindex("world/amb4.wav");
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 /*QUAKED misc_nuke (1 0 0) (-16 -16 -16) (16 16 16)

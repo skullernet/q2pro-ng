@@ -60,7 +60,7 @@ void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     flechette->dmg = damage;
     flechette->dmg_radius = kick;
 
-    gi.linkentity(flechette);
+    trap_LinkEntity(flechette);
 
     trace_t tr;
     trap_Trace(&tr, self->s.origin, NULL, NULL, flechette->s.origin,
@@ -326,7 +326,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     field->r.ownernum = ent->s.number;
     field->classname = "prox_field";
     field->teammaster = ent;
-    gi.linkentity(field);
+    trap_LinkEntity(field);
 
     VectorClear(ent->velocity);
     VectorClear(ent->avelocity);
@@ -344,7 +344,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
     ent->r.solid = SOLID_BBOX;
     ent->r.svflags &= ~SVF_PROJECTILE;
 
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void THINK(Prox_Think)(edict_t *self)
@@ -423,7 +423,7 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
         break;
     }
 
-    gi.linkentity(prox);
+    trap_LinkEntity(prox);
 }
 
 // *************************
@@ -703,7 +703,7 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     nuke->classname = "nuke";
     nuke->die = nuke_die;
 
-    gi.linkentity(nuke);
+    trap_LinkEntity(nuke);
 }
 
 // *************************
@@ -845,7 +845,7 @@ void THINK(tesla_think_active)(edict_t *self)
             VectorCopy(start, te->s.old_origin);
             VectorCopy(tr.endpos, te->s.origin);
             te->nextthink = level.time + SEC(0.2f);
-            gi.linkentity(te);
+            trap_LinkEntity(te);
         }
     }
 
@@ -897,7 +897,7 @@ void THINK(tesla_activate)(edict_t *self)
     trigger->touch = tesla_zap;
     trigger->classname = "tesla trigger";
     // doesn't need to be marked as a teamslave since the move code for bounce looks for teamchains
-    gi.linkentity(trigger);
+    trap_LinkEntity(trigger);
 
     VectorClear(self->s.angles);
     // clear the owner if in deathmatch
@@ -1011,7 +1011,7 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     if (self->client && !G_ShouldPlayersCollide(true))
         tesla->clipmask &= ~CONTENTS_PLAYER;
 
-    gi.linkentity(tesla);
+    trap_LinkEntity(tesla);
 }
 
 // *************************
@@ -1117,7 +1117,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
     VectorCopy(start, te->s.old_origin);
     VectorCopy(endpoint, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
-    gi.linkentity(te);
+    trap_LinkEntity(te);
 }
 
 // *************************
@@ -1204,7 +1204,7 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->classname = "bolt";
-    gi.linkentity(bolt);
+    trap_LinkEntity(bolt);
 
     trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
@@ -1389,7 +1389,7 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
     bolt->r.ownernum = self->s.number;
     bolt->dmg = damage;
     bolt->classname = "tracker";
-    gi.linkentity(bolt);
+    trap_LinkEntity(bolt);
 
     if (enemy) {
         bolt->nextthink = level.time + HZ(10);

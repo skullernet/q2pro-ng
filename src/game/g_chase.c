@@ -84,7 +84,7 @@ void UpdateChaseCam(edict_t *ent)
 
     ent->viewheight = 0;
     ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
-    gi.linkentity(ent);
+    trap_LinkEntity(ent);
 }
 
 void ChaseNext(edict_t *ent)

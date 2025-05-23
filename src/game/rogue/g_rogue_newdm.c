@@ -226,7 +226,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
 
     base->classname = "doppleganger";
 
-    gi.linkentity(base);
+    trap_LinkEntity(base);
 
     body = G_Spawn();
     number = body->s.number;
@@ -242,7 +242,7 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     body->teleport_time = level.time + HZ(10);
     body->think = body_think;
     body->nextthink = level.time + FRAME_TIME;
-    gi.linkentity(body);
+    trap_LinkEntity(body);
 
     base->teamchain = body;
     body->teammaster = base;
