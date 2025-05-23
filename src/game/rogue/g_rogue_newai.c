@@ -759,7 +759,7 @@ edict_t *CheckForBadArea(edict_t *ent)
     VectorAdd(ent->s.origin, ent->r.mins, mins);
     VectorAdd(ent->s.origin, ent->r.maxs, maxs);
 
-    num = gi.BoxEdicts(mins, maxs, touch, q_countof(touch), AREA_TRIGGERS);
+    num = trap_BoxEdicts(mins, maxs, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)

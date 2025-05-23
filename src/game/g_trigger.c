@@ -126,7 +126,7 @@ void THINK(latched_trigger_think)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 
     int list[MAX_EDICTS_OLD];
-    int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
     bool any_inside = false;
 
     for (int i = 0; i < count; i++) {
@@ -687,7 +687,7 @@ void THINK(hurt_think)(edict_t *self)
     else
         dflags = DAMAGE_NONE;
 
-    count = gi.BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
+    count = trap_BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
 
     for (int i = 0; i < count; i++) {
         edict_t *other = g_edicts + list[i];
@@ -1197,7 +1197,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
         if (trigger_coop_relay_ok(&g_edicts[i]))
             num_active++;
 
-    int count = gi.BoxEdicts(self->r.absmin, self->r.absmax, players, q_countof(players), AREA_SOLID);
+    int count = trap_BoxEdicts(self->r.absmin, self->r.absmax, players, q_countof(players), AREA_SOLID);
     for (i = 0; i < count; i++)
         if (trigger_coop_relay_ok(g_edicts + players[i]))
             players[num_present++] = players[i];

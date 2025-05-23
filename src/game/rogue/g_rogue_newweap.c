@@ -440,7 +440,7 @@ bool fire_player_melee(edict_t *self, const vec3_t start, const vec3_t aim, int 
 
     // find all the things we could maybe hit
     int list[MAX_EDICTS_OLD];
-    int count = gi.BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
 
     bool was_hit = false;
 
@@ -785,7 +785,7 @@ void THINK(tesla_think_active)(edict_t *self)
     VectorCopy(self->s.origin, start);
     start[2] += 16;
 
-    num = gi.BoxEdicts(self->teamchain->r.absmin, self->teamchain->r.absmax, touch, q_countof(touch), AREA_SOLID);
+    num = trap_BoxEdicts(self->teamchain->r.absmin, self->teamchain->r.absmax, touch, q_countof(touch), AREA_SOLID);
     for (i = 0; i < num; i++) {
         // if the tesla died while zapping things, stop zapping.
         if (!self->r.inuse)

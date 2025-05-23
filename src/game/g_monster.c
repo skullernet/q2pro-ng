@@ -736,7 +736,7 @@ static void M_CheckDodge(edict_t *self)
     }
 
     int list[MAX_EDICTS_OLD];
-    int count = gi.BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
     for (int i = 0; i < count; i++) {
         edict_t *ent = g_edicts + list[i];
 

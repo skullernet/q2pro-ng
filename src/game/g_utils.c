@@ -517,7 +517,7 @@ void G_TouchTriggers(edict_t *ent)
     if ((ent->client || (ent->r.svflags & SVF_MONSTER)) && (ent->health <= 0))
         return;
 
-    num = gi.BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_TRIGGERS);
+    num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
@@ -612,7 +612,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     int      touch[MAX_EDICTS_OLD];
     edict_t *hit;
 
-    num = gi.BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
+    num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
 
     for (i = 0; i < num; i++) {
         hit = g_edicts + touch[i];
