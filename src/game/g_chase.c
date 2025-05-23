@@ -151,7 +151,7 @@ void GetChaseTarget(edict_t *ent)
     }
 
     if (ent->client->chase_msg_time <= level.time) {
-        gi.centerprintf(ent, "No other players to chase.");
+        G_ClientPrintf(ent, PRINT_CENTER, "No other players to chase.");
         ent->client->chase_msg_time = level.time + SEC(5);
     }
 }

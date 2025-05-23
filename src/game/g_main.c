@@ -159,7 +159,7 @@ static void PreInitGame(void)
     // This gamemode only supports deathmatch
     if (ctf->integer) {
         if (!deathmatch->integer) {
-            gi.dprintf("Forcing deathmatch.\n");
+            G_Printf("Forcing deathmatch.\n");
             gi.cvar_set("deathmatch", "1");
         }
         // force coop off
@@ -171,7 +171,7 @@ static void PreInitGame(void)
     }
     if (teamplay->integer) {
         if (!deathmatch->integer) {
-            gi.dprintf("Forcing deathmatch.\n");
+            G_Printf("Forcing deathmatch.\n");
             gi.cvar_set("deathmatch", "1");
         }
         // force coop off
@@ -192,7 +192,7 @@ static void InitGame(void)
 {
     cvar_t *cv;
 
-    gi.dprintf("==== InitGame ====\n");
+    G_Printf("==== InitGame ====\n");
 
     PreInitGame();
 
@@ -243,7 +243,7 @@ static void InitGame(void)
     sv_dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
     sv_running = gi.cvar("sv_running", NULL, 0);
     if (!sv_running)
-        gi.error("sv_running cvar doesn't exist");
+        G_Error("sv_running cvar doesn't exist");
 
     // latched vars
     sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
@@ -340,7 +340,7 @@ static void InitGame(void)
     if (cv->integer & GMF_VARIABLE_FPS) {
         cv = gi.cvar("sv_fps", NULL, 0);
         if (!cv || !cv->integer)
-            gi.error("GMF_VARIABLE_FPS exported but no 'sv_fps' cvar");
+            G_Error("GMF_VARIABLE_FPS exported but no 'sv_fps' cvar");
         game.tick_rate = cv->integer;
         game.frame_time = 1000 / game.tick_rate;
         game.frame_time_sec = 1.0f / game.tick_rate;
@@ -368,7 +368,7 @@ static void InitGame(void)
 
 static void ShutdownGame(void)
 {
-    gi.dprintf("==== ShutdownGame ====\n");
+    G_Printf("==== ShutdownGame ====\n");
 
     memset(&game, 0, sizeof(game));
 
@@ -632,7 +632,7 @@ static void CheckDMRules(void)
 
     if (timelimit->value) {
         if (level.time >= SEC(timelimit->value * 60)) {
-            gi.bprintf(PRINT_HIGH, "Time limit hit.\n");
+            G_ClientPrintf(NULL, PRINT_HIGH, "Time limit hit.\n");
             EndDMLevel();
             return;
         }
@@ -651,7 +651,7 @@ static void CheckDMRules(void)
                 continue;
 
             if (cl->resp.score >= fraglimit->integer) {
-                gi.bprintf(PRINT_HIGH, "Frag limit hit.\n");
+                G_ClientPrintf(NULL, PRINT_HIGH, "Frag limit hit.\n");
                 EndDMLevel();
                 return;
             }
@@ -717,7 +717,7 @@ static void ExitLevel(void)
         return;
 
     if (level.changemap == NULL) {
-        gi.error("Got null changemap when trying to exit level. Was a trigger_changelevel configured correctly?");
+        G_Error("Got null changemap when trying to exit level. Was a trigger_changelevel configured correctly?");
         return;
     }
 
@@ -972,14 +972,11 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
     va_list     argptr;
     char        text[MAX_STRING_CHARS];
 
-    if (type == PRINT_DEVELOPER)
-        return;
-
     va_start(argptr, fmt);
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.dprintf("%s", text);
+    trap_Print(type, text);
 }
 
 void Com_Error(error_type_t type, const char *fmt, ...)
@@ -991,6 +988,6 @@ void Com_Error(error_type_t type, const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.error("%s", text);
+    trap_Error(text);
 }
 #endif

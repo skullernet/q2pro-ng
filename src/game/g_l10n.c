@@ -27,7 +27,7 @@ static char *copy_string(const char *s)
     size_t len = strlen(s) + 1;
 
     if (len > sizeof(message_data) - message_size)
-        gi.error("Message data overflow");
+        G_Error("Message data overflow");
 
     char *d = message_data + message_size;
     message_size += len;
@@ -66,7 +66,7 @@ static void parse_line(const char *data)
     *p = 0;
 
     if (nb_messages == q_countof(messages))
-        gi.error("Too many messages");
+        G_Error("Too many messages");
 
     message_t *m = &messages[nb_messages++];
     m->key = copy_string(key);
@@ -84,14 +84,14 @@ void G_LoadL10nFile(void)
     G_FreeL10nFile();
 
     if (!fs) {
-        gi.dprintf("FILESYSTEM_API_V1 not available\n");
+        G_Printf("FILESYSTEM_API_V1 not available\n");
         return;
     }
 
     qhandle_t f;
     int ret = fs->OpenFile(L10N_FILE, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
     if (!f) {
-        gi.dprintf("Couldn't open %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+        G_Printf("Couldn't open %s: %s\n", L10N_FILE, fs->ErrorString(ret));
         return;
     }
 
@@ -101,7 +101,7 @@ void G_LoadL10nFile(void)
         if (ret == 0)
             break;
         if (ret < 0) {
-            gi.dprintf("Couldn't read %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+            G_Printf("Couldn't read %s: %s\n", L10N_FILE, fs->ErrorString(ret));
             break;
         }
         parse_line(line);
@@ -111,7 +111,7 @@ void G_LoadL10nFile(void)
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 
-    gi.dprintf("Loaded %d messages from %s\n", nb_messages, L10N_FILE);
+    G_Printf("Loaded %d messages from %s\n", nb_messages, L10N_FILE);
 }
 
 const char *G_GetL10nString(const char *key)

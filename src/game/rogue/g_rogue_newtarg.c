@@ -72,7 +72,7 @@ void THINK(target_steam_start)(edict_t *self)
     if (self->target) {
         ent = G_Find(NULL, FOFS(targetname), self->target);
         if (!ent)
-            gi.dprintf("%s: target %s not found\n", etos(self), self->target);
+            G_Printf("%s: target %s not found\n", etos(self), self->target);
         self->enemy = ent;
     } else {
         G_SetMovedir(self->s.angles, self->movedir);
@@ -126,7 +126,7 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), self->target))) {
             if (t == self) {
-                gi.dprintf("WARNING: entity used itself.\n");
+                G_Printf("WARNING: entity used itself.\n");
             } else if (t->r.svflags & SVF_MONSTER) {
                 if (t->health <= 0)
                     return;
@@ -136,7 +136,7 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
                 FoundTarget(t);
             }
             if (!self->r.inuse) {
-                gi.dprintf("entity was removed while using targets\n");
+                G_Printf("entity was removed while using targets\n");
                 return;
             }
         }
@@ -153,12 +153,12 @@ killtarget - entity to be pissed off at
 void SP_target_anger(edict_t *self)
 {
     if (!self->target) {
-        gi.dprintf("%s without target!\n", etos(self));
+        G_Printf("%s without target!\n", etos(self));
         G_FreeEdict(self);
         return;
     }
     if (!self->killtarget) {
-        gi.dprintf("%s without killtarget!\n", etos(self));
+        G_Printf("%s without killtarget!\n", etos(self));
         G_FreeEdict(self);
         return;
     }

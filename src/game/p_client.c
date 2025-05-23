@@ -192,7 +192,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
 
     // send generic/self
     if (base) {
-        gi.bprintf(PRINT_MEDIUM, base, self->client->pers.netname);
+        G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname);
         if (deathmatch->integer && !mod.no_point_loss) {
             self->client->resp.score--;
 
@@ -329,7 +329,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
             break;
         }
 
-        gi.bprintf(PRINT_MEDIUM, base, self->client->pers.netname, attacker->client->pers.netname);
+        G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname, attacker->client->pers.netname);
 
         if (G_TeamplayEnabled()) {
             // ZOID
@@ -376,7 +376,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         return;
     }
 
-    gi.bprintf(PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
+    G_ClientPrintf(NULL, PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
     // ROGUE
     if (deathmatch->integer && !mod.no_point_loss) {
         if (gamerules->integer) {
@@ -704,7 +704,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
                 for (int i = 0; i < game.maxclients; i++) {
                     edict_t *player = &g_edicts[i];
                     if (player->r.inuse)
-                        gi.centerprintf(player, "Everyone is dead. You lose.\nRestarting level...");
+                        G_ClientPrintf(player, PRINT_CENTER, "Everyone is dead. You lose.\nRestarting level...");
                 }
             }
 
@@ -739,7 +739,7 @@ static void Player_GiveStartItems(edict_t *ent, const char *ptr)
             const gitem_t *item = FindItemByClassname(token);
 
             if (!item || !item->pickup)
-                gi.error("Invalid g_start_item entry: %s\n", token);
+                G_Error("Invalid g_start_item entry: %s", token);
 
             int count = 1;
 
@@ -1380,7 +1380,7 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
             spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, true, &any_valid);
 
             if (!any_valid)
-                gi.error("no valid spawn points found");
+                G_Error("no valid spawn points found");
         }
 
         if (spot) {
@@ -1417,7 +1417,7 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
 
         // in SP, just put us at the origin if spawn fails
         if (!spot) {
-            gi.dprintf("Couldn't find spawn point %s\n", game.spawnpoint);
+            G_Printf("Couldn't find spawn point %s\n", game.spawnpoint);
             VectorClear(origin);
             VectorClear(angles);
             return true;
@@ -1568,7 +1568,7 @@ static void spectator_respawn(edict_t *ent)
         if (*spectator_password->string &&
             strcmp(spectator_password->string, "none") &&
             strcmp(spectator_password->string, value)) {
-            gi.cprintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
             ent->client->pers.spectator = false;
             gi.WriteByte(svc_stufftext);
             gi.WriteString("spectator 0\n");
@@ -1582,7 +1582,7 @@ static void spectator_respawn(edict_t *ent)
                 numspec++;
 
         if (numspec >= maxspectators->integer) {
-            gi.cprintf(ent, PRINT_HIGH, "Server spectator limit is full.");
+            G_ClientPrintf(ent, PRINT_HIGH, "Server spectator limit is full.");
             ent->client->pers.spectator = false;
             // reset his spectator var
             gi.WriteByte(svc_stufftext);
@@ -1597,7 +1597,7 @@ static void spectator_respawn(edict_t *ent)
 
         if (*password->string && strcmp(password->string, "none") &&
             strcmp(password->string, value)) {
-            gi.cprintf(ent, PRINT_HIGH, "Password incorrect.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "Password incorrect.\n");
             ent->client->pers.spectator = true;
             gi.WriteByte(svc_stufftext);
             gi.WriteString("spectator 1\n");
@@ -1631,9 +1631,9 @@ static void spectator_respawn(edict_t *ent)
     ent->client->respawn_time = level.time;
 
     if (ent->client->pers.spectator)
-        gi.bprintf(PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s has moved to the sidelines\n", ent->client->pers.netname);
     else
-        gi.bprintf(PRINT_HIGH, "%s joined the game\n", ent->client->pers.netname);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the game\n", ent->client->pers.netname);
 }
 
 //==============================================================
@@ -2012,7 +2012,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
             G_AddEvent(ent, EV_MUZZLEFLASH, MZ_LOGIN);
     }
 
-    gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 
     // make sure all view stuff is valid
     ClientEndServerFrame(ent);
@@ -2042,7 +2042,7 @@ static void G_SetLevelEntry(void)
     }
 
     if (!found_entry) {
-        gi.dprintf("WARNING: more than %d maps in unit, can't track the rest\n", MAX_LEVELS_PER_UNIT);
+        G_Printf("WARNING: more than %d maps in unit, can't track the rest\n", MAX_LEVELS_PER_UNIT);
         return;
     }
 
@@ -2104,7 +2104,7 @@ static void G_SetLevelEntry(void)
         }
 
         if (!found_entry) {
-            gi.dprintf("WARNING: more than %d maps in unit, can't track the rest\n", MAX_LEVELS_PER_UNIT);
+            G_Printf("WARNING: more than %d maps in unit, can't track the rest\n", MAX_LEVELS_PER_UNIT);
             return;
         }
 
@@ -2169,7 +2169,7 @@ void ClientBegin(edict_t *ent)
     } else {
         // send effect if in a multiplayer game
         if (game.maxclients > 1 && !(ent->r.svflags & SVF_NOCLIENT))
-            gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
+            G_ClientPrintf(NULL, PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
     }
 
     level.coop_scale_players++;
@@ -2348,7 +2348,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     if (game.maxclients > 1) {
         // [Paril-KEX] fetch name because now netname is kinda unsuitable
         value = Info_ValueForKey(userinfo, "name");
-        gi.cprintf(NULL, PRINT_HIGH, "%s connected.\n", value);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s connected.\n", value);
     }
 
     ent->client->pers.connected = true;

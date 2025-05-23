@@ -603,7 +603,7 @@ static void Drop_Ammo(edict_t *ent, const gitem_t *item)
 
     if (ent->client->pers.weapon && ent->client->pers.weapon == item && (item->flags & IF_AMMO) &&
         ent->client->pers.inventory[index] - dropped->count <= 0) {
-        gi.cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
         G_FreeEdict(dropped);
         return;
     }
@@ -802,7 +802,7 @@ static void Use_PowerArmor(edict_t *ent, const gitem_t *item)
         G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/power2.wav"), 1, ATTN_NORM);
     } else {
         if (!ent->client->pers.inventory[IT_AMMO_CELLS]) {
-            gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "No cells for power armor.\n");
             return;
         }
 
@@ -1083,7 +1083,7 @@ void THINK(droptofloor)(edict_t *ent)
                     ent->velocity[2] = 0;
                 else {
                 // RAFAEL
-                    gi.dprintf("%s: droptofloor: startsolid\n", etos(ent));
+                    G_Printf("%s: droptofloor: startsolid\n", etos(ent));
                     G_FreeEdict(ent);
                     return;
                 // RAFAEL
@@ -1171,7 +1171,7 @@ void PrecacheItem(const gitem_t *it)
 
         len = s - start;
         if (len >= MAX_QPATH || len < 5)
-            gi.error("PrecacheItem: %s has bad precache string", it->classname);
+            G_Error("PrecacheItem: %s has bad precache string", it->classname);
         memcpy(data, start, len);
         data[len] = 0;
         if (*s)
@@ -1218,7 +1218,7 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
         }
     } else if (ent->spawnflags >= SPAWNFLAG_ITEM_MAX) { // PGM
         ent->spawnflags = SPAWNFLAG_NONE;
-        gi.dprintf("%s has invalid spawnflags set\n", etos(ent));
+        G_Printf("%s has invalid spawnflags set\n", etos(ent));
     }
 
     // some items will be prevented in deathmatch
@@ -1305,12 +1305,12 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
     // DM only items
     if (!deathmatch->integer) {
         if (item->pickup == Pickup_Doppleganger || item->pickup == Pickup_Nuke) {
-            gi.dprintf("%s spawned in non-DM; freeing...\n", etos(ent));
+            G_Printf("%s spawned in non-DM; freeing...\n", etos(ent));
             G_FreeEdict(ent);
             return;
         }
         if ((item->use == Use_Vengeance) || (item->use == Use_Hunter)) {
-            gi.dprintf("%s spawned in non-DM; freeing...\n", etos(ent));
+            G_Printf("%s spawned in non-DM; freeing...\n", etos(ent));
             G_FreeEdict(ent);
             return;
         }

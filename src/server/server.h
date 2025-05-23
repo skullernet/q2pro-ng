@@ -359,7 +359,6 @@ typedef struct {
 #endif
 
 #if USE_SAVEGAMES
-    int             gamedetecthack;
     qhandle_t       savefile;
 #endif
 

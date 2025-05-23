@@ -109,7 +109,7 @@ bool SV_RunThink(edict_t *ent)
 
     ent->nextthink = 0;
     if (!ent->think)
-        gi.error("NULL ent->think");
+        G_Error("NULL ent->think");
     ent->think(ent);
 
     return false;
@@ -471,7 +471,7 @@ retry:
         }
     }
     if (pushed_p > &pushed[MAX_EDICTS])
-        gi.error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
+        G_Error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
     if (part) {
         // if the pusher has a "blocked" function, call it
@@ -991,7 +991,7 @@ void G_RunEntity(edict_t *ent)
         break;
     // ROGUE
     default:
-        gi.error("SV_Physics: bad movetype %d", ent->movetype);
+        G_Error("SV_Physics: bad movetype %d", ent->movetype);
     }
 
     // PGM

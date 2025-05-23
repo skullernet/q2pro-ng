@@ -351,7 +351,7 @@ void NoAmmoWeaponChange(edict_t *ent, bool sound)
         const gitem_t *item = GetItemByIndex(no_ammo_order[i]);
 
         if (!item)
-            gi.error("Invalid no ammo weapon switch weapon %d\n", no_ammo_order[i]);
+            G_Error("Invalid no ammo weapon switch weapon %d", no_ammo_order[i]);
 
         if (!ent->client->pers.inventory[item->id])
             continue;
@@ -478,12 +478,12 @@ static weap_switch_t Weapon_AttemptSwitch(edict_t *ent, const gitem_t *item, boo
 
         if (!ent->client->pers.inventory[item->ammo]) {
             if (!silent)
-                gi.cprintf(ent, PRINT_HIGH, "No %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
+                G_ClientPrintf(ent, PRINT_HIGH, "No %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
             return WEAP_SWITCH_NO_AMMO;
         }
         if (ent->client->pers.inventory[item->ammo] < item->quantity) {
             if (!silent)
-                gi.cprintf(ent, PRINT_HIGH, "Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
+                G_ClientPrintf(ent, PRINT_HIGH, "Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
             return WEAP_SWITCH_NOT_ENOUGH_AMMO;
         }
     }
@@ -551,7 +551,7 @@ void Use_Weapon(edict_t *ent, const gitem_t *item)
     if (result == WEAP_SWITCH_VALID)
         ent->client->newweapon = wanted; // change to this weapon when down
     else if ((result = Weapon_AttemptSwitch(ent, wanted, true)) == WEAP_SWITCH_NO_WEAPON && wanted != ent->client->pers.weapon && wanted != ent->client->newweapon)
-        gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", wanted->pickup_name);
+        G_ClientPrintf(ent, PRINT_HIGH, "Out of item: %s\n", wanted->pickup_name);
 }
 
 /*
@@ -564,7 +564,7 @@ void Drop_Weapon(edict_t *ent, const gitem_t *item)
     item_id_t index = item->id;
     // see if we're already using it
     if (((item == ent->client->pers.weapon) || (item == ent->client->newweapon)) && (ent->client->pers.inventory[index] == 1)) {
-        gi.cprintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Can't drop current weapon\n");
         return;
     }
 

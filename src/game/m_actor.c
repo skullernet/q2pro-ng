@@ -205,7 +205,7 @@ void PAIN(actor_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
         else
             M_SetAnimation(self, &actor_move_taunt);
         name = actor_names[self->s.number % q_countof(actor_names)];
-        gi.cprintf(other, PRINT_CHAT, "%s: %s!\n", name, random_element(messages));
+        G_ClientPrintf(other, PRINT_CHAT, "%s: %s!\n", name, random_element(messages));
         return;
     }
 
@@ -348,7 +348,7 @@ void USE(actor_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     self->goalentity = self->movetarget = G_PickTarget(self->target);
     if ((!self->movetarget) || (strcmp(self->movetarget->classname, "target_actor") != 0)) {
-        gi.dprintf("%s: bad target %s\n", etos(self), self->target);
+        G_Printf("%s: bad target %s\n", etos(self), self->target);
         self->target = NULL;
         self->monsterinfo.pausetime = HOLD_FOREVER;
         self->monsterinfo.stand(self);
@@ -372,13 +372,13 @@ void SP_misc_actor(edict_t *self)
     }
 
     if (!self->targetname) {
-        gi.dprintf("%s: no targetname\n", etos(self));
+        G_Printf("%s: no targetname\n", etos(self));
         G_FreeEdict(self);
         return;
     }
 
     if (!self->target) {
-        gi.dprintf("%s: no target\n", etos(self));
+        G_Printf("%s: no target\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -455,7 +455,7 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             edict_t *ent = &g_edicts[n];
             if (!ent->r.inuse)
                 continue;
-            gi.cprintf(ent, PRINT_CHAT, "%s: %s\n", actor_names[other->s.number % q_countof(actor_names)], self->message);
+            G_ClientPrintf(ent, PRINT_CHAT, "%s: %s\n", actor_names[other->s.number % q_countof(actor_names)], self->message);
         }
     }
 
@@ -510,7 +510,7 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 void SP_target_actor(edict_t *self)
 {
     if (!self->targetname)
-        gi.dprintf("%s: no targetname\n", etos(self));
+        G_Printf("%s: no targetname\n", etos(self));
 
     self->r.solid = SOLID_TRIGGER;
     self->touch = target_actor_touch;

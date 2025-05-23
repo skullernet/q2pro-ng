@@ -1440,7 +1440,7 @@ void TOUCH(door_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
         return;
     self->touch_debounce_time = level.time + SEC(5);
 
-    gi.centerprintf(other, "%s", self->message);
+    G_ClientPrintf(other, PRINT_CENTER, "%s", self->message);
     G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
 }
 
@@ -1620,7 +1620,7 @@ void SP_func_door_rotating(edict_t *ent)
         VectorInverse(ent->movedir);
 
     if (!st.distance) {
-        gi.dprintf("%s: no distance set\n", etos(ent));
+        G_Printf("%s: no distance set\n", etos(ent));
         st.distance = 90;
     }
 
@@ -1658,7 +1658,7 @@ void SP_func_door_rotating(edict_t *ent)
     if (ent->spawnflags & SPAWNFLAG_DOOR_START_OPEN) {
         if (ent->spawnflags & SPAWNFLAG_DOOR_ROTATING_SAFE_OPEN) {
             ent->spawnflags &= ~SPAWNFLAG_DOOR_ROTATING_SAFE_OPEN;
-            gi.dprintf("%s: SAFE_OPEN is not compatible with START_OPEN\n", etos(ent));
+            G_Printf("%s: SAFE_OPEN is not compatible with START_OPEN\n", etos(ent));
         }
 
         VectorCopy(ent->pos2, ent->s.angles);
@@ -1920,7 +1920,7 @@ again:
 
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.dprintf("%s: train_next: bad target %s\n", etos(self), self->target);
+        G_Printf("%s: train_next: bad target %s\n", etos(self), self->target);
         return;
     }
 
@@ -1929,7 +1929,7 @@ again:
     // check for a teleport path_corner
     if (ent->spawnflags & SPAWNFLAG_PATH_CORNER_TELEPORT) {
         if (!first) {
-            gi.dprintf("%s: connected teleport path_corners\n", etos(ent));
+            G_Printf("%s: connected teleport path_corners\n", etos(ent));
             return;
         }
         first = false;
@@ -2060,12 +2060,12 @@ void THINK(func_train_find)(edict_t *self)
     edict_t *ent;
 
     if (!self->target) {
-        gi.dprintf("%s: train_find: no target\n", etos(self));
+        G_Printf("%s: train_find: no target\n", etos(self));
         return;
     }
     ent = G_PickTarget(self->target);
     if (!ent) {
-        gi.dprintf("%s: train_find: target %s not found\n", etos(self), self->target);
+        G_Printf("%s: train_find: target %s not found\n", etos(self), self->target);
         return;
     }
     self->target = ent->target;
@@ -2143,7 +2143,7 @@ void SP_func_train(edict_t *self)
         self->nextthink = level.time + FRAME_TIME;
         self->think = func_train_find;
     } else {
-        gi.dprintf("%s: no target\n", etos(self));
+        G_Printf("%s: no target\n", etos(self));
     }
 }
 
@@ -2157,13 +2157,13 @@ void USE(trigger_elevator_use)(edict_t *self, edict_t *other, edict_t *activator
         return;
 
     if (!other->pathtarget) {
-        gi.dprintf("%s: elevator used with no pathtarget\n", etos(self));
+        G_Printf("%s: elevator used with no pathtarget\n", etos(self));
         return;
     }
 
     target = G_PickTarget(other->pathtarget);
     if (!target) {
-        gi.dprintf("%s: elevator used with bad pathtarget: %s\n", etos(self), other->pathtarget);
+        G_Printf("%s: elevator used with bad pathtarget: %s\n", etos(self), other->pathtarget);
         return;
     }
 
@@ -2174,16 +2174,16 @@ void USE(trigger_elevator_use)(edict_t *self, edict_t *other, edict_t *activator
 void THINK(trigger_elevator_init)(edict_t *self)
 {
     if (!self->target) {
-        gi.dprintf("%s: has no target\n", etos(self));
+        G_Printf("%s: has no target\n", etos(self));
         return;
     }
     self->movetarget = G_PickTarget(self->target);
     if (!self->movetarget) {
-        gi.dprintf("%s: unable to find target %s\n", etos(self), self->target);
+        G_Printf("%s: unable to find target %s\n", etos(self), self->target);
         return;
     }
     if (strcmp(self->movetarget->classname, "func_train") != 0) {
-        gi.dprintf("%s: target %s is not a train\n", etos(self), self->target);
+        G_Printf("%s: target %s is not a train\n", etos(self), self->target);
         return;
     }
 
@@ -2247,7 +2247,7 @@ void SP_func_timer(edict_t *self)
 
     if (self->random >= self->wait) {
         self->random = self->wait - FRAME_TIME_SEC;
-        gi.dprintf("%s: random >= wait\n", etos(self));
+        G_Printf("%s: random >= wait\n", etos(self));
     }
 
     if (self->spawnflags & SPAWNFLAG_TIMER_START_ON) {
@@ -2605,7 +2605,7 @@ void THINK(func_eye_setup)(edict_t *self)
     edict_t *eye_pos = G_PickTarget(self->pathtarget);
 
     if (!eye_pos)
-        gi.dprintf("%s: bad target\n", etos(self));
+        G_Printf("%s: bad target\n", etos(self));
     else
         VectorSubtract(eye_pos->s.origin, self->s.origin, self->move_origin);
 

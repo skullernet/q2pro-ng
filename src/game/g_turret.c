@@ -196,14 +196,14 @@ void THINK(turret_breach_finish_init)(edict_t *self)
 {
     // get and save info for muzzle location
     if (!self->target) {
-        gi.dprintf("%s: needs a target\n", etos(self));
+        G_Printf("%s: needs a target\n", etos(self));
     } else {
         self->target_ent = G_PickTarget(self->target);
         if (self->target_ent) {
             VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
             G_FreeEdict(self->target_ent);
         } else
-            gi.dprintf("%s: could not find target entity \"%s\"\n", etos(self), self->target);
+            G_Printf("%s: could not find target entity \"%s\"\n", etos(self), self->target);
     }
 
     self->teammaster->dmg = self->dmg;
@@ -441,7 +441,7 @@ void SP_turret_driver(edict_t *self)
     if (st.item) {
         self->item = FindItemByClassname(st.item);
         if (!self->item)
-            gi.dprintf("%s: bad item: %s\n", etos(self), st.item);
+            G_Printf("%s: bad item: %s\n", etos(self), st.item);
     }
 
     self->think = turret_driver_link;
@@ -596,12 +596,12 @@ before firing to acquire the target.
 void SP_turret_invisible_brain(edict_t *self)
 {
     if (!self->killtarget) {
-        gi.dprintf("%s with no killtarget!\n", etos(self));
+        G_Printf("%s with no killtarget!\n", etos(self));
         G_FreeEdict(self);
         return;
     }
     if (!self->target) {
-        gi.dprintf("%s with no target!\n", etos(self));
+        G_Printf("%s with no target!\n", etos(self));
         G_FreeEdict(self);
         return;
     }

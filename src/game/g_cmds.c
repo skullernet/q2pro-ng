@@ -100,7 +100,7 @@ void ValidateSelectedItem(edict_t *ent)
 static bool G_CheatCheck(edict_t *ent)
 {
     if (game.maxclients > 1 && !sv_cheats->integer) {
-        gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
         return false;
     }
 
@@ -235,13 +235,13 @@ static void Cmd_Give_f(edict_t *ent)
         it = FindItemByClassname(name);
 
     if (!it) {
-        gi.cprintf(ent, PRINT_HIGH, "Unknown item\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown item\n");
         return;
     }
 
     // ROGUE
     if (it->flags & IF_NOT_GIVEABLE) {
-        gi.cprintf(ent, PRINT_HIGH, "Item cannot be given\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Item cannot be given\n");
         return;
     }
     // ROGUE
@@ -299,9 +299,9 @@ static void Cmd_God_f(edict_t *ent)
 
     ent->flags ^= FL_GODMODE;
     if (!(ent->flags & FL_GODMODE))
-        gi.cprintf(ent, PRINT_HIGH, "godmode OFF\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "godmode OFF\n");
     else
-        gi.cprintf(ent, PRINT_HIGH, "godmode ON\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "godmode ON\n");
 }
 
 /*
@@ -320,9 +320,9 @@ static void Cmd_Immortal_f(edict_t *ent)
 
     ent->flags ^= FL_IMMORTAL;
     if (!(ent->flags & FL_IMMORTAL))
-        gi.cprintf(ent, PRINT_HIGH, "immortal OFF\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "immortal OFF\n");
     else
-        gi.cprintf(ent, PRINT_HIGH, "immortal ON\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "immortal ON\n");
 }
 
 /*
@@ -397,7 +397,7 @@ static void Cmd_Spawn_f(edict_t *ent)
             VectorSubtract(other->s.origin, ent->s.origin, dir);
 
             if (DotProduct(dir, forward) < 0) {
-                gi.cprintf(ent, PRINT_HIGH, "Couldn't find a suitable spawn location\n");
+                G_ClientPrintf(ent, PRINT_HIGH, "Couldn't find a suitable spawn location\n");
                 G_FreeEdict(other);
                 break;
             }
@@ -432,7 +432,7 @@ static void Cmd_Teleport_f(edict_t *ent)
         return;
 
     if (gi.argc() < 4) {
-        gi.cprintf(ent, PRINT_HIGH, "Not enough args; teleport x y z\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Not enough args; teleport x y z\n");
         return;
     }
 
@@ -471,9 +471,9 @@ static void Cmd_Notarget_f(edict_t *ent)
 
     ent->flags ^= FL_NOTARGET;
     if (!(ent->flags & FL_NOTARGET))
-        gi.cprintf(ent, PRINT_HIGH, "notarget OFF\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "notarget OFF\n");
     else
-        gi.cprintf(ent, PRINT_HIGH, "notarget ON\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "notarget ON\n");
 }
 
 /*
@@ -492,9 +492,9 @@ static void Cmd_Novisible_f(edict_t *ent)
 
     ent->flags ^= FL_NOVISIBLE;
     if (!(ent->flags & FL_NOVISIBLE))
-        gi.cprintf(ent, PRINT_HIGH, "novisible OFF\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "novisible OFF\n");
     else
-        gi.cprintf(ent, PRINT_HIGH, "novisible ON\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "novisible ON\n");
 }
 
 static void Cmd_AlertAll_f(edict_t *ent)
@@ -527,10 +527,10 @@ static void Cmd_Noclip_f(edict_t *ent)
 
     if (ent->movetype == MOVETYPE_NOCLIP) {
         ent->movetype = MOVETYPE_WALK;
-        gi.cprintf(ent, PRINT_HIGH, "noclip OFF\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "noclip OFF\n");
     } else {
         ent->movetype = MOVETYPE_NOCLIP;
-        gi.cprintf(ent, PRINT_HIGH, "noclip ON\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "noclip ON\n");
     }
 }
 
@@ -559,18 +559,18 @@ static void Cmd_Use_f(edict_t *ent)
         it = FindItem(s);
 
     if (!it) {
-        gi.cprintf(ent, PRINT_HIGH, "Unknown item: %s\n", s);
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown item: %s\n", s);
         return;
     }
     if (!it->use) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Item is not usable.\n");
         return;
     }
     index = it->id;
 
     // Paril: Use_Weapon handles weapon availability
     if (!(it->flags & IF_WEAPON) && !ent->client->pers.inventory[index]) {
-        gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", it->pickup_name);
+        G_ClientPrintf(ent, PRINT_HIGH, "Out of item: %s\n", it->pickup_name);
         return;
     }
 
@@ -621,16 +621,16 @@ static void Cmd_Drop_f(edict_t *ent)
         it = FindItem(s);
 
     if (!it) {
-        gi.cprintf(ent, PRINT_HIGH, "Unknown item : %s\n", s);
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown item : %s\n", s);
         return;
     }
     if (!G_CanDropItem(it)) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not droppable.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Item is not droppable.\n");
         return;
     }
     index = it->id;
     if (!ent->client->pers.inventory[index]) {
-        gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", it->pickup_name);
+        G_ClientPrintf(ent, PRINT_HIGH, "Out of item: %s\n", it->pickup_name);
         return;
     }
 
@@ -706,13 +706,13 @@ static void Cmd_InvUse_f(edict_t *ent)
     ValidateSelectedItem(ent);
 
     if (ent->client->pers.selected_item == IT_NULL) {
-        gi.cprintf(ent, PRINT_HIGH, "No item to use.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "No item to use.\n");
         return;
     }
 
     it = &itemlist[ent->client->pers.selected_item];
     if (!it->use) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Item is not usable.\n");
         return;
     }
 
@@ -858,13 +858,13 @@ static void Cmd_InvDrop_f(edict_t *ent)
     ValidateSelectedItem(ent);
 
     if (ent->client->pers.selected_item == IT_NULL) {
-        gi.cprintf(ent, PRINT_HIGH, "No item to drop.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "No item to drop.\n");
         return;
     }
 
     it = &itemlist[ent->client->pers.selected_item];
     if (!G_CanDropItem(it)) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not droppable.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Item is not droppable.\n");
         return;
     }
     it->drop(ent, it);
@@ -913,7 +913,7 @@ Cmd_Kill_AI_f
 static void Cmd_Kill_AI_f(edict_t * ent)
 {
     if (!sv_cheats->integer) {
-        gi.cprintf(ent, PRINT_HIGH, "Kill_AI: Cheats Must Be Enabled!\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Kill_AI: Cheats Must Be Enabled!\n");
         return;
     }
 
@@ -937,7 +937,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
         G_FreeEdict(edict);
     }
 
-    gi.cprintf(ent, PRINT_HIGH, "Kill_AI: All AI Are Dead...\n");
+    G_ClientPrintf(ent, PRINT_HIGH, "Kill_AI: All AI Are Dead...\n");
 }
 
 /*
@@ -947,7 +947,7 @@ Cmd_Where_f
 */
 static void Cmd_Where_f(edict_t *ent)
 {
-    gi.cprintf(ent, PRINT_HIGH, "Location: %s %s\n", vtos(ent->s.origin), vtos(ent->client->ps.viewangles));
+    G_ClientPrintf(ent, PRINT_HIGH, "Location: %s %s\n", vtos(ent->s.origin), vtos(ent->client->ps.viewangles));
 }
 
 /*
@@ -958,7 +958,7 @@ Cmd_Clear_AI_Enemy_f
 static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
 {
     if (!sv_cheats->integer) {
-        gi.cprintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Cheats Must Be Enabled!\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Cheats Must Be Enabled!\n");
         return;
     }
 
@@ -971,7 +971,7 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
         edict->monsterinfo.aiflags |= AI_FORGET_ENEMY;
     }
 
-    gi.cprintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Clear All AI Enemies...\n");
+    G_ClientPrintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Clear All AI Enemies...\n");
 }
 
 /*
@@ -1049,7 +1049,7 @@ static void Cmd_Players_f(edict_t *ent)
         strcat(large, small);
     }
 
-    gi.cprintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
+    G_ClientPrintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
 }
 
 bool CheckFlood(edict_t *ent)
@@ -1061,8 +1061,8 @@ bool CheckFlood(edict_t *ent)
         cl = ent->client;
 
         if (level.time < cl->flood_locktill) {
-            gi.cprintf(ent, PRINT_HIGH, "You can't talk for %.f more seconds\n",
-                       TO_SEC(cl->flood_locktill - level.time));
+            G_ClientPrintf(ent, PRINT_HIGH, "You can't talk for %.f more seconds\n",
+                           TO_SEC(cl->flood_locktill - level.time));
             return true;
         }
         i = cl->flood_whenhead - flood_msgs->integer + 1;
@@ -1072,8 +1072,8 @@ bool CheckFlood(edict_t *ent)
             i = 0;
         if (cl->flood_when[i] && level.time - cl->flood_when[i] < SEC(flood_persecond->value)) {
             cl->flood_locktill = level.time + SEC(flood_waitdelay->value);
-            gi.cprintf(ent, PRINT_CHAT, "You can't talk for %d more seconds\n",
-                       flood_waitdelay->integer);
+            G_ClientPrintf(ent, PRINT_CHAT, "You can't talk for %d more seconds\n",
+                           flood_waitdelay->integer);
             return true;
         }
         cl->flood_whenhead = (cl->flood_whenhead + 1) % (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
@@ -1204,7 +1204,7 @@ static void Cmd_Wave_f(edict_t *ent)
                     continue;
 
                 G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/help_marker.wav"), 1.0f, ATTN_NONE);
-                gi.cprintf(player, PRINT_HIGH, other_notify_msg, ent->client->pers.netname);
+                G_ClientPrintf(player, PRINT_HIGH, other_notify_msg, ent->client->pers.netname);
             }
         }
     } else {
@@ -1218,15 +1218,15 @@ static void Cmd_Wave_f(edict_t *ent)
                 continue;
 
             if (aiming_at && other_notify_msg)
-                gi.cprintf(targ, PRINT_HIGH, other_notify_msg, ent->client->pers.netname, aiming_at->client->pers.netname);
+                G_ClientPrintf(targ, PRINT_HIGH, other_notify_msg, ent->client->pers.netname, aiming_at->client->pers.netname);
             else if (other_notify_none_msg)
-                gi.cprintf(targ, PRINT_HIGH, other_notify_none_msg, ent->client->pers.netname);
+                G_ClientPrintf(targ, PRINT_HIGH, other_notify_none_msg, ent->client->pers.netname);
         }
 
         if (aiming_at && other_notify_msg)
-            gi.cprintf(ent, PRINT_HIGH, other_notify_msg, ent->client->pers.netname, aiming_at->client->pers.netname);
+            G_ClientPrintf(ent, PRINT_HIGH, other_notify_msg, ent->client->pers.netname, aiming_at->client->pers.netname);
         else if (other_notify_none_msg)
-            gi.cprintf(ent, PRINT_HIGH, other_notify_none_msg, ent->client->pers.netname);
+            G_ClientPrintf(ent, PRINT_HIGH, other_notify_none_msg, ent->client->pers.netname);
     }
 
     ent->client->anim_time = 0;
@@ -1266,7 +1266,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
     Q_strlcat(text, "\n", sizeof(text));
 
     if (sv_dedicated->integer)
-        gi.cprintf(NULL, PRINT_CHAT, "%s", text);
+        Com_LPrintf(PRINT_TALK, "%s", text);
 
     for (j = 0; j < game.maxclients; j++) {
         other = &g_edicts[j];
@@ -1274,7 +1274,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
             continue;
         if (!other->client)
             continue;
-        gi.cprintf(other, PRINT_CHAT, "%s", text);
+        G_ClientPrintf(other, PRINT_CHAT, "%s", text);
     }
 }
 
@@ -1301,14 +1301,14 @@ static void Cmd_PlayerList_f(edict_t *ent)
         if (strlen(text) + strlen(st) > sizeof(text) - 50) {
             if (strlen(text) < sizeof(text) - 12)
                 strcat(text, "And more...\n");
-            gi.cprintf(ent, PRINT_HIGH, "%s", text);
+            G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
             return;
         }
         strcat(text, st);
     }
 
     if (*text)
-        gi.cprintf(ent, PRINT_HIGH, "%s", text);
+        G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
 static void Cmd_Switchteam_f(edict_t *ent)
@@ -1365,8 +1365,8 @@ static void Cmd_Switchteam_f(edict_t *ent)
 
                 G_PostRespawn(ent);
 
-                gi.bprintf(PRINT_HIGH, "%s joined the %s team.\n",
-                           ent->client->pers.netname, CTFTeamName(best_team));
+                G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the %s team.\n",
+                               ent->client->pers.netname, CTFTeamName(best_team));
                 return;
             }
 
@@ -1379,8 +1379,8 @@ static void Cmd_Switchteam_f(edict_t *ent)
 
             ent->client->resp.score = 0;
 
-            gi.bprintf(PRINT_HIGH, "%s changed to the %s team.\n",
-                       ent->client->pers.netname, CTFTeamName(best_team));
+            G_ClientPrintf(NULL, PRINT_HIGH, "%s changed to the %s team.\n",
+                           ent->client->pers.netname, CTFTeamName(best_team));
         }
 
         return;
@@ -1410,7 +1410,7 @@ static void Cmd_ListMonsters_f(edict_t *ent)
         if (e->deadflag)
             continue;
 
-        gi.dprintf("%s\n", etos(e));
+        G_Printf("%s\n", etos(e));
     }
 }
 
@@ -1421,12 +1421,12 @@ static void Cmd_ShowSecrets_f(edict_t *self)
     bool found;
 
     if (game.maxclients > 1) {
-        gi.cprintf(self, PRINT_HIGH, "Only possible in single player\n");
+        G_ClientPrintf(self, PRINT_HIGH, "Only possible in single player\n");
         return;
     }
 
     if (!draw) {
-        gi.cprintf(self, PRINT_HIGH, "Debug drawing API not available\n");
+        G_ClientPrintf(self, PRINT_HIGH, "Debug drawing API not available\n");
         return;
     }
 
@@ -1447,7 +1447,7 @@ static void Cmd_ShowSecrets_f(edict_t *self)
             secrets++;
     }
 
-    gi.cprintf(self, PRINT_HIGH, "%d secrets revealed\n", secrets);
+    G_ClientPrintf(self, PRINT_HIGH, "%d secrets revealed\n", secrets);
 }
 
 /*

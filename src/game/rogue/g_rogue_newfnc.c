@@ -126,7 +126,7 @@ void TOUCH(secret_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     self->monsterinfo.attack_finished = level.time + SEC(2);
 
     if (self->message)
-        gi.centerprintf(other, "%s", self->message);
+        G_ClientPrintf(other, PRINT_CENTER, "%s", self->message);
 }
 
 /*QUAKED func_door_secret2 (0 .5 .8) ? open_once 1st_left 1st_down no_shoot always_shoot slide_right slide_forward
@@ -173,7 +173,7 @@ void SP_func_door_secret2(edict_t *ent)
         lrSize = ent->r.size[0];
         fbSize = ent->r.size[1];
     } else {
-        gi.dprintf("%s not at 0,90,180,270!\n", etos(ent));
+        G_Printf("%s not at 0,90,180,270!\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }

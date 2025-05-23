@@ -118,40 +118,60 @@ clear:
 }
 
 /*
-=================
-PF_bprintf
+===============
+PF_dprintf
 
-Sends text to all active clients.
-=================
+Debug print to server console.
+===============
 */
-static void PF_bprintf(int level, const char *fmt, ...)
+static void PF_dprint(print_type_t type, const char *msg)
 {
-    va_list     argptr;
-    char        string[MAX_STRING_CHARS];
-    client_t    *client;
-    size_t      len;
-    int         i;
+    Con_SkipNotify(true);
+    Com_LPrintf(type, "%s", msg);
+    Con_SkipNotify(false);
+}
 
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(string, sizeof(string), fmt, argptr);
-    va_end(argptr);
+/*
+===============
+PF_cprintf
 
-    if (len >= sizeof(string)) {
-        Com_DWPrintf("%s: overflow\n", __func__);
-        return;
+Print to a single client if the level passes.
+===============
+*/
+static void PF_cprint(edict_t *ent, print_level_t level, const char *msg)
+{
+    client_t *client = NULL;
+
+    if (ent) {
+        int clientNum = SV_NumForEdict(ent);
+        if (clientNum < 0 || clientNum >= svs.maxclients) {
+            Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
+            return;
+        }
+
+        client = svs.client_pool + clientNum;
+        if (client->state <= cs_zombie) {
+            Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
+            return;
+        }
+
+        if (level < client->messagelevel)
+            return;
     }
 
     MSG_WriteByte(svc_print);
     MSG_WriteByte(level);
-    MSG_WriteData(string, len + 1);
+    MSG_WriteString(msg);
+
+    if (client) {
+        SV_ClientAddMessage(client, MSG_RELIABLE);
+        SZ_Clear(&msg_write);
+        return;
+    }
 
     // echo to console
-    if (COM_DEDICATED) {
-        // mask off high bits
-        for (i = 0; i < len; i++)
-            string[i] &= 127;
-        Com_Printf("%s", string);
-    }
+    if (COM_DEDICATED)
+        Com_Printf("%s", msg);
 
     FOR_EACH_CLIENT(client) {
         if (client->state != cs_spawned)
@@ -166,140 +186,13 @@ static void PF_bprintf(int level, const char *fmt, ...)
 
 /*
 ===============
-PF_dprintf
-
-Debug print to server console.
-===============
-*/
-static void PF_dprintf(const char *fmt, ...)
-{
-    char        msg[MAXPRINTMSG];
-    va_list     argptr;
-
-#if USE_SAVEGAMES
-    // detect YQ2 game lib by unique first two messages
-    if (!svs.gamedetecthack)
-        svs.gamedetecthack = 1 + !strcmp(fmt, "Game is starting up.\n");
-    else if (svs.gamedetecthack == 2)
-        svs.gamedetecthack = 3 + !strcmp(fmt, "Game is %s built on %s.\n");
-#endif
-
-    va_start(argptr, fmt);
-    Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
-    Con_SkipNotify(true);
-    Com_Printf("%s", msg);
-    Con_SkipNotify(false);
-}
-
-/*
-===============
-PF_cprintf
-
-Print to a single client if the level passes.
-===============
-*/
-static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
-{
-    char        msg[MAX_STRING_CHARS];
-    va_list     argptr;
-    int         clientNum;
-    size_t      len;
-    client_t    *client;
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(msg)) {
-        Com_DWPrintf("%s: overflow\n", __func__);
-        return;
-    }
-
-    if (!ent) {
-        Com_LPrintf(level == PRINT_CHAT ? PRINT_TALK : PRINT_ALL, "%s", msg);
-        return;
-    }
-
-    clientNum = SV_NumForEdict(ent);
-    if (clientNum < 0 || clientNum >= svs.maxclients) {
-        Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
-        return;
-    }
-
-    client = svs.client_pool + clientNum;
-    if (client->state <= cs_zombie) {
-        Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
-        return;
-    }
-
-    MSG_WriteByte(svc_print);
-    MSG_WriteByte(level);
-    MSG_WriteData(msg, len + 1);
-
-    if (level >= client->messagelevel) {
-        SV_ClientAddMessage(client, MSG_RELIABLE);
-    }
-
-    SZ_Clear(&msg_write);
-}
-
-/*
-===============
-PF_centerprintf
-
-Centerprint to a single client.
-===============
-*/
-static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
-{
-    char        msg[MAX_STRING_CHARS];
-    va_list     argptr;
-    int         n;
-    size_t      len;
-
-    if (!ent) {
-        return;
-    }
-
-    n = SV_NumForEdict(ent);
-    if (n < 0 || n >= svs.maxclients) {
-        Com_DWPrintf("%s to a non-client %d\n", __func__, n);
-        return;
-    }
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(msg)) {
-        Com_DWPrintf("%s: overflow\n", __func__);
-        return;
-    }
-
-    MSG_WriteByte(svc_centerprint);
-    MSG_WriteData(msg, len + 1);
-
-    PF_Unicast(ent, true);
-}
-
-/*
-===============
 PF_error
 
 Abort the server with a game error
 ===============
 */
-static q_noreturn void PF_error(const char *fmt, ...)
+static q_noreturn void PF_error(const char *msg)
 {
-    char        msg[MAXERRORMSG];
-    va_list     argptr;
-
-    va_start(argptr, fmt);
-    Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
-
     Com_Error(ERR_DROP, "Game Error: %s", msg);
 }
 
@@ -561,10 +454,8 @@ static const game_import_t game_import = {
 
     .multicast = SV_Multicast,
     .unicast = PF_Unicast,
-    .bprintf = PF_bprintf,
-    .dprintf = PF_dprintf,
-    .cprintf = PF_cprintf,
-    .centerprintf = PF_centerprintf,
+    .dprint = PF_dprint,
+    .cprint = PF_cprint,
     .error = PF_error,
 
     .linkentity = PF_LinkEdict,

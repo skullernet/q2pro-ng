@@ -173,13 +173,8 @@ typedef struct {
     uint32_t    structsize;
 
     // special messages
-    void (* q_printf(2, 3) bprintf)(int printlevel, const char *fmt, ...);
-    void (* q_printf(1, 2) dprintf)(const char *fmt, ...);
-    void (* q_printf(3, 4) cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
-    void (* q_printf(2, 3) centerprintf)(edict_t *ent, const char *fmt, ...);
-    void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
-    void (*positioned_sound)(const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
-    void (*local_sound)(edict_t *target, const vec3_t origin, edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
+    void (*dprint)(print_type_t type, const char *msg);
+    void (*cprint)(edict_t *ent, print_level_t printlevel, const char *msg);
 
     // config strings hold all the index strings, the lightstyles,
     // and misc data like the sky definition and cdtrack.
@@ -188,7 +183,7 @@ typedef struct {
     void (*configstring)(int index, const char *str);
     size_t (*get_configstring)(int index, char *buf, size_t size);
 
-    void (* q_noreturn_ptr q_printf(1, 2) error)(const char *fmt, ...);
+    void (* q_noreturn_ptr error)(const char *msg);
 
     // the *index functions create configstrings and some internal server state
     int (*findindex)(const char *name, int start, int max, int skip);

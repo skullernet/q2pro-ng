@@ -120,7 +120,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
             count++;
 
     if (count > MAX_REINFORCEMENTS_TOTAL)
-        gi.error("Too many reinforcements");
+        G_Error("Too many reinforcements");
 
     // allocate
     list->reinforcements = G_Malloc(sizeof(list->reinforcements[0]) * count);

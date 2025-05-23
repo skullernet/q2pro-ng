@@ -351,7 +351,7 @@ static void hover_reattack(edict_t *self)
         else if (self->monsterinfo.attack_state == AS_SLIDING)
             M_SetAnimation(self, &hover_move_attack2);
         else
-            gi.dprintf("hover_reattack: unexpected state %d\n", self->monsterinfo.attack_state);
+            G_Printf("hover_reattack: unexpected state %d\n", self->monsterinfo.attack_state);
         return;
     }
     M_SetAnimation(self, &hover_move_end_attack);

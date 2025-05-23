@@ -9,7 +9,7 @@ This is a large viper about to crash
 void SP_misc_crashviper(edict_t *ent)
 {
     if (!ent->target) {
-        gi.dprintf("%s: no target\n", etos(ent));
+        G_Printf("%s: no target\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -44,7 +44,7 @@ void USE(misc_viper_missile_use)(edict_t *self, edict_t *other, edict_t *activat
 
     self->enemy = G_Find(NULL, FOFS(targetname), self->target);
     if (!self->enemy) {
-        gi.dprintf("%s: target %s not found\n", etos(self), self->target);
+        G_Printf("%s: target %s not found\n", etos(self), self->target);
         return;
     }
 
@@ -86,7 +86,7 @@ Maxx's transport at end of game
 void SP_misc_transport(edict_t *ent)
 {
     if (!ent->target) {
-        gi.dprintf("%s: no target\n", etos(ent));
+        G_Printf("%s: no target\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }

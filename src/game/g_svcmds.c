@@ -6,7 +6,7 @@
 
 static void Svcmd_Test_f(void)
 {
-    gi.cprintf(NULL, PRINT_HIGH, "Svcmd_Test_f()\n");
+    G_Printf("Svcmd_Test_f()\n");
 }
 
 /*
@@ -74,7 +74,7 @@ static bool StringToFilter(const char *s, ipfilter_t *f)
 
     for (i = 0; i < 4; i++) {
         if (*s < '0' || *s > '9') {
-            gi.cprintf(NULL, PRINT_HIGH, "Bad filter address: %s\n", s);
+            G_Printf("Bad filter address: %s\n", s);
             return false;
         }
 
@@ -143,7 +143,7 @@ static void SVCmd_AddIP_f(void)
     int i;
 
     if (gi.argc() < 3) {
-        gi.cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
+        G_Printf("Usage:  addip <ip-mask>\n");
         return;
     }
 
@@ -152,7 +152,7 @@ static void SVCmd_AddIP_f(void)
             break; // free spot
     if (i == numipfilters) {
         if (numipfilters == MAX_IPFILTERS) {
-            gi.cprintf(NULL, PRINT_HIGH, "IP filter list is full\n");
+            G_Printf("IP filter list is full\n");
             return;
         }
         numipfilters++;
@@ -173,7 +173,7 @@ static void SVCmd_RemoveIP_f(void)
     int        i, j;
 
     if (gi.argc() < 3) {
-        gi.cprintf(NULL, PRINT_HIGH, "Usage:  sv removeip <ip-mask>\n");
+        G_Printf("Usage:  sv removeip <ip-mask>\n");
         return;
     }
 
@@ -185,10 +185,10 @@ static void SVCmd_RemoveIP_f(void)
             for (j = i + 1; j < numipfilters; j++)
                 ipfilters[j - 1] = ipfilters[j];
             numipfilters--;
-            gi.cprintf(NULL, PRINT_HIGH, "Removed.\n");
+            G_Printf("Removed.\n");
             return;
         }
-    gi.cprintf(NULL, PRINT_HIGH, "Didn't find %s.\n", gi.argv(2));
+    G_Printf("Didn't find %s.\n", gi.argv(2));
 }
 
 /*
@@ -201,17 +201,17 @@ static void SVCmd_ListIP_f(void)
     int  i;
     byte b[4];
 
-    gi.cprintf(NULL, PRINT_HIGH, "Filter list:\n");
+    G_Printf("Filter list:\n");
     for (i = 0; i < numipfilters; i++) {
         *(unsigned *)b = ipfilters[i].compare;
-        gi.cprintf(NULL, PRINT_HIGH, "%d.%d.%d.%d\n", b[0], b[1], b[2], b[3]);
+        G_Printf("%d.%d.%d.%d\n", b[0], b[1], b[2], b[3]);
     }
 }
 
 // [Paril-KEX]
 static void SVCmd_NextMap_f(void)
 {
-    gi.bprintf(PRINT_HIGH, "Map ended by server.\n");
+    G_ClientPrintf(NULL, PRINT_HIGH, "Map ended by server.\n");
     EndDMLevel();
 }
 
@@ -288,5 +288,5 @@ void ServerCommand(void)
     else if (Q_strcasecmp(cmd, "meminfo") == 0)
         G_MemoryInfo_f();
     else
-        gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
+        G_Printf("Unknown server command \"%s\"\n", cmd);
 }

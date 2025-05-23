@@ -41,7 +41,7 @@ void USE(Use_Target_Tent)(edict_t *ent, edict_t *other, edict_t *activator)
         }
     }
 
-    gi.dprintf("%s has bad style\n", etos(ent));
+    G_Printf("%s has bad style\n", etos(ent));
     G_FreeEdict(ent);
 }
 
@@ -102,7 +102,7 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
 void SP_target_speaker(edict_t *ent)
 {
     if (!st.noise) {
-        gi.dprintf("%s: no noise set\n", etos(ent));
+        G_Printf("%s: no noise set\n", etos(ent));
         return;
     }
 
@@ -173,7 +173,7 @@ void SP_target_help(edict_t *ent)
     }
 
     if (!ent->message) {
-        gi.dprintf("%s: no message\n", etos(ent));
+        G_Printf("%s: no message\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -207,9 +207,9 @@ void USE(use_target_secret)(edict_t *ent, edict_t *other, edict_t *activator)
 void THINK(G_VerifyTargetted)(edict_t *ent)
 {
     if (!ent->targetname || !*ent->targetname)
-        gi.dprintf("WARNING: missing targetname on %s\n", etos(ent));
+        G_Printf("WARNING: missing targetname on %s\n", etos(ent));
     else if (!G_Find(NULL, FOFS(target), ent->targetname))
-        gi.dprintf("WARNING: doesn't appear to be anything targeting %s\n", etos(ent));
+        G_Printf("WARNING: doesn't appear to be anything targeting %s\n", etos(ent));
 }
 
 void SP_target_secret(edict_t *ent)
@@ -263,7 +263,7 @@ void G_PlayerNotifyGoal(edict_t *player)
                     current_goal++;
 
                 if (!*current_goal)
-                    gi.error("invalid n64 goals; tell Paril\n");
+                    G_Error("invalid n64 goals; tell Paril");
 
                 current_goal++;
             }
@@ -285,7 +285,7 @@ void G_PlayerNotifyGoal(edict_t *player)
         }
 
         if (player->client->pers.game_help1changed != game.help1changed) {
-            gi.cprintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
+            G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
             G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk.wav"), 1.0f, ATTN_NONE);
 
             player->client->pers.game_help1changed = game.help1changed;
@@ -302,7 +302,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (*game.helpmessage1 && level.primary_objective_string)
             // [Sam-KEX] Print objective to screen
-            gi.cprintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.primary_objective_string, game.helpmessage1));
+            G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.primary_objective_string, game.helpmessage1));
     }
 
     if (player->client->pers.game_help2changed != game.help2changed) {
@@ -312,7 +312,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (*game.helpmessage2 && level.secondary_objective_string)
             // [Sam-KEX] Print objective to screen
-            gi.cprintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.secondary_objective_string, game.helpmessage2));
+            G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.secondary_objective_string, game.helpmessage2));
     }
 }
 
@@ -429,7 +429,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
             return;
 
         if (activator && activator->client)
-            gi.bprintf(PRINT_HIGH, "%s exited the level.\n", activator->client->pers.netname);
+            G_ClientPrintf(NULL, PRINT_HIGH, "%s exited the level.\n", activator->client->pers.netname);
     }
 
     // if going to a new unit, clear cross triggers
@@ -468,7 +468,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 void SP_target_changelevel(edict_t *ent)
 {
     if (!ent->map) {
-        gi.dprintf("%s: no map\n", etos(ent));
+        G_Printf("%s: no map\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -527,7 +527,7 @@ void SP_target_splash(edict_t *self)
         self->sounds = SPLASH_ELECTRIC_N64;
 
     if (self->sounds >= q_countof(splash_events)) {
-        gi.dprintf("%s has bad sounds", etos(self));
+        G_Printf("%s has bad sounds", etos(self));
         self->sounds = 0;
     }
 
@@ -841,7 +841,7 @@ void THINK(target_laser_start)(edict_t *self)
         if (self->target) {
             ent = G_Find(NULL, FOFS(targetname), self->target);
             if (!ent)
-                gi.dprintf("%s: %s is a bad target\n", etos(self), self->target);
+                G_Printf("%s: %s is a bad target\n", etos(self), self->target);
             else {
                 self->enemy = ent;
 
@@ -928,13 +928,13 @@ void USE(target_lightramp_use)(edict_t *self, edict_t *other, edict_t *activator
             if (!e)
                 break;
             if (strcmp(e->classname, "light") != 0)
-                gi.dprintf("%s: target %s (%s) is not a light\n", etos(self), self->target, etos(e));
+                G_Printf("%s: target %s (%s) is not a light\n", etos(self), self->target, etos(e));
             else
                 self->enemy = e;
         }
 
         if (!self->enemy) {
-            gi.dprintf("%s: target %s not found\n", etos(self), self->target);
+            G_Printf("%s: target %s not found\n", etos(self), self->target);
             G_FreeEdict(self);
             return;
         }
@@ -947,7 +947,7 @@ void USE(target_lightramp_use)(edict_t *self, edict_t *other, edict_t *activator
 void SP_target_lightramp(edict_t *self)
 {
     if (!self->message || strlen(self->message) != 2 || self->message[0] < 'a' || self->message[0] > 'z' || self->message[1] < 'a' || self->message[1] > 'z' || self->message[0] == self->message[1]) {
-        gi.dprintf("%s: bad ramp (%s)\n", etos(self), self->message ? self->message : "null string");
+        G_Printf("%s: bad ramp (%s)\n", etos(self), self->message ? self->message : "null string");
         G_FreeEdict(self);
         return;
     }
@@ -958,7 +958,7 @@ void SP_target_lightramp(edict_t *self)
     }
 
     if (!self->target) {
-        gi.dprintf("%s: no target\n", etos(self));
+        G_Printf("%s: no target\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -1046,7 +1046,7 @@ void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activato
 void SP_target_earthquake(edict_t *self)
 {
     if (!self->targetname)
-        gi.dprintf("%s: untargeted\n", etos(self));
+        G_Printf("%s: untargeted\n", etos(self));
 
     if (level.is_n64) {
         self->spawnflags |= SPAWNFLAGS_EARTHQUAKE_TOGGLE;
@@ -1354,7 +1354,7 @@ void SP_target_soundfx(edict_t *self)
         self->noise_index = G_SoundIndex("world/bigpump2.wav");
         break;
     default:
-        gi.dprintf("%s: unknown noise %d\n", etos(self), self->noise_index);
+        G_Printf("%s: unknown noise %d\n", etos(self), self->noise_index);
         return;
     }
 
@@ -1544,9 +1544,9 @@ void SP_target_poi(edict_t *self)
 
     if (!self->team) {
         if (self->spawnflags & SPAWNFLAG_POI_NEAREST)
-            gi.dprintf("%s has useless spawnflag 'NEAREST'\n", etos(self));
+            G_Printf("%s has useless spawnflag 'NEAREST'\n", etos(self));
         if (self->spawnflags & SPAWNFLAG_POI_DYNAMIC)
-            gi.dprintf("%s has useless spawnflag 'DYNAMIC'\n", etos(self));
+            G_Printf("%s has useless spawnflag 'DYNAMIC'\n", etos(self));
     }
 }
 
@@ -1577,9 +1577,9 @@ void USE(use_target_healthbar)(edict_t *ent, edict_t *other, edict_t *activator)
 
     if (!target || ent->health != target->spawn_count) {
         if (target)
-            gi.dprintf("%s: target %s changed from what it used to be\n", etos(ent), etos(target));
+            G_Printf("%s: target %s changed from what it used to be\n", etos(ent), etos(target));
         else
-            gi.dprintf("%s: no target\n", etos(ent));
+            G_Printf("%s: no target\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -1594,7 +1594,7 @@ void USE(use_target_healthbar)(edict_t *ent, edict_t *other, edict_t *activator)
         return;
     }
 
-    gi.dprintf("%s: too many health bars\n", etos(ent));
+    G_Printf("%s: too many health bars\n", etos(ent));
     G_FreeEdict(ent);
 }
 
@@ -1604,7 +1604,7 @@ void THINK(check_target_healthbar)(edict_t *ent)
 
     if (!target || !(target->r.svflags & SVF_MONSTER)) {
         if (target)
-            gi.dprintf("%s: target %s does not appear to be a monster\n", etos(ent), etos(target));
+            G_Printf("%s: target %s does not appear to be a monster\n", etos(ent), etos(target));
         G_FreeEdict(ent);
         return;
     }
@@ -1621,13 +1621,13 @@ void SP_target_healthbar(edict_t *self)
     }
 
     if (!self->target || !*self->target) {
-        gi.dprintf("%s: missing target\n", etos(self));
+        G_Printf("%s: missing target\n", etos(self));
         G_FreeEdict(self);
         return;
     }
 
     if (!self->message) {
-        gi.dprintf("%s: missing message\n", etos(self));
+        G_Printf("%s: missing message\n", etos(self));
         G_FreeEdict(self);
         return;
     }

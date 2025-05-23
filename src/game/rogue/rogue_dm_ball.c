@@ -36,9 +36,9 @@ static int DBall_CheckDMRules(void)
 {
     if (goallimit->integer) {
         if (dball_team1_goalscore >= goallimit->integer)
-            gi.bprintf(PRINT_HIGH, "Team 1 Wins.\n");
+            G_ClientPrintf(NULL, PRINT_HIGH, "Team 1 Wins.\n");
         else if (dball_team2_goalscore >= goallimit->integer)
-            gi.bprintf(PRINT_HIGH, "Team 2 Wins.\n");
+            G_ClientPrintf(NULL, PRINT_HIGH, "Team 2 Wins.\n");
         else
             return 0;
 
@@ -84,17 +84,17 @@ static void DBall_ClientBegin(edict_t *ent)
     }
 
     if (team1 > team2) {
-        gi.dprintf("assigned to team 2\n");
+        G_Printf("assigned to team 2\n");
         Info_SetValueForKey(ent->client->pers.userinfo, "skin", dball_team2_skin->string);
     } else {
-        gi.dprintf("assigned to team 1\n");
+        G_Printf("assigned to team 1\n");
         Info_SetValueForKey(ent->client->pers.userinfo, "skin", dball_team1_skin->string);
     }
 
     ClientUserinfoChanged(ent, ent->client->pers.userinfo);
 
     if (unassigned)
-        gi.dprintf("%d unassigned players present!\n", unassigned);
+        G_Printf("%d unassigned players present!\n", unassigned);
 #endif
 }
 
@@ -177,7 +177,7 @@ static void DBall_PostInitSetup(void)
         dball_ball_startpt_count++;
 
     if (dball_ball_startpt_count == 0)
-        gi.dprintf("No Deathball start points!\n");
+        G_Printf("No Deathball start points!\n");
 }
 
 //==================
@@ -209,7 +209,7 @@ static int DBall_ChangeKnockback(edict_t *targ, edict_t *attacker, int knockback
         else if (mod.id == MOD_BFG_EFFECT) // bfg
             knockback = 90;
         else
-            gi.dprintf("zero knockback, mod %d\n", mod.id);
+            G_Printf("zero knockback, mod %d\n", mod.id);
     } else {
         // FIXME - change this to an array?
         switch (mod.id) {
@@ -307,14 +307,14 @@ void TOUCH(DBall_GoalTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
                 else if (other->enemy == ent)
                     ent->client->resp.score -= scorechange;
             } else
-                gi.dprintf("unassigned player!!!!\n");
+                G_Printf("unassigned player!!!!\n");
         }
     }
 
     if (other->enemy)
-        gi.dprintf("score for team %d by %s\n", team_score, other->enemy->client->pers.netname);
+        G_Printf("score for team %d by %s\n", team_score, other->enemy->client->pers.netname);
     else
-        gi.dprintf("score for team %d by someone\n", team_score);
+        G_Printf("score for team %d by someone\n", team_score);
 
     DBall_BallDie(other, other->enemy, other->enemy, 0, vec3_origin, MOD_SUICIDE);
 
@@ -342,7 +342,7 @@ static edict_t *PickBallStart(edict_t *ent)
     }
 
     if (current == 0)
-        gi.dprintf("No ball start points found!\n");
+        G_Printf("No ball start points found!\n");
 
     return G_Find(NULL, FOFS(classname), "dm_dball_ball_start");
 }

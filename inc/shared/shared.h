@@ -118,16 +118,14 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 #define Q_assert(expr) Q_assert_type(ERR_FATAL, expr)
 
 // game print flags
-enum {
+typedef enum {
     PRINT_LOW,          // pickup messages
     PRINT_MEDIUM,       // death messages
     PRINT_HIGH,         // critical messages
     PRINT_CHAT,         // chat messages
-// KEX
     PRINT_TYPEWRITER,
     PRINT_CENTER,
-// KEX
-};
+} print_level_t;
 
 // destination class for gi.multicast()
 typedef enum {

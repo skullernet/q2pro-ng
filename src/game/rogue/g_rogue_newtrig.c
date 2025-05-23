@@ -43,7 +43,7 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
 
     dest = G_PickTarget(self->target);
     if (!dest) {
-        gi.dprintf("Teleport Destination not found!\n");
+        G_Printf("Teleport Destination not found!\n");
         return;
     }
 

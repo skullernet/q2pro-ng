@@ -784,7 +784,7 @@ static void write_str(const char *fmt, ...)
     va_end(argptr);
 
     if (len >= sizeof(text))
-        gi.error("oversize line");
+        G_Error("oversize line");
 
     fs->WriteFile(text, len, g_savefile);
 }
@@ -891,7 +891,7 @@ static void write_pointer(const char *name, const void *p, ptr_type_t type)
         }
     }
 
-    gi.error("unknown pointer of type %d: %p", type, p);
+    G_Error("unknown pointer of type %d: %p", type, p);
 }
 
 static void write_inventory(const int *inven)
@@ -1076,7 +1076,7 @@ static const char *read_line(void)
 {
     int ret = fs->ReadLine(g_savefile, line.data, sizeof(line.data));
     if (ret < 0)
-        gi.error("%s: error reading input file", line.filename);
+        G_Error("%s: error reading input file", line.filename);
     line.ptr = line.data;
     line.number++;
     return line.ptr;
@@ -1092,7 +1092,7 @@ static void parse_error(const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    gi.error("%s: line %d: %s", line.filename, line.number, text);
+    G_Error("%s: line %d: %s", line.filename, line.number, text);
 }
 
 static int unescape_char(int c)
@@ -1213,7 +1213,7 @@ static void unknown(const char *what)
     if (g_strict_saves->integer)
         parse_error("unknown %s: %s", what, token);
 
-    gi.dprintf("WARNING: %s: line %d: unknown %s: %s\n", line.filename, line.number, what, token);
+    G_Printf("WARNING: %s: line %d: unknown %s: %s\n", line.filename, line.number, what, token);
     line.ptr = NULL;    // skip to next line
 }
 
@@ -1623,7 +1623,7 @@ void ReadGame(qhandle_t handle, const char *filename)
     expect("version");
     line.version = parse_int32();
     if (line.version < SAVE_VERSION_MINIMUM || line.version > SAVE_VERSION_CURRENT)
-        gi.error("Savegame has bad version");
+        G_Error("Savegame has bad version");
 
     int maxclients = game.maxclients;
 
@@ -1632,7 +1632,7 @@ void ReadGame(qhandle_t handle, const char *filename)
 
     // should agree with server's version
     if (game.maxclients != maxclients)
-        gi.error("Savegame has bad maxclients");
+        G_Error("Savegame has bad maxclients");
 
     memset(g_clients, 0, sizeof(g_clients[0]) * game.maxclients);
 
@@ -1719,7 +1719,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
     expect("version");
     line.version = parse_int32();
     if (line.version < SAVE_VERSION_MINIMUM || line.version > SAVE_VERSION_CURRENT)
-        gi.error("Savegame has bad version");
+        G_Error("Savegame has bad version");
 
     // wipe all the entities except world
     memset(g_edicts, 0, sizeof(g_edicts[0]) * ENTITYNUM_WORLD);
@@ -1781,14 +1781,14 @@ void ReadLevel(qhandle_t handle, const char *filename)
 bool G_CanSave(void)
 {
     if (game.maxclients == 1 && g_edicts[0].health <= 0) {
-        gi.cprintf(&g_edicts[0], PRINT_HIGH, "Can't savegame while dead!\n");
+        G_ClientPrintf(&g_edicts[0], PRINT_HIGH, "Can't savegame while dead!\n");
         return false;
     }
 
     // don't allow saving during cameras/intermissions as this
     // causes the game to act weird when these are loaded
     if (level.intermissiontime) {
-        gi.cprintf(&g_edicts[0], PRINT_HIGH, "Can't savegame during intermission!\n");
+        G_ClientPrintf(&g_edicts[0], PRINT_HIGH, "Can't savegame during intermission!\n");
         return false;
     }
 

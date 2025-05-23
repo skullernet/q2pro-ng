@@ -729,7 +729,7 @@ static void tesla_remove(edict_t *self)
             G_FreeEdict(cur);
         }
     } else if (self->air_finished)
-        gi.dprintf("tesla_mine without a field!\n");
+        G_Printf("tesla_mine without a field!\n");
 
     self->r.ownernum = self->teammaster->s.number; // Going away, set the owner correctly.
     // PGM - grenade explode does damage to self->enemy

@@ -334,7 +334,7 @@ edict_t *SelectCTFSpawnPoint(edict_t *ent, bool force_spawn)
         if (any_valid)
             return spot;
 
-        gi.error("can't find suitable spectator spawn point");
+        G_Error("can't find suitable spectator spawn point");
         return NULL;
     }
 
@@ -349,7 +349,7 @@ edict_t *SelectCTFSpawnPoint(edict_t *ent, bool force_spawn)
         spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, true, &any_valid);
 
         if (!any_valid)
-            gi.error("can't find suitable CTF spawn point");
+            G_Error("can't find suitable CTF spawn point");
 
         return spot;
     }
@@ -415,8 +415,8 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
     if (targ->client->pers.inventory[enemy_flag_item]) {
         attacker->client->resp.ctf_lastfraggedcarrier = level.time;
         attacker->client->resp.score += CTF_FRAG_CARRIER_BONUS;
-        gi.cprintf(attacker, PRINT_MEDIUM, "BONUS: %d points for fragging enemy flag carrier.\n",
-                   CTF_FRAG_CARRIER_BONUS);
+        G_ClientPrintf(attacker, PRINT_MEDIUM, "BONUS: %d points for fragging enemy flag carrier.\n",
+                       CTF_FRAG_CARRIER_BONUS);
 
         // the target had the flag, clear the hurt carrier
         // field on the other team
@@ -434,9 +434,9 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         // attacker is on the same team as the flag carrier and
         // fragged a guy who hurt our flag carrier
         attacker->client->resp.score += CTF_CARRIER_DANGER_PROTECT_BONUS;
-        gi.bprintf(PRINT_MEDIUM, "%s defends %s's flag carrier against an agressive enemy\n",
-                   attacker->client->pers.netname,
-                   CTFTeamName(attacker->client->resp.ctf_team));
+        G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends %s's flag carrier against an agressive enemy\n",
+                       attacker->client->pers.netname,
+                       CTFTeamName(attacker->client->resp.ctf_team));
         if (attacker->client->resp.ghost)
             attacker->client->resp.ghost->carrierdef++;
         return;
@@ -488,13 +488,13 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         // we defended the base flag
         attacker->client->resp.score += CTF_FLAG_DEFENSE_BONUS;
         if (flag->r.solid == SOLID_NOT)
-            gi.bprintf(PRINT_MEDIUM, "%s defends the %s base.\n",
-                       attacker->client->pers.netname,
-                       CTFTeamName(attacker->client->resp.ctf_team));
+            G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends the %s base.\n",
+                           attacker->client->pers.netname,
+                           CTFTeamName(attacker->client->resp.ctf_team));
         else
-            gi.bprintf(PRINT_MEDIUM, "%s defends the %s flag.\n",
-                       attacker->client->pers.netname,
-                       CTFTeamName(attacker->client->resp.ctf_team));
+            G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends the %s flag.\n",
+                           attacker->client->pers.netname,
+                           CTFTeamName(attacker->client->resp.ctf_team));
         if (attacker->client->resp.ghost)
             attacker->client->resp.ghost->basedef++;
         return;
@@ -508,9 +508,9 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
             VectorLength(v2) < CTF_ATTACKER_PROTECT_RADIUS ||
             loc_CanSee(carrier, targ) || loc_CanSee(carrier, attacker)) {
             attacker->client->resp.score += CTF_CARRIER_PROTECT_BONUS;
-            gi.bprintf(PRINT_MEDIUM, "%s defends the %s's flag carrier.\n",
-                       attacker->client->pers.netname,
-                       CTFTeamName(attacker->client->resp.ctf_team));
+            G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends the %s's flag carrier.\n",
+                           attacker->client->pers.netname,
+                           CTFTeamName(attacker->client->resp.ctf_team));
             if (attacker->client->resp.ghost)
                 attacker->client->resp.ghost->carrierdef++;
             return;
@@ -584,7 +584,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
     else if (ent->item->id == IT_FLAG2)
         ctf_team = CTF_TEAM2;
     else {
-        gi.cprintf(ent, PRINT_HIGH, "Don't know what team the flag is on.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Don't know what team the flag is on.\n");
         return false;
     }
 
@@ -603,8 +603,8 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
             // flag, he's just won!
 
             if (other->client->pers.inventory[enemy_flag_item]) {
-                gi.bprintf(PRINT_HIGH, "%s captured the %s flag!\n",
-                           other->client->pers.netname, CTFOtherTeamName(ctf_team));
+                G_ClientPrintf(NULL, PRINT_HIGH, "%s captured the %s flag!\n",
+                               other->client->pers.netname, CTFOtherTeamName(ctf_team));
                 other->client->pers.inventory[enemy_flag_item] = 0;
 
                 ctfgame.last_flag_capture = level.time;
@@ -634,11 +634,11 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                             player->client->resp.score += CTF_TEAM_BONUS;
                         // award extra points for capture assists
                         if (player->client->resp.ctf_lastreturnedflag && player->client->resp.ctf_lastreturnedflag + CTF_RETURN_FLAG_ASSIST_TIMEOUT > level.time) {
-                            gi.bprintf(PRINT_HIGH, "%s gets an assist for returning the flag!\n", player->client->pers.netname);
+                            G_ClientPrintf(NULL, PRINT_HIGH, "%s gets an assist for returning the flag!\n", player->client->pers.netname);
                             player->client->resp.score += CTF_RETURN_FLAG_ASSIST_BONUS;
                         }
                         if (player->client->resp.ctf_lastfraggedcarrier && player->client->resp.ctf_lastfraggedcarrier + CTF_FRAG_CARRIER_ASSIST_TIMEOUT > level.time) {
-                            gi.bprintf(PRINT_HIGH, "%s gets an assist for fragging the flag carrier!\n", player->client->pers.netname);
+                            G_ClientPrintf(NULL, PRINT_HIGH, "%s gets an assist for fragging the flag carrier!\n", player->client->pers.netname);
                             player->client->resp.score += CTF_FRAG_CARRIER_ASSIST_BONUS;
                         }
                     }
@@ -650,8 +650,8 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
             return false; // its at home base already
         }
         // hey, its not home.  return it by teleporting it back
-        gi.bprintf(PRINT_HIGH, "%s returned the %s flag!\n",
-                   other->client->pers.netname, CTFTeamName(ctf_team));
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s returned the %s flag!\n",
+                       other->client->pers.netname, CTFTeamName(ctf_team));
         other->client->resp.score += CTF_RECOVERY_BONUS;
         other->client->resp.ctf_lastreturnedflag = level.time;
         G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
@@ -661,8 +661,8 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
     }
 
     // hey, its not our flag, pick it up
-    gi.bprintf(PRINT_HIGH, "%s got the %s flag!\n",
-               other->client->pers.netname, CTFTeamName(ctf_team));
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s got the %s flag!\n",
+                   other->client->pers.netname, CTFTeamName(ctf_team));
     other->client->resp.score += CTF_FLAG_BONUS;
 
     other->client->pers.inventory[flag_item] = 1;
@@ -695,12 +695,12 @@ void THINK(CTFDropFlagThink)(edict_t *ent)
     // reset flag will remove ourselves
     if (ent->item->id == IT_FLAG1) {
         CTFResetFlag(CTF_TEAM1);
-        gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n",
-                   CTFTeamName(CTF_TEAM1));
+        G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n",
+                       CTFTeamName(CTF_TEAM1));
     } else if (ent->item->id == IT_FLAG2) {
         CTFResetFlag(CTF_TEAM2);
-        gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n",
-                   CTFTeamName(CTF_TEAM2));
+        G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n",
+                       CTFTeamName(CTF_TEAM2));
     }
 
     G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
@@ -714,13 +714,13 @@ void CTFDeadDropFlag(edict_t *self)
     if (self->client->pers.inventory[IT_FLAG1]) {
         dropped = Drop_Item(self, GetItemByIndex(IT_FLAG1));
         self->client->pers.inventory[IT_FLAG1] = 0;
-        gi.bprintf(PRINT_HIGH, "%s lost the %s flag!\n",
-                   self->client->pers.netname, CTFTeamName(CTF_TEAM1));
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s lost the %s flag!\n",
+                      self->client->pers.netname, CTFTeamName(CTF_TEAM1));
     } else if (self->client->pers.inventory[IT_FLAG2]) {
         dropped = Drop_Item(self, GetItemByIndex(IT_FLAG2));
         self->client->pers.inventory[IT_FLAG2] = 0;
-        gi.bprintf(PRINT_HIGH, "%s lost the %s flag!\n",
-                   self->client->pers.netname, CTFTeamName(CTF_TEAM2));
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s lost the %s flag!\n",
+                       self->client->pers.netname, CTFTeamName(CTF_TEAM2));
     }
 
     if (dropped) {
@@ -733,9 +733,9 @@ void CTFDeadDropFlag(edict_t *self)
 void CTFDrop_Flag(edict_t *ent, const gitem_t *item)
 {
     if (brandom())
-        gi.cprintf(ent, PRINT_HIGH, "Only lusers drop flags.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Only lusers drop flags.\n");
     else
-        gi.cprintf(ent, PRINT_HIGH, "Winners don't drop flags.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Winners don't drop flags.\n");
 }
 
 void THINK(CTFFlagThink)(edict_t *ent)
@@ -769,7 +769,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
 
     trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
     if (tr.startsolid) {
-        gi.dprintf("CTFFlagSetup: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
+        G_Printf("CTFFlagSetup: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
@@ -836,7 +836,7 @@ void CTFCalcRankings(int player_ranks[MAX_CLIENTS])
 void CheckEndTDMLevel(void)
 {
     if (ctfgame.total1 >= fraglimit->integer || ctfgame.total2 >= fraglimit->integer) {
-        gi.bprintf(PRINT_HIGH, "Frag limit hit.\n");
+        G_ClientPrintf(NULL, PRINT_HIGH, "Frag limit hit.\n");
         EndDMLevel();
     }
 }
@@ -844,10 +844,10 @@ void CheckEndTDMLevel(void)
 void CTFID_f(edict_t *ent)
 {
     if (ent->client->resp.id_state) {
-        gi.cprintf(ent, PRINT_HIGH, "Disabling player identication display.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Disabling player identication display.\n");
         ent->client->resp.id_state = false;
     } else {
-        gi.cprintf(ent, PRINT_HIGH, "Activating player identication display.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Activating player identication display.\n");
         ent->client->resp.id_state = true;
     }
 }
@@ -997,7 +997,7 @@ void SetCTFStats(edict_t *ent)
 
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM1);
-                        gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM1));
+                        G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM1));
                         G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
@@ -1025,7 +1025,7 @@ void SetCTFStats(edict_t *ent)
 
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM2);
-                        gi.bprintf(PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM2));
+                        G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM2));
                         G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
@@ -1414,13 +1414,13 @@ void CTFTeam_f(edict_t *ent)
 
     t = gi.args();
     if (!*t) {
-        gi.cprintf(ent, PRINT_HIGH, "You are on the %s team.\n",
-                   CTFTeamName(ent->client->resp.ctf_team));
+        G_ClientPrintf(ent, PRINT_HIGH, "You are on the %s team.\n",
+                       CTFTeamName(ent->client->resp.ctf_team));
         return;
     }
 
     if (ctfgame.match > MATCH_SETUP) {
-        gi.cprintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
         return;
     }
 
@@ -1428,7 +1428,7 @@ void CTFTeam_f(edict_t *ent)
     // using this command.
     if (g_teamplay_force_join->integer) {
         if (!(ent->r.svflags & SVF_BOT)) {
-            gi.cprintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
             return;
         }
     }
@@ -1438,13 +1438,13 @@ void CTFTeam_f(edict_t *ent)
     else if (Q_strcasecmp(t, "blue") == 0)
         desired_team = CTF_TEAM2;
     else {
-        gi.cprintf(ent, PRINT_HIGH, "Unknown team %s.\n", t);
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown team %s.\n", t);
         return;
     }
 
     if (ent->client->resp.ctf_team == desired_team) {
-        gi.cprintf(ent, PRINT_HIGH, "You are already on the %s team.\n",
-                   CTFTeamName(ent->client->resp.ctf_team));
+        G_ClientPrintf(ent, PRINT_HIGH, "You are already on the %s team.\n",
+                       CTFTeamName(ent->client->resp.ctf_team));
         return;
     }
 
@@ -1465,8 +1465,8 @@ void CTFTeam_f(edict_t *ent)
 
         G_PostRespawn(ent);
 
-        gi.bprintf(PRINT_HIGH, "%s joined the %s team.\n",
-                   ent->client->pers.netname, CTFTeamName(desired_team));
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the %s team.\n",
+                       ent->client->pers.netname, CTFTeamName(desired_team));
         return;
     }
 
@@ -1479,8 +1479,8 @@ void CTFTeam_f(edict_t *ent)
 
     ent->client->resp.score = 0;
 
-    gi.bprintf(PRINT_HIGH, "%s changed to the %s team.\n",
-               ent->client->pers.netname, CTFTeamName(desired_team));
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s changed to the %s team.\n",
+                   ent->client->pers.netname, CTFTeamName(desired_team));
 }
 
 #define MAX_CTF_STAT_LENGTH 1024
@@ -1673,7 +1673,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
 static void CTFHasTech(edict_t *who)
 {
     if (level.time - who->client->ctf_lasttechmsg > SEC(2)) {
-        gi.centerprintf(who, "You already have a TECH powerup.\n");
+        G_ClientPrintf(who, PRINT_CENTER, "You already have a TECH powerup.\n");
         who->client->ctf_lasttechmsg = level.time;
     }
 }
@@ -1967,8 +1967,8 @@ void CTFSay_Team(edict_t *who, const char *msg_in)
         if (!cl_ent->r.inuse)
             continue;
         if (cl_ent->client->resp.ctf_team == who->client->resp.ctf_team)
-            gi.cprintf(cl_ent, PRINT_CHAT, "(%s): %s\n",
-                       who->client->pers.netname, msg);
+            G_ClientPrintf(cl_ent, PRINT_CHAT, "(%s): %s\n",
+                           who->client->pers.netname, msg);
     }
 }
 
@@ -2048,12 +2048,12 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     edict_t *e;
 
     if (electpercentage->value == 0) {
-        gi.cprintf(ent, PRINT_HIGH, "Elections are disabled, only an admin can process this action.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Elections are disabled, only an admin can process this action.\n");
         return false;
     }
 
     if (ctfgame.election != ELECT_NONE) {
-        gi.cprintf(ent, PRINT_HIGH, "Election already in progress.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Election already in progress.\n");
         return false;
     }
 
@@ -2067,7 +2067,7 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     }
 
     if (count < 2) {
-        gi.cprintf(ent, PRINT_HIGH, "Not enough players for election.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Not enough players for election.\n");
         return false;
     }
 
@@ -2079,10 +2079,10 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     Q_strlcpy(ctfgame.emsg, msg, sizeof(ctfgame.emsg));
 
     // tell everyone
-    gi.bprintf(PRINT_CHAT, "%s", ctfgame.emsg);
-    gi.bprintf(PRINT_HIGH, "Type YES or NO to vote on this request.\n");
-    gi.bprintf(PRINT_HIGH, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-               (int)TO_SEC(ctfgame.electtime - level.time));
+    G_ClientPrintf(NULL, PRINT_CHAT, "%s", ctfgame.emsg);
+    G_ClientPrintf(NULL, PRINT_HIGH, "Type YES or NO to vote on this request.\n");
+    G_ClientPrintf(NULL, PRINT_HIGH, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
+                   (int)TO_SEC(ctfgame.electtime - level.time));
 
     return true;
 }
@@ -2152,9 +2152,9 @@ static void CTFAssignGhost(edict_t *ent)
     ctfgame.ghosts[ghost].ent = ent;
     Q_strlcpy(ctfgame.ghosts[ghost].netname, ent->client->pers.netname, sizeof(ctfgame.ghosts[ghost].netname));
     ent->client->resp.ghost = ctfgame.ghosts + ghost;
-    gi.cprintf(ent, PRINT_CHAT, "Your ghost code is **** %d ****\n", ctfgame.ghosts[ghost].code);
-    gi.cprintf(ent, PRINT_HIGH, "If you lose connection, you can rejoin with your score intact by typing \"ghost %d\".\n",
-               ctfgame.ghosts[ghost].code);
+    G_ClientPrintf(ent, PRINT_CHAT, "Your ghost code is **** %d ****\n", ctfgame.ghosts[ghost].code);
+    G_ClientPrintf(ent, PRINT_HIGH, "If you lose connection, you can rejoin with your score intact by typing \"ghost %d\".\n",
+                   ctfgame.ghosts[ghost].code);
 }
 
 // start a match
@@ -2179,7 +2179,7 @@ static void CTFStartMatch(void)
         ent->client->resp.ctf_state = 0;
         ent->client->resp.ghost = NULL;
 
-        gi.centerprintf(ent, "******************\n\nMATCH HAS STARTED!\n\n******************");
+        G_ClientPrintf(ent, PRINT_CENTER, "******************\n\nMATCH HAS STARTED!\n\n******************");
 
         if (ent->client->resp.ctf_team != CTF_NOTEAM) {
             // make up a ghost code
@@ -2204,29 +2204,29 @@ static void CTFStartMatch(void)
 static void CTFEndMatch(void)
 {
     ctfgame.match = MATCH_POST;
-    gi.bprintf(PRINT_CHAT, "MATCH COMPLETED!\n");
+    G_ClientPrintf(NULL, PRINT_CHAT, "MATCH COMPLETED!\n");
 
     CTFCalcScores();
 
-    gi.bprintf(PRINT_HIGH, "RED TEAM:  %d captures, %d points\n",
-               ctfgame.team1, ctfgame.total1);
-    gi.bprintf(PRINT_HIGH, "BLUE TEAM:  %d captures, %d points\n",
-               ctfgame.team2, ctfgame.total2);
+    G_ClientPrintf(NULL, PRINT_HIGH, "RED TEAM:  %d captures, %d points\n",
+                   ctfgame.team1, ctfgame.total1);
+    G_ClientPrintf(NULL, PRINT_HIGH, "BLUE TEAM:  %d captures, %d points\n",
+                   ctfgame.team2, ctfgame.total2);
 
     if (ctfgame.team1 > ctfgame.team2)
-        gi.bprintf(PRINT_CHAT, "RED team won over the BLUE team by %d CAPTURES!\n",
-                   ctfgame.team1 - ctfgame.team2);
+        G_ClientPrintf(NULL, PRINT_CHAT, "RED team won over the BLUE team by %d CAPTURES!\n",
+                       ctfgame.team1 - ctfgame.team2);
     else if (ctfgame.team2 > ctfgame.team1)
-        gi.bprintf(PRINT_CHAT, "BLUE team won over the RED team by %d CAPTURES!\n",
-                   ctfgame.team2 - ctfgame.team1);
+        G_ClientPrintf(NULL, PRINT_CHAT, "BLUE team won over the RED team by %d CAPTURES!\n",
+                       ctfgame.team2 - ctfgame.team1);
     else if (ctfgame.total1 > ctfgame.total2) // frag tie breaker
-        gi.bprintf(PRINT_CHAT, "RED team won over the BLUE team by %d POINTS!\n",
-                   ctfgame.total1 - ctfgame.total2);
+        G_ClientPrintf(NULL, PRINT_CHAT, "RED team won over the BLUE team by %d POINTS!\n",
+                       ctfgame.total1 - ctfgame.total2);
     else if (ctfgame.total2 > ctfgame.total1)
-        gi.bprintf(PRINT_CHAT, "BLUE team won over the RED team by %d POINTS!\n",
-                   ctfgame.total2 - ctfgame.total1);
+        G_ClientPrintf(NULL, PRINT_CHAT, "BLUE team won over the RED team by %d POINTS!\n",
+                       ctfgame.total2 - ctfgame.total1);
     else
-        gi.bprintf(PRINT_CHAT, "TIE GAME!\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "TIE GAME!\n");
 
     EndDMLevel();
 }
@@ -2254,13 +2254,13 @@ static void CTFWinElection(void)
 
     case ELECT_ADMIN:
         ctfgame.etarget->client->resp.admin = true;
-        gi.bprintf(PRINT_HIGH, "%s has become an admin.\n", ctfgame.etarget->client->pers.netname);
-        gi.cprintf(ctfgame.etarget, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ctfgame.etarget->client->pers.netname);
+        G_ClientPrintf(ctfgame.etarget, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
         break;
 
     case ELECT_MAP:
-        gi.bprintf(PRINT_HIGH, "%s is warping to level %s.\n",
-                   ctfgame.etarget->client->pers.netname, ctfgame.elevel);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s is warping to level %s.\n",
+                       ctfgame.etarget->client->pers.netname, ctfgame.elevel);
         Q_strlcpy(level.forcemap, ctfgame.elevel, sizeof(level.forcemap));
         EndDMLevel();
         break;
@@ -2274,15 +2274,15 @@ static void CTFWinElection(void)
 void CTFVoteYes(edict_t *ent)
 {
     if (ctfgame.election == ELECT_NONE) {
-        gi.cprintf(ent, PRINT_HIGH, "No election is in progress.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "No election is in progress.\n");
         return;
     }
     if (ent->client->resp.voted) {
-        gi.cprintf(ent, PRINT_HIGH, "You already voted.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You already voted.\n");
         return;
     }
     if (ctfgame.etarget == ent) {
-        gi.cprintf(ent, PRINT_HIGH, "You can't vote for yourself.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You can't vote for yourself.\n");
         return;
     }
 
@@ -2294,31 +2294,31 @@ void CTFVoteYes(edict_t *ent)
         CTFWinElection();
         return;
     }
-    gi.bprintf(PRINT_HIGH, "%s\n", ctfgame.emsg);
-    gi.bprintf(PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-               (int)TO_SEC(ctfgame.electtime - level.time));
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s\n", ctfgame.emsg);
+    G_ClientPrintf(NULL, PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
+                   (int)TO_SEC(ctfgame.electtime - level.time));
 }
 
 void CTFVoteNo(edict_t *ent)
 {
     if (ctfgame.election == ELECT_NONE) {
-        gi.cprintf(ent, PRINT_HIGH, "No election is in progress.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "No election is in progress.\n");
         return;
     }
     if (ent->client->resp.voted) {
-        gi.cprintf(ent, PRINT_HIGH, "You already voted.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You already voted.\n");
         return;
     }
     if (ctfgame.etarget == ent) {
-        gi.cprintf(ent, PRINT_HIGH, "You can't vote for yourself.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You can't vote for yourself.\n");
         return;
     }
 
     ent->client->resp.voted = true;
 
-    gi.bprintf(PRINT_HIGH, "%s\n", ctfgame.emsg);
-    gi.bprintf(PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-               (int)TO_SEC(ctfgame.electtime - level.time));
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s\n", ctfgame.emsg);
+    G_ClientPrintf(NULL, PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
+                   (int)TO_SEC(ctfgame.electtime - level.time));
 }
 
 void CTFReady(edict_t *ent)
@@ -2328,22 +2328,22 @@ void CTFReady(edict_t *ent)
     int t1, t2;
 
     if (ent->client->resp.ctf_team == CTF_NOTEAM) {
-        gi.cprintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
         return;
     }
 
     if (ctfgame.match != MATCH_SETUP) {
-        gi.cprintf(ent, PRINT_HIGH, "A match is not being setup.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "A match is not being setup.\n");
         return;
     }
 
     if (ent->client->resp.ready) {
-        gi.cprintf(ent, PRINT_HIGH, "You have already commited.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You have already commited.\n");
         return;
     }
 
     ent->client->resp.ready = true;
-    gi.bprintf(PRINT_HIGH, "%s is ready.\n", ent->client->pers.netname);
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s is ready.\n", ent->client->pers.netname);
 
     t1 = t2 = 0;
     for (j = 0, i = 0; i < game.maxclients; i++) {
@@ -2359,7 +2359,7 @@ void CTFReady(edict_t *ent)
     }
     if (!j && t1 && t2) {
         // everyone has commited
-        gi.bprintf(PRINT_CHAT, "All players have committed.  Match starting\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "All players have committed.  Match starting\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
         ctfgame.countdown = false;
@@ -2370,25 +2370,25 @@ void CTFReady(edict_t *ent)
 void CTFNotReady(edict_t *ent)
 {
     if (ent->client->resp.ctf_team == CTF_NOTEAM) {
-        gi.cprintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
         return;
     }
 
     if (ctfgame.match != MATCH_SETUP && ctfgame.match != MATCH_PREGAME) {
-        gi.cprintf(ent, PRINT_HIGH, "A match is not being setup.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "A match is not being setup.\n");
         return;
     }
 
     if (!ent->client->resp.ready) {
-        gi.cprintf(ent, PRINT_HIGH, "You haven't commited.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You haven't commited.\n");
         return;
     }
 
     ent->client->resp.ready = false;
-    gi.bprintf(PRINT_HIGH, "%s is no longer ready.\n", ent->client->pers.netname);
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s is no longer ready.\n", ent->client->pers.netname);
 
     if (ctfgame.match == MATCH_PREGAME) {
-        gi.bprintf(PRINT_CHAT, "Match halted.\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "Match halted.\n");
         ctfgame.match = MATCH_SETUP;
         ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
     }
@@ -2400,16 +2400,16 @@ void CTFGhost(edict_t *ent)
     int n;
 
     if (gi.argc() < 2) {
-        gi.cprintf(ent, PRINT_HIGH, "Usage:  ghost <code>\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Usage:  ghost <code>\n");
         return;
     }
 
     if (ent->client->resp.ctf_team != CTF_NOTEAM) {
-        gi.cprintf(ent, PRINT_HIGH, "You are already in the game.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You are already in the game.\n");
         return;
     }
     if (ctfgame.match != MATCH_GAME) {
-        gi.cprintf(ent, PRINT_HIGH, "No match is in progress.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "No match is in progress.\n");
         return;
     }
 
@@ -2417,7 +2417,7 @@ void CTFGhost(edict_t *ent)
 
     for (i = 0; i < MAX_CLIENTS; i++) {
         if (ctfgame.ghosts[i].code && ctfgame.ghosts[i].code == n) {
-            gi.cprintf(ent, PRINT_HIGH, "Ghost code accepted, your position has been reinstated.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "Ghost code accepted, your position has been reinstated.\n");
             ctfgame.ghosts[i].ent->client->resp.ghost = NULL;
             ent->client->resp.ctf_team = ctfgame.ghosts[i].team;
             ent->client->resp.ghost = ctfgame.ghosts + i;
@@ -2427,12 +2427,12 @@ void CTFGhost(edict_t *ent)
             ent->r.svflags = SVF_NONE;
             ent->flags &= ~FL_GODMODE;
             PutClientInServer(ent);
-            gi.bprintf(PRINT_HIGH, "%s has been reinstated to %s team.\n",
-                       ent->client->pers.netname, CTFTeamName(ent->client->resp.ctf_team));
+            G_ClientPrintf(NULL, PRINT_HIGH, "%s has been reinstated to %s team.\n",
+                           ent->client->pers.netname, CTFTeamName(ent->client->resp.ctf_team));
             return;
         }
     }
-    gi.cprintf(ent, PRINT_HIGH, "Invalid ghost code.\n");
+    G_ClientPrintf(ent, PRINT_HIGH, "Invalid ghost code.\n");
 }
 
 bool CTFMatchSetup(void)
@@ -2506,11 +2506,11 @@ static void CTFJoinTeam(edict_t *ent, ctfteam_t desired_team)
 
     G_PostRespawn(ent);
 
-    gi.bprintf(PRINT_HIGH, "%s joined the %s team.\n",
-               ent->client->pers.netname, CTFTeamName(desired_team));
+    G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the %s team.\n",
+                   ent->client->pers.netname, CTFTeamName(desired_team));
 
     if (ctfgame.match == MATCH_SETUP) {
-        gi.centerprintf(ent, "Type \"ready\" in console to ready up.\n");
+        G_ClientPrintf(ent, PRINT_CENTER, "Type \"ready\" in console to ready up.\n");
     }
 
     // if anybody has a menu open, update it immediately
@@ -2760,7 +2760,7 @@ bool CTFCheckRules(void)
     edict_t *ent;
 
     if (ctfgame.election != ELECT_NONE && ctfgame.electtime <= level.time) {
-        gi.bprintf(PRINT_CHAT, "Election timed out and has been cancelled.\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "Election timed out and has been cancelled.\n");
         ctfgame.election = ELECT_NONE;
     }
 
@@ -2888,7 +2888,7 @@ bool CTFCheckRules(void)
     if (capturelimit->integer &&
         (ctfgame.team1 >= capturelimit->integer ||
          ctfgame.team2 >= capturelimit->integer)) {
-        gi.bprintf(PRINT_HIGH, "Capture limit hit.\n");
+        G_ClientPrintf(NULL, PRINT_HIGH, "Capture limit hit.\n");
         return true;
     }
     return false;
@@ -2907,7 +2907,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
         return;
     dest = G_PickTarget(self->target);
     if (!dest) {
-        gi.dprintf("Couldn't find destination\n");
+        G_Printf("Couldn't find destination\n");
         return;
     }
 
@@ -2968,7 +2968,7 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     edict_t *s;
 
     if (!ent->target) {
-        gi.dprintf("teleporter without a target.\n");
+        G_Printf("teleporter without a target.\n");
         G_FreeEdict(ent);
         return;
     }
@@ -3017,8 +3017,8 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     if (settings->matchlen != matchtime->value) {
-        gi.bprintf(PRINT_HIGH, "%s changed the match length to %d minutes.\n",
-                   ent->client->pers.netname, settings->matchlen);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match length to %d minutes.\n",
+                       ent->client->pers.netname, settings->matchlen);
         if (ctfgame.match == MATCH_GAME) {
             // in the middle of a match, change it on the fly
             ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchtime->value)) + FROM_MIN(settings->matchlen);
@@ -3027,8 +3027,8 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
     }
 
     if (settings->matchsetuplen != matchsetuptime->value) {
-        gi.bprintf(PRINT_HIGH, "%s changed the match setup time to %d minutes.\n",
-                   ent->client->pers.netname, settings->matchsetuplen);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match setup time to %d minutes.\n",
+                       ent->client->pers.netname, settings->matchsetuplen);
         if (ctfgame.match == MATCH_SETUP) {
             // in the middle of a match, change it on the fly
             ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchsetuptime->value)) + FROM_MIN(settings->matchsetuplen);
@@ -3037,8 +3037,8 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
     }
 
     if (settings->matchstartlen != matchstarttime->value) {
-        gi.bprintf(PRINT_HIGH, "%s changed the match start time to %d seconds.\n",
-                   ent->client->pers.netname, settings->matchstartlen);
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match start time to %d seconds.\n",
+                       ent->client->pers.netname, settings->matchstartlen);
         if (ctfgame.match == MATCH_PREGAME) {
             // in the middle of a match, change it on the fly
             ctfgame.matchtime = (ctfgame.matchtime - SEC(matchstarttime->value)) + SEC(settings->matchstartlen);
@@ -3047,32 +3047,32 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
     }
 
     if (settings->weaponsstay != !!g_dm_weapons_stay->integer) {
-        gi.bprintf(PRINT_HIGH, "%s turned %s weapons stay.\n",
-                   ent->client->pers.netname, settings->weaponsstay ? "on" : "off");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s weapons stay.\n",
+                       ent->client->pers.netname, settings->weaponsstay ? "on" : "off");
         gi.cvar_set("g_dm_weapons_stay", settings->weaponsstay ? "1" : "0");
     }
 
     if (settings->instantitems != !!g_dm_instant_items->integer) {
-        gi.bprintf(PRINT_HIGH, "%s turned %s instant items.\n",
-                   ent->client->pers.netname, settings->instantitems ? "on" : "off");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s instant items.\n",
+                       ent->client->pers.netname, settings->instantitems ? "on" : "off");
         gi.cvar_set("g_dm_instant_items", settings->instantitems ? "1" : "0");
     }
 
     if (settings->quaddrop != (bool)!g_dm_no_quad_drop->integer) {
-        gi.bprintf(PRINT_HIGH, "%s turned %s quad drop.\n",
-                   ent->client->pers.netname, settings->quaddrop ? "on" : "off");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s quad drop.\n",
+                       ent->client->pers.netname, settings->quaddrop ? "on" : "off");
         gi.cvar_set("g_dm_no_quad_drop", !settings->quaddrop ? "1" : "0");
     }
 
     if (settings->instantweap != !!g_instant_weapon_switch->integer) {
-        gi.bprintf(PRINT_HIGH, "%s turned %s instant weapons.\n",
-                   ent->client->pers.netname, settings->instantweap ? "on" : "off");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s instant weapons.\n",
+                       ent->client->pers.netname, settings->instantweap ? "on" : "off");
         gi.cvar_set("g_instant_weapon_switch", settings->instantweap ? "1" : "0");
     }
 
     if (settings->matchlock != !!matchlock->integer) {
-        gi.bprintf(PRINT_HIGH, "%s turned %s match lock.\n",
-                   ent->client->pers.netname, settings->matchlock ? "on" : "off");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s match lock.\n",
+                       ent->client->pers.netname, settings->matchlock ? "on" : "off");
         gi.cvar_set("matchlock", settings->matchlock ? "1" : "0");
     }
 
@@ -3218,13 +3218,13 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
     PMenu_Close(ent);
 
     if (ctfgame.match == MATCH_SETUP) {
-        gi.bprintf(PRINT_CHAT, "Match has been forced to start.\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime->value);
         G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
-        gi.bprintf(PRINT_CHAT, "Match has been forced to terminate.\n");
+        G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to terminate.\n");
         ctfgame.match = MATCH_SETUP;
         ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
         CTFResetAllPlayers();
@@ -3248,7 +3248,7 @@ static void CTFAdmin_Reset(edict_t *ent, pmenuhnd_t *p)
     PMenu_Close(ent);
 
     // go back to normal mode
-    gi.bprintf(PRINT_CHAT, "Match mode has been terminated, reseting to normal game.\n");
+    G_ClientPrintf(NULL, PRINT_CHAT, "Match mode has been terminated, reseting to normal game.\n");
     ctfgame.match = MATCH_NONE;
     gi.cvar_set("competition", "1");
     CTFResetAllPlayers();
@@ -3297,15 +3297,15 @@ static void CTFOpenAdminMenu(edict_t *ent)
 void CTFAdmin(edict_t *ent)
 {
     if (!allow_admin->integer) {
-        gi.cprintf(ent, PRINT_HIGH, "Administration is disabled\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Administration is disabled\n");
         return;
     }
 
     if (gi.argc() > 1 && admin_password->string && *admin_password->string &&
         !ent->client->resp.admin && strcmp(admin_password->string, gi.argv(1)) == 0) {
         ent->client->resp.admin = true;
-        gi.bprintf(PRINT_HIGH, "%s has become an admin.\n", ent->client->pers.netname);
-        gi.cprintf(ent, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ent->client->pers.netname);
+        G_ClientPrintf(ent, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
     }
 
     if (!ent->client->resp.admin) {
@@ -3353,9 +3353,9 @@ void CTFStats(edict_t *ent)
 
     if (i == MAX_CLIENTS) {
         if (*text)
-            gi.cprintf(ent, PRINT_HIGH, "%s", text);
+            G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
         else
-            gi.cprintf(ent, PRINT_HIGH, "No statistics available.\n");
+            G_ClientPrintf(ent, PRINT_HIGH, "No statistics available.\n");
         return;
     }
 
@@ -3387,7 +3387,7 @@ void CTFStats(edict_t *ent)
         strcat(text, st);
     }
 
-    gi.cprintf(ent, PRINT_HIGH, "%s", text);
+    G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
 void CTFPlayerList(edict_t *ent)
@@ -3424,7 +3424,7 @@ void CTFPlayerList(edict_t *ent)
         strcat(text, st);
     }
 
-    gi.cprintf(ent, PRINT_HIGH, "%s", text);
+    G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
 void CTFWarp(edict_t *ent)
@@ -3432,8 +3432,8 @@ void CTFWarp(edict_t *ent)
     char *token;
 
     if (gi.argc() < 2) {
-        gi.cprintf(ent, PRINT_HIGH, "Where do you want to warp to?\n");
-        gi.cprintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
+        G_ClientPrintf(ent, PRINT_HIGH, "Where do you want to warp to?\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
         return;
     }
 
@@ -3444,14 +3444,14 @@ void CTFWarp(edict_t *ent)
             break;
 
     if (!*token) {
-        gi.cprintf(ent, PRINT_HIGH, "Unknown CTF level.\n");
-        gi.cprintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown CTF level.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
         return;
     }
 
     if (ent->client->resp.admin) {
-        gi.bprintf(PRINT_HIGH, "%s is warping to level %s.\n",
-                   ent->client->pers.netname, gi.argv(1));
+        G_ClientPrintf(NULL, PRINT_HIGH, "%s is warping to level %s.\n",
+                       ent->client->pers.netname, gi.argv(1));
         Q_strlcpy(level.forcemap, gi.argv(1), sizeof(level.forcemap));
         EndDMLevel();
         return;
@@ -3467,29 +3467,29 @@ void CTFBoot(edict_t *ent)
     edict_t *targ;
 
     if (!ent->client->resp.admin) {
-        gi.cprintf(ent, PRINT_HIGH, "You are not an admin.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You are not an admin.\n");
         return;
     }
 
     if (gi.argc() < 2) {
-        gi.cprintf(ent, PRINT_HIGH, "Who do you want to kick?\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Who do you want to kick?\n");
         return;
     }
 
     if (*gi.argv(1) < '0' && *gi.argv(1) > '9') {
-        gi.cprintf(ent, PRINT_HIGH, "Specify the player number to kick.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Specify the player number to kick.\n");
         return;
     }
 
     int i = Q_atoi(gi.argv(1));
     if (i < 0 || i >= game.maxclients) {
-        gi.cprintf(ent, PRINT_HIGH, "Invalid player number.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Invalid player number.\n");
         return;
     }
 
     targ = g_edicts + i;
     if (!targ->r.inuse) {
-        gi.cprintf(ent, PRINT_HIGH, "That player number is not connected.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "That player number is not connected.\n");
         return;
     }
 

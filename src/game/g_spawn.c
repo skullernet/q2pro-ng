@@ -621,13 +621,13 @@ void ED_CallSpawn(edict_t *ent)
     int                 i;
 
     if (!ent->classname) {
-        gi.dprintf("ED_CallSpawn: NULL classname\n");
+        G_Printf("ED_CallSpawn: NULL classname\n");
         G_FreeEdict(ent);
         return;
     }
 
     if (ent == world && strcmp(ent->classname, "worldspawn"))
-        gi.error("ED_CallSpawn: first entity must be worldspawn");
+        G_Error("ED_CallSpawn: first entity must be worldspawn");
 
     // PGM - do this before calling the spawn function so it can be overridden.
     VectorSet(ent->gravityVector, 0, 0, -1);
@@ -680,7 +680,7 @@ void ED_CallSpawn(edict_t *ent)
         }
     }
 
-    gi.dprintf("%s doesn't have a spawn function\n", etos(ent));
+    G_Printf("%s doesn't have a spawn function\n", etos(ent));
     G_FreeEdict(ent);
 }
 
@@ -823,7 +823,7 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
         *(float *)(b + f->ofs) = ED_ParseAttenuation(value);
         break;
     default:
-        gi.error("%s: bad field type", __func__);
+        G_Error("%s: bad field type", __func__);
         break;
     }
 }
@@ -872,7 +872,7 @@ void ED_ParseField(const char *key, const char *value, edict_t *ent)
         return;
     }
 
-    gi.dprintf("%s is not a valid field\n", key);
+    G_Printf("%s is not a valid field\n", key);
 }
 
 bool ED_WasKeySpecified(const char *key)
@@ -952,17 +952,17 @@ static const char *ED_ParseEdict(const char *data, edict_t *ent)
         if (com_token[0] == '}')
             break;
         if (!data)
-            gi.error("ED_ParseEntity: EOF without closing brace");
+            G_Error("ED_ParseEntity: EOF without closing brace");
 
         Q_strlcpy(keyname, com_token, sizeof(keyname));
 
         // parse value
         com_token = COM_Parse(&data);
         if (!data)
-            gi.error("ED_ParseEntity: EOF without closing brace");
+            G_Error("ED_ParseEntity: EOF without closing brace");
 
         if (com_token[0] == '}')
-            gi.error("ED_ParseEntity: closing brace without data");
+            G_Error("ED_ParseEntity: closing brace without data");
 
         init = true;
 
@@ -1042,7 +1042,7 @@ static void G_FixTeams(void)
         }
     }
 
-    gi.dprintf("%d teams repaired\n", c);
+    G_Printf("%d teams repaired\n", c);
 }
 
 static void G_FindTeams(void)
@@ -1086,7 +1086,7 @@ static void G_FindTeams(void)
     G_FixTeams();
     // ROGUE
 
-    gi.dprintf("%d teams with %d entities\n", c, c2);
+    G_Printf("%d teams with %d entities\n", c, c2);
 }
 
 // inhibit entities from game based on cvars & spawnflags
@@ -1142,7 +1142,7 @@ static void G_PrecacheStartItems(void)
             const gitem_t *item = FindItemByClassname(token);
 
             if (!item || !item->pickup)
-                gi.error("Invalid g_start_items entry: %s\n", token);
+                G_Error("Invalid g_start_items entry: %s", token);
 
             PrecacheItem(item);
         }
@@ -1167,7 +1167,7 @@ void G_AddPrecache(precache_t func)
             return;
 
     if (game.num_precaches == q_countof(game.precaches))
-        gi.error("Too many precaches");
+        G_Error("Too many precaches");
 
     game.precaches[game.num_precaches++] = func;
     func();
@@ -1260,7 +1260,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         if (!entities)
             break;
         if (com_token[0] != '{')
-            gi.error("ED_LoadFromFile: found \"%s\" when expecting {", com_token);
+            G_Error("ED_LoadFromFile: found \"%s\" when expecting {", com_token);
 
         if (!ent)
             ent = world;
@@ -1284,7 +1284,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
         ent->s.renderfx |= RF_IR_VISIBLE; // PGM
     }
 
-    gi.dprintf("%d entities inhibited\n", inhibit);
+    G_Printf("%d entities inhibited\n", inhibit);
 
     // precache start_items
     G_PrecacheStartItems();

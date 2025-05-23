@@ -16,7 +16,7 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
         return NULL;
 
     if (ent->client->menu) {
-        gi.dprintf("warning, ent already has a menu\n");
+        G_Printf("warning, ent already has a menu\n");
         PMenu_Close(ent);
     }
 
@@ -92,7 +92,7 @@ void PMenu_Do_Update(edict_t *ent)
     bool        alt = false;
 
     if (!ent->client->menu) {
-        gi.dprintf("warning:  ent has no menu\n");
+        G_Printf("warning:  ent has no menu\n");
         return;
     }
 
@@ -148,7 +148,7 @@ void PMenu_Do_Update(edict_t *ent)
 void PMenu_Update(edict_t *ent)
 {
     if (!ent->client->menu) {
-        gi.dprintf("warning:  ent has no menu\n");
+        G_Printf("warning:  ent has no menu\n");
         return;
     }
 
@@ -170,7 +170,7 @@ void PMenu_Next(edict_t *ent)
     pmenu_t *p;
 
     if (!ent->client->menu) {
-        gi.dprintf("warning:  ent has no menu\n");
+        G_Printf("warning:  ent has no menu\n");
         return;
     }
 
@@ -204,7 +204,7 @@ void PMenu_Prev(edict_t *ent)
     pmenu_t *p;
 
     if (!ent->client->menu) {
-        gi.dprintf("warning:  ent has no menu\n");
+        G_Printf("warning:  ent has no menu\n");
         return;
     }
 
@@ -238,7 +238,7 @@ void PMenu_Select(edict_t *ent)
     pmenu_t *p;
 
     if (!ent->client->menu) {
-        gi.dprintf("warning:  ent has no menu\n");
+        G_Printf("warning:  ent has no menu\n");
         return;
     }
 

@@ -124,7 +124,7 @@ bool Pickup_Sphere(edict_t *ent, edict_t *other)
             if (ent->item->use)
                 ent->item->use(other, ent->item);
             else
-                gi.dprintf("Powerup has no use function!\n");
+                G_Printf("Powerup has no use function!\n");
             // PGM
         }
     }
@@ -135,7 +135,7 @@ bool Pickup_Sphere(edict_t *ent, edict_t *other)
 void Use_Defender(edict_t *ent, const gitem_t *item)
 {
     if (ent->client && ent->client->owned_sphere) {
-        gi.cprintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
         return;
     }
 
@@ -147,7 +147,7 @@ void Use_Defender(edict_t *ent, const gitem_t *item)
 void Use_Hunter(edict_t *ent, const gitem_t *item)
 {
     if (ent->client && ent->client->owned_sphere) {
-        gi.cprintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
         return;
     }
 
@@ -159,7 +159,7 @@ void Use_Hunter(edict_t *ent, const gitem_t *item)
 void Use_Vengeance(edict_t *ent, const gitem_t *item)
 {
     if (ent->client && ent->client->owned_sphere) {
-        gi.cprintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Only one sphere at a time!\n");
         return;
     }
 

@@ -582,7 +582,7 @@ void SP_hint_path(edict_t *self)
     }
 
     if (!self->targetname && !self->target) {
-        gi.dprintf("%s: unlinked\n", etos(self));
+        G_Printf("%s: unlinked\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -618,7 +618,7 @@ void InitHintPaths(void)
         if (e->spawnflags & SPAWNFLAG_HINT_ENDPOINT) {
             if (e->target) { // start point
                 if (e->targetname) { // this is a bad end, ignore it
-                    gi.dprintf("%s: marked as endpoint with both target (%s) and targetname (%s)\n",
+                    G_Printf("%s: marked as endpoint with both target (%s) and targetname (%s)\n",
                                etos(e), e->target, e->targetname);
                 } else {
                     if (num_hint_paths >= MAX_HINT_CHAINS)
@@ -636,14 +636,14 @@ void InitHintPaths(void)
         current->hint_chain_id = i;
         e = G_Find(NULL, FOFS(targetname), current->target);
         if (G_Find(e, FOFS(targetname), current->target)) {
-            gi.dprintf("%s: forked path detected for chain %d, target %s\n",
+            G_Printf("%s: forked path detected for chain %d, target %s\n",
                        etos(current), num_hint_paths, current->target);
             hint_path_start[i]->hint_chain = NULL;
             continue;
         }
         while (e) {
             if (e->hint_chain) {
-                gi.dprintf("%s: circular path detected for chain %d, targetname %s\n",
+                G_Printf("%s: circular path detected for chain %d, targetname %s\n",
                            etos(e), num_hint_paths, e->targetname);
                 hint_path_start[i]->hint_chain = NULL;
                 break;
@@ -655,7 +655,7 @@ void InitHintPaths(void)
                 break;
             e = G_Find(NULL, FOFS(targetname), current->target);
             if (G_Find(e, FOFS(targetname), current->target)) {
-                gi.dprintf("%s: forked path detected for chain %d, target %s\n",
+                G_Printf("%s: forked path detected for chain %d, target %s\n",
                            etos(current), num_hint_paths, current->target);
                 hint_path_start[i]->hint_chain = NULL;
                 break;

@@ -179,7 +179,7 @@ void SP_trigger_multiple(edict_t *ent)
 
     if (ent->spawnflags & SPAWNFLAG_TRIGGER_LATCHED) {
         if (ent->spawnflags & (SPAWNFLAG_TRIGGER_TRIGGERED | SPAWNFLAG_TRIGGER_TOGGLE))
-            gi.dprintf("%s: latched and triggered/toggle are not supported\n", etos(ent));
+            G_Printf("%s: latched and triggered/toggle are not supported\n", etos(ent));
 
         ent->think = latched_trigger_think;
         ent->nextthink = level.time + FRAME_TIME;
@@ -228,7 +228,7 @@ void SP_trigger_once(edict_t *ent)
     if (ent->spawnflags & SPAWNFLAG_TRIGGER_MONSTER) {
         ent->spawnflags &= ~SPAWNFLAG_TRIGGER_MONSTER;
         ent->spawnflags |= SPAWNFLAG_TRIGGER_TRIGGERED;
-        gi.dprintf("%s: fixed TRIGGERED flag\n", etos(ent));
+        G_Printf("%s: fixed TRIGGERED flag\n", etos(ent));
     }
 
     ent->wait = -1;
@@ -284,7 +284,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
         if (level.time < self->touch_debounce_time)
             return;
         self->touch_debounce_time = level.time + SEC(5);
-        gi.centerprintf(activator, "You need %s", self->item->pickup_name_definite);
+        G_ClientPrintf(activator, PRINT_CENTER, "You need %s", self->item->pickup_name_definite);
         G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keytry.wav"), 1, ATTN_NORM);
         return;
     }
@@ -348,18 +348,18 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_trigger_key(edict_t *self)
 {
     if (!st.item) {
-        gi.dprintf("%s: no key item\n", etos(self));
+        G_Printf("%s: no key item\n", etos(self));
         return;
     }
     self->item = FindItemByClassname(st.item);
 
     if (!self->item) {
-        gi.dprintf("%s: item %s not found\n", etos(self), st.item);
+        G_Printf("%s: item %s not found\n", etos(self), st.item);
         return;
     }
 
     if (!self->target) {
-        gi.dprintf("%s: no target\n", etos(self));
+        G_Printf("%s: no target\n", etos(self));
         return;
     }
 
@@ -396,14 +396,14 @@ void USE(trigger_counter_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     if (self->count) {
         if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
-            gi.centerprintf(activator, "%d more to go...", self->count);
+            G_ClientPrintf(activator, PRINT_CENTER, "%d more to go...", self->count);
             G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
         }
         return;
     }
 
     if (!(self->spawnflags & SPAWNFLAG_COUNTER_NOMESSAGE)) {
-        gi.centerprintf(activator, "Sequence completed!");
+        G_ClientPrintf(activator, PRINT_CENTER, "Sequence completed!");
         G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
     }
     self->activator = activator;
@@ -585,7 +585,7 @@ void SP_trigger_push(edict_t *self)
         if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF)
             self->r.solid = SOLID_NOT;
     } else if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF) {
-        gi.dprintf("trigger_push is START_OFF but not targeted.\n");
+        G_Printf("trigger_push is START_OFF but not targeted.\n");
         self->r.svflags = SVF_NONE;
         self->touch = NULL;
         self->r.solid = SOLID_BSP;
@@ -822,7 +822,7 @@ void TOUCH(trigger_gravity_touch)(edict_t *self, edict_t *other, const trace_t *
 void SP_trigger_gravity(edict_t *self)
 {
     if (!st.gravity || !*st.gravity) {
-        gi.dprintf("%s: no gravity set\n", etos(self));
+        G_Printf("%s: no gravity set\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -1108,7 +1108,7 @@ void SP_trigger_fog(edict_t *self)
     InitTrigger(self);
 
     if (!(self->spawnflags & (SPAWNFLAG_FOG_AFFECT_FOG | SPAWNFLAG_FOG_AFFECT_HEIGHTFOG)))
-        gi.dprintf("WARNING: %s with no fog spawnflags set\n", etos(self));
+        G_Printf("WARNING: %s with no fog spawnflags set\n", etos(self));
 
     if (self->target) {
         self->movetarget = G_PickTarget(self->target);
@@ -1165,7 +1165,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
             continue;
 
         if (self->timestamp < level.time)
-            gi.centerprintf(player, "%s", self->map);
+            G_ClientPrintf(player, PRINT_CENTER, "%s", self->map);
         can_use = false;
     }
 
@@ -1176,7 +1176,7 @@ void USE(trigger_coop_relay_use)(edict_t *self, edict_t *other, edict_t *activat
 {
     if (!trigger_coop_relay_can_use(self, activator)) {
         if (self->timestamp < level.time)
-            gi.centerprintf(activator, "%s", self->message);
+            G_ClientPrintf(activator, PRINT_CENTER, "%s", self->message);
 
         self->timestamp = level.time + SEC(5);
         return;
@@ -1205,7 +1205,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
     if (num_present == num_active) {
         const char *msg = self->message;
         self->message = NULL;
-        G_UseTargets(self, &g_edicts[1]);
+        G_UseTargets(self, &g_edicts[0]);
         self->message = msg;
 
         G_FreeEdict(self);
@@ -1214,7 +1214,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
 
     if (num_present && self->timestamp < level.time) {
         for (i = 0; i < num_present; i++)
-            gi.centerprintf(g_edicts + players[i], "%s", self->message);
+            G_ClientPrintf(&g_edicts[players[i]], PRINT_CENTER, "%s", self->message);
 
         for (i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
@@ -1224,7 +1224,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
                 if (players[j] == i)
                     break;
             if (j == num_present)
-                gi.centerprintf(player, "%s", self->map);
+                G_ClientPrintf(player, PRINT_CENTER, "%s", self->map);
         }
 
         self->timestamp = level.time + SEC(5);
@@ -1236,7 +1236,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
 void SP_trigger_coop_relay(edict_t *self)
 {
     if (self->targetname && self->spawnflags & SPAWNFLAG_COOP_RELAY_AUTO_FIRE)
-        gi.dprintf("%s: targetname and auto-fire are mutually exclusive\n", etos(self));
+        G_Printf("%s: targetname and auto-fire are mutually exclusive\n", etos(self));
 
     InitTrigger(self);
 

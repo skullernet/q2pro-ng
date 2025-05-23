@@ -573,10 +573,10 @@ void G_MonsterKilled(edict_t *self)
         }
 
         if (!found)
-            gi.centerprintf(&g_edicts[0], "found missing monster?");
+            G_ClientPrintf(&g_edicts[0], PRINT_CENTER, "found missing monster?");
 
         if (level.killed_monsters == level.total_monsters)
-            gi.centerprintf(&g_edicts[0], "all monsters dead");
+            G_ClientPrintf(&g_edicts[0], PRINT_CENTER, "all monsters dead");
     }
 }
 
@@ -919,7 +919,7 @@ static void monster_triggered_start(edict_t *self)
             }
         }
 
-    gi.dprintf("%s: is trigger spawned, but has no targetname or no entity to spawn it\n", etos(self));
+    G_Printf("%s: is trigger spawned, but has no targetname or no entity to spawn it\n", etos(self));
 }
 
 /*
@@ -1069,7 +1069,7 @@ bool monster_start(edict_t *self)
     if (st.item) {
         self->item = FindItemByClassname(st.item);
         if (!self->item)
-            gi.dprintf("%s: bad item: %s\n", etos(self), st.item);
+            G_Printf("%s: bad item: %s\n", etos(self), st.item);
     }
 
     // randomize what frame they start on
@@ -1110,7 +1110,7 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
     VectorCopy(check, self->s.origin);
 
     if (result == STUCK_FIXED && developer->integer)
-        gi.dprintf("fixed stuck %s\n", etos(self));
+        G_Printf("fixed stuck %s\n", etos(self));
 
     return result;
 }
@@ -1175,7 +1175,7 @@ void monster_start_go(edict_t *self)
         }
 
         if (is_stuck)
-            gi.dprintf("WARNING: %s stuck in solid\n", etos(self));
+            G_Printf("WARNING: %s stuck in solid\n", etos(self));
     }
 
     if (self->health <= 0)
@@ -1198,7 +1198,7 @@ void monster_start_go(edict_t *self)
             }
         }
         if (notcombat && self->combattarget)
-            gi.dprintf("%s: has target with mixed types\n", etos(self));
+            G_Printf("%s: has target with mixed types\n", etos(self));
         if (fixup)
             self->target = NULL;
     }
@@ -1209,7 +1209,7 @@ void monster_start_go(edict_t *self)
 
         while ((target = G_Find(target, FOFS(targetname), self->combattarget)) != NULL)
             if (strcmp(target->classname, "point_combat") != 0)
-                gi.dprintf("%s has a bad combattarget %s (%s)\n", etos(self), self->combattarget, etos(target));
+                G_Printf("%s has a bad combattarget %s (%s)\n", etos(self), self->combattarget, etos(target));
     }
 
     // allow spawning dead
@@ -1218,7 +1218,7 @@ void monster_start_go(edict_t *self)
     if (self->target) {
         self->goalentity = self->movetarget = G_PickTarget(self->target);
         if (!self->movetarget) {
-            gi.dprintf("%s: can't find target %s\n", etos(self), self->target);
+            G_Printf("%s: can't find target %s\n", etos(self), self->target);
             self->target = NULL;
             self->monsterinfo.pausetime = HOLD_FOREVER;
             if (!spawn_dead)
@@ -1371,13 +1371,13 @@ It will only fire once, and free itself afterwards.
 void SP_trigger_health_relay(edict_t *self)
 {
     if (!self->targetname) {
-        gi.dprintf("%s missing targetname\n", etos(self));
+        G_Printf("%s missing targetname\n", etos(self));
         G_FreeEdict(self);
         return;
     }
 
     if (self->speed < 0 || self->speed > 1) {
-        gi.dprintf("%s has bad \"speed\" (health percentage); must be between 0 and 1, inclusive\n", etos(self));
+        G_Printf("%s has bad \"speed\" (health percentage); must be between 0 and 1, inclusive\n", etos(self));
         G_FreeEdict(self);
         return;
     }

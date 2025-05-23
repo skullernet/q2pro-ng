@@ -1357,6 +1357,12 @@ int G_ModelIndex(const char *name);
 int G_SoundIndex(const char *name);
 int G_ImageIndex(const char *name);
 
+#define G_Printf(...) Com_LPrintf(PRINT_ALL, __VA_ARGS__)
+#define G_Error(...) Com_Error(ERR_DROP, __VA_ARGS__)
+
+q_printf(3, 4)
+void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...);
+
 //
 // g_spawn.c
 //

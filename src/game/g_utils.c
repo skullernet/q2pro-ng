@@ -143,7 +143,7 @@ edict_t *G_PickTarget(const char *targetname)
     edict_t *choice[MAXCHOICES];
 
     if (!targetname) {
-        gi.dprintf("G_PickTarget called with NULL targetname\n");
+        G_Printf("G_PickTarget called with NULL targetname\n");
         return NULL;
     }
 
@@ -157,7 +157,7 @@ edict_t *G_PickTarget(const char *targetname)
     }
 
     if (!num_choices) {
-        gi.dprintf("G_PickTarget: target %s not found\n", targetname);
+        G_Printf("G_PickTarget: target %s not found\n", targetname);
         return NULL;
     }
 
@@ -177,9 +177,9 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
     //
     if ((ent->message) && !(activator->r.svflags & SVF_MONSTER)) {
         if (coop_global && coop->integer)
-            gi.bprintf(PRINT_CENTER, "%s", ent->message);
+            G_ClientPrintf(NULL, PRINT_CENTER, "%s", ent->message);
         else
-            gi.centerprintf(activator, "%s", ent->message);
+            G_ClientPrintf(activator, PRINT_CENTER, "%s", ent->message);
 
         // [Paril-KEX] allow non-noisy centerprints
         if (ent->noise_index >= 0) {
@@ -222,7 +222,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t->think = Think_Delay;
         t->activator = activator;
         if (!activator)
-            gi.dprintf("Think_Delay with no activator\n");
+            G_Printf("Think_Delay with no activator\n");
         t->message = ent->message;
         t->target = ent->target;
         t->killtarget = ent->killtarget;
@@ -274,7 +274,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
             G_FreeEdict(t);
 
             if (!ent->r.inuse) {
-                gi.dprintf("entity was removed while using killtargets\n");
+                G_Printf("entity was removed while using killtargets\n");
                 return;
             }
         }
@@ -293,12 +293,12 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
                 continue;
 
             if (t == ent)
-                gi.dprintf("WARNING: Entity used itself.\n");
+                G_Printf("WARNING: Entity used itself.\n");
             else if (t->use)
                 t->use(t, ent, activator);
 
             if (!ent->r.inuse) {
-                gi.dprintf("entity was removed while using targets\n");
+                G_Printf("entity was removed while using targets\n");
                 return;
             }
         }
@@ -392,10 +392,10 @@ void G_FreeMemory(void)
 void *G_Malloc(size_t len)
 {
     if (len > sizeof(g_mem_pool))
-        gi.error("Bad alloc size");
+        G_Error("Bad alloc size");
     len = Q_ALIGN(len, 8);
     if (len > sizeof(g_mem_pool) - g_mem_used)
-        gi.error("Out of memory");
+        G_Error("Out of memory");
     void *out = g_mem_pool + g_mem_used;
     g_mem_used += len;
     return out;
@@ -413,7 +413,7 @@ char *G_CopyString(const char *in)
 
 void G_MemoryInfo_f(void)
 {
-    gi.dprintf("%d bytes allocated (%.1f%%)\n", g_mem_used, g_mem_used * 100.0f / sizeof(g_mem_pool));
+    G_Printf("%d bytes allocated (%.1f%%)\n", g_mem_used, g_mem_used * 100.0f / sizeof(g_mem_pool));
 }
 
 void G_InitEdict(edict_t *e)
@@ -466,7 +466,7 @@ edict_t *G_Spawn(void)
     }
 
     if (i == ENTITYNUM_WORLD)
-        gi.error("ED_Alloc: no free edicts");
+        G_Error("ED_Alloc: no free edicts");
 
     globals.num_edicts++;
     G_InitEdict(e);
@@ -697,7 +697,7 @@ void G_AddEvent(edict_t *ent, entity_event_t event, int param)
         if (ent->s.event[1]) {
             extern cvar_t *sv_running;
             if (sv_running->integer >= 2)
-                gi.dprintf("Too many events for %s: %d, %d, %d\n", etos(ent), ent->s.event[0], ent->s.event[1], event);
+                G_Printf("Too many events for %s: %d, %d, %d\n", etos(ent), ent->s.event[0], ent->s.event[1], event);
             return;
         }
         ent->s.event[1] = event;
@@ -786,4 +786,16 @@ int G_SoundIndex(const char *name)
 int G_ImageIndex(const char *name)
 {
     return trap_FindIndex(name, CS_IMAGES, MAX_IMAGES, 0);
+}
+
+void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)
+{
+    va_list     argptr;
+    char        text[MAX_STRING_CHARS];
+
+    va_start(argptr, fmt);
+    Q_vsnprintf(text, sizeof(text), fmt, argptr);
+    va_end(argptr);
+
+    trap_ClientPrint(ent, level, text);
 }

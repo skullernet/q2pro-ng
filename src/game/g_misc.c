@@ -332,7 +332,7 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 void SP_path_corner(edict_t *self)
 {
     if (!self->targetname) {
-        gi.dprintf("%s with no targetname\n", etos(self));
+        G_Printf("%s with no targetname\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -361,7 +361,7 @@ void TOUCH(point_combat_touch)(edict_t *self, edict_t *other, const trace_t *tr,
         other->target = self->target;
         other->goalentity = other->movetarget = G_PickTarget(other->target);
         if (!other->goalentity) {
-            gi.dprintf("%s target %s does not exist\n", etos(self), self->target);
+            G_Printf("%s target %s does not exist\n", etos(self), self->target);
             other->movetarget = self;
         }
         // [Paril-KEX] allow them to be re-used
@@ -565,7 +565,7 @@ void SP_func_wall(edict_t *self)
 
     // yell if the spawnflags are odd
     if ((self->spawnflags & SPAWNFLAG_WALL_START_ON) && !(self->spawnflags & SPAWNFLAG_WALL_TOGGLE)) {
-        gi.dprintf("func_wall START_ON without TOGGLE\n");
+        G_Printf("func_wall START_ON without TOGGLE\n");
         self->spawnflags |= SPAWNFLAG_WALL_TOGGLE;
     }
 
@@ -597,7 +597,7 @@ void USE(func_animation_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_func_animation(edict_t *self)
 {
     if (!self->bmodel_anim.enabled) {
-        gi.dprintf("%s has no animation data\n", etos(self));
+        G_Printf("%s has no animation data\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -867,7 +867,7 @@ void SP_func_explosive(edict_t *self)
         if (self->sounds == 1)
             self->noise_index = G_SoundIndex("world/brkglas.wav");
         else
-            gi.dprintf("%s: invalid \"sounds\" %d\n", etos(self), self->sounds);
+            G_Printf("%s: invalid \"sounds\" %d\n", etos(self), self->sounds);
     }
 
     trap_LinkEntity(self);
@@ -1293,7 +1293,7 @@ void USE(misc_viper_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_misc_viper(edict_t *ent)
 {
     if (!ent->target) {
-        gi.dprintf("%s without a target\n", etos(ent));
+        G_Printf("%s without a target\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -1414,7 +1414,7 @@ void USE(misc_strogg_ship_use)(edict_t *self, edict_t *other, edict_t *activator
 void SP_misc_strogg_ship(edict_t *ent)
 {
     if (!ent->target) {
-        gi.dprintf("%s without a target\n", etos(ent));
+        G_Printf("%s without a target\n", etos(ent));
         G_FreeEdict(ent);
         return;
     }
@@ -1712,13 +1712,13 @@ void USE(func_clock_use)(edict_t *self, edict_t *other, edict_t *activator)
 void SP_func_clock(edict_t *self)
 {
     if (!self->target) {
-        gi.dprintf("%s with no target\n", etos(self));
+        G_Printf("%s with no target\n", etos(self));
         G_FreeEdict(self);
         return;
     }
 
     if ((self->spawnflags & SPAWNFLAG_TIMER_DOWN) && (!self->count)) {
-        gi.dprintf("%s with no count\n", etos(self));
+        G_Printf("%s with no count\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -1750,7 +1750,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     dest = G_Find(NULL, FOFS(targetname), self->target);
     if (!dest) {
-        gi.dprintf("Couldn't find destination\n");
+        G_Printf("Couldn't find destination\n");
         return;
     }
 
@@ -2038,7 +2038,7 @@ void THINK(info_world_text_think)(edict_t *self)
         return;
 
     if (self->sounds >= q_countof(colors)) {
-        gi.dprintf("%s: invalid color\n", etos(self));
+        G_Printf("%s: invalid color\n", etos(self));
         self->sounds = 0;
     }
 
@@ -2058,7 +2058,7 @@ designer placed in world text for debugging.
 void SP_info_world_text(edict_t *self)
 {
     if (!self->message) {
-        gi.dprintf("%s: no message\n", etos(self));
+        G_Printf("%s: no message\n", etos(self));
         G_FreeEdict(self);
         return;
     }
@@ -2253,7 +2253,7 @@ void USE(info_nav_lock_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     while ((n = G_Find(n, FOFS(targetname), self->target))) {
         if (!(n->r.svflags & SVF_DOOR)) {
-            gi.dprintf("%s tried targeting %s, a non-SVF_DOOR\n", etos(self), etos(n));
+            G_Printf("%s tried targeting %s, a non-SVF_DOOR\n", etos(self), etos(n));
             continue;
         }
 
@@ -2267,13 +2267,13 @@ toggle locked state on linked entity
 void SP_info_nav_lock(edict_t *self)
 {
     if (!self->targetname) {
-        gi.dprintf("%s missing targetname\n", etos(self));
+        G_Printf("%s missing targetname\n", etos(self));
         G_FreeEdict(self);
         return;
     }
 
     if (!self->target) {
-        gi.dprintf("%s missing target\n", etos(self));
+        G_Printf("%s missing target\n", etos(self));
         G_FreeEdict(self);
         return;
     }
