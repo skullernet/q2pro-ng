@@ -59,62 +59,74 @@ static int PF_FindIndex(const char *name, int start, int max, int skip)
     return i;
 }
 
-/*
-===============
-PF_Unicast
-
-Sends the contents of the mutlicast buffer to a single client.
-===============
-*/
-static void PF_Unicast(edict_t *ent, bool reliable)
+static client_t *get_client(edict_t *ent, const char *func)
 {
-    client_t    *client;
-    int         cmd, flags, clientNum;
-
-    if (!ent) {
-        goto clear;
-    }
-
-    if (msg_write.overflowed)
-        Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
-
-    clientNum = SV_NumForEdict(ent);
+    int clientNum = SV_NumForEdict(ent);
     if (clientNum < 0 || clientNum >= svs.maxclients) {
-        Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
-        goto clear;
+        Com_DWPrintf("%s to a non-client %d\n", func, clientNum);
+        return NULL;
     }
 
-    client = svs.client_pool + clientNum;
+    client_t *client = svs.client_pool + clientNum;
     if (client->state <= cs_zombie) {
-        Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
-        goto clear;
+        Com_DWPrintf("%s to a free/zombie client %d\n", func, clientNum);
+        return NULL;
     }
 
-    if (!msg_write.cursize) {
-        Com_DPrintf("%s with empty data\n", __func__);
-        goto clear;
+    return client;
+}
+
+
+static void PF_ClientLayout(edict_t *ent, const char *str, bool reliable)
+{
+    client_t *client = NULL;
+    int flags = reliable ? MSG_RELIABLE : 0;
+
+    if (ent) {
+        client = get_client(ent, __func__);
+        if (!client)
+            return;
     }
 
-    cmd = msg_write.data[0];
+    MSG_WriteByte(svc_layout);
+    MSG_WriteString(str);
 
-    flags = 0;
-    if (reliable) {
-        flags |= MSG_RELIABLE;
+    if (client) {
+        SV_ClientAddMessage(client, flags | MSG_CLEAR);
+        return;
     }
 
-    if (cmd == svc_layout || (cmd == svc_configstring && RL16(&msg_write.data[1]) == CS_STATUSBAR)) {
-        flags |= MSG_COMPRESS_AUTO;
-    }
+    FOR_EACH_CLIENT(client)
+        if (client->state == cs_spawned)
+            SV_ClientAddMessage(client, flags);
 
-    SV_ClientAddMessage(client, flags);
-
-    // fix anti-kicking exploit for broken mods
-    if (cmd == svc_disconnect) {
-        client->drop_hack = true;
-    }
-
-clear:
     SZ_Clear(&msg_write);
+}
+
+static void PF_ClientStuffText(edict_t *ent, const char *str)
+{
+    client_t *client = get_client(ent, __func__);
+    if (!client)
+        return;
+
+    MSG_WriteByte(svc_stufftext);
+    MSG_WriteString(str);
+
+    SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
+}
+
+static void PF_ClientInventory(edict_t *ent, int *inventory, int count)
+{
+    client_t *client = get_client(ent, __func__);
+    if (!client)
+        return;
+
+    MSG_WriteByte(svc_inventory);
+    MSG_WriteByte(count);
+    for (int i = 0; i < count; i++)
+         MSG_WriteShort(inventory[i]);
+
+    SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
 }
 
 /*
@@ -143,19 +155,8 @@ static void PF_cprint(edict_t *ent, print_level_t level, const char *msg)
     client_t *client = NULL;
 
     if (ent) {
-        int clientNum = SV_NumForEdict(ent);
-        if (clientNum < 0 || clientNum >= svs.maxclients) {
-            Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
-            return;
-        }
-
-        client = svs.client_pool + clientNum;
-        if (client->state <= cs_zombie) {
-            Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
-            return;
-        }
-
-        if (level < client->messagelevel)
+        client = get_client(ent, __func__);
+        if (!client || level < client->messagelevel)
             return;
     }
 
@@ -164,8 +165,7 @@ static void PF_cprint(edict_t *ent, print_level_t level, const char *msg)
     MSG_WriteString(msg);
 
     if (client) {
-        SV_ClientAddMessage(client, MSG_RELIABLE);
-        SZ_Clear(&msg_write);
+        SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
         return;
     }
 
@@ -310,11 +310,6 @@ static size_t PF_GetConfigstring(int index, char *buf, size_t size)
     return Q_strlcpy(buf, sv.configstrings[index], size);
 }
 
-static void PF_WriteFloat(float f)
-{
-    Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
-}
-
 static bool PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
     const mleaf_t *leaf1, *leaf2;
@@ -452,8 +447,6 @@ static const game_import_t game_import = {
     .apiversion = GAME_API_VERSION,
     .structsize = sizeof(game_import_t),
 
-    .multicast = SV_Multicast,
-    .unicast = PF_Unicast,
     .dprint = PF_dprint,
     .cprint = PF_cprint,
     .error = PF_error,
@@ -471,15 +464,9 @@ static const game_import_t game_import = {
     .configstring = PF_configstring,
     .get_configstring = PF_GetConfigstring,
 
-    .WriteChar = MSG_WriteChar,
-    .WriteByte = MSG_WriteByte,
-    .WriteShort = MSG_WriteShort,
-    .WriteLong = MSG_WriteLong,
-    .WriteFloat = PF_WriteFloat,
-    .WriteString = MSG_WriteString,
-    .WritePosition = MSG_WritePos,
-    .WriteDir = MSG_WriteDir,
-    .WriteAngle = MSG_WriteAngle,
+    .ClientStuffText = PF_ClientStuffText,
+    .ClientLayout = PF_ClientLayout,
+    .ClientInventory = PF_ClientInventory,
     .DirToByte = DirToByte,
 
     .TagMalloc = PF_TagMalloc,

@@ -1570,9 +1570,7 @@ static void spectator_respawn(edict_t *ent)
             strcmp(spectator_password->string, value)) {
             G_ClientPrintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
             ent->client->pers.spectator = false;
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true);
+            trap_ClientStuffText(ent, "spectator 0\n");
             return;
         }
 
@@ -1585,9 +1583,7 @@ static void spectator_respawn(edict_t *ent)
             G_ClientPrintf(ent, PRINT_HIGH, "Server spectator limit is full.");
             ent->client->pers.spectator = false;
             // reset his spectator var
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 0\n");
-            gi.unicast(ent, true);
+            trap_ClientStuffText(ent, "spectator 0\n");
             return;
         }
     } else {
@@ -1599,9 +1595,7 @@ static void spectator_respawn(edict_t *ent)
             strcmp(password->string, value)) {
             G_ClientPrintf(ent, PRINT_HIGH, "Password incorrect.\n");
             ent->client->pers.spectator = true;
-            gi.WriteByte(svc_stufftext);
-            gi.WriteString("spectator 1\n");
-            gi.unicast(ent, true);
+            trap_ClientStuffText(ent, "spectator 1\n");
             return;
         }
     }

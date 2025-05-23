@@ -19,16 +19,6 @@
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
 
-// protocol bytes that can be directly added to messages
-enum {
-    svc_muzzleflash = 1,
-    svc_muzzleflash2,
-    svc_temp_entity,
-    svc_layout,
-    svc_inventory,
-    svc_stufftext = 11
-};
-
 //==================================================================
 
 extern const vec3_t player_mins;
@@ -1728,7 +1718,7 @@ void G_SetStats(edict_t *ent);
 void G_SetCoopStats(edict_t *ent);
 void G_SetSpectatorStats(edict_t *ent);
 void G_CheckChaseStats(edict_t *ent);
-void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer);
+void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer, bool reliable);
 void G_UpdateLevelEntry(void);
 void G_EndOfUnitMessage(void);
 

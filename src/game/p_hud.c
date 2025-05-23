@@ -172,9 +172,7 @@ void G_EndOfUnitMessage(void)
 
     sb_yb(-48), sb_xv(0), sb_cstring2("Press any button to continue.");
 
-    gi.WriteByte(svc_layout);
-    gi.WriteString(sb_buffer());
-    gi.multicast(vec3_origin, MULTICAST_ALL_R);
+    trap_ClientLayout(NULL, sb_buffer(), true);
 
     for (int i = 0; i < game.maxclients; i++) {
         if (g_edicts[i].r.inuse)
@@ -298,7 +296,7 @@ DeathmatchScoreboardMessage
 
 ==================
 */
-void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
+void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
 {
     char        entry[1024];
     char        string[1400];
@@ -314,7 +312,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 
     // ZOID
     if (G_TeamplayEnabled()) {
-        CTFScoreboardMessage(ent, killer);
+        CTFScoreboardMessage(ent, killer, reliable);
         return;
     }
     // ZOID
@@ -392,8 +390,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
         stringlength += j;
     }
 
-    gi.WriteByte(svc_layout);
-    gi.WriteString(string);
+    trap_ClientLayout(ent, string, reliable);
 }
 
 /*
@@ -406,8 +403,7 @@ Note that it isn't that hard to overflow the 1400 byte message limit!
 */
 void DeathmatchScoreboard(edict_t *ent)
 {
-    DeathmatchScoreboardMessage(ent, ent->enemy);
-    gi.unicast(ent, true);
+    DeathmatchScoreboardMessage(ent, ent->enemy, true);
     ent->client->menutime = level.time + SEC(3);
 }
 
@@ -498,9 +494,7 @@ static void HelpComputer(edict_t *ent)
     sb_xv(265), sb_yv(164), sb_rstring2(va("Goals: %d/%d", level.found_goals, level.total_goals));
     sb_xv(265), sb_yv(172), sb_rstring2(va("Secrets: %d/%d", level.found_secrets, level.total_secrets));
 
-    gi.WriteByte(svc_layout);
-    gi.WriteString(sb_buffer());
-    gi.unicast(ent, true);
+    trap_ClientLayout(ent, sb_buffer(), true);
 }
 
 /*

@@ -1215,8 +1215,7 @@ void ClientEndServerFrame(edict_t *ent)
 
         // if the scoreboard is up, update it if a client leaves
         if (deathmatch->integer && ent->client->showscores && ent->client->menutime) {
-            DeathmatchScoreboardMessage(ent, ent->enemy);
-            gi.unicast(ent, false);
+            DeathmatchScoreboardMessage(ent, ent->enemy, false);
             ent->client->menutime = 0;
         }
 
@@ -1323,10 +1322,8 @@ void ClientEndServerFrame(edict_t *ent)
 
     // ZOID
     if (ent->client->menudirty && ent->client->menutime <= level.time) {
-        if (ent->client->menu) {
-            PMenu_Do_Update(ent);
-            gi.unicast(ent, true);
-        }
+        if (ent->client->menu)
+            PMenu_Do_Update(ent, true);
         ent->client->menutime = level.time;
         ent->client->menudirty = false;
     }
@@ -1336,12 +1333,11 @@ void ClientEndServerFrame(edict_t *ent)
     if (ent->client->showscores && ent->client->menutime <= level.time) {
         // ZOID
         if (ent->client->menu) {
-            PMenu_Do_Update(ent);
+            PMenu_Do_Update(ent, false);
             ent->client->menudirty = false;
         } else
         // ZOID
-            DeathmatchScoreboardMessage(ent, ent->enemy);
-        gi.unicast(ent, false);
+            DeathmatchScoreboardMessage(ent, ent->enemy, false);
         ent->client->menutime = level.time + SEC(3);
     }
 

@@ -646,7 +646,7 @@ Cmd_Inven_f
 */
 static void Cmd_Inven_f(edict_t *ent)
 {
-    int        i;
+    int        i, count;
     gclient_t *cl;
 
     cl = ent->client;
@@ -676,12 +676,11 @@ static void Cmd_Inven_f(edict_t *ent)
 
     cl->showinventory = true;
 
-    gi.WriteByte(svc_inventory);
-    for (i = 0; i < IT_TOTAL; i++)
-        gi.WriteShort(cl->pers.inventory[i]);
-    for (; i < MAX_ITEMS; i++)
-        gi.WriteShort(0);
-    gi.unicast(ent, true);
+    for (i = count = 0; i < IT_TOTAL; i++)
+        if (cl->pers.inventory[i])
+            count = i + 1;
+
+    trap_ClientInventory(ent, cl->pers.inventory, count);
 }
 
 /*

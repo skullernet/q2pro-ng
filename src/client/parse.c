@@ -697,11 +697,16 @@ static void CL_ParseLayout(void)
 
 static void CL_ParseInventory(void)
 {
-    int        i;
+    int     count, i;
 
-    for (i = 0; i < MAX_ITEMS; i++) {
+    count = MSG_ReadByte();
+    if (count > MAX_ITEMS)
+        Com_Error(ERR_DROP, "%s: bad count", __func__);
+
+    for (i = 0; i < count; i++)
         cl.inventory[i] = MSG_ReadShort();
-    }
+    for (; i < MAX_ITEMS; i++)
+        cl.inventory[i] = 0;
 }
 
 static void CL_ParseDownload(int cmd)

@@ -91,7 +91,7 @@ void        CTFCalcRankings(int player_ranks[MAX_CLIENTS]); // [Paril-KEX]
 void        CheckEndTDMLevel(void); // [Paril-KEX]
 void        SetCTFStats(edict_t *ent);
 void        CTFDeadDropFlag(edict_t *self);
-void        CTFScoreboardMessage(edict_t *ent, edict_t *killer);
+void        CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable);
 void        CTFTeam_f(edict_t *ent);
 void        CTFID_f(edict_t *ent);
 void        CTFSay_Team(edict_t *who, const char *msg);

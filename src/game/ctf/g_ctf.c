@@ -1490,7 +1490,7 @@ void CTFTeam_f(edict_t *ent)
 CTFScoreboardMessage
 ==================
 */
-void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
+void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
 {
     char       entry[1024];
     char       string[1400];
@@ -1662,8 +1662,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer)
     //if (level.intermissiontime)
     //    fmt::format_to(std::back_inserter(string), FMT_STRING("ifgef {} yb -48 xv 0 loc_cstring2 0 \"$m_eou_press_button\" endif "), (level.intermission_server_frame + (5_sec).frames()));
 
-    gi.WriteByte(svc_layout);
-    gi.WriteString(string);
+    trap_ClientLayout(ent, string, reliable);
 }
 
 /*------------------------------------------------------------------------*/

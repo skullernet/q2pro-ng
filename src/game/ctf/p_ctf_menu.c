@@ -51,8 +51,7 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
     if (UpdateFunc)
         UpdateFunc(ent);
 
-    PMenu_Do_Update(ent);
-    gi.unicast(ent, true);
+    PMenu_Do_Update(ent, true);
 
     return hnd;
 }
@@ -83,7 +82,7 @@ void PMenu_UpdateEntry(pmenu_t *entry, const char *text, int align, SelectFunc_t
 
 #include "g_statusbar.h"
 
-void PMenu_Do_Update(edict_t *ent)
+void PMenu_Do_Update(edict_t *ent, bool reliable)
 {
     int         i;
     pmenu_t *p;
@@ -141,8 +140,7 @@ void PMenu_Do_Update(edict_t *ent)
         alt = false;
     }
 
-    gi.WriteByte(svc_layout);
-    gi.WriteString(sb_buffer());
+    trap_ClientLayout(ent, sb_buffer(), reliable);
 }
 
 void PMenu_Update(edict_t *ent)
@@ -154,8 +152,7 @@ void PMenu_Update(edict_t *ent)
 
     if (level.time - ent->client->menutime >= SEC(1)) {
         // been a second or more since last update, update now
-        PMenu_Do_Update(ent);
-        gi.unicast(ent, true);
+        PMenu_Do_Update(ent, true);
         ent->client->menutime = level.time + SEC(1);
         ent->client->menudirty = false;
     }

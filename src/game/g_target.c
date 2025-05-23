@@ -1786,11 +1786,8 @@ void USE(use_target_story)(edict_t *self, edict_t *other, edict_t *activator)
     else
         level.story_active = false;
 
-    if (level.story_active) {
-        gi.WriteByte(svc_layout);
-        gi.WriteString(va("xv 0 yv 0 cstring \"%s\"", self->message));
-        gi.multicast(vec3_origin, MULTICAST_ALL_R);
-    }
+    if (level.story_active)
+        trap_ClientLayout(NULL, va("xv 0 yv 0 cstring \"%s\"", self->message), true);
 }
 
 void SP_target_story(edict_t *self)

@@ -30,7 +30,7 @@ struct pmenu_s {
 pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc);
 void        PMenu_Close(edict_t *ent);
 void        PMenu_UpdateEntry(pmenu_t *entry, const char *text, int align, SelectFunc_t SelectFunc);
-void        PMenu_Do_Update(edict_t *ent);
+void        PMenu_Do_Update(edict_t *ent, bool reliable);
 void        PMenu_Update(edict_t *ent);
 void        PMenu_Next(edict_t *ent);
 void        PMenu_Prev(edict_t *ent);

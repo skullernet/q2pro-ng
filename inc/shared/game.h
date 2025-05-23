@@ -206,17 +206,9 @@ typedef struct {
     int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
 
     // network messaging
-    void (*multicast)(const vec3_t origin, multicast_t to);
-    void (*unicast)(edict_t *ent, bool reliable);
-    void (*WriteChar)(int c);
-    void (*WriteByte)(int c);
-    void (*WriteShort)(int c);
-    void (*WriteLong)(int c);
-    void (*WriteFloat)(float f);
-    void (*WriteString)(const char *s);
-    void (*WritePosition)(const vec3_t pos);    // some fractional bits
-    void (*WriteDir)(const vec3_t pos);         // single byte encoded, very coarse
-    void (*WriteAngle)(float f);
+    void (*ClientLayout)(edict_t *ent, const char *str, bool reliable);
+    void (*ClientStuffText)(edict_t *ent, const char *str);
+    void (*ClientInventory)(edict_t *ent, int *inventory, int count);
     int (*DirToByte)(const vec3_t dir);
 
     // managed memory allocation
