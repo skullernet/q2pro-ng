@@ -14,12 +14,12 @@ bool Pickup_Nuke(edict_t *ent, edict_t *other)
     if (quantity >= 1)
         return false;
 
-    if (coop->integer && !P_UseCoopInstancedItems() && (ent->item->flags & IF_STAY_COOP) && (quantity > 0))
+    if (coop.integer && !P_UseCoopInstancedItems() && (ent->item->flags & IF_STAY_COOP) && (quantity > 0))
         return false;
 
     other->client->pers.inventory[ent->item->id]++;
 
-    if (deathmatch->integer && !(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
+    if (deathmatch.integer && !(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
         SetRespawn(ent, SEC(ent->item->quantity));
 
     return true;
@@ -85,7 +85,7 @@ bool Pickup_Doppleganger(edict_t *ent, edict_t *other)
 {
     int quantity;
 
-    if (!deathmatch->integer) // item is DM only
+    if (!deathmatch.integer) // item is DM only
         return false;
 
     quantity = other->client->pers.inventory[ent->item->id];
@@ -108,18 +108,18 @@ bool Pickup_Sphere(edict_t *ent, edict_t *other)
         return false;
 
     quantity = other->client->pers.inventory[ent->item->id];
-    if ((skill->integer == 1 && quantity >= 2) || (skill->integer >= 2 && quantity >= 1))
+    if ((skill.integer == 1 && quantity >= 2) || (skill.integer >= 2 && quantity >= 1))
         return false;
 
-    if ((coop->integer) && !P_UseCoopInstancedItems() && (ent->item->flags & IF_STAY_COOP) && (quantity > 0))
+    if ((coop.integer) && !P_UseCoopInstancedItems() && (ent->item->flags & IF_STAY_COOP) && (quantity > 0))
         return false;
 
     other->client->pers.inventory[ent->item->id]++;
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
             SetRespawn(ent, SEC(ent->item->quantity));
-        if (g_dm_instant_items->integer) {
+        if (g_dm_instant_items.integer) {
             // PGM
             if (ent->item->use)
                 ent->item->use(other, ent->item);

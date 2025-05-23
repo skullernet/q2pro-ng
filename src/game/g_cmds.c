@@ -99,7 +99,7 @@ void ValidateSelectedItem(edict_t *ent)
 
 static bool G_CheatCheck(edict_t *ent)
 {
-    if (game.maxclients > 1 && !sv_cheats->integer) {
+    if (game.maxclients > 1 && !sv_cheats.integer) {
         G_ClientPrintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
         return false;
     }
@@ -923,7 +923,7 @@ static void Cmd_Kill_f(edict_t *ent)
     // ROGUE
 
     // [Paril-KEX] don't allow kill to take points away in TDM
-    player_die(ent, ent, ent, 100000, vec3_origin, (mod_t) { MOD_SUICIDE, teamplay->integer });
+    player_die(ent, ent, ent, 100000, vec3_origin, (mod_t) { MOD_SUICIDE, teamplay.integer });
 }
 
 /*
@@ -933,7 +933,7 @@ Cmd_Kill_AI_f
 */
 static void Cmd_Kill_AI_f(edict_t * ent)
 {
-    if (!sv_cheats->integer) {
+    if (!sv_cheats.integer) {
         G_ClientPrintf(ent, PRINT_HIGH, "Kill_AI: Cheats Must Be Enabled!\n");
         return;
     }
@@ -978,7 +978,7 @@ Cmd_Clear_AI_Enemy_f
 */
 static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
 {
-    if (!sv_cheats->integer) {
+    if (!sv_cheats.integer) {
         G_ClientPrintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Cheats Must Be Enabled!\n");
         return;
     }
@@ -1078,7 +1078,7 @@ bool CheckFlood(edict_t *ent)
     int        i;
     gclient_t *cl;
 
-    if (flood_msgs->integer) {
+    if (flood_msgs.integer) {
         cl = ent->client;
 
         if (level.time < cl->flood_locktill) {
@@ -1086,15 +1086,15 @@ bool CheckFlood(edict_t *ent)
                            TO_SEC(cl->flood_locktill - level.time));
             return true;
         }
-        i = cl->flood_whenhead - flood_msgs->integer + 1;
+        i = cl->flood_whenhead - flood_msgs.integer + 1;
         if (i < 0)
             i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
         if (i >= q_countof(cl->flood_when))
             i = 0;
-        if (cl->flood_when[i] && level.time - cl->flood_when[i] < SEC(flood_persecond->value)) {
-            cl->flood_locktill = level.time + SEC(flood_waitdelay->value);
+        if (cl->flood_when[i] && level.time - cl->flood_when[i] < SEC(flood_persecond.value)) {
+            cl->flood_locktill = level.time + SEC(flood_waitdelay.value);
             G_ClientPrintf(ent, PRINT_CHAT, "You can't talk for %d more seconds\n",
-                           flood_waitdelay->integer);
+                           flood_waitdelay.integer);
             return true;
         }
         cl->flood_whenhead = (cl->flood_whenhead + 1) % (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
@@ -1292,7 +1292,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
 
     Q_strlcat(text, "\n", sizeof(text));
 
-    if (sv_dedicated->integer)
+    if (sv_dedicated.integer)
         Com_LPrintf(PRINT_TALK, "%s", text);
 
     for (j = 0; j < game.maxclients; j++) {
@@ -1344,7 +1344,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
         return;
 
     // [Paril-KEX] in force-join, just do a regular team join.
-    if (g_teamplay_force_join->integer) {
+    if (g_teamplay_force_join.integer) {
         // check if we should even switch teams
         edict_t *player;
         int team1count = 0, team2count = 0;
@@ -1424,7 +1424,7 @@ static void Cmd_ListMonsters_f(edict_t *ent)
 {
     if (!G_CheatCheck(ent))
         return;
-    if (!g_debug_monster_kills->integer)
+    if (!g_debug_monster_kills.integer)
         return;
 
     for (int i = 0; i < level.total_monsters; i++) {

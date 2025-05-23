@@ -104,6 +104,7 @@ typedef struct genctx_s {
 typedef void (*xcommand_t)(void);
 typedef size_t (*xmacro_t)(char *, size_t);
 typedef void (*xcompleter_t)(struct genctx_s *, int);
+typedef void (*xgenerator_t)(struct genctx_s *);
 
 typedef struct cmd_macro_s {
     struct cmd_macro_s  *next, *hashNext;

@@ -411,7 +411,7 @@ static void arachnid_rapid_fire(edict_t *self)
 
 static void arachnid_spawn(edict_t *self)
 {
-    if (skill->integer < 3)
+    if (skill.integer < 3)
         return;
 
     static const vec3_t reinforcement_position[] = { { -24, 124, 0 }, { -24, -124, 0 } };
@@ -624,7 +624,7 @@ static void arachnid_precache(void)
     sound_sight     = G_SoundIndex("arachnid/sight.wav");
     sound_pissed    = G_SoundIndex("arachnid/angry.wav");
 
-    if (skill->integer >= 3)
+    if (skill.integer >= 3)
         sound_spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
 }
 
@@ -641,7 +641,7 @@ void SP_monster_arachnid(edict_t *self)
 
     PrecacheGibs(use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
 
-    if (skill->integer >= 3) {
+    if (skill.integer >= 3) {
         const char *reinforcements = DEFAULT_REINFORCEMENTS;
 
         if (!ED_WasKeySpecified("monster_slots"))

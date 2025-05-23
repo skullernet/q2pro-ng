@@ -50,7 +50,7 @@ void MOVEINFO_ENDFUNC(plat2_hit_top)(edict_t *ent)
             ent->think = plat2_go_down;
             ent->nextthink = level.time + SEC(ent->wait * 2.5f);
         }
-        if (deathmatch->integer)
+        if (deathmatch.integer)
             ent->last_move_time = level.time - SEC(ent->wait * 0.5f);
         else
             ent->last_move_time = level.time - SEC(ent->wait);
@@ -80,7 +80,7 @@ void MOVEINFO_ENDFUNC(plat2_hit_bottom)(edict_t *ent)
             ent->think = plat2_go_up;
             ent->nextthink = level.time + SEC(ent->wait * 2.5f);
         }
-        if (deathmatch->integer)
+        if (deathmatch.integer)
             ent->last_move_time = level.time - SEC(ent->wait * 0.5f);
         else
             ent->last_move_time = level.time - SEC(ent->wait);
@@ -161,7 +161,7 @@ static void plat2_operate(edict_t *ent, edict_t *other)
 
     ent->plat2flags = PLAT2_MOVING;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         pauseTime = SEC(0.3f);
     else
         pauseTime = SEC(0.5f);
@@ -319,7 +319,7 @@ void SP_func_plat2(edict_t *ent)
     if (!ent->wait)
         ent->wait = 2.0f;
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         ent->speed *= 2;
         ent->accel *= 2;
         ent->decel *= 2;

@@ -218,9 +218,12 @@ typedef struct {
     void (*FreeTags)(unsigned tag);
 
     // console variable interaction
-    cvar_t *(*cvar)(const char *var_name, const char *value, int flags);
-    cvar_t *(*cvar_set)(const char *var_name, const char *value);
-    cvar_t *(*cvar_forceset)(const char *var_name, const char *value);
+    bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, int flags);
+    void (*Cvar_Set)(const char *name, const char *value);
+    void (*Cvar_ForceSet)(const char *name, const char *value);
+    int (*Cvar_VariableInteger)(const char *name);
+    float (*Cvar_VariableValue)(const char *name);
+    unsigned (*Cvar_VariableString)(const char *name, char *buf, unsigned size);
 
     // ClientCommand and ServerCommand parameter access
     int (*argc)(void);

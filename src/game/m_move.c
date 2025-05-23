@@ -885,7 +885,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 // check if a movement would succeed
 bool ai_check_move(edict_t *self, float dist)
 {
-    if (ai_movement_disabled->integer)
+    if (ai_movement_disabled.integer)
         return false;
 
     float yaw = DEG2RAD(self->s.angles[YAW]);
@@ -1160,7 +1160,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist, const vec3_t goal)
         else
             VectorCopy(self->goalentity->s.origin, request.goal);
         request.moveDist = dist;
-        if (g_debug_monster_paths->integer == 1)
+        if (g_debug_monster_paths.integer == 1)
             request.debugging.drawTime = 1.5f;
         VectorCopy(self->s.origin, request.start);
         request.pathFlags = PathFlags_Walk;
@@ -1348,7 +1348,7 @@ M_MoveToGoal
 */
 void M_MoveToGoal(edict_t *ent, float dist)
 {
-    if (ai_movement_disabled->integer) {
+    if (ai_movement_disabled.integer) {
         if (!FacingIdeal(ent))
             M_ChangeYaw(ent);
         // mal: don't move, but still face toward target
@@ -1444,7 +1444,7 @@ M_walkmove
 */
 bool M_walkmove(edict_t *ent, float yaw, float dist)
 {
-    if (ai_movement_disabled->integer)
+    if (ai_movement_disabled.integer)
         return false;
 
     if (!ent->groundentity && !(ent->flags & (FL_FLY | FL_SWIM)))

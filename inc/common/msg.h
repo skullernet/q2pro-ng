@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "common/cvar.h"
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 

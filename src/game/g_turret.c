@@ -73,7 +73,7 @@ static void turret_breach_fire(edict_t *self)
         damage = self->count;
     else
         damage = irandom2(100, 150);
-    speed = 550 + 50 * skill->integer;
+    speed = 550 + 50 * skill.integer;
     edict_t *owner = &g_edicts[self->teammaster->r.ownernum];
     edict_t *rocket = fire_rocket(owner->activator ? owner->activator : owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
@@ -352,7 +352,7 @@ void THINK(turret_driver_think)(edict_t *self)
     if (level.time < self->monsterinfo.attack_finished)
         return;
 
-    gtime_t reaction_time = SEC(3 - skill->integer);
+    gtime_t reaction_time = SEC(3 - skill.integer);
     if ((level.time - self->monsterinfo.trail_time) < reaction_time)
         return;
 
@@ -402,7 +402,7 @@ void InfantryPrecache(void);
 
 void SP_turret_driver(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -426,7 +426,7 @@ void SP_turret_driver(edict_t *self)
 
     self->flags |= FL_NO_KNOCKBACK;
 
-    if (g_debug_monster_kills->integer)
+    if (g_debug_monster_kills.integer)
         level.monsters_registered[level.total_monsters] = self->s.number;
     level.total_monsters++;
 
@@ -505,7 +505,7 @@ void THINK(turret_brain_think)(edict_t *self)
     if (level.time < self->monsterinfo.attack_finished)
         return;
 
-    gtime_t reaction_time = self->delay ? SEC(self->delay) : SEC(3 - skill->integer);
+    gtime_t reaction_time = self->delay ? SEC(self->delay) : SEC(3 - skill.integer);
     if ((level.time - self->monsterinfo.trail_time) < reaction_time)
         return;
 

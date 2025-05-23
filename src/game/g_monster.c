@@ -248,7 +248,7 @@ bool M_ShouldReactToPain(edict_t *self, mod_t mod)
     if (self->monsterinfo.aiflags & (AI_DUCKED | AI_COMBAT_POINT))
         return false;
 
-    return mod.id == MOD_CHAINFIST || skill->integer < 3;
+    return mod.id == MOD_CHAINFIST || skill.integer < 3;
 }
 
 void M_WorldEffects(edict_t *ent)
@@ -422,7 +422,7 @@ void M_SetEffects(edict_t *ent)
 
 bool M_AllowSpawn(edict_t *self)
 {
-    return !deathmatch->integer || ai_allow_dm_spawn->integer;
+    return !deathmatch.integer || ai_allow_dm_spawn.integer;
 }
 
 void M_SetAnimationEx(edict_t *self, const mmove_t *move, bool instant)
@@ -557,10 +557,10 @@ void G_MonsterKilled(edict_t *self)
 {
     level.killed_monsters++;
 
-    if (coop->integer && self->enemy && self->enemy->client)
+    if (coop.integer && self->enemy && self->enemy->client)
         self->enemy->client->resp.score++;
 
-    if (g_debug_monster_kills->integer) {
+    if (g_debug_monster_kills.integer) {
         bool found = false;
 
         for (int i = 0; i < level.total_monsters; i++) {
@@ -700,7 +700,7 @@ void monster_dead(edict_t *self)
 
 void monster_footstep(edict_t *self)
 {
-    if (self->groundentity && g_monster_footsteps->integer)
+    if (self->groundentity && g_monster_footsteps.integer)
         G_AddEvent(self, EV_OTHER_FOOTSTEP, 0);
 }
 
@@ -1022,7 +1022,7 @@ bool monster_start(edict_t *self)
     // ROGUE
     if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(self->spawnflags & SPAWNFLAG_MONSTER_DEAD)) {
     // ROGUE
-        if (g_debug_monster_kills->integer)
+        if (g_debug_monster_kills.integer)
             level.monsters_registered[level.total_monsters] = self->s.number;
         level.total_monsters++;
     }
@@ -1045,8 +1045,8 @@ bool monster_start(edict_t *self)
     if (!self->monsterinfo.checkattack)
         self->monsterinfo.checkattack = M_CheckAttack;
 
-    if (ai_model_scale->value > 0)
-        self->s.scale = ai_model_scale->value;
+    if (ai_model_scale.value > 0)
+        self->s.scale = ai_model_scale.value;
 
     if (self->s.scale) {
         self->monsterinfo.scale *= self->s.scale;
@@ -1109,7 +1109,7 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 
     VectorCopy(check, self->s.origin);
 
-    if (result == STUCK_FIXED && developer->integer)
+    if (result == STUCK_FIXED && developer.integer)
         G_Printf("fixed stuck %s\n", etos(self));
 
     return result;

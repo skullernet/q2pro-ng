@@ -21,7 +21,7 @@ SkipViewModifiers
 */
 static bool SkipViewModifiers(void)
 {
-    if (g_skipViewModifiers->integer && sv_cheats->integer)
+    if (g_skipViewModifiers.integer && sv_cheats.integer)
         return true;
 
     // don't do bobbing, etc on grapple
@@ -54,10 +54,10 @@ static float SV_CalcRoll(const vec3_t angles, const vec3_t velocity)
     sign = side < 0 ? -1 : 1;
     side = fabsf(side);
 
-    value = sv_rollangle->value;
+    value = sv_rollangle.value;
 
-    if (side < sv_rollspeed->value)
-        side = side * value / sv_rollspeed->value;
+    if (side < sv_rollspeed.value)
+        side = side * value / sv_rollspeed.value;
     else
         side = value;
 
@@ -296,18 +296,18 @@ static void SV_CalcViewOffset(edict_t *ent)
         // add angles based on velocity
         if (!ent->client->pers.bob_skip) {
             delta = DotProduct(ent->velocity, forward);
-            angles[PITCH] += delta * run_pitch->value;
+            angles[PITCH] += delta * run_pitch.value;
 
             delta = DotProduct(ent->velocity, right);
-            angles[ROLL] += delta * run_roll->value;
+            angles[ROLL] += delta * run_roll.value;
 
             // add angles based on bob
-            delta = bobfracsin * bob_pitch->value * xyspeed;
+            delta = bobfracsin * bob_pitch.value * xyspeed;
             if ((ent->client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
                 delta *= 6; // crouching
             delta = min(delta, 1.2f);
             angles[PITCH] += delta;
-            delta = bobfracsin * bob_roll->value * xyspeed;
+            delta = bobfracsin * bob_roll.value * xyspeed;
             if ((ent->client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
                 delta *= 6; // crouching
             delta = min(delta, 1.2f);
@@ -351,7 +351,7 @@ static void SV_CalcViewOffset(edict_t *ent)
 
         // add bob height
         if (!ent->client->pers.bob_skip) {
-            bob = bobfracsin * xyspeed * bob_up->value;
+            bob = bobfracsin * xyspeed * bob_up.value;
             if (bob > 6)
                 bob = 6;
             v[2] += bob;
@@ -439,9 +439,9 @@ static void SV_CalcGunOffset(edict_t *ent)
 
     // gun_x / gun_y / gun_z are development tools
     for (i = 0; i < 3; i++) {
-        ent->client->ps.gunoffset[i] += forward[i] * gun_y->value;
-        ent->client->ps.gunoffset[i] += right[i] * gun_x->value;
-        ent->client->ps.gunoffset[i] += up[i] * -gun_z->value;
+        ent->client->ps.gunoffset[i] += forward[i] * gun_y.value;
+        ent->client->ps.gunoffset[i] += right[i] * gun_x.value;
+        ent->client->ps.gunoffset[i] += up[i] * -gun_z.value;
     }
 }
 
@@ -666,7 +666,7 @@ static void P_FallingDamage(edict_t *ent)
         if (damage < 1)
             damage = 1;
 
-        if (!deathmatch->integer || !g_dm_no_fall_damage->integer)
+        if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
             T_Damage(ent, world, world, dir, ent->s.origin, vec3_origin, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
     } else
         G_AddEvent(ent, EV_FALLSHORT, 0);
@@ -860,7 +860,7 @@ static void G_SetClientEffects(edict_t *ent)
     if (ent->flags & FL_DISGUISED)
         ent->s.renderfx |= RF_USE_DISGUISE;
 
-    if (gamerules->integer) {
+    if (gamerules.integer) {
         if (DMGame.PlayerEffects)
             DMGame.PlayerEffects(ent);
     }
@@ -935,7 +935,7 @@ G_SetClientEvent
 static void G_SetClientEvent(edict_t *ent)
 {
     if (ent->client->ps.pmove.pm_flags & PMF_ON_LADDER) {
-        if (!deathmatch->integer &&
+        if (!deathmatch.integer &&
             current_client->last_ladder_sound < level.time &&
             Distance(current_client->last_ladder_pos, ent->s.origin) > 48) {
             G_AddEvent(ent, EV_LADDER_STEP, 0);
@@ -1204,7 +1204,7 @@ void ClientEndServerFrame(edict_t *ent)
     // the player any normal movement attributes
     //
     if (level.intermissiontime || ent->client->awaiting_respawn) {
-        if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime))) {
+        if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime))) {
             current_client->ps.screen_blend[3] = 0;
             current_client->ps.damage_blend[3] = 0;
             current_client->ps.fov = 90;
@@ -1214,7 +1214,7 @@ void ClientEndServerFrame(edict_t *ent)
         G_SetCoopStats(ent);
 
         // if the scoreboard is up, update it if a client leaves
-        if (deathmatch->integer && ent->client->showscores && ent->client->menutime) {
+        if (deathmatch.integer && ent->client->showscores && ent->client->menutime) {
             DeathmatchScoreboardMessage(ent, ent->enemy, false);
             ent->client->menutime = 0;
         }
@@ -1346,7 +1346,7 @@ void ClientEndServerFrame(edict_t *ent)
     // [Paril-KEX] in coop, if player collision is enabled and
     // we are currently in no-player-collision mode, check if
     // it's safe.
-    if (coop->integer && G_ShouldPlayersCollide(false) && !(ent->clipmask & CONTENTS_PLAYER) && ent->takedamage) {
+    if (coop.integer && G_ShouldPlayersCollide(false) && !(ent->clipmask & CONTENTS_PLAYER) && ent->takedamage) {
         bool clipped_player = false;
 
         for (int i = 0; i < game.maxclients; i++) {

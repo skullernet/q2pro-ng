@@ -230,7 +230,7 @@ static void WidowSpawn(edict_t *self)
 
         ent->monsterinfo.aiflags |= AI_SPAWNED_COMMANDER | AI_DO_NOT_COUNT | AI_IGNORE_SHOTS;
 
-        if (!coop->integer) {
+        if (!coop.integer) {
             designated_enemy = self->enemy;
         } else {
             designated_enemy = PickCoopTarget(ent);
@@ -851,12 +851,12 @@ void PAIN(widow_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     if (damage >= 15) {
         if (damage < 75) {
-            if ((skill->integer < 3) && (frandom() < (0.6f - (0.2f * skill->integer)))) {
+            if ((skill.integer < 3) && (frandom() < (0.6f - (0.2f * skill.integer)))) {
                 M_SetAnimation(self, &widow_move_pain_light);
                 self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
             }
         } else {
-            if ((skill->integer < 3) && (frandom() < (0.75f - (0.1f * skill->integer)))) {
+            if ((skill.integer < 3) && (frandom() < (0.75f - (0.1f * skill.integer)))) {
                 M_SetAnimation(self, &widow_move_pain_heavy);
                 self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
             }
@@ -923,24 +923,24 @@ static void WidowPowerArmor(edict_t *self)
     self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
     // I don't like this, but it works
     if (self->monsterinfo.power_armor_power <= 0)
-        self->monsterinfo.power_armor_power += 250 * skill->integer;
+        self->monsterinfo.power_armor_power += 250 * skill.integer;
 }
 
 static void WidowRespondPowerup(edict_t *self, edict_t *other)
 {
     if (other->s.effects & EF_QUAD) {
-        if (skill->integer == 1)
+        if (skill.integer == 1)
             WidowDouble(self, other->client->quad_time);
-        else if (skill->integer == 2)
+        else if (skill.integer == 2)
             WidowGoinQuad(self, other->client->quad_time);
-        else if (skill->integer == 3) {
+        else if (skill.integer == 3) {
             WidowGoinQuad(self, other->client->quad_time);
             WidowPowerArmor(self);
         }
     } else if (other->s.effects & EF_DOUBLE) {
-        if (skill->integer == 2)
+        if (skill.integer == 2)
             WidowDouble(self, other->client->double_time);
-        else if (skill->integer == 3) {
+        else if (skill.integer == 3) {
             WidowDouble(self, other->client->double_time);
             WidowPowerArmor(self);
         }
@@ -948,11 +948,11 @@ static void WidowRespondPowerup(edict_t *self, edict_t *other)
         widow_damage_multiplier = 1;
 
     if (other->s.effects & EF_PENT) {
-        if (skill->integer == 1)
+        if (skill.integer == 1)
             WidowPowerArmor(self);
-        else if (skill->integer == 2)
+        else if (skill.integer == 2)
             WidowPent(self, other->client->invincible_time);
-        else if (skill->integer == 3) {
+        else if (skill.integer == 3) {
             WidowPent(self, other->client->invincible_time);
             WidowPowerArmor(self);
         }
@@ -963,7 +963,7 @@ void WidowPowerups(edict_t *self)
 {
     edict_t *ent;
 
-    if (!coop->integer) {
+    if (!coop.integer) {
         WidowRespondPowerup(self, self->enemy);
     } else {
         // in coop, check for pents, then quads, then doubles
@@ -1060,7 +1060,7 @@ bool MONSTERINFO_BLOCKED(widow_blocked)(edict_t *self, float dist)
 
 void WidowCalcSlots(edict_t *self)
 {
-    switch (skill->integer) {
+    switch (skill.integer) {
     case 0:
     case 1:
         self->monsterinfo.monster_slots = 3;
@@ -1075,8 +1075,8 @@ void WidowCalcSlots(edict_t *self)
         self->monsterinfo.monster_slots = 3;
         break;
     }
-    if (coop->integer)
-        self->monsterinfo.monster_slots = min(6, self->monsterinfo.monster_slots + (skill->integer * (CountPlayers() - 1)));
+    if (coop.integer)
+        self->monsterinfo.monster_slots = min(6, self->monsterinfo.monster_slots + (skill.integer * (CountPlayers() - 1)));
 }
 
 static void WidowPrecache(void)
@@ -1138,13 +1138,13 @@ void SP_monster_widow(edict_t *self)
     VectorSet(self->r.mins, -40, -40, 0);
     VectorSet(self->r.maxs, 40, 40, 144);
 
-    self->health = (2000 + 1000 * skill->integer) * st.health_multiplier;
-    if (coop->integer)
-        self->health += 500 * skill->integer;
+    self->health = (2000 + 1000 * skill.integer) * st.health_multiplier;
+    if (coop.integer)
+        self->health += 500 * skill.integer;
     self->gib_health = -5000;
     self->mass = 1500;
 
-    if (skill->integer == 3) {
+    if (skill.integer == 3) {
         if (!ED_WasKeySpecified("power_armor_type"))
             self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
         if (!ED_WasKeySpecified("power_armor_power"))

@@ -64,7 +64,7 @@ void MoveClientToIntermission(edict_t *ent)
 
     // add the layout
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         DeathmatchScoreboard(ent);
         ent->client->showscores = true;
     }
@@ -188,7 +188,7 @@ void BeginIntermission(edict_t *targ)
         return; // already activated
 
     // ZOID
-    if (ctf->integer)
+    if (ctf.integer)
         CTFCalcScores();
     // ZOID
 
@@ -225,7 +225,7 @@ void BeginIntermission(edict_t *targ)
     G_UpdateLevelEntry();
 
     if (strstr(level.changemap, "*")) {
-        if (coop->integer) {
+        if (coop.integer) {
             for (int i = 0; i < game.maxclients; i++) {
                 client = g_edicts + i;
                 if (!client->r.inuse)
@@ -242,12 +242,12 @@ void BeginIntermission(edict_t *targ)
         // "no end of unit" maps handle intermission differently
         if (!(targ->spawnflags & SPAWNFLAG_CHANGELEVEL_NO_END_OF_UNIT))
             G_EndOfUnitMessage();
-        else if ((targ->spawnflags & SPAWNFLAG_CHANGELEVEL_IMMEDIATE_LEAVE) && !deathmatch->integer) {
+        else if ((targ->spawnflags & SPAWNFLAG_CHANGELEVEL_IMMEDIATE_LEAVE) && !deathmatch.integer) {
             level.exitintermission = true; // go immediately to the next level
             return;
         }
     } else {
-        if (!deathmatch->integer) {
+        if (!deathmatch.integer) {
             level.exitintermission = true; // go immediately to the next level
             return;
         }
@@ -362,7 +362,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         //===============
         // ROGUE
         // allow new DM games to override the tag picture
-        if (gamerules->integer) {
+        if (gamerules.integer) {
             if (DMGame.DogTag)
                 DMGame.DogTag(cl_ent, killer, &tag);
         }
@@ -427,7 +427,7 @@ void Cmd_Score_f(edict_t *ent)
         PMenu_Close(ent);
     // ZOID
 
-    if (!deathmatch->integer && !coop->integer)
+    if (!deathmatch.integer && !coop.integer)
         return;
 
     if (ent->client->showscores) {
@@ -451,11 +451,11 @@ static void HelpComputer(edict_t *ent)
 {
     const char *sk;
 
-    if (skill->integer == 0)
+    if (skill.integer == 0)
         sk = "Easy";
-    else if (skill->integer == 1)
+    else if (skill.integer == 1)
         sk = "Medium";
-    else if (skill->integer == 2)
+    else if (skill.integer == 2)
         sk = "Hard";
     else
         sk = "Nightmare";
@@ -507,7 +507,7 @@ Display the current help message
 void Cmd_Help_f(edict_t *ent)
 {
     // this is for backwards compatability
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         Cmd_Score_f(ent);
         return;
     }
@@ -536,10 +536,10 @@ void Cmd_Help_f(edict_t *ent)
 // even if we're spectating
 void G_SetCoopStats(edict_t *ent)
 {
-    if (!coop->integer)
+    if (!coop.integer)
         return;
 
-    if (g_coop_enable_lives->integer)
+    if (g_coop_enable_lives.integer)
         ent->client->ps.stats[STAT_LIVES] = ent->client->pers.lives + 1;
     else
         ent->client->ps.stats[STAT_LIVES] = 0;
@@ -740,7 +740,7 @@ void G_SetStats(edict_t *ent)
     //
     ent->client->ps.stats[STAT_LAYOUTS] = 0;
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         if (ent->client->pers.health <= 0 || level.intermissiontime || ent->client->showscores)
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT;
         if (ent->client->showinventory && ent->client->pers.health > 0)
@@ -756,11 +756,11 @@ void G_SetStats(edict_t *ent)
     }
 
     if (level.intermissiontime || ent->client->awaiting_respawn) {
-        if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime)))
+        if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime)))
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_HIDE_HUD;
 
         // N64 always merges into one screen on level ends
-        if (level.intermission_eou || level.is_n64 || (deathmatch->integer && level.intermissiontime))
+        if (level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime))
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INTERMISSION;
     }
 
@@ -768,7 +768,7 @@ void G_SetStats(edict_t *ent)
         ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT | LAYOUTS_HIDE_CROSSHAIR;
 
     // [Paril-KEX] key display
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         int key_offset = 0;
 
         ent->client->ps.stats[STAT_KEY_A] =

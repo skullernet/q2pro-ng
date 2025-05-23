@@ -47,7 +47,7 @@ potential spawning position for deathmatch games
 */
 void SP_info_player_deathmatch(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -60,7 +60,7 @@ potential spawning position for coop games
 */
 void SP_info_player_coop(edict_t *self)
 {
-    if (!coop->integer) {
+    if (!coop.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -74,7 +74,7 @@ needs to be checked
 */
 void SP_info_player_coop_lava(edict_t *self)
 {
-    if (!coop->integer) {
+    if (!coop.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -99,7 +99,7 @@ bool P_UseCoopInstancedItems(void)
 {
     // squad respawn forces instanced items on, since we don't
     // want players to need to backtrack just to get their stuff.
-    return g_coop_instanced_items->integer || g_coop_squad_respawn->integer;
+    return g_coop_instanced_items.integer || g_coop_squad_respawn.integer;
 }
 
 //=======================================================================
@@ -108,7 +108,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
 {
     const char *base = NULL;
 
-    if (coop->integer && attacker->client)
+    if (coop.integer && attacker->client)
         mod.friendly_fire = true;
 
     switch (mod.id) {
@@ -193,10 +193,10 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
     // send generic/self
     if (base) {
         G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname);
-        if (deathmatch->integer && !mod.no_point_loss) {
+        if (deathmatch.integer && !mod.no_point_loss) {
             self->client->resp.score--;
 
-            if (teamplay->integer)
+            if (teamplay.integer)
                 G_AdjustTeamScore(self->client->resp.ctf_team, -1);
         }
         self->enemy = NULL;
@@ -344,7 +344,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         }
 
         // ROGUE
-        if (gamerules->integer) {
+        if (gamerules.integer) {
             if (DMGame.Score) {
                 if (mod.friendly_fire) {
                     if (!mod.no_point_loss)
@@ -356,21 +356,21 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         }
         // ROGUE
 
-        if (deathmatch->integer) {
+        if (deathmatch.integer) {
             if (mod.friendly_fire) {
                 if (!mod.no_point_loss) {
                     attacker->client->resp.score--;
 
-                    if (teamplay->integer)
+                    if (teamplay.integer)
                         G_AdjustTeamScore(attacker->client->resp.ctf_team, -1);
                 }
             } else {
                 attacker->client->resp.score++;
 
-                if (teamplay->integer)
+                if (teamplay.integer)
                     G_AdjustTeamScore(attacker->client->resp.ctf_team, 1);
             }
-        } else if (!coop->integer)
+        } else if (!coop.integer)
             self->client->resp.score--;
 
         return;
@@ -378,8 +378,8 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
 
     G_ClientPrintf(NULL, PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
     // ROGUE
-    if (deathmatch->integer && !mod.no_point_loss) {
-        if (gamerules->integer) {
+    if (deathmatch.integer && !mod.no_point_loss) {
+        if (gamerules.integer) {
             if (DMGame.Score) {
                 DMGame.Score(self, self, -1, mod);
             }
@@ -387,7 +387,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         } else {
             self->client->resp.score--;
 
-            if (teamplay->integer)
+            if (teamplay.integer)
                 G_AdjustTeamScore(attacker->client->resp.ctf_team, -1);
         }
     }
@@ -404,24 +404,24 @@ static void TossClientWeapon(edict_t *self)
     // RAFAEL
     float spread;
 
-    if (!deathmatch->integer)
+    if (!deathmatch.integer)
         return;
 
     item = self->client->pers.weapon;
-    if (item && g_instagib->integer)
+    if (item && g_instagib.integer)
         item = NULL;
     if (item && !self->client->pers.inventory[self->client->pers.weapon->ammo])
         item = NULL;
     if (item && !G_CanDropItem(item))
         item = NULL;
 
-    if (g_dm_no_quad_drop->integer)
+    if (g_dm_no_quad_drop.integer)
         quad = false;
     else
         quad = (self->client->quad_time > (level.time + SEC(1)));
 
     // RAFAEL
-    if (g_dm_no_quadfire_drop->integer)
+    if (g_dm_no_quadfire_drop.integer)
         quadfire = false;
     else
         quadfire = (self->client->quadfire_time > (level.time + SEC(1)));
@@ -534,8 +534,8 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     self->r.svflags |= SVF_DEADMONSTER;
 
     if (!self->deadflag) {
-        if (deathmatch->integer && g_dm_force_respawn_time->integer)
-            self->client->respawn_time = (level.time + SEC(g_dm_force_respawn_time->value));
+        if (deathmatch.integer && g_dm_force_respawn_time.integer)
+            self->client->respawn_time = (level.time + SEC(g_dm_force_respawn_time.value));
         else
             self->client->respawn_time = (level.time + SEC(1));
 
@@ -551,21 +551,21 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         CTFDeadDropFlag(self);
         CTFDeadDropTech(self);
         // ZOID
-        if (deathmatch->integer && !self->client->showscores)
+        if (deathmatch.integer && !self->client->showscores)
             Cmd_Help_f(self); // show scores
 
-        if (coop->integer && !P_UseCoopInstancedItems()) {
+        if (coop.integer && !P_UseCoopInstancedItems()) {
             // clear inventory
             // this is kind of ugly, but it's how we want to handle keys in coop
             for (int n = 0; n < IT_TOTAL; n++) {
-                if (coop->integer && (itemlist[n].flags & IF_KEY))
+                if (coop.integer && (itemlist[n].flags & IF_KEY))
                     self->client->resp.coop_respawn.inventory[n] = self->client->pers.inventory[n];
                 self->client->pers.inventory[n] = 0;
             }
         }
     }
 
-    if (gamerules->integer) { // if we're in a dm game, alert the game
+    if (gamerules.integer) { // if we're in a dm game, alert the game
         if (DMGame.PlayerDeath)
             DMGame.PlayerDeath(self, inflictor, attacker);
     }
@@ -626,7 +626,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
 
             // more meaty gibs for your dollar!
-            if (deathmatch->integer && (self->health < -80))
+            if (deathmatch.integer && (self->health < -80))
                 count = 8;
             else
                 count = 4;
@@ -680,8 +680,8 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     }
 
     if (!self->deadflag) {
-        if (coop->integer && (g_coop_squad_respawn->integer || g_coop_enable_lives->integer)) {
-            if (g_coop_enable_lives->integer && self->client->pers.lives) {
+        if (coop.integer && (g_coop_squad_respawn.integer || g_coop_enable_lives.integer)) {
+            if (g_coop_enable_lives.integer && self->client->pers.lives) {
                 self->client->pers.lives--;
                 self->client->resp.coop_respawn.lives--;
             }
@@ -692,7 +692,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
                 edict_t *player = &g_edicts[i];
                 if (!player->r.inuse)
                     continue;
-                if (player->health > 0 || (!level.deadly_kill_box && g_coop_enable_lives->integer && player->client->pers.lives > 0)) {
+                if (player->health > 0 || (!level.deadly_kill_box && g_coop_enable_lives.integer && player->client->pers.lives > 0)) {
                     allPlayersDead = false;
                     break;
                 }
@@ -723,13 +723,10 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 //=======================================================================
 
 // [Paril-KEX]
-static void Player_GiveStartItems(edict_t *ent, const char *ptr)
+static void Player_GiveStartItems(edict_t *ent, char *copy)
 {
-    char copy[MAX_STRING_CHARS];
-    Q_strlcpy(copy, ptr, sizeof(copy));
-
     const char *s = copy;
-    while (1) {
+    while (*s) {
         char *p = strchr(s, ';');
         if (p)
             *p = 0;
@@ -793,7 +790,7 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
         // player may not have weapons at all.
         bool taken_loadout = false;
 
-        if (coop->integer) {
+        if (coop.integer) {
             for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (!player->r.inuse || player == ent || !player->client->pers.spawned ||
@@ -826,28 +823,33 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
             client->pers.max_ammo[AMMO_TESLA] = 5;
             // ROGUE
 
-            if (!deathmatch->integer || !g_instagib->integer)
+            if (!deathmatch.integer || !g_instagib.integer)
                 client->pers.inventory[IT_WEAPON_BLASTER] = 1;
 
             // [Kex]
             // start items!
-            if (*g_start_items->string)
-                Player_GiveStartItems(ent, g_start_items->string);
-            else if (deathmatch->integer && g_instagib->integer) {
+            char buffer[MAX_STRING_CHARS];
+            trap_Cvar_VariableString("g_start_items", buffer, sizeof(buffer));
+
+            if (*buffer)
+                Player_GiveStartItems(ent, buffer);
+            else if (deathmatch.integer && g_instagib.integer) {
                 client->pers.inventory[IT_WEAPON_RAILGUN] = 1;
                 client->pers.inventory[IT_AMMO_SLUGS] = 99;
             }
 
-            if (level.start_items && *level.start_items)
-                Player_GiveStartItems(ent, level.start_items);
+            if (level.start_items && *level.start_items) {
+                Q_strlcpy(buffer, level.start_items, sizeof(buffer));
+                Player_GiveStartItems(ent, buffer);
+            }
 
             // power armor from start items
             G_CheckPowerArmor(ent);
 
             // ZOID
-            bool give_grapple = (!strcmp(g_allow_grapple->string, "auto")) ?
-                                (ctf->integer ? !level.no_grapple : 0) :
-                                g_allow_grapple->integer;
+            bool give_grapple = (!strcmp(g_allow_grapple.string, "auto")) ?
+                                (ctf.integer ? !level.no_grapple : 0) :
+                                g_allow_grapple.integer;
 
             if (give_grapple)
                 client->pers.inventory[IT_WEAPON_GRAPPLE] = 1;
@@ -865,8 +867,8 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
         // ZOID
     }
 
-    if (coop->integer && g_coop_enable_lives->integer)
-        client->pers.lives = g_coop_num_lives->integer + 1;
+    if (coop.integer && g_coop_enable_lives.integer)
+        client->pers.lives = g_coop_num_lives.integer + 1;
 
     if (ent->client->pers.autoshield >= AUTO_SHIELD_AUTO)
         client->pers.savedFlags |= FL_WANTS_POWER_ARMOR;
@@ -914,7 +916,7 @@ void SaveClientData(void)
         g_clients[i].pers.health = ent->health;
         g_clients[i].pers.max_health = ent->max_health;
         g_clients[i].pers.savedFlags = (ent->flags & (FL_FLASHLIGHT | FL_GODMODE | FL_NOTARGET | FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR));
-        if (coop->integer)
+        if (coop.integer)
             g_clients[i].pers.score = ent->client->resp.score;
     }
 }
@@ -924,7 +926,7 @@ void FetchClientEntData(edict_t *ent)
     ent->health = ent->client->pers.health;
     ent->max_health = ent->client->pers.max_health;
     ent->flags |= ent->client->pers.savedFlags;
-    if (coop->integer)
+    if (coop.integer)
         ent->client->resp.score = ent->client->pers.score;
 }
 
@@ -1288,7 +1290,7 @@ static edict_t *SelectCoopSpawnPoint(edict_t *ent, bool force_spawn, bool check_
     }
 
     // if player collision is disabled, just pick a random spot
-    if (!g_coop_player_collision->integer) {
+    if (!g_coop_player_collision.integer) {
         spot = NULL;
 
         num_valid_spots = irandom1(num_valid_spots);
@@ -1316,7 +1318,7 @@ static edict_t *SelectCoopSpawnPoint(edict_t *ent, bool force_spawn, bool check_
     }
 
     // no safe spots..?
-    if (force_spawn || !g_coop_player_collision->integer)
+    if (force_spawn || !g_coop_player_collision.integer)
         return SelectSingleSpawnPoint(spot);
 
     return NULL;
@@ -1372,12 +1374,12 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
     edict_t *spot = NULL;
 
     // DM spots are simple
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         if (G_TeamplayEnabled())
             spot = SelectCTFSpawnPoint(ent, force_spawn);
         else {
             bool any_valid;
-            spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, true, &any_valid);
+            spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest.integer, force_spawn, true, &any_valid);
 
             if (!any_valid)
                 G_Error("no valid spawn points found");
@@ -1393,7 +1395,7 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
         return false;
     }
 
-    if (coop->integer) {
+    if (coop.integer) {
         spot = SelectCoopSpawnPoint(ent, force_spawn, true);
 
         if (!spot)
@@ -1536,7 +1538,7 @@ void G_PostRespawn(edict_t *self)
 
 void respawn(edict_t *self)
 {
-    if (deathmatch->integer || coop->integer) {
+    if (deathmatch.integer || coop.integer) {
         // spectators don't leave bodies
         if (!self->client->resp.spectator)
             CopyToBodyQue(self);
@@ -1565,9 +1567,9 @@ static void spectator_respawn(edict_t *ent)
     if (ent->client->pers.spectator) {
         char *value = Info_ValueForKey(ent->client->pers.userinfo, "spectator");
 
-        if (*spectator_password->string &&
-            strcmp(spectator_password->string, "none") &&
-            strcmp(spectator_password->string, value)) {
+        if (*spectator_password.string &&
+            strcmp(spectator_password.string, "none") &&
+            strcmp(spectator_password.string, value)) {
             G_ClientPrintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
             ent->client->pers.spectator = false;
             trap_ClientStuffText(ent, "spectator 0\n");
@@ -1579,7 +1581,7 @@ static void spectator_respawn(edict_t *ent)
             if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
-        if (numspec >= maxspectators->integer) {
+        if (numspec >= maxspectators.integer) {
             G_ClientPrintf(ent, PRINT_HIGH, "Server spectator limit is full.");
             ent->client->pers.spectator = false;
             // reset his spectator var
@@ -1591,8 +1593,8 @@ static void spectator_respawn(edict_t *ent)
         // he must have the right password
         char *value = Info_ValueForKey(ent->client->pers.userinfo, "password");
 
-        if (*password->string && strcmp(password->string, "none") &&
-            strcmp(password->string, value)) {
+        if (*password.string && strcmp(password.string, "none") &&
+            strcmp(password.string, value)) {
             G_ClientPrintf(ent, PRINT_HIGH, "Password incorrect.\n");
             ent->client->pers.spectator = true;
             trap_ClientStuffText(ent, "spectator 1\n");
@@ -1713,7 +1715,7 @@ void PutClientInServer(edict_t *ent)
         VectorCopy(squad_respawn_angles, spawn_angles);
         valid_spawn = true;
     // PGM
-    } else if (gamerules->integer && DMGame.SelectSpawnPoint)
+    } else if (gamerules.integer && DMGame.SelectSpawnPoint)
         valid_spawn = DMGame.SelectSpawnPoint(ent, spawn_origin, spawn_angles, force_spawn);
     // PGM
     else
@@ -1789,7 +1791,7 @@ void PutClientInServer(edict_t *ent)
     Q_strlcpy(social_id, ent->client->pers.social_id, sizeof(social_id));
 
     // deathmatch wipes most client data every spawn
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         client->pers.health = 0;
         resp = client->resp;
     } else {
@@ -1797,7 +1799,7 @@ void PutClientInServer(edict_t *ent)
         char userinfo[MAX_INFO_STRING];
         memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
 
-        if (coop->integer) {
+        if (coop.integer) {
             resp = client->resp;
 
             if (!P_UseCoopInstancedItems()) {
@@ -1814,7 +1816,7 @@ void PutClientInServer(edict_t *ent)
 
         ClientUserinfoChanged(ent, userinfo);
 
-        if (coop->integer) {
+        if (coop.integer) {
             if (resp.score > client->pers.score)
                 client->pers.score = resp.score;
         } else
@@ -1924,7 +1926,7 @@ void PutClientInServer(edict_t *ent)
     // [Paril-KEX] a bit of a hack, but landmark spawns can sometimes cause
     // intersecting spawns, so we'll do a sanity check here...
     if (spawn_from_begin) {
-        if (coop->integer) {
+        if (coop.integer) {
             edict_t *collision = G_UnsafeSpawnPosition(ent->s.origin, true);
 
             if (collision) {
@@ -1955,7 +1957,7 @@ void PutClientInServer(edict_t *ent)
     if (Q_strcasecmp(level.mapname, "rboss") == 0) {
         // if you get on to rboss in single player or coop, ensure
         // the player has the nuke key. (not in DM)
-        if (!deathmatch->integer)
+        if (!deathmatch.integer)
             client->pers.inventory[IT_KEY_NUKE] = 1;
     }
 
@@ -1990,7 +1992,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
     // ZOID
 
     // PGM
-    if (gamerules->integer && DMGame.ClientBegin) {
+    if (gamerules.integer && DMGame.ClientBegin) {
         DMGame.ClientBegin(ent);
     }
     // PGM
@@ -2014,7 +2016,7 @@ static void ClientBeginDeathmatch(edict_t *ent)
 
 static void G_SetLevelEntry(void)
 {
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         return;
     // map is a hub map, so we shouldn't bother tracking any of this.
     // the next map will pick up as the start.
@@ -2050,9 +2052,9 @@ static void G_SetLevelEntry(void)
         level.entry->visit_order = highest_order + 1;
 
         // give all of the clients an extra life back
-        if (g_coop_enable_lives->integer)
+        if (g_coop_enable_lives.integer)
             for (int i = 0; i < game.maxclients; i++)
-                g_clients[i].pers.lives = min(g_coop_num_lives->integer + 1, g_clients[i].pers.lives + 1);
+                g_clients[i].pers.lives = min(g_coop_num_lives.integer + 1, g_clients[i].pers.lives + 1);
     }
 
     // scan for all new maps we can go to, for secret levels
@@ -2123,7 +2125,7 @@ void ClientBegin(edict_t *ent)
     // [Paril-KEX] we're always connected by this point...
     ent->client->pers.connected = true;
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         ClientBeginDeathmatch(ent);
         return;
     }
@@ -2197,7 +2199,7 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     val = Info_ValueForKey(userinfo, "spectator");
 
     // spectators are only supported in deathmatch
-    if (deathmatch->integer && !G_TeamplayEnabled() && *val && strcmp(val, "0"))
+    if (deathmatch.integer && !G_TeamplayEnabled() && *val && strcmp(val, "0"))
         ent->client->pers.spectator = true;
     else
         ent->client->pers.spectator = false;
@@ -2288,12 +2290,12 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     // check for a spectator
     char *value = Info_ValueForKey(userinfo, "spectator");
 
-    if (deathmatch->integer && *value && strcmp(value, "0")) {
+    if (deathmatch.integer && *value && strcmp(value, "0")) {
         int i, numspec;
 
-        if (*spectator_password->string &&
-            strcmp(spectator_password->string, "none") &&
-            strcmp(spectator_password->string, value)) {
+        if (*spectator_password.string &&
+            strcmp(spectator_password.string, "none") &&
+            strcmp(spectator_password.string, value)) {
             Info_SetValueForKey(userinfo, "rejmsg", "Spectator password required or incorrect.");
             return false;
         }
@@ -2303,15 +2305,15 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
             if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
-        if (numspec >= maxspectators->integer) {
+        if (numspec >= maxspectators.integer) {
             Info_SetValueForKey(userinfo, "rejmsg", "Server spectator limit is full.");
             return false;
         }
     } else {
         // check for a password ( if not a bot! )
         value = Info_ValueForKey(userinfo, "password");
-        if (*password->string && strcmp(password->string, "none") &&
-            strcmp(password->string, value)) {
+        if (*password.string && strcmp(password.string, "none") &&
+            strcmp(password.string, value)) {
             Info_SetValueForKey(userinfo, "rejmsg", "Password required or incorrect.");
             return false;
         }
@@ -2381,7 +2383,7 @@ void ClientDisconnect(edict_t *ent)
         ent->client->owned_sphere = NULL;
     }
 
-    if (gamerules->integer) {
+    if (gamerules.integer) {
         if (DMGame.PlayerDisconnect)
             DMGame.PlayerDisconnect(ent);
     }
@@ -2402,7 +2404,7 @@ void ClientDisconnect(edict_t *ent)
     ent->timestamp = level.time + SEC(1);
 
     // update active scoreboards
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (player->r.inuse && player->client->showscores)
@@ -2415,19 +2417,19 @@ void ClientDisconnect(edict_t *ent)
 
 bool G_ShouldPlayersCollide(bool weaponry)
 {
-    if (g_disable_player_collision->integer)
+    if (g_disable_player_collision.integer)
         return false; // only for debugging.
 
     // always collide on dm
-    if (!coop->integer)
+    if (!coop.integer)
         return true;
 
     // weaponry collides if friendly fire is enabled
-    if (weaponry && g_friendly_fire->integer)
+    if (weaponry && g_friendly_fire.integer)
         return true;
 
     // check collision cvar
-    return g_coop_player_collision->integer;
+    return g_coop_player_collision.integer;
 }
 
 static bool HandleMenuMovement(edict_t *ent, usercmd_t *ucmd)
@@ -2490,7 +2492,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         bool n64_sp = false;
 
         if (level.intermissiontime) {
-            n64_sp = !deathmatch->integer && level.is_n64;
+            n64_sp = !deathmatch.integer && level.is_n64;
 
             // can exit intermission after five seconds
             // Paril: except in N64. the camera handles it.
@@ -2538,7 +2540,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         // [Paril-KEX]
         if (!G_ShouldPlayersCollide(false) ||
-            (coop->integer && !(ent->clipmask & CONTENTS_PLAYER)) // if player collision is on and we're temporarily ghostly...
+            (coop.integer && !(ent->clipmask & CONTENTS_PLAYER)) // if player collision is on and we're temporarily ghostly...
            )
         {
             client->ps.pmove.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
@@ -2586,7 +2588,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             VectorCopy(ent->s.origin, client->last_ladder_pos);
 
             if (pm.s.pm_flags & PMF_ON_LADDER) {
-                if (!deathmatch->integer && client->last_ladder_sound < level.time) {
+                if (!deathmatch.integer && client->last_ladder_sound < level.time) {
                     G_AddEvent(ent, EV_LADDER_STEP, 0);
                     client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
                 }
@@ -2919,16 +2921,16 @@ typedef enum {
 static bool G_CoopRespawn(edict_t *ent)
 {
     // don't do this in non-coop
-    if (!coop->integer)
+    if (!coop.integer)
         return false;
     // if we don't have squad or lives, it doesn't matter
-    if (!g_coop_squad_respawn->integer && !g_coop_enable_lives->integer)
+    if (!g_coop_squad_respawn.integer && !g_coop_enable_lives.integer)
         return false;
 
     respawn_state_t state = RESPAWN_NONE;
 
     // first pass: if we have no lives left, just move to spectator
-    if (g_coop_enable_lives->integer && !ent->client->pers.lives) {
+    if (g_coop_enable_lives.integer && !ent->client->pers.lives) {
         state = RESPAWN_SPECTATE;
         ent->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
     }
@@ -2936,7 +2938,7 @@ static bool G_CoopRespawn(edict_t *ent)
     // second pass: check for where to spawn
     if (state == RESPAWN_NONE) {
         // if squad respawn, don't respawn until we can find a good player to spawn on.
-        if (g_coop_squad_respawn->integer) {
+        if (g_coop_squad_respawn.integer) {
             bool allDead = true;
 
             for (int i = 0; i < game.maxclients; i++) {
@@ -3033,7 +3035,7 @@ void ClientBeginServerFrame(edict_t *ent)
         return;
     }
 
-    if (deathmatch->integer && !G_TeamplayEnabled() &&
+    if (deathmatch.integer && !G_TeamplayEnabled() &&
         client->pers.spectator != client->resp.spectator &&
         (level.time - client->respawn_time) >= SEC(5)) {
         spectator_respawn(ent);
@@ -3052,13 +3054,13 @@ void ClientBeginServerFrame(edict_t *ent)
             // check for coop handling
             if (!G_CoopRespawn(ent)) {
                 // in deathmatch, only wait for attack button
-                if (deathmatch->integer)
+                if (deathmatch.integer)
                     buttonMask = BUTTON_ATTACK;
                 else
                     buttonMask = -1;
 
                 if ((client->latched_buttons & buttonMask) ||
-                    (deathmatch->integer && g_dm_force_respawn->integer)) {
+                    (deathmatch.integer && g_dm_force_respawn.integer)) {
                     respawn(ent);
                     client->latched_buttons = BUTTON_NONE;
                 }
@@ -3068,7 +3070,7 @@ void ClientBeginServerFrame(edict_t *ent)
     }
 
     // add player trail so monsters can follow
-    if (!deathmatch->integer)
+    if (!deathmatch.integer)
         PlayerTrail_Add(ent);
 
     client->latched_buttons = BUTTON_NONE;

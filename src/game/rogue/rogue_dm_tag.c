@@ -93,7 +93,7 @@ static void Tag_Score(edict_t *attacker, edict_t *victim, int scoreChange, mod_t
 
 bool Tag_PickupToken(edict_t *ent, edict_t *other)
 {
-    if (gamerules->integer != RDM_TAG)
+    if (gamerules.integer != RDM_TAG)
         return false;
 
     // sanity checking is good.
@@ -231,12 +231,12 @@ The tag token for deathmatch tag games.
 */
 void SP_dm_tag_token(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
 
-    if (gamerules->integer != RDM_TAG) {
+    if (gamerules.integer != RDM_TAG) {
         G_FreeEdict(self);
         return;
     }

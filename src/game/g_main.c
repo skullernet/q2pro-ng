@@ -21,115 +21,115 @@ const trace_t null_trace;
 edict_t g_edicts[MAX_EDICTS];
 gclient_t g_clients[MAX_CLIENTS];
 
-cvar_t *developer;
-cvar_t *deathmatch;
-cvar_t *coop;
-cvar_t *skill;
-cvar_t *fraglimit;
-cvar_t *timelimit;
+vm_cvar_t developer;
+vm_cvar_t deathmatch;
+vm_cvar_t coop;
+vm_cvar_t skill;
+vm_cvar_t fraglimit;
+vm_cvar_t timelimit;
 // ZOID
-cvar_t *capturelimit;
-cvar_t *g_quick_weapon_switch;
-cvar_t *g_instant_weapon_switch;
+vm_cvar_t capturelimit;
+vm_cvar_t g_quick_weapon_switch;
+vm_cvar_t g_instant_weapon_switch;
 // ZOID
-cvar_t      *password;
-cvar_t      *spectator_password;
-cvar_t      *needpass;
-static cvar_t *maxclients;
-cvar_t      *maxspectators;
-cvar_t      *g_select_empty;
-cvar_t      *sv_dedicated;
-cvar_t      *sv_running;
+vm_cvar_t password;
+vm_cvar_t spectator_password;
+vm_cvar_t needpass;
+vm_cvar_t maxspectators;
+vm_cvar_t g_select_empty;
+vm_cvar_t sv_dedicated;
+vm_cvar_t sv_running;
 
-cvar_t *filterban;
+vm_cvar_t filterban;
 
-cvar_t *sv_maxvelocity;
-cvar_t *sv_gravity;
+vm_cvar_t sv_maxvelocity;
+vm_cvar_t sv_gravity;
 
-cvar_t *g_skipViewModifiers;
+vm_cvar_t g_skipViewModifiers;
 
-cvar_t *sv_rollspeed;
-cvar_t *sv_rollangle;
-cvar_t *gun_x;
-cvar_t *gun_y;
-cvar_t *gun_z;
+vm_cvar_t sv_rollspeed;
+vm_cvar_t sv_rollangle;
+vm_cvar_t gun_x;
+vm_cvar_t gun_y;
+vm_cvar_t gun_z;
 
-cvar_t *run_pitch;
-cvar_t *run_roll;
-cvar_t *bob_up;
-cvar_t *bob_pitch;
-cvar_t *bob_roll;
+vm_cvar_t run_pitch;
+vm_cvar_t run_roll;
+vm_cvar_t bob_up;
+vm_cvar_t bob_pitch;
+vm_cvar_t bob_roll;
 
-cvar_t *sv_cheats;
+vm_cvar_t sv_cheats;
 
-cvar_t *g_debug_monster_paths;
-cvar_t *g_debug_monster_kills;
+vm_cvar_t g_debug_monster_paths;
+vm_cvar_t g_debug_monster_kills;
 
-cvar_t *flood_msgs;
-cvar_t *flood_persecond;
-cvar_t *flood_waitdelay;
+vm_cvar_t flood_msgs;
+vm_cvar_t flood_persecond;
+vm_cvar_t flood_waitdelay;
 
-cvar_t *sv_stopspeed; // PGM     (this was a define in g_phys.c)
+vm_cvar_t sv_stopspeed; // PGM     (this was a define in g_phys.c)
 
-cvar_t *g_strict_saves;
+vm_cvar_t g_strict_saves;
 
 // ROGUE cvars
-cvar_t *gamerules;
-cvar_t *huntercam;
-cvar_t *g_dm_strong_mines;
-cvar_t *g_dm_random_items;
+vm_cvar_t gamerules;
+vm_cvar_t huntercam;
+vm_cvar_t g_dm_strong_mines;
+vm_cvar_t g_dm_random_items;
 // ROGUE
 
 // [Kex]
-cvar_t *g_instagib;
-cvar_t *g_coop_player_collision;
-cvar_t *g_coop_squad_respawn;
-cvar_t *g_coop_enable_lives;
-cvar_t *g_coop_num_lives;
-cvar_t *g_coop_instanced_items;
-cvar_t *g_allow_grapple;
-cvar_t *g_grapple_fly_speed;
-cvar_t *g_grapple_pull_speed;
-cvar_t *g_grapple_damage;
-cvar_t *g_coop_health_scaling;
-cvar_t *g_weapon_respawn_time;
+vm_cvar_t g_instagib;
+vm_cvar_t g_coop_player_collision;
+vm_cvar_t g_coop_squad_respawn;
+vm_cvar_t g_coop_enable_lives;
+vm_cvar_t g_coop_num_lives;
+vm_cvar_t g_coop_instanced_items;
+vm_cvar_t g_allow_grapple;
+vm_cvar_t g_grapple_fly_speed;
+vm_cvar_t g_grapple_pull_speed;
+vm_cvar_t g_grapple_damage;
+vm_cvar_t g_coop_health_scaling;
+vm_cvar_t g_weapon_respawn_time;
 
 // dm"flags"
-cvar_t *g_no_health;
-cvar_t *g_no_items;
-cvar_t *g_dm_weapons_stay;
-cvar_t *g_dm_no_fall_damage;
-cvar_t *g_dm_instant_items;
-cvar_t *g_dm_same_level;
-cvar_t *g_friendly_fire;
-cvar_t *g_dm_force_respawn;
-cvar_t *g_dm_force_respawn_time;
-cvar_t *g_dm_spawn_farthest;
-cvar_t *g_no_armor;
-cvar_t *g_dm_allow_exit;
-cvar_t *g_infinite_ammo;
-cvar_t *g_dm_no_quad_drop;
-cvar_t *g_dm_no_quadfire_drop;
-cvar_t *g_no_mines;
-cvar_t *g_dm_no_stack_double;
-cvar_t *g_no_nukes;
-cvar_t *g_no_spheres;
-cvar_t *g_teamplay_armor_protect;
-cvar_t *g_allow_techs;
-cvar_t *g_start_items;
-cvar_t *g_map_list;
-cvar_t *g_map_list_shuffle;
+vm_cvar_t g_no_health;
+vm_cvar_t g_no_items;
+vm_cvar_t g_dm_weapons_stay;
+vm_cvar_t g_dm_no_fall_damage;
+vm_cvar_t g_dm_instant_items;
+vm_cvar_t g_dm_same_level;
+vm_cvar_t g_friendly_fire;
+vm_cvar_t g_dm_force_respawn;
+vm_cvar_t g_dm_force_respawn_time;
+vm_cvar_t g_dm_spawn_farthest;
+vm_cvar_t g_no_armor;
+vm_cvar_t g_dm_allow_exit;
+vm_cvar_t g_infinite_ammo;
+vm_cvar_t g_dm_no_quad_drop;
+vm_cvar_t g_dm_no_quadfire_drop;
+vm_cvar_t g_no_mines;
+vm_cvar_t g_dm_no_stack_double;
+vm_cvar_t g_no_nukes;
+vm_cvar_t g_no_spheres;
+vm_cvar_t g_teamplay_armor_protect;
+vm_cvar_t g_allow_techs;
+vm_cvar_t g_start_items;
+vm_cvar_t g_map_list;
+vm_cvar_t g_map_list_shuffle;
 
-cvar_t *sv_airaccelerate;
-cvar_t *g_damage_scale;
-cvar_t *g_disable_player_collision;
-cvar_t *ai_damage_scale;
-cvar_t *ai_model_scale;
-cvar_t *ai_allow_dm_spawn;
-cvar_t *ai_movement_disabled;
-cvar_t *g_monster_footsteps;
+vm_cvar_t sv_airaccelerate;
+vm_cvar_t g_damage_scale;
+vm_cvar_t g_disable_player_collision;
+vm_cvar_t ai_damage_scale;
+vm_cvar_t ai_model_scale;
+vm_cvar_t ai_allow_dm_spawn;
+vm_cvar_t ai_movement_disabled;
+vm_cvar_t g_monster_footsteps;
+vm_cvar_t g_auto_save_min_time;
 
-static cvar_t *g_frames_per_frame;
+static vm_cvar_t g_frames_per_frame;
 
 static void G_RunFrame(void);
 static void G_PrepFrame(void);
@@ -145,11 +145,10 @@ is loaded.
 */
 static void PreInitGame(void)
 {
-    developer = gi.cvar("developer", "0", 0);
-    maxclients = gi.cvar("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
-    deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
-    coop = gi.cvar("coop", "0", CVAR_LATCH);
-    teamplay = gi.cvar("teamplay", "0", CVAR_LATCH);
+    trap_Cvar_Register(&developer, "developer", "0", 0);
+    trap_Cvar_Register(&deathmatch, "deathmatch", "0", CVAR_LATCH);
+    trap_Cvar_Register(&coop, "coop", "0", CVAR_LATCH);
+    trap_Cvar_Register(&teamplay, "teamplay", "0", CVAR_LATCH);
 
     // ZOID
     CTFInit();
@@ -157,26 +156,26 @@ static void PreInitGame(void)
 
     // ZOID
     // This gamemode only supports deathmatch
-    if (ctf->integer) {
-        if (!deathmatch->integer) {
+    if (ctf.integer) {
+        if (!deathmatch.integer) {
             G_Printf("Forcing deathmatch.\n");
-            gi.cvar_set("deathmatch", "1");
+            trap_Cvar_Set("deathmatch", "1");
         }
         // force coop off
-        if (coop->integer)
-            gi.cvar_set("coop", "0");
+        if (coop.integer)
+            trap_Cvar_Set("coop", "0");
         // force tdm off
-        if (teamplay->integer)
-            gi.cvar_set("teamplay", "0");
+        if (teamplay.integer)
+            trap_Cvar_Set("teamplay", "0");
     }
-    if (teamplay->integer) {
-        if (!deathmatch->integer) {
+    if (teamplay.integer) {
+        if (!deathmatch.integer) {
             G_Printf("Forcing deathmatch.\n");
-            gi.cvar_set("deathmatch", "1");
+            trap_Cvar_Set("deathmatch", "1");
         }
         // force coop off
-        if (coop->integer)
-            gi.cvar_set("coop", "0");
+        if (coop.integer)
+            trap_Cvar_Set("coop", "0");
     }
     // ZOID
 }
@@ -190,8 +189,6 @@ Called after PreInitGame when the game has set up cvars.
 */
 static void InitGame(void)
 {
-    cvar_t *cv;
-
     G_Printf("==== InitGame ====\n");
 
     PreInitGame();
@@ -202,127 +199,126 @@ static void InitGame(void)
     fs = gi.GetExtension(FILESYSTEM_API_V1);
     draw = gi.GetExtension(DEBUG_DRAW_API_V1);
 
-    gun_x = gi.cvar("gun_x", "0", 0);
-    gun_y = gi.cvar("gun_y", "0", 0);
-    gun_z = gi.cvar("gun_z", "0", 0);
+    trap_Cvar_Register(&gun_x, "gun_x", "0", 0);
+    trap_Cvar_Register(&gun_y, "gun_y", "0", 0);
+    trap_Cvar_Register(&gun_z, "gun_z", "0", 0);
 
     // FIXME: sv_ prefix is wrong for these
-    sv_rollspeed = gi.cvar("sv_rollspeed", "200", 0);
-    sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
-    sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
-    sv_gravity = gi.cvar("sv_gravity", "800", 0);
+    trap_Cvar_Register(&sv_rollspeed, "sv_rollspeed", "200", 0);
+    trap_Cvar_Register(&sv_rollangle, "sv_rollangle", "2", 0);
+    trap_Cvar_Register(&sv_maxvelocity, "sv_maxvelocity", "2000", 0);
+    trap_Cvar_Register(&sv_gravity, "sv_gravity", "800", 0);
 
-    g_skipViewModifiers = gi.cvar("g_skipViewModifiers", "0", 0);
+    trap_Cvar_Register(&g_skipViewModifiers, "g_skipViewModifiers", "0", 0);
 
-    sv_stopspeed = gi.cvar("sv_stopspeed", "100", 0); // PGM - was #define in g_phys.c
+    trap_Cvar_Register(&sv_stopspeed, "sv_stopspeed", "100", 0); // PGM - was #define in g_phys.c
 
     // ROGUE
-    huntercam = gi.cvar("huntercam", "1", CVAR_SERVERINFO | CVAR_LATCH);
-    g_dm_strong_mines = gi.cvar("g_dm_strong_mines", "0", 0);
-    g_dm_random_items = gi.cvar("g_dm_random_items", "0", 0);
+    trap_Cvar_Register(&huntercam, "huntercam", "1", CVAR_SERVERINFO | CVAR_LATCH);
+    trap_Cvar_Register(&g_dm_strong_mines, "g_dm_strong_mines", "0", 0);
+    trap_Cvar_Register(&g_dm_random_items, "g_dm_random_items", "0", 0);
     // ROGUE
 
     // [Kex] Instagib
-    g_instagib = gi.cvar("g_instagib", "0", 0);
+    trap_Cvar_Register(&g_instagib, "g_instagib", "0", 0);
 
     // [Paril-KEX]
-    g_coop_player_collision = gi.cvar("g_coop_player_collision", "0", CVAR_LATCH);
-    g_coop_squad_respawn = gi.cvar("g_coop_squad_respawn", "1", CVAR_LATCH);
-    g_coop_enable_lives = gi.cvar("g_coop_enable_lives", "0", CVAR_LATCH);
-    g_coop_num_lives = gi.cvar("g_coop_num_lives", "2", CVAR_LATCH);
-    g_coop_instanced_items = gi.cvar("g_coop_instanced_items", "1", CVAR_LATCH);
-    g_allow_grapple = gi.cvar("g_allow_grapple", "auto", 0);
-    g_grapple_fly_speed = gi.cvar("g_grapple_fly_speed", va("%d", CTF_DEFAULT_GRAPPLE_SPEED), 0);
-    g_grapple_pull_speed = gi.cvar("g_grapple_pull_speed", va("%d", CTF_DEFAULT_GRAPPLE_PULL_SPEED), 0);
-    g_grapple_damage = gi.cvar("g_grapple_damage", "10", 0);
+    trap_Cvar_Register(&g_coop_player_collision, "g_coop_player_collision", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_coop_squad_respawn, "g_coop_squad_respawn", "1", CVAR_LATCH);
+    trap_Cvar_Register(&g_coop_enable_lives, "g_coop_enable_lives", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_coop_num_lives, "g_coop_num_lives", "2", CVAR_LATCH);
+    trap_Cvar_Register(&g_coop_instanced_items, "g_coop_instanced_items", "1", CVAR_LATCH);
+    trap_Cvar_Register(&g_allow_grapple, "g_allow_grapple", "auto", 0);
+    trap_Cvar_Register(&g_grapple_fly_speed, "g_grapple_fly_speed", va("%d", CTF_DEFAULT_GRAPPLE_SPEED), 0);
+    trap_Cvar_Register(&g_grapple_pull_speed, "g_grapple_pull_speed", va("%d", CTF_DEFAULT_GRAPPLE_PULL_SPEED), 0);
+    trap_Cvar_Register(&g_grapple_damage, "g_grapple_damage", "10", 0);
 
-    g_debug_monster_paths = gi.cvar("g_debug_monster_paths", "0", 0);
-    g_debug_monster_kills = gi.cvar("g_debug_monster_kills", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_debug_monster_paths, "g_debug_monster_paths", "0", 0);
+    trap_Cvar_Register(&g_debug_monster_kills, "g_debug_monster_kills", "0", CVAR_LATCH);
 
     // noset vars
-    sv_dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
-    sv_running = gi.cvar("sv_running", NULL, 0);
-    if (!sv_running)
-        G_Error("sv_running cvar doesn't exist");
+    trap_Cvar_Register(&sv_dedicated, "dedicated", "0", CVAR_NOSET);
+    trap_Cvar_Register(&sv_running, "sv_running", NULL, 0);
 
     // latched vars
-    sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-    gi.cvar("gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
+    trap_Cvar_Register(&sv_cheats, "cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
+    trap_Cvar_Register(NULL, "gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
 
-    maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
-    skill = gi.cvar("skill", "1", CVAR_LATCH);
-    gamerules = gi.cvar("gamerules", "0", CVAR_LATCH); // PGM
+    trap_Cvar_Register(&maxspectators, "maxspectators", "4", CVAR_SERVERINFO);
+    trap_Cvar_Register(&skill, "skill", "1", CVAR_LATCH);
+    trap_Cvar_Register(&gamerules, "gamerules", "0", CVAR_LATCH); // PGM
 
     // change anytime vars
-    fraglimit = gi.cvar("fraglimit", "0", CVAR_SERVERINFO);
-    timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO);
+    trap_Cvar_Register(&fraglimit, "fraglimit", "0", CVAR_SERVERINFO);
+    trap_Cvar_Register(&timelimit, "timelimit", "0", CVAR_SERVERINFO);
     // ZOID
-    capturelimit = gi.cvar("capturelimit", "0", CVAR_SERVERINFO);
-    g_quick_weapon_switch = gi.cvar("g_quick_weapon_switch", "1", CVAR_LATCH);
-    g_instant_weapon_switch = gi.cvar("g_instant_weapon_switch", "0", CVAR_LATCH);
+    trap_Cvar_Register(&capturelimit, "capturelimit", "0", CVAR_SERVERINFO);
+    trap_Cvar_Register(&g_quick_weapon_switch, "g_quick_weapon_switch", "1", CVAR_LATCH);
+    trap_Cvar_Register(&g_instant_weapon_switch, "g_instant_weapon_switch", "0", CVAR_LATCH);
     // ZOID
-    password = gi.cvar("password", "", CVAR_USERINFO);
-    spectator_password = gi.cvar("spectator_password", "", CVAR_USERINFO);
-    needpass = gi.cvar("needpass", "0", CVAR_SERVERINFO);
-    filterban = gi.cvar("filterban", "1", 0);
+    trap_Cvar_Register(&password, "password", "", CVAR_USERINFO);
+    trap_Cvar_Register(&spectator_password, "spectator_password", "", CVAR_USERINFO);
+    trap_Cvar_Register(&needpass, "needpass", "0", CVAR_SERVERINFO);
+    trap_Cvar_Register(&filterban, "filterban", "1", 0);
 
-    g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
+    trap_Cvar_Register(&g_select_empty, "g_select_empty", "0", CVAR_ARCHIVE);
 
-    run_pitch = gi.cvar("run_pitch", "0.002", 0);
-    run_roll = gi.cvar("run_roll", "0.005", 0);
-    bob_up = gi.cvar("bob_up", "0.005", 0);
-    bob_pitch = gi.cvar("bob_pitch", "0.002", 0);
-    bob_roll = gi.cvar("bob_roll", "0.002", 0);
+    trap_Cvar_Register(&run_pitch, "run_pitch", "0.002", 0);
+    trap_Cvar_Register(&run_roll, "run_roll", "0.005", 0);
+    trap_Cvar_Register(&bob_up, "bob_up", "0.005", 0);
+    trap_Cvar_Register(&bob_pitch, "bob_pitch", "0.002", 0);
+    trap_Cvar_Register(&bob_roll, "bob_roll", "0.002", 0);
 
     // flood control
-    flood_msgs = gi.cvar("flood_msgs", "4", 0);
-    flood_persecond = gi.cvar("flood_persecond", "4", 0);
-    flood_waitdelay = gi.cvar("flood_waitdelay", "10", 0);
+    trap_Cvar_Register(&flood_msgs, "flood_msgs", "4", 0);
+    trap_Cvar_Register(&flood_persecond, "flood_persecond", "4", 0);
+    trap_Cvar_Register(&flood_waitdelay, "flood_waitdelay", "10", 0);
 
-    g_strict_saves = gi.cvar("g_strict_saves", "1", 0);
+    trap_Cvar_Register(&g_strict_saves, "g_strict_saves", "1", 0);
 
-    sv_airaccelerate = gi.cvar("sv_airaccelerate", "0", 0);
+    trap_Cvar_Register(&sv_airaccelerate, "sv_airaccelerate", "0", 0);
 
-    g_damage_scale = gi.cvar("g_damage_scale", "1", 0);
-    g_disable_player_collision = gi.cvar("g_disable_player_collision", "0", 0);
-    ai_damage_scale = gi.cvar("ai_damage_scale", "1", 0);
-    ai_model_scale = gi.cvar("ai_model_scale", "0", 0);
-    ai_allow_dm_spawn = gi.cvar("ai_allow_dm_spawn", "0", 0);
-    ai_movement_disabled = gi.cvar("ai_movement_disabled", "0", 0);
-    g_monster_footsteps = gi.cvar("g_monster_footsteps", "1", 0);
+    trap_Cvar_Register(&g_damage_scale, "g_damage_scale", "1", 0);
+    trap_Cvar_Register(&g_disable_player_collision, "g_disable_player_collision", "0", 0);
+    trap_Cvar_Register(&ai_damage_scale, "ai_damage_scale", "1", 0);
+    trap_Cvar_Register(&ai_model_scale, "ai_model_scale", "0", 0);
+    trap_Cvar_Register(&ai_allow_dm_spawn, "ai_allow_dm_spawn", "0", 0);
+    trap_Cvar_Register(&ai_movement_disabled, "ai_movement_disabled", "0", 0);
+    trap_Cvar_Register(&g_monster_footsteps, "g_monster_footsteps", "1", 0);
+    trap_Cvar_Register(&g_auto_save_min_time, "g_auto_save_min_time", "60", 0);
 
-    g_frames_per_frame = gi.cvar("g_frames_per_frame", "1", 0);
+    trap_Cvar_Register(&g_frames_per_frame, "g_frames_per_frame", "1", 0);
 
-    g_coop_health_scaling = gi.cvar("g_coop_health_scaling", "0", CVAR_LATCH);
-    g_weapon_respawn_time = gi.cvar("g_weapon_respawn_time", "30", 0);
+    trap_Cvar_Register(&g_coop_health_scaling, "g_coop_health_scaling", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_weapon_respawn_time, "g_weapon_respawn_time", "30", 0);
 
     // dm "flags"
-    g_no_health = gi.cvar("g_no_health", "0", 0);
-    g_no_items = gi.cvar("g_no_items", "0", 0);
-    g_dm_weapons_stay = gi.cvar("g_dm_weapons_stay", "0", CVAR_LATCH);
-    g_dm_no_fall_damage = gi.cvar("g_dm_no_fall_damage", "0", 0);
-    g_dm_instant_items = gi.cvar("g_dm_instant_items", "1", 0);
-    g_dm_same_level = gi.cvar("g_dm_same_level", "0", 0);
-    g_friendly_fire = gi.cvar("g_friendly_fire", "0", 0);
-    g_dm_force_respawn = gi.cvar("g_dm_force_respawn", "0", 0);
-    g_dm_force_respawn_time = gi.cvar("g_dm_force_respawn_time", "0", 0);
-    g_dm_spawn_farthest = gi.cvar("g_dm_spawn_farthest", "1", 0);
-    g_no_armor = gi.cvar("g_no_armor", "0", 0);
-    g_dm_allow_exit = gi.cvar("g_dm_allow_exit", "0", 0);
-    g_infinite_ammo = gi.cvar("g_infinite_ammo", "0", CVAR_LATCH);
-    g_dm_no_quad_drop = gi.cvar("g_dm_no_quad_drop", "0", 0);
-    g_dm_no_quadfire_drop = gi.cvar("g_dm_no_quadfire_drop", "0", 0);
-    g_no_mines = gi.cvar("g_no_mines", "0", 0);
-    g_dm_no_stack_double = gi.cvar("g_dm_no_stack_double", "0", 0);
-    g_no_nukes = gi.cvar("g_no_nukes", "0", 0);
-    g_no_spheres = gi.cvar("g_no_spheres", "0", 0);
-    g_teamplay_force_join = gi.cvar("g_teamplay_force_join", "0", 0);
-    g_teamplay_armor_protect = gi.cvar("g_teamplay_armor_protect", "0", 0);
-    g_allow_techs = gi.cvar("g_allow_techs", "auto", 0);
+    trap_Cvar_Register(&g_no_health, "g_no_health", "0", 0);
+    trap_Cvar_Register(&g_no_items, "g_no_items", "0", 0);
+    trap_Cvar_Register(&g_dm_weapons_stay, "g_dm_weapons_stay", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_dm_no_fall_damage, "g_dm_no_fall_damage", "0", 0);
+    trap_Cvar_Register(&g_dm_instant_items, "g_dm_instant_items", "1", 0);
+    trap_Cvar_Register(&g_dm_same_level, "g_dm_same_level", "0", 0);
+    trap_Cvar_Register(&g_friendly_fire, "g_friendly_fire", "0", 0);
+    trap_Cvar_Register(&g_dm_force_respawn, "g_dm_force_respawn", "0", 0);
+    trap_Cvar_Register(&g_dm_force_respawn_time, "g_dm_force_respawn_time", "0", 0);
+    trap_Cvar_Register(&g_dm_spawn_farthest, "g_dm_spawn_farthest", "1", 0);
+    trap_Cvar_Register(&g_no_armor, "g_no_armor", "0", 0);
+    trap_Cvar_Register(&g_dm_allow_exit, "g_dm_allow_exit", "0", 0);
+    trap_Cvar_Register(&g_infinite_ammo, "g_infinite_ammo", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_dm_no_quad_drop, "g_dm_no_quad_drop", "0", 0);
+    trap_Cvar_Register(&g_dm_no_quadfire_drop, "g_dm_no_quadfire_drop", "0", 0);
+    trap_Cvar_Register(&g_no_mines, "g_no_mines", "0", 0);
+    trap_Cvar_Register(&g_dm_no_stack_double, "g_dm_no_stack_double", "0", 0);
+    trap_Cvar_Register(&g_no_nukes, "g_no_nukes", "0", 0);
+    trap_Cvar_Register(&g_no_spheres, "g_no_spheres", "0", 0);
+    trap_Cvar_Register(&g_teamplay_force_join, "g_teamplay_force_join", "0", 0);
+    trap_Cvar_Register(&g_teamplay_armor_protect, "g_teamplay_armor_protect", "0", 0);
+    trap_Cvar_Register(&g_allow_techs, "g_allow_techs", "auto", 0);
 
-    g_start_items = gi.cvar("g_start_items", "", CVAR_LATCH);
-    g_map_list = gi.cvar("g_map_list", "", 0);
-    g_map_list_shuffle = gi.cvar("g_map_list_shuffle", "0", 0);
+    trap_Cvar_Register(&g_start_items, "g_start_items", "", CVAR_LATCH);
+    trap_Cvar_Register(&g_map_list, "g_map_list", "", 0);
+    trap_Cvar_Register(&g_map_list_shuffle, "g_map_list_shuffle", "0", 0);
 
     // items
     InitItems();
@@ -332,16 +328,16 @@ static void InitGame(void)
     globals.max_edicts = q_countof(g_edicts);
 
     // initialize all clients for this game
-    game.maxclients = maxclients->integer;
+    game.maxclients = trap_Cvar_VariableInteger("maxclients");
     globals.num_edicts = game.maxclients;
 
 #if USE_FPS
     // variable FPS support
-    if (cv->integer & GMF_VARIABLE_FPS) {
-        cv = gi.cvar("sv_fps", NULL, 0);
-        if (!cv || !cv->integer)
+    if (cv.integer & GMF_VARIABLE_FPS) {
+        int fps = trap_Cvar_VariableInteger("sv_fps");
+        if (!fps)
             G_Error("GMF_VARIABLE_FPS exported but no 'sv_fps' cvar");
-        game.tick_rate = cv->integer;
+        game.tick_rate = fps;
         game.frame_time = 1000 / game.tick_rate;
         game.frame_time_sec = 1.0f / game.tick_rate;
     } else {
@@ -353,15 +349,16 @@ static void InitGame(void)
 
     //======
     // ROGUE
-    if (gamerules->integer)
+    if (gamerules.integer)
         InitGameRules(); // if there are game rules to set up, do so now.
     // ROGUE
     //======
 
     G_LoadL10nFile();
 
-    cv = gi.cvar("game", NULL, 0);
-    use_psx_assets = cv && !strncmp(cv->string, "psx", 3);
+    char buf[MAX_QPATH];
+    trap_Cvar_VariableString("game", buf, sizeof(buf));
+    use_psx_assets = !strncmp(buf, "psx", 3);
 }
 
 //===================================================================
@@ -487,7 +484,7 @@ void EndDMLevel(void)
     edict_t *ent;
 
     // stay on same level flag
-    if (g_dm_same_level->integer) {
+    if (g_dm_same_level.integer) {
         BeginIntermission(CreateTargetChangeLevel(level.mapname));
         return;
     }
@@ -497,9 +494,12 @@ void EndDMLevel(void)
         return;
     }
 
+    char buffer[MAX_STRING_CHARS];
+    trap_Cvar_VariableString("g_map_list", buffer, sizeof(buffer));
+
     // see if it's in the map list
-    if (*g_map_list->string) {
-        const char *str = g_map_list->string;
+    if (*buffer) {
+        const char *str = buffer;
         char first_map[MAX_QPATH];
         char *map;
 
@@ -520,7 +520,7 @@ void EndDMLevel(void)
                     } else {
 #if 0
                         // [Paril-KEX] re-shuffle if necessary
-                        if (g_map_list_shuffle->integer) {
+                        if (g_map_list_shuffle.integer) {
                             auto values = str_split(g_map_list->string, ' ');
 
                             if (values.size() == 1) {
@@ -535,7 +535,7 @@ void EndDMLevel(void)
                             if (values[0] == level.mapname)
                                 std::swap(values[0], values[values.size() - 1]);
 
-                            gi.cvar_forceset("g_map_list", fmt::format("{}", join_strings(values, " ")).data());
+                            trap_Cvar_ForceSet("g_map_list", fmt::format("{}", join_strings(values, " ")).data());
 
                             BeginIntermission(CreateTargetChangeLevel(values[0].c_str()));
                             return;
@@ -584,16 +584,16 @@ static void CheckNeedPass(void)
 
     // if password or spectator_password has changed, update needpass
     // as needed
-    if (password->modified || spectator_password->modified) {
+    if (password.modified || spectator_password.modified) {
         need = 0;
 
-        if (*password->string && Q_strcasecmp(password->string, "none"))
+        if (*password.string && Q_strcasecmp(password.string, "none"))
             need |= 1;
-        if (*spectator_password->string && Q_strcasecmp(spectator_password->string, "none"))
+        if (*spectator_password.string && Q_strcasecmp(spectator_password.string, "none"))
             need |= 2;
 
-        gi.cvar_set("needpass", va("%d", need));
-        password->modified = spectator_password->modified = false;
+        trap_Cvar_Set("needpass", va("%d", need));
+        password.modified = spectator_password.modified = false;
     }
 }
 
@@ -609,11 +609,11 @@ static void CheckDMRules(void)
     if (level.intermissiontime)
         return;
 
-    if (!deathmatch->integer)
+    if (!deathmatch.integer)
         return;
 
     // ZOID
-    if (ctf->integer && CTFCheckRules()) {
+    if (ctf.integer && CTFCheckRules()) {
         EndDMLevel();
         return;
     }
@@ -623,24 +623,24 @@ static void CheckDMRules(void)
 
     //=======
     // ROGUE
-    if (gamerules->integer && DMGame.CheckDMRules) {
+    if (gamerules.integer && DMGame.CheckDMRules) {
         if (DMGame.CheckDMRules())
             return;
     }
     // ROGUE
     //=======
 
-    if (timelimit->value) {
-        if (level.time >= SEC(timelimit->value * 60)) {
+    if (timelimit.value) {
+        if (level.time >= SEC(timelimit.value * 60)) {
             G_ClientPrintf(NULL, PRINT_HIGH, "Time limit hit.\n");
             EndDMLevel();
             return;
         }
     }
 
-    if (fraglimit->integer) {
+    if (fraglimit.integer) {
         // [Paril-KEX]
-        if (teamplay->integer) {
+        if (teamplay.integer) {
             CheckEndTDMLevel();
             return;
         }
@@ -650,7 +650,7 @@ static void CheckDMRules(void)
             if (!g_edicts[i].r.inuse)
                 continue;
 
-            if (cl->resp.score >= fraglimit->integer) {
+            if (cl->resp.score >= fraglimit.integer) {
                 G_ClientPrintf(NULL, PRINT_HIGH, "Frag limit hit.\n");
                 EndDMLevel();
                 return;
@@ -705,10 +705,10 @@ static void ExitLevel(void)
         memset(game.level_entries, 0, sizeof(game.level_entries));
 
         // give all players their lives back
-        if (g_coop_enable_lives->integer) {
+        if (g_coop_enable_lives.integer) {
             for (int i = 0; i < game.maxclients; i++) {
                 if (g_edicts[i].r.inuse)
-                    g_clients[i].pers.lives = g_coop_num_lives->integer + 1;
+                    g_clients[i].pers.lives = g_coop_num_lives.integer + 1;
             }
         }
     }
@@ -737,9 +737,9 @@ static void ExitLevel(void)
 
 static void G_CheckCvars(void)
 {
-    if (sv_gravity->modified) {
-        level.gravity = sv_gravity->value;
-        sv_gravity->modified = false;
+    if (sv_gravity.modified) {
+        level.gravity = sv_gravity.value;
+        sv_gravity.modified = false;
     }
 }
 
@@ -807,16 +807,16 @@ static void G_RunFrame_(bool main_loop)
     // clear client coop respawn states; this is done
     // early since it may be set multiple times for different
     // players
-    if (coop->integer && (g_coop_enable_lives->integer || g_coop_squad_respawn->integer)) {
+    if (coop.integer && (g_coop_enable_lives.integer || g_coop_squad_respawn.integer)) {
         for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (!player->r.inuse)
                 continue;
             if (player->client->respawn_time >= level.time)
                 player->client->coop_respawn_state = COOP_RESPAWN_WAITING;
-            else if (g_coop_enable_lives->integer && player->health <= 0 && player->client->pers.lives == 0)
+            else if (g_coop_enable_lives.integer && player->health <= 0 && player->client->pers.lives == 0)
                 player->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
-            else if (g_coop_enable_lives->integer && G_AnyDeadPlayersWithoutLives())
+            else if (g_coop_enable_lives.integer && G_AnyDeadPlayersWithoutLives())
                 player->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
             else
                 player->client->coop_respawn_state = COOP_RESPAWN_NONE;
@@ -881,7 +881,7 @@ static void G_RunFrame_(bool main_loop)
     // see if needpass needs updated
     CheckNeedPass();
 
-    if (coop->integer && (g_coop_enable_lives->integer || g_coop_squad_respawn->integer)) {
+    if (coop.integer && (g_coop_enable_lives.integer || g_coop_squad_respawn.integer)) {
         // rarely, we can see a flash of text if all players respawned
         // on some other player, so if everybody is now alive we'll reset
         // back to empty
@@ -938,12 +938,12 @@ static bool G_AnyPlayerSpawned(void)
 
 static void G_RunFrame(void)
 {
-    bool main_loop = sv_running->integer >= 2;
+    bool main_loop = sv_running.integer >= 2;
 
     if (main_loop && !G_AnyPlayerSpawned())
         return;
 
-    for (int i = 0; i < g_frames_per_frame->integer; i++)
+    for (int i = 0; i < g_frames_per_frame.integer; i++)
         G_RunFrame_(main_loop);
 }
 

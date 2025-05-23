@@ -19,9 +19,9 @@ static int      dball_ball_startpt_count;
 static int      dball_team1_goalscore;
 static int      dball_team2_goalscore;
 
-static cvar_t  *dball_team1_skin;
-static cvar_t  *dball_team2_skin;
-static cvar_t  *goallimit;
+static vm_cvar_t dball_team1_skin;
+static vm_cvar_t dball_team2_skin;
+static vm_cvar_t goallimit;
 
 // prototypes
 
@@ -34,10 +34,10 @@ void DBall_BallRespawn(edict_t *self);
 
 static int DBall_CheckDMRules(void)
 {
-    if (goallimit->integer) {
-        if (dball_team1_goalscore >= goallimit->integer)
+    if (goallimit.integer) {
+        if (dball_team1_goalscore >= goallimit.integer)
             G_ClientPrintf(NULL, PRINT_HIGH, "Team 1 Wins.\n");
-        else if (dball_team2_goalscore >= goallimit->integer)
+        else if (dball_team2_goalscore >= goallimit.integer)
             G_ClientPrintf(NULL, PRINT_HIGH, "Team 2 Wins.\n");
         else
             return 0;
@@ -144,19 +144,18 @@ static void DBall_GameInit(void)
 {
     // we don't want a minimum speed for friction to take effect.
     // this will allow any knockback to move stuff.
-    gi.cvar_forceset("sv_stopspeed", "0");
+    trap_Cvar_ForceSet("sv_stopspeed", "0");
     dball_team1_goalscore = 0;
     dball_team2_goalscore = 0;
 
-    gi.cvar_forceset(g_no_mines->name, "1");
-    gi.cvar_forceset(g_no_nukes->name, "1");
-    gi.cvar_forceset(g_dm_no_stack_double->name, "1");
-    gi.cvar_forceset(g_friendly_fire->name, "0");
-    //gi.cvar_forceset(g_no_mines->name, "1"); note: skin teams gone...
+    trap_Cvar_ForceSet("g_no_mines", "1");
+    trap_Cvar_ForceSet("g_no_nukes", "1");
+    trap_Cvar_ForceSet("g_dm_no_stack_double", "1");
+    trap_Cvar_ForceSet("g_friendly_fire", "0");
 
-    dball_team1_skin = gi.cvar("dball_team1_skin", "male/ctf_r", 0);
-    dball_team2_skin = gi.cvar("dball_team2_skin", "male/ctf_b", 0);
-    goallimit = gi.cvar("goallimit", "0", 0);
+    trap_Cvar_Register(&dball_team1_skin, "dball_team1_skin", "male/ctf_r", 0);
+    trap_Cvar_Register(&dball_team2_skin, "dball_team2_skin", "male/ctf_b", 0);
+    trap_Cvar_Register(&goallimit, "goallimit", "0", 0);
 }
 
 static void DBall_PostInitSetup(void)
@@ -469,12 +468,12 @@ Deathball Ball
 */
 void SP_dm_dball_ball(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
 
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }
@@ -505,11 +504,11 @@ Deathball team 1 start point
 */
 void SP_dm_dball_team1_start(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }
@@ -520,11 +519,11 @@ Deathball team 2 start point
 */
 void SP_dm_dball_team2_start(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }
@@ -535,11 +534,11 @@ Deathball ball start point
 */
 void SP_dm_dball_ball_start(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }
@@ -554,11 +553,11 @@ delay: time between speed changes (default: 0.2 sec)
 */
 void SP_dm_dball_speed_change(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }
@@ -592,12 +591,12 @@ Team1/Team2 - beneficiary of this goal. when the ball enters this goal, the bene
 */
 void SP_dm_dball_goal(edict_t *self)
 {
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
 
-    if (gamerules->integer != RDM_DEATHBALL) {
+    if (gamerules.integer != RDM_DEATHBALL) {
         G_FreeEdict(self);
         return;
     }

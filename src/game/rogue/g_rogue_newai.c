@@ -576,7 +576,7 @@ END - set this flag on the endpoints of each hintpath.
 */
 void SP_hint_path(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1024,9 +1024,9 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
             // on Easy & Normal, don't sidestep as often (25% on Easy, 50% on Normal)
             float chance = 1.0f;
 
-            if (skill->integer == 0)
+            if (skill.integer == 0)
                 chance = 0.25f;
-            else if (skill->integer == 1)
+            else if (skill.integer == 1)
                 chance = 0.50f;
 
             if (frandom() > chance) {
@@ -1078,9 +1078,9 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
             monster_duck_down(self);
 
             // on Easy & Normal mode, duck longer
-            if (skill->integer == 0)
+            if (skill.integer == 0)
                 self->monsterinfo.duck_wait_time += random_time_sec(0.5f, 1.0f);
-            else if (skill->integer == 1)
+            else if (skill.integer == 1)
                 self->monsterinfo.duck_wait_time += random_time_sec(0.1f, 0.35f);
         }
 
@@ -1173,7 +1173,7 @@ edict_t *PickCoopTarget(edict_t *self)
     edict_t *ent;
 
     // if we're not in coop, this is a noop
-    if (!coop->integer)
+    if (!coop.integer)
         return NULL;
 
     for (int player = 0; player < game.maxclients; player++) {
@@ -1199,7 +1199,7 @@ int CountPlayers(void)
     int      count = 0;
 
     // if we're not in coop, this is a noop
-    if (!coop->integer)
+    if (!coop.integer)
         return 1;
 
     for (int player = 0; player < game.maxclients; player++) {

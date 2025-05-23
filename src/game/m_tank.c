@@ -428,7 +428,7 @@ static void TankRocket(edict_t *self)
     //======
     // PMM - lead target  (not when blindfiring)
     // 20, 35, 50, 65 chance of leading
-    if ((!blindfire) && ((frandom() < (0.2f + ((3 - skill->integer) * 0.15f)))))
+    if ((!blindfire) && ((frandom() < (0.2f + ((3 - skill.integer) * 0.15f)))))
         PredictAim(self, self->enemy, start, rocketSpeed, false, 0, dir, vec);
     // PMM - lead target
     //======

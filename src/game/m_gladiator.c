@@ -197,7 +197,7 @@ static void gladbGun(edict_t *self)
 
 static void gladbGun_check(edict_t *self)
 {
-    if (skill->integer == 3)
+    if (skill.integer == 3)
         gladbGun(self);
 }
 

@@ -1130,111 +1130,112 @@ static inline bool brandom(void)
 
 #define random_element(array)   ((array)[irandom1(q_countof(array))])
 
-extern cvar_t *developer;
-extern cvar_t *deathmatch;
-extern cvar_t *coop;
-extern cvar_t *skill;
-extern cvar_t *fraglimit;
-extern cvar_t *timelimit;
+extern vm_cvar_t developer;
+extern vm_cvar_t deathmatch;
+extern vm_cvar_t coop;
+extern vm_cvar_t skill;
+extern vm_cvar_t fraglimit;
+extern vm_cvar_t timelimit;
 // ZOID
-extern cvar_t *capturelimit;
-extern cvar_t *g_quick_weapon_switch;
-extern cvar_t *g_instant_weapon_switch;
+extern vm_cvar_t capturelimit;
+extern vm_cvar_t g_quick_weapon_switch;
+extern vm_cvar_t g_instant_weapon_switch;
 // ZOID
-extern cvar_t *password;
-extern cvar_t *spectator_password;
-extern cvar_t *needpass;
-extern cvar_t *g_select_empty;
-extern cvar_t *sv_dedicated;
+extern vm_cvar_t password;
+extern vm_cvar_t spectator_password;
+extern vm_cvar_t needpass;
+extern vm_cvar_t g_select_empty;
+extern vm_cvar_t sv_dedicated;
 
-extern cvar_t *filterban;
+extern vm_cvar_t filterban;
 
-extern cvar_t *sv_gravity;
-extern cvar_t *sv_maxvelocity;
+extern vm_cvar_t sv_gravity;
+extern vm_cvar_t sv_maxvelocity;
 
-extern cvar_t *gun_x, *gun_y, *gun_z;
-extern cvar_t *sv_rollspeed;
-extern cvar_t *sv_rollangle;
+extern vm_cvar_t gun_x, gun_y, gun_z;
+extern vm_cvar_t sv_rollspeed;
+extern vm_cvar_t sv_rollangle;
 
-extern cvar_t *run_pitch;
-extern cvar_t *run_roll;
-extern cvar_t *bob_up;
-extern cvar_t *bob_pitch;
-extern cvar_t *bob_roll;
+extern vm_cvar_t run_pitch;
+extern vm_cvar_t run_roll;
+extern vm_cvar_t bob_up;
+extern vm_cvar_t bob_pitch;
+extern vm_cvar_t bob_roll;
 
-extern cvar_t *sv_cheats;
-extern cvar_t *g_debug_monster_paths;
-extern cvar_t *g_debug_monster_kills;
-extern cvar_t *maxspectators;
+extern vm_cvar_t sv_cheats;
+extern vm_cvar_t g_debug_monster_paths;
+extern vm_cvar_t g_debug_monster_kills;
+extern vm_cvar_t maxspectators;
 
-extern cvar_t *flood_msgs;
-extern cvar_t *flood_persecond;
-extern cvar_t *flood_waitdelay;
+extern vm_cvar_t flood_msgs;
+extern vm_cvar_t flood_persecond;
+extern vm_cvar_t flood_waitdelay;
 
-extern cvar_t *sv_maplist;
+extern vm_cvar_t sv_maplist;
 
-extern cvar_t *g_skipViewModifiers;
+extern vm_cvar_t g_skipViewModifiers;
 
-extern cvar_t *sv_stopspeed; // PGM - this was a define in g_phys.c
+extern vm_cvar_t sv_stopspeed; // PGM - this was a define in g_phys.c
 
-extern cvar_t *g_strict_saves;
-extern cvar_t *g_coop_health_scaling;
-extern cvar_t *g_weapon_respawn_time;
+extern vm_cvar_t g_strict_saves;
+extern vm_cvar_t g_coop_health_scaling;
+extern vm_cvar_t g_weapon_respawn_time;
 
-extern cvar_t *g_no_health;
-extern cvar_t *g_no_items;
-extern cvar_t *g_dm_weapons_stay;
-extern cvar_t *g_dm_no_fall_damage;
-extern cvar_t *g_dm_instant_items;
-extern cvar_t *g_dm_same_level;
-extern cvar_t *g_friendly_fire;
-extern cvar_t *g_dm_force_respawn;
-extern cvar_t *g_dm_force_respawn_time;
-extern cvar_t *g_dm_spawn_farthest;
-extern cvar_t *g_no_armor;
-extern cvar_t *g_dm_allow_exit;
-extern cvar_t *g_infinite_ammo;
-extern cvar_t *g_dm_no_quad_drop;
-extern cvar_t *g_dm_no_quadfire_drop;
-extern cvar_t *g_no_mines;
-extern cvar_t *g_dm_no_stack_double;
-extern cvar_t *g_no_nukes;
-extern cvar_t *g_no_spheres;
-extern cvar_t *g_teamplay_armor_protect;
-extern cvar_t *g_allow_techs;
+extern vm_cvar_t g_no_health;
+extern vm_cvar_t g_no_items;
+extern vm_cvar_t g_dm_weapons_stay;
+extern vm_cvar_t g_dm_no_fall_damage;
+extern vm_cvar_t g_dm_instant_items;
+extern vm_cvar_t g_dm_same_level;
+extern vm_cvar_t g_friendly_fire;
+extern vm_cvar_t g_dm_force_respawn;
+extern vm_cvar_t g_dm_force_respawn_time;
+extern vm_cvar_t g_dm_spawn_farthest;
+extern vm_cvar_t g_no_armor;
+extern vm_cvar_t g_dm_allow_exit;
+extern vm_cvar_t g_infinite_ammo;
+extern vm_cvar_t g_dm_no_quad_drop;
+extern vm_cvar_t g_dm_no_quadfire_drop;
+extern vm_cvar_t g_no_mines;
+extern vm_cvar_t g_dm_no_stack_double;
+extern vm_cvar_t g_no_nukes;
+extern vm_cvar_t g_no_spheres;
+extern vm_cvar_t g_teamplay_armor_protect;
+extern vm_cvar_t g_allow_techs;
 
-extern cvar_t *g_start_items;
-extern cvar_t *g_map_list;
-extern cvar_t *g_map_list_shuffle;
+extern vm_cvar_t g_start_items;
+extern vm_cvar_t g_map_list;
+extern vm_cvar_t g_map_list_shuffle;
 
 // ROGUE
-extern cvar_t *gamerules;
-extern cvar_t *huntercam;
-extern cvar_t *g_dm_strong_mines;
-extern cvar_t *g_dm_random_items;
+extern vm_cvar_t gamerules;
+extern vm_cvar_t huntercam;
+extern vm_cvar_t g_dm_strong_mines;
+extern vm_cvar_t g_dm_random_items;
 // ROGUE
 
 // [Kex]
-extern cvar_t *g_instagib;
-extern cvar_t *g_coop_player_collision;
-extern cvar_t *g_coop_squad_respawn;
-extern cvar_t *g_coop_enable_lives;
-extern cvar_t *g_coop_num_lives;
-extern cvar_t *g_coop_instanced_items;
-extern cvar_t *g_allow_grapple;
-extern cvar_t *g_grapple_fly_speed;
-extern cvar_t *g_grapple_pull_speed;
-extern cvar_t *g_grapple_damage;
+extern vm_cvar_t g_instagib;
+extern vm_cvar_t g_coop_player_collision;
+extern vm_cvar_t g_coop_squad_respawn;
+extern vm_cvar_t g_coop_enable_lives;
+extern vm_cvar_t g_coop_num_lives;
+extern vm_cvar_t g_coop_instanced_items;
+extern vm_cvar_t g_allow_grapple;
+extern vm_cvar_t g_grapple_fly_speed;
+extern vm_cvar_t g_grapple_pull_speed;
+extern vm_cvar_t g_grapple_damage;
 
-extern cvar_t *sv_airaccelerate;
+extern vm_cvar_t sv_airaccelerate;
 
-extern cvar_t *g_damage_scale;
-extern cvar_t *g_disable_player_collision;
-extern cvar_t *ai_damage_scale;
-extern cvar_t *ai_model_scale;
-extern cvar_t *ai_allow_dm_spawn;
-extern cvar_t *ai_movement_disabled;
-extern cvar_t *g_monster_footsteps;
+extern vm_cvar_t g_damage_scale;
+extern vm_cvar_t g_disable_player_collision;
+extern vm_cvar_t ai_damage_scale;
+extern vm_cvar_t ai_model_scale;
+extern vm_cvar_t ai_allow_dm_spawn;
+extern vm_cvar_t ai_movement_disabled;
+extern vm_cvar_t g_monster_footsteps;
+extern vm_cvar_t g_auto_save_min_time;
 
 #define world (&g_edicts[ENTITYNUM_WORLD])
 

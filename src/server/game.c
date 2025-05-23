@@ -330,14 +330,38 @@ static bool PF_inVIS(const vec3_t p1, const vec3_t p2, vis_t vis)
     return true;
 }
 
-static cvar_t *PF_cvar(const char *name, const char *value, int flags)
+static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, int flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
         Com_WPrintf("Game attempted to set extended flags on '%s', masked out.\n", name);
         flags &= ~CVAR_EXTENDED_MASK;
     }
 
-    return Cvar_Get(name, value, flags | CVAR_GAME);
+    cvar_t *cv = Cvar_Get(name, value, flags | CVAR_GAME);
+    if (!cv)
+        return false;
+    if (!var)
+        return true;
+
+    var->integer = cv->integer;
+    var->value = cv->value;
+    Q_strlcpy(var->string, cv->string, sizeof(var->string));
+    return true;
+}
+
+static void PF_Cvar_Set(const char *name, const char *value)
+{
+    Cvar_UserSet(name, value);
+}
+
+static void PF_Cvar_ForceSet(const char *name, const char *value)
+{
+    Cvar_Set(name, value);
+}
+
+static unsigned PF_Cvar_VariableString(const char *name, char *buf, unsigned size)
+{
+    return Q_strlcpy(buf, Cvar_VariableString(name), size);
 }
 
 static void PF_AddCommandString(const char *string)
@@ -484,9 +508,12 @@ static const game_import_t game_import = {
     .TagFree = Z_Free,
     .FreeTags = PF_FreeTags,
 
-    .cvar = PF_cvar,
-    .cvar_set = Cvar_UserSet,
-    .cvar_forceset = Cvar_Set,
+    .Cvar_Register = PF_Cvar_Register,
+    .Cvar_Set = PF_Cvar_Set,
+    .Cvar_ForceSet = PF_Cvar_ForceSet,
+    .Cvar_VariableInteger = Cvar_VariableInteger,
+    .Cvar_VariableValue = Cvar_VariableValue,
+    .Cvar_VariableString = PF_Cvar_VariableString,
 
     .argc = Cmd_Argc,
     .argv = PF_Argv,

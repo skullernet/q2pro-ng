@@ -166,7 +166,7 @@ When fired, the "message" key becomes the current personal computer string, and 
 */
 void SP_target_help(edict_t *ent)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(ent);
         return;
@@ -214,7 +214,7 @@ void THINK(G_VerifyTargetted)(edict_t *ent)
 
 void SP_target_secret(edict_t *ent)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(ent);
         return;
@@ -243,7 +243,7 @@ static const char *G_ExpandArgument(const char *fmt, const char *arg)
 void G_PlayerNotifyGoal(edict_t *player)
 {
     // no goals in DM
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         return;
 
     if (!player->client->pers.spawned)
@@ -349,7 +349,7 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
 
 void SP_target_goal(edict_t *ent)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(ent);
         return;
@@ -414,17 +414,17 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
     if (level.intermissiontime)
         return; // already activated
 
-    if (!deathmatch->integer && !coop->integer && g_edicts[0].health <= 0)
+    if (!deathmatch.integer && !coop.integer && g_edicts[0].health <= 0)
         return;
 
     // if noexit, do a ton of damage to other
-    if (deathmatch->integer && !g_dm_allow_exit->integer && other != world) {
+    if (deathmatch.integer && !g_dm_allow_exit.integer && other != world) {
         T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, (mod_t) { MOD_EXIT });
         return;
     }
 
     // if multiplayer, let everyone know who hit the exit
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         if (level.time < SEC(10))
             return;
 
@@ -437,7 +437,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
         game.cross_level_flags &= ~(SFL_CROSS_TRIGGER_MASK);
 
     // if map has a landmark, store position instead of using spawn next map
-    if (activator && activator->client && !deathmatch->integer) {
+    if (activator && activator->client && !deathmatch.integer) {
         gclient_t *client = activator->client;
 
         client->landmark_name[0] = 0;
@@ -952,7 +952,7 @@ void SP_target_lightramp(edict_t *self)
         return;
     }
 
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1284,7 +1284,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_target_camera(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(self);
         return;
@@ -1300,7 +1300,7 @@ void SP_target_camera(edict_t *self)
 
 void USE(use_target_gravity)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    gi.cvar_set("sv_gravity", va("%f", self->gravity));
+    trap_Cvar_Set("sv_gravity", va("%f", self->gravity));
     level.gravity = self->gravity;
 }
 
@@ -1526,7 +1526,7 @@ void THINK(target_poi_setup)(edict_t *self)
 
 void SP_target_poi(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(self);
         return;
@@ -1615,7 +1615,7 @@ void THINK(check_target_healthbar)(edict_t *ent)
 
 void SP_target_healthbar(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1644,7 +1644,7 @@ void SP_target_healthbar(edict_t *self)
 
 void USE(use_target_autosave)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    gtime_t save_time = SEC(gi.cvar("g_athena_auto_save_min_time", "60", CVAR_NOSET)->value);
+    gtime_t save_time = SEC(g_auto_save_min_time.value);
 
     if (level.time - level.next_auto_save > save_time) {
         trap_AddCommandString("autosave\n");
@@ -1654,7 +1654,7 @@ void USE(use_target_autosave)(edict_t *ent, edict_t *other, edict_t *activator)
 
 void SP_target_autosave(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1721,7 +1721,7 @@ void USE(trigger_crossunit_trigger_use)(edict_t *self, edict_t *other, edict_t *
 
 void SP_target_crossunit_trigger(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1746,7 +1746,7 @@ void THINK(target_crossunit_target_think)(edict_t *self)
 
 void SP_target_crossunit_target(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1770,7 +1770,7 @@ void USE(use_target_achievement)(edict_t *self, edict_t *other, edict_t *activat
 
 void SP_target_achievement(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -1792,7 +1792,7 @@ void USE(use_target_story)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_target_story(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }

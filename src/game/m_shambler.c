@@ -201,7 +201,7 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
         return;
 
     // If hard or nightmare, don't go into pain while attacking
-    if (skill->integer >= 2) {
+    if (skill.integer >= 2) {
         if ((self->s.frame >= FRAME_smash01) && (self->s.frame <= FRAME_smash12))
             return;
         if ((self->s.frame >= FRAME_swingl01) && (self->s.frame <= FRAME_swingl09))

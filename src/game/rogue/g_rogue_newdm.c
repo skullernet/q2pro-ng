@@ -78,13 +78,13 @@ static item_id_t FindSubstituteItem(edict_t *ent)
             continue;
 
         // don't respawn spheres if they're dmflag disabled.
-        if (g_no_spheres->integer && (i == IT_ITEM_SPHERE_VENGEANCE || i == IT_ITEM_SPHERE_HUNTER || i == IT_ITEM_SPHERE_DEFENDER))
+        if (g_no_spheres.integer && (i == IT_ITEM_SPHERE_VENGEANCE || i == IT_ITEM_SPHERE_HUNTER || i == IT_ITEM_SPHERE_DEFENDER))
             continue;
 
-        if (g_no_nukes->integer && i == IT_AMMO_NUKE)
+        if (g_no_nukes.integer && i == IT_AMMO_NUKE)
             continue;
 
-        if (g_no_mines->integer && (i == IT_AMMO_PROX || i == IT_AMMO_TESLA || i == IT_AMMO_TRAP))
+        if (g_no_mines.integer && (i == IT_AMMO_PROX || i == IT_AMMO_TESLA || i == IT_AMMO_TRAP))
             continue;
 
         itflags = GetSubstituteItemFlags(i);
@@ -264,8 +264,8 @@ void InitGameRules(void)
     // clear out the game rule structure before we start
     memset(&DMGame, 0, sizeof(DMGame));
 
-    if (gamerules->integer) {
-        switch (gamerules->integer) {
+    if (gamerules.integer) {
+        switch (gamerules.integer) {
         case RDM_TAG:
             DMGame = DMGame_Tag;
             break;
@@ -274,7 +274,7 @@ void InitGameRules(void)
             break;
         // reset gamerules if it's not a valid number
         default:
-            gi.cvar_forceset("gamerules", "0");
+            trap_Cvar_ForceSet("gamerules", "0");
             break;
         }
     }

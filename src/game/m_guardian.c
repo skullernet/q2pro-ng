@@ -725,7 +725,7 @@ void MONSTERINFO_ATTACK(guardian_attack)(edict_t *self)
             self->style = 1;
             changedAttack = true;
 
-            if (skill->integer >= 2)
+            if (skill.integer >= 2)
                 self->monsterinfo.nextframe = FRAME_atk2_in8;
         } else if (M_CheckClearShot(self, monster_flash_offset[MZ2_GUARDIAN_BLASTER])) {
             M_SetAnimation(self, &guardian_move_atk1_in);
@@ -823,7 +823,7 @@ static void GuardianPowerArmor(edict_t *self)
     self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
     // I don't like this, but it works
     if (self->monsterinfo.power_armor_power <= 0)
-        self->monsterinfo.power_armor_power += 200 * skill->integer;
+        self->monsterinfo.power_armor_power += 200 * skill.integer;
 }
 
 static void GuardianRespondPowerup(edict_t *self, edict_t *other)
@@ -836,7 +836,7 @@ static void GuardianPowerups(edict_t *self)
 {
     edict_t *ent;
 
-    if (!coop->integer) {
+    if (!coop.integer) {
         GuardianRespondPowerup(self, self->enemy);
     } else {
         for (int player = 0; player < game.maxclients; player++) {
@@ -903,9 +903,9 @@ void SP_monster_guardian(edict_t *self)
     self->health = 2500 * st.health_multiplier;
     self->gib_health = -200;
 
-    if (skill->integer >= 3 || coop->integer)
+    if (skill.integer >= 3 || coop.integer)
         self->health *= 2;
-    else if (skill->integer == 2)
+    else if (skill.integer == 2)
         self->health *= 1.5f;
 
     self->monsterinfo.scale = MODEL_SCALE;

@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "common/cmd.h"
+#include "common/cvar.h"
 #include "common/utils.h"
 
 //

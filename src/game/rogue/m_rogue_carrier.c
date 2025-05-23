@@ -72,7 +72,7 @@ static void CarrierCoopCheck(edict_t *self)
     // if we're not in coop, this is a noop
     // [Paril-KEX] might as well let this work in SP too, so he fires it
     // if you get below him
-    //if (!coop->integer)
+    //if (!coop.integer)
     //  return;
     // if we are, and we have recently fired, bail
     if (self->monsterinfo.fire_wait > level.time)
@@ -927,10 +927,10 @@ void SP_monster_carrier(edict_t *self)
     VectorSet(self->r.maxs, 56, 56, 44);
 
     // 2000 - 4000 health
-    self->health = max(2000, 2000 + 1000 * (skill->integer - 1)) * st.health_multiplier;
+    self->health = max(2000, 2000 + 1000 * (skill.integer - 1)) * st.health_multiplier;
     // add health in coop (500 * skill)
-    if (coop->integer)
-        self->health += 500 * skill->integer;
+    if (coop.integer)
+        self->health += 500 * skill.integer;
 
     self->gib_health = -200;
     self->mass = 1000;
@@ -971,8 +971,8 @@ void SP_monster_carrier(edict_t *self)
         reinforcements = st.reinforcements;
 
     if (self->monsterinfo.monster_slots && reinforcements && *reinforcements) {
-        if (skill->integer)
-            self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill->value / 2));
+        if (skill.integer)
+            self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill.value / 2));
 
         M_SetupReinforcements(reinforcements, &self->monsterinfo.reinforcements);
     }

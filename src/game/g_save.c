@@ -1210,7 +1210,7 @@ static void unknown(const char *what)
 {
     const char *token = COM_MakePrintable(line.token);
 
-    if (g_strict_saves->integer)
+    if (g_strict_saves.integer)
         parse_error("unknown %s: %s", what, token);
 
     G_Printf("WARNING: %s: line %d: unknown %s: %s\n", line.filename, line.number, what, token);

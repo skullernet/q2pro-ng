@@ -88,8 +88,8 @@ void SV_CheckVelocity(edict_t *ent)
     //
     float speed = VectorLength(ent->velocity);
 
-    if (speed > sv_maxvelocity->value)
-        VectorScale(ent->velocity, sv_maxvelocity->value / speed, ent->velocity);
+    if (speed > sv_maxvelocity.value)
+        VectorScale(ent->velocity, sv_maxvelocity.value / speed, ent->velocity);
 }
 
 /*
@@ -719,7 +719,7 @@ void SV_AddRotationalFriction(edict_t *ent)
     float adjustment;
 
     VectorMA(ent->s.angles, FRAME_TIME_SEC, ent->avelocity, ent->s.angles);
-    adjustment = FRAME_TIME_SEC * sv_stopspeed->value * sv_friction; // PGM now a cvar
+    adjustment = FRAME_TIME_SEC * sv_stopspeed.value * sv_friction; // PGM now a cvar
 
     for (n = 0; n < 3; n++) {
         if (ent->avelocity[n] > 0) {
@@ -791,7 +791,7 @@ static void SV_Physics_Step(edict_t *ent)
     // friction for flying monsters that have been given vertical velocity
     if ((ent->flags & FL_FLY) && (ent->velocity[2] != 0) && !(ent->monsterinfo.aiflags & AI_ALTERNATE_FLY)) {
         speed = fabsf(ent->velocity[2]);
-        control = speed < sv_stopspeed->value ? sv_stopspeed->value : speed;
+        control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
         friction = sv_friction / 3;
         newspeed = speed - (FRAME_TIME_SEC * control * friction);
         if (newspeed < 0)
@@ -803,7 +803,7 @@ static void SV_Physics_Step(edict_t *ent)
     // friction for flying monsters that have been given vertical velocity
     if ((ent->flags & FL_SWIM) && (ent->velocity[2] != 0) && !(ent->monsterinfo.aiflags & AI_ALTERNATE_FLY)) {
         speed = fabsf(ent->velocity[2]);
-        control = speed < sv_stopspeed->value ? sv_stopspeed->value : speed;
+        control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
         newspeed = speed - (FRAME_TIME_SEC * control * sv_waterfriction * ent->waterlevel);
         if (newspeed < 0)
             newspeed = 0;
@@ -823,7 +823,7 @@ static void SV_Physics_Step(edict_t *ent)
                 if (ent->deadflag)
                     friction *= 0.5f;
 
-                control = speed < sv_stopspeed->value ? sv_stopspeed->value : speed;
+                control = speed < sv_stopspeed.value ? sv_stopspeed.value : speed;
                 newspeed = speed - FRAME_TIME_SEC * control * friction;
 
                 if (newspeed < 0)

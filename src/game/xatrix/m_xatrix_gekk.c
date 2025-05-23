@@ -1321,7 +1321,7 @@ void MONSTERINFO_DODGE(gekk_dodge)(edict_t *self, edict_t *attacker, gtime_t eta
         return;
     }
 
-    if (skill->integer == 0) {
+    if (skill.integer == 0) {
         r = frandom();
         if (r > 0.5f)
             M_SetAnimation(self, &gekk_move_lduck);
@@ -1333,7 +1333,7 @@ void MONSTERINFO_DODGE(gekk_dodge)(edict_t *self, edict_t *attacker, gtime_t eta
     self->monsterinfo.pausetime = level.time + eta + SEC(0.3f);
     r = frandom();
 
-    if (skill->integer == 1) {
+    if (skill.integer == 1) {
         if (r > 0.33f) {
             r = frandom();
             if (r > 0.5f)
@@ -1350,7 +1350,7 @@ void MONSTERINFO_DODGE(gekk_dodge)(edict_t *self, edict_t *attacker, gtime_t eta
         return;
     }
 
-    if (skill->integer == 2) {
+    if (skill.integer == 2) {
         if (r > 0.66f) {
             r = frandom();
             if (r > 0.5f)

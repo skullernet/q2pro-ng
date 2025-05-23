@@ -400,7 +400,7 @@ void THINK(Trap_Think)(edict_t *ent)
     if (ent->s.frame >= 4) {
         ent->s.effects |= EF_TRAP;
         // clear the owner if in deathmatch
-        if (deathmatch->integer)
+        if (deathmatch.integer)
             ent->r.ownernum = ENTITYNUM_NONE;
     }
 
@@ -430,7 +430,7 @@ void THINK(Trap_Think)(edict_t *ent)
         if (target != ent->teammaster && CheckTeamDamage(target, ent->teammaster))
             continue;
         // [Paril-KEX]
-        if (!deathmatch->integer && target->client)
+        if (!deathmatch.integer && target->client)
             continue;
         if (target->health <= 0)
             continue;
@@ -486,7 +486,7 @@ void THINK(Trap_Think)(edict_t *ent)
     VectorCopy(ent->s.origin, ent->s.old_origin);
     ent->timestamp = level.time + SEC(30);
     ent->accel = best->mass;
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         ent->mass = best->mass / 4;
     else
         ent->mass = best->mass / 10;

@@ -166,7 +166,7 @@ static void Widow2Spawn(edict_t *self)
 
         ent->monsterinfo.aiflags |= AI_SPAWNED_COMMANDER | AI_DO_NOT_COUNT | AI_IGNORE_SHOTS;
 
-        if (!coop->integer) {
+        if (!coop.integer) {
             designated_enemy = self->enemy;
         } else {
             designated_enemy = PickCoopTarget(ent);
@@ -309,7 +309,7 @@ static void Widow2SaveDisruptLoc(edict_t *self)
 
 static void widow2_disrupt_reattack(edict_t *self)
 {
-    if (frandom() < (0.25f + (skill->integer * 0.15f)))
+    if (frandom() < (0.25f + (skill.integer * 0.15f)))
         self->monsterinfo.nextframe = FRAME_firea01;
 }
 
@@ -704,7 +704,7 @@ void MONSTERINFO_ATTACK(widow2_attack)(edict_t *self)
                 // melee attack ok
 
                 // be nice in easy mode
-                if (skill->integer != 0 || irandom1(4)) {
+                if (skill.integer != 0 || irandom1(4)) {
                     M_SetAnimation(self, &widow2_move_tongs);
                     return;
                 }
@@ -809,12 +809,12 @@ void PAIN(widow2_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
     if (damage >= 15) {
         if (damage < 75) {
-            if ((skill->integer < 3) && (frandom() < (0.6f - (0.2f * skill->integer)))) {
+            if ((skill.integer < 3) && (frandom() < (0.6f - (0.2f * skill.integer)))) {
                 self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
                 M_SetAnimation(self, &widow2_move_pain);
             }
         } else {
-            if ((skill->integer < 3) && (frandom() < (0.75f - (0.1f * skill->integer)))) {
+            if ((skill.integer < 3) && (frandom() < (0.75f - (0.1f * skill.integer)))) {
                 self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
                 M_SetAnimation(self, &widow2_move_pain);
             }
@@ -958,14 +958,14 @@ void SP_monster_widow2(edict_t *self)
     VectorSet(self->r.mins, -70, -70, 0);
     VectorSet(self->r.maxs, 70, 70, 144);
 
-    self->health = (2000 + 800 + 1000 * skill->integer) * st.health_multiplier;
-    if (coop->integer)
-        self->health += 500 * skill->integer;
+    self->health = (2000 + 800 + 1000 * skill.integer) * st.health_multiplier;
+    if (coop.integer)
+        self->health += 500 * skill.integer;
     //  self->health = 1;
     self->gib_health = -900;
     self->mass = 2500;
 
-    if (skill->integer == 3) {
+    if (skill.integer == 3) {
         if (!ED_WasKeySpecified("power_armor_type"))
             self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
         if (!ED_WasKeySpecified("power_armor_power"))
@@ -1139,7 +1139,7 @@ static void ThrowMoreStuff(edict_t *self, const vec3_t point)
 {
     int n;
 
-    if (coop->integer) {
+    if (coop.integer) {
         ThrowSmallStuff(self, point);
         return;
     }

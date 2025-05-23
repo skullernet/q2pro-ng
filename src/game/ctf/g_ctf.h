@@ -35,9 +35,9 @@ typedef struct {
     edict_t *ent;
 } ghost_t;
 
-extern cvar_t *ctf;
-extern cvar_t *g_teamplay_force_join;
-extern cvar_t *teamplay;
+extern vm_cvar_t ctf;
+extern vm_cvar_t g_teamplay_force_join;
+extern vm_cvar_t teamplay;
 
 #define CTF_TEAM1_SKIN "ctf_r"
 #define CTF_TEAM2_SKIN "ctf_b"

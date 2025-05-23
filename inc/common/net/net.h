@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "common/cvar.h"
 #include "common/fifo.h"
 
 // net.h -- quake's interface to the networking layer

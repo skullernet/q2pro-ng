@@ -150,7 +150,7 @@ void TOUCH(Prox_Field_Touch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
     if (CheckTeamDamage(prox->teammaster, other))
         return;
 
-    if (!deathmatch->integer && other->client)
+    if (!deathmatch.integer && other->client)
         return;
 
     if (other == prox) // don't set self off
@@ -186,12 +186,12 @@ void THINK(prox_seek)(edict_t *ent)
 
 static bool monster_or_player(edict_t *ent)
 {
-    return ((ent->r.svflags & SVF_MONSTER) || (deathmatch->integer && (ent->client || !strcmp(ent->classname, "prox_mine")))) && (ent->health > 0);
+    return ((ent->r.svflags & SVF_MONSTER) || (deathmatch.integer && (ent->client || !strcmp(ent->classname, "prox_mine")))) && (ent->health > 0);
 }
 
 bool player_start_point(edict_t *ent)
 {
-    return deathmatch->integer && (!strncmp(ent->classname, "info_player_", 12) || !strcmp(ent->classname, "misc_teleporter_dest") || !strncmp(ent->classname, "item_flag_", 10));
+    return deathmatch.integer && (!strncmp(ent->classname, "info_player_", 12) || !strcmp(ent->classname, "misc_teleporter_dest") || !strncmp(ent->classname, "item_flag_", 10));
 }
 
 void THINK(prox_open)(edict_t *ent)
@@ -203,7 +203,7 @@ void THINK(prox_open)(edict_t *ent)
 
         // set the owner to NULL so the owner can walk through it.  needs to be done here so the owner
         // doesn't get stuck on it while it's opening if fired at point blank wall
-        if (deathmatch->integer)
+        if (deathmatch.integer)
             ent->r.ownernum = ENTITYNUM_NONE;
 
         if (ent->teamchain)
@@ -233,7 +233,7 @@ void THINK(prox_open)(edict_t *ent)
             return;
         }
 
-        if (g_dm_strong_mines->integer)
+        if (g_dm_strong_mines.integer)
             ent->timestamp = level.time + PROX_TIME_TO_LIVE;
         else {
             switch ((int)(ent->dmg / (PROX_DAMAGE * PROX_DAMAGE_OPEN_MULT))) {
@@ -801,7 +801,7 @@ void THINK(tesla_think_active)(edict_t *self)
 
         // don't hit teammates
         if (hit->client) {
-            if (!deathmatch->integer)
+            if (!deathmatch.integer)
                 continue;
             if (CheckTeamDamage(hit, &g_edicts[self->teamchain->r.ownernum]))
                 continue;
@@ -811,7 +811,7 @@ void THINK(tesla_think_active)(edict_t *self)
             continue;
 
         // don't hit other teslas in SP/coop
-        if (!deathmatch->integer && hit->classname && (hit->r.svflags & SVF_TRAP))
+        if (!deathmatch.integer && hit->classname && (hit->r.svflags & SVF_TRAP))
             continue;
 
         trap_Trace(&tr, start, NULL, NULL, hit->s.origin, self->s.number, MASK_PROJECTILE);
@@ -866,7 +866,7 @@ void THINK(tesla_activate)(edict_t *self)
     }
 
     // only check for spawn points in deathmatch
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         search = NULL;
         while ((search = findradius(search, self->s.origin, 1.5f * TESLA_DAMAGE_RADIUS)) != NULL) {
             if (search == self)
@@ -901,7 +901,7 @@ void THINK(tesla_activate)(edict_t *self)
 
     VectorClear(self->s.angles);
     // clear the owner if in deathmatch
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         self->r.ownernum = ENTITYNUM_NONE;
     self->teamchain = trigger;
     self->think = tesla_think_active;
@@ -993,7 +993,7 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     // blow up on contact with lava & slime code
     tesla->touch = tesla_lava;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         // PMM - lowered from 50 - 7/29/1998
         tesla->health = 20;
     else

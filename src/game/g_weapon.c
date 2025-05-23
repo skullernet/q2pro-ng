@@ -549,7 +549,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (other->takedamage) {
         T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
-    } else if (!deathmatch->integer && !coop->integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
+    } else if (!deathmatch.integer && !coop.integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
         while (n--)
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
@@ -649,7 +649,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     pierce_end(&pierce);
 
     // send gun puff / flash
-    entity_event_t te = (deathmatch->integer && g_instagib->integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
+    entity_event_t te = (deathmatch.integer && g_instagib.integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
     G_SpawnTrail(start, tr.endpos, te);
 
     if (self->client)
@@ -813,7 +813,7 @@ void THINK(bfg_think)(edict_t *self)
     int      dmg;
     trace_t  tr;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         dmg = 5;
     else
         dmg = 10;

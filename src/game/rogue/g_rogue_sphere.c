@@ -311,8 +311,8 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
         return;
 
     // sam raimi cam is disabled if FORCE_RESPAWN is set.
-    // sam raimi cam is also disabled if huntercam->value is 0.
-    if (g_dm_force_respawn->integer || !huntercam->integer)
+    // sam raimi cam is also disabled if huntercam.value is 0.
+    if (g_dm_force_respawn.integer || !huntercam.integer)
         return;
 
     dist = Distance(other->s.origin, self->s.origin);

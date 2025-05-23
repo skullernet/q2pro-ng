@@ -45,14 +45,14 @@ typedef struct {
 
 static ctfgame_t ctfgame;
 
-cvar_t *ctf;
-cvar_t *teamplay;
-cvar_t *g_teamplay_force_join;
+vm_cvar_t ctf;
+vm_cvar_t teamplay;
+vm_cvar_t g_teamplay_force_join;
 
 // [Paril-KEX]
 bool G_TeamplayEnabled(void)
 {
-    return ctf->integer || teamplay->integer;
+    return ctf.integer || teamplay.integer;
 }
 
 // [Paril-KEX]
@@ -64,16 +64,16 @@ void G_AdjustTeamScore(ctfteam_t team, int offset)
         ctfgame.total2 += offset;
 }
 
-static cvar_t *competition;
-static cvar_t *matchlock;
-static cvar_t *electpercentage;
-static cvar_t *matchtime;
-static cvar_t *matchsetuptime;
-static cvar_t *matchstarttime;
-static cvar_t *admin_password;
-static cvar_t *allow_admin;
-static cvar_t *warp_list;
-static cvar_t *warn_unbalanced;
+static vm_cvar_t competition;
+static vm_cvar_t matchlock;
+static vm_cvar_t electpercentage;
+static vm_cvar_t matchtime;
+static vm_cvar_t matchsetuptime;
+static vm_cvar_t matchstarttime;
+static vm_cvar_t admin_password;
+static vm_cvar_t allow_admin;
+static vm_cvar_t warp_list;
+static vm_cvar_t warn_unbalanced;
 
 // Index for various CTF pics, this saves us from calling G_ImageIndex
 // all the time and saves a few CPU cycles since we don't have to do
@@ -148,25 +148,25 @@ void CTFSpawn(void)
     memset(&ctfgame, 0, sizeof(ctfgame));
     CTFSetupTechSpawn();
 
-    if (competition->integer > 1) {
+    if (competition.integer > 1) {
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
+        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
     }
 }
 
 void CTFInit(void)
 {
-    ctf = gi.cvar("ctf", "0", CVAR_SERVERINFO | CVAR_LATCH);
-    competition = gi.cvar("competition", "0", CVAR_SERVERINFO);
-    matchlock = gi.cvar("matchlock", "1", CVAR_SERVERINFO);
-    electpercentage = gi.cvar("electpercentage", "66", 0);
-    matchtime = gi.cvar("matchtime", "20", CVAR_SERVERINFO);
-    matchsetuptime = gi.cvar("matchsetuptime", "10", 0);
-    matchstarttime = gi.cvar("matchstarttime", "20", 0);
-    admin_password = gi.cvar("admin_password", "", 0);
-    allow_admin = gi.cvar("allow_admin", "1", 0);
-    warp_list = gi.cvar("warp_list", "q2ctf1 q2ctf2 q2ctf3 q2ctf4 q2ctf5", 0);
-    warn_unbalanced = gi.cvar("warn_unbalanced", "0", 0);
+    trap_Cvar_Register(&ctf, "ctf", "0", CVAR_SERVERINFO | CVAR_LATCH);
+    trap_Cvar_Register(&competition, "competition", "0", CVAR_SERVERINFO);
+    trap_Cvar_Register(&matchlock, "matchlock", "1", CVAR_SERVERINFO);
+    trap_Cvar_Register(&electpercentage, "electpercentage", "66", 0);
+    trap_Cvar_Register(&matchtime, "matchtime", "20", CVAR_SERVERINFO);
+    trap_Cvar_Register(&matchsetuptime, "matchsetuptime", "10", 0);
+    trap_Cvar_Register(&matchstarttime, "matchstarttime", "20", 0);
+    trap_Cvar_Register(&admin_password, "admin_password", "", 0);
+    trap_Cvar_Register(&allow_admin, "allow_admin", "1", 0);
+    trap_Cvar_Register(&warp_list, "warp_list", "q2ctf1 q2ctf2 q2ctf3 q2ctf4 q2ctf5", 0);
+    trap_Cvar_Register(&warn_unbalanced, "warn_unbalanced", "0", 0);
 }
 
 /*
@@ -267,7 +267,7 @@ void CTFAssignTeam(gclient_t *who)
 
     who->resp.ctf_state = 0;
 
-    if (!g_teamplay_force_join->integer && !(g_edicts[who - g_clients].r.svflags & SVF_BOT)) {
+    if (!g_teamplay_force_join.integer && !(g_edicts[who - g_clients].r.svflags & SVF_BOT)) {
         who->resp.ctf_team = CTF_NOTEAM;
         return;
     }
@@ -313,7 +313,7 @@ edict_t *SelectCTFSpawnPoint(edict_t *ent, bool force_spawn)
     bool any_valid;
 
     if (ent->client->resp.ctf_state) {
-        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, false, &any_valid);
+        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest.integer, force_spawn, false, &any_valid);
 
         if (any_valid)
             return spot;
@@ -329,7 +329,7 @@ edict_t *SelectCTFSpawnPoint(edict_t *ent, bool force_spawn)
         cname = "info_player_team2";
         break;
     default:
-        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, true, &any_valid);
+        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest.integer, force_spawn, true, &any_valid);
 
         if (any_valid)
             return spot;
@@ -346,7 +346,7 @@ edict_t *SelectCTFSpawnPoint(edict_t *ent, bool force_spawn)
         spawn_points[nb_spots++] = spot;
 
     if (!nb_spots) {
-        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest->integer, force_spawn, true, &any_valid);
+        spot = SelectDeathmatchSpawnPoint(g_dm_spawn_farthest.integer, force_spawn, true, &any_valid);
 
         if (!any_valid)
             G_Error("can't find suitable CTF spawn point");
@@ -835,7 +835,7 @@ void CTFCalcRankings(int player_ranks[MAX_CLIENTS])
 
 void CheckEndTDMLevel(void)
 {
-    if (ctfgame.total1 >= fraglimit->integer || ctfgame.total2 >= fraglimit->integer) {
+    if (ctfgame.total1 >= fraglimit.integer || ctfgame.total2 >= fraglimit.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "Frag limit hit.\n");
         EndDMLevel();
     }
@@ -970,7 +970,7 @@ void SetCTFStats(edict_t *ent)
         }
     }
 
-    if (ctf->integer) {
+    if (ctf.integer) {
         // figure out what icon to display for team logos
         // three states:
         //   flag at base
@@ -1264,7 +1264,7 @@ void CTFGrapplePull(edict_t *self)
             self->s.sound = G_SoundIndex("weapons/grapple/grhang.wav");
         }
 
-        VectorScale(hookdir, g_grapple_pull_speed->value, owner->velocity);
+        VectorScale(hookdir, g_grapple_pull_speed.value, owner->velocity);
         owner->flags |= FL_NO_KNOCKBACK;
         SV_AddGravity(owner);
     }
@@ -1331,7 +1331,7 @@ static void CTFGrappleFire(edict_t *ent, const vec3_t g_offset, int damage, effe
     if (ent->client->silencer_shots)
         volume = 0.2f;
 
-    if (CTFFireGrapple(ent, start, dir, damage, g_grapple_fly_speed->value, effect))
+    if (CTFFireGrapple(ent, start, dir, damage, g_grapple_fly_speed.value, effect))
         G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grfire.wav"), volume, ATTN_NORM);
 
     PlayerNoise(ent, start, PNOISE_WEAPON);
@@ -1339,7 +1339,7 @@ static void CTFGrappleFire(edict_t *ent, const vec3_t g_offset, int damage, effe
 
 static void CTFWeapon_Grapple_Fire(edict_t *ent)
 {
-    CTFGrappleFire(ent, vec3_origin, g_grapple_damage->integer, EF_NONE);
+    CTFGrappleFire(ent, vec3_origin, g_grapple_damage.integer, EF_NONE);
 }
 
 void CTFWeapon_Grapple(edict_t *ent)
@@ -1426,7 +1426,7 @@ void CTFTeam_f(edict_t *ent)
 
     // [Paril-KEX] with force-join, don't allow us to switch
     // using this command.
-    if (g_teamplay_force_join->integer) {
+    if (g_teamplay_force_join.integer) {
         if (!(ent->r.svflags & SVF_BOT)) {
             G_ClientPrintf(ent, PRINT_HIGH, "Can't change teams in a match.\n");
             return;
@@ -1540,18 +1540,18 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
     *string = 0;
 
     // [Paril-KEX] time & frags
-    if (teamplay->integer) {
-        if (fraglimit->integer)
-            sprintf(string, "xv -20 yv -10 string2 \"Frag Limit: %d\" ", fraglimit->integer);
+    if (teamplay.integer) {
+        if (fraglimit.integer)
+            sprintf(string, "xv -20 yv -10 string2 \"Frag Limit: %d\" ", fraglimit.integer);
     } else {
-        if (capturelimit->integer)
-            sprintf(string, "xv -20 yv -10 string2 \"Capture Limit: %d\" ", capturelimit->integer);
+        if (capturelimit.integer)
+            sprintf(string, "xv -20 yv -10 string2 \"Capture Limit: %d\" ", capturelimit.integer);
     }
     //if (timelimit->value)
     //    fmt::format_to(std::back_inserter(string), FMT_STRING("xv 340 yv -10 time_limit {} "), gi.ServerFrame() + ((FROM_MIN(timelimit->value) - level.time)).milliseconds() / FRAME_TIME.milliseconds());
 
     // team one
-    if (teamplay->integer) {
+    if (teamplay.integer) {
         sprintf(string + strlen(string),
                 "if 25 xv -32 yv 8 pic 25 endif "
                 "xv -123 yv 28 cstring \"%d\" "
@@ -1814,10 +1814,10 @@ void CTFSetupTechSpawn(void)
     bool techs_allowed;
 
     // [Paril-KEX]
-    if (!strcmp(g_allow_techs->string, "auto"))
-        techs_allowed = !!ctf->integer;
+    if (!strcmp(g_allow_techs.string, "auto"))
+        techs_allowed = !!ctf.integer;
     else
-        techs_allowed = !!g_allow_techs->integer;
+        techs_allowed = !!g_allow_techs.integer;
 
     if (!techs_allowed)
         return;
@@ -2021,7 +2021,7 @@ void SP_misc_ctf_small_banner(edict_t *ent)
 
 static void SetGameName(pmenu_t *p)
 {
-    if (ctf->integer)
+    if (ctf.integer)
         Q_strlcpy(p->text, "ThreeWave Capture the Flag", sizeof(p->text));
     else
         Q_strlcpy(p->text, "Team Deathmatch", sizeof(p->text));
@@ -2045,7 +2045,7 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     int      count;
     edict_t *e;
 
-    if (electpercentage->value == 0) {
+    if (electpercentage.value == 0) {
         G_ClientPrintf(ent, PRINT_HIGH, "Elections are disabled, only an admin can process this action.\n");
         return false;
     }
@@ -2072,7 +2072,7 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     ctfgame.etarget = ent;
     ctfgame.election = type;
     ctfgame.evotes = 0;
-    ctfgame.needvotes = (int)((count * electpercentage->value) / 100);
+    ctfgame.needvotes = (int)((count * electpercentage.value) / 100);
     ctfgame.electtime = level.time + SEC(20); // twenty seconds for election
     Q_strlcpy(ctfgame.emsg, msg, sizeof(ctfgame.emsg));
 
@@ -2125,7 +2125,7 @@ static void CTFResetAllPlayers(void)
         }
     }
     if (ctfgame.match == MATCH_SETUP)
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
+        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
 }
 
 static void CTFAssignGhost(edict_t *ent)
@@ -2161,7 +2161,7 @@ static void CTFStartMatch(void)
     edict_t *ent;
 
     ctfgame.match = MATCH_GAME;
-    ctfgame.matchtime = level.time + FROM_MIN(matchtime->value);
+    ctfgame.matchtime = level.time + FROM_MIN(matchtime.value);
     ctfgame.countdown = false;
 
     ctfgame.team1 = ctfgame.team2 = 0;
@@ -2244,8 +2244,8 @@ static void CTFWinElection(void)
     switch (ctfgame.election) {
     case ELECT_MATCH:
         // reset into match mode
-        if (competition->integer < 3)
-            gi.cvar_set("competition", "2");
+        if (competition.integer < 3)
+            trap_Cvar_Set("competition", "2");
         ctfgame.match = MATCH_SETUP;
         CTFResetAllPlayers();
         break;
@@ -2359,7 +2359,7 @@ void CTFReady(edict_t *ent)
         // everyone has commited
         G_ClientPrintf(NULL, PRINT_CHAT, "All players have committed.  Match starting\n");
         ctfgame.match = MATCH_PREGAME;
-        ctfgame.matchtime = level.time + SEC(matchstarttime->value);
+        ctfgame.matchtime = level.time + SEC(matchstarttime.value);
         ctfgame.countdown = false;
         G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
     }
@@ -2388,7 +2388,7 @@ void CTFNotReady(edict_t *ent)
     if (ctfgame.match == MATCH_PREGAME) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match halted.\n");
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
+        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
     }
 }
 
@@ -2594,7 +2594,7 @@ static void CTFUpdateJoinMenu(edict_t *ent)
 
     SetGameName(entries);
 
-    if (ctfgame.match >= MATCH_PREGAME && matchlock->integer) {
+    if (ctfgame.match >= MATCH_PREGAME && matchlock.integer) {
         Q_strlcpy(entries[jmenu_red].text, "MATCH IS LOCKED", sizeof(entries[jmenu_red].text));
         entries[jmenu_red].SelectFunc = NULL;
         Q_strlcpy(entries[jmenu_blue].text, "  (entry is not permitted)", sizeof(entries[jmenu_blue].text));
@@ -2612,11 +2612,11 @@ static void CTFUpdateJoinMenu(edict_t *ent)
     }
 
     // KEX_FIXME: what's this for?
-    if (g_teamplay_force_join->string && *g_teamplay_force_join->string) {
-        if (Q_strcasecmp(g_teamplay_force_join->string, "red") == 0) {
+    if (*g_teamplay_force_join.string) {
+        if (Q_strcasecmp(g_teamplay_force_join.string, "red") == 0) {
             entries[jmenu_blue].text[0] = '\0';
             entries[jmenu_blue].SelectFunc = NULL;
-        } else if (Q_strcasecmp(g_teamplay_force_join->string, "blue") == 0) {
+        } else if (Q_strcasecmp(g_teamplay_force_join.string, "blue") == 0) {
             entries[jmenu_red].text[0] = '\0';
             entries[jmenu_red].SelectFunc = NULL;
         }
@@ -2672,7 +2672,7 @@ static void CTFUpdateJoinMenu(edict_t *ent)
 
     entries[jmenu_reqmatch].text[0] = '\0';
     entries[jmenu_reqmatch].SelectFunc = NULL;
-    if (competition->integer && ctfgame.match < MATCH_SETUP) {
+    if (competition.integer && ctfgame.match < MATCH_SETUP) {
         Q_strlcpy(entries[jmenu_reqmatch].text, "Request Match", sizeof(entries[jmenu_reqmatch].text));
         entries[jmenu_reqmatch].SelectFunc = CTFRequestMatch;
     }
@@ -2709,7 +2709,7 @@ bool CTFStartClient(edict_t *ent)
     if (ent->client->resp.ctf_team != CTF_NOTEAM)
         return false;
 
-    if ((!(ent->r.svflags & SVF_BOT) && !g_teamplay_force_join->integer) || ctfgame.match >= MATCH_SETUP) {
+    if ((!(ent->r.svflags & SVF_BOT) && !g_teamplay_force_join.integer) || ctfgame.match >= MATCH_SETUP) {
         // start as 'observer'
         ent->movetype = MOVETYPE_NOCLIP;
         ent->r.solid = SOLID_NOT;
@@ -2727,7 +2727,7 @@ bool CTFStartClient(edict_t *ent)
 
 void CTFObserver(edict_t *ent)
 {
-    if (!G_TeamplayEnabled() || g_teamplay_force_join->integer)
+    if (!G_TeamplayEnabled() || g_teamplay_force_join.integer)
         return;
 
     // start as 'observer'
@@ -2775,13 +2775,13 @@ bool CTFCheckRules(void)
             switch (ctfgame.match) {
             case MATCH_SETUP:
                 // go back to normal mode
-                if (competition->integer < 3) {
+                if (competition.integer < 3) {
                     ctfgame.match = MATCH_NONE;
-                    gi.cvar_set("competition", "1");
+                    trap_Cvar_Set("competition", "1");
                     CTFResetAllPlayers();
                 } else {
                     // reset the time
-                    ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
+                    ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
                 }
                 return false;
 
@@ -2818,7 +2818,7 @@ bool CTFCheckRules(void)
                     j++;
             }
 
-            if (competition->integer < 3)
+            if (competition.integer < 3)
                 Q_snprintf(text, sizeof(text), "%02d:%02d SETUP: %d not ready", t / 60, t % 60, j);
             else
                 Q_snprintf(text, sizeof(text), "SETUP: %d not ready", j);
@@ -2857,7 +2857,7 @@ bool CTFCheckRules(void)
         ctfgame.lasttime = TO_SEC(level.time);
         // this is only done in non-match (public) mode
 
-        if (warn_unbalanced->integer) {
+        if (warn_unbalanced.integer) {
             // count up the team totals
             for (i = 0; i < game.maxclients; i++) {
                 ent = g_edicts + i;
@@ -2885,9 +2885,9 @@ bool CTFCheckRules(void)
             ctfgame.warnactive = 0;
     }
 
-    if (capturelimit->integer &&
-        (ctfgame.team1 >= capturelimit->integer ||
-         ctfgame.team2 >= capturelimit->integer)) {
+    if (capturelimit.integer &&
+        (ctfgame.team1 >= capturelimit.integer ||
+         ctfgame.team2 >= capturelimit.integer)) {
         G_ClientPrintf(NULL, PRINT_HIGH, "Capture limit hit.\n");
         return true;
     }
@@ -3016,64 +3016,64 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
 {
     admin_settings_t *settings = p->arg;
 
-    if (settings->matchlen != matchtime->value) {
+    if (settings->matchlen != matchtime.value) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match length to %d minutes.\n",
                        ent->client->pers.netname, settings->matchlen);
         if (ctfgame.match == MATCH_GAME) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchtime->value)) + FROM_MIN(settings->matchlen);
+            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchtime.value)) + FROM_MIN(settings->matchlen);
         }
-        gi.cvar_set("matchtime", va("%d", settings->matchlen));
+        trap_Cvar_Set("matchtime", va("%d", settings->matchlen));
     }
 
-    if (settings->matchsetuplen != matchsetuptime->value) {
+    if (settings->matchsetuplen != matchsetuptime.value) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match setup time to %d minutes.\n",
                        ent->client->pers.netname, settings->matchsetuplen);
         if (ctfgame.match == MATCH_SETUP) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchsetuptime->value)) + FROM_MIN(settings->matchsetuplen);
+            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchsetuptime.value)) + FROM_MIN(settings->matchsetuplen);
         }
-        gi.cvar_set("matchsetuptime", va("%d", settings->matchsetuplen));
+        trap_Cvar_Set("matchsetuptime", va("%d", settings->matchsetuplen));
     }
 
-    if (settings->matchstartlen != matchstarttime->value) {
+    if (settings->matchstartlen != matchstarttime.value) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s changed the match start time to %d seconds.\n",
                        ent->client->pers.netname, settings->matchstartlen);
         if (ctfgame.match == MATCH_PREGAME) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - SEC(matchstarttime->value)) + SEC(settings->matchstartlen);
+            ctfgame.matchtime = (ctfgame.matchtime - SEC(matchstarttime.value)) + SEC(settings->matchstartlen);
         }
-        gi.cvar_set("matchstarttime", va("%d", settings->matchstartlen));
+        trap_Cvar_Set("matchstarttime", va("%d", settings->matchstartlen));
     }
 
-    if (settings->weaponsstay != !!g_dm_weapons_stay->integer) {
+    if (settings->weaponsstay != !!g_dm_weapons_stay.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s weapons stay.\n",
                        ent->client->pers.netname, settings->weaponsstay ? "on" : "off");
-        gi.cvar_set("g_dm_weapons_stay", settings->weaponsstay ? "1" : "0");
+        trap_Cvar_Set("g_dm_weapons_stay", settings->weaponsstay ? "1" : "0");
     }
 
-    if (settings->instantitems != !!g_dm_instant_items->integer) {
+    if (settings->instantitems != !!g_dm_instant_items.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s instant items.\n",
                        ent->client->pers.netname, settings->instantitems ? "on" : "off");
-        gi.cvar_set("g_dm_instant_items", settings->instantitems ? "1" : "0");
+        trap_Cvar_Set("g_dm_instant_items", settings->instantitems ? "1" : "0");
     }
 
-    if (settings->quaddrop != (bool)!g_dm_no_quad_drop->integer) {
+    if (settings->quaddrop != (bool)!g_dm_no_quad_drop.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s quad drop.\n",
                        ent->client->pers.netname, settings->quaddrop ? "on" : "off");
-        gi.cvar_set("g_dm_no_quad_drop", !settings->quaddrop ? "1" : "0");
+        trap_Cvar_Set("g_dm_no_quad_drop", !settings->quaddrop ? "1" : "0");
     }
 
-    if (settings->instantweap != !!g_instant_weapon_switch->integer) {
+    if (settings->instantweap != !!g_instant_weapon_switch.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s instant weapons.\n",
                        ent->client->pers.netname, settings->instantweap ? "on" : "off");
-        gi.cvar_set("g_instant_weapon_switch", settings->instantweap ? "1" : "0");
+        trap_Cvar_Set("g_instant_weapon_switch", settings->instantweap ? "1" : "0");
     }
 
-    if (settings->matchlock != !!matchlock->integer) {
+    if (settings->matchlock != !!matchlock.integer) {
         G_ClientPrintf(NULL, PRINT_HIGH, "%s turned %s match lock.\n",
                        ent->client->pers.netname, settings->matchlock ? "on" : "off");
-        gi.cvar_set("matchlock", settings->matchlock ? "1" : "0");
+        trap_Cvar_Set("matchlock", settings->matchlock ? "1" : "0");
     }
 
     PMenu_Close(ent);
@@ -3200,14 +3200,14 @@ static void CTFAdmin_Settings(edict_t *ent, pmenuhnd_t *p)
 
     settings = gi.TagMalloc(sizeof(*settings), TAG_LEVEL);
 
-    settings->matchlen = matchtime->integer;
-    settings->matchsetuplen = matchsetuptime->integer;
-    settings->matchstartlen = matchstarttime->integer;
-    settings->weaponsstay = g_dm_weapons_stay->integer;
-    settings->instantitems = g_dm_instant_items->integer;
-    settings->quaddrop = !g_dm_no_quad_drop->integer;
-    settings->instantweap = g_instant_weapon_switch->integer != 0;
-    settings->matchlock = matchlock->integer != 0;
+    settings->matchlen = matchtime.integer;
+    settings->matchsetuplen = matchsetuptime.integer;
+    settings->matchstartlen = matchstarttime.integer;
+    settings->weaponsstay = g_dm_weapons_stay.integer;
+    settings->instantitems = g_dm_instant_items.integer;
+    settings->quaddrop = !g_dm_no_quad_drop.integer;
+    settings->instantweap = g_instant_weapon_switch.integer != 0;
+    settings->matchlock = matchlock.integer != 0;
 
     menu = PMenu_Open(ent, def_setmenu, -1, q_countof(def_setmenu), settings, NULL);
     CTFAdmin_UpdateSettings(ent, menu);
@@ -3220,13 +3220,13 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
     if (ctfgame.match == MATCH_SETUP) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
-        ctfgame.matchtime = level.time + SEC(matchstarttime->value);
+        ctfgame.matchtime = level.time + SEC(matchstarttime.value);
         G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to terminate.\n");
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime->value);
+        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
         CTFResetAllPlayers();
     }
 }
@@ -3236,8 +3236,8 @@ static void CTFAdmin_MatchMode(edict_t *ent, pmenuhnd_t *p)
     PMenu_Close(ent);
 
     if (ctfgame.match != MATCH_SETUP) {
-        if (competition->integer < 3)
-            gi.cvar_set("competition", "2");
+        if (competition.integer < 3)
+            trap_Cvar_Set("competition", "2");
         ctfgame.match = MATCH_SETUP;
         CTFResetAllPlayers();
     }
@@ -3250,7 +3250,7 @@ static void CTFAdmin_Reset(edict_t *ent, pmenuhnd_t *p)
     // go back to normal mode
     G_ClientPrintf(NULL, PRINT_CHAT, "Match mode has been terminated, reseting to normal game.\n");
     ctfgame.match = MATCH_NONE;
-    gi.cvar_set("competition", "1");
+    trap_Cvar_Set("competition", "1");
     CTFResetAllPlayers();
 }
 
@@ -3283,7 +3283,7 @@ static void CTFOpenAdminMenu(edict_t *ent)
     } else if (ctfgame.match == MATCH_GAME || ctfgame.match == MATCH_PREGAME) {
         Q_strlcpy(adminmenu[3].text, "Cancel match", sizeof(adminmenu[3].text));
         adminmenu[3].SelectFunc = CTFAdmin_MatchSet;
-    } else if (ctfgame.match == MATCH_NONE && competition->integer) {
+    } else if (ctfgame.match == MATCH_NONE && competition.integer) {
         Q_strlcpy(adminmenu[3].text, "Switch to match mode", sizeof(adminmenu[3].text));
         adminmenu[3].SelectFunc = CTFAdmin_MatchMode;
     }
@@ -3296,7 +3296,7 @@ static void CTFOpenAdminMenu(edict_t *ent)
 
 void CTFAdmin(edict_t *ent)
 {
-    if (!allow_admin->integer) {
+    if (!allow_admin.integer) {
         G_ClientPrintf(ent, PRINT_HIGH, "Administration is disabled\n");
         return;
     }
@@ -3304,8 +3304,8 @@ void CTFAdmin(edict_t *ent)
     char buf[MAX_QPATH];
     trap_Argv(1, buf, sizeof(buf));
 
-    if (trap_Argc() > 1 && admin_password->string && *admin_password->string &&
-        !ent->client->resp.admin && strcmp(admin_password->string, buf) == 0) {
+    if (trap_Argc() > 1 && *admin_password.string &&
+        !ent->client->resp.admin && strcmp(admin_password.string, buf) == 0) {
         ent->client->resp.admin = true;
         G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ent->client->pers.netname);
         G_ClientPrintf(ent, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
@@ -3432,26 +3432,28 @@ void CTFPlayerList(edict_t *ent)
 
 void CTFWarp(edict_t *ent)
 {
-    char *token;
+    char list[MAX_STRING_CHARS];
+    trap_Cvar_VariableString("warp_list", list, sizeof(list));
 
     if (trap_Argc() < 2) {
         G_ClientPrintf(ent, PRINT_HIGH, "Where do you want to warp to?\n");
-        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
+        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", list);
         return;
     }
 
     char buf[MAX_QPATH];
     trap_Argv(1, buf, sizeof(buf));
 
-    const char *mlist = warp_list->string;
+    const char *s = list;
+    char *token;
 
-    while (*(token = COM_Parse(&mlist)))
+    while (*(token = COM_Parse(&s)))
         if (Q_strcasecmp(token, buf) == 0)
             break;
 
     if (!*token) {
         G_ClientPrintf(ent, PRINT_HIGH, "Unknown CTF level.\n");
-        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", warp_list->string);
+        G_ClientPrintf(ent, PRINT_HIGH, "Available levels are: %s\n", list);
         return;
     }
 

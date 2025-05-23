@@ -49,7 +49,7 @@ void dabeam_update(edict_t *self, bool damage)
             // hurt it if we can
             if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
                 T_Damage(hit, self, owner, self->movedir, tr.endpos, vec3_origin,
-                         self->dmg, skill->integer, DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
+                         self->dmg, skill.integer, DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
 
             if (self->dmg < 0) { // healer ray
                 // when player is at 100 health

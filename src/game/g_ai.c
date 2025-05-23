@@ -482,7 +482,7 @@ void FoundTarget(edict_t *self)
         self->monsterinfo.attack_finished = level.time + SEC(0.6f);
 
     // give easy/medium a little more reaction time
-    self->monsterinfo.attack_finished += skill->integer == 0 ? SEC(0.4f) : skill->integer == 1 ? SEC(0.2) : 0;
+    self->monsterinfo.attack_finished += skill.integer == 0 ? SEC(0.4f) : skill.integer == 1 ? SEC(0.2) : 0;
 
     VectorCopy(self->enemy->s.origin, self->monsterinfo.saved_goal);
     VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
@@ -723,7 +723,7 @@ bool FindTarget(edict_t *self)
     }
 
     // ROGUE - hintpath coop fix
-    if ((self->monsterinfo.aiflags & AI_HINT_PATH) && coop->integer)
+    if ((self->monsterinfo.aiflags & AI_HINT_PATH) && coop.integer)
         heardit = false;
     // ROGUE
 
@@ -1346,7 +1346,7 @@ void ai_run(edict_t *self, float dist)
             return;
         }
 
-        if (coop->integer) {
+        if (coop.integer) {
             // if we're in coop, check my real enemy first .. if I SEE him, set gotcha to true
             if (self->enemy && visible(self, realEnemy))
                 gotcha = true;
@@ -1498,7 +1498,7 @@ void ai_run(edict_t *self, float dist)
 
     // PMM - moved down here to allow monsters to get on hint paths
     // coop will change to another enemy if visible
-    if (coop->integer)
+    if (coop.integer)
         FindTarget(self);
     // pmm
 

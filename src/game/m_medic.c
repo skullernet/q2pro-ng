@@ -1227,7 +1227,7 @@ static void medic_finish_spawn(edict_t *self)
         else
             designated_enemy = self->enemy;
 
-        if (coop->integer) {
+        if (coop.integer) {
             designated_enemy = PickCoopTarget(ent);
             if (designated_enemy) {
                 // try to avoid using my enemy
@@ -1517,8 +1517,8 @@ void SP_monster_medic(edict_t *self)
             reinforcements = st.reinforcements;
 
         if (self->monsterinfo.monster_slots && reinforcements && *reinforcements) {
-            if (skill->integer)
-                self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill->value / 2));
+            if (skill.integer)
+                self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill.value / 2));
 
             M_SetupReinforcements(reinforcements, &self->monsterinfo.reinforcements);
         }

@@ -172,7 +172,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
 
     gib->think = G_FreeEdict;
 
-    if (g_instagib->integer)
+    if (g_instagib.integer)
         gib->nextthink = level.time + random_time_sec(1, 5);
     else
         gib->nextthink = level.time + random_time_sec(10, 20);
@@ -409,7 +409,7 @@ void TOUCH(point_combat_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 
 void SP_point_combat(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         G_FreeEdict(self);
         return;
     }
@@ -479,7 +479,7 @@ void SP_dynamic_light(edict_t *self)
 void SP_light(edict_t *self)
 {
     // no targeted lights in deathmatch, because they cause global messages
-    if ((!self->targetname || (deathmatch->integer && !(self->spawnflags & SPAWNFLAG_LIGHT_ALLOW_IN_DM)))) { // [Sam-KEX]
+    if ((!self->targetname || (deathmatch.integer && !(self->spawnflags & SPAWNFLAG_LIGHT_ALLOW_IN_DM)))) { // [Sam-KEX]
         G_FreeEdict(self);
         return;
     }
@@ -820,7 +820,7 @@ void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator
 
 void SP_func_explosive(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(self);
         return;
@@ -968,7 +968,7 @@ void THINK(barrel_start)(edict_t *self)
 
 void SP_misc_explobox(edict_t *self)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(self);
         return;
@@ -1237,7 +1237,7 @@ void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attac
 
 void SP_misc_deadsoldier(edict_t *ent)
 {
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // auto-remove for deathmatch
         G_FreeEdict(ent);
         return;
@@ -2205,8 +2205,8 @@ void SP_misc_player_mannequin(edict_t *self)
     SetupMannequinModel(self, st.height, st.goals, st.image);
 
     self->s.scale = 1.0f;
-    if (ai_model_scale->value > 0.0f)
-        self->s.scale = ai_model_scale->value;
+    if (ai_model_scale.value > 0.0f)
+        self->s.scale = ai_model_scale.value;
     else if (st.radius > 0.0f)
         self->s.scale = st.radius;
 

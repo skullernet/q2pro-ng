@@ -1672,7 +1672,7 @@ bool MONSTERINFO_DUCK(soldier_duck)(edict_t *self, gtime_t eta)
 
     if (self->monsterinfo.active_move == &soldier_move_attack6)
         M_SetAnimation(self, &soldier_move_trip);
-    else if (self->dmg || (is_sustain() ? (frandom() > 0.5f + (skill->integer * 0.12f)) : brandom()))
+    else if (self->dmg || (is_sustain() ? (frandom() > 0.5f + (skill.integer * 0.12f)) : brandom()))
         M_SetAnimation(self, &soldier_move_duck);
     else
         M_SetAnimation(self, &soldier_move_attack3);

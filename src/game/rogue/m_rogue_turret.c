@@ -396,8 +396,8 @@ static void TurretFire(edict_t *self)
             // more often; makes them more unpredictable
             if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN)
                 PredictAim(self, self->enemy, start, 0, true, 0.3f, dir, NULL);
-            else if (frandom() < skill->integer / 5.0f)
-                PredictAim(self, self->enemy, start, rocketSpeed, true, (frandom1(3.0f - skill->integer) / 3.0f) - frandom1(0.05f * (3.0f - skill->integer)), dir, NULL);
+            else if (frandom() < skill.integer / 5.0f)
+                PredictAim(self, self->enemy, start, rocketSpeed, true, (frandom1(3.0f - skill.integer) / 3.0f) - frandom1(0.05f * (3.0f - skill.integer)), dir, NULL);
         }
 
         trap_Trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
@@ -407,7 +407,7 @@ static void TurretFire(edict_t *self)
             else if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) {
                 if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME)) {
                     self->monsterinfo.aiflags |= AI_HOLD_FRAME;
-                    self->monsterinfo.duck_wait_time = level.time + SEC(2 + frandom1(skill->value));
+                    self->monsterinfo.duck_wait_time = level.time + SEC(2 + frandom1(skill.value));
                     self->monsterinfo.next_duck_time = level.time + SEC(1);
                     G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/chngnu1a.wav"), 1, ATTN_NORM);
                 } else {
@@ -779,18 +779,18 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_TURRET_ROCKET) {
         chance = 0.10f;
-        nexttime = SEC(1.8f - (0.2f * skill->integer));
+        nexttime = SEC(1.8f - (0.2f * skill.integer));
     } else if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER) {
         chance = 0.35f;
-        nexttime = SEC(1.2f - (0.2f * skill->integer));
+        nexttime = SEC(1.2f - (0.2f * skill.integer));
     } else {
         chance = 0.50f;
-        nexttime = SEC(0.8f - (0.1f * skill->integer));
+        nexttime = SEC(0.8f - (0.1f * skill.integer));
     }
 
-    if (skill->integer == 0)
+    if (skill.integer == 0)
         chance *= 0.5f;
-    else if (skill->integer > 1)
+    else if (skill.integer > 1)
         chance *= 2;
 
     // PGM - go ahead and shoot every time if it's a info_notnull
@@ -847,7 +847,7 @@ void SP_monster_turret(edict_t *self)
     self->health = 50 * st.health_multiplier;
     self->gib_health = -100;
     self->mass = 250;
-    self->yaw_speed = 10 * skill->integer;
+    self->yaw_speed = 10 * skill.integer;
 
     self->monsterinfo.armor_type = IT_ARMOR_COMBAT;
     self->monsterinfo.armor_power = 50;
@@ -926,7 +926,7 @@ void SP_monster_turret(edict_t *self)
         self->use = turret_activate;
         turret_wall_spawn(self);
         if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT)) {
-            if (g_debug_monster_kills->integer)
+            if (g_debug_monster_kills.integer)
                 level.monsters_registered[level.total_monsters] = self->s.number;
             level.total_monsters++;
         }

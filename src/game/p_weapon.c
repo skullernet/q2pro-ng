@@ -22,7 +22,7 @@ bool G_CheckInfiniteAmmo(const gitem_t *item)
     if (item->flags & IF_NO_INFINITE_AMMO)
         return false;
 
-    return g_infinite_ammo->integer || (deathmatch->integer && g_instagib->integer);
+    return g_infinite_ammo.integer || (deathmatch.integer && g_instagib.integer);
 }
 
 //========
@@ -37,7 +37,7 @@ int P_DamageModifier(edict_t *ent)
         is_quad = 1;
 
         // if we're quad and DF_NO_STACK_DOUBLE is on, return now.
-        if (g_dm_no_stack_double->integer)
+        if (g_dm_no_stack_double.integer)
             return damage_multiplier;
     }
 
@@ -128,7 +128,7 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
         }
     }
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         return;
 
     if (who->flags & FL_NOTARGET)
@@ -182,9 +182,9 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
 
 static bool G_WeaponShouldStay(void)
 {
-    if (deathmatch->integer)
-        return g_dm_weapons_stay->integer;
-    if (coop->integer)
+    if (deathmatch.integer)
+        return g_dm_weapons_stay.integer;
+    if (coop.integer)
         return !P_UseCoopInstancedItems();
 
     return false;
@@ -213,7 +213,7 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
             // RAFAEL: Don't get infinite ammo with trap
             if (G_CheckInfiniteAmmo(ammo))
                 Add_Ammo(other, ammo, 1000);
-            else if (level.is_psx && deathmatch->integer)
+            else if (level.is_psx && deathmatch.integer)
                 // in PSX, we get double ammo with pickups
                 Add_Ammo(other, ammo, ammo->quantity * 2);
             else
@@ -221,13 +221,13 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
         }
 
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED_PLAYER)) {
-            if (deathmatch->integer) {
-                if (g_dm_weapons_stay->integer)
+            if (deathmatch.integer) {
+                if (g_dm_weapons_stay.integer)
                     ent->flags |= FL_RESPAWN;
 
-                SetRespawnEx(ent, SEC(g_weapon_respawn_time->integer), !g_dm_weapons_stay->integer);
+                SetRespawnEx(ent, SEC(g_weapon_respawn_time.integer), !g_dm_weapons_stay.integer);
             }
-            if (coop->integer)
+            if (coop.integer)
                 ent->flags |= FL_RESPAWN;
         }
     }
@@ -265,7 +265,7 @@ current
 void ChangeWeapon(edict_t *ent)
 {
     // [Paril-KEX]
-    if (ent->health > 0 && !g_instant_weapon_switch->integer && ((ent->client->latched_buttons | ent->client->buttons) & BUTTON_HOLSTER))
+    if (ent->health > 0 && !g_instant_weapon_switch.integer && ((ent->client->latched_buttons | ent->client->buttons) & BUTTON_HOLSTER))
         return;
 
     if (ent->client->grenade_time) {
@@ -312,7 +312,7 @@ void ChangeWeapon(edict_t *ent)
 
     // for instantweap, run think immediately
     // to set up correct start frame
-    if (g_instant_weapon_switch->integer)
+    if (g_instant_weapon_switch.integer)
         Weapon_RunThink(ent);
 }
 
@@ -394,7 +394,7 @@ static gtime_t Weapon_AnimationTime(edict_t *ent)
 {
     int gunrate;
 
-    if (g_quick_weapon_switch->integer && ent->client->ps.gunframe != 0 &&
+    if (g_quick_weapon_switch.integer && ent->client->ps.gunframe != 0 &&
         (ent->client->weaponstate == WEAPON_ACTIVATING || ent->client->weaponstate == WEAPON_DROPPING))
         gunrate = 20;
     else
@@ -473,7 +473,7 @@ static weap_switch_t Weapon_AttemptSwitch(edict_t *ent, const gitem_t *item, boo
     if (!ent->client->pers.inventory[item->id])
         return WEAP_SWITCH_NO_WEAPON;
 
-    if (item->ammo && !g_select_empty->integer && !(item->flags & IF_AMMO)) {
+    if (item->ammo && !g_select_empty.integer && !(item->flags & IF_AMMO)) {
         const gitem_t *ammo_item = GetItemByIndex(item->ammo);
 
         if (!ent->client->pers.inventory[item->ammo]) {
@@ -638,14 +638,14 @@ static bool Weapon_HandleDropping(edict_t *ent, int FRAME_DEACTIVATE_LAST)
 static bool Weapon_HandleActivating(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_IDLE_FIRST)
 {
     if (ent->client->weaponstate == WEAPON_ACTIVATING) {
-        if (ent->client->weapon_think_time <= level.time || g_instant_weapon_switch->integer) {
+        if (ent->client->weapon_think_time <= level.time || g_instant_weapon_switch.integer) {
             ent->client->weapon_think_time = level.time + Weapon_AnimationTime(ent);
 
-            if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST || g_instant_weapon_switch->integer) {
+            if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST || g_instant_weapon_switch.integer) {
                 ent->client->weaponstate = WEAPON_READY;
                 ent->client->ps.gunframe = FRAME_IDLE_FIRST;
                 ent->client->weapon_fire_buffered = false;
-                if (!g_instant_weapon_switch->integer)
+                if (!g_instant_weapon_switch.integer)
                     Weapon_SetFinished(ent);
                 else
                     ent->client->weapon_fire_finished = 0;
@@ -664,17 +664,17 @@ static bool Weapon_HandleNewWeapon(edict_t *ent, int FRAME_DEACTIVATE_FIRST, int
 {
     bool is_holstering = false;
 
-    if (!g_instant_weapon_switch->integer)
+    if (!g_instant_weapon_switch.integer)
         is_holstering = ((ent->client->latched_buttons | ent->client->buttons) & BUTTON_HOLSTER);
 
     if ((ent->client->newweapon || is_holstering) && (ent->client->weaponstate != WEAPON_FIRING)) {
-        if (g_instant_weapon_switch->integer || ent->client->weapon_think_time <= level.time) {
+        if (g_instant_weapon_switch.integer || ent->client->weapon_think_time <= level.time) {
             if (!ent->client->newweapon)
                 ent->client->newweapon = ent->client->pers.weapon;
 
             ent->client->weaponstate = WEAPON_DROPPING;
 
-            if (g_instant_weapon_switch->integer) {
+            if (g_instant_weapon_switch.integer) {
                 ChangeWeapon(ent);
                 return true;
             }
@@ -1267,7 +1267,7 @@ static void Weapon_HyperBlaster_Fire(edict_t *ent)
             offset[2] = 0;
             offset[1] = 4 * cosf(rotation);
 
-            if (deathmatch->integer)
+            if (deathmatch.integer)
                 damage = 15;
             else
                 damage = 20;
@@ -1377,7 +1377,7 @@ static void Chaingun_Fire(edict_t *ent)
     int   damage;
     int   kick = 2;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = 6;
     else
         damage = 8;
@@ -1499,7 +1499,7 @@ static void weapon_shotgun_fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         fire_shotgun(ent, start, dir, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, (mod_t) { MOD_SHOTGUN });
     else
         fire_shotgun(ent, start, dir, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, (mod_t) { MOD_SHOTGUN });
@@ -1572,7 +1572,7 @@ static void weapon_railgun_fire(edict_t *ent)
     int damage, kick;
 
     // normal damage too extreme for DM
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         damage = 100;
         kick = 200;
     } else {
@@ -1620,7 +1620,7 @@ static void weapon_bfg_fire(edict_t *ent)
     int   damage;
     float damage_radius = 1000;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = 200;
     else
         damage = 500;

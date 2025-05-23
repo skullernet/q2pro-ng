@@ -290,7 +290,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keyuse.wav"), 1, ATTN_NORM);
-    if (coop->integer) {
+    if (coop.integer) {
         edict_t *ent;
 
         if (index == IT_KEY_POWER_CUBE || index == IT_KEY_EXPLOSIVE_CHARGES) {
@@ -1147,7 +1147,7 @@ static bool trigger_coop_relay_ok(edict_t *player)
 static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
 {
     // not coop, so act like a standard trigger_relay minus the message
-    if (!coop->integer)
+    if (!coop.integer)
         return true;
 
     // coop; scan for all alive players, print appropriate message

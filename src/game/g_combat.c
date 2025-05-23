@@ -173,7 +173,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
         pa_te_type = EV_SCREEN_SPARKS;
         damage = damage / 3;
     } else {
-        if (ctf->integer)
+        if (ctf.integer)
             damagePerCell = 1; // power armor is weaker in CTF
         else
             damagePerCell = 2;
@@ -425,7 +425,7 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2)
         return false;
 
     // [Paril-KEX] coop 'team' support
-    if (coop->integer)
+    if (coop.integer)
         return true;
     // ZOID
     if (G_TeamplayEnabled() && ent1->client->resp.ctf_team == ent2->client->resp.ctf_team)
@@ -440,7 +440,7 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2)
 bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
 {
     // always damage teammates if friendly fire is enabled
-    return !g_friendly_fire->integer && OnSameTeam(targ, attacker);
+    return !g_friendly_fire.integer && OnSameTeam(targ, attacker);
 }
 
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t dir, const vec3_t point,
@@ -457,7 +457,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     if (!targ->takedamage)
         return;
 
-    if (g_instagib->integer && attacker->client && targ->client)
+    if (g_instagib.integer && attacker->client && targ->client)
         // [Kex] always kill no matter what on instagib
         damage = 9999;
 
@@ -472,14 +472,14 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
             mod.friendly_fire = true;
 
             // if we're not a nuke & friendly fire is disabled, just kill the damage
-            if (!g_friendly_fire->integer && (mod.id != MOD_NUKE))
+            if (!g_friendly_fire.integer && (mod.id != MOD_NUKE))
                 damage = 0;
         }
     }
 
     // ROGUE
     //  allow the deathmatch game to change values
-    if (deathmatch->integer && gamerules->integer) {
+    if (deathmatch.integer && gamerules.integer) {
         if (DMGame.ChangeDamage)
             damage = DMGame.ChangeDamage(targ, attacker, damage, mod);
         if (DMGame.ChangeKnockback)
@@ -491,7 +491,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     // ROGUE
 
     // easy mode takes half damage
-    if (skill->integer == 0 && deathmatch->integer == 0 && targ->client && damage) {
+    if (skill.integer == 0 && deathmatch.integer == 0 && targ->client && damage) {
         damage /= 2;
         if (!damage)
             damage = 1;
@@ -499,9 +499,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
 
     // mal: just for debugging...
     if (targ->r.svflags & SVF_MONSTER)
-        damage *= ai_damage_scale->integer;
+        damage *= ai_damage_scale.integer;
     else
-        damage *= g_damage_scale->integer;
+        damage *= g_damage_scale.integer;
 
     client = targ->client;
 
@@ -583,7 +583,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     // team armor protect
     if (G_TeamplayEnabled() && targ->client && attacker->client &&
         targ->client->resp.ctf_team == attacker->client->resp.ctf_team && targ != attacker &&
-        g_teamplay_armor_protect->integer) {
+        g_teamplay_armor_protect.integer) {
         psave = asave = 0;
     } else {
     // ZOID

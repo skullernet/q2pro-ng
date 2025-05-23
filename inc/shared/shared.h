@@ -764,9 +764,6 @@ CVARS (console variables)
 ==========================================================
 */
 
-#ifndef CVAR
-#define CVAR
-
 #define CVAR_ARCHIVE    BIT(0)  // set to cause it to be saved to vars.rc
 #define CVAR_USERINFO   BIT(1)  // added to userinfo when changed
 #define CVAR_SERVERINFO BIT(2)  // added to serverinfo when changed
@@ -774,35 +771,13 @@ CVARS (console variables)
                                 // but can be set from the command line
 #define CVAR_LATCH      BIT(4)  // save changes until server restart
 
-#if USE_CLIENT || USE_SERVER
-struct cvar_s;
-struct genctx_s;
-
-typedef void (*xchanged_t)(struct cvar_s *);
-typedef void (*xgenerator_t)(struct genctx_s *);
-#endif
-
-// nothing outside the cvar.*() functions should modify these fields!
-typedef struct cvar_s {
-    char        *name;
-    char        *string;
-    char        *latched_string;    // for CVAR_LATCH vars
-    int         flags;
-    bool        modified;   // set each time the cvar is changed
-    float       value;
-    struct cvar_s *next;
-
-// ------ new stuff ------
-    int         integer;
-    char        *default_string;
-#if USE_CLIENT || USE_SERVER
-    xchanged_t      changed;
-    xgenerator_t    generator;
-    struct cvar_s   *hashNext;
-#endif
-} cvar_t;
-
-#endif      // CVAR
+typedef struct {
+    int integer;
+    float value;
+    bool modified;
+    char string[MAX_QPATH];     // for longer strings trap_Cvar_VariableString
+                                // must be used
+} vm_cvar_t;
 
 /*
 ==============================================================

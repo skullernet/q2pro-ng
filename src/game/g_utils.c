@@ -176,7 +176,7 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
     // print the message
     //
     if ((ent->message) && !(activator->r.svflags & SVF_MONSTER)) {
-        if (coop_global && coop->integer)
+        if (coop_global && coop.integer)
             G_ClientPrintf(NULL, PRINT_CENTER, "%s", ent->message);
         else
             G_ClientPrintf(activator, PRINT_CENTER, "%s", ent->message);
@@ -605,7 +605,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
     contents_t mask = CONTENTS_MONSTER | CONTENTS_PLAYER;
 
     // [Paril-KEX] don't gib other players in coop if we're not colliding
-    if (from_spawning && ent->client && coop->integer && !G_ShouldPlayersCollide(false))
+    if (from_spawning && ent->client && coop.integer && !G_ShouldPlayersCollide(false))
         mask &= ~CONTENTS_PLAYER;
 
     int      i, num;
@@ -635,7 +635,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
         // [Paril-KEX] don't allow telefragging of friends in coop.
         // the player that is about to be telefragged will have collision
         // disabled until another time.
-        if (ent->client && hit->client && coop->integer) {
+        if (ent->client && hit->client && coop.integer) {
             hit->clipmask &= ~CONTENTS_PLAYER;
             ent->clipmask &= ~CONTENTS_PLAYER;
             continue;
@@ -695,8 +695,8 @@ void G_AddEvent(edict_t *ent, entity_event_t event, int param)
 {
     if (ent->s.event[0]) {
         if (ent->s.event[1]) {
-            extern cvar_t *sv_running;
-            if (sv_running->integer >= 2)
+            extern vm_cvar_t sv_running;
+            if (sv_running.integer >= 2)
                 G_Printf("Too many events for %s: %d, %d, %d\n", etos(ent), ent->s.event[0], ent->s.event[1], event);
             return;
         }

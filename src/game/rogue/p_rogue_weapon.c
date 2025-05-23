@@ -87,7 +87,7 @@ static void weapon_chainfist_fire(edict_t *ent)
 
     int damage = 7;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = 15;
 
     if (is_quad)
@@ -183,7 +183,7 @@ static void weapon_tracker_fire(edict_t *self)
         mask &= ~CONTENTS_PLAYER;
 
     // PMM - felt a little high at 25
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = 45;
     else
         damage = 135;
@@ -239,7 +239,7 @@ static void weapon_etf_rifle_fire(edict_t *ent)
     int    i;
     vec3_t offset;
 
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = 10;
     else
         damage = 10;
@@ -346,12 +346,12 @@ static void Heatbeam_Fire(edict_t *ent)
 
     // for comparison, the hyperblaster is 15/20
     // jim requested more damage, so try 15/15 --- PGM 07/23/98
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         damage = HEATBEAM_DM_DMG;
     else
         damage = HEATBEAM_SP_DMG;
 
-    if (deathmatch->integer) // really knock 'em around in deathmatch
+    if (deathmatch.integer) // really knock 'em around in deathmatch
         kick = 75;
     else
         kick = 30;

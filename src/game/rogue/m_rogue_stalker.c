@@ -293,9 +293,9 @@ static void stalker_reactivate(edict_t *self)
 
 static void stalker_heal(edict_t *self)
 {
-    if (skill->integer == 2)
+    if (skill.integer == 2)
         self->health += 2;
-    else if (skill->integer == 3)
+    else if (skill.integer == 3)
         self->health += 3;
     else
         self->health++;

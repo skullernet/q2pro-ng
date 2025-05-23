@@ -649,7 +649,7 @@ void ED_CallSpawn(edict_t *ent)
         if (!strcmp(item->classname, ent->classname)) {
             // found it
             // before spawning, pick random item replacement
-            if (g_dm_random_items->integer) {
+            if (g_dm_random_items.integer) {
                 ent->item = item;
                 item_id_t new_item = DoRandomRespawn(ent);
 
@@ -1093,25 +1093,25 @@ static void G_FindTeams(void)
 static bool G_InhibitEntity(edict_t *ent)
 {
     // dm-only
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         return (ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH);
 
     // coop flags
-    if (coop->integer && (ent->spawnflags & SPAWNFLAG_NOT_COOP))
+    if (coop.integer && (ent->spawnflags & SPAWNFLAG_NOT_COOP))
         return true;
-    if (!coop->integer && (ent->spawnflags & SPAWNFLAG_COOP_ONLY))
+    if (!coop.integer && (ent->spawnflags & SPAWNFLAG_COOP_ONLY))
         return true;
 
     // skill
-    return ((skill->integer == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
-           ((skill->integer == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
-           ((skill->integer >= 2) && (ent->spawnflags & SPAWNFLAG_NOT_HARD));
+    return ((skill.integer == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
+           ((skill.integer == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
+           ((skill.integer >= 2) && (ent->spawnflags & SPAWNFLAG_NOT_HARD));
 }
 
 // [Paril-KEX]
 void G_PrecacheInventoryItems(void)
 {
-    if (deathmatch->integer)
+    if (deathmatch.integer)
         return;
 
     for (int i = 0; i < game.maxclients; i++) {
@@ -1125,14 +1125,11 @@ void G_PrecacheInventoryItems(void)
 // [Paril-KEX]
 static void G_PrecacheStartItems(void)
 {
-    if (!*g_start_items->string)
-        return;
-
     char copy[MAX_STRING_CHARS];
-    Q_strlcpy(copy, g_start_items->string, sizeof(copy));
+    trap_Cvar_VariableString("g_start_items", copy, sizeof(copy));
 
     const char *s = copy;
-    while (1) {
+    while (*s) {
         char *p = strchr(s, ';');
         if (p)
             *p = 0;
@@ -1213,9 +1210,9 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     int      inhibit;
     const char   *com_token;
 
-    int skill_level = Q_clip(skill->integer, 0, 3);
-    if (skill->integer != skill_level)
-        gi.cvar_forceset("skill", va("%d", skill_level));
+    int skill_level = Q_clip(skill.integer, 0, 3);
+    if (skill.integer != skill_level)
+        trap_Cvar_ForceSet("skill", va("%d", skill_level));
 
     SaveClientData();
 
@@ -1236,7 +1233,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     level.is_psx = strncmp(level.mapname, "psx/", 4) == 0;
 
     level.coop_scale_players = 0;
-    level.coop_health_scaling = Q_clipf(g_coop_health_scaling->value, 0, 1);
+    level.coop_health_scaling = Q_clipf(g_coop_health_scaling.value, 0, 1);
 
     // set client fields on player ents
     for (int i = 0; i < game.maxclients; i++) {
@@ -1299,8 +1296,8 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     // ZOID
 
     // ROGUE
-    if (deathmatch->integer) {
-        if (g_dm_random_items->integer)
+    if (deathmatch.integer) {
+        if (g_dm_random_items.integer)
             PrecacheForRandomRespawn();
     } else {
         InitHintPaths(); // if there aren't hintpaths on this map, enable quick aborts
@@ -1308,7 +1305,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     // ROGUE
 
     // ROGUE    -- allow dm games to do init stuff right before game starts.
-    if (deathmatch->integer && gamerules->integer) {
+    if (deathmatch.integer && gamerules.integer) {
         if (DMGame.PostInitSetup)
             DMGame.PostInitSetup();
     }
@@ -1375,7 +1372,7 @@ static void G_InitStatusbar(void)
     sb_if(STAT_HELPICON), sb_xv(150), sb_pic(STAT_HELPICON), sb_endif();
 
     // ---- gamemode-specific stuff ----
-    if (!deathmatch->integer) {
+    if (!deathmatch.integer) {
         // SP/coop
         // key display
         // move up if the timer is active
@@ -1391,7 +1388,7 @@ static void G_InitStatusbar(void)
         sb_if(STAT_KEY_B), sb_xv(272), sb_pic(STAT_KEY_B), sb_endif();
         sb_if(STAT_KEY_C), sb_xv(248), sb_pic(STAT_KEY_C), sb_endif();
 
-        if (coop->integer) {
+        if (coop.integer) {
             // top of screen coop respawn display
             sb_if(STAT_COOP_RESPAWN),
                 sb_xv(0),
@@ -1451,7 +1448,7 @@ static void G_InitStatusbar(void)
             sb_pic(STAT_CTF_JOINED_TEAM2_PIC),
         sb_endif();
 
-        if (ctf->integer) {
+        if (ctf.integer) {
             // have flag graph
             sb_if(STAT_CTF_FLAG_PIC),
                 sb_yt(26),
@@ -1474,7 +1471,7 @@ static void G_InitStatusbar(void)
             sb_pic(STAT_CTF_ID_VIEW_COLOR),
         sb_endif();
 
-        if (ctf->integer) {
+        if (ctf.integer) {
             // match
             sb_if(STAT_CTF_MATCH),
                 sb_xl(0),
@@ -1504,7 +1501,7 @@ static void G_InitStatusbar(void)
     }
 
     // ---- more shared stuff ----
-    if (deathmatch->integer) {
+    if (deathmatch.integer) {
         // tech
         sb_if(STAT_CTF_TECH),
             sb_yb(-137),
@@ -1679,17 +1676,17 @@ void SP_worldspawn(edict_t *ent)
 
     if (!st.gravity) {
         level.gravity = 800;
-        gi.cvar_set("sv_gravity", "800");
+        trap_Cvar_Set("sv_gravity", "800");
     } else {
         level.gravity = Q_atof(st.gravity);
-        gi.cvar_set("sv_gravity", st.gravity);
+        trap_Cvar_Set("sv_gravity", st.gravity);
     }
 
     level.snd_fry = G_SoundIndex("player/fry.wav"); // standing in lava / slime
 
     PrecacheItem(GetItemByIndex(IT_WEAPON_BLASTER));
 
-    if (g_dm_random_items->integer)
+    if (g_dm_random_items.integer)
         for (item_id_t i = IT_NULL + 1; i < IT_TOTAL; i++)
             PrecacheItem(GetItemByIndex(i));
 
@@ -1798,7 +1795,7 @@ void SP_worldspawn(edict_t *ent)
     trap_SetConfigstring(CS_LIGHTS + 63, "a");
 
     // coop respawn strings
-    if (coop->integer) {
+    if (coop.integer) {
         static const char *const str[] = {
             "Can't respawn - in combat",
             "Can't respawn - bad area",
