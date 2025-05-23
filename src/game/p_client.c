@@ -2573,7 +2573,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         pm.cmd = *ucmd;
         pm.trace = trap_Trace;
-        pm.clip = gi.clip;
+        pm.clip = trap_Clip;
         pm.pointcontents = gi.pointcontents;
 
         // perform a pmove
