@@ -13,7 +13,7 @@ Used to group brushes together just for editor convenience.
 void USE(Use_Areaportal)(edict_t *ent, edict_t *other, edict_t *activator)
 {
     ent->count ^= 1; // toggle state
-    gi.SetAreaPortalState(ent->style, ent->count);
+    trap_SetAreaPortalState(ent->style, ent->count);
 }
 
 /*QUAKED func_areaportal (0 0 0) ?

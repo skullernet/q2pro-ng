@@ -774,7 +774,7 @@ bool FindTarget(edict_t *self)
             if (!visible(self, client))
                 return false;
         } else {
-            if (!gi.inVIS(self->s.origin, client->s.origin, VIS_PHS))
+            if (!trap_InVis(self->s.origin, client->s.origin, VIS_PHS))
                 return false;
         }
 
@@ -785,7 +785,7 @@ bool FindTarget(edict_t *self)
 
         // check area portals - if they are different and not connected then we can't hear it
         if (client->r.areanum != self->r.areanum)
-            if (!gi.AreasConnected(self->r.areanum, client->r.areanum))
+            if (!trap_AreasConnected(self->r.areanum, client->r.areanum))
                 return false;
 
         self->ideal_yaw = vectoyaw(temp);

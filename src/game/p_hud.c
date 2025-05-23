@@ -594,7 +594,7 @@ static int G_EncodeHealthBar(int bar)
         return 0;
     }
 
-    if (ent->spawnflags & SPAWNFLAG_HEALTHBAR_PVS_ONLY && !gi.inVIS(ent->s.origin, ent->enemy->s.origin, VIS_PVS))
+    if (ent->spawnflags & SPAWNFLAG_HEALTHBAR_PVS_ONLY && !trap_InVis(ent->s.origin, ent->enemy->s.origin, VIS_PVS))
         return 0;
 
     float percent = (float)ent->enemy->health / ent->enemy->max_health;

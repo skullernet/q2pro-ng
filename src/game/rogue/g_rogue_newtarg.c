@@ -191,7 +191,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
             if (!player->r.inuse)
                 continue;
 
-            if (gi.inVIS(player->s.origin, ent->s.origin, VIS_PVS)) {
+            if (trap_InVis(player->s.origin, ent->s.origin, VIS_PVS)) {
                 T_Damage(ent, self, self, vec3_origin, ent->s.origin, vec3_origin,
                          ent->health, 0, DAMAGE_NO_PROTECTION, (mod_t) { MOD_TELEFRAG });
                 break;

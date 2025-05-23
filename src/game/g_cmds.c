@@ -1214,7 +1214,7 @@ static void Cmd_Wave_f(edict_t *ent)
                 continue;
             if (!targ->client)
                 continue;
-            if (!gi.inVIS(ent->s.origin, targ->s.origin, VIS_PVS | VIS_NOAREAS))
+            if (!trap_InVis(ent->s.origin, targ->s.origin, VIS_PVS | VIS_NOAREAS))
                 continue;
 
             if (aiming_at && other_notify_msg)
