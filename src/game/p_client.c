@@ -762,6 +762,83 @@ static void Player_GiveStartItems(edict_t *ent, char *copy)
     }
 }
 
+static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
+{
+    // set name
+    char *val = Info_ValueForKey(userinfo, "name");
+    if (!*val)
+        val = "badinfo";
+    Q_strlcpy(ent->client->pers.netname, val, sizeof(ent->client->pers.netname));
+
+    // set spectator
+    val = Info_ValueForKey(userinfo, "spectator");
+
+    // spectators are only supported in deathmatch
+    if (deathmatch.integer && !G_TeamplayEnabled() && *val && strcmp(val, "0"))
+        ent->client->pers.spectator = true;
+    else
+        ent->client->pers.spectator = false;
+
+    // set skin
+    val = Info_ValueForKey(userinfo, "skin");
+    if (!*val)
+        val = "male/grunt";
+
+    int playernum = ent->s.number;
+
+    // combine name and skin into a configstring
+    // ZOID
+    if (G_TeamplayEnabled())
+        CTFAssignSkin(ent, val);
+    else
+    // ZOID
+        trap_SetConfigstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, val));
+
+    // ZOID
+    //  set player name field (used in id_state view)
+    if (G_TeamplayEnabled())
+        trap_SetConfigstring(CONFIG_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
+    // ZOID
+
+    // fov
+    val = Info_ValueForKey(userinfo, "fov");
+    ent->client->ps.fov = Q_clip(Q_atoi(val), 1, 160);
+
+    // handedness
+    val = Info_ValueForKey(userinfo, "hand");
+    if (*val) {
+        ent->client->pers.hand = Q_clip(Q_atoi(val), RIGHT_HANDED, CENTER_HANDED);
+    } else {
+        ent->client->pers.hand = RIGHT_HANDED;
+    }
+
+    // [Paril-KEX] auto-switch
+    val = Info_ValueForKey(userinfo, "autoswitch");
+    if (*val) {
+        ent->client->pers.autoswitch = Q_clip(Q_atoi(val), AUTOSW_SMART, AUTOSW_NEVER);
+    } else {
+        ent->client->pers.autoswitch = AUTOSW_SMART;
+    }
+
+    val = Info_ValueForKey(userinfo, "autoshield");
+    if (*val) {
+        ent->client->pers.autoshield = Q_atoi(val);
+    } else {
+        ent->client->pers.autoshield = -1;
+    }
+
+    // [Paril-KEX] wants bob
+    val = Info_ValueForKey(userinfo, "bobskip");
+    if (*val) {
+        ent->client->pers.bob_skip = !!Q_atoi(val);
+    } else {
+        ent->client->pers.bob_skip = false;
+    }
+
+    // save off the userinfo in case we want to check something later
+    Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
+}
+
 /*
 ==============
 InitClientPersistant
@@ -2116,9 +2193,10 @@ called when a client has finished connecting, and is ready
 to be placed into the game.  This will happen every level load.
 ============
 */
-void ClientBegin(edict_t *ent)
+qvm_exported void G_ClientBegin(int clientnum)
 {
-    ent->client = g_clients + (ent - g_edicts);
+    edict_t *ent = &g_edicts[clientnum];
+    ent->client = &g_clients[clientnum];
     ent->client->awaiting_respawn = false;
     ent->client->respawn_timeout = 0;
 
@@ -2187,81 +2265,11 @@ ClientUserInfoChanged
 called whenever the player updates a userinfo variable.
 ============
 */
-void ClientUserinfoChanged(edict_t *ent, char *userinfo)
+qvm_exported void G_ClientUserinfoChanged(int clientnum)
 {
-    // set name
-    char *val = Info_ValueForKey(userinfo, "name");
-    if (!*val)
-        val = "badinfo";
-    Q_strlcpy(ent->client->pers.netname, val, sizeof(ent->client->pers.netname));
-
-    // set spectator
-    val = Info_ValueForKey(userinfo, "spectator");
-
-    // spectators are only supported in deathmatch
-    if (deathmatch.integer && !G_TeamplayEnabled() && *val && strcmp(val, "0"))
-        ent->client->pers.spectator = true;
-    else
-        ent->client->pers.spectator = false;
-
-    // set skin
-    val = Info_ValueForKey(userinfo, "skin");
-    if (!*val)
-        val = "male/grunt";
-
-    int playernum = ent->s.number;
-
-    // combine name and skin into a configstring
-    // ZOID
-    if (G_TeamplayEnabled())
-        CTFAssignSkin(ent, val);
-    else
-    // ZOID
-        trap_SetConfigstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, val));
-
-    // ZOID
-    //  set player name field (used in id_state view)
-    if (G_TeamplayEnabled())
-        trap_SetConfigstring(CONFIG_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
-    // ZOID
-
-    // fov
-    val = Info_ValueForKey(userinfo, "fov");
-    ent->client->ps.fov = Q_clip(Q_atoi(val), 1, 160);
-
-    // handedness
-    val = Info_ValueForKey(userinfo, "hand");
-    if (*val) {
-        ent->client->pers.hand = Q_clip(Q_atoi(val), RIGHT_HANDED, CENTER_HANDED);
-    } else {
-        ent->client->pers.hand = RIGHT_HANDED;
-    }
-
-    // [Paril-KEX] auto-switch
-    val = Info_ValueForKey(userinfo, "autoswitch");
-    if (*val) {
-        ent->client->pers.autoswitch = Q_clip(Q_atoi(val), AUTOSW_SMART, AUTOSW_NEVER);
-    } else {
-        ent->client->pers.autoswitch = AUTOSW_SMART;
-    }
-
-    val = Info_ValueForKey(userinfo, "autoshield");
-    if (*val) {
-        ent->client->pers.autoshield = Q_atoi(val);
-    } else {
-        ent->client->pers.autoshield = -1;
-    }
-
-    // [Paril-KEX] wants bob
-    val = Info_ValueForKey(userinfo, "bobskip");
-    if (*val) {
-        ent->client->pers.bob_skip = !!Q_atoi(val);
-    } else {
-        ent->client->pers.bob_skip = false;
-    }
-
-    // save off the userinfo in case we want to check something later
-    Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
+    char userinfo[MAX_INFO_STRING];
+    trap_GetUserinfo(clientnum, userinfo, sizeof(userinfo));
+    ClientUserinfoChanged(&g_edicts[clientnum], userinfo);
 }
 
 /*
@@ -2276,16 +2284,10 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
+qvm_exported const char *G_ClientConnect(int clientnum)
 {
-    // check to see if they are on the banned IP list
-#if 0
-    value = Info_ValueForKey(userinfo, "ip");
-    if (SV_FilterPacket(value)) {
-        Info_SetValueForKey(userinfo, "rejmsg", "Banned.");
-        return false;
-    }
-#endif
+    char userinfo[MAX_INFO_STRING];
+    trap_GetUserinfo(clientnum, userinfo, sizeof(userinfo));
 
     // check for a spectator
     char *value = Info_ValueForKey(userinfo, "spectator");
@@ -2296,8 +2298,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
         if (*spectator_password.string &&
             strcmp(spectator_password.string, "none") &&
             strcmp(spectator_password.string, value)) {
-            Info_SetValueForKey(userinfo, "rejmsg", "Spectator password required or incorrect.");
-            return false;
+            return "Spectator password required or incorrect.";
         }
 
         // count spectators
@@ -2305,22 +2306,18 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
             if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
                 numspec++;
 
-        if (numspec >= maxspectators.integer) {
-            Info_SetValueForKey(userinfo, "rejmsg", "Server spectator limit is full.");
-            return false;
-        }
+        if (numspec >= maxspectators.integer)
+            return "Server spectator limit is full.";
     } else {
         // check for a password ( if not a bot! )
         value = Info_ValueForKey(userinfo, "password");
-        if (*password.string && strcmp(password.string, "none") &&
-            strcmp(password.string, value)) {
-            Info_SetValueForKey(userinfo, "rejmsg", "Password required or incorrect.");
-            return false;
-        }
+        if (*password.string && strcmp(password.string, "none") && strcmp(password.string, value))
+            return "Password required or incorrect.";
     }
 
     // they can connect
-    ent->client = g_clients + (ent - g_edicts);
+    edict_t *ent = &g_edicts[clientnum];
+    ent->client = &g_clients[clientnum];
 
     // set up userinfo early
     ClientUserinfoChanged(ent, userinfo);
@@ -2348,7 +2345,7 @@ bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo)
     }
 
     ent->client->pers.connected = true;
-    return true;
+    return NULL;
 }
 
 /*
@@ -2359,8 +2356,9 @@ Called when a player drops from the server.
 Will not be called between levels.
 ============
 */
-void ClientDisconnect(edict_t *ent)
+qvm_exported void G_ClientDisconnect(int clientnum)
 {
+    edict_t *ent = &g_edicts[clientnum];
     if (!ent->client)
         return;
 
@@ -2469,22 +2467,27 @@ This will be called once for each client frame, which will
 usually be a couple times for each server frame.
 ==============
 */
-void ClientThink(edict_t *ent, usercmd_t *ucmd)
+qvm_exported void G_ClientThink(int clientnum)
 {
+    edict_t   *ent;
     gclient_t *client;
     edict_t   *other;
-    int        i;
+    usercmd_t  ucmd;
     pmove_t    pm;
+    int        i;
 
+    ent = &g_edicts[clientnum];
     level.current_entity = ent;
     client = ent->client;
+
+    trap_GetUsercmd(clientnum, &ucmd);
 
     // [Paril-KEX] pass buttons through even if we are in intermission or
     // chasing.
     client->oldbuttons = client->buttons;
-    client->buttons = ucmd->buttons;
+    client->buttons = ucmd.buttons;
     client->latched_buttons |= client->buttons & ~client->oldbuttons;
-    client->cmd = *ucmd;
+    client->cmd = ucmd;
 
     if (level.intermissiontime || ent->client->awaiting_respawn) {
         client->ps.pmove.pm_type = PM_FREEZE;
@@ -2497,7 +2500,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
             // can exit intermission after five seconds
             // Paril: except in N64. the camera handles it.
             // Paril again: except on unit exits, we can leave immediately after camera finishes
-            if (level.changemap && (!n64_sp || level.level_intermission_set) && level.time > level.intermissiontime + SEC(5) && (ucmd->buttons & BUTTON_ANY))
+            if (level.changemap && (!n64_sp || level.level_intermission_set) && level.time > level.intermissiontime + SEC(5) && (ucmd.buttons & BUTTON_ANY))
                 level.exitintermission = true;
         }
 
@@ -2511,7 +2514,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
     if (ent->client->chase_target) {
         for (i = 0; i < 3; i++)
-            client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd->angles[i]);
+            client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd.angles[i]);
         ent->movetype = MOVETYPE_NOCLIP;
     } else {
         // set up for pmove
@@ -2522,7 +2525,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
                 client->ps.pmove.pm_type = PM_FREEZE;
 
                 // [Paril-KEX] handle menu movement
-                HandleMenuMovement(ent, ucmd);
+                HandleMenuMovement(ent, &ucmd);
             } else if (ent->client->awaiting_respawn)
                 client->ps.pmove.pm_type = PM_FREEZE;
             else if (ent->client->resp.spectator || (G_TeamplayEnabled() && ent->client->resp.ctf_team == CTF_NOTEAM))
@@ -2567,7 +2570,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
             pm.snapinitial = true;
 
-        pm.cmd = *ucmd;
+        pm.cmd = ucmd;
         pm.trace = trap_Trace;
         pm.clip = trap_Clip;
         pm.pointcontents = trap_PointContents;
@@ -2611,7 +2614,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
         if (!ent->client->menu)
             for (i = 0; i < 3; i++)
-                client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd->angles[i]);
+                client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd.angles[i]);
 
         // ROGUE sam raimi cam support
         if (ent->flags & FL_SAM_RAIMI)
@@ -2692,8 +2695,8 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
     }
 
     if (client->resp.spectator) {
-        if (!HandleMenuMovement(ent, ucmd)) {
-            if (ucmd->buttons & BUTTON_JUMP) {
+        if (!HandleMenuMovement(ent, &ucmd)) {
+            if (ucmd.buttons & BUTTON_JUMP) {
                 if (!(client->ps.pmove.pm_flags & PMF_JUMP_HELD)) {
                     client->ps.pmove.pm_flags |= PMF_JUMP_HELD;
                     if (client->chase_target)
@@ -2716,7 +2719,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 
 static bool G_MonstersSearchingFor(edict_t *player)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
         if (!ent->r.inuse || !(ent->r.svflags & SVF_MONSTER) || ent->health <= 0)
             continue;

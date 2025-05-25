@@ -1832,7 +1832,7 @@ void CTFResetTech(void)
     edict_t *ent;
     int i;
 
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         ent = g_edicts + i;
         if (ent->r.inuse && ent->item && (ent->item->flags & IF_TECH))
             G_FreeEdict(ent);
@@ -2116,7 +2116,7 @@ static void CTFResetAllPlayers(void)
     CTFResetTech();
     CTFResetFlags();
 
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         ent = g_edicts + i;
         if (ent->r.inuse && ent->r.solid == SOLID_NOT &&
             ent->think == DoRespawn && ent->nextthink >= level.time) {
@@ -3198,7 +3198,7 @@ static void CTFAdmin_Settings(edict_t *ent, pmenuhnd_t *p)
 
     PMenu_Close(ent);
 
-    settings = gi.TagMalloc(sizeof(*settings), TAG_LEVEL);
+    settings = NULL;//gi.TagMalloc(sizeof(*settings), TAG_LEVEL);
 
     settings->matchlen = matchtime.integer;
     settings->matchsetuplen = matchsetuptime.integer;

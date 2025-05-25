@@ -786,7 +786,7 @@ static void write_str(const char *fmt, ...)
     if (len >= sizeof(text))
         G_Error("oversize line");
 
-    fs->WriteFile(text, len, g_savefile);
+    trap_FS_WriteFile(text, len, g_savefile);
 }
 
 static void begin_block(const char *name)
@@ -1069,14 +1069,16 @@ static struct {
     int len;
     int number;
     int version;
-    const char *filename;
 } line;
 
 static const char *read_line(void)
 {
-    int ret = fs->ReadLine(g_savefile, line.data, sizeof(line.data));
-    if (ret < 0)
-        G_Error("%s: error reading input file", line.filename);
+    int ret = trap_FS_ReadLine(g_savefile, line.data, sizeof(line.data));
+    if (ret < 0) {
+        char buf[MAX_QPATH];
+        trap_FS_ErrorString(ret, buf, sizeof(buf));
+        G_Error("error reading input file: %s", buf);
+    }
     line.ptr = line.data;
     line.number++;
     return line.ptr;
@@ -1092,7 +1094,7 @@ static void parse_error(const char *fmt, ...)
     Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    G_Error("%s: line %d: %s", line.filename, line.number, text);
+    G_Error("error at line %d: %s", line.number, text);
 }
 
 static int unescape_char(int c)
@@ -1213,7 +1215,7 @@ static void unknown(const char *what)
     if (g_strict_saves.integer)
         parse_error("unknown %s: %s", what, token);
 
-    G_Printf("WARNING: %s: line %d: unknown %s: %s\n", line.filename, line.number, what, token);
+    G_Printf("WARNING: line %d: unknown %s: %s\n", line.number, what, token);
     line.ptr = NULL;    // skip to next line
 }
 
@@ -1589,7 +1591,7 @@ A single player death will automatically restore from the
 last save position.
 ============
 */
-void WriteGame(qhandle_t handle, bool autosave)
+qvm_exported void G_WriteGame(qhandle_t handle, bool autosave)
 {
     if (!autosave)
         SaveClientData();
@@ -1609,16 +1611,13 @@ void WriteGame(qhandle_t handle, bool autosave)
     end_block();
 }
 
-void ReadGame(qhandle_t handle, const char *filename)
+qvm_exported void G_ReadGame(qhandle_t handle)
 {
     int num;
-
-    gi.FreeTags(TAG_GAME);
 
     g_savefile = handle;
 
     memset(&line, 0, sizeof(line));
-    line.filename = filename;
     expect(SAVE_MAGIC1);
     expect("version");
     line.version = parse_int32();
@@ -1650,7 +1649,7 @@ WriteLevel
 
 =================
 */
-void WriteLevel(qhandle_t handle)
+qvm_exported void G_WriteLevel(qhandle_t handle)
 {
     int     i;
     edict_t *ent, *nullent;
@@ -1669,7 +1668,7 @@ void WriteLevel(qhandle_t handle)
 
     // write out all the entities
     begin_block("entities");
-    for (i = 0; i < globals.num_edicts; i++) {
+    for (i = 0; i < level.num_edicts; i++) {
         ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
@@ -1696,7 +1695,7 @@ calling ReadLevel.
 No clients are connected yet.
 =================
 */
-void ReadLevel(qhandle_t handle, const char *filename)
+qvm_exported void G_ReadLevel(qhandle_t handle)
 {
     int     entnum;
     int     i;
@@ -1714,7 +1713,6 @@ void ReadLevel(qhandle_t handle, const char *filename)
     g_savefile = handle;
 
     memset(&line, 0, sizeof(line));
-    line.filename = filename;
     expect(SAVE_MAGIC2);
     expect("version");
     line.version = parse_int32();
@@ -1723,7 +1721,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
 
     // wipe all the entities except world
     memset(g_edicts, 0, sizeof(g_edicts[0]) * ENTITYNUM_WORLD);
-    globals.num_edicts = game.maxclients;
+    level.num_edicts = game.maxclients;
 
     // load the level locals
     expect("level");
@@ -1733,8 +1731,8 @@ void ReadLevel(qhandle_t handle, const char *filename)
     expect("entities");
     expect("{");
     while ((entnum = parse_array(ENTITYNUM_WORLD)) != -1) {
-        if (entnum >= globals.num_edicts)
-            globals.num_edicts = entnum + 1;
+        if (entnum >= level.num_edicts)
+            level.num_edicts = entnum + 1;
 
         ent = &g_edicts[entnum];
         if (ent->r.inuse)
@@ -1747,6 +1745,9 @@ void ReadLevel(qhandle_t handle, const char *filename)
         trap_LinkEntity(ent);
     }
 
+    // inform the server that num_edicts has changed
+    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
+
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {
         ent = &g_edicts[i];
@@ -1756,7 +1757,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
     }
 
     // do any load time things at this point
-    for (i = 0; i < globals.num_edicts; i++) {
+    for (i = 0; i < level.num_edicts; i++) {
         ent = &g_edicts[i];
 
         if (!ent->r.inuse)
@@ -1778,7 +1779,7 @@ void ReadLevel(qhandle_t handle, const char *filename)
 }
 
 // [Paril-KEX]
-bool G_CanSave(void)
+qvm_exported bool G_CanSave(void)
 {
     if (game.maxclients == 1 && g_edicts[0].health <= 0) {
         G_ClientPrintf(&g_edicts[0], PRINT_HIGH, "Can't savegame while dead!\n");

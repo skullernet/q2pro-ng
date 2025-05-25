@@ -406,7 +406,7 @@ static int read_server_file(void)
     if (!svs.savefile)
         return -1;
 
-    ge->ReadGame(svs.savefile, "save/" SAVE_CURRENT "/game.ssv");
+    ge->ReadGame(svs.savefile);
 
     FS_CloseFile(svs.savefile);
     svs.savefile = 0;
@@ -481,7 +481,7 @@ static int read_level_file(void)
     if (!svs.savefile)
         return -1;
 
-    ge->ReadLevel(svs.savefile, name);
+    ge->ReadLevel(svs.savefile);
 
     FS_CloseFile(svs.savefile);
     svs.savefile = 0;

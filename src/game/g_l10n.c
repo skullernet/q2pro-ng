@@ -81,33 +81,33 @@ void G_FreeL10nFile(void)
 
 void G_LoadL10nFile(void)
 {
+    char buf[MAX_QPATH];
+    qhandle_t f;
+    int ret;
+
     G_FreeL10nFile();
 
-    if (!fs) {
-        G_Printf("FILESYSTEM_API_V1 not available\n");
-        return;
-    }
-
-    qhandle_t f;
-    int ret = fs->OpenFile(L10N_FILE, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    ret = trap_FS_OpenFile(L10N_FILE, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
     if (!f) {
-        G_Printf("Couldn't open %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+        trap_FS_ErrorString(ret, buf, sizeof(buf));
+        G_Printf("Couldn't open %s: %s\n", L10N_FILE, buf);
         return;
     }
 
     while (1) {
         char line[MAX_STRING_CHARS];
-        ret = fs->ReadLine(f, line, sizeof(line));
+        ret = trap_FS_ReadLine(f, line, sizeof(line));
         if (ret == 0)
             break;
         if (ret < 0) {
-            G_Printf("Couldn't read %s: %s\n", L10N_FILE, fs->ErrorString(ret));
+            trap_FS_ErrorString(ret, buf, sizeof(buf));
+            G_Printf("Couldn't read %s: %s\n", L10N_FILE, buf);
             break;
         }
         parse_line(line);
     }
 
-    fs->CloseFile(f);
+    trap_FS_CloseFile(f);
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 

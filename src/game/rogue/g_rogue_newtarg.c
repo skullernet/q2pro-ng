@@ -178,7 +178,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
     edict_t *ent, *player;
 
     // kill any visible monsters
-    for (ent = g_edicts; ent < &g_edicts[globals.num_edicts]; ent++) {
+    for (ent = g_edicts; ent < &g_edicts[level.num_edicts]; ent++) {
         if (!ent->r.inuse)
             continue;
         if (ent->health < 1)

@@ -935,11 +935,11 @@ Parses an edict out of the given string, returning the new position
 ed should be a properly initialized empty edict.
 ====================
 */
-static const char *ED_ParseEdict(const char *data, edict_t *ent)
+static void ED_ParseEdict(edict_t *ent)
 {
-    bool  init;
-    char  keyname[256];
-    const char *com_token;
+    bool    init;
+    char    keyname[256];
+    char    com_token[MAX_TOKEN_CHARS];
 
     init = false;
 
@@ -948,17 +948,13 @@ static const char *ED_ParseEdict(const char *data, edict_t *ent)
     // go through all the dictionary pairs
     while (1) {
         // parse key
-        com_token = COM_Parse(&data);
-        if (com_token[0] == '}')
-            break;
-        if (!data)
+        if (!trap_ParseEntityString(keyname, sizeof(keyname)))
             G_Error("ED_ParseEntity: EOF without closing brace");
-
-        Q_strlcpy(keyname, com_token, sizeof(keyname));
+        if (keyname[0] == '}')
+            break;
 
         // parse value
-        com_token = COM_Parse(&data);
-        if (!data)
+        if (!trap_ParseEntityString(com_token, sizeof(com_token)))
             G_Error("ED_ParseEntity: EOF without closing brace");
 
         if (com_token[0] == '}')
@@ -980,8 +976,6 @@ static const char *ED_ParseEdict(const char *data, edict_t *ent)
 
     if (!init)
         memset(ent, 0, sizeof(*ent));
-
-    return data;
 }
 
 /*
@@ -1004,7 +998,7 @@ static void G_FixTeams(void)
     int c;
 
     c = 0;
-    for (i = 0, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < level.num_edicts; i++, e++) {
         if (!e->r.inuse)
             continue;
         if (!e->team)
@@ -1022,7 +1016,7 @@ static void G_FixTeams(void)
         e->flags &= ~FL_TEAMSLAVE;
         e->flags |= FL_TEAMMASTER;
         c++;
-        for (j = 0, e2 = g_edicts + j; j < globals.num_edicts; j++, e2++) {
+        for (j = 0, e2 = g_edicts + j; j < level.num_edicts; j++, e2++) {
             if (e2 == e)
                 continue;
             if (!e2->r.inuse)
@@ -1053,7 +1047,7 @@ static void G_FindTeams(void)
 
     c = 0;
     c2 = 0;
-    for (i = 0, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = 0, e = g_edicts + i; i < level.num_edicts; i++, e++) {
         if (!e->r.inuse)
             continue;
         if (!e->team)
@@ -1065,7 +1059,7 @@ static void G_FindTeams(void)
         e->flags |= FL_TEAMMASTER;
         c++;
         c2++;
-        for (j = i + 1, e2 = e + 1; j < globals.num_edicts; j++, e2++) {
+        for (j = i + 1, e2 = e + 1; j < level.num_edicts; j++, e2++) {
             if (!e2->r.inuse)
                 continue;
             if (!e2->team)
@@ -1204,11 +1198,11 @@ Creates a server's entity / program execution context by
 parsing textual entity definitions out of an ent file.
 ==============
 */
-void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint)
+q_exported void G_SpawnEntities(void)
 {
     edict_t *ent;
     int      inhibit;
-    const char   *com_token;
+    char     com_token[MAX_QPATH];
 
     int skill_level = Q_clip(skill.integer, 0, 3);
     if (skill.integer != skill_level)
@@ -1221,13 +1215,14 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
     memset(&level, 0, sizeof(level));
     memset(g_edicts, 0, sizeof(g_edicts));
+    level.num_edicts = game.maxclients;
     level.is_spawning = true;
 
     // all other flags are not important atm
     //globals.server_flags &= SERVER_FLAG_LOADING;
 
-    Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
-    Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
+    trap_GetLevelName(level.mapname, sizeof(level.mapname));
+    trap_GetSpawnPoint(game.spawnpoint, sizeof(game.spawnpoint));
 
     level.is_n64 = strncmp(level.mapname, "q64/", 4) == 0;
     level.is_psx = strncmp(level.mapname, "psx/", 4) == 0;
@@ -1253,8 +1248,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
     // parse ents
     while (1) {
         // parse the opening brace
-        com_token = COM_Parse(&entities);
-        if (!entities)
+        if (!trap_ParseEntityString(com_token, sizeof(com_token)))
             break;
         if (com_token[0] != '{')
             G_Error("ED_LoadFromFile: found \"%s\" when expecting {", com_token);
@@ -1263,7 +1257,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
             ent = world;
         else
             ent = G_Spawn();
-        entities = ED_ParseEdict(entities, ent);
+        ED_ParseEdict(ent);
 
         // remove things (except the world) from different skill levels or deathmatch
         if (ent != world) {

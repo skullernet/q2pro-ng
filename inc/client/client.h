@@ -166,4 +166,6 @@ void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
                     float size, uint32_t color, uint32_t time, bool depth_test);
 #else
 #define R_ClearDebugLines() (void)0
+#define R_AddDebugBounds(mins, maxs, color, time, depth_test) (void)0
+#define R_AddDebugText(origin, angles, text, size, color, time, depth_test) (void)0
 #endif

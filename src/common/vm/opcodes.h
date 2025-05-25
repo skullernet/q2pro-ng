@@ -200,6 +200,14 @@ typedef enum {
 } Opcode;
 
 typedef enum {
+    I32_Trunc_sat_f32_s = 0,
+    I32_Trunc_sat_f32_u = 1,
+    I32_Trunc_sat_f64_s = 2,
+    I32_Trunc_sat_f64_u = 3,
+    I64_Trunc_sat_f32_s = 4,
+    I64_Trunc_sat_f32_u = 5,
+    I64_Trunc_sat_f64_s = 6,
+    I64_Trunc_sat_f64_u = 7,
     MemoryCopy          = 10,
     MemoryFill          = 11,
 } ExtendedOpcode;

@@ -237,7 +237,7 @@ void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
     //if ((ent->last_move_time + SEC(2)) > level.time)
     //  return;
 
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *trigger = g_edicts + i;
         if (!trigger->r.inuse)
             continue;

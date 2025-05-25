@@ -34,13 +34,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
 #define VM_Realloc(ptr, size)   Z_Realloc(ptr, size)
 
-#define ASSERT(cond, ...) \
-    do { if (!(cond)) Com_Error(ERR_DROP, __VA_ARGS__); } while (0)
+#define VM_MAGIC   0x6d736100
+#define VM_VERSION 0x01
 
-#define WA_MAGIC   0x6d736100
-#define WA_VERSION 0x01
-
-#define PAGE_SIZE       0x10000  // 65536
 #define STACK_SIZE      0x10000  // 65536
 #define BLOCKSTACK_SIZE 0x1000   // 4096
 #define CALLSTACK_SIZE  0x1000   // 4096
@@ -84,20 +80,8 @@ typedef struct {
     char      *export_name;     // function only (exported)
     char      *import_module;   // function only (imported)
     char      *import_field;    // function only (imported)
-    void      *(*func_ptr)(void); // function only (imported)
+    vm_thunk_t thunk;           // function only (imported)
 } vm_block_t;
-
-typedef struct {
-    uint8_t    value_type;
-    union {
-        uint32_t   u32;
-        int32_t    i32;
-        uint64_t   u64;
-        int64_t    i64;
-        float      f32;
-        double     f64;
-    } value;
-} vm_value_t;
 
 typedef struct {
     const vm_block_t  *block;
@@ -115,14 +99,6 @@ typedef struct {
 } vm_table_t;
 
 typedef struct {
-    uint32_t    initial;     // initial size (64K pages)
-    uint32_t    maximum;     // maximum size (64K pages)
-    uint32_t    pages;       // current size (64K pages)
-    uint8_t    *bytes;       // memory area
-    char       *export_name; // when exported
-} vm_memory_t;
-
-typedef struct {
     uint32_t    kind;
     char       *name;
     void       *value;
@@ -130,6 +106,7 @@ typedef struct {
 
 typedef struct vm_s {
     char       *path;           // file path of the wasm module
+    const vm_import_t *imports;
 
     uint32_t    num_bytes;      // number of bytes in the module
     uint8_t    *bytes;          // module content/bytes

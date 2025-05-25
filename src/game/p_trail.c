@@ -67,7 +67,7 @@ static edict_t *PlayerTrail_Spawn(edict_t *owner)
 // we don't want these to stay around across level loads.
 void PlayerTrail_Destroy(edict_t *player)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
         if (!ent->r.inuse || !ent->classname)
             continue;

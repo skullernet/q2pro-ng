@@ -26,7 +26,7 @@ edict_t *findradius2(edict_t *from, const vec3_t org, float rad)
         from = g_edicts;
     else
         from++;
-    for (; from < &g_edicts[globals.num_edicts]; from++) {
+    for (; from < &g_edicts[level.num_edicts]; from++) {
         if (!from->r.inuse)
             continue;
         if (from->r.solid == SOLID_NOT)

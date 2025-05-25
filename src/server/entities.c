@@ -234,12 +234,8 @@ void SV_BuildClientFrame(client_t *client)
     int         clientarea, clientcluster;
     visrow_t    clientphs;
     visrow_t    clientpvs;
-    entity_state_t temp;
 
     clent = client->edict;
-    if (!clent->client)
-        return;        // not in game yet
-
     Q_assert(client->entities);
 
     // this is the frame we are creating
@@ -261,7 +257,7 @@ void SV_BuildClientFrame(client_t *client)
     frame->areabytes = CM_WriteAreaBits(&sv.cm, frame->areabits, clientarea);
 
     // grab the current player_state_t
-    frame->ps = clent->client->ps;
+    frame->ps = client->client->ps;
 
     CM_FatPVS(&sv.cm, &clientpvs, clientorg);
     BSP_ClusterVis(sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
@@ -270,9 +266,7 @@ void SV_BuildClientFrame(client_t *client)
     frame->num_entities = 0;
     frame->first_entity = client->next_entity;
 
-    Q_assert_soft(ge->num_edicts <= ENTITYNUM_WORLD);
-
-    for (e = 0; e < ge->num_edicts; e++) {
+    for (e = 0; e < svs.num_edicts; e++) {
         ent = SV_EdictForNum(e);
 
         // ignore entities not in use
@@ -328,20 +322,9 @@ void SV_BuildClientFrame(client_t *client)
             }
         }
 
-        // optionally skip it
-        if (ge->EntityVisibleToClient && !ge->EntityVisibleToClient(clent, ent))
-            continue;
-
         // add it to the circular client_entities array
         state = &client->entities[client->next_entity & (client->num_entities - 1)];
-
-        // optionally customize it
-        if (ge->CustomizeEntityToClient && ge->CustomizeEntityToClient(clent, ent, &temp)) {
-            Q_assert_soft(temp.number == e);
-            *state = temp;
-        } else {
-            *state = ent->s;
-        }
+        *state = ent->s;
 
         // clear footsteps
         if (client->settings[CLS_NOFOOTSTEPS] && (state->event[0] == EV_FOOTSTEP ||

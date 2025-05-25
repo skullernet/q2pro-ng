@@ -202,7 +202,7 @@ void SV_DropClient(client_t *client, const char *reason)
 
     // call the prog function for removing a client
     // this will remove the body, among other things
-    ge->ClientDisconnect(client->edict);
+    ge->ClientDisconnect(client->number);
 
     SV_CleanClient(client);
 
@@ -841,29 +841,13 @@ static void send_connect_packet(client_t *newcl, int nctype)
                       dlstring1, dlstring2, sv.name);
 }
 
-// converts all the extra positional parameters to `connect' command into an
-// infostring appended to normal userinfo after terminating NUL. game mod can
-// then access these parameters in ClientConnect callback.
-static void format_conninfo(conn_params_t *params, char *conninfo)
-{
-    Q_snprintf(conninfo, MAX_INFO_STRING,
-               "\\challenge\\%d\\ip\\%s"
-               "\\major\\%d\\minor\\%d\\netchan\\%d"
-               "\\packetlen\\%d\\qport\\%d\\zlib\\%d",
-               params->challenge, NET_AdrToString(&net_from),
-               params->protocol, params->version, params->nctype,
-               params->maxlength, params->qport, params->has_zlib);
-}
-
 static void SVC_DirectConnect(void)
 {
     char            userinfo[MAX_INFO_STRING];
-    char            conninfo[MAX_INFO_STRING];
     conn_params_t   params;
     client_t        *newcl;
     int             number;
-    bool            allow;
-    char            *reason;
+    const char      *denied;
 
     memset(&params, 0, sizeof(params));
 
@@ -892,26 +876,27 @@ static void SVC_DirectConnect(void)
     newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
     newcl->edict = SV_EdictForNum(number);
+    newcl->client = SV_ClientForNum(number);
 #if USE_FPS
     newcl->framediv = sv.frametime.div;
     newcl->settings[CLS_FPS] = BASE_FRAMERATE;
 #endif
-
-    format_conninfo(&params, conninfo);
+    Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
+    newcl->state = cs_assigned;
 
     // get the game a chance to reject this connection or modify the userinfo
     sv_client = newcl;
     sv_player = newcl->edict;
-    allow = ge->ClientConnect(newcl->edict, userinfo, conninfo);
+    denied = ge->ClientConnect(number);
     sv_client = NULL;
     sv_player = NULL;
-    if (!allow) {
-        reason = Info_ValueForKey(userinfo, "rejmsg");
-        if (*reason) {
-            reject_printf("%s\nConnection refused.\n", reason);
+    if (denied) {
+        if (*denied) {
+            reject_printf("%s\nConnection refused.\n", denied);
         } else {
             reject_printf("Connection refused.\n");
         }
+        newcl->state = cs_free;
         return;
     }
 
@@ -920,7 +905,6 @@ static void SVC_DirectConnect(void)
     newcl->numpackets = 1;
 
     // parse some info from the info strings
-    Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
     SV_UserinfoChanged(newcl);
 
     // send the connect packet to the client
@@ -1474,23 +1458,7 @@ player processing happens outside RunWorldFrame
 */
 static void SV_PrepWorldFrame(void)
 {
-    edict_t    *ent;
-    int        i;
-
-    if (ge && ge->PrepFrame) {
-        ge->PrepFrame();
-        return;
-    }
-
-    if (!SV_FRAMESYNC)
-        return;
-
-    for (i = 1; i < ge->num_edicts; i++) {
-        ent = SV_EdictForNum(i);
-
-        // events only last for a single keyframe
-        ent->s.event[0] = ent->s.event[1] = 0;
-    }
+    ge->PrepFrame();
 }
 
 // pause if there is only local client on the server
@@ -1744,7 +1712,7 @@ void SV_UserinfoChanged(client_t *cl)
     int     i;
 
     // call prog code to allow overrides
-    ge->ClientUserinfoChanged(cl->edict, cl->userinfo);
+    ge->ClientUserinfoChanged(cl->number);
 
     // name for C code
     val = Info_ValueForKey(cl->userinfo, "name");

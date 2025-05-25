@@ -24,7 +24,7 @@ The game can issue trap_Argc() / trap_Argv() commands to get the rest
 of the parameters
 =================
 */
-void ServerCommand(void)
+qvm_exported void G_ServerCommand(void)
 {
     char cmd[MAX_QPATH];
 

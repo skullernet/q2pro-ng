@@ -76,7 +76,7 @@ edict_t *G_Find(edict_t *from, int fieldofs, const char *match)
     else
         from++;
 
-    for (; from < &g_edicts[globals.num_edicts]; from++) {
+    for (; from < &g_edicts[level.num_edicts]; from++) {
         if (!from->r.inuse)
             continue;
         s = *(char **)((byte *)from + fieldofs);
@@ -107,7 +107,7 @@ edict_t *findradius(edict_t *from, const vec3_t org, float rad)
         from = g_edicts;
     else
         from++;
-    for (; from < &g_edicts[globals.num_edicts]; from++) {
+    for (; from < &g_edicts[level.num_edicts]; from++) {
         if (!from->r.inuse)
             continue;
         if (from->r.solid == SOLID_NOT)
@@ -456,7 +456,7 @@ edict_t *G_Spawn(void)
     int      i;
     edict_t *e;
 
-    for (i = game.maxclients, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
+    for (i = game.maxclients, e = g_edicts + i; i < level.num_edicts; i++, e++) {
         // the first couple seconds of server time can involve a lot of
         // freeing and allocating, so relax the replacement policy
         if (!e->r.inuse && (e->freetime < SEC(2) || level.time - e->freetime > SEC(0.5f))) {
@@ -468,7 +468,12 @@ edict_t *G_Spawn(void)
     if (i == ENTITYNUM_WORLD)
         G_Error("ED_Alloc: no free edicts");
 
-    globals.num_edicts++;
+    // allocate new edict
+    level.num_edicts++;
+
+    // inform the server that num_edicts has changed
+    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
+
     G_InitEdict(e);
     return e;
 }

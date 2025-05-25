@@ -756,7 +756,7 @@ static void tesla_blow(edict_t *self)
 
 static edict_t *tesla_find_beam(edict_t *self, edict_t *hit)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
         if (ent->r.inuse && ent->r.ownernum == self->s.number && ent->enemy == hit)
             return ent;

@@ -134,6 +134,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
     Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
+    Q_strlcpy(sv.spawnpoint, cmd->spawnpoint, sizeof(sv.spawnpoint));
 
     if (Cvar_VariableInteger("deathmatch")) {
         sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
@@ -168,7 +169,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Nav_Load();
 
     // load and spawn all other entities
-    ge->SpawnEntities(sv.name, sv.cm.entitystring, cmd->spawnpoint);
+    sv.entitystring = sv.cm.entitystring;
+    ge->SpawnEntities();
 
     // run two frames to allow everything to settle
     for (i = 0; i < 2; i++, sv.framenum++)

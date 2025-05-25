@@ -6,19 +6,18 @@
 game_locals_t  game;
 level_locals_t level;
 
-game_import_t       gi;
-
-filesystem_api_v1_t *fs;
-debug_draw_api_v1_t *draw;
+#ifndef Q2_VM
+game_import_t   gi;
+game_export_t   globals;
+#endif
 
 bool use_psx_assets;
 
-game_export_t  globals;
 spawn_temp_t   st;
 
 const trace_t null_trace;
 
-edict_t g_edicts[MAX_EDICTS];
+edict_t   g_edicts[MAX_EDICTS];
 gclient_t g_clients[MAX_CLIENTS];
 
 vm_cvar_t developer;
@@ -131,9 +130,6 @@ vm_cvar_t g_auto_save_min_time;
 
 static vm_cvar_t g_frames_per_frame;
 
-static void G_RunFrame(void);
-static void G_PrepFrame(void);
-
 /*
 ============
 PreInitGame
@@ -187,17 +183,14 @@ InitGame
 Called after PreInitGame when the game has set up cvars.
 ============
 */
-static void InitGame(void)
+qvm_exported void G_Init(void)
 {
     G_Printf("==== InitGame ====\n");
 
     PreInitGame();
 
     // seed RNG
-    Q_srand(time(NULL));
-
-    fs = gi.GetExtension(FILESYSTEM_API_V1);
-    draw = gi.GetExtension(DEBUG_DRAW_API_V1);
+    Q_srand(trap_RealTime());
 
     trap_Cvar_Register(&gun_x, "gun_x", "0", 0);
     trap_Cvar_Register(&gun_y, "gun_y", "0", 0);
@@ -323,13 +316,12 @@ static void InitGame(void)
     // items
     InitItems();
 
-    // initialize all entities for this game
-    globals.edicts = g_edicts;
-    globals.max_edicts = q_countof(g_edicts);
-
     // initialize all clients for this game
     game.maxclients = trap_Cvar_VariableInteger("maxclients");
-    globals.num_edicts = game.maxclients;
+    level.num_edicts = game.maxclients;
+
+    // initialize all entities for this game
+    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
 
 #if USE_FPS
     // variable FPS support
@@ -363,28 +355,22 @@ static void InitGame(void)
 
 //===================================================================
 
-static void ShutdownGame(void)
+qvm_exported void G_Shutdown(void)
 {
     G_Printf("==== ShutdownGame ====\n");
 
     memset(&game, 0, sizeof(game));
 
-    gi.FreeTags(TAG_LEVEL);
-    gi.FreeTags(TAG_GAME);
-
     G_FreeMemory();
     G_FreeL10nFile();
 }
 
-static void *G_GetExtension(const char *name)
-{
-    return NULL;
-}
-
-static void G_RestartFilesystem(void)
+qvm_exported void G_RestartFilesystem(void)
 {
     G_LoadL10nFile();
 }
+
+#ifndef Q2_VM
 
 /*
 =================
@@ -401,36 +387,33 @@ q_exported game_export_t *GetGameAPI(const game_import_t *import)
     globals.apiversion = GAME_API_VERSION;
     globals.structsize = sizeof(globals);
 
-    globals.Init = InitGame;
-    globals.Shutdown = ShutdownGame;
-    globals.SpawnEntities = SpawnEntities;
+    globals.Init = G_Init;
+    globals.Shutdown = G_Shutdown;
+    globals.SpawnEntities = G_SpawnEntities;
 
     globals.CanSave = G_CanSave;
-    globals.WriteGame = WriteGame;
-    globals.ReadGame = ReadGame;
-    globals.WriteLevel = WriteLevel;
-    globals.ReadLevel = ReadLevel;
+    globals.WriteGame = G_WriteGame;
+    globals.ReadGame = G_ReadGame;
+    globals.WriteLevel = G_WriteLevel;
+    globals.ReadLevel = G_ReadLevel;
 
-    globals.ClientThink = ClientThink;
-    globals.ClientConnect = ClientConnect;
-    globals.ClientUserinfoChanged = ClientUserinfoChanged;
-    globals.ClientDisconnect = ClientDisconnect;
-    globals.ClientBegin = ClientBegin;
-    globals.ClientCommand = ClientCommand;
-    globals.Pmove = Pmove;
+    globals.ClientThink = G_ClientThink;
+    globals.ClientConnect = G_ClientConnect;
+    globals.ClientUserinfoChanged = G_ClientUserinfoChanged;
+    globals.ClientDisconnect = G_ClientDisconnect;
+    globals.ClientBegin = G_ClientBegin;
+    globals.ClientCommand = G_ClientCommand;
 
     globals.RunFrame = G_RunFrame;
     globals.PrepFrame = G_PrepFrame;
 
-    globals.EntityVisibleToClient = G_EntityVisibleToClient;
     globals.RestartFilesystem = G_RestartFilesystem;
-    globals.GetExtension = G_GetExtension;
-    globals.ServerCommand = ServerCommand;
-
-    globals.edict_size = sizeof(edict_t);
+    globals.ServerCommand = G_ServerCommand;
 
     return &globals;
 }
+
+#endif
 
 //======================================================================
 
@@ -828,7 +811,7 @@ static void G_RunFrame_(bool main_loop)
     // even the world gets a chance to think
     //
     ent = g_edicts;
-    for (int i = 0; i < globals.num_edicts; i++, ent++) {
+    for (int i = 0; i < level.num_edicts; i++, ent++) {
         if (!ent->r.inuse) {
             // defer removing client info so that disconnected, etc works
             if (i < game.maxclients) {
@@ -913,7 +896,7 @@ static void G_RunFrame_(bool main_loop)
         level.entry->time += FRAME_TIME;
 
     // [Paril-KEX] run monster pains now
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *e = &g_edicts[i];
 
         if (!e->r.inuse || !(e->r.svflags & SVF_MONSTER))
@@ -936,7 +919,7 @@ static bool G_AnyPlayerSpawned(void)
     return false;
 }
 
-static void G_RunFrame(void)
+qvm_exported void G_RunFrame(void)
 {
     bool main_loop = sv_running.integer >= 2;
 
@@ -955,9 +938,9 @@ This has to be done before the world logic, because
 player processing happens outside RunFrame
 ================
 */
-static void G_PrepFrame(void)
+qvm_exported void G_PrepFrame(void)
 {
-    for (int i = 0; i < globals.num_edicts; i++) {
+    for (int i = 0; i < level.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
         ent->s.event[0] = ent->s.event[1] = EV_NONE;
         if (ent->free_after_event)

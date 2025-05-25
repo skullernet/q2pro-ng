@@ -893,17 +893,6 @@ static void UTF8_Test_f(void)
 }
 #endif
 
-#include "common/vm.h"
-static void Com_TestVm_f(void)
-{
-    vm_t *vm = VM_Load("test.wasm");
-    if (vm) {
-        uint32_t res = VM_Call(vm, 1, 12345ULL);
-        Com_Printf("res = %#x\n", res);
-        VM_Free(vm);
-    }
-}
-
 static const cmdreg_t c_test[] = {
     { "error", Com_Error_f },
     { "errordrop", Com_ErrorDrop_f },
@@ -930,7 +919,6 @@ static const cmdreg_t c_test[] = {
     { "extcmptest", Com_ExtCmpTest_f },
     { "nextpathtest", Com_NextPathTest_f },
     { "extract", Com_Extract_f },
-    { "vmtest", Com_TestVm_f },
     { NULL }
 };
 

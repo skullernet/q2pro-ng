@@ -109,7 +109,7 @@ void SV_ClearWorld(void)
     }
 
     // make sure all entities are unlinked
-    for (int i = 0; i < ge->max_edicts; i++) {
+    for (int i = 0; i < MAX_EDICTS; i++) {
         edict_t *ent = SV_EdictForNum(i);
         ent->r.linked = false;
         ent->r.linkcount = 0;

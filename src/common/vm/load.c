@@ -29,11 +29,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "common/sizebuf.h"
 #include "common/files.h"
 
-int VM_GetExport(vm_t *m, const char *name, uint32_t kind)
+int VM_GetExport(vm_t *m, const char *name)
 {
     for (uint32_t e = 0; e < m->num_exports; e++) {
         const vm_export_t *export = &m->exports[e];
-        if (export->kind != kind)
+        if (export->kind != KIND_FUNCTION)
             continue;
         if (!strcmp(name, export->name))
             return e;
@@ -82,6 +82,50 @@ static uint64_t get_type_mask(vm_type_t *type)
         mask |= 0x80 - type->params[p];
     }
     return mask;
+}
+
+static int get_value_type(int c)
+{
+    switch (c) {
+    case 'i':
+        return I32;
+    case 'I':
+        return I64;
+    case 'f':
+        return F32;
+    case 'F':
+        return F64;
+    }
+    return 0;
+}
+
+static vm_thunk_t find_import(vm_t *m, const char *name, const vm_type_t *type)
+{
+    const vm_import_t *import = m->imports;
+    while (import->thunk) {
+        if (!strcmp(import->name, name))
+            break;
+        import++;
+    }
+
+    ASSERT(import->thunk, "Import %s not found", name);
+    const char *s = import->type;
+    uint64_t mask = 0x80;
+
+    if (*s && s[1] == ' ') {
+        mask |= 0x80 - get_value_type(*s);
+        s += 2;
+    }
+    mask <<= 4;
+
+    while (*s) {
+        mask <<= 4;
+        mask |= 0x80 - get_value_type(*s);
+        s++;
+    }
+
+    ASSERT(mask == type->mask, "Import %s type mismatch", name);
+    return import->thunk;
 }
 
 static char *sz_read_string(sizebuf_t *sz)
@@ -172,15 +216,15 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
             type_index = SZ_ReadLeb(sz);
             ASSERT(type_index < m->num_types, "Bad type index");
             break;
+#if 0
         case KIND_GLOBAL:
             content_type = SZ_ReadLeb(sz);
             SZ_ReadByte(sz); // mutability
             break;
+#endif
         default:
             ASSERT(0, "Import of kind %d not supported", kind);
         }
-
-        void *val = NULL;   // TODO
 
         // Store in the right place
         switch (kind) {
@@ -190,12 +234,14 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
             m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
 
             vm_block_t *func = &m->funcs[m->num_imports - 1];
+            memset(func, 0, sizeof(*func));
             func->import_module = import_module;
             func->import_field = import_field;
             func->type = &m->types[type_index];
-            func->func_ptr = val;
+            func->thunk = find_import(m, import_field, func->type);
             break;
 
+#if 0
         case KIND_GLOBAL:
             m->num_globals++;
             m->globals = VM_Realloc(m->globals, m->num_globals * sizeof(m->globals[0]));
@@ -215,6 +261,7 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
                 ASSERT(0, "Import of type %d not supported", content_type);
             }
             break;
+#endif
         }
     }
 }
@@ -225,6 +272,7 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
     ASSERT(count <= SZ_Remaining(sz), "Too many functions");
     m->num_funcs += count;
     m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
+    memset(m->funcs + m->num_funcs - count, 0, sizeof(m->funcs[0]) * count);
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
@@ -281,7 +329,7 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
     ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
-    m->memory.bytes = VM_Malloc(m->memory.pages * PAGE_SIZE);
+    m->memory.bytes = VM_Malloc(m->memory.pages * VM_PAGE_SIZE);
 }
 
 static void parse_globals(vm_t *m, sizebuf_t *sz)
@@ -387,7 +435,7 @@ static void parse_data(vm_t *m, sizebuf_t *sz)
         // Copy the data to the memory offset
         uint32_t offset = init.value.u32;
         uint32_t size = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + size <= m->memory.pages * PAGE_SIZE, "Memory init out of bounds");
+        ASSERT((uint64_t)offset + size <= m->memory.pages * VM_PAGE_SIZE, "Memory init out of bounds");
         memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
     }
 }
@@ -440,7 +488,7 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
     vm_block_t  *block;
     vm_block_t  *blockstack[BLOCKSTACK_SIZE];
     int          top = -1;
-    int          opcode = Unreachable;
+    uint32_t     opcode = Unreachable;
     uint32_t     count, index;
 
     sz->readcount = func->start_addr;
@@ -557,8 +605,10 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
             break;
 
         case Extended:
-            opcode = SZ_ReadByte(sz);
+            opcode = SZ_ReadLeb(sz);
             switch (opcode) {
+            case I32_Trunc_sat_f32_s ... I64_Trunc_sat_f64_u:
+                break;
             case MemoryCopy:
                 sz->readcount += 2;
                 break;
@@ -602,28 +652,36 @@ static const parsefunc_t parsefuncs[NUM_SECTIONS] = {
     parse_data,
 };
 
-vm_t *VM_Load(const char *name)
+vm_t *VM_Load(const char *name, const vm_import_t *imports)
 {
     uint32_t    word;
     vm_t        *m;
     sizebuf_t   sz;
     byte        *data;
-    int         len;
+    int64_t     len;
+    qhandle_t   f;
 
-    len = FS_LoadFile(name, (void **)&data);
-    if (!data)
+    len = FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    if (!f)
         return NULL;
+
+    if (len > MAX_LOADFILE)
+        return NULL;
+
+    data = VM_Malloc(Q_ALIGN(len + 1024, 1024));
+    FS_Read(data, len, f);
+    FS_CloseFile(f);
 
     SZ_InitRead(&sz, data, len);
     sz.allowunderflow = false;
 
     // Check the module
     word = SZ_ReadLong(&sz);
-    if (word != WA_MAGIC)
+    if (word != VM_MAGIC)
         return NULL;
 
     word = SZ_ReadLong(&sz);
-    if (word != WA_VERSION)
+    if (word != VM_VERSION)
         return NULL;
 
     // Allocate the module
@@ -638,6 +696,7 @@ vm_t *VM_Load(const char *name)
     m->num_bytes = len;
     m->block_lookup = VM_Malloc(m->num_bytes * sizeof(m->block_lookup[0]));
     m->start_func = -1;
+    m->imports = imports;
 
     // Read the sections
     vm_section_t sections[NUM_SECTIONS] = { 0 };
@@ -704,7 +763,7 @@ void VM_Free(vm_t *m)
     Z_Free(m);
 }
 
-uint64_t VM_Call(vm_t *m, uint32_t e, ...)
+void VM_Call(vm_t *m, uint32_t e)
 {
     ASSERT(!(e < 0 || e >= m->num_exports), "Bad export");
 
@@ -713,32 +772,21 @@ uint64_t VM_Call(vm_t *m, uint32_t e, ...)
 
     const vm_block_t *func = export->value;
     const vm_type_t *type = func->type;
-    va_list ap;
 
-    va_start(ap, e);
-    for (int i = 0; i < type->num_params; i++) {
-        vm_value_t *value = &m->stack[++m->sp];
-        value->value_type = type->params[i];
-        switch (type->params[i]) {
-        case I32:
-            value->value.u32 = va_arg(ap, uint32_t);
-            break;
-        case I64:
-            value->value.u64 = va_arg(ap, uint64_t);
-            break;
-        case F32:
-            value->value.f32 = va_arg(ap, double);
-            break;
-        case F64:
-            value->value.f64 = va_arg(ap, double);
-            break;
-        default:
-            ASSERT(0, "Bad param");
-        }
-    }
-    va_end(ap);
+    m->sp += type->num_params;
 
     VM_SetupCall(m, func->fidx);
     VM_Interpret(m);
-    return m->stack[m->sp--].value.u64;
+
+    m->sp -= type->num_results;
+}
+
+vm_value_t *VM_StackTop(vm_t *m)
+{
+    return &m->stack[m->sp];
+}
+
+vm_memory_t *VM_Memory(vm_t *m)
+{
+    return &m->memory;
 }

@@ -24,10 +24,10 @@
 extern const vec3_t player_mins;
 extern const vec3_t player_maxs;
 
+#ifndef Q2_VM
 extern game_import_t    gi;
-
-extern filesystem_api_v1_t *fs;
-extern debug_draw_api_v1_t *draw;
+extern game_export_t    globals;
+#endif
 
 extern bool use_psx_assets;
 
@@ -667,6 +667,7 @@ typedef struct {
     uint16_t monsters_registered[MAX_EDICTS]; // only for debug
     int killed_monsters;
 
+    int num_edicts;
     edict_t *current_entity; // entity running from G_RunFrame
     int body_que;   // dead bodies
 
@@ -1027,7 +1028,6 @@ typedef struct {
 
 extern game_locals_t  game;
 extern level_locals_t level;
-extern game_export_t  globals;
 extern spawn_temp_t   st;
 
 static inline float lerp(float a, float b, float f)
@@ -1260,7 +1260,7 @@ bool CheckFlood(edict_t *ent);
 void Cmd_Help_f(edict_t *ent);
 void Cmd_Score_f(edict_t *ent);
 void ValidateSelectedItem(edict_t *ent);
-void ClientCommand(edict_t *ent);
+void G_ClientCommand(int clientnum);
 
 //
 // g_items.c
@@ -1367,15 +1367,15 @@ const char *G_GetLightStyle(int style);
 void G_AddPrecache(precache_t func);
 void G_RefreshPrecaches(void);
 void G_PrecacheInventoryItems(void);
-void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
+void G_SpawnEntities(void);
 
 //
 // g_save.c
 //
-void WriteGame(qhandle_t handle, bool autosave);
-void ReadGame(qhandle_t handle, const char *filename);
-void WriteLevel(qhandle_t handle);
-void ReadLevel(qhandle_t handle, const char *filename);
+void G_WriteGame(qhandle_t handle, bool autosave);
+void G_ReadGame(qhandle_t handle);
+void G_WriteLevel(qhandle_t handle);
+void G_ReadLevel(qhandle_t handle);
 bool G_CanSave(void);
 
 //
@@ -1682,11 +1682,11 @@ void InitClientPersistant(edict_t *ent, gclient_t *client);
 void InitClientResp(gclient_t *client);
 void InitBodyQue(void);
 void ClientBeginServerFrame(edict_t *ent);
-void ClientThink(edict_t *ent, usercmd_t *cmd);
-bool ClientConnect(edict_t *ent, char *userinfo, char *conninfo);
-void ClientDisconnect(edict_t *ent);
-void ClientBegin(edict_t *ent);
-void ClientUserinfoChanged(edict_t *ent, char *userinfo);
+void G_ClientThink(int clientnum);
+const char *G_ClientConnect(int clientnum);
+void G_ClientDisconnect(int clientnum);
+void G_ClientBegin(int clientnum);
+void G_ClientUserinfoChanged(int clientnum);
 void P_AssignClientSkinnum(edict_t *ent);
 float PlayersRangeFromSpot(edict_t *spot);
 bool SpawnPointClear(edict_t *spot);
@@ -1703,7 +1703,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 //
 // g_svcmds.c
 //
-void ServerCommand(void);
+void G_ServerCommand(void);
 
 //
 // p_view.c
@@ -1789,6 +1789,10 @@ void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float o
 //
 // g_main.c
 //
+void G_Init(void);
+void G_Shutdown(void);
+void G_RunFrame(void);
+void G_PrepFrame(void);
 void SaveClientData(void);
 void FetchClientEntData(edict_t *ent);
 void EndDMLevel(void);
@@ -2327,11 +2331,11 @@ struct edict_s {
     // shared with server; do not touch members until the "private" section
     entity_state_t  s;
     entity_shared_t r;
-    gclient_t       *client; // NULL if not a player
 
     //================================
 
     // private to game
+    gclient_t   *client; // NULL if not a player
     int         spawn_count; // [Paril-KEX] used to differentiate different entities that may be in the same slot
     movetype_t  movetype;
     contents_t  clipmask;

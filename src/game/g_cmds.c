@@ -523,7 +523,7 @@ static void Cmd_AlertAll_f(edict_t *ent)
     if (!G_CheatCheck(ent))
         return;
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *t = &g_edicts[i];
 
         if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
@@ -949,7 +949,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
     trace_t tr;
     trap_Trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse || i == tr.entnum)
             continue;
@@ -983,7 +983,7 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
         return;
     }
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < globals.num_edicts; i++) {
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse)
             continue;
@@ -1452,12 +1452,7 @@ static void Cmd_ShowSecrets_f(edict_t *self)
         return;
     }
 
-    if (!draw) {
-        G_ClientPrintf(self, PRINT_HIGH, "Debug drawing API not available\n");
-        return;
-    }
-
-    draw->ClearDebugLines();
+    trap_R_ClearDebugLines();
     ent = NULL;
     while ((ent = G_Find(ent, FOFS(classname), "target_secret"))) {
         if (!ent->targetname)
@@ -1466,7 +1461,7 @@ static void Cmd_ShowSecrets_f(edict_t *self)
         other = NULL;
         found = false;
         while ((other = G_Find(other, FOFS(target), ent->targetname))) {
-            draw->AddDebugBounds(other->r.absmin, other->r.absmax, U32_RED, 10000, false);
+            trap_R_AddDebugBounds(other->r.absmin, other->r.absmax, U32_RED, 10000, false);
             found = true;
         }
 
@@ -1482,13 +1477,13 @@ static void Cmd_ShowSecrets_f(edict_t *self)
 ClientCommand
 =================
 */
-void ClientCommand(edict_t *ent)
+q_exported void G_ClientCommand(int clientnum)
 {
-    char cmd[MAX_QPATH];
-
+    edict_t *ent = &g_edicts[clientnum];
     if (!ent->client)
         return; // not fully in game yet
 
+    char cmd[MAX_QPATH];
     trap_Argv(0, cmd, sizeof(cmd));
 
     if (Q_strcasecmp(cmd, "players") == 0) {

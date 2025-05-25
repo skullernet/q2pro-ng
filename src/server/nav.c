@@ -574,6 +574,7 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
         }
     }
 
+#if 0
     // store resulting path for compass, etc
     if (request->pathPoints.count) {
         // if we're too far from the first node, add in our current position.
@@ -601,6 +602,7 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
             info->numPathPoints++;
         }
     }
+#endif
 
     if (request->nodeSearch.ignoreNodeFlags) {
         info->returnCode = PathReturnCode_RawPathFound;
@@ -737,6 +739,7 @@ static void Nav_DebugPath(const PathRequest *request, const PathInfo *path)
     R_AddDebugSphere(request->start, 8.0f, U32_YELLOW, time, false);
     R_AddDebugSphere(request->goal, 8.0f, U32_YELLOW, time, false);
 
+#if 0
     int count = min(path->numPathPoints, request->pathPoints.count);
 
     if (count > 0) {
@@ -753,6 +756,9 @@ static void Nav_DebugPath(const PathRequest *request, const PathInfo *path)
     } else {
         R_AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
     }
+#else
+    R_AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
+#endif
 
     if (path->returnCode == PathReturnCode_TraversalPending || path->returnCode == PathReturnCode_InProgress) {
         R_AddDebugSphere(path->firstMovePoint, 16.0f, U32_RED, time, false);
@@ -898,7 +904,7 @@ static const char *const nodeflags[] = {
 
 static void Nav_DrawNode(const nav_node_t *node)
 {
-    float dist = Distance(node->origin, ge->edicts[0].s.origin);
+    float dist = Distance(node->origin, svs.edicts[0].s.origin);
 
     if (dist > nav_debug_range->value)
         return;
@@ -1032,7 +1038,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         VectorAdd(origin, mins, absmin);
         VectorAdd(origin, maxs, absmax);
 
-        for (int i = svs.maxclients; i < ge->num_edicts; i++) {
+        for (int i = svs.maxclients; i < svs.num_edicts; i++) {
             const edict_t *e = SV_EdictForNum(i);
 
             if (!e->r.inuse)
@@ -1099,7 +1105,7 @@ static void Nav_SetupEntities(void)
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *e = &nav_data.edicts[i];
 
-        for (int n = svs.maxclients; n < ge->num_edicts; n++) {
+        for (int n = svs.maxclients; n < svs.num_edicts; n++) {
             const edict_t *game_e = SV_EdictForNum(n);
 
             if (!game_e->r.inuse)

@@ -55,7 +55,7 @@ static void SV_CreateBaselines(void)
         }
     }
 
-    for (i = 0; i < ge->num_edicts; i++) {
+    for (i = 0; i < svs.num_edicts; i++) {
         ent = SV_EdictForNum(i);
 
         if (!ent->r.inuse) {
@@ -311,7 +311,7 @@ void SV_Begin_f(void)
     }
 
     // call the game begin function
-    ge->ClientBegin(sv_player);
+    ge->ClientBegin(sv_client->number);
 }
 
 //=============================================================================
@@ -835,7 +835,7 @@ static void SV_ExecuteUserCommand(const char *s)
         sv_client->lastactivity = svs.realtime;
     }
 
-    ge->ClientCommand(sv_player);
+    ge->ClientCommand(sv_client->number);
 }
 
 /*
@@ -876,7 +876,9 @@ static inline void SV_ClientThink(usercmd_t *cmd)
         sv_client->lastactivity = svs.realtime;
     }
 
-    ge->ClientThink(sv_player, cmd);
+    if (cmd != old)
+        *old = *cmd;
+    ge->ClientThink(sv_client->number);
 }
 
 static void SV_SetLastFrame(int lastframe)
@@ -1162,50 +1164,6 @@ static void SV_ParseDeltaUserinfo(void)
 
     SV_UpdateUserinfo();
 }
-
-#if USE_FPS
-// key frames must be aligned for all clients (and game) to ensure there isn't
-// additional frame of latency for clients with framediv > 1.
-void SV_AlignKeyFrames(client_t *client)
-{
-    int framediv = sv.frametime.div / client->framediv;
-    int framenum = (sv.framenum + client->framediv - 1) / client->framediv;
-    int frameofs = framenum % framediv;
-    int newnum = frameofs + Q_align_up(client->framenum, framediv);
-
-    Com_DDPrintf("[%d] align %d --> %d (num = %d, div = %d, ofs = %d)\n",
-                 sv.framenum, client->framenum, newnum, framenum, framediv, frameofs);
-    client->framenum = newnum;
-}
-
-static void set_client_fps(int value)
-{
-    int framediv, framerate;
-
-    // 0 means highest
-    if (!value)
-        value = sv.framerate;
-
-    framediv = Q_clip(value / BASE_FRAMERATE, 1, MAX_FRAMEDIV);
-    framediv = sv.frametime.div / Q_gcd(sv.frametime.div, framediv);
-    framerate = sv.framerate / framediv;
-
-    Com_DDPrintf("[%d] client div=%d, server div=%d, rate=%d\n",
-                 sv.framenum, framediv, sv.frametime.div, framerate);
-
-    sv_client->framediv = framediv;
-
-    SV_AlignKeyFrames(sv_client);
-
-    // save for status inspection
-    sv_client->settings[CLS_FPS] = framerate;
-
-    MSG_WriteByte(svc_setting);
-    MSG_WriteLong(SVS_FPS);
-    MSG_WriteLong(framerate);
-    SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-}
-#endif
 
 static void SV_ParseClientSetting(void)
 {

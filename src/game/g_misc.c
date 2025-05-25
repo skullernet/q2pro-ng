@@ -1661,14 +1661,10 @@ void THINK(func_clock_think)(edict_t *self)
         func_clock_format_countdown(self);
         self->health--;
     } else {
-        struct tm *ltime;
-        time_t     gmtime;
-
-        gmtime = time(NULL);
-        ltime = localtime(&gmtime);
-        if (ltime)
+        vm_time_t ltime;
+        if (trap_LocalTime(trap_RealTime(), &ltime))
             Q_snprintf(self->clock_message, sizeof(self->clock_message), "%2i:%02i:%02i",
-                       ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+                       ltime.tm_hour, ltime.tm_min, ltime.tm_sec);
         else
             strcpy(self->clock_message, "00:00:00");
     }
@@ -2034,20 +2030,17 @@ void THINK(info_world_text_think)(edict_t *self)
         U32_WHITE, U32_RED, U32_BLUE, U32_GREEN, U32_YELLOW, U32_BLACK, U32_CYAN, U32_ORANGE
     };
 
-    if (!draw)
-        return;
-
     if (self->sounds >= q_countof(colors)) {
         G_Printf("%s: invalid color\n", etos(self));
         self->sounds = 0;
     }
 
     if (self->s.angles[YAW] == -3.0f) {
-        draw->AddDebugText(self->s.origin, NULL, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
+        trap_R_AddDebugText(self->s.origin, NULL, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
     } else {
         vec3_t textAngle = { 0 };
         textAngle[YAW] = anglemod(self->s.angles[YAW] + 180);
-        draw->AddDebugText(self->s.origin, textAngle, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
+        trap_R_AddDebugText(self->s.origin, textAngle, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
     }
     self->nextthink = level.time + FRAME_TIME;
 }

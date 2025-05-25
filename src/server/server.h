@@ -128,7 +128,10 @@ typedef struct {
     char        mapcmd[MAX_QPATH];          // ie: *intro.cin+base
 
     char        name[MAX_QPATH];            // map name, or cinematic name
+    char        spawnpoint[MAX_QPATH];
     cm_t        cm;
+
+    const char  *entitystring;
 
     configstring_t  configstrings[MAX_CONFIGSTRINGS];
 
@@ -180,6 +183,7 @@ typedef struct client_s {
     // core info
     clstate_t       state;
     edict_t         *edict;     // EDICT_NUM(clientnum+1)
+    gclient_t       *client;
     int             number;     // client slot number
 
     // client flags
@@ -351,6 +355,13 @@ typedef struct {
     int         maxclients_soft;    // minus reserved slots
     int         maxclients;
     client_t    *client_pool;       // [maxclients]
+
+    edict_t     *edicts;
+    int         edict_size;
+    int         num_edicts;
+
+    gclient_t   *clients;
+    int         client_size;
 
 #if USE_ZLIB
     z_stream        z;  // for compressing messages at once
@@ -547,12 +558,17 @@ extern const game_export_t      *ge;
 
 static inline int SV_NumForEdict(const edict_t *e)
 {
-    return ((byte *)e - (byte *)ge->edicts) / ge->edict_size;
+    return ((byte *)e - (byte *)svs.edicts) / svs.edict_size;
 }
 
 static inline edict_t *SV_EdictForNum(int n)
 {
-    return (edict_t *)((byte *)ge->edicts + ge->edict_size * n);
+    return (edict_t *)((byte *)svs.edicts + svs.edict_size * n);
+}
+
+static inline gclient_t *SV_ClientForNum(int n)
+{
+    return (gclient_t *)((byte *)svs.clients + svs.client_size * n);
 }
 
 static inline server_entity_t *SV_SentForEdict(const edict_t *e)
@@ -595,18 +611,18 @@ bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info);
 
 static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
 {
-    const gclient_t *cl = client->edict->client;
+    const gclient_t *cl = client->client;
     VectorAdd(cl->ps.pmove.origin, cl->ps.viewoffset, org);
 }
 
 static inline int SV_GetClient_Stat(const client_t *client, int stat)
 {
-    return client->edict->client->ps.stats[stat];
+    return client->client->ps.stats[stat];
 }
 
 static inline void SV_SetClient_Ping(const client_t *client, int ping)
 {
-    client->edict->client->ping = ping;
+    client->client->ping = ping;
 }
 
 //============================================================

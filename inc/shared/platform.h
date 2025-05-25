@@ -121,6 +121,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_exported          __attribute__((visibility("default")))
 #endif
 
+#ifdef Q2_VM
+#define qvm_exported        __attribute__((visibility("default")))
+#else
+#define qvm_exported
+#endif
+
 #define q_unused            __attribute__((unused))
 
 #if q_has_builtin(__builtin_unreachable)

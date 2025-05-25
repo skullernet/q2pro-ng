@@ -8,6 +8,7 @@
 // note that arg will be freed when the menu is closed, it must be allocated memory
 pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc)
 {
+#if 0
     pmenuhnd_t    *hnd;
     const pmenu_t *p;
     int            i;
@@ -54,10 +55,14 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
     PMenu_Do_Update(ent, true);
 
     return hnd;
+#else
+    return NULL;
+#endif
 }
 
 void PMenu_Close(edict_t *ent)
 {
+#if 0
     pmenuhnd_t *hnd;
 
     if (!ent->client->menu)
@@ -70,6 +75,7 @@ void PMenu_Close(edict_t *ent)
     gi.TagFree(hnd);
     ent->client->menu = NULL;
     ent->client->showscores = false;
+#endif
 }
 
 // only use on pmenu's that have been called with PMenu_Open

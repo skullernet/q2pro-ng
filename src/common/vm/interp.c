@@ -113,6 +113,15 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
 
 void VM_ThunkOut(vm_t *m, uint32_t fidx)
 {
+    const vm_block_t  *func = &m->funcs[fidx];
+    const vm_type_t   *type = func->type;
+
+    func->thunk(&m->memory, &m->stack[m->sp - type->num_params + 1]);
+    m->sp += type->num_results - type->num_params;
+
+    // Set return value type
+    if (type->num_results == 1)
+        m->stack[m->sp].value_type = type->results[0];
 }
 
 static uint32_t read_leb(vm_t *m)
@@ -121,8 +130,6 @@ static uint32_t read_leb(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
-        ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
         bits += 7;
@@ -137,8 +144,6 @@ static int32_t read_leb_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
-        ASSERT(bits < 32, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT32_C(0x7f)) << bits;
         bits += 7;
@@ -155,8 +160,6 @@ static int64_t read_leb64_si(vm_t *m)
     int c, bits = 0;
 
     do {
-        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
-        ASSERT(bits < 64, "LEB encoding too long");
         c = m->bytes[m->pc++];
         v |= (c & UINT64_C(0x7f)) << bits;
         bits += 7;
@@ -199,14 +202,14 @@ void VM_Interpret(vm_t *m)
     uint32_t     arg, val, fidx, tidx, cond, depth, count;
     uint32_t     offset, addr, dst, src, n;
     uint8_t     *maddr;
-    uint8_t      opcode;
+    uint32_t     opcode;
     uint32_t     a, b, c; // I32 math
     uint64_t     d, e, f; // I64 math
     float        g, h, i; // F32 math
     double       j, k, l; // F64 math
 
     while (1) {
-        ASSERT(m->pc < m->num_bytes, "Read out of bounds");
+        ASSERT(m->pc < m->num_bytes, "Program counter out of bounds");
 
         cur_pc = m->pc;
         opcode = m->bytes[m->pc++];
@@ -321,7 +324,7 @@ void VM_Interpret(vm_t *m)
 
         case CallIndirect:
             tidx = read_leb(m);
-            m->pc++; // ignore default table
+            read_leb(m); // ignore default table
             val = stack[m->sp--].value.u32;
             ASSERT(val < m->table.maximum, "Undefined element %#x in table", val);
             fidx = m->table.entries[val];
@@ -399,23 +402,50 @@ void VM_Interpret(vm_t *m)
             stack[m->sp].value.u32 = prev_pages;
             if (delta == 0)
                 continue; // no change
-            if ((uint64_t)delta + prev_pages > m->memory.maximum) {
-                stack[m->sp].value.u32 = -1;
-                continue;
-            }
-            m->memory.pages += delta;
-            m->memory.bytes = VM_Realloc(m->memory.bytes, m->memory.pages * PAGE_SIZE);
+            stack[m->sp].value.u32 = -1;    // resize not supported
             continue;
 
         case Extended:
-            opcode = m->bytes[m->pc++];
+            opcode = read_leb(m);
             switch (opcode) {
+            case I32_Trunc_sat_f32_s:
+                stack[m->sp].value.i32 = stack[m->sp].value.f32;
+                stack[m->sp].value_type = I32;
+                break;
+            case I32_Trunc_sat_f32_u:
+                stack[m->sp].value.u32 = stack[m->sp].value.f32;
+                stack[m->sp].value_type = I32;
+                break;
+            case I32_Trunc_sat_f64_s:
+                stack[m->sp].value.i32 = stack[m->sp].value.f64;
+                stack[m->sp].value_type = I32;
+                break;
+            case I32_Trunc_sat_f64_u:
+                stack[m->sp].value.u32 = stack[m->sp].value.f64;
+                stack[m->sp].value_type = I32;
+                break;
+            case I64_Trunc_sat_f32_s:
+                stack[m->sp].value.i64 = stack[m->sp].value.f32;
+                stack[m->sp].value_type = I64;
+                break;
+            case I64_Trunc_sat_f32_u:
+                stack[m->sp].value.u64 = stack[m->sp].value.f32;
+                stack[m->sp].value_type = I64;
+                break;
+            case I64_Trunc_sat_f64_s:
+                stack[m->sp].value.i64 = stack[m->sp].value.f64;
+                stack[m->sp].value_type = I64;
+                break;
+            case I64_Trunc_sat_f64_u:
+                stack[m->sp].value.u64 = stack[m->sp].value.f64;
+                stack[m->sp].value_type = I64;
+                break;
             case MemoryCopy:
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
-                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE &&
-                       (uint64_t)src + n <= m->memory.pages * PAGE_SIZE, "Memory copy out of bounds");
+                ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE &&
+                       (uint64_t)src + n <= m->memory.pages * VM_PAGE_SIZE, "Memory copy out of bounds");
                 memmove(m->memory.bytes + dst, m->memory.bytes + src, n);
                 m->pc += 2;
                 m->sp -= 3;
@@ -425,7 +455,7 @@ void VM_Interpret(vm_t *m)
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
-                ASSERT((uint64_t)dst + n <= m->memory.pages * PAGE_SIZE, "Memory fill out of bounds");
+                ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE, "Memory fill out of bounds");
                 memset(m->memory.bytes + dst, src, n);
                 m->pc += 1;
                 m->sp -= 3;
@@ -442,7 +472,7 @@ void VM_Interpret(vm_t *m)
             offset = read_leb(m);
             addr = stack[m->sp--].value.u32;
             ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * PAGE_SIZE, "Memory load out of bounds");
+                   <= m->memory.pages * VM_PAGE_SIZE, "Memory load out of bounds");
             maddr = m->memory.bytes + offset + addr;
             stack[++m->sp].value.u64 = 0; // initialize to 0
 
@@ -513,7 +543,7 @@ void VM_Interpret(vm_t *m)
             vm_value_t *sval = &stack[m->sp--];
             addr = stack[m->sp--].value.u32;
             ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * PAGE_SIZE, "Memory store out of bounds");
+                   <= m->memory.pages * VM_PAGE_SIZE, "Memory store out of bounds");
             maddr = m->memory.bytes + offset + addr;
 
             switch (opcode) {
@@ -1078,6 +1108,23 @@ void VM_Interpret(vm_t *m)
             break;
         case F64_Reinterpret_i64:
             stack[m->sp].value_type = F64;
+            break;
+
+        // sign extensions
+        case I32_Extend8_s:
+            stack[m->sp].value.i32 = (int8_t)stack[m->sp].value.i32;
+            break;
+        case I32_Extend16_s:
+            stack[m->sp].value.i32 = (int16_t)stack[m->sp].value.i32;
+            break;
+        case I64_Extend8_s:
+            stack[m->sp].value.i64 = (int8_t)stack[m->sp].value.i64;
+            break;
+        case I64_Extend16_s:
+            stack[m->sp].value.i64 = (int16_t)stack[m->sp].value.i64;
+            break;
+        case I64_Extend32_s:
+            stack[m->sp].value.i64 = (int32_t)stack[m->sp].value.i64;
             break;
 
         default:
