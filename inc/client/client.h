@@ -166,6 +166,15 @@ void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
                     float size, uint32_t color, uint32_t time, bool depth_test);
 #else
 #define R_ClearDebugLines() (void)0
+#define R_AddDebugLine(start, end, color, time, depth_test) (void)0
+#define R_AddDebugPoint(point, size, color, time, depth_test) (void)0
+#define R_AddDebugAxis(origin, angles, size, time, depth_test) (void)0
 #define R_AddDebugBounds(mins, maxs, color, time, depth_test) (void)0
+#define R_AddDebugSphere(origin, radius, color, time, depth_test) (void)0
+#define R_AddDebugCircle(origin, radius, color, time, depth_test) (void)0
+#define R_AddDebugCylinder(origin, half_height, radius, color, time, depth_test) (void)0
+#define R_DrawArrowCap(apex, dir, size, color, time, depth_test) (void)0
+#define R_AddDebugArrow(start, end, size, line_color, arrow_color, time, depth_test) (void)0
+#define R_AddDebugCurveArrow(start, ctrl, end, size, line_color, arrow_color, time, depth_test) (void)0
 #define R_AddDebugText(origin, angles, text, size, color, time, depth_test) (void)0
 #endif

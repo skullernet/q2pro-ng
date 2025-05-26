@@ -780,17 +780,17 @@ void G_SnapVectorTowards(vec3_t v, const vec3_t to)
 
 int G_ModelIndex(const char *name)
 {
-    return trap_FindIndex(name, CS_MODELS, MAX_MODELS, MODELINDEX_PLAYER);
+    return trap_FindConfigstring(name, CS_MODELS, MAX_MODELS, MODELINDEX_PLAYER);
 }
 
 int G_SoundIndex(const char *name)
 {
-    return trap_FindIndex(name, CS_SOUNDS, MAX_SOUNDS, 0);
+    return trap_FindConfigstring(name, CS_SOUNDS, MAX_SOUNDS, 0);
 }
 
 int G_ImageIndex(const char *name)
 {
-    return trap_FindIndex(name, CS_IMAGES, MAX_IMAGES, 0);
+    return trap_FindConfigstring(name, CS_IMAGES, MAX_IMAGES, 0);
 }
 
 void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)

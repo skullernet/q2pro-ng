@@ -181,32 +181,45 @@ typedef struct {
     // and misc data like the sky definition and cdtrack.
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
-    void (*SetConfigstring)(int index, const char *str);
-    unsigned (*GetConfigstring)(int index, char *buf, unsigned size);
-    int (*FindIndex)(const char *name, int start, int max, int skip);
+    void (*SetConfigstring)(unsigned index, const char *str);
+    unsigned (*GetConfigstring)(unsigned index, char *buf, unsigned size);
+    int (*FindConfigstring)(const char *name, int start, int max, int skip);
 
     // collision detection
-    void (*Trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, int contentmask);
-    void (*Clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, int contentmask);
-    int (*PointContents)(const vec3_t point);
+    void (*Trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
+    void (*Clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask);
+    contents_t (*PointContents)(const vec3_t point);
+    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+
     bool (*InVis)(const vec3_t p1, const vec3_t p2, vis_t vis);
-    void (*SetAreaPortalState)(int portalnum, bool open);
+    void (*SetAreaPortalState)(unsigned portalnum, bool open);
     bool (*AreasConnected)(int area1, int area2);
 
     // an entity will never be sent to a client or used for collision
     // if it is not passed to linkentity.  If the size, position, or
     // solidity changes, it must be relinked.
-    void (*SetBrushModel)(edict_t *ent, const char *name);
     void (*LinkEntity)(edict_t *ent);
     void (*UnlinkEntity)(edict_t *ent);     // call before removing an interactive edict
-    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+    void (*SetBrushModel)(edict_t *ent, const char *name);
 
     // network messaging
     void (*ClientPrint)(edict_t *ent, print_level_t printlevel, const char *msg);
     void (*ClientLayout)(edict_t *ent, const char *str, bool reliable);
     void (*ClientStuffText)(edict_t *ent, const char *str);
     void (*ClientInventory)(edict_t *ent, int *inventory, int count);
+
     int (*DirToByte)(const vec3_t dir);
+
+    void (*LocateGameData)(edict_t *edicts, unsigned edict_size, unsigned num_edicts, gclient_t *clients, unsigned client_size);
+    bool (*ParseEntityString)(char *buf, unsigned size);
+    unsigned (*GetLevelName)(char *buf, unsigned size);
+    unsigned (*GetSpawnPoint)(char *buf, unsigned size);
+    unsigned (*GetUserinfo)(unsigned clientnum, char *buf, unsigned size);
+    void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
+    bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info);
+
+    int64_t (*RealTime)(void);
+    bool (*LocalTime)(int64_t time, vm_time_t *localtime);
 
     // console variable interaction
     bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, int flags);
@@ -226,14 +239,6 @@ typedef struct {
     void (*AddCommandString)(const char *text);
 
     void (*DebugGraph)(float value, int color);
-
-    bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info);
-    void (*LocateGameData)(edict_t *edicts, unsigned edict_size, unsigned num_edicts, gclient_t *clients, unsigned client_size);
-    bool (*ParseEntityString)(char *buf, unsigned size);
-    unsigned (*GetLevelName)(char *buf, unsigned size);
-    unsigned (*GetSpawnPoint)(char *buf, unsigned size);
-    unsigned (*GetUserinfo)(unsigned clientnum, char *buf, unsigned size);
-    void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
 
     int64_t     (*FS_OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
     int         (*FS_CloseFile)(qhandle_t f);
@@ -260,9 +265,6 @@ typedef struct {
                                  uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
     void (*R_AddDebugText)(const vec3_t origin, const vec3_t angles, const char *text,
                            float size, uint32_t color, uint32_t time, bool depth_test);
-
-    int64_t (*RealTime)(void);
-    bool (*LocalTime)(int64_t time, vm_time_t *localtime);
 } game_import_t;
 
 //

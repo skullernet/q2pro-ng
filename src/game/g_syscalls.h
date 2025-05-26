@@ -1,37 +1,42 @@
 #ifdef Q2_VM
-void trap_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
-void trap_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask);
-int trap_BoxEdicts(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
-void trap_LinkEntity(edict_t *ent);
-void trap_UnlinkEntity(edict_t *ent);
-contents_t trap_PointContents(const vec3_t point);
-void trap_SetBrushModel(edict_t *ent, const char *name);
-bool trap_InVis(const vec3_t p1, const vec3_t p2, vis_t vis);
-void trap_SetAreaPortalState(int portalnum, bool open);
-bool trap_AreasConnected(int area1, int area2);
-void trap_SetConfigstring(int index, const char *str);
-unsigned trap_GetConfigstring(int index, char *buf, unsigned size);
-int trap_FindIndex(const char *name, int start, int max, int skip);
-void trap_ClientPrint(edict_t *ent, print_level_t level, const char *msg);
 void trap_Print(print_type_t type, const char *msg);
 q_noreturn void trap_Error(const char *msg);
+
+void trap_SetConfigstring(unsigned index, const char *str);
+unsigned trap_GetConfigstring(unsigned index, char *buf, unsigned size);
+int trap_FindConfigstring(const char *name, int start, int max, int skip);
+
+void trap_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask);
+void trap_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask);
+contents_t trap_PointContents(const vec3_t point);
+int trap_BoxEdicts(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+
+bool trap_InVis(const vec3_t p1, const vec3_t p2, vis_t vis);
+void trap_SetAreaPortalState(unsigned portalnum, bool open);
+bool trap_AreasConnected(int area1, int area2);
+
+void trap_LinkEntity(edict_t *ent);
+void trap_UnlinkEntity(edict_t *ent);
+void trap_SetBrushModel(edict_t *ent, const char *name);
+
+void trap_ClientPrint(edict_t *ent, print_level_t level, const char *msg);
 void trap_ClientLayout(edict_t *ent, const char *str, bool reliable);
 void trap_ClientStuffText(edict_t *ent, const char *str);
 void trap_ClientInventory(edict_t *ent, int *inventory, int count);
+
 int trap_DirToByte(const vec3_t dir);
 void trap_ByteToDir(int v, vec3_t dir);
-void trap_AddCommandString(const char *text);
-bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info);
+
 void trap_LocateGameData(edict_t *edicts, unsigned edict_size, unsigned num_edicts, gclient_t *clients, unsigned client_size);
 bool trap_ParseEntityString(char *buf, unsigned size);
 unsigned trap_GetLevelName(char *buf, unsigned size);
 unsigned trap_GetSpawnPoint(char *buf, unsigned size);
 unsigned trap_GetUserinfo(unsigned clientnum, char *buf, unsigned size);
 void trap_GetUsercmd(unsigned clientnum, usercmd_t *ucmd);
+bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info);
 
-int trap_Argc(void);
-unsigned trap_Argv(int arg, char *buf, unsigned size);
-unsigned trap_Args(char *buf, unsigned size);
+int64_t trap_RealTime(void);
+bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 
 bool trap_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, int flags);
 void trap_Cvar_Set(const char *name, const char *value);
@@ -39,6 +44,13 @@ void trap_Cvar_ForceSet(const char *name, const char *value);
 int trap_Cvar_VariableInteger(const char *name);
 float trap_Cvar_VariableValue(const char *name);
 unsigned trap_Cvar_VariableString(const char *name, char *buf, unsigned size);
+
+int trap_Argc(void);
+unsigned trap_Argv(int arg, char *buf, unsigned size);
+unsigned trap_Args(char *buf, unsigned size);
+void trap_AddCommandString(const char *text);
+
+void trap_DebugGraph(float value, int color);
 
 int64_t trap_FS_OpenFile(const char *path, qhandle_t *f, unsigned mode);
 int trap_FS_CloseFile(qhandle_t f);
@@ -66,9 +78,6 @@ void trap_R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3
                                uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
 void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
                          float size, uint32_t color, uint32_t time, bool depth_test);
-
-int64_t trap_RealTime(void);
-bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 #else
 #define trap_Trace gi.Trace
 #define trap_Clip gi.Clip
@@ -82,7 +91,7 @@ bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 #define trap_AreasConnected gi.AreasConnected
 #define trap_SetConfigstring gi.SetConfigstring
 #define trap_GetConfigstring gi.GetConfigstring
-#define trap_FindIndex gi.FindIndex
+#define trap_FindConfigstring gi.FindConfigstring
 #define trap_Print gi.Print
 #define trap_Error gi.Error
 #define trap_ClientPrint gi.ClientPrint

@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 const game_export_t     *ge;
 
-static void PF_SetConfigstring(int index, const char *val);
+static void PF_SetConfigstring(unsigned index, const char *val);
 
 /*
 ================
@@ -31,7 +31,7 @@ PF_FindIndex
 
 ================
 */
-static int PF_FindIndex(const char *name, int start, int max, int skip)
+static int PF_FindConfigstring(const char *name, int start, int max, int skip)
 {
     char *string;
     int i;
@@ -239,13 +239,13 @@ PF_configstring
 If game is actively running, broadcasts configstring change.
 ===============
 */
-static void PF_SetConfigstring(int index, const char *val)
+static void PF_SetConfigstring(unsigned index, const char *val)
 {
     size_t len, maxlen;
     client_t *client;
     char *dst;
 
-    if (index < 0 || index >= MAX_CONFIGSTRINGS)
+    if (index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
     if (sv.state == ss_dead) {
@@ -303,9 +303,9 @@ static void PF_SetConfigstring(int index, const char *val)
     SZ_Clear(&msg_write);
 }
 
-static unsigned PF_GetConfigstring(int index, char *buf, unsigned size)
+static unsigned PF_GetConfigstring(unsigned index, char *buf, unsigned size)
 {
-    if (index < 0 || index >= MAX_CONFIGSTRINGS)
+    if (index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
     return Q_strlcpy(buf, sv.configstrings[index], size);
@@ -384,7 +384,7 @@ static unsigned PF_Args(char *buf, unsigned size)
     return Q_strlcpy(buf, Cmd_RawArgs(), size);
 }
 
-static void PF_SetAreaPortalState(int portalnum, bool open)
+static void PF_SetAreaPortalState(unsigned portalnum, bool open)
 {
     CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
@@ -444,6 +444,11 @@ static void PF_LocateGameData(edict_t *edicts, unsigned edict_size, unsigned num
     svs.num_edicts = num_edicts;
     svs.clients = clients;
     svs.client_size = client_size;
+}
+
+static unsigned PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, unsigned size)
+{
+    return 0;
 }
 
 static unsigned PF_ErrorString(int error, char *buf, unsigned size)
@@ -510,8 +515,8 @@ VM_THUNK(GetConfigstring) {
     VM_U32(0) = PF_GetConfigstring(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
-VM_THUNK(FindIndex) {
-    VM_U32(0) = PF_FindIndex(VM_STR(0), VM_U32(1), VM_U32(2), VM_U32(3));
+VM_THUNK(FindConfigstring) {
+    VM_U32(0) = PF_FindConfigstring(VM_STR(0), VM_U32(1), VM_U32(2), VM_U32(3));
 }
 
 VM_THUNK(Trace) {
@@ -526,6 +531,10 @@ VM_THUNK(PointContents) {
     VM_U32(0) = SV_PointContents(VM_VEC3(0));
 }
 
+VM_THUNK(BoxEdicts) {
+    VM_U32(0) = SV_AreaEdicts(VM_VEC3(0), VM_VEC3(1), VM_PTR_CNT(2, int, VM_U32(3)), VM_U32(3), VM_U32(4));
+}
+
 VM_THUNK(InVis) {
     VM_U32(0) = PF_InVis(VM_VEC3(0), VM_VEC3(1), VM_U32(2));
 }
@@ -538,10 +547,6 @@ VM_THUNK(AreasConnected) {
     VM_U32(0) = PF_AreasConnected(VM_U32(0), VM_U32(1));
 }
 
-VM_THUNK(SetBrushModel) {
-    PF_SetBrushModel(VM_ENT(0), VM_STR(1));
-}
-
 VM_THUNK(LinkEntity) {
     PF_LinkEdict(VM_ENT(0));
 }
@@ -550,8 +555,8 @@ VM_THUNK(UnlinkEntity) {
     PF_UnlinkEdict(VM_ENT(0));
 }
 
-VM_THUNK(BoxEdicts) {
-    VM_U32(0) = SV_AreaEdicts(VM_VEC3(0), VM_VEC3(1), VM_PTR_CNT(2, int, VM_U32(3)), VM_U32(3), VM_U32(4));
+VM_THUNK(SetBrushModel) {
+    PF_SetBrushModel(VM_ENT(0), VM_STR(1));
 }
 
 VM_THUNK(ClientPrint) {
@@ -572,6 +577,48 @@ VM_THUNK(ClientInventory) {
 
 VM_THUNK(DirToByte) {
     VM_U32(0) = DirToByte(VM_VEC3(0));
+}
+
+VM_THUNK(ByteToDir) {
+    ByteToDir(VM_U32(0), VM_VEC3(1));
+}
+
+VM_THUNK(LocateGameData) {
+    edict_t *edicts = VM_GetPointer(m, VM_U32(0), VM_U32(1), VM_U32(2), q_alignof(*edicts));
+    gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients));
+    PF_LocateGameData(edicts, VM_U32(1), VM_U32(2), clients, VM_U32(4));
+}
+
+VM_THUNK(ParseEntityString) {
+    VM_U32(0) = PF_ParseEntityString(VM_STR_BUF(0, 1), VM_U32(1));
+}
+
+VM_THUNK(GetLevelName) {
+    VM_U32(0) = PF_GetLevelName(VM_STR_BUF(0, 1), VM_U32(1));
+}
+
+VM_THUNK(GetSpawnPoint) {
+    VM_U32(0) = PF_GetSpawnPoint(VM_STR_BUF(0, 1), VM_U32(1));
+}
+
+VM_THUNK(GetUserinfo) {
+    VM_U32(0) = PF_GetUserinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(GetUsercmd) {
+    PF_GetUsercmd(VM_U32(0), VM_PTR(1, usercmd_t));
+}
+
+VM_THUNK(GetPathToGoal) {
+    VM_U32(0) = Nav_GetPathToGoal(VM_PTR(0, PathRequest), VM_PTR(1, PathInfo));
+}
+
+VM_THUNK(RealTime) {
+    VM_I64(0) = PF_RealTime();
+}
+
+VM_THUNK(LocalTime) {
+    VM_U32(0) = PF_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
 }
 
 VM_THUNK(Cvar_Register) {
@@ -614,34 +661,8 @@ VM_THUNK(AddCommandString) {
     PF_AddCommandString(VM_STR(0));
 }
 
-VM_THUNK(GetPathToGoal) {
-    VM_U32(0) = Nav_GetPathToGoal(VM_PTR(0, PathRequest), VM_PTR(1, PathInfo));
-}
-
-VM_THUNK(LocateGameData) {
-    edict_t *edicts = VM_GetPointer(m, VM_U32(0), VM_U32(1), VM_U32(2), q_alignof(*edicts));
-    gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients));
-    PF_LocateGameData(edicts, VM_U32(1), VM_U32(2), clients, VM_U32(4));
-}
-
-VM_THUNK(ParseEntityString) {
-    VM_U32(0) = PF_ParseEntityString(VM_STR_BUF(0, 1), VM_U32(1));
-}
-
-VM_THUNK(GetLevelName) {
-    VM_U32(0) = PF_GetLevelName(VM_STR_BUF(0, 1), VM_U32(1));
-}
-
-VM_THUNK(GetSpawnPoint) {
-    VM_U32(0) = PF_GetSpawnPoint(VM_STR_BUF(0, 1), VM_U32(1));
-}
-
-VM_THUNK(GetUserinfo) {
-    VM_U32(0) = PF_GetUserinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
-}
-
-VM_THUNK(GetUsercmd) {
-    PF_GetUsercmd(VM_U32(0), VM_PTR(1, usercmd_t));
+VM_THUNK(DebugGraph) {
+   SCR_DebugGraph(VM_F32(0), VM_U32(1));
 }
 
 VM_THUNK(FS_OpenFile) {
@@ -660,8 +681,24 @@ VM_THUNK(FS_WriteFile) {
     VM_I32(0) = FS_Write(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
 }
 
+VM_THUNK(FS_FlushFile) {
+    VM_I32(0) = FS_Flush(VM_U32(0));
+}
+
+VM_THUNK(FS_TellFile) {
+    VM_I64(0) = FS_Tell(VM_U32(0));
+}
+
+VM_THUNK(FS_SeekFile) {
+    VM_I32(0) = FS_Seek(VM_U32(0), VM_I64(1), VM_U32(2));
+}
+
 VM_THUNK(FS_ReadLine) {
     VM_I32(0) = FS_ReadLine(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(FS_ListFiles) {
+    VM_U32(0) = PF_ListFiles(VM_STR(0), VM_STR_NULL(1), VM_U32(2), VM_STR_BUF(3, 4), VM_U32(4));
 }
 
 VM_THUNK(FS_ErrorString) {
@@ -672,20 +709,44 @@ VM_THUNK(R_ClearDebugLines) {
     R_ClearDebugLines();
 }
 
+VM_THUNK(R_AddDebugLine) {
+    R_AddDebugLine(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugPoint) {
+    R_AddDebugPoint(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugAxis) {
+    R_AddDebugAxis(VM_VEC3(0), VM_VEC3_NULL(1), VM_F32(2), VM_U32(3), VM_U32(4));
+}
+
 VM_THUNK(R_AddDebugBounds) {
     R_AddDebugBounds(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
 }
 
+VM_THUNK(R_AddDebugSphere) {
+    R_AddDebugSphere(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugCircle) {
+    R_AddDebugCircle(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugCylinder) {
+    R_AddDebugCylinder(VM_VEC3(0), VM_F32(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+}
+
+VM_THUNK(R_AddDebugArrow) {
+    R_AddDebugArrow(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+}
+
+VM_THUNK(R_AddDebugCurveArrow) {
+    R_AddDebugCurveArrow(VM_VEC3(0), VM_VEC3(1), VM_VEC3(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6), VM_U32(7));
+}
+
 VM_THUNK(R_AddDebugText) {
-    R_AddDebugText(VM_VEC3(0), VM_VEC3(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
-}
-
-VM_THUNK(RealTime) {
-    VM_I64(0) = PF_RealTime();
-}
-
-VM_THUNK(LocalTime) {
-    VM_U32(0) = PF_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
+    R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
 }
 
 VM_THUNK(sinf) {
@@ -728,22 +789,32 @@ static const vm_import_t game_vm_import[] = {
     VM_IMPORT(Error, "i"),
     VM_IMPORT(SetConfigstring, "ii"),
     VM_IMPORT(GetConfigstring, "i iiii"),
-    VM_IMPORT(FindIndex, "i iiii"),
+    VM_IMPORT(FindConfigstring, "i iiii"),
     VM_IMPORT(Trace, "iiiiiii"),
     VM_IMPORT(Clip, "iiiiiii"),
     VM_IMPORT(PointContents, "i i"),
+    VM_IMPORT(BoxEdicts, "i iiiii"),
     VM_IMPORT(InVis, "i iii"),
     VM_IMPORT(SetAreaPortalState, "ii"),
     VM_IMPORT(AreasConnected, "i ii"),
-    VM_IMPORT(SetBrushModel, "ii"),
     VM_IMPORT(LinkEntity, "i"),
     VM_IMPORT(UnlinkEntity, "i"),
-    VM_IMPORT(BoxEdicts, "i iiiii"),
+    VM_IMPORT(SetBrushModel, "ii"),
     VM_IMPORT(ClientPrint, "iii"),
     VM_IMPORT(ClientLayout, "iii"),
     VM_IMPORT(ClientStuffText, "ii"),
     VM_IMPORT(ClientInventory, "iii"),
     VM_IMPORT(DirToByte, "i i"),
+    VM_IMPORT(ByteToDir, "ii"),
+    VM_IMPORT(LocateGameData, "iiiii"),
+    VM_IMPORT(ParseEntityString, "i ii"),
+    VM_IMPORT(GetLevelName, "i ii"),
+    VM_IMPORT(GetSpawnPoint, "i ii"),
+    VM_IMPORT(GetUserinfo, "i iii"),
+    VM_IMPORT(GetUsercmd, "ii"),
+    VM_IMPORT(GetPathToGoal, "i ii"),
+    VM_IMPORT(RealTime, "I "),
+    VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
     VM_IMPORT(Cvar_Set, "ii"),
     VM_IMPORT(Cvar_ForceSet, "ii"),
@@ -754,24 +825,28 @@ static const vm_import_t game_vm_import[] = {
     VM_IMPORT(Argv, "i iii"),
     VM_IMPORT(Args, "i ii"),
     VM_IMPORT(AddCommandString, "i"),
-    VM_IMPORT(GetPathToGoal, "i ii"),
-    VM_IMPORT(LocateGameData, "iiiii"),
-    VM_IMPORT(ParseEntityString, "i ii"),
-    VM_IMPORT(GetLevelName, "i ii"),
-    VM_IMPORT(GetSpawnPoint, "i ii"),
-    VM_IMPORT(GetUserinfo, "i iii"),
-    VM_IMPORT(GetUsercmd, "ii"),
+    VM_IMPORT(DebugGraph, "fi"),
     VM_IMPORT(FS_OpenFile, "I iii"),
     VM_IMPORT(FS_CloseFile, "i i"),
     VM_IMPORT(FS_ReadFile, "i iii"),
     VM_IMPORT(FS_WriteFile, "i iii"),
+    VM_IMPORT(FS_FlushFile, "i i"),
+    VM_IMPORT(FS_TellFile, "I i"),
+    VM_IMPORT(FS_SeekFile, "i iIi"),
     VM_IMPORT(FS_ReadLine, "i iii"),
+    VM_IMPORT(FS_ListFiles, "i iiiii"),
     VM_IMPORT(FS_ErrorString, "i iii"),
     VM_IMPORT(R_ClearDebugLines, ""),
+    VM_IMPORT(R_AddDebugLine, "iiiii"),
+    VM_IMPORT(R_AddDebugPoint, "ifiii"),
+    VM_IMPORT(R_AddDebugAxis, "iifii"),
     VM_IMPORT(R_AddDebugBounds, "iiiii"),
+    VM_IMPORT(R_AddDebugSphere, "ifiii"),
+    VM_IMPORT(R_AddDebugCircle, "ifiii"),
+    VM_IMPORT(R_AddDebugCylinder, "iffiii"),
+    VM_IMPORT(R_AddDebugArrow, "iifiiii"),
+    VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
     VM_IMPORT(R_AddDebugText, "iiifiii"),
-    VM_IMPORT(RealTime, "I "),
-    VM_IMPORT(LocalTime, "i Ii"),
 
     VM_IMPORT_RAW(thunk_sinf, "sinf", "f f"),
     VM_IMPORT_RAW(thunk_cosf, "cosf", "f f"),
@@ -966,7 +1041,7 @@ static const game_import_t game_import = {
     .SetBrushModel = PF_SetBrushModel,
     .InVis = PF_InVis,
 
-    .FindIndex = PF_FindIndex,
+    .FindConfigstring = PF_FindConfigstring,
     .SetConfigstring = PF_SetConfigstring,
     .GetConfigstring = PF_GetConfigstring,
 
