@@ -34,6 +34,26 @@ static const uint8_t mem_load_size[I64_Store32 - I32_Load + 1] = {
     4, 8, 4, 8, 1, 2, 1, 2, 4 // stores
 };
 
+// Minimum stack pointer required for each instruction.
+static const int8_t min_sp[256] = {
+    -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0, -1,
+    -1,  0, -1, -1, -1, -1, -1, -1, -1, -1,  0,  2, -1, -1, -1, -1,
+    -1,  0,  0, -1,  0, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,
+     0, -1, -1, -1, -1,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  1,  1,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  1,  1,  1,  1,
+     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,
+     0,  0,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,
+     1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1,
+};
+
 //
 // Stack machine (byte code related functions)
 //
@@ -96,10 +116,13 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
 
     // Push locals (dropping extras)
     m->fp = m->sp - type->num_params + 1;
+    ASSERT(m->fp >= 0, "Stack underflow");
 
     // Validate arguments vs formal params
     for (uint32_t f = 0; f < type->num_params; f++)
         ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
+
+    ASSERT(m->sp + (int)func->num_locals < STACK_SIZE - 1, "Stack overflow");
 
     // Push function locals
     for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
@@ -117,8 +140,10 @@ void VM_ThunkOut(vm_t *m, uint32_t fidx)
     const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
 
+    int fp = m->sp - type->num_params + 1;
+    ASSERT(fp >= 0, "Stack underflow");
+
     // Validate arguments vs formal params
-    uint32_t fp = m->sp - type->num_params + 1;
     for (uint32_t f = 0; f < type->num_params; f++)
         ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
 
@@ -219,6 +244,9 @@ void VM_Interpret(vm_t *m)
 
         cur_pc = m->pc;
         opcode = m->bytes[m->pc++];
+
+        ASSERT(m->sp >= min_sp[opcode], "Stack underflow");
+        ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
 
         switch (opcode) {
         //
@@ -441,7 +469,9 @@ void VM_Interpret(vm_t *m)
                 stack[m->sp].value.u64 = stack[m->sp].value.f64;
                 stack[m->sp].value_type = I64;
                 break;
+
             case MemoryCopy:
+                ASSERT(m->sp >= 2, "Stack underflow");
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
@@ -453,6 +483,7 @@ void VM_Interpret(vm_t *m)
                 continue;
 
             case MemoryFill:
+                ASSERT(m->sp >= 2, "Stack underflow");
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
@@ -471,11 +502,11 @@ void VM_Interpret(vm_t *m)
         case I32_Load ... I64_Load32_u:
             read_leb(m); // skip flags
             offset = read_leb(m);
-            addr = stack[m->sp--].value.u32;
+            addr = stack[m->sp].value.u32;
             ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
                    <= m->memory.pages * VM_PAGE_SIZE, "Memory load out of bounds");
             maddr = m->memory.bytes + offset + addr;
-            stack[++m->sp].value.u64 = 0; // initialize to 0
+            stack[m->sp].value.u64 = 0; // initialize to 0
 
             switch (opcode) {
             case I32_Load:
