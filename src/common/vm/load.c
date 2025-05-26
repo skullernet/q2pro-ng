@@ -209,7 +209,7 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
         char *import_module = sz_read_string(sz);
         char *import_field = sz_read_string(sz);
         uint32_t kind = SZ_ReadByte(sz);
-        uint32_t type_index = 0, content_type = 0;
+        uint32_t type_index = 0;//, content_type = 0;
 
         switch (kind) {
         case KIND_FUNCTION:
@@ -329,7 +329,7 @@ static void parse_memory(vm_t *m, sizebuf_t *sz)
     ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
-    m->memory.bytes = VM_Malloc(m->memory.pages * VM_PAGE_SIZE);
+    m->memory.bytes = VM_Malloc(m->memory.pages * VM_PAGE_SIZE + 1024);
 }
 
 static void parse_globals(vm_t *m, sizebuf_t *sz)
@@ -729,6 +729,9 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports)
             VM_Interpret(m);
         }
     }
+
+    Com_Printf("Loaded %s: %d imports, %d exports, %d funcs, %d mempages\n", name,
+               m->num_imports, m->num_exports, m->num_funcs - m->num_imports, m->memory.pages);
 
     return m;
 }

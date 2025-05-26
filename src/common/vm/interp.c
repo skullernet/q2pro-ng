@@ -88,8 +88,6 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 // Sets new pc value for the start of the function
 void VM_SetupCall(vm_t *m, uint32_t fidx)
 {
-    ASSERT(fidx < m->num_funcs, "Bad function index");
-
     const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
 
@@ -98,7 +96,10 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
 
     // Push locals (dropping extras)
     m->fp = m->sp - type->num_params + 1;
-    // TODO: validate arguments vs formal params
+
+    // Validate arguments vs formal params
+    for (uint32_t f = 0; f < type->num_params; f++)
+        ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
 
     // Push function locals
     for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
@@ -116,7 +117,12 @@ void VM_ThunkOut(vm_t *m, uint32_t fidx)
     const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
 
-    func->thunk(&m->memory, &m->stack[m->sp - type->num_params + 1]);
+    // Validate arguments vs formal params
+    uint32_t fp = m->sp - type->num_params + 1;
+    for (uint32_t f = 0; f < type->num_params; f++)
+        ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
+
+    func->thunk(&m->memory, &m->stack[fp]);
     m->sp += type->num_results - type->num_params;
 
     // Set return value type
@@ -318,34 +324,29 @@ void VM_Interpret(vm_t *m)
             if (fidx < m->num_imports) {
                 VM_ThunkOut(m, fidx);   // import/thunk call
             } else {
+                ASSERT(fidx < m->num_funcs, "Bad function index");
                 VM_SetupCall(m, fidx);  // regular function call
             }
             continue;
 
         case CallIndirect:
             tidx = read_leb(m);
+            ASSERT(tidx < m->num_types, "Bad type index");
             read_leb(m); // ignore default table
             val = stack[m->sp--].value.u32;
             ASSERT(val < m->table.maximum, "Undefined element %#x in table", val);
             fidx = m->table.entries[val];
             ASSERT(fidx < m->num_funcs, "Bad function index");
 
-            if (fidx < m->num_imports) {
-                VM_ThunkOut(m, fidx);   // import/thunk call
-                continue;
-            }
-
             const vm_block_t *func = &m->funcs[fidx];
             const vm_type_t *type = func->type;
 
-            ASSERT(type->mask == m->types[tidx].mask, "Indirect call function type differ");
+            ASSERT(type == &m->types[tidx], "Indirect call function type differ");
 
-            VM_SetupCall(m, fidx);  // regular function call
-
-            // Validate signatures match
-            ASSERT(type->num_params + func->num_locals == m->sp - m->fp + 1, "Indirect call param counts differ");
-            for (uint32_t f = 0; f < type->num_params; f++)
-                ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Indirect call param types differ");
+            if (fidx < m->num_imports)
+                VM_ThunkOut(m, fidx);   // import/thunk call
+            else
+                VM_SetupCall(m, fidx);  // regular function call
             continue;
 
         //
