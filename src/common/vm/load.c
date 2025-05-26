@@ -786,7 +786,7 @@ void VM_Call(vm_t *m, uint32_t e)
 
 vm_value_t *VM_StackTop(vm_t *m)
 {
-    return &m->stack[m->sp];
+    return &m->stack[m->sp + 1];
 }
 
 vm_memory_t *VM_Memory(vm_t *m)
