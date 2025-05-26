@@ -974,7 +974,7 @@ void VM_Interpret(vm_t *m)
                 i = max(g, h);
                 break;
             case F32_Copysign:
-                i = h < 0 ? -fabsf(g) : fabsf(g);
+                i = copysignf(g, h);
                 break;
             }
             stack[m->sp].value.f32 = i;
@@ -1005,7 +1005,7 @@ void VM_Interpret(vm_t *m)
                 l = max(j, k);
                 break;
             case F64_Copysign:
-                l = k < 0 ? -fabs(j) : fabs(j);
+                l = copysign(j, k);
                 break;
             }
             stack[m->sp].value.f64 = l;
