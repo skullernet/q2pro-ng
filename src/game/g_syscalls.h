@@ -32,6 +32,7 @@ bool trap_ParseEntityString(char *buf, unsigned size);
 unsigned trap_GetLevelName(char *buf, unsigned size);
 unsigned trap_GetSpawnPoint(char *buf, unsigned size);
 unsigned trap_GetUserinfo(unsigned clientnum, char *buf, unsigned size);
+unsigned trap_GetConnectinfo(unsigned clientnum, char *buf, unsigned size);
 void trap_GetUsercmd(unsigned clientnum, usercmd_t *ucmd);
 bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info);
 

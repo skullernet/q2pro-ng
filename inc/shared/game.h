@@ -215,6 +215,7 @@ typedef struct {
     unsigned (*GetLevelName)(char *buf, unsigned size);
     unsigned (*GetSpawnPoint)(char *buf, unsigned size);
     unsigned (*GetUserinfo)(unsigned clientnum, char *buf, unsigned size);
+    unsigned (*GetConnectinfo)(unsigned clientnum, char *buf, unsigned size);
     void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
     bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info);
 

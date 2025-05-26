@@ -402,6 +402,18 @@ static unsigned PF_GetUserinfo(unsigned clientnum, char *buf, unsigned size)
     return Q_strlcpy(buf, cl->userinfo, size);
 }
 
+static unsigned PF_GetConnectinfo(unsigned clientnum, char *buf, unsigned size)
+{
+    Q_assert_soft(clientnum < svs.maxclients);
+    const client_t *cl = &svs.client_pool[clientnum];
+    Q_assert_soft(cl->state > cs_zombie);
+
+    return Q_snprintf(buf, size,
+                      "\\challenge\\%d\\ip\\%s\\major\\%d\\minor\\%d\\zlib\\%d",
+                      cl->challenge, NET_AdrToString(&cl->netchan.remote_address),
+                      cl->protocol, cl->version, cl->has_zlib);
+}
+
 static void PF_GetUsercmd(unsigned clientnum, usercmd_t *ucmd)
 {
     Q_assert_soft(clientnum < svs.maxclients);
@@ -482,19 +494,6 @@ static bool PF_LocalTime(int64_t in, vm_time_t *out)
     out->tm_isdst = tm->tm_isdst;
     return true;
 }
-
-#if 0
-static void PF_GetConnectinfo(int clientnum, char *buf, unsigned size)
-{
-    Q_snprintf(buf, size,
-               "\\challenge\\%d\\ip\\%s"
-               "\\major\\%d\\minor\\%d\\netchan\\%d"
-               "\\packetlen\\%d\\qport\\%d\\zlib\\%d",
-               params->challenge, NET_AdrToString(&net_from),
-               params->protocol, params->version, params->nctype,
-               params->maxlength, params->qport, params->has_zlib);
-}
-#endif
 
 // edict pointers need custom validation
 static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr)
@@ -619,6 +618,10 @@ VM_THUNK(GetSpawnPoint) {
 
 VM_THUNK(GetUserinfo) {
     VM_U32(0) = PF_GetUserinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(GetConnectinfo) {
+    VM_U32(0) = PF_GetConnectinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
 VM_THUNK(GetUsercmd) {
@@ -827,6 +830,7 @@ static const vm_import_t game_vm_import[] = {
     VM_IMPORT(GetLevelName, "i ii"),
     VM_IMPORT(GetSpawnPoint, "i ii"),
     VM_IMPORT(GetUserinfo, "i iii"),
+    VM_IMPORT(GetConnectinfo, "i iii"),
     VM_IMPORT(GetUsercmd, "ii"),
     VM_IMPORT(GetPathToGoal, "i ii"),
     VM_IMPORT(RealTime, "I "),
