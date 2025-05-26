@@ -360,6 +360,9 @@ typedef struct {
     int         edict_size;
     int         num_edicts;
 
+    uint32_t    vm_edicts_minptr;
+    uint32_t    vm_edicts_maxptr;
+
     gclient_t   *clients;
     int         client_size;
 

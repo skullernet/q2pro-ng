@@ -1740,12 +1740,9 @@ qvm_exported void G_ReadLevel(qhandle_t handle)
 
         G_InitEdict(ent);
         read_fields(edict_t_fields, ent);
-
-        // let the server rebuild world links for this ent
-        trap_LinkEntity(ent);
     }
 
-    // inform the server that num_edicts has changed
+    // set final amount of edicts
     trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
 
     // mark all clients as unconnected
@@ -1769,6 +1766,9 @@ qvm_exported void G_ReadLevel(qhandle_t handle)
         if (strcmp(ent->classname, "target_crosslevel_target") == 0 ||
             strcmp(ent->classname, "target_crossunit_target") == 0)
             ent->nextthink = level.time + SEC(ent->delay);
+
+        // let the server rebuild world links for this ent
+        trap_LinkEntity(ent);
     }
 
     // precache player inventory items

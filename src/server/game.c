@@ -496,8 +496,17 @@ static void PF_GetConnectinfo(int clientnum, char *buf, unsigned size)
 }
 #endif
 
-#define VM_ENT(arg) VM_PTR(arg, edict_t)
-#define VM_ENT_NULL(arg) VM_PTR_NULL(arg, edict_t, 1)
+// edict pointers need custom validation
+static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr)
+{
+    ASSERT(ptr >= svs.vm_edicts_minptr &&
+           ptr <= svs.vm_edicts_maxptr, "Out of bounds VM edict");
+    ASSERT(!(ptr % q_alignof(edict_t)), "Misaligned VM edict");
+    return (edict_t *)(m->bytes + ptr);
+}
+
+#define VM_ENT(arg)      VM_GetEntity(m, VM_U32(arg))
+#define VM_ENT_NULL(arg) (VM_U32(arg) ? VM_GetEntity(m, VM_U32(arg)) : NULL)
 
 VM_THUNK(Print) {
     PF_Print(VM_U32(0), VM_STR(1));
@@ -584,9 +593,16 @@ VM_THUNK(ByteToDir) {
 }
 
 VM_THUNK(LocateGameData) {
-    edict_t *edicts = VM_GetPointer(m, VM_U32(0), VM_U32(1), VM_U32(2), q_alignof(*edicts));
+    uint32_t edicts_ptr = VM_U32(0);
+    uint32_t edict_size = VM_U32(1);
+    uint32_t num_edicts = VM_U32(2);
+
+    edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, num_edicts, q_alignof(*edicts));
     gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients));
-    PF_LocateGameData(edicts, VM_U32(1), VM_U32(2), clients, VM_U32(4));
+    PF_LocateGameData(edicts, edict_size, num_edicts, clients, VM_U32(4));
+
+    svs.vm_edicts_minptr = edicts_ptr;
+    svs.vm_edicts_maxptr = edicts_ptr + (num_edicts - 1) * edict_size;
 }
 
 VM_THUNK(ParseEntityString) {
