@@ -464,9 +464,15 @@ static void S_RegisterSexedSounds(void)
         sounds[total++] = i;
     }
 
-    // register sounds for baseclientinfo and other valid clientinfos
-    for (i = 0; i <= MAX_CLIENTS; i++) {
-        if (i > 0 && !cl.clientinfo[i].model_name[0])
+    // register sounds for baseclientinfo
+    for (j = 0; j < total; j++) {
+        sfx = &known_sfx[sounds[j]];
+        S_RegisterSexedSound(MAX_CLIENTS, sfx->name);
+    }
+
+    // register sounds for other valid clientinfos
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (!cl.clientinfo[i].model_name[0])
             continue;
         for (j = 0; j < total; j++) {
             sfx = &known_sfx[sounds[j]];
