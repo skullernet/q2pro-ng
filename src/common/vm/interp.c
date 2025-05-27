@@ -234,6 +234,7 @@ void VM_Interpret(vm_t *m)
     uint32_t     offset, addr, dst, src, n;
     uint8_t     *maddr;
     uint32_t     opcode;
+    uint32_t     instrs = 0;
     uint32_t     a, b, c; // I32 math
     uint64_t     d, e, f; // I64 math
     float        g, h, i; // F32 math
@@ -247,6 +248,9 @@ void VM_Interpret(vm_t *m)
 
         ASSERT(m->sp >= min_sp[opcode], "Stack underflow");
         ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
+
+        ASSERT(instrs < INT32_MAX, "Runaway program loop");
+        instrs++;
 
         switch (opcode) {
         //
