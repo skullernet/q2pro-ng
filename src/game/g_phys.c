@@ -63,17 +63,14 @@ SV_TestEntityPosition
 
 ============
 */
-static edict_t *SV_TestEntityPosition(edict_t *ent)
+static bool SV_TestEntityPosition(edict_t *ent)
 {
-    trace_t    trace;
+    trace_t     trace;
 
-    trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin,
-               ent->s.number, G_GetClipMask(ent));
+    trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs,
+              ent->s.origin, ent->s.number, G_GetClipMask(ent));
 
-    if (trace.startsolid)
-        return g_edicts;
-
-    return NULL;
+    return trace.startsolid;
 }
 
 /*
@@ -274,11 +271,8 @@ typedef struct {
     float    yaw;
 } pushed_t;
 
-static pushed_t pushed[MAX_EDICTS], *pushed_p;
-
-static edict_t *obstacle;
-
-float SnapToEights(float x);
+static pushed_t pushed[MAX_EDICTS];
+static int      num_pushed;
 
 /*
 ============
@@ -288,32 +282,34 @@ Objects need to be moved back on a failed push,
 otherwise riders would continue to slide.
 ============
 */
-static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
+static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
 {
-    edict_t  *check, *block = NULL;
+    edict_t  *check;
+    bool      block = false;
     vec3_t    mins, maxs;
     pushed_t *p;
-    vec3_t    org, org2, move2, forward, right, up;
+    vec3_t    org, org2, move2, axis[3];
 
-    // clamp the move to 1/8 units, so the position will
-    // be accurate for client side prediction
-    for (int i = 0; i < 3; i++)
-        move[i] = SnapToEights(move[i]);
-
-    // find the bounding box
-    VectorAdd(pusher->r.absmin, move, mins);
-    VectorAdd(pusher->r.absmax, move, maxs);
+    // find the bounding box of entire move
+    VectorCopy(pusher->r.absmin, mins);
+    VectorCopy(pusher->r.absmax, maxs);
+    for (int i = 0; i < 3; i++) {
+        if (move[i] > 0)
+            maxs[i] += move[i];
+        else
+            mins[i] += move[i];
+    }
 
     // we need this for pushing things later
-    VectorNegate(amove, org);
-    AngleVectors(org, forward, right, up);
+    AnglesToAxis(amove, axis);
 
     // save the pusher's original position
-    pushed_p->ent = pusher;
-    VectorCopy(pusher->s.origin, pushed_p->origin);
-    VectorCopy(pusher->s.angles, pushed_p->angles);
-    pushed_p->rotated = false;
-    pushed_p++;
+    Q_assert(num_pushed < q_countof(pushed));
+    p = &pushed[num_pushed++];
+    p->ent = pusher;
+    VectorCopy(pusher->s.origin, p->origin);
+    VectorCopy(pusher->s.angles, p->angles);
+    p->rotated = false;
 
     // move the pusher to it's final position
     VectorAdd(pusher->s.origin, move, pusher->s.origin);
@@ -322,27 +318,26 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 
     // no clip mask, so it won't move anything
     if (!G_GetClipMask(pusher))
-        return true;
+        return NULL;
+
+    int list[MAX_EDICTS_OLD];
+    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
 
     // see if any solid entities are inside the final position
-    check = g_edicts;
-    for (int e = 0; e < level.num_edicts; e++, check++) {
+    for (int i = 0; i < count; i++) {
+        check = g_edicts + list[i];
         if (!check->r.inuse)
             continue;
         if (check->movetype == MOVETYPE_PUSH || check->movetype == MOVETYPE_STOP ||
             check->movetype == MOVETYPE_NONE || check->movetype == MOVETYPE_NOCLIP)
             continue;
 
-        if (!check->r.linked)
-            continue; // not linked in anywhere
-
         // if the entity is standing on the pusher, it will definitely be moved
         if (check->groundentity != pusher) {
             // see if the ent needs to be tested
-            if (check->r.absmin[0] >= maxs[0] || check->r.absmin[1] >= maxs[1] || check->r.absmin[2] >= maxs[2] ||
-                check->r.absmax[0] <= mins[0] || check->r.absmax[1] <= mins[1] || check->r.absmax[2] <= mins[2])
+            if (!boxes_intersect(check->r.absmin, check->r.absmax,
+                                 pusher->r.absmin, pusher->r.absmax))
                 continue;
-
             // see if the ent's bbox is inside the pusher's final position
             if (!SV_TestEntityPosition(check))
                 continue;
@@ -350,13 +345,14 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 
         if ((pusher->movetype == MOVETYPE_PUSH) || (check->groundentity == pusher)) {
             // move this entity
-            pushed_p->ent = check;
-            VectorCopy(check->s.origin, pushed_p->origin);
-            VectorCopy(check->s.angles, pushed_p->angles);
-            pushed_p->rotated = !!amove[YAW];
-            if (pushed_p->rotated)
-                pushed_p->yaw = pusher->s.angles[YAW];
-            pushed_p++;
+            Q_assert(num_pushed < q_countof(pushed));
+            p = &pushed[num_pushed++];
+            p->ent = check;
+            VectorCopy(check->s.origin, p->origin);
+            VectorCopy(check->s.angles, p->angles);
+            p->rotated = !!amove[YAW];
+            if (p->rotated)
+                p->yaw = pusher->s.angles[YAW];
 
             vec3_t old_position;
             VectorCopy(check->s.origin, old_position);
@@ -373,10 +369,8 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
 
             // figure movement due to the pusher's amove
             VectorSubtract(check->s.origin, pusher->s.origin, org);
-            org2[0] = DotProduct(org, forward);
-            org2[1] = -DotProduct(org, right);
-            org2[2] = DotProduct(org, up);
-            VectorSubtract(org2, org, move2);
+            VectorRotate(org, axis, org2);
+            VectorSubtract(org, org2, move2);
             VectorAdd(check->s.origin, move2, check->s.origin);
 
             // may have pushed them off an edge
@@ -389,7 +383,7 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             // to be a blocker because otherwise elevators/doors get stuck
             if (block && check->client && !check->takedamage) {
                 VectorCopy(old_position, check->s.origin);
-                block = NULL;
+                block = false;
             }
 
             if (!block) {
@@ -404,18 +398,15 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             VectorCopy(old_position, check->s.origin);
             block = SV_TestEntityPosition(check);
             if (!block) {
-                pushed_p--;
+                num_pushed--;
                 continue;
             }
         }
 
-        // save off the obstacle so we can call the block function
-        obstacle = check;
-
         // move back any entities we already moved
         // go backwards, so if the same entity was pushed
         // twice, it goes back to the original position
-        for (int i = (pushed_p - pushed) - 1; i >= 0; i--) {
+        for (int i = num_pushed - 1; i >= 0; i--) {
             p = &pushed[i];
             VectorCopy(p->origin, p->ent->s.origin);
             VectorCopy(p->angles, p->ent->s.angles);
@@ -427,15 +418,17 @@ static bool SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
             }
             trap_LinkEntity(p->ent);
         }
-        return false;
+
+        // return the obstacle so we can call the block function
+        return check;
     }
 
     // FIXME: is there a better way to handle this?
-    //  see if anything we moved has touched a trigger
-    for (int i = (pushed_p - pushed) - 1; i >= 0; i--)
+    // see if anything we moved has touched a trigger
+    for (int i = num_pushed - 1; i >= 0; i--)
         G_TouchTriggers(pushed[i].ent);
 
-    return true;
+    return NULL;
 }
 
 /*
@@ -449,7 +442,7 @@ push all box objects
 static void SV_Physics_Pusher(edict_t *ent)
 {
     vec3_t   move, amove;
-    edict_t *part;
+    edict_t *part, *obstacle;
 
     // if not a team captain, so movement will be handled elsewhere
     if (ent->flags & FL_TEAMSLAVE)
@@ -459,19 +452,19 @@ static void SV_Physics_Pusher(edict_t *ent)
     // any moves or calling any think functions
     // if the move is blocked, all moved objects will be backed out
 retry:
-    pushed_p = pushed;
+    obstacle = NULL;
+    num_pushed = 0;
     for (part = ent; part; part = part->teamchain) {
         if (!VectorEmpty(part->velocity) || !VectorEmpty(part->avelocity)) {
             // object is moving
             VectorScale(part->velocity, FRAME_TIME_SEC, move);
             VectorScale(part->avelocity, FRAME_TIME_SEC, amove);
 
-            if (!SV_Push(part, move, amove))
+            obstacle = SV_Push(part, move, amove);
+            if (obstacle)
                 break; // move was blocked
         }
     }
-    if (pushed_p > &pushed[MAX_EDICTS])
-        G_Error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
     if (part) {
         // if the pusher has a "blocked" function, call it
