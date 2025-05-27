@@ -316,13 +316,13 @@ void M_WorldEffects(edict_t *ent)
     }
 }
 
-bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, bool ceiling, edict_t *ignore, contents_t mask, bool allow_partial)
+bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, bool ceiling, int ignore, contents_t mask, bool allow_partial)
 {
     vec3_t  end;
     trace_t trace;
 
     // PGM
-    trap_Trace(&trace, origin, mins, maxs, origin, ignore->s.number, mask);
+    trap_Trace(&trace, origin, mins, maxs, origin, ignore, mask);
     if (trace.startsolid) {
         if (!ceiling)
             origin[2] += 1;
@@ -337,7 +337,7 @@ bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, 
         end[2] += 256;
     // PGM
 
-    trap_Trace(&trace, origin, mins, maxs, end, ignore->s.number, mask);
+    trap_Trace(&trace, origin, mins, maxs, end, ignore, mask);
 
     if (trace.fraction == 1 || trace.allsolid || (!allow_partial && trace.startsolid))
         return false;
@@ -351,7 +351,7 @@ bool M_droptofloor(edict_t *ent)
     contents_t mask = G_GetClipMask(ent);
 
     if (!(ent->spawnflags & SPAWNFLAG_MONSTER_NO_DROP)) {
-        if (!M_droptofloor_generic(ent->s.origin, ent->r.mins, ent->r.maxs, ent->gravityVector[2] > 0, ent, mask, true))
+        if (!M_droptofloor_generic(ent->s.origin, ent->r.mins, ent->r.maxs, ent->gravityVector[2] > 0, ent->s.number, mask, true))
             return false;
     } else {
         trace_t tr;

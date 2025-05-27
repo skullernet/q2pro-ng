@@ -35,7 +35,7 @@ bool M_CheckBottom_Fast_Generic(const vec3_t absmins, const vec3_t absmaxs, bool
     return true; // we got out easy
 }
 
-bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const vec3_t maxs, edict_t *ignore, contents_t mask, bool ceiling, bool allow_any_step_height)
+bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const vec3_t maxs, int ignore, contents_t mask, bool ceiling, bool allow_any_step_height)
 {
     //
     // check it for real...
@@ -70,7 +70,7 @@ bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const ve
     vec3_t maxs_no_z = { maxs[0], maxs[1] };
 
     trace_t trace;
-    trap_Trace(&trace, start, mins_no_z, maxs_no_z, stop, ignore->s.number, mask);
+    trap_Trace(&trace, start, mins_no_z, maxs_no_z, stop, ignore, mask);
 
     if (trace.fraction == 1.0f)
         return false;
@@ -105,7 +105,7 @@ bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t mins, const ve
             quadrant_end[2] = stop[2];
 
             trap_Trace(&trace, quadrant_start, half_step_quadrant_mins,
-                       half_step_quadrant, quadrant_end, ignore->s.number, mask);
+                       half_step_quadrant, quadrant_end, ignore, mask);
 
             // PGM
             //  FIXME - this will only handle 0,0,1 and 0,0,-1 gravity vectors
@@ -137,7 +137,7 @@ bool M_CheckBottom(edict_t *ent)
 
     contents_t mask = (ent->r.svflags & SVF_MONSTER) ? MASK_MONSTERSOLID : (MASK_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER);
     return M_CheckBottom_Slow_Generic(ent->s.origin, ent->r.mins, ent->r.maxs,
-                                      ent, mask, ent->gravityVector[2] > 0,
+                                      ent->s.number, mask, ent->gravityVector[2] > 0,
                                       ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP);
 }
 

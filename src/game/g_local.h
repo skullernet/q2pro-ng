@@ -1481,7 +1481,7 @@ bool M_CheckClearShot(edict_t *self, const vec3_t offset);
 bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start);
 void M_ProjectFlashSource(edict_t *self, const vec3_t offset, const vec3_t forward, const vec3_t right, vec3_t start);
 bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, bool ceiling,
-                           edict_t *ignore, contents_t mask, bool allow_partial);
+                           int ignore, contents_t mask, bool allow_partial);
 bool M_droptofloor(edict_t *ent);
 void monster_think(edict_t *self);
 void monster_dead_think(edict_t *self);
@@ -1760,7 +1760,7 @@ extern int damage_multiplier;
 //
 bool M_CheckBottom_Fast_Generic(const vec3_t absmins, const vec3_t absmaxs, bool ceiling);
 bool M_CheckBottom_Slow_Generic(const vec3_t origin, const vec3_t absmins, const vec3_t absmaxs,
-                                edict_t *ignore, contents_t mask, bool ceiling, bool allow_any_step_height);
+                                int ignore, contents_t mask, bool ceiling, bool allow_any_step_height);
 bool M_CheckBottom(edict_t *ent);
 bool SV_CloseEnough(edict_t *ent, edict_t *goal, float dist);
 bool M_walkmove(edict_t *ent, float yaw, float dist);

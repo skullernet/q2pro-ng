@@ -75,7 +75,7 @@ bool FindSpawnPoint(const vec3_t startpoint, const vec3_t mins, const vec3_t max
     VectorCopy(startpoint, spawnpoint);
 
     // drop first
-    if (drop && M_droptofloor_generic(spawnpoint, mins, maxs, false, NULL, MASK_MONSTERSOLID, false))
+    if (drop && M_droptofloor_generic(spawnpoint, mins, maxs, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
         return true;
 
     VectorCopy(startpoint, spawnpoint);
@@ -85,7 +85,7 @@ bool FindSpawnPoint(const vec3_t startpoint, const vec3_t mins, const vec3_t max
         return false;
 
     // fixed, so drop again
-    if (drop && !M_droptofloor_generic(spawnpoint, mins, maxs, false, NULL, MASK_MONSTERSOLID, false))
+    if (drop && !M_droptofloor_generic(spawnpoint, mins, maxs, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
         return false; // ???
 
     return true;
@@ -141,7 +141,7 @@ bool CheckGroundSpawnPoint(const vec3_t origin, const vec3_t entMins, const vec3
     if (M_CheckBottom_Fast_Generic(absmin, absmax, false))
         return true;
 
-    if (M_CheckBottom_Slow_Generic(origin, entMins, entMaxs, NULL, MASK_MONSTERSOLID, false, false))
+    if (M_CheckBottom_Slow_Generic(origin, entMins, entMaxs, ENTITYNUM_NONE, MASK_MONSTERSOLID, false, false))
         return true;
 
     return false;
