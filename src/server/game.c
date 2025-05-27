@@ -596,12 +596,12 @@ VM_THUNK(LocateGameData) {
     uint32_t edict_size = VM_U32(1);
     uint32_t num_edicts = VM_U32(2);
 
-    edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, num_edicts, q_alignof(*edicts));
+    edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, MAX_EDICTS, q_alignof(*edicts));
     gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients));
     PF_LocateGameData(edicts, edict_size, num_edicts, clients, VM_U32(4));
 
     svs.vm_edicts_minptr = edicts_ptr;
-    svs.vm_edicts_maxptr = edicts_ptr + (num_edicts - 1) * edict_size;
+    svs.vm_edicts_maxptr = edicts_ptr + (MAX_EDICTS - 1) * edict_size;
 }
 
 VM_THUNK(ParseEntityString) {

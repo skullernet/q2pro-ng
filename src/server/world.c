@@ -482,7 +482,7 @@ SV_ClipMoveToEntities
 static void SV_ClipMoveToEntities(trace_t *tr,
                                   const vec3_t start, const vec3_t end,
                                   const vec3_t mins, const vec3_t maxs,
-                                  int passent, contents_t contentmask)
+                                  unsigned passent, contents_t contentmask)
 {
     vec3_t      boxmins, boxmaxs;
     int         i, num, ownernum = ENTITYNUM_NONE;
@@ -553,12 +553,14 @@ Passedict and edicts owned by passedict are explicitly not checked.
 ==================
 */
 void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
-              const vec3_t maxs, const vec3_t end, int passent, contents_t contentmask)
+              const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask)
 {
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
+
+    Q_assert_soft(passent < MAX_EDICTS);
 
     // clip to world
     CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);
@@ -579,12 +581,14 @@ Can be used to clip to SOLID_TRIGGER by its BSP tree.
 ==================
 */
 void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
-             const vec3_t maxs, const vec3_t end, int clipent, contents_t contentmask)
+             const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask)
 {
     if (!mins)
         mins = vec3_origin;
     if (!maxs)
         maxs = vec3_origin;
+
+    Q_assert_soft(clipent < MAX_EDICTS);
 
     if (clipent == ENTITYNUM_WORLD) {
         CM_BoxTrace(trace, start, end, mins, maxs, SV_WorldNodes(), contentmask);

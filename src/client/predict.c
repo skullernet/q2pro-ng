@@ -135,7 +135,7 @@ CL_Trace
 ================
 */
 void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
-              const vec3_t end, int passent, contents_t contentmask)
+              const vec3_t end, unsigned passent, contents_t contentmask)
 {
     if (!mins)
         mins = vec3_origin;
@@ -153,7 +153,7 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
 }
 
 static void CL_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
-                    const vec3_t end, int clipent, contents_t contentmask)
+                    const vec3_t end, unsigned clipent, contents_t contentmask)
 {
     CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
     tr->entnum = ENTITYNUM_WORLD;
