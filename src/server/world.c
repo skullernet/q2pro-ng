@@ -263,8 +263,9 @@ static uint32_t SV_PackSolid(const edict_t *ent)
 
 void PF_LinkEdict(edict_t *ent)
 {
-    server_entity_t *sent;
+    server_entity_t *sent, *sort;
     areanode_t *node;
+    list_t *list;
     int entnum;
 
     if (!ent)
@@ -330,9 +331,15 @@ void PF_LinkEdict(edict_t *ent)
 
     // link it in
     if (ent->r.solid == SOLID_TRIGGER)
-        List_Append(&node->trigger_edicts, &sent->area);
+        list = &node->trigger_edicts;
     else
-        List_Append(&node->solid_edicts, &sent->area);
+        list = &node->solid_edicts;
+
+    LIST_FOR_EACH(server_entity_t, sort, list, area)
+        if (sort > sent)
+            break;
+
+    List_Append(&sort->area, &sent->area);
 }
 
 
