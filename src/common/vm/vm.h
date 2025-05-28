@@ -41,6 +41,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define BLOCKSTACK_SIZE 0x1000   // 4096
 #define CALLSTACK_SIZE  0x1000   // 4096
 #define BR_TABLE_SIZE   0x10000  // 65536
+#define MAX_BLOCKS      0x10000
 #define MAX_LOCALS      0x1000
 #define MAX_RESULTS     1
 
@@ -117,10 +118,12 @@ typedef struct vm_s {
     uint32_t    num_imports;    // number of leading imports in functions
     uint32_t    num_funcs;      // number of function (including imports)
     vm_block_t  *funcs;         // imported and locally defined functions
-    vm_block_t  **block_lookup; // map of module byte position to Blocks
-                                // same length as byte_count
     uint32_t    start_func;     // function to run on module load
 
+    uint32_t    num_blocks;
+    vm_block_t *blocks;
+    uint16_t   *block_lookup;   // map of module byte position to block index
+                                // same length as byte_count
     vm_table_t  table;
     vm_memory_t memory;
 

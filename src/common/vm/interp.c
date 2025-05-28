@@ -265,17 +265,17 @@ void VM_Interpret(vm_t *m)
 
         case Block:
             read_leb(m);  // ignore block type
-            VM_PushBlock(m, m->block_lookup[cur_pc], m->sp);
+            VM_PushBlock(m, &m->blocks[m->block_lookup[cur_pc]], m->sp);
             continue;
 
         case Loop:
             read_leb(m);  // ignore block type
-            VM_PushBlock(m, m->block_lookup[cur_pc], m->sp);
+            VM_PushBlock(m, &m->blocks[m->block_lookup[cur_pc]], m->sp);
             continue;
 
         case If:
             read_leb(m);  // ignore block type
-            block = m->block_lookup[cur_pc];
+            block = &m->blocks[m->block_lookup[cur_pc]];
             VM_PushBlock(m, block, m->sp);
 
             cond = stack[m->sp--].value.u32;

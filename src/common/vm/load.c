@@ -486,7 +486,7 @@ static void parse_code(vm_t *m, sizebuf_t *sz)
 static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
 {
     vm_block_t  *block;
-    vm_block_t  *blockstack[BLOCKSTACK_SIZE];
+    uint16_t     blockstack[BLOCKSTACK_SIZE];
     int          top = -1;
     uint32_t     opcode = Unreachable;
     uint32_t     count, index;
@@ -500,24 +500,31 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
         case Loop:
         case If:
             ASSERT(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
-            block = VM_Malloc(sizeof(*block));
+            ASSERT(m->num_blocks < MAX_BLOCKS, "Too many blocks");
+            if (!(m->num_blocks & 1023))
+                m->blocks = VM_Realloc(m->blocks, (m->num_blocks + 1024) * sizeof(m->blocks[0]));
+            index = m->num_blocks++;
+            block = &m->blocks[index];
+            memset(block, 0, sizeof(*block));
             block->block_type = opcode;
             block->type = get_block_type(SZ_ReadLeb(sz));
             block->start_addr = pos;
-            blockstack[++top] = block;
-            m->block_lookup[pos] = block;
+            blockstack[++top] = index;
+            m->block_lookup[pos] = index;
             break;
 
         case Else:
-            ASSERT(blockstack[top]->block_type == If, "Else not matched with if");
-            blockstack[top]->else_addr = pos + 1;
+            ASSERT(top >= 0, "Blockstack underflow");
+            block = &m->blocks[blockstack[top]];
+            ASSERT(block->block_type == If, "Else not matched with if");
+            block->else_addr = pos + 1;
             break;
 
         case End:
             if (pos == func->end_addr)
                 break;
             ASSERT(top >= 0, "Blockstack underflow");
-            block = blockstack[top--];
+            block = &m->blocks[blockstack[top--]];
             block->end_addr = pos;
             if (block->block_type == Loop) {
                 // loop: label after start
@@ -730,8 +737,8 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports)
         }
     }
 
-    Com_Printf("Loaded %s: %d imports, %d exports, %d funcs, %d mempages\n", name,
-               m->num_imports, m->num_exports, m->num_funcs - m->num_imports, m->memory.pages);
+    Com_Printf("Loaded %s: %d imports, %d exports, %d funcs, %d mempages, %d bytes of code, %d blocks\n", name,
+               m->num_imports, m->num_exports, m->num_funcs - m->num_imports, m->memory.pages, m->num_bytes, m->num_blocks);
 
     return m;
 }
@@ -752,15 +759,13 @@ void VM_Free(vm_t *m)
     for (i = 0; i < m->num_exports; i++)
         Z_Free(m->exports[i].name);
 
-    for (i = 0; i < m->num_bytes; i++)
-        Z_Free(m->block_lookup[i]);
-
     Z_Free(m->types);
     Z_Free(m->funcs);
     Z_Free(m->globals);
     Z_Free(m->exports);
     Z_Free(m->table.entries);
     Z_Free(m->memory.bytes);
+    Z_Free(m->blocks);
     Z_Free(m->block_lookup);
     Z_Free(m->bytes);
     Z_Free(m);
