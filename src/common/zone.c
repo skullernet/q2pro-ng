@@ -155,60 +155,6 @@ void Z_Freep(void *ptr)
 
 /*
 ========================
-Z_Realloc
-========================
-*/
-void *Z_Realloc(void *ptr, size_t size)
-{
-    zhead_t *z;
-
-    if (!ptr) {
-        return Z_Malloc(size);
-    }
-
-    if (!size) {
-        Z_Free(ptr);
-        return NULL;
-    }
-
-    z = (zhead_t *)ptr - 1;
-
-    Z_Validate(z);
-
-    Q_assert(size <= INT_MAX);
-
-    size += sizeof(*z);
-    if (z->size == size) {
-        return z + 1;
-    }
-
-    Q_assert(z->tag != TAG_STATIC);
-
-    Z_CountFree(z);
-
-    z = realloc(z, size);
-    if (!z) {
-        Com_Error(ERR_FATAL, "%s: couldn't realloc %zu bytes", __func__, size);
-    }
-
-    z->size = size;
-    List_Relink(&z->entry);
-
-    Z_CountAlloc(z);
-
-    return z + 1;
-}
-
-void *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag)
-{
-    Q_assert(!size || nmemb <= INT_MAX / size);
-    if (!ptr)
-        return Z_TagMalloc(nmemb * size, tag);
-    return Z_Realloc(ptr, nmemb * size);
-}
-
-/*
-========================
 Z_Stats_f
 ========================
 */
@@ -308,6 +254,77 @@ void *Z_Malloc(size_t size)
 void *Z_Mallocz(size_t size)
 {
     return Z_TagMallocz(size, TAG_GENERAL);
+}
+
+/*
+========================
+Z_Realloc
+========================
+*/
+static void *Z_TagReallocInternal(void *ptr, size_t size, memtag_t tag, bool init)
+{
+    zhead_t *z;
+
+    if (!ptr) {
+        return Z_TagMallocInternal(size, tag, init);
+    }
+
+    if (!size) {
+        Z_Free(ptr);
+        return NULL;
+    }
+
+    z = (zhead_t *)ptr - 1;
+
+    Z_Validate(z);
+
+    Q_assert(size <= INT_MAX);
+
+    size += sizeof(*z);
+    if (z->size == size) {
+        return z + 1;
+    }
+
+    Q_assert(z->tag != TAG_STATIC);
+
+    Z_CountFree(z);
+
+    z = realloc(z, size);
+    if (!z) {
+        Com_Error(ERR_FATAL, "%s: couldn't realloc %zu bytes", __func__, size);
+    }
+
+    if (init && size > z->size) {
+        memset((byte *)z + z->size, 0, size - z->size);
+    }
+
+    z->size = size;
+    List_Relink(&z->entry);
+
+    Z_CountAlloc(z);
+
+    return z + 1;
+}
+
+void *Z_TagRealloc(void *ptr, size_t size, memtag_t tag)
+{
+    return Z_TagReallocInternal(ptr, size, tag, false);
+}
+
+void *Z_TagReallocz(void *ptr, size_t size, memtag_t tag)
+{
+    return Z_TagReallocInternal(ptr, size, tag, true);
+}
+
+void *Z_Realloc(void *ptr, size_t size)
+{
+    return Z_TagRealloc(ptr, size, TAG_GENERAL);
+}
+
+void *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag)
+{
+    Q_assert(!size || nmemb <= INT_MAX / size);
+    return Z_TagRealloc(ptr, nmemb * size, tag);
 }
 
 /*

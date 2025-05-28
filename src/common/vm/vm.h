@@ -32,7 +32,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "opcodes.h"
 
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
-#define VM_Realloc(ptr, size)   Z_Realloc(ptr, size)
+#define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
 
 #define VM_MAGIC   0x6d736100
 #define VM_VERSION 0x01

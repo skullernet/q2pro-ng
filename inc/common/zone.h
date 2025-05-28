@@ -47,6 +47,8 @@ void    Z_Init(void);
 void    Z_Free(void *ptr);
 void    Z_Freep(void *ptr);
 void    *Z_Realloc(void *ptr, size_t size);
+void    *Z_TagRealloc(void *ptr, size_t size, memtag_t tag);
+void    *Z_TagReallocz(void *ptr, size_t size, memtag_t tag);
 void    *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag);
 q_malloc
 void    *Z_Malloc(size_t size);

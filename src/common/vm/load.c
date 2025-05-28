@@ -234,7 +234,6 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
             m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
 
             vm_block_t *func = &m->funcs[m->num_imports - 1];
-            memset(func, 0, sizeof(*func));
             func->import_module = import_module;
             func->import_field = import_field;
             func->type = &m->types[type_index];
@@ -272,7 +271,6 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
     ASSERT(count <= SZ_Remaining(sz), "Too many functions");
     m->num_funcs += count;
     m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
-    memset(m->funcs + m->num_funcs - count, 0, sizeof(m->funcs[0]) * count);
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
@@ -505,7 +503,6 @@ static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
                 m->blocks = VM_Realloc(m->blocks, (m->num_blocks + 1024) * sizeof(m->blocks[0]));
             index = m->num_blocks++;
             block = &m->blocks[index];
-            memset(block, 0, sizeof(*block));
             block->block_type = opcode;
             block->type = get_block_type(SZ_ReadLeb(sz));
             block->start_addr = pos;
