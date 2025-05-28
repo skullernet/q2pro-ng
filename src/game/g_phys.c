@@ -225,29 +225,33 @@ SV_PushEntity
 Does not change the entities velocity at all
 ============
 */
-static trace_t SV_PushEntity(edict_t *ent, const vec3_t push)
+static void SV_PushEntity(edict_t *ent, const vec3_t push, trace_t *trace)
 {
     vec3_t start, end;
     VectorCopy(ent->s.origin, start);
     VectorAdd(start, push, end);
 
-retry:;
-    trace_t trace;
-    trap_Trace(&trace, start, ent->r.mins, ent->r.maxs, end, ent->s.number, G_GetClipMask(ent));
+    while (true) {
+        trap_Trace(trace, start, ent->r.mins, ent->r.maxs, end, ent->s.number, G_GetClipMask(ent));
 
-    VectorMA(trace.endpos, 0.5f, trace.plane.normal, ent->s.origin);
-    trap_LinkEntity(ent);
+        VectorMA(trace->endpos, 0.5f, trace->plane.normal, ent->s.origin);
+        trap_LinkEntity(ent);
 
-    if (trace.fraction != 1.0f || trace.startsolid) {
-        G_Impact(ent, &trace);
+        if (trace->fraction == 1.0f && !trace->startsolid)
+            break;
+
+        G_Impact(ent, trace);
+
+        if (!ent->r.inuse)
+            return;
+
+        if (g_edicts[trace->entnum].r.inuse)
+            break;
 
         // if the pushed entity went away and the pusher is still there
-        if (!g_edicts[trace.entnum].r.inuse && ent->r.inuse) {
-            // move the pusher back and try again
-            VectorCopy(start, ent->s.origin);
-            trap_LinkEntity(ent);
-            goto retry;
-        }
+        // move the pusher back and try again
+        VectorCopy(start, ent->s.origin);
+        trap_LinkEntity(ent);
     }
 
     // ================
@@ -257,10 +261,7 @@ retry:;
     // PGM
     // ================
 
-    if (ent->r.inuse)
-        G_TouchTriggers(ent);
-
-    return trace;
+    G_TouchTriggers(ent);
 }
 
 typedef struct {
@@ -596,7 +597,7 @@ static void SV_Physics_Toss(edict_t *ent)
 
         num_tries--;
         VectorScale(ent->velocity, time_left, move);
-        trace = SV_PushEntity(ent, move);
+        SV_PushEntity(ent, move, &trace);
 
         if (!ent->r.inuse)
             return;
