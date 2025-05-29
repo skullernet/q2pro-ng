@@ -53,7 +53,7 @@ static const vm_type_t block_types[5] = {
 static const vm_type_t *get_block_type(uint32_t value_type)
 {
     switch (value_type) {
-    case 0x40:
+    case BLOCK:
         return &block_types[0];
     case I32:
         return &block_types[1];
@@ -188,7 +188,8 @@ static void parse_types(vm_t *m, sizebuf_t *sz)
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
-        type->form = SZ_ReadByte(sz);
+        type->form = SZ_ReadLeb(sz);
+        ASSERT(type->form == FUNC, "Must be function type");
         type->num_params = SZ_ReadLeb(sz);
         ASSERT(type->num_params <= SZ_Remaining(sz) / 3, "Too many parameters");
         type->params = VM_Malloc(type->num_params * sizeof(type->params[0]));
@@ -285,8 +286,8 @@ static void parse_tables(vm_t *m, sizebuf_t *sz)
     uint32_t table_count = SZ_ReadLeb(sz);
     ASSERT(table_count == 1, "More than 1 table not supported");
 
-    uint32_t type = SZ_ReadByte(sz);
-    ASSERT(type == 0x70, "Must be funcref");
+    uint32_t type = SZ_ReadLeb(sz);
+    ASSERT(type == FUNCREF, "Must be funcref");
 
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t tsize = SZ_ReadLeb(sz); // Initial size
@@ -378,6 +379,8 @@ static void parse_exports(vm_t *m, sizebuf_t *sz)
             ASSERT(index < m->num_globals, "Bad global index");
             export->value = &m->globals[index];
             break;
+        default:
+            ASSERT(0, "Export of kind %d not supported", kind);
         }
     }
 }
@@ -481,7 +484,7 @@ static void parse_code(vm_t *m, sizebuf_t *sz)
     }
 }
 
-static void find_blocks(vm_t *m, vm_block_t *func, sizebuf_t *sz)
+static void find_blocks(vm_t *m, const vm_block_t *func, sizebuf_t *sz)
 {
     vm_block_t  *block;
     uint16_t     blockstack[BLOCKSTACK_SIZE];

@@ -49,7 +49,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define I64       0x7e  // -0x02
 #define F32       0x7d  // -0x03
 #define F64       0x7c  // -0x04
-#define ANYFUNC   0x70  // -0x10
+#define FUNCREF   0x70  // -0x10
 #define FUNC      0x60  // -0x20
 #define BLOCK     0x40  // -0x40
 
