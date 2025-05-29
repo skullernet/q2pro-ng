@@ -475,7 +475,6 @@ static void parse_code(vm_t *m, sizebuf_t *sz)
 
         func->start_addr = sz->readcount;
         func->end_addr = payload_start + body_size - 1;
-        func->br_addr = func->end_addr;
         ASSERT(sz->data[func->end_addr] == End, "Function block doesn't end with End opcode");
         sz->readcount = func->end_addr + 1;
     }
@@ -505,7 +504,8 @@ static void find_blocks(vm_t *m, const vm_block_t *func, sizebuf_t *sz)
             block = &m->blocks[index];
             block->block_type = opcode;
             block->type = get_block_type(SZ_ReadLeb(sz));
-            block->start_addr = pos;
+            if (opcode == Loop)
+                block->end_addr = sz->readcount;    // loop: label after start
             blockstack[++top] = index;
             m->block_lookup[pos] = index;
             break;
@@ -514,7 +514,7 @@ static void find_blocks(vm_t *m, const vm_block_t *func, sizebuf_t *sz)
             ASSERT(top >= 0, "Blockstack underflow");
             block = &m->blocks[blockstack[top]];
             ASSERT(block->block_type == If, "Else not matched with if");
-            block->else_addr = pos + 1;
+            block->start_addr = pos + 1;
             break;
 
         case End:
@@ -522,14 +522,8 @@ static void find_blocks(vm_t *m, const vm_block_t *func, sizebuf_t *sz)
                 break;
             ASSERT(top >= 0, "Blockstack underflow");
             block = &m->blocks[blockstack[top--]];
-            block->end_addr = pos;
-            if (block->block_type == Loop) {
-                // loop: label after start
-                block->br_addr = block->start_addr + 2;
-            } else {
-                // block, if: label at end
-                block->br_addr = pos;
-            }
+            if (block->block_type != Loop)
+                block->end_addr = pos; // block, if: label at end
             break;
 
         case Br:

@@ -281,12 +281,12 @@ void VM_Interpret(vm_t *m)
             cond = stack[m->sp--].value.u32;
             if (cond == 0) { // if false
                 // branch to else block or after end of if
-                if (block->else_addr == 0) {
+                if (block->start_addr == 0) {
                     // no else block, pop if block and skip end
                     m->csp--;
-                    m->pc = block->br_addr + 1;
+                    m->pc = block->end_addr + 1;
                 } else {
-                    m->pc = block->else_addr;
+                    m->pc = block->start_addr;
                 }
             }
             // if true, keep going
@@ -294,7 +294,7 @@ void VM_Interpret(vm_t *m)
 
         case Else:
             block = m->callstack[m->csp].block;
-            m->pc = block->br_addr;
+            m->pc = block->end_addr;
             continue;
 
         case End:
@@ -308,7 +308,7 @@ void VM_Interpret(vm_t *m)
             ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
-            m->pc = m->callstack[m->csp].block->br_addr;
+            m->pc = m->callstack[m->csp].block->end_addr;
             continue;
 
         case BrIf:
@@ -318,7 +318,7 @@ void VM_Interpret(vm_t *m)
                 ASSERT(m->csp >= depth, "Call stack underflow");
                 m->csp -= depth;
                 // set to end for VM_PopBlock
-                m->pc = m->callstack[m->csp].block->br_addr;
+                m->pc = m->callstack[m->csp].block->end_addr;
             }
             continue;
 
@@ -337,7 +337,7 @@ void VM_Interpret(vm_t *m)
             ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
-            m->pc = m->callstack[m->csp].block->br_addr;
+            m->pc = m->callstack[m->csp].block->end_addr;
             continue;
 
         case Return:

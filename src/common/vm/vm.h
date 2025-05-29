@@ -75,10 +75,8 @@ typedef struct {
         uint32_t  *locals;      // function only
         vm_thunk_t thunk;       // function only (imported)
     };
-    uint32_t   start_addr;
-    uint32_t   end_addr;
-    uint32_t   else_addr;       // if block only
-    uint32_t   br_addr;         // blocks only
+    uint32_t   start_addr;      // else branch addr for if block
+    uint32_t   end_addr;        // branch addr
     const vm_type_t *type;      // params/results type
 } vm_block_t;
 
