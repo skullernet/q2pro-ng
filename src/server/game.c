@@ -496,16 +496,16 @@ static bool PF_LocalTime(int64_t in, vm_time_t *out)
 }
 
 // edict pointers need custom validation
-static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr)
+static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr, const char *func)
 {
-    ASSERT(ptr >= svs.vm_edicts_minptr &&
-           ptr <= svs.vm_edicts_maxptr, "Out of bounds VM edict");
-    ASSERT(!(ptr % q_alignof(edict_t)), "Misaligned VM edict");
+    VM_ASSERT2(ptr >= svs.vm_edicts_minptr &&
+               ptr <= svs.vm_edicts_maxptr, "Out of bounds VM edict");
+    VM_ASSERT2(!(ptr % q_alignof(edict_t)), "Misaligned VM edict");
     return (edict_t *)(m->bytes + ptr);
 }
 
-#define VM_ENT(arg)      VM_GetEntity(m, VM_U32(arg))
-#define VM_ENT_NULL(arg) (VM_U32(arg) ? VM_GetEntity(m, VM_U32(arg)) : NULL)
+#define VM_ENT(arg)      VM_GetEntity(m, VM_U32(arg), __func__)
+#define VM_ENT_NULL(arg) (VM_U32(arg) ? VM_GetEntity(m, VM_U32(arg), __func__) : NULL)
 
 VM_THUNK(Print) {
     PF_Print(VM_U32(0), VM_STR(1));
@@ -596,8 +596,8 @@ VM_THUNK(LocateGameData) {
     uint32_t edict_size = VM_U32(1);
     uint32_t num_edicts = VM_U32(2);
 
-    edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, MAX_EDICTS, q_alignof(*edicts));
-    gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients));
+    edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, MAX_EDICTS, q_alignof(*edicts), __func__);
+    gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients), __func__);
     PF_LocateGameData(edicts, edict_size, num_edicts, clients, VM_U32(4));
 
     svs.vm_edicts_minptr = edicts_ptr;
@@ -641,7 +641,7 @@ VM_THUNK(LocalTime) {
 }
 
 VM_THUNK(Cvar_Register) {
-    VM_U32(0) = PF_Cvar_Register(VM_PTR_NULL(0, vm_cvar_t, 1), VM_STR(1), VM_STR_NULL(2), VM_U32(3));
+    VM_U32(0) = PF_Cvar_Register(VM_PTR_NULL(0, vm_cvar_t), VM_STR(1), VM_STR_NULL(2), VM_U32(3));
 }
 
 VM_THUNK(Cvar_Set) {
@@ -649,7 +649,7 @@ VM_THUNK(Cvar_Set) {
 }
 
 VM_THUNK(Cvar_ForceSet) {
-    PF_Cvar_Set(VM_STR(0), VM_STR(1));
+    PF_Cvar_ForceSet(VM_STR(0), VM_STR(1));
 }
 
 VM_THUNK(Cvar_VariableInteger) {
@@ -797,8 +797,8 @@ VM_THUNK(memcmp) {
     uint32_t p2   = VM_U32(1);
     uint32_t size = VM_U32(2);
 
-    ASSERT((uint64_t)p1 + size <= m->pages * VM_PAGE_SIZE &&
-           (uint64_t)p2 + size <= m->pages * VM_PAGE_SIZE, "Memory compare out of bounds");
+    VM_ASSERT((uint64_t)p1 + size <= m->pages * VM_PAGE_SIZE &&
+              (uint64_t)p2 + size <= m->pages * VM_PAGE_SIZE, "Memory compare out of bounds");
 
     VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
 }
@@ -1171,9 +1171,11 @@ void SV_InitGameProgs(void)
         ge = &game_vm_export;
         for (int i = 0; i < G_NumEntries; i++) {
             game_exports[i] = VM_GetExport(vm, game_vm_exports[i].name);
-            ASSERT(game_exports[i] >= 0, "Export %s not found", game_vm_exports[i].name);
+            if (game_exports[i] == -1)
+                Com_Error(ERR_DROP, "Export %s not found", game_vm_exports[i].name);
         }
     } else {
+        Com_Printf("Couldn't load %s: %s\n", "vm/game.qvm", Com_GetLastError());
         game_library = Sys_LoadGameLibrary();
         if (!game_library)
             Com_Error(ERR_DROP, "Failed to load game library");

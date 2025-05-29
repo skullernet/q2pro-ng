@@ -60,7 +60,7 @@ static const int8_t min_sp[256] = {
 
 void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 {
-    ASSERT(m->csp < CALLSTACK_SIZE - 1, "Call stack overflow");
+    VM_ASSERT(m->csp < CALLSTACK_SIZE - 1, "Call stack overflow");
 
     vm_frame_t *frame = &m->callstack[++m->csp];
     frame->block = block;
@@ -71,7 +71,7 @@ void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 
 static const vm_block_t *VM_PopBlock(vm_t *m)
 {
-    ASSERT(m->csp >= 0, "Call stack underflow");
+    VM_ASSERT(m->csp >= 0, "Call stack underflow");
 
     const vm_frame_t *frame = &m->callstack[m->csp--];
     const vm_type_t *t = frame->block->type;
@@ -80,7 +80,7 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 
     // Validate the return value
     if (t->num_results == 1)
-        ASSERT(m->stack[m->sp].value_type == t->results[0], "Call type mismatch");
+        VM_ASSERT(m->stack[m->sp].value_type == t->results[0], "Call type mismatch");
 
     // Restore stack pointer
     if (t->num_results == 1) {
@@ -116,13 +116,13 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
 
     // Push locals (dropping extras)
     m->fp = m->sp - type->num_params + 1;
-    ASSERT(m->fp >= 0, "Stack underflow");
+    VM_ASSERT(m->fp >= 0, "Stack underflow");
 
     // Validate arguments vs formal params
     for (uint32_t f = 0; f < type->num_params; f++)
-        ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
+        VM_ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
 
-    ASSERT(m->sp + (int)func->num_locals < STACK_SIZE - 1, "Stack overflow");
+    VM_ASSERT(m->sp + (int)func->num_locals < STACK_SIZE - 1, "Stack overflow");
 
     // Push function locals
     for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
@@ -141,11 +141,11 @@ void VM_ThunkOut(vm_t *m, uint32_t fidx)
     const vm_type_t   *type = func->type;
 
     int fp = m->sp - type->num_params + 1;
-    ASSERT(fp >= 0, "Stack underflow");
+    VM_ASSERT(fp >= 0, "Stack underflow");
 
     // Validate arguments vs formal params
     for (uint32_t f = 0; f < type->num_params; f++)
-        ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
+        VM_ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
 
     func->thunk(&m->memory, &m->stack[fp]);
     m->sp += type->num_results - type->num_params;
@@ -241,15 +241,15 @@ void VM_Interpret(vm_t *m)
     double       j, k, l; // F64 math
 
     while (1) {
-        ASSERT(m->pc < m->num_bytes, "Program counter out of bounds");
+        VM_ASSERT(m->pc < m->num_bytes, "Program counter out of bounds");
 
         cur_pc = m->pc;
         opcode = m->bytes[m->pc++];
 
-        ASSERT(m->sp >= min_sp[opcode], "Stack underflow");
-        ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
+        VM_ASSERT(m->sp >= min_sp[opcode], "Stack underflow");
+        VM_ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
 
-        ASSERT(instrs < INT32_MAX, "Runaway program loop");
+        VM_ASSERT(instrs < INT32_MAX, "Runaway program loop");
         instrs++;
 
         switch (opcode) {
@@ -257,7 +257,7 @@ void VM_Interpret(vm_t *m)
         // Control flow operators
         //
         case Unreachable:
-            ASSERT(0, "Unreachable instruction");
+            VM_ASSERT(0, "Unreachable instruction");
             continue;
 
         case Nop:
@@ -305,7 +305,7 @@ void VM_Interpret(vm_t *m)
 
         case Br:
             depth = read_leb(m);
-            ASSERT(m->csp >= depth, "Call stack underflow");
+            VM_ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
             m->pc = m->callstack[m->csp].block->end_addr;
@@ -315,7 +315,7 @@ void VM_Interpret(vm_t *m)
             depth = read_leb(m);
             cond = stack[m->sp--].value.u32;
             if (cond) { // if true
-                ASSERT(m->csp >= depth, "Call stack underflow");
+                VM_ASSERT(m->csp >= depth, "Call stack underflow");
                 m->csp -= depth;
                 // set to end for VM_PopBlock
                 m->pc = m->callstack[m->csp].block->end_addr;
@@ -324,7 +324,7 @@ void VM_Interpret(vm_t *m)
 
         case BrTable:
             count = read_leb(m);
-            ASSERT(count <= BR_TABLE_SIZE, "BrTable size too big");
+            VM_ASSERT(count <= BR_TABLE_SIZE, "BrTable size too big");
             for (uint32_t i = 0; i < count; i++)
                 m->br_table[i] = read_leb(m);
 
@@ -334,7 +334,7 @@ void VM_Interpret(vm_t *m)
             if (didx >= 0 && didx < count)
                 depth = m->br_table[didx];
 
-            ASSERT(m->csp >= depth, "Call stack underflow");
+            VM_ASSERT(m->csp >= depth, "Call stack underflow");
             m->csp -= depth;
             // set to end for VM_PopBlock
             m->pc = m->callstack[m->csp].block->end_addr;
@@ -356,24 +356,24 @@ void VM_Interpret(vm_t *m)
             if (fidx < m->num_imports) {
                 VM_ThunkOut(m, fidx);   // import/thunk call
             } else {
-                ASSERT(fidx < m->num_funcs, "Bad function index");
+                VM_ASSERT(fidx < m->num_funcs, "Bad function index");
                 VM_SetupCall(m, fidx);  // regular function call
             }
             continue;
 
         case CallIndirect:
             tidx = read_leb(m);
-            ASSERT(tidx < m->num_types, "Bad type index");
+            VM_ASSERT(tidx < m->num_types, "Bad type index");
             read_leb(m); // ignore default table
             val = stack[m->sp--].value.u32;
-            ASSERT(val < m->table.maximum, "Undefined element %#x in table", val);
+            VM_ASSERT(val < m->table.maximum, "Undefined element in table");
             fidx = m->table.entries[val];
-            ASSERT(fidx < m->num_funcs, "Bad function index");
+            VM_ASSERT(fidx < m->num_funcs, "Bad function index");
 
             const vm_block_t *func = &m->funcs[fidx];
             const vm_type_t *type = func->type;
 
-            ASSERT(type == &m->types[tidx], "Indirect call function type differ");
+            VM_ASSERT(type == &m->types[tidx], "Indirect call function type differ");
 
             if (fidx < m->num_imports)
                 VM_ThunkOut(m, fidx);   // import/thunk call
@@ -475,30 +475,30 @@ void VM_Interpret(vm_t *m)
                 break;
 
             case MemoryCopy:
-                ASSERT(m->sp >= 2, "Stack underflow");
+                VM_ASSERT(m->sp >= 2, "Stack underflow");
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
-                ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE &&
-                       (uint64_t)src + n <= m->memory.pages * VM_PAGE_SIZE, "Memory copy out of bounds");
+                VM_ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE &&
+                          (uint64_t)src + n <= m->memory.pages * VM_PAGE_SIZE, "Memory copy out of bounds");
                 memmove(m->memory.bytes + dst, m->memory.bytes + src, n);
                 m->pc += 2;
                 m->sp -= 3;
                 continue;
 
             case MemoryFill:
-                ASSERT(m->sp >= 2, "Stack underflow");
+                VM_ASSERT(m->sp >= 2, "Stack underflow");
                 dst = stack[m->sp - 2].value.u32;
                 src = stack[m->sp - 1].value.u32;
                 n   = stack[m->sp    ].value.u32;
-                ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE, "Memory fill out of bounds");
+                VM_ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE, "Memory fill out of bounds");
                 memset(m->memory.bytes + dst, src, n);
                 m->pc += 1;
                 m->sp -= 3;
                 continue;
 
             default:
-                ASSERT(0, "Unrecognized extended opcode %#x", opcode);
+                VM_ASSERT(0, "Unrecognized extended opcode");
             }
             continue;
 
@@ -507,8 +507,8 @@ void VM_Interpret(vm_t *m)
             read_leb(m); // skip flags
             offset = read_leb(m);
             addr = stack[m->sp].value.u32;
-            ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * VM_PAGE_SIZE, "Memory load out of bounds");
+            VM_ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
+                      <= m->memory.pages * VM_PAGE_SIZE, "Memory load out of bounds");
             maddr = m->memory.bytes + offset + addr;
             stack[m->sp].value.u64 = 0; // initialize to 0
 
@@ -578,8 +578,8 @@ void VM_Interpret(vm_t *m)
             offset = read_leb(m);
             vm_value_t *sval = &stack[m->sp--];
             addr = stack[m->sp--].value.u32;
-            ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
-                   <= m->memory.pages * VM_PAGE_SIZE, "Memory store out of bounds");
+            VM_ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
+                      <= m->memory.pages * VM_PAGE_SIZE, "Memory store out of bounds");
             maddr = m->memory.bytes + offset + addr;
 
             switch (opcode) {
@@ -874,7 +874,7 @@ void VM_Interpret(vm_t *m)
             b = stack[m->sp].value.u32;
             m->sp--;
             if (opcode >= I32_Div_s && opcode <= I32_Rem_u)
-                ASSERT(b, "Integer divide by zero");
+                VM_ASSERT(b, "Integer divide by zero");
             switch (opcode) {
             case I32_Add:
                 c = a + b;
@@ -886,7 +886,7 @@ void VM_Interpret(vm_t *m)
                 c = a * b;
                 break;
             case I32_Div_s:
-                ASSERT(!(a == INT32_MIN && b == -1), "Integer overflow");
+                VM_ASSERT(!(a == INT32_MIN && b == -1), "Integer overflow");
                 c = (int32_t)a / (int32_t)b;
                 break;
             case I32_Div_u:
@@ -932,7 +932,7 @@ void VM_Interpret(vm_t *m)
             e = stack[m->sp].value.u64;
             m->sp--;
             if (opcode >= I64_Div_s && opcode <= I64_Rem_u)
-                ASSERT(e, "Integer divide by zero");
+                VM_ASSERT(e, "Integer divide by zero");
             switch (opcode) {
             case I64_Add:
                 f = d + e;
@@ -944,7 +944,7 @@ void VM_Interpret(vm_t *m)
                 f = d * e;
                 break;
             case I64_Div_s:
-                ASSERT(!(d == INT64_MIN && e == -1), "Integer overflow");
+                VM_ASSERT(!(d == INT64_MIN && e == -1), "Integer overflow");
                 f = (int64_t)d / (int64_t)e;
                 break;
             case I64_Div_u:
@@ -1164,7 +1164,7 @@ void VM_Interpret(vm_t *m)
             break;
 
         default:
-            ASSERT(0, "Unrecognized opcode %#x", opcode);
+            VM_ASSERT(0, "Unrecognized opcode");
         }
     }
 }

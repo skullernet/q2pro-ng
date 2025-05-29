@@ -96,8 +96,13 @@ typedef struct {
 } vm_table_t;
 
 typedef struct {
+    char       *data;
+    uint32_t    len;
+} vm_string_t;
+
+typedef struct {
     uint32_t    kind;
-    char       *name;
+    vm_string_t name;
     void       *value;
 } vm_export_t;
 
