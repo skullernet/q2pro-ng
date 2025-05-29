@@ -235,8 +235,6 @@ static void parse_imports(vm_t *m, sizebuf_t *sz)
             m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
 
             vm_block_t *func = &m->funcs[m->num_imports - 1];
-            func->import_module = import_module;
-            func->import_field = import_field;
             func->type = &m->types[type_index];
             func->thunk = find_import(m, import_field, func->type);
             break;
@@ -276,7 +274,6 @@ static void parse_functions(vm_t *m, sizebuf_t *sz)
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
         ASSERT(tidx < m->num_types, "Bad type index");
-        m->funcs[f].fidx = f;
         m->funcs[f].type = &m->types[tidx];
     }
 }
@@ -753,7 +750,7 @@ void VM_Free(vm_t *m)
     for (i = 0; i < m->num_types; i++)
         Z_Free(m->types[i].params);
 
-    for (i = 0; i < m->num_funcs; i++)
+    for (i = m->num_imports; i < m->num_funcs; i++)
         Z_Free(m->funcs[i].locals);
 
     for (i = 0; i < m->num_exports; i++)
@@ -783,7 +780,7 @@ void VM_Call(vm_t *m, uint32_t e)
 
     m->sp += type->num_params;
 
-    VM_SetupCall(m, func->fidx);
+    VM_SetupCall(m, func - m->funcs);
     VM_Interpret(m);
 
     m->sp -= type->num_results;
