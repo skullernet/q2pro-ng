@@ -827,12 +827,16 @@ void VM_Call(vm_t *m, uint32_t fidx)
     const vm_block_t *func = &m->funcs[fidx];
     const vm_type_t *type = func->type;
 
-    m->sp += type->num_params;
+    // Set pushed params type
+    for (uint32_t f = 0; f < type->num_params; f++)
+        m->stack[++m->sp].value_type = type->params[f];
 
     VM_SetupCall(m, fidx);
     VM_Interpret(m);
 
-    m->sp -= type->num_results;
+    // Validate the return value
+    if (type->num_results == 1)
+        VM_ASSERT(m->stack[m->sp--].value_type == type->results[0], "Call type mismatch");
 }
 
 vm_value_t *VM_StackTop(vm_t *m)

@@ -58,7 +58,7 @@ static const int8_t min_sp[256] = {
 // Stack machine (byte code related functions)
 //
 
-void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
+static void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp)
 {
     VM_ASSERT(m->csp < CALLSTACK_SIZE - 1, "Call stack overflow");
 
@@ -135,7 +135,7 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
     m->pc = func->start_addr;
 }
 
-void VM_ThunkOut(vm_t *m, uint32_t fidx)
+static void VM_ThunkOut(vm_t *m, uint32_t fidx)
 {
     const vm_block_t  *func = &m->funcs[fidx];
     const vm_type_t   *type = func->type;
@@ -147,12 +147,13 @@ void VM_ThunkOut(vm_t *m, uint32_t fidx)
     for (uint32_t f = 0; f < type->num_params; f++)
         VM_ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
 
+    m->sp -= type->num_params;
+
     func->thunk(&m->memory, &m->stack[fp]);
-    m->sp += type->num_results - type->num_params;
 
     // Set return value type
     if (type->num_results == 1)
-        m->stack[m->sp].value_type = type->results[0];
+        m->stack[++m->sp].value_type = type->results[0];
 }
 
 static uint32_t read_leb(vm_t *m)
@@ -229,6 +230,7 @@ void VM_Interpret(vm_t *m)
 {
     vm_value_t          *stack = m->stack;
     const vm_block_t    *block;
+    int          enter_csp = m->csp;
     uint32_t     cur_pc;
     uint32_t     arg, val, fidx, tidx, cond, depth, count;
     uint32_t     offset, addr, dst, src, n;
@@ -239,6 +241,8 @@ void VM_Interpret(vm_t *m)
     uint64_t     d, e, f; // I64 math
     float        g, h, i; // F32 math
     double       j, k, l; // F64 math
+
+    VM_ASSERT(enter_csp >= 0, "Call stack underflow");
 
     while (1) {
         VM_ASSERT(m->pc < m->num_bytes, "Program counter out of bounds");
@@ -299,8 +303,10 @@ void VM_Interpret(vm_t *m)
 
         case End:
             block = VM_PopBlock(m);
-            if (block->block_type == 0x00 && m->csp == -1)
+            if (m->csp < enter_csp) {
+                VM_ASSERT(block->block_type == 0x00, "Not a function");
                 return; // return to top-level from function
+            }
             continue;
 
         case Br:
@@ -345,7 +351,8 @@ void VM_Interpret(vm_t *m)
                 m->csp--;
             // Set the program count to the end of the function
             // The actual VM_PopBlock and return is handled by the end opcode.
-            m->pc = m->callstack[0].block->end_addr;
+            VM_ASSERT(m->csp >= 0, "Call stack underflow");
+            m->pc = m->callstack[m->csp].block->end_addr;
             continue;
 
         //

@@ -144,7 +144,5 @@ typedef struct vm_s {
     uint32_t    br_table[BR_TABLE_SIZE]; // br_table branch indexes
 } vm_t;
 
-void VM_PushBlock(vm_t *m, const vm_block_t *block, int sp);
 void VM_SetupCall(vm_t *m, uint32_t fidx);
-void VM_ThunkOut(vm_t *m, uint32_t fidx);
 void VM_Interpret(vm_t *m);
