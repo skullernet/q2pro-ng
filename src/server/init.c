@@ -435,6 +435,7 @@ void SV_InitGame(void)
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;
     svs.heartbeat_index = 0;
 
+    Q_assert_soft(svs.edicts);
     for (i = 0; i < svs.maxclients; i++) {
         client = svs.client_pool + i;
         ent = SV_EdictForNum(i);
