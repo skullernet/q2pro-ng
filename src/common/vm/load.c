@@ -831,24 +831,37 @@ void VM_Call(vm_t *m, uint32_t fidx)
     const vm_block_t *func = &m->funcs[fidx];
     const vm_type_t *type = func->type;
 
+    int fp = m->sp - type->num_params + 1;
+    VM_ASSERT(fp >= 0, "Stack underflow");
+
     // Set pushed params type
     for (uint32_t f = 0; f < type->num_params; f++)
-        m->stack[++m->sp].value_type = type->params[f];
+        m->stack[fp + f].value_type = type->params[f];
 
     VM_SetupCall(m, fidx);
     VM_Interpret(m);
 
     // Validate the return value
-    if (type->num_results == 1)
-        VM_ASSERT(m->stack[m->sp--].value_type == type->results[0], "Call type mismatch");
+    if (type->num_results == 1) {
+        VM_ASSERT(m->sp >= 0, "Stack underflow");
+        VM_ASSERT(m->stack[m->sp].value_type == type->results[0], "Call type mismatch");
+    }
 }
 
-vm_value_t *VM_StackTop(vm_t *m)
+vm_value_t *VM_StackPush(vm_t *m, int n)
 {
-    return &m->stack[m->sp + 1];
+    VM_ASSERT(m->sp < STACK_SIZE - n, "Stack overflow");
+    m->sp += n;
+    return &m->stack[m->sp - n + 1];
 }
 
-vm_memory_t *VM_Memory(vm_t *m)
+vm_value_t *VM_StackPop(vm_t *m)
+{
+    VM_ASSERT(m->sp >= 0, "Stack underflow");
+    return &m->stack[m->sp--];
+}
+
+const vm_memory_t *VM_Memory(vm_t *m)
 {
     return &m->memory;
 }

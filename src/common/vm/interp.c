@@ -122,7 +122,7 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
     for (uint32_t f = 0; f < type->num_params; f++)
         VM_ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
 
-    VM_ASSERT(m->sp + (int)func->num_locals < STACK_SIZE - 1, "Stack overflow");
+    VM_ASSERT(m->sp < STACK_SIZE - (int)func->num_locals, "Stack overflow");
 
     // Push function locals
     for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
@@ -152,8 +152,10 @@ static void VM_ThunkOut(vm_t *m, uint32_t fidx)
     func->thunk(&m->memory, &m->stack[fp]);
 
     // Set return value type
-    if (type->num_results == 1)
+    if (type->num_results == 1) {
+        VM_ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
         m->stack[++m->sp].value_type = type->results[0];
+    }
 }
 
 static uint32_t read_leb(vm_t *m)

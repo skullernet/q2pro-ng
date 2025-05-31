@@ -948,7 +948,7 @@ static void vm_G_SpawnEntities(void) {
 }
 
 static void vm_G_WriteGame(qhandle_t handle, bool autosave) {
-    vm_value_t *stack = VM_StackTop(game_vm);
+    vm_value_t *stack = VM_StackPush(game_vm, 2);
     VM_U32(0) = handle;
     VM_U32(1) = autosave;
     VM_Call(game_vm, game_exports[G_WriteGame]);
@@ -956,7 +956,7 @@ static void vm_G_WriteGame(qhandle_t handle, bool autosave) {
 
 static void call_single(game_entry_enum_t entry, uint32_t arg)
 {
-    vm_value_t *stack = VM_StackTop(game_vm);
+    vm_value_t *stack = VM_StackPush(game_vm, 1);
     VM_U32(0) = arg;
     VM_Call(game_vm, game_exports[entry]);
 }
@@ -975,14 +975,14 @@ static void vm_G_ReadLevel(qhandle_t handle) {
 
 static bool vm_G_CanSave(void) {
     VM_Call(game_vm, game_exports[G_CanSave]);
-    vm_value_t *stack = VM_StackTop(game_vm);
+    const vm_value_t *stack = VM_StackPop(game_vm);
     return VM_U32(0);
 }
 
 static const char *vm_G_ClientConnect(int clientnum) {
     call_single(G_ClientConnect, clientnum);
-    vm_value_t *stack = VM_StackTop(game_vm);
-    vm_memory_t *m = VM_Memory(game_vm);
+    const vm_value_t *stack = VM_StackPop(game_vm);
+    const vm_memory_t *m = VM_Memory(game_vm);
     return VM_STR_NULL(0);
 }
 
