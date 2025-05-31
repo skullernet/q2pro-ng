@@ -127,6 +127,7 @@ typedef struct vm_s {
                                 // same length as byte_count
     vm_table_t  table;
     vm_memory_t memory;
+    vm_value_t  llvm_stack_start;
 
     uint32_t    num_globals;    // number of globals
     vm_value_t  *globals;       // globals

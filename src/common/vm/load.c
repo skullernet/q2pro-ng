@@ -766,6 +766,10 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports)
         if (!find_blocks(m, &m->funcs[f], &sz))
             goto fail2;
 
+    // assume first global is LLVM stack pointer
+    if (m->num_globals)
+        m->llvm_stack_start = m->globals[0];
+
     Com_Printf("Loaded %s: %d bytes of code, %d MB of memory\n", name,
                m->num_bytes, m->memory.pages * VM_PAGE_SIZE / 1000000);
 
@@ -847,4 +851,16 @@ vm_value_t *VM_StackTop(vm_t *m)
 vm_memory_t *VM_Memory(vm_t *m)
 {
     return &m->memory;
+}
+
+void VM_Reset(vm_t *m)
+{
+    // empty stacks
+    m->sp  = -1;
+    m->fp  = -1;
+    m->csp = -1;
+
+    // reset LLVM stack pointer
+    if (m->num_globals)
+        m->globals[0] = m->llvm_stack_start;
 }

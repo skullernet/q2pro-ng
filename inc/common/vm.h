@@ -111,3 +111,4 @@ void VM_Free(vm_t *m);
 void VM_Call(vm_t *m, uint32_t e);
 vm_value_t *VM_StackTop(vm_t *m);
 vm_memory_t *VM_Memory(vm_t *m);
+void VM_Reset(vm_t *m);

@@ -1135,6 +1135,9 @@ it is changing to a different game directory.
 */
 void SV_ShutdownGameProgs(void)
 {
+    if (game_vm)
+        VM_Reset(game_vm);
+
     if (ge) {
         ge->Shutdown();
         ge = NULL;
