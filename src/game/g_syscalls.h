@@ -26,6 +26,7 @@ void trap_ClientInventory(edict_t *ent, int *inventory, int count);
 
 int trap_DirToByte(const vec3_t dir);
 void trap_ByteToDir(int v, vec3_t dir);
+bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
 
 void trap_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
 bool trap_ParseEntityString(char *buf, size_t size);
@@ -107,6 +108,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 
 #define trap_DirToByte gi.DirToByte
 #define trap_ByteToDir gi.ByteToDir
+#define trap_GetSurfaceInfo gi.GetSurfaceInfo
 
 #define trap_LocateGameData gi.LocateGameData
 #define trap_ParseEntityString gi.ParseEntityString

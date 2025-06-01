@@ -335,6 +335,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uint32_t point[3]);
 #endif
 
+bool BSP_SurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info);
 void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p);
 

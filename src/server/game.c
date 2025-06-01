@@ -422,6 +422,11 @@ static bool PF_ParseEntityString(char *buf, size_t size)
     return sv.entitystring;
 }
 
+static bool PF_GetSurfaceInfo(unsigned surf_id, surface_info_t *info)
+{
+    return BSP_SurfaceInfo(sv.cm.cache, surf_id, info);
+}
+
 static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size)
 {
     Q_assert_soft(edict_size >= sizeof(edict_t));
@@ -583,6 +588,10 @@ VM_THUNK(DirToByte) {
 
 VM_THUNK(ByteToDir) {
     ByteToDir(VM_U32(0), VM_VEC3(1));
+}
+
+VM_THUNK(GetSurfaceInfo) {
+    VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
 }
 
 VM_THUNK(LocateGameData) {
@@ -819,6 +828,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(ClientInventory, "iii"),
     VM_IMPORT(DirToByte, "i i"),
     VM_IMPORT(ByteToDir, "ii"),
+    VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(LocateGameData, "iiiii"),
     VM_IMPORT(ParseEntityString, "i ii"),
     VM_IMPORT(GetLevelName, "i ii"),
@@ -1038,6 +1048,7 @@ static const game_import_t game_dll_imports = {
 
     .DirToByte = DirToByte,
     .ByteToDir = ByteToDir,
+    .GetSurfaceInfo = PF_GetSurfaceInfo,
 
     .LocateGameData = PF_LocateGameData,
     .ParseEntityString = PF_ParseEntityString,

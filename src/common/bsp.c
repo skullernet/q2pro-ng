@@ -1036,6 +1036,26 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 
 #endif
 
+bool BSP_SurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info)
+{
+    memset(info, 0, sizeof(*info));
+
+    if (!bsp || surf_id < 1 || surf_id > bsp->numtexinfo)
+        return false;
+
+    const mtexinfo_t *tex = &bsp->texinfo[surf_id - 1];
+    Q_strlcpy(info->name, tex->name, sizeof(info->name));
+    info->flags = tex->flags;
+    info->value = tex->value;
+
+#if USE_CLIENT
+    Q_strlcpy(info->material, tex->material, sizeof(info->material));
+    info->footstep_id = tex->step_id;
+#endif
+
+    return true;
+}
+
 void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis)
 {
     const byte  *in, *in_end;

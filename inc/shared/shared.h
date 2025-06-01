@@ -900,6 +900,15 @@ typedef struct {
 
 typedef int contents_t;
 
+typedef struct {
+    char    name[32];
+    char    material[16];
+    int     footstep_id;
+    int     flags;
+    int     value;
+    int     reserved;
+} surface_info_t;
+
 // a trace is returned when a box is swept through the world
 typedef struct {
     bool            allsolid;       // if true, plane is not valid
