@@ -17,12 +17,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
+#include "shared/list.h"
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/vm.h"
 #include "system/system.h"
 #include <errno.h>
+
+static LIST_DECL(vm_modules);
 
 typedef const void *(*dll_entry_t)(const void *);
 
@@ -63,8 +66,10 @@ const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
 
     if (!Cvar_VariableInteger("vm_native") && FS_FileExists(buffer)) {
         mod->vm = VM_Load(buffer, iface->vm_imports, iface->vm_exports);
-        if (mod->vm)
+        if (mod->vm) {
+            List_Append(&vm_modules, &mod->entry);
             return iface->dll_exports;
+        }
         Com_WPrintf("Couldn't load %s: %s\n", buffer, Com_GetLastError());
     }
 
@@ -107,13 +112,62 @@ const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
         Com_Error(ERR_DROP, "%s is version %d, expected %d", iface->name, version, iface->api_version);
     }
 
+    List_Append(&vm_modules, &mod->entry);
     mod->lib = handle;
     return exports;
+}
+
+static void VM_UpdateCvar(vm_cvar_t *var, const cvar_t *cv)
+{
+    var->integer = cv->integer;
+    var->value = cv->value;
+    Q_strlcpy(var->string, cv->string, sizeof(var->string));
+}
+
+bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const char *value, unsigned flags)
+{
+    cvar_t *var = Cvar_Get(name, value, flags);
+    if (!var)
+        return false;
+    if (!vmc)
+        return true;
+
+    for (int i = 0; i < mod->num_cvars; i++)
+        if (mod->cvars[i].vmc == vmc)
+            return true;
+
+    if (mod->num_cvars >= 1024) {
+        Com_WPrintf("Too many VM cvars\n");
+        return false;
+    }
+
+    if (!(mod->num_cvars & 31))
+        mod->cvars = VM_Realloc(mod->cvars, (mod->num_cvars + 32) * sizeof(mod->cvars[0]));
+
+    vm_cvar_glue_t *glue = &mod->cvars[mod->num_cvars++];
+    glue->vmc = vmc;
+    glue->var = var;
+
+    VM_UpdateCvar(vmc, var);
+    return true;
+}
+
+void VM_CvarChanged(const cvar_t *var)
+{
+    vm_module_t *mod;
+
+    LIST_FOR_EACH(vm_module_t, mod, &vm_modules, entry)
+        for (int i = 0; i < mod->num_cvars; i++)
+            if (mod->cvars[i].var == var)
+                VM_UpdateCvar(mod->cvars[i].vmc, var);
 }
 
 void VM_FreeModule(vm_module_t *mod)
 {
     VM_Free(mod->vm);
     Sys_FreeLibrary(mod->lib);
+    Z_Free(mod->cvars);
+    if (mod->entry.next)
+        List_Remove(&mod->entry);
     memset(mod, 0, sizeof(*mod));
 }

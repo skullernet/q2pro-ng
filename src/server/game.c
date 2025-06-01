@@ -331,16 +331,7 @@ static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value
         flags &= ~CVAR_EXTENDED_MASK;
     }
 
-    cvar_t *cv = Cvar_Get(name, value, flags | CVAR_GAME);
-    if (!cv)
-        return false;
-    if (!var)
-        return true;
-
-    var->integer = cv->integer;
-    var->value = cv->value;
-    Q_strlcpy(var->string, cv->string, sizeof(var->string));
-    return true;
+    return VM_RegisterCvar(&game, var, name, value, flags | CVAR_GAME);
 }
 
 static void PF_Cvar_Set(const char *name, const char *value)

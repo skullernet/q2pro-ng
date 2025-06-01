@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/prompt.h"
+#include "common/vm.h"
 #include "common/utils.h"
 #include "common/zone.h"
 #include "client/client.h"
@@ -192,6 +193,7 @@ static void change_string_value(cvar_t *var, const char *value, from_t from)
             var->changed(var);
         }
     }
+    VM_CvarChanged(var);
 }
 
 static bool validate_info_cvar(const char *s)
@@ -622,6 +624,7 @@ void Cvar_GetLatchedVars(void)
         if (var->changed) {
             var->changed(var);
         }
+        VM_CvarChanged(var);
     }
 }
 

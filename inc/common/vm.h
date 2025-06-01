@@ -27,6 +27,12 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
 
+#include "shared/list.h"
+#include "common/cvar.h"
+
+#define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
+#define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
+
 #define VM_ASSERT_FUNC(cond, msg, func) \
     do { if (!(cond)) Com_Error(ERR_DROP, "%s: %s", func, msg); } while (0)
 
@@ -133,9 +139,20 @@ typedef struct {
 } vm_interface_t;
 
 typedef struct {
+    vm_cvar_t *vmc;
+    cvar_t *var;
+} vm_cvar_glue_t;
+
+typedef struct {
+    list_t entry;
     vm_t *vm;
     void *lib;
+    vm_cvar_glue_t *cvars;
+    int num_cvars;
 } vm_module_t;
 
 const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface);
 void VM_FreeModule(vm_module_t *mod);
+
+bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const char *value, unsigned flags);
+void VM_CvarChanged(const cvar_t *var);
