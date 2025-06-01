@@ -166,6 +166,8 @@ struct edict_s {
 
 //===============================================================
 
+#ifndef Q2_VM
+
 //
 // functions provided by the main engine
 //
@@ -182,7 +184,7 @@ typedef struct {
     // All of the current configstrings are sent to clients when
     // they connect, and changes are sent to all connected clients.
     void (*SetConfigstring)(unsigned index, const char *str);
-    unsigned (*GetConfigstring)(unsigned index, char *buf, unsigned size);
+    size_t (*GetConfigstring)(unsigned index, char *buf, size_t size);
     int (*FindConfigstring)(const char *name, int start, int max, int skip);
 
     // collision detection
@@ -209,13 +211,14 @@ typedef struct {
     void (*ClientInventory)(edict_t *ent, int *inventory, int count);
 
     int (*DirToByte)(const vec3_t dir);
+    void (*ByteToDir)(int v, vec3_t dir);
 
-    void (*LocateGameData)(edict_t *edicts, unsigned edict_size, unsigned num_edicts, gclient_t *clients, unsigned client_size);
-    bool (*ParseEntityString)(char *buf, unsigned size);
-    unsigned (*GetLevelName)(char *buf, unsigned size);
-    unsigned (*GetSpawnPoint)(char *buf, unsigned size);
-    unsigned (*GetUserinfo)(unsigned clientnum, char *buf, unsigned size);
-    unsigned (*GetConnectinfo)(unsigned clientnum, char *buf, unsigned size);
+    void (*LocateGameData)(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
+    bool (*ParseEntityString)(char *buf, size_t size);
+    size_t (*GetLevelName)(char *buf, size_t size);
+    size_t (*GetSpawnPoint)(char *buf, size_t size);
+    size_t (*GetUserinfo)(unsigned clientnum, char *buf, size_t size);
+    size_t (*GetConnectinfo)(unsigned clientnum, char *buf, size_t size);
     void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
     bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info);
 
@@ -223,17 +226,17 @@ typedef struct {
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
 
     // console variable interaction
-    bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, int flags);
+    bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, unsigned flags);
     void (*Cvar_Set)(const char *name, const char *value);
     void (*Cvar_ForceSet)(const char *name, const char *value);
     int (*Cvar_VariableInteger)(const char *name);
     float (*Cvar_VariableValue)(const char *name);
-    unsigned (*Cvar_VariableString)(const char *name, char *buf, unsigned size);
+    size_t (*Cvar_VariableString)(const char *name, char *buf, size_t size);
 
     // ClientCommand and ServerCommand parameter access
     int (*Argc)(void);
-    unsigned (*Argv)(int arg, char *buf, unsigned size);
-    unsigned (*Args)(char *buf, unsigned size);     // concatenation of all argv >= 1
+    size_t (*Argv)(int arg, char *buf, size_t size);
+    size_t (*Args)(char *buf, size_t size);     // concatenation of all argv >= 1
 
     // add commands to the server console as if they were typed in
     // for map changing, etc
@@ -249,7 +252,8 @@ typedef struct {
     int64_t     (*FS_TellFile)(qhandle_t f);
     int         (*FS_SeekFile)(qhandle_t f, int64_t offset, int whence);
     int         (*FS_ReadLine)(qhandle_t f, char *buffer, size_t size);
-    unsigned    (*FS_ErrorString)(int error, char *buf, unsigned size);
+    size_t      (*FS_ListFiles)(const char *path, const char *filter, unsigned flags, char *buffer, size_t size);
+    size_t      (*FS_ErrorString)(int error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
     void (*R_AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
@@ -317,4 +321,4 @@ typedef struct {
     void (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_t;
 
-typedef game_export_t *(*game_entry_t)(const game_import_t *);
+#endif

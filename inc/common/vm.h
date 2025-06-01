@@ -57,10 +57,15 @@ typedef struct {
 typedef void (*vm_thunk_t)(const vm_memory_t *, vm_value_t *);
 
 typedef struct {
-    vm_thunk_t thunk;
     const char *name;
     const char *mask;
-} vm_import_t;
+    vm_thunk_t thunk;
+} mod_import_t;
+
+typedef struct {
+    const char *name;
+    const char *mask;
+} mod_export_t;
 
 static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t size,
                                   uint32_t nmemb, uint32_t align, const char *func)
@@ -98,18 +103,39 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 #define VM_THUNK(x) \
     static void thunk_##x(const vm_memory_t *m, vm_value_t *stack)
 
-#define VM_IMPORT_RAW(thunk, name, mask) \
-    { thunk, name, mask }
 #define VM_IMPORT(name, mask) \
-    { thunk_##name, "trap_"#name, mask }
+    { "trap_"#name, mask, thunk_##name }
+
+#define VM_IMPORT_RAW(name, mask) \
+    { #name, mask, thunk_##name }
+
+#define VM_EXPORT(name, mask) \
+    { #name, mask }
 
 typedef struct vm_s vm_t;
 
-int VM_GetExport(vm_t *m, const char *name);
-vm_t *VM_Load(const char *name, const vm_import_t *imports);
+vm_t *VM_Load(const char *name, const mod_import_t *imports, const mod_export_t *exports);
 void VM_Free(vm_t *m);
 void VM_Call(vm_t *m, uint32_t e);
 vm_value_t *VM_StackPush(vm_t *m, int n);
 vm_value_t *VM_StackPop(vm_t *m);
 const vm_memory_t *VM_Memory(vm_t *m);
 void VM_Reset(vm_t *m);
+
+typedef struct {
+    const char *name;
+    const mod_import_t *vm_imports;
+    const mod_export_t *vm_exports;
+    const char *dll_entry_name;
+    const void *dll_imports;
+    const void *dll_exports;
+    uint32_t api_version;
+} vm_interface_t;
+
+typedef struct {
+    vm_t *vm;
+    void *lib;
+} vm_module_t;
+
+const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface);
+void VM_FreeModule(vm_module_t *mod);

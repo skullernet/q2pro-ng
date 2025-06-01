@@ -8,7 +8,6 @@ level_locals_t level;
 
 #ifndef Q2_VM
 game_import_t   gi;
-game_export_t   globals;
 #endif
 
 bool use_psx_assets;
@@ -380,37 +379,38 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-q_exported game_export_t *GetGameAPI(const game_import_t *import)
+q_exported const game_export_t *GetGameAPI(const game_import_t *import)
 {
+    static const game_export_t ge = {
+        .apiversion = GAME_API_VERSION,
+        .structsize = sizeof(ge),
+
+        .Init = G_Init,
+        .Shutdown = G_Shutdown,
+        .SpawnEntities = G_SpawnEntities,
+
+        .CanSave = G_CanSave,
+        .WriteGame = G_WriteGame,
+        .ReadGame = G_ReadGame,
+        .WriteLevel = G_WriteLevel,
+        .ReadLevel = G_ReadLevel,
+
+        .ClientThink = G_ClientThink,
+        .ClientConnect = G_ClientConnect,
+        .ClientUserinfoChanged = G_ClientUserinfoChanged,
+        .ClientDisconnect = G_ClientDisconnect,
+        .ClientBegin = G_ClientBegin,
+        .ClientCommand = G_ClientCommand,
+
+        .RunFrame = G_RunFrame,
+        .PrepFrame = G_PrepFrame,
+
+        .ServerCommand = G_ServerCommand,
+        .RestartFilesystem = G_RestartFilesystem,
+    };
+
     gi = *import;
-
-    globals.apiversion = GAME_API_VERSION;
-    globals.structsize = sizeof(globals);
-
-    globals.Init = G_Init;
-    globals.Shutdown = G_Shutdown;
-    globals.SpawnEntities = G_SpawnEntities;
-
-    globals.CanSave = G_CanSave;
-    globals.WriteGame = G_WriteGame;
-    globals.ReadGame = G_ReadGame;
-    globals.WriteLevel = G_WriteLevel;
-    globals.ReadLevel = G_ReadLevel;
-
-    globals.ClientThink = G_ClientThink;
-    globals.ClientConnect = G_ClientConnect;
-    globals.ClientUserinfoChanged = G_ClientUserinfoChanged;
-    globals.ClientDisconnect = G_ClientDisconnect;
-    globals.ClientBegin = G_ClientBegin;
-    globals.ClientCommand = G_ClientCommand;
-
-    globals.RunFrame = G_RunFrame;
-    globals.PrepFrame = G_PrepFrame;
-
-    globals.RestartFilesystem = G_RestartFilesystem;
-    globals.ServerCommand = G_ServerCommand;
-
-    return &globals;
+    return &ge;
 }
 
 #endif

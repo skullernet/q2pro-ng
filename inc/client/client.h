@@ -165,16 +165,21 @@ void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t en
 void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
                     float size, uint32_t color, uint32_t time, bool depth_test);
 #else
-#define R_ClearDebugLines() (void)0
-#define R_AddDebugLine(start, end, color, time, depth_test) (void)0
-#define R_AddDebugPoint(point, size, color, time, depth_test) (void)0
-#define R_AddDebugAxis(origin, angles, size, time, depth_test) (void)0
-#define R_AddDebugBounds(mins, maxs, color, time, depth_test) (void)0
-#define R_AddDebugSphere(origin, radius, color, time, depth_test) (void)0
-#define R_AddDebugCircle(origin, radius, color, time, depth_test) (void)0
-#define R_AddDebugCylinder(origin, half_height, radius, color, time, depth_test) (void)0
-#define R_DrawArrowCap(apex, dir, size, color, time, depth_test) (void)0
-#define R_AddDebugArrow(start, end, size, line_color, arrow_color, time, depth_test) (void)0
-#define R_AddDebugCurveArrow(start, ctrl, end, size, line_color, arrow_color, time, depth_test) (void)0
-#define R_AddDebugText(origin, angles, text, size, color, time, depth_test) (void)0
+static inline void R_ClearDebugLines(void) { }
+static inline void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+                                      bool depth_test) { }
+static inline void R_DrawArrowCap(const vec3_t apex, const vec3_t dir, float size,
+                                  uint32_t color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+                                   uint32_t arrow_color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+                                        uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test) { }
+static inline void R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
+                                  float size, uint32_t color, uint32_t time, bool depth_test) { }
 #endif

@@ -21,44 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/math.h"
 #include "common/vm.h"
 
+static vm_module_t      game;
 const game_export_t     *ge;
-
-static void PF_SetConfigstring(unsigned index, const char *val);
-
-/*
-================
-PF_FindIndex
-
-================
-*/
-static int PF_FindConfigstring(const char *name, int start, int max, int skip)
-{
-    char *string;
-    int i;
-
-    if (!name || !name[0])
-        return 0;
-
-    for (i = 1; i < max; i++) {
-        if (i == skip) {
-            continue;
-        }
-        string = sv.configstrings[start + i];
-        if (!string[0]) {
-            break;
-        }
-        if (!strcmp(string, name)) {
-            return i;
-        }
-    }
-
-    if (i == max)
-        Com_Error(ERR_DROP, "%s(%s): overflow", __func__, name);
-
-    PF_SetConfigstring(i + start, name);
-
-    return i;
-}
 
 static client_t *get_client(edict_t *ent, const char *func)
 {
@@ -303,12 +267,41 @@ static void PF_SetConfigstring(unsigned index, const char *val)
     SZ_Clear(&msg_write);
 }
 
-static unsigned PF_GetConfigstring(unsigned index, char *buf, unsigned size)
+static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
 {
     if (index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
     return Q_strlcpy(buf, sv.configstrings[index], size);
+}
+
+static int PF_FindConfigstring(const char *name, int start, int max, int skip)
+{
+    char *string;
+    int i;
+
+    if (!name || !name[0])
+        return 0;
+
+    for (i = 1; i < max; i++) {
+        if (i == skip) {
+            continue;
+        }
+        string = sv.configstrings[start + i];
+        if (!string[0]) {
+            break;
+        }
+        if (!strcmp(string, name)) {
+            return i;
+        }
+    }
+
+    if (i == max)
+        Com_Error(ERR_DROP, "%s(%s): overflow", __func__, name);
+
+    PF_SetConfigstring(i + start, name);
+
+    return i;
 }
 
 static bool PF_InVis(const vec3_t p1, const vec3_t p2, vis_t vis)
@@ -331,7 +324,7 @@ static bool PF_InVis(const vec3_t p1, const vec3_t p2, vis_t vis)
     return true;
 }
 
-static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, int flags)
+static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, unsigned flags)
 {
     if (flags & CVAR_EXTENDED_MASK) {
         Com_WPrintf("Game attempted to set extended flags on '%s', masked out.\n", name);
@@ -360,7 +353,7 @@ static void PF_Cvar_ForceSet(const char *name, const char *value)
     Cvar_Set(name, value);
 }
 
-static unsigned PF_Cvar_VariableString(const char *name, char *buf, unsigned size)
+static size_t PF_Cvar_VariableString(const char *name, char *buf, size_t size)
 {
     return Q_strlcpy(buf, Cvar_VariableString(name), size);
 }
@@ -374,12 +367,12 @@ static void PF_AddCommandString(const char *string)
     Cbuf_AddText(&cmd_buffer, string);
 }
 
-static unsigned PF_Argv(int arg, char *buf, unsigned size)
+static size_t PF_Argv(int arg, char *buf, size_t size)
 {
     return Q_strlcpy(buf, Cmd_Argv(arg), size);
 }
 
-static unsigned PF_Args(char *buf, unsigned size)
+static size_t PF_Args(char *buf, size_t size)
 {
     return Q_strlcpy(buf, Cmd_RawArgs(), size);
 }
@@ -394,7 +387,7 @@ static bool PF_AreasConnected(int area1, int area2)
     return CM_AreasConnected(&sv.cm, area1, area2);
 }
 
-static unsigned PF_GetUserinfo(unsigned clientnum, char *buf, unsigned size)
+static size_t PF_GetUserinfo(unsigned clientnum, char *buf, size_t size)
 {
     Q_assert_soft(clientnum < svs.maxclients);
     const client_t *cl = &svs.client_pool[clientnum];
@@ -402,7 +395,7 @@ static unsigned PF_GetUserinfo(unsigned clientnum, char *buf, unsigned size)
     return Q_strlcpy(buf, cl->userinfo, size);
 }
 
-static unsigned PF_GetConnectinfo(unsigned clientnum, char *buf, unsigned size)
+static size_t PF_GetConnectinfo(unsigned clientnum, char *buf, size_t size)
 {
     Q_assert_soft(clientnum < svs.maxclients);
     const client_t *cl = &svs.client_pool[clientnum];
@@ -422,23 +415,23 @@ static void PF_GetUsercmd(unsigned clientnum, usercmd_t *ucmd)
     *ucmd = cl->lastcmd;
 }
 
-static unsigned PF_GetLevelName(char *buf, unsigned size)
+static size_t PF_GetLevelName(char *buf, size_t size)
 {
     return Q_strlcpy(buf, sv.name, size);
 }
 
-static unsigned PF_GetSpawnPoint(char *buf, unsigned size)
+static size_t PF_GetSpawnPoint(char *buf, size_t size)
 {
     return Q_strlcpy(buf, sv.spawnpoint, size);
 }
 
-static bool PF_ParseEntityString(char *buf, unsigned size)
+static bool PF_ParseEntityString(char *buf, size_t size)
 {
     COM_ParseToken(&sv.entitystring, buf, size);
     return sv.entitystring;
 }
 
-static void PF_LocateGameData(edict_t *edicts, unsigned edict_size, unsigned num_edicts, gclient_t *clients, unsigned client_size)
+static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size)
 {
     Q_assert_soft(edict_size >= sizeof(edict_t));
     Q_assert_soft(edict_size <= INT_MAX / MAX_EDICTS);
@@ -458,12 +451,12 @@ static void PF_LocateGameData(edict_t *edicts, unsigned edict_size, unsigned num
     svs.client_size = client_size;
 }
 
-static unsigned PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, unsigned size)
+static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
 {
     return 0;
 }
 
-static unsigned PF_ErrorString(int error, char *buf, unsigned size)
+static size_t PF_ErrorString(int error, char *buf, size_t size)
 {
     return Q_strlcpy(buf, Q_ErrorString(error), size);
 }
@@ -803,7 +796,7 @@ VM_THUNK(memcmp) {
     VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
 }
 
-static const vm_import_t game_vm_import[] = {
+static const mod_import_t game_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
     VM_IMPORT(SetConfigstring, "ii"),
@@ -868,13 +861,13 @@ static const vm_import_t game_vm_import[] = {
     VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
     VM_IMPORT(R_AddDebugText, "iiifiii"),
 
-    VM_IMPORT_RAW(thunk_sinf, "sinf", "f f"),
-    VM_IMPORT_RAW(thunk_cosf, "cosf", "f f"),
-    VM_IMPORT_RAW(thunk_tanf, "tanf", "f f"),
-    VM_IMPORT_RAW(thunk_asinf, "asinf", "f f"),
-    VM_IMPORT_RAW(thunk_acosf, "acosf", "f f"),
-    VM_IMPORT_RAW(thunk_atan2f, "atan2f", "f ff"),
-    VM_IMPORT_RAW(thunk_memcmp, "memcmp", "i iii"),
+    VM_IMPORT_RAW(sinf, "f f"),
+    VM_IMPORT_RAW(cosf, "f f"),
+    VM_IMPORT_RAW(tanf, "f f"),
+    VM_IMPORT_RAW(asinf, "f f"),
+    VM_IMPORT_RAW(acosf, "f f"),
+    VM_IMPORT_RAW(atan2f, "f ff"),
+    VM_IMPORT_RAW(memcmp, "i iii"),
 
     { 0 }
 };
@@ -882,36 +875,27 @@ static const vm_import_t game_vm_import[] = {
 //==============================================
 
 typedef enum {
-    G_Init,
-    G_Shutdown,
-    G_SpawnEntities,
-    G_WriteGame,
-    G_ReadGame,
-    G_WriteLevel,
-    G_ReadLevel,
-    G_CanSave,
-    G_ClientConnect,
-    G_ClientBegin,
-    G_ClientUserinfoChanged,
-    G_ClientDisconnect,
-    G_ClientCommand,
-    G_ClientThink,
-    G_PrepFrame,
-    G_RunFrame,
-    G_ServerCommand,
-    G_RestartFilesystem,
-    G_NumEntries
-} game_entry_enum_t;
+    vm_G_Init,
+    vm_G_Shutdown,
+    vm_G_SpawnEntities,
+    vm_G_WriteGame,
+    vm_G_ReadGame,
+    vm_G_WriteLevel,
+    vm_G_ReadLevel,
+    vm_G_CanSave,
+    vm_G_ClientConnect,
+    vm_G_ClientBegin,
+    vm_G_ClientUserinfoChanged,
+    vm_G_ClientDisconnect,
+    vm_G_ClientCommand,
+    vm_G_ClientThink,
+    vm_G_PrepFrame,
+    vm_G_RunFrame,
+    vm_G_ServerCommand,
+    vm_G_RestartFilesystem,
+} game_entry_t;
 
-typedef struct {
-    const char *name;
-    const char *type;
-} vm_export_t;
-
-#define VM_EXPORT(name, type) \
-    { #name, type }
-
-static const vm_export_t game_vm_exports[G_NumEntries] = {
+static const mod_export_t game_vm_exports[] = {
     VM_EXPORT(G_Init, ""),
     VM_EXPORT(G_Shutdown, ""),
     VM_EXPORT(G_SpawnEntities, ""),
@@ -930,146 +914,140 @@ static const vm_export_t game_vm_exports[G_NumEntries] = {
     VM_EXPORT(G_RunFrame, ""),
     VM_EXPORT(G_ServerCommand, ""),
     VM_EXPORT(G_RestartFilesystem, ""),
+
+    { 0 }
 };
 
-static int game_exports[G_NumEntries];
-static vm_t *game_vm;
-
-static void vm_G_Init(void) {
-    VM_Call(game_vm, game_exports[G_Init]);
+static void thunk_G_Init(void) {
+    VM_Call(game.vm, vm_G_Init);
 }
 
-static void vm_G_Shutdown(void) {
-    VM_Call(game_vm, game_exports[G_Shutdown]);
+static void thunk_G_Shutdown(void) {
+    VM_Call(game.vm, vm_G_Shutdown);
 }
 
-static void vm_G_SpawnEntities(void) {
-    VM_Call(game_vm, game_exports[G_SpawnEntities]);
+static void thunk_G_SpawnEntities(void) {
+    VM_Call(game.vm, vm_G_SpawnEntities);
 }
 
-static void vm_G_WriteGame(qhandle_t handle, bool autosave) {
-    vm_value_t *stack = VM_StackPush(game_vm, 2);
+static void thunk_G_WriteGame(qhandle_t handle, bool autosave) {
+    vm_value_t *stack = VM_StackPush(game.vm, 2);
     VM_U32(0) = handle;
     VM_U32(1) = autosave;
-    VM_Call(game_vm, game_exports[G_WriteGame]);
+    VM_Call(game.vm, vm_G_WriteGame);
 }
 
-static void call_single(game_entry_enum_t entry, uint32_t arg)
-{
-    vm_value_t *stack = VM_StackPush(game_vm, 1);
+static void call_single(game_entry_t entry, uint32_t arg) {
+    vm_value_t *stack = VM_StackPush(game.vm, 1);
     VM_U32(0) = arg;
-    VM_Call(game_vm, game_exports[entry]);
+    VM_Call(game.vm, entry);
 }
 
-static void vm_G_ReadGame(qhandle_t handle) {
-    call_single(G_ReadGame, handle);
+static void thunk_G_ReadGame(qhandle_t handle) {
+    call_single(vm_G_ReadGame, handle);
 }
 
-static void vm_G_WriteLevel(qhandle_t handle) {
-    call_single(G_WriteLevel, handle);
+static void thunk_G_WriteLevel(qhandle_t handle) {
+    call_single(vm_G_WriteLevel, handle);
 }
 
-static void vm_G_ReadLevel(qhandle_t handle) {
-    call_single(G_ReadLevel, handle);
+static void thunk_G_ReadLevel(qhandle_t handle) {
+    call_single(vm_G_ReadLevel, handle);
 }
 
-static bool vm_G_CanSave(void) {
-    VM_Call(game_vm, game_exports[G_CanSave]);
-    const vm_value_t *stack = VM_StackPop(game_vm);
+static bool thunk_G_CanSave(void) {
+    VM_Call(game.vm, vm_G_CanSave);
+    const vm_value_t *stack = VM_StackPop(game.vm);
     return VM_U32(0);
 }
 
-static const char *vm_G_ClientConnect(int clientnum) {
-    call_single(G_ClientConnect, clientnum);
-    const vm_value_t *stack = VM_StackPop(game_vm);
-    const vm_memory_t *m = VM_Memory(game_vm);
+static const char *thunk_G_ClientConnect(int clientnum) {
+    call_single(vm_G_ClientConnect, clientnum);
+    const vm_value_t *stack = VM_StackPop(game.vm);
+    const vm_memory_t *m = VM_Memory(game.vm);
     return VM_STR_NULL(0);
 }
 
-static void vm_G_ClientBegin(int clientnum) {
-    call_single(G_ClientBegin, clientnum);
+static void thunk_G_ClientBegin(int clientnum) {
+    call_single(vm_G_ClientBegin, clientnum);
 }
 
-static void vm_G_ClientUserinfoChanged(int clientnum) {
-    call_single(G_ClientUserinfoChanged, clientnum);
+static void thunk_G_ClientUserinfoChanged(int clientnum) {
+    call_single(vm_G_ClientUserinfoChanged, clientnum);
 }
 
-static void vm_G_ClientDisconnect(int clientnum) {
-    call_single(G_ClientDisconnect, clientnum);
+static void thunk_G_ClientDisconnect(int clientnum) {
+    call_single(vm_G_ClientDisconnect, clientnum);
 }
 
-static void vm_G_ClientCommand(int clientnum) {
-    call_single(G_ClientCommand, clientnum);
+static void thunk_G_ClientCommand(int clientnum) {
+    call_single(vm_G_ClientCommand, clientnum);
 }
 
-static void vm_G_ClientThink(int clientnum) {
-    call_single(G_ClientThink, clientnum);
+static void thunk_G_ClientThink(int clientnum) {
+    call_single(vm_G_ClientThink, clientnum);
 }
 
-static void vm_G_PrepFrame(void) {
-    VM_Call(game_vm, game_exports[G_PrepFrame]);
+static void thunk_G_PrepFrame(void) {
+    VM_Call(game.vm, vm_G_PrepFrame);
 }
 
-static void vm_G_RunFrame(void) {
-    VM_Call(game_vm, game_exports[G_RunFrame]);
+static void thunk_G_RunFrame(void) {
+    VM_Call(game.vm, vm_G_RunFrame);
 }
 
-static void vm_G_ServerCommand(void) {
-    VM_Call(game_vm, game_exports[G_ServerCommand]);
+static void thunk_G_ServerCommand(void) {
+    VM_Call(game.vm, vm_G_ServerCommand);
 }
 
-static void vm_G_RestartFilesystem(void) {
-    VM_Call(game_vm, game_exports[G_RestartFilesystem]);
+static void thunk_G_RestartFilesystem(void) {
+    VM_Call(game.vm, vm_G_RestartFilesystem);
 }
-
-static const game_export_t game_vm_export = {
-    .Init = vm_G_Init,
-    .Shutdown = vm_G_Shutdown,
-    .SpawnEntities = vm_G_SpawnEntities,
-    .WriteGame = vm_G_WriteGame,
-    .ReadGame = vm_G_ReadGame,
-    .WriteLevel = vm_G_WriteLevel,
-    .ReadLevel = vm_G_ReadLevel,
-    .CanSave = vm_G_CanSave,
-    .ClientConnect = vm_G_ClientConnect,
-    .ClientBegin = vm_G_ClientBegin,
-    .ClientUserinfoChanged = vm_G_ClientUserinfoChanged,
-    .ClientDisconnect = vm_G_ClientDisconnect,
-    .ClientCommand = vm_G_ClientCommand,
-    .ClientThink = vm_G_ClientThink,
-    .PrepFrame = vm_G_PrepFrame,
-    .RunFrame = vm_G_RunFrame,
-    .ServerCommand = vm_G_ServerCommand,
-    .RestartFilesystem = vm_G_RestartFilesystem,
-};
 
 //==============================================
 
-static const game_import_t game_import = {
+static const game_import_t game_dll_imports = {
     .apiversion = GAME_API_VERSION,
     .structsize = sizeof(game_import_t),
 
     .Print = PF_Print,
     .Error = PF_Error,
 
-    .LinkEntity = PF_LinkEdict,
-    .UnlinkEntity = PF_UnlinkEdict,
-    .BoxEdicts = SV_AreaEdicts,
+    .SetConfigstring = PF_SetConfigstring,
+    .GetConfigstring = PF_GetConfigstring,
+    .FindConfigstring = PF_FindConfigstring,
+
     .Trace = SV_Trace,
     .Clip = SV_Clip,
     .PointContents = SV_PointContents,
-    .SetBrushModel = PF_SetBrushModel,
-    .InVis = PF_InVis,
+    .BoxEdicts = SV_AreaEdicts,
 
-    .FindConfigstring = PF_FindConfigstring,
-    .SetConfigstring = PF_SetConfigstring,
-    .GetConfigstring = PF_GetConfigstring,
+    .InVis = PF_InVis,
+    .SetAreaPortalState = PF_SetAreaPortalState,
+    .AreasConnected = PF_AreasConnected,
+
+    .LinkEntity = PF_LinkEdict,
+    .UnlinkEntity = PF_UnlinkEdict,
+    .SetBrushModel = PF_SetBrushModel,
 
     .ClientPrint = PF_ClientPrint,
     .ClientStuffText = PF_ClientStuffText,
     .ClientLayout = PF_ClientLayout,
     .ClientInventory = PF_ClientInventory,
+
     .DirToByte = DirToByte,
+    .ByteToDir = ByteToDir,
+
+    .LocateGameData = PF_LocateGameData,
+    .ParseEntityString = PF_ParseEntityString,
+    .GetLevelName = PF_GetLevelName,
+    .GetSpawnPoint = PF_GetSpawnPoint,
+    .GetUserinfo = PF_GetUserinfo,
+    .GetUsercmd = PF_GetUsercmd,
+    .GetPathToGoal = Nav_GetPathToGoal,
+
+    .RealTime = PF_RealTime,
+    .LocalTime = PF_LocalTime,
 
     .Cvar_Register = PF_Cvar_Register,
     .Cvar_Set = PF_Cvar_Set,
@@ -1083,17 +1061,7 @@ static const game_import_t game_import = {
     .Args = PF_Args,
     .AddCommandString = PF_AddCommandString,
 
-    .SetAreaPortalState = PF_SetAreaPortalState,
-    .AreasConnected = PF_AreasConnected,
-
-    .GetPathToGoal = Nav_GetPathToGoal,
-
-    .LocateGameData = PF_LocateGameData,
-    .ParseEntityString = PF_ParseEntityString,
-    .GetLevelName = PF_GetLevelName,
-    .GetSpawnPoint = PF_GetSpawnPoint,
-    .GetUserinfo = PF_GetUserinfo,
-    .GetUsercmd = PF_GetUsercmd,
+    .DebugGraph = SCR_DebugGraph,
 
     .FS_OpenFile = FS_OpenFile,
     .FS_CloseFile = FS_CloseFile,
@@ -1103,9 +1071,9 @@ static const game_import_t game_import = {
     .FS_TellFile = FS_Tell,
     .FS_SeekFile = FS_Seek,
     .FS_ReadLine = FS_ReadLine,
+    .FS_ListFiles = PF_ListFiles,
     .FS_ErrorString = PF_ErrorString,
 
-#if USE_REF && USE_DEBUG
     .R_ClearDebugLines = R_ClearDebugLines,
     .R_AddDebugLine = R_AddDebugLine,
     .R_AddDebugPoint = R_AddDebugPoint,
@@ -1117,13 +1085,41 @@ static const game_import_t game_import = {
     .R_AddDebugArrow = R_AddDebugArrow,
     .R_AddDebugCurveArrow = R_AddDebugCurveArrow,
     .R_AddDebugText = R_AddDebugText,
-#endif
-
-    .RealTime = PF_RealTime,
-    .LocalTime = PF_LocalTime,
 };
 
-static void *game_library;
+static const game_export_t game_dll_exports = {
+    .apiversion = GAME_API_VERSION,
+    .structsize = sizeof(game_export_t),
+
+    .Init = thunk_G_Init,
+    .Shutdown = thunk_G_Shutdown,
+    .SpawnEntities = thunk_G_SpawnEntities,
+    .WriteGame = thunk_G_WriteGame,
+    .ReadGame = thunk_G_ReadGame,
+    .WriteLevel = thunk_G_WriteLevel,
+    .ReadLevel = thunk_G_ReadLevel,
+    .CanSave = thunk_G_CanSave,
+    .ClientConnect = thunk_G_ClientConnect,
+    .ClientBegin = thunk_G_ClientBegin,
+    .ClientUserinfoChanged = thunk_G_ClientUserinfoChanged,
+    .ClientDisconnect = thunk_G_ClientDisconnect,
+    .ClientCommand = thunk_G_ClientCommand,
+    .ClientThink = thunk_G_ClientThink,
+    .PrepFrame = thunk_G_PrepFrame,
+    .RunFrame = thunk_G_RunFrame,
+    .ServerCommand = thunk_G_ServerCommand,
+    .RestartFilesystem = thunk_G_RestartFilesystem,
+};
+
+static const vm_interface_t game_iface = {
+    .name = "game",
+    .vm_imports = game_vm_imports,
+    .vm_exports = game_vm_exports,
+    .dll_entry_name = "GetGameAPI",
+    .dll_imports = &game_dll_imports,
+    .dll_exports = &game_dll_exports,
+    .api_version = GAME_API_VERSION,
+};
 
 /*
 ===============
@@ -1135,23 +1131,14 @@ it is changing to a different game directory.
 */
 void SV_ShutdownGameProgs(void)
 {
-    if (game_vm)
-        VM_Reset(game_vm);
+    VM_Reset(game.vm);
 
     if (ge) {
         ge->Shutdown();
         ge = NULL;
     }
-    if (game_library) {
-        Sys_FreeLibrary(game_library);
-        game_library = NULL;
-    }
-    if (game_vm) {
-        VM_Free(game_vm);
-        game_vm = NULL;
-    }
 
-    Z_LeakTest(TAG_FREE);
+    VM_FreeModule(&game);
 }
 
 /*
@@ -1163,49 +1150,12 @@ Init the game subsystem for a new map
 */
 void SV_InitGameProgs(void)
 {
-    game_entry_t    entry;
-
     // unload anything we have now
     SV_ShutdownGameProgs();
 
-    vm_t *vm = VM_Load("vm/game.qvm", game_vm_import);
-    if (vm) {
-        game_vm = vm;
-        ge = &game_vm_export;
-        for (int i = 0; i < G_NumEntries; i++) {
-            game_exports[i] = VM_GetExport(vm, game_vm_exports[i].name);
-            if (game_exports[i] == -1)
-                Com_Error(ERR_DROP, "Export %s not found", game_vm_exports[i].name);
-        }
-    } else {
-        Com_Printf("Couldn't load %s: %s\n", "vm/game.qvm", Com_GetLastError());
-        game_library = Sys_LoadGameLibrary();
-        if (!game_library)
-            Com_Error(ERR_DROP, "Failed to load game library");
-
-        entry = Sys_GetProcAddress(game_library, "GetGameAPI");
-        if (!entry)
-            Com_Error(ERR_DROP, "No game library entry point found");
-
-        // load a new game dll
-        ge = entry(&game_import);
-        if (!ge) {
-            Com_Error(ERR_DROP, "Game library returned NULL exports");
-        }
-
-        Com_DPrintf("Game API version: %d\n", ge->apiversion);
-
-        if (ge->apiversion != GAME_API_VERSION) {
-            Com_Error(ERR_DROP, "Game library is version %d, expected %d",
-                      ge->apiversion, GAME_API_VERSION);
-        }
-    }
+    // load game module
+    ge = VM_LoadModule(&game, &game_iface);
 
     // initialize
     ge->Init();
-
-    // sanitize maxclients
-    if (sv_maxclients->integer != svs.maxclients || sv_maxclients->value != svs.maxclients) {
-        Com_Error(ERR_DROP, "Game library corrupted maxclients value");
-    }
 }

@@ -107,8 +107,7 @@ typedef struct {
 } vm_export_t;
 
 typedef struct vm_s {
-    char       *path;           // file path of the wasm module
-    const vm_import_t *imports;
+    const mod_import_t  *imports;
 
     uint32_t    num_bytes;      // number of bytes in the module
     uint8_t    *bytes;          // module content/bytes
@@ -134,6 +133,9 @@ typedef struct vm_s {
 
     uint32_t    num_exports;    // number of exports
     vm_export_t *exports;
+
+    uint32_t     num_func_exports;
+    const vm_block_t **func_exports;
 
     // Runtime state
     uint32_t    pc;                // program counter

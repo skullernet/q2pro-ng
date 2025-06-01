@@ -676,15 +676,8 @@ static void SV_Savegame_f(void)
         return;
     }
 
-    if (ge->CanSave) {
-        if (!ge->CanSave())
-            return;
-    } else {
-        if (svs.maxclients == 1 && SV_GetClient_Stat(&svs.client_pool[0], STAT_HEALTH) <= 0) {
-            Com_Printf("Can't savegame while dead!\n");
-            return;
-        }
-    }
+    if (!ge->CanSave())
+        return;
 
     if (!strcmp(Cmd_Argv(0), "autosave")) {
         dir = "save1";

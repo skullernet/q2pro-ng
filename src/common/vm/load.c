@@ -96,17 +96,8 @@ static int get_value_type(int c)
     return 0;
 }
 
-static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_t *name, const vm_type_t *type)
+static uint64_t calc_type_mask(const char *s)
 {
-    const vm_import_t *import;
-
-    for (import = m->imports; import->thunk; import++)
-        if (vm_string_eq(name, import->name))
-            break;
-
-    ASSERT(import->thunk, "Import %.*s not found", name->len, name->data);
-
-    const char *s = import->mask;
     uint64_t mask = 0x80;
 
     if (*s && s[1] == ' ') {
@@ -121,7 +112,20 @@ static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_
         s++;
     }
 
-    ASSERT(mask == type->mask, "Import %.*s type mismatch", name->len, name->data);
+    return mask;
+}
+
+static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_t *name, const vm_type_t *type)
+{
+    const mod_import_t *import;
+
+    for (import = m->imports; import->thunk; import++)
+        if (vm_string_eq(name, import->name))
+            break;
+
+    ASSERT(import->thunk, "Import %.*s not found", name->len, name->data);
+
+    ASSERT(calc_type_mask(import->mask) == type->mask, "Import %.*s type mismatch", name->len, name->data);
 
     m->num_imports++;
     m->num_funcs++;
@@ -719,7 +723,39 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
     return true;
 }
 
-vm_t *VM_Load(const char *name, const vm_import_t *imports)
+static bool fill_exports(vm_t *m, const mod_export_t *exports)
+{
+    const mod_export_t *exp;
+    int i;
+
+    for (i = 0, exp = exports; exp->name; i++, exp++)
+        ;
+    m->num_func_exports = i;
+    m->func_exports = VM_Malloc(m->num_func_exports * sizeof(m->func_exports[0]));
+
+    for (i = 0, exp = exports; i < m->num_func_exports; i++, exp++) {
+        uint32_t e;
+
+        for (e = 0; e < m->num_exports; e++) {
+            const vm_export_t *export = &m->exports[e];
+            if (export->kind != KIND_FUNCTION)
+                continue;
+            if (!vm_string_eq(&export->name, exp->name))
+                continue;
+
+            const vm_block_t *func = export->value;
+            ASSERT(func->type->mask == calc_type_mask(exp->mask), "Export %s type mismatch", exp->name);
+            m->func_exports[i] = func;
+            break;
+        }
+
+        ASSERT(e < m->num_exports, "Export %s not found", exp->name);
+    }
+
+    return true;
+}
+
+vm_t *VM_Load(const char *name, const mod_import_t *imports, const mod_export_t *exports)
 {
     vm_t        *m;
     sizebuf_t   sz;
@@ -758,6 +794,9 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports)
     m->imports = imports;
 
     if (!parse_sections(m, &sz))
+        goto fail2;
+
+    if (!fill_exports(m, exports))
         goto fail2;
 
     m->block_lookup = VM_Malloc(m->num_bytes * sizeof(m->block_lookup[0]));
@@ -801,6 +840,7 @@ void VM_Free(vm_t *m)
     Z_Free(m->funcs);
     Z_Free(m->globals);
     Z_Free(m->exports);
+    Z_Free(m->func_exports);
     Z_Free(m->table.entries);
     Z_Free(m->memory.bytes);
     Z_Free(m->block_lookup);
@@ -809,26 +849,11 @@ void VM_Free(vm_t *m)
     Z_Free(m);
 }
 
-int VM_GetExport(vm_t *m, const char *name)
+void VM_Call(vm_t *m, uint32_t e)
 {
-    if (!name)
-        return m->start_func;
+    VM_ASSERT(e < m->num_func_exports, "Bad function index");
 
-    for (uint32_t e = 0; e < m->num_exports; e++) {
-        const vm_export_t *export = &m->exports[e];
-        if (export->kind != KIND_FUNCTION)
-            continue;
-        if (vm_string_eq(&export->name, name))
-            return (vm_block_t *)export->value - m->funcs;
-    }
-    return -1;
-}
-
-void VM_Call(vm_t *m, uint32_t fidx)
-{
-    VM_ASSERT(fidx >= m->num_imports && fidx < m->num_funcs, "Bad function index");
-
-    const vm_block_t *func = &m->funcs[fidx];
+    const vm_block_t *func = m->func_exports[e];
     const vm_type_t *type = func->type;
 
     int fp = m->sp - type->num_params + 1;
@@ -838,7 +863,7 @@ void VM_Call(vm_t *m, uint32_t fidx)
     for (uint32_t f = 0; f < type->num_params; f++)
         m->stack[fp + f].value_type = type->params[f];
 
-    VM_SetupCall(m, fidx);
+    VM_SetupCall(m, func - m->funcs);
     VM_Interpret(m);
 
     // Validate the return value
@@ -868,6 +893,9 @@ const vm_memory_t *VM_Memory(vm_t *m)
 
 void VM_Reset(vm_t *m)
 {
+    if (!m)
+        return;
+
     // empty stacks
     m->sp  = -1;
     m->fp  = -1;

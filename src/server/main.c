@@ -1448,19 +1448,6 @@ static void SV_CheckTimeouts(void)
     }
 }
 
-/*
-================
-SV_PrepWorldFrame
-
-This has to be done before the world logic, because
-player processing happens outside RunWorldFrame
-================
-*/
-static void SV_PrepWorldFrame(void)
-{
-    ge->PrepFrame();
-}
-
 // pause if there is only local client on the server
 static inline bool check_paused(void)
 {
@@ -1512,16 +1499,6 @@ static void SV_RunGameFrame(void)
     if (host_speeds->integer)
         time_after_game = Sys_Milliseconds();
 #endif
-
-    if (msg_write.overflowed)
-        Com_Error(ERR_DROP, "%s: message buffer overflowed", __func__);
-
-    if (msg_write.cursize) {
-        Com_WPrintf("Game left %u bytes "
-                    "in multicast buffer, cleared.\n",
-                    msg_write.cursize);
-        SZ_Clear(&msg_write);
-    }
 }
 
 /*
@@ -1668,7 +1645,7 @@ unsigned SV_Frame(unsigned msec)
         SV_MasterHeartbeat();
 
         // clear teleport flags, etc for next frame
-        SV_PrepWorldFrame();
+        ge->PrepFrame();
 
         // advance for next frame
         sv.framenum++;
@@ -1767,8 +1744,9 @@ void SV_UserinfoChanged(client_t *cl)
 
 void SV_RestartFilesystem(void)
 {
-    if (ge && ge->RestartFilesystem)
-        ge->RestartFilesystem();
+    if (!svs.initialized)
+        return;
+    ge->RestartFilesystem();
     Nav_Unload();
     Nav_Load();
 }
