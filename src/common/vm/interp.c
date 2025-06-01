@@ -26,6 +26,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "vm.h"
+#include "common/intreadwrite.h"
 
 // Size of memory load.
 // This starts with the first memory load operator at opcode 0x28

@@ -26,9 +26,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "shared/shared.h"
-#include "common/intreadwrite.h"
 #include "common/vm.h"
-#include "common/zone.h"
 #include "opcodes.h"
 
 #define VM_MAGIC   0x6d736100
@@ -97,14 +95,15 @@ typedef struct {
     uint32_t    len;
 } vm_string_t;
 
+// Internal WASM export
 typedef struct {
     uint32_t    kind;
     vm_string_t name;
     void       *value;
-} vm_export_t;
+} wa_export_t;
 
 typedef struct vm_s {
-    const mod_import_t  *imports;
+    const vm_import_t  *imports;
 
     uint32_t    num_bytes;      // number of bytes in the module
     uint8_t    *bytes;          // module content/bytes
@@ -129,10 +128,10 @@ typedef struct vm_s {
     vm_value_t  *globals;       // globals
 
     uint32_t    num_exports;    // number of exports
-    vm_export_t *exports;
+    wa_export_t *exports;
 
-    uint32_t     num_func_exports;
-    const vm_block_t **func_exports;
+    uint32_t    num_func_exports;
+    uint32_t   *func_exports;
 
     // Runtime state
     uint32_t    pc;                // program counter

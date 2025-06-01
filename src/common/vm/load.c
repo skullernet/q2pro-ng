@@ -117,13 +117,13 @@ static uint64_t calc_type_mask(const char *s)
 
 static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_t *name, const vm_type_t *type)
 {
-    const mod_import_t *import;
+    const vm_import_t *import;
 
-    for (import = m->imports; import->thunk; import++)
+    for (import = m->imports; import->name; import++)
         if (vm_string_eq(name, import->name))
             break;
 
-    ASSERT(import->thunk, "Import %.*s not found", name->len, name->data);
+    ASSERT(import->name, "Import %.*s not found", name->len, name->data);
 
     ASSERT(calc_type_mask(import->mask) == type->mask, "Import %.*s type mismatch", name->len, name->data);
 
@@ -358,7 +358,7 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
     m->num_exports = num_exports;
 
     for (uint32_t e = 0; e < num_exports; e++) {
-        vm_export_t *export = &m->exports[e];
+        wa_export_t *export = &m->exports[e];
         vm_read_string(sz, &export->name);
         uint32_t kind = SZ_ReadByte(sz);
         uint32_t index = SZ_ReadLeb(sz);
@@ -723,9 +723,9 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
     return true;
 }
 
-static bool fill_exports(vm_t *m, const mod_export_t *exports)
+static bool fill_exports(vm_t *m, const vm_export_t *exports)
 {
-    const mod_export_t *exp;
+    const vm_export_t *exp;
     int i;
 
     for (i = 0, exp = exports; exp->name; i++, exp++)
@@ -737,7 +737,7 @@ static bool fill_exports(vm_t *m, const mod_export_t *exports)
         uint32_t e;
 
         for (e = 0; e < m->num_exports; e++) {
-            const vm_export_t *export = &m->exports[e];
+            const wa_export_t *export = &m->exports[e];
             if (export->kind != KIND_FUNCTION)
                 continue;
             if (!vm_string_eq(&export->name, exp->name))
@@ -745,7 +745,7 @@ static bool fill_exports(vm_t *m, const mod_export_t *exports)
 
             const vm_block_t *func = export->value;
             ASSERT(func->type->mask == calc_type_mask(exp->mask), "Export %s type mismatch", exp->name);
-            m->func_exports[i] = func;
+            m->func_exports[i] = func - m->funcs;
             break;
         }
 
@@ -755,7 +755,7 @@ static bool fill_exports(vm_t *m, const mod_export_t *exports)
     return true;
 }
 
-vm_t *VM_Load(const char *name, const mod_import_t *imports, const mod_export_t *exports)
+vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *exports)
 {
     vm_t        *m;
     sizebuf_t   sz;
@@ -852,8 +852,9 @@ void VM_Free(vm_t *m)
 void VM_Call(vm_t *m, uint32_t e)
 {
     VM_ASSERT(e < m->num_func_exports, "Bad function index");
+    uint32_t fidx = m->func_exports[e];
 
-    const vm_block_t *func = m->func_exports[e];
+    const vm_block_t *func = &m->funcs[fidx];
     const vm_type_t *type = func->type;
 
     int fp = m->sp - type->num_params + 1;
@@ -863,7 +864,7 @@ void VM_Call(vm_t *m, uint32_t e)
     for (uint32_t f = 0; f < type->num_params; f++)
         m->stack[fp + f].value_type = type->params[f];
 
-    VM_SetupCall(m, func - m->funcs);
+    VM_SetupCall(m, fidx);
     VM_Interpret(m);
 
     // Validate the return value
@@ -873,20 +874,20 @@ void VM_Call(vm_t *m, uint32_t e)
     }
 }
 
-vm_value_t *VM_StackPush(vm_t *m, int n)
+vm_value_t *VM_Push(vm_t *m, int n)
 {
     VM_ASSERT(m->sp < STACK_SIZE - n, "Stack overflow");
     m->sp += n;
     return &m->stack[m->sp - n + 1];
 }
 
-vm_value_t *VM_StackPop(vm_t *m)
+vm_value_t *VM_Pop(vm_t *m)
 {
     VM_ASSERT(m->sp >= 0, "Stack underflow");
     return &m->stack[m->sp--];
 }
 
-const vm_memory_t *VM_Memory(vm_t *m)
+const vm_memory_t *VM_Memory(const vm_t *m)
 {
     return &m->memory;
 }

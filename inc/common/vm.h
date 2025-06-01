@@ -31,6 +31,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/utils.h"
+#include "common/zone.h"
 
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
 #define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
@@ -68,12 +69,12 @@ typedef struct {
     const char *name;
     const char *mask;
     vm_thunk_t thunk;
-} mod_import_t;
+} vm_import_t;
 
 typedef struct {
     const char *name;
     const char *mask;
-} mod_export_t;
+} vm_export_t;
 
 static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t size,
                                   uint32_t nmemb, uint32_t align, const char *func)
@@ -122,21 +123,21 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 
 typedef struct vm_s vm_t;
 
-vm_t *VM_Load(const char *name, const mod_import_t *imports, const mod_export_t *exports);
+vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *exports);
 void VM_Free(vm_t *m);
 void VM_Call(vm_t *m, uint32_t e);
-vm_value_t *VM_StackPush(vm_t *m, int n);
-vm_value_t *VM_StackPop(vm_t *m);
-const vm_memory_t *VM_Memory(vm_t *m);
+vm_value_t *VM_Push(vm_t *m, int n);
+vm_value_t *VM_Pop(vm_t *m);
+const vm_memory_t *VM_Memory(const vm_t *m);
 void VM_Reset(vm_t *m);
 
 typedef struct {
     const char *name;
-    const mod_import_t *vm_imports;
-    const mod_export_t *vm_exports;
+    const vm_import_t *vm_imports;
+    const vm_export_t *vm_exports;
     const char *dll_entry_name;
     const void *dll_imports;
-    const void *dll_exports;
+    const void *dll_exports;    // only used for thunking VM calls
     uint32_t api_version;
 } vm_interface_t;
 

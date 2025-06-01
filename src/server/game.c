@@ -675,7 +675,7 @@ VM_THUNK(AddCommandString) {
 }
 
 VM_THUNK(DebugGraph) {
-   SCR_DebugGraph(VM_F32(0), VM_U32(1));
+    SCR_DebugGraph(VM_F32(0), VM_U32(1));
 }
 
 VM_THUNK(FS_OpenFile) {
@@ -797,7 +797,7 @@ VM_THUNK(memcmp) {
     VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
 }
 
-static const mod_import_t game_vm_imports[] = {
+static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
     VM_IMPORT(SetConfigstring, "ii"),
@@ -896,7 +896,7 @@ typedef enum {
     vm_G_RestartFilesystem,
 } game_entry_t;
 
-static const mod_export_t game_vm_exports[] = {
+static const vm_export_t game_vm_exports[] = {
     VM_EXPORT(G_Init, ""),
     VM_EXPORT(G_Shutdown, ""),
     VM_EXPORT(G_SpawnEntities, ""),
@@ -932,14 +932,14 @@ static void thunk_G_SpawnEntities(void) {
 }
 
 static void thunk_G_WriteGame(qhandle_t handle, bool autosave) {
-    vm_value_t *stack = VM_StackPush(game.vm, 2);
+    vm_value_t *stack = VM_Push(game.vm, 2);
     VM_U32(0) = handle;
     VM_U32(1) = autosave;
     VM_Call(game.vm, vm_G_WriteGame);
 }
 
 static void call_single(game_entry_t entry, uint32_t arg) {
-    vm_value_t *stack = VM_StackPush(game.vm, 1);
+    vm_value_t *stack = VM_Push(game.vm, 1);
     VM_U32(0) = arg;
     VM_Call(game.vm, entry);
 }
@@ -958,13 +958,13 @@ static void thunk_G_ReadLevel(qhandle_t handle) {
 
 static bool thunk_G_CanSave(void) {
     VM_Call(game.vm, vm_G_CanSave);
-    const vm_value_t *stack = VM_StackPop(game.vm);
+    const vm_value_t *stack = VM_Pop(game.vm);
     return VM_U32(0);
 }
 
 static const char *thunk_G_ClientConnect(int clientnum) {
     call_single(vm_G_ClientConnect, clientnum);
-    const vm_value_t *stack = VM_StackPop(game.vm);
+    const vm_value_t *stack = VM_Pop(game.vm);
     const vm_memory_t *m = VM_Memory(game.vm);
     return VM_STR_NULL(0);
 }
@@ -1088,6 +1088,7 @@ static const game_import_t game_dll_imports = {
     .R_AddDebugText = R_AddDebugText,
 };
 
+// "fake" exports for calling into VM
 static const game_export_t game_dll_exports = {
     .apiversion = GAME_API_VERSION,
     .structsize = sizeof(game_export_t),
