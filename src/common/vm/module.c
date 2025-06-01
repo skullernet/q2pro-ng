@@ -162,11 +162,39 @@ void VM_CvarChanged(const cvar_t *var)
                 VM_UpdateCvar(mod->cvars[i].vmc, var);
 }
 
+int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned mode)
+{
+    int64_t ret = FS_OpenFile(path, f, mode);
+    if (*f)
+        Q_SetBit(mod->open_files, *f - 1);
+    return ret;
+}
+
+int VM_CloseFile(vm_module_t *mod, qhandle_t f)
+{
+    int ret = FS_CloseFile(f);
+    if (f >= 1 && f <= MAX_FILE_HANDLES)
+        Q_ClearBit(mod->open_files, f - 1);
+    return ret;
+}
+
 void VM_FreeModule(vm_module_t *mod)
 {
+    int i, j, index;
+
     VM_Free(mod->vm);
     Sys_FreeLibrary(mod->lib);
     Z_Free(mod->cvars);
+
+    for (i = 0; i < q_countof(mod->open_files); i++) {
+        if (mod->open_files[i] == 0)
+            continue;
+        index = i * BC_BITS;
+        for (j = 0; j < BC_BITS; j++, index++)
+            if (Q_IsBitSet(mod->open_files, index))
+                FS_CloseFile(index + 1);
+    }
+
     if (mod->entry.next)
         List_Remove(&mod->entry);
     memset(mod, 0, sizeof(*mod));

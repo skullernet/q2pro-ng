@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/files.h"
 #include "system/system.h"
 
+#define MAX_FILE_HANDLES    1024
+
 #define MIN_LISTED_FILES    1024
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8

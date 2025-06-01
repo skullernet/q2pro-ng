@@ -442,6 +442,16 @@ static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_e
     svs.client_size = client_size;
 }
 
+static int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode)
+{
+    return VM_OpenFile(&game, path, f, mode);
+}
+
+static int PF_CloseFile(qhandle_t f)
+{
+    return VM_CloseFile(&game, f);
+}
+
 static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
 {
     return 0;
@@ -669,11 +679,11 @@ VM_THUNK(DebugGraph) {
 }
 
 VM_THUNK(FS_OpenFile) {
-    VM_U64(0) = FS_OpenFile(VM_STR(0), VM_PTR(1, qhandle_t), VM_U32(2));
+    VM_U64(0) = PF_OpenFile(VM_STR(0), VM_PTR(1, qhandle_t), VM_U32(2));
 }
 
 VM_THUNK(FS_CloseFile) {
-    VM_I32(0) = FS_CloseFile(VM_U32(0));
+    VM_I32(0) = PF_CloseFile(VM_U32(0));
 }
 
 VM_THUNK(FS_ReadFile) {
@@ -1054,8 +1064,8 @@ static const game_import_t game_dll_imports = {
 
     .DebugGraph = SCR_DebugGraph,
 
-    .FS_OpenFile = FS_OpenFile,
-    .FS_CloseFile = FS_CloseFile,
+    .FS_OpenFile = PF_OpenFile,
+    .FS_CloseFile = PF_CloseFile,
     .FS_ReadFile = FS_Read,
     .FS_WriteFile = FS_Write,
     .FS_FlushFile = FS_Flush,

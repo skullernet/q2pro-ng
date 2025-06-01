@@ -29,6 +29,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "shared/list.h"
 #include "common/cvar.h"
+#include "common/files.h"
+#include "common/utils.h"
 
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
 #define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
@@ -149,6 +151,7 @@ typedef struct {
     void *lib;
     vm_cvar_glue_t *cvars;
     int num_cvars;
+    size_t open_files[BC_COUNT(MAX_FILE_HANDLES)];
 } vm_module_t;
 
 const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface);
@@ -156,3 +159,6 @@ void VM_FreeModule(vm_module_t *mod);
 
 bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const char *value, unsigned flags);
 void VM_CvarChanged(const cvar_t *var);
+
+int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned mode);
+int VM_CloseFile(vm_module_t *mod, qhandle_t f);
