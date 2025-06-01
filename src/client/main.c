@@ -2532,7 +2532,6 @@ static void CL_InitLocal(void)
     CL_RegisterInput();
     CL_InitDemos();
     LOC_Init();
-    CL_InitAscii();
     CL_InitEffects();
     CL_InitTEnts();
     CL_InitDownloads();

@@ -984,12 +984,6 @@ static inline void SCR_FinishCinematic(void)
 #endif
 
 //
-// ascii.c
-//
-void CL_InitAscii(void);
-
-
-//
 // http.c
 //
 #if USE_CURL
