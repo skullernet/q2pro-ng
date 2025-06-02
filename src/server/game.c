@@ -80,7 +80,7 @@ static void PF_ClientStuffText(edict_t *ent, const char *str)
     SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
 }
 
-static void PF_ClientInventory(edict_t *ent, int *inventory, int count)
+static void PF_ClientInventory(edict_t *ent, int16_t *inventory, int count)
 {
     client_t *client = get_client(ent, __func__);
     if (!client)
@@ -579,7 +579,7 @@ VM_THUNK(ClientStuffText) {
 }
 
 VM_THUNK(ClientInventory) {
-    PF_ClientInventory(VM_ENT(0), VM_PTR_CNT(1, int, VM_U32(2)), VM_U32(2));
+    PF_ClientInventory(VM_ENT(0), VM_PTR_CNT(1, int16_t, VM_U32(2)), VM_U32(2));
 }
 
 VM_THUNK(DirToByte) {

@@ -131,7 +131,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     item_id_t  power_armor_type;
     int        damagePerCell;
     entity_event_t  pa_te_type;
-    int       *power;
+    int        power;
     int        power_used;
 
     if (ent->health <= 0)
@@ -147,16 +147,16 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
 
     if (client) {
         power_armor_type = PowerArmorType(ent);
-        power = &client->pers.inventory[IT_AMMO_CELLS];
+        power = client->pers.inventory[IT_AMMO_CELLS];
     } else if (ent->r.svflags & SVF_MONSTER) {
         power_armor_type = ent->monsterinfo.power_armor_type;
-        power = &ent->monsterinfo.power_armor_power;
+        power = ent->monsterinfo.power_armor_power;
     } else
         return 0;
 
     if (power_armor_type == IT_NULL)
         return 0;
-    if (!*power)
+    if (!power)
         return 0;
 
     if (power_armor_type == IT_ITEM_POWER_SCREEN) {
@@ -185,7 +185,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     // being absorbed
     damage = max(1, damage);
 
-    save = *power * damagePerCell;
+    save = power * damagePerCell;
 
     if (!save)
         return 0;
@@ -211,13 +211,18 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     // Paril: adjustment so that power armor
     // always uses damagePerCell even if it does
     // only a single point of damage
-    *power = max(0, *power - max(damagePerCell, power_used));
+    power = max(0, power - max(damagePerCell, power_used));
 
     // check power armor turn-off states
     if (ent->client)
         G_CheckPowerArmor(ent);
-    else if (!*power)
+    else if (!power)
         G_AddEvent(ent, EV_POWER_SPLASH, power_armor_type);
+
+    if (client)
+        client->pers.inventory[IT_AMMO_CELLS] = power;
+    else
+        ent->monsterinfo.power_armor_power = power;
 
     return save;
 }
@@ -228,7 +233,7 @@ static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int
     int            save;
     item_id_t      index;
     const gitem_t *armor;
-    int           *power;
+    int            power;
 
     if (!damage)
         return 0;
@@ -252,20 +257,23 @@ static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int
         save = ceilf(armor->armor_info->normal_protection * damage);
 
     if (client)
-        power = &client->pers.inventory[index];
+        power = client->pers.inventory[index];
     else
-        power = &ent->monsterinfo.armor_power;
+        power = ent->monsterinfo.armor_power;
 
-    if (save >= *power)
-        save = *power;
-
+    save = min(save, power);
     if (!save)
         return 0;
 
-    *power -= save;
+    power -= save;
 
-    if (!client && !ent->monsterinfo.armor_power)
-        ent->monsterinfo.armor_type = IT_NULL;
+    if (client)
+        client->pers.inventory[index] = power;
+    else {
+        ent->monsterinfo.armor_power = power;
+        if (!power)
+            ent->monsterinfo.armor_type = IT_NULL;
+    }
 
     SpawnDamage(te_sparks, point, normal, save);
 

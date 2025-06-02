@@ -22,7 +22,7 @@ void trap_SetBrushModel(edict_t *ent, const char *name);
 void trap_ClientPrint(edict_t *ent, print_level_t level, const char *msg);
 void trap_ClientLayout(edict_t *ent, const char *str, bool reliable);
 void trap_ClientStuffText(edict_t *ent, const char *str);
-void trap_ClientInventory(edict_t *ent, int *inventory, int count);
+void trap_ClientInventory(edict_t *ent, int16_t *inventory, int count);
 
 int trap_DirToByte(const vec3_t dir);
 void trap_ByteToDir(int v, vec3_t dir);

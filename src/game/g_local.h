@@ -2080,7 +2080,7 @@ typedef struct {
 
     item_id_t selected_item;
     gtime_t   selected_item_time;
-    int       inventory[IT_TOTAL];
+    int16_t   inventory[IT_TOTAL];
 
     // ammo capacities
     int16_t max_ammo[AMMO_MAX];

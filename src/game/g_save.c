@@ -569,7 +569,7 @@ static const save_field_t client_persistent_t_fields[] = {
 
     I(selected_item),
     T(selected_item_time),
-    GA_(F_INVENTORY, int, inventory, IT_TOTAL),
+    GA_(F_INVENTORY, int16_t, inventory, IT_TOTAL),
 
     GA_(F_MAX_AMMO, int16_t, max_ammo, AMMO_MAX),
 
@@ -894,7 +894,7 @@ static void write_pointer(const char *name, const void *p, ptr_type_t type)
     G_Error("unknown pointer of type %d: %p", type, p);
 }
 
-static void write_inventory(const int *inven)
+static void write_inventory(const int16_t *inven)
 {
     begin_block("inventory");
     for (int i = IT_NULL + 1; i < IT_TOTAL; i++) {
@@ -1407,7 +1407,7 @@ static void *read_pointer(ptr_type_t type)
     return NULL;
 }
 
-static void read_inventory(int *inven)
+static void read_inventory(int16_t *inven)
 {
     expect("{");
     while (1) {
@@ -1416,7 +1416,7 @@ static void read_inventory(int *inven)
             break;
         const gitem_t *item = FindItemByClassname(tok);
         if (item)
-            inven[item->id] = parse_int32();
+            inven[item->id] = parse_int16();
         else
             unknown("item");
     }
