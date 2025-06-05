@@ -59,3 +59,4 @@ static inline int Q_ErrorNumber(void)
 }
 
 const char *Q_ErrorString(int error);
+size_t Q_ErrorStringBuffer(int error, char *buffer, size_t size);

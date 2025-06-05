@@ -306,22 +306,7 @@ static int PF_FindConfigstring(const char *name, int start, int max, int skip)
 
 static bool PF_InVis(const vec3_t p1, const vec3_t p2, vis_t vis)
 {
-    const mleaf_t *leaf1, *leaf2;
-    visrow_t mask;
-
-    leaf1 = CM_PointLeaf(&sv.cm, p1);
-    BSP_ClusterVis(sv.cm.cache, &mask, leaf1->cluster, vis & VIS_PHS);
-
-    leaf2 = CM_PointLeaf(&sv.cm, p2);
-    if (leaf2->cluster == -1)
-        return false;
-    if (!Q_IsBitSet(mask.b, leaf2->cluster))
-        return false;
-    if (vis & VIS_NOAREAS)
-        return true;
-    if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
-        return false;       // a door blocks it
-    return true;
+    return CM_InVis(&sv.cm, p1, p2, vis);
 }
 
 static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, unsigned flags)
@@ -344,11 +329,6 @@ static void PF_Cvar_ForceSet(const char *name, const char *value)
     Cvar_Set(name, value);
 }
 
-static size_t PF_Cvar_VariableString(const char *name, char *buf, size_t size)
-{
-    return Q_strlcpy(buf, Cvar_VariableString(name), size);
-}
-
 static void PF_AddCommandString(const char *string)
 {
 #if USE_CLIENT
@@ -356,16 +336,6 @@ static void PF_AddCommandString(const char *string)
         string = "pushmenu loadgame\n";
 #endif
     Cbuf_AddText(&cmd_buffer, string);
-}
-
-static size_t PF_Argv(int arg, char *buf, size_t size)
-{
-    return Q_strlcpy(buf, Cmd_Argv(arg), size);
-}
-
-static size_t PF_Args(char *buf, size_t size)
-{
-    return Q_strlcpy(buf, Cmd_RawArgs(), size);
 }
 
 static void PF_SetAreaPortalState(unsigned portalnum, bool open)
@@ -460,38 +430,6 @@ static int PF_CloseFile(qhandle_t f)
 static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
 {
     return 0;
-}
-
-static size_t PF_ErrorString(int error, char *buf, size_t size)
-{
-    return Q_strlcpy(buf, Q_ErrorString(error), size);
-}
-
-static int64_t PF_RealTime(void)
-{
-    return time(NULL);
-}
-
-static bool PF_LocalTime(int64_t in, vm_time_t *out)
-{
-    time_t t = in;
-    if (t != in)
-        return false;
-
-    struct tm *tm = localtime(&t);
-    if (!tm)
-        return false;
-
-    out->tm_sec = tm->tm_sec;
-    out->tm_min = tm->tm_min;
-    out->tm_hour = tm->tm_hour;
-    out->tm_mday = tm->tm_mday;
-    out->tm_mon = tm->tm_mon;
-    out->tm_year = tm->tm_year;
-    out->tm_wday = tm->tm_wday;
-    out->tm_yday = tm->tm_yday;
-    out->tm_isdst = tm->tm_isdst;
-    return true;
 }
 
 // edict pointers need custom validation
@@ -636,11 +574,11 @@ VM_THUNK(GetPathToGoal) {
 }
 
 VM_THUNK(RealTime) {
-    VM_I64(0) = PF_RealTime();
+    VM_I64(0) = Com_RealTime();
 }
 
 VM_THUNK(LocalTime) {
-    VM_U32(0) = PF_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
+    VM_U32(0) = Com_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
 }
 
 VM_THUNK(Cvar_Register) {
@@ -664,7 +602,7 @@ VM_THUNK(Cvar_VariableValue) {
 }
 
 VM_THUNK(Cvar_VariableString) {
-    VM_U32(0) = PF_Cvar_VariableString(VM_STR(0), VM_STR_BUF(1, 2), VM_U32(2));
+    VM_U32(0) = Cvar_VariableStringBuffer(VM_STR(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
 VM_THUNK(Argc) {
@@ -672,11 +610,11 @@ VM_THUNK(Argc) {
 }
 
 VM_THUNK(Argv) {
-    VM_U32(0) = PF_Argv(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+    VM_U32(0) = Cmd_ArgvBuffer(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
 VM_THUNK(Args) {
-    VM_U32(0) = PF_Args(VM_STR_BUF(0, 1), VM_U32(1));
+    VM_U32(0) = Cmd_RawArgsBuffer(VM_STR_BUF(0, 1), VM_U32(1));
 }
 
 VM_THUNK(AddCommandString) {
@@ -724,7 +662,7 @@ VM_THUNK(FS_ListFiles) {
 }
 
 VM_THUNK(FS_ErrorString) {
-    VM_U32(0) = PF_ErrorString(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+    VM_U32(0) = Q_ErrorStringBuffer(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
 VM_THUNK(R_ClearDebugLines) {
@@ -1058,19 +996,19 @@ static const game_import_t game_dll_imports = {
     .GetUsercmd = PF_GetUsercmd,
     .GetPathToGoal = Nav_GetPathToGoal,
 
-    .RealTime = PF_RealTime,
-    .LocalTime = PF_LocalTime,
+    .RealTime = Com_RealTime,
+    .LocalTime = Com_LocalTime,
 
     .Cvar_Register = PF_Cvar_Register,
     .Cvar_Set = PF_Cvar_Set,
     .Cvar_ForceSet = PF_Cvar_ForceSet,
     .Cvar_VariableInteger = Cvar_VariableInteger,
     .Cvar_VariableValue = Cvar_VariableValue,
-    .Cvar_VariableString = PF_Cvar_VariableString,
+    .Cvar_VariableString = Cvar_VariableStringBuffer,
 
     .Argc = Cmd_Argc,
-    .Argv = PF_Argv,
-    .Args = PF_Args,
+    .Argv = Cmd_ArgvBuffer,
+    .Args = Cmd_RawArgsBuffer,
     .AddCommandString = PF_AddCommandString,
 
     .DebugGraph = SCR_DebugGraph,
@@ -1084,7 +1022,7 @@ static const game_import_t game_dll_imports = {
     .FS_SeekFile = FS_Seek,
     .FS_ReadLine = FS_ReadLine,
     .FS_ListFiles = PF_ListFiles,
-    .FS_ErrorString = PF_ErrorString,
+    .FS_ErrorString = Q_ErrorStringBuffer,
 
     .R_ClearDebugLines = R_ClearDebugLines,
     .R_AddDebugLine = R_AddDebugLine,

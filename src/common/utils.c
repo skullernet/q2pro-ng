@@ -621,6 +621,33 @@ uint32_t Com_SlowRand(void)
 
 #endif
 
+int64_t Com_RealTime(void)
+{
+    return time(NULL);
+}
+
+bool Com_LocalTime(int64_t in, vm_time_t *out)
+{
+    time_t t = in;
+    if (t != in)
+        return false;
+
+    struct tm *tm = localtime(&t);
+    if (!tm)
+        return false;
+
+    out->tm_sec = tm->tm_sec;
+    out->tm_min = tm->tm_min;
+    out->tm_hour = tm->tm_hour;
+    out->tm_mday = tm->tm_mday;
+    out->tm_mon = tm->tm_mon;
+    out->tm_year = tm->tm_year;
+    out->tm_wday = tm->tm_wday;
+    out->tm_yday = tm->tm_yday;
+    out->tm_isdst = tm->tm_isdst;
+    return true;
+}
+
 /*
 ==============================================================================
 

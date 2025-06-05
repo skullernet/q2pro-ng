@@ -127,16 +127,6 @@ typedef enum {
     PRINT_CENTER,
 } print_level_t;
 
-// destination class for gi.multicast()
-typedef enum {
-    MULTICAST_ALL,
-    MULTICAST_PHS,
-    MULTICAST_PVS,
-    MULTICAST_ALL_R,
-    MULTICAST_PHS_R,
-    MULTICAST_PVS_R
-} multicast_t;
-
 typedef char configstring_t[MAX_QPATH];
 
 /*
@@ -882,6 +872,13 @@ COLLISION DETECTION
 // FIXME: eliminate AREA_ distinction?
 #define AREA_SOLID      1
 #define AREA_TRIGGERS   2
+
+// flags for CM_InVis()
+typedef enum {
+    VIS_PVS     = 0,
+    VIS_PHS     = 1,
+    VIS_NOAREAS = 2     // can be OR'ed with one of above
+} vis_t;
 
 // plane_t structure
 typedef struct {

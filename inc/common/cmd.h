@@ -182,6 +182,7 @@ char    *Cmd_RawArgsFrom(int from);
 char    *Cmd_ArgsRange(int from, int to);
 size_t  Cmd_ArgsBuffer(char *buffer, size_t size);
 size_t  Cmd_ArgvBuffer(int arg, char *buffer, size_t size);
+size_t  Cmd_RawArgsBuffer(char *buffer, size_t size);
 int     Cmd_ArgOffset(int arg);
 int     Cmd_FindArgForOffset(int offset);
 char    *Cmd_RawString(void);

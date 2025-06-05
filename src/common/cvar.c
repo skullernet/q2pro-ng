@@ -131,6 +131,11 @@ const char *Cvar_VariableString(const char *var_name)
     return var->string;
 }
 
+size_t Cvar_VariableStringBuffer(const char *var_name, char *buffer, size_t size)
+{
+    return Q_strlcpy(buffer, Cvar_VariableString(var_name), size);
+}
+
 void Cvar_Variable_g(genctx_t *ctx)
 {
     cvar_t *c;

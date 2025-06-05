@@ -85,6 +85,9 @@ uint32_t Com_SlowRand(void);
 #define Com_SlowCrand()  ((int32_t)Com_SlowRand() * 0x1p-31f)
 #endif
 
+int64_t Com_RealTime(void);
+bool Com_LocalTime(int64_t in, vm_time_t *out);
+
 #if USE_CLIENT
 #define UNICODE_UNKNOWN     0xFFFD
 #define UNICODE_MAX         0x10FFFF

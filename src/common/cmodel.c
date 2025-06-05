@@ -1003,6 +1003,33 @@ int CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area)
     return bytes;
 }
 
+bool CM_InVis(const cm_t *cm, const vec3_t p1, const vec3_t p2, vis_t vis)
+{
+    const bsp_t *bsp = cm->cache;
+    const mleaf_t *leaf1, *leaf2;
+    visrow_t mask;
+
+    if (!bsp)
+        return false;
+
+    leaf1 = BSP_PointLeaf(bsp->nodes, p1);
+    if (leaf1->cluster == -1)
+        return false;
+
+    leaf2 = BSP_PointLeaf(bsp->nodes, p2);
+    if (leaf2->cluster == -1)
+        return false;
+
+    BSP_ClusterVis(bsp, &mask, leaf1->cluster, vis & VIS_PHS);
+    if (!Q_IsBitSet(mask.b, leaf2->cluster))
+        return false;
+    if (vis & VIS_NOAREAS)
+        return true;
+    if (!CM_AreasConnected(cm, leaf1->area, leaf2->area))
+        return false;       // a door blocks it
+    return true;
+}
+
 int CM_WritePortalBits(const cm_t *cm, byte *buffer)
 {
     int     i, bytes, numportals;

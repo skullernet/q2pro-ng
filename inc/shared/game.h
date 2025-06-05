@@ -51,13 +51,6 @@ typedef enum {
     SOLID_BSP           // bsp clip, touch on edge
 } solid_t;
 
-// flags for inVIS()
-typedef enum {
-    VIS_PVS     = 0,
-    VIS_PHS     = 1,
-    VIS_NOAREAS = 2     // can be OR'ed with one of above
-} vis_t;
-
 //===============================================================
 
 typedef enum {

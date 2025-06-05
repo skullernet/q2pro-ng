@@ -914,6 +914,11 @@ size_t Cmd_ArgsBuffer(char *buffer, size_t size)
     return Q_strlcpy(buffer, Cmd_Args(), size);
 }
 
+size_t Cmd_RawArgsBuffer(char *buffer, size_t size)
+{
+    return Q_strlcpy(buffer, Cmd_RawArgs(), size);
+}
+
 /*
 ============
 Cmd_ArgsFrom

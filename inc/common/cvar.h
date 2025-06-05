@@ -138,9 +138,7 @@ int Cvar_VariableInteger(const char *var_name);
 // returns 0 if not defined or non numeric
 
 const char *Cvar_VariableString(const char *var_name);
+size_t Cvar_VariableStringBuffer(const char *var_name, char *buffer, size_t size);
 // returns an empty string if not defined
-
-#define Cvar_VariableStringBuffer(name, buffer, size) \
-    Q_strlcpy(buffer, Cvar_VariableString(name), size)
 
 void Cvar_Set_f(void);

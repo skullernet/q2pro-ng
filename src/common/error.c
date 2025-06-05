@@ -62,3 +62,8 @@ const char *Q_ErrorString(int error)
 
     return error_table[e];
 }
+
+size_t Q_ErrorStringBuffer(int error, char *buffer, size_t size)
+{
+    return Q_strlcpy(buffer, Q_ErrorString(error), size);
+}
