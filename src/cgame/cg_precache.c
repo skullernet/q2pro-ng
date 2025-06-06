@@ -24,13 +24,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*
 ================
-CL_ParsePlayerSkin
+CG_ParsePlayerSkin
 
 Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
+void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
 {
     size_t len;
     char *t;
@@ -91,11 +91,11 @@ default_model:
 
 /*
 ================
-CL_LoadClientinfo
+CG_LoadClientinfo
 
 ================
 */
-void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
+void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
 {
     int         i;
     char        model_name[MAX_QPATH];
@@ -105,7 +105,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
 
-    CL_ParsePlayerSkin(ci->name, model_name, skin_name, s);
+    CG_ParsePlayerSkin(ci->name, model_name, skin_name, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
@@ -191,16 +191,16 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 
 /*
 =================
-CL_RegisterSounds
+CG_RegisterSounds
 =================
 */
-void CL_RegisterSounds(void)
+void CG_RegisterSounds(void)
 {
     int i;
     char    *s;
 
     S_BeginRegistration();
-    CL_RegisterTEntSounds();
+    CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
         s = cl.configstrings[CS_SOUNDS + i];
         if (!s[0])
@@ -212,12 +212,12 @@ void CL_RegisterSounds(void)
 
 /*
 =================
-CL_RegisterBspModels
+CG_RegisterBspModels
 
 Registers main BSP file and inline models
 =================
 */
-void CL_RegisterBspModels(void)
+void CG_RegisterBspModels(void)
 {
     char *name = va("maps/%s.bsp", cl.mapname);
     int ret;
@@ -240,12 +240,12 @@ void CL_RegisterBspModels(void)
 
 /*
 =================
-CL_RegisterVWepModels
+CG_RegisterVWepModels
 
 Builds a list of visual weapon models
 =================
 */
-void CL_RegisterVWepModels(void)
+void CG_RegisterVWepModels(void)
 {
     int         i;
     char        *name;
@@ -278,11 +278,11 @@ void CL_RegisterVWepModels(void)
 
 /*
 =================
-CL_SetSky
+CG_SetSky
 
 =================
 */
-void CL_SetSky(void)
+void CG_SetSky(void)
 {
     float       rotate = 0;
     int         autorotate = 1;
@@ -301,12 +301,12 @@ void CL_SetSky(void)
 
 /*
 =================
-CL_RegisterImage
+CG_RegisterImage
 
 Hack to handle RF_CUSTOMSKIN for remaster
 =================
 */
-static qhandle_t CL_RegisterImage(const char *s)
+static qhandle_t CG_RegisterImage(const char *s)
 {
     // if it's in a subdir and has an extension, it's either a sprite or a skin
     // allow /some/pic.pcx escape syntax
@@ -326,12 +326,12 @@ static qhandle_t CL_RegisterImage(const char *s)
 
 /*
 =================
-CL_PrepRefresh
+CG_PrepRefresh
 
 Call before entering a new level, or after changing dlls
 =================
 */
-void CL_PrepRefresh(void)
+void CG_PrepRefresh(void)
 {
     int         i;
     char        *name;
@@ -344,9 +344,9 @@ void CL_PrepRefresh(void)
     // register models, pics, and skins
     R_BeginRegistration(cl.mapname);
 
-    CL_LoadState(LOAD_MODELS);
+    CG_LoadState(LOAD_MODELS);
 
-    CL_RegisterTEntModels();
+    CG_RegisterTEntModels();
 
     for (i = 1; i < MAX_MODELS; i++) {
         name = cl.configstrings[CS_MODELS + i];
@@ -359,28 +359,28 @@ void CL_PrepRefresh(void)
         cl.model_draw[i] = R_RegisterModel(name);
     }
 
-    CL_LoadState(LOAD_IMAGES);
+    CG_LoadState(LOAD_IMAGES);
     for (i = 1; i < MAX_IMAGES; i++) {
         name = cl.configstrings[CS_IMAGES + i];
         if (!name[0]) {
             break;
         }
-        cl.image_precache[i] = CL_RegisterImage(name);
+        cl.image_precache[i] = CG_RegisterImage(name);
     }
 
-    CL_LoadState(LOAD_CLIENTS);
+    CG_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
         name = cl.configstrings[CS_PLAYERSKINS + i];
         if (!name[0]) {
             continue;
         }
-        CL_LoadClientinfo(&cl.clientinfo[i], name);
+        CG_LoadClientinfo(&cl.clientinfo[i], name);
     }
 
-    CL_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt");
+    CG_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt");
 
     // set sky textures and speed
-    CL_SetSky();
+    CG_SetSky();
 
     // the renderer can now free unneeded stuff
     R_EndRegistration();
@@ -396,12 +396,12 @@ void CL_PrepRefresh(void)
 
 /*
 =================
-CL_UpdateConfigstring
+CG_UpdateConfigstring
 
 A configstring update has been parsed.
 =================
 */
-void CL_UpdateConfigstring(int index)
+void CG_UpdateConfigstring(int index)
 {
     const char *s = cl.configstrings[index];
 
@@ -416,7 +416,7 @@ void CL_UpdateConfigstring(int index)
     }
 
     if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
-        CL_SetLightStyle(index - CS_LIGHTS, s);
+        CG_SetLightStyle(index - CS_LIGHTS, s);
         return;
     }
 
@@ -435,12 +435,12 @@ void CL_UpdateConfigstring(int index)
     }
 
     if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
-        cl.image_precache[index - CS_IMAGES] = CL_RegisterImage(s);
+        cl.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
         return;
     }
 
     if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
-        CL_LoadClientinfo(&cl.clientinfo[index - CS_PLAYERSKINS], s);
+        CG_LoadClientinfo(&cl.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 
@@ -450,7 +450,7 @@ void CL_UpdateConfigstring(int index)
     }
 
     if (index == CS_SKYROTATE || index == CS_SKYAXIS) {
-        CL_SetSky();
+        CG_SetSky();
         return;
     }
 }

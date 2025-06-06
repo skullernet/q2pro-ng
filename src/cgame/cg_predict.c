@@ -35,10 +35,10 @@ void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
 
 /*
 ===================
-CL_CheckPredictionError
+CG_CheckPredictionError
 ===================
 */
-void CL_CheckPredictionError(void)
+void CG_CheckPredictionError(void)
 {
     int         frame;
     vec3_t      delta;
@@ -58,8 +58,7 @@ void CL_CheckPredictionError(void)
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
-    frame = cls.netchan.incoming_acknowledged & CMD_MASK;
-    cmd = cl.history[frame].cmdNumber;
+    trap_GetUsercmdNumber(&cmd, NULL);
 
     // compare what the server returned with what we had predicted it to be
     VectorSubtract(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK], delta);
@@ -85,45 +84,36 @@ void CL_CheckPredictionError(void)
     VectorCopy(delta, cl.prediction_error);
 }
 
-const mmodel_t *CL_InlineModel(int index)
-{
-    if (index <= 0 || index >= cl.bsp->nummodels)
-        Com_Error(ERR_DROP, "%s: inline model %d out of range", __func__, index);
-
-    return &cl.bsp->models[index];
-}
-
 /*
 ====================
-CL_ClipMoveToEntities
+CG_ClipMoveToEntities
 ====================
 */
-static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, int contentmask)
+static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t end,
+                                  const vec3_t mins, const vec3_t maxs, contents_t contentmask)
 {
-    int         i;
     trace_t     trace;
-    const mnode_t   *headnode;
-    const centity_t *ent;
+    qhandle_t   hmodel;
 
-    for (i = 0; i < cl.numSolidEntities; i++) {
-        ent = cl.solidEntities[i];
+    for (int i = 0; i < cl.numSolidEntities; i++) {
+        const centity_t *ent = cl.solidEntities[i];
 
         if (ent->current.number <= cl.maxclients && !(contentmask & CONTENTS_PLAYER))
             continue;
 
         if (ent->current.solid == PACKED_BSP) {
             // special value for bmodel
-            headnode = CL_InlineModel(ent->current.modelindex)->headnode;
+            hmodel = ent->current.modelindex;
         } else {
-            headnode = CM_HeadnodeForBox(ent->mins, ent->maxs);
+            hmodel = trap_TempBoxModel(ent->mins, ent->maxs);
         }
 
         if (tr->allsolid)
             return;
 
-        CM_TransformedBoxTrace(&trace, start, end,
-                               mins, maxs, headnode, contentmask,
-                               ent->current.origin, ent->current.angles);
+        trap_TransformedBoxTrace(&trace, start, end,
+                                 mins, maxs, hmodel, contentmask,
+                                 ent->current.origin, ent->current.angles);
 
         CM_ClipEntity(tr, &trace, ent->current.number);
     }
@@ -131,10 +121,10 @@ static void CL_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 
 /*
 ================
-CL_Trace
+CG_Trace
 ================
 */
-void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
+void CG_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
               const vec3_t end, unsigned passent, contents_t contentmask)
 {
     if (!mins)
@@ -143,38 +133,34 @@ void CL_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
         maxs = vec3_origin;
 
     // check against world
-    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
     tr->entnum = ENTITYNUM_WORLD;
     if (tr->fraction == 0)
         return;     // blocked by the world
 
     // check all other solid models
-    CL_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
+    CG_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
 }
 
-static void CL_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
+static void CG_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
                     const vec3_t end, unsigned clipent, contents_t contentmask)
 {
-    CM_BoxTrace(tr, start, end, mins, maxs, cl.bsp->nodes, contentmask);
+    trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
     tr->entnum = ENTITYNUM_WORLD;
 }
 
-static int CL_PointContents(const vec3_t point)
+static contents_t CG_PointContents(const vec3_t point)
 {
-    const centity_t *ent;
-    const mmodel_t  *cmodel;
-    int i, contents;
+    contents_t contents = trap_PointContents(point, MODELINDEX_WORLD);
 
-    contents = CM_PointContents(point, cl.bsp->nodes);
-
-    for (i = 0; i < cl.numSolidEntities; i++) {
-        ent = cl.solidEntities[i];
+    for (int i = 0; i < cl.numSolidEntities; i++) {
+        const centity_t *ent = cl.solidEntities[i];
 
         if (ent->current.solid != PACKED_BSP) // special value for bmodel
             continue;
 
-        cmodel = CL_InlineModel(ent->current.modelindex);
-        contents |= CM_TransformedPointContents(point, cmodel->headnode, ent->current.origin, ent->current.angles);
+        contents |= trap_TransformedPointContents(point,
+            ent->current.modelindex, ent->current.origin, ent->current.angles);
     }
 
     return contents;
@@ -182,19 +168,19 @@ static int CL_PointContents(const vec3_t point)
 
 /*
 =================
-CL_PredictMovement
+CG_PredictMovement
 
 Sets cl.predicted_origin and cl.predicted_angles
 =================
 */
-void CL_PredictAngles(void)
+void CG_PredictAngles(void)
 {
     cl.predicted_angles[0] = cl.viewangles[0] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[0]);
     cl.predicted_angles[1] = cl.viewangles[1] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[1]);
     cl.predicted_angles[2] = cl.viewangles[2] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[2]);
 }
 
-void CL_PredictMovement(void)
+void CG_PredictMovement(void)
 {
     unsigned    ack, current, frame;
     pmove_t     pm;
@@ -213,56 +199,40 @@ void CL_PredictMovement(void)
 
     if (!cl_predict->integer || (cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
-        CL_PredictAngles();
+        CG_PredictAngles();
         return;
     }
 
-    ack = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
-    current = cl.cmdNumber;
+    trap_GetUsercmdNumber(&ack, &current);
 
     // if we are too far out of date, just freeze
-    if (current - ack > CMD_BACKUP - 1) {
+    if (current - ack > CMD_BACKUP)
         SHOWMISS("%i: exceeded CMD_BACKUP\n", cl.frame.number);
         return;
     }
 
-    if (!cl.cmd.msec && current == ack) {
+    if (current == ack) {
         SHOWMISS("%i: not moved\n", cl.frame.number);
         return;
     }
 
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
-    pm.trace = CL_Trace;
-    pm.clip = CL_Clip;
-    pm.pointcontents = CL_PointContents;
+    pm.trace = CG_Trace;
+    pm.clip = CG_Clip;
+    pm.pointcontents = CG_PointContents;
     pm.s = cl.frame.ps.pmove;
     VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);
     pm.snapinitial = true;
 
     // run frames
     while (++ack <= current) {
-        pm.cmd = cl.cmds[ack & CMD_MASK];
+        trap_GetUsercmd(ack, &pm.cmd);
         Pmove(&pm);
         pm.snapinitial = false;
 
         // save for debug checking
         VectorCopy(pm.s.origin, cl.predicted_origins[ack & CMD_MASK]);
-    }
-
-    // run pending cmd
-    if (cl.cmd.msec) {
-        pm.cmd = cl.cmd;
-        pm.cmd.forwardmove = cl.localmove[0];
-        pm.cmd.sidemove = cl.localmove[1];
-        pm.cmd.upmove = cl.localmove[2];
-        Pmove(&pm);
-        frame = current;
-
-        // save for debug checking
-        VectorCopy(pm.s.origin, cl.predicted_origins[(current + 1) & CMD_MASK]);
-    } else {
-        frame = current - 1;
     }
 
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {

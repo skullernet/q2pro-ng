@@ -76,6 +76,7 @@ typedef int qhandle_t;
 #define MAX_ITEMS           256
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
+#define MODELINDEX_WORLD    0
 #define MODELINDEX_DUMMY    1   // dummy index for beams
 #define MODELINDEX_PLAYER   255
 

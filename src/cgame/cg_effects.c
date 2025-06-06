@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "shared/m_flash.h"
 
-static void CL_LogoutEffect(const vec3_t org, int color);
+static void CG_LogoutEffect(const vec3_t org, int color);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
@@ -42,17 +42,17 @@ typedef struct {
 
 static clightstyle_t    cl_lightstyles[MAX_LIGHTSTYLES];
 
-static void CL_ClearLightStyles(void)
+static void CG_ClearLightStyles(void)
 {
     memset(cl_lightstyles, 0, sizeof(cl_lightstyles));
 }
 
 /*
 ================
-CL_SetLightStyle
+CG_SetLightStyle
 ================
 */
-void CL_SetLightStyle(int index, const char *s)
+void CG_SetLightStyle(int index, const char *s)
 {
     int     i;
     clightstyle_t   *ls;
@@ -67,10 +67,10 @@ void CL_SetLightStyle(int index, const char *s)
 
 /*
 ================
-CL_AddLightStyles
+CG_AddLightStyles
 ================
 */
-void CL_AddLightStyles(void)
+void CG_AddLightStyles(void)
 {
     int     i, ofs = cl.time / 100;
     clightstyle_t   *ls;
@@ -87,12 +87,12 @@ void CL_AddLightStyles(void)
             else if (ls->length)
                 value = ls->map[0];
 
-            V_AddLightStyle(i, value);
+            trap_R_AddLightStyle(i, value);
         }
     } else {
         for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
-            V_AddLightStyle(i, value);
+            trap_R_AddLightStyle(i, value);
         }
     }
 }
@@ -107,17 +107,17 @@ DLIGHT MANAGEMENT
 
 static cdlight_t       cl_dlights[MAX_DLIGHTS];
 
-static void CL_ClearDlights(void)
+static void CG_ClearDlights(void)
 {
     memset(cl_dlights, 0, sizeof(cl_dlights));
 }
 
 /*
 ===============
-CL_AllocDlight
+CG_AllocDlight
 ===============
 */
-cdlight_t *CL_AllocDlight(int key)
+cdlight_t *CG_AllocDlight(int key)
 {
     int     i;
     cdlight_t   *dl;
@@ -152,10 +152,10 @@ cdlight_t *CL_AllocDlight(int key)
 
 /*
 ===============
-CL_AddDLights
+CG_AddDLights
 ===============
 */
-void CL_AddDLights(void)
+void CG_AddDLights(void)
 {
     int         i;
     cdlight_t   *dl;
@@ -164,8 +164,8 @@ void CL_AddDLights(void)
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cl.time)
             continue;
-        V_AddLight(dl->origin, dl->radius,
-                   dl->color[0], dl->color[1], dl->color[2]);
+        trap_R_AddLight(dl->origin, dl->radius,
+                               dl->color[0], dl->color[1], dl->color[2]);
     }
 }
 
@@ -173,10 +173,10 @@ void CL_AddDLights(void)
 
 /*
 ==============
-CL_MuzzleFlash
+CG_MuzzleFlash
 ==============
 */
-void CL_MuzzleFlash(centity_t *pl, int weapon)
+void CG_MuzzleFlash(centity_t *pl, int weapon)
 {
     vec3_t      fv, rv;
     cdlight_t   *dl;
@@ -191,7 +191,7 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
     entnum = pl->current.number;
     local = entnum == cl.frame.ps.clientnum;
 
-    dl = CL_AllocDlight(entnum);
+    dl = CG_AllocDlight(entnum);
     VectorCopy(pl->current.origin, dl->origin);
     AngleVectors(pl->current.angles, fv, rv, NULL);
     VectorMA(dl->origin, 18, fv, dl->origin);
@@ -206,7 +206,7 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 27.0f, 7.4f, -6.6f }, 8.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 27.0f, 7.4f, -6.6f }, 8.0f);
         break;
     case MZ_BLUEHYPERBLASTER:
         VectorSet(dl->color, 0, 0, 1);
@@ -216,27 +216,27 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 23.5f, 6.0f, -6.0f }, 9.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 23.5f, 6.0f, -6.0f }, 9.0f);
         break;
     case MZ_MACHINEGUN:
         VectorSet(dl->color, 1, 1, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -8.0f }, 12.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -8.0f }, 12.0f);
         break;
     case MZ_SHOTGUN:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, entnum, CHAN_AUTO,   S_RegisterSound("weapons/shotgr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_SHOTG, (const vec3_t) { 26.5f, 8.6f, -9.5f }, 12.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_SHOTG, (const vec3_t) { 26.5f, 8.6f, -9.5f }, 12.0f);
         break;
     case MZ_SSHOTGUN:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/sshotf1b.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_SHOTG2, (const vec3_t) { 25.0f, 7.0f, -5.5f }, 12.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_SHOTG2, (const vec3_t) { 25.0f, 7.0f, -5.5f }, 12.0f);
         break;
     case MZ_CHAINGUN1:
         dl->radius = 200 + (Q_rand() & 31);
@@ -244,7 +244,7 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 12.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 12.0f);
         break;
     case MZ_CHAINGUN2:
         dl->radius = 225 + (Q_rand() & 31);
@@ -254,7 +254,7 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.05f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 16.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 16.0f);
         break;
     case MZ_CHAINGUN3:
         dl->radius = 250 + (Q_rand() & 31);
@@ -266,28 +266,28 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.066f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 20.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_MACHN, (const vec3_t) { 29.0f, 9.7f, -10.0f }, 20.0f);
         break;
     case MZ_RAILGUN:
         VectorSet(dl->color, 0.5f, 0.5f, 1.0f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/railgf1a.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, entnum, CHAN_AUTO,   S_RegisterSound("weapons/railgr1b.wav"), volume, ATTN_NORM, 0.4f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_RAIL, (const vec3_t) { 20.0f, 5.2f, -7.0f }, 12.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_RAIL, (const vec3_t) { 20.0f, 5.2f, -7.0f }, 12.0f);
         break;
     case MZ_ROCKET:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/rocklf1a.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, entnum, CHAN_AUTO,   S_RegisterSound("weapons/rocklr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 20.8f, 5.0f, -11.0f }, 10.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 20.8f, 5.0f, -11.0f }, 10.0f);
         break;
     case MZ_GRENADE:
         VectorSet(dl->color, 1, 0.5f, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, entnum, CHAN_AUTO,   S_RegisterSound("weapons/grenlr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_LAUNCH, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 9.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_LAUNCH, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 9.0f);
         break;
     case MZ_BFG:
         VectorSet(dl->color, 0, 1, 0);
@@ -296,23 +296,23 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
     case MZ_BFG2:
         VectorSet(dl->color, 0, 1, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_BFG, (const vec3_t) { 18.0f, 8.0f, -7.5f }, 16.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_BFG, (const vec3_t) { 18.0f, 8.0f, -7.5f }, 16.0f);
         break;
 
     case MZ_LOGIN:
         VectorSet(dl->color, 0, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, 0xd0);  // green
+        CG_LogoutEffect(pl->current.origin, 0xd0);  // green
         break;
     case MZ_LOGOUT:
         VectorSet(dl->color, 1, 0, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, 0x40);  // red
+        CG_LogoutEffect(pl->current.origin, 0x40);  // red
         break;
     case MZ_RESPAWN:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, 0xe0);  // yellow
+        CG_LogoutEffect(pl->current.origin, 0xe0);  // yellow
         break;
     case MZ_PHALANX:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
@@ -321,13 +321,13 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
     case MZ_PHALANX2:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 18.0f, 10.0f, -6.0f }, 9.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_ROCKET, (const vec3_t) { 18.0f, 10.0f, -6.0f }, 9.0f);
         break;
     case MZ_IONRIPPER:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/rippfire.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_BOOMER, (const vec3_t) { 24.0f, 3.8f, -5.5f }, 15.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_BOOMER, (const vec3_t) { 24.0f, 3.8f, -5.5f }, 15.0f);
         break;
 
     case MZ_PROX:
@@ -335,26 +335,26 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
         S_StartSound(NULL, entnum, CHAN_AUTO,   S_RegisterSound("weapons/proxlr1a.wav"), volume, ATTN_NORM, 0.1f);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_LAUNCH, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 9.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_LAUNCH, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 9.0f);
         break;
     case MZ_ETF_RIFLE:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 5.25f, -5.5f }, 4.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 5.25f, -5.5f }, 4.0f);
         break;
     case MZ_ETF_RIFLE_2:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
         break;
     case MZ_HEATBEAM:
         VectorSet(dl->color, 1, 1, 0);
         dl->die = cl.time + 100;
 //      S_StartSound (NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/bfg__l1a.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_BEAMER, (const vec3_t) { 18.0f, 6.0f, -8.5f }, 16.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_BEAMER, (const vec3_t) { 18.0f, 6.0f, -8.5f }, 16.0f);
         break;
     case MZ_BLASTER2:
         VectorSet(dl->color, 0, 1, 0);
@@ -362,11 +362,11 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
         break;
     case MZ_TRACKER:
-        // negative flashes handled the same in gl/soft until CL_AddDLights
+        // negative flashes handled the same in gl/soft until CG_AddDLights
         VectorSet(dl->color, -1, -1, -1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/disint2.wav"), volume, ATTN_NORM, 0);
         if (local)
-            CL_AddWeaponMuzzleFX(MFLASH_DIST, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 10.0f);
+            CG_AddWeaponMuzzleFX(MFLASH_DIST, (const vec3_t) { 18.0f, 6.0f, -6.5f }, 10.0f);
         break;
     case MZ_NUKE1:
         VectorSet(dl->color, 1, 0, 0);
@@ -401,10 +401,10 @@ void CL_MuzzleFlash(centity_t *pl, int weapon)
 
 /*
 ==============
-CL_MuzzleFlash2
+CG_MuzzleFlash2
 ==============
 */
-void CL_MuzzleFlash2(centity_t *ent, int weapon)
+void CG_MuzzleFlash2(centity_t *ent, int weapon)
 {
     vec3_t      ofs, origin, flash_origin;
     cdlight_t   *dl;
@@ -432,7 +432,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
 
     VectorMA(origin, 4.0f * scale, forward, flash_origin);
 
-    dl = CL_AllocDlight(entnum);
+    dl = CG_AllocDlight(entnum);
     VectorCopy(origin, dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
     dl->die = cl.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
@@ -461,10 +461,10 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_INFANTRY_MACHINEGUN_21:
     case MZ2_INFANTRY_MACHINEGUN_22:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 18.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 18.0f * scale);
         break;
 
     case MZ2_SOLDIER_MACHINEGUN_1:
@@ -477,10 +477,10 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SOLDIER_MACHINEGUN_8:
     case MZ2_SOLDIER_MACHINEGUN_9:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("soldier/solatck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 13.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 13.0f * scale);
         break;
 
     case MZ2_GUNNER_MACHINEGUN_1:
@@ -492,10 +492,10 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_GUNNER_MACHINEGUN_7:
     case MZ2_GUNNER_MACHINEGUN_8:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("gunner/gunatck2.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 24.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 24.0f * scale);
         break;
 
     case MZ2_ACTOR_MACHINEGUN_1:
@@ -507,10 +507,10 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SUPERTANK_MACHINEGUN_6:
     case MZ2_TURRET_MACHINEGUN:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_BOSS2_MACHINEGUN_L1:
@@ -523,12 +523,12 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
         VectorSet(dl->color, 1, 1, 0);
         if (weapon == MZ2_BOSS2_MACHINEGUN_L2) {
             S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
-            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
+            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
         } else {
-            CL_ParticleEffect(origin, vec3_origin, 0, 40);
-            CL_SmokeAndFlash(origin);
+            CG_ParticleEffect(origin, vec3_origin, 0, 40);
+            CG_SmokeAndFlash(origin);
             S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
-            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         }
         break;
 
@@ -544,14 +544,14 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_TURRET_BLASTER:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("soldier/solatck2.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_FLYER_BLASTER_1:
     case MZ2_FLYER_BLASTER_2:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_MEDIC_BLASTER_1:
@@ -569,20 +569,20 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_MEDIC_HYPERBLASTER1_12:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("medic/medatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_HOVER_BLASTER_1:
     case MZ2_HOVER_BLASTER_2:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("hover/hovatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_FLOAT_BLASTER_1:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("floater/fltatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_SOLDIER_SHOTGUN_1:
@@ -595,9 +595,9 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SOLDIER_SHOTGUN_8:
     case MZ2_SOLDIER_SHOTGUN_9:
         VectorSet(dl->color, 1, 1, 0);
-        CL_SmokeAndFlash(origin);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_SHOTG, 0, 17.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_SHOTG, 0, 17.0f * scale);
         break;
 
     case MZ2_TANK_BLASTER_1:
@@ -605,7 +605,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_TANK_BLASTER_3:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 24.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 24.0f * scale);
         break;
 
     case MZ2_TANK_MACHINEGUN_1:
@@ -628,18 +628,18 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_TANK_MACHINEGUN_18:
     case MZ2_TANK_MACHINEGUN_19:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         Q_snprintf(soundname, sizeof(soundname), "tank/tnkatk2%c.wav", 'a' + Q_rand() % 5);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound(soundname), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 20.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 20.0f * scale);
         break;
 
     case MZ2_CHICK_ROCKET_1:
     case MZ2_TURRET_ROCKET:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("chick/chkatck2.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 16.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 16.0f * scale);
         break;
 
     case MZ2_TANK_ROCKET_1:
@@ -647,7 +647,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_TANK_ROCKET_3:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("tank/tnkatck1.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
     case MZ2_SUPERTANK_ROCKET_1:
@@ -663,7 +663,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
 //  case MZ2_CARRIER_ROCKET_4:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
     case MZ2_GUNNER_GRENADE_1:
@@ -678,7 +678,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SUPERTANK_GRENADE_2:
         VectorSet(dl->color, 1, 0.5f, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("gunner/gunatck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
 
     case MZ2_GLADIATOR_RAILGUN_1:
@@ -690,13 +690,13 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_ARACHNID_RAIL_UP1:
     case MZ2_ARACHNID_RAIL_UP2:
         VectorSet(dl->color, 0.5f, 0.5f, 1.0f);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_RAIL, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_RAIL, 0, 32.0f * scale);
         break;
 
     case MZ2_MAKRON_BFG:
         VectorSet(dl->color, 0.5f, 1, 0.5f);
         //S_StartSound (NULL, entnum, CHAN_WEAPON, S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
     case MZ2_MAKRON_BLASTER_1:
@@ -718,7 +718,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_MAKRON_BLASTER_17:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("makron/blaster.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 22.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 22.0f * scale);
         break;
 
     case MZ2_JORG_MACHINEGUN_L1:
@@ -728,10 +728,10 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_JORG_MACHINEGUN_L5:
     case MZ2_JORG_MACHINEGUN_L6:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("boss3/xfire.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_JORG_MACHINEGUN_R1:
@@ -741,14 +741,14 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_JORG_MACHINEGUN_R5:
     case MZ2_JORG_MACHINEGUN_R6:
         VectorSet(dl->color, 1, 1, 0);
-        CL_ParticleEffect(origin, vec3_origin, 0, 40);
-        CL_SmokeAndFlash(origin);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_JORG_BFG_1:
         VectorSet(dl->color, 0.5f, 1, 0.5f);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
     case MZ2_BOSS2_MACHINEGUN_R1:
@@ -760,12 +760,12 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_CARRIER_MACHINEGUN_R2:
         if (weapon == MZ2_BOSS2_MACHINEGUN_R2) {
             S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
-            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
+            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
         } else {
             VectorSet(dl->color, 1, 1, 0);
-            CL_ParticleEffect(origin, vec3_origin, 0, 40);
-            CL_SmokeAndFlash(origin);
-            CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
+            CG_ParticleEffect(origin, vec3_origin, 0, 40);
+            CG_SmokeAndFlash(origin);
+            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         }
         break;
 
@@ -823,13 +823,13 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_MEDIC_HYPERBLASTER2_12:
         VectorSet(dl->color, 0, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 2, 22.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 2, 22.0f * scale);
         break;
 
     case MZ2_WIDOW_DISRUPTOR:
         VectorSet(dl->color, -1, -1, -1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/disint2.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_DIST, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_DIST, 0, 32.0f * scale);
         break;
 
     case MZ2_WIDOW_PLASMABEAM:
@@ -852,7 +852,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
         dl->radius = 300 + (Q_rand() & 100);
         VectorSet(dl->color, 1, 1, 0);
         dl->die = cl.time + 200;
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BEAMER, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BEAMER, 0, 32.0f * scale);
         break;
 
     case MZ2_SOLDIER_RIPPER_1:
@@ -866,7 +866,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SOLDIER_RIPPER_9:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/rippfire.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BOOMER, 0, 32.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BOOMER, 0, 32.0f * scale);
         break;
 
     case MZ2_SOLDIER_HYPERGUN_1:
@@ -880,20 +880,20 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_SOLDIER_HYPERGUN_9:
         VectorSet(dl->color, 0, 0, 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 1, 8.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 1, 8.0f * scale);
         break;
 
     case MZ2_GUARDIAN_BLASTER:
         VectorSet(dl->color, 1, 1, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 16.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 16.0f * scale);
         break;
 
     case MZ2_GUNCMDR_CHAINGUN_1:
     case MZ2_GUNCMDR_CHAINGUN_2:
         VectorSet(dl->color, 0, 0, 1);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("guncmdr/gcdratck2.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 16.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 16.0f * scale);
         break;
 
     case MZ2_GUNCMDR_GRENADE_MORTAR_1:
@@ -904,7 +904,7 @@ void CL_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_GUNCMDR_GRENADE_FRONT_3:
         VectorSet(dl->color, 1, 0.5f, 0);
         S_StartSound(NULL, entnum, CHAN_WEAPON, S_RegisterSound("guncmdr/gcdratck3.wav"), 1, ATTN_NORM, 0);
-        CL_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
     }
 }
@@ -921,7 +921,7 @@ static cparticle_t  *active_particles, *free_particles;
 
 static cparticle_t  particles[MAX_PARTICLES];
 
-static void CL_ClearParticles(void)
+static void CG_ClearParticles(void)
 {
     int     i;
 
@@ -933,7 +933,7 @@ static void CL_ClearParticles(void)
     particles[i].next = NULL;
 }
 
-cparticle_t *CL_AllocParticle(void)
+cparticle_t *CG_AllocParticle(void)
 {
     cparticle_t *p;
 
@@ -950,19 +950,19 @@ cparticle_t *CL_AllocParticle(void)
 
 /*
 ===============
-CL_ParticleEffect
+CG_ParticleEffect
 
 Wall impact puffs
 ===============
 */
-void CL_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count)
+void CG_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count)
 {
     int         i, j;
     cparticle_t *p;
     float       d;
 
     for (i = 0; i < count; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -983,20 +983,19 @@ void CL_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count)
     }
 }
 
-
 /*
 ===============
-CL_ParticleEffect2
+CG_ParticleEffect2
 ===============
 */
-void CL_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count)
+void CG_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count)
 {
     int         i, j;
     cparticle_t *p;
     float       d;
 
     for (i = 0; i < count; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1017,19 +1016,18 @@ void CL_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count
     }
 }
 
-
 /*
 ===============
-CL_TeleporterParticles
+CG_TeleporterParticles
 ===============
 */
-void CL_TeleporterParticles(const vec3_t org)
+void CG_TeleporterParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
 
     for (i = 0; i < 8; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1052,20 +1050,19 @@ void CL_TeleporterParticles(const vec3_t org)
     }
 }
 
-
 /*
 ===============
-CL_LogoutEffect
+CG_LogoutEffect
 
 ===============
 */
-static void CL_LogoutEffect(const vec3_t org, int color)
+static void CG_LogoutEffect(const vec3_t org, int color)
 {
     int         i, j;
     cparticle_t *p;
 
     for (i = 0; i < 500; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1088,20 +1085,19 @@ static void CL_LogoutEffect(const vec3_t org, int color)
     }
 }
 
-
 /*
 ===============
-CL_ItemRespawnParticles
+CG_ItemRespawnParticles
 
 ===============
 */
-void CL_ItemRespawnParticles(const vec3_t org)
+void CG_ItemRespawnParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
 
     for (i = 0; i < 64; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1124,19 +1120,18 @@ void CL_ItemRespawnParticles(const vec3_t org)
     }
 }
 
-
 /*
 ===============
-CL_ExplosionParticles
+CG_ExplosionParticles
 ===============
 */
-void CL_ExplosionParticles(const vec3_t org)
+void CG_ExplosionParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
 
     for (i = 0; i < 256; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1158,10 +1153,10 @@ void CL_ExplosionParticles(const vec3_t org)
 
 /*
 ===============
-CL_BigTeleportParticles
+CG_BigTeleportParticles
 ===============
 */
-void CL_BigTeleportParticles(const vec3_t org)
+void CG_BigTeleportParticles(const vec3_t org)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     int         i;
@@ -1169,7 +1164,7 @@ void CL_BigTeleportParticles(const vec3_t org)
     float       angle, dist;
 
     for (i = 0; i < 4096; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1196,22 +1191,21 @@ void CL_BigTeleportParticles(const vec3_t org)
     }
 }
 
-
 /*
 ===============
-CL_BlasterParticles
+CG_BlasterParticles
 
 Wall impact puffs
 ===============
 */
-void CL_BlasterParticles(const vec3_t org, const vec3_t dir)
+void CG_BlasterParticles(const vec3_t org, const vec3_t dir)
 {
     int         i, j;
     cparticle_t *p;
     float       d;
 
     for (i = 0; i < 40; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1232,14 +1226,13 @@ void CL_BlasterParticles(const vec3_t org, const vec3_t dir)
     }
 }
 
-
 /*
 ===============
-CL_BlasterTrail
+CG_BlasterTrail
 
 ===============
 */
-void CL_BlasterTrail(centity_t *ent, const vec3_t end)
+void CG_BlasterTrail(centity_t *ent, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1256,7 +1249,7 @@ void CL_BlasterTrail(centity_t *ent, const vec3_t end)
     VectorScale(vec, dec, vec);
 
     for (i = 0; i < count; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             break;
         VectorClear(p->accel);
@@ -1279,11 +1272,11 @@ void CL_BlasterTrail(centity_t *ent, const vec3_t end)
 
 /*
 ===============
-CL_FlagTrail
+CG_FlagTrail
 
 ===============
 */
-void CL_FlagTrail(centity_t *ent, const vec3_t end, int color)
+void CG_FlagTrail(centity_t *ent, const vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1300,7 +1293,7 @@ void CL_FlagTrail(centity_t *ent, const vec3_t end, int color)
     VectorScale(vec, dec, vec);
 
     for (i = 0; i < count; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             break;
         VectorClear(p->accel);
@@ -1323,12 +1316,12 @@ void CL_FlagTrail(centity_t *ent, const vec3_t end, int color)
 
 /*
 ===============
-CL_DiminishingTrail
+CG_DiminishingTrail
 
-Now combined with CL_RocketTrail().
+Now combined with CG_RocketTrail().
 ===============
 */
-void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type)
+void CG_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type)
 {
     static const byte  colors[DT_COUNT] = { 0xe8, 0xdb, 0x04, 0x04, 0xd8 };
     static const float alphas[DT_COUNT] = { 0.4f, 0.4f, 0.2f, 0.2f, 0.4f };
@@ -1362,7 +1355,7 @@ void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
     for (i = 0; i < count; i++) {
         // drop less particles as it flies
         if ((Q_rand() & 1023) < ent->trailcount) {
-            p = CL_AllocParticle();
+            p = CG_AllocParticle();
             if (!p)
                 break;
 
@@ -1390,7 +1383,7 @@ void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
 
         // rocket fire (non-diminishing)
         if (type == DT_ROCKET && (Q_rand() & 15) == 0) {
-            p = CL_AllocParticle();
+            p = CG_AllocParticle();
             if (!p)
                 break;
 
@@ -1418,11 +1411,11 @@ void CL_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
 
 /*
 ===============
-CL_RailTrail
+CG_RailTrail
 
 ===============
 */
-void CL_OldRailTrail(const vec3_t start, const vec3_t end)
+void CG_OldRailTrail(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1442,7 +1435,7 @@ void CL_OldRailTrail(const vec3_t start, const vec3_t end)
     MakeNormalVectors(vec, right, up);
 
     for (i = 0; i < len; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1474,7 +1467,7 @@ void CL_OldRailTrail(const vec3_t start, const vec3_t end)
     while (len > 0) {
         len -= dec;
 
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1494,14 +1487,13 @@ void CL_OldRailTrail(const vec3_t start, const vec3_t end)
     }
 }
 
-
 /*
 ===============
-CL_BubbleTrail
+CG_BubbleTrail
 
 ===============
 */
-void CL_BubbleTrail(const vec3_t start, const vec3_t end)
+void CG_BubbleTrail(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -1518,7 +1510,7 @@ void CL_BubbleTrail(const vec3_t start, const vec3_t end)
     VectorScale(vec, dec, vec);
 
     for (i = 0; i < len; i += dec) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1538,16 +1530,15 @@ void CL_BubbleTrail(const vec3_t start, const vec3_t end)
     }
 }
 
-
 /*
 ===============
-CL_FlyParticles
+CG_FlyParticles
 ===============
 */
 
 #define BEAMLENGTH  16
 
-static void CL_FlyParticles(const vec3_t origin, int count)
+static void CG_FlyParticles(const vec3_t origin, int count)
 {
     int         i;
     cparticle_t *p;
@@ -1562,7 +1553,7 @@ static void CL_FlyParticles(const vec3_t origin, int count)
 
     ltime = cl.time * 0.001f;
     for (i = 0; i < count; i += 2) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1594,7 +1585,7 @@ static void CL_FlyParticles(const vec3_t origin, int count)
     }
 }
 
-void CL_FlyEffect(centity_t *ent, const vec3_t origin)
+void CG_FlyEffect(centity_t *ent, const vec3_t origin)
 {
     int     n;
     int     count;
@@ -1618,16 +1609,15 @@ void CL_FlyEffect(centity_t *ent, const vec3_t origin)
             count = NUMVERTEXNORMALS;
     }
 
-    CL_FlyParticles(origin, count);
+    CG_FlyParticles(origin, count);
 }
-
 
 /*
 ===============
-CL_BfgParticles
+CG_BfgParticles
 ===============
 */
-void CL_BfgParticles(const entity_t *ent)
+void CG_BfgParticles(const entity_t *ent)
 {
     int         i;
     cparticle_t *p;
@@ -1639,7 +1629,7 @@ void CL_BfgParticles(const entity_t *ent)
 
     ltime = cl.time * 0.001f;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1672,20 +1662,19 @@ void CL_BfgParticles(const entity_t *ent)
     }
 }
 
-
 /*
 ===============
-CL_BFGExplosionParticles
+CG_BFGExplosionParticles
 ===============
 */
-//FIXME combined with CL_ExplosionParticles
-void CL_BFGExplosionParticles(const vec3_t org)
+//FIXME combined with CG_ExplosionParticles
+void CG_BFGExplosionParticles(const vec3_t org)
 {
     int         i, j;
     cparticle_t *p;
 
     for (i = 0; i < 256; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1705,14 +1694,13 @@ void CL_BFGExplosionParticles(const vec3_t org)
     }
 }
 
-
 /*
 ===============
-CL_TeleportParticles
+CG_TeleportParticles
 
 ===============
 */
-void CL_TeleportParticles(const vec3_t org)
+void CG_TeleportParticles(const vec3_t org)
 {
     int         i, j, k;
     cparticle_t *p;
@@ -1722,7 +1710,7 @@ void CL_TeleportParticles(const vec3_t org)
     for (i = -16; i <= 16; i += 4)
         for (j = -16; j <= 16; j += 4)
             for (k = -16; k <= 32; k += 4) {
-                p = CL_AllocParticle();
+                p = CG_AllocParticle();
                 if (!p)
                     return;
 
@@ -1749,15 +1737,1016 @@ void CL_TeleportParticles(const vec3_t org)
             }
 }
 
+void CG_Flashlight(int ent, const vec3_t pos)
+{
+    cdlight_t   *dl;
+
+    dl = CG_AllocDlight(ent);
+    VectorCopy(pos, dl->origin);
+    dl->radius = 400;
+    dl->die = cl.time + 100;
+    VectorSet(dl->color, 1, 1, 1);
+}
+
+/*
+======
+CG_ColorFlash - flash of light
+======
+*/
+void CG_ColorFlash(const vec3_t pos, int ent, int intensity, float r, float g, float b)
+{
+    cdlight_t   *dl;
+
+    dl = CG_AllocDlight(ent);
+    VectorCopy(pos, dl->origin);
+    dl->radius = intensity;
+    dl->die = cl.time + 100;
+    VectorSet(dl->color, r, g, b);
+}
+
+/*
+======
+CG_DebugTrail
+======
+*/
+void CG_DebugTrail(const vec3_t start, const vec3_t end)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    float       len;
+    cparticle_t *p;
+    float       dec;
+
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
+    len = VectorNormalize(vec);
+
+    dec = 3;
+    VectorScale(vec, dec, vec);
+    VectorCopy(start, move);
+
+    while (len > 0) {
+        len -= dec;
+
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        VectorClear(p->accel);
+        VectorClear(p->vel);
+        p->alpha = 1.0f;
+        p->alphavel = -0.1f;
+        p->color = 0x74 + (Q_rand() & 7);
+        VectorCopy(move, p->org);
+        VectorAdd(move, vec, move);
+    }
+}
+
+void CG_ForceWall(const vec3_t start, const vec3_t end, int color)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    float       len;
+    int         j;
+    cparticle_t *p;
+
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
+    len = VectorNormalize(vec);
+
+    VectorScale(vec, 4, vec);
+
+    // FIXME: this is a really silly way to have a loop
+    while (len > 0) {
+        len -= 4;
+
+        if (frand() > 0.3f) {
+            p = CG_AllocParticle();
+            if (!p)
+                return;
+            VectorClear(p->accel);
+
+            p->time = cl.time;
+
+            p->alpha = 1.0f;
+            p->alphavel =  -1.0f / (3.0f + frand() * 0.5f);
+            p->color = color;
+            for (j = 0; j < 3; j++)
+                p->org[j] = move[j] + crand() * 3;
+            p->vel[0] = 0;
+            p->vel[1] = 0;
+            p->vel[2] = -40 - (crand() * 10);
+        }
+
+        VectorAdd(move, vec, move);
+    }
+}
+
+/*
+===============
+CG_BubbleTrail2 (lets you control the # of bubbles by setting the distance between the spawns)
+
+===============
+*/
+void CG_BubbleTrail2(const vec3_t start, const vec3_t end, int dist)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    float       len;
+    int         i, j;
+    cparticle_t *p;
+    float       dec;
+
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
+    len = VectorNormalize(vec);
+
+    dec = dist;
+    VectorScale(vec, dec, vec);
+
+    for (i = 0; i < len; i += dec) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        VectorClear(p->accel);
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = -1.0f / (1 + frand() * 0.1f);
+        p->color = 4 + (Q_rand() & 7);
+        for (j = 0; j < 3; j++) {
+            p->org[j] = move[j] + crand() * 2;
+            p->vel[j] = crand() * 10;
+        }
+        p->org[2] -= 4;
+        p->vel[2] += 20;
+
+        VectorAdd(move, vec, move);
+    }
+}
+
+void CG_Heatbeam(const vec3_t start, const vec3_t forward)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    float       len;
+    int         j;
+    cparticle_t *p;
+    int         i;
+    float       c, s;
+    vec3_t      dir;
+    float       ltime;
+    float       step = 32.0f, rstep;
+    float       start_pt;
+    float       rot;
+    float       variance;
+
+    VectorCopy(start, move);
+    len = VectorNormalize2(forward, vec);
+
+    ltime = cl.time * 0.001f;
+    start_pt = fmodf(ltime * 96.0f, step);
+    VectorMA(move, start_pt, vec, move);
+
+    VectorScale(vec, step, vec);
+
+    rstep = M_PIf / 10.0f;
+    for (i = start_pt; i < len; i += step) {
+        for (rot = 0; rot < M_PIf * 2; rot += rstep) {
+            p = CG_AllocParticle();
+            if (!p)
+                return;
+
+            p->time = cl.time;
+            VectorClear(p->accel);
+            variance = 0.5f;
+            c = cosf(rot) * variance;
+            s = sinf(rot) * variance;
+
+            // trim it so it looks like it's starting at the origin
+            if (i < 10) {
+                VectorScale(cl.v_right, c * (i / 10.0f), dir);
+                VectorMA(dir, s * (i / 10.0f), cl.v_up, dir);
+            } else {
+                VectorScale(cl.v_right, c, dir);
+                VectorMA(dir, s, cl.v_up, dir);
+            }
+
+            p->alpha = 0.5f;
+            p->alphavel = -1000.0f;
+            p->color = 223 - (Q_rand() & 7);
+            for (j = 0; j < 3; j++) {
+                p->org[j] = move[j] + dir[j] * 3;
+                p->vel[j] = 0;
+            }
+        }
+
+        VectorAdd(move, vec, move);
+    }
+}
+
+/*
+===============
+CG_ParticleSteamEffect
+
+Puffs with velocity along direction, with some randomness thrown in
+===============
+*/
+void CG_ParticleSteamEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude)
+{
+    int         i, j;
+    cparticle_t *p;
+    float       d;
+    vec3_t      r, u;
+
+    MakeNormalVectors(dir, r, u);
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = color + (Q_rand() & 7);
+
+        for (j = 0; j < 3; j++)
+            p->org[j] = org[j] + magnitude * 0.1f * crand();
+
+        VectorScale(dir, magnitude, p->vel);
+        d = crand() * magnitude / 3;
+        VectorMA(p->vel, d, r, p->vel);
+        d = crand() * magnitude / 3;
+        VectorMA(p->vel, d, u, p->vel);
+
+        p->accel[0] = p->accel[1] = 0;
+        p->accel[2] = -PARTICLE_GRAVITY / 2;
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_TrackerTrail
+===============
+*/
+void CG_TrackerTrail(centity_t *ent, const vec3_t end)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    vec3_t      forward, up, angle_dir;
+    int         i, count, sign;
+    cparticle_t *p;
+    const int   dec = 3;
+    float       dist;
+
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
+
+    VectorCopy(vec, forward);
+    vectoangles2(forward, angle_dir);
+    AngleVectors(angle_dir, NULL, NULL, up);
+
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
+
+    sign = ent->trailcount;
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            break;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = -2.0f;
+        p->color = 0;
+        dist = 8 * cosf(DotProduct(move, forward) * M_PIf / 64);
+        if (sign & 1)
+            dist = -dist;
+        VectorMA(move, dist, up, p->org);
+        VectorSet(p->vel, 0, 0, 5);
+
+        VectorAdd(move, vec, move);
+        sign ^= 1;
+    }
+
+    ent->trailcount = sign;
+    VectorCopy(move, ent->lerp_origin);
+}
+
+// Marsaglia 1972 rejection method
+static void RandomDir(vec3_t dir)
+{
+    float x, y, s, a;
+
+    do {
+        x = crand();
+        y = crand();
+        s = x * x + y * y;
+    } while (s > 1);
+
+    a = 2 * sqrtf(1 - s);
+    dir[0] = x * a;
+    dir[1] = y * a;
+    dir[2] = -1 + 2 * s;
+}
+
+void CG_Tracker_Shell(const centity_t *ent, const vec3_t origin)
+{
+    vec3_t          org, dir, mid;
+    int             i, count;
+    cparticle_t     *p;
+    float           radius, scale;
+
+    VectorAvg(ent->mins, ent->maxs, mid);
+    VectorAdd(origin, mid, org);
+    radius = ent->radius;
+    scale = Q_clipf(ent->radius / 40.0f, 1, 2);
+    count = 300 * scale;
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = INSTANT_PARTICLE;
+        p->color = 0;
+        p->scale = scale;
+
+        RandomDir(dir);
+        VectorMA(org, radius, dir, p->org);
+    }
+}
+
+void CG_MonsterPlasma_Shell(const vec3_t origin)
+{
+    vec3_t          dir;
+    int             i;
+    cparticle_t     *p;
+
+    for (i = 0; i < 40; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = INSTANT_PARTICLE;
+        p->color = 0xe0;
+
+        RandomDir(dir);
+        VectorMA(origin, 10, dir, p->org);
+    }
+}
+
+void CG_Widowbeamout(cl_sustain_t *self)
+{
+    static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
+    vec3_t          dir;
+    int             i;
+    cparticle_t     *p;
+    float           ratio;
+
+    ratio = 1.0f - (self->endtime - cl.time) / 2100.0f;
+
+    for (i = 0; i < 300; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = INSTANT_PARTICLE;
+        p->color = colortable[Q_rand() & 3];
+
+        RandomDir(dir);
+        VectorMA(self->org, (45.0f * ratio), dir, p->org);
+    }
+}
+
+void CG_Nukeblast(cl_sustain_t *self)
+{
+    static const byte   colortable[4] = {110, 112, 114, 116};
+    vec3_t          dir;
+    int             i;
+    cparticle_t     *p;
+    float           ratio;
+
+    ratio = 1.0f - (self->endtime - cl.time) / 1000.0f;
+
+    for (i = 0; i < 700; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = INSTANT_PARTICLE;
+        p->color = colortable[Q_rand() & 3];
+
+        RandomDir(dir);
+        VectorMA(self->org, (200.0f * ratio), dir, p->org);
+    }
+}
+
+void CG_WidowSplash(const vec3_t pos)
+{
+    static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
+    int         i;
+    cparticle_t *p;
+    vec3_t      dir;
+
+    for (i = 0; i < 256; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = colortable[Q_rand() & 3];
+
+        RandomDir(dir);
+        VectorMA(pos, 45.0f, dir, p->org);
+        VectorScale(dir, 40.0f, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -0.8f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_TagTrail
+
+===============
+*/
+void CG_TagTrail(centity_t *ent, const vec3_t end, int color)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    int         i, j, count;
+    cparticle_t *p;
+    const int   dec = 5;
+
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
+
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            break;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = -1.0f / (0.8f + frand() * 0.2f);
+        p->color = color;
+        for (j = 0; j < 3; j++) {
+            p->org[j] = move[j] + crand() * 16;
+            p->vel[j] = crand() * 5;
+        }
+
+        VectorAdd(move, vec, move);
+    }
+
+    VectorCopy(move, ent->lerp_origin);
+}
+
+/*
+===============
+CG_ColorExplosionParticles
+===============
+*/
+void CG_ColorExplosionParticles(const vec3_t org, int color, int run)
+{
+    int         i, j;
+    cparticle_t *p;
+
+    for (i = 0; i < 128; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = color + (Q_rand() % run);
+
+        for (j = 0; j < 3; j++) {
+            p->org[j] = org[j] + ((int)(Q_rand() % 32) - 16);
+            p->vel[j] = (int)(Q_rand() % 256) - 128;
+        }
+
+        p->accel[0] = p->accel[1] = 0;
+        p->accel[2] = -PARTICLE_GRAVITY;
+        p->alpha = 1.0f;
+
+        p->alphavel = -0.4f / (0.6f + frand() * 0.2f);
+    }
+}
+
+/*
+===============
+CG_ParticleSmokeEffect - like the steam effect, but unaffected by gravity
+===============
+*/
+void CG_ParticleSmokeEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude)
+{
+    int         i, j;
+    cparticle_t *p;
+    float       d;
+    vec3_t      r, u;
+
+    MakeNormalVectors(dir, r, u);
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = color + (Q_rand() & 7);
+
+        for (j = 0; j < 3; j++)
+            p->org[j] = org[j] + magnitude * 0.1f * crand();
+
+        VectorScale(dir, magnitude, p->vel);
+        d = crand() * magnitude / 3;
+        VectorMA(p->vel, d, r, p->vel);
+        d = crand() * magnitude / 3;
+        VectorMA(p->vel, d, u, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_BlasterParticles2
+
+Wall impact puffs (Green)
+===============
+*/
+void CG_BlasterParticles2(const vec3_t org, const vec3_t dir, unsigned int color)
+{
+    int         i, j;
+    cparticle_t *p;
+    float       d;
+    int         count;
+
+    count = 40;
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = color + (Q_rand() & 7);
+
+        d = Q_rand() & 15;
+        for (j = 0; j < 3; j++) {
+            p->org[j] = org[j] + ((int)(Q_rand() & 7) - 4) + d * dir[j];
+            p->vel[j] = dir[j] * 30 + crand() * 40;
+        }
+
+        p->accel[0] = p->accel[1] = 0;
+        p->accel[2] = -PARTICLE_GRAVITY;
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_BlasterTrail2
+
+Green!
+===============
+*/
+void CG_BlasterTrail2(centity_t *ent, const vec3_t end)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    int         i, j, count;
+    cparticle_t *p;
+    const int   dec = 5;
+
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
+
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            break;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
+        p->color = 0xd0;
+        for (j = 0; j < 3; j++) {
+            p->org[j] = move[j] + crand();
+            p->vel[j] = crand() * 5;
+        }
+
+        VectorAdd(move, vec, move);
+    }
+
+    VectorCopy(move, ent->lerp_origin);
+}
+
+/*
+===============
+CG_IonripperTrail
+===============
+*/
+void CG_IonripperTrail(centity_t *ent, const vec3_t end)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    cparticle_t *p;
+    const int   dec = 5;
+    int         i, count, sign;
+
+    VectorSubtract(end, ent->lerp_origin, vec);
+    count = VectorNormalize(vec) / dec;
+    if (!count)
+        return;
+
+    VectorCopy(ent->lerp_origin, move);
+    VectorScale(vec, dec, vec);
+
+    sign = ent->trailcount;
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            break;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+        p->alpha = 0.5f;
+        p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
+        p->color = 0xe4 + (Q_rand() & 3);
+
+        VectorCopy(move, p->org);
+
+        p->vel[0] = (sign & 1) ? 10 : -10;
+        p->vel[1] = 0;
+        p->vel[2] = 0;
+
+        VectorAdd(move, vec, move);
+        sign ^= 1;
+    }
+
+    ent->trailcount = sign;
+    VectorCopy(move, ent->lerp_origin);
+}
+
+/*
+===============
+CG_TrapParticles
+===============
+*/
+void CG_TrapParticles(centity_t *ent, const vec3_t origin)
+{
+    vec3_t      move;
+    vec3_t      vec;
+    vec3_t      start, end;
+    float       len;
+    int         j;
+    cparticle_t *p;
+    int         dec;
+
+    if (cl.time - ent->fly_stoptime < 10)
+        return;
+    ent->fly_stoptime = cl.time;
+
+    VectorCopy(origin, start);
+    VectorCopy(origin, end);
+    start[2] -= 14;
+    end[2] += 50;
+
+    VectorCopy(start, move);
+    VectorSubtract(end, start, vec);
+    len = VectorNormalize(vec);
+
+    dec = 5;
+    VectorScale(vec, 5, vec);
+
+    // FIXME: this is a really silly way to have a loop
+    while (len > 0) {
+        len -= dec;
+
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+        VectorClear(p->accel);
+
+        p->time = cl.time;
+
+        p->alpha = 1.0f;
+        p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
+        p->color = 0xe0;
+        for (j = 0; j < 3; j++) {
+            p->org[j] = move[j] + crand();
+            p->vel[j] = crand() * 15;
+        }
+        p->accel[2] = PARTICLE_GRAVITY;
+
+        VectorAdd(move, vec, move);
+    }
+
+    {
+        int         i, j, k;
+        cparticle_t *p;
+        float       vel;
+        vec3_t      dir;
+        vec3_t      org;
+
+        VectorCopy(origin, org);
+
+        for (i = -2; i <= 2; i += 4)
+            for (j = -2; j <= 2; j += 4)
+                for (k = -2; k <= 4; k += 4) {
+                    p = CG_AllocParticle();
+                    if (!p)
+                        return;
+
+                    p->time = cl.time;
+                    p->color = 0xe0 + (Q_rand() & 3);
+
+                    p->alpha = 1.0f;
+                    p->alphavel = -1.0f / (0.3f + (Q_rand() & 7) * 0.02f);
+
+                    p->org[0] = org[0] + i + ((Q_rand() & 23) * crand());
+                    p->org[1] = org[1] + j + ((Q_rand() & 23) * crand());
+                    p->org[2] = org[2] + k + ((Q_rand() & 23) * crand());
+
+                    dir[0] = j * 8;
+                    dir[1] = i * 8;
+                    dir[2] = k * 8;
+
+                    VectorNormalize(dir);
+                    vel = 50 + (Q_rand() & 63);
+                    VectorScale(dir, vel, p->vel);
+
+                    p->accel[0] = p->accel[1] = 0;
+                    p->accel[2] = -PARTICLE_GRAVITY;
+                }
+    }
+}
+
+/*
+===============
+CG_ParticleEffect3
+===============
+*/
+void CG_ParticleEffect3(const vec3_t org, const vec3_t dir, int color, int count)
+{
+    int         i, j;
+    cparticle_t *p;
+    float       d;
+
+    for (i = 0; i < count; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = color;
+
+        d = Q_rand() & 7;
+        for (j = 0; j < 3; j++) {
+            p->org[j] = org[j] + ((int)(Q_rand() & 7) - 4) + d * dir[j];
+            p->vel[j] = crand() * 20;
+        }
+
+        p->accel[0] = p->accel[1] = 0;
+        p->accel[2] = PARTICLE_GRAVITY;
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_BerserkSlamParticles
+===============
+*/
+void CG_BerserkSlamParticles(const vec3_t org, const vec3_t dir)
+{
+    static const byte   colortable[4] = {110, 112, 114, 116};
+    int         i;
+    cparticle_t *p;
+    float       d;
+    vec3_t      r, u;
+
+    MakeNormalVectors(dir, r, u);
+
+    for (i = 0; i < 700; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = colortable[Q_rand() & 3];
+
+        VectorCopy(org, p->org);
+
+        d = frand() * 192;
+        VectorScale(dir, d, p->vel);
+        d = crand() * 192;
+        VectorMA(p->vel, d, r, p->vel);
+        d = crand() * 192;
+        VectorMA(p->vel, d, u, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_PowerSplash
+
+TODO: differentiate screen/shield
+===============
+*/
+void CG_PowerSplash(const centity_t *cent)
+{
+    static const byte   colortable[4] = {208, 209, 210, 211};
+    int         i;
+    cparticle_t *p;
+    vec3_t      org, dir, mid;
+
+    VectorAvg(cent->mins, cent->maxs, mid);
+    VectorAdd(cent->current.origin, mid, org);
+
+    for (i = 0; i < 256; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = colortable[Q_rand() & 3];
+
+        RandomDir(dir);
+        VectorMA(org, cent->radius, dir, p->org);
+        VectorScale(dir, 40.0f, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -1.0f / (0.5f + frand() * 0.3f);
+    }
+}
+
+/*
+===============
+CG_TeleporterParticles
+===============
+*/
+void CG_TeleporterParticles2(const vec3_t org)
+{
+    int         i;
+    cparticle_t *p;
+    vec3_t      dir;
+
+    for (i = 0; i < 8; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = 0xdb;
+
+        RandomDir(dir);
+        VectorMA(org, 30.0f, dir, p->org);
+        p->org[2] += 20.0f;
+        VectorScale(dir, -25.0f, p->vel);
+
+        VectorClear(p->accel);
+        p->alpha = 1.0f;
+
+        p->alphavel = -0.8f;
+    }
+}
+
+/*
+===============
+CG_HologramParticles
+===============
+*/
+void CG_HologramParticles(const vec3_t org)
+{
+    int         i;
+    cparticle_t *p;
+    vec3_t      dir;
+    float       ltime;
+    vec3_t      axis[3];
+
+    ltime = cl.time * 0.03f;
+    VectorSet(dir, ltime, ltime, 0);
+    AnglesToAxis(dir, axis);
+
+    for (i = 0; i < NUMVERTEXNORMALS; i++) {
+        p = CG_AllocParticle();
+        if (!p)
+            return;
+
+        p->time = cl.time;
+        p->color = 0xd0;
+
+        VectorRotate(bytedirs[i], axis, dir);
+        VectorMA(org, 100.0f, dir, p->org);
+
+        VectorClear(p->vel);
+        VectorClear(p->accel);
+
+        p->alpha = 1.0f;
+        p->alphavel = INSTANT_PARTICLE;
+    }
+}
+
+/*
+===============
+CG_BarrelExplodingParticles
+===============
+*/
+void CG_BarrelExplodingParticles(const vec3_t org)
+{
+    static const vec3_t ofs[6] = {
+        { -10, 0, 40 },
+        { 10, 0, 40 },
+        { 0, 16, 30 },
+        { 16, 0, 25 },
+        { 0, -16, 20 },
+        { -16, 0, 15 },
+    };
+
+    static const vec3_t dir[6] = {
+        { 0, 0, 1 },
+        { 0, 0, 1 },
+        { 0, 1, 0 },
+        { 1, 0, 0 },
+        { 0, -1, 0 },
+        { -1, 0, 0 },
+    };
+
+    static const byte color[4] = { 52, 64, 96, 112 };
+
+    for (int i = 0; i < 6; i++) {
+        vec3_t p;
+        VectorAdd(org, ofs[i], p);
+        for (int j = 0; j < 4; j++)
+            CG_ParticleSmokeEffect(p, dir[i], color[j], 5, 40);
+    }
+}
+
 extern int          r_numparticles;
 extern particle_t   r_particles[MAX_PARTICLES];
 
 /*
 ===============
-CL_AddParticles
+CG_AddParticles
 ===============
 */
-void CL_AddParticles(void)
+void CG_AddParticles(void)
 {
     cparticle_t     *p, *next;
     float           alpha;
@@ -1817,21 +2806,20 @@ void CL_AddParticles(void)
     active_particles = active;
 }
 
-
 /*
 ==============
-CL_ClearEffects
+CG_ClearEffects
 
 ==============
 */
-void CL_ClearEffects(void)
+void CG_ClearEffects(void)
 {
-    CL_ClearLightStyles();
-    CL_ClearParticles();
-    CL_ClearDlights();
+    CG_ClearLightStyles();
+    CG_ClearParticles();
+    CG_ClearDlights();
 }
 
-void CL_InitEffects(void)
+void CG_InitEffects(void)
 {
     int i, j;
 

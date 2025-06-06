@@ -58,6 +58,7 @@ qhandle_t   cl_img_flare;
 static cvar_t   *cl_muzzleflashes;
 cvar_t   *cl_hit_markers;
 
+#define MAX_FOOTSTEP_IDS    256
 #define MAX_FOOTSTEP_SFX    15
 
 typedef struct {
@@ -65,29 +66,26 @@ typedef struct {
     qhandle_t   sfx[MAX_FOOTSTEP_SFX];
 } cl_footstep_sfx_t;
 
-static cl_footstep_sfx_t    *cl_footstep_sfx;
+static cl_footstep_sfx_t    cl_footstep_sfx[MAX_FOOTSTEP_IDS];
 static int                  cl_num_footsteps;
 static qhandle_t            cl_last_footstep;
 
-extern mtexinfo_t nulltexinfo;
-
 /*
 =================
-CL_FindFootstepSurface
+CG_FindFootstepSurface
 =================
 */
-static int CL_FindFootstepSurface(int entnum)
+static int CG_FindFootstepSurface(int entnum)
 {
-    int footstep_id = FOOTSTEP_ID_DEFAULT;
-    centity_t *cent = &cl_entities[entnum];
+    const centity_t *cent = &cl_entities[entnum];
 
     // skip if no materials loaded
     if (cl_num_footsteps <= FOOTSTEP_RESERVED_COUNT)
-        return footstep_id;
+        return FOOTSTEP_ID_DEFAULT;
 
     // allow custom footsteps to be disabled
     if (cl_footsteps->integer >= 2)
-        return footstep_id;
+        return FOOTSTEP_ID_DEFAULT;
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
@@ -114,37 +112,40 @@ static int CL_FindFootstepSurface(int entnum)
 
     // first, a trace done solely against MASK_SOLID
     trace_t tr;
-    CL_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, ENTITYNUM_NONE, MASK_SOLID);
+    CG_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, ENTITYNUM_NONE, MASK_SOLID);
 
     if (tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
-        return footstep_id;
+        return FOOTSTEP_ID_DEFAULT;
     }
 
     if (tr.surface_id) {
         // copy over the surfaces' step ID
-        footstep_id = cl.bsp->texinfo[tr.surface_id - 1].step_id;
+        surface_info_t surf;
+        trap_GetSurfaceInfo(tr.surface_id, &surf);
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
         vec3_t new_end;
         VectorCopy(tr.endpos, new_end);
         new_end[2] += 1;
 
-        CL_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);
+        CG_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
         if (tr.surface_id)
-            footstep_id = cl.bsp->texinfo[tr.surface_id - 1].step_id;
+            trap_GetSurfaceInfo(tr.surface_id, &surf);
+
+        return surf.footstep_id;
     }
 
-    return footstep_id;
+    return FOOTSTEP_ID_DEFAULT;
 }
 
 /*
 =================
-CL_PlayFootstepSfx
+CG_PlayFootstepSfx
 =================
 */
-static void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float attenuation)
+static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float attenuation)
 {
     const cl_footstep_sfx_t *sfx;
     qhandle_t footstep_sfx;
@@ -153,15 +154,15 @@ static void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float atte
     if (!cl_num_footsteps)
         return; // should not really happen
 
-    if (step_id == -1)
-        step_id = CL_FindFootstepSurface(entnum);
-
-    Q_assert((unsigned)step_id < cl_num_footsteps);
+    if (step_id == FOOTSTEP_ID_DEFAULT)
+        step_id = CG_FindFootstepSurface(entnum);
+    if (step_id >= MAX_FOOTSTEP_IDS)
+        step_id = FOOTSTEP_ID_DEFAULT;
 
     sfx = &cl_footstep_sfx[step_id];
-    if (!sfx->num_sfx)
+    if (sfx->num_sfx <= 0)
         sfx = &cl_footstep_sfx[0];
-    if (!sfx->num_sfx)
+    if (sfx->num_sfx <= 0)
         return; // no footsteps, not even fallbacks
 
     // pick a random footstep sound, but avoid playing the same one twice in a row
@@ -176,10 +177,10 @@ static void CL_PlayFootstepSfx(int step_id, int entnum, float volume, float atte
 
 /*
 =================
-CL_RegisterFootstep
+CG_RegisterFootstep
 =================
 */
-static void CL_RegisterFootstep(cl_footstep_sfx_t *sfx, const char *material)
+static void CG_RegisterFootstep(cl_footstep_sfx_t *sfx, const char *material)
 {
     char name[MAX_QPATH];
     size_t len;
@@ -203,47 +204,37 @@ static void CL_RegisterFootstep(cl_footstep_sfx_t *sfx, const char *material)
 
 /*
 =================
-CL_RegisterFootsteps
+CG_RegisterFootsteps
 =================
 */
-static void CL_RegisterFootsteps(void)
+static void CG_RegisterFootsteps(void)
 {
-    mtexinfo_t *tex;
+    surface_info_t surf;
     int i;
 
     cl_last_footstep = 0;
 
-    Z_Freep(&cl_footstep_sfx);
-    if (!cl.bsp) {
-        cl_num_footsteps = 0;
-        return;
-    }
-
-    cl_num_footsteps = BSP_LoadMaterials(cl.bsp);
-    Q_assert(cl_num_footsteps >= FOOTSTEP_RESERVED_COUNT);
-    cl_footstep_sfx = Z_Malloc(sizeof(cl_footstep_sfx[0]) * cl_num_footsteps);
-
-    for (i = 0; i < cl_num_footsteps; i++)
+    for (i = 0; i < MAX_FOOTSTEP_IDS; i++)
         cl_footstep_sfx[i].num_sfx = -1;
 
     // load reserved footsteps
-    CL_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_DEFAULT], NULL);
-    CL_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_LADDER], "ladder");
+    CG_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_DEFAULT], NULL);
+    CG_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_LADDER], "ladder");
 
     // load the rest
-    for (i = 0, tex = cl.bsp->texinfo; i < cl.bsp->numtexinfo; i++, tex++) {
-        cl_footstep_sfx_t *sfx = &cl_footstep_sfx[tex->step_id];
+    for (i = 1; trap_GetSurfaceInfo(i, &surf) && surf.footstep_id < MAX_FOOTSTEP_IDS; i++) {
+        cl_footstep_sfx_t *sfx = &cl_footstep_sfx[surf.footstep_id];
         if (sfx->num_sfx == -1)
-            CL_RegisterFootstep(sfx, tex->material);
+            CG_RegisterFootstep(sfx, surf.material);
     }
 }
 
 /*
 =================
-CL_RegisterTEntSounds
+CG_RegisterTEntSounds
 =================
 */
-void CL_RegisterTEntSounds(void)
+void CG_RegisterTEntSounds(void)
 {
     cl_sfx_ric1 = S_RegisterSound("world/ric1.wav");
     cl_sfx_ric2 = S_RegisterSound("world/ric2.wav");
@@ -261,7 +252,7 @@ void CL_RegisterTEntSounds(void)
     S_RegisterSound("player/fall2.wav");
     S_RegisterSound("player/fall1.wav");
 
-    CL_RegisterFootsteps();
+    CG_RegisterFootsteps();
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
@@ -286,10 +277,10 @@ static const char *const muzzlenames[MFLASH_TOTAL] = {
 
 /*
 =================
-CL_RegisterTEntModels
+CG_RegisterTEntModels
 =================
 */
-void CL_RegisterTEntModels(void)
+void CG_RegisterTEntModels(void)
 {
     void *data;
     int len;
@@ -349,12 +340,12 @@ typedef struct {
 
 static explosion_t  cl_explosions[MAX_EXPLOSIONS];
 
-static void CL_ClearExplosions(void)
+static void CG_ClearExplosions(void)
 {
     memset(cl_explosions, 0, sizeof(cl_explosions));
 }
 
-static explosion_t *CL_AllocExplosion(void)
+static explosion_t *CG_AllocExplosion(void)
 {
     explosion_t *e, *oldest;
     int     i;
@@ -380,15 +371,15 @@ static explosion_t *CL_AllocExplosion(void)
     return oldest;
 }
 
-static explosion_t *CL_PlainExplosion(const vec3_t pos)
+static explosion_t *CG_PlainExplosion(const vec3_t pos)
 {
     explosion_t *ex;
 
-    ex = CL_AllocExplosion();
+    ex = CG_AllocExplosion();
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
@@ -399,15 +390,15 @@ static explosion_t *CL_PlainExplosion(const vec3_t pos)
     return ex;
 }
 
-static void CL_BFGExplosion(const vec3_t pos)
+static void CG_BFGExplosion(const vec3_t pos)
 {
     explosion_t *ex;
 
-    ex = CL_AllocExplosion();
+    ex = CG_AllocExplosion();
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
     ex->ent.model = cl_mod_bfg_explo;
@@ -416,7 +407,7 @@ static void CL_BFGExplosion(const vec3_t pos)
     ex->frames = 4;
 }
 
-void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
+void CG_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
     if (!cl_muzzleflashes->integer)
         return;
@@ -433,10 +424,10 @@ void CL_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
     else
         cl.weapon.muzzle.roll = 0;
     VectorCopy(offset, cl.weapon.muzzle.offset);
-    cl.weapon.muzzle.time = cl.servertime - CL_FRAMETIME;
+    cl.weapon.muzzle.time = cl.servertime - CG_FRAMETIME;
 }
 
-void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
+void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
 {
     explosion_t *ex;
 
@@ -448,13 +439,13 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     if (!cl_mod_muzzles[fx])
         return;
 
-    ex = CL_AllocExplosion();
+    ex = CG_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     VectorCopy(angles, ex->ent.angles);
     ex->type = ex_mflash;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
@@ -464,31 +455,31 @@ void CL_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
 
 /*
 =================
-CL_SmokeAndFlash
+CG_SmokeAndFlash
 =================
 */
-void CL_SmokeAndFlash(const vec3_t origin)
+void CG_SmokeAndFlash(const vec3_t origin)
 {
     explosion_t *ex;
 
-    ex = CL_AllocExplosion();
+    ex = CG_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     ex->type = ex_misc;
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_smoke;
 
-    ex = CL_AllocExplosion();
+    ex = CG_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
     ex->type = ex_flash;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_flash;
 }
 
-static void CL_AddExplosions(void)
+static void CG_AddExplosions(void)
 {
     entity_t    *ent;
     int         i;
@@ -504,7 +495,7 @@ static void CL_AddExplosions(void)
             if (cl.time - ex->start > 50)
                 ex->type = ex_free;
             else
-                V_AddEntity(&ex->ent);
+                trap_R_AddEntity(&ex->ent);
             continue;
         }
 
@@ -563,8 +554,8 @@ static void CL_AddExplosions(void)
             continue;
 
         if (ex->light)
-            V_AddLight(ent->origin, ex->light * ent->alpha,
-                       ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+            trap_R_AddLight(ent->origin, ex->light * ent->alpha,
+                            ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
 
         if (ex->type != ex_light) {
             VectorCopy(ent->origin, ent->oldorigin);
@@ -575,7 +566,7 @@ static void CL_AddExplosions(void)
             ent->oldframe = ex->baseframe + f;
             ent->backlerp = 1.0f - (frac - f);
 
-            V_AddEntity(ent);
+            trap_R_AddEntity(ent);
         }
     }
 }
@@ -601,12 +592,12 @@ typedef struct {
 
 static laser_t  cl_lasers[MAX_LASERS];
 
-static void CL_ClearLasers(void)
+static void CG_ClearLasers(void)
 {
     memset(cl_lasers, 0, sizeof(cl_lasers));
 }
 
-static laser_t *CL_AllocLaser(void)
+static laser_t *CG_AllocLaser(void)
 {
     laser_t *l;
     int i;
@@ -622,7 +613,7 @@ static laser_t *CL_AllocLaser(void)
     return NULL;
 }
 
-static void CL_AddLasers(void)
+static void CG_AddLasers(void)
 {
     laser_t     *l;
     entity_t    ent;
@@ -650,15 +641,15 @@ static void CL_AddLasers(void)
         VectorCopy(l->end, ent.oldorigin);
         ent.frame = l->width;
 
-        V_AddEntity(&ent);
+        trap_R_AddEntity(&ent);
     }
 }
 
-static void CL_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
+static void CG_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
 {
     laser_t *l;
 
-    l = CL_AllocLaser();
+    l = CG_AllocLaser();
     if (!l)
         return;
 
@@ -667,184 +658,6 @@ static void CL_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
     l->lifetime = 100;
     l->color = (colors >> ((Q_rand() % 4) * 8)) & 0xff;
     l->width = 4;
-}
-
-/*
-==============================================================
-
-BEAM MANAGEMENT
-
-==============================================================
-*/
-
-void CL_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entnum)
-{
-    int         i, steps;
-    vec3_t      dist, org, offset = { 0 };
-    float       x, y, z, d;
-    entity_t    ent;
-    vec3_t      angles;
-    float       len;
-    int         framenum;
-    float       model_length;
-    float       hand_multiplier = 0;
-    player_state_t  *ps, *ops;
-
-    if (entnum < cl.maxclients) {
-        if (model == cl_mod_heatbeam)
-            VectorSet(offset, 2, 7, -3);
-        else if (model == cl_mod_grapple_cable)
-            VectorSet(offset, 9, 12, -3);
-        else if (model == cl_mod_lightning)
-            VectorSet(offset, 0, 12, -12);
-    }
-
-    // if coming from the player, update the start position
-    if (entnum == cl.frame.ps.clientnum) {
-        if (cl_gun->integer == 3)
-            hand_multiplier = -1;
-        else if (cl_gun->integer == 2)
-            hand_multiplier = 1;
-        else if (info_hand->integer == 2)
-            hand_multiplier = 0;
-        else if (info_hand->integer == 1)
-            hand_multiplier = -1;
-        else
-            hand_multiplier = 1;
-
-        // set up gun position
-        ps = CL_KEYPS;
-        ops = CL_OLDKEYPS;
-
-        for (i = 0; i < 3; i++)
-            org[i] = cl.refdef.vieworg[i] + ops->gunoffset[i] +
-                CL_KEYLERPFRAC * (ps->gunoffset[i] - ops->gunoffset[i]);
-
-        x = offset[0];
-        y = offset[1];
-        z = offset[2];
-
-        // adjust offset for gun fov
-        if (cl_gunfov->value > 0) {
-            float fov_x = Cvar_ClampValue(cl_gunfov, 30, 160);
-            float fov_y = V_CalcFov(fov_x, 4, 3);
-
-            x *= tanf(cl.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
-            z *= tanf(cl.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
-        }
-
-        VectorMA(org, hand_multiplier * x, cl.v_right, org);
-        VectorMA(org, y, cl.v_forward, org);
-        VectorMA(org, z, cl.v_up, org);
-        if (hand_multiplier == 0)
-            VectorMA(org, -1, cl.v_up, org);
-
-        // calculate pitch and yaw
-        VectorSubtract(end, org, dist);
-
-        if (model != cl_mod_grapple_cable) {
-            d = VectorLength(dist);
-            VectorScale(cl.v_forward, d, dist);
-        }
-
-        // FIXME: use cl.refdef.viewangles?
-        vectoangles2(dist, angles);
-
-        // if it's the heatbeam, draw the particle effect
-        if (model == cl_mod_heatbeam && !sv_paused->integer)
-            CL_Heatbeam(org, dist);
-
-        framenum = 1;
-    } else {
-        VectorCopy(start, org);
-
-        // calculate pitch and yaw
-        VectorSubtract(end, org, dist);
-        vectoangles2(dist, angles);
-
-        // if it's a player, use the hardcoded player offset
-        if (entnum < cl.maxclients) {
-            vec3_t  tmp, f, r, u;
-
-            tmp[0] = -angles[0];
-            tmp[1] = angles[1] + 180.0f;
-            tmp[2] = 0;
-            AngleVectors(tmp, f, r, u);
-
-            VectorMA(org, -offset[0] + 1, r, org);
-            VectorMA(org, -offset[1], f, org);
-            VectorMA(org, -offset[2] - 10, u, org);
-        } else if (model == cl_mod_heatbeam) {
-            // if it's a monster, do the particle effect
-            CL_MonsterPlasma_Shell(start);
-        }
-
-        framenum = 2;
-    }
-
-    // add new entities for the beams
-    d = VectorNormalize(dist);
-    if (model == cl_mod_heatbeam) {
-        model_length = 32.0f;
-    } else if (model == cl_mod_lightning) {
-        model_length = 35.0f;
-        d -= 20.0f; // correction so it doesn't end in middle of tesla
-    } else {
-        model_length = 30.0f;
-    }
-
-    // correction for grapple cable model, which has origin in the middle
-    if (entnum == cl.frame.ps.clientnum && model == cl_mod_grapple_cable && hand_multiplier) {
-        VectorMA(org, model_length * 0.5f, dist, org);
-        d -= model_length * 0.5f;
-    }
-
-    steps = ceilf(d / model_length);
-
-    memset(&ent, 0, sizeof(ent));
-    ent.model = model;
-
-    // PMM - special case for lightning model .. if the real length is shorter than the model,
-    // flip it around & draw it from the end to the start.  This prevents the model from going
-    // through the tesla mine (instead it goes through the target)
-    if ((model == cl_mod_lightning) && (steps <= 1)) {
-        VectorCopy(end, ent.origin);
-        ent.flags = RF_FULLBRIGHT;
-        ent.angles[0] = angles[0];
-        ent.angles[1] = angles[1];
-        ent.angles[2] = Com_SlowRand() % 360;
-        V_AddEntity(&ent);
-        return;
-    }
-
-    if (steps > 1) {
-        len = (d - model_length) / (steps - 1);
-        VectorScale(dist, len, dist);
-    }
-
-    if (model == cl_mod_heatbeam) {
-        ent.frame = framenum;
-        ent.flags = RF_FULLBRIGHT;
-        ent.angles[0] = -angles[0];
-        ent.angles[1] = angles[1] + 180.0f;
-        ent.angles[2] = cl.time % 360;
-    } else if (model == cl_mod_lightning) {
-        ent.flags = RF_FULLBRIGHT;
-        ent.angles[0] = -angles[0];
-        ent.angles[1] = angles[1] + 180.0f;
-    } else {
-        ent.flags = RF_NOSHADOW;
-        ent.angles[0] = angles[0];
-        ent.angles[1] = angles[1];
-    }
-
-    VectorCopy(org, ent.origin);
-    for (i = 0; i < steps; i++) {
-        if (model != cl_mod_heatbeam)
-            ent.angles[2] = Com_SlowRand() % 360;
-        V_AddEntity(&ent);
-        VectorAdd(ent.origin, dist, ent.origin);
-    }
 }
 
 /*
@@ -859,12 +672,12 @@ SUSTAIN MANAGEMENT
 
 static cl_sustain_t     cl_sustains[MAX_SUSTAINS];
 
-static void CL_ClearSustains(void)
+static void CG_ClearSustains(void)
 {
     memset(cl_sustains, 0, sizeof(cl_sustains));
 }
 
-static cl_sustain_t *CL_AllocSustain(void)
+static cl_sustain_t *CG_AllocSustain(void)
 {
     cl_sustain_t    *s;
     int             i;
@@ -877,7 +690,7 @@ static cl_sustain_t *CL_AllocSustain(void)
     return NULL;
 }
 
-static void CL_ProcessSustain(void)
+static void CG_ProcessSustain(void)
 {
     cl_sustain_t    *s;
     int             i;
@@ -892,21 +705,21 @@ static void CL_ProcessSustain(void)
     }
 }
 
-static void CL_ParseWidow(const vec3_t pos)
+static void CG_ParseWidow(const vec3_t pos)
 {
     cl_sustain_t    *s;
 
-    s = CL_AllocSustain();
+    s = CG_AllocSustain();
     if (!s)
         return;
 
     VectorCopy(pos, s->org);
     s->endtime = cl.time + 2100;
-    s->think = CL_Widowbeamout;
+    s->think = CG_Widowbeamout;
     s->nextthink = cl.time;
 }
 
-static void CL_ParseNuke(const vec3_t pos)
+static void CG_ParseNuke(const vec3_t pos)
 {
     explosion_t     *ex;
     cl_sustain_t    *s;
@@ -914,17 +727,17 @@ static void CL_ParseNuke(const vec3_t pos)
     S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cl_sfx_grenexp, 1, ATTN_NONE, 0);
     S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
 
-    ex = CL_PlainExplosion(pos);
+    ex = CG_PlainExplosion(pos);
     ex->ent.model = cl_mod_explo4;
     ex->ent.scale = 2.0f;
 
-    s = CL_AllocSustain();
+    s = CG_AllocSustain();
     if (!s)
         return;
 
     VectorCopy(pos, s->org);
     s->endtime = cl.time + 1000;
-    s->think = CL_Nukeblast;
+    s->think = CG_Nukeblast;
     s->nextthink = cl.time;
 }
 
@@ -958,11 +771,11 @@ static void cl_railspiral_color_changed(cvar_t *self)
     }
 }
 
-static void CL_RailCore(const vec3_t start, const vec3_t end)
+static void CG_RailCore(const vec3_t start, const vec3_t end)
 {
     laser_t *l;
 
-    l = CL_AllocLaser();
+    l = CG_AllocLaser();
     if (!l)
         return;
 
@@ -974,7 +787,7 @@ static void CL_RailCore(const vec3_t start, const vec3_t end)
     l->rgba = railcore_color;
 }
 
-static void CL_RailSpiral(const vec3_t start, const vec3_t end)
+static void CG_RailSpiral(const vec3_t start, const vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -993,7 +806,7 @@ static void CL_RailSpiral(const vec3_t start, const vec3_t end)
     MakeNormalVectors(vec, right, up);
 
     for (i = 0; i < len; i++) {
-        p = CL_AllocParticle();
+        p = CG_AllocParticle();
         if (!p)
             return;
 
@@ -1020,16 +833,16 @@ static void CL_RailSpiral(const vec3_t start, const vec3_t end)
     }
 }
 
-static void CL_RailTrail(const vec3_t start, const vec3_t end, entity_event_t event)
+static void CG_RailTrail(const vec3_t start, const vec3_t end, entity_event_t event)
 {
     if (!cl_railtrail_type->integer && event != EV_RAILTRAIL2) {
-        CL_OldRailTrail(start, end);
+        CG_OldRailTrail(start, end);
     } else {
         if (cl_railcore_width->integer > 0) {
-            CL_RailCore(start, end);
+            CG_RailCore(start, end);
         }
         if (cl_railtrail_type->integer > 1) {
-            CL_RailSpiral(start, end);
+            CG_RailSpiral(start, end);
         }
     }
 }
@@ -1047,7 +860,7 @@ static void dirtoangles(const vec3_t dir, vec3_t angles)
         angles[1] = 0;
 }
 
-static void CL_BerserkSlam(centity_t *cent, entity_event_t event)
+static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
 {
     vec3_t  forward, right, ofs, dir, origin;
     float   scale;
@@ -1074,11 +887,11 @@ static void CL_BerserkSlam(centity_t *cent, entity_event_t event)
     origin[2] = cent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
 
     trace_t tr;
-    CL_Trace(&tr, cent->current.origin, NULL, NULL, origin, cent->current.number, MASK_SOLID);
+    CG_Trace(&tr, cent->current.origin, NULL, NULL, origin, cent->current.number, MASK_SOLID);
 
-    CL_BerserkSlamParticles(tr.endpos, dir);
+    CG_BerserkSlamParticles(tr.endpos, dir);
 
-    explosion_t *ex = CL_AllocExplosion();
+    explosion_t *ex = CG_AllocExplosion();
     VectorCopy(tr.endpos, ex->ent.origin);
     dirtoangles(dir, ex->ent.angles);
     ex->type = ex_misc;
@@ -1086,13 +899,13 @@ static void CL_BerserkSlam(centity_t *cent, entity_event_t event)
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->ent.scale = 3;
     ex->ent.skinnum = 2;
-    ex->start = cl.servertime - CL_FRAMETIME;
+    ex->start = cl.servertime - CG_FRAMETIME;
     ex->light = 550;
     VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
     ex->frames = 4;
 }
 
-static void CL_SoundEvent(centity_t *cent, uint32_t param)
+static void CG_SoundEvent(centity_t *cent, uint32_t param)
 {
     int channel = (param >> 13) & 7;
     int index = param & (MAX_SOUNDS - 1);
@@ -1107,7 +920,7 @@ static void CL_SoundEvent(centity_t *cent, uint32_t param)
     S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
-static void CL_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
+static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
 {
     int count = (param >> 8) & 255;
     const vec_t *pos = cent->current.origin;
@@ -1117,8 +930,8 @@ static void CL_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     ByteToDir(param & 255, dir);
 
     if (color == EV_SPLASH_ELECTRIC_N64) {
-        CL_ParticleEffect(pos, dir, 0x6c, count / 2);
-        CL_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
+        CG_ParticleEffect(pos, dir, 0x6c, count / 2);
+        CG_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
         color = EV_SPLASH_SPARKS;
     } else {
         static const byte splash_color[] = { 0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8 };
@@ -1126,7 +939,7 @@ static void CL_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
             r = 0x00;
         else
             r = splash_color[color - EV_SPLASH_UNKNOWN];
-        CL_ParticleEffect(pos, dir, r, count);
+        CG_ParticleEffect(pos, dir, r, count);
     }
 
     if (color == EV_SPLASH_SPARKS) {
@@ -1140,7 +953,7 @@ static void CL_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     }
 }
 
-static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t param)
+static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t param)
 {
     int color = (param >>  8) & 255;
     int count = (param >> 16) & 255;
@@ -1154,45 +967,45 @@ static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
 
     switch (type) {
     case EV_BLOOD:
-        CL_ParticleEffect(pos, dir, 0xe8, 60);
+        CG_ParticleEffect(pos, dir, 0xe8, 60);
         break;
     case EV_MORE_BLOOD:
-        CL_ParticleEffect(pos, dir, 0xe8, 250);
+        CG_ParticleEffect(pos, dir, 0xe8, 250);
         break;
     case EV_GREEN_BLOOD:
-        CL_ParticleEffect2(pos, dir, 0xdf, 30);
+        CG_ParticleEffect2(pos, dir, 0xdf, 30);
         break;
     case EV_GUNSHOT:
-        CL_ParticleEffect(pos, dir, 0, 40);
+        CG_ParticleEffect(pos, dir, 0, 40);
         break;
     case EV_SHOTGUN:
-        CL_ParticleEffect(pos, dir, 0, 20);
+        CG_ParticleEffect(pos, dir, 0, 20);
         break;
     case EV_SPARKS:
     case EV_BULLET_SPARKS:
-        CL_ParticleEffect(pos, dir, 0xe0, 6);
+        CG_ParticleEffect(pos, dir, 0xe0, 6);
         break;
     case EV_HEATBEAM_SPARKS:
-        CL_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
+        CG_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
         break;
     case EV_HEATBEAM_STEAM:
-        CL_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
+        CG_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
         break;
     case EV_SCREEN_SPARKS:
-        CL_ParticleEffect(pos, dir, 0xd0, 40);
+        CG_ParticleEffect(pos, dir, 0xd0, 40);
         break;
     case EV_SHIELD_SPARKS:
-        CL_ParticleEffect(pos, dir, 0xb0, 40);
+        CG_ParticleEffect(pos, dir, 0xb0, 40);
         break;
     case EV_ELECTRIC_SPARKS:
-        CL_ParticleEffect(pos, dir, 0x75, 40);
+        CG_ParticleEffect(pos, dir, 0x75, 40);
         break;
     case EV_LASER_SPARKS:
     case EV_WELDING_SPARKS:
-        CL_ParticleEffect2(pos, dir, color, count);
+        CG_ParticleEffect2(pos, dir, color, count);
         break;
     case EV_TUNNEL_SPARKS:
-        CL_ParticleEffect3(pos, dir, color, count);
+        CG_ParticleEffect3(pos, dir, color, count);
         break;
     default:
         break;
@@ -1202,7 +1015,7 @@ static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     case EV_GUNSHOT:
     case EV_SHOTGUN:
     case EV_BULLET_SPARKS:
-        CL_SmokeAndFlash(pos);
+        CG_SmokeAndFlash(pos);
         break;
     case EV_HEATBEAM_SPARKS:
     case EV_HEATBEAM_STEAM:
@@ -1228,7 +1041,7 @@ static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     }
 
     if (type == EV_WELDING_SPARKS) {
-        explosion_t *ex = CL_PlainExplosion(pos);
+        explosion_t *ex = CG_PlainExplosion(pos);
         ex->type = ex_light;
         ex->light = 100 + (Q_rand() % 75);
         VectorSet(ex->lightcolor, 1.0f, 1.0f, 0.3f);
@@ -1236,7 +1049,7 @@ static void CL_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     }
 }
 
-static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
+static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
 {
     const vec_t *pos = cent->current.origin;
     explosion_t *ex;
@@ -1246,24 +1059,24 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
 
     switch (type) {
     case EV_EXPLOSION_PLAIN:
-        CL_PlainExplosion(pos);
+        CG_PlainExplosion(pos);
         break;
     case EV_EXPLOSION1:
     case EV_EXPLOSION1_NL:
-        ex = CL_PlainExplosion(pos);
+        ex = CG_PlainExplosion(pos);
         if (type == EV_EXPLOSION1_NL)
             ex->light = 0;
-        CL_ExplosionParticles(pos);
+        CG_ExplosionParticles(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_NP:
-        CL_PlainExplosion(pos);
+        CG_PlainExplosion(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_BIG:
-        ex = CL_PlainExplosion(pos);
+        ex = CG_PlainExplosion(pos);
         ex->ent.model = cl_mod_explo4;
         ex->ent.scale = 2.0f;
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
@@ -1271,41 +1084,41 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
 
     case EV_EXPLOSION2:
     case EV_EXPLOSION2_NL:
-        ex = CL_PlainExplosion(pos);
+        ex = CG_PlainExplosion(pos);
         ex->frames = 19;
         ex->baseframe = 30;
         if (type == EV_EXPLOSION2_NL)
             ex->light = 0;
-        CL_ExplosionParticles(pos);
+        CG_ExplosionParticles(pos);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLASTER:            // blaster hitting wall
     case EV_BLASTER2:           // green blaster hitting wall
     case EV_FLECHETTE:          // flechette
-        ex = CL_AllocExplosion();
+        ex = CG_AllocExplosion();
         VectorCopy(pos, ex->ent.origin);
         dirtoangles(dir, ex->ent.angles);
         ex->type = ex_misc;
         ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
         switch (type) {
         case EV_BLASTER:
-            CL_BlasterParticles(pos, dir);
+            CG_BlasterParticles(pos, dir);
             ex->lightcolor[0] = 1;
             ex->lightcolor[1] = 1;
             break;
         case EV_BLASTER2:
-            CL_BlasterParticles2(pos, dir, 0xd0);
+            CG_BlasterParticles2(pos, dir, 0xd0);
             ex->ent.skinnum = 1;
             ex->lightcolor[1] = 1;
             break;
         default:
-            CL_BlasterParticles2(pos, dir, 0x6f);
+            CG_BlasterParticles2(pos, dir, 0x6f);
             ex->ent.skinnum = 2;
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cl.servertime - CL_FRAMETIME;
+        ex->start = cl.servertime - CG_FRAMETIME;
         ex->light = 150;
         ex->ent.model = cl_mod_explode;
         ex->frames = 4;
@@ -1313,19 +1126,19 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         break;
 
     case EV_BLUEHYPERBLASTER:
-        CL_BlasterParticles(pos, dir);
+        CG_BlasterParticles(pos, dir);
         break;
 
     case EV_GRENADE_EXPLOSION:
     case EV_GRENADE_EXPLOSION_WATER:
-        ex = CL_PlainExplosion(pos);
+        ex = CG_PlainExplosion(pos);
         ex->frames = 19;
         ex->baseframe = 30;
         if (cl_disable_explosions->integer & NOEXP_GRENADE)
             ex->type = ex_light;
 
         if (!(cl_disable_particles->integer & NOPART_GRENADE_EXPLOSION))
-            CL_ExplosionParticles(pos);
+            CG_ExplosionParticles(pos);
 
         if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
@@ -1338,12 +1151,12 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
 
     case EV_ROCKET_EXPLOSION:
     case EV_ROCKET_EXPLOSION_WATER:
-        ex = CL_PlainExplosion(pos);
+        ex = CG_PlainExplosion(pos);
         if (cl_disable_explosions->integer & NOEXP_ROCKET)
             ex->type = ex_light;
 
         if (!(cl_disable_particles->integer & NOPART_ROCKET_EXPLOSION))
-            CL_ExplosionParticles(pos);
+            CG_ExplosionParticles(pos);
 
         if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
@@ -1355,16 +1168,16 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         break;
 
     case EV_BFG_EXPLOSION:
-        CL_BFGExplosion(pos);
+        CG_BFGExplosion(pos);
         break;
 
     case EV_BFG_EXPLOSION_BIG:
-        CL_BFGExplosionParticles(pos);
+        CG_BFGExplosionParticles(pos);
         break;
 
     case EV_TRACKER_EXPLOSION:
-        CL_ColorFlash(pos, 0, 150, -1, -1, -1);
-        CL_ColorExplosionParticles(pos, 0, 1);
+        CG_ColorFlash(pos, 0, 150, -1, -1, -1);
+        CG_ColorExplosionParticles(pos, 0, 1);
         S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_disrexp, 1, ATTN_NORM, 0);
         break;
 
@@ -1374,7 +1187,7 @@ static void CL_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
 }
 
 // an entity has just been parsed that has an event value
-static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
+static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
     entity_state_t *s = &cent->current;
     const vec_t *start = s->old_origin;
@@ -1384,23 +1197,23 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     switch (event) {
     case EV_ITEM_RESPAWN:
         S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
-        CL_ItemRespawnParticles(s->origin);
+        CG_ItemRespawnParticles(s->origin);
         break;
     case EV_PLAYER_TELEPORT:
         S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
-        CL_TeleportParticles(s->origin);
+        CG_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
         if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(-1, number, 1.0f, ATTN_NORM);
+            CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 1.0f, ATTN_NORM);
         break;
     case EV_OTHER_FOOTSTEP:
         if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(-1, number, 0.5f, ATTN_IDLE);
+            CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 0.5f, ATTN_IDLE);
         break;
     case EV_LADDER_STEP:
         if (cl_footsteps->integer)
-            CL_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
+            CG_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
     case EV_FALLSHORT:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
@@ -1412,84 +1225,84 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_MUZZLEFLASH:
-        CL_MuzzleFlash(cent, param);
+        CG_MuzzleFlash(cent, param);
         break;
     case EV_MUZZLEFLASH2:
-        CL_MuzzleFlash2(cent, param);
+        CG_MuzzleFlash2(cent, param);
         break;
     case EV_SOUND:
-        CL_SoundEvent(cent, param);
+        CG_SoundEvent(cent, param);
         break;
     case EV_BERSERK_SLAM:
     case EV_GUNCMDR_SLAM:
-        CL_BerserkSlam(cent, event);
+        CG_BerserkSlam(cent, event);
         break;
 
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
-        CL_RailTrail(start, s->origin, event);
+        CG_RailTrail(start, s->origin, event);
         S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
 
     case EV_BUBBLETRAIL:
-        CL_BubbleTrail(start, s->origin);
+        CG_BubbleTrail(start, s->origin);
         break;
 
     case EV_BUBBLETRAIL2:
-        CL_BubbleTrail2(start, s->origin, 8);
+        CG_BubbleTrail2(start, s->origin, 8);
         S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_LASER:
-        CL_ParseLaser(start, s->origin, 0xd0d1d2d3);
+        CG_ParseLaser(start, s->origin, 0xd0d1d2d3);
         break;
 
     case EV_BFG_ZAP:
-        CL_ParseLaser(start, s->origin, 0xd0d1d2d3);
-        CL_BFGExplosion(s->origin);
+        CG_ParseLaser(start, s->origin, 0xd0d1d2d3);
+        CG_BFGExplosion(s->origin);
         break;
 
     case EV_SPLASH_UNKNOWN ... EV_SPLASH_ELECTRIC_N64:
-        CL_SplashEvent(cent, event, param);
+        CG_SplashEvent(cent, event, param);
         break;
 
     case EV_BLOOD ... EV_TUNNEL_SPARKS:
-        CL_DamageEvent(cent, event, param);
+        CG_DamageEvent(cent, event, param);
         break;
 
     case EV_EXPLOSION_PLAIN ... EV_TRACKER_EXPLOSION:
-        CL_ExplosionEvent(cent, event, param);
+        CG_ExplosionEvent(cent, event, param);
         break;
 
     case EV_POWER_SPLASH:
         S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
-        CL_PowerSplash(cent);
+        CG_PowerSplash(cent);
         break;
 
     case EV_BOSSTPORT:          // boss teleporting to station
-        CL_BigTeleportParticles(s->origin);
+        CG_BigTeleportParticles(s->origin);
         S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
         break;
 
     case EV_NUKEBLAST:
-        CL_ParseNuke(s->origin);
+        CG_ParseNuke(s->origin);
         break;
 
     case EV_CHAINFIST_SMOKE:
         VectorSet(dir, 0, 0, 1);
-        CL_ParticleSmokeEffect(s->origin, dir, 0, 20, 20);
+        CG_ParticleSmokeEffect(s->origin, dir, 0, 20, 20);
         break;
 
     case EV_TELEPORT_EFFECT:
-        CL_TeleportParticles(s->origin);
+        CG_TeleportParticles(s->origin);
         break;
 
     case EV_WIDOWBEAMOUT:
-        CL_ParseWidow(s->origin);
+        CG_ParseWidow(s->origin);
         break;
 
     case EV_WIDOWSPLASH:
-        CL_WidowSplash(s->origin);
+        CG_WidowSplash(s->origin);
         break;
 
     default:
@@ -1497,20 +1310,20 @@ static void CL_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     }
 }
 
-void CL_EntityEvents(centity_t *cent)
+void CG_EntityEvents(centity_t *cent)
 {
     entity_state_t *s = &cent->current;
 
-    if (CL_FRAMESYNC) {
+    if (CG_FRAMESYNC) {
         // EF_TELEPORTER acts like an event, but is not cleared each frame
         if (s->effects & EF_TELEPORTER)
-            CL_TeleporterParticles(s->origin);
+            CG_TeleporterParticles(s->origin);
 
         if (s->morefx & EFX_TELEPORTER2)
-            CL_TeleporterParticles2(s->origin);
+            CG_TeleporterParticles2(s->origin);
 
         if (s->morefx & EFX_BARREL_EXPLODING)
-            CL_BarrelExplodingParticles(s->origin);
+            CG_BarrelExplodingParticles(s->origin);
 
         if (s->morefx & EFX_STEAM) {
             uint32_t param = s->skinnum;
@@ -1519,7 +1332,7 @@ void CL_EntityEvents(centity_t *cent)
             int magnitude = (param >> 24) & 0xff;
             vec3_t dir;
             ByteToDir(param & 0xff, dir);
-            CL_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
+            CG_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
         }
     }
 
@@ -1528,35 +1341,35 @@ void CL_EntityEvents(centity_t *cent)
         return;
 #endif
 
-    CL_EntityEvent(cent, s->event[0], s->event_param[0]);
-    CL_EntityEvent(cent, s->event[1], s->event_param[1]);
+    CG_EntityEvent(cent, s->event[0], s->event_param[0]);
+    CG_EntityEvent(cent, s->event[1], s->event_param[1]);
 }
 
 /*
 =================
-CL_AddTEnts
+CG_AddTEnts
 =================
 */
-void CL_AddTEnts(void)
+void CG_AddTEnts(void)
 {
-    CL_AddExplosions();
-    CL_ProcessSustain();
-    CL_AddLasers();
+    CG_AddExplosions();
+    CG_ProcessSustain();
+    CG_AddLasers();
 }
 
 /*
 =================
-CL_ClearTEnts
+CG_ClearTEnts
 =================
 */
-void CL_ClearTEnts(void)
+void CG_ClearTEnts(void)
 {
-    CL_ClearExplosions();
-    CL_ClearLasers();
-    CL_ClearSustains();
+    CG_ClearExplosions();
+    CG_ClearLasers();
+    CG_ClearSustains();
 }
 
-void CL_InitTEnts(void)
+void CG_InitTEnts(void)
 {
     cl_muzzleflashes = Cvar_Get("cl_muzzleflashes", "1", 0);
     cl_hit_markers = Cvar_Get("cl_hit_markers", "2", 0);

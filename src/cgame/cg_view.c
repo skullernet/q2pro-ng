@@ -71,11 +71,11 @@ static void V_ClearScene(void)
 
 /*
 =====================
-V_AddEntity
+trap_R_AddEntity
 
 =====================
 */
-void V_AddEntity(const entity_t *ent)
+void trap_R_AddEntity(const entity_t *ent)
 {
     if (r_numentities >= MAX_ENTITIES)
         return;
@@ -97,11 +97,11 @@ void V_AddParticle(const particle_t *p)
 
 /*
 =====================
-V_AddLight
+trap_R_AddLight
 
 =====================
 */
-void V_AddLight(const vec3_t org, float intensity, float r, float g, float b)
+void trap_R_AddLight(const vec3_t org, float intensity, float r, float g, float b)
 {
     dlight_t    *dl;
 
@@ -241,7 +241,7 @@ static void V_TestLights(void)
 
 //===================================================================
 
-void CL_UpdateBlendSetting(void)
+void CG_UpdateBlendSetting(void)
 {
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOBLEND);
@@ -378,9 +378,9 @@ void V_RenderView(void)
         V_ClearScene();
 
         // build a refresh entity list and calc cl.sim*
-        // this also calls CL_CalcViewValues which loads
+        // this also calls CG_CalcViewValues which loads
         // v_forward, etc.
-        CL_AddEntities();
+        CG_AddEntities();
 
 #if USE_DEBUG
         if (cl_testparticles->integer)
@@ -548,7 +548,7 @@ static const cmdreg_t v_cmds[] = {
 
 static void cl_add_blend_changed(cvar_t *self)
 {
-    CL_UpdateBlendSetting();
+    CG_UpdateBlendSetting();
 }
 
 /*
