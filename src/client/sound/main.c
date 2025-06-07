@@ -28,6 +28,11 @@ unsigned    s_registration_sequence;
 channel_t   s_channels[MAX_CHANNELS];
 int         s_numchannels;
 
+loopsound_t  s_loopsounds[MAX_PACKET_ENTITIES];
+int          s_numloopsounds;
+
+hash_map_t  *s_entities;
+
 sndstarted_t    s_started;
 bool            s_active;
 bool            s_supports_float;
@@ -38,6 +43,7 @@ vec3_t      listener_forward;
 vec3_t      listener_right;
 vec3_t      listener_up;
 int         listener_entnum;
+bool        listener_underwater;
 
 bool        s_registering;
 
@@ -187,6 +193,8 @@ void S_Init(void)
 
     num_sfx = 0;
 
+    s_entities = HashMap_TagCreate(unsigned, vec3_t, HashInt32, NULL, TAG_SOUND);
+
     s_paintedtime = 0;
 
     s_registration_sequence = 1;
@@ -237,8 +245,15 @@ void S_Shutdown(void)
     S_FreeAllSounds();
     OGG_Stop();
 
-    s_api->shutdown();
-    s_api = NULL;
+    if (s_api) {
+        s_api->shutdown();
+        s_api = NULL;
+    }
+
+    if (s_entities) {
+        HashMap_Destroy(s_entities);
+        s_entities = NULL;
+    }
 
     s_started = SS_NOT;
     s_active = false;
@@ -287,7 +302,7 @@ sfx_t *S_SfxForHandle(qhandle_t hSfx)
         return NULL;
     }
 
-    Q_assert(hSfx > 0 && hSfx <= num_sfx);
+    Q_assert_soft(hSfx > 0 && hSfx <= num_sfx);
     return &known_sfx[hSfx - 1];
 }
 
@@ -742,6 +757,65 @@ void S_StartLocalSoundOnce(const char *sound)
     }
 }
 
+void S_ClearLoopingSounds(void)
+{
+    s_numloopsounds = 0;
+}
+
+void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float attenuation, bool stereo_pan)
+{
+    Q_assert_soft(entnum < ENTITYNUM_WORLD);
+
+    sfx_t *sfx = S_SfxForHandle(hSfx);
+    if (!sfx)
+        return;
+
+    if (s_numloopsounds >= q_countof(s_loopsounds))
+        return;
+
+    loopsound_t *loop = s_loopsounds[s_numloopsounds++];
+    loop->entnum = entnum;
+    loop->sfx = sfx;
+    loop->volume = volume;
+    if (attenuation == ATTN_STATIC)
+        loop->dist_mult = SOUND_LOOPATTENUATE;
+    else
+        loop->dist_mult = attenuation * SOUND_LOOPATTENUATE_MULT;
+    loop->stereo_pan = stereo_pan;
+}
+
+void S_UpdateEntity(unsigned entnum, const vec3_t origin)
+{
+    Q_assert_soft(entnum < ENTITYNUM_WORLD);
+    vec3_t org;
+    VectorCopy(origin, org);
+    HashMap_Insert(s_entities, &entnum, &org);
+}
+
+void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater)
+{
+    Q_assert_soft(entnum < ENTITYNUM_WORLD);
+    listener_entnum = entnum;
+    VectorCopy(origin, listener_origin);
+    VectorCopy(axis[0], listener_forward);
+    VectorCopy(axis[1], listener_right);
+    VectorCopy(axis[2], listener_up);
+    listener_underwater = underwater;
+}
+
+void S_GetEntityOrigin(unsigned entnum, vec3_t origin)
+{
+    if (entnum == listener_entnum) {
+        VectorCopy(listener_origin, origin);
+    } else {
+        vec3_t *org = HashMap_Lookup(vec3_t, s_entities, &entnum);
+        if (org)
+            VectorCopy(*org, origin);
+        else
+            VectorClear(origin);
+    }
+}
+
 /*
 ==================
 S_StopAllSounds
@@ -753,6 +827,8 @@ void S_StopAllSounds(void)
 
     if (!s_started)
         return;
+
+    s_numloopsounds = 0;
 
     // clear all the playsounds
     memset(s_playsounds, 0, sizeof(s_playsounds));
@@ -796,31 +872,6 @@ void S_PauseRawSamples(bool paused)
 // =======================================================================
 // Update sound buffer
 // =======================================================================
-
-int S_BuildSoundList(int *sounds)
-{
-    int             i, num, count;
-    entity_state_t  *ent;
-
-    if (cls.state != ca_active || !s_active || sv_paused->integer || !s_ambient->integer)
-        return 0;
-
-    for (i = count = 0; i < cl.frame.numEntities; i++) {
-        num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
-        ent = &cl.entityStates[num];
-        if (s_ambient->integer == 2 && !ent->modelindex) {
-            sounds[i] = 0;
-        } else if (s_ambient->integer == 3 && ent->number != listener_entnum) {
-            sounds[i] = 0;
-        } else {
-            sounds[i] = ent->sound & (MAX_SOUNDS - 1);
-            if (sounds[i])
-                count++;
-        }
-    }
-
-    return count;
-}
 
 /*
 =================
@@ -891,14 +942,6 @@ void S_Update(void)
     if (cls.state == ca_loading) {
         // S_ClearBuffer should be already done in S_StopAllSounds
         return;
-    }
-
-    // set listener entity number
-    // other parameters should be already set up by CL_CalcViewValues
-    if (cls.state != ca_active) {
-        listener_entnum = -1;
-    } else {
-        listener_entnum = cl.frame.ps.clientnum;
     }
 
     OGG_Update();

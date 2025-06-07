@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../client.h"
 #include "shared/list.h"
+#include "common/hash_map.h"
 
 #if USE_SNDDMA
 #include "client/sound/dma.h"
@@ -88,6 +89,15 @@ typedef struct {
     unsigned    srcnum;
 #endif
 } channel_t;
+
+typedef struct {
+    sfx_t       *sfx;
+    float       volume;
+    float       dist_mult;
+    uint16_t    entnum;
+    bool        stereo_pan;
+    unsigned    framenum;
+} loopsound_t;
 
 typedef struct {
     char        *name;
@@ -158,6 +168,11 @@ extern const sndapi_t   *s_api;
 extern channel_t    s_channels[MAX_CHANNELS];
 extern int          s_numchannels;
 
+extern loopsound_t  s_loopsounds[MAX_PACKET_ENTITIES];
+extern int          s_numloopsounds;
+
+extern hash_map_t   *s_entities;
+
 extern int          s_paintedtime;
 extern list_t       s_pendingplays;
 
@@ -175,22 +190,14 @@ extern cvar_t       *s_underwater_gain_hf;
     ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)
 
 #define S_IsUnderWater() \
-    (cls.state == ca_active && cl.frame.ps.rdflags & RDF_UNDERWATER && s_underwater->integer)
+    (cls.state == ca_active && listener_underwater && s_underwater->integer)
 
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
-
-static inline float S_GetEntityLoopVolume(const entity_state_t *ent)
-{
-    int vol = (ent->sound >> 24) & 255;
-    return vol ? vol / 255.0f : 1.0f;
-}
-
-#define S_GetEntityLoopStereoPan(ent)   !((ent)->renderfx & RF_NO_STEREO)
 
 sfx_t *S_SfxForHandle(qhandle_t hSfx);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
-int S_BuildSoundList(int *sounds);
+void S_GetEntityOrigin(unsigned entnum, vec3_t origin);
 void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);

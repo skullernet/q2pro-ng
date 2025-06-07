@@ -179,6 +179,8 @@ static void parse_entity_update(const entity_state_t *state)
     if (entity_is_optimized(state)) {
         Com_PlayerToEntityState(&cl.frame.ps, &ent->current);
     }
+
+    CG_SetEntitySoundOrigin(ent);
 }
 
 static void set_active_state(void)
@@ -375,7 +377,7 @@ void CG_DeltaFrame(void)
             cl.hit_marker_count = cl.frame.ps.stats[STAT_HITS] - cl.oldframe.ps.stats[STAT_HITS];
             cl.hit_marker_time = cls.realtime;
             if (cl_hit_markers->integer > 1)
-                S_StartSound(NULL, listener_entnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
+                trap_S_StartSound(NULL, listener_entnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
         }
     }
 
@@ -600,6 +602,32 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
         trap_R_AddEntity(&ent);
         VectorAdd(ent.origin, dist, ent.origin);
     }
+}
+
+static void CG_AddEntityLoopingSound(const entity_state_t *ent)
+{
+    int index = ent->sound & (MAX_SOUNDS - 1);
+
+    if (!index)
+        return;
+    if (s_ambient->integer <= 0)
+        return;
+    if (s_ambient->integer == 2 && !ent->modelindex)
+        return;
+    if (s_ambient->integer == 3 && ent->number != cl.frame.clientNum)
+        return;
+
+    int vol = (ent->sound >> 24) & 255;
+    int att = (ent->sound >> 16) & 255;
+
+    if (vol == 0)
+        vol = 255;
+    if (att == ATTN_ESCAPE_CODE)
+        att = 0;
+    else if (att == 0)
+        att = ATTN_ESCAPE_CODE;
+
+    trap_S_AddLoopingSound(ent->number, cl.sound_precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
 }
 
 /*
@@ -1183,6 +1211,8 @@ static void CG_AddPacketEntities(void)
 skip:
         if (!has_trail)
             VectorCopy(ent.origin, cent->lerp_origin);
+
+        CG_AddEntityLoopingSound(s1);
     }
 }
 
@@ -1586,10 +1616,7 @@ void CG_CalcViewValues(void)
 
     VectorAdd(cl.refdef.vieworg, viewoffset, cl.refdef.vieworg);
 
-    VectorCopy(cl.refdef.vieworg, listener_origin);
-    VectorCopy(cl.v_forward, listener_forward);
-    VectorCopy(cl.v_right, listener_right);
-    VectorCopy(cl.v_up, listener_up);
+    trap_S_UpdateListener(cl.frame.clientNum, cl.refdef.vieworg, cl.viewaxis, cl.frame.ps.rdflags & RDF_UNDERWATER); 
 }
 
 /*
@@ -1601,6 +1628,9 @@ Emits all entities, particles, and lights to the refresh
 */
 void CG_AddEntities(void)
 {
+    trap_R_ClearScene();
+    trap_S_ClearLoopingSounds();
+
     CG_CalcViewValues();
     CG_FinishViewValues();
     CG_AddPacketEntities();
@@ -1608,32 +1638,20 @@ void CG_AddEntities(void)
     CG_AddParticles();
     CG_AddDLights();
     CG_AddLightStyles();
-    LOC_AddLocationsToScene();
 }
 
 /*
 ===============
-CG_GetEntitySoundOrigin
+CG_SetEntitySoundOrigin
 
 Called to get the sound spatialization origin
 ===============
 */
-void CG_GetEntitySoundOrigin(unsigned entnum, vec3_t org)
+void CG_SetEntitySoundOrigin(const centity_t *ent)
 {
-    const centity_t *ent;
-
-    if (entnum >= ENTITYNUM_WORLD)
-        Com_Error(ERR_DROP, "%s: bad entity", __func__);
-
-    if (entnum == listener_entnum) {
-        // should this ever happen?
-        VectorCopy(listener_origin, org);
-        return;
-    }
+    vec3_t org;
 
     // interpolate origin
-    // FIXME: what should be the sound origin point for RF_BEAM entities?
-    ent = &cl_entities[entnum];
     LerpVector(ent->prev.origin, ent->current.origin, cl.lerpfrac, org);
 
     // offset the origin for BSP models
@@ -1643,4 +1661,6 @@ void CG_GetEntitySoundOrigin(unsigned entnum, vec3_t org)
         VectorAvg(mins, maxs, mid);
         VectorAdd(org, mid, org);
     }
+
+    trap_S_UpdateEntity(entnum, org);
 }

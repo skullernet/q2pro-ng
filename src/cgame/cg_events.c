@@ -171,7 +171,7 @@ static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float
     if (footstep_sfx == cl_last_footstep)
         footstep_sfx = sfx->sfx[(sfx_num + 1) % sfx->num_sfx];
 
-    S_StartSound(NULL, entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
+    trap_S_StartSound(NULL, entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
     cl_last_footstep = footstep_sfx;
 }
 
@@ -196,7 +196,7 @@ static void CG_RegisterFootstep(cl_footstep_sfx_t *sfx, const char *material)
         Q_assert(len < sizeof(name));
         if (FS_LoadFile(name + 1, NULL) < 0)
             break;
-        sfx->sfx[i] = S_RegisterSound(name);
+        sfx->sfx[i] = trap_S_RegisterSound(name);
     }
 
     sfx->num_sfx = i;
@@ -236,28 +236,28 @@ CG_RegisterTEntSounds
 */
 void CG_RegisterTEntSounds(void)
 {
-    cl_sfx_ric1 = S_RegisterSound("world/ric1.wav");
-    cl_sfx_ric2 = S_RegisterSound("world/ric2.wav");
-    cl_sfx_ric3 = S_RegisterSound("world/ric3.wav");
-    cl_sfx_lashit = S_RegisterSound("weapons/lashit.wav");
-    cl_sfx_spark5 = S_RegisterSound("world/spark5.wav");
-    cl_sfx_spark6 = S_RegisterSound("world/spark6.wav");
-    cl_sfx_spark7 = S_RegisterSound("world/spark7.wav");
-    cl_sfx_railg = S_RegisterSound("weapons/railgf1a.wav");
-    cl_sfx_rockexp = S_RegisterSound("weapons/rocklx1a.wav");
-    cl_sfx_grenexp = S_RegisterSound("weapons/grenlx1a.wav");
-    cl_sfx_watrexp = S_RegisterSound("weapons/xpld_wat.wav");
+    cl_sfx_ric1 = trap_S_RegisterSound("world/ric1.wav");
+    cl_sfx_ric2 = trap_S_RegisterSound("world/ric2.wav");
+    cl_sfx_ric3 = trap_S_RegisterSound("world/ric3.wav");
+    cl_sfx_lashit = trap_S_RegisterSound("weapons/lashit.wav");
+    cl_sfx_spark5 = trap_S_RegisterSound("world/spark5.wav");
+    cl_sfx_spark6 = trap_S_RegisterSound("world/spark6.wav");
+    cl_sfx_spark7 = trap_S_RegisterSound("world/spark7.wav");
+    cl_sfx_railg = trap_S_RegisterSound("weapons/railgf1a.wav");
+    cl_sfx_rockexp = trap_S_RegisterSound("weapons/rocklx1a.wav");
+    cl_sfx_grenexp = trap_S_RegisterSound("weapons/grenlx1a.wav");
+    cl_sfx_watrexp = trap_S_RegisterSound("weapons/xpld_wat.wav");
 
-    S_RegisterSound("player/land1.wav");
-    S_RegisterSound("player/fall2.wav");
-    S_RegisterSound("player/fall1.wav");
+    trap_S_RegisterSound("player/land1.wav");
+    trap_S_RegisterSound("player/fall2.wav");
+    trap_S_RegisterSound("player/fall1.wav");
 
     CG_RegisterFootsteps();
 
-    cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
-    cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+    cl_sfx_lightning = trap_S_RegisterSound("weapons/tesla.wav");
+    cl_sfx_disrexp = trap_S_RegisterSound("weapons/disrupthit.wav");
 
-    cl_sfx_hit_marker = S_RegisterSound("weapons/marker.wav");
+    cl_sfx_hit_marker = trap_S_RegisterSound("weapons/marker.wav");
 }
 
 static const char *const muzzlenames[MFLASH_TOTAL] = {
@@ -724,8 +724,8 @@ static void CG_ParseNuke(const vec3_t pos)
     explosion_t     *ex;
     cl_sustain_t    *s;
 
-    S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cl_sfx_grenexp, 1, ATTN_NONE, 0);
-    S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cl_sfx_grenexp, 1, ATTN_NONE, 0);
+    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
 
     ex = CG_PlainExplosion(pos);
     ex->ent.model = cl_mod_explo4;
@@ -868,8 +868,8 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     AngleVectors(cent->current.angles, forward, right, NULL);
 
     if (event == EV_BERSERK_SLAM) {
-        S_StartSound(NULL, cent->current.number, CHAN_WEAPON, S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
-        S_StartSound(NULL, cent->current.number, CHAN_AUTO, S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, cent->current.number, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, cent->current.number, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
         VectorSet(ofs, 20.0f, -14.3f, -21.0f);
         VectorSet(dir, 0, 0, 1);
     } else {
@@ -917,7 +917,7 @@ static void CG_SoundEvent(centity_t *cent, uint32_t param)
         att = 0;
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
-    S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+    trap_S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
 static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
@@ -945,11 +945,11 @@ static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     if (color == EV_SPLASH_SPARKS) {
         r = Q_rand() & 3;
         if (r == 0)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark5, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark5, 1, ATTN_STATIC, 0);
         else if (r == 1)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark6, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark6, 1, ATTN_STATIC, 0);
         else
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark7, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_spark7, 1, ATTN_STATIC, 0);
     }
 }
 
@@ -1019,12 +1019,12 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         break;
     case EV_HEATBEAM_SPARKS:
     case EV_HEATBEAM_STEAM:
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
     case EV_SCREEN_SPARKS:
     case EV_SHIELD_SPARKS:
     case EV_ELECTRIC_SPARKS:
-        S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, 257, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
     default:
         break;
@@ -1033,11 +1033,11 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     if (type == EV_GUNSHOT || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
         if (r == 1)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric1, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric1, 1, ATTN_NORM, 0);
         else if (r == 2)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric2, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric2, 1, ATTN_NORM, 0);
         else if (r == 3)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_ric3, 1, ATTN_NORM, 0);
     }
 
     if (type == EV_WELDING_SPARKS) {
@@ -1067,19 +1067,19 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION1_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_NP:
         CG_PlainExplosion(pos);
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_BIG:
         ex = CG_PlainExplosion(pos);
         ex->ent.model = cl_mod_explo4;
         ex->ent.scale = 2.0f;
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION2:
@@ -1090,7 +1090,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION2_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLASTER:            // blaster hitting wall
@@ -1122,7 +1122,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         ex->light = 150;
         ex->ent.model = cl_mod_explode;
         ex->frames = 4;
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLUEHYPERBLASTER:
@@ -1144,9 +1144,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_GRENADE_EXPLOSION_WATER)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
         else
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_ROCKET_EXPLOSION:
@@ -1162,9 +1162,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_ROCKET_EXPLOSION_WATER)
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_watrexp, 1, ATTN_NORM, 0);
         else
-            S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_EXPLOSION:
@@ -1178,7 +1178,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     case EV_TRACKER_EXPLOSION:
         CG_ColorFlash(pos, 0, 150, -1, -1, -1);
         CG_ColorExplosionParticles(pos, 0, 1);
-        S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_disrexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_disrexp, 1, ATTN_NORM, 0);
         break;
 
     default:
@@ -1196,11 +1196,11 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
 
     switch (event) {
     case EV_ITEM_RESPAWN:
-        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
+        trap_S_StartSound(NULL, number, CHAN_WEAPON, trap_S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
         CG_ItemRespawnParticles(s->origin);
         break;
     case EV_PLAYER_TELEPORT:
-        S_StartSound(NULL, number, CHAN_WEAPON, S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
+        trap_S_StartSound(NULL, number, CHAN_WEAPON, trap_S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
         CG_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
@@ -1216,13 +1216,13 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
             CG_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
     case EV_FALLSHORT:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_FALL:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_FALLFAR:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_MUZZLEFLASH:
         CG_MuzzleFlash(cent, param);
@@ -1241,7 +1241,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
         CG_RailTrail(start, s->origin, event);
-        S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
+        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_railg, 1, ATTN_NORM, 0);
         break;
 
     case EV_BUBBLETRAIL:
@@ -1250,7 +1250,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
 
     case EV_BUBBLETRAIL2:
         CG_BubbleTrail2(start, s->origin, 8);
-        S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cl_sfx_lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_LASER:
@@ -1275,13 +1275,13 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
 
     case EV_POWER_SPLASH:
-        S_StartSound(NULL, number, CHAN_AUTO, S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
         CG_PowerSplash(cent);
         break;
 
     case EV_BOSSTPORT:          // boss teleporting to station
         CG_BigTeleportParticles(s->origin);
-        S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
         break;
 
     case EV_NUKEBLAST:

@@ -205,7 +205,7 @@ void CG_RegisterSounds(void)
         s = cl.configstrings[CS_SOUNDS + i];
         if (!s[0])
             break;
-        cl.sound_precache[i] = S_RegisterSound(s);
+        cl.sound_precache[i] = trap_S_RegisterSound(s);
     }
     S_EndRegistration();
 }
@@ -430,7 +430,7 @@ void CG_UpdateConfigstring(int index)
     }
 
     if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
-        cl.sound_precache[index - CS_SOUNDS] = S_RegisterSound(s);
+        cl.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
         return;
     }
 

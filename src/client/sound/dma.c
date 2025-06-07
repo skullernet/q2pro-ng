@@ -673,13 +673,11 @@ static void DMA_Spatialize(channel_t *ch)
     if (ch->fixed_origin) {
         VectorCopy(ch->origin, origin);
     } else {
-        CL_GetEntitySoundOrigin(ch->entnum, origin);
+        S_GetEntityOrigin(ch->entnum, origin);
     }
 
     S_SpatializeOrigin(origin, ch->master_vol, ch->dist_mult, &ch->leftvol, &ch->rightvol, dma.channels - 1);
 }
-
-#define GET_STEREO(ent) (S_GetEntityLoopStereoPan(ent) && dma.channels - 1)
 
 /*
 ==================
@@ -693,52 +691,37 @@ as the entities are sent to the client
 static void AddLoopSounds(void)
 {
     int         i, j;
-    int         sounds[MAX_EDICTS];
-    float       left, right, left_total, right_total, vol, att;
+    float       left, right, left_total, right_total;
+    loopsound_t *loop, *other;
     channel_t   *ch;
     sfx_t       *sfx;
     sfxcache_t  *sc;
-    int         num;
-    entity_state_t *ent;
     vec3_t      origin;
 
-    if (!S_BuildSoundList(sounds))
-        return;
-
-    for (i = 0; i < cl.frame.numEntities; i++) {
-        if (!sounds[i])
+    for (i = 0; i < s_numloopsounds; i++) {
+        loop = &s_loopsounds[i];
+        if (loop->framecount == s_framecount)
             continue;
 
-        sfx = S_SfxForHandle(cl.sound_precache[sounds[i]]);
-        if (!sfx)
-            continue;       // bad sound effect
+        sfx = loop->sfx;
         sc = sfx->cache;
         if (!sc)
             continue;
 
-        num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
-        ent = &cl.entityStates[num];
-
-        vol = S_GetEntityLoopVolume(ent);
-        att = Com_GetEntityLoopDistMult(ent);
-
         // find the total contribution of all sounds of this type
-        CL_GetEntitySoundOrigin(ent->number, origin);
-        S_SpatializeOrigin(origin, vol, att, &left_total,
-                           &right_total, GET_STEREO(ent));
-        for (j = i + 1; j < cl.frame.numEntities; j++) {
-            if (sounds[j] != sounds[i])
+        S_GetEntityOrigin(loop->entnum, origin);
+        S_SpatializeOrigin(origin, loop->volume, loop->dist_mult,
+                           &left_total, &right_total, loop->stereo_pan & (dma.channels - 1));
+        for (j = i + 1; j < s_numloopsounds; j++) {
+            other = &s_loopsounds[j];
+            if (other->sfx != loop->sfx)
                 continue;
-            sounds[j] = 0;  // don't check this again later
+            // don't check this again later
+            other->framecount = s_framecount;
 
-            num = (cl.frame.firstEntity + j) & PARSE_ENTITIES_MASK;
-            ent = &cl.entityStates[num];
-
-            CL_GetEntitySoundOrigin(ent->number, origin);
-            S_SpatializeOrigin(origin,
-                               S_GetEntityLoopVolume(ent),
-                               Com_GetEntityLoopDistMult(ent),
-                               &left, &right, GET_STEREO(ent));
+            S_GetEntityOrigin(other->entnum, origin);
+            S_SpatializeOrigin(origin, other->volume, other->dist_mult,
+                               &left, &right, other->stereo_pan & (dma.channels - 1));
             left_total += left;
             right_total += right;
         }
@@ -753,8 +736,8 @@ static void AddLoopSounds(void)
 
         ch->leftvol = min(left_total, 1.0f);
         ch->rightvol = min(right_total, 1.0f);
-        ch->master_vol = vol;
-        ch->dist_mult = att;    // for S_IsFullVolume()
+        ch->master_vol = loop->volume;
+        ch->dist_mult = loop->dist_mult;    // for S_IsFullVolume()
         ch->autosound = true;   // remove next frame
         ch->sfx = sfx;
         ch->pos = s_paintedtime % sc->length;

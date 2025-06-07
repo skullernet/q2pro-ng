@@ -204,6 +204,13 @@ static const cgame_import_t cgame_dll_imports = {
     .Args = Cmd_RawArgsBuffer,
     .AddCommandString = PF_AddCommandString,
 
+    .S_RegisterSound = S_RegisterSound,
+    .S_StartSound = S_StartSound,
+    .S_ClearLoopingSounds = S_ClearLoopingSounds,
+    .S_AddLoopingSound = S_AddLoopingSound,
+    .S_UpdateEntity = S_UpdateEntity,
+    .S_UpdateListener = S_UpdateListener,
+
     .FS_OpenFile = PF_OpenFile,
     .FS_CloseFile = PF_CloseFile,
     .FS_ReadFile = FS_Read,

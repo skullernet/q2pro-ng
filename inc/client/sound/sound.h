@@ -29,6 +29,12 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel,
 void S_StartLocalSound(const char *s);
 void S_StartLocalSoundOnce(const char *s);
 
+void S_ClearLoopingSounds(void);
+void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float attenuation, bool stereo_pan);
+
+void S_UpdateEntity(unsigned entnum, const vec3_t origin);
+void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater);
+
 void S_FreeAllSounds(void);
 void S_StopAllSounds(void);
 void S_Update(void);
