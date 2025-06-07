@@ -1186,6 +1186,34 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     }
 }
 
+static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, float volume, float attenuation)
+{
+    const clientinfo_t *ci;
+
+    if (number < MAX_CLIENTS)
+        ci = &cl.clientinfo[number];
+    else
+        ci = &cl.baseclientinfo;
+
+    trap_S_StartSound(NULL, number, channel, ci->sounds[index], volume, attenuation, 0);
+}
+
+static void CG_PainEvent(int number, int health)
+{
+    sexed_sound_t l;
+
+    if (health < 25)
+        l = SS_PAIN25_1;
+    else if (health < 50)
+        l = SS_PAIN50_1;
+    else if (health < 75)
+        l = SS_PAIN75_1;
+    else
+        l = SS_PAIN100_1;
+
+    CG_SexedSound(number, CHAN_VOICE, l + (Q_rand() & 1), 1, ATTN_NORM);
+}
+
 // an entity has just been parsed that has an event value
 static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
@@ -1219,10 +1247,25 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_FALL:
-        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("*fall2.wav"), 1, ATTN_NORM, 0);
+        CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM, 0);
         break;
     case EV_FALLFAR:
-        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("*fall1.wav"), 1, ATTN_NORM, 0);
+        CG_SexedSound(number, CHAN_AUTO, SS_FALL1, 1, ATTN_NORM, 0);
+        break;
+    case EV_DEATH1 ... EV_DEATH4:
+        CG_SexedSound(number, CHAN_VOICE, SS_DEATH1 + (event - EV_DEATH1), 1, ATTN_NORM);
+        break;
+    case EV_PAIN:
+        CG_PainEvent(number, param);
+        break;
+    case EV_GURP:
+        CG_SexedSound(number, CHAN_VOICE, SS_GURP1 + (Q_rand() & 1), 1, ATTN_NORM);
+        break;
+    case EV_DROWN:
+        CG_SexedSound(number, CHAN_VOICE, SS_DROWN, 1, ATTN_NORM);
+        break;
+    case EV_JUMP:
+        CG_SexedSound(number, CHAN_VOICE, SS_JUMP, 1, ATTN_NORM);
         break;
     case EV_MUZZLEFLASH:
         CG_MuzzleFlash(cent, param);

@@ -668,13 +668,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
                     break;
                 }
             }
-            static const char *const death_sounds[] = {
-                "*death1.wav",
-                "*death2.wav",
-                "*death3.wav",
-                "*death4.wav"
-            };
-            G_StartSound(self, CHAN_VOICE, G_SoundIndex(random_element(death_sounds)), 1, ATTN_NORM);
+            G_AddEvent(self, EV_DEATH1 + irandom1(4), 0);
             self->client->anim_time = 0;
         }
     }
@@ -2599,7 +2593,7 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
-            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("*jump1.wav"), 1, ATTN_NORM);
+            G_AddEvent(ent, EV_JUMP, 0);
             // Paril: removed to make ambushes more effective and to
             // not have monsters around corners come to jumps
             // PlayerNoise(ent, ent->s.origin, PNOISE_SELF);

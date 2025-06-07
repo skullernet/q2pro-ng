@@ -147,29 +147,7 @@ static void P_DamageFeedback(edict_t *player)
     if ((level.time > player->pain_debounce_time) && !(player->flags & FL_GODMODE) && (client->invincible_time <= level.time)) {
         player->pain_debounce_time = level.time + SEC(0.7f);
 
-        static const char *const pain_sounds[] = {
-            "*pain25_1.wav",
-            "*pain25_2.wav",
-            "*pain50_1.wav",
-            "*pain50_2.wav",
-            "*pain75_1.wav",
-            "*pain75_2.wav",
-            "*pain100_1.wav",
-            "*pain100_2.wav",
-        };
-
-        if (player->health < 25)
-            l = 0;
-        else if (player->health < 50)
-            l = 2;
-        else if (player->health < 75)
-            l = 4;
-        else
-            l = 6;
-
-        l |= brandom();
-
-        G_StartSound(player, CHAN_VOICE, G_SoundIndex(pain_sounds[l]), 1, ATTN_NORM);
+        G_AddEvent(player, EV_PAIN, player->health);
         // Paril: pain noises alert monsters
         PlayerNoise(player, player->s.origin, PNOISE_SELF);
     }
@@ -778,11 +756,9 @@ static void P_WorldEffects(void)
 
                 // play a gurp sound instead of a normal pain sound
                 if (current_player->health <= current_player->dmg)
-                    G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("*drown1.wav"), 1, ATTN_NORM); // [Paril-KEX]
-                else if (brandom())
-                    G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("*gurp1.wav"), 1, ATTN_NORM);
+                    G_AddEvent(current_player, EV_DROWN, 0); // [Paril-KEX]
                 else
-                    G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("*gurp2.wav"), 1, ATTN_NORM);
+                    G_AddEvent(current_player, EV_GURP, 0);
 
                 current_player->pain_debounce_time = level.time;
 

@@ -1696,26 +1696,6 @@ void SP_worldspawn(edict_t *ent)
     G_SoundIndex("items/respawn1.wav");
     G_SoundIndex("misc/mon_power2.wav");
 
-    // sexed sounds
-    G_SoundIndex("*death1.wav");
-    G_SoundIndex("*death2.wav");
-    G_SoundIndex("*death3.wav");
-    G_SoundIndex("*death4.wav");
-    G_SoundIndex("*fall1.wav");
-    G_SoundIndex("*fall2.wav");
-    G_SoundIndex("*gurp1.wav"); // drowning damage
-    G_SoundIndex("*gurp2.wav");
-    G_SoundIndex("*jump1.wav"); // player jump
-    G_SoundIndex("*pain25_1.wav");
-    G_SoundIndex("*pain25_2.wav");
-    G_SoundIndex("*pain50_1.wav");
-    G_SoundIndex("*pain50_2.wav");
-    G_SoundIndex("*pain75_1.wav");
-    G_SoundIndex("*pain75_2.wav");
-    G_SoundIndex("*pain100_1.wav");
-    G_SoundIndex("*pain100_2.wav");
-    G_SoundIndex("*drown1.wav"); // [Paril-KEX]
-
     // sexed models
     for (item_id_t id = IT_NULL; id < IT_TOTAL; id++) {
         const gitem_t *item = &itemlist[id];

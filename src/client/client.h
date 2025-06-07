@@ -85,6 +85,29 @@ extern centity_t    cl_entities[MAX_EDICTS];
 
 #define MAX_CLIENTWEAPONMODELS        256       // PGM -- upped from 16 to fit the chainfist vwep
 
+typedef enum {
+    SS_DEATH1,
+    SS_DEATH2,
+    SS_DEATH3,
+    SS_DEATH4,
+    SS_FALL1,
+    SS_FALL2,
+    SS_GURP1,
+    SS_GURP2,
+    SS_DROWN,
+    SS_JUMP,
+    SS_PAIN25_1,
+    SS_PAIN25_2,
+    SS_PAIN50_1,
+    SS_PAIN50_2,
+    SS_PAIN75_1,
+    SS_PAIN75_2,
+    SS_PAIN100_1,
+    SS_PAIN100_2,
+
+    SS_MAX
+} sexed_sound_t;
+
 typedef struct {
     char name[MAX_QPATH];
     qhandle_t skin;
@@ -93,6 +116,7 @@ typedef struct {
     char skin_name[MAX_QPATH];
     qhandle_t model;
     qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
+    qhandle_t sounds[SS_MAX];
 } clientinfo_t;
 
 typedef struct {

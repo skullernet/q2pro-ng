@@ -477,10 +477,6 @@ sfxcache_t *S_LoadSound(sfx_t *s)
     byte        *data;
     sfxcache_t  *sc;
     int         len;
-    char        *name;
-
-    if (s->name[0] == '*')
-        return NULL;
 
 // see if still in memory
     sc = s->cache;
@@ -492,21 +488,16 @@ sfxcache_t *S_LoadSound(sfx_t *s)
         return NULL;
 
 // load it in
-    if (s->truename)
-        name = s->truename;
-    else
-        name = s->name;
-
-    len = FS_LoadFile(name, (void **)&data);
+    len = FS_LoadFile(s->name, (void **)&data);
     if (!data) {
         if (len != Q_ERR(ENOENT))
-            Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(name), Q_ErrorString(len));
+            Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(s->name), Q_ErrorString(len));
         s->error = len;
         return NULL;
     }
 
     memset(&s_info, 0, sizeof(s_info));
-    s_info.name = name;
+    s_info.name = s->name;
 
     SZ_InitRead(&sz, data, len);
 
@@ -527,7 +518,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 
 fail:
     if (!sc)
-        Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(name), Com_GetLastError());
+        Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(s->name), Com_GetLastError());
     FS_FreeFile(data);
     return sc;
 }

@@ -22,6 +22,55 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
+static const char *const sexed_sounds[SS_MAX] = {
+    [SS_DEATH1]    = "death1",
+    [SS_DEATH2]    = "death2",
+    [SS_DEATH3]    = "death3",
+    [SS_DEATH4]    = "death4",
+    [SS_FALL1]     = "fall1",
+    [SS_FALL2]     = "fall2",
+    [SS_GURP1]     = "gurp1",
+    [SS_GURP2]     = "gurp2",
+    [SS_DROWN]     = "drown1",
+    [SS_JUMP]      = "jump1",
+    [SS_PAIN25_1]  = "pain25_1",
+    [SS_PAIN25_2]  = "pain25_2",
+    [SS_PAIN50_1]  = "pain50_1",
+    [SS_PAIN50_2]  = "pain50_2",
+    [SS_PAIN75_1]  = "pain75_1",
+    [SS_PAIN75_2]  = "pain75_2",
+    [SS_PAIN100_1] = "pain100_1",
+    [SS_PAIN100_2] = "pain100_2",
+};
+
+static bool CG_FileExists(const char *name)
+{
+    qhandle_t f;
+    trap_FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    if (f) {
+        trap_FS_CloseFile(f);
+        return true;
+    }
+    return false;
+}
+
+static qhandle_t CG_RegisterSexedSound(const char *model, const char *base)
+{
+    char buffer[MAX_QPATH];
+
+    // see if we already know of the model specific sound
+    if (Q_concat(buffer, MAX_QPATH, "#players/", model, "/", base, ".wav") >= MAX_QPATH)
+        Q_concat(buffer, MAX_QPATH, "#players/male/", base, ".wav");
+
+    // see if it exists
+    if (CG_FileExists(buffer + 1))
+        return trap_S_RegisterSound(buffer);
+
+    // no, revert to the male sound in the pak0.pak
+    Q_concat(buffer, MAX_QPATH, "player/male/", base, ".wav");
+    return trap_S_RegisterSound(buffer);
+}
+
 /*
 ================
 CG_ParsePlayerSkin
@@ -173,6 +222,10 @@ void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
+
+    // sounds
+    for (i = 0; i < SS_MAX; i++)
+        ci->sounds[i] = CG_RegisterSexedSound(model_name, sexed_sounds[i]);
 
     // base info should be at least partially valid
     if (ci == &cl.baseclientinfo)
