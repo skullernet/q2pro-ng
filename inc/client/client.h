@@ -111,10 +111,6 @@ void SCR_UpdateScreen(void);
 #define UI_MULTILINE        BIT(9)
 #define UI_DRAWCURSOR       BIT(10)
 
-extern const uint32_t   colorTable[8];
-
-bool SCR_ParseColor(const char *s, color_t *color);
-
 float V_CalcFov(float fov_x, float width, float height);
 
 #else // USE_CLIENT

@@ -130,6 +130,14 @@ typedef struct {
     hash_map_t      *programs;
 } glStatic_t;
 
+typedef struct glentity_s {
+    union {
+        entity_t;
+        entity_t ent_;
+    };
+    struct glentity_s *next;
+} glentity_t;
+
 typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
@@ -141,7 +149,7 @@ typedef struct {
     int             viewcluster2;
     int             nodes_visible;
     cplane_t        frustumPlanes[4];
-    entity_t        *ent;
+    glentity_t      *ent;
     bool            entrotated;
     float           entscale;
     vec3_t          entaxis[3];
@@ -149,12 +157,12 @@ typedef struct {
     mat4_t          skymatrix[2];
     lightpoint_t    lightpoint;
     struct {
-        entity_t    *opaque;
-        entity_t    *beams;
-        entity_t    *flares;
-        entity_t    *bmodels;
-        entity_t    *alpha_back;
-        entity_t    *alpha_front;
+        glentity_t  *opaque;
+        glentity_t  *beams;
+        glentity_t  *flares;
+        glentity_t  *bmodels;
+        glentity_t  *alpha_back;
+        glentity_t  *alpha_front;
     } ents;
     glStateBits_t   fog_bits, fog_bits_sky;
     int             framebuffer_width;
@@ -203,9 +211,20 @@ extern glStatic_t gl_static;
 extern glConfig_t gl_config;
 extern glRefdef_t glr;
 
-extern entity_t gl_world;
+extern glentity_t gl_world;
 
-extern unsigned r_registration_sequence;
+extern int          r_numdlights;
+extern dlight_t     r_dlights[MAX_DLIGHTS];
+
+extern int          r_numentities;
+extern glentity_t   r_entities[MAX_ENTITIES];
+
+extern int          r_numparticles;
+extern particle_t   *r_particles;
+
+extern lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
+
+extern unsigned     r_registration_sequence;
 
 typedef struct {
     int nodesDrawn;
@@ -480,7 +499,7 @@ qhandle_t R_RegisterModel(const char *name);
  *
  */
 #define LIGHT_STYLE(i) \
-    &glr.fd.lightstyles[gl_static.lightstylemap[(i)]]
+    &r_lightstyles[gl_static.lightstylemap[(i)]]
 
 #define LM_MAX_LIGHTMAPS    128
 #define LM_MAX_BLOCK_WIDTH  (1 << 10)

@@ -67,7 +67,7 @@ void GL_DrawParticles(void)
     vec_t *dst_vert;
     glStateBits_t bits;
 
-    if (!glr.fd.num_particles)
+    if (!r_numparticles)
         return;
 
     GL_LoadMatrix(glr.viewmatrix);
@@ -76,8 +76,8 @@ void GL_DrawParticles(void)
 
     bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE | glr.fog_bits;
 
-    p = glr.fd.particles;
-    total = glr.fd.num_particles;
+    p = r_particles;
+    total = r_numparticles;
     do {
         GL_BindTexture(TMU_TEXTURE, TEXNUM_PARTICLE);
         GL_StateBits(bits);
@@ -310,7 +310,7 @@ void GL_DrawBeams(void)
     vec3_t segs[2];
     color_t color;
     float width, scale;
-    const entity_t *ent;
+    const glentity_t *ent;
 
     if (!glr.ents.beams)
         return;
@@ -372,7 +372,7 @@ void GL_DrawFlares(void)
     vec_t *dst_vert;
     glIndex_t *dst_indices;
     GLuint result;
-    const entity_t *ent;
+    const glentity_t *ent;
     const image_t *image;
     glquery_t *q;
     float scale;

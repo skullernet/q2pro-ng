@@ -155,7 +155,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     int             index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
-    const entity_t  *ent;
+    const glentity_t  *ent;
     const mmodel_t  *model;
     const vec_t     *angles;
 
@@ -255,7 +255,7 @@ static void GL_MarkLights(void)
 
     glr.dlightframe++;
 
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
+    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
         VectorCopy(light->origin, light->transformed);
         GL_MarkLights_r(gl_static.world.cache->nodes, light, BIT_ULL(i));
     }
@@ -269,7 +269,7 @@ static void GL_TransformLights(const mmodel_t *model)
 
     glr.dlightframe++;
 
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
+    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
         VectorSubtract(light->origin, glr.ent->origin, temp);
         VectorRotate(temp, glr.entaxis, light->transformed);
         GL_MarkLights_r(model->headnode, light, BIT_ULL(i));
@@ -282,7 +282,7 @@ static void GL_AddLights(const vec3_t origin, vec3_t color)
     vec_t f;
     int i;
 
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
+    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
         f = light->intensity - DLIGHT_CUTOFF - Distance(light->origin, origin);
         if (f > 0) {
             f *= (1.0f / 255);
@@ -392,7 +392,7 @@ void GL_DrawBspModel(mmodel_t *model)
     vec3_t bounds[2];
     vec_t dot;
     vec3_t transformed, temp;
-    entity_t *ent = glr.ent;
+    glentity_t *ent = glr.ent;
     glCullResult_t cull;
     glStateBits_t skymask;
     int i;
@@ -507,7 +507,7 @@ static inline void GL_DrawLeaf(const mleaf_t *leaf)
     if (leaf->contents & CONTENTS_SOLID)
         return; // solid leaf
 
-    if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area))
+    if (!Q_IsBitSet(glr.fd.areabits, leaf->area))
         return; // door blocks sight
 
     for (int i = 0; i < leaf->numleaffaces; i++)

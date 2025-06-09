@@ -148,11 +148,11 @@ static void add_dynamic_lights(const mface_t *surf)
     s_scale = surf->lm_scale[0];
     t_scale = surf->lm_scale[1];
 
-    for (i = 0; i < glr.fd.num_dlights; i++) {
+    for (i = 0; i < r_numdlights; i++) {
         if (!(surf->dlightbits & BIT_ULL(i)))
             continue;
 
-        light = &glr.fd.dlights[i];
+        light = &r_dlights[i];
         dist = PlaneDiffFast(light->transformed, surf->plane);
         rad = light->intensity - fabsf(dist);
         if (rad < DLIGHT_CUTOFF)
@@ -1186,12 +1186,10 @@ void GL_LoadWorld(const char *name)
     if ((bsp->has_bspx || n64surfs > 100) && gl_static.use_shaders)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
 
-    glr.fd.lightstyles = &(lightstyle_t){ 1 };
+    R_SetLightStyle(0, 1.0f);
 
     // post process all surfaces
     upload_world_surfaces();
-
-    glr.fd.lightstyles = NULL;
 
     GL_ShowErrors(__func__);
 }

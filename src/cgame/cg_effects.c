@@ -87,12 +87,12 @@ void CG_AddLightStyles(void)
             else if (ls->length)
                 value = ls->map[0];
 
-            trap_R_AddLightStyle(i, value);
+            trap_R_SetLightStyle(i, value);
         }
     } else {
         for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
-            trap_R_AddLightStyle(i, value);
+            trap_R_SetLightStyle(i, value);
         }
     }
 }
@@ -165,7 +165,7 @@ void CG_AddDLights(void)
         if (dl->die < cl.time)
             continue;
         trap_R_AddLight(dl->origin, dl->radius,
-                               dl->color[0], dl->color[1], dl->color[2]);
+                        dl->color[0], dl->color[1], dl->color[2]);
     }
 }
 

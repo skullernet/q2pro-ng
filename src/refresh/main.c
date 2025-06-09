@@ -28,11 +28,22 @@ glStatic_t gl_static;
 glConfig_t gl_config;
 statCounters_t  c;
 
-entity_t gl_world;
+glentity_t gl_world;
 
 refcfg_t r_config;
 
-unsigned r_registration_sequence;
+int         r_numdlights;
+dlight_t    r_dlights[MAX_DLIGHTS];
+
+int         r_numentities;
+glentity_t  r_entities[MAX_ENTITIES];
+
+int         r_numparticles;
+particle_t  *r_particles;
+
+lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
+
+unsigned    r_registration_sequence;
 
 // regular variables
 cvar_t *gl_partscale;
@@ -270,7 +281,7 @@ void GL_MultMatrix(GLfloat *restrict p, const GLfloat *restrict a, const GLfloat
 
 void GL_SetEntityAxis(void)
 {
-    const entity_t *e = glr.ent;
+    const glentity_t *e = glr.ent;
 
     glr.entrotated = false;
     glr.entscale = 1;
@@ -336,7 +347,7 @@ void GL_RotateForEntity(void)
 
 static void GL_DrawSpriteModel(const model_t *model)
 {
-    const entity_t *e = glr.ent;
+    const glentity_t *e = glr.ent;
     const mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     const image_t *image = frame->image;
     const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1.0f;
@@ -385,7 +396,7 @@ static void GL_DrawSpriteModel(const model_t *model)
 
 static void GL_DrawNullModel(void)
 {
-    const entity_t *e = glr.ent;
+    const glentity_t *e = glr.ent;
 
     if (e->flags & RF_WEAPONMODEL)
         return;
@@ -437,7 +448,7 @@ static void make_flare_quad(const vec3_t origin, float scale)
 static void GL_OccludeFlares(void)
 {
     const bsp_t *bsp = gl_static.world.cache;
-    const entity_t *ent;
+    const glentity_t *ent;
     glquery_t *q;
     vec3_t dir, org;
     float scale, dist;
@@ -517,9 +528,47 @@ static void GL_OccludeFlares(void)
         qglColorMask(1, 1, 1, 1);
 }
 
+// renderer will iterate the list backwards, so sorting order must be reversed
+static int entitycmpfnc(const void *_a, const void *_b)
+{
+    const glentity_t *a = (const glentity_t *)_a;
+    const glentity_t *b = (const glentity_t *)_b;
+
+    bool a_trans = a->flags & RF_TRANSLUCENT;
+    bool b_trans = b->flags & RF_TRANSLUCENT;
+    if (a_trans != b_trans)
+        return b_trans - a_trans;
+    if (a_trans) {
+        float dist_a = DistanceSquared(a->origin, glr.fd.vieworg);
+        float dist_b = DistanceSquared(b->origin, glr.fd.vieworg);
+        if (dist_a > dist_b)
+            return 1;
+        if (dist_a < dist_b)
+            return -1;
+    }
+
+    bool a_shell = a->flags & RF_SHELL_MASK;
+    bool b_shell = b->flags & RF_SHELL_MASK;
+    if (a_shell != b_shell)
+        return b_shell - a_shell;
+
+    // all other models are sorted by model then skin
+    if (a->model > b->model)
+        return -1;
+    if (a->model < b->model)
+        return 1;
+
+    if (a->skin > b->skin)
+        return -1;
+    if (a->skin < b->skin)
+        return 1;
+
+    return 0;
+}
+
 static void GL_ClassifyEntities(void)
 {
-    entity_t *ent;
+    glentity_t *ent;
     int i;
 
     memset(&glr.ents, 0, sizeof(glr.ents));
@@ -527,7 +576,10 @@ static void GL_ClassifyEntities(void)
     if (!gl_drawentities->integer)
         return;
 
-    for (i = 0, ent = glr.fd.entities; i < glr.fd.num_entities; i++, ent++) {
+    // sort entities for better cache locality
+    qsort(r_entities, r_numentities, sizeof(r_entities[0]), entitycmpfnc);
+
+    for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
             if (ent->frame) {
                 ent->next = glr.ents.beams;
@@ -567,7 +619,7 @@ static void GL_ClassifyEntities(void)
     }
 }
 
-static void GL_DrawEntities(entity_t *ent)
+static void GL_DrawEntities(glentity_t *ent)
 {
     model_t *model;
 
@@ -1055,7 +1107,7 @@ static void gl_clearcolor_changed(cvar_t *self)
 {
     color_t color;
 
-    if (!SCR_ParseColor(self->string, &color)) {
+    if (!COM_ParseColor(self->string, &color)) {
         Com_WPrintf("Invalid value '%s' for '%s'\n", self->string, self->name);
         Cvar_Reset(self);
         color.u32 = U32_BLACK;
@@ -1510,4 +1562,77 @@ void R_ModeChanged(int width, int height, int flags)
     r_config.width = width;
     r_config.height = height;
     r_config.flags = flags;
+}
+
+/*
+===============
+R_ClearScene
+===============
+*/
+void R_ClearScene(void)
+{
+    r_numdlights = 0;
+    r_numentities = 0;
+    r_numparticles = 0;
+    r_particles = NULL;
+}
+
+/*
+===============
+R_AddEntity
+===============
+*/
+void R_AddEntity(const entity_t *ent)
+{
+    glentity_t  *glent;
+
+    if (r_numentities >= MAX_ENTITIES)
+        return;
+    glent = &r_entities[r_numentities++];
+    glent->ent_ = *ent;
+    glent->next = NULL;
+}
+
+/*
+===============
+R_AddLight
+===============
+*/
+void R_AddLight(const vec3_t org, float intensity, float r, float g, float b)
+{
+    dlight_t    *dl;
+
+    if (r_numdlights >= MAX_DLIGHTS)
+        return;
+    dl = &r_dlights[r_numdlights++];
+    VectorCopy(org, dl->origin);
+    dl->intensity = intensity;
+    dl->color[0] = r;
+    dl->color[1] = g;
+    dl->color[2] = b;
+}
+
+/*
+===============
+R_SetLightStyle
+===============
+*/
+void R_SetLightStyle(unsigned style, float value)
+{
+    lightstyle_t    *ls;
+
+    Q_assert_soft(style < MAX_LIGHTSTYLES);
+    ls = &r_lightstyles[style];
+    ls->white = value;
+}
+
+/*
+===============
+R_LocateParticles
+===============
+*/
+void R_LocateParticles(const particle_t *p, int count)
+{
+    r_particles = p;
+    r_numparticles = count;
 }

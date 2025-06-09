@@ -592,6 +592,28 @@ extern const char com_hexchars[16];
 size_t COM_EscapeString(char *dst, const char *src, size_t size);
 char *COM_MakePrintable(const char *s);
 
+typedef enum {
+    COLOR_BLACK,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_YELLOW,
+    COLOR_BLUE,
+    COLOR_CYAN,
+    COLOR_MAGENTA,
+    COLOR_WHITE,
+
+    COLOR_ALT,
+    COLOR_NONE,
+
+    COLOR_COUNT
+} color_index_t;
+
+extern const char *const colorNames[COLOR_COUNT];
+extern const uint32_t    colorTable[8];
+
+color_index_t COM_ParseColorIndex(const char *s);
+bool COM_ParseColor(const char *s, color_t *color);
+
 int SortStrcmp(const void *p1, const void *p2);
 int SortStricmp(const void *p1, const void *p2);
 

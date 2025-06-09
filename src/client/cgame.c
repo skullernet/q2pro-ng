@@ -151,7 +151,7 @@ static void PF_GetServerFrameNumber(unsigned *frame, unsigned *time)
     *time = cl.frame.number * BASE_FRAMETIME;
 }
 
-static bool PF_GetServerFrame(unsigned number, vm_server_frame_t *out)
+static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
 {
     const server_frame_t *frame = &cl.frames[number & UPDATE_MASK];
 
@@ -221,6 +221,35 @@ static const cgame_import_t cgame_dll_imports = {
     .FS_ReadLine = FS_ReadLine,
     .FS_ListFiles = PF_ListFiles,
     .FS_ErrorString = Q_ErrorStringBuffer,
+
+    .R_RegisterModel = R_RegisterModel,
+    .R_RegisterPic = R_RegisterPic,
+    .R_RegisterFont = R_RegisterFont,
+    .R_RegisterSkin = R_RegisterSkin,
+    .R_RegisterSprite = R_RegisterSprite,
+
+    .R_SetSky = R_SetSky,
+
+    .R_ClearScene = R_ClearScene,
+    .R_AddEntity = R_AddEntity,
+    .R_AddLight = R_AddLight,
+    .R_SetLightStyle = R_SetLightStyle,
+    .R_LocateParticles = R_LocateParticles,
+    .R_RenderScene = R_RenderScene,
+
+    .R_ClearColor = R_ClearColor,
+    .R_SetAlpha = R_SetAlpha,
+    .R_SetColor = R_SetColor,
+    .R_SetClipRect = R_SetClipRect,
+    .R_SetScale = R_SetScale,
+    .R_DrawChar = R_DrawChar,
+    .R_DrawString = R_DrawString,
+    .R_GetPicSize = R_GetPicSize,
+    .R_DrawPic = R_DrawPic,
+    .R_DrawStretchPic = R_DrawStretchPic,
+    .R_DrawKeepAspectPic = R_DrawKeepAspectPic,
+    .R_DrawFill8 = R_DrawFill8,
+    .R_DrawFill32 = R_DrawFill32,
 
     .R_ClearDebugLines = R_ClearDebugLines,
     .R_AddDebugLine = R_AddDebugLine,

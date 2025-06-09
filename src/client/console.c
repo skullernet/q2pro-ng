@@ -418,7 +418,7 @@ static void con_width_changed(cvar_t *self)
 
 static void con_timestampscolor_changed(cvar_t *self)
 {
-    if (!SCR_ParseColor(self->string, &con.ts_color)) {
+    if (!COM_ParseColor(self->string, &con.ts_color)) {
         Com_WPrintf("Invalid value '%s' for '%s'\n", self->string, self->name);
         Cvar_Reset(self);
         con.ts_color.u32 = MakeColor(170, 170, 170, 255);
@@ -726,6 +726,7 @@ static int Con_DrawLine(int v, int row, float alpha, bool notify)
 }
 
 #define CON_PRESTEP     (CONCHAR_HEIGHT * 3 + CONCHAR_HEIGHT / 4)
+#define CON_FADE_TIME   300
 
 /*
 ================
@@ -739,7 +740,7 @@ static void Con_DrawNotify(void)
     int     v;
     const char  *text;
     int     i, j;
-    unsigned    time;
+    unsigned    time, delta;
     int     skip;
     float   alpha;
 
@@ -767,12 +768,14 @@ static void Con_DrawNotify(void)
         if (time == 0)
             continue;
         // alpha fade the last string left on screen
-        alpha = SCR_FadeAlpha(time, con_notifytime->integer, 300);
-        if (!alpha)
+        delta = cls.realtime - time;
+        if (delta >= con_notifytime->integer)
             continue;
-        if (v || i != con.current) {
+        delta = con_notifytime->integer - delta;
+        if (v || i != con.current || delta > CON_FADE_TIME)
             alpha = 1;  // don't fade
-        }
+        else
+            alpha = (float)delta / CON_FADE_TIME;
 
         Con_DrawLine(v, i, alpha, true);
 
@@ -965,12 +968,12 @@ static void Con_DrawSolidConsole(void)
     }
 
 #define APP_VERSION APPLICATION " " VERSION
-#define VER_WIDTH ((int)(sizeof(APP_VERSION) + 1) * CONCHAR_WIDTH)
+#define VER_WIDTH ((int)(sizeof(APP_VERSION) * CONCHAR_WIDTH))
 
     y = vislines - CON_PRESTEP + CONCHAR_HEIGHT;
     row = 0;
     // shift version upwards to prevent overdraw
-    if (x > con.vidWidth - VER_WIDTH) {
+    if (x > con.vidWidth - VER_WIDTH - CONCHAR_WIDTH) {
         y -= CONCHAR_HEIGHT;
         row++;
     }
@@ -979,17 +982,17 @@ static void Con_DrawSolidConsole(void)
 
 // draw clock
     if (con_clock->integer) {
-        x = Com_Time_m(buffer, sizeof(buffer)) * CONCHAR_WIDTH;
+        x = (Com_Time_m(buffer, sizeof(buffer)) + 1) * CONCHAR_WIDTH;
         if (widths[row] + x + CONCHAR_WIDTH <= con.vidWidth) {
-            R_DrawString(con.vidWidth - CONCHAR_WIDTH - x, y - CONCHAR_HEIGHT,
-                         UI_RIGHT, MAX_STRING_CHARS, buffer, con.charsetImage);
+            R_DrawString(con.vidWidth - x, y - CONCHAR_HEIGHT, UI_RIGHT,
+                         MAX_STRING_CHARS, buffer, con.charsetImage);
         }
     }
 
 // draw version
-    if (!row || widths[0] + VER_WIDTH <= con.vidWidth) {
-        SCR_DrawStringEx(con.vidWidth - CONCHAR_WIDTH, y, UI_RIGHT,
-                         MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
+    if (!row || widths[0] + VER_WIDTH + CONCHAR_WIDTH <= con.vidWidth) {
+        R_DrawString(con.vidWidth - VER_WIDTH, y, UI_RIGHT,
+                     MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
     }
 
     // restore rendering parameters

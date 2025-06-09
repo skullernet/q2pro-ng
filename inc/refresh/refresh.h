@@ -66,8 +66,6 @@ typedef struct entity_s {
 
     qhandle_t   skin;           // NULL for inline skin
     float       scale;
-
-    struct entity_s *next;
 } entity_t;
 
 typedef struct {
@@ -101,20 +99,7 @@ typedef struct {
     float       frametime;          // seconds since last video frame
     float       time;               // time is used to auto animate
     int         rdflags;            // RDF_UNDERWATER, etc
-    bool        extended;
-
-    byte        *areabits;          // if not NULL, only areas with set bits will be drawn
-
-    lightstyle_t    *lightstyles;   // [MAX_LIGHTSTYLES]
-
-    int         num_entities;
-    entity_t    *entities;
-
-    int         num_dlights;
-    dlight_t    *dlights;
-
-    int         num_particles;
-    particle_t  *particles;
+    byte        areabits[MAX_MAP_AREA_BYTES];   // only areas with set bits will be drawn
 } refdef_t;
 
 enum {
@@ -216,6 +201,11 @@ void    R_EndRegistration(void);
 #define R_RegisterSkin(name)    R_RegisterImage(name, IT_SKIN, IF_NONE)
 #define R_RegisterSprite(name)  R_RegisterImage(name, IT_SPRITE, IF_NONE)
 
+void    R_ClearScene(void);
+void    R_AddEntity(const entity_t *ent);
+void    R_AddLight(const vec3_t org, float intensity, float r, float g, float b);
+void    R_SetLightStyle(unsigned style, float value);
+void    R_LocateParticles(const particle_t *p, int count);
 void    R_RenderFrame(const refdef_t *fd);
 void    R_LightPoint(const vec3_t origin, vec3_t light);
 

@@ -22,24 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 extern const char com_env_suf[6][3];
 #endif
 
-typedef enum {
-    COLOR_BLACK,
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_BLUE,
-    COLOR_CYAN,
-    COLOR_MAGENTA,
-    COLOR_WHITE,
-
-    COLOR_ALT,
-    COLOR_NONE,
-
-    COLOR_COUNT
-} color_index_t;
-
-extern const char *const colorNames[COLOR_COUNT];
-
 bool Com_WildCmpEx(const char *filter, const char *string, int term, bool ignorecase);
 #define Com_WildCmp(filter, string)  Com_WildCmpEx(filter, string, 0, false)
 
@@ -72,8 +54,6 @@ size_t Com_FormatSize(char *dest, size_t destsize, int64_t bytes);
 size_t Com_FormatSizeLong(char *dest, size_t destsize, int64_t bytes);
 
 void Com_PageInMemory(void *buffer, size_t size);
-
-color_index_t Com_ParseColor(const char *s);
 
 #if USE_REF
 unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);

@@ -101,11 +101,6 @@ static cvar_t   *scr_hit_marker_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
-const uint32_t colorTable[8] = {
-    U32_BLACK, U32_RED, U32_GREEN, U32_YELLOW,
-    U32_BLUE, U32_CYAN, U32_MAGENTA, U32_WHITE
-};
-
 /*
 ===============================================================================
 
@@ -201,166 +196,6 @@ float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime)
     }
 
     return alpha;
-}
-
-bool SCR_ParseColor(const char *s, color_t *color)
-{
-    int i;
-    int c[8];
-
-    // parse generic color
-    if (*s == '#') {
-        s++;
-        for (i = 0; s[i]; i++) {
-            if (i == 8) {
-                return false;
-            }
-            c[i] = Q_charhex(s[i]);
-            if (c[i] == -1) {
-                return false;
-            }
-        }
-
-        switch (i) {
-        case 3:
-            color->u8[0] = c[0] | (c[0] << 4);
-            color->u8[1] = c[1] | (c[1] << 4);
-            color->u8[2] = c[2] | (c[2] << 4);
-            color->u8[3] = 255;
-            break;
-        case 6:
-            color->u8[0] = c[1] | (c[0] << 4);
-            color->u8[1] = c[3] | (c[2] << 4);
-            color->u8[2] = c[5] | (c[4] << 4);
-            color->u8[3] = 255;
-            break;
-        case 8:
-            color->u8[0] = c[1] | (c[0] << 4);
-            color->u8[1] = c[3] | (c[2] << 4);
-            color->u8[2] = c[5] | (c[4] << 4);
-            color->u8[3] = c[7] | (c[6] << 4);
-            break;
-        default:
-            return false;
-        }
-
-        return true;
-    }
-
-    // parse name or index
-    i = Com_ParseColor(s);
-    if (i >= q_countof(colorTable)) {
-        return false;
-    }
-
-    color->u32 = colorTable[i];
-    return true;
-}
-
-/*
-===============================================================================
-
-BAR GRAPHS
-
-===============================================================================
-*/
-
-/*
-==============
-SCR_AddNetgraph
-
-A new packet was just parsed
-==============
-*/
-void SCR_AddNetgraph(void)
-{
-    int         i, color;
-    unsigned    ping;
-
-    // if using the debuggraph for something else, don't
-    // add the net lines
-    if (scr_debuggraph->integer || scr_timegraph->integer)
-        return;
-
-    for (i = 0; i < cls.netchan.dropped; i++)
-        SCR_DebugGraph(30, 0x40);
-
-    for (i = 0; i < cl.suppress_count; i++)
-        SCR_DebugGraph(30, 0xdf);
-
-    if (scr_netgraph->integer > 1) {
-        ping = msg_read.cursize;
-        if (ping < 200)
-            color = 61;
-        else if (ping < 500)
-            color = 59;
-        else if (ping < 800)
-            color = 57;
-        else if (ping < 1200)
-            color = 224;
-        else
-            color = 242;
-        ping /= 40;
-    } else {
-        // see what the latency was on this packet
-        i = cls.netchan.incoming_acknowledged & CMD_MASK;
-        ping = (cls.realtime - cl.history[i].sent) / 30;
-        color = 0xd0;
-    }
-
-    SCR_DebugGraph(min(ping, 30), color);
-}
-
-#define GRAPH_SAMPLES   4096
-#define GRAPH_MASK      (GRAPH_SAMPLES - 1)
-
-static struct {
-    float       values[GRAPH_SAMPLES];
-    byte        colors[GRAPH_SAMPLES];
-    unsigned    current;
-} graph;
-
-/*
-==============
-SCR_DebugGraph
-==============
-*/
-void SCR_DebugGraph(float value, int color)
-{
-    graph.values[graph.current & GRAPH_MASK] = value;
-    graph.colors[graph.current & GRAPH_MASK] = color;
-    graph.current++;
-}
-
-/*
-==============
-SCR_DrawDebugGraph
-==============
-*/
-static void SCR_DrawDebugGraph(void)
-{
-    int     a, y, w, i, h, height;
-    float   v, scale, shift;
-
-    scale = scr_graphscale->value;
-    shift = scr_graphshift->value;
-    height = scr_graphheight->integer;
-    if (height < 1)
-        return;
-
-    w = scr.hud_width;
-    y = scr.hud_height;
-
-    for (a = 0; a < w; a++) {
-        i = (graph.current - 1 - a) & GRAPH_MASK;
-        v = graph.values[i] * scale + shift;
-
-        if (v < 0)
-            v += height * (1 + (int)(-v / height));
-
-        h = (int)v % height;
-        R_DrawFill8(w - 1 - a, y - h, 1, h, graph.colors[i]);
-    }
 }
 
 /*
@@ -672,230 +507,6 @@ static void SCR_DrawNet(void)
     }
 }
 
-
-/*
-===============================================================================
-
-DRAW OBJECTS
-
-===============================================================================
-*/
-
-typedef struct {
-    list_t          entry;
-    int             x, y;
-    cvar_t          *cvar;
-    cmd_macro_t     *macro;
-    int             flags;
-    color_t         color;
-} drawobj_t;
-
-#define FOR_EACH_DRAWOBJ(obj) \
-    LIST_FOR_EACH(drawobj_t, obj, &scr_objects, entry)
-#define FOR_EACH_DRAWOBJ_SAFE(obj, next) \
-    LIST_FOR_EACH_SAFE(drawobj_t, obj, next, &scr_objects, entry)
-
-static LIST_DECL(scr_objects);
-
-static void SCR_Color_g(genctx_t *ctx)
-{
-    int color;
-
-    for (color = 0; color < COLOR_COUNT; color++)
-        Prompt_AddMatch(ctx, colorNames[color]);
-}
-
-static void SCR_Draw_c(genctx_t *ctx, int argnum)
-{
-    if (argnum == 1) {
-        Cvar_Variable_g(ctx);
-        Cmd_Macro_g(ctx);
-    } else if (argnum == 4) {
-        SCR_Color_g(ctx);
-    }
-}
-
-// draw cl_fps -1 80
-static void SCR_Draw_f(void)
-{
-    int x, y;
-    const char *s, *c;
-    drawobj_t *obj;
-    cmd_macro_t *macro;
-    cvar_t *cvar;
-    color_t color;
-    int flags;
-    int argc = Cmd_Argc();
-
-    if (argc == 1) {
-        if (LIST_EMPTY(&scr_objects)) {
-            Com_Printf("No draw strings registered.\n");
-            return;
-        }
-        Com_Printf("Name               X    Y\n"
-                   "--------------- ---- ----\n");
-        FOR_EACH_DRAWOBJ(obj) {
-            s = obj->macro ? obj->macro->name : obj->cvar->name;
-            Com_Printf("%-15s %4d %4d\n", s, obj->x, obj->y);
-        }
-        return;
-    }
-
-    if (argc < 4) {
-        Com_Printf("Usage: %s <name> <x> <y> [color]\n", Cmd_Argv(0));
-        return;
-    }
-
-    color.u32 = U32_BLACK;
-    flags = UI_IGNORECOLOR;
-
-    s = Cmd_Argv(1);
-    x = Q_atoi(Cmd_Argv(2));
-    y = Q_atoi(Cmd_Argv(3));
-
-    if (x < 0) {
-        flags |= UI_RIGHT;
-    }
-
-    if (argc > 4) {
-        c = Cmd_Argv(4);
-        if (!strcmp(c, "alt")) {
-            flags |= UI_ALTCOLOR;
-        } else if (strcmp(c, "none")) {
-            if (!SCR_ParseColor(c, &color)) {
-                Com_Printf("Unknown color '%s'\n", c);
-                return;
-            }
-            flags &= ~UI_IGNORECOLOR;
-        }
-    }
-
-    cvar = NULL;
-    macro = Cmd_FindMacro(s);
-    if (!macro) {
-        cvar = Cvar_WeakGet(s);
-    }
-
-    FOR_EACH_DRAWOBJ(obj) {
-        if (obj->macro == macro && obj->cvar == cvar) {
-            obj->x = x;
-            obj->y = y;
-            obj->flags = flags;
-            obj->color.u32 = color.u32;
-            return;
-        }
-    }
-
-    obj = Z_Malloc(sizeof(*obj));
-    obj->x = x;
-    obj->y = y;
-    obj->cvar = cvar;
-    obj->macro = macro;
-    obj->flags = flags;
-    obj->color.u32 = color.u32;
-
-    List_Append(&scr_objects, &obj->entry);
-}
-
-static void SCR_Draw_g(genctx_t *ctx)
-{
-    drawobj_t *obj;
-    const char *s;
-
-    if (LIST_EMPTY(&scr_objects)) {
-        return;
-    }
-
-    Prompt_AddMatch(ctx, "all");
-
-    FOR_EACH_DRAWOBJ(obj) {
-        s = obj->macro ? obj->macro->name : obj->cvar->name;
-        Prompt_AddMatch(ctx, s);
-    }
-}
-
-static void SCR_UnDraw_c(genctx_t *ctx, int argnum)
-{
-    if (argnum == 1) {
-        SCR_Draw_g(ctx);
-    }
-}
-
-static void SCR_UnDraw_f(void)
-{
-    char *s;
-    drawobj_t *obj, *next;
-    cmd_macro_t *macro;
-    cvar_t *cvar;
-
-    if (Cmd_Argc() != 2) {
-        Com_Printf("Usage: %s <name>\n", Cmd_Argv(0));
-        return;
-    }
-
-    if (LIST_EMPTY(&scr_objects)) {
-        Com_Printf("No draw strings registered.\n");
-        return;
-    }
-
-    s = Cmd_Argv(1);
-    if (!strcmp(s, "all")) {
-        FOR_EACH_DRAWOBJ_SAFE(obj, next) {
-            Z_Free(obj);
-        }
-        List_Init(&scr_objects);
-        Com_Printf("Deleted all draw strings.\n");
-        return;
-    }
-
-    cvar = NULL;
-    macro = Cmd_FindMacro(s);
-    if (!macro) {
-        cvar = Cvar_WeakGet(s);
-    }
-
-    FOR_EACH_DRAWOBJ_SAFE(obj, next) {
-        if (obj->macro == macro && obj->cvar == cvar) {
-            List_Remove(&obj->entry);
-            Z_Free(obj);
-            return;
-        }
-    }
-
-    Com_Printf("Draw string '%s' not found.\n", s);
-}
-
-static void SCR_DrawObjects(void)
-{
-    char buffer[MAX_QPATH];
-    int x, y;
-    drawobj_t *obj;
-
-    FOR_EACH_DRAWOBJ(obj) {
-        x = obj->x;
-        y = obj->y;
-        if (x < 0) {
-            x += scr.hud_width + 1;
-        }
-        if (y < 0) {
-            y += scr.hud_height - CONCHAR_HEIGHT + 1;
-        }
-        if (!(obj->flags & UI_IGNORECOLOR)) {
-            R_SetColor(obj->color.u32);
-        }
-        if (obj->macro) {
-            obj->macro->function(buffer, sizeof(buffer));
-            SCR_DrawString(x, y, obj->flags, buffer);
-        } else {
-            SCR_DrawString(x, y, obj->flags, obj->cvar->string);
-        }
-        if (!(obj->flags & UI_IGNORECOLOR)) {
-            R_ClearColor();
-            R_SetAlpha(scr_alpha->value);
-        }
-    }
-}
-
 /*
 ===============================================================================
 
@@ -1185,49 +796,6 @@ static void SCR_Sky_f(void)
     R_SetSky(name, rotate, true, axis);
 }
 
-/*
-================
-SCR_TimeRefresh_f
-================
-*/
-static void SCR_TimeRefresh_f(void)
-{
-    int     i;
-    unsigned    start, stop;
-    float       time;
-
-    if (cls.state != ca_active) {
-        Com_Printf("No map loaded.\n");
-        return;
-    }
-
-    start = Sys_Milliseconds();
-
-    cl.refdef.frametime = 0.0f;
-    if (Cmd_Argc() == 2) {
-        // run without page flipping
-        R_BeginFrame();
-        for (i = 0; i < 128; i++) {
-            cl.refdef.viewangles[1] = i / 128.0f * 360.0f;
-            R_RenderFrame(&cl.refdef);
-        }
-        R_EndFrame();
-    } else {
-        for (i = 0; i < 128; i++) {
-            cl.refdef.viewangles[1] = i / 128.0f * 360.0f;
-
-            R_BeginFrame();
-            R_RenderFrame(&cl.refdef);
-            R_EndFrame();
-        }
-    }
-
-    stop = Sys_Milliseconds();
-    time = (stop - start) * 0.001f;
-    Com_Printf("%f seconds (%f fps)\n", time, 128.0f / time);
-}
-
-
 //============================================================================
 
 static void ch_scale_changed(cvar_t *self)
@@ -1307,12 +875,7 @@ void SCR_SetCrosshairColor(void)
 
 void SCR_ModeChanged(void)
 {
-    IN_Activate();
-    Con_CheckResize();
-    UI_ModeChanged();
-    cls.disable_screen = 0;
-    if (scr.initialized)
-        scr.hud_scale = R_ClampScale(scr_scale);
+    scr.hud_scale = R_ClampScale(scr_scale);
 }
 
 static void scr_font_changed(cvar_t *self)
@@ -1451,55 +1014,6 @@ void SCR_Shutdown(void)
 }
 
 //=============================================================================
-
-/*
-================
-SCR_BeginLoadingPlaque
-================
-*/
-void SCR_BeginLoadingPlaque(void)
-{
-    if (!cls.state) {
-        return;
-    }
-
-    S_StopAllSounds();
-    OGG_Update();
-
-    if (cls.disable_screen) {
-        return;
-    }
-
-#if USE_DEBUG
-    if (developer->integer) {
-        return;
-    }
-#endif
-
-    // if at console or menu, don't bring up the plaque
-    if (cls.key_dest & (KEY_CONSOLE | KEY_MENU)) {
-        return;
-    }
-
-    scr.draw_loading = true;
-    SCR_UpdateScreen();
-
-    cls.disable_screen = Sys_Milliseconds();
-}
-
-/*
-================
-SCR_EndLoadingPlaque
-================
-*/
-void SCR_EndLoadingPlaque(void)
-{
-    if (!cls.state) {
-        return;
-    }
-    cls.disable_screen = 0;
-    Con_ClearNotify_f();
-}
 
 // Clear any parts of the tiled background that were drawn on last frame
 static void SCR_TileClear(void)
@@ -2062,7 +1576,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             color_t     color;
 
             token = COM_Parse(&s);
-            if (SCR_ParseColor(token, &color)) {
+            if (COM_ParseColor(token, &color)) {
                 color.u8[3] *= scr_alpha->value;
                 R_SetColor(color.u32);
             }
@@ -2228,12 +1742,6 @@ static void SCR_Draw2D(void)
     R_ClearColor();
     R_SetAlpha(Cvar_ClampValue(scr_alpha, 0, 1));
 
-    if (scr_timegraph->integer)
-        SCR_DebugGraph(cls.frametime * 300, 0xdc);
-
-    if (scr_debuggraph->integer || scr_timegraph->integer || scr_netgraph->integer)
-        SCR_DrawDebugGraph();
-
     SCR_DrawStats();
 
     SCR_DrawLayout();
@@ -2243,8 +1751,6 @@ static void SCR_Draw2D(void)
     SCR_DrawCenterString();
 
     SCR_DrawNet();
-
-    SCR_DrawObjects();
 
     SCR_DrawChatHUD();
 
@@ -2260,26 +1766,15 @@ static void SCR_Draw2D(void)
     SCR_DrawDebugPmove();
 #endif
 
+    // draw loading plaque
+    if (draw_loading)
+        SCR_DrawLoading();
+
     R_SetScale(1.0f);
 }
 
-static void SCR_DrawActive(void)
+qvm_exported void CG_DrawFrame(bool draw_loading)
 {
-    // if full screen menu is up, do nothing at all
-    if (!UI_IsTransparent())
-        return;
-
-    // draw black background if not active
-    if (cls.state < ca_active) {
-        R_DrawFill8(0, 0, r_config.width, r_config.height, 0);
-        return;
-    }
-
-    if (cls.state == ca_cinematic) {
-        SCR_DrawCinematic();
-        return;
-    }
-
     // start with full screen HUD
     scr.hud_height = r_config.height;
     scr.hud_width = r_config.width;
@@ -2296,59 +1791,4 @@ static void SCR_DrawActive(void)
 
     // draw all 2D elements
     SCR_Draw2D();
-}
-
-//=======================================================
-
-/*
-==================
-SCR_UpdateScreen
-
-This is called every frame, and can also be called explicitly to flush
-text to the screen.
-==================
-*/
-void SCR_UpdateScreen(void)
-{
-    static int recursive;
-
-    if (!scr.initialized) {
-        return;             // not initialized yet
-    }
-
-    // if the screen is disabled (loading plaque is up), do nothing at all
-    if (cls.disable_screen) {
-        unsigned delta = Sys_Milliseconds() - cls.disable_screen;
-
-        if (delta < 120 * 1000) {
-            return;
-        }
-
-        cls.disable_screen = 0;
-        Com_Printf("Loading plaque timed out.\n");
-    }
-
-    if (recursive > 1) {
-        Com_Error(ERR_FATAL, "%s: recursively called", __func__);
-    }
-
-    recursive++;
-
-    R_BeginFrame();
-
-    // do 3D refresh drawing
-    SCR_DrawActive();
-
-    // draw main menu
-    UI_Draw(cls.realtime);
-
-    // draw console
-    Con_DrawConsole();
-
-    // draw loading plaque
-    SCR_DrawLoading();
-
-    R_EndFrame();
-
-    recursive--;
 }

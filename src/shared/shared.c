@@ -739,6 +739,108 @@ char *COM_MakePrintable(const char *s)
 /*
 ============================================================================
 
+                    COLORS PARSING
+
+============================================================================
+*/
+
+const char *const colorNames[COLOR_COUNT] = {
+    "black", "red", "green", "yellow",
+    "blue", "cyan", "magenta", "white",
+    "alt", "none"
+};
+
+const uint32_t colorTable[8] = {
+    U32_BLACK, U32_RED, U32_GREEN, U32_YELLOW,
+    U32_BLUE, U32_CYAN, U32_MAGENTA, U32_WHITE
+};
+
+/*
+================
+COM_ParseColorIndex
+
+Parses color name or index.
+Returns COLOR_NONE in case of error.
+================
+*/
+color_index_t COM_ParseColorIndex(const char *s)
+{
+    color_index_t i;
+
+    if (COM_IsUint(s)) {
+        i = Q_atoi(s);
+        if (i < 0 || i >= COLOR_COUNT) {
+            return COLOR_NONE;
+        }
+        return i;
+    }
+
+    for (i = 0; i < COLOR_COUNT; i++) {
+        if (!strcmp(colorNames[i], s)) {
+            return i;
+        }
+    }
+
+    return COLOR_NONE;
+}
+
+bool COM_ParseColor(const char *s, color_t *color)
+{
+    int i;
+    int c[8];
+
+    // parse generic color
+    if (*s == '#') {
+        s++;
+        for (i = 0; s[i]; i++) {
+            if (i == 8) {
+                return false;
+            }
+            c[i] = Q_charhex(s[i]);
+            if (c[i] == -1) {
+                return false;
+            }
+        }
+
+        switch (i) {
+        case 3:
+            color->u8[0] = c[0] | (c[0] << 4);
+            color->u8[1] = c[1] | (c[1] << 4);
+            color->u8[2] = c[2] | (c[2] << 4);
+            color->u8[3] = 255;
+            break;
+        case 6:
+            color->u8[0] = c[1] | (c[0] << 4);
+            color->u8[1] = c[3] | (c[2] << 4);
+            color->u8[2] = c[5] | (c[4] << 4);
+            color->u8[3] = 255;
+            break;
+        case 8:
+            color->u8[0] = c[1] | (c[0] << 4);
+            color->u8[1] = c[3] | (c[2] << 4);
+            color->u8[2] = c[5] | (c[4] << 4);
+            color->u8[3] = c[7] | (c[6] << 4);
+            break;
+        default:
+            return false;
+        }
+
+        return true;
+    }
+
+    // parse name or index
+    i = COM_ParseColorIndex(s);
+    if (i >= q_countof(colorTable)) {
+        return false;
+    }
+
+    color->u32 = colorTable[i];
+    return true;
+}
+
+/*
+============================================================================
+
                     LIBRARY REPLACEMENT FUNCTIONS
 
 ============================================================================

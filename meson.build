@@ -178,8 +178,10 @@ if cc.get_argument_syntax() == 'gcc'
   test_args = [
     '-Werror=vla',
     '-Wformat-security',
+    '-Wno-microsoft-anon-tag',
     '-Wpointer-arith',
     '-Wstrict-prototypes',
+    '-fms-extensions',
     '-fno-math-errno',
     '-fno-trapping-math',
     '-fsigned-char',

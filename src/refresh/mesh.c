@@ -603,7 +603,7 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
 
 static const image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
-    const entity_t *ent = glr.ent;
+    const glentity_t *ent = glr.ent;
 
     if (ent->flags & RF_SHELL_MASK)
         return R_SHELLTEXTURE;
@@ -939,26 +939,12 @@ static void setup_weaponmodel(void)
 
 void GL_DrawAliasModel(const model_t *model)
 {
-    const entity_t *ent = glr.ent;
+    const glentity_t *ent = glr.ent;
     glCullResult_t cull;
     void (*tessfunc)(const maliasmesh_t *);
 
-    if (glr.fd.extended) {
-        newframenum = ent->frame % model->numframes;
-        oldframenum = ent->oldframe % model->numframes;
-    } else {
-        newframenum = ent->frame;
-        if (newframenum >= model->numframes) {
-            Com_DPrintf("%s: no such frame: %u\n", __func__, newframenum);
-            newframenum = 0;
-        }
-
-        oldframenum = ent->oldframe;
-        if (oldframenum >= model->numframes) {
-            Com_DPrintf("%s: no such oldframe: %u\n", __func__, oldframenum);
-            oldframenum = 0;
-        }
-    }
+    newframenum = ent->frame % model->numframes;
+    oldframenum = ent->oldframe % model->numframes;
 
     backlerp = ent->backlerp;
     frontlerp = 1.0f - backlerp;

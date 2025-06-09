@@ -1807,7 +1807,7 @@ static void Cmd_EchoEx_f(void)
             escapes = true;
             break;
         case 'c':
-            color = Com_ParseColor(cmd_optarg);
+            color = COM_ParseColorIndex(cmd_optarg);
             break;
         case 'l':
             switch (Q_tolower(*cmd_optarg)) {

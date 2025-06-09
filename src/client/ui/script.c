@@ -508,7 +508,7 @@ static void Parse_Background(menuFrameWork_t *menu)
 {
     char *s = Cmd_Argv(1);
 
-    if (SCR_ParseColor(s, &menu->color)) {
+    if (COM_ParseColor(s, &menu->color)) {
         menu->image = 0;
         menu->transparent = menu->color.u8[3] != 255;
     } else {
@@ -561,13 +561,13 @@ static void Parse_Color(void)
     c = Cmd_Argv(2);
 
     if (!strcmp(s, "normal")) {
-        SCR_ParseColor(c, &uis.color.normal);
+        COM_ParseColor(c, &uis.color.normal);
     } else if (!strcmp(s, "active")) {
-        SCR_ParseColor(c, &uis.color.active);
+        COM_ParseColor(c, &uis.color.active);
     } else if (!strcmp(s, "selection")) {
-        SCR_ParseColor(c, &uis.color.selection);
+        COM_ParseColor(c, &uis.color.selection);
     } else if (!strcmp(s, "disabled")) {
-        SCR_ParseColor(c, &uis.color.disabled);
+        COM_ParseColor(c, &uis.color.disabled);
     } else {
         Com_Printf("Unknown state '%s'\n", s);
     }
@@ -724,7 +724,7 @@ static bool Parse_File(const char *path, int depth)
                 } else if (!strcmp(cmd, "background")) {
                     char *s = Cmd_Argv(1);
 
-                    if (SCR_ParseColor(s, &uis.color.background)) {
+                    if (COM_ParseColor(s, &uis.color.background)) {
                         uis.backgroundHandle = 0;
                         uis.transparent = uis.color.background.u8[3] != 255;
                     } else {
