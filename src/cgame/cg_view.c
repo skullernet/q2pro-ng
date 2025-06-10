@@ -19,304 +19,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-//=============
-//
-// development tools for weapons
-//
-int         gun_frame;
-qhandle_t   gun_model;
-
-//=============
-
-static cvar_t   *cl_add_particles;
-static cvar_t   *cl_add_lights;
-static cvar_t   *cl_add_entities;
-static cvar_t   *cl_add_blend;
-
-#if USE_DEBUG
-static cvar_t   *cl_testparticles;
-static cvar_t   *cl_testentities;
-static cvar_t   *cl_testlights;
-static cvar_t   *cl_testblend;
-
-static cvar_t   *cl_stats;
-#endif
-
 cvar_t   *cl_adjustfov;
-
-int         r_numdlights;
-dlight_t    r_dlights[MAX_DLIGHTS];
-
-int         r_numentities;
-entity_t    r_entities[MAX_ENTITIES];
 
 int         r_numparticles;
 particle_t  r_particles[MAX_PARTICLES];
 
-lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
-
-/*
-====================
-V_ClearScene
-
-Specifies the model that will be used as the world
-====================
-*/
-static void V_ClearScene(void)
-{
-    r_numdlights = 0;
-    r_numentities = 0;
-    r_numparticles = 0;
-}
-
-/*
-=====================
-trap_R_AddEntity
-
-=====================
-*/
-void trap_R_AddEntity(const entity_t *ent)
-{
-    if (r_numentities >= MAX_ENTITIES)
-        return;
-    r_entities[r_numentities++] = *ent;
-}
-
-/*
-=====================
-V_AddParticle
-
-=====================
-*/
-void V_AddParticle(const particle_t *p)
-{
-    if (r_numparticles >= MAX_PARTICLES)
-        return;
-    r_particles[r_numparticles++] = *p;
-}
-
-/*
-=====================
-trap_R_AddLight
-
-=====================
-*/
-void trap_R_AddLight(const vec3_t org, float intensity, float r, float g, float b)
-{
-    dlight_t    *dl;
-
-    if (r_numdlights >= MAX_DLIGHTS)
-        return;
-    dl = &r_dlights[r_numdlights++];
-    VectorCopy(org, dl->origin);
-    dl->intensity = intensity;
-    dl->color[0] = r;
-    dl->color[1] = g;
-    dl->color[2] = b;
-}
-
-/*
-=====================
-V_AddLightStyle
-
-=====================
-*/
-void V_AddLightStyle(int style, float value)
-{
-    lightstyle_t    *ls;
-
-    Q_assert(style >= 0 && style < MAX_LIGHTSTYLES);
-    ls = &r_lightstyles[style];
-    ls->white = value;
-}
-
-#if USE_DEBUG
-
-/*
-================
-V_TestParticles
-
-If cl_testparticles is set, create 4096 particles in the view
-================
-*/
-static void V_TestParticles(void)
-{
-    particle_t  *p;
-    int         i, j;
-    float       d, r, u;
-
-    r_numparticles = MAX_PARTICLES;
-    for (i = 0; i < r_numparticles; i++) {
-        d = i * 0.25f;
-        r = 4 * ((i & 7) - 3.5f);
-        u = 4 * (((i >> 3) & 7) - 3.5f);
-        p = &r_particles[i];
-
-        for (j = 0; j < 3; j++)
-            p->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * d +
-                           cg.v_right[j] * r + cg.v_up[j] * u;
-
-        p->color = 8;
-        p->alpha = 1;
-    }
-}
-
-/*
-================
-V_TestEntities
-
-If cl_testentities is set, create 32 player models
-================
-*/
-static void V_TestEntities(void)
-{
-    int         i, j;
-    float       f, r;
-    entity_t    *ent;
-
-    r_numentities = 32;
-    memset(r_entities, 0, sizeof(r_entities));
-
-    for (i = 0; i < r_numentities; i++) {
-        ent = &r_entities[i];
-
-        r = 64 * ((i % 4) - 1.5f);
-        f = 64 * (i / 4) + 128;
-
-        for (j = 0; j < 3; j++)
-            ent->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * f +
-                             cg.v_right[j] * r;
-
-        ent->model = cg.baseclientinfo.model;
-        ent->skin = cg.baseclientinfo.skin;
-    }
-}
-
-/*
-================
-V_TestLights
-
-If cl_testlights is set, create 32 lights models
-================
-*/
-static void V_TestLights(void)
-{
-    int         i, j;
-    float       f, r;
-    dlight_t    *dl;
-
-    if (cl_testlights->integer != 1) {
-        dl = &r_dlights[0];
-        r_numdlights = 1;
-
-        VectorMA(cg.refdef.vieworg, 256, cg.v_forward, dl->origin);
-        if (cl_testlights->integer == -1)
-            VectorSet(dl->color, -1, -1, -1);
-        else
-            VectorSet(dl->color, 1, 1, 1);
-        dl->intensity = 256;
-        return;
-    }
-
-    r_numdlights = MAX_DLIGHTS;
-    memset(r_dlights, 0, sizeof(r_dlights));
-
-    for (i = 0; i < r_numdlights; i++) {
-        dl = &r_dlights[i];
-
-        r = 64 * ((i % 4) - 1.5f);
-        f = 64 * (i / 4) + 128;
-
-        for (j = 0; j < 3; j++)
-            dl->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * f +
-                            cg.v_right[j] * r;
-        dl->color[0] = ((i % 6) + 1) & 1;
-        dl->color[1] = (((i % 6) + 1) & 2) >> 1;
-        dl->color[2] = (((i % 6) + 1) & 4) >> 2;
-        dl->intensity = 200;
-    }
-}
-
-#endif
-
-//===================================================================
-
-void CG_UpdateBlendSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOBLEND);
-    MSG_WriteShort(!cl_add_blend->integer);
-    MSG_FlushTo(&cgs.netchan.message);
-}
-
 //============================================================================
-
-// gun frame debugging functions
-static void V_Gun_Next_f(void)
-{
-    gun_frame++;
-    Com_Printf("frame %i\n", gun_frame);
-}
-
-static void V_Gun_Prev_f(void)
-{
-    gun_frame--;
-    if (gun_frame < 0)
-        gun_frame = 0;
-    Com_Printf("frame %i\n", gun_frame);
-}
-
-static void V_Gun_Model_f(void)
-{
-    char    name[MAX_QPATH];
-
-    if (Cmd_Argc() != 2) {
-        gun_model = 0;
-        return;
-    }
-    Q_concat(name, sizeof(name), "models/", Cmd_Argv(1), "/tris.md2");
-    gun_model = R_RegisterModel(name);
-}
-
-//============================================================================
-
-// renderer will iterate the list backwards, so sorting order must be reversed
-static int entitycmpfnc(const void *_a, const void *_b)
-{
-    const entity_t *a = (const entity_t *)_a;
-    const entity_t *b = (const entity_t *)_b;
-
-    bool a_trans = a->flags & RF_TRANSLUCENT;
-    bool b_trans = b->flags & RF_TRANSLUCENT;
-    if (a_trans != b_trans)
-        return b_trans - a_trans;
-    if (a_trans) {
-        float dist_a = DistanceSquared(a->origin, cg.refdef.vieworg);
-        float dist_b = DistanceSquared(b->origin, cg.refdef.vieworg);
-        if (dist_a > dist_b)
-            return 1;
-        if (dist_a < dist_b)
-            return -1;
-    }
-
-    bool a_shell = a->flags & RF_SHELL_MASK;
-    bool b_shell = b->flags & RF_SHELL_MASK;
-    if (a_shell != b_shell)
-        return b_shell - a_shell;
-
-    // all other models are sorted by model then skin
-    if (a->model > b->model)
-        return -1;
-    if (a->model < b->model)
-        return 1;
-
-    if (a->skin > b->skin)
-        return -1;
-    if (a->skin < b->skin)
-        return 1;
-
-    return 0;
-}
 
 static void V_SetLightLevel(void)
 {
@@ -349,16 +57,8 @@ V_CalcFov
 */
 float V_CalcFov(float fov_x, float width, float height)
 {
-    float    a;
-    float    x;
-
-    if (fov_x < 0.75f || fov_x > 179)
-        Com_Error(ERR_DROP, "%s: bad fov: %f", __func__, fov_x);
-
-    x = width / tanf(fov_x * (M_PIf / 360));
-
-    a = atanf(height / x);
-    a = a * (360 / M_PIf);
+    float x = width / tanf(fov_x * (M_PIf / 360));
+    float a = atanf(height / x) * (360 / M_PIf);
 
     return a;
 }
@@ -381,19 +81,6 @@ void V_RenderView(void)
         // this also calls CG_CalcViewValues which loads
         // v_forward, etc.
         CG_AddEntities();
-
-#if USE_DEBUG
-        if (cl_testparticles->integer)
-            V_TestParticles();
-        if (cl_testentities->integer)
-            V_TestEntities();
-        if (cl_testlights->integer)
-            V_TestLights();
-        if (cl_testblend->integer & 1)
-            Vector4Set(cg.refdef.screen_blend, 1, 0.5f, 0.25f, 0.5f);
-        if (cl_testblend->integer & 2)
-            Vector4Set(cg.refdef.damage_blend, 0.25f, 0.5f, 0.7f, 0.5f);
-#endif
 
         // never let it sit exactly on a node line, because a water plane can
         // disappear when viewed with the eye exactly on it.
@@ -418,46 +105,17 @@ void V_RenderView(void)
 
         cg.refdef.frametime = cgs.frametime;
         cg.refdef.time = cg.time * 0.001f;
+        memcpy(cg.refdef.areabits, cg.frame.areabits, sizeof(cg.refdef.areabits));
 
-        if (cg.frame.areabytes) {
-            cg.refdef.areabits = cg.frame.areabits;
-        } else {
-            cg.refdef.areabits = NULL;
-        }
-
-        if (!cl_add_entities->integer)
-            r_numentities = 0;
-        if (!cl_add_particles->integer)
-            r_numparticles = 0;
-        if (!cl_add_lights->integer)
-            r_numdlights = 0;
-        if (!cl_add_blend->integer) {
-            Vector4Clear(cg.refdef.screen_blend);
-            Vector4Clear(cg.refdef.damage_blend);
-        }
         if (cg.custom_fog.density) {
             cg.refdef.fog = cg.custom_fog;
             cg.refdef.heightfog = (player_heightfog_t){ 0 };
         }
 
-        cg.refdef.num_entities = r_numentities;
-        cg.refdef.entities = r_entities;
-        cg.refdef.num_particles = r_numparticles;
-        cg.refdef.particles = r_particles;
-        cg.refdef.num_dlights = r_numdlights;
-        cg.refdef.dlights = r_dlights;
-        cg.refdef.lightstyles = r_lightstyles;
         cg.refdef.rdflags = cg.frame.ps.rdflags;
-
-        // sort entities for better cache locality
-        qsort(cg.refdef.entities, cg.refdef.num_entities, sizeof(cg.refdef.entities[0]), entitycmpfnc);
     }
 
     R_RenderFrame(&cg.refdef);
-#if USE_DEBUG
-    if (cl_stats->integer)
-        Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
-#endif
 
     V_SetLightLevel();
 }
@@ -538,18 +196,10 @@ static void V_Fog_f(void)
 }
 
 static const cmdreg_t v_cmds[] = {
-    { "gun_next", V_Gun_Next_f },
-    { "gun_prev", V_Gun_Prev_f },
-    { "gun_model", V_Gun_Model_f },
     { "viewpos", V_Viewpos_f },
     { "fog", V_Fog_f },
     { NULL }
 };
-
-static void cl_add_blend_changed(cvar_t *self)
-{
-    CG_UpdateBlendSetting();
-}
 
 /*
 =============
@@ -559,21 +209,6 @@ V_Init
 void V_Init(void)
 {
     Cmd_Register(v_cmds);
-
-#if USE_DEBUG
-    cl_testblend = Cvar_Get("cl_testblend", "0", 0);
-    cl_testparticles = Cvar_Get("cl_testparticles", "0", 0);
-    cl_testentities = Cvar_Get("cl_testentities", "0", 0);
-    cl_testlights = Cvar_Get("cl_testlights", "0", CVAR_CHEAT);
-
-    cl_stats = Cvar_Get("cl_stats", "0", 0);
-#endif
-
-    cl_add_lights = Cvar_Get("cl_lights", "1", 0);
-    cl_add_particles = Cvar_Get("cl_particles", "1", 0);
-    cl_add_entities = Cvar_Get("cl_entities", "1", 0);
-    cl_add_blend = Cvar_Get("cl_blend", "1", 0);
-    cl_add_blend->changed = cl_add_blend_changed;
 
     cl_adjustfov = Cvar_Get("cl_adjustfov", "1", 0);
 }
