@@ -45,43 +45,43 @@ void CG_CheckPredictionError(void)
     unsigned    cmd;
     float       len;
 
-    if (cls.demo.playback) {
+    if (cgs.demo.playback) {
         return;
     }
 
     if (sv_paused->integer) {
-        VectorClear(cl.prediction_error);
+        VectorClear(cg.prediction_error);
         return;
     }
 
-    if (!cl_predict->integer || (cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION))
+    if (!cl_predict->integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION))
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
     trap_GetUsercmdNumber(&cmd, NULL);
 
     // compare what the server returned with what we had predicted it to be
-    VectorSubtract(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK], delta);
+    VectorSubtract(cg.frame.ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
 
     // save the prediction error for interpolation
     len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
     if (len < 0.001f || len > 80.0f) {
         // > 80 world units is a teleport or something
-        VectorClear(cl.prediction_error);
+        VectorClear(cg.prediction_error);
         return;
     }
 
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
-             cl.frame.number, len, delta[0], delta[1], delta[2]);
+             cg.frame.number, len, delta[0], delta[1], delta[2]);
 
     // don't predict steps against server returned data
-    if (cl.predicted_step_frame <= cmd)
-        cl.predicted_step_frame = cmd + 1;
+    if (cg.predicted_step_frame <= cmd)
+        cg.predicted_step_frame = cmd + 1;
 
-    VectorCopy(cl.frame.ps.pmove.origin, cl.predicted_origins[cmd & CMD_MASK]);
+    VectorCopy(cg.frame.ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
-    VectorCopy(delta, cl.prediction_error);
+    VectorCopy(delta, cg.prediction_error);
 }
 
 /*
@@ -95,10 +95,10 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     trace_t     trace;
     qhandle_t   hmodel;
 
-    for (int i = 0; i < cl.numSolidEntities; i++) {
-        const centity_t *ent = cl.solidEntities[i];
+    for (int i = 0; i < cg.numSolidEntities; i++) {
+        const centity_t *ent = cg.solidEntities[i];
 
-        if (ent->current.number <= cl.maxclients && !(contentmask & CONTENTS_PLAYER))
+        if (ent->current.number <= cg.maxclients && !(contentmask & CONTENTS_PLAYER))
             continue;
 
         if (ent->current.solid == PACKED_BSP) {
@@ -153,8 +153,8 @@ static contents_t CG_PointContents(const vec3_t point)
 {
     contents_t contents = trap_PointContents(point, MODELINDEX_WORLD);
 
-    for (int i = 0; i < cl.numSolidEntities; i++) {
-        const centity_t *ent = cl.solidEntities[i];
+    for (int i = 0; i < cg.numSolidEntities; i++) {
+        const centity_t *ent = cg.solidEntities[i];
 
         if (ent->current.solid != PACKED_BSP) // special value for bmodel
             continue;
@@ -170,14 +170,14 @@ static contents_t CG_PointContents(const vec3_t point)
 =================
 CG_PredictMovement
 
-Sets cl.predicted_origin and cl.predicted_angles
+Sets cg.predicted_origin and cg.predicted_angles
 =================
 */
 void CG_PredictAngles(void)
 {
-    cl.predicted_angles[0] = cl.viewangles[0] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[0]);
-    cl.predicted_angles[1] = cl.viewangles[1] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[1]);
-    cl.predicted_angles[2] = cl.viewangles[2] + SHORT2ANGLE(cl.frame.ps.pmove.delta_angles[2]);
+    cg.predicted_angles[0] = cg.viewangles[0] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[0]);
+    cg.predicted_angles[1] = cg.viewangles[1] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[1]);
+    cg.predicted_angles[2] = cg.viewangles[2] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[2]);
 }
 
 void CG_PredictMovement(void)
@@ -185,11 +185,11 @@ void CG_PredictMovement(void)
     unsigned    ack, current, frame;
     pmove_t     pm;
 
-    if (cls.state != ca_active) {
+    if (cgs.state != ca_active) {
         return;
     }
 
-    if (cls.demo.playback) {
+    if (cgs.demo.playback) {
         return;
     }
 
@@ -197,7 +197,7 @@ void CG_PredictMovement(void)
         return;
     }
 
-    if (!cl_predict->integer || (cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cl_predict->integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
         CG_PredictAngles();
         return;
@@ -207,12 +207,12 @@ void CG_PredictMovement(void)
 
     // if we are too far out of date, just freeze
     if (current - ack > CMD_BACKUP)
-        SHOWMISS("%i: exceeded CMD_BACKUP\n", cl.frame.number);
+        SHOWMISS("%i: exceeded CMD_BACKUP\n", cg.frame.number);
         return;
     }
 
     if (current == ack) {
-        SHOWMISS("%i: not moved\n", cl.frame.number);
+        SHOWMISS("%i: not moved\n", cg.frame.number);
         return;
     }
 
@@ -221,8 +221,8 @@ void CG_PredictMovement(void)
     pm.trace = CG_Trace;
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
-    pm.s = cl.frame.ps.pmove;
-    VectorCopy(cl.frame.ps.viewoffset, pm.viewoffset);
+    pm.s = cg.frame.ps.pmove;
+    VectorCopy(cg.frame.ps.viewoffset, pm.viewoffset);
     pm.snapinitial = true;
 
     // run frames
@@ -232,34 +232,34 @@ void CG_PredictMovement(void)
         pm.snapinitial = false;
 
         // save for debug checking
-        VectorCopy(pm.s.origin, cl.predicted_origins[ack & CMD_MASK]);
+        VectorCopy(pm.s.origin, cg.predicted_origins[ack & CMD_MASK]);
     }
 
     if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
         float step, step_abs, oldz;
 
-        oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
+        oldz = cg.predicted_origins[cg.predicted_step_frame & CMD_MASK][2];
         step = pm.s.origin[2] - oldz;
         step_abs = fabsf(step);
         if (step_abs > 1.0f && step_abs < 20.0f) {
             // check for stepping up before a previous step is completed
-            unsigned delta = cls.realtime - cl.predicted_step_time;
+            unsigned delta = cgs.realtime - cg.predicted_step_time;
             float prev_step = 0;
             if (delta < 100)
-                prev_step = cl.predicted_step * (100 - delta) * 0.01f;
+                prev_step = cg.predicted_step * (100 - delta) * 0.01f;
 
-            cl.predicted_step = Q_clipf(prev_step + step, -32, 32);
-            cl.predicted_step_time = cls.realtime;
-            cl.predicted_step_frame = frame + 1;    // don't double step
+            cg.predicted_step = Q_clipf(prev_step + step, -32, 32);
+            cg.predicted_step_time = cgs.realtime;
+            cg.predicted_step_frame = frame + 1;    // don't double step
         }
     }
 
-    if (cl.predicted_step_frame < frame) {
-        cl.predicted_step_frame = frame;
+    if (cg.predicted_step_frame < frame) {
+        cg.predicted_step_frame = frame;
     }
 
     // copy results out for rendering
-    VectorCopy(pm.s.origin, cl.predicted_origin);
-    VectorCopy(pm.s.velocity, cl.predicted_velocity);
-    VectorCopy(pm.viewangles, cl.predicted_angles);
+    VectorCopy(pm.s.origin, cg.predicted_origin);
+    VectorCopy(pm.s.velocity, cg.predicted_velocity);
+    VectorCopy(pm.viewangles, cg.predicted_angles);
 }

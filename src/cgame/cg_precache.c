@@ -203,14 +203,14 @@ void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     }
 
     // weapon file
-    for (i = 0; i < cl.numWeaponModels; i++) {
+    for (i = 0; i < cg.numWeaponModels; i++) {
         Q_concat(weapon_filename, sizeof(weapon_filename),
-                 "players/", model_name, "/", cl.weaponModels[i]);
+                 "players/", model_name, "/", cg.weaponModels[i]);
         ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
         if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
             Q_concat(weapon_filename, sizeof(weapon_filename),
-                     "players/male/", cl.weaponModels[i]);
+                     "players/male/", cg.weaponModels[i]);
             ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
         }
     }
@@ -228,7 +228,7 @@ void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
         ci->sounds[i] = CG_RegisterSexedSound(model_name, sexed_sounds[i]);
 
     // base info should be at least partially valid
-    if (ci == &cl.baseclientinfo)
+    if (ci == &cg.baseclientinfo)
         return;
 
     // must have loaded all data types to be valid
@@ -255,10 +255,10 @@ void CG_RegisterSounds(void)
     S_BeginRegistration();
     CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
-        s = cl.configstrings[CS_SOUNDS + i];
+        s = cg.configstrings[CS_SOUNDS + i];
         if (!s[0])
             break;
-        cl.sound_precache[i] = trap_S_RegisterSound(s);
+        cg.sound_precache[i] = trap_S_RegisterSound(s);
     }
     S_EndRegistration();
 }
@@ -272,21 +272,21 @@ Registers main BSP file and inline models
 */
 void CG_RegisterBspModels(void)
 {
-    char *name = va("maps/%s.bsp", cl.mapname);
+    char *name = va("maps/%s.bsp", cg.mapname);
     int ret;
 
-    ret = BSP_Load(name, &cl.bsp);
-    if (cl.bsp == NULL) {
+    ret = BSP_Load(name, &cg.bsp);
+    if (cg.bsp == NULL) {
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
     }
 
-    if (cl.bsp->checksum != Q_atoi(cl.configstrings[CS_MAPCHECKSUM])) {
-        if (cls.demo.playback) {
+    if (cg.bsp->checksum != Q_atoi(cg.configstrings[CS_MAPCHECKSUM])) {
+        if (cgs.demo.playback) {
             Com_WPrintf("Local map version differs from demo: %i != %s\n",
-                        cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+                        cg.bsp->checksum, cg.configstrings[CS_MAPCHECKSUM]);
         } else {
             Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
-                      cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+                      cg.bsp->checksum, cg.configstrings[CS_MAPCHECKSUM]);
         }
     }
 }
@@ -303,8 +303,8 @@ void CG_RegisterVWepModels(void)
     int         i;
     char        *name;
 
-    cl.numWeaponModels = 1;
-    strcpy(cl.weaponModels[0], "weapon.md2");
+    cg.numWeaponModels = 1;
+    strcpy(cg.weaponModels[0], "weapon.md2");
 
     // only default model when vwep is off
     if (!cl_vwep->integer) {
@@ -312,7 +312,7 @@ void CG_RegisterVWepModels(void)
     }
 
     for (i = 1; i < MAX_MODELS; i++) {
-        name = cl.configstrings[CS_MODELS + i];
+        name = cg.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
@@ -321,9 +321,9 @@ void CG_RegisterVWepModels(void)
         }
 
         // special player weapon model
-        Q_strlcpy(cl.weaponModels[cl.numWeaponModels++], name + 1, sizeof(cl.weaponModels[0]));
+        Q_strlcpy(cg.weaponModels[cg.numWeaponModels++], name + 1, sizeof(cg.weaponModels[0]));
 
-        if (cl.numWeaponModels == MAX_CLIENTWEAPONMODELS) {
+        if (cg.numWeaponModels == MAX_CLIENTWEAPONMODELS) {
             break;
         }
     }
@@ -341,15 +341,15 @@ void CG_SetSky(void)
     int         autorotate = 1;
     vec3_t      axis;
 
-    sscanf(cl.configstrings[CS_SKYROTATE], "%f %d", &rotate, &autorotate);
+    sscanf(cg.configstrings[CS_SKYROTATE], "%f %d", &rotate, &autorotate);
 
-    if (sscanf(cl.configstrings[CS_SKYAXIS], "%f %f %f",
+    if (sscanf(cg.configstrings[CS_SKYAXIS], "%f %f %f",
                &axis[0], &axis[1], &axis[2]) != 3) {
         Com_DPrintf("Couldn't parse CS_SKYAXIS\n");
         VectorClear(axis);
     }
 
-    R_SetSky(cl.configstrings[CS_SKY], rotate, autorotate, axis);
+    R_SetSky(cg.configstrings[CS_SKY], rotate, autorotate, axis);
 }
 
 /*
@@ -389,48 +389,48 @@ void CG_PrepRefresh(void)
     int         i;
     char        *name;
 
-    if (!cls.ref_initialized)
+    if (!cgs.ref_initialized)
         return;
-    if (!cl.mapname[0])
+    if (!cg.mapname[0])
         return;     // no map loaded
 
     // register models, pics, and skins
-    R_BeginRegistration(cl.mapname);
+    R_BeginRegistration(cg.mapname);
 
     CG_LoadState(LOAD_MODELS);
 
     CG_RegisterTEntModels();
 
     for (i = 1; i < MAX_MODELS; i++) {
-        name = cl.configstrings[CS_MODELS + i];
+        name = cg.configstrings[CS_MODELS + i];
         if (!name[0] && i != MODELINDEX_PLAYER) {
             break;
         }
         if (name[0] == '#') {
             continue;
         }
-        cl.model_draw[i] = R_RegisterModel(name);
+        cg.model_draw[i] = R_RegisterModel(name);
     }
 
     CG_LoadState(LOAD_IMAGES);
     for (i = 1; i < MAX_IMAGES; i++) {
-        name = cl.configstrings[CS_IMAGES + i];
+        name = cg.configstrings[CS_IMAGES + i];
         if (!name[0]) {
             break;
         }
-        cl.image_precache[i] = CG_RegisterImage(name);
+        cg.image_precache[i] = CG_RegisterImage(name);
     }
 
     CG_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
-        name = cl.configstrings[CS_PLAYERSKINS + i];
+        name = cg.configstrings[CS_PLAYERSKINS + i];
         if (!name[0]) {
             continue;
         }
-        CG_LoadClientinfo(&cl.clientinfo[i], name);
+        CG_LoadClientinfo(&cg.clientinfo[i], name);
     }
 
-    CG_LoadClientinfo(&cl.baseclientinfo, "unnamed\\male/grunt");
+    CG_LoadClientinfo(&cg.baseclientinfo, "unnamed\\male/grunt");
 
     // set sky textures and speed
     CG_SetSky();
@@ -456,15 +456,15 @@ A configstring update has been parsed.
 */
 void CG_UpdateConfigstring(int index)
 {
-    const char *s = cl.configstrings[index];
+    const char *s = cg.configstrings[index];
 
     if (index == CS_MAXCLIENTS) {
-        cl.maxclients = Q_atoi(s);
+        cg.maxclients = Q_atoi(s);
         return;
     }
 
     if (index == CS_AIRACCEL) {
-        //cl.pmp.airaccelerate = cl.pmp.qwmode || Q_atoi(s);
+        //cg.pmp.airaccelerate = cg.pmp.qwmode || Q_atoi(s);
         return;
     }
 
@@ -473,27 +473,27 @@ void CG_UpdateConfigstring(int index)
         return;
     }
 
-    if (cls.state < ca_precached) {
+    if (cgs.state < ca_precached) {
         return;
     }
 
     if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
-        cl.model_draw[index - CS_MODELS] = R_RegisterModel(s);
+        cg.model_draw[index - CS_MODELS] = R_RegisterModel(s);
         return;
     }
 
     if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
-        cl.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
+        cg.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
         return;
     }
 
     if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
-        cl.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
+        cg.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
         return;
     }
 
     if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
-        CG_LoadClientinfo(&cl.clientinfo[index - CS_PLAYERSKINS], s);
+        CG_LoadClientinfo(&cg.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 

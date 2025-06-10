@@ -179,7 +179,7 @@ SCR_FadeAlpha
 float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime)
 {
     float alpha;
-    unsigned timeLeft, delta = cls.realtime - startTime;
+    unsigned timeLeft, delta = cgs.realtime - startTime;
 
     if (delta >= visTime) {
         return 0;
@@ -250,14 +250,14 @@ static void SCR_DrawDemo(void)
         return;
     }
 
-    if (cls.demo.playback) {
-        if (cls.demo.file_size && !cls.demo.compat) {
+    if (cgs.demo.playback) {
+        if (cgs.demo.file_size && !cgs.demo.compat) {
             draw_progress_bar(
-                cls.demo.file_progress,
+                cgs.demo.file_progress,
                 sv_paused->integer &&
                 cl_paused->integer &&
                 scr_showpause->integer == 2,
-                cls.demo.frames_read);
+                cgs.demo.frames_read);
         }
         return;
     }
@@ -306,7 +306,7 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     cp = &scr_centerprints[(scr_centerhead - 1) & (MAX_CENTERPRINTS - 1)];
     if (!strcmp(cp->string, str)) {
         if (cp->start)
-            cp->start = cls.realtime;
+            cp->start = cgs.realtime;
         if (scr_centertail == scr_centerhead)
             scr_centertail--;
         return;
@@ -360,7 +360,7 @@ static void SCR_DrawCenterString(void)
             return;
         cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
         if (!cp->start)
-            cp->start = cls.realtime;
+            cp->start = cgs.realtime;
         alpha = SCR_FadeAlpha(cp->start, scr_centertime->integer + cp->typewrite, 300);
         if (alpha > 0)
             break;
@@ -373,7 +373,7 @@ static void SCR_DrawCenterString(void)
     flags = UI_CENTER;
 
     if (cp->typewrite) {
-        maxlen = scr_printspeed->value * 0.001f * (cls.realtime - cp->start);
+        maxlen = scr_printspeed->value * 0.001f * (cgs.realtime - cp->start);
         flags |= UI_DROPSHADOW | UI_DRAWCURSOR;
     } else {
         maxlen = MAX_STRING_CHARS;
@@ -423,22 +423,22 @@ void SCR_LagClear(void)
 
 void SCR_LagSample(void)
 {
-    int i = cls.netchan.incoming_acknowledged & CMD_MASK;
-    client_history_t *h = &cl.history[i];
+    int i = cgs.netchan.incoming_acknowledged & CMD_MASK;
+    client_history_t *h = &cg.history[i];
     unsigned ping;
 
-    h->rcvd = cls.realtime;
+    h->rcvd = cgs.realtime;
     if (!h->cmdNumber || h->rcvd < h->sent) {
         return;
     }
 
     ping = h->rcvd - h->sent;
-    for (i = 0; i < cls.netchan.dropped; i++) {
+    for (i = 0; i < cgs.netchan.dropped; i++) {
         lag.samples[lag.head % LAG_WIDTH] = ping | LAG_CRIT_BIT;
         lag.head++;
     }
 
-    if (cl.frameflags & FF_SUPPRESSED) {
+    if (cg.frameflags & FF_SUPPRESSED) {
         ping |= LAG_WARN_BIT;
     }
     lag.samples[lag.head % LAG_WIDTH] = ping;
@@ -500,8 +500,8 @@ static void SCR_DrawNet(void)
     }
 
     // draw phone jack
-    if (cls.netchan.outgoing_sequence - cls.netchan.incoming_acknowledged >= CMD_BACKUP) {
-        if ((cls.realtime >> 8) & 3) {
+    if (cgs.netchan.outgoing_sequence - cgs.netchan.incoming_acknowledged >= CMD_BACKUP) {
+        if ((cgs.realtime >> 8) & 3) {
             R_DrawStretchPic(x, y, LAG_WIDTH, LAG_HEIGHT, scr.net_pic);
         }
     }
@@ -540,7 +540,7 @@ void SCR_AddToChatHUD(const char *text)
 
     line = &scr_chatlines[scr_chathead++ & CHAT_LINE_MASK];
     Q_strlcpy(line->text, text, sizeof(line->text));
-    line->time = cls.realtime;
+    line->time = cgs.realtime;
 
     p = strrchr(line->text, '\n');
     if (p)
@@ -616,14 +616,14 @@ static void SCR_DrawTurtle(void)
     if (scr_showturtle->integer <= 0)
         return;
 
-    if (!cl.frameflags)
+    if (!cg.frameflags)
         return;
 
     x = CONCHAR_WIDTH;
     y = scr.hud_height - 11 * CONCHAR_HEIGHT;
 
 #define DF(f) \
-    if (cl.frameflags & FF_##f) { \
+    if (cg.frameflags & FF_##f) { \
         SCR_DrawString(x, y, UI_ALTCOLOR, #f); \
         y += CONCHAR_HEIGHT; \
     }
@@ -662,8 +662,8 @@ static void SCR_DrawDebugStats(void)
     x = CONCHAR_WIDTH;
     y = (scr.hud_height - j * CONCHAR_HEIGHT) / 2;
     for (i = 0; i < j; i++) {
-        Q_snprintf(buffer, sizeof(buffer), "%2d: %d", i, cl.frame.ps.stats[i]);
-        if (cl.oldframe.ps.stats[i] != cl.frame.ps.stats[i]) {
+        Q_snprintf(buffer, sizeof(buffer), "%2d: %d", i, cg.frame.ps.stats[i]);
+        if (cg.oldframe.ps.stats[i] != cg.frame.ps.stats[i]) {
             R_SetColor(U32_RED);
         }
         R_DrawString(x, y, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
@@ -691,14 +691,14 @@ static void SCR_DrawDebugPmove(void)
     x = CONCHAR_WIDTH;
     y = (scr.hud_height - 2 * CONCHAR_HEIGHT) / 2;
 
-    i = cl.frame.ps.pmove.pm_type;
+    i = cg.frame.ps.pmove.pm_type;
     if (i > PM_FREEZE)
         i = PM_FREEZE;
 
     R_DrawString(x, y, 0, MAX_STRING_CHARS, types[i], scr.font_pic);
     y += CONCHAR_HEIGHT;
 
-    j = cl.frame.ps.pmove.pm_flags;
+    j = cg.frame.ps.pmove.pm_flags;
     for (i = 0; i < 8; i++) {
         if (j & (1 << i)) {
             x = R_DrawString(x, y, 0, MAX_STRING_CHARS, flags[i], scr.font_pic);
@@ -770,7 +770,7 @@ static void SCR_Sky_f(void)
         return;
     }
 
-    if (cls.state != ca_active) {
+    if (cgs.state != ca_active) {
         Com_Printf("No map loaded.\n");
         return;
     }
@@ -845,7 +845,7 @@ void SCR_SetCrosshairColor(void)
         return;
     }
 
-    health = cl.frame.ps.stats[STAT_HEALTH];
+    health = cg.frame.ps.stats[STAT_HEALTH];
     if (health <= 0) {
         VectorSet(scr.crosshair_color.u8, 0, 0, 0);
         return;
@@ -1124,10 +1124,10 @@ static void SCR_DrawInventory(void)
     int     selected;
     int     top;
 
-    if (!(cl.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
+    if (!(cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
         return;
 
-    selected = cl.frame.ps.stats[STAT_SELECTED_ITEM];
+    selected = cg.frame.ps.stats[STAT_SELECTED_ITEM];
 
     num = 0;
     selected_num = 0;
@@ -1135,7 +1135,7 @@ static void SCR_DrawInventory(void)
         if (i == selected) {
             selected_num = num;
         }
-        if (cl.inventory[i]) {
+        if (cg.inventory[i]) {
             index[num++] = i;
         }
     }
@@ -1165,17 +1165,17 @@ static void SCR_DrawInventory(void)
     for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
         item = index[i];
         // search for a binding
-        Q_concat(string, sizeof(string), "use ", cl.configstrings[CS_ITEMS + item]);
+        Q_concat(string, sizeof(string), "use ", cg.configstrings[CS_ITEMS + item]);
         bind = Key_GetBinding(string);
 
         Q_snprintf(string, sizeof(string), "%6s %3i %s",
-                   bind, cl.inventory[item], cl.configstrings[CS_ITEMS + item]);
+                   bind, cg.inventory[item], cg.configstrings[CS_ITEMS + item]);
 
         if (item != selected) {
             HUD_DrawAltString(x, y, string);
         } else {    // draw a blinky cursor by the selected item
             HUD_DrawString(x, y, string);
-            if ((cls.realtime >> 8) & 1) {
+            if ((cgs.realtime >> 8) & 1) {
                 R_DrawChar(x - CONCHAR_WIDTH, y, 0, 15, scr.font_pic);
             }
         }
@@ -1317,13 +1317,13 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cl.frame.ps.stats[value];
+            value = cg.frame.ps.stats[value];
             if (value < 0 || value >= MAX_IMAGES) {
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
-            token = cl.configstrings[CS_IMAGES + value];
+            token = cg.configstrings[CS_IMAGES + value];
             if (token[0]) {
-                qhandle_t pic = cl.image_precache[value];
+                qhandle_t pic = cg.image_precache[value];
                 // hack for action mod scope scaling
                 if (x == scr.hud_width  / 2 - 160 &&
                     y == scr.hud_height / 2 - 120 &&
@@ -1355,7 +1355,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_CLIENTS) {
                 Com_Error(ERR_DROP, "%s: invalid client index", __func__);
             }
-            ci = &cl.clientinfo[value];
+            ci = &cg.clientinfo[value];
 
             token = COM_Parse(&s);
             score = Q_atoi(token);
@@ -1376,7 +1376,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             HUD_DrawString(x + 32, y + 3 * CONCHAR_HEIGHT, buffer);
 
             if (!ci->icon) {
-                ci = &cl.baseclientinfo;
+                ci = &cg.baseclientinfo;
             }
             R_DrawPic(x, y, ci->icon);
             continue;
@@ -1396,7 +1396,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_CLIENTS) {
                 Com_Error(ERR_DROP, "%s: invalid client index", __func__);
             }
-            ci = &cl.clientinfo[value];
+            ci = &cg.clientinfo[value];
 
             token = COM_Parse(&s);
             score = Q_atoi(token);
@@ -1408,7 +1408,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             Q_snprintf(buffer, sizeof(buffer), "%3d %3d %-12.12s",
                        score, ping, ci->name);
-            if (value == cl.frame.ps.clientnum) {
+            if (value == cg.frame.ps.clientnum) {
                 HUD_DrawAltString(x, y, buffer);
             } else {
                 HUD_DrawString(x, y, buffer);
@@ -1432,7 +1432,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cl.frame.ps.stats[value];
+            value = cg.frame.ps.stats[value];
             HUD_DrawNumber(x, y, 0, width, value);
             continue;
         }
@@ -1442,15 +1442,15 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cl.frame.ps.stats[STAT_HEALTH];
+            value = cg.frame.ps.stats[STAT_HEALTH];
             if (value > 25)
                 color = 0;  // green
             else if (value > 0)
-                color = ((cl.frame.number / CG_FRAMEDIV) >> 2) & 1;     // flash
+                color = ((cg.frame.number / CG_FRAMEDIV) >> 2) & 1;     // flash
             else
                 color = 1;
 
-            if (cl.frame.ps.stats[STAT_FLASHES] & 1)
+            if (cg.frame.ps.stats[STAT_FLASHES] & 1)
                 R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1462,15 +1462,15 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cl.frame.ps.stats[STAT_AMMO];
+            value = cg.frame.ps.stats[STAT_AMMO];
             if (value > 5)
                 color = 0;  // green
             else if (value >= 0)
-                color = ((cl.frame.number / CG_FRAMEDIV) >> 2) & 1;     // flash
+                color = ((cg.frame.number / CG_FRAMEDIV) >> 2) & 1;     // flash
             else
                 continue;   // negative number = don't show
 
-            if (cl.frame.ps.stats[STAT_FLASHES] & 4)
+            if (cg.frame.ps.stats[STAT_FLASHES] & 4)
                 R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1482,13 +1482,13 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cl.frame.ps.stats[STAT_ARMOR];
+            value = cg.frame.ps.stats[STAT_ARMOR];
             if (value < 1)
                 continue;
 
             color = 0;  // green
 
-            if (cl.frame.ps.stats[STAT_FLASHES] & 2)
+            if (cg.frame.ps.stats[STAT_FLASHES] & 2)
                 R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1502,11 +1502,11 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (index < 0 || index >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            index = cl.frame.ps.stats[index];
+            index = cg.frame.ps.stats[index];
             if (index < 0 || index >= MAX_CONFIGSTRINGS) {
                 Com_Error(ERR_DROP, "%s: invalid string index", __func__);
             }
-            token = cl.configstrings[index];
+            token = cg.configstrings[index];
             if (!strcmp(cmd, "string"))
                 HUD_DrawString(x, y, token);
             else if (!strcmp(cmd, "string2"))
@@ -1564,7 +1564,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cl.frame.ps.stats[value];
+            value = cg.frame.ps.stats[value];
             if (!value) {   // skip to endif
                 SCR_SkipToEndif(&s);
             }
@@ -1589,7 +1589,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cl.frame.ps.stats[value];
+            value = cg.frame.ps.stats[value];
 
             token = COM_Parse(&s);
             index = Q_atoi(token);
@@ -1597,7 +1597,7 @@ static void SCR_ExecuteLayoutString(const char *s)
                 Com_Error(ERR_DROP, "%s: invalid string index", __func__);
             }
 
-            HUD_DrawCenterString(x + 320 / 2, y, cl.configstrings[index]);
+            HUD_DrawCenterString(x + 320 / 2, y, cg.configstrings[index]);
             SCR_DrawHealthBar(x + 320 / 2, y + CONCHAR_HEIGHT + 4, value & 0xff);
             SCR_DrawHealthBar(x + 320 / 2, y + CONCHAR_HEIGHT + 12, (value >> 8) & 0xff);
             continue;
@@ -1650,15 +1650,15 @@ static void SCR_DrawLoading(void)
 
 static void SCR_DrawHitMarker(void)
 {
-    if (!cl.hit_marker_count)
+    if (!cg.hit_marker_count)
         return;
     if (!scr.hit_marker_pic || scr_hit_marker_time->integer <= 0 ||
-        cls.realtime - cl.hit_marker_time > scr_hit_marker_time->integer) {
-        cl.hit_marker_count = 0;
+        cgs.realtime - cg.hit_marker_time > scr_hit_marker_time->integer) {
+        cg.hit_marker_count = 0;
         return;
     }
 
-    float frac = (float)(cls.realtime - cl.hit_marker_time) / scr_hit_marker_time->integer;
+    float frac = (float)(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time->integer;
     float alpha = 1.0f - (frac * frac);
 
     int x = (scr.hud_width - scr.hit_marker_width) / 2;
@@ -1679,7 +1679,7 @@ static void SCR_DrawCrosshair(void)
 
     if (!scr_crosshair->integer)
         return;
-    if (cl.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
+    if (cg.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
 
     x = (scr.hud_width - scr.crosshair_width) / 2;
@@ -1701,10 +1701,10 @@ static void SCR_DrawStats(void)
 {
     if (scr_draw2d->integer <= 1)
         return;
-    if (cl.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
+    if (cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
         return;
 
-    SCR_ExecuteLayoutString(cl.configstrings[CS_STATUSBAR]);
+    SCR_ExecuteLayoutString(cg.configstrings[CS_STATUSBAR]);
 }
 
 static void SCR_DrawLayout(void)
@@ -1712,14 +1712,14 @@ static void SCR_DrawLayout(void)
     if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
         return;     // turn off for GTV
 
-    if (cls.demo.playback && Key_IsDown(K_F1))
+    if (cgs.demo.playback && Key_IsDown(K_F1))
         goto draw;
 
-    if (!(cl.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT))
+    if (!(cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT))
         return;
 
 draw:
-    SCR_ExecuteLayoutString(cl.layout);
+    SCR_ExecuteLayoutString(cg.layout);
 }
 
 static void SCR_Draw2D(void)
@@ -1727,7 +1727,7 @@ static void SCR_Draw2D(void)
     if (scr_draw2d->integer <= 0)
         return;     // turn off for screenshots
 
-    if (cls.key_dest & KEY_MENU)
+    if (cgs.key_dest & KEY_MENU)
         return;
 
     R_SetScale(scr.hud_scale);

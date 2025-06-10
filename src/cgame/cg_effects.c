@@ -72,11 +72,11 @@ CG_AddLightStyles
 */
 void CG_AddLightStyles(void)
 {
-    int     i, ofs = cl.time / 100;
+    int     i, ofs = cg.time / 100;
     clightstyle_t   *ls;
 
     if (cl_lerp_lightstyles->integer) {
-        float f = (cl.time % 100) * 0.01f;
+        float f = (cg.time % 100) * 0.01f;
         float b = 1.0f - f;
 
         for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
@@ -137,7 +137,7 @@ cdlight_t *CG_AllocDlight(int key)
 // then look for anything else
     dl = cl_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (dl->die < cl.time) {
+        if (dl->die < cg.time) {
             memset(dl, 0, sizeof(*dl));
             dl->key = key;
             return dl;
@@ -162,7 +162,7 @@ void CG_AddDLights(void)
 
     dl = cl_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (dl->die < cl.time)
+        if (dl->die < cg.time)
             continue;
         trap_R_AddLight(dl->origin, dl->radius,
                         dl->color[0], dl->color[1], dl->color[2]);
@@ -189,7 +189,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     weapon &= ~MZ_SILENCED;
 
     entnum = pl->current.number;
-    local = entnum == cl.frame.ps.clientnum;
+    local = entnum == cg.frame.ps.clientnum;
 
     dl = CG_AllocDlight(entnum);
     VectorCopy(pl->current.origin, dl->origin);
@@ -197,7 +197,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     VectorMA(dl->origin, 18, fv, dl->origin);
     VectorMA(dl->origin, 16, rv, dl->origin);
     dl->radius = 100 * (2 - silenced) + (Q_rand() & 31);
-    dl->die = cl.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
+    dl->die = cg.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
 
     volume = 1.0f - 0.8f * silenced;
 
@@ -351,7 +351,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         break;
     case MZ_HEATBEAM:
         VectorSet(dl->color, 1, 1, 0);
-        dl->die = cl.time + 100;
+        dl->die = cg.time + 100;
 //      trap_S_StartSound (NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/bfg__l1a.wav"), volume, ATTN_NORM, 0);
         if (local)
             CG_AddWeaponMuzzleFX(MFLASH_BEAMER, (const vec3_t) { 18.0f, 6.0f, -8.5f }, 16.0f);
@@ -370,19 +370,19 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         break;
     case MZ_NUKE1:
         VectorSet(dl->color, 1, 0, 0);
-        dl->die = cl.time + 100;
+        dl->die = cg.time + 100;
         break;
     case MZ_NUKE2:
         VectorSet(dl->color, 1, 1, 0);
-        dl->die = cl.time + 100;
+        dl->die = cg.time + 100;
         break;
     case MZ_NUKE4:
         VectorSet(dl->color, 0, 0, 1);
-        dl->die = cl.time + 100;
+        dl->die = cg.time + 100;
         break;
     case MZ_NUKE8:
         VectorSet(dl->color, 0, 1, 1);
-        dl->die = cl.time + 100;
+        dl->die = cg.time + 100;
         break;
     }
 
@@ -435,7 +435,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     dl = CG_AllocDlight(entnum);
     VectorCopy(origin, dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    dl->die = cl.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
+    dl->die = cg.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
 
     switch (weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1:
@@ -851,7 +851,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     case MZ2_WIDOW2_BEAM_SWEEP_11:
         dl->radius = 300 + (Q_rand() & 100);
         VectorSet(dl->color, 1, 1, 0);
-        dl->die = cl.time + 200;
+        dl->die = cg.time + 200;
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BEAMER, 0, 32.0f * scale);
         break;
 
@@ -966,7 +966,7 @@ void CG_ParticleEffect(const vec3_t org, const vec3_t dir, int color, int count)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color + (Q_rand() & 7);
 
         d = Q_rand() & 31;
@@ -999,7 +999,7 @@ void CG_ParticleEffect2(const vec3_t org, const vec3_t dir, int color, int count
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color;
 
         d = Q_rand() & 7;
@@ -1031,7 +1031,7 @@ void CG_TeleporterParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xdb;
 
         for (j = 0; j < 2; j++) {
@@ -1066,7 +1066,7 @@ static void CG_LogoutEffect(const vec3_t org, int color)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->color = color + (Q_rand() & 7);
 
@@ -1101,7 +1101,7 @@ void CG_ItemRespawnParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->color = 0xd4 + (Q_rand() & 3); // green
 
@@ -1135,7 +1135,7 @@ void CG_ExplosionParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xe0 + (Q_rand() & 7);
 
         for (j = 0; j < 3; j++) {
@@ -1168,7 +1168,7 @@ void CG_BigTeleportParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->color = colortable[Q_rand() & 3];
 
@@ -1209,7 +1209,7 @@ void CG_BlasterParticles(const vec3_t org, const vec3_t dir)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xe0 + (Q_rand() & 7);
 
         d = Q_rand() & 15;
@@ -1254,7 +1254,7 @@ void CG_BlasterTrail(centity_t *ent, const vec3_t end)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
@@ -1298,7 +1298,7 @@ void CG_FlagTrail(centity_t *ent, const vec3_t end, int color)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (0.8f + frand() * 0.2f);
@@ -1360,7 +1360,7 @@ void CG_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
                 break;
 
             VectorClear(p->accel);
-            p->time = cl.time;
+            p->time = cg.time;
 
             p->alpha = 1.0f;
             p->alphavel = -1.0f / (1 + frand() * alphas[type]);
@@ -1388,7 +1388,7 @@ void CG_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t t
                 break;
 
             VectorClear(p->accel);
-            p->time = cl.time;
+            p->time = cg.time;
 
             p->alpha = 1.0f;
             p->alphavel = -1.0f / (1 + frand() * 0.2f);
@@ -1439,7 +1439,7 @@ void CG_OldRailTrail(const vec3_t start, const vec3_t end)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         VectorClear(p->accel);
 
         d = i * 0.1f;
@@ -1471,7 +1471,7 @@ void CG_OldRailTrail(const vec3_t start, const vec3_t end)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         VectorClear(p->accel);
 
         p->alpha = 1.0f;
@@ -1515,7 +1515,7 @@ void CG_BubbleTrail(const vec3_t start, const vec3_t end)
             return;
 
         VectorClear(p->accel);
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (1 + frand() * 0.2f);
@@ -1551,7 +1551,7 @@ static void CG_FlyParticles(const vec3_t origin, int count)
     if (count > NUMVERTEXNORMALS)
         count = NUMVERTEXNORMALS;
 
-    ltime = cl.time * 0.001f;
+    ltime = cg.time * 0.001f;
     for (i = 0; i < count; i += 2) {
         p = CG_AllocParticle();
         if (!p)
@@ -1568,7 +1568,7 @@ static void CG_FlyParticles(const vec3_t origin, int count)
         forward[1] = cp * sy;
         forward[2] = -sp;
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         dist = sinf(ltime + i) * 64;
         p->org[0] = origin[0] + bytedirs[i][0] * dist + forward[0] * BEAMLENGTH;
@@ -1591,18 +1591,18 @@ void CG_FlyEffect(centity_t *ent, const vec3_t origin)
     int     count;
     int     starttime;
 
-    if (ent->fly_stoptime < cl.time) {
-        starttime = cl.time;
-        ent->fly_stoptime = cl.time + 60000;
+    if (ent->fly_stoptime < cg.time) {
+        starttime = cg.time;
+        ent->fly_stoptime = cg.time + 60000;
     } else {
         starttime = ent->fly_stoptime - 60000;
     }
 
-    n = cl.time - starttime;
+    n = cg.time - starttime;
     if (n < 20000)
         count = n * NUMVERTEXNORMALS / 20000;
     else {
-        n = ent->fly_stoptime - cl.time;
+        n = ent->fly_stoptime - cg.time;
         if (n < 20000)
             count = n * NUMVERTEXNORMALS / 20000;
         else
@@ -1627,7 +1627,7 @@ void CG_BfgParticles(const entity_t *ent)
     float       dist;
     float       ltime;
 
-    ltime = cl.time * 0.001f;
+    ltime = cg.time * 0.001f;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
         p = CG_AllocParticle();
         if (!p)
@@ -1644,7 +1644,7 @@ void CG_BfgParticles(const entity_t *ent)
         forward[1] = cp * sy;
         forward[2] = -sp;
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         dist = sinf(ltime + i) * 64;
         p->org[0] = ent->origin[0] + bytedirs[i][0] * dist + forward[0] * BEAMLENGTH;
@@ -1678,7 +1678,7 @@ void CG_BFGExplosionParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xd0 + (Q_rand() & 7);
 
         for (j = 0; j < 3; j++) {
@@ -1714,7 +1714,7 @@ void CG_TeleportParticles(const vec3_t org)
                 if (!p)
                     return;
 
-                p->time = cl.time;
+                p->time = cg.time;
                 p->color = 7 + (Q_rand() & 7);
 
                 p->alpha = 1.0f;
@@ -1744,7 +1744,7 @@ void CG_Flashlight(int ent, const vec3_t pos)
     dl = CG_AllocDlight(ent);
     VectorCopy(pos, dl->origin);
     dl->radius = 400;
-    dl->die = cl.time + 100;
+    dl->die = cg.time + 100;
     VectorSet(dl->color, 1, 1, 1);
 }
 
@@ -1760,7 +1760,7 @@ void CG_ColorFlash(const vec3_t pos, int ent, int intensity, float r, float g, f
     dl = CG_AllocDlight(ent);
     VectorCopy(pos, dl->origin);
     dl->radius = intensity;
-    dl->die = cl.time + 100;
+    dl->die = cg.time + 100;
     VectorSet(dl->color, r, g, b);
 }
 
@@ -1792,7 +1792,7 @@ void CG_DebugTrail(const vec3_t start, const vec3_t end)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         VectorClear(p->accel);
         VectorClear(p->vel);
         p->alpha = 1.0f;
@@ -1827,7 +1827,7 @@ void CG_ForceWall(const vec3_t start, const vec3_t end, int color)
                 return;
             VectorClear(p->accel);
 
-            p->time = cl.time;
+            p->time = cg.time;
 
             p->alpha = 1.0f;
             p->alphavel =  -1.0f / (3.0f + frand() * 0.5f);
@@ -1871,7 +1871,7 @@ void CG_BubbleTrail2(const vec3_t start, const vec3_t end, int dist)
             return;
 
         VectorClear(p->accel);
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (1 + frand() * 0.1f);
@@ -1906,7 +1906,7 @@ void CG_Heatbeam(const vec3_t start, const vec3_t forward)
     VectorCopy(start, move);
     len = VectorNormalize2(forward, vec);
 
-    ltime = cl.time * 0.001f;
+    ltime = cg.time * 0.001f;
     start_pt = fmodf(ltime * 96.0f, step);
     VectorMA(move, start_pt, vec, move);
 
@@ -1919,7 +1919,7 @@ void CG_Heatbeam(const vec3_t start, const vec3_t forward)
             if (!p)
                 return;
 
-            p->time = cl.time;
+            p->time = cg.time;
             VectorClear(p->accel);
             variance = 0.5f;
             c = cosf(rot) * variance;
@@ -1927,11 +1927,11 @@ void CG_Heatbeam(const vec3_t start, const vec3_t forward)
 
             // trim it so it looks like it's starting at the origin
             if (i < 10) {
-                VectorScale(cl.v_right, c * (i / 10.0f), dir);
-                VectorMA(dir, s * (i / 10.0f), cl.v_up, dir);
+                VectorScale(cg.v_right, c * (i / 10.0f), dir);
+                VectorMA(dir, s * (i / 10.0f), cg.v_up, dir);
             } else {
-                VectorScale(cl.v_right, c, dir);
-                VectorMA(dir, s, cl.v_up, dir);
+                VectorScale(cg.v_right, c, dir);
+                VectorMA(dir, s, cg.v_up, dir);
             }
 
             p->alpha = 0.5f;
@@ -1968,7 +1968,7 @@ void CG_ParticleSteamEffect(const vec3_t org, const vec3_t dir, int color, int c
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color + (Q_rand() & 7);
 
         for (j = 0; j < 3; j++)
@@ -2022,7 +2022,7 @@ void CG_TrackerTrail(centity_t *ent, const vec3_t end)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -2.0f;
@@ -2077,7 +2077,7 @@ void CG_Tracker_Shell(const centity_t *ent, const vec3_t origin)
             return;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = INSTANT_PARTICLE;
@@ -2101,7 +2101,7 @@ void CG_MonsterPlasma_Shell(const vec3_t origin)
             return;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = INSTANT_PARTICLE;
@@ -2120,7 +2120,7 @@ void CG_Widowbeamout(cl_sustain_t *self)
     cparticle_t     *p;
     float           ratio;
 
-    ratio = 1.0f - (self->endtime - cl.time) / 2100.0f;
+    ratio = 1.0f - (self->endtime - cg.time) / 2100.0f;
 
     for (i = 0; i < 300; i++) {
         p = CG_AllocParticle();
@@ -2128,7 +2128,7 @@ void CG_Widowbeamout(cl_sustain_t *self)
             return;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = INSTANT_PARTICLE;
@@ -2147,7 +2147,7 @@ void CG_Nukeblast(cl_sustain_t *self)
     cparticle_t     *p;
     float           ratio;
 
-    ratio = 1.0f - (self->endtime - cl.time) / 1000.0f;
+    ratio = 1.0f - (self->endtime - cg.time) / 1000.0f;
 
     for (i = 0; i < 700; i++) {
         p = CG_AllocParticle();
@@ -2155,7 +2155,7 @@ void CG_Nukeblast(cl_sustain_t *self)
             return;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = INSTANT_PARTICLE;
@@ -2178,7 +2178,7 @@ void CG_WidowSplash(const vec3_t pos)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = colortable[Q_rand() & 3];
 
         RandomDir(dir);
@@ -2220,7 +2220,7 @@ void CG_TagTrail(centity_t *ent, const vec3_t end, int color)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (0.8f + frand() * 0.2f);
@@ -2251,7 +2251,7 @@ void CG_ColorExplosionParticles(const vec3_t org, int color, int run)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color + (Q_rand() % run);
 
         for (j = 0; j < 3; j++) {
@@ -2286,7 +2286,7 @@ void CG_ParticleSmokeEffect(const vec3_t org, const vec3_t dir, int color, int c
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color + (Q_rand() & 7);
 
         for (j = 0; j < 3; j++)
@@ -2325,7 +2325,7 @@ void CG_BlasterParticles2(const vec3_t org, const vec3_t dir, unsigned int color
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color + (Q_rand() & 7);
 
         d = Q_rand() & 15;
@@ -2371,7 +2371,7 @@ void CG_BlasterTrail2(centity_t *ent, const vec3_t end)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
@@ -2415,7 +2415,7 @@ void CG_IonripperTrail(centity_t *ent, const vec3_t end)
             break;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->alpha = 0.5f;
         p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
         p->color = 0xe4 + (Q_rand() & 3);
@@ -2449,9 +2449,9 @@ void CG_TrapParticles(centity_t *ent, const vec3_t origin)
     cparticle_t *p;
     int         dec;
 
-    if (cl.time - ent->fly_stoptime < 10)
+    if (cg.time - ent->fly_stoptime < 10)
         return;
-    ent->fly_stoptime = cl.time;
+    ent->fly_stoptime = cg.time;
 
     VectorCopy(origin, start);
     VectorCopy(origin, end);
@@ -2474,7 +2474,7 @@ void CG_TrapParticles(centity_t *ent, const vec3_t origin)
             return;
         VectorClear(p->accel);
 
-        p->time = cl.time;
+        p->time = cg.time;
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (0.3f + frand() * 0.2f);
@@ -2504,7 +2504,7 @@ void CG_TrapParticles(centity_t *ent, const vec3_t origin)
                     if (!p)
                         return;
 
-                    p->time = cl.time;
+                    p->time = cg.time;
                     p->color = 0xe0 + (Q_rand() & 3);
 
                     p->alpha = 1.0f;
@@ -2544,7 +2544,7 @@ void CG_ParticleEffect3(const vec3_t org, const vec3_t dir, int color, int count
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = color;
 
         d = Q_rand() & 7;
@@ -2581,7 +2581,7 @@ void CG_BerserkSlamParticles(const vec3_t org, const vec3_t dir)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = colortable[Q_rand() & 3];
 
         VectorCopy(org, p->org);
@@ -2622,7 +2622,7 @@ void CG_PowerSplash(const centity_t *cent)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = colortable[Q_rand() & 3];
 
         RandomDir(dir);
@@ -2652,7 +2652,7 @@ void CG_TeleporterParticles2(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xdb;
 
         RandomDir(dir);
@@ -2680,7 +2680,7 @@ void CG_HologramParticles(const vec3_t org)
     float       ltime;
     vec3_t      axis[3];
 
-    ltime = cl.time * 0.03f;
+    ltime = cg.time * 0.03f;
     VectorSet(dir, ltime, ltime, 0);
     AnglesToAxis(dir, axis);
 
@@ -2689,7 +2689,7 @@ void CG_HologramParticles(const vec3_t org)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         p->color = 0xd0;
 
         VectorRotate(bytedirs[i], axis, dir);
@@ -2761,7 +2761,7 @@ void CG_AddParticles(void)
         next = p->next;
 
         if (p->alphavel != INSTANT_PARTICLE) {
-            time = (cl.time - p->time) * 0.001f;
+            time = (cg.time - p->time) * 0.001f;
             alpha = p->alpha + time * p->alphavel;
             if (alpha <= 0) {
                 // faded out

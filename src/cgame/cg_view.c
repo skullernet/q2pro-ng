@@ -153,8 +153,8 @@ static void V_TestParticles(void)
         p = &r_particles[i];
 
         for (j = 0; j < 3; j++)
-            p->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d +
-                           cl.v_right[j] * r + cl.v_up[j] * u;
+            p->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * d +
+                           cg.v_right[j] * r + cg.v_up[j] * u;
 
         p->color = 8;
         p->alpha = 1;
@@ -184,11 +184,11 @@ static void V_TestEntities(void)
         f = 64 * (i / 4) + 128;
 
         for (j = 0; j < 3; j++)
-            ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
-                             cl.v_right[j] * r;
+            ent->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * f +
+                             cg.v_right[j] * r;
 
-        ent->model = cl.baseclientinfo.model;
-        ent->skin = cl.baseclientinfo.skin;
+        ent->model = cg.baseclientinfo.model;
+        ent->skin = cg.baseclientinfo.skin;
     }
 }
 
@@ -209,7 +209,7 @@ static void V_TestLights(void)
         dl = &r_dlights[0];
         r_numdlights = 1;
 
-        VectorMA(cl.refdef.vieworg, 256, cl.v_forward, dl->origin);
+        VectorMA(cg.refdef.vieworg, 256, cg.v_forward, dl->origin);
         if (cl_testlights->integer == -1)
             VectorSet(dl->color, -1, -1, -1);
         else
@@ -228,8 +228,8 @@ static void V_TestLights(void)
         f = 64 * (i / 4) + 128;
 
         for (j = 0; j < 3; j++)
-            dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
-                            cl.v_right[j] * r;
+            dl->origin[j] = cg.refdef.vieworg[j] + cg.v_forward[j] * f +
+                            cg.v_right[j] * r;
         dl->color[0] = ((i % 6) + 1) & 1;
         dl->color[1] = (((i % 6) + 1) & 2) >> 1;
         dl->color[2] = (((i % 6) + 1) & 4) >> 2;
@@ -246,7 +246,7 @@ void CG_UpdateBlendSetting(void)
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_NOBLEND);
     MSG_WriteShort(!cl_add_blend->integer);
-    MSG_FlushTo(&cls.netchan.message);
+    MSG_FlushTo(&cgs.netchan.message);
 }
 
 //============================================================================
@@ -291,8 +291,8 @@ static int entitycmpfnc(const void *_a, const void *_b)
     if (a_trans != b_trans)
         return b_trans - a_trans;
     if (a_trans) {
-        float dist_a = DistanceSquared(a->origin, cl.refdef.vieworg);
-        float dist_b = DistanceSquared(b->origin, cl.refdef.vieworg);
+        float dist_a = DistanceSquared(a->origin, cg.refdef.vieworg);
+        float dist_b = DistanceSquared(b->origin, cg.refdef.vieworg);
         if (dist_a > dist_b)
             return 1;
         if (dist_a < dist_b)
@@ -323,21 +323,21 @@ static void V_SetLightLevel(void)
     vec3_t shadelight;
 
     // save off light value for server to look at (BIG HACK!)
-    R_LightPoint(cl.refdef.vieworg, shadelight);
+    R_LightPoint(cg.refdef.vieworg, shadelight);
 
     // pick the greatest component, which should be the same
     // as the mono value returned by software
     if (shadelight[0] > shadelight[1]) {
         if (shadelight[0] > shadelight[2]) {
-            cl.lightlevel = 150.0f * shadelight[0];
+            cg.lightlevel = 150.0f * shadelight[0];
         } else {
-            cl.lightlevel = 150.0f * shadelight[2];
+            cg.lightlevel = 150.0f * shadelight[2];
         }
     } else {
         if (shadelight[1] > shadelight[2]) {
-            cl.lightlevel = 150.0f * shadelight[1];
+            cg.lightlevel = 150.0f * shadelight[1];
         } else {
-            cl.lightlevel = 150.0f * shadelight[2];
+            cg.lightlevel = 150.0f * shadelight[2];
         }
     }
 }
@@ -374,10 +374,10 @@ void V_RenderView(void)
 {
     // an invalid frame will just use the exact previous refdef
     // we can't use the old frame if the video mode has changed, though...
-    if (cl.frame.valid) {
+    if (cg.frame.valid) {
         V_ClearScene();
 
-        // build a refresh entity list and calc cl.sim*
+        // build a refresh entity list and calc cg.sim*
         // this also calls CG_CalcViewValues which loads
         // v_forward, etc.
         CG_AddEntities();
@@ -390,39 +390,39 @@ void V_RenderView(void)
         if (cl_testlights->integer)
             V_TestLights();
         if (cl_testblend->integer & 1)
-            Vector4Set(cl.refdef.screen_blend, 1, 0.5f, 0.25f, 0.5f);
+            Vector4Set(cg.refdef.screen_blend, 1, 0.5f, 0.25f, 0.5f);
         if (cl_testblend->integer & 2)
-            Vector4Set(cl.refdef.damage_blend, 0.25f, 0.5f, 0.7f, 0.5f);
+            Vector4Set(cg.refdef.damage_blend, 0.25f, 0.5f, 0.7f, 0.5f);
 #endif
 
         // never let it sit exactly on a node line, because a water plane can
         // disappear when viewed with the eye exactly on it.
         // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-        cl.refdef.vieworg[0] += 1.0f / 16;
-        cl.refdef.vieworg[1] += 1.0f / 16;
-        cl.refdef.vieworg[2] += 1.0f / 16;
+        cg.refdef.vieworg[0] += 1.0f / 16;
+        cg.refdef.vieworg[1] += 1.0f / 16;
+        cg.refdef.vieworg[2] += 1.0f / 16;
 
-        cl.refdef.x = scr_vrect.x;
-        cl.refdef.y = scr_vrect.y;
-        cl.refdef.width = scr_vrect.width;
-        cl.refdef.height = scr_vrect.height;
+        cg.refdef.x = scr_vrect.x;
+        cg.refdef.y = scr_vrect.y;
+        cg.refdef.width = scr_vrect.width;
+        cg.refdef.height = scr_vrect.height;
 
         // adjust for non-4/3 screens
         if (cl_adjustfov->integer) {
-            cl.refdef.fov_y = cl.fov_y;
-            cl.refdef.fov_x = V_CalcFov(cl.refdef.fov_y, cl.refdef.height, cl.refdef.width);
+            cg.refdef.fov_y = cg.fov_y;
+            cg.refdef.fov_x = V_CalcFov(cg.refdef.fov_y, cg.refdef.height, cg.refdef.width);
         } else {
-            cl.refdef.fov_x = cl.fov_x;
-            cl.refdef.fov_y = V_CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
+            cg.refdef.fov_x = cg.fov_x;
+            cg.refdef.fov_y = V_CalcFov(cg.refdef.fov_x, cg.refdef.width, cg.refdef.height);
         }
 
-        cl.refdef.frametime = cls.frametime;
-        cl.refdef.time = cl.time * 0.001f;
+        cg.refdef.frametime = cgs.frametime;
+        cg.refdef.time = cg.time * 0.001f;
 
-        if (cl.frame.areabytes) {
-            cl.refdef.areabits = cl.frame.areabits;
+        if (cg.frame.areabytes) {
+            cg.refdef.areabits = cg.frame.areabits;
         } else {
-            cl.refdef.areabits = NULL;
+            cg.refdef.areabits = NULL;
         }
 
         if (!cl_add_entities->integer)
@@ -432,28 +432,28 @@ void V_RenderView(void)
         if (!cl_add_lights->integer)
             r_numdlights = 0;
         if (!cl_add_blend->integer) {
-            Vector4Clear(cl.refdef.screen_blend);
-            Vector4Clear(cl.refdef.damage_blend);
+            Vector4Clear(cg.refdef.screen_blend);
+            Vector4Clear(cg.refdef.damage_blend);
         }
-        if (cl.custom_fog.density) {
-            cl.refdef.fog = cl.custom_fog;
-            cl.refdef.heightfog = (player_heightfog_t){ 0 };
+        if (cg.custom_fog.density) {
+            cg.refdef.fog = cg.custom_fog;
+            cg.refdef.heightfog = (player_heightfog_t){ 0 };
         }
 
-        cl.refdef.num_entities = r_numentities;
-        cl.refdef.entities = r_entities;
-        cl.refdef.num_particles = r_numparticles;
-        cl.refdef.particles = r_particles;
-        cl.refdef.num_dlights = r_numdlights;
-        cl.refdef.dlights = r_dlights;
-        cl.refdef.lightstyles = r_lightstyles;
-        cl.refdef.rdflags = cl.frame.ps.rdflags;
+        cg.refdef.num_entities = r_numentities;
+        cg.refdef.entities = r_entities;
+        cg.refdef.num_particles = r_numparticles;
+        cg.refdef.particles = r_particles;
+        cg.refdef.num_dlights = r_numdlights;
+        cg.refdef.dlights = r_dlights;
+        cg.refdef.lightstyles = r_lightstyles;
+        cg.refdef.rdflags = cg.frame.ps.rdflags;
 
         // sort entities for better cache locality
-        qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
+        qsort(cg.refdef.entities, cg.refdef.num_entities, sizeof(cg.refdef.entities[0]), entitycmpfnc);
     }
 
-    R_RenderFrame(&cl.refdef);
+    R_RenderFrame(&cg.refdef);
 #if USE_DEBUG
     if (cl_stats->integer)
         Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
@@ -470,7 +470,7 @@ V_Viewpos_f
 */
 static void V_Viewpos_f(void)
 {
-    Com_Printf("%s : %.f\n", vtos(cl.refdef.vieworg), cl.refdef.viewangles[YAW]);
+    Com_Printf("%s : %.f\n", vtos(cg.refdef.vieworg), cg.refdef.viewangles[YAW]);
 }
 
 /*
@@ -501,20 +501,20 @@ static void V_Fog_f(void)
     float args[5];
 
     if (argc == 1) {
-        if (cl.custom_fog.density || cl.custom_fog.sky_factor) {
+        if (cg.custom_fog.density || cg.custom_fog.sky_factor) {
             Com_Printf("User set global fog:\n");
-            dump_fog(&cl.custom_fog);
+            dump_fog(&cg.custom_fog);
             return;
         }
-        if (cl.frame.ps.fog.density || cl.frame.ps.fog.sky_factor) {
+        if (cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor) {
             Com_Printf("Global fog:\n");
-            dump_fog(&cl.frame.ps.fog);
+            dump_fog(&cg.frame.ps.fog);
         }
-        if (cl.frame.ps.heightfog.density) {
+        if (cg.frame.ps.heightfog.density) {
             Com_Printf("Height fog:\n");
-            dump_heightfog(&cl.frame.ps.heightfog);
+            dump_heightfog(&cg.frame.ps.heightfog);
         }
-        if (!(cl.frame.ps.fog.density || cl.frame.ps.fog.sky_factor || cl.frame.ps.heightfog.density))
+        if (!(cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor || cg.frame.ps.heightfog.density))
             Com_Printf("No fog.\n");
         return;
     }
@@ -527,14 +527,14 @@ static void V_Fog_f(void)
     for (int i = 0; i < 5; i++)
         args[i] = Q_clipf(Q_atof(Cmd_Argv(i + 1)), 0, 1);
 
-    cl.custom_fog.color[0]   = args[0];
-    cl.custom_fog.color[1]   = args[1];
-    cl.custom_fog.color[2]   = args[2];
-    cl.custom_fog.density    = args[3];
-    cl.custom_fog.sky_factor = args[4];
+    cg.custom_fog.color[0]   = args[0];
+    cg.custom_fog.color[1]   = args[1];
+    cg.custom_fog.color[2]   = args[2];
+    cg.custom_fog.density    = args[3];
+    cg.custom_fog.sky_factor = args[4];
 
-    cl.refdef.fog = cl.custom_fog;
-    cl.refdef.heightfog = (player_heightfog_t){ 0 };
+    cg.refdef.fog = cg.custom_fog;
+    cg.refdef.heightfog = (player_heightfog_t){ 0 };
 }
 
 static const cmdreg_t v_cmds[] = {

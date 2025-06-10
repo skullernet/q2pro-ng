@@ -306,7 +306,7 @@ void CG_RegisterTEntModels(void)
 
     // check for remaster powerscreen model (ugly!)
     len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
-    cl.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
+    cg.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
     FS_FreeFile(data);
 }
 
@@ -358,7 +358,7 @@ static explosion_t *CG_AllocExplosion(void)
         }
     }
 // find the oldest explosion
-    time = cl.time;
+    time = cg.time;
     oldest = cl_explosions;
 
     for (i = 0, e = cl_explosions; i < MAX_EXPLOSIONS; i++, e++) {
@@ -379,7 +379,7 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
@@ -398,7 +398,7 @@ static void CG_BFGExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
     ex->ent.model = cl_mod_bfg_explo;
@@ -417,14 +417,14 @@ void CG_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
     if (!cl_mod_muzzles[fx])
         return;
 
-    cl.weapon.muzzle.model = cl_mod_muzzles[fx];
-    cl.weapon.muzzle.scale = scale;
+    cg.weapon.muzzle.model = cl_mod_muzzles[fx];
+    cg.weapon.muzzle.scale = scale;
     if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
-        cl.weapon.muzzle.roll = Q_rand() % 360;
+        cg.weapon.muzzle.roll = Q_rand() % 360;
     else
-        cl.weapon.muzzle.roll = 0;
-    VectorCopy(offset, cl.weapon.muzzle.offset);
-    cl.weapon.muzzle.time = cl.servertime - CG_FRAMETIME;
+        cg.weapon.muzzle.roll = 0;
+    VectorCopy(offset, cg.weapon.muzzle.offset);
+    cg.weapon.muzzle.time = cg.servertime - CG_FRAMETIME;
 }
 
 void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
@@ -445,7 +445,7 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->type = ex_mflash;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
@@ -467,7 +467,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_misc;
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_smoke;
 
     ex = CG_AllocExplosion();
@@ -475,7 +475,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_flash;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->ent.model = cl_mod_flash;
 }
 
@@ -492,14 +492,14 @@ static void CG_AddExplosions(void)
             continue;
 
         if (ex->type == ex_mflash) {
-            if (cl.time - ex->start > 50)
+            if (cg.time - ex->start > 50)
                 ex->type = ex_free;
             else
                 trap_R_AddEntity(&ex->ent);
             continue;
         }
 
-        frac = (cl.time - ex->start) * BASE_1_FRAMETIME;
+        frac = (cg.time - ex->start) * BASE_1_FRAMETIME;
         f = floorf(frac);
 
         ent = &ex->ent;
@@ -603,9 +603,9 @@ static laser_t *CG_AllocLaser(void)
     int i;
 
     for (i = 0, l = cl_lasers; i < MAX_LASERS; i++, l++) {
-        if (cl.time - l->starttime >= l->lifetime) {
+        if (cg.time - l->starttime >= l->lifetime) {
             memset(l, 0, sizeof(*l));
-            l->starttime = cl.time;
+            l->starttime = cg.time;
             return l;
         }
     }
@@ -623,7 +623,7 @@ static void CG_AddLasers(void)
     memset(&ent, 0, sizeof(ent));
 
     for (i = 0, l = cl_lasers; i < MAX_LASERS; i++, l++) {
-        time = l->lifetime - (cl.time - l->starttime);
+        time = l->lifetime - (cg.time - l->starttime);
         if (time <= 0) {
             continue;
         }
@@ -697,9 +697,9 @@ static void CG_ProcessSustain(void)
 
     for (i = 0, s = cl_sustains; i < MAX_SUSTAINS; i++, s++) {
         if (s->think) {
-            if ((s->endtime >= cl.time) && (cl.time >= s->nextthink))
+            if ((s->endtime >= cg.time) && (cg.time >= s->nextthink))
                 s->think(s);
-            else if (s->endtime < cl.time)
+            else if (s->endtime < cg.time)
                 s->think = NULL;
         }
     }
@@ -714,9 +714,9 @@ static void CG_ParseWidow(const vec3_t pos)
         return;
 
     VectorCopy(pos, s->org);
-    s->endtime = cl.time + 2100;
+    s->endtime = cg.time + 2100;
     s->think = CG_Widowbeamout;
-    s->nextthink = cl.time;
+    s->nextthink = cg.time;
 }
 
 static void CG_ParseNuke(const vec3_t pos)
@@ -736,9 +736,9 @@ static void CG_ParseNuke(const vec3_t pos)
         return;
 
     VectorCopy(pos, s->org);
-    s->endtime = cl.time + 1000;
+    s->endtime = cg.time + 1000;
     s->think = CG_Nukeblast;
-    s->nextthink = cl.time;
+    s->nextthink = cg.time;
 }
 
 //==============================================================
@@ -810,7 +810,7 @@ static void CG_RailSpiral(const vec3_t start, const vec3_t end)
         if (!p)
             return;
 
-        p->time = cl.time;
+        p->time = cg.time;
         VectorClear(p->accel);
 
         d = i * 0.1f;
@@ -899,7 +899,7 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->ent.scale = 3;
     ex->ent.skinnum = 2;
-    ex->start = cl.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - CG_FRAMETIME;
     ex->light = 550;
     VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
     ex->frames = 4;
@@ -917,7 +917,7 @@ static void CG_SoundEvent(centity_t *cent, uint32_t param)
         att = 0;
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
-    trap_S_StartSound(NULL, cent->current.number, channel, cl.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+    trap_S_StartSound(NULL, cent->current.number, channel, cg.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
 static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
@@ -1118,7 +1118,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cl.servertime - CG_FRAMETIME;
+        ex->start = cg.servertime - CG_FRAMETIME;
         ex->light = 150;
         ex->ent.model = cl_mod_explode;
         ex->frames = 4;
@@ -1191,9 +1191,9 @@ static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, 
     const clientinfo_t *ci;
 
     if (number < MAX_CLIENTS)
-        ci = &cl.clientinfo[number];
+        ci = &cg.clientinfo[number];
     else
-        ci = &cl.baseclientinfo;
+        ci = &cg.baseclientinfo;
 
     trap_S_StartSound(NULL, number, channel, ci->sounds[index], volume, attenuation, 0);
 }
@@ -1380,7 +1380,7 @@ void CG_EntityEvents(centity_t *cent)
     }
 
 #if USE_FPS
-    if (cent->event_frame != cl.frame.number)
+    if (cent->event_frame != cg.frame.number)
         return;
 #endif
 
