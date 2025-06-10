@@ -20,87 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "common/cvar.h"
 #include "common/error.h"
-
-#define MAX_DLIGHTS     64
-#define MAX_ENTITIES    2048
-#define MAX_PARTICLES   8192
-#define MAX_LIGHTSTYLES 256
-
-#define POWERSUIT_SCALE     4.0f
-#define WEAPONSHELL_SCALE   0.5f
-
-#define RF_TRACKER          BIT_ULL(32)
-
-#define RF_SHELL_MASK       (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | \
-                             RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM | RF_SHELL_LITE_GREEN)
-
-#define DLIGHT_CUTOFF       64
-
-typedef struct entity_s {
-    qhandle_t           model;          // opaque type outside refresh
-    vec3_t              angles;
-
-    /*
-    ** most recent data
-    */
-    vec3_t              origin;     // also used as RF_BEAM's "from"
-    unsigned            frame;      // also used as RF_BEAM's diameter
-
-    /*
-    ** previous data for lerping
-    */
-    vec3_t              oldorigin;  // also used as RF_BEAM's "to"
-    unsigned            oldframe;
-
-    /*
-    ** misc
-    */
-    float   backlerp;               // 0.0 = current, 1.0 = old
-    int     skinnum;                // also used as RF_BEAM's palette index,
-                                    // -1 => use rgba
-
-    float   alpha;                  // ignore if RF_TRANSLUCENT isn't set
-    color_t rgba;
-
-    uint64_t    flags;
-
-    qhandle_t   skin;           // NULL for inline skin
-    float       scale;
-} entity_t;
-
-typedef struct {
-    vec3_t  origin;
-    vec3_t  transformed;
-    vec3_t  color;
-    float   intensity;
-} dlight_t;
-
-typedef struct {
-    vec3_t  origin;
-    int     color;              // -1 => use rgba
-    float   scale;
-    float   alpha;
-    color_t rgba;
-} particle_t;
-
-typedef struct {
-    float   white;              // highest of RGB
-} lightstyle_t;
-
-typedef struct {
-    int         x, y, width, height;// in virtual screen coordinates
-    float       fov_x, fov_y;
-    vec3_t      vieworg;
-    vec3_t      viewangles;
-    vec4_t      screen_blend;       // rgba 0-1 full screen blend
-    vec4_t      damage_blend;       // rgba 0-1 damage blend
-    player_fog_t        fog;
-    player_heightfog_t  heightfog;
-    float       frametime;          // seconds since last video frame
-    float       time;               // time is used to auto animate
-    int         rdflags;            // RDF_UNDERWATER, etc
-    byte        areabits[MAX_MAP_AREA_BYTES];   // only areas with set bits will be drawn
-} refdef_t;
+#include "shared/refresh.h"
 
 enum {
     QGL_PROFILE_NONE,
@@ -133,42 +53,6 @@ typedef struct {
 
 extern refcfg_t r_config;
 
-typedef struct {
-    int left, right, top, bottom;
-} clipRect_t;
-
-typedef enum {
-    IF_NONE             = 0,
-    IF_PERMANENT        = BIT(0),   // not freed by R_EndRegistration()
-    IF_TRANSPARENT      = BIT(1),   // known to be transparent
-    IF_PALETTED         = BIT(2),   // loaded from 8-bit paletted format
-    IF_UPSCALED         = BIT(3),   // upscaled
-    IF_SCRAP            = BIT(4),   // put in scrap texture
-    IF_TURBULENT        = BIT(5),   // turbulent surface (don't desaturate, etc)
-    IF_REPEAT           = BIT(6),   // tiling image
-    IF_NEAREST          = BIT(7),   // don't bilerp
-    IF_OPAQUE           = BIT(8),   // known to be opaque
-    IF_DEFAULT_FLARE    = BIT(9),   // default flare hack
-    IF_CUBEMAP          = BIT(10),  // cubemap (or part of it)
-    IF_CLASSIC_SKY      = BIT(11),  // split in two halves
-
-    // these flags only affect R_RegisterImage() behavior,
-    // and are not stored in image
-    IF_OPTIONAL         = BIT(16),  // don't warn if not found
-    IF_KEEP_EXTENSION   = BIT(17),  // don't override extension
-} imageflags_t;
-
-typedef enum {
-    IT_PIC,
-    IT_FONT,
-    IT_SKIN,
-    IT_SPRITE,
-    IT_WALL,
-    IT_SKY,
-
-    IT_MAX
-} imagetype_t;
-
 // called when the library is loaded
 bool    R_Init(bool total);
 
@@ -190,16 +74,14 @@ void    R_Shutdown(bool total);
 // slash will not use the "pics/" prefix or the ".pcx" postfix)
 void    R_BeginRegistration(const char *map);
 qhandle_t R_RegisterModel(const char *name);
-qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags);
+qhandle_t R_RegisterPic(const char *name);
+qhandle_t R_RegisterFont(const char *name);
+qhandle_t R_RegisterTempPic(const char *name);
+qhandle_t R_RegisterTempFont(const char *name);
+qhandle_t R_RegisterSkin(const char *name);
+qhandle_t R_RegisterSprite(const char *name);
 void    R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
 void    R_EndRegistration(void);
-
-#define R_RegisterPic(name)     R_RegisterImage(name, IT_PIC, IF_PERMANENT)
-#define R_RegisterTempPic(name) R_RegisterImage(name, IT_PIC, IF_NONE)
-#define R_RegisterFont(name)    R_RegisterImage(name, IT_FONT, IF_PERMANENT)
-#define R_RegisterSkin(name)    R_RegisterImage(name, IT_SKIN, IF_NONE)
-#define R_RegisterSprite(name)  R_RegisterImage(name, IT_SPRITE, IF_NONE)
 
 void    R_ClearScene(void);
 void    R_AddEntity(const entity_t *ent);

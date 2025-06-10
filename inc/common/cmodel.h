@@ -20,10 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "common/bsp.h"
 
-// bitmasks communicated by server
-#define MAX_MAP_AREA_BYTES      (MAX_MAP_AREAS / 8)
-#define MAX_MAP_PORTAL_BYTES    128
-
 typedef struct {
     bsp_t       *cache;
     int         *floodnums;     // if two areas have equal floodnums,
@@ -101,6 +97,6 @@ void        CM_SetAreaPortalState(const cm_t *cm, int portalnum, bool open);
 bool        CM_AreasConnected(const cm_t *cm, int area1, int area2);
 
 int         CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area);
-int         CM_WritePortalBits(const cm_t *cm, byte *buffer);
+int         CM_WritePortalBits(const cm_t *cm, byte *buffer, int bytes);
 void        CM_SetPortalStates(const cm_t *cm, const byte *buffer, int bytes);
 bool        CM_HeadnodeVisible(const mnode_t *headnode, const byte *visbits);

@@ -139,6 +139,13 @@ typedef struct glentity_s {
 } glentity_t;
 
 typedef struct {
+    vec3_t  origin;
+    vec3_t  transformed;
+    vec3_t  color;
+    float   intensity;
+} dlight_t;
+
+typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
     mat4_t          viewmatrix;

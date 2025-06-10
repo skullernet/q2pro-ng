@@ -51,7 +51,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define FRAMEFLAGS_BITS         4
 #define SUPPRESSCOUNT_BITS      4
 
-#define MAX_PACKET_ENTITIES     512
 #define MAX_PARSE_ENTITIES      (MAX_PACKET_ENTITIES * UPDATE_BACKUP)
 #define PARSE_ENTITIES_MASK     (MAX_PARSE_ENTITIES - 1)
 

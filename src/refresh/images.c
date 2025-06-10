@@ -2069,7 +2069,7 @@ image_t *IMG_ForHandle(qhandle_t h)
 R_RegisterImage
 ===============
 */
-qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags)
+static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
@@ -2085,9 +2085,13 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
     if (!r_numImages)
         return 0;
 
+    // hack for testing code
+    if (*name == '#')
+        flags |= IF_KEEP_EXTENSION;
+
     if (type == IT_SKIN || type == IT_SPRITE) {
         len = FS_NormalizePathBuffer(fullname, name, sizeof(fullname));
-    } else if (*name == '/' || *name == '\\') {
+    } else if (*name == '/' || *name == '\\' || *name == '#') {
         len = FS_NormalizePathBuffer(fullname, name + 1, sizeof(fullname));
     } else {
         len = Q_concat(fullname, sizeof(fullname), "pics/", name);
@@ -2106,6 +2110,30 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type, imageflags_t flags
         return image - r_images;
 
     return 0;
+}
+
+qhandle_t R_RegisterPic(const char *name) {
+    return IMG_Register(IT_PIC, IF_PERMANENT);
+}
+
+qhandle_t R_RegisterFont(const char *name) {
+    return IMG_Register(IT_FONT, IF_PERMANENT);
+}
+
+qhandle_t R_RegisterTempPic(const char *name) {
+    return IMG_Register(IT_PIC, IF_NONE);
+}
+
+qhandle_t R_RegisterTempFont(const char *name) {
+    return IMG_Register(IT_FONT, IF_NONE);
+}
+
+qhandle_t R_RegisterSkin(const char *name) {
+    return IMG_Register(IT_SKIN, IF_NONE);
+}
+
+qhandle_t R_RegisterSprite(const char *name) {
+    return IMG_Register(IT_SPRITE, IF_NONE);
 }
 
 /*

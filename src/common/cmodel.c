@@ -1030,15 +1030,15 @@ bool CM_InVis(const cm_t *cm, const vec3_t p1, const vec3_t p2, vis_t vis)
     return true;
 }
 
-int CM_WritePortalBits(const cm_t *cm, byte *buffer)
+int CM_WritePortalBits(const cm_t *cm, byte *buffer, int bytes)
 {
-    int     i, bytes, numportals;
+    int     i, numportals;
 
     if (!cm->cache) {
         return 0;
     }
 
-    numportals = min(cm->cache->numportals, MAX_MAP_PORTAL_BYTES << 3);
+    numportals = min(cm->cache->numportals, bytes << 3);
 
     bytes = (numportals + 7) >> 3;
     memset(buffer, 0, bytes);

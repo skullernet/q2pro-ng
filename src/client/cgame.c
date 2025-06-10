@@ -162,10 +162,13 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     if (cl.numEntityStates - frame->firstEntity > MAX_PARSE_ENTITIES)
         return false;
 
+    out->number = number;
+    memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
+
     for (int i = 0; i < frame->numEntities; i++)
         out->entities[i] = cl.entityStates[(frame->firstEntity + i) & PARSE_ENTITIES_MASK];
-
     out->num_entities = frame->numEntities;
+
     return true;
 }
 
@@ -208,6 +211,8 @@ static const cgame_import_t cgame_dll_imports = {
     .S_StartSound = S_StartSound,
     .S_ClearLoopingSounds = S_ClearLoopingSounds,
     .S_AddLoopingSound = S_AddLoopingSound,
+    .S_StartBackgroundTrack = S_StartBackgroundTrack,
+    .S_StopBackgroundTrack = S_StopBackgroundTrack,
     .S_UpdateEntity = S_UpdateEntity,
     .S_UpdateListener = S_UpdateListener,
 
@@ -223,8 +228,8 @@ static const cgame_import_t cgame_dll_imports = {
     .FS_ErrorString = Q_ErrorStringBuffer,
 
     .R_RegisterModel = R_RegisterModel,
-    .R_RegisterPic = R_RegisterPic,
-    .R_RegisterFont = R_RegisterFont,
+    .R_RegisterPic = R_RegisterTempPic,
+    .R_RegisterFont = R_RegisterTempFont,
     .R_RegisterSkin = R_RegisterSkin,
     .R_RegisterSprite = R_RegisterSprite,
 

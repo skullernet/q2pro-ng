@@ -41,6 +41,38 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_TEXTURE_SIZE    8192
 
 typedef enum {
+    IF_NONE             = 0,
+    IF_PERMANENT        = BIT(0),   // not freed by R_EndRegistration()
+    IF_TRANSPARENT      = BIT(1),   // known to be transparent
+    IF_PALETTED         = BIT(2),   // loaded from 8-bit paletted format
+    IF_UPSCALED         = BIT(3),   // upscaled
+    IF_SCRAP            = BIT(4),   // put in scrap texture
+    IF_TURBULENT        = BIT(5),   // turbulent surface (don't desaturate, etc)
+    IF_REPEAT           = BIT(6),   // tiling image
+    IF_NEAREST          = BIT(7),   // don't bilerp
+    IF_OPAQUE           = BIT(8),   // known to be opaque
+    IF_DEFAULT_FLARE    = BIT(9),   // default flare hack
+    IF_CUBEMAP          = BIT(10),  // cubemap (or part of it)
+    IF_CLASSIC_SKY      = BIT(11),  // split in two halves
+
+    // these flags only affect R_RegisterImage() behavior,
+    // and are not stored in image
+    IF_OPTIONAL         = BIT(16),  // don't warn if not found
+    IF_KEEP_EXTENSION   = BIT(17),  // don't override extension
+} imageflags_t;
+
+typedef enum {
+    IT_PIC,
+    IT_FONT,
+    IT_SKIN,
+    IT_SPRITE,
+    IT_WALL,
+    IT_SKY,
+
+    IT_MAX
+} imagetype_t;
+
+typedef enum {
     IM_PCX,
     IM_WAL,
 #if USE_TGA

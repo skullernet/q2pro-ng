@@ -106,7 +106,7 @@ static int write_level_file(void)
     int         i, ret;
     char        *s;
     size_t      len;
-    byte        portalbits[MAX_MAP_PORTAL_BYTES];
+    byte        portalbits[255];
     qhandle_t   f;
 
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
@@ -138,7 +138,7 @@ static int write_level_file(void)
     }
     MSG_WriteShort(i);
 
-    len = CM_WritePortalBits(&sv.cm, portalbits);
+    len = CM_WritePortalBits(&sv.cm, portalbits, sizeof(portalbits));
     MSG_WriteByte(len);
     MSG_WriteData(portalbits, len);
 

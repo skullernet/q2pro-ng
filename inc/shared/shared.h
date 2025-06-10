@@ -1436,6 +1436,9 @@ enum {
 #define COORD2SHORT(x)  ((int)((x)*8.0f))
 #define SHORT2COORD(x)  ((x)*(1.0f/8))
 
+#define MAX_MAP_AREA_BYTES      32
+#define MAX_PACKET_ENTITIES     512
+
 //
 // config strings are a general means of communication from
 // the server to all connected clients.

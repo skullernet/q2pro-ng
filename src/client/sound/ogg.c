@@ -31,6 +31,7 @@ typedef struct {
 } ogg_state_t;
 
 static ogg_state_t          ogg;
+static char                 ogg_game_track[MAX_QPATH];
 
 static AVPacket             *ogg_pkt;
 static AVFrame              *ogg_frame_in;
@@ -243,7 +244,7 @@ void OGG_Play(void)
         return;
 
     if (cls.state >= ca_connected)
-        s = cl.configstrings[CS_CDTRACK];
+        s = ogg_game_track;
     else
         s = ogg_menu_track->string;
 
@@ -300,6 +301,18 @@ void OGG_Stop(void)
 
     if (s_api)
         s_api->drop_raw_samples();
+}
+
+void S_StartBackgroundTrack(const char *track)
+{
+    Q_strlcpy(ogg_game_track, track, sizeof(ogg_game_track));
+    OGG_Play();
+}
+
+void S_StopBackgroundTrack(void)
+{
+    ogg_game_track[0] = 0;
+    OGG_Stop();
 }
 
 static int read_packet(AVPacket *pkt)
