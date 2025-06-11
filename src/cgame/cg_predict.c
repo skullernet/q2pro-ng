@@ -16,7 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "client.h"
+#include "cg_local.h"
 #include "../game/bg_local.h"
 
 void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)

@@ -23,12 +23,7 @@ master_t    sv_masters[MAX_MASTERS];   // address of group servers
 
 LIST_DECL(sv_banlist);
 LIST_DECL(sv_blacklist);
-LIST_DECL(sv_cmdlist_connect);
-LIST_DECL(sv_cmdlist_begin);
 LIST_DECL(sv_lrconlist);
-LIST_DECL(sv_filterlist);
-LIST_DECL(sv_cvarbanlist);
-LIST_DECL(sv_infobanlist);
 LIST_DECL(sv_clientlist);   // linked list of non-free clients
 
 client_t    *sv_client;         // current client
@@ -157,13 +152,11 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
 
     if (announce == 2)
         // announce to others
-        SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
-                           client->name, prefix, reason);
+        SV_BroadcastCommand("print %s%s%s\n", client->name, prefix, reason);
 
     if (announce)
         // print this to client as they will not receive broadcast
-        SV_ClientPrintf(client, PRINT_HIGH, "%s%s%s\n",
-                        client->name, prefix, reason);
+        SV_ClientCommand(client, "print %s%s%s\n", client->name, prefix, reason);
 
     // print to server console
     if (COM_DEDICATED)
@@ -759,14 +752,6 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
 
     // copy userinfo off
     Q_strlcpy(userinfo, info, MAX_INFO_STRING);
-
-    // reject if there is a kickable userinfo ban
-    if ((ban = SV_CheckInfoBans(userinfo, true)) != NULL) {
-        s = ban->comment;
-        if (!s)
-            s = "Userinfo banned.";
-        return reject("%s\nConnection refused.\n", s);
-    }
 
     return true;
 }
@@ -1707,8 +1692,7 @@ void SV_UserinfoChanged(client_t *cl)
         }
         if (sv_show_name_changes->integer > 1 ||
             (sv_show_name_changes->integer == 1 && cl->state == cs_spawned)) {
-            SV_BroadcastPrintf(PRINT_HIGH, "%s changed name to %s\n",
-                               cl->name, name);
+            SV_BroadcastCommand("print %s changed name to %s\n", cl->name, name);
         }
     }
     memcpy(cl->name, name, len + 1);

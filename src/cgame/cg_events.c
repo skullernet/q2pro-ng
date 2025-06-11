@@ -17,8 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // cl_tent.c -- client side temporary entities
 
-#include "client.h"
-#include "common/mdfour.h"
+#include "cg_local.h"
 
 qhandle_t   cl_sfx_ric1;
 qhandle_t   cl_sfx_ric2;
@@ -89,8 +88,8 @@ static int CG_FindFootstepSurface(int entnum)
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
-    const vec3_t trace_mins = { cent->mins[0], cent->mins[1], 0 };
-    const vec3_t trace_maxs = { cent->maxs[0], cent->maxs[1], 0 };
+    const vec3_t trace_mins = { cent->mins[0], cent->mins[1] };
+    const vec3_t trace_maxs = { cent->maxs[0], cent->maxs[1] };
 
     // trace start position is the entity's current origin + { 0 0 1 },
     // so that entities with their mins at 0 won't get caught in the floor
@@ -282,32 +281,24 @@ CG_RegisterTEntModels
 */
 void CG_RegisterTEntModels(void)
 {
-    void *data;
-    int len;
+    cl_mod_explode = trap_R_RegisterModel("models/objects/explode/tris.md2");
+    cl_mod_smoke = trap_R_RegisterModel("models/objects/smoke/tris.md2");
+    cl_mod_flash = trap_R_RegisterModel("models/objects/flash/tris.md2");
+    cl_mod_parasite_segment = trap_R_RegisterModel("models/monsters/parasite/segment/tris.md2");
+    cl_mod_grapple_cable = trap_R_RegisterModel("models/ctf/segment/tris.md2");
+    cl_mod_explo4 = trap_R_RegisterModel("models/objects/r_explode/tris.md2");
+    cl_mod_bfg_explo = trap_R_RegisterModel("sprites/s_bfg2.sp2");
+    cl_mod_powerscreen = trap_R_RegisterModel("models/items/armor/effect/tris.md2");
+    cl_mod_laser = trap_R_RegisterModel("models/objects/laser/tris.md2");
+    cl_mod_dmspot = trap_R_RegisterModel("models/objects/dmspot/tris.md2");
 
-    cl_mod_explode = R_RegisterModel("models/objects/explode/tris.md2");
-    cl_mod_smoke = R_RegisterModel("models/objects/smoke/tris.md2");
-    cl_mod_flash = R_RegisterModel("models/objects/flash/tris.md2");
-    cl_mod_parasite_segment = R_RegisterModel("models/monsters/parasite/segment/tris.md2");
-    cl_mod_grapple_cable = R_RegisterModel("models/ctf/segment/tris.md2");
-    cl_mod_explo4 = R_RegisterModel("models/objects/r_explode/tris.md2");
-    cl_mod_bfg_explo = R_RegisterModel("sprites/s_bfg2.sp2");
-    cl_mod_powerscreen = R_RegisterModel("models/items/armor/effect/tris.md2");
-    cl_mod_laser = R_RegisterModel("models/objects/laser/tris.md2");
-    cl_mod_dmspot = R_RegisterModel("models/objects/dmspot/tris.md2");
-
-    cl_mod_lightning = R_RegisterModel("models/proj/lightning/tris.md2");
-    cl_mod_heatbeam = R_RegisterModel("models/proj/beam/tris.md2");
+    cl_mod_lightning = trap_R_RegisterModel("models/proj/lightning/tris.md2");
+    cl_mod_heatbeam = trap_R_RegisterModel("models/proj/beam/tris.md2");
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
-        cl_mod_muzzles[i] = R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
+        cl_mod_muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 
-    cl_img_flare = R_RegisterImage("misc/flare.tga", IT_SPRITE, IF_DEFAULT_FLARE);
-
-    // check for remaster powerscreen model (ugly!)
-    len = FS_LoadFile("models/items/armor/effect/tris.md2", &data);
-    cg.need_powerscreen_scale = len == 2300 && Com_BlockChecksum(data, len) == 0x19fca65b;
-    FS_FreeFile(data);
+    cl_img_flare = trap_R_RegisterImage("misc/flare.tga", IT_SPRITE, IF_DEFAULT_FLARE);
 }
 
 /*

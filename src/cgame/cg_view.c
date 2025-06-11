@@ -17,12 +17,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // cl_view.c -- player rendering positioning
 
-#include "client.h"
+#include "cg_local.h"
 
 cvar_t   *cl_adjustfov;
-
-int         r_numparticles;
-particle_t  r_particles[MAX_PARTICLES];
 
 //============================================================================
 
@@ -62,7 +59,6 @@ float V_CalcFov(float fov_x, float width, float height)
 
     return a;
 }
-
 
 /*
 ==================

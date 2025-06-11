@@ -19,10 +19,7 @@ void trap_LinkEntity(edict_t *ent);
 void trap_UnlinkEntity(edict_t *ent);
 void trap_SetBrushModel(edict_t *ent, const char *name);
 
-void trap_ClientPrint(edict_t *ent, print_level_t level, const char *msg);
-void trap_ClientLayout(edict_t *ent, const char *str, bool reliable);
-void trap_ClientStuffText(edict_t *ent, const char *str);
-void trap_ClientInventory(edict_t *ent, int16_t *inventory, int count);
+void trap_ClientCommand(edict_t *ent, const char *str, bool reliable);
 
 int trap_DirToByte(const vec3_t dir);
 void trap_ByteToDir(int v, vec3_t dir);
@@ -101,10 +98,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_UnlinkEntity gi.UnlinkEntity
 #define trap_SetBrushModel gi.SetBrushModel
 
-#define trap_ClientPrint gi.ClientPrint
-#define trap_ClientLayout gi.ClientLayout
-#define trap_ClientStuffText gi.ClientStuffText
-#define trap_ClientInventory gi.ClientInventory
+#define trap_ClientCommand gi.ClientCommand
 
 #define trap_DirToByte gi.DirToByte
 #define trap_ByteToDir gi.ByteToDir

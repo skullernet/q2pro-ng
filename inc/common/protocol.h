@@ -68,38 +68,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef enum {
     svc_bad,
 
-    // these ops are known to the game dll
-    svc_muzzleflash,
-    svc_muzzleflash2,
-    svc_temp_entity,
-    svc_layout,
-    svc_inventory,
-
     // the rest are private to the client and server
     svc_nop,
     svc_disconnect,
     svc_reconnect,
-    svc_sound,                  // <see code>
-    svc_print,                  // [byte] id [string] null terminated string
-    svc_stufftext,              // [string] stuffed into client's console buffer
-                                // should be \n terminated
-    svc_serverdata,             // [long] protocol ...
-    svc_configstring,           // [short] [string]
-    svc_spawnbaseline,
-    svc_centerprint,            // [string] to put in center of the screen
-    svc_download,               // [short] size [size bytes]
-    svc_playerinfo,             // variable
-    svc_packetentities,         // [...]
-    svc_deltapacketentities,    // [...]
+    svc_stringcmd,
+    svc_serverdata,
+    svc_configstring,
+    svc_download,
     svc_frame,
-
-    // R1Q2 specific operations
     svc_zpacket,
     svc_zdownload,
-    svc_gamestate, // Q2PRO specific, means svc_playerupdate in R1Q2
-    svc_setting,
-
-    // Q2PRO specific operations
     svc_configstringstream,
     svc_baselinestream,
 
@@ -114,17 +93,11 @@ typedef enum {
 typedef enum {
     clc_bad,
     clc_nop,
-    clc_move,               // [usercmd_t]
-    clc_userinfo,           // [userinfo string]
-    clc_stringcmd,          // [string] message
-
-    // R1Q2 specific operations
-    clc_setting,
-
-    // Q2PRO specific operations
-    clc_move_nodelta = 10,
+    clc_move_nodelta,
     clc_move_batched,
-    clc_userinfo_delta
+    clc_userinfo,
+    clc_userinfo_delta,
+    clc_stringcmd,
 } clc_ops_t;
 
 //==============================================

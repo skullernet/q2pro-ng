@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_precache.c
 //
 
-#include "client.h"
+#include "cg_local.h"
 
 static const char *const sexed_sounds[SS_MAX] = {
     [SS_DEATH1]    = "death1",
@@ -79,7 +79,7 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
+static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
 {
     size_t len;
     char *t;
@@ -144,7 +144,7 @@ CG_LoadClientinfo
 
 ================
 */
-void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
+static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
 {
     int         i;
     char        model_name[MAX_QPATH];
@@ -249,45 +249,15 @@ CG_RegisterSounds
 */
 void CG_RegisterSounds(void)
 {
-    int i;
-    char    *s;
+    int     i;
+    char    name[MAX_QPATH];
 
-    S_BeginRegistration();
     CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
-        s = cg.configstrings[CS_SOUNDS + i];
-        if (!s[0])
+        trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
+        if (!name[0])
             break;
-        cg.sound_precache[i] = trap_S_RegisterSound(s);
-    }
-    S_EndRegistration();
-}
-
-/*
-=================
-CG_RegisterBspModels
-
-Registers main BSP file and inline models
-=================
-*/
-void CG_RegisterBspModels(void)
-{
-    char *name = va("maps/%s.bsp", cg.mapname);
-    int ret;
-
-    ret = BSP_Load(name, &cg.bsp);
-    if (cg.bsp == NULL) {
-        Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
-    }
-
-    if (cg.bsp->checksum != Q_atoi(cg.configstrings[CS_MAPCHECKSUM])) {
-        if (cgs.demo.playback) {
-            Com_WPrintf("Local map version differs from demo: %i != %s\n",
-                        cg.bsp->checksum, cg.configstrings[CS_MAPCHECKSUM]);
-        } else {
-            Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
-                      cg.bsp->checksum, cg.configstrings[CS_MAPCHECKSUM]);
-        }
+        cg.sound_precache[i] = trap_S_RegisterSound(name);
     }
 }
 
@@ -300,32 +270,28 @@ Builds a list of visual weapon models
 */
 void CG_RegisterVWepModels(void)
 {
-    int         i;
-    char        *name;
+    int     i;
+    char    name[MAX_QPATH];
 
     cg.numWeaponModels = 1;
     strcpy(cg.weaponModels[0], "weapon.md2");
 
     // only default model when vwep is off
-    if (!cl_vwep->integer) {
+    if (!cl_vwep->integer)
         return;
-    }
 
     for (i = 1; i < MAX_MODELS; i++) {
-        name = cg.configstrings[CS_MODELS + i];
-        if (!name[0] && i != MODELINDEX_PLAYER) {
-            break;
-        }
-        if (name[0] != '#') {
+        if (i == MODELINDEX_PLAYER)
             continue;
-        }
+        trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
+        if (name[0] != '#')
+            continue;
 
         // special player weapon model
         Q_strlcpy(cg.weaponModels[cg.numWeaponModels++], name + 1, sizeof(cg.weaponModels[0]));
 
-        if (cg.numWeaponModels == MAX_CLIENTWEAPONMODELS) {
+        if (cg.numWeaponModels == MAX_CLIENTWEAPONMODELS)
             break;
-        }
     }
 }
 
@@ -340,16 +306,19 @@ void CG_SetSky(void)
     float       rotate = 0;
     int         autorotate = 1;
     vec3_t      axis;
+    char        name[MAX_QPATH];
 
-    sscanf(cg.configstrings[CS_SKYROTATE], "%f %d", &rotate, &autorotate);
+    trap_GetConfigstring(CS_SKYROTATE, name, sizeof(name));
+    sscanf(name, "%f %d", &rotate, &autorotate);
 
-    if (sscanf(cg.configstrings[CS_SKYAXIS], "%f %f %f",
-               &axis[0], &axis[1], &axis[2]) != 3) {
+    trap_GetConfigstring(CS_SKYAXIS, name, sizeof(name));
+    if (sscanf(name, "%f %f %f", &axis[0], &axis[1], &axis[2]) != 3) {
         Com_DPrintf("Couldn't parse CS_SKYAXIS\n");
         VectorClear(axis);
     }
 
-    R_SetSky(cg.configstrings[CS_SKY], rotate, autorotate, axis);
+    trap_GetConfigstring(CS_SKY, name, sizeof(name));
+    trap_R_SetSky(name, rotate, autorotate, axis);
 }
 
 /*
@@ -364,17 +333,14 @@ static qhandle_t CG_RegisterImage(const char *s)
     // if it's in a subdir and has an extension, it's either a sprite or a skin
     // allow /some/pic.pcx escape syntax
     if (*s != '/' && *s != '\\' && *COM_FileExtension(s)) {
-        if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/psx_flare")))
-            return R_RegisterImage(s, IT_SPRITE, IF_DEFAULT_FLARE);
-
         if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/")))
-            return R_RegisterSprite(s);
+            return trap_R_RegisterSprite(s);
 
         if (strchr(s, '/'))
-            return R_RegisterSkin(s);
+            return trap_R_RegisterSkin(s);
     }
 
-    return R_RegisterTempPic(s);
+    return trap_R_RegisterPic(s);
 }
 
 /*
@@ -386,47 +352,37 @@ Call before entering a new level, or after changing dlls
 */
 void CG_PrepRefresh(void)
 {
-    int         i;
-    char        *name;
-
-    if (!cgs.ref_initialized)
-        return;
-    if (!cg.mapname[0])
-        return;     // no map loaded
-
-    // register models, pics, and skins
-    R_BeginRegistration(cg.mapname);
+    int     i;
+    char    name[MAX_QPATH];
 
     CG_LoadState(LOAD_MODELS);
 
     CG_RegisterTEntModels();
 
     for (i = 1; i < MAX_MODELS; i++) {
-        name = cg.configstrings[CS_MODELS + i];
-        if (!name[0] && i != MODELINDEX_PLAYER) {
-            break;
-        }
-        if (name[0] == '#') {
+        if (i == MODELINDEX_PLAYER)
             continue;
-        }
-        cg.model_draw[i] = R_RegisterModel(name);
+        trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
+        if (!name[0])
+            break;
+        if (name[0] == '#')
+            continue;
+        cg.model_draw[i] = trap_R_RegisterModel(name);
     }
 
     CG_LoadState(LOAD_IMAGES);
     for (i = 1; i < MAX_IMAGES; i++) {
-        name = cg.configstrings[CS_IMAGES + i];
-        if (!name[0]) {
+        trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
+        if (!name[0])
             break;
-        }
         cg.image_precache[i] = CG_RegisterImage(name);
     }
 
     CG_LoadState(LOAD_CLIENTS);
     for (i = 0; i < MAX_CLIENTS; i++) {
-        name = cg.configstrings[CS_PLAYERSKINS + i];
-        if (!name[0]) {
+        trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name));
+        if (!name[0])
             continue;
-        }
         CG_LoadClientinfo(&cg.clientinfo[i], name);
     }
 
@@ -435,16 +391,9 @@ void CG_PrepRefresh(void)
     // set sky textures and speed
     CG_SetSky();
 
-    // the renderer can now free unneeded stuff
-    R_EndRegistration();
-
-    // clear any lines of console text
-    Con_ClearNotify_f();
-
-    SCR_UpdateScreen();
-
     // start the cd track
-    OGG_Play();
+    trap_GetConfigstring(CS_CDTRACK, name, sizeof(name));
+    trap_S_StartBackgroundTrack(name);
 }
 
 /*
@@ -454,9 +403,10 @@ CG_UpdateConfigstring
 A configstring update has been parsed.
 =================
 */
-void CG_UpdateConfigstring(int index)
+qvm_exported void CG_UpdateConfigstring(unsigned index)
 {
-    const char *s = cg.configstrings[index];
+    char s[MAX_QPATH];
+    trap_GetConfigstring(index, s, sizeof(s));
 
     if (index == CS_MAXCLIENTS) {
         cg.maxclients = Q_atoi(s);
@@ -473,12 +423,8 @@ void CG_UpdateConfigstring(int index)
         return;
     }
 
-    if (cgs.state < ca_precached) {
-        return;
-    }
-
     if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
-        cg.model_draw[index - CS_MODELS] = R_RegisterModel(s);
+        cg.model_draw[index - CS_MODELS] = trap_R_RegisterModel(s);
         return;
     }
 
@@ -498,7 +444,7 @@ void CG_UpdateConfigstring(int index)
     }
 
     if (index == CS_CDTRACK) {
-        OGG_Play();
+        trap_S_StartBackgroundTrack(s);
         return;
     }
 

@@ -155,28 +155,6 @@ static void write_baseline_stream(void)
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
-static void stuff_cmds(const list_t *list)
-{
-    stuffcmd_t *stuff;
-
-    LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
-        MSG_WriteByte(svc_stufftext);
-        MSG_WriteData(stuff->string, strlen(stuff->string));
-        MSG_WriteByte('\n');
-        MSG_WriteByte(0);
-        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-    }
-}
-
-static void stuff_cvar_bans(void)
-{
-    cvarban_t *ban;
-
-    LIST_FOR_EACH(cvarban_t, ban, &sv_cvarbanlist, entry)
-        if (Q_stricmp(ban->var, "version"))
-            SV_ClientCommand(sv_client, "cmd \177c %s $%s\n", ban->var, ban->var);
-}
-
 /*
 ================
 SV_New_f
@@ -202,8 +180,6 @@ void SV_New_f(void)
         Com_DPrintf("New not valid -- already primed\n");
         return;
     }
-
-    SV_ClientCommand(sv_client, "\n");
 
     //
     // serverdata needs to go over for all types of servers
@@ -232,19 +208,6 @@ void SV_New_f(void)
     MSG_WriteShort(0);
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-
-    SV_ClientCommand(sv_client, "\n");
-
-    // send version string request
-    if (oldstate == cs_assigned) {
-        SV_ClientCommand(sv_client, "cmd \177c version $version\n");
-        stuff_cmds(&sv_cmdlist_connect);
-    }
-
-    stuff_cvar_bans();
-
-    if (SV_CheckInfoBans(sv_client->userinfo, false))
-        return;
 
     Com_DPrintf("Going from cs_connected to cs_primed for %s\n",
                 sv_client->name);
@@ -299,10 +262,6 @@ void SV_Begin_f(void)
     sv_client->cmd_msec_used = 0;
     sv_client->suppress_count = 0;
     sv_client->http_download = false;
-
-    SV_AlignKeyFrames(sv_client);
-
-    stuff_cmds(&sv_cmdlist_begin);
 
     // allocate packet entities if not done yet
     if (!sv_client->entities) {
@@ -457,7 +416,7 @@ static void SV_BeginDownload_f(void)
     if (offset > downloadsize) {
         Com_DPrintf("Refusing download, %s has wrong version of %s (%d > %d)\n",
                     sv_client->name, name, offset, (int)downloadsize);
-        SV_ClientPrintf(sv_client, PRINT_HIGH, "File size differs from server.\n"
+        SV_ClientCommand(sv_client, "print File size differs from server.\n"
                         "Please delete the corresponding .tmp file from your system.\n");
         goto fail2;
     }
@@ -601,7 +560,7 @@ static void SV_Lag_f(void)
         cl = sv_client;
     }
 
-    SV_ClientPrintf(sv_client, PRINT_HIGH,
+    SV_ClientCommand(sv_client, "print "
                     "Lag stats for:       %s\n"
                     "RTT (min/avg/max):   %d/%d/%d ms\n"
                     "Server to client PL: %.2f%% (approx)\n"
@@ -619,126 +578,23 @@ static void SV_PacketdupHack_f(void)
     if (Cmd_Argc() > 1) {
         numdups = Q_atoi(Cmd_Argv(1));
         if (numdups < 0 || numdups > sv_packetdup_hack->integer) {
-            SV_ClientPrintf(sv_client, PRINT_HIGH,
-                            "Packetdup of %d is not allowed on this server.\n", numdups);
+            SV_ClientCommand(sv_client, "print Packetdup of %d is not allowed on this server.\n", numdups);
             return;
         }
 
         sv_client->numpackets = numdups + 1;
     }
 
-    SV_ClientPrintf(sv_client, PRINT_HIGH,
-                    "Server is sending %d duplicate packet%s to you.\n",
+    SV_ClientCommand(sv_client,
+                    "print Server is sending %d duplicate packet%s to you.\n",
                     numdups, numdups == 1 ? "" : "s");
 }
 #endif
-
-static bool match_cvar_val(const char *s, const char *v)
-{
-    switch (*s++) {
-    case '*':
-        return *v;
-    case '=':
-        return Q_atof(v) == Q_atof(s);
-    case '<':
-        return Q_atof(v) < Q_atof(s);
-    case '>':
-        return Q_atof(v) > Q_atof(s);
-    case '~':
-        return Q_stristr(v, s);
-    case '#':
-        return !Q_stricmp(v, s);
-    default:
-        return !Q_stricmp(v, s - 1);
-    }
-}
-
-static bool match_cvar_ban(const cvarban_t *ban, const char *v)
-{
-    bool success = true;
-    const char *s = ban->match;
-
-    if (*s == '!') {
-        s++;
-        success = false;
-    }
-
-    return match_cvar_val(s, v) == success;
-}
-
-// returns true if matched ban is kickable
-static bool handle_cvar_ban(const cvarban_t *ban, const char *v)
-{
-    if (!match_cvar_ban(ban, v))
-        return false;
-
-    if (ban->action == FA_LOG || ban->action == FA_KICK)
-        Com_Printf("%s[%s]: matched cvarban: \"%s\" is \"%s\"\n", sv_client->name,
-                   NET_AdrToString(&sv_client->netchan.remote_address), ban->var, v);
-
-    if (ban->action == FA_LOG)
-        return false;
-
-    if (ban->comment) {
-        if (ban->action == FA_STUFF) {
-            MSG_WriteByte(svc_stufftext);
-        } else {
-            MSG_WriteByte(svc_print);
-            MSG_WriteByte(PRINT_HIGH);
-        }
-        MSG_WriteData(ban->comment, strlen(ban->comment));
-        MSG_WriteByte('\n');
-        MSG_WriteByte(0);
-        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-    }
-
-    if (ban->action == FA_KICK) {
-        SV_DropClient(sv_client, "?was kicked");
-        return true;
-    }
-
-    return false;
-}
-
-static void SV_CvarResult_f(void)
-{
-    cvarban_t *ban;
-    char *c, *v;
-
-    c = Cmd_Argv(1);
-    if (!strcmp(c, "version")) {
-        if (!sv_client->version_string) {
-            v = Cmd_RawArgsFrom(2);
-            if (COM_DEDICATED) {
-                Com_Printf("%s[%s]: %s\n", sv_client->name,
-                           NET_AdrToString(&sv_client->netchan.remote_address), v);
-            }
-            sv_client->version_string = SV_CopyString(v);
-        }
-    } else if (!strcmp(c, "console")) {
-        if (sv_client->console_queries > 0) {
-            Com_Printf("%s[%s]: \"%s\" is \"%s\"\n", sv_client->name,
-                       NET_AdrToString(&sv_client->netchan.remote_address),
-                       Cmd_Argv(2), Cmd_RawArgsFrom(3));
-            sv_client->console_queries--;
-        }
-    }
-
-    LIST_FOR_EACH(cvarban_t, ban, &sv_cvarbanlist, entry) {
-        if (!Q_stricmp(ban->var, c)) {
-            if (handle_cvar_ban(ban, Cmd_RawArgsFrom(2)))
-                return;
-            stringCmdCount--;
-        }
-    }
-}
 
 static const ucmd_t ucmds[] = {
     // auto issued
     { "new", SV_New_f },
     { "begin", SV_Begin_f },
-    { "baselines", NULL },
-    { "configstrings", NULL },
     { "nextserver", SV_NextServer_f },
     { "disconnect", SV_Disconnect_f },
 
@@ -750,7 +606,6 @@ static const ucmd_t ucmds[] = {
     { "nextdl", SV_NextDownload_f },
     { "stopdl", SV_StopDownload_f },
 
-    { "\177c", SV_CvarResult_f },
     { "nogamedata", SV_NoGameData_f },
     { "lag", SV_Lag_f },
 #if USE_PACKETDUP
@@ -759,35 +614,6 @@ static const ucmd_t ucmds[] = {
 
     { NULL, NULL }
 };
-
-static void handle_filtercmd(const filtercmd_t *filter)
-{
-    if (filter->action == FA_IGNORE)
-        return;
-
-    if (filter->action == FA_LOG || filter->action == FA_KICK)
-        Com_Printf("%s[%s]: issued banned command: %s\n", sv_client->name,
-                   NET_AdrToString(&sv_client->netchan.remote_address), filter->string);
-
-    if (filter->action == FA_LOG)
-        return;
-
-    if (filter->comment) {
-        if (filter->action == FA_STUFF) {
-            MSG_WriteByte(svc_stufftext);
-        } else {
-            MSG_WriteByte(svc_print);
-            MSG_WriteByte(PRINT_HIGH);
-        }
-        MSG_WriteData(filter->comment, strlen(filter->comment));
-        MSG_WriteByte('\n');
-        MSG_WriteByte(0);
-        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-    }
-
-    if (filter->action == FA_KICK)
-        SV_DropClient(sv_client, "?was kicked");
-}
 
 /*
 ==================
@@ -821,13 +647,6 @@ static void SV_ExecuteUserCommand(const char *s)
 
     if (sv_client->state != cs_spawned && !sv_allow_unconnected_cmds->integer) {
         return;
-    }
-
-    LIST_FOR_EACH(filtercmd_t, filter, &sv_filterlist, entry) {
-        if (!Q_stricmp(filter->string, c)) {
-            handle_filtercmd(filter);
-            return;
-        }
     }
 
     if (!strcmp(c, "say") || !strcmp(c, "say_team")) {
@@ -1012,43 +831,6 @@ static void SV_NewClientExecuteMove(int c)
 
 /*
 =================
-SV_CheckInfoBans
-
-Returns matched kickable ban or NULL
-=================
-*/
-cvarban_t *SV_CheckInfoBans(const char *info, bool match_only)
-{
-    char key[MAX_INFO_STRING];
-    char value[MAX_INFO_STRING];
-    cvarban_t *ban;
-
-    if (LIST_EMPTY(&sv_infobanlist))
-        return NULL;
-
-    while (1) {
-        Info_NextPair(&info, key, value);
-        if (!info)
-            return NULL;
-
-        LIST_FOR_EACH(cvarban_t, ban, &sv_infobanlist, entry) {
-            if (match_only && ban->action != FA_KICK)
-                continue;
-            if (Q_stricmp(ban->var, key))
-                continue;
-            if (match_only) {
-                if (match_cvar_ban(ban, value))
-                    return ban;
-            } else {
-                if (handle_cvar_ban(ban, value))
-                    return ban;
-            }
-        }
-    }
-}
-
-/*
-=================
 SV_UpdateUserinfo
 
 Ensures that userinfo is valid and name is properly set.
@@ -1082,14 +864,11 @@ static void SV_UpdateUserinfo(void)
             return;
         }
         if (COM_IsWhite(s))
-            SV_ClientPrintf(sv_client, PRINT_HIGH, "You can't have an empty name.\n");
+            SV_ClientCommand(sv_client, "print You can't have an empty name.\n");
         else
-            SV_ClientPrintf(sv_client, PRINT_HIGH, "You can't change your name too often.\n");
-        SV_ClientCommand(sv_client, "set name \"%s\"\n", sv_client->name);
+            SV_ClientCommand(sv_client, "print You can't change your name too often.\n");
+        SV_ClientCommand(sv_client, "stuff set name \"%s\"\n", sv_client->name);
     }
-
-    if (SV_CheckInfoBans(sv_client->userinfo, false))
-        return;
 
     SV_UserinfoChanged(sv_client);
 }
@@ -1163,26 +942,6 @@ static void SV_ParseDeltaUserinfo(void)
     }
 
     SV_UpdateUserinfo();
-}
-
-static void SV_ParseClientSetting(void)
-{
-    int idx, value;
-
-    idx = MSG_ReadShort();
-    value = MSG_ReadShort();
-
-    Com_DDPrintf("%s(%s): [%d] = %d\n", __func__, sv_client->name, idx, value);
-
-    if (idx < 0 || idx >= CLS_MAX)
-        return;
-
-    sv_client->settings[idx] = value;
-
-#if USE_FPS
-    if (idx == CLS_FPS)
-        set_client_fps(value);
-#endif
 }
 
 static void SV_ParseClientCommand(void)

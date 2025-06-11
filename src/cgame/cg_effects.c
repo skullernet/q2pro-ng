@@ -17,8 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // cl_fx.c -- entity effects parsing and management
 
-#include "client.h"
-#include "shared/m_flash.h"
+#include "cg_local.h"
 
 static void CG_LogoutEffect(const vec3_t org, int color);
 
@@ -2738,8 +2737,8 @@ void CG_BarrelExplodingParticles(const vec3_t org)
     }
 }
 
-extern int          r_numparticles;
-extern particle_t   r_particles[MAX_PARTICLES];
+static int          r_numparticles;
+static particle_t   r_particles[MAX_PARTICLES];
 
 /*
 ===============
@@ -2802,6 +2801,8 @@ void CG_AddParticles(void)
             p->alpha = 0.0f;
         }
     }
+
+    trap_R_LocateParticles(r_particles, r_numparticles);
 
     active_particles = active;
 }

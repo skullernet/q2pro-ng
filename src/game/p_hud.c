@@ -172,7 +172,7 @@ void G_EndOfUnitMessage(void)
 
     sb_yb(-48), sb_xv(0), sb_cstring2("Press any button to continue.");
 
-    trap_ClientLayout(NULL, sb_buffer(), true);
+    trap_ClientCommand(NULL, va("layout %s", sb_buffer()), true);
 
     for (int i = 0; i < game.maxclients; i++) {
         if (g_edicts[i].r.inuse)
@@ -390,7 +390,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         stringlength += j;
     }
 
-    trap_ClientLayout(ent, string, reliable);
+    trap_ClientCommand(ent, va("layout %s", string), reliable);
 }
 
 /*
@@ -494,7 +494,7 @@ static void HelpComputer(edict_t *ent)
     sb_xv(265), sb_yv(164), sb_rstring2(va("Goals: %d/%d", level.found_goals, level.total_goals));
     sb_xv(265), sb_yv(172), sb_rstring2(va("Secrets: %d/%d", level.found_secrets, level.total_secrets));
 
-    trap_ClientLayout(ent, sb_buffer(), true);
+    trap_ClientCommand(ent, va("layout %s", sb_buffer()), true);
 }
 
 /*

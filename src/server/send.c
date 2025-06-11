@@ -39,8 +39,8 @@ void SV_FlushRedirect(int redirected, const char *outputbuf, size_t len)
         memcpy(buffer + 10, outputbuf, len);
         NET_SendPacket(NS_SERVER, buffer, len + 10, &net_from);
     } else if (redirected == RD_CLIENT) {
-        MSG_WriteByte(svc_print);
-        MSG_WriteByte(PRINT_HIGH);
+        MSG_WriteByte(svc_stringcmd);
+        MSG_WriteData(CONST_STR_LEN("print "));
         MSG_WriteData(outputbuf, len);
         MSG_WriteByte(0);
         SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
@@ -111,76 +111,6 @@ EVENT MESSAGES
 */
 
 
-/*
-=================
-SV_ClientPrintf
-
-Sends text across to be displayed if the level passes.
-=================
-*/
-void SV_ClientPrintf(client_t *client, int level, const char *fmt, ...)
-{
-    va_list     argptr;
-    char        string[MAX_STRING_CHARS];
-    size_t      len;
-
-    if (level < client->messagelevel)
-        return;
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(string, sizeof(string), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(string)) {
-        Com_WPrintf("%s: overflow\n", __func__);
-        return;
-    }
-
-    MSG_WriteByte(svc_print);
-    MSG_WriteByte(level);
-    MSG_WriteData(string, len + 1);
-
-    SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
-}
-
-/*
-=================
-SV_BroadcastPrintf
-
-Sends text to all active clients.
-=================
-*/
-void SV_BroadcastPrintf(int level, const char *fmt, ...)
-{
-    va_list     argptr;
-    char        string[MAX_STRING_CHARS];
-    client_t    *client;
-    size_t      len;
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(string, sizeof(string), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(string)) {
-        Com_WPrintf("%s: overflow\n", __func__);
-        return;
-    }
-
-    MSG_WriteByte(svc_print);
-    MSG_WriteByte(level);
-    MSG_WriteData(string, len + 1);
-
-    FOR_EACH_CLIENT(client) {
-        if (client->state != cs_spawned)
-            continue;
-        if (level < client->messagelevel)
-            continue;
-        SV_ClientAddMessage(client, MSG_RELIABLE);
-    }
-
-    SZ_Clear(&msg_write);
-}
-
 void SV_ClientCommand(client_t *client, const char *fmt, ...)
 {
     va_list     argptr;
@@ -196,7 +126,7 @@ void SV_ClientCommand(client_t *client, const char *fmt, ...)
         return;
     }
 
-    MSG_WriteByte(svc_stufftext);
+    MSG_WriteByte(svc_stringcmd);
     MSG_WriteData(string, len + 1);
 
     SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
@@ -225,7 +155,7 @@ void SV_BroadcastCommand(const char *fmt, ...)
         return;
     }
 
-    MSG_WriteByte(svc_stufftext);
+    MSG_WriteByte(svc_stringcmd);
     MSG_WriteData(string, len + 1);
 
     FOR_EACH_CLIENT(client) {
@@ -396,21 +326,6 @@ COMMON STUFF
 ===============================================================================
 */
 
-#if USE_DEBUG && USE_FPS
-static void check_key_sync(const client_t *client)
-{
-    int div = sv.frametime.div / client->framediv;
-    int key1 = !(sv.framenum % sv.frametime.div);
-    int key2 = !(client->framenum % div);
-
-    if (key1 != key2) {
-        Com_LPrintf(PRINT_DEVELOPER,
-                    "[%d] frame %d for %s not synced (%d != %d)\n",
-                    sv.framenum, client->framenum, client->name, key1, key2);
-    }
-}
-#endif
-
 /*
 =======================
 SV_SendClientMessages
@@ -428,14 +343,6 @@ void SV_SendClientMessages(void)
     FOR_EACH_CLIENT(client) {
         if (!CLIENT_ACTIVE(client))
             goto finish;
-
-        if (!SV_CLIENTSYNC(client))
-            continue;
-
-#if USE_DEBUG && USE_FPS
-        if (developer->integer)
-            check_key_sync(client);
-#endif
 
         // if the reliable message overflowed,
         // drop the client (should never happen)

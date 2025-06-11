@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "shared/cgame.h"
+#include "shared/m_flash.h"
 #include "shared/refresh.h"
 #include "cg_syscalls.h"
 
@@ -319,24 +320,6 @@ static inline void CL_AdvanceValue(float *restrict val, float target, float spee
 // main.c
 //
 
-void CL_Init(void);
-void CL_Quit_f(void);
-void CL_Disconnect(error_type_t type);
-void CL_UpdateRecordingSetting(void);
-void CL_Begin(void);
-void CL_CheckForResend(void);
-void CL_ClearState(void);
-void CL_RestartFilesystem(bool total);
-void CL_RestartRefresh(bool total);
-void CL_ClientCommand(const char *string);
-void CL_SendRcon(const netadr_t *adr, const char *pass, const char *cmd);
-const char *CL_Server_g(const char *partial, int argnum, int state);
-void CL_CheckForPause(void);
-void CL_UpdateFrameTimes(void);
-bool CL_CheckForIgnore(const char *s);
-void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen);
-
-void cl_timeout_changed(cvar_t *self);
 
 //
 // precache.c
@@ -380,17 +363,7 @@ void CL_CalcViewValues(void);
 //
 // view.c
 //
-extern int          gun_frame;
-extern qhandle_t    gun_model;
 
-void V_Init(void);
-void V_Shutdown(void);
-void V_RenderView(void);
-void V_AddEntity(const entity_t *ent);
-void V_AddParticle(const particle_t *p);
-void V_AddLight(const vec3_t org, float intensity, float r, float g, float b);
-void V_AddLightStyle(int style, float value);
-void CL_UpdateBlendSetting(void);
 
 
 //

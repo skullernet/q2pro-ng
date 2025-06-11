@@ -278,7 +278,7 @@ static const cgame_export_t cgame_dll_exports = {
     .Shutdown = thunk_CG_Shutdown,
     .RenderFrame = thunk_CG_RenderFrame,
     .ServerCommand = thunk_CG_ServerCommand,
-    .RestartFilesystem = thunk_CG_RestartFilesystem,
+    .ConsoleCommand = thunk_CG_ConsoleCommand,
 };
 
 static const vm_interface_t cgame_iface = {
@@ -293,6 +293,9 @@ static const vm_interface_t cgame_iface = {
 
 void CL_ShutdownCGame(void)
 {
+    // clear pointers to cgame memory
+    R_ClearScene();
+
     VM_Reset(cgame.vm);
 
     if (cge) {
@@ -303,14 +306,63 @@ void CL_ShutdownCGame(void)
     VM_FreeModule(&cgame);
 }
 
+/*
+=================
+CL_LoadMap
+
+Registers main BSP file and inline models
+=================
+*/
+static void CL_LoadMap(void)
+{
+    char name[MAX_QPATH];
+    int ret;
+
+    if (cl.bsp)
+        return;
+
+    Q_snprintf(name, sizeof(name), "maps/%s.bsp", cl.mapname);
+    ret = BSP_Load(name, &cl.bsp);
+    if (cl.bsp == NULL) {
+        Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
+    }
+
+    if (cl.bsp->checksum != Q_atoi(cl.configstrings[CS_MAPCHECKSUM])) {
+        if (cgs.demo.playback) {
+            Com_WPrintf("Local map version differs from demo: %i != %s\n",
+                        cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+        } else {
+            Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
+                      cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+        }
+    }
+}
+
 void CL_InitCGame(void)
 {
     // unload anything we have now
     CL_ShutdownCGame();
 
+    CL_LoadMap();
+
     // load cgame module
     cge = VM_LoadModule(&cgame, &cgame_iface);
 
+    // register models, pics, and skins
+    R_BeginRegistration(cg.mapname);
+
+    S_BeginRegistration();
+
     // initialize
     cge->Init();
+
+    S_EndRegistration();
+
+    // the renderer can now free unneeded stuff
+    R_EndRegistration();
+
+    // clear any lines of console text
+    Con_ClearNotify_f();
+
+    SCR_UpdateScreen();
 }

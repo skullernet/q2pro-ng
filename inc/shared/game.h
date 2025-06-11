@@ -198,10 +198,7 @@ typedef struct {
     void (*SetBrushModel)(edict_t *ent, const char *name);
 
     // network messaging
-    void (*ClientPrint)(edict_t *ent, print_level_t printlevel, const char *msg);
-    void (*ClientLayout)(edict_t *ent, const char *str, bool reliable);
-    void (*ClientStuffText)(edict_t *ent, const char *str);
-    void (*ClientInventory)(edict_t *ent, int16_t *inventory, int count);
+    void (*ClientCommand)(edict_t *ent, const char *str, bool reliable);
 
     int (*DirToByte)(const vec3_t dir);
     void (*ByteToDir)(int v, vec3_t dir);

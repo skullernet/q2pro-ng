@@ -668,6 +668,7 @@ Cmd_Inven_f
 */
 static void Cmd_Inven_f(edict_t *ent)
 {
+    char       text[MAX_STRING_CHARS];
     int        i, count;
     gclient_t *cl;
 
@@ -702,7 +703,11 @@ static void Cmd_Inven_f(edict_t *ent)
         if (cl->pers.inventory[i])
             count = i + 1;
 
-    trap_ClientInventory(ent, cl->pers.inventory, count);
+    strcpy(text, "inven");
+    for (i = 0; i < count; i++)
+        Q_strlcat(text, va(" %d", cl->pers.inventory[i]), sizeof(text));
+
+    trap_ClientCommand(ent, text, true);
 }
 
 /*

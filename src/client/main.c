@@ -95,20 +95,10 @@ cvar_t  *info_hand;
 cvar_t  *info_gender;
 cvar_t  *info_uf;
 
-#if USE_REF
-extern cvar_t *gl_modulate_world;
-extern cvar_t *gl_modulate_entities;
-extern cvar_t *gl_brightness;
-#endif
-
 client_static_t cls;
 client_state_t  cl;
 
 centity_t   cl_entities[MAX_EDICTS];
-
-// used for executing stringcmds
-cmdbuf_t    cl_cmdbuf;
-char        cl_cmdbuf_text[MAX_STRING_CHARS];
 
 //======================================================================
 
@@ -179,74 +169,6 @@ static request_t *CL_FindRequest(void)
 
 //======================================================================
 
-static void CL_UpdateGunSetting(void)
-{
-    int nogun;
-
-    if (cl_gun->integer == -1) {
-        nogun = 2;
-    } else if (cl_gun->integer == 0 || (info_hand->integer == 2 && cl_gun->integer == 1)) {
-        nogun = 1;
-    } else {
-        nogun = 0;
-    }
-
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOGUN);
-    MSG_WriteShort(nogun);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
-static void CL_UpdateGibSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOGIBS);
-    MSG_WriteShort(!cl_gibs->integer);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
-static void CL_UpdateFootstepsSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOFOOTSTEPS);
-    MSG_WriteShort(!cl_footsteps->integer);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
-static void CL_UpdatePredictSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOPREDICT);
-    MSG_WriteShort(!cl_predict->integer);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
-#if USE_FPS
-static void CL_UpdateRateSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_FPS);
-    MSG_WriteShort(cl_updaterate->integer);
-    MSG_FlushTo(&cls.netchan.message);
-}
-#endif
-
-void CL_UpdateRecordingSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_RECORDING);
-    MSG_WriteShort(!!cls.demo.recording);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
-static void CL_UpdateFlaresSetting(void)
-{
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOFLARES);
-    MSG_WriteShort(!cl_flares->integer);
-    MSG_FlushTo(&cls.netchan.message);
-}
-
 /*
 ===================
 CL_ClientCommand
@@ -282,6 +204,9 @@ bool CL_ForwardToServer(void)
     if (cls.state != ca_active || *cmd == '-' || *cmd == '+') {
         return false;
     }
+
+    if (cge->ConsoleCommand())
+        return true;
 
     CL_ClientCommand(Cmd_RawArgsFrom(0));
     return true;
@@ -606,13 +531,6 @@ void CL_ClearState(void)
 
     // unprotect game cvar
     fs_game->flags &= ~CVAR_ROM;
-
-#if USE_REF
-    // unprotect our custom modulate cvars
-    gl_modulate_world->flags &= ~CVAR_CHEAT;
-    gl_modulate_entities->flags &= ~CVAR_CHEAT;
-    gl_brightness->flags &= ~CVAR_CHEAT;
-#endif
 }
 
 /*
@@ -665,7 +583,7 @@ void CL_Disconnect(error_type_t type)
 
     CL_ClearState();
 
-    CL_FreeCGame();
+    CL_ShutdownCGame();
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
@@ -1498,37 +1416,12 @@ Called after all downloads are done. Not used for demos.
 */
 void CL_Begin(void)
 {
-#if USE_REF
-    if (!Q_stricmp(cl.gamedir, "gloom")) {
-        // cheat protect our custom modulate cvars
-        gl_modulate_world->flags |= CVAR_CHEAT;
-        gl_modulate_entities->flags |= CVAR_CHEAT;
-        gl_brightness->flags |= CVAR_CHEAT;
-    }
-#endif
-
     Cvar_FixCheats();
 
-    CL_PrepRefresh();
-    CL_LoadState(LOAD_SOUNDS);
-    CL_RegisterSounds();
-    LOC_LoadLocations();
-    CL_LoadState(LOAD_NONE);
+    CL_InitCGame();
     cls.state = ca_precached;
 
-#if USE_FPS
-    CL_UpdateRateSetting();
-#endif
-
     CL_ClientCommand(va("begin %i\n", precache_spawncount));
-
-    CL_UpdateGunSetting();
-    CL_UpdateBlendSetting();
-    CL_UpdateGibSetting();
-    CL_UpdateFootstepsSetting();
-    CL_UpdatePredictSetting();
-    CL_UpdateRecordingSetting();
-    CL_UpdateFlaresSetting();
 }
 
 /*
@@ -1554,307 +1447,20 @@ static void CL_Precache_f(void)
 
     // demos use different precache sequence
     if (cls.demo.playback) {
-        CL_RegisterBspModels();
-        CL_PrepRefresh();
-        CL_LoadState(LOAD_SOUNDS);
-        CL_RegisterSounds();
-        CL_LoadState(LOAD_NONE);
+        CL_InitCGame();
         cls.state = ca_precached;
         return;
     }
 
     precache_spawncount = Q_atoi(Cmd_Argv(1));
 
-    CL_ResetPrecacheCheck();
-    CL_RequestNextDownload();
+    //CL_ResetPrecacheCheck();
+    //CL_RequestNextDownload();
+    CL_Begin();
 
     if (cls.state != ca_precached) {
         cls.state = ca_connected;
     }
-}
-
-void CL_LoadFilterList(string_entry_t **list, const char *name, const char *comments, size_t maxlen)
-{
-    string_entry_t *entry, *next;
-    char *raw, *data, *p;
-    int len, count q_unused, line;
-
-    // free previous entries
-    for (entry = *list; entry; entry = next) {
-        next = entry->next;
-        Z_Free(entry);
-    }
-
-    *list = NULL;
-
-    // load new list
-    len = FS_LoadFileEx(name, (void **)&raw, FS_TYPE_REAL, TAG_FILESYSTEM);
-    if (!raw) {
-        if (len != Q_ERR(ENOENT))
-            Com_EPrintf("Couldn't load %s: %s\n", name, Q_ErrorString(len));
-        return;
-    }
-
-    count = 0;
-    line = 1;
-    data = raw;
-
-    while (*data) {
-        p = strchr(data, '\n');
-        if (p) {
-            if (p > data && *(p - 1) == '\r')
-                *(p - 1) = 0;
-            *p = 0;
-        }
-
-        // ignore empty lines and comments
-        if (*data && (!comments || !strchr(comments, *data))) {
-            len = strlen(data);
-            if (len < maxlen) {
-                entry = Z_Malloc(sizeof(*entry) + len);
-                memcpy(entry->string, data, len + 1);
-                entry->next = *list;
-                *list = entry;
-                count++;
-            } else {
-                Com_WPrintf("Oversize filter on line %d in %s\n", line, name);
-            }
-        }
-
-        if (!p)
-            break;
-
-        data = p + 1;
-        line++;
-    }
-
-    Com_DPrintf("Loaded %d filters from %s\n", count, name);
-
-    FS_FreeFile(raw);
-}
-
-static void CL_LoadStuffTextWhiteList(void)
-{
-    CL_LoadFilterList(&cls.stufftextwhitelist, "stufftext-whitelist.txt", NULL, MAX_STRING_CHARS);
-}
-
-typedef struct {
-    list_t entry;
-    unsigned hits;
-    char match[1];
-} ignore_t;
-
-static list_t   cl_ignore_text;
-static list_t   cl_ignore_nick;
-
-static ignore_t *find_ignore(const list_t *list, const char *match)
-{
-    ignore_t *ignore;
-
-    LIST_FOR_EACH(ignore_t, ignore, list, entry) {
-        if (!strcmp(ignore->match, match)) {
-            return ignore;
-        }
-    }
-
-    return NULL;
-}
-
-static void list_ignores(const list_t *list)
-{
-    ignore_t *ignore;
-
-    if (LIST_EMPTY(list)) {
-        Com_Printf("No ignore filters.\n");
-        return;
-    }
-
-    Com_Printf("Current ignore filters:\n");
-    LIST_FOR_EACH(ignore_t, ignore, list, entry) {
-        Com_Printf("\"%s\" (%u hit%s)\n", ignore->match,
-                   ignore->hits, ignore->hits == 1 ? "" : "s");
-    }
-}
-
-static void add_ignore(list_t *list, const char *match, size_t minlen)
-{
-    ignore_t *ignore;
-    size_t matchlen;
-
-    // don't create the same ignore twice
-    if (find_ignore(list, match)) {
-        return;
-    }
-
-    matchlen = strlen(match);
-    if (matchlen < minlen) {
-        Com_Printf("Match string \"%s\" is too short.\n", match);
-        return;
-    }
-
-    ignore = Z_Malloc(sizeof(*ignore) + matchlen);
-    ignore->hits = 0;
-    memcpy(ignore->match, match, matchlen + 1);
-    List_Append(list, &ignore->entry);
-}
-
-static void remove_ignore(list_t *list, const char *match)
-{
-    ignore_t *ignore;
-
-    ignore = find_ignore(list, match);
-    if (!ignore) {
-        Com_Printf("Can't find ignore filter \"%s\"\n", match);
-        return;
-    }
-
-    List_Remove(&ignore->entry);
-    Z_Free(ignore);
-}
-
-static void remove_all_ignores(list_t *list)
-{
-    ignore_t *ignore, *next;
-    int count = 0;
-
-    LIST_FOR_EACH_SAFE(ignore_t, ignore, next, list, entry) {
-        Z_Free(ignore);
-        count++;
-    }
-
-    Com_Printf("Removed %d ignore filter%s.\n", count, count == 1 ? "" : "s");
-    List_Init(list);
-}
-
-static void CL_IgnoreText_f(void)
-{
-    if (Cmd_Argc() == 1) {
-        list_ignores(&cl_ignore_text);
-        return;
-    }
-
-    add_ignore(&cl_ignore_text, Cmd_ArgsFrom(1), 3);
-}
-
-static void CL_UnIgnoreText_f(void)
-{
-    if (Cmd_Argc() == 1) {
-        list_ignores(&cl_ignore_text);
-        return;
-    }
-
-    if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "all")) {
-        remove_all_ignores(&cl_ignore_text);
-        return;
-    }
-
-    remove_ignore(&cl_ignore_text, Cmd_ArgsFrom(1));
-}
-
-static void CL_IgnoreNick_c(genctx_t *ctx, int argnum)
-{
-    if (argnum == 1) {
-        CL_Name_g(ctx);
-    }
-}
-
-static void CL_UnIgnoreNick_c(genctx_t *ctx, int argnum)
-{
-    ignore_t *ignore;
-
-    if (argnum == 1) {
-        LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_nick, entry) {
-            Prompt_AddMatch(ctx, ignore->match);
-        }
-    }
-}
-
-static void CL_IgnoreNick_f(void)
-{
-    if (Cmd_Argc() == 1) {
-        list_ignores(&cl_ignore_nick);
-        return;
-    }
-
-    add_ignore(&cl_ignore_nick, Cmd_Argv(1), 1);
-}
-
-static void CL_UnIgnoreNick_f(void)
-{
-    if (Cmd_Argc() == 1) {
-        list_ignores(&cl_ignore_nick);
-        return;
-    }
-
-    if (Cmd_Argc() == 2 && !strcmp(Cmd_Argv(1), "all")) {
-        remove_all_ignores(&cl_ignore_nick);
-        return;
-    }
-
-    remove_ignore(&cl_ignore_nick, Cmd_Argv(1));
-}
-
-static bool match_ignore_nick_2(const char *nick, const char *s)
-{
-    size_t len = strlen(nick);
-
-    if (!strncmp(s, nick, len) && !strncmp(s + len, ": ", 2))
-        return true;
-
-    if (*s == '(') {
-        s++;
-        return !strncmp(s, nick, len) && !strncmp(s + len, "): ", 3);
-    }
-
-    return false;
-}
-
-static bool match_ignore_nick(const char *nick, const char *s)
-{
-    if (match_ignore_nick_2(nick, s))
-        return true;
-
-    if (*s == '[') {
-        char *p = strstr(s + 1, "] ");
-        if (p)
-            return match_ignore_nick_2(nick, p + 2);
-    }
-
-    return false;
-}
-
-/*
-=================
-CL_CheckForIgnore
-=================
-*/
-bool CL_CheckForIgnore(const char *s)
-{
-    char buffer[MAX_STRING_CHARS];
-    ignore_t *ignore;
-
-    if (LIST_EMPTY(&cl_ignore_text) && LIST_EMPTY(&cl_ignore_nick)) {
-        return false;
-    }
-
-    Q_strlcpy(buffer, s, sizeof(buffer));
-    COM_strclr(buffer);
-
-    LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_text, entry) {
-        if (Com_WildCmp(ignore->match, buffer)) {
-            ignore->hits++;
-            return true;
-        }
-    }
-
-    LIST_FOR_EACH(ignore_t, ignore, &cl_ignore_nick, entry) {
-        if (match_ignore_nick(ignore->match, buffer)) {
-            ignore->hits++;
-            return true;
-        }
-    }
-
-    return false;
 }
 
 static void CL_DumpClients_f(void)
@@ -2196,6 +1802,7 @@ void CL_RestartFilesystem(bool total)
 
     Con_Popup(false);
 
+    CL_ShutdownCGame();
     UI_Shutdown();
 
     S_StopAllSounds();
@@ -2211,28 +1818,21 @@ void CL_RestartFilesystem(bool total)
 
         R_Init(false);
 
-        SCR_RegisterMedia();
         Con_RegisterMedia();
         UI_Init();
     } else {
         FS_Restart(total);
     }
 
+    OGG_LoadTrackList();
+
     if (cls_state == ca_disconnected) {
         UI_OpenMenu(UIMENU_DEFAULT);
     } else if (cls_state >= ca_loading && cls_state <= ca_active) {
-        CL_LoadState(LOAD_MAP);
-        CL_PrepRefresh();
-        CL_LoadState(LOAD_SOUNDS);
-        CL_RegisterSounds();
-        CL_LoadState(LOAD_NONE);
+        CL_InitCGame();
     } else if (cls_state == ca_cinematic) {
         SCR_ReloadCinematic();
     }
-
-    CL_LoadDownloadIgnores();
-    CL_LoadStuffTextWhiteList();
-    OGG_LoadTrackList();
 
     // switch back to original state
     cls.state = cls_state;
@@ -2260,6 +1860,8 @@ void CL_RestartRefresh(bool total)
 
     Con_Popup(false);
 
+    CL_ShutdownCGame();
+
     S_StopAllSounds();
 
     if (total) {
@@ -2271,7 +1873,6 @@ void CL_RestartRefresh(bool total)
         UI_Shutdown();
         R_Shutdown(false);
         R_Init(false);
-        SCR_RegisterMedia();
         Con_RegisterMedia();
         UI_Init();
     }
@@ -2279,9 +1880,7 @@ void CL_RestartRefresh(bool total)
     if (cls_state == ca_disconnected) {
         UI_OpenMenu(UIMENU_DEFAULT);
     } else if (cls_state >= ca_loading && cls_state <= ca_active) {
-        CL_LoadState(LOAD_MAP);
-        CL_PrepRefresh();
-        CL_LoadState(LOAD_NONE);
+        CL_InitCGame();
     } else if (cls_state == ca_cinematic) {
         SCR_ReloadCinematic();
     }
@@ -2335,112 +1934,6 @@ static void CL_RestartRefresh_f(void)
         return;
     }
     CL_RestartRefresh(true);
-}
-
-static bool allow_stufftext(const char *text)
-{
-    string_entry_t *entry;
-
-    if (cl_ignore_stufftext->integer <= 0)
-        return true;
-
-    for (entry = cls.stufftextwhitelist; entry; entry = entry->next)
-        if (Com_WildCmp(entry->string, text))
-            return true;
-
-    if (cl_ignore_stufftext->integer >= 2)
-        Com_WPrintf("Ignored stufftext: %s\n", text);
-
-    return false;
-}
-
-// execute string in server command buffer
-static void exec_server_string(cmdbuf_t *buf, const char *text)
-{
-    char *s;
-
-    Cmd_TokenizeString(text, true);
-
-    // execute the command line
-    if (!Cmd_Argc()) {
-        return;        // no tokens
-    }
-
-    Com_DPrintf("stufftext: %s\n", COM_MakePrintable(text));
-
-    s = Cmd_Argv(0);
-
-    // handle private client commands
-    if (!strcmp(s, "changing")) {
-        CL_Changing_f();
-        return;
-    }
-    if (!strcmp(s, "precache")) {
-        CL_Precache_f();
-        return;
-    }
-
-    // forbid nearly every command from demos
-    if (cls.demo.playback && !cls.demo.compat) {
-        if (strcmp(s, "play")) {
-            return;
-        }
-    }
-
-    // handle commands that are always allowed
-    if (!strcmp(s, "reconnect")) {
-        CL_Reconnect_f();
-        return;
-    }
-    if (!strcmp(s, "cmd") && !cls.stufftextwhitelist) {
-        CL_ForwardToServer_f();
-        return;
-    }
-
-    // optional whitelist filtering
-    if (!allow_stufftext(text)) {
-        return;
-    }
-
-    // execute regular commands
-    Cmd_ExecuteCommand(buf);
-}
-
-static void cl_gun_changed(cvar_t *self)
-{
-    CL_UpdateGunSetting();
-}
-
-static void info_hand_changed(cvar_t *self)
-{
-    CL_UpdateGunSetting();
-}
-
-static void cl_gibs_changed(cvar_t *self)
-{
-    CL_UpdateGibSetting();
-}
-
-static void cl_footsteps_changed(cvar_t *self)
-{
-    CL_UpdateFootstepsSetting();
-}
-
-static void cl_predict_changed(cvar_t *self)
-{
-    CL_UpdatePredictSetting();
-}
-
-#if USE_FPS
-static void cl_updaterate_changed(cvar_t *self)
-{
-    CL_UpdateRateSetting();
-}
-#endif
-
-static void cl_flares_changed(cvar_t *self)
-{
-    CL_UpdateFlaresSetting();
 }
 
 static void cl_sync_changed(cvar_t *self)
@@ -2531,9 +2024,6 @@ static void CL_InitLocal(void)
 
     CL_RegisterInput();
     CL_InitDemos();
-    LOC_Init();
-    CL_InitEffects();
-    CL_InitTEnts();
     CL_InitDownloads();
 
     Cmd_Register(c_client);
@@ -2673,14 +2163,6 @@ static void CL_InitLocal(void)
     Cmd_AddMacro("cl_surface", CL_Surface_m);
 }
 
-static const cmdreg_t c_ignores[] = {
-    { "ignoretext", CL_IgnoreText_f },
-    { "unignoretext", CL_UnIgnoreText_f },
-    { "ignorenick", CL_IgnoreNick_f, CL_IgnoreNick_c },
-    { "unignorenick", CL_UnIgnoreNick_f, CL_UnIgnoreNick_c },
-    { NULL }
-};
-
 /*
 =================
 CL_PreInit
@@ -2692,11 +2174,6 @@ Called before executing configs to register commands such as `bind' or
 void CL_PreInit(void)
 {
     Key_Init();
-
-    List_Init(&cl_ignore_text);
-    List_Init(&cl_ignore_nick);
-
-    Cmd_Register(c_ignores);
 }
 
 /*
@@ -2755,10 +2232,6 @@ static void CL_SetClientTime(void)
     if (com_timedemo->integer) {
         cl.time = cl.servertime;
         cl.lerpfrac = 1.0f;
-#if USE_FPS
-        cl.keytime = cl.keyservertime;
-        cl.keylerpfrac = 1.0f;
-#endif
         return;
     }
 
@@ -2777,24 +2250,6 @@ static void CL_SetClientTime(void)
 
     SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
               cl.time, cl.servertime, cl.lerpfrac);
-
-#if USE_FPS
-    prevtime = cl.keyservertime - BASE_FRAMETIME;
-    if (cl.keytime > cl.keyservertime) {
-        SHOWCLAMP(2, "high keyclamp %i\n", cl.keytime - cl.keyservertime);
-        cl.keytime = cl.keyservertime;
-        cl.keylerpfrac = 1.0f;
-    } else if (cl.keytime < prevtime) {
-        SHOWCLAMP(2, "low keyclamp %i\n", prevtime - cl.keytime);
-        cl.keytime = prevtime;
-        cl.keylerpfrac = 0;
-    } else {
-        cl.keylerpfrac = (cl.keytime - prevtime) * BASE_1_FRAMETIME;
-    }
-
-    SHOWCLAMP(3, "keytime %d %d keylerpfrac %.3f\n",
-              cl.keytime, cl.keyservertime, cl.keylerpfrac);
-#endif
 }
 
 static void CL_MeasureStats(void)
@@ -2834,23 +2289,6 @@ static void CL_MeasureStats(void)
 
     cls.measure.time = com_localTime;
 }
-
-#if USE_AUTOREPLY
-static void CL_CheckForReply(void)
-{
-    if (!cl.reply_delta) {
-        return;
-    }
-
-    if (cls.realtime - cl.reply_time < cl.reply_delta) {
-        return;
-    }
-
-    CL_ClientCommand(va("say \"%s\"", com_version->string));
-
-    cl.reply_delta = 0;
-}
-#endif
 
 static void CL_CheckTimeout(void)
 {
@@ -3133,11 +2571,6 @@ unsigned CL_Frame(unsigned msec)
     // calculate local time
     CL_SetClientTime();
 
-#if USE_AUTOREPLY
-    // check for version reply
-    CL_CheckForReply();
-#endif
-
     // resend a connection request if necessary
     CL_CheckForResend();
 
@@ -3223,7 +2656,6 @@ bool CL_ProcessEvents(void)
 
     // process console and stuffed commands
     Cbuf_Execute(&cmd_buffer);
-    Cbuf_Execute(&cl_cmdbuf);
 
     HTTP_RunDownloads();
 
@@ -3266,20 +2698,12 @@ void CL_Init(void)
 
     SCR_InitCinematics();
 
-    CL_LoadDownloadIgnores();
-    CL_LoadStuffTextWhiteList();
-
     HTTP_Init();
 
     UI_OpenMenu(UIMENU_DEFAULT);
 
     Con_PostInit();
     Con_RunConsole();
-
-    cl_cmdbuf.from = FROM_STUFFTEXT;
-    cl_cmdbuf.text = cl_cmdbuf_text;
-    cl_cmdbuf.maxsize = sizeof(cl_cmdbuf_text);
-    cl_cmdbuf.exec = exec_server_string;
 
     Cvar_Set("cl_running", "1");
 }

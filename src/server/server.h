@@ -303,31 +303,6 @@ typedef struct {
     char    string[1];
 } stuffcmd_t;
 
-typedef enum {
-    FA_IGNORE,
-    FA_LOG,
-    FA_PRINT,
-    FA_STUFF,
-    FA_KICK,
-
-    FA_MAX
-} filteraction_t;
-
-typedef struct {
-    list_t          entry;
-    filteraction_t  action;
-    char            *comment;
-    char            string[1];
-} filtercmd_t;
-
-typedef struct {
-    list_t          entry;
-    filteraction_t  action;
-    char            *var;
-    char            *match;
-    char            *comment;
-} cvarban_t;
-
 #define MAX_MASTERS         8       // max recipients for heartbeat packets
 #define HEARTBEAT_SECONDS   300
 
@@ -512,8 +487,6 @@ void SV_FlushRedirect(int redirected, const char *outputbuf, size_t len);
 void SV_SendClientMessages(void);
 void SV_SendAsyncPackets(void);
 
-void SV_ClientPrintf(client_t *cl, int level, const char *fmt, ...) q_printf(3, 4);
-void SV_BroadcastPrintf(int level, const char *fmt, ...) q_printf(2, 3);
 void SV_ClientCommand(client_t *cl, const char *fmt, ...) q_printf(2, 3);
 void SV_BroadcastCommand(const char *fmt, ...) q_printf(1, 2);
 void SV_ClientAddMessage(client_t *client, int flags);
@@ -527,19 +500,10 @@ void SV_New_f(void);
 void SV_Begin_f(void);
 void SV_ExecuteClientMessage(client_t *cl);
 void SV_CloseDownload(client_t *client);
-#if USE_FPS
-void SV_AlignKeyFrames(client_t *client);
-#else
-#define SV_AlignKeyFrames(client) (void)0
-#endif
-cvarban_t *SV_CheckInfoBans(const char *info, bool match_only);
 
 //
 // sv_ccmds.c
 //
-void SV_AddMatch_f(list_t *list);
-void SV_DelMatch_f(list_t *list);
-void SV_ListMatches_f(list_t *list);
 client_t *SV_GetPlayer(const char *s, bool partial);
 void SV_PrintMiscInfo(void);
 

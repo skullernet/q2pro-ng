@@ -797,10 +797,35 @@ void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)
 {
     va_list     argptr;
     char        text[MAX_STRING_CHARS];
+    size_t      l;
 
+    switch (level) {
+    case PRINT_CHAT:
+        strcpy(text, "chat ");
+        break;
+    case PRINT_CENTER:
+        strcpy(text, "cp ");
+        break;
+    case PRINT_TYPEWRITER:
+        strcpy(text, "tw ");
+        break;
+    default:
+        strcpy(text, "print ");
+        break;
+    }
+
+    l = strlen(text);
     va_start(argptr, fmt);
-    Q_vsnprintf(text, sizeof(text), fmt, argptr);
+    Q_vsnprintf(text + l, sizeof(text) - l, fmt, argptr);
     va_end(argptr);
 
-    trap_ClientPrint(ent, level, text);
+    trap_ClientCommand(ent, text, true);
+
+    // echo to console
+    if (sv_dedicated.integer) {
+        if (level == PRINT_CHAT)
+            trap_Print(PRINT_TALK, text + l);
+        else if (level < PRINT_CHAT)
+            trap_Print(PRINT_ALL, text + l);
+    }
 }

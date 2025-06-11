@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // cl_parse.c  -- parse a message received from the server
 
 #include "client.h"
-#include "shared/m_flash.h"
 
 /*
 =====================================================================
@@ -385,40 +384,11 @@ static void CL_ParseBaseline(int index)
         MSG_ParseDeltaEntity(&cl.baselines[index], index);
 }
 
-// instead of wasting space for svc_configstring and svc_spawnbaseline
-// bytes, entire game state is compressed into a single stream.
-static void CL_ParseGamestate(int cmd)
-{
-    int         index;
-
-    if (cmd == svc_configstringstream) {
-        while (1) {
-            index = MSG_ReadWord();
-            if (index == MAX_CONFIGSTRINGS) {
-                break;
-            }
-            CL_ParseConfigstring(index);
-        }
-    }
-
-    if (cmd == svc_baselinestream) {
-        while (1) {
-            index = MSG_ReadBits(ENTITYNUM_BITS);
-            if (!index) {
-                break;
-            }
-            CL_ParseBaseline(index);
-        }
-    }
-}
-
 static void CL_ParseServerData(void)
 {
     char    levelname[MAX_QPATH];
     int     i, protocol, attractloop q_unused;
     bool    cinematic;
-
-    Cbuf_Execute(&cl_cmdbuf);          // make sure any stuffed commands are done
 
     // wipe the client_state_t struct
     CL_ClearState();
@@ -516,8 +486,6 @@ static void CL_ParseServerData(void)
         Com_WPrintf("Serverdata has invalid playernum %d\n", cl.clientNum);
         cl.clientNum = -1;
     }
-
-    CL_InitCGame();
 }
 
 /*
@@ -549,164 +517,33 @@ static void CL_ParseReconnect(void)
     CL_CheckForResend();
 }
 
-#if USE_AUTOREPLY
-static void CL_CheckForVersion(const char *s)
+static void CL_ParseServerCommand(void)
 {
-    char *p;
+    char text[MAX_STRING_CHARS];
 
-    p = strstr(s, ": ");
-    if (!p) {
+    MSG_ReadString(text, sizeof(text));
+    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(text));
+
+    Cmd_TokenizeString(text, false);
+
+    // handle private client commands
+    s = Cmd_Argv(0);
+    if (!strcmp(s, "changing")) {
+        CL_Changing_f();
         return;
     }
-
-    if (strncmp(p + 2, "!version", 8)) {
+    if (!strcmp(s, "precache")) {
+        CL_Precache_f();
         return;
     }
-
-    if (cl.reply_time && cls.realtime - cl.reply_time < 120000) {
+    if (!strcmp(s, "reconnect")) {
+        CL_Reconnect_f();
         return;
     }
-
-    cl.reply_time = cls.realtime;
-    cl.reply_delta = 1024 + (Q_rand() & 1023);
-}
-#endif
-
-// attempt to scan out an IP address in dotted-quad notation and
-// add it into circular array of recent addresses
-static void CL_CheckForIP(const char *s)
-{
-    unsigned b1, b2, b3, b4, port;
-    netadr_t *a;
-    int n;
-
-    while (*s) {
-        n = sscanf(s, "%3u.%3u.%3u.%3u:%u", &b1, &b2, &b3, &b4, &port);
-        if (n >= 4 && (b1 | b2 | b3 | b4) < 256) {
-            if (n == 5) {
-                if (port < 1024 || port > 65535) {
-                    break; // privileged or invalid port
-                }
-            } else {
-                port = PORT_SERVER;
-            }
-
-            a = &cls.recent_addr[cls.recent_head++ & RECENT_MASK];
-            a->type = NA_IP;
-            a->ip.u8[0] = b1;
-            a->ip.u8[1] = b2;
-            a->ip.u8[2] = b3;
-            a->ip.u8[3] = b4;
-            a->port = BigShort(port);
-            break;
-        }
-
-        s++;
-    }
-}
-
-static void CL_ParsePrint(void)
-{
-    int level;
-    char s[MAX_STRING_CHARS];
-    const char *fmt;
-
-    level = MSG_ReadByte();
-    MSG_ReadString(s, sizeof(s));
-
-    SHOWNET(3, "    %i \"%s\"\n", level, COM_MakePrintable(s));
-
-    if (level != PRINT_CHAT) {
-        if (level == PRINT_TYPEWRITER || level == PRINT_CENTER)
-            SCR_CenterPrint(s, level == PRINT_TYPEWRITER);
-        else
-            Com_Printf("%s", s);
-        if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
-            COM_strclr(s);
-            Cmd_ExecTrigger(s);
-        }
+    if (!cge)
         return;
-    }
 
-    if (CL_CheckForIgnore(s)) {
-        return;
-    }
-
-#if USE_AUTOREPLY
-    if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
-        CL_CheckForVersion(s);
-    }
-#endif
-
-    CL_CheckForIP(s);
-
-    // disable notify
-    if (!cl_chat_notify->integer) {
-        Con_SkipNotify(true);
-    }
-
-    // filter text
-    if (cl_chat_filter->integer) {
-        COM_strclr(s);
-        fmt = "%s\n";
-    } else {
-        fmt = "%s";
-    }
-
-    Com_LPrintf(PRINT_TALK, fmt, s);
-
-    Con_SkipNotify(false);
-
-    SCR_AddToChatHUD(s);
-
-    // play sound
-    if (cl_chat_sound->integer > 1)
-        S_StartLocalSoundOnce("misc/talk1.wav");
-    else if (cl_chat_sound->integer > 0)
-        S_StartLocalSoundOnce("misc/talk.wav");
-}
-
-static void CL_ParseCenterPrint(void)
-{
-    char s[MAX_STRING_CHARS];
-
-    MSG_ReadString(s, sizeof(s));
-    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(s));
-    SCR_CenterPrint(s, false);
-
-    if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
-        COM_strclr(s);
-        Cmd_ExecTrigger(s);
-    }
-}
-
-static void CL_ParseStuffText(void)
-{
-    char s[MAX_STRING_CHARS];
-
-    MSG_ReadString(s, sizeof(s));
-    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(s));
-    Cbuf_AddText(&cl_cmdbuf, s);
-}
-
-static void CL_ParseLayout(void)
-{
-    MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(cl.layout));
-}
-
-static void CL_ParseInventory(void)
-{
-    int     count, i;
-
-    count = MSG_ReadByte();
-    if (count > MAX_ITEMS)
-        Com_Error(ERR_DROP, "%s: bad count", __func__);
-
-    for (i = 0; i < count; i++)
-        cl.inventory[i] = MSG_ReadShort();
-    for (; i < MAX_ITEMS; i++)
-        cl.inventory[i] = 0;
+    cge->ServerCommand();
 }
 
 static void CL_ParseDownload(int cmd)
@@ -781,42 +618,6 @@ static void CL_ParseZPacket(void)
 #endif
 }
 
-#if USE_FPS
-static void set_server_fps(int value)
-{
-    cl.frametime = Com_ComputeFrametime(value);
-    cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
-
-    // fix time delta
-    if (cls.state == ca_active) {
-        int delta = cl.frame.number - cl.servertime / cl.frametime.time;
-        cl.serverdelta = Q_align_down(delta, cl.frametime.div);
-    }
-
-    Com_DPrintf("client framediv=%d time=%d delta=%d\n",
-                cl.frametime.div, cl.servertime, cl.serverdelta);
-}
-#endif
-
-static void CL_ParseSetting(void)
-{
-    int index q_unused;
-    int value q_unused;
-
-    index = MSG_ReadLong();
-    value = MSG_ReadLong();
-
-    switch (index) {
-#if USE_FPS
-    case SVS_FPS:
-        set_server_fps(value);
-        break;
-#endif
-    default:
-        break;
-    }
-}
-
 /*
 =====================
 CL_ParseServerMessage
@@ -867,16 +668,8 @@ void CL_ParseServerMessage(void)
             CL_ParseReconnect();
             return;
 
-        case svc_print:
-            CL_ParsePrint();
-            break;
-
-        case svc_centerprint:
-            CL_ParseCenterPrint();
-            break;
-
-        case svc_stufftext:
-            CL_ParseStuffText();
+        case svc_stringcmd:
+            CL_ParseServerCommand();
             break;
 
         case svc_serverdata:
@@ -888,11 +681,6 @@ void CL_ParseServerMessage(void)
             CL_ParseConfigstring(index);
             break;
 
-        case svc_spawnbaseline:
-            index = MSG_ReadBits(ENTITYNUM_BITS);
-            CL_ParseBaseline(index);
-            break;
-
         case svc_download:
             CL_ParseDownload(cmd);
             continue;
@@ -900,14 +688,6 @@ void CL_ParseServerMessage(void)
         case svc_frame:
             CL_ParseFrame();
             continue;
-
-        case svc_inventory:
-            CL_ParseInventory();
-            break;
-
-        case svc_layout:
-            CL_ParseLayout();
-            break;
 
         case svc_zpacket:
             CL_ParseZPacket();
@@ -917,14 +697,24 @@ void CL_ParseServerMessage(void)
             CL_ParseDownload(cmd);
             continue;
 
-        case svc_gamestate:
         case svc_configstringstream:
-        case svc_baselinestream:
-            CL_ParseGamestate(cmd);
-            continue;
+            while (1) {
+                index = MSG_ReadWord();
+                if (index == MAX_CONFIGSTRINGS) {
+                    break;
+                }
+                CL_ParseConfigstring(index);
+            }
+            break;
 
-        case svc_setting:
-            CL_ParseSetting();
+        case svc_baselinestream:
+            while (1) {
+                index = MSG_ReadBits(ENTITYNUM_BITS);
+                if (!index) {
+                    break;
+                }
+                CL_ParseBaseline(index);
+            }
             continue;
         }
 
@@ -993,13 +783,8 @@ bool CL_SeekDemoMessage(void)
             Com_Error(ERR_DISCONNECT, "Server disconnected");
             break;
 
-        case svc_print:
-            MSG_ReadByte();
-            // fall through
-
-        case svc_centerprint:
-        case svc_stufftext:
-            MSG_ReadString(NULL, 0);
+        case svc_strincmd:
+            CL_ParseServerCommand();
             break;
 
         case svc_serverdata:
@@ -1012,22 +797,9 @@ bool CL_SeekDemoMessage(void)
             CL_ParseConfigstring(index);
             break;
 
-        case svc_spawnbaseline:
-            index = MSG_ReadBits(ENTITYNUM_BITS);
-            CL_ParseBaseline(index);
-            break;
-
         case svc_frame:
             CL_ParseFrame();
             continue;
-
-        case svc_inventory:
-            CL_ParseInventory();
-            break;
-
-        case svc_layout:
-            CL_ParseLayout();
-            break;
         }
     }
 

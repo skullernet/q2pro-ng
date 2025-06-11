@@ -24,36 +24,26 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static vm_module_t      game;
 const game_export_t     *ge;
 
-static client_t *get_client(edict_t *ent, const char *func)
-{
-    int clientNum = SV_NumForEdict(ent);
-    if (clientNum < 0 || clientNum >= svs.maxclients) {
-        Com_DWPrintf("%s to a non-client %d\n", func, clientNum);
-        return NULL;
-    }
-
-    client_t *client = svs.client_pool + clientNum;
-    if (client->state <= cs_zombie) {
-        Com_DWPrintf("%s to a free/zombie client %d\n", func, clientNum);
-        return NULL;
-    }
-
-    return client;
-}
-
-
-static void PF_ClientLayout(edict_t *ent, const char *str, bool reliable)
+static void PF_SendClientCommand(edict_t *ent, const char *str, bool reliable)
 {
     client_t *client = NULL;
     int flags = reliable ? MSG_RELIABLE : 0;
 
     if (ent) {
-        client = get_client(ent, __func__);
-        if (!client)
-            return;
+        int clientNum = SV_NumForEdict(ent);
+        if (clientNum < 0 || clientNum >= svs.maxclients) {
+            Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
+            return NULL;
+        }
+
+        client = svs.client_pool + clientNum;
+        if (client->state <= cs_zombie) {
+            Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
+            return NULL;
+        }
     }
 
-    MSG_WriteByte(svc_layout);
+    MSG_WriteByte(svc_stringcmd);
     MSG_WriteString(str);
 
     if (client) {
@@ -68,32 +58,6 @@ static void PF_ClientLayout(edict_t *ent, const char *str, bool reliable)
     SZ_Clear(&msg_write);
 }
 
-static void PF_ClientStuffText(edict_t *ent, const char *str)
-{
-    client_t *client = get_client(ent, __func__);
-    if (!client)
-        return;
-
-    MSG_WriteByte(svc_stufftext);
-    MSG_WriteString(str);
-
-    SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
-}
-
-static void PF_ClientInventory(edict_t *ent, int16_t *inventory, int count)
-{
-    client_t *client = get_client(ent, __func__);
-    if (!client)
-        return;
-
-    MSG_WriteByte(svc_inventory);
-    MSG_WriteByte(count);
-    for (int i = 0; i < count; i++)
-         MSG_WriteShort(inventory[i]);
-
-    SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
-}
-
 /*
 ===============
 PF_dprintf
@@ -106,47 +70,6 @@ static void PF_Print(print_type_t type, const char *msg)
     Con_SkipNotify(true);
     Com_LPrintf(type, "%s", msg);
     Con_SkipNotify(false);
-}
-
-/*
-===============
-PF_cprintf
-
-Print to a single client if the level passes.
-===============
-*/
-static void PF_ClientPrint(edict_t *ent, print_level_t level, const char *msg)
-{
-    client_t *client = NULL;
-
-    if (ent) {
-        client = get_client(ent, __func__);
-        if (!client || level < client->messagelevel)
-            return;
-    }
-
-    MSG_WriteByte(svc_print);
-    MSG_WriteByte(level);
-    MSG_WriteString(msg);
-
-    if (client) {
-        SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
-        return;
-    }
-
-    // echo to console
-    if (COM_DEDICATED)
-        Com_Printf("%s", msg);
-
-    FOR_EACH_CLIENT(client) {
-        if (client->state != cs_spawned)
-            continue;
-        if (level >= client->messagelevel) {
-            SV_ClientAddMessage(client, MSG_RELIABLE);
-        }
-    }
-
-    SZ_Clear(&msg_write);
 }
 
 /*
@@ -504,20 +427,8 @@ VM_THUNK(SetBrushModel) {
     PF_SetBrushModel(VM_ENT(0), VM_STR(1));
 }
 
-VM_THUNK(ClientPrint) {
-    PF_ClientPrint(VM_ENT_NULL(0), VM_U32(1), VM_STR(2));
-}
-
-VM_THUNK(ClientLayout) {
-    PF_ClientLayout(VM_ENT_NULL(0), VM_STR(1), VM_U32(2));
-}
-
-VM_THUNK(ClientStuffText) {
-    PF_ClientStuffText(VM_ENT(0), VM_STR(1));
-}
-
-VM_THUNK(ClientInventory) {
-    PF_ClientInventory(VM_ENT(0), VM_PTR_CNT(1, int16_t, VM_U32(2)), VM_U32(2));
+VM_THUNK(ClientCommand) {
+    PF_ClientCommand(VM_ENT_NULL(0), VM_STR(1), VM_U32(2));
 }
 
 VM_THUNK(DirToByte) {
@@ -760,10 +671,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(LinkEntity, "i"),
     VM_IMPORT(UnlinkEntity, "i"),
     VM_IMPORT(SetBrushModel, "ii"),
-    VM_IMPORT(ClientPrint, "iii"),
-    VM_IMPORT(ClientLayout, "iii"),
-    VM_IMPORT(ClientStuffText, "ii"),
-    VM_IMPORT(ClientInventory, "iii"),
+    VM_IMPORT(ClientCommand, "iii"),
     VM_IMPORT(DirToByte, "i i"),
     VM_IMPORT(ByteToDir, "ii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
@@ -979,10 +887,7 @@ static const game_import_t game_dll_imports = {
     .UnlinkEntity = PF_UnlinkEdict,
     .SetBrushModel = PF_SetBrushModel,
 
-    .ClientPrint = PF_ClientPrint,
-    .ClientStuffText = PF_ClientStuffText,
-    .ClientLayout = PF_ClientLayout,
-    .ClientInventory = PF_ClientInventory,
+    .ClientCommand = PF_ClientCommand,
 
     .DirToByte = DirToByte,
     .ByteToDir = ByteToDir,

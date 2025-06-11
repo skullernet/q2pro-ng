@@ -707,7 +707,6 @@ static void CL_PlayDemo_f(void)
 
     // read and parse messages util `precache' command
     for (int i = 0; cls.state == ca_connected && i < 1000; i++) {
-        Cbuf_Execute(&cl_cmdbuf);
         parse_next_message(0);
     }
 }
@@ -1170,10 +1169,6 @@ void CL_CleanupDemos(void)
                            cls.demo.time_frames, sec, fps);
             }
         }
-
-        // clear whatever stufftext remains
-        if (!cls.demo.compat)
-            Cbuf_Clear(&cl_cmdbuf);
     }
 
     CL_FreeDemoSnapshots();

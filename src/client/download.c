@@ -168,19 +168,6 @@ void CL_CleanupDownloads(void)
 #endif
 }
 
-/*
-===============
-CL_LoadDownloadIgnores
-
-Allow mods to provide a list of paths that are known to be non-existent and
-should never be downloaded (e.g. model specific sounds).
-===============
-*/
-void CL_LoadDownloadIgnores(void)
-{
-    CL_LoadFilterList(&cls.download.ignores, "download-ignores.txt", "#/", MAX_QPATH);
-}
-
 static bool start_udp_download(dlqueue_t *q)
 {
     size_t len;

@@ -749,7 +749,6 @@ void CL_FinalizeCmd(void)
 
     // command buffer ticks in sync with cl_maxfps
     Cbuf_Frame(&cmd_buffer);
-    Cbuf_Frame(&cl_cmdbuf);
 
     if (cls.state != ca_active) {
         goto clear; // not talking to a server
