@@ -133,7 +133,7 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
         }
     }
 
-    MSG_WriteShort(ENTITYNUM_NONE);     // end of packetentities
+    MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);  // end of packetentities
 }
 
 static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to,
@@ -149,12 +149,11 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteData(to->areabits, to->areabytes);
 
     // delta encode the playerstate
-    MSG_WriteByte(svc_playerinfo);
     MSG_WriteDeltaPlayerstate(from ? &from->ps : NULL, &to->ps);
 
     // delta encode the entities
-    MSG_WriteByte(svc_packetentities);
     emit_packet_entities(from, to);
+    MSG_FlushBits();
 }
 
 // frames_written counter starts at 0, but we add 1 to every frame number
@@ -280,9 +279,6 @@ void CL_Stop_f(void)
 
 // print some statistics
     Com_Printf("Stopped demo (%s).\n", buffer);
-
-// tell the server we finished recording
-    CL_UpdateRecordingSetting();
 }
 
 static const cmd_option_t o_record[] = {
@@ -364,12 +360,10 @@ static void CL_Record_f(void)
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
 
-    // tell the server we are recording
-    CL_UpdateRecordingSetting();
-
     //
     // write out messages to hold the startup information
     //
+    MSG_BeginWriting();
 
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
@@ -381,6 +375,7 @@ static void CL_Record_f(void)
     MSG_WriteString(cl.configstrings[CS_NAME]);
 
     // configstrings
+    MSG_WriteByte(svc_configstringstream);
     for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         s = cl.configstrings[i];
         if (!*s)
@@ -388,32 +383,40 @@ static void CL_Record_f(void)
 
         len = Q_strnlen(s, MAX_QPATH);
         if (msg_write.cursize + len + 4 > msg_write.maxsize) {
+            MSG_WriteShort(MAX_CONFIGSTRINGS);
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
+            MSG_WriteByte(svc_configstringstream);
         }
 
-        MSG_WriteByte(svc_configstring);
         MSG_WriteShort(i);
         MSG_WriteData(s, len);
         MSG_WriteByte(0);
     }
+    MSG_WriteShort(MAX_CONFIGSTRINGS);
 
     // baselines
+    MSG_WriteByte(svc_baselinestream);
     for (i = 0; i < ENTITYNUM_WORLD; i++) {
         ent = &cl.baselines[i];
         if (!ent->number)
             continue;
 
         if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
+            MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
+            MSG_FlushBits();
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
+            MSG_BeginWriting();
+            MSG_WriteByte(svc_baselinestream);
         }
 
-        MSG_WriteByte(svc_spawnbaseline);
         MSG_WriteDeltaEntity(NULL, ent, true);
     }
+    MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
+    MSG_FlushBits();
 
-    MSG_WriteByte(svc_stufftext);
+    MSG_WriteByte(svc_stringcmd);
     MSG_WriteString("precache\n");
 
     // write it to the demo file
@@ -643,7 +646,7 @@ static int parse_next_message(int wait)
     CL_ParseServerMessage();
 
     // if recording demo, write the message out
-    if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC) {
+    if (cls.demo.recording && !cls.demo.paused) {
         CL_WriteDemoMessage(&cls.demo.buffer);
     }
 
@@ -757,6 +760,8 @@ void CL_EmitDemoSnapshot(void)
     if (pos < cls.demo.file_offset)
         return;
 
+    MSG_BeginWriting();
+
     // write all the backups, since we can't predict what frame the next
     // delta will come from
     lastframe = NULL;
@@ -790,8 +795,8 @@ void CL_EmitDemoSnapshot(void)
     }
 
     // write layout
-    MSG_WriteByte(svc_layout);
-    MSG_WriteString(cl.layout);
+    MSG_WriteByte(svc_stringcmd);
+    MSG_WriteString(va("layout %s", cl.layout));
 
     if (msg_write.overflowed) {
         Com_DWPrintf("%s: message buffer overflowed\n", __func__);
@@ -846,6 +851,9 @@ Called after the first valid frame is parsed from the demo.
 void CL_FirstDemoFrame(void)
 {
     int64_t len, ofs;
+
+    if (!cls.demo.playback)
+        return;
 
     Com_DPrintf("[%d] first frame\n", cl.frame.number);
 
@@ -1040,7 +1048,7 @@ static void CL_Seek_f(void)
         index = i * BC_BITS;
         for (j = 0; j < BC_BITS; j++, index++) {
             if (Q_IsBitSet(cl.dcs, index))
-                CL_UpdateConfigstring(index);
+                cge->UpdateConfigstring(index);
         }
     }
 
@@ -1051,14 +1059,14 @@ static void CL_Seek_f(void)
 #endif
 
     // clear old effects
-    CL_ClearEffects();
-    CL_ClearTEnts();
+    //CL_ClearEffects();
+    //CL_ClearTEnts();
 
     // fix time delta
     cl.serverdelta += cl.frame.number - prev;
 
     // fire up destination frame
-    CL_DeltaFrame();
+    //CL_DeltaFrame();
 
     if (cls.demo.recording && !cls.demo.paused)
         resume_record();

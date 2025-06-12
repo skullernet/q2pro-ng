@@ -2113,27 +2113,27 @@ static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t f
 }
 
 qhandle_t R_RegisterPic(const char *name) {
-    return IMG_Register(IT_PIC, IF_PERMANENT);
+    return IMG_Register(name, IT_PIC, IF_PERMANENT);
 }
 
 qhandle_t R_RegisterFont(const char *name) {
-    return IMG_Register(IT_FONT, IF_PERMANENT);
+    return IMG_Register(name, IT_FONT, IF_PERMANENT);
 }
 
 qhandle_t R_RegisterTempPic(const char *name) {
-    return IMG_Register(IT_PIC, IF_NONE);
+    return IMG_Register(name, IT_PIC, IF_NONE);
 }
 
 qhandle_t R_RegisterTempFont(const char *name) {
-    return IMG_Register(IT_FONT, IF_NONE);
+    return IMG_Register(name, IT_FONT, IF_NONE);
 }
 
 qhandle_t R_RegisterSkin(const char *name) {
-    return IMG_Register(IT_SKIN, IF_NONE);
+    return IMG_Register(name, IT_SKIN, IF_NONE);
 }
 
 qhandle_t R_RegisterSprite(const char *name) {
-    return IMG_Register(IT_SPRITE, IF_NONE);
+    return IMG_Register(name, IT_SPRITE, IF_NONE);
 }
 
 /*

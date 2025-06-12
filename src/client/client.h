@@ -139,6 +139,8 @@ typedef struct {
                                 // is rendering at.  always <= cl.servertime
     float       lerpfrac;       // between oldframe and frame
 
+    int         lightlevel;
+
     //
     // transient data from server
     //
@@ -244,6 +246,8 @@ typedef struct {
     active_t    active;
 
     bool        ref_initialized;
+
+    bool        draw_loading;
     unsigned    disable_screen;
 
     int         userinfo_modified;
@@ -433,8 +437,10 @@ static inline void CL_AdvanceValue(float *restrict val, float target, float spee
 
 void CL_Init(void);
 void CL_Quit_f(void);
+void CL_Precache_f(void);
+void CL_Changing_f(void);
+void CL_Reconnect_f(void);
 void CL_Disconnect(error_type_t type);
-void CL_UpdateRecordingSetting(void);
 void CL_Begin(void);
 void CL_CheckForResend(void);
 void CL_ClearState(void);
@@ -447,28 +453,6 @@ void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 
 void cl_timeout_changed(cvar_t *self);
-
-//
-// precache.c
-//
-
-typedef enum {
-    LOAD_NONE,
-    LOAD_MAP,
-    LOAD_MODELS,
-    LOAD_IMAGES,
-    LOAD_CLIENTS,
-    LOAD_SOUNDS
-} load_state_t;
-
-void CL_ParsePlayerSkin(char *name, char *model, char *skin, const char *s);
-void CL_LoadClientinfo(clientinfo_t *ci, const char *s);
-void CL_LoadState(load_state_t state);
-void CL_RegisterSounds(void);
-void CL_RegisterBspModels(void);
-void CL_RegisterVWepModels(void);
-void CL_PrepRefresh(void);
-void CL_UpdateConfigstring(int index);
 
 
 //
@@ -540,6 +524,7 @@ void Con_Popup(bool force);
 void Con_SkipNotify(bool skip);
 void Con_RegisterMedia(void);
 void Con_CheckResize(void);
+void Con_LoadState(const char *state);
 
 void Key_Console(int key);
 void Key_Message(int key);
@@ -627,7 +612,7 @@ void HTTP_CleanupDownloads(void);
 // cgame.c
 //
 
-extern cgame_export_t   *cge;
+extern const cgame_export_t *cge;
 
 void CL_InitCGame(void);
 void CL_ShutdownCGame(void);

@@ -95,7 +95,7 @@ typedef struct {
     float       dist_mult;
     uint16_t    entnum;
     bool        stereo_pan;
-    unsigned    framenum;
+    unsigned    framecount;
 } loopsound_t;
 
 typedef struct {
@@ -176,6 +176,13 @@ extern int          s_paintedtime;
 extern list_t       s_pendingplays;
 
 extern wavinfo_t    s_info;
+
+extern vec3_t   listener_origin;
+extern vec3_t   listener_forward;
+extern vec3_t   listener_right;
+extern vec3_t   listener_up;
+extern int      listener_entnum;
+extern bool     listener_underwater;
 
 extern cvar_t       *s_volume;
 extern cvar_t       *s_ambient;

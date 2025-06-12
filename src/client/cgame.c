@@ -19,8 +19,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/vm.h"
 
-static vm_module_t  cgame;
-cgame_export_t      *cge;
+#define MODELINDEX_TEMPBOX  -1
+
+static vm_module_t      cgame;
+const cgame_export_t    *cge;
+
+static const mnode_t *box_headnode;
 
 static const mnode_t *CL_ClipHandleToNode(unsigned index, bool world)
 {
@@ -28,7 +32,7 @@ static const mnode_t *CL_ClipHandleToNode(unsigned index, bool world)
         return box_headnode;
     Q_assert_soft(index > 0 || world);
     Q_assert_soft(index < cl.bsp->nummodels);
-    return &cl.bsp->models[index];
+    return cl.bsp->models[index].headnode;
 }
 
 static void PF_Print(print_type_t type, const char *msg)
@@ -39,6 +43,12 @@ static void PF_Print(print_type_t type, const char *msg)
 static q_noreturn void PF_Error(const char *msg)
 {
     Com_Error(ERR_DROP, "CGame Error: %s", msg);
+}
+
+static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
+{
+    Q_assert_soft(index < MAX_CONFIGSTRINGS);
+    return Q_strlcpy(buf, cl.configstrings[index], size);
 }
 
 static void PF_BoxTrace(trace_t *trace,
@@ -72,7 +82,7 @@ static contents_t PF_TransformedPointContents(const vec3_t point, qhandle_t hmod
 
 static qhandle_t PF_TempBoxModel(const vec3_t mins, const vec3_t maxs)
 {
-    CM_HeadnodeForBox(mins, maxs);
+    box_headnode = CM_HeadnodeForBox(mins, maxs);
     return MODELINDEX_TEMPBOX;
 }
 
@@ -99,6 +109,14 @@ static void PF_AddCommandString(const char *string)
 static bool PF_GetSurfaceInfo(unsigned surf_id, surface_info_t *info)
 {
     return BSP_SurfaceInfo(cl.bsp, surf_id, info);
+}
+
+static void PF_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs)
+{
+    Q_assert_soft(index < cl.bsp->nummodels);
+    const mmodel_t *mod = &cl.bsp->models[index];
+    VectorCopy(mod->mins, mins);
+    VectorCopy(mod->maxs, maxs);
 }
 
 static int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode)
@@ -172,6 +190,234 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     return true;
 }
 
+//==============================================
+
+VM_THUNK(Print) {
+    PF_Print(VM_U32(0), VM_STR(1));
+}
+
+VM_THUNK(Error) {
+    PF_Error(VM_STR(0));
+}
+
+VM_THUNK(GetConfigstring) {
+    VM_U32(0) = PF_GetConfigstring(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(FS_OpenFile) {
+    VM_U64(0) = PF_OpenFile(VM_STR(0), VM_PTR(1, qhandle_t), VM_U32(2));
+}
+
+VM_THUNK(FS_CloseFile) {
+    VM_I32(0) = PF_CloseFile(VM_U32(0));
+}
+
+VM_THUNK(FS_ReadFile) {
+    VM_I32(0) = FS_Read(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
+}
+
+VM_THUNK(FS_WriteFile) {
+    VM_I32(0) = FS_Write(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
+}
+
+VM_THUNK(FS_FlushFile) {
+    VM_I32(0) = FS_Flush(VM_U32(0));
+}
+
+VM_THUNK(FS_TellFile) {
+    VM_I64(0) = FS_Tell(VM_U32(0));
+}
+
+VM_THUNK(FS_SeekFile) {
+    VM_I32(0) = FS_Seek(VM_U32(0), VM_I64(1), VM_U32(2));
+}
+
+VM_THUNK(FS_ReadLine) {
+    VM_I32(0) = FS_ReadLine(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(FS_ListFiles) {
+    VM_U32(0) = PF_ListFiles(VM_STR(0), VM_STR_NULL(1), VM_U32(2), VM_STR_BUF(3, 4), VM_U32(4));
+}
+
+VM_THUNK(FS_ErrorString) {
+    VM_U32(0) = Q_ErrorStringBuffer(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(R_ClearDebugLines) {
+    R_ClearDebugLines();
+}
+
+VM_THUNK(R_AddDebugLine) {
+    R_AddDebugLine(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugPoint) {
+    R_AddDebugPoint(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugAxis) {
+    R_AddDebugAxis(VM_VEC3(0), VM_VEC3_NULL(1), VM_F32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugBounds) {
+    R_AddDebugBounds(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugSphere) {
+    R_AddDebugSphere(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugCircle) {
+    R_AddDebugCircle(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_AddDebugCylinder) {
+    R_AddDebugCylinder(VM_VEC3(0), VM_F32(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+}
+
+VM_THUNK(R_AddDebugArrow) {
+    R_AddDebugArrow(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+}
+
+VM_THUNK(R_AddDebugCurveArrow) {
+    R_AddDebugCurveArrow(VM_VEC3(0), VM_VEC3(1), VM_VEC3(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6), VM_U32(7));
+}
+
+VM_THUNK(R_AddDebugText) {
+    R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+}
+
+VM_THUNK(sinf) {
+    VM_F32(0) = sinf(VM_F32(0));
+}
+
+VM_THUNK(cosf) {
+    VM_F32(0) = cosf(VM_F32(0));
+}
+
+VM_THUNK(tanf) {
+    VM_F32(0) = tanf(VM_F32(0));
+}
+
+VM_THUNK(asinf) {
+    VM_F32(0) = asinf(VM_F32(0));
+}
+
+VM_THUNK(acosf) {
+    VM_F32(0) = acosf(VM_F32(0));
+}
+
+VM_THUNK(atan2f) {
+    VM_F32(0) = atan2f(VM_F32(0), VM_F32(1));
+}
+
+VM_THUNK(memcmp) {
+    uint32_t p1   = VM_U32(0);
+    uint32_t p2   = VM_U32(1);
+    uint32_t size = VM_U32(2);
+
+    VM_ASSERT((uint64_t)p1 + size <= m->pages * VM_PAGE_SIZE &&
+              (uint64_t)p2 + size <= m->pages * VM_PAGE_SIZE, "Memory compare out of bounds");
+
+    VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
+}
+
+static const vm_import_t cgame_vm_imports[] = {
+    VM_IMPORT(Print, "ii"),
+    VM_IMPORT(Error, "i"),
+    VM_IMPORT(GetConfigstring, "i iiii"),
+    VM_IMPORT(FS_OpenFile, "I iii"),
+    VM_IMPORT(FS_CloseFile, "i i"),
+    VM_IMPORT(FS_ReadFile, "i iii"),
+    VM_IMPORT(FS_WriteFile, "i iii"),
+    VM_IMPORT(FS_FlushFile, "i i"),
+    VM_IMPORT(FS_TellFile, "I i"),
+    VM_IMPORT(FS_SeekFile, "i iIi"),
+    VM_IMPORT(FS_ReadLine, "i iii"),
+    VM_IMPORT(FS_ListFiles, "i iiiii"),
+    VM_IMPORT(FS_ErrorString, "i iii"),
+    VM_IMPORT(R_ClearDebugLines, ""),
+    VM_IMPORT(R_AddDebugLine, "iiiii"),
+    VM_IMPORT(R_AddDebugPoint, "ifiii"),
+    VM_IMPORT(R_AddDebugAxis, "iifii"),
+    VM_IMPORT(R_AddDebugBounds, "iiiii"),
+    VM_IMPORT(R_AddDebugSphere, "ifiii"),
+    VM_IMPORT(R_AddDebugCircle, "ifiii"),
+    VM_IMPORT(R_AddDebugCylinder, "iffiii"),
+    VM_IMPORT(R_AddDebugArrow, "iifiiii"),
+    VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
+    VM_IMPORT(R_AddDebugText, "iiifiii"),
+
+    VM_IMPORT_RAW(sinf, "f f"),
+    VM_IMPORT_RAW(cosf, "f f"),
+    VM_IMPORT_RAW(tanf, "f f"),
+    VM_IMPORT_RAW(asinf, "f f"),
+    VM_IMPORT_RAW(acosf, "f f"),
+    VM_IMPORT_RAW(atan2f, "f ff"),
+    VM_IMPORT_RAW(memcmp, "i iii"),
+
+    { 0 }
+};
+
+//==============================================
+
+typedef enum {
+    vm_CG_Init,
+    vm_CG_Shutdown,
+    vm_CG_DrawActiveFrame,
+    vm_CG_ModeChanged,
+    vm_CG_ConsoleCommand,
+    vm_CG_ServerCommand,
+    vm_CG_UpdateConfigstring,
+} cgame_entry_t;
+
+static const vm_export_t cgame_vm_exports[] = {
+    VM_EXPORT(CG_Init, ""),
+    VM_EXPORT(CG_Shutdown, ""),
+    VM_EXPORT(CG_DrawActiveFrame, ""),
+    VM_EXPORT(CG_ModeChanged, ""),
+    VM_EXPORT(CG_ConsoleCommand, ""),
+    VM_EXPORT(CG_ServerCommand, ""),
+    VM_EXPORT(CG_UpdateConfigstring, ""),
+
+    { 0 }
+};
+
+static void thunk_CG_Init(void) {
+    VM_Call(cgame.vm, vm_CG_Init);
+}
+
+static void thunk_CG_Shutdown(void) {
+    VM_Call(cgame.vm, vm_CG_Shutdown);
+}
+
+static void thunk_CG_DrawActiveFrame(void) {
+    VM_Call(cgame.vm, vm_CG_DrawActiveFrame);
+}
+
+static void thunk_CG_ModeChanged(void) {
+    VM_Call(cgame.vm, vm_CG_ModeChanged);
+}
+
+static bool thunk_CG_ConsoleCommand(void) {
+    VM_Call(cgame.vm, vm_CG_ConsoleCommand);
+    const vm_value_t *stack = VM_Pop(cgame.vm);
+    return VM_U32(0);
+}
+
+static void thunk_CG_ServerCommand(void) {
+    VM_Call(cgame.vm, vm_CG_ServerCommand);
+}
+
+static void thunk_CG_UpdateConfigstring(unsigned index) {
+    vm_value_t *stack = VM_Push(cgame.vm, 1);
+    VM_U32(0) = index;
+    VM_Call(cgame.vm, vm_CG_UpdateConfigstring);
+}
+
+//==============================================
+
 static const cgame_import_t cgame_dll_imports = {
     .apiversion = CGAME_API_VERSION,
     .structsize = sizeof(cgame_import_t),
@@ -179,7 +425,6 @@ static const cgame_import_t cgame_dll_imports = {
     .Print = PF_Print,
     .Error = PF_Error,
 
-    .SetConfigstring = PF_SetConfigstring,
     .GetConfigstring = PF_GetConfigstring,
 
     .BoxTrace = PF_BoxTrace,
@@ -190,10 +435,18 @@ static const cgame_import_t cgame_dll_imports = {
 
     .DirToByte = DirToByte,
     .ByteToDir = ByteToDir,
-    .GetSurfaceInfo = PF_GetSurfaceInfo,
 
-    .RealTime = PF_RealTime,
-    .LocalTime = PF_LocalTime,
+    .GetSurfaceInfo = PF_GetSurfaceInfo,
+    .GetBrushModelBounds = PF_GetBrushModelBounds,
+
+    .GetUsercmdNumber = PF_GetUsercmdNumber,
+    .GetUsercmd = PF_GetUsercmd,
+
+    .GetServerFrameNumber = PF_GetServerFrameNumber,
+    .GetServerFrame = PF_GetServerFrame,
+
+    .RealTime = Com_RealTime,
+    .LocalTime = Com_LocalTime,
 
     .Cvar_Register = PF_Cvar_Register,
     .Cvar_Set = PF_Cvar_Set,
@@ -240,7 +493,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_AddLight = R_AddLight,
     .R_SetLightStyle = R_SetLightStyle,
     .R_LocateParticles = R_LocateParticles,
-    .R_RenderScene = R_RenderScene,
+    .R_RenderScene = R_RenderFrame,
 
     .R_ClearColor = R_ClearColor,
     .R_SetAlpha = R_SetAlpha,
@@ -276,9 +529,11 @@ static const cgame_export_t cgame_dll_exports = {
 
     .Init = thunk_CG_Init,
     .Shutdown = thunk_CG_Shutdown,
-    .RenderFrame = thunk_CG_RenderFrame,
-    .ServerCommand = thunk_CG_ServerCommand,
+    .DrawActiveFrame = thunk_CG_DrawActiveFrame,
+    .ModeChanged = thunk_CG_ModeChanged,
     .ConsoleCommand = thunk_CG_ConsoleCommand,
+    .ServerCommand = thunk_CG_ServerCommand,
+    .UpdateConfigstring = thunk_CG_UpdateConfigstring,
 };
 
 static const vm_interface_t cgame_iface = {
@@ -328,7 +583,7 @@ static void CL_LoadMap(void)
     }
 
     if (cl.bsp->checksum != Q_atoi(cl.configstrings[CS_MAPCHECKSUM])) {
-        if (cgs.demo.playback) {
+        if (cls.demo.playback) {
             Com_WPrintf("Local map version differs from demo: %i != %s\n",
                         cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
         } else {
@@ -349,7 +604,7 @@ void CL_InitCGame(void)
     cge = VM_LoadModule(&cgame, &cgame_iface);
 
     // register models, pics, and skins
-    R_BeginRegistration(cg.mapname);
+    R_BeginRegistration(cl.mapname);
 
     S_BeginRegistration();
 

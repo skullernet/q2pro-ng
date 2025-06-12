@@ -16,6 +16,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#pragma once
+
+#include "shared/keys.h"
+#include "shared/refresh.h"
+
 #define CGAME_API_VERSION    4000
 
 typedef struct {
@@ -41,7 +46,6 @@ typedef struct {
     void (*Print)(print_type_t type, const char *msg);
     void (*q_noreturn_ptr Error)(const char *msg);
 
-    void (*SetConfigstring)(unsigned index, const char *str);
     size_t (*GetConfigstring)(unsigned index, char *buf, size_t size);
 
     void (*BoxTrace)(trace_t *trace,
@@ -67,12 +71,11 @@ typedef struct {
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
     void (*GetBrushModelBounds)(unsigned index, vec3_t mins, vec3_t maxs);
 
-    bool (*GetUsercmdNumber)(unsigned *ack, unsigned *current);
+    void (*GetUsercmdNumber)(unsigned *ack, unsigned *current);
     bool (*GetUsercmd)(unsigned number, usercmd_t *ucmd);
-    bool (*GetPendingUsercmd)(usercmd_t *ucmd);
 
     void (*GetServerFrameNumber)(unsigned *frame, unsigned *time);
-    bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *frame);
+    bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
 
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
@@ -137,7 +140,7 @@ typedef struct {
     void (*S_StartSound)(const vec3_t origin, int entnum, int entchannel,
                          qhandle_t sfx, float volume, float attenuation, float timeofs);
     void (*S_ClearLoopingSounds)(void);
-    void (*S_AddLoopingSound)(const vec3_t origin, unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
+    void (*S_AddLoopingSound)(unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
     void (*S_StartBackgroundTrack)(const char *track);
     void (*S_StopBackgroundTrack)(void);
     void (*S_UpdateEntity)(unsigned entnum, const vec3_t origin);
@@ -181,5 +184,8 @@ typedef struct {
     void (*Init)(void);
     void (*Shutdown)(void);
     void (*DrawActiveFrame)(void);
+    void (*ModeChanged)(void);
     bool (*ConsoleCommand)(void);
+    void (*ServerCommand)(void);
+    void (*UpdateConfigstring)(unsigned index);
 } cgame_export_t;

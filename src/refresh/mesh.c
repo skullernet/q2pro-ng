@@ -910,6 +910,7 @@ static void draw_alias_skeleton(const md5_model_t *model)
 // existing RF_WEAPONMODEL flag, we do it here.
 static void setup_weaponmodel(void)
 {
+#if 0
     extern cvar_t   *info_hand;
     extern cvar_t   *cl_adjustfov;
     extern cvar_t   *cl_gunfov;
@@ -935,6 +936,7 @@ static void setup_weaponmodel(void)
     }
 
     GL_Frustum(fov_x, fov_y, reflect_x);
+#endif
 }
 
 void GL_DrawAliasModel(const model_t *model)

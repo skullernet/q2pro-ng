@@ -78,7 +78,7 @@ typedef struct {
     netadr_t remoteAddress;
     char *remotePassword;
 
-    load_state_t loadstate;
+    char loadstate[MAX_QPATH];
 } console_t;
 
 static console_t    con;
@@ -563,12 +563,12 @@ void Con_SetColor(color_index_t color)
 
 /*
 =================
-CL_LoadState
+Con_LoadState
 =================
 */
-void CL_LoadState(load_state_t state)
+void Con_LoadState(const char *state)
 {
-    con.loadstate = state;
+    Q_strlcpy(con.loadstate, state, sizeof(con.loadstate));
     SCR_UpdateScreen();
     if (vid)
         vid->pump_events();
@@ -921,29 +921,8 @@ static void Con_DrawSolidConsole(void)
         R_DrawString(CONCHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
     } else if (cls.state == ca_loading) {
         // draw loading state
-        switch (con.loadstate) {
-        case LOAD_MAP:
-            text = va("maps/%s.bsp", cl.mapname);
-            break;
-        case LOAD_MODELS:
-            text = "models";
-            break;
-        case LOAD_IMAGES:
-            text = "images";
-            break;
-        case LOAD_CLIENTS:
-            text = "clients";
-            break;
-        case LOAD_SOUNDS:
-            text = "sounds";
-            break;
-        default:
-            text = NULL;
-            break;
-        }
-
-        if (text) {
-            Q_snprintf(buffer, sizeof(buffer), "Loading %s...", text);
+        if (con.loadstate[0]) {
+            Q_snprintf(buffer, sizeof(buffer), "Loading %s...", con.loadstate);
 
             // draw it
             y = vislines - CON_PRESTEP + CONCHAR_HEIGHT * 2;

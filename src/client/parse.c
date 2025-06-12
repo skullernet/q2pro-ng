@@ -174,6 +174,28 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     }
 }
 
+static void CL_SetActiveState(void)
+{
+    cls.state = ca_active;
+
+    cl.serverdelta = cl.frame.number;
+    cl.time = cl.servertime = 0; // set time, needed for demos
+    cl.frameflags = 0;
+    cl.initialSeq = cls.netchan.outgoing_sequence;
+
+    SCR_EndLoadingPlaque();     // get rid of loading plaque
+    Con_Close(false);           // get rid of connection screen
+
+    CL_CheckForPause();
+
+    CL_UpdateFrameTimes();
+
+    IN_Activate();
+
+    // init some demo things
+    CL_FirstDemoFrame();
+}
+
 static void CL_ParseFrame(void)
 {
     int                     currentframe, deltaframe, delta, suppressed, length;
@@ -307,17 +329,14 @@ static void CL_ParseFrame(void)
     cl.oldframe = cl.frame;
     cl.frame = frame;
 
-#if USE_FPS
-    if (CL_FRAMESYNC) {
-        cl.oldkeyframe = cl.keyframe;
-        cl.keyframe = cl.frame;
-    }
-#endif
-
     cls.demo.frames_read++;
 
-    if (!cls.demo.seeking)
-        CL_DeltaFrame();
+    // getting a valid frame message ends the connection process
+    if (cls.state == ca_precached)
+        CL_SetActiveState();
+
+    if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking)
+        CL_EmitDemoFrame();
 }
 
 /*
@@ -359,7 +378,8 @@ static void CL_ParseConfigstring(int index)
     }
 
     // do something appropriate
-    CL_UpdateConfigstring(index);
+    if (cge)
+        cge->UpdateConfigstring(index);
 }
 
 static void CL_ParseBaseline(int index)
@@ -520,6 +540,7 @@ static void CL_ParseReconnect(void)
 static void CL_ParseServerCommand(void)
 {
     char text[MAX_STRING_CHARS];
+    const char *s;
 
     MSG_ReadString(text, sizeof(text));
     SHOWNET(3, "    \"%s\"\n", COM_MakePrintable(text));
@@ -540,10 +561,9 @@ static void CL_ParseServerCommand(void)
         CL_Reconnect_f();
         return;
     }
-    if (!cge)
-        return;
 
-    cge->ServerCommand();
+    if (cge)
+        cge->ServerCommand();
 }
 
 static void CL_ParseDownload(int cmd)
@@ -558,7 +578,7 @@ static void CL_ParseDownload(int cmd)
     size = MSG_ReadShort();
     percent = MSG_ReadByte();
     if (size == -1) {
-        CL_HandleDownload(NULL, size, percent, 0);
+        //CL_HandleDownload(NULL, size, percent, 0);
         return;
     }
 
@@ -574,7 +594,7 @@ static void CL_ParseDownload(int cmd)
         Com_Error(ERR_DROP, "%s: bad size: %d", __func__, size);
     }
 
-    CL_HandleDownload(MSG_ReadData(size), size, percent, cmd);
+    //CL_HandleDownload(MSG_ReadData(size), size, percent, cmd);
 }
 
 static void CL_ParseZPacket(void)
@@ -783,7 +803,7 @@ bool CL_SeekDemoMessage(void)
             Com_Error(ERR_DISCONNECT, "Server disconnected");
             break;
 
-        case svc_strincmd:
+        case svc_stringcmd:
             CL_ParseServerCommand();
             break;
 

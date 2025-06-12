@@ -483,10 +483,12 @@ static void CL_MouseMove(void)
     mx *= speed;
     my *= speed;
 
+    /*
     if (m_autosens->integer) {
         mx *= cl.fov_x * autosens_x;
         my *= cl.fov_y * autosens_y;
     }
+    */
 
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {

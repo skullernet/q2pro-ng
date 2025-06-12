@@ -1159,7 +1159,7 @@ static void SV_AddLrconCmd_f(void)
     s = COM_StripQuotes(Cmd_RawArgsFrom(1));
     LIST_FOR_EACH(stuffcmd_t, stuff, &sv_lrconlist, entry) {
         if (!strcmp(stuff->string, s)) {
-            Com_Printf("Lrconcmd already exists: %s\n", what, s);
+            Com_Printf("Lrconcmd already exists: %s\n", s);
             return;
         }
     }
@@ -1191,7 +1191,7 @@ static void SV_DelLrconCmd_f(void)
         LIST_FOR_EACH_SAFE(stuffcmd_t, stuff, next, &sv_lrconlist, entry) {
             Z_Free(stuff);
         }
-        List_Init(list);
+        List_Init(&sv_lrconlist);
         return;
     }
 

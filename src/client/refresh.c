@@ -404,11 +404,9 @@ void CL_InitRefresh(void)
     mode_changed = 0;
 
     // Initialize the rest of graphics subsystems
-    V_Init();
     SCR_Init();
     UI_Init();
 
-    SCR_RegisterMedia();
     Con_RegisterMedia();
 
     cvar_modified &= ~(CVAR_FILES | CVAR_REFRESH);
@@ -426,7 +424,6 @@ void CL_ShutdownRefresh(void)
     }
 
     // Shutdown the rest of graphics subsystems
-    V_Shutdown();
     SCR_Shutdown();
     UI_Shutdown();
 

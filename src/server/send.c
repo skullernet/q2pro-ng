@@ -406,10 +406,8 @@ static void write_pending_download(client_t *client)
     SZ_WriteByte(buf, client->downloadcount * 100 / client->downloadsize);
     SZ_Write(buf, client->download + client->downloadcount - chunk, chunk);
 
-    if (client->downloadcount == client->downloadsize) {
+    if (client->downloadcount == client->downloadsize)
         SV_CloseDownload(client);
-        SV_AlignKeyFrames(client);
-    }
 }
 
 /*

@@ -173,6 +173,19 @@ void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, floa
     VectorRotate(temp, matrix, out);
 }
 
+/*
+====================
+V_CalcFov
+====================
+*/
+float V_CalcFov(float fov_x, float width, float height)
+{
+    float x = width / tanf(fov_x * (M_PIf / 360));
+    float a = atanf(height / x) * (360 / M_PIf);
+
+    return a;
+}
+
 //====================================================================================
 
 /*

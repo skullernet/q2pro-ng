@@ -39,7 +39,7 @@ int         r_numentities;
 glentity_t  r_entities[MAX_ENTITIES];
 
 int         r_numparticles;
-particle_t  *r_particles;
+const particle_t    *r_particles;
 
 lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
 
@@ -856,7 +856,7 @@ void R_RenderFrame(const refdef_t *fd)
     glr.fd = *fd;
 
     if (gl_dynamic->integer != 1 || gl_vertexlight->integer)
-        glr.fd.num_dlights = 0;
+        r_numdlights = 0;
 
     glr.fog_bits = glr.fog_bits_sky = 0;
 
@@ -1088,8 +1088,8 @@ static void gl_modulate_changed(cvar_t *self)
 // ugly hack to reset sky
 static void gl_drawsky_changed(cvar_t *self)
 {
-    if (gl_static.world.cache)
-        CL_SetSky();
+    //if (gl_static.world.cache)
+    //    CL_SetSky();
 }
 
 static void gl_novis_changed(cvar_t *self)

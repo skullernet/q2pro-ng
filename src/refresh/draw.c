@@ -255,10 +255,7 @@ static int get_auto_scale(void)
 
 float R_ClampScale(cvar_t *var)
 {
-    if (!var)
-        return 1.0f;
-
-    if (var->value)
+    if (var && var->value)
         return 1.0f / Cvar_ClampValue(var, 1.0f, 10.0f);
 
     return 1.0f / get_auto_scale();
@@ -441,9 +438,9 @@ void Draw_Stats(void)
     Draw_Stringf(x, y, "Faces / batch  : %.1f", c.batchesDrawn ? (float)c.facesDrawn / c.batchesDrawn : 0.0f); y += 10;
     Draw_Stringf(x, y, "Tris / batch   : %.1f", c.batchesDrawn ? (float)c.facesTris / c.batchesDrawn : 0.0f); y += 10;
     Draw_Stringf(x, y, "2D batches     : %i", c.batchesDrawn2D); y += 10;
-    Draw_Stringf(x, y, "Total entities : %i", glr.fd.num_entities); y += 10;
-    Draw_Stringf(x, y, "Total dlights  : %i", glr.fd.num_dlights); y += 10;
-    Draw_Stringf(x, y, "Total particles: %i", glr.fd.num_particles); y += 10;
+    Draw_Stringf(x, y, "Total entities : %i", r_numentities); y += 10;
+    Draw_Stringf(x, y, "Total dlights  : %i", r_numdlights); y += 10;
+    Draw_Stringf(x, y, "Total particles: %i", r_numparticles); y += 10;
     Draw_Stringf(x, y, "Uniform uploads: %i", c.uniformUploads); y += 10;
     Draw_Stringf(x, y, "Array binds    : %i", c.vertexArrayBinds); y += 10;
     Draw_Stringf(x, y, "Occl. queries  : %i", c.occlusionQueries); y += 10;

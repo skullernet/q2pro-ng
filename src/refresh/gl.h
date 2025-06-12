@@ -227,7 +227,7 @@ extern int          r_numentities;
 extern glentity_t   r_entities[MAX_ENTITIES];
 
 extern int          r_numparticles;
-extern particle_t   *r_particles;
+extern const particle_t *r_particles;
 
 extern lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
 

@@ -185,30 +185,11 @@ static void parse_entity_update(const entity_state_t *state)
 
 static void set_active_state(void)
 {
-    cgs.state = ca_active;
-
-    cg.serverdelta = Q_align_down(cg.frame.number, CG_FRAMEDIV);
-    cg.time = cg.servertime = 0; // set time, needed for demos
-#if USE_FPS
-    cg.keytime = cg.keyservertime = 0;
-    cg.keyframe = cg.frame; // initialize keyframe to make sure it's valid
-#endif
-
     // initialize oldframe so lerping doesn't hurt anything
     cg.oldframe.valid = false;
     cg.oldframe.ps = cg.frame.ps;
-#if USE_FPS
-    cg.oldkeyframe.valid = false;
-    cg.oldkeyframe.ps = cg.keyframe.ps;
-#endif
 
-    cg.frameflags = 0;
-    cg.initialSeq = cgs.netchan.outgoing_sequence;
-
-    if (cgs.demo.playback) {
-        // init some demo things
-        CG_FirstDemoFrame();
-    } else {
+    if (!cgs.demo.playback) {
         // set initial cg.predicted_origin and cg.predicted_angles
         VectorCopy(cg.frame.ps.pmove.origin, cg.predicted_origin);
         VectorCopy(cg.frame.ps.pmove.velocity, cg.predicted_velocity);
@@ -221,15 +202,7 @@ static void set_active_state(void)
         }
     }
 
-    SCR_EndLoadingPlaque();     // get rid of loading plaque
     SCR_LagClear();
-    Con_Close(false);           // get rid of connection screen
-
-    CG_CheckForPause();
-
-    CG_UpdateFrameTimes();
-
-    IN_Activate();
 
     if (!cgs.demo.playback) {
         EXEC_TRIGGER(cl_beginmapcmd);
@@ -322,9 +295,6 @@ void CG_DeltaFrame(void)
         Com_Error(ERR_DROP, "%s: server time overflowed", __func__);
 
     cg.servertime = framenum * CG_FRAMETIME;
-#if USE_FPS
-    cg.keyservertime = (framenum / cg.frametime.div) * BASE_FRAMETIME;
-#endif
 
     // rebuild the list of solid entities for this frame
     cg.numSolidEntities = 0;
@@ -348,26 +318,13 @@ void CG_DeltaFrame(void)
         CG_EntityEvents(ent);
     }
 
-    if (cgs.demo.recording && !cgs.demo.paused && !cgs.demo.seeking && CG_FRAMESYNC) {
-        CG_EmitDemoFrame();
-    }
-
     if (cgs.demo.playback) {
         // this delta has nothing to do with local viewangles,
         // clear it to avoid interfering with demo freelook hack
         VectorClear(cg.frame.ps.pmove.delta_angles);
     }
 
-    if (cg.oldframe.ps.pmove.pm_type != cg.frame.ps.pmove.pm_type) {
-        IN_Activate();
-    }
-
     check_player_lerp(&cg.oldframe, &cg.frame, 1);
-
-#if USE_FPS
-    if (CG_FRAMESYNC)
-        check_player_lerp(&cg.oldkeyframe, &cg.keyframe, cg.frametime.div);
-#endif
 
     if (cg.frame.ps.stats[STAT_HITS] > cg.oldframe.ps.stats[STAT_HITS]) {
         extern cvar_t *cl_hit_markers;
@@ -385,34 +342,6 @@ void CG_DeltaFrame(void)
 
     SCR_SetCrosshairColor();
 }
-
-#if USE_DEBUG
-// for debugging problems when out-of-date entity origin is referenced
-void CG_CheckEntityPresent(int entnum, const char *what)
-{
-    const centity_t *e;
-
-    if (entnum == cg.frame.ps.clientnum) {
-        return; // player entity = current
-    }
-
-    e = &cl_entities[entnum];
-    if (e->serverframe == cg.frame.number) {
-        return; // current
-    }
-
-    if (e->serverframe) {
-        Com_LPrintf(PRINT_DEVELOPER,
-                    "SERVER BUG: %s on entity %d last seen %d frames ago\n",
-                    what, entnum, cg.frame.number - e->serverframe);
-    } else {
-        Com_LPrintf(PRINT_DEVELOPER,
-                    "SERVER BUG: %s on entity %d never seen before\n",
-                    what, entnum);
-    }
-}
-#endif
-
 
 /*
 ==========================================================================

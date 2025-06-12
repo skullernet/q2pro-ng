@@ -21,27 +21,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 cvar_t  *rcon_address;
 
-cvar_t  *cl_noskins;
-cvar_t  *cl_footsteps;
 cvar_t  *cl_timeout;
-cvar_t  *cl_predict;
-cvar_t  *cl_gun;
-cvar_t  *cl_gunalpha;
-cvar_t  *cl_gunfov;
-cvar_t  *cl_gun_x;
-cvar_t  *cl_gun_y;
-cvar_t  *cl_gun_z;
 cvar_t  *cl_warn_on_fps_rounding;
 cvar_t  *cl_maxfps;
 cvar_t  *cl_async;
 cvar_t  *r_maxfps;
 cvar_t  *cl_autopause;
-
-cvar_t  *cl_kickangles;
-cvar_t  *cl_rollhack;
-cvar_t  *cl_noglow;
-cvar_t  *cl_nobob;
-cvar_t  *cl_nolerp;
 
 #if USE_DEBUG
 cvar_t  *cl_shownet;
@@ -49,28 +34,12 @@ cvar_t  *cl_showmiss;
 cvar_t  *cl_showclamp;
 #endif
 
-cvar_t  *cl_thirdperson;
-cvar_t  *cl_thirdperson_angle;
-cvar_t  *cl_thirdperson_range;
-
-cvar_t  *cl_disable_particles;
-cvar_t  *cl_disable_explosions;
-cvar_t  *cl_dlight_hacks;
-cvar_t  *cl_smooth_explosions;
-
-cvar_t  *cl_chat_notify;
-cvar_t  *cl_chat_sound;
-cvar_t  *cl_chat_filter;
-
 cvar_t  *cl_disconnectcmd;
 cvar_t  *cl_changemapcmd;
 cvar_t  *cl_beginmapcmd;
 
-cvar_t  *cl_ignore_stufftext;
 cvar_t  *cl_allow_vid_restart;
 
-cvar_t  *cl_gibs;
-cvar_t  *cl_flares;
 #if USE_FPS
 cvar_t  *cl_updaterate;
 #endif
@@ -78,8 +47,6 @@ cvar_t  *cl_updaterate;
 cvar_t  *cl_protocol;
 
 cvar_t  *gender_auto;
-
-cvar_t  *cl_vwep;
 
 //
 // userinfo
@@ -97,8 +64,6 @@ cvar_t  *info_uf;
 
 client_static_t cls;
 client_state_t  cl;
-
-centity_t   cl_entities[MAX_EDICTS];
 
 //======================================================================
 
@@ -512,16 +477,11 @@ void CL_ClearState(void)
 {
     S_StopAllSounds();
     SCR_StopCinematic();
-    SCR_ClearCenterPrints();
-    CL_ClearEffects();
-    CL_ClearTEnts();
-    LOC_FreeLocations();
     CL_FreeDemoSnapshots();
 
     // wipe the entire cl structure
     BSP_Free(cl.bsp);
     memset(&cl, 0, sizeof(cl));
-    memset(&cl_entities, 0, sizeof(cl_entities));
 
     if (cls.state > ca_connected) {
         cls.state = ca_connected;
@@ -550,8 +510,6 @@ void CL_Disconnect(error_type_t type)
 
     SCR_EndLoadingPlaque(); // get rid of loading plaque
 
-    SCR_ClearChatHUD_f();   // clear chat HUD on server change
-
     if (cls.state > ca_disconnected && !cls.demo.playback) {
         EXEC_TRIGGER(cl_disconnectcmd);
     }
@@ -579,7 +537,7 @@ void CL_Disconnect(error_type_t type)
     CL_CleanupDemos();
 
     // stop download
-    CL_CleanupDownloads();
+    //CL_CleanupDownloads();
 
     CL_ClearState();
 
@@ -818,7 +776,7 @@ Just sent as a hint to the client that they should
 drop to full console
 =================
 */
-static void CL_Changing_f(void)
+void CL_Changing_f(void)
 {
     int i, j;
     char *s;
@@ -867,7 +825,7 @@ CL_Reconnect_f
 The server is changing levels
 =================
 */
-static void CL_Reconnect_f(void)
+void CL_Reconnect_f(void)
 {
     if (cls.demo.playback) {
         Com_Printf("No server to reconnect to.\n");
@@ -970,86 +928,6 @@ static void CL_PingServers_f(void)
         OOB_PRINT(NS_CLIENT, &address, "info 34");
     }
 }
-
-/*
-=================
-CL_Skins_f
-
-Load or download any custom player skins and models
-=================
-*/
-static void CL_Skins_f(void)
-{
-    int i;
-    char *s;
-    clientinfo_t *ci;
-
-    if (cls.state < ca_precached) {
-        Com_Printf("Must be in a level to load skins.\n");
-        return;
-    }
-
-    CL_RegisterVWepModels();
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[CS_PLAYERSKINS + i];
-        if (!s[0])
-            continue;
-        ci = &cl.clientinfo[i];
-        CL_LoadClientinfo(ci, s);
-        if (!ci->model_name[0] || !ci->skin_name[0])
-            ci = &cl.baseclientinfo;
-        Com_Printf("client %d: %s --> %s/%s\n", i, s,
-                   ci->model_name, ci->skin_name);
-        SCR_UpdateScreen();
-    }
-}
-
-static void cl_noskins_changed(cvar_t *self)
-{
-    int i;
-    char *s;
-    clientinfo_t *ci;
-
-    if (cls.state < ca_precached) {
-        return;
-    }
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        s = cl.configstrings[CS_PLAYERSKINS + i];
-        if (!s[0])
-            continue;
-        ci = &cl.clientinfo[i];
-        CL_LoadClientinfo(ci, s);
-    }
-}
-
-static void cl_vwep_changed(cvar_t *self)
-{
-    if (cls.state < ca_precached) {
-        return;
-    }
-
-    CL_RegisterVWepModels();
-    cl_noskins_changed(self);
-}
-
-static void CL_Name_g(genctx_t *ctx)
-{
-    int i;
-    char buffer[MAX_CLIENT_NAME];
-
-    if (cls.state < ca_precached) {
-        return;
-    }
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        Q_strlcpy(buffer, cl.clientinfo[i].name, sizeof(buffer));
-        if (COM_strclr(buffer))
-            Prompt_AddMatch(ctx, buffer);
-    }
-}
-
 
 /*
 =================
@@ -1247,10 +1125,8 @@ static void CL_PacketEvent(void)
 
     SCR_AddNetgraph();
 
-    SCR_LagSample();
-
     // if recording demo, write the message out
-    if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC) {
+    if (cls.demo.recording && !cls.demo.paused) {
         CL_WriteDemoMessage(&cls.demo.buffer);
     }
 }
@@ -1373,7 +1249,7 @@ static void CL_RestartSound_f(void)
 {
     S_Shutdown();
     S_Init();
-    CL_RegisterSounds();
+    //CL_RegisterSounds();
 }
 
 /*
@@ -1432,18 +1308,15 @@ The server will send this command right
 before allowing the client into the server
 =================
 */
-static void CL_Precache_f(void)
+void CL_Precache_f(void)
 {
     if (cls.state < ca_connected) {
         return;
     }
 
     cls.state = ca_loading;
-    CL_LoadState(LOAD_MAP);
 
     S_StopAllSounds();
-
-    CL_RegisterVWepModels();
 
     // demos use different precache sequence
     if (cls.demo.playback) {
@@ -1461,59 +1334,6 @@ static void CL_Precache_f(void)
     if (cls.state != ca_precached) {
         cls.state = ca_connected;
     }
-}
-
-static void CL_DumpClients_f(void)
-{
-    int i;
-
-    if (cls.state != ca_active) {
-        Com_Printf("Must be in a level to dump.\n");
-        return;
-    }
-
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        if (!cl.clientinfo[i].name[0]) {
-            continue;
-        }
-
-        Com_Printf("%3i: %s\n", i, cl.clientinfo[i].name);
-    }
-}
-
-static void dump_program(const char *text, const char *name)
-{
-    char buffer[MAX_OSPATH];
-
-    if (cls.state != ca_active) {
-        Com_Printf("Must be in a level to dump.\n");
-        return;
-    }
-
-    if (Cmd_Argc() != 2) {
-        Com_Printf("Usage: %s <filename>\n", Cmd_Argv(0));
-        return;
-    }
-
-    if (!*text) {
-        Com_Printf("No %s to dump.\n", name);
-        return;
-    }
-
-    if (FS_EasyWriteFile(buffer, sizeof(buffer), FS_MODE_WRITE | FS_FLAG_TEXT,
-                         "layouts/", Cmd_Argv(1), ".txt", text, strlen(text))) {
-        Com_Printf("Dumped %s program to %s.\n", name, buffer);
-    }
-}
-
-static void CL_DumpStatusbar_f(void)
-{
-    dump_program(cl.configstrings[CS_STATUSBAR], "status bar");
-}
-
-static void CL_DumpLayout_f(void)
-{
-    dump_program(cl.layout, "layout");
 }
 
 static const cmd_option_t o_writeconfig[] = {
@@ -1605,22 +1425,6 @@ static void CL_WriteConfig_f(void)
         Com_Printf("Wrote %s.\n", buffer);
 }
 
-static void CL_Say_c(genctx_t *ctx, int argnum)
-{
-    CL_Name_g(ctx);
-}
-
-static void CL_Item_c(genctx_t *ctx, int argnum)
-{
-    if (cls.state < ca_connected || cls.demo.playback || argnum != 1)
-        return;
-
-    ctx->ignorecase = true;
-    ctx->stripquotes = true;
-    for (int i = 0; i < MAX_ITEMS; i++)
-        Prompt_AddMatch(ctx, cl.configstrings[CS_ITEMS + i]);
-}
-
 static size_t CL_Mapname_m(char *buffer, size_t size)
 {
     return Q_strlcpy(buffer, cl.mapname, size);
@@ -1633,6 +1437,7 @@ static size_t CL_Server_m(char *buffer, size_t size)
 
 static size_t CL_Ups_m(char *buffer, size_t size)
 {
+#if 0
     vec3_t vel;
 
     if (!cls.demo.playback && cl_predict->integer &&
@@ -1643,6 +1448,8 @@ static size_t CL_Ups_m(char *buffer, size_t size)
     }
 
     return Q_snprintf(buffer, size, "%.f", VectorLength(vel));
+#endif
+    return Q_strlcpy(buffer, "", size);
 }
 
 static size_t CL_Timer_m(char *buffer, size_t size)
@@ -1735,6 +1542,7 @@ static size_t CL_NumEntities_m(char *buffer, size_t size)
 
 static size_t CL_Surface_m(char *buffer, size_t size)
 {
+#if 0
     trace_t trace;
     vec3_t end;
 
@@ -1744,7 +1552,7 @@ static size_t CL_Surface_m(char *buffer, size_t size)
         if (trace.surface_id)
             return Q_snprintf(buffer, size, "%s %#x", cl.bsp->texinfo[trace.surface_id - 1].name, trace.surface_flags);
     }
-
+#endif
     return Q_strlcpy(buffer, "", size);
 }
 
@@ -1951,19 +1759,6 @@ static void cl_allow_download_changed(cvar_t *self)
     }
 }
 
-// ugly hack for compatibility
-static void cl_chat_sound_changed(cvar_t *self)
-{
-    if (!*self->string)
-        self->integer = 0;
-    else if (!Q_stricmp(self->string, "misc/talk.wav"))
-        self->integer = 1;
-    else if (!Q_stricmp(self->string, "misc/talk1.wav"))
-        self->integer = 2;
-    else if (!self->integer && !COM_IsUint(self->string))
-        self->integer = 1;
-}
-
 void cl_timeout_changed(cvar_t *self)
 {
     self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
@@ -1973,7 +1768,6 @@ static const cmdreg_t c_client[] = {
     { "cmd", CL_ForwardToServer_f },
     { "pause", CL_Pause_f },
     { "pingservers", CL_PingServers_f },
-    { "skins", CL_Skins_f },
     { "userinfo", CL_Userinfo_f },
     { "snd_restart", CL_RestartSound_f },
     { "play", CL_PlaySound_f, CL_PlaySound_c },
@@ -1984,9 +1778,6 @@ static const cmdreg_t c_client[] = {
     { "reconnect", CL_Reconnect_f },
     { "rcon", CL_Rcon_f, CL_Rcon_c },
     { "serverstatus", CL_ServerStatus_f, CL_ServerStatus_c },
-    { "dumpclients", CL_DumpClients_f },
-    { "dumpstatusbar", CL_DumpStatusbar_f },
-    { "dumplayout", CL_DumpLayout_f },
     { "writeconfig", CL_WriteConfig_f, CL_WriteConfig_c },
     { "vid_restart", CL_RestartRefresh_f },
     { "r_reload", CL_ReloadRefresh_f },
@@ -1997,12 +1788,12 @@ static const cmdreg_t c_client[] = {
     // the only thing this does is allow command completion
     // to work -- all unknown commands are automatically
     // forwarded to the server
-    { "say", NULL, CL_Say_c },
-    { "say_team", NULL, CL_Say_c },
+    { "say" },
+    { "say_team" },
 
-    { "wave" }, { "inven" }, { "kill" }, { "use", NULL, CL_Item_c },
-    { "drop", NULL, CL_Item_c }, { "info" }, { "prog" },
-    { "give", NULL, CL_Item_c }, { "god" }, { "notarget" }, { "noclip" },
+    { "wave" }, { "inven" }, { "kill" }, { "use" },
+    { "drop" }, { "info" }, { "prog" },
+    { "give" }, { "god" }, { "notarget" }, { "noclip" },
     { "invuse" }, { "invprev" }, { "invnext" }, { "invdrop" },
     { "weapnext" }, { "weapprev" },
 
@@ -2024,7 +1815,7 @@ static void CL_InitLocal(void)
 
     CL_RegisterInput();
     CL_InitDemos();
-    CL_InitDownloads();
+    //CL_InitDownloads();
 
     Cmd_Register(c_client);
 
@@ -2036,20 +1827,6 @@ static void CL_InitLocal(void)
     //
     // register our variables
     //
-    cl_gun = Cvar_Get("cl_gun", "1", 0);
-    cl_gun->changed = cl_gun_changed;
-    cl_gunalpha = Cvar_Get("cl_gunalpha", "1", 0);
-    cl_gunfov = Cvar_Get("cl_gunfov", "90", 0);
-    cl_gun_x = Cvar_Get("cl_gun_x", "0", 0);
-    cl_gun_y = Cvar_Get("cl_gun_y", "0", 0);
-    cl_gun_z = Cvar_Get("cl_gun_z", "0", 0);
-    cl_footsteps = Cvar_Get("cl_footsteps", "1", 0);
-    cl_footsteps->changed = cl_footsteps_changed;
-    cl_noskins = Cvar_Get("cl_noskins", "0", 0);
-    cl_noskins->changed = cl_noskins_changed;
-    cl_predict = Cvar_Get("cl_predict", "1", 0);
-    cl_predict->changed = cl_predict_changed;
-    cl_kickangles = Cvar_Get("cl_kickangles", "1", CVAR_CHEAT);
     cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
     cl_maxfps = Cvar_Get("cl_maxfps", "62", 0);
     cl_maxfps->changed = cl_sync_changed;
@@ -2058,10 +1835,6 @@ static void CL_InitLocal(void)
     r_maxfps = Cvar_Get("r_maxfps", "0", 0);
     r_maxfps->changed = cl_sync_changed;
     cl_autopause = Cvar_Get("cl_autopause", "1", 0);
-    cl_rollhack = Cvar_Get("cl_rollhack", "1", 0);
-    cl_noglow = Cvar_Get("cl_noglow", "0", 0);
-    cl_nobob = Cvar_Get("cl_nobob", "0", 0);
-    cl_nolerp = Cvar_Get("cl_nolerp", "0", 0);
 
     // hack for timedemo
     com_timedemo->changed = cl_sync_changed;
@@ -2081,45 +1854,20 @@ static void CL_InitLocal(void)
     rcon_address = Cvar_Get("rcon_address", "", CVAR_PRIVATE);
     rcon_address->generator = Com_Address_g;
 
-    cl_thirdperson = Cvar_Get("cl_thirdperson", "0", CVAR_CHEAT);
-    cl_thirdperson_angle = Cvar_Get("cl_thirdperson_angle", "0", 0);
-    cl_thirdperson_range = Cvar_Get("cl_thirdperson_range", "60", 0);
-
-    cl_disable_particles = Cvar_Get("cl_disable_particles", "0", 0);
-    cl_disable_explosions = Cvar_Get("cl_disable_explosions", "0", 0);
-    cl_dlight_hacks = Cvar_Get("cl_dlight_hacks", "0", 0);
-    cl_smooth_explosions = Cvar_Get("cl_smooth_explosions", "1", 0);
-
-    cl_gibs = Cvar_Get("cl_gibs", "1", 0);
-    cl_gibs->changed = cl_gibs_changed;
-
-    cl_flares = Cvar_Get("cl_flares", "1", 0);
-    cl_flares->changed = cl_flares_changed;
-
 #if USE_FPS
     cl_updaterate = Cvar_Get("cl_updaterate", "0", 0);
     cl_updaterate->changed = cl_updaterate_changed;
 #endif
 
-    cl_chat_notify = Cvar_Get("cl_chat_notify", "1", 0);
-    cl_chat_sound = Cvar_Get("cl_chat_sound", "1", 0);
-    cl_chat_sound->changed = cl_chat_sound_changed;
-    cl_chat_sound_changed(cl_chat_sound);
-    cl_chat_filter = Cvar_Get("cl_chat_filter", "0", 0);
-
     cl_disconnectcmd = Cvar_Get("cl_disconnectcmd", "", 0);
     cl_changemapcmd = Cvar_Get("cl_changemapcmd", "", 0);
     cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
 
-    cl_ignore_stufftext = Cvar_Get("cl_ignore_stufftext", "0", 0);
     cl_allow_vid_restart = Cvar_Get("cl_allow_vid_restart", "0", 0);
 
     cl_protocol = Cvar_Get("cl_protocol", "0", 0);
 
     gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
-
-    cl_vwep = Cvar_Get("cl_vwep", "1", CVAR_ARCHIVE);
-    cl_vwep->changed = cl_vwep_changed;
 
     allow_download->changed = cl_allow_download_changed;
     cl_allow_download_changed(allow_download);
@@ -2134,7 +1882,7 @@ static void CL_InitLocal(void)
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_hand->changed = info_hand_changed;
+    //info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = false; // clear this so we know when user sets it manually
@@ -2235,7 +1983,7 @@ static void CL_SetClientTime(void)
         return;
     }
 
-    prevtime = cl.servertime - CL_FRAMETIME;
+    prevtime = cl.servertime - BASE_FRAMETIME;
     if (cl.time > cl.servertime) {
         SHOWCLAMP(2, "high clamp %i\n", cl.time - cl.servertime);
         cl.time = cl.servertime;
@@ -2245,7 +1993,7 @@ static void CL_SetClientTime(void)
         cl.time = prevtime;
         cl.lerpfrac = 0;
     } else {
-        cl.lerpfrac = (cl.time - prevtime) * CL_1_FRAMETIME;
+        cl.lerpfrac = (cl.time - prevtime) * BASE_1_FRAMETIME;
     }
 
     SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
@@ -2594,9 +2342,6 @@ unsigned CL_Frame(unsigned msec)
     // send pending cmds
     CL_SendCmd();
 
-    // predict all unacknowledged movements
-    CL_PredictMovement();
-
     SCR_RunCinematic();
 
     UI_Frame(main_extra);
@@ -2619,10 +2364,6 @@ unsigned CL_Frame(unsigned msec)
         R_FRAMES++;
 
         // update audio after the 3D view was drawn
-        S_Update();
-    } else if (sync_mode == SYNC_SLEEP_10) {
-        // force audio and effects update if not rendering
-        CL_CalcViewValues();
         S_Update();
     }
 

@@ -39,25 +39,16 @@ client_src = [
   'src/client/cgame.c',
   'src/client/console.c',
   'src/client/demo.c',
-  'src/client/download.c',
-  'src/client/effects.c',
-  'src/client/entities.c',
+  #'src/client/download.c',
   'src/client/input.c',
   'src/client/keys.c',
-  'src/client/locs.c',
   'src/client/main.c',
-  'src/client/newfx.c',
   'src/client/parse.c',
-  'src/client/precache.c',
-  'src/client/predict.c',
   'src/client/refresh.c',
   'src/client/screen.c',
   'src/client/sound/main.c',
   'src/client/sound/mem.c',
-  'src/client/tent.c',
-  'src/client/view.c',
   'src/common/async.c',
-  'src/game/p_move.c',
   'src/server/commands.c',
   'src/server/entities.c',
   'src/server/game.c',
@@ -67,7 +58,6 @@ client_src = [
   'src/server/send.c',
   'src/server/user.c',
   'src/server/world.c',
-  'src/shared/m_flash.c',
 ]
 
 ui_src = [
@@ -117,6 +107,21 @@ game_src = files(
 )
 
 subdir('src/game')
+
+cgame_src = files(
+  'src/cgame/cg_effects.c',
+  'src/cgame/cg_entities.c',
+  'src/cgame/cg_events.c',
+  'src/cgame/cg_main.c',
+  'src/cgame/cg_precache.c',
+  'src/cgame/cg_predict.c',
+  'src/cgame/cg_screen.c',
+  'src/cgame/cg_servercmds.c',
+  'src/cgame/cg_view.c',
+  'src/game/p_move.c',
+  'src/shared/m_flash.c',
+  'src/shared/shared.c',
+)
 
 cc = meson.get_compiler('c')
 
@@ -255,7 +260,7 @@ endif
 common_deps = [zlib]
 client_deps = [png, curl, sdl2]
 server_deps = []
-game_deps = [zlib]
+game_deps = []
 
 jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
@@ -373,6 +378,17 @@ executable('q2proded', common_src, server_src,
   link_args:             exe_link_args,
   c_args:                ['-DUSE_SERVER=1', engine_args],
   install:               system_wide,
+)
+
+shared_library('cgame' + cpu, cgame_src,
+  name_prefix:           '',
+  dependencies:          game_deps,
+  include_directories:   'inc',
+  gnu_symbol_visibility: 'hidden',
+  link_args:             dll_link_args,
+  install:               system_wide,
+  install_dir:           libdir / get_option('base-game'),
+  override_options:      get_option('game-build-options'),
 )
 
 shared_library('game' + cpu, game_src,

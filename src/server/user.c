@@ -165,11 +165,8 @@ This will be sent on the initial connection and upon each server load.
 */
 void SV_New_f(void)
 {
-    clstate_t oldstate;
-
     Com_DPrintf("New() from %s\n", sv_client->name);
 
-    oldstate = sv_client->state;
     if (sv_client->state < cs_connected) {
         Com_DPrintf("Going from cs_assigned to cs_connected for %s\n",
                     sv_client->name);
@@ -479,7 +476,6 @@ static void SV_StopDownload_f(void)
     Com_DPrintf("Download of %s to %s stopped by user request\n",
                 sv_client->downloadname, sv_client->name);
     SV_CloseDownload(sv_client);
-    SV_AlignKeyFrames(sv_client);
 }
 
 //============================================================================
@@ -542,7 +538,6 @@ static void SV_ShowMiscInfo_f(void)
 static void SV_NoGameData_f(void)
 {
     sv_client->nodata ^= 1;
-    SV_AlignKeyFrames(sv_client);
 }
 
 static void SV_Lag_f(void)
@@ -623,7 +618,6 @@ SV_ExecuteUserCommand
 static void SV_ExecuteUserCommand(const char *s)
 {
     const ucmd_t *u;
-    filtercmd_t *filter;
     char *c;
 
     Cmd_TokenizeString(s, false);
@@ -1013,10 +1007,6 @@ void SV_ExecuteClientMessage(client_t *client)
 
         case clc_stringcmd:
             SV_ParseClientCommand();
-            break;
-
-        case clc_setting:
-            SV_ParseClientSetting();
             break;
 
         case clc_userinfo_delta:

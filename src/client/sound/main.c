@@ -685,7 +685,7 @@ void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float atte
     if (s_numloopsounds >= q_countof(s_loopsounds))
         return;
 
-    loopsound_t *loop = s_loopsounds[s_numloopsounds++];
+    loopsound_t *loop = &s_loopsounds[s_numloopsounds++];
     loop->entnum = entnum;
     loop->sfx = sfx;
     loop->volume = volume;

@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static vm_module_t      game;
 const game_export_t     *ge;
 
-static void PF_SendClientCommand(edict_t *ent, const char *str, bool reliable)
+static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
 {
     client_t *client = NULL;
     int flags = reliable ? MSG_RELIABLE : 0;
@@ -33,13 +33,13 @@ static void PF_SendClientCommand(edict_t *ent, const char *str, bool reliable)
         int clientNum = SV_NumForEdict(ent);
         if (clientNum < 0 || clientNum >= svs.maxclients) {
             Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
-            return NULL;
+            return;
         }
 
         client = svs.client_pool + clientNum;
         if (client->state <= cs_zombie) {
             Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
-            return NULL;
+            return;
         }
     }
 

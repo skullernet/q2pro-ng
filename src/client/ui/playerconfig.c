@@ -39,6 +39,7 @@ typedef struct {
 
     refdef_t    refdef;
     entity_t    entities[2];
+    int         num_entities;
 
     unsigned    time;
     unsigned    oldTime;
@@ -61,14 +62,14 @@ static void ReloadMedia(void)
     char *model = uis.pmi[m_player.model.curvalue].directory;
     char *skin = uis.pmi[m_player.model.curvalue].skindisplaynames[m_player.skin.curvalue];
 
-    m_player.refdef.num_entities = 0;
+    m_player.num_entities = 0;
 
     Q_concat(scratch, sizeof(scratch), "players/", model, "/tris.md2");
     m_player.entities[0].model = R_RegisterModel(scratch);
     if (!m_player.entities[0].model)
         return;
 
-    m_player.refdef.num_entities++;
+    m_player.num_entities++;
 
     Q_concat(scratch, sizeof(scratch), "players/", model, "/", skin, ".pcx");
     m_player.entities[0].skin = R_RegisterSkin(scratch);
@@ -81,7 +82,7 @@ static void ReloadMedia(void)
     if (!m_player.entities[1].model)
         return;
 
-    m_player.refdef.num_entities++;
+    m_player.num_entities++;
 }
 
 static void RunFrame(void)
@@ -99,7 +100,7 @@ static void RunFrame(void)
 
         frame = (m_player.time / 120) % 40;
 
-        for (i = 0; i < m_player.refdef.num_entities; i++) {
+        for (i = 0; i < m_player.num_entities; i++) {
             m_player.entities[i].oldframe = m_player.entities[i].frame;
             m_player.entities[i].frame = frame;
         }
@@ -110,6 +111,8 @@ static void Draw(menuFrameWork_t *self)
 {
     float backlerp;
     int i;
+
+    R_ClearScene();
 
     m_player.refdef.time = uis.realtime * 0.001f;
 
@@ -122,8 +125,9 @@ static void Draw(menuFrameWork_t *self)
                    (float)(m_player.time - m_player.oldTime);
     }
 
-    for (i = 0; i < m_player.refdef.num_entities; i++) {
+    for (i = 0; i < m_player.num_entities; i++) {
         m_player.entities[i].backlerp = backlerp;
+        R_AddEntity(&m_player.entities[i]);
     }
 
     Menu_Draw(self);
@@ -321,8 +325,6 @@ void M_Menu_PlayerConfig(void)
     VectorCopy(origin, m_player.entities[1].origin);
     VectorCopy(origin, m_player.entities[1].oldorigin);
 
-    m_player.refdef.num_entities = 0;
-    m_player.refdef.entities = m_player.entities;
     m_player.refdef.rdflags = RDF_NOWORLDMODEL;
 
     m_player.name.generic.type = MTYPE_FIELD;

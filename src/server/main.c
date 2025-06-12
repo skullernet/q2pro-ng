@@ -711,7 +711,6 @@ static bool permit_connection(conn_params_t *p)
 static bool parse_userinfo(conn_params_t *params, char *userinfo)
 {
     char *info, *s;
-    cvarban_t *ban;
 
     // validate userinfo
     info = Cmd_Argv(4);
@@ -763,11 +762,10 @@ static client_t *redirect(const char *addr)
     // set up a fake server netchan
     MSG_WriteLong(1);
     MSG_WriteLong(0);
-    MSG_WriteByte(svc_print);
-    MSG_WriteByte(PRINT_HIGH);
-    MSG_WriteString(va("Server is full. Redirecting you to %s...\n", addr));
-    MSG_WriteByte(svc_stufftext);
-    MSG_WriteString(va("connect %s\n", addr));
+    MSG_WriteByte(svc_stringcmd);
+    MSG_WriteString(va("print Server is full. Redirecting you to %s...\n", addr));
+    MSG_WriteByte(svc_stringcmd);
+    MSG_WriteString(va("stuff connect %s\n", addr));
 
     NET_SendPacket(NS_SERVER, msg_write.data, msg_write.cursize, &net_from);
     SZ_Clear(&msg_write);
@@ -1962,9 +1960,8 @@ static void SV_FinalMessage(const char *message, error_type_t type)
         return;
 
     if (message) {
-        MSG_WriteByte(svc_print);
-        MSG_WriteByte(PRINT_HIGH);
-        MSG_WriteString(message);
+        MSG_WriteByte(svc_stringcmd);
+        MSG_WriteString(va("print %s", message));
     }
 
     if (type == ERR_RECONNECT)

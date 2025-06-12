@@ -48,7 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
-typedef int qhandle_t;
+typedef unsigned int qhandle_t;
 
 // angle indexes
 #define PITCH               0       // up / down
@@ -266,6 +266,7 @@ vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
 void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
 void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
+float V_CalcFov(float fov_x, float width, float height);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {

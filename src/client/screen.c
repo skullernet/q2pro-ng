@@ -109,8 +109,8 @@ static void SCR_DrawDebugGraph(void)
     if (height < 1)
         return;
 
-    w = scr.hud_width;
-    y = scr.hud_height;
+    w = r_config.width;
+    y = r_config.height;
 
     for (a = 0; a < w; a++) {
         i = (graph.current - 1 - a) & GRAPH_MASK;
@@ -129,7 +129,8 @@ void SCR_ModeChanged(void)
     IN_Activate();
     Con_CheckResize();
     UI_ModeChanged();
-    cge->ModeChanged();
+    if (cge)
+        cge->ModeChanged();
     cls.disable_screen = 0;
 }
 
@@ -181,7 +182,7 @@ void SCR_BeginLoadingPlaque(void)
         return;
     }
 
-    scr.draw_loading = true;
+    cls.draw_loading = true;
     SCR_UpdateScreen();
 
     cls.disable_screen = Sys_Milliseconds();
@@ -201,6 +202,31 @@ void SCR_EndLoadingPlaque(void)
     Con_ClearNotify_f();
 }
 
+static void SCR_DrawLoading(void)
+{
+    int x, y, w, h;
+    qhandle_t pic;
+    float scale;
+
+    if (!cls.draw_loading)
+        return;
+
+    cls.draw_loading = false;
+
+    pic = R_RegisterPic("loading");
+    scale = R_ClampScale(NULL);
+
+    R_SetScale(scale);
+
+    R_GetPicSize(&w, &h, pic);
+    x = (r_config.width * scale - w) / 2;
+    y = (r_config.height * scale - h) / 2;
+
+    R_DrawPic(x, y, pic);
+
+    R_SetScale(1.0f);
+}
+
 static void SCR_DrawActive(void)
 {
     // if full screen menu is up, do nothing at all
@@ -218,7 +244,7 @@ static void SCR_DrawActive(void)
         return;
     }
 
-    cge->DrawFrame();
+    cge->DrawActiveFrame();
 }
 
 /*
