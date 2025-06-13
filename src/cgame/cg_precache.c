@@ -419,6 +419,11 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
+    if (index == CS_STATUSBAR) {
+        trap_GetConfigstring(index, cg.statusbar, sizeof(cg.statusbar));
+        return;
+    }
+
     if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
         CG_SetLightStyle(index - CS_LIGHTS, s);
         return;

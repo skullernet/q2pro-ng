@@ -121,6 +121,7 @@ static void VM_UpdateCvar(vm_cvar_t *var, const cvar_t *cv)
 {
     var->integer = cv->integer;
     var->value = cv->value;
+    var->modified = true;
     Q_strlcpy(var->string, cv->string, sizeof(var->string));
 }
 

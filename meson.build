@@ -109,6 +109,7 @@ game_src = files(
 subdir('src/game')
 
 cgame_src = files(
+  'src/cgame/cg_consolecmds.c',
   'src/cgame/cg_effects.c',
   'src/cgame/cg_entities.c',
   'src/cgame/cg_events.c',

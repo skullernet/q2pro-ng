@@ -69,6 +69,8 @@ typedef struct {
                                 qhandle_t hmodel, contents_t contentmask,
                                 const vec3_t origin, const vec3_t angles);
 
+    void (*ClipEntity)(trace_t *dst, const trace_t *src, int entnum);
+
     contents_t (*PointContents)(const vec3_t point, qhandle_t hmodel);
     contents_t (*TransformedPointContents)(const vec3_t point, qhandle_t hmodel,
                                            const vec3_t origin, const vec3_t angles);
@@ -112,6 +114,7 @@ typedef struct {
 
     size_t  (*Key_KeynumToString)(int keynum, char *buf, size_t size);
     int     (*Key_StringToKeynum)(const char *str);
+    size_t  (*Key_GetBinding)(const char *binding, char *buf, size_t size);
     void    (*Key_SetBinding)(int keynum, const char *binding);
     int     (*Key_EnumBindings)(int keynum, const char *binding);
 
@@ -120,6 +123,9 @@ typedef struct {
     qhandle_t (*R_RegisterFont)(const char *name);
     qhandle_t (*R_RegisterSkin)(const char *name);
     qhandle_t (*R_RegisterSprite)(const char *name);
+
+    void    (*R_GetConfig)(refcfg_t *cfg);
+    float   (*R_GetAutoScale)(void);
 
     void    (*R_SetSky)(const char *name, float rotate, bool autorotate, const vec3_t axis);
 
@@ -142,6 +148,7 @@ typedef struct {
     void    (*R_DrawPic)(int x, int y, qhandle_t pic);
     void    (*R_DrawStretchPic)(int x, int y, int w, int h, qhandle_t pic);
     void    (*R_DrawKeepAspectPic)(int x, int y, int w, int h, qhandle_t pic);
+    void    (*R_TileClear)(int x, int y, int w, int h, qhandle_t pic);
     void    (*R_DrawFill8)(int x, int y, int w, int h, int c);
     void    (*R_DrawFill32)(int x, int y, int w, int h, uint32_t color);
 

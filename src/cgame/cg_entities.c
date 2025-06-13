@@ -143,8 +143,8 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
 
 static inline bool entity_is_new(const centity_t *ent)
 {
-    if (!cg.oldframe.valid)
-        return true;    // last received frame was invalid
+    //if (!cg.oldframe.valid)
+    //    return true;    // last received frame was invalid
 
     if (ent->serverframe != cg.oldframe.number)
         return true;    // wasn't in last received frame
@@ -211,7 +211,7 @@ static void parse_entity_update(const entity_state_t *state)
 static void set_active_state(void)
 {
     // initialize oldframe so lerping doesn't hurt anything
-    cg.oldframe.valid = false;
+    //cg.oldframe.valid = false;
     cg.oldframe.ps = cg.frame.ps;
 
     if (!cgs.demoplayback) {
@@ -240,24 +240,17 @@ static void check_player_lerp(void)
     ops = &cg.oldframe.ps;
 
     // no lerping if player entity was teleported (origin check)
-    if (abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 * 8 ||
-        abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 * 8 ||
-        abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256 * 8) {
+    if (fabsf(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
+        fabsf(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 ||
+        fabsf(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256) {
         goto dup;
     }
 
     // no lerping if player entity was teleported (event check)
     ent = &cl_entities[ps->clientnum];
-    if (ent->serverframe > oldnum &&
-        ent->serverframe <= frame->number &&
-#if USE_FPS
-        ent->event_frame > oldnum &&
-        ent->event_frame <= frame->number &&
-#endif
-        (ent->current.event[0] == EV_PLAYER_TELEPORT
-         || ent->current.event[0] == EV_OTHER_TELEPORT)) {
+    if (ent->current.event[0] == EV_PLAYER_TELEPORT ||
+        ent->current.event[0] == EV_OTHER_TELEPORT)
         goto dup;
-    }
 
     // no lerping if teleport bit was flipped
     if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
@@ -291,8 +284,8 @@ void CG_DeltaFrame(void)
     int         i, framenum;
 
     // getting a valid frame message ends the connection process
-    if (cgs.state == ca_precached)
-        set_active_state();
+    //if (cgs.state == ca_precached)
+    //    set_active_state();
 
     // set server time
     framenum = cg.frame.number - cg.serverdelta;
@@ -1330,7 +1323,7 @@ static void CG_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         trap_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                  ent->current.modelindex, contentmask, org, ang);
 
-        CM_ClipEntity(tr, &trace, ent->current.number);
+        trap_ClipEntity(tr, &trace, ent->current.number);
     }
 }
 
@@ -1529,7 +1522,9 @@ void CG_CalcViewValues(void)
 
     VectorAdd(cg.refdef.vieworg, viewoffset, cg.refdef.vieworg);
 
-    trap_S_UpdateListener(cg.frame.ps.clientnum, cg.refdef.vieworg, cg.viewaxis, cg.frame.ps.rdflags & RDF_UNDERWATER);
+    vec3_t axis[3];
+    AnglesToAxis(cg.refdef.viewangles, axis);
+    trap_S_UpdateListener(cg.frame.ps.clientnum, cg.refdef.vieworg, axis, cg.frame.ps.rdflags & RDF_UNDERWATER);
 }
 
 /*

@@ -635,6 +635,10 @@ VM_THUNK(acosf) {
     VM_F32(0) = acosf(VM_F32(0));
 }
 
+VM_THUNK(atanf) {
+    VM_F32(0) = atanf(VM_F32(0));
+}
+
 VM_THUNK(atan2f) {
     VM_F32(0) = atan2f(VM_F32(0), VM_F32(1));
 }
@@ -718,6 +722,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT_RAW(tanf, "f f"),
     VM_IMPORT_RAW(asinf, "f f"),
     VM_IMPORT_RAW(acosf, "f f"),
+    VM_IMPORT_RAW(atanf, "f f"),
     VM_IMPORT_RAW(atan2f, "f ff"),
     VM_IMPORT_RAW(memcmp, "i iii"),
 

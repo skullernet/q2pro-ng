@@ -37,7 +37,9 @@ static const mnode_t *CL_ClipHandleToNode(unsigned index, bool world)
 
 static void PF_Print(print_type_t type, const char *msg)
 {
-    Com_LPrintf(type, "%s", msg);
+    Con_SkipNotify(type & PRINT_SKIPNOTIFY);
+    Com_LPrintf(type & ~PRINT_SKIPNOTIFY, "%s", msg);
+    Con_SkipNotify(false);
 }
 
 static q_noreturn void PF_Error(const char *msg)
@@ -106,6 +108,16 @@ static void PF_AddCommandString(const char *string)
     Cbuf_AddText(&cmd_buffer, string);
 }
 
+static size_t PF_Key_KeynumToString(int keynum, char *buf, size_t size)
+{
+    return Q_strlcpy(buf, Key_KeynumToString(keynum), size);
+}
+
+static size_t PF_Key_GetBinding(const char *binding, char *buf, size_t size)
+{
+    return Q_strlcpy(buf, Key_GetBinding(binding), size);
+}
+
 static bool PF_GetSurfaceInfo(unsigned surf_id, surface_info_t *info)
 {
     return BSP_SurfaceInfo(cl.bsp, surf_id, info);
@@ -132,6 +144,16 @@ static int PF_CloseFile(qhandle_t f)
 static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
 {
     return 0;
+}
+
+static void PF_R_GetConfig(refcfg_t *cfg)
+{
+    *cfg = r_config;
+}
+
+static float PF_R_GetAutoScale(void)
+{
+    return R_ClampScale(NULL);
 }
 
 static void PF_GetUsercmdNumber(unsigned *ack_p, unsigned *cur_p)
@@ -190,9 +212,9 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     return true;
 }
 
-static bool trap_GetDemoInfo(cg_demo_info_t *info)
+static bool PF_GetDemoInfo(cg_demo_info_t *info)
 {
-    if (!cgs.demo.playback)
+    if (!cls.demo.playback)
         return false;
     if (!info)
         return true;
@@ -320,6 +342,10 @@ VM_THUNK(acosf) {
     VM_F32(0) = acosf(VM_F32(0));
 }
 
+VM_THUNK(atanf) {
+    VM_F32(0) = atanf(VM_F32(0));
+}
+
 VM_THUNK(atan2f) {
     VM_F32(0) = atan2f(VM_F32(0), VM_F32(1));
 }
@@ -366,6 +392,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT_RAW(tanf, "f f"),
     VM_IMPORT_RAW(asinf, "f f"),
     VM_IMPORT_RAW(acosf, "f f"),
+    VM_IMPORT_RAW(atanf, "f f"),
     VM_IMPORT_RAW(atan2f, "f ff"),
     VM_IMPORT_RAW(memcmp, "i iii"),
 
@@ -441,6 +468,7 @@ static const cgame_import_t cgame_dll_imports = {
 
     .BoxTrace = PF_BoxTrace,
     .TransformedBoxTrace = PF_TransformedBoxTrace,
+    .ClipEntity = CM_ClipEntity,
     .PointContents = PF_PointContents,
     .TransformedPointContents = PF_TransformedPointContents,
     .TempBoxModel = PF_TempBoxModel,
@@ -453,6 +481,8 @@ static const cgame_import_t cgame_dll_imports = {
 
     .GetServerFrameNumber = PF_GetServerFrameNumber,
     .GetServerFrame = PF_GetServerFrame,
+
+    .GetDemoInfo = PF_GetDemoInfo,
 
     .RealTime = Com_RealTime,
     .LocalTime = Com_LocalTime,
@@ -468,6 +498,21 @@ static const cgame_import_t cgame_dll_imports = {
     .Argv = Cmd_ArgvBuffer,
     .Args = Cmd_RawArgsBuffer,
     .AddCommandString = PF_AddCommandString,
+
+    .Key_GetOverstrikeMode = Key_GetOverstrikeMode,
+    .Key_SetOverstrikeMode = Key_SetOverstrikeMode,
+    .Key_GetDest = Key_GetDest,
+    .Key_SetDest = Key_SetDest,
+
+    .Key_IsDown = Key_IsDown,
+    .Key_AnyKeyDown = Key_AnyKeyDown,
+    .Key_ClearStates = Key_ClearStates,
+
+    .Key_KeynumToString = PF_Key_KeynumToString,
+    .Key_StringToKeynum = Key_StringToKeynum,
+    .Key_GetBinding = PF_Key_GetBinding,
+    .Key_SetBinding = Key_SetBinding,
+    .Key_EnumBindings = Key_EnumBindings,
 
     .S_RegisterSound = S_RegisterSound,
     .S_StartSound = S_StartSound,
@@ -495,6 +540,9 @@ static const cgame_import_t cgame_dll_imports = {
     .R_RegisterSkin = R_RegisterSkin,
     .R_RegisterSprite = R_RegisterSprite,
 
+    .R_GetConfig = PF_R_GetConfig,
+    .R_GetAutoScale = PF_R_GetAutoScale,
+
     .R_SetSky = R_SetSky,
 
     .R_ClearScene = R_ClearScene,
@@ -515,6 +563,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_DrawPic = R_DrawPic,
     .R_DrawStretchPic = R_DrawStretchPic,
     .R_DrawKeepAspectPic = R_DrawKeepAspectPic,
+    .R_TileClear = R_TileClear,
     .R_DrawFill8 = R_DrawFill8,
     .R_DrawFill32 = R_DrawFill32,
 

@@ -29,6 +29,8 @@ void *memchr(const void *s, int c, size_t n);
 int sprintf(char *dst, const char *fmt, ...);
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
 
+int sscanf(const char *str, const char *fmt, ...);
+
 void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 
 void *memcpy(void *dst, const void *src, size_t n);
@@ -43,11 +45,14 @@ int abs(int i);
 double fabs(double f);
 double copysign(double x, double y);
 float fabsf(float f);
+float fmodf(float x, float y);
 float sinf(float f);
 float cosf(float f);
 float tanf(float f);
-float atan2f(float y, float x);
+float asinf(float f);
 float acosf(float f);
+float atanf(float f);
+float atan2f(float y, float x);
 float sqrtf(float f);
 float floorf(float f);
 float ceilf(float f);

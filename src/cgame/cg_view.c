@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static void V_SetLightLevel(void)
 {
+#if 0
     vec3_t shadelight;
 
     // save off light value for server to look at (BIG HACK!)
@@ -43,6 +44,7 @@ static void V_SetLightLevel(void)
             cg.lightlevel = 150.0f * shadelight[2];
         }
     }
+#endif
 }
 
 /*
@@ -95,80 +97,3 @@ void V_RenderView(void)
     V_SetLightLevel();
 }
 
-
-/*
-=============
-V_Viewpos_f
-=============
-*/
-static void V_Viewpos_f(void)
-{
-    Com_Printf("%s : %.f\n", vtos(cg.refdef.vieworg), cg.refdef.viewangles[YAW]);
-}
-
-/*
-=============
-V_Fog_f
-=============
-*/
-static void dump_fog(const player_fog_t *fog)
-{
-    Com_Printf("(%.3f %.3f %.3f) %f %f\n",
-               fog->color[0], fog->color[1], fog->color[2],
-               fog->density, fog->sky_factor);
-}
-
-static void dump_heightfog(const player_heightfog_t *fog)
-{
-    Com_Printf("Start  : (%.3f %.3f %.3f) %.f\n",
-               fog->start.color[0], fog->start.color[1], fog->start.color[2], fog->start.dist);
-    Com_Printf("End    : (%.3f %.3f %.3f) %.f\n",
-               fog->end.color[0], fog->end.color[1], fog->end.color[2], fog->end.dist);
-    Com_Printf("Density: %f\n", fog->density);
-    Com_Printf("Falloff: %f\n", fog->falloff);
-}
-
-static void V_Fog_f(void)
-{
-    int argc = trap_Argc();
-    float args[5];
-
-    if (argc == 1) {
-        if (cg.custom_fog.density || cg.custom_fog.sky_factor) {
-            Com_Printf("User set global fog:\n");
-            dump_fog(&cg.custom_fog);
-            return;
-        }
-        if (cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor) {
-            Com_Printf("Global fog:\n");
-            dump_fog(&cg.frame.ps.fog);
-        }
-        if (cg.frame.ps.heightfog.density) {
-            Com_Printf("Height fog:\n");
-            dump_heightfog(&cg.frame.ps.heightfog);
-        }
-        if (!(cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor || cg.frame.ps.heightfog.density))
-            Com_Printf("No fog.\n");
-        return;
-    }
-
-    if (argc < 5) {
-        Com_Printf("Usage: fog <r g b density> [sky_factor]\n");
-        return;
-    }
-
-    for (int i = 0; i < 5; i++) {
-        char buf[MAX_QPATH];
-        trap_Argv(i + 1, buf, sizeof(buf));
-        args[i] = Q_clipf(Q_atof(buf), 0, 1);
-    }
-
-    cg.custom_fog.color[0]   = args[0];
-    cg.custom_fog.color[1]   = args[1];
-    cg.custom_fog.color[2]   = args[2];
-    cg.custom_fog.density    = args[3];
-    cg.custom_fog.sky_factor = args[4];
-
-    cg.refdef.fog = cg.custom_fog;
-    cg.refdef.heightfog = (player_heightfog_t){ 0 };
-}

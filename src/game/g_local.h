@@ -1304,7 +1304,6 @@ void     G_UseTargets(edict_t *ent, edict_t *activator);
 void     G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global);
 void     G_SetMovedir(vec3_t angles, vec3_t movedir);
 float    vectoyaw(const vec3_t vec);
-void     vectoangles(const vec3_t value1, vec3_t angles);
 char    *etos(edict_t *ent);
 
 void     G_InitEdict(edict_t *e);

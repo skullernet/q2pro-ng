@@ -154,6 +154,7 @@ typedef struct {
     //
     // transient data from server
     //
+    char        statusbar[MAX_NET_STRING];
     char        layout[MAX_NET_STRING];     // general 2D overlay
     int         inventory[MAX_ITEMS];
 
@@ -252,16 +253,11 @@ extern vm_cvar_t    cl_nobob;
 extern vm_cvar_t    cl_nolerp;
 
 #if USE_DEBUG
-#define SHOWCLAMP(level, ...) \
-    do { if (cl_showclamp.integer >= level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
     do { if (cl_showmiss.integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 extern vm_cvar_t    cl_showmiss;
-extern vm_cvar_t    cl_showclamp;
 #else
-#define SHOWCLAMP(...)
 #define SHOWMISS(...)
 #endif
 
@@ -295,6 +291,7 @@ extern vm_cvar_t    cl_railcore_width;
 extern vm_cvar_t    cl_railspiral_color;
 extern vm_cvar_t    cl_railspiral_radius;
 
+extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
 
 extern vm_cvar_t    s_ambient;
@@ -302,16 +299,16 @@ extern vm_cvar_t    s_ambient;
 //
 // userinfo
 //
-extern vm_cvar_t info_password;
-extern vm_cvar_t info_spectator;
-extern vm_cvar_t info_name;
-extern vm_cvar_t info_skin;
-extern vm_cvar_t info_rate;
-extern vm_cvar_t info_fov;
-extern vm_cvar_t info_msg;
-extern vm_cvar_t info_hand;
-extern vm_cvar_t info_gender;
-extern vm_cvar_t info_uf;
+extern vm_cvar_t    info_password;
+extern vm_cvar_t    info_spectator;
+extern vm_cvar_t    info_name;
+extern vm_cvar_t    info_skin;
+extern vm_cvar_t    info_rate;
+extern vm_cvar_t    info_fov;
+extern vm_cvar_t    info_msg;
+extern vm_cvar_t    info_hand;
+extern vm_cvar_t    info_gender;
+extern vm_cvar_t    info_uf;
 
 //=============================================================================
 
@@ -327,6 +324,8 @@ static inline void CG_AdvanceValue(float *restrict val, float target, float spee
             *val = target;
     }
 }
+
+#define Com_SlowRand  Q_rand
 
 //
 // main.c
@@ -346,6 +345,7 @@ bool CG_FileExists(const char *name);
 void CG_RegisterSounds(void);
 void CG_RegisterBspModels(void);
 void CG_RegisterVWepModels(void);
+void CG_SetSky(void);
 void CG_PrepRefresh(void);
 void CG_UpdateConfigstring(unsigned index);
 
@@ -371,6 +371,7 @@ void CG_SetEntitySoundOrigin(const centity_t *ent);
 // view.c
 //
 
+void V_RenderView(void);
 
 
 //
@@ -536,7 +537,7 @@ extern vrect_t      scr_vrect;        // position of render window
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
-void    SCR_CenterPrint(bool typewrite);
+void    SCR_CenterPrint(const char *str, bool typewrite);
 void    SCR_ClearCenterPrints(void);
 void    SCR_RegisterMedia(void);
 void    SCR_ModeChanged(void);
@@ -551,6 +552,7 @@ void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
+void    CG_ModeChanged(void);
 void    CG_DrawActiveFrame(void);
 
 //

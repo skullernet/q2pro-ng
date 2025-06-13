@@ -95,3 +95,15 @@ typedef struct {
 typedef struct {
     int left, right, top, bottom;
 } clipRect_t;
+
+typedef enum {
+    QVF_FULLSCREEN      = BIT(0),
+    QVF_GAMMARAMP       = BIT(1),
+    QVF_VIDEOSYNC       = BIT(2),
+} vidFlags_t;
+
+typedef struct {
+    int         width;
+    int         height;
+    vidFlags_t  flags;
+} refcfg_t;

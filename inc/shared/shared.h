@@ -47,6 +47,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
+#define CONST_STR_LEN(x)    x, sizeof("" x) - 1
+
 typedef unsigned char byte;
 typedef unsigned int qhandle_t;
 
@@ -99,7 +101,7 @@ typedef enum {
     PRINT_WARNING,      // print in yellow color
     PRINT_ERROR,        // print in red color
     PRINT_NOTICE,       // print in cyan color
-    PRINT_NO_NOTIFY     = 16
+    PRINT_SKIPNOTIFY = 16
 } print_type_t;
 
 q_printf(2, 3)
@@ -276,6 +278,8 @@ extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 
 int DirToByte(const vec3_t dir);
 void ByteToDir(unsigned index, vec3_t dir);
+
+void vectoangles(const vec3_t value1, vec3_t angles);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {
@@ -649,6 +653,25 @@ char    *vtos(const vec3_t v);
 
 //=============================================
 
+#define CONCHAR_WIDTH  8
+#define CONCHAR_HEIGHT 8
+
+#define UI_LEFT             BIT(0)
+#define UI_RIGHT            BIT(1)
+#define UI_CENTER           (UI_LEFT | UI_RIGHT)
+#define UI_BOTTOM           BIT(2)
+#define UI_TOP              BIT(3)
+#define UI_MIDDLE           (UI_BOTTOM | UI_TOP)
+#define UI_DROPSHADOW       BIT(4)
+#define UI_ALTCOLOR         BIT(5)
+#define UI_IGNORECOLOR      BIT(6)
+#define UI_XORCOLOR         BIT(7)
+#define UI_AUTOWRAP         BIT(8)
+#define UI_MULTILINE        BIT(9)
+#define UI_DRAWCURSOR       BIT(10)
+
+//=============================================
+
 static inline uint16_t ShortSwap(uint16_t s)
 {
 #if q_has_builtin(__builtin_bswap16)
@@ -815,6 +838,15 @@ typedef struct {
     bool modified;
     char string[MAX_QPATH];     // for longer strings use trap_Cvar_VariableString
 } vm_cvar_t;
+
+typedef struct {
+    vm_cvar_t *var;
+    const char *name;
+    const char *default_string;
+    unsigned flags;
+} vm_cvar_reg_t;
+
+#define VM_CVAR(name, def, flags) { &name, #name, def, flags }
 
 /*
 ==========================================================
@@ -1084,7 +1116,7 @@ typedef struct {
     // callbacks to test the world
     trace_func_t    trace;
     clip_func_t     clip;
-    int             (*pointcontents)(const vec3_t point);
+    contents_t      (*pointcontents)(const vec3_t point);
 
     // [KEX] variables (in)
     vec3_t      viewoffset;

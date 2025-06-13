@@ -22,9 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "common/utils.h"
 
-#define CONCHAR_WIDTH  8
-#define CONCHAR_HEIGHT 8
-
 void CL_PreInit(void);
 
 void SCR_DebugGraph(float value, int color);
@@ -96,22 +93,6 @@ void SCR_EndLoadingPlaque(void);
 
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
-
-#define UI_LEFT             BIT(0)
-#define UI_RIGHT            BIT(1)
-#define UI_CENTER           (UI_LEFT | UI_RIGHT)
-#define UI_BOTTOM           BIT(2)
-#define UI_TOP              BIT(3)
-#define UI_MIDDLE           (UI_BOTTOM | UI_TOP)
-#define UI_DROPSHADOW       BIT(4)
-#define UI_ALTCOLOR         BIT(5)
-#define UI_IGNORECOLOR      BIT(6)
-#define UI_XORCOLOR         BIT(7)
-#define UI_AUTOWRAP         BIT(8)
-#define UI_MULTILINE        BIT(9)
-#define UI_DRAWCURSOR       BIT(10)
-
-float V_CalcFov(float fov_x, float width, float height);
 
 #else // USE_CLIENT
 

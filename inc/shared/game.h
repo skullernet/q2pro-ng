@@ -201,7 +201,7 @@ typedef struct {
     void (*ClientCommand)(edict_t *ent, const char *str, bool reliable);
 
     int (*DirToByte)(const vec3_t dir);
-    void (*ByteToDir)(int v, vec3_t dir);
+    void (*ByteToDir)(unsigned v, vec3_t dir);
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
 
     void (*LocateGameData)(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
