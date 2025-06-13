@@ -190,6 +190,18 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     return true;
 }
 
+static bool trap_GetDemoInfo(cg_demo_info_t *info)
+{
+    if (!cgs.demo.playback)
+        return false;
+    if (!info)
+        return true;
+    Q_strlcpy(info->name, cls.servername, sizeof(info->name));
+    info->progress = cls.demo.file_progress;
+    info->framenum = cls.demo.frames_read;
+    return true;
+}
+
 //==============================================
 
 VM_THUNK(Print) {
@@ -432,9 +444,6 @@ static const cgame_import_t cgame_dll_imports = {
     .PointContents = PF_PointContents,
     .TransformedPointContents = PF_TransformedPointContents,
     .TempBoxModel = PF_TempBoxModel,
-
-    .DirToByte = DirToByte,
-    .ByteToDir = ByteToDir,
 
     .GetSurfaceInfo = PF_GetSurfaceInfo,
     .GetBrushModelBounds = PF_GetBrushModelBounds,

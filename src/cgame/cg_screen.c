@@ -135,7 +135,6 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
     return R_DrawString(x, y, flags, maxlen, s, font);
 }
 
-
 /*
 ==============
 SCR_DrawStringMulti
@@ -206,13 +205,21 @@ DEMO BAR
 ===============================================================================
 */
 
-static void draw_progress_bar(float progress, bool paused, int framenum)
+static void SCR_DrawDemo(void)
 {
+    cg_demo_info_t info;
     char buffer[16];
     int x, w, h;
     size_t len;
 
-    w = Q_rint(scr.hud_width * progress);
+    if (!scr_demobar.integer)
+        return;
+    if (!cgs.demoplayback)
+        return;
+    if (!trap_GetDemoInfo(&info))
+        return;
+
+    w = Q_rint(scr.hud_width * info.progress);
     h = Q_rint(CONCHAR_HEIGHT / scr.hud_scale);
 
     scr.hud_height -= h;
@@ -225,42 +232,23 @@ static void draw_progress_bar(float progress, bool paused, int framenum)
     w = Q_rint(scr.hud_width * scr.hud_scale);
     h = Q_rint(scr.hud_height * scr.hud_scale);
 
-    len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", progress * 100);
+    len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", info.progress * 100);
     x = (w - len * CONCHAR_WIDTH) / 2;
     R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
 
-    if (scr_demobar->integer > 1) {
-        int sec = framenum / BASE_FRAMERATE;
+    if (scr_demobar.integer > 1) {
+        int sec = info.framenum / BASE_FRAMERATE;
+        int sub = info.framenum % BASE_FRAMERATE;
         int min = sec / 60; sec %= 60;
 
-        Q_scnprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, framenum % BASE_FRAMERATE);
+        Q_snprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, sub);
         R_DrawString(0, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
     }
 
-    if (paused) {
+    if (sv_paused.integer && cl_paused.integer && scr_showpause.integer == 2)
         SCR_DrawString(w, h, UI_RIGHT, "[PAUSED]");
-    }
 
     R_SetScale(1.0f);
-}
-
-static void SCR_DrawDemo(void)
-{
-    if (!scr_demobar->integer) {
-        return;
-    }
-
-    if (cgs.demo.playback) {
-        if (cgs.demo.file_size && !cgs.demo.compat) {
-            draw_progress_bar(
-                cgs.demo.file_progress,
-                sv_paused->integer &&
-                cl_paused->integer &&
-                scr_showpause->integer == 2,
-                cgs.demo.frames_read);
-        }
-        return;
-    }
 }
 
 /*
@@ -297,7 +285,7 @@ Called for important messages that should stay in the center of the screen
 for a few moments
 ==============
 */
-void SCR_CenterPrint(const char *str, bool typewrite)
+void SCR_CenterPrint(bool typewrite)
 {
     centerprint_t *cp;
     const char *s;
@@ -313,7 +301,7 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     }
 
     cp = &scr_centerprints[scr_centerhead & (MAX_CENTERPRINTS - 1)];
-    Q_strlcpy(cp->string, str, sizeof(cp->string));
+    trap_Args(cp->string, sizeof(cp->string));
 
     // count the number of lines for centering
     cp->lines = 1;
@@ -329,9 +317,9 @@ void SCR_CenterPrint(const char *str, bool typewrite)
 
     // for typewritten strings set minimum display time,
     // but no longer than 30 sec
-    if (typewrite && scr_printspeed->value > 0) {
+    if (typewrite && scr_printspeed.value > 0) {
         size_t nb_chars = strlen(cp->string) - cp->lines + 2;
-        cp->typewrite = min(nb_chars * 1000 / scr_printspeed->value + 300, 30000);
+        cp->typewrite = min(nb_chars * 1000 / scr_printspeed.value + 300, 30000);
     }
 
     // echo it to the console
@@ -350,7 +338,7 @@ static void SCR_DrawCenterString(void)
     float alpha;
     size_t maxlen;
 
-    if (!scr_centertime->integer) {
+    if (!scr_centertime.integer) {
         scr_centertail = scr_centerhead;
         return;
     }
@@ -361,19 +349,19 @@ static void SCR_DrawCenterString(void)
         cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
         if (!cp->start)
             cp->start = cgs.realtime;
-        alpha = SCR_FadeAlpha(cp->start, scr_centertime->integer + cp->typewrite, 300);
+        alpha = SCR_FadeAlpha(cp->start, scr_centertime.integer + cp->typewrite, 300);
         if (alpha > 0)
             break;
         scr_centertail++;
     }
 
-    R_SetAlpha(alpha * scr_alpha->value);
+    R_SetAlpha(alpha * scr_alpha.value);
 
     y = scr.hud_height / 4 - cp->lines * CONCHAR_HEIGHT / 2;
     flags = UI_CENTER;
 
     if (cp->typewrite) {
-        maxlen = scr_printspeed->value * 0.001f * (cgs.realtime - cp->start);
+        maxlen = scr_printspeed.value * 0.001f * (cgs.realtime - cp->start);
         flags |= UI_DROPSHADOW | UI_DRAWCURSOR;
     } else {
         maxlen = MAX_STRING_CHARS;
@@ -382,15 +370,15 @@ static void SCR_DrawCenterString(void)
     SCR_DrawStringMulti(scr.hud_width / 2, y, flags,
                         maxlen, cp->string, scr.font_pic);
 
-    R_SetAlpha(scr_alpha->value);
+    R_SetAlpha(scr_alpha.value);
 }
 
 static void scr_centertime_changed(cvar_t *self)
 {
-    if (self->value > 0)
-        self->integer = 1000 * Cvar_ClampValue(self, 1.0f, 30.0f);
+    if (self.value > 0)
+        self.integer = 1000 * Cvar_ClampValue(self, 1.0f, 30.0f);
     else
-        self->integer = 0;
+        self.integer = 0;
 }
 
 /*
@@ -481,8 +469,8 @@ static void SCR_LagDraw(int x, int y)
 
 static void SCR_DrawNet(void)
 {
-    int x = scr_lag_x->integer;
-    int y = scr_lag_y->integer;
+    int x = scr_lag_x.integer;
+    int y = scr_lag_y.integer;
 
     if (x < 0) {
         x += scr.hud_width - LAG_WIDTH + 1;
@@ -492,8 +480,8 @@ static void SCR_DrawNet(void)
     }
 
     // draw ping graph
-    if (scr_lag_draw->integer) {
-        if (scr_lag_draw->integer > 1) {
+    if (scr_lag_draw.integer) {
+        if (scr_lag_draw.integer > 1) {
             R_DrawFill8(x, y, LAG_WIDTH, LAG_HEIGHT, 4);
         }
         SCR_LagDraw(x, y);
@@ -553,13 +541,13 @@ static void SCR_DrawChatHUD(void)
     float alpha;
     chatline_t *line;
 
-    if (scr_chathud->integer == 0)
+    if (scr_chathud.integer == 0)
         return;
 
-    x = scr_chathud_x->integer;
-    y = scr_chathud_y->integer;
+    x = scr_chathud_x.integer;
+    y = scr_chathud_y.integer;
 
-    if (scr_chathud->integer == 2)
+    if (scr_chathud.integer == 2)
         flags = UI_ALTCOLOR;
     else
         flags = 0;
@@ -578,21 +566,21 @@ static void SCR_DrawChatHUD(void)
         step = CONCHAR_HEIGHT;
     }
 
-    lines = scr_chathud_lines->integer;
+    lines = scr_chathud_lines.integer;
     if (lines > scr_chathead)
         lines = scr_chathead;
 
     for (i = 0; i < lines; i++) {
         line = &scr_chatlines[(scr_chathead - i - 1) & CHAT_LINE_MASK];
 
-        if (scr_chathud_time->integer) {
-            alpha = SCR_FadeAlpha(line->time, scr_chathud_time->integer, 1000);
+        if (scr_chathud_time.integer) {
+            alpha = SCR_FadeAlpha(line->time, scr_chathud_time.integer, 1000);
             if (!alpha)
                 break;
 
-            R_SetAlpha(alpha * scr_alpha->value);
+            R_SetAlpha(alpha * scr_alpha.value);
             SCR_DrawString(x, y, flags, line->text);
-            R_SetAlpha(scr_alpha->value);
+            R_SetAlpha(scr_alpha.value);
         } else {
             SCR_DrawString(x, y, flags, line->text);
         }
@@ -600,114 +588,6 @@ static void SCR_DrawChatHUD(void)
         y += step;
     }
 }
-
-/*
-===============================================================================
-
-DEBUG STUFF
-
-===============================================================================
-*/
-
-static void SCR_DrawTurtle(void)
-{
-    int x, y;
-
-    if (scr_showturtle->integer <= 0)
-        return;
-
-    if (!cg.frameflags)
-        return;
-
-    x = CONCHAR_WIDTH;
-    y = scr.hud_height - 11 * CONCHAR_HEIGHT;
-
-#define DF(f) \
-    if (cg.frameflags & FF_##f) { \
-        SCR_DrawString(x, y, UI_ALTCOLOR, #f); \
-        y += CONCHAR_HEIGHT; \
-    }
-
-    if (scr_showturtle->integer > 1) {
-        DF(SUPPRESSED)
-    }
-    DF(CLIENTPRED)
-    if (scr_showturtle->integer > 1) {
-        DF(CLIENTDROP)
-        DF(SERVERDROP)
-    }
-    DF(BADFRAME)
-    DF(OLDFRAME)
-    DF(OLDENT)
-    DF(NODELTA)
-
-#undef DF
-}
-
-#if USE_DEBUG
-
-static void SCR_DrawDebugStats(void)
-{
-    char buffer[MAX_QPATH];
-    int i, j;
-    int x, y;
-
-    j = scr_showstats->integer;
-    if (j <= 0)
-        return;
-
-    if (j > MAX_STATS)
-        j = MAX_STATS;
-
-    x = CONCHAR_WIDTH;
-    y = (scr.hud_height - j * CONCHAR_HEIGHT) / 2;
-    for (i = 0; i < j; i++) {
-        Q_snprintf(buffer, sizeof(buffer), "%2d: %d", i, cg.frame.ps.stats[i]);
-        if (cg.oldframe.ps.stats[i] != cg.frame.ps.stats[i]) {
-            R_SetColor(U32_RED);
-        }
-        R_DrawString(x, y, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
-        R_ClearColor();
-        y += CONCHAR_HEIGHT;
-    }
-}
-
-static void SCR_DrawDebugPmove(void)
-{
-    static const char * const types[] = {
-        "NORMAL", "SPECTATOR", "DEAD", "GIB", "FREEZE"
-    };
-    static const char * const flags[] = {
-        "DUCKED", "JUMP_HELD", "ON_GROUND",
-        "TIME_WATERJUMP", "TIME_LAND", "TIME_TELEPORT",
-        "NO_PREDICTION", "TELEPORT_BIT"
-    };
-    unsigned i, j;
-    int x, y;
-
-    if (!scr_showpmove->integer)
-        return;
-
-    x = CONCHAR_WIDTH;
-    y = (scr.hud_height - 2 * CONCHAR_HEIGHT) / 2;
-
-    i = cg.frame.ps.pmove.pm_type;
-    if (i > PM_FREEZE)
-        i = PM_FREEZE;
-
-    R_DrawString(x, y, 0, MAX_STRING_CHARS, types[i], scr.font_pic);
-    y += CONCHAR_HEIGHT;
-
-    j = cg.frame.ps.pmove.pm_flags;
-    for (i = 0; i < 8; i++) {
-        if (j & (1 << i)) {
-            x = R_DrawString(x, y, 0, MAX_STRING_CHARS, flags[i], scr.font_pic);
-            x += CONCHAR_WIDTH;
-        }
-    }
-}
-
-#endif
 
 //============================================================================
 
@@ -735,7 +615,7 @@ Keybinding command
 */
 static void SCR_SizeUp_f(void)
 {
-    Cvar_SetInteger(scr_viewsize, scr_viewsize->integer + 10, FROM_CONSOLE);
+    Cvar_SetInteger(scr_viewsize, scr_viewsize.integer + 10, FROM_CONSOLE);
 }
 
 /*
@@ -747,7 +627,7 @@ Keybinding command
 */
 static void SCR_SizeDown_f(void)
 {
-    Cvar_SetInteger(scr_viewsize, scr_viewsize->integer - 10, FROM_CONSOLE);
+    Cvar_SetInteger(scr_viewsize, scr_viewsize.integer - 10, FROM_CONSOLE);
 }
 
 /*
@@ -817,7 +697,7 @@ static void ch_scale_changed(cvar_t *self)
 
 static void ch_color_changed(cvar_t *self)
 {
-    if (ch_health->integer) {
+    if (ch_health.integer) {
         SCR_SetCrosshairColor();
     } else {
         scr.crosshair_color.u8[0] = Cvar_ClampValue(ch_red, 0, 1) * 255;
@@ -829,8 +709,8 @@ static void ch_color_changed(cvar_t *self)
 
 static void scr_crosshair_changed(cvar_t *self)
 {
-    if (self->integer > 0) {
-        scr.crosshair_pic = R_RegisterPic(va("ch%i", self->integer));
+    if (self.integer > 0) {
+        scr.crosshair_pic = R_RegisterPic(va("ch%i", self.integer));
         ch_scale_changed(ch_scale);
     } else {
         scr.crosshair_pic = 0;
@@ -841,7 +721,7 @@ void SCR_SetCrosshairColor(void)
 {
     int health;
 
-    if (!ch_health->integer) {
+    if (!ch_health.integer) {
         return;
     }
 
@@ -1020,10 +900,7 @@ static void SCR_TileClear(void)
 {
     int top, bottom, left, right;
 
-    //if (con.currentHeight == 1)
-    //  return;     // full screen console
-
-    if (scr_viewsize->integer == 100)
+    if (scr_viewsize.integer == 100)
         return;     // full screen rendering
 
     top = scr_vrect.y;
@@ -1329,10 +1206,10 @@ static void SCR_ExecuteLayoutString(const char *s)
                     y == scr.hud_height / 2 - 120 &&
                     Com_WildCmp("scope?x", token))
                 {
-                    int w = 320 * ch_scale->value;
-                    int h = 240 * ch_scale->value;
-                    R_DrawStretchPic((scr.hud_width  - w) / 2 + ch_x->integer,
-                                     (scr.hud_height - h) / 2 + ch_y->integer,
+                    int w = 320 * ch_scale.value;
+                    int h = 240 * ch_scale.value;
+                    R_DrawStretchPic((scr.hud_width  - w) / 2 + ch_x.integer,
+                                     (scr.hud_height - h) / 2 + ch_y.integer,
                                      w, h, pic);
                 } else {
                     R_DrawPic(x, y, pic);
@@ -1577,7 +1454,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             token = COM_Parse(&s);
             if (COM_ParseColor(token, &color)) {
-                color.u8[3] *= scr_alpha->value;
+                color.u8[3] *= scr_alpha.value;
                 R_SetColor(color.u32);
             }
             continue;
@@ -1605,7 +1482,7 @@ static void SCR_ExecuteLayoutString(const char *s)
     }
 
     R_ClearColor();
-    R_SetAlpha(scr_alpha->value);
+    R_SetAlpha(scr_alpha.value);
 }
 
 //=============================================================================
@@ -1614,11 +1491,11 @@ static void SCR_DrawPause(void)
 {
     int x, y, w, h;
 
-    if (!sv_paused->integer)
+    if (!sv_paused.integer)
         return;
-    if (!cl_paused->integer)
+    if (!cl_paused.integer)
         return;
-    if (scr_showpause->integer != 1)
+    if (scr_showpause.integer != 1)
         return;
 
     R_GetPicSize(&w, &h, scr.pause_pic);
@@ -1652,13 +1529,13 @@ static void SCR_DrawHitMarker(void)
 {
     if (!cg.hit_marker_count)
         return;
-    if (!scr.hit_marker_pic || scr_hit_marker_time->integer <= 0 ||
-        cgs.realtime - cg.hit_marker_time > scr_hit_marker_time->integer) {
+    if (!scr.hit_marker_pic || scr_hit_marker_time.integer <= 0 ||
+        cgs.realtime - cg.hit_marker_time > scr_hit_marker_time.integer) {
         cg.hit_marker_count = 0;
         return;
     }
 
-    float frac = (float)(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time->integer;
+    float frac = (float)(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time.integer;
     float alpha = 1.0f - (frac * frac);
 
     int x = (scr.hud_width - scr.hit_marker_width) / 2;
@@ -1666,8 +1543,8 @@ static void SCR_DrawHitMarker(void)
 
     R_SetColor(MakeColor(255, 0, 0, alpha * 255));
 
-    R_DrawStretchPic(x + ch_x->integer,
-                     y + ch_y->integer,
+    R_DrawStretchPic(x + ch_x.integer,
+                     y + ch_y.integer,
                      scr.hit_marker_width,
                      scr.hit_marker_height,
                      scr.hit_marker_pic);
@@ -1677,7 +1554,7 @@ static void SCR_DrawCrosshair(void)
 {
     int x, y;
 
-    if (!scr_crosshair->integer)
+    if (!scr_crosshair.integer)
         return;
     if (cg.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
@@ -1687,8 +1564,8 @@ static void SCR_DrawCrosshair(void)
 
     R_SetColor(scr.crosshair_color.u32);
 
-    R_DrawStretchPic(x + ch_x->integer,
-                     y + ch_y->integer,
+    R_DrawStretchPic(x + ch_x.integer,
+                     y + ch_y.integer,
                      scr.crosshair_width,
                      scr.crosshair_height,
                      scr.crosshair_pic);
@@ -1699,7 +1576,7 @@ static void SCR_DrawCrosshair(void)
 // The status bar is a small layout program that is based on the stats array
 static void SCR_DrawStats(void)
 {
-    if (scr_draw2d->integer <= 1)
+    if (scr_draw2d.integer <= 1)
         return;
     if (cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
         return;
@@ -1709,7 +1586,7 @@ static void SCR_DrawStats(void)
 
 static void SCR_DrawLayout(void)
 {
-    if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
+    if (scr_draw2d.integer == 3 && !Key_IsDown(K_F1))
         return;     // turn off for GTV
 
     if (cgs.demo.playback && Key_IsDown(K_F1))
@@ -1724,7 +1601,7 @@ draw:
 
 static void SCR_Draw2D(void)
 {
-    if (scr_draw2d->integer <= 0)
+    if (scr_draw2d.integer <= 0)
         return;     // turn off for screenshots
 
     if (cgs.key_dest & KEY_MENU)
@@ -1773,7 +1650,7 @@ static void SCR_Draw2D(void)
     R_SetScale(1.0f);
 }
 
-qvm_exported void CG_DrawFrame(bool draw_loading)
+qvm_exported void CG_DrawActiveFrame(void)
 {
     // start with full screen HUD
     scr.hud_height = r_config.height;

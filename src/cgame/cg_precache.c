@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "cg_local.h"
+#include "shared/files.h"
 
 static const char *const sexed_sounds[SS_MAX] = {
     [SS_DEATH1]    = "death1",
@@ -43,7 +44,7 @@ static const char *const sexed_sounds[SS_MAX] = {
     [SS_PAIN100_2] = "pain100_2",
 };
 
-static bool CG_FileExists(const char *name)
+bool CG_FileExists(const char *name)
 {
     qhandle_t f;
     trap_FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
@@ -119,10 +120,10 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *
         strcpy(model, "male");
 
     // apply restrictions on skins
-    if (cl_noskins->integer == 2 || !COM_IsPath(skin))
+    if (cl_noskins.integer == 2 || !COM_IsPath(skin))
         goto default_skin;
 
-    if (cl_noskins->integer || !COM_IsPath(model))
+    if (cl_noskins.integer || !COM_IsPath(model))
         goto default_model;
 
     return;
@@ -159,24 +160,24 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     // model file
     Q_concat(model_filename, sizeof(model_filename),
              "players/", model_name, "/tris.md2");
-    ci->model = R_RegisterModel(model_filename);
+    ci->model = trap_R_RegisterModel(model_filename);
     if (!ci->model && Q_stricmp(model_name, "male")) {
         strcpy(model_name, "male");
         strcpy(model_filename, "players/male/tris.md2");
-        ci->model = R_RegisterModel(model_filename);
+        ci->model = trap_R_RegisterModel(model_filename);
     }
 
     // skin file
     Q_concat(skin_filename, sizeof(skin_filename),
              "players/", model_name, "/", skin_name, ".pcx");
-    ci->skin = R_RegisterSkin(skin_filename);
+    ci->skin = trap_R_RegisterSkin(skin_filename);
 
     // if we don't have the skin and the model was female,
     // see if athena skin exists
     if (!ci->skin && !Q_stricmp(model_name, "female")) {
         strcpy(skin_name, "athena");
         strcpy(skin_filename, "players/female/athena.pcx");
-        ci->skin = R_RegisterSkin(skin_filename);
+        ci->skin = trap_R_RegisterSkin(skin_filename);
     }
 
     // if we don't have the skin and the model wasn't male,
@@ -185,12 +186,12 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
         // change model to male
         strcpy(model_name, "male");
         strcpy(model_filename, "players/male/tris.md2");
-        ci->model = R_RegisterModel(model_filename);
+        ci->model = trap_R_RegisterModel(model_filename);
 
         // see if the skin exists for the male model
         Q_concat(skin_filename, sizeof(skin_filename),
                  "players/male/", skin_name, ".pcx");
-        ci->skin = R_RegisterSkin(skin_filename);
+        ci->skin = trap_R_RegisterSkin(skin_filename);
     }
 
     // if we still don't have a skin, it means that the male model
@@ -199,26 +200,26 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
         // see if the skin exists for the male model
         strcpy(skin_name, "grunt");
         strcpy(skin_filename, "players/male/grunt.pcx");
-        ci->skin = R_RegisterSkin(skin_filename);
+        ci->skin = trap_R_RegisterSkin(skin_filename);
     }
 
     // weapon file
     for (i = 0; i < cg.numWeaponModels; i++) {
         Q_concat(weapon_filename, sizeof(weapon_filename),
                  "players/", model_name, "/", cg.weaponModels[i]);
-        ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
+        ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
             Q_concat(weapon_filename, sizeof(weapon_filename),
                      "players/male/", cg.weaponModels[i]);
-            ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
+            ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         }
     }
 
     // icon file
     Q_concat(icon_filename, sizeof(icon_filename),
              "/players/", model_name, "/", skin_name, "_i.pcx");
-    ci->icon = R_RegisterTempPic(icon_filename);
+    ci->icon = trap_R_RegisterPic(icon_filename);
 
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
@@ -277,7 +278,7 @@ void CG_RegisterVWepModels(void)
     strcpy(cg.weaponModels[0], "weapon.md2");
 
     // only default model when vwep is off
-    if (!cl_vwep->integer)
+    if (!cl_vwep.integer)
         return;
 
     for (i = 1; i < MAX_MODELS; i++) {
@@ -313,7 +314,7 @@ void CG_SetSky(void)
 
     trap_GetConfigstring(CS_SKYAXIS, name, sizeof(name));
     if (sscanf(name, "%f %f %f", &axis[0], &axis[1], &axis[2]) != 3) {
-        Com_DPrintf("Couldn't parse CS_SKYAXIS\n");
+        Com_Printf("Couldn't parse CS_SKYAXIS\n");
         VectorClear(axis);
     }
 
@@ -333,7 +334,7 @@ static qhandle_t CG_RegisterImage(const char *s)
     // if it's in a subdir and has an extension, it's either a sprite or a skin
     // allow /some/pic.pcx escape syntax
     if (*s != '/' && *s != '\\' && *COM_FileExtension(s)) {
-        if (!FS_pathcmpn(s, CONST_STR_LEN("sprites/")))
+        if (!Q_stricmpn(s, CONST_STR_LEN("sprites/")))
             return trap_R_RegisterSprite(s);
 
         if (strchr(s, '/'))
@@ -355,7 +356,7 @@ void CG_PrepRefresh(void)
     int     i;
     char    name[MAX_QPATH];
 
-    CG_LoadState(LOAD_MODELS);
+    //trap_SetLoadState("models");
 
     CG_RegisterTEntModels();
 
@@ -370,7 +371,7 @@ void CG_PrepRefresh(void)
         cg.model_draw[i] = trap_R_RegisterModel(name);
     }
 
-    CG_LoadState(LOAD_IMAGES);
+    //trap_SetLoadState("images");
     for (i = 1; i < MAX_IMAGES; i++) {
         trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
         if (!name[0])
@@ -378,7 +379,7 @@ void CG_PrepRefresh(void)
         cg.image_precache[i] = CG_RegisterImage(name);
     }
 
-    CG_LoadState(LOAD_CLIENTS);
+    //trap_SetLoadState("clients");
     for (i = 0; i < MAX_CLIENTS; i++) {
         trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name));
         if (!name[0])

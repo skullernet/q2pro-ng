@@ -236,28 +236,6 @@ unsigned Com_ParseExtensionString(const char *s, const char *const extnames[])
 
 /*
 ================
-Com_PlayerToEntityState
-
-Restores entity origin and angles from player state
-================
-*/
-void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
-{
-    vec_t pitch;
-
-    VectorCopy(ps->pmove.origin, es->origin);
-
-    pitch = ps->viewangles[PITCH];
-    if (pitch > 180) {
-        pitch -= 360;
-    }
-    es->angles[PITCH] = pitch / 3;
-    es->angles[YAW] = ps->viewangles[YAW];
-    es->angles[ROLL] = 0;
-}
-
-/*
-================
 Com_GetEntityLoopDistMult
 
 Converts remaster autosound attenuation into distance multiplier.

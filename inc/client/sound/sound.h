@@ -18,8 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#define CHAN_FOOTSTEP   8
-
 void S_Init(void);
 void S_Shutdown(void);
 

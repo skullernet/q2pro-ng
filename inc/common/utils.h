@@ -29,8 +29,6 @@ bool Com_WildCmpEx(const char *filter, const char *string, int term, bool ignore
 bool Com_ParseTimespec(const char *s, int *frames);
 #endif
 
-void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es);
-
 // only begin attenuating sound volumes when outside the FULLVOLUME range
 #define SOUND_FULLVOLUME            80
 #define SOUND_LOOPATTENUATE         (ATTN_STATIC * 0.001f)

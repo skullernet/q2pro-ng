@@ -54,9 +54,6 @@ qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 
 qhandle_t   cl_img_flare;
 
-static cvar_t   *cl_muzzleflashes;
-cvar_t   *cl_hit_markers;
-
 #define MAX_FOOTSTEP_IDS    256
 #define MAX_FOOTSTEP_SFX    15
 
@@ -83,7 +80,7 @@ static int CG_FindFootstepSurface(int entnum)
         return FOOTSTEP_ID_DEFAULT;
 
     // allow custom footsteps to be disabled
-    if (cl_footsteps->integer >= 2)
+    if (cl_footsteps.integer >= 2)
         return FOOTSTEP_ID_DEFAULT;
 
     // use an X/Y only mins/maxs copy of the entity,
@@ -150,6 +147,8 @@ static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float
     qhandle_t footstep_sfx;
     int sfx_num;
 
+    if (!cl_footsteps.integer)
+        return;
     if (!cl_num_footsteps)
         return; // should not really happen
 
@@ -193,7 +192,7 @@ static void CG_RegisterFootstep(cl_footstep_sfx_t *sfx, const char *material)
         else
             len = Q_snprintf(name, sizeof(name), "#sound/player/step%i.wav", i + 1);
         Q_assert(len < sizeof(name));
-        if (FS_LoadFile(name + 1, NULL) < 0)
+        if (!CG_FileExists(name + 1))
             break;
         sfx->sfx[i] = trap_S_RegisterSound(name);
     }
@@ -298,7 +297,7 @@ void CG_RegisterTEntModels(void)
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cl_mod_muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 
-    cl_img_flare = trap_R_RegisterImage("misc/flare.tga", IT_SPRITE, IF_DEFAULT_FLARE);
+    cl_img_flare = trap_R_RegisterSprite("misc/flare.tga");
 }
 
 /*
@@ -370,7 +369,7 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
@@ -389,7 +388,7 @@ static void CG_BFGExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
     ex->ent.model = cl_mod_bfg_explo;
@@ -400,7 +399,7 @@ static void CG_BFGExplosion(const vec3_t pos)
 
 void CG_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
 {
-    if (!cl_muzzleflashes->integer)
+    if (!cl_muzzleflashes.integer)
         return;
 
     Q_assert(fx < q_countof(cl_mod_muzzles));
@@ -415,14 +414,14 @@ void CG_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale)
     else
         cg.weapon.muzzle.roll = 0;
     VectorCopy(offset, cg.weapon.muzzle.offset);
-    cg.weapon.muzzle.time = cg.servertime - CG_FRAMETIME;
+    cg.weapon.muzzle.time = cg.servertime - BASE_FRAMETIME;
 }
 
 void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale)
 {
     explosion_t *ex;
 
-    if (!cl_muzzleflashes->integer)
+    if (!cl_muzzleflashes.integer)
         return;
 
     Q_assert(fx < q_countof(cl_mod_muzzles));
@@ -436,7 +435,7 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, 
     ex->type = ex_mflash;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->ent.model = cl_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
@@ -458,7 +457,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_misc;
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->ent.model = cl_mod_smoke;
 
     ex = CG_AllocExplosion();
@@ -466,7 +465,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_flash;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->ent.model = cl_mod_flash;
 }
 
@@ -517,7 +516,7 @@ static void CG_AddExplosions(void)
                 break;
             }
 
-            if (cl_smooth_explosions->integer) {
+            if (cl_smooth_explosions.integer) {
                 ent->alpha = 1.0f - frac / (ex->frames - 1);
                 ent->flags |= RF_TRANSLUCENT;
             } else {
@@ -734,33 +733,8 @@ static void CG_ParseNuke(const vec3_t pos)
 
 //==============================================================
 
-static color_t  railcore_color;
-static color_t  railspiral_color;
-
-static cvar_t *cl_railtrail_type;
-static cvar_t *cl_railtrail_time;
-static cvar_t *cl_railcore_color;
-static cvar_t *cl_railcore_width;
-static cvar_t *cl_railspiral_color;
-static cvar_t *cl_railspiral_radius;
-
-static void cl_railcore_color_changed(cvar_t *self)
-{
-    if (!COM_ParseColor(self->string, &railcore_color)) {
-        Com_WPrintf("Invalid value '%s' for '%s'\n", self->string, self->name);
-        Cvar_Reset(self);
-        railcore_color.u32 = U32_RED;
-    }
-}
-
-static void cl_railspiral_color_changed(cvar_t *self)
-{
-    if (!COM_ParseColor(self->string, &railspiral_color)) {
-        Com_WPrintf("Invalid value '%s' for '%s'\n", self->string, self->name);
-        Cvar_Reset(self);
-        railspiral_color.u32 = U32_BLUE;
-    }
-}
+static color_t  railcore_color = { U32_RED };
+static color_t  railspiral_color = { U32_BLUE };
 
 static void CG_RailCore(const vec3_t start, const vec3_t end)
 {
@@ -770,11 +744,16 @@ static void CG_RailCore(const vec3_t start, const vec3_t end)
     if (!l)
         return;
 
+    if (cl_railcore_color.modified) {
+        COM_ParseColor(cl_railcore_color.string, &railcore_color);
+        cl_railcore_color.modified = false;
+    }
+
     VectorCopy(start, l->start);
     VectorCopy(end, l->end);
     l->color = -1;
-    l->lifetime = cl_railtrail_time->integer;
-    l->width = cl_railcore_width->integer;
+    l->lifetime = cl_railtrail_time.integer;
+    l->width = cl_railcore_width.integer;
     l->rgba = railcore_color;
 }
 
@@ -796,6 +775,11 @@ static void CG_RailSpiral(const vec3_t start, const vec3_t end)
 
     MakeNormalVectors(vec, right, up);
 
+    if (cl_railspiral_color.modified) {
+        COM_ParseColor(cl_railspiral_color.string, &railspiral_color);
+        cl_railspiral_color.modified = false;
+    }
+
     for (i = 0; i < len; i++) {
         p = CG_AllocParticle();
         if (!p)
@@ -812,11 +796,11 @@ static void CG_RailSpiral(const vec3_t start, const vec3_t end)
         VectorMA(dir, s, up, dir);
 
         p->alpha = 1.0f;
-        p->alphavel = -1.0f / (cl_railtrail_time->value + frand() * 0.2f);
+        p->alphavel = -1.0f / (cl_railtrail_time.value + frand() * 0.2f);
         p->color = -1;
         p->rgba = railspiral_color;
         for (j = 0; j < 3; j++) {
-            p->org[j] = move[j] + dir[j] * cl_railspiral_radius->value;
+            p->org[j] = move[j] + dir[j] * cl_railspiral_radius.value;
             p->vel[j] = dir[j] * 6;
         }
 
@@ -826,13 +810,13 @@ static void CG_RailSpiral(const vec3_t start, const vec3_t end)
 
 static void CG_RailTrail(const vec3_t start, const vec3_t end, entity_event_t event)
 {
-    if (!cl_railtrail_type->integer && event != EV_RAILTRAIL2) {
+    if (!cl_railtrail_type.integer && event != EV_RAILTRAIL2) {
         CG_OldRailTrail(start, end);
     } else {
-        if (cl_railcore_width->integer > 0) {
+        if (cl_railcore_width.integer > 0) {
             CG_RailCore(start, end);
         }
-        if (cl_railtrail_type->integer > 1) {
+        if (cl_railtrail_type.integer > 1) {
             CG_RailSpiral(start, end);
         }
     }
@@ -890,7 +874,7 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->ent.scale = 3;
     ex->ent.skinnum = 2;
-    ex->start = cg.servertime - CG_FRAMETIME;
+    ex->start = cg.servertime - BASE_FRAMETIME;
     ex->light = 550;
     VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
     ex->frames = 4;
@@ -951,7 +935,7 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     const vec_t *pos = cent->current.origin;
     vec3_t dir;
 
-    if (cl_disable_particles->integer & NOPART_BLOOD && type < EV_GUNSHOT)
+    if (cl_disable_particles.integer & NOPART_BLOOD && type < EV_GUNSHOT)
         return;
 
     ByteToDir(param & 255, dir);
@@ -1109,7 +1093,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cg.servertime - CG_FRAMETIME;
+        ex->start = cg.servertime - BASE_FRAMETIME;
         ex->light = 150;
         ex->ent.model = cl_mod_explode;
         ex->frames = 4;
@@ -1125,13 +1109,13 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         ex = CG_PlainExplosion(pos);
         ex->frames = 19;
         ex->baseframe = 30;
-        if (cl_disable_explosions->integer & NOEXP_GRENADE)
+        if (cl_disable_explosions.integer & NOEXP_GRENADE)
             ex->type = ex_light;
 
-        if (!(cl_disable_particles->integer & NOPART_GRENADE_EXPLOSION))
+        if (!(cl_disable_particles.integer & NOPART_GRENADE_EXPLOSION))
             CG_ExplosionParticles(pos);
 
-        if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
+        if (cl_dlight_hacks.integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
 
         if (type == EV_GRENADE_EXPLOSION_WATER)
@@ -1143,13 +1127,13 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     case EV_ROCKET_EXPLOSION:
     case EV_ROCKET_EXPLOSION_WATER:
         ex = CG_PlainExplosion(pos);
-        if (cl_disable_explosions->integer & NOEXP_ROCKET)
+        if (cl_disable_explosions.integer & NOEXP_ROCKET)
             ex->type = ex_light;
 
-        if (!(cl_disable_particles->integer & NOPART_ROCKET_EXPLOSION))
+        if (!(cl_disable_particles.integer & NOPART_ROCKET_EXPLOSION))
             CG_ExplosionParticles(pos);
 
-        if (cl_dlight_hacks->integer & DLHACK_SMALLER_EXPLOSION)
+        if (cl_dlight_hacks.integer & DLHACK_SMALLER_EXPLOSION)
             ex->light = 200;
 
         if (type == EV_ROCKET_EXPLOSION_WATER)
@@ -1223,25 +1207,22 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         CG_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
-        if (cl_footsteps->integer)
-            CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 1.0f, ATTN_NORM);
+        CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 1.0f, ATTN_NORM);
         break;
     case EV_OTHER_FOOTSTEP:
-        if (cl_footsteps->integer)
-            CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 0.5f, ATTN_IDLE);
+        CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 0.5f, ATTN_IDLE);
         break;
     case EV_LADDER_STEP:
-        if (cl_footsteps->integer)
-            CG_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
+        CG_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
     case EV_FALLSHORT:
         trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
         break;
     case EV_FALL:
-        CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM, 0);
+        CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM);
         break;
     case EV_FALLFAR:
-        CG_SexedSound(number, CHAN_AUTO, SS_FALL1, 1, ATTN_NORM, 0);
+        CG_SexedSound(number, CHAN_AUTO, SS_FALL1, 1, ATTN_NORM);
         break;
     case EV_DEATH1 ... EV_DEATH4:
         CG_SexedSound(number, CHAN_VOICE, SS_DEATH1 + (event - EV_DEATH1), 1, ATTN_NORM);
@@ -1348,26 +1329,24 @@ void CG_EntityEvents(centity_t *cent)
 {
     entity_state_t *s = &cent->current;
 
-    if (CG_FRAMESYNC) {
-        // EF_TELEPORTER acts like an event, but is not cleared each frame
-        if (s->effects & EF_TELEPORTER)
-            CG_TeleporterParticles(s->origin);
+    // EF_TELEPORTER acts like an event, but is not cleared each frame
+    if (s->effects & EF_TELEPORTER)
+        CG_TeleporterParticles(s->origin);
 
-        if (s->morefx & EFX_TELEPORTER2)
-            CG_TeleporterParticles2(s->origin);
+    if (s->morefx & EFX_TELEPORTER2)
+        CG_TeleporterParticles2(s->origin);
 
-        if (s->morefx & EFX_BARREL_EXPLODING)
-            CG_BarrelExplodingParticles(s->origin);
+    if (s->morefx & EFX_BARREL_EXPLODING)
+        CG_BarrelExplodingParticles(s->origin);
 
-        if (s->morefx & EFX_STEAM) {
-            uint32_t param = s->skinnum;
-            int color = (param >> 8) & 0xff;
-            int count = (param >> 16) & 0xff;
-            int magnitude = (param >> 24) & 0xff;
-            vec3_t dir;
-            ByteToDir(param & 0xff, dir);
-            CG_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
-        }
+    if (s->morefx & EFX_STEAM) {
+        uint32_t param = s->skinnum;
+        int color = (param >> 8) & 0xff;
+        int count = (param >> 16) & 0xff;
+        int magnitude = (param >> 24) & 0xff;
+        vec3_t dir;
+        ByteToDir(param & 0xff, dir);
+        CG_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
     }
 
 #if USE_FPS
@@ -1401,24 +1380,4 @@ void CG_ClearTEnts(void)
     CG_ClearExplosions();
     CG_ClearLasers();
     CG_ClearSustains();
-}
-
-void CG_InitTEnts(void)
-{
-    cl_muzzleflashes = Cvar_Get("cl_muzzleflashes", "1", 0);
-    cl_hit_markers = Cvar_Get("cl_hit_markers", "2", 0);
-    cl_railtrail_type = Cvar_Get("cl_railtrail_type", "0", 0);
-    cl_railtrail_time = Cvar_Get("cl_railtrail_time", "1.0", 0);
-    cl_railtrail_time->changed = cl_timeout_changed;
-    cl_railtrail_time->changed(cl_railtrail_time);
-    cl_railcore_color = Cvar_Get("cl_railcore_color", "red", 0);
-    cl_railcore_color->changed = cl_railcore_color_changed;
-    cl_railcore_color->generator = Com_Color_g;
-    cl_railcore_color_changed(cl_railcore_color);
-    cl_railcore_width = Cvar_Get("cl_railcore_width", "2", 0);
-    cl_railspiral_color = Cvar_Get("cl_railspiral_color", "blue", 0);
-    cl_railspiral_color->changed = cl_railspiral_color_changed;
-    cl_railspiral_color->generator = Com_Color_g;
-    cl_railspiral_color_changed(cl_railspiral_color);
-    cl_railspiral_radius = Cvar_Get("cl_railspiral_radius", "3", 0);
 }

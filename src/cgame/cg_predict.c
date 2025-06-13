@@ -40,21 +40,19 @@ CG_CheckPredictionError
 */
 void CG_CheckPredictionError(void)
 {
-    int         frame;
     vec3_t      delta;
     unsigned    cmd;
     float       len;
 
-    if (cgs.demo.playback) {
+    if (cgs.demoplayback)
         return;
-    }
 
-    if (sv_paused->integer) {
+    if (sv_paused.integer) {
         VectorClear(cg.prediction_error);
         return;
     }
 
-    if (!cl_predict->integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION))
+    if (!cl_predict.integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION))
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
@@ -175,9 +173,16 @@ Sets cg.predicted_origin and cg.predicted_angles
 */
 void CG_PredictAngles(void)
 {
-    cg.predicted_angles[0] = cg.viewangles[0] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[0]);
-    cg.predicted_angles[1] = cg.viewangles[1] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[1]);
-    cg.predicted_angles[2] = cg.viewangles[2] + SHORT2ANGLE(cg.frame.ps.pmove.delta_angles[2]);
+    unsigned current;
+    usercmd_t cmd;
+
+    trap_GetUsercmdNumber(NULL, &current);
+    trap_GetUsercmd(current, &cmd);
+
+    for (int i = 0; i < 3; i++) {
+        int16_t temp = cmd.angles[i] + cg.frame.ps.pmove.delta_angles[i];
+        cg.predicted_angles[i] = SHORT2ANGLE(temp);
+    }
 }
 
 void CG_PredictMovement(void)
@@ -185,19 +190,13 @@ void CG_PredictMovement(void)
     unsigned    ack, current, frame;
     pmove_t     pm;
 
-    if (cgs.state != ca_active) {
+    if (cgs.demoplayback)
         return;
-    }
 
-    if (cgs.demo.playback) {
+    if (sv_paused.integer)
         return;
-    }
 
-    if (sv_paused->integer) {
-        return;
-    }
-
-    if (!cl_predict->integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cl_predict.integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
         CG_PredictAngles();
         return;
@@ -206,7 +205,7 @@ void CG_PredictMovement(void)
     trap_GetUsercmdNumber(&ack, &current);
 
     // if we are too far out of date, just freeze
-    if (current - ack > CMD_BACKUP)
+    if (current - ack > CMD_BACKUP) {
         SHOWMISS("%i: exceeded CMD_BACKUP\n", cg.frame.number);
         return;
     }

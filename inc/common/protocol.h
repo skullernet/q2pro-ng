@@ -41,10 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
                             // must be power of two
 #define UPDATE_MASK     (UPDATE_BACKUP - 1)
 
-#define CMD_BACKUP      128 // allow a lot of command backups for very fast systems
-                            // increased from 64
-#define CMD_MASK        (CMD_BACKUP - 1)
-
 #define SVCMD_BITS              5
 #define FRAMENUM_BITS           27
 #define DELTAFRAME_BITS         5
@@ -104,9 +100,6 @@ typedef enum {
 
 // a client with this number will never be included in MVD stream
 #define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
-
-// a SOLID_BBOX will never create this value
-#define PACKED_BSP      31
 
 typedef enum {
     // R1Q2 specific

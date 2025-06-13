@@ -101,39 +101,3 @@ const char *MSG_ServerCommandString(int cmd);
 #endif // USE_CLIENT
 
 void MSG_ChangeVectors_f(void);
-
-//============================================================================
-
-/*
-==================
-MSG_PackSolid
-
-This function assumes x/y are symmetric. Z does not have to be symmetric, and z
-maxs can be negative.
-==================
-*/
-static inline uint32_t MSG_PackSolid(const vec3_t mins, const vec3_t maxs)
-{
-    int x = maxs[0];
-    int y = maxs[1];
-    int zd = -mins[2];
-    int zu = maxs[2] + 32;
-
-    x = Q_clip(x, 1, 255);
-    y = Q_clip(y, 1, 255);
-    zd = Q_clip_uint8(zd);
-    zu = Q_clip_uint8(zu);
-
-    return MakeLittleLong(x, y, zd, zu);
-}
-
-static inline void MSG_UnpackSolid(uint32_t solid, vec3_t mins, vec3_t maxs)
-{
-    int x = solid & 255;
-    int y = (solid >> 8) & 255;
-    int zd = (solid >> 16) & 255;
-    int zu = ((solid >> 24) & 255) - 32;
-
-    VectorSet(mins, -x, -y, -zd);
-    VectorSet(maxs,  x,  y,  zu);
-}

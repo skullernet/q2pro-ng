@@ -23,6 +23,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define CGAME_API_VERSION    4000
 
+#define CMD_BACKUP      128 // allow a lot of command backups for very fast systems
+                            // increased from 64
+#define CMD_MASK        (CMD_BACKUP - 1)
+
 typedef struct {
     int             number;
     int             delta;
@@ -35,6 +39,12 @@ typedef struct {
     int             num_entities;
     entity_state_t  entities[MAX_PACKET_ENTITIES];
 } cg_server_frame_t;
+
+typedef struct {
+    char        name[MAX_QPATH];
+    float       progress;
+    unsigned    framenum;
+} cg_demo_info_t;
 
 //
 // functions provided by the main engine
@@ -65,9 +75,6 @@ typedef struct {
 
     qhandle_t (*TempBoxModel)(const vec3_t mins, const vec3_t maxs);
 
-    int (*DirToByte)(const vec3_t dir);
-    void (*ByteToDir)(int v, vec3_t dir);
-
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
     void (*GetBrushModelBounds)(unsigned index, vec3_t mins, vec3_t maxs);
 
@@ -76,6 +83,8 @@ typedef struct {
 
     void (*GetServerFrameNumber)(unsigned *frame, unsigned *time);
     bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
+
+    bool (*GetDemoInfo)(cg_demo_info_t *info);
 
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);

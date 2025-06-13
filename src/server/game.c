@@ -234,11 +234,6 @@ static bool PF_InVis(const vec3_t p1, const vec3_t p2, vis_t vis)
 
 static bool PF_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, unsigned flags)
 {
-    if (flags & CVAR_EXTENDED_MASK) {
-        Com_WPrintf("Game attempted to set extended flags on '%s', masked out.\n", name);
-        flags &= ~CVAR_EXTENDED_MASK;
-    }
-
     return VM_RegisterCvar(&game, var, name, value, flags | CVAR_GAME);
 }
 

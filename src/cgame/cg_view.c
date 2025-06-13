@@ -19,8 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
-cvar_t   *cl_adjustfov;
-
 //============================================================================
 
 static void V_SetLightLevel(void)
@@ -55,50 +53,44 @@ V_RenderView
 */
 void V_RenderView(void)
 {
-    // an invalid frame will just use the exact previous refdef
-    // we can't use the old frame if the video mode has changed, though...
-    if (cg.frame.valid) {
-        V_ClearScene();
+    // build a refresh entity list
+    // this also calls CG_CalcViewValues which loads
+    // v_forward, etc.
+    CG_AddEntities();
 
-        // build a refresh entity list and calc cg.sim*
-        // this also calls CG_CalcViewValues which loads
-        // v_forward, etc.
-        CG_AddEntities();
+    // never let it sit exactly on a node line, because a water plane can
+    // disappear when viewed with the eye exactly on it.
+    // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
+    cg.refdef.vieworg[0] += 1.0f / 16;
+    cg.refdef.vieworg[1] += 1.0f / 16;
+    cg.refdef.vieworg[2] += 1.0f / 16;
 
-        // never let it sit exactly on a node line, because a water plane can
-        // disappear when viewed with the eye exactly on it.
-        // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-        cg.refdef.vieworg[0] += 1.0f / 16;
-        cg.refdef.vieworg[1] += 1.0f / 16;
-        cg.refdef.vieworg[2] += 1.0f / 16;
+    cg.refdef.x = scr_vrect.x;
+    cg.refdef.y = scr_vrect.y;
+    cg.refdef.width = scr_vrect.width;
+    cg.refdef.height = scr_vrect.height;
 
-        cg.refdef.x = scr_vrect.x;
-        cg.refdef.y = scr_vrect.y;
-        cg.refdef.width = scr_vrect.width;
-        cg.refdef.height = scr_vrect.height;
-
-        // adjust for non-4/3 screens
-        if (cl_adjustfov->integer) {
-            cg.refdef.fov_y = cg.fov_y;
-            cg.refdef.fov_x = V_CalcFov(cg.refdef.fov_y, cg.refdef.height, cg.refdef.width);
-        } else {
-            cg.refdef.fov_x = cg.fov_x;
-            cg.refdef.fov_y = V_CalcFov(cg.refdef.fov_x, cg.refdef.width, cg.refdef.height);
-        }
-
-        cg.refdef.frametime = cgs.frametime;
-        cg.refdef.time = cg.time * 0.001f;
-        memcpy(cg.refdef.areabits, cg.frame.areabits, sizeof(cg.refdef.areabits));
-
-        if (cg.custom_fog.density) {
-            cg.refdef.fog = cg.custom_fog;
-            cg.refdef.heightfog = (player_heightfog_t){ 0 };
-        }
-
-        cg.refdef.rdflags = cg.frame.ps.rdflags;
+    // adjust for non-4/3 screens
+    if (cl_adjustfov.integer) {
+        cg.refdef.fov_y = cg.fov_y;
+        cg.refdef.fov_x = V_CalcFov(cg.refdef.fov_y, cg.refdef.height, cg.refdef.width);
+    } else {
+        cg.refdef.fov_x = cg.fov_x;
+        cg.refdef.fov_y = V_CalcFov(cg.refdef.fov_x, cg.refdef.width, cg.refdef.height);
     }
 
-    R_RenderFrame(&cg.refdef);
+    cg.refdef.frametime = cgs.frametime;
+    cg.refdef.time = cg.time * 0.001f;
+    memcpy(cg.refdef.areabits, cg.frame.areabits, sizeof(cg.refdef.areabits));
+
+    if (cg.custom_fog.density) {
+        cg.refdef.fog = cg.custom_fog;
+        cg.refdef.heightfog = (player_heightfog_t){ 0 };
+    }
+
+    cg.refdef.rdflags = cg.frame.ps.rdflags;
+
+    trap_R_RenderScene(&cg.refdef);
 
     V_SetLightLevel();
 }
@@ -138,7 +130,7 @@ static void dump_heightfog(const player_heightfog_t *fog)
 
 static void V_Fog_f(void)
 {
-    int argc = Cmd_Argc();
+    int argc = trap_Argc();
     float args[5];
 
     if (argc == 1) {
@@ -161,12 +153,15 @@ static void V_Fog_f(void)
     }
 
     if (argc < 5) {
-        Com_Printf("Usage: %s <r g b density> [sky_factor]\n", Cmd_Argv(0));
+        Com_Printf("Usage: fog <r g b density> [sky_factor]\n");
         return;
     }
 
-    for (int i = 0; i < 5; i++)
-        args[i] = Q_clipf(Q_atof(Cmd_Argv(i + 1)), 0, 1);
+    for (int i = 0; i < 5; i++) {
+        char buf[MAX_QPATH];
+        trap_Argv(i + 1, buf, sizeof(buf));
+        args[i] = Q_clipf(Q_atof(buf), 0, 1);
+    }
 
     cg.custom_fog.color[0]   = args[0];
     cg.custom_fog.color[1]   = args[1];
@@ -176,27 +171,4 @@ static void V_Fog_f(void)
 
     cg.refdef.fog = cg.custom_fog;
     cg.refdef.heightfog = (player_heightfog_t){ 0 };
-}
-
-static const cmdreg_t v_cmds[] = {
-    { "viewpos", V_Viewpos_f },
-    { "fog", V_Fog_f },
-    { NULL }
-};
-
-/*
-=============
-V_Init
-=============
-*/
-void V_Init(void)
-{
-    Cmd_Register(v_cmds);
-
-    cl_adjustfov = Cvar_Get("cl_adjustfov", "1", 0);
-}
-
-void V_Shutdown(void)
-{
-    Cmd_Deregister(v_cmds);
 }

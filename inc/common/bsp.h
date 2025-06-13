@@ -36,16 +36,6 @@ typedef union {
     size_t  l[VIS_FAST_LONGS(VIS_MAX_BYTES)];
 } visrow_t;
 
-#if USE_CLIENT
-
-enum {
-    FOOTSTEP_ID_DEFAULT,
-    FOOTSTEP_ID_LADDER,
-    FOOTSTEP_RESERVED_COUNT
-};
-
-#endif
-
 typedef struct mtexinfo_s {
     char                name[MAX_TEXNAME];
     int                 flags;

@@ -23,9 +23,6 @@ static void CG_LogoutEffect(const vec3_t org, int color);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
 
-static cvar_t *cl_lerp_lightstyles;
-static cvar_t *cl_muzzlelight_time;
-
 /*
 ==============================================================
 
@@ -74,7 +71,7 @@ void CG_AddLightStyles(void)
     int     i, ofs = cg.time / 100;
     clightstyle_t   *ls;
 
-    if (cl_lerp_lightstyles->integer) {
+    if (cl_lerp_lightstyles.integer) {
         float f = (cg.time % 100) * 0.01f;
         float b = 1.0f - f;
 
@@ -196,7 +193,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     VectorMA(dl->origin, 18, fv, dl->origin);
     VectorMA(dl->origin, 16, rv, dl->origin);
     dl->radius = 100 * (2 - silenced) + (Q_rand() & 31);
-    dl->die = cg.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
+    dl->die = cg.time + Q_clip(cl_muzzlelight_time.integer, 0, 1000);
 
     volume = 1.0f - 0.8f * silenced;
 
@@ -385,7 +382,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         break;
     }
 
-    if (cl_dlight_hacks->integer & DLHACK_NO_MUZZLEFLASH) {
+    if (cl_dlight_hacks.integer & DLHACK_NO_MUZZLEFLASH) {
         switch (weapon) {
         case MZ_MACHINEGUN:
         case MZ_CHAINGUN1:
@@ -434,7 +431,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     dl = CG_AllocDlight(entnum);
     VectorCopy(origin, dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    dl->die = cg.time + Cvar_ClampInteger(cl_muzzlelight_time, 0, 1000);
+    dl->die = cg.time + Q_clip(cl_muzzlelight_time.integer, 0, 1000);
 
     switch (weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1:
@@ -2008,7 +2005,7 @@ void CG_TrackerTrail(centity_t *ent, const vec3_t end)
         return;
 
     VectorCopy(vec, forward);
-    vectoangles2(forward, angle_dir);
+    vectoangles(forward, angle_dir);
     AngleVectors(angle_dir, NULL, NULL, up);
 
     VectorCopy(ent->lerp_origin, move);
@@ -2827,7 +2824,4 @@ void CG_InitEffects(void)
     for (i = 0; i < NUMVERTEXNORMALS; i++)
         for (j = 0; j < 3; j++)
             avelocities[i][j] = (Q_rand() & 255) * 0.01f;
-
-    cl_lerp_lightstyles = Cvar_Get("cl_lerp_lightstyles", "0", 0);
-    cl_muzzlelight_time = Cvar_Get("cl_muzzlelight_time", "16", 0);
 }

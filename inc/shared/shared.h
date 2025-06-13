@@ -98,7 +98,8 @@ typedef enum {
     PRINT_DEVELOPER,    // only print when "developer 1"
     PRINT_WARNING,      // print in yellow color
     PRINT_ERROR,        // print in red color
-    PRINT_NOTICE        // print in cyan color
+    PRINT_NOTICE,       // print in cyan color
+    PRINT_NO_NOTIFY     = 16
 } print_type_t;
 
 q_printf(2, 3)
@@ -266,7 +267,15 @@ vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
 void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
 void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
+void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up);
 float V_CalcFov(float fov_x, float width, float height);
+
+#define NUMVERTEXNORMALS    162
+
+extern const vec3_t bytedirs[NUMVERTEXNORMALS];
+
+int DirToByte(const vec3_t dir);
+void ByteToDir(unsigned index, vec3_t dir);
 
 static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
 {
@@ -778,21 +787,34 @@ CVARS (console variables)
 ==========================================================
 */
 
-#define CVAR_ARCHIVE    BIT(0)  // set to cause it to be saved to vars.rc
-#define CVAR_USERINFO   BIT(1)  // added to userinfo when changed
-#define CVAR_SERVERINFO BIT(2)  // added to serverinfo when changed
-#define CVAR_NOSET      BIT(3)  // don't allow change from console at all,
-                                // but can be set from the command line
-#define CVAR_LATCH      BIT(4)  // save changes until server restart
+#define CVAR_ARCHIVE        BIT(0)      // set to cause it to be saved to vars.rc
+#define CVAR_USERINFO       BIT(1)      // added to userinfo when changed
+#define CVAR_SERVERINFO     BIT(2)      // added to serverinfo when changed
+#define CVAR_NOSET          BIT(3)      // don't allow change from console at all,
+                                        // but can be set from the command line
+#define CVAR_LATCH          BIT(4)      // save changes until server restart
+#define CVAR_CHEAT          BIT(5)      // can't be changed when connected
+#define CVAR_PRIVATE        BIT(6)      // never macro expanded or saved to config
+#define CVAR_ROM            BIT(7)      // can't be changed even from cmdline
+#define CVAR_MODIFIED       BIT(8)      // modified by user
+#define CVAR_CUSTOM         BIT(9)      // created by user
+#define CVAR_WEAK           BIT(10)     // doesn't have value
+#define CVAR_GAME           BIT(11)     // created by game library
+#define CVAR_NOARCHIVE      BIT(12)     // never saved to config
+#define CVAR_FILES          BIT(13)     // r_reload when changed
+#define CVAR_REFRESH        BIT(14)     // vid_restart when changed
+#define CVAR_SOUND          BIT(15)     // snd_restart when changed
+
+#define CVAR_INFOMASK       (CVAR_USERINFO | CVAR_SERVERINFO)
+#define CVAR_MODIFYMASK     (CVAR_INFOMASK | CVAR_FILES | CVAR_REFRESH | CVAR_SOUND)
+#define CVAR_NOARCHIVEMASK  (CVAR_NOSET | CVAR_CHEAT | CVAR_PRIVATE | CVAR_ROM | CVAR_NOARCHIVE)
 
 typedef struct {
     int integer;
     float value;
     bool modified;
-    char string[MAX_QPATH];     // for longer strings trap_Cvar_VariableString
-                                // must be used
+    char string[MAX_QPATH];     // for longer strings use trap_Cvar_VariableString
 } vm_cvar_t;
-
 
 /*
 ==========================================================
@@ -920,6 +942,12 @@ typedef struct {
 #define PLANE_NON_AXIAL 6
 
 typedef int contents_t;
+
+enum {
+    FOOTSTEP_ID_DEFAULT,
+    FOOTSTEP_ID_LADDER,
+    FOOTSTEP_RESERVED_COUNT
+};
 
 typedef struct {
     char    name[32];
@@ -1330,6 +1358,7 @@ typedef enum {
     CHAN_ITEM,
     CHAN_BODY,
     CHAN_AUX,
+    CHAN_FOOTSTEP,
 
     // modifier flags
     CHAN_NO_PHS_ADD     = BIT(3),   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
@@ -1635,8 +1664,37 @@ typedef struct {
 
 //==============================================
 
+// a SOLID_BBOX will never create this value
+#define PACKED_BSP      31
+
 #define ENTITYNUM_BITS      13
 #define ENTITYNUM_MASK      MASK(ENTITYNUM_BITS)
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum
 #define GUNINDEX_MASK       MASK(GUNINDEX_BITS)
+
+static inline uint32_t MSG_PackSolid(const vec3_t mins, const vec3_t maxs)
+{
+    int x = maxs[0];
+    int y = maxs[1];
+    int zd = -mins[2];
+    int zu = maxs[2] + 32;
+
+    x = Q_clip(x, 1, 255);
+    y = Q_clip(y, 1, 255);
+    zd = Q_clip_uint8(zd);
+    zu = Q_clip_uint8(zu);
+
+    return MakeLittleLong(x, y, zd, zu);
+}
+
+static inline void MSG_UnpackSolid(uint32_t solid, vec3_t mins, vec3_t maxs)
+{
+    int x = solid & 255;
+    int y = (solid >> 8) & 255;
+    int zd = (solid >> 16) & 255;
+    int zu = ((solid >> 24) & 255) - 32;
+
+    VectorSet(mins, -x, -y, -zd);
+    VectorSet(maxs,  x,  y,  zu);
+}
