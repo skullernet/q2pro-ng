@@ -98,7 +98,9 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 
 #define VM_PTR(arg, type) VM_PTR_CNT(arg, type, 1)
 
-#define VM_STR_BUF(arg, siz) VM_PTR_CNT(arg, char, VM_U32(siz))
+#define VM_STR_BUF(arg, siz) \
+    ((VM_U32(arg) || VM_U32(siz)) ? VM_PTR_CNT(arg, char, VM_U32(siz)) : NULL)
+
 #define VM_STR_NULL(arg) VM_PTR_NULL(arg, char)
 #define VM_STR(arg) VM_PTR(arg, char)
 

@@ -1456,9 +1456,10 @@ void CG_CalcViewValues(void)
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
-        /*if (trap_Key_GetDest() == KEY_GAME && trap_Key_IsDown(K_SHIFT)) {
-            VectorCopy(cg.viewangles, cg.refdef.viewangles);
-        } else*/ {
+        if (trap_Key_GetDest() == KEY_GAME && trap_Key_IsDown(K_SHIFT)) {
+            CG_PredictAngles();
+            VectorCopy(cg.predicted_angles, cg.refdef.viewangles);
+        } else {
             LerpAngles(ops->viewangles, ps->viewangles, lerp,
                        cg.refdef.viewangles);
         }
@@ -1495,13 +1496,6 @@ void CG_CalcViewValues(void)
     else
         lerp_values(&ops->heightfog, &ps->heightfog, lerp,
                     &cg.refdef.heightfog, sizeof(cg.refdef.heightfog) / sizeof(float));
-
-#if USE_FPS
-    ps = &cg.keyframe.ps;
-    ops = &cg.oldkeyframe.ps;
-
-    lerp = cg.keylerpfrac;
-#endif
 
     // interpolate field of view
     cg.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);

@@ -187,7 +187,7 @@ void CG_PredictAngles(void)
 
 void CG_PredictMovement(void)
 {
-    unsigned    ack, current, frame;
+    unsigned    ack, current;
     pmove_t     pm;
 
     if (cgs.demoplayback)
@@ -249,12 +249,8 @@ void CG_PredictMovement(void)
 
             cg.predicted_step = Q_clipf(prev_step + step, -32, 32);
             cg.predicted_step_time = cgs.realtime;
-            cg.predicted_step_frame = frame + 1;    // don't double step
+            cg.predicted_step_frame = current;  // don't double step
         }
-    }
-
-    if (cg.predicted_step_frame < frame) {
-        cg.predicted_step_frame = frame;
     }
 
     // copy results out for rendering

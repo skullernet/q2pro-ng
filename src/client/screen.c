@@ -245,6 +245,12 @@ static void SCR_DrawActive(void)
     }
 
     cge->DrawActiveFrame();
+
+    if (scr_timegraph->integer)
+        SCR_DebugGraph(cls.frametime * 300, 0xdc);
+
+    if (scr_debuggraph->integer || scr_timegraph->integer || scr_netgraph->integer)
+        SCR_DrawDebugGraph();
 }
 
 /*
