@@ -135,6 +135,7 @@ typedef struct {
     void    (*R_SetLightStyle)(unsigned style, float value);
     void    (*R_LocateParticles)(const particle_t *p, int count);
     void    (*R_RenderScene)(const refdef_t *fd);
+    void    (*R_LightPoint)(const vec3_t origin, vec3_t light);
 
     void    (*R_ClearColor)(void);
     void    (*R_SetAlpha)(float clpha);

@@ -23,11 +23,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static void V_SetLightLevel(void)
 {
-#if 0
     vec3_t shadelight;
 
     // save off light value for server to look at (BIG HACK!)
-    R_LightPoint(cg.refdef.vieworg, shadelight);
+    trap_R_LightPoint(cg.refdef.vieworg, shadelight);
 
     // pick the greatest component, which should be the same
     // as the mono value returned by software
@@ -44,7 +43,6 @@ static void V_SetLightLevel(void)
             cg.lightlevel = 150.0f * shadelight[2];
         }
     }
-#endif
 }
 
 /*

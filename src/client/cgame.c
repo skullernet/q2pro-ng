@@ -238,6 +238,302 @@ VM_THUNK(GetConfigstring) {
     VM_U32(0) = PF_GetConfigstring(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
+VM_THUNK(BoxTrace) {
+    PF_BoxTrace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3(2), VM_VEC3(3), VM_VEC3(4), VM_U32(5), VM_U32(6));
+}
+
+VM_THUNK(TransformedBoxTrace) {
+    PF_TransformedBoxTrace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3(2), VM_VEC3(3), VM_VEC3(4), VM_U32(5), VM_U32(6), VM_VEC3(7), VM_VEC3(8));
+}
+
+VM_THUNK(ClipEntity) {
+    CM_ClipEntity(VM_PTR(0, trace_t), VM_PTR(1, trace_t), VM_U32(2));
+}
+
+VM_THUNK(PointContents) {
+    VM_U32(0) = PF_PointContents(VM_VEC3(0), VM_U32(1));
+}
+
+VM_THUNK(TransformedPointContents) {
+    VM_U32(0) = PF_TransformedPointContents(VM_VEC3(0), VM_U32(1), VM_VEC3(2), VM_VEC3(3));
+}
+
+VM_THUNK(TempBoxModel) {
+    VM_U32(0) = PF_TempBoxModel(VM_VEC3(0), VM_VEC3(1));
+}
+
+VM_THUNK(GetSurfaceInfo) {
+    VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
+}
+
+VM_THUNK(GetBrushModelBounds) {
+    PF_GetBrushModelBounds(VM_U32(0), VM_VEC3(1), VM_VEC3(2));
+}
+
+VM_THUNK(GetUsercmdNumber) {
+    PF_GetUsercmdNumber(VM_PTR(0, unsigned), VM_PTR(1, unsigned));
+}
+
+VM_THUNK(GetUsercmd) {
+    VM_U32(0) = PF_GetUsercmd(VM_U32(0), VM_PTR(1, usercmd_t));
+}
+
+VM_THUNK(GetServerFrameNumber) {
+    PF_GetServerFrameNumber(VM_PTR(0, unsigned), VM_PTR(1, unsigned));
+}
+
+VM_THUNK(GetServerFrame) {
+    VM_U32(0) = PF_GetServerFrame(VM_U32(0), VM_PTR(1, cg_server_frame_t));
+}
+
+VM_THUNK(GetDemoInfo) {
+    VM_U32(0) = PF_GetDemoInfo(VM_PTR(0, cg_demo_info_t));
+}
+
+VM_THUNK(RealTime) {
+    VM_I64(0) = Com_RealTime();
+}
+
+VM_THUNK(LocalTime) {
+    VM_U32(0) = Com_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
+}
+
+VM_THUNK(Cvar_Register) {
+    VM_U32(0) = PF_Cvar_Register(VM_PTR_NULL(0, vm_cvar_t), VM_STR(1), VM_STR_NULL(2), VM_U32(3));
+}
+
+VM_THUNK(Cvar_Set) {
+    PF_Cvar_Set(VM_STR(0), VM_STR(1));
+}
+
+VM_THUNK(Cvar_ForceSet) {
+    PF_Cvar_ForceSet(VM_STR(0), VM_STR(1));
+}
+
+VM_THUNK(Cvar_VariableInteger) {
+    VM_U32(0) = Cvar_VariableInteger(VM_STR(0));
+}
+
+VM_THUNK(Cvar_VariableValue) {
+    VM_F32(0) = Cvar_VariableValue(VM_STR(0));
+}
+
+VM_THUNK(Cvar_VariableString) {
+    VM_U32(0) = Cvar_VariableStringBuffer(VM_STR(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(Argc) {
+    VM_U32(0) = Cmd_Argc();
+}
+
+VM_THUNK(Argv) {
+    VM_U32(0) = Cmd_ArgvBuffer(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(Args) {
+    VM_U32(0) = Cmd_RawArgsBuffer(VM_STR_BUF(0, 1), VM_U32(1));
+}
+
+VM_THUNK(AddCommandString) {
+    PF_AddCommandString(VM_STR(0));
+}
+
+VM_THUNK(Key_GetOverstrikeMode) {
+    VM_U32(0) = Key_GetOverstrikeMode();
+}
+
+VM_THUNK(Key_SetOverstrikeMode) {
+    Key_SetOverstrikeMode(VM_U32(0));
+}
+
+VM_THUNK(Key_GetDest) {
+    VM_U32(0) = Key_GetDest();
+}
+
+VM_THUNK(Key_SetDest) {
+    Key_SetDest(VM_U32(0));
+}
+
+VM_THUNK(Key_IsDown) {
+    VM_U32(0) = Key_IsDown(VM_U32(0));
+}
+
+VM_THUNK(Key_AnyKeyDown) {
+    VM_U32(0) = Key_AnyKeyDown();
+}
+
+VM_THUNK(Key_ClearStates) {
+    Key_ClearStates();
+}
+
+VM_THUNK(Key_KeynumToString) {
+    VM_U32(0) = PF_Key_KeynumToString(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(Key_StringToKeynum) {
+    VM_U32(0) = Key_StringToKeynum(VM_STR(0));
+}
+
+VM_THUNK(Key_GetBinding) {
+    VM_U32(0) = PF_Key_GetBinding(VM_STR(0), VM_STR_BUF(1, 2), VM_U32(2));
+}
+
+VM_THUNK(Key_SetBinding) {
+    Key_SetBinding(VM_U32(0), VM_STR(1));
+}
+
+VM_THUNK(Key_EnumBindings) {
+    VM_U32(0) = Key_EnumBindings(VM_U32(0), VM_STR(1));
+}
+
+VM_THUNK(R_RegisterModel) {
+    VM_U32(0) = R_RegisterModel(VM_STR(0));
+}
+
+VM_THUNK(R_RegisterPic) {
+    VM_U32(0) = R_RegisterPic(VM_STR(0));
+}
+
+VM_THUNK(R_RegisterFont) {
+    VM_U32(0) = R_RegisterFont(VM_STR(0));
+}
+
+VM_THUNK(R_RegisterSkin) {
+    VM_U32(0) = R_RegisterSkin(VM_STR(0));
+}
+
+VM_THUNK(R_RegisterSprite) {
+    VM_U32(0) = R_RegisterSprite(VM_STR(0));
+}
+
+VM_THUNK(R_GetConfig) {
+    PF_R_GetConfig(VM_PTR(0, refcfg_t));
+}
+
+VM_THUNK(R_GetAutoScale) {
+    VM_F32(0) = PF_R_GetAutoScale();
+}
+
+VM_THUNK(R_SetSky) {
+    R_SetSky(VM_STR(0), VM_F32(1), VM_U32(2), VM_VEC3(3));
+}
+
+VM_THUNK(R_ClearScene) {
+    R_ClearScene();
+}
+
+VM_THUNK(R_AddEntity) {
+    R_AddEntity(VM_PTR(0, entity_t));
+}
+
+VM_THUNK(R_AddLight) {
+    R_AddLight(VM_VEC3(0), VM_F32(1), VM_F32(2), VM_F32(3), VM_F32(4));
+}
+
+VM_THUNK(R_SetLightStyle) {
+    R_SetLightStyle(VM_U32(0), VM_F32(1));
+}
+
+VM_THUNK(R_LocateParticles) {
+    R_LocateParticles(VM_PTR_CNT(0, particle_t, VM_U32(1)), VM_U32(1));
+}
+
+VM_THUNK(R_RenderScene) {
+    R_RenderFrame(VM_PTR(0, refdef_t));
+}
+
+VM_THUNK(R_LightPoint) {
+    R_LightPoint(VM_VEC3(0), VM_VEC3(1));
+}
+
+VM_THUNK(R_ClearColor) {
+    R_ClearColor();
+}
+
+VM_THUNK(R_SetAlpha) {
+    R_SetAlpha(VM_F32(0));
+}
+
+VM_THUNK(R_SetColor) {
+    R_SetColor(VM_U32(0));
+}
+
+VM_THUNK(R_SetClipRect) {
+    R_SetClipRect(VM_PTR(0, clipRect_t));
+}
+
+VM_THUNK(R_SetScale) {
+    R_SetScale(VM_F32(0));
+}
+
+VM_THUNK(R_DrawChar) {
+    R_DrawChar(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_DrawString) {
+    VM_U32(0) = R_DrawString(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_STR(4), VM_U32(5));
+}
+
+VM_THUNK(R_GetPicSize) {
+    VM_U32(0) = R_GetPicSize(VM_PTR(0, int), VM_PTR(1, int), VM_U32(2));
+}
+
+VM_THUNK(R_DrawPic) {
+    R_DrawPic(VM_U32(0), VM_U32(1), VM_U32(2));
+}
+
+VM_THUNK(R_DrawStretchPic) {
+    R_DrawStretchPic(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_DrawKeepAspectPic) {
+    R_DrawKeepAspectPic(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_TileClear) {
+    R_TileClear(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_DrawFill8) {
+    R_DrawFill8(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(R_DrawFill32) {
+    R_DrawFill32(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+}
+
+VM_THUNK(S_RegisterSound) {
+    VM_U32(0) = S_RegisterSound(VM_STR(0));
+}
+
+VM_THUNK(S_StartSound) {
+    S_StartSound(VM_VEC3_NULL(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_F32(4), VM_F32(5), VM_F32(6));
+}
+
+VM_THUNK(S_ClearLoopingSounds) {
+    S_ClearLoopingSounds();
+}
+
+VM_THUNK(S_AddLoopingSound) {
+    S_AddLoopingSound(VM_U32(0), VM_U32(1), VM_F32(2), VM_F32(3), VM_U32(4));
+}
+
+VM_THUNK(S_StartBackgroundTrack) {
+    S_StartBackgroundTrack(VM_STR(0));
+}
+
+VM_THUNK(S_StopBackgroundTrack) {
+    S_StopBackgroundTrack();
+}
+
+VM_THUNK(S_UpdateEntity) {
+    S_UpdateEntity(VM_U32(0), VM_VEC3(1));
+}
+
+VM_THUNK(S_UpdateListener) {
+    S_UpdateListener(VM_U32(0), VM_VEC3(1), VM_PTR_CNT(2, vec3_t, 3), VM_U32(3));
+}
+
 VM_THUNK(FS_OpenFile) {
     VM_U64(0) = PF_OpenFile(VM_STR(0), VM_PTR(1, qhandle_t), VM_U32(2));
 }
@@ -364,7 +660,81 @@ VM_THUNK(memcmp) {
 static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
-    VM_IMPORT(GetConfigstring, "i iiii"),
+    VM_IMPORT(GetConfigstring, "i iii"),
+    VM_IMPORT(BoxTrace, "iiiiiii"),
+    VM_IMPORT(TransformedBoxTrace, "iiiiiiiii"),
+    VM_IMPORT(ClipEntity, "iii"),
+    VM_IMPORT(PointContents, "i ii"),
+    VM_IMPORT(TransformedPointContents, "i iiii"),
+    VM_IMPORT(TempBoxModel, "i ii"),
+    VM_IMPORT(GetSurfaceInfo, "i ii"),
+    VM_IMPORT(GetBrushModelBounds, "iii"),
+    VM_IMPORT(GetUsercmdNumber, "ii"),
+    VM_IMPORT(GetUsercmd, "i ii"),
+    VM_IMPORT(GetServerFrameNumber, "ii"),
+    VM_IMPORT(GetServerFrame, "i ii"),
+    VM_IMPORT(GetDemoInfo, "i i"),
+    VM_IMPORT(RealTime, "I "),
+    VM_IMPORT(LocalTime, "i Ii"),
+    VM_IMPORT(Cvar_Register, "i iiii"),
+    VM_IMPORT(Cvar_Set, "ii"),
+    VM_IMPORT(Cvar_ForceSet, "ii"),
+    VM_IMPORT(Cvar_VariableInteger, "i i"),
+    VM_IMPORT(Cvar_VariableValue, "f i"),
+    VM_IMPORT(Cvar_VariableString, "i iii"),
+    VM_IMPORT(Argc, "i "),
+    VM_IMPORT(Argv, "i iii"),
+    VM_IMPORT(Args, "i ii"),
+    VM_IMPORT(AddCommandString, "i"),
+    VM_IMPORT(Key_GetOverstrikeMode, "i "),
+    VM_IMPORT(Key_SetOverstrikeMode, "i"),
+    VM_IMPORT(Key_GetDest, "i "),
+    VM_IMPORT(Key_SetDest, "i"),
+    VM_IMPORT(Key_IsDown, "i i"),
+    VM_IMPORT(Key_AnyKeyDown, "i "),
+    VM_IMPORT(Key_ClearStates, ""),
+    VM_IMPORT(Key_KeynumToString, "i iii"),
+    VM_IMPORT(Key_StringToKeynum, "i i"),
+    VM_IMPORT(Key_GetBinding, "i iii"),
+    VM_IMPORT(Key_SetBinding, "ii"),
+    VM_IMPORT(Key_EnumBindings, "i ii"),
+    VM_IMPORT(R_RegisterModel, "i i"),
+    VM_IMPORT(R_RegisterPic, "i i"),
+    VM_IMPORT(R_RegisterFont, "i i"),
+    VM_IMPORT(R_RegisterSkin, "i i"),
+    VM_IMPORT(R_RegisterSprite, "i i"),
+    VM_IMPORT(R_GetConfig, "i"),
+    VM_IMPORT(R_GetAutoScale, "f "),
+    VM_IMPORT(R_SetSky, "ifii"),
+    VM_IMPORT(R_ClearScene, ""),
+    VM_IMPORT(R_AddEntity, "i"),
+    VM_IMPORT(R_AddLight, "iffff"),
+    VM_IMPORT(R_SetLightStyle, "if"),
+    VM_IMPORT(R_LocateParticles, "ii"),
+    VM_IMPORT(R_RenderScene, "i"),
+    VM_IMPORT(R_LightPoint, "ii"),
+    VM_IMPORT(R_ClearColor, ""),
+    VM_IMPORT(R_SetAlpha, "f"),
+    VM_IMPORT(R_SetColor, "i"),
+    VM_IMPORT(R_SetClipRect, "i"),
+    VM_IMPORT(R_SetScale, "f"),
+    VM_IMPORT(R_DrawChar, "iiiii"),
+    VM_IMPORT(R_DrawString, "i iiiiii"),
+    VM_IMPORT(R_GetPicSize, "i iii"),
+    VM_IMPORT(R_DrawPic, "iii"),
+    VM_IMPORT(R_DrawStretchPic, "iiiii"),
+    VM_IMPORT(R_DrawKeepAspectPic, "iiiii"),
+    VM_IMPORT(R_TileClear, "iiiii"),
+    VM_IMPORT(R_DrawFill8, "iiiii"),
+    VM_IMPORT(R_DrawFill32, "iiiii"),
+    VM_IMPORT(S_RegisterSound, "i i"),
+    VM_IMPORT(S_StartSound, "iiiifff"),
+    VM_IMPORT(S_ClearLoopingSounds, ""),
+    VM_IMPORT(S_AddLoopingSound, "iiffi"),
+    VM_IMPORT(S_StartBackgroundTrack, "i"),
+    VM_IMPORT(S_StopBackgroundTrack, ""),
+    VM_IMPORT(S_UpdateEntity, "ii"),
+    VM_IMPORT(S_UpdateListener, "iiii"),
     VM_IMPORT(FS_OpenFile, "I iii"),
     VM_IMPORT(FS_CloseFile, "i i"),
     VM_IMPORT(FS_ReadFile, "i iii"),
@@ -416,9 +786,9 @@ static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_Shutdown, ""),
     VM_EXPORT(CG_DrawActiveFrame, ""),
     VM_EXPORT(CG_ModeChanged, ""),
-    VM_EXPORT(CG_ConsoleCommand, ""),
+    VM_EXPORT(CG_ConsoleCommand, "i "),
     VM_EXPORT(CG_ServerCommand, ""),
-    VM_EXPORT(CG_UpdateConfigstring, ""),
+    VM_EXPORT(CG_UpdateConfigstring, "i"),
 
     { 0 }
 };
@@ -551,6 +921,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_SetLightStyle = R_SetLightStyle,
     .R_LocateParticles = R_LocateParticles,
     .R_RenderScene = R_RenderFrame,
+    .R_LightPoint = R_LightPoint,
 
     .R_ClearColor = R_ClearColor,
     .R_SetAlpha = R_SetAlpha,

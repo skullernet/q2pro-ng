@@ -1884,3 +1884,303 @@ long strtol(const char *restrict s, char **restrict p, int base)
 {
     return strtoxl(s, p, base, 0UL+LONG_MIN);
 }
+
+/* Copyright (c) 2019 Tushar Jois
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+#define SSCANF_CONSUME_WSPACE() while (isspace(*buf_ptr++))
+#define SSCANF_CHECK(x) if (!(x)) goto exit;
+#define SSCANF_MATCH() SSCANF_CHECK(*buf_ptr == *fmt_ptr);
+#define SSCANF_CHECK_NULL(ptr) SSCANF_CHECK(NULL != ptr);
+#define SSCANF_CHECK_BUFFER() SSCANF_CHECK('\0' != *buffer);
+#define SSCANF_CHECK_STRTONUM() SSCANF_CHECK(buf_ptr != end_ptr);
+
+int sscanf(const char *buffer, const char *format, ...)
+{
+    /* Our return value. On a conversion error, we return this immediately. */
+    int num_args_set = 0;
+
+    /* We use these to index into our buffer and format string. */
+    const char *buf_ptr = buffer;
+    const char *fmt_ptr = format;
+
+    /* Variadic arguments -- pointers in which we put our conversion results. */
+    va_list args;
+    long *long_ptr;
+    int *int_ptr;
+    short *short_ptr;
+    unsigned long *ulong_ptr;
+    unsigned short *ushort_ptr;
+    unsigned int *uint_ptr;
+    double *double_ptr;
+    float *float_ptr;
+    char *char_ptr;
+    wchar_t *wchar_ptr;
+
+    /* These are useful variables when doing string to number conversion. */
+    char *end_ptr;
+    int base;
+
+    /* These are flags that are used by different conversion specifiers. */
+    int is_suppressed = 0;
+    size_t max_width = 0;
+    char length_mod = '\0';
+
+    /* Return a special value when one of the arguments is NULL. */
+    if (NULL == buffer || NULL == format) {
+        return -1;
+    }
+
+    va_start(args, format);
+
+    while ('\0' != *fmt_ptr) {
+        /* We ignore spaces before specifiers. */
+        if (isspace(*fmt_ptr)) {
+            /* Any whitespace in the format consumes all of the whitespace in the
+               buffer. */
+            SSCANF_CONSUME_WSPACE();
+            fmt_ptr++;
+            continue;
+        }
+
+        if ('%' == *fmt_ptr) {
+            /* Handle conversion specifier. */
+            fmt_ptr++;
+
+            /* Check for assignment-suppressing character. */
+            if ('*' == *fmt_ptr) {
+                is_suppressed = 1;
+                fmt_ptr++;
+            } else {
+                is_suppressed = 0;
+            }
+
+            /* Check for maximum field width. */
+            if (isdigit(*fmt_ptr)) {
+                max_width = strtoul(fmt_ptr, &end_ptr, 0);
+                /* Check if the sequence is a number > 0. */
+                SSCANF_CHECK(fmt_ptr != end_ptr);
+                SSCANF_CHECK(max_width > 0);
+
+                fmt_ptr = end_ptr;
+            } else {
+                max_width = 0;
+            }
+
+            /* Check for a length modifier. */
+            if ('h' == *fmt_ptr || 'l' == *fmt_ptr) {
+                length_mod = *fmt_ptr;
+                fmt_ptr++;
+            } else {
+                length_mod = '\0';
+            }
+
+            /* Handle the conversion format specifier. */
+            if ('n' == *fmt_ptr) {
+                /* 'n': number of characters read so far. */
+                /* 'n' conversion specifiers DO NOT consume whitespace. */
+                /* Technically undefined, but just stop here for safety. */
+                SSCANF_CHECK(!is_suppressed);
+                if ('l' == length_mod) {
+                    long_ptr = va_arg(args, long*);
+                    SSCANF_CHECK_NULL(long_ptr);
+                    *long_ptr = (long)(buf_ptr - buffer);
+                } else if ('h' == length_mod) {
+                    short_ptr = va_arg(args, short*);
+                    SSCANF_CHECK_NULL(short_ptr);
+                    *short_ptr = (short)(buf_ptr - buffer);
+                } else {
+                    int_ptr = va_arg(args, int*);
+                    SSCANF_CHECK_NULL(int_ptr);
+                    *int_ptr = (int)(buf_ptr - buffer);
+                }
+                fmt_ptr++;
+                num_args_set++;
+                continue;
+            }
+
+            /* All other specifiers move the buffer pointer, so check that it's not
+               NUL. */
+            SSCANF_CHECK_BUFFER();
+
+            if ('%' == *fmt_ptr) {
+                /* '%': match literal %. */
+                SSCANF_CONSUME_WSPACE();
+                SSCANF_MATCH();
+                buf_ptr++;
+            } else if ('c' == *fmt_ptr || 's' == *fmt_ptr) {
+                /* 'c'/'s': match a character sequence/string. */
+                if (!max_width) {
+                    if ('c' == *fmt_ptr) {
+                        max_width = 1;
+                    } else {
+                        max_width = SIZE_MAX;
+                    }
+                }
+                /* 'c' conversion specifiers DO NOT consume whitespace. */
+                if ('c' != *fmt_ptr) {
+                    SSCANF_CONSUME_WSPACE();
+                }
+
+                if (is_suppressed) {
+                    /* Consume the character (string) and ignore it in this case. */
+                    for (; max_width > 0; max_width--) {
+                        buf_ptr++;
+                        if (*buf_ptr == '\0' || (isspace(*buf_ptr) && 's' == *fmt_ptr)) {
+                            break;
+                        }
+                    }
+                    fmt_ptr++;
+                    continue;
+
+                } else if ('l' == length_mod) {
+                    wchar_ptr = va_arg(args, wchar_t*);
+                    SSCANF_CHECK_NULL(wchar_ptr);
+                    /* TODO: Implementation. */
+                    SSCANF_CHECK(0);
+
+                } else {
+                    char_ptr = va_arg(args, char*);
+                    SSCANF_CHECK_NULL(char_ptr);
+
+                    for (; max_width > 0; max_width--) {
+                        *char_ptr = *buf_ptr;
+                        if (*buf_ptr == '\0' || (isspace(*buf_ptr) && 's' == *fmt_ptr)) {
+                            break;
+                        }
+                        char_ptr++;
+                        buf_ptr++;
+                    }
+
+                    /* Strings are null-terminated. */
+                    if ('s' == *fmt_ptr) {
+                        *char_ptr = '\0';
+                    }
+                    num_args_set++;
+                }
+
+            } else if ('[' == *fmt_ptr) {
+                /* TODO: '[': match a non-empty sequence of characters from a set. */
+                SSCANF_CHECK(0);
+
+                /* '[' conversion specifiers DO NOT consume whitespace. */
+
+            } else if ('i' == *fmt_ptr || 'd' == *fmt_ptr) {
+                /* 'i'/'d': match a integer/decimal integer. */
+
+                SSCANF_CONSUME_WSPACE();
+                base = ('d' == *fmt_ptr) * 10;
+
+                if (is_suppressed) {
+                    /* Consume the integer and ignore it in this case. */
+                    strtol(buf_ptr, &end_ptr, base);
+                } else if ('l' == length_mod) {
+                    long_ptr = va_arg(args, long*);
+                    SSCANF_CHECK_NULL(long_ptr);
+                    *long_ptr = (long) strtol(buf_ptr, &end_ptr, base);
+                } else if ('h' == length_mod) {
+                    short_ptr = va_arg(args, short*);
+                    SSCANF_CHECK_NULL(short_ptr);
+                    *short_ptr = (short)(strtol(buf_ptr, &end_ptr, base));
+                } else {
+                    int_ptr = va_arg(args, int*);
+                    SSCANF_CHECK_NULL(int_ptr);
+                    *int_ptr = (int)(strtol(buf_ptr, &end_ptr, base));
+                }
+
+                SSCANF_CHECK_STRTONUM();
+                buf_ptr = end_ptr;
+                num_args_set++;
+
+            } else if ('g' == *fmt_ptr || 'e' == *fmt_ptr || 'f' == *fmt_ptr ||
+                       'G' == *fmt_ptr || 'E' == *fmt_ptr || 'F' == *fmt_ptr) {
+                /* 'g'/'e'/'f': match a float in strtod form. */
+                /* TODO: 'a': match a float in C99 binary floating-point form. */
+
+                SSCANF_CONSUME_WSPACE();
+
+                if (is_suppressed) {
+                    /* Consume the float and ignore it in this case. */
+                    strtod(buf_ptr, &end_ptr);
+                } else if ('l' == length_mod) {
+                    double_ptr = va_arg(args, double*);
+                    SSCANF_CHECK_NULL(double_ptr);
+                    *double_ptr = (double)(strtod(buf_ptr, &end_ptr));
+                } else {
+                    float_ptr = va_arg(args, float*);
+                    SSCANF_CHECK_NULL(float_ptr);
+                    *float_ptr = (float)(strtod(buf_ptr, &end_ptr));
+                }
+
+                SSCANF_CHECK_STRTONUM();
+                buf_ptr = end_ptr;
+                num_args_set++;
+
+            } else if ('u' == *fmt_ptr || 'o' == *fmt_ptr || 'x' == *fmt_ptr ||
+                       'X' == *fmt_ptr) {
+                /* 'u'/'o'/'x': match a unsigned decimal/octal/hexadecimal integer */
+
+                SSCANF_CONSUME_WSPACE();
+                base = ('u' == *fmt_ptr) * 10 + ('o' == *fmt_ptr) * 8 +
+                       ('x' == *fmt_ptr || 'X' == *fmt_ptr) * 16;
+
+                if (is_suppressed) {
+                    /* Consume the unsigned integer and ignore it in this case. */
+                    strtoul(buf_ptr, &end_ptr, base);
+                } else if ('l' == length_mod) {
+                    ulong_ptr = va_arg(args, unsigned long*);
+                    SSCANF_CHECK_NULL(ulong_ptr);
+                    *ulong_ptr = (unsigned long) strtoul(buf_ptr, &end_ptr, base);
+                } else if ('h' == length_mod) {
+                    ushort_ptr = va_arg(args, unsigned short*);
+                    SSCANF_CHECK_NULL(ushort_ptr);
+                    *ushort_ptr = (unsigned short)(strtoul(buf_ptr, &end_ptr, base));
+                } else {
+                    uint_ptr = va_arg(args, unsigned int*);
+                    SSCANF_CHECK_NULL(uint_ptr);
+                    *uint_ptr = (unsigned int)(strtoul(buf_ptr, &end_ptr, base));
+                }
+
+                SSCANF_CHECK_STRTONUM();
+                buf_ptr = end_ptr;
+                num_args_set++;
+
+            } else {
+                /* Unknown conversion specifier. */
+                SSCANF_CHECK(0);
+            }
+
+            /* TODO: 'p': match a (implementation-defined) pointer. */
+
+        } else {
+            /* Match character with that in buffer. */
+            SSCANF_MATCH();
+            buf_ptr++;
+        }
+
+        /* Get the next format specifier. */
+        fmt_ptr++;
+    }
+
+exit:
+    va_end(args);
+    return num_args_set;
+}

@@ -658,7 +658,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
     VM_IMPORT(SetConfigstring, "ii"),
-    VM_IMPORT(GetConfigstring, "i iiii"),
+    VM_IMPORT(GetConfigstring, "i iii"),
     VM_IMPORT(FindConfigstring, "i iiii"),
     VM_IMPORT(Trace, "iiiiiii"),
     VM_IMPORT(Clip, "iiiiiii"),

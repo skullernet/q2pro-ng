@@ -247,7 +247,7 @@ void SV_Begin_f(void)
         return;
     }
 
-    if (!sv_client->version_string) {
+    if (!sv_client->version_string&&0) {
         SV_DropClient(sv_client, "!failed version probe");
         return;
     }

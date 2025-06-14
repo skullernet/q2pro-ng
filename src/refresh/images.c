@@ -2089,6 +2089,11 @@ static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t f
     if (*name == '#')
         flags |= IF_KEEP_EXTENSION;
 
+    if (*name == '*') {
+        name++;
+        flags |= IF_REPEAT;
+    }
+
     if (type == IT_SKIN || type == IT_SPRITE) {
         len = FS_NormalizePathBuffer(fullname, name, sizeof(fullname));
     } else if (*name == '/' || *name == '\\' || *name == '#') {

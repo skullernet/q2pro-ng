@@ -26,10 +26,13 @@ void *memchr(const void *s, int c, size_t n);
 #define PRId64  "lld"
 #define PRIx64  "llx"
 
-int sprintf(char *dst, const char *fmt, ...);
+int sprintf(char *dst, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
 
-int sscanf(const char *str, const char *fmt, ...);
+int sscanf(const char *str, const char *fmt, ...)
+    __attribute__((format(scanf, 2, 3)));
 
 void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 

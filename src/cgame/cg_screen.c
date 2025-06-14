@@ -754,6 +754,10 @@ void SCR_Init(void)
         const vm_cvar_reg_t *reg = &scr_cvars[i];
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
+
+    SCR_RegisterMedia();
+
+    CG_ModeChanged();
 }
 
 //=============================================================================
@@ -1079,7 +1083,9 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_IMAGES) {
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
-            trap_R_DrawPic(x, y, cg.image_precache[value]);
+            if (value) {
+                trap_R_DrawPic(x, y, cg.image_precache[value]);
+            }
             continue;
         }
 

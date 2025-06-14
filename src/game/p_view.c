@@ -77,7 +77,6 @@ static void P_DamageFeedback(edict_t *player)
     float        side;
     float        realcount, count, kick;
     vec3_t       v;
-    int          l;
     static const vec3_t armor_color = { 1.0f, 1.0f, 1.0f };
     static const vec3_t power_color = { 0.0f, 1.0f, 0.0f };
     static const vec3_t bcolor = { 1.0f, 0.0f, 0.0f };
