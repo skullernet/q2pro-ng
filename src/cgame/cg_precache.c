@@ -389,6 +389,13 @@ void CG_PrepRefresh(void)
 
     CG_LoadClientinfo(&cg.baseclientinfo, "unnamed\\male/grunt");
 
+    for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
+        trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name));
+        if (!name[0])
+            break;
+        CG_SetLightStyle(i, name);
+    }
+
     // set sky textures and speed
     CG_SetSky();
 

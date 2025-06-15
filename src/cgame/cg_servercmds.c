@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static void CG_StartLocalSoundOnce(const char *sound)
 {
     qhandle_t sfx = trap_S_RegisterSound(sound);
-    trap_S_StartSound(NULL, cg.frame.ps.clientnum, 256, sfx, 1, ATTN_NONE, 0);
+    trap_S_StartSound(NULL, cg.frame->ps.clientnum, 256, sfx, 1, ATTN_NONE, 0);
 }
 
 static void CG_Chat(char *text)
@@ -94,6 +94,11 @@ qvm_exported void CG_ServerCommand(void)
 
     if (!strcmp(cmd, "inven")) {
         CG_Inventory();
+        return;
+    }
+
+    if (!strcmp(cmd, "layout")) {
+        Q_strlcpy(cg.layout, buf, sizeof(cg.layout));
         return;
     }
 }

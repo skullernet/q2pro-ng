@@ -53,6 +53,13 @@ V_RenderView
 */
 void V_RenderView(void)
 {
+    CG_ProcessFrames();
+
+    if (!cg.frame)
+        return;
+
+    CG_PredictMovement();
+
     // build a refresh entity list
     // this also calls CG_CalcViewValues which loads
     // v_forward, etc.
@@ -81,14 +88,14 @@ void V_RenderView(void)
 
     cg.refdef.frametime = cgs.frametime;
     cg.refdef.time = cg.time * 0.001f;
-    memcpy(cg.refdef.areabits, cg.frame.areabits, sizeof(cg.refdef.areabits));
+    memcpy(cg.refdef.areabits, cg.frame->areabits, sizeof(cg.refdef.areabits));
 
     if (cg.custom_fog.density) {
         cg.refdef.fog = cg.custom_fog;
         cg.refdef.heightfog = (player_heightfog_t){ 0 };
     }
 
-    cg.refdef.rdflags = cg.frame.ps.rdflags;
+    cg.refdef.rdflags = cg.frame->ps.rdflags;
 
     trap_R_RenderScene(&cg.refdef);
 

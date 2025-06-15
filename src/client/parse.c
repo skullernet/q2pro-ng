@@ -274,6 +274,7 @@ static void CL_ParseFrame(void)
 
     // read areabits
     length = MSG_ReadBits(6);
+    memset(frame.areabits, 255, sizeof(frame.areabits));
     if (length) {
         if (length > sizeof(frame.areabits)) {
             Com_Error(ERR_DROP, "%s: invalid areabits length", __func__);

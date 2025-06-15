@@ -185,7 +185,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     weapon &= ~MZ_SILENCED;
 
     entnum = pl->current.number;
-    local = entnum == cg.frame.ps.clientnum;
+    local = entnum == cg.frame->ps.clientnum;
 
     dl = CG_AllocDlight(entnum);
     VectorCopy(pl->current.origin, dl->origin);
@@ -2734,7 +2734,6 @@ void CG_BarrelExplodingParticles(const vec3_t org)
     }
 }
 
-static int          r_numparticles;
 static particle_t   r_particles[MAX_PARTICLES];
 
 /*
@@ -2749,6 +2748,7 @@ void CG_AddParticles(void)
     float           time, time2;
     cparticle_t     *active, *tail;
     particle_t      *part;
+    int r_numparticles = 0;
 
     active = NULL;
     tail = NULL;
@@ -2819,9 +2819,12 @@ void CG_ClearEffects(void)
 
 void CG_InitEffects(void)
 {
-    int i, j;
+    CG_ClearParticles();
 
-    for (i = 0; i < NUMVERTEXNORMALS; i++)
-        for (j = 0; j < 3; j++)
-            avelocities[i][j] = (Q_rand() & 255) * 0.01f;
+    for (int i = 0; i < NUMVERTEXNORMALS; i++) {
+        uint32_t r = Q_rand();
+        avelocities[i][0] = (r & 255) * 0.01f;
+        avelocities[i][1] = (r >> 8 & 255) * 0.01f;
+        avelocities[i][2] = (r >> 16 & 255) * 0.01f;
+    }
 }

@@ -192,9 +192,7 @@ static void PF_SetConfigstring(unsigned index, const char *val)
 
 static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
 {
-    if (index >= MAX_CONFIGSTRINGS)
-        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
-
+    Q_assert_soft(index < MAX_CONFIGSTRINGS);
     return Q_strlcpy(buf, sv.configstrings[index], size);
 }
 

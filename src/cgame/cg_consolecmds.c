@@ -61,15 +61,15 @@ static void V_Fog_f(void)
             dump_fog(&cg.custom_fog);
             return;
         }
-        if (cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor) {
+        if (cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor) {
             Com_Printf("Global fog:\n");
-            dump_fog(&cg.frame.ps.fog);
+            dump_fog(&cg.frame->ps.fog);
         }
-        if (cg.frame.ps.heightfog.density) {
+        if (cg.frame->ps.heightfog.density) {
             Com_Printf("Height fog:\n");
-            dump_heightfog(&cg.frame.ps.heightfog);
+            dump_heightfog(&cg.frame->ps.heightfog);
         }
-        if (!(cg.frame.ps.fog.density || cg.frame.ps.fog.sky_factor || cg.frame.ps.heightfog.density))
+        if (!(cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor || cg.frame->ps.heightfog.density))
             Com_Printf("No fog.\n");
         return;
     }

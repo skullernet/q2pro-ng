@@ -106,13 +106,6 @@ typedef struct {
 // server map change
 //
 typedef struct {
-    int         timeoutcount;
-
-    unsigned    lastTransmitTime;
-    unsigned    lastTransmitCmdNumber;
-    unsigned    lastTransmitCmdNumberReal;
-    bool        sendPacketNow;
-
     vec3_t      predicted_origins[CMD_BACKUP];  // for debug comparing against server
 
     float       predicted_step;                // for stair up smoothing
@@ -128,8 +121,10 @@ typedef struct {
     centity_t       *solidEntities[MAX_PACKET_ENTITIES];
     int             numSolidEntities;
 
-    cg_server_frame_t  frame;       // received from server
-    cg_server_frame_t  oldframe;
+    cg_server_frame_t   *frame;     // received from server
+    cg_server_frame_t   *oldframe;
+    cg_server_frame_t   frames[2];
+    unsigned            processed_framenum, current_framenum;
     int             servertime;
     int             serverdelta;
 
@@ -419,7 +414,6 @@ void CG_RegisterTEntSounds(void);
 void CG_RegisterTEntModels(void);
 void CG_AddTEnts(void);
 void CG_ClearTEnts(void);
-void CG_InitTEnts(void);
 
 
 //
@@ -536,12 +530,11 @@ extern vrect_t      scr_vrect;        // position of render window
 
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
-void    SCR_UpdateScreen(void);
 void    SCR_CenterPrint(const char *str, bool typewrite);
 void    SCR_ClearCenterPrints(void);
 void    SCR_RegisterMedia(void);
 void    SCR_ModeChanged(void);
-void    SCR_LagSample(void);
+void    SCR_LagSample(const cg_server_frame_t *frame);
 void    SCR_LagClear(void);
 void    SCR_SetCrosshairColor(void);
 
@@ -561,3 +554,8 @@ void    CG_DrawActiveFrame(void);
 
 void CG_ServerCommand(void);
 bool CG_ConsoleCommand(void);
+
+//
+// frame.c
+//
+void CG_ProcessFrames(void);

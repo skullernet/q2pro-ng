@@ -2060,7 +2060,7 @@ IMG_ForHandle
 */
 image_t *IMG_ForHandle(qhandle_t h)
 {
-    Q_assert(h >= 0 && h < r_numImages);
+    Q_assert_soft(h < r_numImages);
     return &r_images[h];
 }
 

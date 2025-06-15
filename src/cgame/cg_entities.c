@@ -60,7 +60,7 @@ FRAME PARSING
 // returns true if origin/angles update has been optimized out
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    return state->number == cg.frame.ps.clientnum && cg.frame.ps.pmove.pm_type < PM_DEAD;
+    return state->number == cg.frame->ps.clientnum && cg.frame->ps.pmove.pm_type < PM_DEAD;
 }
 
 static inline void
@@ -73,7 +73,7 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
     ent->prev = *state;
 #if USE_FPS
     ent->prev_frame = state->frame;
-    ent->event_frame = cg.frame.number;
+    ent->event_frame = cg.frame->number;
 #endif
 
     if (state->event[0] == EV_PLAYER_TELEPORT ||
@@ -98,9 +98,9 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
 #if USE_FPS
     // check for new event
     if (state->event != ent->current.event)
-        ent->event_frame = cg.frame.number; // new
-    else if (cg.frame.number - ent->event_frame >= cg.frametime.div)
-        ent->event_frame = cg.frame.number; // refreshed
+        ent->event_frame = cg.frame->number; // new
+    else if (cg.frame->number - ent->event_frame >= cg.frametime.div)
+        ent->event_frame = cg.frame->number; // refreshed
     else
         event = 0; // duplicated
 #endif
@@ -143,10 +143,10 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
 
 static inline bool entity_is_new(const centity_t *ent)
 {
-    //if (!cg.oldframe.valid)
+    //if (!cg.oldframe->valid)
     //    return true;    // last received frame was invalid
 
-    if (ent->serverframe != cg.oldframe.number)
+    if (ent->serverframe != cg.oldframe->number)
         return true;    // wasn't in last received frame
 
     if (cl_nolerp.integer == 2)
@@ -155,7 +155,7 @@ static inline bool entity_is_new(const centity_t *ent)
     if (cl_nolerp.integer == 3)
         return false;   // developer option, lerp from last received frame
 
-    if (cg.oldframe.number != cg.frame.number - 1)
+    if (cg.oldframe->number != cg.frame->number - 1)
         return true;    // previous server frame was dropped
 
     return false;
@@ -168,7 +168,7 @@ static void parse_entity_update(const entity_state_t *state)
     vec3_t origin_v;
 
     // if entity is solid, decode mins/maxs and add to the list
-    if (state->solid && state->number != cg.frame.ps.clientnum
+    if (state->solid && state->number != cg.frame->ps.clientnum
         && cg.numSolidEntities < MAX_PACKET_ENTITIES)
         cg.solidEntities[cg.numSolidEntities++] = ent;
 
@@ -184,7 +184,7 @@ static void parse_entity_update(const entity_state_t *state)
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        VectorCopy(cg.frame.ps.pmove.origin, origin_v);
+        VectorCopy(cg.frame->ps.pmove.origin, origin_v);
         origin = origin_v;
     } else {
         origin = state->origin;
@@ -197,37 +197,15 @@ static void parse_entity_update(const entity_state_t *state)
         entity_update_old(ent, state, origin);
     }
 
-    ent->serverframe = cg.frame.number;
+    ent->serverframe = cg.frame->number;
     ent->current = *state;
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        Com_PlayerToEntityState(&cg.frame.ps, &ent->current);
+        Com_PlayerToEntityState(&cg.frame->ps, &ent->current);
     }
 
     CG_SetEntitySoundOrigin(ent);
-}
-
-static void set_active_state(void)
-{
-    // initialize oldframe so lerping doesn't hurt anything
-    //cg.oldframe.valid = false;
-    cg.oldframe.ps = cg.frame.ps;
-
-    if (!cgs.demoplayback) {
-        // set initial cg.predicted_origin and cg.predicted_angles
-        VectorCopy(cg.frame.ps.pmove.origin, cg.predicted_origin);
-        VectorCopy(cg.frame.ps.pmove.velocity, cg.predicted_velocity);
-        if (cg.frame.ps.pmove.pm_type < PM_DEAD) {
-            // enhanced servers don't send viewangles
-            CG_PredictAngles();
-        } else {
-            // just use what server provided
-            VectorCopy(cg.frame.ps.viewangles, cg.predicted_angles);
-        }
-    }
-
-    SCR_LagClear();
 }
 
 static void check_player_lerp(void)
@@ -236,8 +214,8 @@ static void check_player_lerp(void)
     const centity_t *ent;
 
     // find states to interpolate between
-    ps = &cg.frame.ps;
-    ops = &cg.oldframe.ps;
+    ps = &cg.frame->ps;
+    ops = &cg.oldframe->ps;
 
     // no lerping if player entity was teleported (origin check)
     if (fabsf(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
@@ -288,7 +266,7 @@ void CG_DeltaFrame(void)
     //    set_active_state();
 
     // set server time
-    framenum = cg.frame.number - cg.serverdelta;
+    framenum = cg.frame->number - cg.serverdelta;
 
     if (framenum < 0)
         Com_Error(ERR_DROP, "%s: server time went backwards", __func__);
@@ -304,33 +282,33 @@ void CG_DeltaFrame(void)
     // initialize position of the player's own entity from playerstate.
     // this is needed in situations when player entity is invisible, but
     // server sends an effect referencing it's origin (such as MZ_LOGIN, etc)
-    ent = &cl_entities[cg.frame.ps.clientnum];
-    Com_PlayerToEntityState(&cg.frame.ps, &ent->current);
+    ent = &cl_entities[cg.frame->ps.clientnum];
+    Com_PlayerToEntityState(&cg.frame->ps, &ent->current);
 
     // set current and prev, unpack solid, etc
-    for (i = 0; i < cg.frame.num_entities; i++)
-        parse_entity_update(&cg.frame.entities[i]);
+    for (i = 0; i < cg.frame->num_entities; i++)
+        parse_entity_update(&cg.frame->entities[i]);
 
     // fire events. due to footstep tracing this must be after updating entities.
-    for (i = 0; i < cg.frame.num_entities; i++)
-        CG_EntityEvents(&cl_entities[cg.frame.entities[i].number]);
+    for (i = 0; i < cg.frame->num_entities; i++)
+        CG_EntityEvents(&cl_entities[cg.frame->entities[i].number]);
 
     if (cgs.demoplayback) {
         // this delta has nothing to do with local viewangles,
         // clear it to avoid interfering with demo freelook hack
-        VectorClear(cg.frame.ps.pmove.delta_angles);
+        VectorClear(cg.frame->ps.pmove.delta_angles);
     }
 
     check_player_lerp();
 
-    if (cg.frame.ps.stats[STAT_HITS] > cg.oldframe.ps.stats[STAT_HITS]) {
+    if (cg.frame->ps.stats[STAT_HITS] > cg.oldframe->ps.stats[STAT_HITS]) {
         extern qhandle_t cl_sfx_hit_marker;
 
         if (cl_hit_markers.integer > 0) {
-            cg.hit_marker_count = cg.frame.ps.stats[STAT_HITS] - cg.oldframe.ps.stats[STAT_HITS];
+            cg.hit_marker_count = cg.frame->ps.stats[STAT_HITS] - cg.oldframe->ps.stats[STAT_HITS];
             cg.hit_marker_time = cgs.realtime;
             if (cl_hit_markers.integer > 1)
-                trap_S_StartSound(NULL, cg.frame.ps.clientnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
+                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cl_sfx_hit_marker, 1, ATTN_NONE, 0);
         }
     }
 
@@ -382,7 +360,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     }
 
     // if coming from the player, update the start position
-    if (entnum == cg.frame.ps.clientnum) {
+    if (entnum == cg.frame->ps.clientnum) {
         if (cl_gun.integer == 3)
             hand_multiplier = -1;
         else if (cl_gun.integer == 2)
@@ -395,8 +373,8 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
             hand_multiplier = 1;
 
         // set up gun position
-        ps = &cg.frame.ps;
-        ops = &cg.oldframe.ps;
+        ps = &cg.frame->ps;
+        ops = &cg.oldframe->ps;
 
         for (i = 0; i < 3; i++)
             org[i] = cg.refdef.vieworg[i] + ops->gunoffset[i] +
@@ -476,7 +454,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     }
 
     // correction for grapple cable model, which has origin in the middle
-    if (entnum == cg.frame.ps.clientnum && model == cl_mod_grapple_cable && hand_multiplier) {
+    if (entnum == cg.frame->ps.clientnum && model == cl_mod_grapple_cable && hand_multiplier) {
         VectorMA(org, model_length * 0.5f, dist, org);
         d -= model_length * 0.5f;
     }
@@ -539,7 +517,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
         return;
     if (s_ambient.integer == 2 && !ent->modelindex)
         return;
-    if (s_ambient.integer == 3 && ent->number != cg.frame.ps.clientnum)
+    if (s_ambient.integer == 3 && ent->number != cg.frame->ps.clientnum)
         return;
 
     int vol = (ent->sound >> 24) & 255;
@@ -586,8 +564,8 @@ static void CG_AddPacketEntities(void)
 
     memset(&ent, 0, sizeof(ent));
 
-    for (pnum = 0; pnum < cg.frame.num_entities; pnum++) {
-        s1 = &cg.frame.entities[pnum];
+    for (pnum = 0; pnum < cg.frame->num_entities; pnum++) {
+        s1 = &cg.frame->entities[pnum];
 
         cent = &cl_entities[s1->number];
 
@@ -652,7 +630,7 @@ static void CG_AddPacketEntities(void)
             LerpVector(cent->prev.old_origin, cent->current.old_origin,
                        cg.lerpfrac, ent.oldorigin);
         } else {
-            if (s1->number == cg.frame.ps.clientnum) {
+            if (s1->number == cg.frame->ps.clientnum) {
                 // use predicted origin
                 VectorCopy(cg.playerEntityOrigin, ent.origin);
                 VectorCopy(cg.playerEntityOrigin, ent.oldorigin);
@@ -817,7 +795,7 @@ static void CG_AddPacketEntities(void)
             AngleVectors(ent.angles, forward, NULL, NULL);
             VectorMA(ent.origin, 64, forward, start);
             trap_R_AddLight(start, 100, 1, 0, 0);
-        } else if (s1->number == cg.frame.ps.clientnum) {
+        } else if (s1->number == cg.frame->ps.clientnum) {
             VectorCopy(cg.playerEntityAngles, ent.angles);      // use predicted angles
         } else { // interpolate angles
             LerpAngles(cent->prev.angles, cent->current.angles,
@@ -832,7 +810,7 @@ static void CG_AddPacketEntities(void)
             trace_t trace;
             const int mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER;
 
-            if (s1->number == cg.frame.ps.clientnum) {
+            if (s1->number == cg.frame->ps.clientnum) {
                 VectorMA(cg.refdef.vieworg, 256, cg.v_forward, end);
                 VectorCopy(cg.refdef.vieworg, start);
             } else {
@@ -852,7 +830,7 @@ static void CG_AddPacketEntities(void)
         if (s1->morefx & EFX_GRENADE_LIGHT)
             trap_R_AddLight(ent.origin, 100, 1, 1, 0);
 
-        if (s1->number == cg.frame.ps.clientnum && !cg.thirdPersonView) {
+        if (s1->number == cg.frame->ps.clientnum && !cg.thirdPersonView) {
             if (effects & EF_FLAG1)
                 trap_R_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
             else if (effects & EF_FLAG2)
@@ -896,7 +874,7 @@ static void CG_AddPacketEntities(void)
             has_alpha = true;
         }
 
-        if (s1->number == cg.frame.ps.clientnum && cg.thirdPersonView && cg.thirdPersonAlpha != 1.0f) {
+        if (s1->number == cg.frame->ps.clientnum && cg.thirdPersonView && cg.thirdPersonAlpha != 1.0f) {
             custom_alpha *= cg.thirdPersonAlpha;
             has_alpha = true;
         }
@@ -1146,9 +1124,9 @@ skip:
 
 static const centity_t *get_player_entity(void)
 {
-    const centity_t *ent = &cl_entities[cg.frame.ps.clientnum];
+    const centity_t *ent = &cl_entities[cg.frame->ps.clientnum];
 
-    if (ent->serverframe != cg.frame.number)
+    if (ent->serverframe != cg.frame->number)
         return NULL;
     if (!ent->current.modelindex)
         return NULL;
@@ -1197,8 +1175,8 @@ static void CG_AddViewWeapon(void)
         return;
 
     // find states to interpolate between
-    ps = &cg.frame.ps;
-    ops = &cg.oldframe.ps;
+    ps = &cg.frame->ps;
+    ops = &cg.oldframe->ps;
 
     memset(&gun, 0, sizeof(gun));
 
@@ -1285,7 +1263,7 @@ static void CG_SetupFirstPersonView(void)
     // add kick angles
     if (cl_kickangles.integer) {
         vec3_t kickangles;
-        LerpAngles(cg.oldframe.ps.kick_angles, cg.frame.ps.kick_angles, cg.lerpfrac, kickangles);
+        LerpAngles(cg.oldframe->ps.kick_angles, cg.frame->ps.kick_angles, cg.lerpfrac, kickangles);
         VectorAdd(cg.refdef.viewangles, kickangles, cg.refdef.viewangles);
     }
 
@@ -1342,7 +1320,7 @@ static void CG_SetupThirdPersionView(void)
     trace_t trace;
 
     // if dead, set a nice view angle
-    if (cg.frame.ps.stats[STAT_HEALTH] <= 0) {
+    if (cg.frame->ps.stats[STAT_HEALTH] <= 0) {
         cg.refdef.viewangles[ROLL] = 0;
         cg.refdef.viewangles[PITCH] = 10;
     }
@@ -1429,8 +1407,8 @@ void CG_CalcViewValues(void)
     float lerp;
 
     // find states to interpolate between
-    ps = &cg.frame.ps;
-    ops = &cg.oldframe.ps;
+    ps = &cg.frame->ps;
+    ops = &cg.oldframe->ps;
 
     lerp = cg.lerpfrac;
 
@@ -1518,7 +1496,7 @@ void CG_CalcViewValues(void)
 
     vec3_t axis[3];
     AnglesToAxis(cg.refdef.viewangles, axis);
-    trap_S_UpdateListener(cg.frame.ps.clientnum, cg.refdef.vieworg, axis, cg.frame.ps.rdflags & RDF_UNDERWATER);
+    trap_S_UpdateListener(cg.frame->ps.clientnum, cg.refdef.vieworg, axis, cg.frame->ps.rdflags & RDF_UNDERWATER);
 }
 
 /*
@@ -1530,9 +1508,6 @@ Emits all entities, particles, and lights to the refresh
 */
 void CG_AddEntities(void)
 {
-    trap_R_ClearScene();
-    trap_S_ClearLoopingSounds();
-
     CG_CalcViewValues();
     CG_FinishViewValues();
     CG_AddPacketEntities();

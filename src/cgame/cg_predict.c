@@ -52,14 +52,14 @@ void CG_CheckPredictionError(void)
         return;
     }
 
-    if (!cl_predict.integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION))
+    if (!cl_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
     trap_GetUsercmdNumber(&cmd, NULL);
 
     // compare what the server returned with what we had predicted it to be
-    VectorSubtract(cg.frame.ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
+    VectorSubtract(cg.frame->ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
 
     // save the prediction error for interpolation
     len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
@@ -70,13 +70,13 @@ void CG_CheckPredictionError(void)
     }
 
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
-             cg.frame.number, len, delta[0], delta[1], delta[2]);
+             cg.frame->number, len, delta[0], delta[1], delta[2]);
 
     // don't predict steps against server returned data
     if (cg.predicted_step_frame <= cmd)
         cg.predicted_step_frame = cmd + 1;
 
-    VectorCopy(cg.frame.ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK]);
+    VectorCopy(cg.frame->ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
     VectorCopy(delta, cg.prediction_error);
@@ -180,7 +180,7 @@ void CG_PredictAngles(void)
     trap_GetUsercmd(current, &cmd);
 
     for (int i = 0; i < 3; i++) {
-        int16_t temp = cmd.angles[i] + cg.frame.ps.pmove.delta_angles[i];
+        int16_t temp = cmd.angles[i] + cg.frame->ps.pmove.delta_angles[i];
         cg.predicted_angles[i] = SHORT2ANGLE(temp);
     }
 }
@@ -196,7 +196,7 @@ void CG_PredictMovement(void)
     if (sv_paused.integer)
         return;
 
-    if (!cl_predict.integer || (cg.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cl_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
         CG_PredictAngles();
         return;
@@ -206,12 +206,12 @@ void CG_PredictMovement(void)
 
     // if we are too far out of date, just freeze
     if (current - ack > CMD_BACKUP) {
-        SHOWMISS("%i: exceeded CMD_BACKUP\n", cg.frame.number);
+        SHOWMISS("%i: exceeded CMD_BACKUP\n", cg.frame->number);
         return;
     }
 
     if (current == ack) {
-        SHOWMISS("%i: not moved\n", cg.frame.number);
+        SHOWMISS("%i: not moved\n", cg.frame->number);
         return;
     }
 
@@ -220,8 +220,8 @@ void CG_PredictMovement(void)
     pm.trace = CG_Trace;
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
-    pm.s = cg.frame.ps.pmove;
-    VectorCopy(cg.frame.ps.viewoffset, pm.viewoffset);
+    pm.s = cg.frame->ps.pmove;
+    VectorCopy(cg.frame->ps.viewoffset, pm.viewoffset);
     pm.snapinitial = true;
 
     // run frames

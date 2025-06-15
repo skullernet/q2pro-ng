@@ -113,6 +113,7 @@ cgame_src = files(
   'src/cgame/cg_effects.c',
   'src/cgame/cg_entities.c',
   'src/cgame/cg_events.c',
+  'src/cgame/cg_frame.c',
   'src/cgame/cg_main.c',
   'src/cgame/cg_precache.c',
   'src/cgame/cg_predict.c',

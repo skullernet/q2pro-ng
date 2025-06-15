@@ -205,6 +205,8 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     out->number = number;
     memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
 
+    out->ps = frame->ps;
+
     for (int i = 0; i < frame->numEntities; i++)
         out->entities[i] = cl.entityStates[(frame->firstEntity + i) & PARSE_ENTITIES_MASK];
     out->num_entities = frame->numEntities;
@@ -271,7 +273,7 @@ VM_THUNK(GetBrushModelBounds) {
 }
 
 VM_THUNK(GetUsercmdNumber) {
-    PF_GetUsercmdNumber(VM_PTR(0, unsigned), VM_PTR(1, unsigned));
+    PF_GetUsercmdNumber(VM_PTR_NULL(0, unsigned), VM_PTR_NULL(1, unsigned));
 }
 
 VM_THUNK(GetUsercmd) {
@@ -287,7 +289,7 @@ VM_THUNK(GetServerFrame) {
 }
 
 VM_THUNK(GetDemoInfo) {
-    VM_U32(0) = PF_GetDemoInfo(VM_PTR(0, cg_demo_info_t));
+    VM_U32(0) = PF_GetDemoInfo(VM_PTR_NULL(0, cg_demo_info_t));
 }
 
 VM_THUNK(RealTime) {

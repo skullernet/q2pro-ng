@@ -1350,7 +1350,7 @@ void CG_EntityEvents(centity_t *cent)
     }
 
 #if USE_FPS
-    if (cent->event_frame != cg.frame.number)
+    if (cent->event_frame != cg.frame->number)
         return;
 #endif
 

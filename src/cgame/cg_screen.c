@@ -396,7 +396,7 @@ void SCR_LagClear(void)
     lag.head = 0;
 }
 
-void SCR_LagSample(void)
+void SCR_LagSample(const cg_server_frame_t *frame)
 {
 #if 0
     int i = cgs.netchan.incoming_acknowledged & CMD_MASK;
@@ -587,9 +587,6 @@ static void ch_scale_changed(void)
     int w, h;
     float scale;
 
-    if (!ch_scale.modified)
-        return;
-
     scale = Q_clipf(ch_scale.value, 0.1f, 9.0f);
 
     // prescale
@@ -600,8 +597,6 @@ static void ch_scale_changed(void)
     trap_R_GetPicSize(&w, &h, scr.hit_marker_pic);
     scr.hit_marker_width = Q_rint(w * scale);
     scr.hit_marker_height = Q_rint(h * scale);
-
-    ch_scale.modified = false;
 }
 
 static void ch_color_changed(void)
@@ -634,7 +629,7 @@ void SCR_SetCrosshairColor(void)
         return;
     }
 
-    health = cg.frame.ps.stats[STAT_HEALTH];
+    health = cg.frame->ps.stats[STAT_HEALTH];
     if (health <= 0) {
         VectorSet(scr.crosshair_color.u8, 0, 0, 0);
         return;
@@ -662,17 +657,47 @@ void SCR_SetCrosshairColor(void)
     }
 }
 
-qvm_exported void CG_ModeChanged(void)
-{
-    trap_R_GetConfig(&scr.config);
-    scr.hud_scale = trap_R_GetAutoScale();
-}
-
 static void scr_font_changed(void)
 {
     scr.font_pic = trap_R_RegisterFont(scr_font.string);
     if (!scr.font_pic)
         scr.font_pic = trap_R_RegisterFont("conchars");
+}
+
+static void scr_scale_changed(void)
+{
+    if (scr_scale.value >= 1.0f)
+        scr.hud_scale = 1.0f / min(scr_scale.value, 10.0f);
+    else
+        scr.hud_scale = trap_R_GetAutoScale();
+}
+
+static void SCR_UpdateCvars(void)
+{
+    if (scr_scale.modified) {
+        scr_scale_changed();
+        scr_scale.modified = false;
+    }
+
+    if (scr_font.modified) {
+        scr_font_changed();
+        scr_font.modified = false;
+    }
+
+    if (ch_scale.modified) {
+        ch_scale_changed();
+        ch_scale.modified = false;
+    }
+
+    if (ch_red.modified || ch_green.modified || ch_blue.modified || ch_alpha.modified) {
+        ch_color_changed();
+        ch_red.modified = ch_green.modified = ch_blue.modified = ch_alpha.modified = false;
+    }
+
+    if (scr_crosshair.modified) {
+        scr_crosshair_changed();
+        scr_crosshair.modified = false;
+    }
 }
 
 /*
@@ -699,11 +724,6 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = trap_R_RegisterPic("loading");
     scr.net_pic = trap_R_RegisterPic("net");
     scr.hit_marker_pic = trap_R_RegisterPic("marker");
-}
-
-static void scr_scale_changed(void)
-{
-    //scr.hud_scale = trap_R_ClampScale(scr_scale.value);
 }
 
 static const vm_cvar_reg_t scr_cvars[] = {
@@ -754,6 +774,8 @@ void SCR_Init(void)
         const vm_cvar_reg_t *reg = &scr_cvars[i];
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
+
+    SCR_UpdateCvars();
 
     SCR_RegisterMedia();
 
@@ -884,10 +906,10 @@ static void SCR_DrawInventory(void)
     int     selected;
     int     top;
 
-    if (!(cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
+    if (!(cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
         return;
 
-    selected = cg.frame.ps.stats[STAT_SELECTED_ITEM];
+    selected = cg.frame->ps.stats[STAT_SELECTED_ITEM];
 
     num = 0;
     selected_num = 0;
@@ -1079,7 +1101,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cg.frame.ps.stats[value];
+            value = cg.frame->ps.stats[value];
             if (value < 0 || value >= MAX_IMAGES) {
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
@@ -1156,7 +1178,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             Q_snprintf(buffer, sizeof(buffer), "%3d %3d %-12.12s",
                        score, ping, ci->name);
-            if (value == cg.frame.ps.clientnum) {
+            if (value == cg.frame->ps.clientnum) {
                 HUD_DrawAltString(x, y, buffer);
             } else {
                 HUD_DrawString(x, y, buffer);
@@ -1180,7 +1202,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cg.frame.ps.stats[value];
+            value = cg.frame->ps.stats[value];
             HUD_DrawNumber(x, y, 0, width, value);
             continue;
         }
@@ -1190,15 +1212,15 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cg.frame.ps.stats[STAT_HEALTH];
+            value = cg.frame->ps.stats[STAT_HEALTH];
             if (value > 25)
                 color = 0;  // green
             else if (value > 0)
-                color = (cg.frame.number >> 2) & 1;     // flash
+                color = (cg.frame->number >> 2) & 1;     // flash
             else
                 color = 1;
 
-            if (cg.frame.ps.stats[STAT_FLASHES] & 1)
+            if (cg.frame->ps.stats[STAT_FLASHES] & 1)
                 trap_R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1210,15 +1232,15 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cg.frame.ps.stats[STAT_AMMO];
+            value = cg.frame->ps.stats[STAT_AMMO];
             if (value > 5)
                 color = 0;  // green
             else if (value >= 0)
-                color = (cg.frame.number >> 2) & 1;     // flash
+                color = (cg.frame->number >> 2) & 1;     // flash
             else
                 continue;   // negative number = don't show
 
-            if (cg.frame.ps.stats[STAT_FLASHES] & 4)
+            if (cg.frame->ps.stats[STAT_FLASHES] & 4)
                 trap_R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1230,13 +1252,13 @@ static void SCR_ExecuteLayoutString(const char *s)
             int     color;
 
             width = 3;
-            value = cg.frame.ps.stats[STAT_ARMOR];
+            value = cg.frame->ps.stats[STAT_ARMOR];
             if (value < 1)
                 continue;
 
             color = 0;  // green
 
-            if (cg.frame.ps.stats[STAT_FLASHES] & 2)
+            if (cg.frame->ps.stats[STAT_FLASHES] & 2)
                 trap_R_DrawPic(x, y, scr.field_pic);
 
             HUD_DrawNumber(x, y, color, width, value);
@@ -1250,7 +1272,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (index < 0 || index >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            index = cg.frame.ps.stats[index];
+            index = cg.frame->ps.stats[index];
             if (index < 0 || index >= MAX_CONFIGSTRINGS) {
                 Com_Error(ERR_DROP, "%s: invalid string index", __func__);
             }
@@ -1312,7 +1334,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cg.frame.ps.stats[value];
+            value = cg.frame->ps.stats[value];
             if (!value) {   // skip to endif
                 SCR_SkipToEndif(&s);
             }
@@ -1337,7 +1359,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_STATS) {
                 Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
             }
-            value = cg.frame.ps.stats[value];
+            value = cg.frame->ps.stats[value];
 
             token = COM_Parse(&s);
             index = Q_atoi(token);
@@ -1428,7 +1450,7 @@ static void SCR_DrawCrosshair(void)
 
     if (!scr_crosshair.integer)
         return;
-    if (cg.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
+    if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
 
     x = (scr.hud_width - scr.crosshair_width) / 2;
@@ -1450,7 +1472,7 @@ static void SCR_DrawStats(void)
 {
     if (scr_draw2d.integer <= 1)
         return;
-    if (cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
+    if (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
         return;
 
     SCR_ExecuteLayoutString(cg.statusbar);
@@ -1464,7 +1486,7 @@ static void SCR_DrawLayout(void)
     if (cgs.demoplayback && trap_Key_IsDown(K_F1))
         goto draw;
 
-    if (!(cg.frame.ps.stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT))
+    if (!(cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_LAYOUT))
         return;
 
 draw:
@@ -1512,9 +1534,15 @@ static void SCR_Draw2D(void)
 
 qvm_exported void CG_DrawActiveFrame(void)
 {
+    trap_R_ClearScene();
+
+    trap_S_ClearLoopingSounds();
+
     // start with full screen HUD
     scr.hud_height = scr.config.height;
     scr.hud_width = scr.config.width;
+
+    SCR_UpdateCvars();
 
     SCR_DrawDemo();
 
@@ -1528,4 +1556,9 @@ qvm_exported void CG_DrawActiveFrame(void)
 
     // draw all 2D elements
     SCR_Draw2D();
+}
+
+qvm_exported void CG_ModeChanged(void)
+{
+    trap_R_GetConfig(&scr.config);
 }

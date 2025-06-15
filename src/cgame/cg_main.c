@@ -132,12 +132,16 @@ qvm_exported void CG_Init(void)
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
 
+    cgs.demoplayback = trap_GetDemoInfo(NULL);
+
+    CG_UpdateConfigstring(CS_MAXCLIENTS);
+    CG_UpdateConfigstring(CS_STATUSBAR);
+
     SCR_Init();
+    CG_InitEffects();
     CG_RegisterVWepModels();
     CG_PrepRefresh();
     CG_RegisterSounds();
-
-    trap_GetConfigstring(CS_STATUSBAR, cg.statusbar, sizeof(cg.statusbar));
 }
 
 qvm_exported void CG_Shutdown(void)

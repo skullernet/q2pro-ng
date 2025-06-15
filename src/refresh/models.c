@@ -1669,10 +1669,10 @@ model_t *MOD_ForHandle(qhandle_t h)
 {
     model_t *model;
 
+    Q_assert_soft(h <= r_numModels);
     if (!h)
         return NULL;
 
-    Q_assert(h > 0 && h <= r_numModels);
     model = &r_models[h - 1];
     if (!model->type)
         return NULL;

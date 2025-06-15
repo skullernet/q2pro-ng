@@ -298,7 +298,7 @@ sfx_t *S_SfxForHandle(qhandle_t hSfx)
         return NULL;
     }
 
-    Q_assert_soft(hSfx > 0 && hSfx <= num_sfx);
+    Q_assert_soft(hSfx <= num_sfx);
     return &known_sfx[hSfx - 1];
 }
 
@@ -710,7 +710,7 @@ void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3]
     listener_entnum = entnum;
     VectorCopy(origin, listener_origin);
     VectorCopy(axis[0], listener_forward);
-    VectorCopy(axis[1], listener_right);
+    VectorNegate(axis[1], listener_right);
     VectorCopy(axis[2], listener_up);
     listener_underwater = underwater;
 }
