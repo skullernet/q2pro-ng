@@ -786,7 +786,7 @@ typedef enum {
 static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_Init, ""),
     VM_EXPORT(CG_Shutdown, ""),
-    VM_EXPORT(CG_DrawActiveFrame, ""),
+    VM_EXPORT(CG_DrawActiveFrame, "i"),
     VM_EXPORT(CG_ModeChanged, ""),
     VM_EXPORT(CG_ConsoleCommand, "i "),
     VM_EXPORT(CG_ServerCommand, ""),
@@ -803,7 +803,9 @@ static void thunk_CG_Shutdown(void) {
     VM_Call(cgame.vm, vm_CG_Shutdown);
 }
 
-static void thunk_CG_DrawActiveFrame(void) {
+static void thunk_CG_DrawActiveFrame(unsigned msec) {
+    vm_value_t *stack = VM_Push(cgame.vm, 1);
+    VM_U32(0) = msec;
     VM_Call(cgame.vm, vm_CG_DrawActiveFrame);
 }
 

@@ -42,6 +42,7 @@ vm_cvar_t   cl_noglow;
 vm_cvar_t   cl_nobob;
 vm_cvar_t   cl_nolerp;
 vm_cvar_t   cl_showmiss;
+vm_cvar_t   cl_showclamp;
 vm_cvar_t   cl_thirdperson;
 vm_cvar_t   cl_thirdperson_angle;
 vm_cvar_t   cl_thirdperson_range;
@@ -68,6 +69,7 @@ vm_cvar_t   cl_railspiral_color;
 vm_cvar_t   cl_railspiral_radius;
 vm_cvar_t   cl_paused;
 vm_cvar_t   sv_paused;
+vm_cvar_t   com_timedemo;
 vm_cvar_t   s_ambient;
 vm_cvar_t   info_hand;
 vm_cvar_t   info_fov;
@@ -89,6 +91,7 @@ static vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cl_nobob, "0", 0),
     VM_CVAR(cl_nolerp, "0", 0),
     VM_CVAR(cl_showmiss, "0", 0),
+    VM_CVAR(cl_showclamp, "0", 0),
     VM_CVAR(cl_thirdperson, "0", CVAR_CHEAT),
     VM_CVAR(cl_thirdperson_angle, "0", 0),
     VM_CVAR(cl_thirdperson_range, "60", 0),
@@ -117,6 +120,7 @@ static vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(sv_paused, "0", CVAR_ROM),
     VM_CVAR(s_ambient, "1", 0),
 
+    { &com_timedemo, "timedemo", "0", CVAR_CHEAT },
     { &info_hand, "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE },
     { &info_fov, "fov", "90", CVAR_USERINFO | CVAR_ARCHIVE },
     { &info_uf, "uf", "", CVAR_USERINFO },

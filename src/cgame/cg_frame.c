@@ -21,11 +21,40 @@ static void CG_SetActiveState(void)
     SCR_LagClear();
 }
 
+static void CG_SetClientTime(void)
+{
+    int prevtime;
+
+    if (sv_paused.integer)
+        return;
+
+    if (com_timedemo.integer) {
+        cg.time = cg.servertime;
+        cg.lerpfrac = 1.0f;
+        return;
+    }
+
+    prevtime = cg.servertime - BASE_FRAMETIME;
+    if (cg.time > cg.servertime) {
+        SHOWCLAMP(2, "high clamp %i\n", cg.time - cg.servertime);
+        cg.time = cg.servertime;
+        cg.lerpfrac = 1.0f;
+    } else if (cg.time < prevtime) {
+        SHOWCLAMP(2, "low clamp %i\n", prevtime - cg.time);
+        cg.time = prevtime;
+        cg.lerpfrac = 0;
+    } else {
+        cg.lerpfrac = (cg.time - prevtime) * BASE_1_FRAMETIME;
+    }
+
+    SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
+              cg.time, cg.servertime, cg.lerpfrac);
+}
 
 static cg_server_frame_t *CG_ReadNextFrame(void)
 {
     cg_server_frame_t *frame = &cg.frames[0];
-    if (frame == cg.oldframe)
+    if (frame == cg.frame)
         frame = &cg.frames[1];
 
     while (cg.processed_framenum < cg.current_framenum) {
@@ -44,10 +73,7 @@ static cg_server_frame_t *CG_ReadNextFrame(void)
 
 void CG_ProcessFrames(void)
 {
-    unsigned time;
-
-    trap_GetServerFrameNumber(&cg.current_framenum, &time);
-    cg.time=time;
+    trap_GetServerFrameNumber(&cg.current_framenum, &cg.servertime);
 
     if (!cg.frame) {
         cg.frame = CG_ReadNextFrame();
@@ -55,6 +81,11 @@ void CG_ProcessFrames(void)
             return;
         CG_SetActiveState();
     }
+
+    CG_SetClientTime();
+
+    //if (cg.time < cg.servertime)
+    //    return;
 
     cg_server_frame_t *frame = CG_ReadNextFrame();
     if (frame) {

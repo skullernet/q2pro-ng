@@ -125,7 +125,7 @@ typedef struct {
     cg_server_frame_t   *oldframe;
     cg_server_frame_t   frames[2];
     unsigned            processed_framenum, current_framenum;
-    int             servertime;
+    unsigned        servertime;
     int             serverdelta;
 
     int         time;           // this is the time value that the client
@@ -248,12 +248,17 @@ extern vm_cvar_t    cl_nobob;
 extern vm_cvar_t    cl_nolerp;
 
 #if USE_DEBUG
+#define SHOWCLAMP(level, ...) \
+    do { if (cl_showclamp.integer >= level) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
     do { if (cl_showmiss.integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 extern vm_cvar_t    cl_showmiss;
+extern vm_cvar_t    cl_showclamp;
 #else
 #define SHOWMISS(...)
+#define SHOWCLAMP(...)
 #endif
 
 extern vm_cvar_t    cl_vwep;
@@ -288,6 +293,7 @@ extern vm_cvar_t    cl_railspiral_radius;
 
 extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
+extern vm_cvar_t    com_timedemo;
 
 extern vm_cvar_t    s_ambient;
 
@@ -546,7 +552,7 @@ void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
 void    CG_ModeChanged(void);
-void    CG_DrawActiveFrame(void);
+void    CG_DrawActiveFrame(unsigned msec);
 
 //
 // servercmd.c

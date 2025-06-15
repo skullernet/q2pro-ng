@@ -200,7 +200,7 @@ typedef struct {
 
     void (*Init)(void);
     void (*Shutdown)(void);
-    void (*DrawActiveFrame)(void);
+    void (*DrawActiveFrame)(unsigned msec);
     void (*ModeChanged)(void);
     bool (*ConsoleCommand)(void);
     void (*ServerCommand)(void);

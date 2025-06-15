@@ -1532,8 +1532,16 @@ static void SCR_Draw2D(void)
     trap_R_SetScale(1.0f);
 }
 
-qvm_exported void CG_DrawActiveFrame(void)
+qvm_exported void CG_DrawActiveFrame(unsigned time)
 {
+    unsigned msec = time - cgs.realtime;
+    cgs.realtime = time;
+
+    if (!sv_paused.integer)
+        cg.time += msec;
+
+    cgs.frametime = msec * 0.001f;
+
     trap_R_ClearScene();
 
     trap_S_ClearLoopingSounds();

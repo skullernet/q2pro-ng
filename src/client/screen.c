@@ -244,7 +244,7 @@ static void SCR_DrawActive(void)
         return;
     }
 
-    cge->DrawActiveFrame();
+    cge->DrawActiveFrame(cls.realtime);
 
     if (scr_timegraph->integer)
         SCR_DebugGraph(cls.frametime * 300, 0xdc);

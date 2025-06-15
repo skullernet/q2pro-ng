@@ -1970,36 +1970,6 @@ void CL_Activate(active_t active)
     }
 }
 
-static void CL_SetClientTime(void)
-{
-    int prevtime;
-
-    if (cls.state != ca_active || sv_paused->integer)
-        return;
-
-    if (com_timedemo->integer) {
-        cl.time = cl.servertime;
-        cl.lerpfrac = 1.0f;
-        return;
-    }
-
-    prevtime = cl.servertime - BASE_FRAMETIME;
-    if (cl.time > cl.servertime) {
-        SHOWCLAMP(2, "high clamp %i\n", cl.time - cl.servertime);
-        cl.time = cl.servertime;
-        cl.lerpfrac = 1.0f;
-    } else if (cl.time < prevtime) {
-        SHOWCLAMP(2, "low clamp %i\n", prevtime - cl.time);
-        cl.time = prevtime;
-        cl.lerpfrac = 0;
-    } else {
-        cl.lerpfrac = (cl.time - prevtime) * BASE_1_FRAMETIME;
-    }
-
-    SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
-              cl.time, cl.servertime, cl.lerpfrac);
-}
-
 static void CL_MeasureStats(void)
 {
     int i;
@@ -2244,6 +2214,7 @@ unsigned CL_Frame(unsigned msec)
     }
 
     main_extra += msec;
+    ref_extra += msec;
     cls.realtime += msec;
 
     CL_ProcessEvents();
@@ -2276,7 +2247,6 @@ unsigned CL_Frame(unsigned msec)
         if (sync_mode == ASYNC_VIDEO) {
             ref_frame = R_VideoSync();
         } else {
-            ref_extra += main_extra;
             if (ref_extra < ref_msec) {
                 ref_frame = false;
             } else if (ref_extra > ref_msec * 4) {
@@ -2306,18 +2276,8 @@ unsigned CL_Frame(unsigned msec)
     if (cls.frametime > 1.0f / 5)
         cls.frametime = 1.0f / 5;
 
-    if (!sv_paused->integer) {
-        cl.time += main_extra;
-#if USE_FPS
-        cl.keytime += main_extra;
-#endif
-    }
-
     // read next demo frame
     CL_DemoFrame();
-
-    // calculate local time
-    CL_SetClientTime();
 
     // resend a connection request if necessary
     CL_CheckForResend();
