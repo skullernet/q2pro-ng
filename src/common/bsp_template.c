@@ -105,7 +105,7 @@ BSP_LOAD(Texinfo)
 #endif
         out->flags = BSP_Long();
         out->value = BSP_Long();
-        out->id = i + 1;
+        out->surface_id = i + 1;
 
         memcpy(out->name, in, sizeof(out->name) - 1);
         in += MAX_TEXNAME;

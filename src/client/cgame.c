@@ -120,7 +120,12 @@ static size_t PF_Key_GetBinding(const char *binding, char *buf, size_t size)
 
 static bool PF_GetSurfaceInfo(unsigned surf_id, surface_info_t *info)
 {
-    return BSP_SurfaceInfo(cl.bsp, surf_id, info);
+    return BSP_GetSurfaceInfo(cl.bsp, surf_id, info);
+}
+
+static bool PF_GetMaterialInfo(unsigned material_id, material_info_t *info)
+{
+    return BSP_GetMaterialInfo(cl.bsp, material_id, info);
 }
 
 static void PF_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs)
@@ -266,6 +271,10 @@ VM_THUNK(TempBoxModel) {
 
 VM_THUNK(GetSurfaceInfo) {
     VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
+}
+
+VM_THUNK(GetMaterialInfo) {
+    VM_U32(0) = PF_GetMaterialInfo(VM_U32(0), VM_PTR(1, material_info_t));
 }
 
 VM_THUNK(GetBrushModelBounds) {
@@ -670,6 +679,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(TransformedPointContents, "i iiii"),
     VM_IMPORT(TempBoxModel, "i ii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
+    VM_IMPORT(GetMaterialInfo, "i ii"),
     VM_IMPORT(GetBrushModelBounds, "iii"),
     VM_IMPORT(GetUsercmdNumber, "ii"),
     VM_IMPORT(GetUsercmd, "i ii"),
@@ -848,6 +858,7 @@ static const cgame_import_t cgame_dll_imports = {
     .TempBoxModel = PF_TempBoxModel,
 
     .GetSurfaceInfo = PF_GetSurfaceInfo,
+    .GetMaterialInfo = PF_GetMaterialInfo,
     .GetBrushModelBounds = PF_GetBrushModelBounds,
 
     .GetUsercmdNumber = PF_GetUsercmdNumber,

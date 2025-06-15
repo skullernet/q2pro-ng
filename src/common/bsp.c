@@ -334,26 +334,31 @@ void BSP_Free(bsp_t *bsp)
     if (--bsp->refcount == 0) {
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
+        Z_Free(bsp->materials);
         Z_Free(bsp);
     }
 }
 
-#if USE_CLIENT
-
-int BSP_LoadMaterials(bsp_t *bsp)
+static void BSP_LoadMaterials(bsp_t *bsp)
 {
     char path[MAX_QPATH];
+    material_t material;
     mtexinfo_t *out, *tex;
-    int i, j, step_id = FOOTSTEP_RESERVED_COUNT;
     qhandle_t f;
+    int i, j;
+
+    // init default materials
+    bsp->nummaterials = MATERIAL_RESERVED_COUNT;
+    bsp->materials = Z_Malloc(bsp->nummaterials * sizeof(bsp->materials[0]));
+    strncpy(bsp->materials[MATERIAL_ID_DEFAULT], "default", sizeof(bsp->materials[0]));
+    strncpy(bsp->materials[MATERIAL_ID_LADDER ], "ladder",  sizeof(bsp->materials[0]));
 
     for (i = 0, out = bsp->texinfo; i < bsp->numtexinfo; i++, out++) {
         // see if already loaded material for this texinfo
         for (j = i - 1; j >= 0; j--) {
             tex = &bsp->texinfo[j];
             if (!Q_stricmp(tex->name, out->name)) {
-                strcpy(out->material, tex->material);
-                out->step_id = tex->step_id;
+                out->material_id = tex->material_id;
                 break;
             }
         }
@@ -363,45 +368,41 @@ int BSP_LoadMaterials(bsp_t *bsp)
         // load material file
         Q_concat(path, sizeof(path), "textures/", out->name, ".mat");
         FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
-        if (f) {
-            FS_Read(out->material, sizeof(out->material) - 1, f);
-            FS_CloseFile(f);
-        }
+        if (!f)
+            continue;
 
-        if (out->material[0] && !COM_IsPath(out->material)) {
-            Com_WPrintf("Bad material \"%s\" in %s\n", COM_MakePrintable(out->material), path);
-            out->material[0] = 0;
-        }
+        memset(material, 0, sizeof(material));
+        FS_Read(material, sizeof(material), f);
+        FS_CloseFile(f);
 
-        if (!out->material[0] || !Q_stricmp(out->material, "default")) {
-            out->step_id = FOOTSTEP_ID_DEFAULT;
+        if (material[sizeof(material) - 1]) {
+            Com_WPrintf("Oversize material in %s\n", path);
             continue;
         }
 
-        if (!Q_stricmp(out->material, "ladder")) {
-            out->step_id = FOOTSTEP_ID_LADDER;
+        if (!COM_IsPath(material)) {
+            Com_WPrintf("Bad material \"%s\" in %s\n", COM_MakePrintable(material), path);
             continue;
         }
 
-        // see if already allocated step_id for this material
-        for (j = i - 1; j >= 0; j--) {
-            tex = &bsp->texinfo[j];
-            if (!Q_stricmp(tex->material, out->material)) {
-                out->step_id = tex->step_id;
+        // see if already allocated id for this material
+        for (j = bsp->nummaterials - 1; j >= 0; j--) {
+            if (!Q_stricmp(bsp->materials[j], material)) {
+                out->material_id = j;
                 break;
             }
         }
 
-        // allocate new step_id
-        if (j == -1)
-            out->step_id = step_id++;
+        // allocate new material
+        if (j == -1) {
+            out->material_id = bsp->nummaterials++;
+            bsp->materials = Z_Realloc(bsp->materials, bsp->nummaterials * sizeof(bsp->materials[0]));
+            memcpy(bsp->materials[out->material_id], material, sizeof(bsp->materials[0]));
+        }
     }
 
-    Com_DPrintf("%s: %d materials loaded\n", __func__, step_id);
-    return step_id;
+    Com_DPrintf("%s: %d materials loaded\n", __func__, bsp->nummaterials);
 }
-
-#endif
 
 #if USE_REF
 
@@ -887,6 +888,8 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     BSP_MergeLeafContents(bsp);
 
+    BSP_LoadMaterials(bsp);
+
     Hunk_End(&bsp->hunk);
 
     List_Append(&bsp_cache, &bsp->entry);
@@ -1036,7 +1039,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 
 #endif
 
-bool BSP_SurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info)
+bool BSP_GetSurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info)
 {
     memset(info, 0, sizeof(*info));
 
@@ -1048,11 +1051,20 @@ bool BSP_SurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info)
     info->flags = tex->flags;
     info->value = tex->value;
 
-#if USE_CLIENT
-    Q_strlcpy(info->material, tex->material, sizeof(info->material));
-    info->footstep_id = tex->step_id;
-#endif
+    Q_strlcpy(info->material, bsp->materials[tex->material_id], sizeof(info->material));
+    info->material_id = tex->material_id;
 
+    return true;
+}
+
+bool BSP_GetMaterialInfo(const bsp_t *bsp, unsigned material_id, material_info_t *info)
+{
+    memset(info, 0, sizeof(*info));
+
+    if (!bsp || material_id >= bsp->nummaterials)
+        return false;
+
+    Q_strlcpy(info->material, bsp->materials[material_id], sizeof(info->material));
     return true;
 }
 

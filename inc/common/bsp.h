@@ -36,21 +36,20 @@ typedef union {
     size_t  l[VIS_FAST_LONGS(VIS_MAX_BYTES)];
 } visrow_t;
 
+typedef char material_t[16];
+
 typedef struct mtexinfo_s {
     char                name[MAX_TEXNAME];
     int                 flags;
     int                 value;
-    int                 id;
+    int                 surface_id;
+    int                 material_id;
 #if USE_REF
     vec3_t              axis[2];
     vec2_t              offset;
     struct image_s      *image; // used for texturing
     struct mtexinfo_s   *next; // used for animation
     int                 numframes;
-#endif
-#if USE_CLIENT
-    char                material[16];
-    int                 step_id;
 #endif
 } mtexinfo_t;
 
@@ -240,6 +239,9 @@ typedef struct {
     int             numtexinfo;
     mtexinfo_t      *texinfo;
 
+    int             nummaterials;
+    material_t      *materials;
+
     int             numplanes;
     cplane_t        *planes;
 
@@ -305,10 +307,6 @@ int BSP_Load(const char *name, bsp_t **bsp_p);
 void BSP_Free(bsp_t *bsp);
 const char *BSP_ErrorString(int err);
 
-#if USE_CLIENT
-int BSP_LoadMaterials(bsp_t *bsp);
-#endif
-
 #if USE_REF
 typedef struct {
     mface_t     *surf;
@@ -325,7 +323,9 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
 const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uint32_t point[3]);
 #endif
 
-bool BSP_SurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info);
+bool BSP_GetSurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info);
+bool BSP_GetMaterialInfo(const bsp_t *bsp, unsigned material_id, material_info_t *info);
+
 void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p);
 

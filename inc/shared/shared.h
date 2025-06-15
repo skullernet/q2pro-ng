@@ -976,15 +976,19 @@ typedef struct {
 typedef int contents_t;
 
 enum {
-    FOOTSTEP_ID_DEFAULT,
-    FOOTSTEP_ID_LADDER,
-    FOOTSTEP_RESERVED_COUNT
+    MATERIAL_ID_DEFAULT,
+    MATERIAL_ID_LADDER,
+    MATERIAL_RESERVED_COUNT
 };
+
+typedef struct {
+    char    material[16];
+} material_info_t;
 
 typedef struct {
     char    name[32];
     char    material[16];
-    int     footstep_id;
+    int     material_id;
     int     flags;
     int     value;
     int     reserved;

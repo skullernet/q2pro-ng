@@ -54,7 +54,7 @@ qhandle_t   cl_mod_muzzles[MFLASH_TOTAL];
 
 qhandle_t   cl_img_flare;
 
-#define MAX_FOOTSTEP_IDS    256
+#define MAX_MATERIALS       256
 #define MAX_FOOTSTEP_SFX    15
 
 typedef struct {
@@ -62,7 +62,7 @@ typedef struct {
     qhandle_t   sfx[MAX_FOOTSTEP_SFX];
 } cl_footstep_sfx_t;
 
-static cl_footstep_sfx_t    cl_footstep_sfx[MAX_FOOTSTEP_IDS];
+static cl_footstep_sfx_t    cl_footstep_sfx[MAX_MATERIALS];
 static int                  cl_num_footsteps;
 static qhandle_t            cl_last_footstep;
 
@@ -76,12 +76,12 @@ static int CG_FindFootstepSurface(int entnum)
     const centity_t *cent = &cl_entities[entnum];
 
     // skip if no materials loaded
-    if (cl_num_footsteps <= FOOTSTEP_RESERVED_COUNT)
-        return FOOTSTEP_ID_DEFAULT;
+    if (cl_num_footsteps <= MATERIAL_RESERVED_COUNT)
+        return MATERIAL_ID_DEFAULT;
 
     // allow custom footsteps to be disabled
     if (cl_footsteps.integer >= 2)
-        return FOOTSTEP_ID_DEFAULT;
+        return MATERIAL_ID_DEFAULT;
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
@@ -112,7 +112,7 @@ static int CG_FindFootstepSurface(int entnum)
 
     if (tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
-        return FOOTSTEP_ID_DEFAULT;
+        return MATERIAL_ID_DEFAULT;
     }
 
     if (tr.surface_id) {
@@ -130,10 +130,10 @@ static int CG_FindFootstepSurface(int entnum)
         if (tr.surface_id)
             trap_GetSurfaceInfo(tr.surface_id, &surf);
 
-        return surf.footstep_id;
+        return surf.material_id;
     }
 
-    return FOOTSTEP_ID_DEFAULT;
+    return MATERIAL_ID_DEFAULT;
 }
 
 /*
@@ -152,10 +152,10 @@ static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float
     if (!cl_num_footsteps)
         return; // should not really happen
 
-    if (step_id == FOOTSTEP_ID_DEFAULT)
+    if (step_id == MATERIAL_ID_DEFAULT)
         step_id = CG_FindFootstepSurface(entnum);
-    if (step_id >= MAX_FOOTSTEP_IDS)
-        step_id = FOOTSTEP_ID_DEFAULT;
+    if (step_id >= cl_num_footsteps)
+        step_id = MATERIAL_ID_DEFAULT;
 
     sfx = &cl_footstep_sfx[step_id];
     if (sfx->num_sfx <= 0)
@@ -207,24 +207,22 @@ CG_RegisterFootsteps
 */
 static void CG_RegisterFootsteps(void)
 {
-    surface_info_t surf;
+    material_info_t info;
     int i;
 
-    cl_last_footstep = 0;
-
-    for (i = 0; i < MAX_FOOTSTEP_IDS; i++)
-        cl_footstep_sfx[i].num_sfx = -1;
-
     // load reserved footsteps
-    CG_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_DEFAULT], NULL);
-    CG_RegisterFootstep(&cl_footstep_sfx[FOOTSTEP_ID_LADDER], "ladder");
+    CG_RegisterFootstep(&cl_footstep_sfx[MATERIAL_ID_DEFAULT], NULL);
+    CG_RegisterFootstep(&cl_footstep_sfx[MATERIAL_ID_LADDER], "ladder");
 
     // load the rest
-    for (i = 1; trap_GetSurfaceInfo(i, &surf) && surf.footstep_id < MAX_FOOTSTEP_IDS; i++) {
-        cl_footstep_sfx_t *sfx = &cl_footstep_sfx[surf.footstep_id];
-        if (sfx->num_sfx == -1)
-            CG_RegisterFootstep(sfx, surf.material);
+    for (i = MATERIAL_RESERVED_COUNT; i < MAX_MATERIALS; i++) {
+        if (!trap_GetMaterialInfo(i, &info))
+            break;
+        CG_RegisterFootstep(&cl_footstep_sfx[i], info.material);
     }
+
+    cl_num_footsteps = i;
+    cl_last_footstep = 0;
 }
 
 /*
@@ -1207,13 +1205,13 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         CG_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
-        CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 1.0f, ATTN_NORM);
+        CG_PlayFootstepSfx(MATERIAL_ID_DEFAULT, number, 1.0f, ATTN_NORM);
         break;
     case EV_OTHER_FOOTSTEP:
-        CG_PlayFootstepSfx(FOOTSTEP_ID_DEFAULT, number, 0.5f, ATTN_IDLE);
+        CG_PlayFootstepSfx(MATERIAL_ID_DEFAULT, number, 0.5f, ATTN_IDLE);
         break;
     case EV_LADDER_STEP:
-        CG_PlayFootstepSfx(FOOTSTEP_ID_LADDER, number, 0.5f, ATTN_IDLE);
+        CG_PlayFootstepSfx(MATERIAL_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
     case EV_FALLSHORT:
         trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);

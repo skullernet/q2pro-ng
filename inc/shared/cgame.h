@@ -78,6 +78,7 @@ typedef struct {
     qhandle_t (*TempBoxModel)(const vec3_t mins, const vec3_t maxs);
 
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
+    bool (*GetMaterialInfo)(unsigned material_id, material_info_t *info);
     void (*GetBrushModelBounds)(unsigned index, vec3_t mins, vec3_t maxs);
 
     void (*GetUsercmdNumber)(unsigned *ack, unsigned *current);

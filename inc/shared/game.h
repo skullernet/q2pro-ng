@@ -202,7 +202,9 @@ typedef struct {
 
     int (*DirToByte)(const vec3_t dir);
     void (*ByteToDir)(unsigned v, vec3_t dir);
+
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
+    bool (*GetMaterialInfo)(unsigned material_id, material_info_t *info);
 
     void (*LocateGameData)(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
     bool (*ParseEntityString)(char *buf, size_t size);

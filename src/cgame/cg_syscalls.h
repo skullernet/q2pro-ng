@@ -42,6 +42,7 @@ contents_t trap_TransformedPointContents(const vec3_t point, qhandle_t hmodel,
 qhandle_t trap_TempBoxModel(const vec3_t mins, const vec3_t maxs);
 
 bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
+bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
 void trap_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs);
 
 void trap_GetUsercmdNumber(unsigned *ack, unsigned *current);
@@ -168,6 +169,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_TempBoxModel cgi->TempBoxModel
 
 #define trap_GetSurfaceInfo cgi->GetSurfaceInfo
+#define trap_GetMaterialInfo cgi->GetMaterialInfo
 #define trap_GetBrushModelBounds cgi->GetBrushModelBounds
 
 #define trap_GetUsercmdNumber cgi->GetUsercmdNumber

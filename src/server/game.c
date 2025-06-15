@@ -310,7 +310,12 @@ static bool PF_ParseEntityString(char *buf, size_t size)
 
 static bool PF_GetSurfaceInfo(unsigned surf_id, surface_info_t *info)
 {
-    return BSP_SurfaceInfo(sv.cm.cache, surf_id, info);
+    return BSP_GetSurfaceInfo(sv.cm.cache, surf_id, info);
+}
+
+static bool PF_GetMaterialInfo(unsigned material_id, material_info_t *info)
+{
+    return BSP_GetMaterialInfo(sv.cm.cache, material_id, info);
 }
 
 static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size)
@@ -434,6 +439,10 @@ VM_THUNK(ByteToDir) {
 
 VM_THUNK(GetSurfaceInfo) {
     VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
+}
+
+VM_THUNK(GetMaterialInfo) {
+    VM_U32(0) = PF_GetMaterialInfo(VM_U32(0), VM_PTR(1, material_info_t));
 }
 
 VM_THUNK(LocateGameData) {
@@ -672,6 +681,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(DirToByte, "i i"),
     VM_IMPORT(ByteToDir, "ii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
+    VM_IMPORT(GetMaterialInfo, "i ii"),
     VM_IMPORT(LocateGameData, "iiiii"),
     VM_IMPORT(ParseEntityString, "i ii"),
     VM_IMPORT(GetLevelName, "i ii"),
@@ -889,7 +899,9 @@ static const game_import_t game_dll_imports = {
 
     .DirToByte = DirToByte,
     .ByteToDir = ByteToDir,
+
     .GetSurfaceInfo = PF_GetSurfaceInfo,
+    .GetMaterialInfo = PF_GetMaterialInfo,
 
     .LocateGameData = PF_LocateGameData,
     .ParseEntityString = PF_ParseEntityString,

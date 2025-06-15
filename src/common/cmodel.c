@@ -545,7 +545,7 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
             trace->fraction = enterfrac;
             trace->plane = *clipplane;
             trace->surface_flags = leadside->texinfo->flags;
-            trace->surface_id = leadside->texinfo->id;
+            trace->surface_id = leadside->texinfo->surface_id;
             trace->contents = brush->contents;
         }
     }
