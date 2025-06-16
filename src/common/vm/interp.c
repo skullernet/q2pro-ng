@@ -79,10 +79,6 @@ static const vm_block_t *VM_PopBlock(vm_t *m)
 
     m->fp = frame->fp; // Restore frame pointer
 
-    // Validate the return value
-    if (t->num_results == 1)
-        VM_ASSERT(m->stack[m->sp].value_type == t->results[0], "Call type mismatch");
-
     // Restore stack pointer
     if (t->num_results == 1) {
         // Save top value as result
@@ -118,24 +114,18 @@ void VM_SetupCall(vm_t *m, uint32_t fidx)
     // Push locals (dropping extras)
     m->fp = m->sp - type->num_params + 1;
     VM_ASSERT(m->fp >= 0, "Stack underflow");
-
-    // Validate arguments vs formal params
-    for (uint32_t f = 0; f < type->num_params; f++)
-        VM_ASSERT(type->params[f] == m->stack[m->fp + f].value_type, "Function call param types differ");
-
     VM_ASSERT(m->sp < STACK_SIZE - (int)func->num_locals, "Stack overflow");
 
     // Push function locals
-    for (uint32_t lidx = 0; lidx < func->num_locals; lidx++) {
-        m->sp++;
-        m->stack[m->sp].value_type = func->locals[lidx];
-        m->stack[m->sp].value.u64 = 0; // Initialize whole union to 0
-    }
+    for (uint32_t lidx = 0; lidx < func->num_locals; lidx++)
+        m->stack[++m->sp].u64 = 0; // Initialize whole union to 0
 
     // Set program counter to start of function
     m->pc = func->start_addr;
 }
 
+// Call imported function.
+// Pops params and pushes return value.
 static void VM_ThunkOut(vm_t *m, uint32_t fidx)
 {
     const vm_block_t  *func = &m->funcs[fidx];
@@ -144,19 +134,13 @@ static void VM_ThunkOut(vm_t *m, uint32_t fidx)
     int fp = m->sp - type->num_params + 1;
     VM_ASSERT(fp >= 0, "Stack underflow");
 
-    // Validate arguments vs formal params
-    for (uint32_t f = 0; f < type->num_params; f++)
-        VM_ASSERT(type->params[f] == m->stack[fp + f].value_type, "Function call param types differ");
-
+    // Pop params
     m->sp -= type->num_params;
 
     func->thunk(&m->memory, &m->stack[fp]);
 
-    // Set return value type
-    if (type->num_results == 1) {
-        VM_ASSERT(m->sp < STACK_SIZE - 1, "Stack overflow");
-        m->stack[++m->sp].value_type = type->results[0];
-    }
+    // Push return value
+    m->sp += type->num_results;
 }
 
 static uint32_t read_leb(vm_t *m)
@@ -285,7 +269,7 @@ void VM_Interpret(vm_t *m)
             block = &m->blocks[m->block_lookup[cur_pc]];
             VM_PushBlock(m, block, m->sp);
 
-            cond = stack[m->sp--].value.u32;
+            cond = stack[m->sp--].u32;
             if (cond == 0) { // if false
                 // branch to else block or after end of if
                 if (block->start_addr == 0) {
@@ -322,7 +306,7 @@ void VM_Interpret(vm_t *m)
 
         case BrIf:
             depth = read_leb(m);
-            cond = stack[m->sp--].value.u32;
+            cond = stack[m->sp--].u32;
             if (cond) { // if true
                 VM_ASSERT(m->csp >= depth, "Call stack underflow");
                 m->csp -= depth;
@@ -339,7 +323,7 @@ void VM_Interpret(vm_t *m)
 
             depth = read_leb(m);
 
-            int32_t didx = stack[m->sp--].value.i32;
+            int32_t didx = stack[m->sp--].i32;
             if (didx >= 0 && didx < count)
                 depth = m->br_table[didx];
 
@@ -375,7 +359,7 @@ void VM_Interpret(vm_t *m)
             tidx = read_leb(m);
             VM_ASSERT(tidx < m->num_types, "Bad type index");
             read_leb(m); // ignore default table
-            val = stack[m->sp--].value.u32;
+            val = stack[m->sp--].u32;
             VM_ASSERT(val < m->table.maximum, "Undefined element in table");
             fidx = m->table.entries[val];
             VM_ASSERT(fidx < m->num_funcs, "Bad function index");
@@ -399,7 +383,7 @@ void VM_Interpret(vm_t *m)
             continue;
 
         case Select:
-            cond = stack[m->sp--].value.u32;
+            cond = stack[m->sp--].u32;
             m->sp--;
             if (!cond)  // use a instead of b
                 stack[m->sp] = stack[m->sp + 1];
@@ -434,61 +418,52 @@ void VM_Interpret(vm_t *m)
         //
         case MemorySize:
             m->pc++; // ignore reserved
-            stack[++m->sp].value_type = I32;
-            stack[m->sp].value.u32 = m->memory.pages;
+            stack[++m->sp].u32 = m->memory.pages;
             continue;
 
         case MemoryGrow:
             m->pc++; // ignore reserved
             uint32_t prev_pages = m->memory.pages;
-            uint32_t delta = stack[m->sp].value.u32;
-            stack[m->sp].value.u32 = prev_pages;
+            uint32_t delta = stack[m->sp].u32;
+            stack[m->sp].u32 = prev_pages;
             if (delta == 0)
                 continue; // no change
-            stack[m->sp].value.u32 = -1;    // resize not supported
+            stack[m->sp].u32 = -1;    // resize not supported
             continue;
 
         case Extended:
             opcode = read_leb(m);
             switch (opcode) {
             case I32_Trunc_sat_f32_s:
-                stack[m->sp].value.i32 = stack[m->sp].value.f32;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].i32 = stack[m->sp].f32;
                 break;
             case I32_Trunc_sat_f32_u:
-                stack[m->sp].value.u32 = stack[m->sp].value.f32;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].u32 = stack[m->sp].f32;
                 break;
             case I32_Trunc_sat_f64_s:
-                stack[m->sp].value.i32 = stack[m->sp].value.f64;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].i32 = stack[m->sp].f64;
                 break;
             case I32_Trunc_sat_f64_u:
-                stack[m->sp].value.u32 = stack[m->sp].value.f64;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].u32 = stack[m->sp].f64;
                 break;
             case I64_Trunc_sat_f32_s:
-                stack[m->sp].value.i64 = stack[m->sp].value.f32;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].i64 = stack[m->sp].f32;
                 break;
             case I64_Trunc_sat_f32_u:
-                stack[m->sp].value.u64 = stack[m->sp].value.f32;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = stack[m->sp].f32;
                 break;
             case I64_Trunc_sat_f64_s:
-                stack[m->sp].value.i64 = stack[m->sp].value.f64;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].i64 = stack[m->sp].f64;
                 break;
             case I64_Trunc_sat_f64_u:
-                stack[m->sp].value.u64 = stack[m->sp].value.f64;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = stack[m->sp].f64;
                 break;
 
             case MemoryCopy:
                 VM_ASSERT(m->sp >= 2, "Stack underflow");
-                dst = stack[m->sp - 2].value.u32;
-                src = stack[m->sp - 1].value.u32;
-                n   = stack[m->sp    ].value.u32;
+                dst = stack[m->sp - 2].u32;
+                src = stack[m->sp - 1].u32;
+                n   = stack[m->sp    ].u32;
                 VM_ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE &&
                           (uint64_t)src + n <= m->memory.pages * VM_PAGE_SIZE, "Memory copy out of bounds");
                 memmove(m->memory.bytes + dst, m->memory.bytes + src, n);
@@ -498,9 +473,9 @@ void VM_Interpret(vm_t *m)
 
             case MemoryFill:
                 VM_ASSERT(m->sp >= 2, "Stack underflow");
-                dst = stack[m->sp - 2].value.u32;
-                src = stack[m->sp - 1].value.u32;
-                n   = stack[m->sp    ].value.u32;
+                dst = stack[m->sp - 2].u32;
+                src = stack[m->sp - 1].u32;
+                n   = stack[m->sp    ].u32;
                 VM_ASSERT((uint64_t)dst + n <= m->memory.pages * VM_PAGE_SIZE, "Memory fill out of bounds");
                 memset(m->memory.bytes + dst, src, n);
                 m->pc += 1;
@@ -516,68 +491,53 @@ void VM_Interpret(vm_t *m)
         case I32_Load ... I64_Load32_u:
             read_leb(m); // skip flags
             offset = read_leb(m);
-            addr = stack[m->sp].value.u32;
+            addr = stack[m->sp].u32;
             VM_ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
                       <= m->memory.pages * VM_PAGE_SIZE, "Memory load out of bounds");
             maddr = m->memory.bytes + offset + addr;
-            stack[m->sp].value.u64 = 0; // initialize to 0
 
             switch (opcode) {
             case I32_Load:
-                stack[m->sp].value.u32 = RN32(maddr);
-                stack[m->sp].value_type = I32;
+                stack[m->sp].u32 = RN32(maddr);
                 break;
             case I64_Load:
-                stack[m->sp].value.u64 = RN64(maddr);
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = RN64(maddr);
                 break;
             case F32_Load:
-                stack[m->sp].value.u32 = RN32(maddr);
-                stack[m->sp].value_type = F32;
+                stack[m->sp].u32 = RN32(maddr);
                 break;
             case F64_Load:
-                stack[m->sp].value.u64 = RN64(maddr);
-                stack[m->sp].value_type = F64;
+                stack[m->sp].u64 = RN64(maddr);
                 break;
             case I32_Load8_s:
-                stack[m->sp].value.i32 = (int8_t)*maddr;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].i32 = (int8_t)*maddr;
                 break;
             case I32_Load8_u:
-                stack[m->sp].value.u32 = *maddr;
-                stack[m->sp].value_type = I32;
+                stack[m->sp].u32 = *maddr;
                 break;
             case I32_Load16_s:
-                stack[m->sp].value.i32 = (int16_t)RN16(maddr);
-                stack[m->sp].value_type = I32;
+                stack[m->sp].i32 = (int16_t)RN16(maddr);
                 break;
             case I32_Load16_u:
-                stack[m->sp].value.u32 = RN16(maddr);
-                stack[m->sp].value_type = I32;
+                stack[m->sp].u32 = RN16(maddr);
                 break;
             case I64_Load8_s:
-                stack[m->sp].value.i64 = (int8_t)*maddr;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].i64 = (int8_t)*maddr;
                 break;
             case I64_Load8_u:
-                stack[m->sp].value.u64 = *maddr;
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = *maddr;
                 break;
             case I64_Load16_s:
-                stack[m->sp].value.i64 = (int16_t)RN16(maddr);
-                stack[m->sp].value_type = I64;
+                stack[m->sp].i64 = (int16_t)RN16(maddr);
                 break;
             case I64_Load16_u:
-                stack[m->sp].value.u64 = RN16(maddr);
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = RN16(maddr);
                 break;
             case I64_Load32_s:
-                stack[m->sp].value.i64 = (int32_t)RN32(maddr);
-                stack[m->sp].value_type = I64;
+                stack[m->sp].i64 = (int32_t)RN32(maddr);
                 break;
             case I64_Load32_u:
-                stack[m->sp].value.u64 = RN32(maddr);
-                stack[m->sp].value_type = I64;
+                stack[m->sp].u64 = RN32(maddr);
                 break;
             }
             continue;
@@ -587,7 +547,7 @@ void VM_Interpret(vm_t *m)
             read_leb(m); // skip flags
             offset = read_leb(m);
             vm_value_t *sval = &stack[m->sp--];
-            addr = stack[m->sp--].value.u32;
+            addr = stack[m->sp--].u32;
             VM_ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
                       <= m->memory.pages * VM_PAGE_SIZE, "Memory store out of bounds");
             maddr = m->memory.bytes + offset + addr;
@@ -595,26 +555,26 @@ void VM_Interpret(vm_t *m)
             switch (opcode) {
             case I32_Store:
             case F32_Store:
-                WN32(maddr, sval->value.u32);
+                WN32(maddr, sval->u32);
                 break;
             case I64_Store:
             case F64_Store:
-                WN64(maddr, sval->value.u64);
+                WN64(maddr, sval->u64);
                 break;
             case I32_Store8:
-                *maddr = sval->value.u32;
+                *maddr = sval->u32;
                 break;
             case I32_Store16:
-                WN16(maddr, sval->value.u32);
+                WN16(maddr, sval->u32);
                 break;
             case I64_Store8:
-                *maddr = sval->value.u64;
+                *maddr = sval->u64;
                 break;
             case I64_Store16:
-                WN16(maddr, sval->value.u64);
+                WN16(maddr, sval->u64);
                 break;
             case I64_Store32:
-                WN32(maddr, sval->value.u64);
+                WN32(maddr, sval->u64);
                 break;
             }
             continue;
@@ -623,21 +583,17 @@ void VM_Interpret(vm_t *m)
         // Constants
         //
         case I32_Const:
-            stack[++m->sp].value_type = I32;
-            stack[m->sp].value.u32 = read_leb_si(m);
+            stack[++m->sp].u32 = read_leb_si(m);
             continue;
         case I64_Const:
-            stack[++m->sp].value_type = I64;
-            stack[m->sp].value.u64 = read_leb64_si(m);
+            stack[++m->sp].u64 = read_leb64_si(m);
             continue;
         case F32_Const:
-            stack[++m->sp].value_type = F32;
-            stack[m->sp].value.u32 = RL32(m->bytes + m->pc);
+            stack[++m->sp].u32 = RL32(m->bytes + m->pc);
             m->pc += 4;
             continue;
         case F64_Const:
-            stack[++m->sp].value_type = F64;
-            stack[m->sp].value.u64 = RL64(m->bytes + m->pc);
+            stack[++m->sp].u64 = RL64(m->bytes + m->pc);
             m->pc += 8;
             continue;
 
@@ -647,17 +603,16 @@ void VM_Interpret(vm_t *m)
 
         // unary
         case I32_Eqz:
-            stack[m->sp].value.u32 = stack[m->sp].value.u32 == 0;
+            stack[m->sp].u32 = stack[m->sp].u32 == 0;
             continue;
         case I64_Eqz:
-            stack[m->sp].value_type = I32;
-            stack[m->sp].value.u32 = stack[m->sp].value.u64 == 0;
+            stack[m->sp].u32 = stack[m->sp].u64 == 0;
             continue;
 
         // binary i32
         case I32_Eq ... I32_Ge_u:
-            a = stack[m->sp - 1].value.u32;
-            b = stack[m->sp].value.u32;
+            a = stack[m->sp - 1].u32;
+            b = stack[m->sp].u32;
             m->sp--;
             switch (opcode) {
             case I32_Eq:
@@ -691,14 +646,13 @@ void VM_Interpret(vm_t *m)
                 c = a >= b;
                 break;
             }
-            stack[m->sp].value_type = I32;
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         // binary i64
         case I64_Eq ... I64_Ge_u:
-            d = stack[m->sp - 1].value.u64;
-            e = stack[m->sp].value.u64;
+            d = stack[m->sp - 1].u64;
+            e = stack[m->sp].u64;
             m->sp--;
             switch (opcode) {
             case I64_Eq:
@@ -732,14 +686,13 @@ void VM_Interpret(vm_t *m)
                 c = d >= e;
                 break;
             }
-            stack[m->sp].value_type = I32;
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         // binary f32
         case F32_Eq ... F32_Ge:
-            g = stack[m->sp - 1].value.f32;
-            h = stack[m->sp].value.f32;
+            g = stack[m->sp - 1].f32;
+            h = stack[m->sp].f32;
             m->sp--;
             switch (opcode) {
             case F32_Eq:
@@ -761,14 +714,13 @@ void VM_Interpret(vm_t *m)
                 c = g >= h;
                 break;
             }
-            stack[m->sp].value_type = I32;
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         // binary f64
         case F64_Eq ... F64_Ge:
-            j = stack[m->sp - 1].value.f64;
-            k = stack[m->sp].value.f64;
+            j = stack[m->sp - 1].f64;
+            k = stack[m->sp].f64;
             m->sp--;
             switch (opcode) {
             case F64_Eq:
@@ -790,8 +742,7 @@ void VM_Interpret(vm_t *m)
                 c = j >= k;
                 break;
             }
-            stack[m->sp].value_type = I32;
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         //
@@ -800,7 +751,7 @@ void VM_Interpret(vm_t *m)
 
         // unary i32
         case I32_Clz ... I32_Popcnt:
-            a = stack[m->sp].value.u32;
+            a = stack[m->sp].u32;
             switch (opcode) {
             case I32_Clz:
                 c = a == 0 ? 32 : __builtin_clz(a);
@@ -812,12 +763,12 @@ void VM_Interpret(vm_t *m)
                 c = __builtin_popcount(a);
                 break;
             }
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         // unary i64
         case I64_Clz ... I64_Popcnt:
-            d = stack[m->sp].value.u64;
+            d = stack[m->sp].u64;
             switch (opcode) {
             case I64_Clz:
                 f = d == 0 ? 64 : __builtin_clzll(d);
@@ -829,59 +780,59 @@ void VM_Interpret(vm_t *m)
                 f = __builtin_popcountll(d);
                 break;
             }
-            stack[m->sp].value.u64 = f;
+            stack[m->sp].u64 = f;
             continue;
 
         // unary f32
         case F32_Abs:
-            stack[m->sp].value.f32 = fabsf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = fabsf(stack[m->sp].f32);
             break;
         case F32_Neg:
-            stack[m->sp].value.f32 = -stack[m->sp].value.f32;
+            stack[m->sp].f32 = -stack[m->sp].f32;
             break;
         case F32_Ceil:
-            stack[m->sp].value.f32 = ceilf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = ceilf(stack[m->sp].f32);
             break;
         case F32_Floor:
-            stack[m->sp].value.f32 = floorf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = floorf(stack[m->sp].f32);
             break;
         case F32_Trunc:
-            stack[m->sp].value.f32 = truncf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = truncf(stack[m->sp].f32);
             break;
         case F32_Nearest:
-            stack[m->sp].value.f32 = rintf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = rintf(stack[m->sp].f32);
             break;
         case F32_Sqrt:
-            stack[m->sp].value.f32 = sqrtf(stack[m->sp].value.f32);
+            stack[m->sp].f32 = sqrtf(stack[m->sp].f32);
             break;
 
         // unary f64
         case F64_Abs:
-            stack[m->sp].value.f64 = fabs(stack[m->sp].value.f64);
+            stack[m->sp].f64 = fabs(stack[m->sp].f64);
             break;
         case F64_Neg:
-            stack[m->sp].value.f64 = -stack[m->sp].value.f64;
+            stack[m->sp].f64 = -stack[m->sp].f64;
             break;
         case F64_Ceil:
-            stack[m->sp].value.f64 = ceil(stack[m->sp].value.f64);
+            stack[m->sp].f64 = ceil(stack[m->sp].f64);
             break;
         case F64_Floor:
-            stack[m->sp].value.f64 = floor(stack[m->sp].value.f64);
+            stack[m->sp].f64 = floor(stack[m->sp].f64);
             break;
         case F64_Trunc:
-            stack[m->sp].value.f64 = trunc(stack[m->sp].value.f64);
+            stack[m->sp].f64 = trunc(stack[m->sp].f64);
             break;
         case F64_Nearest:
-            stack[m->sp].value.f64 = rint(stack[m->sp].value.f64);
+            stack[m->sp].f64 = rint(stack[m->sp].f64);
             break;
         case F64_Sqrt:
-            stack[m->sp].value.f64 = sqrt(stack[m->sp].value.f64);
+            stack[m->sp].f64 = sqrt(stack[m->sp].f64);
             break;
 
         // binary i32
         case I32_Add ... I32_Rotr:
-            a = stack[m->sp - 1].value.u32;
-            b = stack[m->sp].value.u32;
+            a = stack[m->sp - 1].u32;
+            b = stack[m->sp].u32;
             m->sp--;
             if (opcode >= I32_Div_s && opcode <= I32_Rem_u)
                 VM_ASSERT(b, "Integer divide by zero");
@@ -933,13 +884,13 @@ void VM_Interpret(vm_t *m)
                 c = rotr32(a, b);
                 break;
             }
-            stack[m->sp].value.u32 = c;
+            stack[m->sp].u32 = c;
             continue;
 
         // binary i64
         case I64_Add ... I64_Rotr:
-            d = stack[m->sp - 1].value.u64;
-            e = stack[m->sp].value.u64;
+            d = stack[m->sp - 1].u64;
+            e = stack[m->sp].u64;
             m->sp--;
             if (opcode >= I64_Div_s && opcode <= I64_Rem_u)
                 VM_ASSERT(e, "Integer divide by zero");
@@ -991,13 +942,13 @@ void VM_Interpret(vm_t *m)
                 f = rotr64(d, e);
                 break;
             }
-            stack[m->sp].value.u64 = f;
+            stack[m->sp].u64 = f;
             continue;
 
         // binary f32
         case F32_Add ... F32_Copysign:
-            g = stack[m->sp - 1].value.f32;
-            h = stack[m->sp].value.f32;
+            g = stack[m->sp - 1].f32;
+            h = stack[m->sp].f32;
             m->sp--;
             switch (opcode) {
             case F32_Add:
@@ -1022,13 +973,13 @@ void VM_Interpret(vm_t *m)
                 i = copysignf(g, h);
                 break;
             }
-            stack[m->sp].value.f32 = i;
+            stack[m->sp].f32 = i;
             continue;
 
         // binary f64
         case F64_Add ... F64_Copysign:
-            j = stack[m->sp - 1].value.f64;
-            k = stack[m->sp].value.f64;
+            j = stack[m->sp - 1].f64;
+            k = stack[m->sp].f64;
             m->sp--;
             switch (opcode) {
             case F64_Add:
@@ -1053,124 +1004,93 @@ void VM_Interpret(vm_t *m)
                 l = copysign(j, k);
                 break;
             }
-            stack[m->sp].value.f64 = l;
+            stack[m->sp].f64 = l;
             continue;
 
         // conversion operations
         case I32_Wrap_i64:
-            stack[m->sp].value.u32 = stack[m->sp].value.u64;
-            stack[m->sp].value_type = I32;
+            stack[m->sp].u32 = stack[m->sp].u64;
             break;
         case I32_Trunc_f32_s:
-            stack[m->sp].value.i32 = stack[m->sp].value.f32;
-            stack[m->sp].value_type = I32;
+            stack[m->sp].i32 = stack[m->sp].f32;
             break;
         case I32_Trunc_f32_u:
-            stack[m->sp].value.u32 = stack[m->sp].value.f32;
-            stack[m->sp].value_type = I32;
+            stack[m->sp].u32 = stack[m->sp].f32;
             break;
         case I32_Trunc_f64_s:
-            stack[m->sp].value.i32 = stack[m->sp].value.f64;
-            stack[m->sp].value_type = I32;
+            stack[m->sp].i32 = stack[m->sp].f64;
             break;
         case I32_Trunc_f64_u:
-            stack[m->sp].value.u32 = stack[m->sp].value.f64;
-            stack[m->sp].value_type = I32;
+            stack[m->sp].u32 = stack[m->sp].f64;
             break;
         case I64_Extend_i32_s:
-            stack[m->sp].value.u64 = stack[m->sp].value.i32;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].u64 = stack[m->sp].i32;
             break;
         case I64_Extend_i32_u:
-            stack[m->sp].value.u64 = stack[m->sp].value.u32;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].u64 = stack[m->sp].u32;
             break;
         case I64_Trunc_f32_s:
-            stack[m->sp].value.i64 = stack[m->sp].value.f32;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].i64 = stack[m->sp].f32;
             break;
         case I64_Trunc_f32_u:
-            stack[m->sp].value.u64 = stack[m->sp].value.f32;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].u64 = stack[m->sp].f32;
             break;
         case I64_Trunc_f64_s:
-            stack[m->sp].value.i64 = stack[m->sp].value.f64;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].i64 = stack[m->sp].f64;
             break;
         case I64_Trunc_f64_u:
-            stack[m->sp].value.u64 = stack[m->sp].value.f64;
-            stack[m->sp].value_type = I64;
+            stack[m->sp].u64 = stack[m->sp].f64;
             break;
         case F32_Convert_i32_s:
-            stack[m->sp].value.f32 = stack[m->sp].value.i32;
-            stack[m->sp].value_type = F32;
+            stack[m->sp].f32 = stack[m->sp].i32;
             break;
         case F32_Convert_i32_u:
-            stack[m->sp].value.f32 = stack[m->sp].value.u32;
-            stack[m->sp].value_type = F32;
+            stack[m->sp].f32 = stack[m->sp].u32;
             break;
         case F32_Convert_i64_s:
-            stack[m->sp].value.f32 = stack[m->sp].value.i64;
-            stack[m->sp].value_type = F32;
+            stack[m->sp].f32 = stack[m->sp].i64;
             break;
         case F32_Convert_i64_u:
-            stack[m->sp].value.f32 = stack[m->sp].value.u64;
-            stack[m->sp].value_type = F32;
+            stack[m->sp].f32 = stack[m->sp].u64;
             break;
         case F32_Demote_f64:
-            stack[m->sp].value.f32 = stack[m->sp].value.f64;
-            stack[m->sp].value_type = F32;
+            stack[m->sp].f32 = stack[m->sp].f64;
             break;
         case F64_Convert_i32_s:
-            stack[m->sp].value.f64 = stack[m->sp].value.i32;
-            stack[m->sp].value_type = F64;
+            stack[m->sp].f64 = stack[m->sp].i32;
             break;
         case F64_Convert_i32_u:
-            stack[m->sp].value.f64 = stack[m->sp].value.u32;
-            stack[m->sp].value_type = F64;
+            stack[m->sp].f64 = stack[m->sp].u32;
             break;
         case F64_Convert_i64_s:
-            stack[m->sp].value.f64 = stack[m->sp].value.i64;
-            stack[m->sp].value_type = F64;
+            stack[m->sp].f64 = stack[m->sp].i64;
             break;
         case F64_Convert_i64_u:
-            stack[m->sp].value.f64 = stack[m->sp].value.u64;
-            stack[m->sp].value_type = F64;
+            stack[m->sp].f64 = stack[m->sp].u64;
             break;
         case F64_Promote_f32:
-            stack[m->sp].value.f64 = stack[m->sp].value.f32;
-            stack[m->sp].value_type = F64;
+            stack[m->sp].f64 = stack[m->sp].f32;
             break;
 
         // reinterpretations
-        case I32_Reinterpret_f32:
-            stack[m->sp].value_type = I32;
-            break;
-        case I64_Reinterpret_f64:
-            stack[m->sp].value_type = I64;
-            break;
-        case F32_Reinterpret_i32:
-            stack[m->sp].value_type = F32;
-            break;
-        case F64_Reinterpret_i64:
-            stack[m->sp].value_type = F64;
+        case I32_Reinterpret_f32 ... F64_Reinterpret_i64:
             break;
 
         // sign extensions
         case I32_Extend8_s:
-            stack[m->sp].value.i32 = (int8_t)stack[m->sp].value.i32;
+            stack[m->sp].i32 = (int8_t)stack[m->sp].i32;
             break;
         case I32_Extend16_s:
-            stack[m->sp].value.i32 = (int16_t)stack[m->sp].value.i32;
+            stack[m->sp].i32 = (int16_t)stack[m->sp].i32;
             break;
         case I64_Extend8_s:
-            stack[m->sp].value.i64 = (int8_t)stack[m->sp].value.i64;
+            stack[m->sp].i64 = (int8_t)stack[m->sp].i64;
             break;
         case I64_Extend16_s:
-            stack[m->sp].value.i64 = (int16_t)stack[m->sp].value.i64;
+            stack[m->sp].i64 = (int16_t)stack[m->sp].i64;
             break;
         case I64_Extend32_s:
-            stack[m->sp].value.i64 = (int32_t)stack[m->sp].value.i64;
+            stack[m->sp].i64 = (int32_t)stack[m->sp].i64;
             break;
 
         default:

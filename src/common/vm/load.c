@@ -168,7 +168,7 @@ static void vm_read_string(sizebuf_t *sz, vm_string_t *s)
     s->data = SZ_ReadData(sz, s->len);
 }
 
-static bool run_init_expr(vm_t *m, vm_value_t *val, uint32_t type, sizebuf_t *sz)
+static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
 {
     int opcode = SZ_ReadByte(sz);
     uint32_t arg;
@@ -180,20 +180,16 @@ static bool run_init_expr(vm_t *m, vm_value_t *val, uint32_t type, sizebuf_t *sz
         *val = m->globals[arg];
         break;
     case I32_Const:
-        val->value_type = I32;
-        val->value.u32  = SZ_ReadSignedLeb(sz, 32);
+        val->u32 = SZ_ReadSignedLeb(sz, 32);
         break;
     case I64_Const:
-        val->value_type = I64;
-        val->value.u64  = SZ_ReadSignedLeb(sz, 64);
+        val->u64 = SZ_ReadSignedLeb(sz, 64);
         break;
     case F32_Const:
-        val->value_type = F32;
-        val->value.u32  = SZ_ReadLong(sz);
+        val->u32 = SZ_ReadLong(sz);
         break;
     case F64_Const:
-        val->value_type = F64;
-        val->value.u64  = SZ_ReadLong64(sz);
+        val->u64 = SZ_ReadLong64(sz);
         break;
     default:
         ASSERT(0, "Init expression not constant (opcode = %#x)", opcode);
@@ -201,8 +197,6 @@ static bool run_init_expr(vm_t *m, vm_value_t *val, uint32_t type, sizebuf_t *sz
 
     opcode = SZ_ReadByte(sz);
     ASSERT(opcode == End, "End opcode expected after init expression");
-
-    ASSERT(val->value_type == type, "Init expression type mismatch");
     return true;
 }
 
@@ -342,9 +336,10 @@ static bool parse_globals(vm_t *m, sizebuf_t *sz)
     for (uint32_t g = 0; g < num_globals; g++) {
         uint32_t type = SZ_ReadLeb(sz);
         SZ_ReadByte(sz); // mutability
+        (void)type;
 
         // Run the init_expr to get global value
-        if (!run_init_expr(m, &m->globals[g], type, sz))
+        if (!run_init_expr(m, &m->globals[g], sz))
             return false;
     }
     return true;
@@ -407,11 +402,11 @@ static bool parse_elements(vm_t *m, sizebuf_t *sz)
         ASSERT(flags == 0, "Flags must be 0");
 
         // Run the init_expr to get offset
-        vm_value_t init;
-        if (!run_init_expr(m, &init, I32, sz))
+        vm_value_t init = { 0 };
+        if (!run_init_expr(m, &init, sz))
             return false;
 
-        uint32_t offset = init.value.u32;
+        uint32_t offset = init.u32;
         uint32_t num_elem = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + num_elem <= m->table.size, "Table init out of bounds");
         for (uint32_t n = 0; n < num_elem; n++)
@@ -429,12 +424,12 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         ASSERT(flags == 0, "Flags must be 0");
 
         // Run the init_expr to get the offset
-        vm_value_t init;
-        if (!run_init_expr(m, &init, I32, sz))
+        vm_value_t init = { 0 };
+        if (!run_init_expr(m, &init, sz))
             return false;
 
         // Copy the data to the memory offset
-        uint32_t offset = init.value.u32;
+        uint32_t offset = init.u32;
         uint32_t size = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + size <= m->memory.pages * VM_PAGE_SIZE, "Memory init out of bounds");
         memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
@@ -849,29 +844,13 @@ void VM_Free(vm_t *m)
     Z_Free(m);
 }
 
+// Call exported function by vm_export_t index.
+// Caller pushes params and pops return value.
 void VM_Call(vm_t *m, uint32_t e)
 {
     VM_ASSERT(e < m->num_func_exports, "Bad function index");
-    uint32_t fidx = m->func_exports[e];
-
-    const vm_block_t *func = &m->funcs[fidx];
-    const vm_type_t *type = func->type;
-
-    int fp = m->sp - type->num_params + 1;
-    VM_ASSERT(fp >= 0, "Stack underflow");
-
-    // Set pushed params type
-    for (uint32_t f = 0; f < type->num_params; f++)
-        m->stack[fp + f].value_type = type->params[f];
-
-    VM_SetupCall(m, fidx);
+    VM_SetupCall(m, m->func_exports[e]);
     VM_Interpret(m);
-
-    // Validate the return value
-    if (type->num_results == 1) {
-        VM_ASSERT(m->sp >= 0, "Stack underflow");
-        VM_ASSERT(m->stack[m->sp].value_type == type->results[0], "Call type mismatch");
-    }
 }
 
 vm_value_t *VM_Push(vm_t *m, int n)

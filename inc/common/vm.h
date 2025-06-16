@@ -44,16 +44,13 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define VM_PAGE_SIZE    0x10000
 
-typedef struct {
-    uint8_t    value_type;
-    union {
-        uint32_t   u32;
-        int32_t    i32;
-        uint64_t   u64;
-        int64_t    i64;
-        float      f32;
-        double     f64;
-    } value;
+typedef union {
+    uint32_t   u32;
+    int32_t    i32;
+    uint64_t   u64;
+    int64_t    i64;
+    float      f32;
+    double     f64;
 } vm_value_t;
 
 typedef struct {
@@ -104,12 +101,12 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 #define VM_STR_NULL(arg) VM_PTR_NULL(arg, char)
 #define VM_STR(arg) VM_PTR(arg, char)
 
-#define VM_U32(arg) stack[arg].value.u32
-#define VM_I32(arg) stack[arg].value.i32
-#define VM_U64(arg) stack[arg].value.u64
-#define VM_I64(arg) stack[arg].value.i64
-#define VM_F32(arg) stack[arg].value.f32
-#define VM_F64(arg) stack[arg].value.f64
+#define VM_U32(arg) stack[arg].u32
+#define VM_I32(arg) stack[arg].i32
+#define VM_U64(arg) stack[arg].u64
+#define VM_I64(arg) stack[arg].i64
+#define VM_F32(arg) stack[arg].f32
+#define VM_F64(arg) stack[arg].f64
 
 #define VM_THUNK(x) \
     static void thunk_##x(const vm_memory_t *m, vm_value_t *stack)
