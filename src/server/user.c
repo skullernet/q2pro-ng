@@ -202,7 +202,7 @@ void SV_New_f(void)
     // send protocol specific stuff
     MSG_WriteShort(sv_client->version);
     MSG_WriteByte(sv.state);
-    MSG_WriteShort(0);
+    MSG_WriteLong(sv.cm.checksum);
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 

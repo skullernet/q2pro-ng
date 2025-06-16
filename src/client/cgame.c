@@ -1026,13 +1026,13 @@ static void CL_LoadMap(void)
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
     }
 
-    if (cl.bsp->checksum != Q_atoi(cl.configstrings[CS_MAPCHECKSUM])) {
+    if (cl.bsp->checksum != cl.mapchecksum) {
         if (cls.demo.playback) {
-            Com_WPrintf("Local map version differs from demo: %i != %s\n",
-                        cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+            Com_WPrintf("Local map version differs from demo: %#x != %#x\n",
+                        cl.bsp->checksum, cl.mapchecksum);
         } else {
-            Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
-                      cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+            Com_Error(ERR_DROP, "Local map version differs from server: %#x != %#x",
+                      cl.bsp->checksum, cl.mapchecksum);
         }
     }
 }

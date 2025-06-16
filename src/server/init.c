@@ -146,10 +146,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     if (cmd->state == ss_game) {
         sv.cm = cmd->cm;
-        sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", sv.cm.checksum);
     } else {
         // no real map
-        strcpy(sv.configstrings[CS_MAPCHECKSUM], "0");
         sv.cm.entitystring = "";
     }
 

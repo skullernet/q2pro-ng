@@ -484,7 +484,7 @@ static void CL_ParseServerData(void)
     Com_DPrintf("Q2PRO server state %d\n", i);
     cl.serverstate = i;
     cinematic = i == ss_pic || i == ss_cinematic;
-    i = MSG_ReadWord();
+    cl.mapchecksum = MSG_ReadLong();
 
     if (cinematic) {
         SCR_PlayCinematic(cl.mapname);
