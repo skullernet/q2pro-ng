@@ -1118,6 +1118,8 @@ skip:
         if (!has_trail)
             VectorCopy(ent.origin, cent->lerp_origin);
 
+        CG_SetEntitySoundOrigin(cent);
+
         CG_AddEntityLoopingSound(s1);
     }
 }

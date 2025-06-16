@@ -185,6 +185,34 @@ void CG_PredictAngles(void)
     }
 }
 
+static void CG_RunUsercmd(pmove_t *pm, unsigned number)
+{
+    float oldz = pm->s.origin[2];
+
+    trap_GetUsercmd(number, &pm->cmd);
+    Pmove(pm);
+
+    if (pm->s.pm_type != PM_SPECTATOR && (pm->s.pm_flags & PMF_ON_GROUND) && number > cg.predicted_step_frame) {
+        float step = pm->s.origin[2] - oldz;
+        float step_abs = fabsf(step);
+
+        if (step_abs > 1.0f && step_abs < 20.0f) {
+            // check for stepping up before a previous step is completed
+            unsigned delta = cgs.realtime - cg.predicted_step_time;
+            float prev_step = 0;
+            if (delta < 100)
+                prev_step = cg.predicted_step * (100 - delta) * 0.01f;
+
+            cg.predicted_step = Q_clipf(prev_step + step, -32, 32);
+            cg.predicted_step_time = cgs.realtime;
+            cg.predicted_step_frame = number;  // don't double step
+        }
+    }
+
+    // save for debug checking
+    VectorCopy(pm->s.origin, cg.predicted_origins[number & CMD_MASK]);
+}
+
 void CG_PredictMovement(void)
 {
     unsigned    ack, current;
@@ -226,31 +254,8 @@ void CG_PredictMovement(void)
 
     // run frames
     while (++ack <= current) {
-        trap_GetUsercmd(ack, &pm.cmd);
-        Pmove(&pm);
+        CG_RunUsercmd(&pm, ack);
         pm.snapinitial = false;
-
-        // save for debug checking
-        VectorCopy(pm.s.origin, cg.predicted_origins[ack & CMD_MASK]);
-    }
-
-    if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND)) {
-        float step, step_abs, oldz;
-
-        oldz = cg.predicted_origins[cg.predicted_step_frame & CMD_MASK][2];
-        step = pm.s.origin[2] - oldz;
-        step_abs = fabsf(step);
-        if (step_abs > 1.0f && step_abs < 20.0f) {
-            // check for stepping up before a previous step is completed
-            unsigned delta = cgs.realtime - cg.predicted_step_time;
-            float prev_step = 0;
-            if (delta < 100)
-                prev_step = cg.predicted_step * (100 - delta) * 0.01f;
-
-            cg.predicted_step = Q_clipf(prev_step + step, -32, 32);
-            cg.predicted_step_time = cgs.realtime;
-            cg.predicted_step_frame = current;  // don't double step
-        }
     }
 
     // copy results out for rendering
