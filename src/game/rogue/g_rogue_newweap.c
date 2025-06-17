@@ -1064,7 +1064,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         VectorCopy(tr.endpos, water_start);
 
         if (!VectorCompare(start, tr.endpos))
-            G_TempEntity(water_start, EV_HEATBEAM_SPARKS, trap_DirToByte(tr.plane.normal));
+            G_TempEntity(water_start, EV_HEATBEAM_SPARKS, tr.plane.dir);
 
         // re-trace ignoring water this time
         trap_Trace(&tr, water_start, NULL, NULL, end, self->s.number, content_mask & ~MASK_WATER);
@@ -1082,7 +1082,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         if (hit->takedamage) {
             T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_ENERGY, (mod_t) { MOD_HEATBEAM });
         } else if (!water) {
-            G_TempEntity(tr.endpos, EV_HEATBEAM_STEAM, trap_DirToByte(tr.plane.normal));
+            G_TempEntity(tr.endpos, EV_HEATBEAM_STEAM, tr.plane.dir);
 
             if (self->client)
                 PlayerNoise(self, tr.endpos, PNOISE_IMPACT);

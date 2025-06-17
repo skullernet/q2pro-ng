@@ -532,7 +532,7 @@ void SP_target_splash(edict_t *self)
     }
 
     self->sounds = splash_events[self->sounds];
-    self->count  = MakeLittleShort(trap_DirToByte(self->movedir), self->count & 255);
+    self->count  = MakeLittleShort(DirToByte(self->movedir), self->count & 255);
 
     trap_LinkEntity(self);
 }
@@ -750,7 +750,7 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(trap_DirToByte(tr.plane.normal), self->s.skinnum & 255, count, 0));
+                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, count, 0));
             }
             break;
         }

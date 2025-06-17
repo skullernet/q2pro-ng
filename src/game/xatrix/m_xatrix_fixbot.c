@@ -345,7 +345,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
                     color = EV_SPLASH_UNKNOWN;
 
                 if (color != EV_SPLASH_UNKNOWN)
-                    G_TempEntity(tr.endpos, color, MakeLittleShort(trap_DirToByte(tr.plane.normal), 8));
+                    G_TempEntity(tr.endpos, color, MakeLittleShort(tr.plane.dir, 8));
 
                 // change bullet's course when it enters water
                 VectorSubtract(end, start, dir);
@@ -371,7 +371,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             if (hit->takedamage) {
                 T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
-                G_TempEntity(tr.endpos, te_impact, trap_DirToByte(tr.plane.normal));
+                G_TempEntity(tr.endpos, te_impact, tr.plane.dir);
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);

@@ -55,7 +55,7 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
 
     VectorMA(self->s.origin, self->style * 0.5f, self->movedir, point);
 
-    self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, trap_DirToByte(self->movedir));
+    self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, DirToByte(self->movedir));
     self->s.morefx = EFX_STEAM;
     self->s.modelindex = MODELINDEX_DUMMY;
 

@@ -197,14 +197,11 @@ typedef struct {
     void (*UnlinkEntity)(edict_t *ent);     // call before removing an interactive edict
     void (*SetBrushModel)(edict_t *ent, const char *name);
 
-    // network messaging
-    void (*ClientCommand)(edict_t *ent, const char *str, bool reliable);
-
-    int (*DirToByte)(const vec3_t dir);
-    void (*ByteToDir)(unsigned v, vec3_t dir);
-
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
     bool (*GetMaterialInfo)(unsigned material_id, material_info_t *info);
+
+    // network messaging
+    void (*ClientCommand)(edict_t *ent, const char *str, bool reliable);
 
     void (*LocateGameData)(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
     bool (*ParseEntityString)(char *buf, size_t size);

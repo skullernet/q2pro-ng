@@ -503,7 +503,7 @@ static void floater_zap(edict_t *self)
     G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM);
 
     // FIXME use the flash, Luke
-    G_TempEntity(origin, EV_SPLASH_SPARKS, MakeLittleShort(trap_DirToByte(dir), 32));
+    G_TempEntity(origin, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
 
     T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 }

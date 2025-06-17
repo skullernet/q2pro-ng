@@ -429,14 +429,6 @@ VM_THUNK(ClientCommand) {
     PF_ClientCommand(VM_ENT_NULL(0), VM_STR(1), VM_U32(2));
 }
 
-VM_THUNK(DirToByte) {
-    VM_U32(0) = DirToByte(VM_VEC3(0));
-}
-
-VM_THUNK(ByteToDir) {
-    ByteToDir(VM_U32(0), VM_VEC3(1));
-}
-
 VM_THUNK(GetSurfaceInfo) {
     VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
 }
@@ -678,8 +670,6 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(UnlinkEntity, "i"),
     VM_IMPORT(SetBrushModel, "ii"),
     VM_IMPORT(ClientCommand, "iii"),
-    VM_IMPORT(DirToByte, "i i"),
-    VM_IMPORT(ByteToDir, "ii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(GetMaterialInfo, "i ii"),
     VM_IMPORT(LocateGameData, "iiiii"),
@@ -895,13 +885,10 @@ static const game_import_t game_dll_imports = {
     .UnlinkEntity = PF_UnlinkEdict,
     .SetBrushModel = PF_SetBrushModel,
 
-    .ClientCommand = PF_ClientCommand,
-
-    .DirToByte = DirToByte,
-    .ByteToDir = ByteToDir,
-
     .GetSurfaceInfo = PF_GetSurfaceInfo,
     .GetMaterialInfo = PF_GetMaterialInfo,
+
+    .ClientCommand = PF_ClientCommand,
 
     .LocateGameData = PF_LocateGameData,
     .ParseEntityString = PF_ParseEntityString,

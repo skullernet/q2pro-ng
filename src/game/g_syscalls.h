@@ -37,13 +37,10 @@ void trap_LinkEntity(edict_t *ent);
 void trap_UnlinkEntity(edict_t *ent);
 void trap_SetBrushModel(edict_t *ent, const char *name);
 
-void trap_ClientCommand(edict_t *ent, const char *str, bool reliable);
-
-int trap_DirToByte(const vec3_t dir);
-void trap_ByteToDir(unsigned v, vec3_t dir);
-
 bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
 bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
+
+void trap_ClientCommand(edict_t *ent, const char *str, bool reliable);
 
 void trap_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
 bool trap_ParseEntityString(char *buf, size_t size);
@@ -118,13 +115,10 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_UnlinkEntity gi.UnlinkEntity
 #define trap_SetBrushModel gi.SetBrushModel
 
-#define trap_ClientCommand gi.ClientCommand
-
-#define trap_DirToByte gi.DirToByte
-#define trap_ByteToDir gi.ByteToDir
-
 #define trap_GetSurfaceInfo gi.GetSurfaceInfo
 #define trap_GetMaterialInfo gi.GetMaterialInfo
+
+#define trap_ClientCommand gi.ClientCommand
 
 #define trap_LocateGameData gi.LocateGameData
 #define trap_ParseEntityString gi.ParseEntityString

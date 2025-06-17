@@ -315,11 +315,13 @@ static void CM_InitBoxHull(void)
         p = &box_planes[i * 2];
         p->type = i >> 1;
         p->normal[i >> 1] = 1;
+        p->dir = DirToByte(p->normal);
 
         p = &box_planes[i * 2 + 1];
         p->type = 3 + (i >> 1);
         p->signbits = 1 << (i >> 1);
         p->normal[i >> 1] = -1;
+        p->dir = DirToByte(p->normal);
     }
 }
 

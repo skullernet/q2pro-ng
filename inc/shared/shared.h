@@ -963,8 +963,9 @@ typedef struct {
     vec3_t  normal;
     float   dist;
     byte    type;           // for fast side tests
-    byte    signbits;       // signx + (signy<<1) + (signz<<1)
-    byte    pad[2];
+    byte    signbits;       // signx + (signy<<1) + (signz<<2)
+    byte    dir;            // DirToByte(normal)
+    byte    pad;
 } cplane_t;
 
 // 0-2 are axial planes

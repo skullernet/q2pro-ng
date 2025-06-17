@@ -153,6 +153,7 @@ BSP_LOAD(Planes)
         out->dist = BSP_Float();
         SetPlaneType(out);
         SetPlaneSignbits(out);
+        out->dir = DirToByte(out->normal);
     }
 
     return Q_ERR_SUCCESS;
