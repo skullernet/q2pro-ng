@@ -88,6 +88,7 @@ static bool IN_GetCurrentGrab(void)
     if (cls.state != ca_active)
         return false;   // not connected
 
+#if 0
     if (in_grab->integer >= 2) {
         if (cls.demo.playback && !Key_IsDown(K_SHIFT))
             return false;   // playing a demo (and not using freelook)
@@ -95,6 +96,7 @@ static bool IN_GetCurrentGrab(void)
         if (cl.frame.ps.pmove.pm_type == PM_FREEZE)
             return false;   // spectator mode
     }
+#endif
 
     if (in_grab->integer >= 1)
         return true;    // regular playing mode

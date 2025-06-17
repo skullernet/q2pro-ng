@@ -48,8 +48,6 @@ cvar_t  *sv_reserved_password;
 
 cvar_t  *sv_show_name_changes;
 
-cvar_t  *sv_airaccelerate;
-cvar_t  *sv_qwmod;              // atu QW Physics modificator
 cvar_t  *sv_novis;
 
 cvar_t  *sv_maxclients;
@@ -1714,11 +1712,13 @@ void SV_UserinfoChanged(client_t *cl)
         cl->rate = 0;
     }
 
+#if 0
     // msg command
     val = Info_ValueForKey(cl->userinfo, "msg");
     if (*val) {
         cl->messagelevel = Q_clip(Q_atoi(val), PRINT_LOW, 256);
     }
+#endif
 }
 
 
@@ -1828,9 +1828,11 @@ void SV_Init(void)
     Cvar_Get("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
     Cvar_Get("coop", "0", /*CVAR_SERVERINFO|*/CVAR_LATCH);
     Cvar_Get("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
+#if 0
     Cvar_Get("dmflags", va("%i", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
     Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
     Cvar_Get("timelimit", "0", CVAR_SERVERINFO);
+#endif
 
     sv_maxclients = Cvar_Get("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
     sv_reserved_slots = Cvar_Get("sv_reserved_slots", "0", CVAR_LATCH);
@@ -1862,8 +1864,6 @@ void SV_Init(void)
 #endif
     sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 
-    sv_airaccelerate = Cvar_Get("sv_airaccelerate", "0", CVAR_LATCH);
-    sv_qwmod = Cvar_Get("sv_qwmod", "0", CVAR_LATCH);   //atu QWMod
     sv_public = Cvar_Get("public", "0", CVAR_LATCH);
     sv_password = Cvar_Get("sv_password", "", CVAR_PRIVATE);
     sv_reserved_password = Cvar_Get("sv_reserved_password", "", CVAR_PRIVATE);

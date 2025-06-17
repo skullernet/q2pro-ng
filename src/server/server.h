@@ -384,8 +384,6 @@ extern cvar_t       *sv_hostname;
 extern cvar_t       *sv_maxclients;
 extern cvar_t       *sv_password;
 extern cvar_t       *sv_reserved_slots;
-extern cvar_t       *sv_airaccelerate;        // development tool
-extern cvar_t       *sv_qwmod;                // atu QW Physics modificator
 extern cvar_t       *sv_enforcetime;
 #if USE_FPS
 extern cvar_t       *sv_fps;

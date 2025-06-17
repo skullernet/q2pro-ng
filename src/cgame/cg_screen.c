@@ -1399,6 +1399,7 @@ static void SCR_DrawPause(void)
     trap_R_DrawPic(x, y, scr.pause_pic);
 }
 
+#if 0
 static void SCR_DrawLoading(void)
 {
     int x, y, w, h;
@@ -1418,6 +1419,7 @@ static void SCR_DrawLoading(void)
 
     trap_R_SetScale(1.0f);
 }
+#endif
 
 static void SCR_DrawHitMarker(void)
 {

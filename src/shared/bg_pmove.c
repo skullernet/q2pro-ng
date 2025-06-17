@@ -2,7 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "shared/shared.h"
-#include "bg_local.h"
+#include "shared/bg_local.h"
 #include <float.h>
 
 #define NUM_SIDE_CHECKS 6
@@ -1459,12 +1459,12 @@ static void PM_ScreenEffects(void)
 
 /*
 ================
-Pmove
+BG_Pmove
 
 Can be called by either the server or the client
 ================
 */
-void Pmove(pmove_t *pmove)
+void BG_Pmove(pmove_t *pmove)
 {
     pm = pmove;
 

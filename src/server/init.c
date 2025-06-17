@@ -136,12 +136,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
     Q_strlcpy(sv.spawnpoint, cmd->spawnpoint, sizeof(sv.spawnpoint));
 
-    if (Cvar_VariableInteger("deathmatch")) {
-        sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
-    } else {
-        strcpy(sv.configstrings[CS_AIRACCEL], "0");
-    }
-
     resolve_masters();
 
     if (cmd->state == ss_game) {
@@ -173,9 +167,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // run two frames to allow everything to settle
     for (i = 0; i < 2; i++, sv.framenum++)
         ge->RunFrame();
-
-    // make sure maxclients string is correct
-    sprintf(sv.configstrings[CS_MAXCLIENTS], "%d", svs.maxclients);
 
     // check for a savegame
     SV_CheckForSavegame(cmd);

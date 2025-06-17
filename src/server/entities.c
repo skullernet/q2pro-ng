@@ -283,6 +283,7 @@ void SV_BuildClientFrame(client_t *client)
         if (!HAS_EFFECTS(ent))
             continue;
 
+#if 0
         // ignore gibs if client says so
         if (client->settings[CLS_NOGIBS]) {
             if (ent->s.effects & EF_GIB && !(ent->s.effects & EF_ROCKET))
@@ -290,6 +291,7 @@ void SV_BuildClientFrame(client_t *client)
             if (ent->s.effects & EF_GREENGIB)
                 continue;
         }
+#endif
 
         // ignore flares if client says so
         if (ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
@@ -326,11 +328,13 @@ void SV_BuildClientFrame(client_t *client)
         state = &client->entities[client->next_entity & (client->num_entities - 1)];
         *state = ent->s;
 
+#if 0
         // clear footsteps
         if (client->settings[CLS_NOFOOTSTEPS] && (state->event[0] == EV_FOOTSTEP ||
             state->event[0] == EV_OTHER_FOOTSTEP || state->event[0] == EV_LADDER_STEP)) {
             state->event[0] = 0;
         }
+#endif
 
         // hide POV entity from renderer, unless this is player's own entity
         if (e == frame->ps.clientnum && ent != clent && !Q2PRO_OPTIMIZE(client)) {

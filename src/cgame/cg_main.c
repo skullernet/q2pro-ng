@@ -141,6 +141,7 @@ qvm_exported void CG_Init(void)
     cgs.demoplayback = trap_GetDemoInfo(NULL);
 
     CG_UpdateConfigstring(CS_MAXCLIENTS);
+    CG_UpdateConfigstring(CS_AIRACCEL);
     CG_UpdateConfigstring(CS_STATUSBAR);
 
     SCR_Init();

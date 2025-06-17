@@ -48,7 +48,6 @@ game_src += files(
   'm_tank.c',
   'p_client.c',
   'p_hud.c',
-  'p_move.c',
   'p_trail.c',
   'p_view.c',
   'p_weapon.c',

@@ -51,6 +51,11 @@ typedef enum {
     SOLID_BSP           // bsp clip, touch on edge
 } solid_t;
 
+// gi.BoxEdicts() can return a list of either solid or trigger entities
+// FIXME: eliminate AREA_ distinction?
+#define AREA_SOLID      1
+#define AREA_TRIGGERS   2
+
 //===============================================================
 
 typedef enum {

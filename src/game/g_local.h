@@ -5,6 +5,7 @@
 #pragma once
 
 #include "shared/shared.h"
+#include "shared/bg_local.h"
 #include "shared/m_flash.h"
 
 // define GAME_INCLUDE so that game.h does not define the
@@ -14,7 +15,6 @@
 #include "shared/game.h"
 
 #include "g_syscalls.h"
-#include "bg_local.h"
 
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
@@ -1965,70 +1965,7 @@ enum {
     GESTURE_MAX
 };
 
-// player_state->stats[] indexes
-enum {
-    STAT_CTF_TEAM1_PIC = 18,
-    STAT_CTF_TEAM1_CAPS = 19,
-    STAT_CTF_TEAM2_PIC = 20,
-    STAT_CTF_TEAM2_CAPS = 21,
-    STAT_CTF_FLAG_PIC = 22,
-    STAT_CTF_JOINED_TEAM1_PIC = 23,
-    STAT_CTF_JOINED_TEAM2_PIC = 24,
-    STAT_CTF_TEAM1_HEADER = 25,
-    STAT_CTF_TEAM2_HEADER = 26,
-    STAT_CTF_TECH = 27,
-    STAT_CTF_ID_VIEW = 28,
-    STAT_CTF_MATCH = 29,
-    STAT_CTF_ID_VIEW_COLOR = 30,
-    STAT_CTF_TEAMINFO = 31,
-
-    // [Paril-KEX] Key display
-    STAT_KEY_A = 18,
-    STAT_KEY_B = 19,
-    STAT_KEY_C = 20,
-
-    // [Paril-KEX] top of screen coop respawn state
-    STAT_COOP_RESPAWN = 21,
-
-    // [Paril-KEX] respawns remaining
-    STAT_LIVES = 22,
-
-    // [Paril-KEX]
-    STAT_HEALTH_BARS = 23, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
-
-    // [Paril-KEX]
-    STAT_SELECTED_ITEM_NAME = 31,
-};
-
 #define SELECTED_ITEM_TIME SEC(3)
-
-// state for coop respawning; used to select which
-// message to print for the player this is set on.
-typedef enum {
-    COOP_RESPAWN_NONE, // no messagee
-    COOP_RESPAWN_IN_COMBAT, // player is in combat
-    COOP_RESPAWN_BAD_AREA, // player not in a good spot
-    COOP_RESPAWN_BLOCKED, // spawning was blocked by something
-    COOP_RESPAWN_WAITING, // for players that are waiting to respawn
-    COOP_RESPAWN_NO_LIVES, // out of lives, so need to wait until level switch
-    COOP_RESPAWN_TOTAL
-} coop_respawn_t;
-
-// reserved general CS ranges
-enum {
-    CONFIG_CTF_MATCH = CS_GENERAL,
-    CONFIG_CTF_TEAMINFO,
-    CONFIG_CTF_PLAYER_NAME,
-    CONFIG_CTF_PLAYER_NAME_END = CONFIG_CTF_PLAYER_NAME + MAX_CLIENTS,
-
-    // nb: offset by 1 since NONE is zero
-    CONFIG_COOP_RESPAWN_STRING,
-    CONFIG_COOP_RESPAWN_STRING_END = CONFIG_COOP_RESPAWN_STRING + (COOP_RESPAWN_TOTAL - 1),
-
-    CONFIG_HEALTH_BAR_NAME, // active health bar name
-
-    CONFIG_LAST
-};
 
 typedef enum {
     BMODEL_ANIM_FORWARDS,

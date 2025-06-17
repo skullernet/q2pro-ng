@@ -102,6 +102,8 @@ server_src = [
 ]
 
 game_src = files(
+  'src/shared/bg_misc.c',
+  'src/shared/bg_pmove.c',
   'src/shared/m_flash.c',
   'src/shared/shared.c'
 )
@@ -120,7 +122,8 @@ cgame_src = files(
   'src/cgame/cg_screen.c',
   'src/cgame/cg_servercmds.c',
   'src/cgame/cg_view.c',
-  'src/game/p_move.c',
+  'src/shared/bg_misc.c',
+  'src/shared/bg_pmove.c',
   'src/shared/m_flash.c',
   'src/shared/shared.c',
 )

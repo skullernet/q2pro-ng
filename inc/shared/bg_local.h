@@ -1,0 +1,587 @@
+/*
+Copyright (C) 1997-2001 Id Software, Inc.
+Copyright (c) ZeniMax Media Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+#pragma once
+
+#define STEPSIZE    18.0f
+
+#define STOP_EPSILON 0.1f
+
+//
+// config strings are a general means of communication from
+// the server to all connected clients.
+// Each config string can be at most MAX_QPATH characters.
+//
+#define MAX_ITEMS           256
+#define MAX_GENERAL         512     // general config strings
+
+#define CS_NAME             0       // server and game both reference!!!
+#define CS_CDTRACK          1
+#define CS_SKY              2
+#define CS_SKYAXIS          3       // %f %f %f format
+#define CS_SKYROTATE        4
+#define CS_STATUSBAR        5       // display program string
+
+#define CS_AIRACCEL         59
+#define CS_MAXCLIENTS       60
+#define CS_MAPCHECKSUM      61
+#define CS_MODELS           62
+#define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
+#define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
+#define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
+#define CS_ITEMS            (CS_LIGHTS + MAX_LIGHTSTYLES)
+#define CS_PLAYERSKINS      (CS_ITEMS + MAX_ITEMS)
+#define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
+#define CS_END              (CS_GENERAL + MAX_GENERAL)
+
+#if CS_END > MAX_CONFIGSTRINGS
+#error Too many configstrings
+#endif
+
+// STAT_LAYOUTS flags
+#define LAYOUTS_LAYOUT          BIT(0)
+#define LAYOUTS_INVENTORY       BIT(1)
+#define LAYOUTS_HIDE_HUD        BIT(2)
+#define LAYOUTS_INTERMISSION    BIT(3)
+#define LAYOUTS_HELP            BIT(4)
+#define LAYOUTS_HIDE_CROSSHAIR  BIT(5)
+
+// uf flags
+#define UF_AUTOSCREENSHOT   BIT(0)
+#define UF_AUTORECORD       BIT(1)
+#define UF_LOCALFOV         BIT(2)
+#define UF_MUTE_PLAYERS     BIT(3)
+#define UF_MUTE_OBSERVERS   BIT(4)
+#define UF_MUTE_MISC        BIT(5)
+#define UF_PLAYERFOV        BIT(6)
+
+//==============================================
+
+// entity_state_t->effects
+// Effects are things handled on the client side (lights, particles, frame animations)
+// that happen constantly on the given entity.
+// An entity that has effects will be sent to the client
+// even if it has a zero index model.
+#define EF_NONE             0U
+#define EF_ROTATE           BIT(0)      // rotate (bonus items)
+#define EF_GIB              BIT(1)      // leave a trail
+#define EF_BOB              BIT(2)      // used by KEX
+#define EF_BLASTER          BIT(3)      // redlight + trail
+#define EF_ROCKET           BIT(4)      // redlight + trail
+#define EF_GRENADE          BIT(5)
+#define EF_HYPERBLASTER     BIT(6)
+#define EF_BFG              BIT(7)
+#define EF_COLOR_SHELL      BIT(8)
+#define EF_POWERSCREEN      BIT(9)
+#define EF_ANIM01           BIT(10)     // automatically cycle between frames 0 and 1 at 2 hz
+#define EF_ANIM23           BIT(11)     // automatically cycle between frames 2 and 3 at 2 hz
+#define EF_ANIM_ALL         BIT(12)     // automatically cycle through all frames at 2hz
+#define EF_ANIM_ALLFAST     BIT(13)     // automatically cycle through all frames at 10hz
+#define EF_FLIES            BIT(14)
+#define EF_QUAD             BIT(15)
+#define EF_PENT             BIT(16)
+#define EF_TELEPORTER       BIT(17)     // particle fountain
+#define EF_FLAG1            BIT(18)
+#define EF_FLAG2            BIT(19)
+
+// RAFAEL
+#define EF_IONRIPPER        BIT(20)
+#define EF_GREENGIB         BIT(21)
+#define EF_BLUEHYPERBLASTER BIT(22)
+#define EF_SPINNINGLIGHTS   BIT(23)
+#define EF_PLASMA           BIT(24)
+#define EF_TRAP             BIT(25)
+
+//ROGUE
+#define EF_TRACKER          BIT(26)
+#define EF_DOUBLE           BIT(27)
+#define EF_SPHERETRANS      BIT(28)
+#define EF_TAGTRAIL         BIT(29)
+#define EF_HALF_DAMAGE      BIT(30)
+#define EF_TRACKERTRAIL     BIT(31)
+//ROGUE
+
+// entity_state_t->morefx flags
+//KEX
+#define EFX_NONE                0U
+#define EFX_DUALFIRE            BIT(0)
+#define EFX_HOLOGRAM            BIT(1)
+#define EFX_FLASHLIGHT          BIT(2)
+#define EFX_BARREL_EXPLODING    BIT(3)
+#define EFX_TELEPORTER2         BIT(4)
+#define EFX_GRENADE_LIGHT       BIT(5)
+//KEX
+#define EFX_STEAM               BIT(6)
+
+// entity_state_t->event values
+// entity events are for effects that take place relative
+// to an existing entities origin.  Very network efficient.
+// All muzzle flashes really should be converted to events...
+typedef enum {
+    EV_NONE,
+    EV_ITEM_RESPAWN,
+    EV_FOOTSTEP,
+    EV_FALLSHORT,
+    EV_FALL,
+    EV_FALLFAR,
+    EV_DEATH1,
+    EV_DEATH2,
+    EV_DEATH3,
+    EV_DEATH4,
+    EV_PAIN,
+    EV_GURP,
+    EV_DROWN,
+    EV_JUMP,
+    EV_PLAYER_TELEPORT,
+    EV_OTHER_TELEPORT,
+    EV_OTHER_FOOTSTEP,
+    EV_LADDER_STEP,
+    EV_MUZZLEFLASH,
+    EV_MUZZLEFLASH2,
+    EV_SOUND,
+    EV_BERSERK_SLAM,
+    EV_GUNCMDR_SLAM,
+    EV_RAILTRAIL,
+    EV_RAILTRAIL2,
+    EV_BUBBLETRAIL,
+    EV_BUBBLETRAIL2,
+    EV_BFG_LASER,
+    EV_BFG_ZAP,
+
+    EV_SPLASH_UNKNOWN,
+    EV_SPLASH_SPARKS,
+    EV_SPLASH_BLUE_WATER,
+    EV_SPLASH_BROWN_WATER,
+    EV_SPLASH_SLIME,
+    EV_SPLASH_LAVA,
+    EV_SPLASH_BLOOD,
+    EV_SPLASH_ELECTRIC_N64,
+
+    EV_BLOOD,
+    EV_MORE_BLOOD,
+    EV_GREEN_BLOOD,
+    EV_GUNSHOT,
+    EV_SHOTGUN,
+    EV_SPARKS,
+    EV_BULLET_SPARKS,
+    EV_HEATBEAM_SPARKS,
+    EV_HEATBEAM_STEAM,
+    EV_SCREEN_SPARKS,
+    EV_SHIELD_SPARKS,
+    EV_ELECTRIC_SPARKS,
+    EV_LASER_SPARKS,
+    EV_WELDING_SPARKS,
+    EV_TUNNEL_SPARKS,
+
+    EV_EXPLOSION_PLAIN,
+    EV_EXPLOSION1,
+    EV_EXPLOSION1_NL,
+    EV_EXPLOSION1_NP,
+    EV_EXPLOSION1_BIG,
+    EV_EXPLOSION2,
+    EV_EXPLOSION2_NL,
+    EV_BLASTER,
+    EV_BLASTER2,
+    EV_FLECHETTE,
+    EV_BLUEHYPERBLASTER,
+    EV_GRENADE_EXPLOSION,
+    EV_GRENADE_EXPLOSION_WATER,
+    EV_ROCKET_EXPLOSION,
+    EV_ROCKET_EXPLOSION_WATER,
+    EV_BFG_EXPLOSION,
+    EV_BFG_EXPLOSION_BIG,
+    EV_TRACKER_EXPLOSION,
+
+    EV_POWER_SPLASH,
+    EV_BOSSTPORT,
+    EV_TELEPORT_EFFECT,
+    EV_CHAINFIST_SMOKE,
+    EV_NUKEBLAST,
+    EV_WIDOWBEAMOUT,
+    EV_WIDOWSPLASH,
+} entity_event_t;
+
+//
+// muzzle flashes / player effects
+//
+typedef enum {
+    MZ_BLASTER,
+    MZ_MACHINEGUN,
+    MZ_SHOTGUN,
+    MZ_CHAINGUN1,
+    MZ_CHAINGUN2,
+    MZ_CHAINGUN3,
+    MZ_RAILGUN,
+    MZ_ROCKET,
+    MZ_GRENADE,
+    MZ_LOGIN,
+    MZ_LOGOUT,
+    MZ_RESPAWN,
+    MZ_BFG,
+    MZ_SSHOTGUN,
+    MZ_HYPERBLASTER,
+    MZ_ITEMRESPAWN,
+
+// RAFAEL
+    MZ_IONRIPPER,
+    MZ_BLUEHYPERBLASTER,
+    MZ_PHALANX,
+
+// KEX
+    MZ_BFG2,
+    MZ_PHALANX2,
+
+//ROGUE
+    MZ_ETF_RIFLE = 30,
+    MZ_PROX,            // KEX
+    MZ_ETF_RIFLE_2,     // MZ_ETF_RIFLE_2 in KEX
+    MZ_HEATBEAM,
+    MZ_BLASTER2,
+    MZ_TRACKER,
+    MZ_NUKE1,
+    MZ_NUKE2,
+    MZ_NUKE4,
+    MZ_NUKE8,
+//ROGUE
+
+    MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
+    MZ_NONE = 0,
+} player_muzzle_t;
+
+// temp entity events
+//
+// Temp entity events are for things that happen
+// at a location separate from any existing entity.
+// Temporary entity messages are explicitly constructed
+// and broadcast.
+typedef enum {
+    TE_GUNSHOT,
+    TE_BLOOD,
+    TE_BLASTER,
+    TE_RAILTRAIL,
+    TE_SHOTGUN,
+    TE_EXPLOSION1,
+    TE_EXPLOSION2,
+    TE_ROCKET_EXPLOSION,
+    TE_GRENADE_EXPLOSION,
+    TE_SPARKS,
+    TE_SPLASH,
+    TE_BUBBLETRAIL,
+    TE_SCREEN_SPARKS,
+    TE_SHIELD_SPARKS,
+    TE_BULLET_SPARKS,
+    TE_LASER_SPARKS,
+    TE_PARASITE_ATTACK,
+    TE_ROCKET_EXPLOSION_WATER,
+    TE_GRENADE_EXPLOSION_WATER,
+    TE_MEDIC_CABLE_ATTACK,
+    TE_BFG_EXPLOSION,
+    TE_BFG_BIGEXPLOSION,
+    TE_BOSSTPORT,           // used as '22' in a map, so DON'T RENUMBER!!!
+    TE_BFG_LASER,
+    TE_GRAPPLE_CABLE,
+    TE_WELDING_SPARKS,
+    TE_GREENBLOOD,
+    TE_BLUEHYPERBLASTER,
+    TE_PLASMA_EXPLOSION,
+    TE_TUNNEL_SPARKS,
+
+//ROGUE
+    TE_BLASTER2,
+    TE_RAILTRAIL2,
+    TE_FLAME,
+    TE_LIGHTNING,
+    TE_DEBUGTRAIL,
+    TE_PLAIN_EXPLOSION,
+    TE_FLASHLIGHT,
+    TE_FORCEWALL,
+    TE_HEATBEAM,
+    TE_MONSTER_HEATBEAM,
+    TE_STEAM,
+    TE_BUBBLETRAIL2,
+    TE_MOREBLOOD,
+    TE_HEATBEAM_SPARKS,
+    TE_HEATBEAM_STEAM,
+    TE_CHAINFIST_SMOKE,
+    TE_ELECTRIC_SPARKS,
+    TE_TRACKER_EXPLOSION,
+    TE_TELEPORT_EFFECT,
+    TE_DBALL_GOAL,
+    TE_WIDOWBEAMOUT,
+    TE_NUKEBLAST,
+    TE_WIDOWSPLASH,
+    TE_EXPLOSION1_BIG,
+    TE_EXPLOSION1_NP,
+    TE_FLECHETTE,
+//ROGUE
+
+//[Paril-KEX]
+    TE_BLUEHYPERBLASTER_2,
+    TE_BFG_ZAP,
+    TE_BERSERK_SLAM,
+    TE_GRAPPLE_CABLE_2,
+    TE_POWER_SPLASH,
+    TE_LIGHTNING_BEAM,
+    TE_EXPLOSION1_NL,
+    TE_EXPLOSION2_NL,
+//[Paril-KEX]
+
+    TE_DAMAGE_DEALT = 128,
+
+    TE_NUM_ENTITIES
+} temp_event_t;
+
+typedef enum {
+    SPLASH_UNKNOWN,
+    SPLASH_SPARKS,
+    SPLASH_BLUE_WATER,
+    SPLASH_BROWN_WATER,
+    SPLASH_SLIME,
+    SPLASH_LAVA,
+    SPLASH_BLOOD,
+    SPLASH_ELECTRIC_N64, // KEX
+} splash_color_t;
+
+// sound channels
+// channel 0 never willingly overrides
+// other channels (1-7) always override a playing sound on that channel
+typedef enum {
+    CHAN_AUTO,
+    CHAN_WEAPON,
+    CHAN_VOICE,
+    CHAN_ITEM,
+    CHAN_BODY,
+    CHAN_AUX,
+    CHAN_FOOTSTEP,
+
+    // modifier flags
+    CHAN_NO_PHS_ADD     = BIT(3),   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
+    CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
+} soundchan_t;
+
+// game print flags
+typedef enum {
+    PRINT_LOW,          // pickup messages
+    PRINT_MEDIUM,       // death messages
+    PRINT_HIGH,         // critical messages
+    PRINT_CHAT,         // chat messages
+    PRINT_TYPEWRITER,
+    PRINT_CENTER,
+} print_level_t;
+
+// state for coop respawning; used to select which
+// message to print for the player this is set on.
+typedef enum {
+    COOP_RESPAWN_NONE, // no messagee
+    COOP_RESPAWN_IN_COMBAT, // player is in combat
+    COOP_RESPAWN_BAD_AREA, // player not in a good spot
+    COOP_RESPAWN_BLOCKED, // spawning was blocked by something
+    COOP_RESPAWN_WAITING, // for players that are waiting to respawn
+    COOP_RESPAWN_NO_LIVES, // out of lives, so need to wait until level switch
+    COOP_RESPAWN_TOTAL
+} coop_respawn_t;
+
+// reserved general CS ranges
+enum {
+    CONFIG_CTF_MATCH = CS_GENERAL,
+    CONFIG_CTF_TEAMINFO,
+    CONFIG_CTF_PLAYER_NAME,
+    CONFIG_CTF_PLAYER_NAME_END = CONFIG_CTF_PLAYER_NAME + MAX_CLIENTS,
+
+    // nb: offset by 1 since NONE is zero
+    CONFIG_COOP_RESPAWN_STRING,
+    CONFIG_COOP_RESPAWN_STRING_END = CONFIG_COOP_RESPAWN_STRING + (COOP_RESPAWN_TOTAL - 1),
+
+    // [Paril-KEX] if 1, n64 player physics apply
+    CONFIG_N64_PHYSICS,
+    CONFIG_HEALTH_BAR_NAME, // active health bar name
+
+    CONFIG_LAST
+};
+
+// player_state->stats[] indexes
+typedef enum {
+    STAT_HEALTH_ICON = 1,
+    STAT_HEALTH,
+    STAT_AMMO_ICON,
+    STAT_AMMO,
+    STAT_ARMOR_ICON,
+    STAT_ARMOR,
+    STAT_SELECTED_ICON,
+    STAT_PICKUP_ICON,
+    STAT_PICKUP_STRING,
+    STAT_TIMER_ICON,
+    STAT_TIMER,
+    STAT_HELPICON,
+    STAT_SELECTED_ITEM,
+    STAT_LAYOUTS,
+    STAT_FLASHES,           // cleared each frame, 1 = health, 2 = armor
+    STAT_CHASE,
+    STAT_SPECTATOR,
+    STAT_HITS,
+
+    STAT_CTF_TEAM1_PIC = 18,
+    STAT_CTF_TEAM1_CAPS = 19,
+    STAT_CTF_TEAM2_PIC = 20,
+    STAT_CTF_TEAM2_CAPS = 21,
+    STAT_CTF_FLAG_PIC = 22,
+    STAT_CTF_JOINED_TEAM1_PIC = 23,
+    STAT_CTF_JOINED_TEAM2_PIC = 24,
+    STAT_CTF_TEAM1_HEADER = 25,
+    STAT_CTF_TEAM2_HEADER = 26,
+    STAT_CTF_TECH = 27,
+    STAT_CTF_ID_VIEW = 28,
+    STAT_CTF_MATCH = 29,
+    STAT_CTF_ID_VIEW_COLOR = 30,
+    STAT_CTF_TEAMINFO = 31,
+
+    // [Paril-KEX] Key display
+    STAT_KEY_A = 18,
+    STAT_KEY_B = 19,
+    STAT_KEY_C = 20,
+
+    // [Paril-KEX] top of screen coop respawn state
+    STAT_COOP_RESPAWN = 21,
+
+    // [Paril-KEX] respawns remaining
+    STAT_LIVES = 22,
+
+    // [Paril-KEX]
+    STAT_HEALTH_BARS = 23, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
+
+    // [Paril-KEX]
+    STAT_SELECTED_ITEM_NAME = 31,
+} stat_index_t;
+
+#define GUNINDEX_BITS       13  // upper 3 bits are skinnum
+#define GUNINDEX_MASK       MASK(GUNINDEX_BITS)
+
+//==============================================
+
+// pmove_state_t is the information necessary for client side movement
+// prediction
+typedef enum {
+    // can accelerate and turn
+    PM_NORMAL,
+    PM_GRAPPLE, // [Paril-KEX] pull towards velocity, no gravity
+    PM_NOCLIP,
+    PM_SPECTATOR,
+    // no acceleration or turning
+    PM_DEAD,
+    PM_GIB,     // different bounding box
+    PM_FREEZE
+} pmtype_t;
+
+// pmove->pm_flags
+#define PMF_NONE            0U
+#define PMF_DUCKED          BIT(0)
+#define PMF_JUMP_HELD       BIT(1)
+#define PMF_ON_GROUND       BIT(2)
+#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
+#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
+#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
+#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
+
+//KEX
+#define PMF_ON_LADDER                   BIT(7)
+#define PMF_NO_ANGULAR_PREDICTION       BIT(8)
+#define PMF_IGNORE_PLAYER_COLLISION     BIT(9)
+#define PMF_TIME_TRICK                  BIT(10)
+#define PMF_NO_GROUND_SEEK              BIT(11)
+//KEX
+
+typedef enum {
+    WATER_NONE,
+    WATER_FEET,
+    WATER_WAIST,
+    WATER_UNDER
+} water_level_t;
+
+#define MAXTOUCH    32
+
+typedef struct {
+    int num;
+    trace_t traces[MAXTOUCH];
+} touch_list_t;
+
+typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
+typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);
+
+typedef struct {
+    // state (in / out)
+    pmove_state_t   s;
+
+    // command (in)
+    usercmd_t       cmd;
+    bool            snapinitial;    // if s has been changed outside pmove
+
+    // results (out)
+    touch_list_t    touch;
+
+    vec3_t      viewangles;         // clamped
+    float       viewheight;
+
+    vec3_t      mins, maxs;         // bounding box size
+
+    int             groundentity;
+    cplane_t        groundplane;
+    contents_t      watertype;
+    water_level_t   waterlevel;
+
+    // callbacks to test the world
+    trace_func_t    trace;
+    clip_func_t     clip;
+    contents_t      (*pointcontents)(const vec3_t point);
+
+    // [KEX] variables (in)
+    vec3_t      viewoffset;
+    int         playernum;
+
+    // [KEX] results (out)
+    vec4_t      screen_blend;
+    int         rdflags;
+    bool        jump_sound;
+    bool        step_clip;
+    float       impact_delta;
+} pmove_t;
+
+typedef enum {
+    GOOD_POSITION,
+    STUCK_FIXED,
+    NO_GOOD_POSITION
+} stuck_result_t;
+
+stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
+                                        int ignore, contents_t mask, trace_func_t trace_func);
+
+typedef struct {
+    float airaccel;
+    bool n64_physics;
+} pm_config_t;
+
+extern pm_config_t pm_config;
+
+void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
+                              int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
+
+void BG_Pmove(pmove_t *pmove);
+
+void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend);
+
+void vectoangles(const vec3_t value1, vec3_t angles);

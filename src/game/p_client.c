@@ -1602,7 +1602,7 @@ void G_PostRespawn(edict_t *self)
 
     // hold in place briefly
     self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-    self->client->ps.pmove.pm_time = 112 >> PM_TIME_SHIFT;
+    self->client->ps.pmove.pm_time = 112;
 
     self->client->respawn_time = level.time;
 }
@@ -1692,7 +1692,7 @@ static void spectator_respawn(edict_t *ent)
 
         // hold in place briefly
         ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 112 >> PM_TIME_SHIFT;
+        ent->client->ps.pmove.pm_time = 112;
     }
 
     ent->client->respawn_time = level.time;
@@ -2570,7 +2570,7 @@ qvm_exported void G_ClientThink(int clientnum)
         pm.pointcontents = trap_PointContents;
 
         // perform a pmove
-        Pmove(&pm);
+        BG_Pmove(&pm);
 
         // [Paril-KEX] save old position for G_TouchProjectiles
         vec3_t old_origin;

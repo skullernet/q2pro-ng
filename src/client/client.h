@@ -142,12 +142,6 @@ typedef struct {
     int         lightlevel;
 
     //
-    // transient data from server
-    //
-    char        layout[MAX_NET_STRING];     // general 2D overlay
-    int         inventory[MAX_ITEMS];
-
-    //
     // server state information
     //
     int         serverstate;    // ss_* constants

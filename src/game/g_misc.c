@@ -1763,7 +1763,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // clear the velocity and hold them in place briefly
     VectorClear(other->velocity);
-    other->client->ps.pmove.pm_time = 160 >> PM_TIME_SHIFT; // hold time
+    other->client->ps.pmove.pm_time = 160; // hold time
     other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
 
     edict_t *owner = &g_edicts[self->r.ownernum];

@@ -795,8 +795,8 @@ void CL_EmitDemoSnapshot(void)
     }
 
     // write layout
-    MSG_WriteByte(svc_stringcmd);
-    MSG_WriteString(va("layout %s", cl.layout));
+    //MSG_WriteByte(svc_stringcmd);
+    //MSG_WriteString(va("layout %s", cl.layout));
 
     if (msg_write.overflowed) {
         Com_DWPrintf("%s: message buffer overflowed\n", __func__);
@@ -1081,6 +1081,7 @@ done:
 
 static void parse_info_string(demoInfo_t *info, int clientNum, int index)
 {
+#if 0
     char string[MAX_QPATH], *p;
 
     MSG_ReadString(string, sizeof(string));
@@ -1094,6 +1095,7 @@ static void parse_info_string(demoInfo_t *info, int clientNum, int index)
             }
         }
     }
+#endif
 }
 
 /*

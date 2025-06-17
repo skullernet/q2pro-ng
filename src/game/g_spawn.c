@@ -1650,6 +1650,15 @@ void SP_worldspawn(edict_t *ent)
 
     trap_SetConfigstring(CS_MAXCLIENTS, va("%d", game.maxclients));
 
+    if (level.is_n64 && !deathmatch.integer) {
+        trap_SetConfigstring(CONFIG_N64_PHYSICS, "1");
+        pm_config.n64_physics = true;
+    }
+
+    trap_SetConfigstring(CS_AIRACCEL, va("%d", sv_airaccelerate.integer));
+    pm_config.airaccel = sv_airaccelerate.integer;
+    sv_airaccelerate.modified = false;
+
 #define DEF_STR(a, b)   ((a) && *(a) ? (a) : (b))
     level.primary_objective_string   = DEF_STR(st.primary_objective_string,   "Primary Objective:\n{}");
     level.secondary_objective_string = DEF_STR(st.secondary_objective_string, "Secondary Objective:\n{}");

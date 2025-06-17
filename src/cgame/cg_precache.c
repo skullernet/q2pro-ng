@@ -422,7 +422,12 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
     }
 
     if (index == CS_AIRACCEL) {
-        //cg.pmp.airaccelerate = cg.pmp.qwmode || Q_atoi(s);
+        pm_config.airaccel = Q_atoi(s);
+        return;
+    }
+
+    if (index == CONFIG_N64_PHYSICS) {
+        pm_config.n64_physics = Q_atoi(s);
         return;
     }
 

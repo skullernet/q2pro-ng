@@ -81,13 +81,7 @@ char *UTF8_TranslitString(const char *src);
 // Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
 static inline size_t Com_ConfigstringSize(int cs)
 {
-    if (cs >= CS_STATUSBAR && cs < CS_AIRACCEL)
-        return MAX_QPATH * (CS_AIRACCEL - cs);
-
-    if (cs >= CS_GENERAL && cs < MAX_CONFIGSTRINGS)
-        return MAX_QPATH * (MAX_CONFIGSTRINGS - cs);
-
-    return MAX_QPATH;
+    return MAX_QPATH * (MAX_CONFIGSTRINGS - cs);
 }
 
 #if USE_FPS

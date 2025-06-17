@@ -17,21 +17,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "cg_local.h"
-#include "../game/bg_local.h"
-
-void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
-{
-    if (a <= 0)
-        return;
-
-    float a2 = v_blend[3] + (1 - v_blend[3]) * a; // new total alpha
-    float a3 = v_blend[3] / a2; // fraction of color from old
-
-    v_blend[0] = v_blend[0] * a3 + r * (1 - a3);
-    v_blend[1] = v_blend[1] * a3 + g * (1 - a3);
-    v_blend[2] = v_blend[2] * a3 + b * (1 - a3);
-    v_blend[3] = a2;
-}
 
 /*
 ===================
@@ -190,7 +175,7 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned number)
     float oldz = pm->s.origin[2];
 
     trap_GetUsercmd(number, &pm->cmd);
-    Pmove(pm);
+    BG_Pmove(pm);
 
     if (pm->s.pm_type != PM_SPECTATOR && (pm->s.pm_flags & PMF_ON_GROUND) && number > cg.predicted_step_frame) {
         float step = pm->s.origin[2] - oldz;

@@ -720,6 +720,12 @@ static void ExitLevel(void)
 
 static void G_CheckCvars(void)
 {
+    if (sv_airaccelerate.modified) {
+        trap_SetConfigstring(CS_AIRACCEL, va("%d", sv_airaccelerate.integer));
+        pm_config.airaccel = sv_airaccelerate.integer;
+        sv_airaccelerate.modified = false;
+    }
+
     if (sv_gravity.modified) {
         level.gravity = sv_gravity.value;
         sv_gravity.modified = false;

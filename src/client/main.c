@@ -1493,6 +1493,7 @@ static size_t CL_Lag_m(char *buffer, size_t size)
     return Q_snprintf(buffer, size, "%.2f%%", f * 100.0f);
 }
 
+#if 0
 static size_t CL_Health_m(char *buffer, size_t size)
 {
     return Q_snprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_HEALTH]);
@@ -1513,6 +1514,7 @@ static size_t CL_WeaponModel_m(char *buffer, size_t size)
     int i = CS_MODELS + (cl.frame.ps.gunindex & GUNINDEX_MASK);
     return Q_strlcpy(buffer, cl.configstrings[i], size);
 }
+#endif
 
 static size_t CL_NumEntities_m(char *buffer, size_t size)
 {
@@ -1882,10 +1884,12 @@ static void CL_InitLocal(void)
     Cmd_AddMacro("cl_pps", CL_Pps_m);   // packets per second
     Cmd_AddMacro("cl_ping", CL_Ping_m);
     Cmd_AddMacro("cl_lag", CL_Lag_m);
+#if 0
     Cmd_AddMacro("cl_health", CL_Health_m);
     Cmd_AddMacro("cl_ammo", CL_Ammo_m);
     Cmd_AddMacro("cl_armor", CL_Armor_m);
     Cmd_AddMacro("cl_weaponmodel", CL_WeaponModel_m);
+#endif
     Cmd_AddMacro("cl_numentities", CL_NumEntities_m);
     Cmd_AddMacro("cl_surface", CL_Surface_m);
 }
