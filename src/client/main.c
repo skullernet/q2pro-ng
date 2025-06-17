@@ -477,6 +477,7 @@ void CL_ClearState(void)
 {
     S_StopAllSounds();
     SCR_StopCinematic();
+    R_ClearScene();
     CL_FreeDemoSnapshots();
 
     // wipe the entire cl structure
@@ -817,40 +818,16 @@ void CL_Changing_f(void)
     SCR_UpdateScreen();
 }
 
-
 /*
 =================
 CL_Reconnect_f
 
-The server is changing levels
+Issued manually at console
 =================
 */
 void CL_Reconnect_f(void)
 {
-    if (cls.demo.playback) {
-        Com_Printf("No server to reconnect to.\n");
-        return;
-    }
-
-    if (cls.state >= ca_precached || Cmd_From() != FROM_STUFFTEXT) {
-        CL_Disconnect(ERR_RECONNECT);
-    }
-
-    if (cls.state >= ca_connected) {
-        cls.state = ca_connected;
-
-        if (cls.download.file) {
-            return; // if we are downloading, we don't change!
-        }
-
-        Com_Printf("Reconnecting...\n");
-
-        CL_ClientCommand("new");
-        return;
-    }
-
-    // issued manually at console
-    if (cls.serverAddress.type == NA_UNSPECIFIED) {
+    if (cls.serverAddress.type == NA_UNSPECIFIED || cls.demo.playback) {
         Com_Printf("No server to reconnect to.\n");
         return;
     }
@@ -858,6 +835,8 @@ void CL_Reconnect_f(void)
         Com_Printf("Can not reconnect to loopback.\n");
         return;
     }
+
+    CL_Disconnect(ERR_RECONNECT);
 
     Com_Printf("Reconnecting...\n");
 

@@ -554,12 +554,16 @@ static void CL_ParseServerCommand(void)
         CL_Changing_f();
         return;
     }
+
     if (!strcmp(s, "precache")) {
         CL_Precache_f();
         return;
     }
+
     if (!strcmp(s, "reconnect")) {
-        CL_Reconnect_f();
+        cls.state = ca_connected;
+        Com_Printf("Reconnecting...\n");
+        CL_ClientCommand("new");
         return;
     }
 

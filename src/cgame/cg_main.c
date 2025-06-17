@@ -128,6 +128,8 @@ static vm_cvar_reg_t cg_cvars[] = {
 
 qvm_exported void CG_Init(void)
 {
+    memset(&cg, 0, sizeof(cg));
+
     // seed RNG
     Q_srand(trap_RealTime());
 

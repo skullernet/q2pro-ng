@@ -1043,13 +1043,11 @@ static void CL_LoadMap(void)
 
 void CL_InitCGame(void)
 {
-    // unload anything we have now
-    CL_ShutdownCGame();
-
     CL_LoadMap();
 
     // load cgame module
-    cge = VM_LoadModule(&cgame, &cgame_iface);
+    if (!cge)
+        cge = VM_LoadModule(&cgame, &cgame_iface);
 
     // register models, pics, and skins
     R_BeginRegistration(cl.mapname);
