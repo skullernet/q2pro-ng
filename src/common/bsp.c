@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
+#include "common/hash_map.h"
 #include "common/intreadwrite.h"
 #include "common/math.h"
 #include "common/mdfour.h"
@@ -343,7 +344,7 @@ static void BSP_LoadMaterials(bsp_t *bsp)
 {
     char path[MAX_QPATH];
     material_t material;
-    mtexinfo_t *out, *tex;
+    mtexinfo_t *out;
     qhandle_t f;
     int i, j;
 
@@ -353,23 +354,21 @@ static void BSP_LoadMaterials(bsp_t *bsp)
     strncpy(bsp->materials[MATERIAL_ID_DEFAULT], "default", sizeof(bsp->materials[0]));
     strncpy(bsp->materials[MATERIAL_ID_LADDER ], "ladder",  sizeof(bsp->materials[0]));
 
+    hash_map_t *map = HashMap_Create(const char *, int, HashCaseStr, HashCaseStrCmp);
+
     for (i = 0, out = bsp->texinfo; i < bsp->numtexinfo; i++, out++) {
         // see if already loaded material for this texinfo
-        for (j = i - 1; j >= 0; j--) {
-            tex = &bsp->texinfo[j];
-            if (!Q_stricmp(tex->name, out->name)) {
-                out->material_id = tex->material_id;
-                break;
-            }
-        }
-        if (j != -1)
+        int *v = HashMap_Lookup(int, map, &(const char *){out->name});
+        if (v) {
+            out->material_id = *v;
             continue;
+        }
 
         // load material file
         Q_concat(path, sizeof(path), "textures/", out->name, ".mat");
         FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
         if (!f)
-            continue;
+            goto done;
 
         memset(material, 0, sizeof(material));
         FS_Read(material, sizeof(material), f);
@@ -377,29 +376,31 @@ static void BSP_LoadMaterials(bsp_t *bsp)
 
         if (material[sizeof(material) - 1]) {
             Com_WPrintf("Oversize material in %s\n", path);
-            continue;
+            goto done;
         }
 
         if (!COM_IsPath(material)) {
             Com_WPrintf("Bad material \"%s\" in %s\n", COM_MakePrintable(material), path);
-            continue;
+            goto done;
         }
 
         // see if already allocated id for this material
         for (j = bsp->nummaterials - 1; j >= 0; j--) {
             if (!Q_stricmp(bsp->materials[j], material)) {
                 out->material_id = j;
-                break;
+                goto done;
             }
         }
 
         // allocate new material
-        if (j == -1) {
-            out->material_id = bsp->nummaterials++;
-            bsp->materials = Z_Realloc(bsp->materials, bsp->nummaterials * sizeof(bsp->materials[0]));
-            memcpy(bsp->materials[out->material_id], material, sizeof(bsp->materials[0]));
-        }
+        out->material_id = bsp->nummaterials++;
+        bsp->materials = Z_Realloc(bsp->materials, bsp->nummaterials * sizeof(bsp->materials[0]));
+        strncpy(bsp->materials[out->material_id], material, sizeof(bsp->materials[0]));
+done:
+        HashMap_Insert(map, &(const char *){out->name}, &out->material_id);
     }
+
+    HashMap_Destroy(map);
 
     Com_DPrintf("%s: %d materials loaded\n", __func__, bsp->nummaterials);
 }
