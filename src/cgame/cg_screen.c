@@ -775,9 +775,9 @@ void SCR_Init(void)
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
 
-    SCR_UpdateCvars();
-
     SCR_RegisterMedia();
+
+    SCR_UpdateCvars();
 
     CG_ModeChanged();
 }
@@ -1569,4 +1569,5 @@ qvm_exported void CG_DrawActiveFrame(unsigned time)
 qvm_exported void CG_ModeChanged(void)
 {
     trap_R_GetConfig(&scr.config);
+    scr_scale_changed();
 }
