@@ -99,10 +99,10 @@ static void write_configstring_stream(void)
     // write a packet full of data
     for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         string = sv.configstrings[i];
-        if (!string[0]) {
+        if (!string) {
             continue;
         }
-        length = Q_strnlen(string, MAX_QPATH);
+        length = strlen(string);
 
         // check if this configstring will overflow
         if (msg_write.cursize + length + 5 > msg_write.maxsize) {
@@ -112,8 +112,7 @@ static void write_configstring_stream(void)
         }
 
         MSG_WriteShort(i);
-        MSG_WriteData(string, length);
-        MSG_WriteByte(0);
+        MSG_WriteData(string, length + 1);
     }
 
     MSG_WriteShort(MAX_CONFIGSTRINGS);

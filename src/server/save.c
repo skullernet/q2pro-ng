@@ -123,13 +123,11 @@ static int write_level_file(void)
     // write configstrings
     for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         s = sv.configstrings[i];
-        if (!s[0])
+        if (!s)
             continue;
 
-        len = Q_strnlen(s, MAX_QPATH);
         MSG_WriteShort(i);
-        MSG_WriteData(s, len);
-        MSG_WriteByte(0);
+        MSG_WriteString(s);
 
         if (msg_write.cursize > msg_write.maxsize / 2) {
             FS_Write(msg_write.data, msg_write.cursize, f);
@@ -422,7 +420,8 @@ static int read_server_file(void)
 static int read_level_file(void)
 {
     char    name[MAX_QPATH];
-    size_t  len, maxlen;
+    char    string[MAX_NET_STRING];
+    size_t  len;
     int     index;
     void    *data;
 
@@ -460,9 +459,11 @@ static int read_level_file(void)
         if (index < 0 || index >= MAX_CONFIGSTRINGS)
             Com_Error(ERR_DROP, "Bad savegame configstring index");
 
-        maxlen = Com_ConfigstringSize(index);
-        if (MSG_ReadString(sv.configstrings[index], maxlen) >= maxlen)
+        if (MSG_ReadString(string, sizeof(string)) >= sizeof(string))
             Com_Error(ERR_DROP, "Savegame configstring too long");
+
+        Z_Free(sv.configstrings[index]);
+        sv.configstrings[index] = SV_CopyString(string);
     }
 
     SV_ClearWorld();

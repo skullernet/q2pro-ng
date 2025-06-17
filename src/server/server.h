@@ -132,8 +132,7 @@ typedef struct {
     cm_t        cm;
 
     const char  *entitystring;
-
-    configstring_t  configstrings[MAX_CONFIGSTRINGS];
+    char        *configstrings[MAX_CONFIGSTRINGS];
 
     server_entity_t entities[MAX_EDICTS];
 } server_t;

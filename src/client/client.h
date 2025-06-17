@@ -155,8 +155,8 @@ typedef struct {
     float       frametime_inv;  // 1/frametime
 #endif
 
-    configstring_t  baseconfigstrings[MAX_CONFIGSTRINGS];
-    configstring_t  configstrings[MAX_CONFIGSTRINGS];
+    char        *baseconfigstrings[MAX_CONFIGSTRINGS];
+    char        *configstrings[MAX_CONFIGSTRINGS];
 
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 

@@ -538,6 +538,15 @@ char *Q_strcasestr(const char *s1, const char *s2);
 #define Q_stricmpn  Q_strncasecmp
 #define Q_stristr   Q_strcasestr
 
+static inline int Q_strcmp_null(const char *s1, const char *s2)
+{
+    if (!s1)
+        s1 = "";
+    if (!s2)
+        s2 = "";
+    return strcmp(s1, s2);
+}
+
 #ifdef HAVE_STRCHRNUL
 #define Q_strchrnul strchrnul
 #else
@@ -624,6 +633,13 @@ char *COM_TrimSpace(char *s);
 // buffer safe operations
 size_t Q_strlcpy(char *dst, const char *src, size_t size);
 size_t Q_strlcat(char *dst, const char *src, size_t size);
+
+static inline size_t Q_strlcpy_null(char *dst, const char *src, size_t size)
+{
+    if (!src)
+        src = "";
+    return Q_strlcpy(dst, src, size);
+}
 
 #define Q_concat(dest, size, ...) \
     Q_concat_array(dest, size, (const char *[]){__VA_ARGS__, NULL})

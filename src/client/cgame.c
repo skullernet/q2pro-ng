@@ -51,7 +51,7 @@ static q_noreturn void PF_Error(const char *msg)
 static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
 {
     Q_assert_soft(index < MAX_CONFIGSTRINGS);
-    return Q_strlcpy(buf, cl.configstrings[index], size);
+    return Q_strlcpy_null(buf, cl.configstrings[index], size);
 }
 
 static void PF_BoxTrace(trace_t *trace,

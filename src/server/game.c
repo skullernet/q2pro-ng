@@ -128,64 +128,47 @@ If game is actively running, broadcasts configstring change.
 */
 static void PF_SetConfigstring(unsigned index, const char *val)
 {
-    size_t len, maxlen;
+    size_t len;
     client_t *client;
-    char *dst;
+    char **dst;
 
-    if (index >= MAX_CONFIGSTRINGS)
-        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
+    Q_assert_soft(index < MAX_CONFIGSTRINGS);
 
     if (sv.state == ss_dead) {
         Com_DWPrintf("%s: not yet initialized\n", __func__);
         return;
     }
 
-    if (!val)
-        val = "";
-
-    // error out entirely if it exceedes array bounds
-    len = strlen(val);
-    maxlen = (MAX_CONFIGSTRINGS - index) * MAX_QPATH;
-    if (len >= maxlen) {
-        Com_Error(ERR_DROP,
-                  "%s: index %d overflowed: %zu > %zu",
-                  __func__, index, len, maxlen - 1);
-    }
-
-    // print a warning and truncate everything else
-    maxlen = Com_ConfigstringSize(index);
-    if (len >= maxlen) {
-        Com_DWPrintf(
-            "%s: index %d overflowed: %zu > %zu\n",
-            __func__, index, len, maxlen - 1);
-        len = maxlen - 1;
-    }
-
-    dst = sv.configstrings[index];
-    if (!strncmp(dst, val, maxlen)) {
+    dst = &sv.configstrings[index];
+    if (!Q_strcmp_null(*dst, val))
         return;
-    }
 
     // change the string in sv
-    memcpy(dst, val, len);
-    dst[len] = 0;
+    Z_Free(*dst);
+    *dst = NULL;
 
-    if (sv.state == ss_loading) {
-        return;
+    len = 0;
+    if (val && *val) {
+        len = strlen(val);
+        Q_assert_soft(len < MAX_NET_STRING);
+        *dst = SV_Malloc(len + 1);
+        memcpy(*dst, val, len + 1);
     }
+
+    if (sv.state == ss_loading)
+        return;
 
     // send the update to everyone
     MSG_WriteByte(svc_configstring);
     MSG_WriteShort(index);
-    MSG_WriteData(val, len);
-    MSG_WriteByte(0);
+    if (len)
+        MSG_WriteData(val, len + 1);
+    else
+        MSG_WriteByte(0);
 
-    FOR_EACH_CLIENT(client) {
-        if (client->state < cs_primed) {
-            continue;
-        }
-        SV_ClientAddMessage(client, MSG_RELIABLE);
-    }
+    FOR_EACH_CLIENT(client)
+        if (client->state >= cs_primed)
+            SV_ClientAddMessage(client, MSG_RELIABLE);
 
     SZ_Clear(&msg_write);
 }
@@ -193,7 +176,7 @@ static void PF_SetConfigstring(unsigned index, const char *val)
 static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
 {
     Q_assert_soft(index < MAX_CONFIGSTRINGS);
-    return Q_strlcpy(buf, sv.configstrings[index], size);
+    return Q_strlcpy_null(buf, sv.configstrings[index], size);
 }
 
 static int PF_FindConfigstring(const char *name, int start, int max, int skip)
@@ -209,7 +192,7 @@ static int PF_FindConfigstring(const char *name, int start, int max, int skip)
             continue;
         }
         string = sv.configstrings[start + i];
-        if (!string[0]) {
+        if (!string) {
             break;
         }
         if (!strcmp(string, name)) {

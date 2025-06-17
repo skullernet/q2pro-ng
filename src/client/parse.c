@@ -348,25 +348,29 @@ static void CL_ParseFrame(void)
 =====================================================================
 */
 
-static void CL_ParseConfigstring(int index)
+static void CL_ParseConfigstring(unsigned index)
 {
-    size_t  len, maxlen;
-    char    *s;
+    char    string[MAX_NET_STRING];
+    size_t  len;
+    char    **dst;
 
-    if (index < 0 || index >= MAX_CONFIGSTRINGS) {
+    if (index >= MAX_CONFIGSTRINGS)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
-    }
 
-    s = cl.configstrings[index];
-    maxlen = Com_ConfigstringSize(index);
-    len = MSG_ReadString(s, maxlen);
+    len = MSG_ReadString(string, sizeof(string));
+    if (len >= sizeof(string))
+        Com_Error(ERR_DROP, "%s: oversize string: %d", __func__, index);
 
-    SHOWNET(3, "    %d \"%s\"\n", index, COM_MakePrintable(s));
+    SHOWNET(3, "    %d \"%s\"\n", index, COM_MakePrintable(string));
 
-    if (len >= maxlen) {
-        Com_WPrintf(
-            "%s: index %d overflowed: %zu > %zu\n",
-            __func__, index, len, maxlen - 1);
+    dst = &cl.configstrings[index];
+
+    Z_Free(*dst);
+    *dst = NULL;
+
+    if (len) {
+        *dst = Z_Malloc(len + 1);
+        memcpy(*dst, string, len + 1);
     }
 
     if (cls.demo.seeking) {

@@ -378,10 +378,10 @@ static void CL_Record_f(void)
     MSG_WriteByte(svc_configstringstream);
     for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
         s = cl.configstrings[i];
-        if (!*s)
+        if (!s)
             continue;
 
-        len = Q_strnlen(s, MAX_QPATH);
+        len = strlen(s);
         if (msg_write.cursize + len + 4 > msg_write.maxsize) {
             MSG_WriteShort(MAX_CONFIGSTRINGS);
             if (!CL_WriteDemoMessage(&msg_write))
@@ -390,8 +390,7 @@ static void CL_Record_f(void)
         }
 
         MSG_WriteShort(i);
-        MSG_WriteData(s, len);
-        MSG_WriteByte(0);
+        MSG_WriteData(s, len + 1);
     }
     MSG_WriteShort(MAX_CONFIGSTRINGS);
 
@@ -431,7 +430,7 @@ static void resume_record(void)
 {
     int i, j, index;
     size_t len;
-    char *s;
+    const char *s;
 
     // write dirty configstrings
     for (i = 0; i < q_countof(cl.dcs); i++) {
@@ -444,8 +443,8 @@ static void resume_record(void)
                 continue;
 
             s = cl.configstrings[index];
+            len = s ? strlen(s) : 0;
 
-            len = Q_strnlen(s, MAX_QPATH);
             if (cls.demo.buffer.cursize + len + 4 > cls.demo.buffer.maxsize) {
                 if (!CL_WriteDemoMessage(&cls.demo.buffer))
                     return;
@@ -736,8 +735,7 @@ void CL_EmitDemoSnapshot(void)
 {
     demosnap_t *snap;
     int64_t pos;
-    char *from, *to;
-    size_t len;
+    const char *from, *to;
     server_frame_t *lastframe, *frame;
     int i, j, lastnum;
 
@@ -784,14 +782,12 @@ void CL_EmitDemoSnapshot(void)
         from = cl.baseconfigstrings[i];
         to = cl.configstrings[i];
 
-        if (!strcmp(from, to))
+        if (!Q_strcmp_null(from, to))
             continue;
 
-        len = Q_strnlen(to, MAX_QPATH);
         MSG_WriteByte(svc_configstring);
         MSG_WriteShort(i);
-        MSG_WriteData(to, len);
-        MSG_WriteByte(0);
+        MSG_WriteString(to);
     }
 
     // write layout
@@ -858,7 +854,8 @@ void CL_FirstDemoFrame(void)
     Com_DPrintf("[%d] first frame\n", cl.frame.number);
 
     // save base configstrings
-    memcpy(cl.baseconfigstrings, cl.configstrings, sizeof(cl.baseconfigstrings[0]) * MAX_CONFIGSTRINGS);
+    for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
+        cl.baseconfigstrings[i] = Z_CopyString(cl.configstrings[i]);
 
     // obtain file length and offset of the second frame
     len = FS_Length(cls.demo.playback);
@@ -999,11 +996,12 @@ static void CL_Seek_f(void)
                 from = cl.baseconfigstrings[i];
                 to = cl.configstrings[i];
 
-                if (!strcmp(from, to))
+                if (!Q_strcmp_null(from, to))
                     continue;
 
                 Q_SetBit(cl.dcs, i);
-                strcpy(to, from);
+                Z_Free(to);
+                cl.configstrings[i] = Z_CopyString(from);
             }
 
             SZ_InitRead(&msg_read, snap->data, snap->msglen);

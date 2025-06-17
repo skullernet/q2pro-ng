@@ -481,6 +481,10 @@ void CL_ClearState(void)
     CL_FreeDemoSnapshots();
 
     // wipe the entire cl structure
+    for (int i = 0; i < MAX_CONFIGSTRINGS; i++) {
+        Z_Free(cl.baseconfigstrings[i]);
+        Z_Free(cl.configstrings[i]);
+    }
     BSP_Free(cl.bsp);
     memset(&cl, 0, sizeof(cl));
 
@@ -800,7 +804,6 @@ void CL_Changing_f(void)
 
     cls.state = ca_connected;   // not active anymore, but not disconnected
     cl.mapname[0] = 0;
-    cl.configstrings[CS_NAME][0] = 0;
 
     CL_CheckForPause();
 

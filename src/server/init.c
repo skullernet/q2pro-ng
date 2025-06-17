@@ -120,6 +120,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     SV_SendAsyncPackets();
 
     // free current level
+    for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
+        Z_Free(sv.configstrings[i]);
     CM_FreeMap(&sv.cm);
     Nav_Unload();
 
@@ -131,7 +133,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     set_frame_time();
 
     // save name for levels that don't set message
-    Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
+    sv.configstrings[CS_NAME] = SV_CopyString(cmd->server);
     Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
     Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
     Q_strlcpy(sv.spawnpoint, cmd->spawnpoint, sizeof(sv.spawnpoint));

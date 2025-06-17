@@ -37,11 +37,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CS_SKYAXIS          3       // %f %f %f format
 #define CS_SKYROTATE        4
 #define CS_STATUSBAR        5       // display program string
-
-#define CS_AIRACCEL         59
-#define CS_MAXCLIENTS       60
-#define CS_MAPCHECKSUM      61
-#define CS_MODELS           62
+#define CS_AIRACCEL         6
+#define CS_MAXCLIENTS       7
+#define CS_MODELS           8
 #define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
 #define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
 #define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
