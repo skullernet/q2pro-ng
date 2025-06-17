@@ -765,35 +765,38 @@ void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)
 {
     va_list     argptr;
     char        text[MAX_STRING_CHARS];
-    size_t      l;
+    const char  *cmd;
 
     switch (level) {
     case PRINT_CHAT:
-        strcpy(text, "chat ");
+        cmd = "chat";
         break;
     case PRINT_CENTER:
-        strcpy(text, "cp ");
+        cmd = "cp";
         break;
     case PRINT_TYPEWRITER:
-        strcpy(text, "tw ");
+        cmd = "tw";
         break;
     default:
-        strcpy(text, "print ");
+        cmd = "print";
         break;
     }
 
-    l = strlen(text);
     va_start(argptr, fmt);
-    Q_vsnprintf(text + l, sizeof(text) - l, fmt, argptr);
+    Q_vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
-    trap_ClientCommand(ent, text, true);
+    for (int i = 0; text[i]; i++)
+        if (text[i] == '\"')
+            text[i] = '`';
+
+    trap_ClientCommand(ent, va("%s \"%s\"", cmd, text), true);
 
     // echo to console
-    if (sv_dedicated.integer) {
+    if (!ent && sv_dedicated.integer) {
         if (level == PRINT_CHAT)
-            trap_Print(PRINT_TALK, text + l);
+            trap_Print(PRINT_TALK, text);
         else if (level < PRINT_CHAT)
-            trap_Print(PRINT_ALL, text + l);
+            trap_Print(PRINT_ALL, text);
     }
 }

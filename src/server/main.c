@@ -152,11 +152,11 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
 
     if (announce == 2)
         // announce to others
-        SV_BroadcastCommand("print %s%s%s\n", client->name, prefix, reason);
+        SV_BroadcastCommand("print \"%s%s%s\n\"", client->name, prefix, reason);
 
     if (announce)
         // print this to client as they will not receive broadcast
-        SV_ClientCommand(client, "print %s%s%s\n", client->name, prefix, reason);
+        SV_ClientCommand(client, "print \"%s%s%s\n\"", client->name, prefix, reason);
 
     // print to server console
     if (COM_DEDICATED)
@@ -1690,7 +1690,7 @@ void SV_UserinfoChanged(client_t *cl)
         }
         if (sv_show_name_changes->integer > 1 ||
             (sv_show_name_changes->integer == 1 && cl->state == cs_spawned)) {
-            SV_BroadcastCommand("print %s changed name to %s\n", cl->name, name);
+            SV_BroadcastCommand("print \"%s changed name to %s\n\"", cl->name, name);
         }
     }
     memcpy(cl->name, name, len + 1);

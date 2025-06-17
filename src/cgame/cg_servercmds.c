@@ -69,8 +69,18 @@ qvm_exported void CG_ServerCommand(void)
     char cmd[MAX_QPATH];
     trap_Argv(0, cmd, sizeof(cmd));
 
+    if (!strcmp(cmd, "layout")) {
+        trap_Args(cg.layout, sizeof(cg.layout));
+        return;
+    }
+
+    if (!strcmp(cmd, "inven")) {
+        CG_Inventory();
+        return;
+    }
+
     char buf[MAX_STRING_CHARS];
-    trap_Args(buf, sizeof(buf));
+    trap_Argv(1, buf, sizeof(buf));
 
     if (!strcmp(cmd, "print")) {
         trap_Print(PRINT_ALL, buf);
@@ -89,16 +99,6 @@ qvm_exported void CG_ServerCommand(void)
 
     if (!strcmp(cmd, "chat")) {
         CG_Chat(buf);
-        return;
-    }
-
-    if (!strcmp(cmd, "inven")) {
-        CG_Inventory();
-        return;
-    }
-
-    if (!strcmp(cmd, "layout")) {
-        Q_strlcpy(cg.layout, buf, sizeof(cg.layout));
         return;
     }
 }

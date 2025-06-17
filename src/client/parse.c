@@ -595,6 +595,7 @@ static void CL_ParseDownload(int cmd)
         Com_Error(ERR_DROP, "%s: bad size: %d", __func__, size);
     }
 
+    (void)percent;
     //CL_HandleDownload(MSG_ReadData(size), size, percent, cmd);
 }
 

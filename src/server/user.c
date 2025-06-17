@@ -413,8 +413,8 @@ static void SV_BeginDownload_f(void)
     if (offset > downloadsize) {
         Com_DPrintf("Refusing download, %s has wrong version of %s (%d > %d)\n",
                     sv_client->name, name, offset, (int)downloadsize);
-        SV_ClientCommand(sv_client, "print File size differs from server.\n"
-                        "Please delete the corresponding .tmp file from your system.\n");
+        SV_ClientCommand(sv_client, "print \"File size differs from server.\n"
+                        "Please delete the corresponding .tmp file from your system.\n\"");
         goto fail2;
     }
 
@@ -555,12 +555,12 @@ static void SV_Lag_f(void)
         cl = sv_client;
     }
 
-    SV_ClientCommand(sv_client, "print "
+    SV_ClientCommand(sv_client, "print \""
                     "Lag stats for:       %s\n"
                     "RTT (min/avg/max):   %d/%d/%d ms\n"
                     "Server to client PL: %.2f%% (approx)\n"
                     "Client to server PL: %.2f%%\n"
-                    "Timescale          : %.3f\n",
+                    "Timescale          : %.3f\n\"",
                     cl->name, cl->min_ping, AVG_PING(cl), cl->max_ping,
                     PL_S2C(cl), PL_C2S(cl), cl->timescale);
 }
@@ -573,7 +573,7 @@ static void SV_PacketdupHack_f(void)
     if (Cmd_Argc() > 1) {
         numdups = Q_atoi(Cmd_Argv(1));
         if (numdups < 0 || numdups > sv_packetdup_hack->integer) {
-            SV_ClientCommand(sv_client, "print Packetdup of %d is not allowed on this server.\n", numdups);
+            SV_ClientCommand(sv_client, "print \"Packetdup of %d is not allowed on this server.\n\"", numdups);
             return;
         }
 
@@ -581,7 +581,7 @@ static void SV_PacketdupHack_f(void)
     }
 
     SV_ClientCommand(sv_client,
-                    "print Server is sending %d duplicate packet%s to you.\n",
+                    "print \"Server is sending %d duplicate packet%s to you.\n\"",
                     numdups, numdups == 1 ? "" : "s");
 }
 #endif
@@ -858,9 +858,9 @@ static void SV_UpdateUserinfo(void)
             return;
         }
         if (COM_IsWhite(s))
-            SV_ClientCommand(sv_client, "print You can't have an empty name.\n");
+            SV_ClientCommand(sv_client, "print \"You can't have an empty name.\n\"");
         else
-            SV_ClientCommand(sv_client, "print You can't change your name too often.\n");
+            SV_ClientCommand(sv_client, "print \"You can't change your name too often.\n\"");
         SV_ClientCommand(sv_client, "stuff set name \"%s\"\n", sv_client->name);
     }
 

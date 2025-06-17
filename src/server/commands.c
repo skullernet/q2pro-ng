@@ -749,7 +749,7 @@ static void SV_ConSay_f(void)
     FOR_EACH_CLIENT(client) {
         if (client->state != cs_spawned)
             continue;
-        SV_ClientCommand(client, "chat console: %s\n", s);
+        SV_ClientCommand(client, "chat \"console: %s\n\"", s);
     }
 
     if (COM_DEDICATED) {
@@ -872,7 +872,7 @@ static void SV_PrintAll_f(void)
     s = COM_StripQuotes(Cmd_RawArgs());
     FOR_EACH_CLIENT(client) {
         if (client->state > cs_zombie)
-            SV_ClientCommand(client, "print %s\n", s);
+            SV_ClientCommand(client, "print \"%s\n\"", s);
     }
 
     if (COM_DEDICATED) {
