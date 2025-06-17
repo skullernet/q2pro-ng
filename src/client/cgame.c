@@ -26,11 +26,12 @@ const cgame_export_t    *cge;
 
 static const mnode_t *box_headnode;
 
-static const mnode_t *CL_ClipHandleToNode(unsigned index, bool world)
+static const mnode_t *CL_ClipHandleToNode(unsigned index, bool transformed)
 {
     if (index == MODELINDEX_TEMPBOX)
         return box_headnode;
-    Q_assert_soft(index > 0 || world);
+    Q_assert_soft(cl.bsp);
+    Q_assert_soft(index >= transformed);
     Q_assert_soft(index < cl.bsp->nummodels);
     return cl.bsp->models[index].headnode;
 }
@@ -58,7 +59,7 @@ static void PF_BoxTrace(trace_t *trace,
                         const vec3_t mins, const vec3_t maxs,
                         qhandle_t hmodel, contents_t contentmask)
 {
-    CM_BoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, true), contentmask);
+    CM_BoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, false), contentmask);
 }
 
 static void PF_TransformedBoxTrace(trace_t *trace,
@@ -67,24 +68,24 @@ static void PF_TransformedBoxTrace(trace_t *trace,
                                    qhandle_t hmodel, contents_t contentmask,
                                    const vec3_t origin, const vec3_t angles)
 {
-    CM_TransformedBoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, false),
+    CM_TransformedBoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, true),
                            contentmask, origin, angles);
 }
 
 static contents_t PF_PointContents(const vec3_t point, qhandle_t hmodel)
 {
-    return BSP_PointLeaf(CL_ClipHandleToNode(hmodel, true), point)->contents;
+    return BSP_PointLeaf(CL_ClipHandleToNode(hmodel, false), point)->contents;
 }
 
 static contents_t PF_TransformedPointContents(const vec3_t point, qhandle_t hmodel,
                                               const vec3_t origin, const vec3_t angles)
 {
-    return CM_TransformedPointContents(point, CL_ClipHandleToNode(hmodel, false), origin, angles);
+    return CM_TransformedPointContents(point, CL_ClipHandleToNode(hmodel, true), origin, angles);
 }
 
 static qhandle_t PF_TempBoxModel(const vec3_t mins, const vec3_t maxs)
 {
-    box_headnode = CM_HeadnodeForBox(mins, maxs);
+    CM_HeadnodeForBox(mins, maxs);
     return MODELINDEX_TEMPBOX;
 }
 
@@ -130,6 +131,7 @@ static bool PF_GetMaterialInfo(unsigned material_id, material_info_t *info)
 
 static void PF_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs)
 {
+    Q_assert_soft(cl.bsp);
     Q_assert_soft(index < cl.bsp->nummodels);
     const mmodel_t *mod = &cl.bsp->models[index];
     VectorCopy(mod->mins, mins);
@@ -1035,6 +1037,8 @@ static void CL_LoadMap(void)
                       cl.bsp->checksum, cl.mapchecksum);
         }
     }
+
+    box_headnode = CM_HeadnodeForBox(vec3_origin, vec3_origin);
 }
 
 void CL_InitCGame(void)
