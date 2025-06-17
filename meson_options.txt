@@ -1,8 +1,3 @@
-option('auto-reply',
-  type: 'boolean',
-  value: true,
-  description: 'Make client auto reply to !version chat probes')
-
 option('avcodec',
   type: 'feature',
   value: 'auto',
@@ -12,11 +7,6 @@ option('base-game',
   type: 'string',
   value: 'baseq2',
   description: 'Name of the base game directory')
-
-option('client-gtv',
-  type: 'boolean',
-  value: false,
-  description: 'Experimental client GTV relay')
 
 option('client-ui',
   type: 'boolean',
@@ -28,21 +18,10 @@ option('default-game',
   value: '',
   description: 'Default value for "game" console variable')
 
-option('game-abi-hack',
-  type: 'feature',
-  value: 'disabled',
-  description: 'Enable this option on i386 Linux to build a server capable of '+
-  'loading closed source game mods built using ancient GCC versions.')
-
 option('game-build-options',
   type: 'array',
   value: [],
   description: 'Custom game build options for LTO, etc')
-
-option('game-new-api',
-  type: 'boolean',
-  value: false,
-  description: 'Build game using new API for big maps support')
 
 option('homedir',
   type: 'string',
@@ -78,18 +57,6 @@ option('md5',
   type: 'boolean',
   value: true,
   description: 'MD5 (re-release) models support')
-
-option('mvd-client',
-  type: 'boolean',
-  value: true,
-  description: 'Enable MVD/GTV client functionality. '+
-  'Use this for hosting a GTV relay server.')
-
-option('mvd-server',
-  type: 'boolean',
-  value: true,
-  description: 'Enable local MVD recording and MVD/GTV server functionality. '+
-  'Use this for hosting a GTV-capable game server.')
 
 option('openal',
   type: 'feature',
@@ -140,11 +107,6 @@ option('tga',
   type: 'boolean',
   value: true,
   description: 'TGA images support')
-
-option('variable-fps',
-  type: 'boolean',
-  value: false,
-  description: 'Support for variable server FPS in both client and server')
 
 option('vid-geometry',
   type: 'string',

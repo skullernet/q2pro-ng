@@ -361,11 +361,6 @@ if get_option('debug')
   refresh_src += 'src/refresh/debug.c'
 endif
 
-if get_option('game-abi-hack').require(x86 and cc.get_id() == 'gcc' and cc.has_argument('-mstackrealign')).allowed()
-  config.set10('USE_GAME_ABI_HACK', true)
-  engine_args += '-mstackrealign'
-endif
-
 executable('q2pro', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
   include_directories:   'inc',
@@ -423,9 +418,7 @@ config.set_quoted('R_TEXTURE_FORMATS', ' '.join(texture_formats))
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
 config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 
-config.set10('USE_AUTOREPLY',     get_option('auto-reply'))
 config.set10('USE_DEBUG',         get_option('debug'))
-config.set10('USE_FPS',           get_option('variable-fps'))
 config.set10('USE_GLES',          get_option('opengl-es1'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
@@ -442,15 +435,6 @@ else
   config.set_quoted('DEFGLPROFILE', '')
 endif
 
-# protocol extensions are always on
-config.set10('USE_PROTOCOL_EXTENSIONS', true)
-
-# new game API flag is *always on* for engine,
-# and can be enabled here for game as well
-if get_option('game-new-api')
-  config.set10('USE_NEW_GAME_API', true)
-endif
-
 configure_file(output: 'config.h', configuration: config)
 
 if system_wide
@@ -458,13 +442,9 @@ if system_wide
 endif
 
 summary({
-  'auto-reply'         : config.get('USE_AUTOREPLY', 0) != 0,
   'avcodec'            : config.get('USE_AVCODEC', 0) != 0,
-  'client-gtv'         : config.get('USE_CLIENT_GTV', 0) != 0,
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,
-  'game-abi-hack'      : config.get('USE_GAME_ABI_HACK', 0) != 0,
-  'game-new-api'       : config.get('USE_NEW_GAME_API', 0) != 0,
   'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
   'libcurl'            : config.get('USE_CURL', 0) != 0,
   'libjpeg'            : config.get('USE_JPG', 0) != 0,
@@ -479,7 +459,6 @@ summary({
   'system-console'     : config.get('USE_SYSCON', 0) != 0,
   'tests'              : config.get('USE_TESTS', 0) != 0,
   'tga'                : config.get('USE_TGA', 0) != 0,
-  'variable-fps'       : config.get('USE_FPS', 0) != 0,
   'wayland'            : config.get('USE_WAYLAND', 0) != 0,
   'windows-crash-dumps': config.get('USE_DBGHELP', 0) != 0,
   'windows-egl'        : config.get('USE_WIN32EGL', 0) != 0,
