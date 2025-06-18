@@ -60,13 +60,10 @@ static const keyname_t keynames[] = {
     K(LEFTARROW),
     K(RIGHTARROW),
 
-    K(ALT),
     K(LALT),
     K(RALT),
-    K(CTRL),
     K(LCTRL),
     K(RCTRL),
-    K(SHIFT),
     K(LSHIFT),
     K(RSHIFT),
 
@@ -207,6 +204,15 @@ Returns key down status: if > 1, it is auto-repeating
 */
 int Key_IsDown(int key)
 {
+    switch (key) {
+    case K_ALT:
+        return keydown[K_LALT] || keydown[K_RALT];
+    case K_CTRL:
+        return keydown[K_LCTRL] || keydown[K_RCTRL];
+    case K_SHIFT:
+        return keydown[K_LSHIFT] || keydown[K_RSHIFT];
+    }
+
     if (key < 0 || key > 255) {
         return 0;
     }
@@ -522,13 +528,10 @@ void Key_Init(void)
     K(LEFTARROW);
     K(RIGHTARROW);
 
-    K(ALT);
     K(LALT);
     K(RALT);
-    K(CTRL);
     K(LCTRL);
     K(RCTRL);
-    K(SHIFT);
     K(LSHIFT);
     K(RSHIFT);
 
@@ -687,7 +690,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
     }
 
     // hack for demo freelook in windowed mode
-    if (cls.key_dest == KEY_NONE && cls.demo.playback && key == K_SHIFT && keydown[key] <= 1) {
+    if (cls.key_dest == KEY_NONE && cls.demo.playback && (key == K_LSHIFT || key == K_RSHIFT) && keydown[key] <= 1) {
         IN_Activate();
     }
 
@@ -846,33 +849,6 @@ void Key_MouseEvent(int x, int y)
         UI_MouseEvent(x, y);
     if (cls.key_dest & KEY_GAME)
         cge->MouseEvent(x, y);
-}
-
-/*
-===================
-Key_Event2
-
-Hack to emulate legacy modifier key presses.
-===================
-*/
-void Key_Event2(unsigned key, bool down, unsigned time)
-{
-    switch (key) {
-    case K_LALT:
-    case K_RALT:
-        Key_Event(K_ALT, down, time);
-        break;
-    case K_LCTRL:
-    case K_RCTRL:
-        Key_Event(K_CTRL, down, time);
-        break;
-    case K_LSHIFT:
-    case K_RSHIFT:
-        Key_Event(K_SHIFT, down, time);
-        break;
-    }
-
-    Key_Event(key, down, time);
 }
 
 /*

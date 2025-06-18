@@ -427,7 +427,7 @@ static void key_event(SDL_KeyboardEvent *event)
         return;
     }
 
-    Key_Event2(key, event->state, event->timestamp);
+    Key_Event(key, event->state, event->timestamp);
 }
 
 static void mouse_button_event(SDL_MouseButtonEvent *event)

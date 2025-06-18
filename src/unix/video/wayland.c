@@ -280,7 +280,7 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
         return;
     }
 
-    Key_Event2(key, down, time);
+    Key_Event(key, down, time);
 
     if (down) {
         wl.lastkeydown = key;
@@ -859,7 +859,7 @@ static void pump_events(void)
         && com_eventTime - wl.keydown_time   > wl.keyrepeat_delay
         && com_eventTime - wl.keyrepeat_time > wl.keyrepeat_delta)
     {
-        Key_Event2(wl.lastkeydown, true, com_eventTime);
+        Key_Event(wl.lastkeydown, true, com_eventTime);
         wl.keyrepeat_time = com_eventTime;
     }
 }

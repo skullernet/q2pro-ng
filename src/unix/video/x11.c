@@ -537,7 +537,7 @@ static void key_event(XKeyEvent *event)
         return;
     }
 
-    Key_Event2(key, event->type == KeyPress, com_eventTime);
+    Key_Event(key, event->type == KeyPress, com_eventTime);
 }
 
 static void button_event(XButtonEvent *event)

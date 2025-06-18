@@ -603,7 +603,7 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
         return;
     }
 
-    Key_Event2(result, down, win.lastMsgTime);
+    Key_Event(result, down, win.lastMsgTime);
 }
 
 static void mouse_wheel_event(int delta)

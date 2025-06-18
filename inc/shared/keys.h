@@ -39,9 +39,12 @@ typedef enum {
     K_LEFTARROW,
     K_RIGHTARROW,
 
-    K_ALT,
-    K_CTRL,
-    K_SHIFT,
+    K_LALT,
+    K_RALT,
+    K_LCTRL,
+    K_RCTRL,
+    K_LSHIFT,
+    K_RSHIFT,
     K_F1,
     K_F2,
     K_F3,
@@ -88,14 +91,6 @@ typedef enum {
     K_KP_PLUS,
     K_KP_MULTIPLY,
 
-// these come paired with legacy K_ALT/K_CTRL/K_SHIFT events
-    K_LALT,
-    K_RALT,
-    K_LCTRL,
-    K_RCTRL,
-    K_LSHIFT,
-    K_RSHIFT,
-
 // mouse buttons generate virtual keys
     K_MOUSE1 = 200,
     K_MOUSE2,
@@ -107,10 +102,15 @@ typedef enum {
     K_MOUSE8,
 
 // mouse wheel generates virtual keys
-    K_MWHEELDOWN,
+    K_MWHEELDOWN = 210,
     K_MWHEELUP,
     K_MWHEELRIGHT,
     K_MWHEELLEFT,
+
+// modifiers don't generate events, but can be tested with Key_IsDown
+    K_ALT = 256,
+    K_CTRL,
+    K_SHIFT,
 } keyevent_t;
 
 typedef enum {

@@ -1436,7 +1436,7 @@ void CG_CalcViewValues(void)
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
-        if (trap_Key_GetDest() == KEY_GAME && trap_Key_IsDown(K_SHIFT)) {
+        if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
             CG_PredictAngles();
             VectorCopy(cg.predicted_angles, cg.refdef.viewangles);
         } else {
