@@ -77,7 +77,7 @@ static void SV_CreateBaselines(void)
         *base = ent->s;
 
         // no need to transmit data that will change anyway
-        if (i <= svs.maxclients) {
+        if (i < svs.maxclients) {
             VectorClear(base->origin);
             VectorClear(base->angles);
             base->frame = 0;
@@ -139,7 +139,7 @@ static void write_baseline_stream(void)
             }
             // check if this baseline will overflow
             if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
-                MSG_WriteBits(0, ENTITYNUM_BITS);
+                MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
                 MSG_FlushBits();
                 SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
                 MSG_BeginWriting();
@@ -149,7 +149,7 @@ static void write_baseline_stream(void)
         }
     }
 
-    MSG_WriteBits(0, ENTITYNUM_BITS);
+    MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
     MSG_FlushBits();
     SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }

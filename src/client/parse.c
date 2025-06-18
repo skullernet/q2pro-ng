@@ -387,26 +387,21 @@ static void CL_ParseConfigstring(unsigned index)
         cge->UpdateConfigstring(index);
 }
 
-static void CL_ParseBaseline(int index)
+static void CL_ParseBaseline(unsigned index)
 {
-    if (index < 0 || index >= ENTITYNUM_WORLD) {
+    if (index >= ENTITYNUM_WORLD) {
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
-#if 0//USE_DEBUG
-    if (cl_shownet->integer >= 3) {
-        Com_LPrintf(PRINT_DEVELOPER, "   baseline:%i ", index);
-        MSG_ShowDeltaEntityBits(bits);
-        Com_LPrintf(PRINT_DEVELOPER, "\n");
-    }
-#endif
     if (MSG_ReadBit()) {
         Com_Error(ERR_DROP, "%s: removed entity", __func__);
         return;
     }
 
+    SHOWNET(3, "    baseline:%i ", index);
     if (MSG_ReadBit())
         MSG_ParseDeltaEntity(&cl.baselines[index], index);
+    SHOWNET(3, "\n");
 }
 
 static void CL_ParseServerData(void)
@@ -740,7 +735,7 @@ void CL_ParseServerMessage(void)
         case svc_baselinestream:
             while (1) {
                 index = MSG_ReadBits(ENTITYNUM_BITS);
-                if (!index) {
+                if (index == ENTITYNUM_NONE) {
                     break;
                 }
                 CL_ParseBaseline(index);
