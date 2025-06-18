@@ -21,96 +21,97 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 // these are the key numbers that should be passed to Key_Event
 //
-#define K_BACKSPACE     8
-#define K_TAB           9
-#define K_ENTER         13
-#define K_PAUSE         19
-#define K_ESCAPE        27
-#define K_SPACE         32
-#define K_DEL           127
+typedef enum {
+    K_BACKSPACE    = 8,
+    K_TAB          = 9,
+    K_ENTER        = 13,
+    K_PAUSE        = 19,
+    K_ESCAPE       = 27,
+    K_SPACE        = 32,
+    K_DEL          = 127,
 
 // normal keys should be passed as lowercased ascii
-#define K_ASCIIFIRST    32
-#define K_ASCIILAST     127
+    K_ASCIIFIRST   = 32,
+    K_ASCIILAST    = 127,
 
-#define K_UPARROW       128
-#define K_DOWNARROW     129
-#define K_LEFTARROW     130
-#define K_RIGHTARROW    131
+    K_UPARROW,
+    K_DOWNARROW,
+    K_LEFTARROW,
+    K_RIGHTARROW,
 
-#define K_ALT           132
-#define K_CTRL          133
-#define K_SHIFT         134
-#define K_F1            135
-#define K_F2            136
-#define K_F3            137
-#define K_F4            138
-#define K_F5            139
-#define K_F6            140
-#define K_F7            141
-#define K_F8            142
-#define K_F9            143
-#define K_F10           144
-#define K_F11           145
-#define K_F12           146
-#define K_INS           147
-#define K_PGDN          148
-#define K_PGUP          149
-#define K_HOME          150
-#define K_END           151
+    K_ALT,
+    K_CTRL,
+    K_SHIFT,
+    K_F1,
+    K_F2,
+    K_F3,
+    K_F4,
+    K_F5,
+    K_F6,
+    K_F7,
+    K_F8,
+    K_F9,
+    K_F10,
+    K_F11,
+    K_F12,
 
-#define K_102ND         152
+    K_INS,
+    K_PGDN,
+    K_PGUP,
+    K_HOME,
+    K_END,
 
-#define K_NUMLOCK       153
-#define K_CAPSLOCK      154
-#define K_SCROLLOCK     155
-#define K_LWINKEY       156
-#define K_RWINKEY       157
-#define K_MENU          158
-#define K_PRINTSCREEN   159
+    K_102ND,
 
-#define K_KP_HOME       160
-#define K_KP_UPARROW    161
-#define K_KP_PGUP       162
-#define K_KP_LEFTARROW  163
-#define K_KP_5          164
-#define K_KP_RIGHTARROW 165
-#define K_KP_END        166
-#define K_KP_DOWNARROW  167
-#define K_KP_PGDN       168
-#define K_KP_ENTER      169
-#define K_KP_INS        170
-#define K_KP_DEL        171
-#define K_KP_SLASH      172
-#define K_KP_MINUS      173
-#define K_KP_PLUS       174
-#define K_KP_MULTIPLY   175
+    K_NUMLOCK,
+    K_CAPSLOCK,
+    K_SCROLLOCK,
+    K_LWINKEY,
+    K_RWINKEY,
+    K_MENU,
+    K_PRINTSCREEN,
+
+    K_KP_HOME,
+    K_KP_UPARROW,
+    K_KP_PGUP,
+    K_KP_LEFTARROW,
+    K_KP_5,
+    K_KP_RIGHTARROW,
+    K_KP_END,
+    K_KP_DOWNARROW,
+    K_KP_PGDN,
+    K_KP_ENTER,
+    K_KP_INS,
+    K_KP_DEL,
+    K_KP_SLASH,
+    K_KP_MINUS,
+    K_KP_PLUS,
+    K_KP_MULTIPLY,
 
 // these come paired with legacy K_ALT/K_CTRL/K_SHIFT events
-#define K_LALT          180
-#define K_RALT          181
-#define K_LCTRL         182
-#define K_RCTRL         183
-#define K_LSHIFT        184
-#define K_RSHIFT        185
+    K_LALT,
+    K_RALT,
+    K_LCTRL,
+    K_RCTRL,
+    K_LSHIFT,
+    K_RSHIFT,
 
 // mouse buttons generate virtual keys
-#define K_MOUSEFIRST    200
-#define K_MOUSE1        200
-#define K_MOUSE2        201
-#define K_MOUSE3        202
-#define K_MOUSE4        203
-#define K_MOUSE5        204
-#define K_MOUSE6        205
-#define K_MOUSE7        206
-#define K_MOUSE8        207
+    K_MOUSE1 = 200,
+    K_MOUSE2,
+    K_MOUSE3,
+    K_MOUSE4,
+    K_MOUSE5,
+    K_MOUSE6,
+    K_MOUSE7,
+    K_MOUSE8,
 
 // mouse wheel generates virtual keys
-#define K_MWHEELDOWN    210
-#define K_MWHEELUP      211
-#define K_MWHEELRIGHT   212
-#define K_MWHEELLEFT    213
-#define K_MOUSELAST     213
+    K_MWHEELDOWN,
+    K_MWHEELUP,
+    K_MWHEELRIGHT,
+    K_MWHEELLEFT,
+} keyevent_t;
 
 typedef enum {
     KEY_NONE    = 0,
