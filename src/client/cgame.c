@@ -800,6 +800,7 @@ typedef enum {
     vm_CG_UpdateConfigstring,
     vm_CG_KeyEvent,
     vm_CG_CharEvent,
+    vm_CG_MouseEvent,
 } cgame_entry_t;
 
 static const vm_export_t cgame_vm_exports[] = {
@@ -812,6 +813,7 @@ static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_UpdateConfigstring, "i"),
     VM_EXPORT(CG_KeyEvent, "i ii"),
     VM_EXPORT(CG_CharEvent, "i"),
+    VM_EXPORT(CG_MouseEvent, "ii"),
 
     { 0 }
 };
@@ -863,6 +865,13 @@ static void thunk_CG_CharEvent(unsigned key) {
     vm_value_t *stack = VM_Push(cgame.vm, 1);
     VM_U32(0) = key;
     VM_Call(cgame.vm, vm_CG_CharEvent);
+}
+
+static void thunk_CG_MouseEvent(int x, int y) {
+    vm_value_t *stack = VM_Push(cgame.vm, 2);
+    VM_U32(0) = x;
+    VM_U32(1) = y;
+    VM_Call(cgame.vm, vm_CG_MouseEvent);
 }
 
 //==============================================
@@ -1008,6 +1017,7 @@ static const cgame_export_t cgame_dll_exports = {
     .UpdateConfigstring = thunk_CG_UpdateConfigstring,
     .KeyEvent = thunk_CG_KeyEvent,
     .CharEvent = thunk_CG_CharEvent,
+    .MouseEvent = thunk_CG_MouseEvent,
 };
 
 static const vm_interface_t cgame_iface = {

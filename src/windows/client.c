@@ -806,7 +806,7 @@ static LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
     switch (uMsg) {
     case WM_MOUSEMOVE:
         if (win.mouse.initialized)
-            UI_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
+            Key_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
         break;
 
     case WM_HOTKEY:

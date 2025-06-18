@@ -174,6 +174,10 @@ qvm_exported void CG_CharEvent(unsigned key)
 {
 }
 
+qvm_exported void CG_MouseEvent(int x, int y)
+{
+}
+
 /*
 =================
 GetCGameAPI
@@ -198,6 +202,7 @@ q_exported const cgame_export_t *GetCGameAPI(const cgame_import_t *import)
         .ModeChanged = CG_ModeChanged,
         .KeyEvent = CG_KeyEvent,
         .CharEvent = CG_CharEvent,
+        .MouseEvent = CG_MouseEvent,
     };
 
     cgi = import;

@@ -25,7 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client/client.h"
 #include "client/keys.h"
 #include "client/video.h"
-#include "client/ui.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
 #include "keytables/keytables.h"
@@ -726,7 +725,7 @@ static void pump_events(void)
             button_event(&event.xbutton);
             break;
         case MotionNotify:
-            UI_MouseEvent(event.xmotion.x, event.xmotion.y);
+            Key_MouseEvent(event.xmotion.x, event.xmotion.y);
             break;
         case UnmapNotify:
             CL_Activate(ACT_MINIMIZED);

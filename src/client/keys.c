@@ -835,6 +835,21 @@ void Key_Event(unsigned key, bool down, unsigned time)
 
 /*
 ===================
+Key_MouseEvent
+
+Routes absolute mouse movement events to appropriate place.
+===================
+*/
+void Key_MouseEvent(int x, int y)
+{
+    if (cls.key_dest & KEY_MENU)
+        UI_MouseEvent(x, y);
+    if (cls.key_dest & KEY_GAME)
+        cge->MouseEvent(x, y);
+}
+
+/*
+===================
 Key_Event2
 
 Hack to emulate legacy modifier key presses.

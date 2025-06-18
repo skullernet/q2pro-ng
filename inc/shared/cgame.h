@@ -214,6 +214,7 @@ typedef struct {
     void (*UpdateConfigstring)(unsigned index);
     bool (*KeyEvent)(unsigned key, bool down);
     void (*CharEvent)(unsigned key);
+    void (*MouseEvent)(int x, int y);
 } cgame_export_t;
 
 #endif

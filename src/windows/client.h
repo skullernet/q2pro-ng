@@ -30,7 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "client/input.h"
 #include "client/keys.h"
-#include "client/ui.h"
 #include "client/video.h"
 #include "refresh/refresh.h"
 #endif

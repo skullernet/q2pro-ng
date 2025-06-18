@@ -28,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "client/input.h"
 #include "client/keys.h"
-#include "client/ui.h"
 #include "client/video.h"
 #include "refresh/refresh.h"
 #include "system/system.h"
@@ -496,8 +495,8 @@ static void pump_events(void)
             break;
         case SDL_MOUSEMOTION:
             if (sdl.win_width && sdl.win_height)
-                UI_MouseEvent(event.motion.x * sdl.width / sdl.win_width,
-                              event.motion.y * sdl.height / sdl.win_height);
+                Key_MouseEvent(event.motion.x * sdl.width / sdl.win_width,
+                               event.motion.y * sdl.height / sdl.win_height);
             break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
