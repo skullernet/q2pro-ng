@@ -394,22 +394,27 @@ void VM_Interpret(vm_t *m)
         //
         case LocalGet:
             arg = read_leb(m);
+            VM_ASSERT(arg < STACK_SIZE - m->fp, "Bad local index");
             stack[++m->sp] = stack[m->fp + arg];
             continue;
         case LocalSet:
             arg = read_leb(m);
+            VM_ASSERT(arg < STACK_SIZE - m->fp, "Bad local index");
             stack[m->fp + arg] = stack[m->sp--];
             continue;
         case LocalTee:
             arg = read_leb(m);
+            VM_ASSERT(arg < STACK_SIZE - m->fp, "Bad local index");
             stack[m->fp + arg] = stack[m->sp];
             continue;
         case GlobalGet:
             arg = read_leb(m);
+            VM_ASSERT(arg < m->num_globals, "Bad global index");
             stack[++m->sp] = m->globals[arg];
             continue;
         case GlobalSet:
             arg = read_leb(m);
+            VM_ASSERT(arg < m->num_globals, "Bad global index");
             m->globals[arg] = stack[m->sp--];
             continue;
 
@@ -546,7 +551,7 @@ void VM_Interpret(vm_t *m)
         case I32_Store ... I64_Store32:
             read_leb(m); // skip flags
             offset = read_leb(m);
-            vm_value_t *sval = &stack[m->sp--];
+            const vm_value_t *sval = &stack[m->sp--];
             addr = stack[m->sp--].u32;
             VM_ASSERT((uint64_t)addr + (uint64_t)offset + mem_load_size[opcode - I32_Load]
                       <= m->memory.pages * VM_PAGE_SIZE, "Memory store out of bounds");
