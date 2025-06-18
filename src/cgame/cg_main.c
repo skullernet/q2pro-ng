@@ -155,6 +155,25 @@ qvm_exported void CG_Shutdown(void)
 {
 }
 
+qvm_exported bool CG_KeyEvent(unsigned key, bool down)
+{
+    if (key != K_ESCAPE)
+        return false;
+    if (cgs.demoplayback)
+        return false;
+    if (!cg.frame)
+        return false;
+    if (!(cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_LAYOUT | LAYOUTS_INVENTORY | LAYOUTS_HELP)))
+        return false;
+
+    trap_ClientCommand("putaway");
+    return true;
+}
+
+qvm_exported void CG_CharEvent(unsigned key)
+{
+}
+
 /*
 =================
 GetCGameAPI
@@ -177,6 +196,8 @@ q_exported const cgame_export_t *GetCGameAPI(const cgame_import_t *import)
         .UpdateConfigstring = CG_UpdateConfigstring,
         .DrawActiveFrame = CG_DrawActiveFrame,
         .ModeChanged = CG_ModeChanged,
+        .KeyEvent = CG_KeyEvent,
+        .CharEvent = CG_CharEvent,
     };
 
     cgi = import;

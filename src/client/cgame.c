@@ -303,6 +303,10 @@ VM_THUNK(GetDemoInfo) {
     VM_U32(0) = PF_GetDemoInfo(VM_PTR_NULL(0, cg_demo_info_t));
 }
 
+VM_THUNK(ClientCommand) {
+    CL_ClientCommand(VM_STR(0));
+}
+
 VM_THUNK(RealTime) {
     VM_I64(0) = Com_RealTime();
 }
@@ -688,6 +692,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetServerFrameNumber, "ii"),
     VM_IMPORT(GetServerFrame, "i ii"),
     VM_IMPORT(GetDemoInfo, "i i"),
+    VM_IMPORT(ClientCommand, "i"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
@@ -793,6 +798,8 @@ typedef enum {
     vm_CG_ConsoleCommand,
     vm_CG_ServerCommand,
     vm_CG_UpdateConfigstring,
+    vm_CG_KeyEvent,
+    vm_CG_CharEvent,
 } cgame_entry_t;
 
 static const vm_export_t cgame_vm_exports[] = {
@@ -803,6 +810,8 @@ static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_ConsoleCommand, "i "),
     VM_EXPORT(CG_ServerCommand, ""),
     VM_EXPORT(CG_UpdateConfigstring, "i"),
+    VM_EXPORT(CG_KeyEvent, "i ii"),
+    VM_EXPORT(CG_CharEvent, "i"),
 
     { 0 }
 };
@@ -841,6 +850,21 @@ static void thunk_CG_UpdateConfigstring(unsigned index) {
     VM_Call(cgame.vm, vm_CG_UpdateConfigstring);
 }
 
+static bool thunk_CG_KeyEvent(unsigned key, bool down) {
+    vm_value_t *stack = VM_Push(cgame.vm, 2);
+    VM_U32(0) = key;
+    VM_U32(1) = down;
+    VM_Call(cgame.vm, vm_CG_KeyEvent);
+    stack = VM_Pop(cgame.vm);
+    return VM_U32(0);
+}
+
+static void thunk_CG_CharEvent(unsigned key) {
+    vm_value_t *stack = VM_Push(cgame.vm, 1);
+    VM_U32(0) = key;
+    VM_Call(cgame.vm, vm_CG_CharEvent);
+}
+
 //==============================================
 
 static const cgame_import_t cgame_dll_imports = {
@@ -870,6 +894,8 @@ static const cgame_import_t cgame_dll_imports = {
     .GetServerFrame = PF_GetServerFrame,
 
     .GetDemoInfo = PF_GetDemoInfo,
+
+    .ClientCommand = CL_ClientCommand,
 
     .RealTime = Com_RealTime,
     .LocalTime = Com_LocalTime,
@@ -980,6 +1006,8 @@ static const cgame_export_t cgame_dll_exports = {
     .ConsoleCommand = thunk_CG_ConsoleCommand,
     .ServerCommand = thunk_CG_ServerCommand,
     .UpdateConfigstring = thunk_CG_UpdateConfigstring,
+    .KeyEvent = thunk_CG_KeyEvent,
+    .CharEvent = thunk_CG_CharEvent,
 };
 
 static const vm_interface_t cgame_iface = {
@@ -994,15 +1022,18 @@ static const vm_interface_t cgame_iface = {
 
 void CL_ShutdownCGame(void)
 {
-    // clear pointers to cgame memory
-    R_ClearScene();
-
     VM_Reset(cgame.vm);
 
     if (cge) {
         cge->Shutdown();
         cge = NULL;
     }
+
+    // clear pointers to cgame memory
+    R_ClearScene();
+
+    // ungrab keys
+    cls.key_dest &= ~KEY_GAME;
 
     VM_FreeModule(&cgame);
 }

@@ -177,7 +177,7 @@ Key_SetDest
 */
 void Key_SetDest(keydest_t dest)
 {
-    int diff;
+    keydest_t diff;
 
 // if not connected, console or menu should be up
     if (cls.state < ca_active && !(dest & (KEY_MENU | KEY_CONSOLE))) {
@@ -188,12 +188,12 @@ void Key_SetDest(keydest_t dest)
     cls.key_dest = dest;
 
 // activate or deactivate mouse
-    if (diff & (KEY_CONSOLE | KEY_MENU)) {
+    if (diff & (KEY_CONSOLE | KEY_MENU | KEY_GAME)) {
         IN_Activate();
         CL_CheckForPause();
     }
 
-    if (dest == KEY_GAME) {
+    if (dest == KEY_NONE) {
         anykeydown = 0;
     }
 }
@@ -652,19 +652,6 @@ void Key_Event(unsigned key, bool down, unsigned time)
             return;
         }
 
-        if (cls.key_dest == KEY_GAME &&
-            /*cl.frame.ps.stats[STAT_LAYOUTS] & (LAYOUTS_LAYOUT | LAYOUTS_INVENTORY | LAYOUTS_HELP) &&*/
-            !cls.demo.playback) {
-            if (keydown[key] == 2) {
-                // force main menu if escape is held
-                UI_OpenMenu(UIMENU_GAME);
-            } else if (keydown[key] == 1) {
-                // put away help computer / inventory
-                CL_ClientCommand("putaway");
-            }
-            return;
-        }
-
         // ignore autorepeats
         if (keydown[key] > 1) {
             return;
@@ -681,7 +668,8 @@ void Key_Event(unsigned key, bool down, unsigned time)
         } else if (cls.key_dest & KEY_MESSAGE) {
             Key_Message(key);
         } else if (cls.state >= ca_active) {
-            UI_OpenMenu(UIMENU_GAME);
+            if (!(cge && cge->KeyEvent(key, down)))
+                UI_OpenMenu(UIMENU_GAME);
         } else {
             UI_OpenMenu(UIMENU_MAIN);
         }
@@ -699,14 +687,14 @@ void Key_Event(unsigned key, bool down, unsigned time)
     }
 
     // hack for demo freelook in windowed mode
-    if (cls.key_dest == KEY_GAME && cls.demo.playback && key == K_SHIFT && keydown[key] <= 1) {
+    if (cls.key_dest == KEY_NONE && cls.demo.playback && key == K_SHIFT && keydown[key] <= 1) {
         IN_Activate();
     }
 
 //
 // if not a consolekey, send to the interpreter no matter what mode is
 //
-    if ((cls.key_dest == KEY_GAME) ||
+    if ((cls.key_dest == KEY_NONE) ||
         ((cls.key_dest & KEY_CONSOLE) && !Q_IsBitSet(consolekeys, key)) ||
         ((cls.key_dest & KEY_MENU) && (key >= K_F1 && key <= K_F12)) ||
         (!down && Q_IsBitSet(buttondown, key))) {
@@ -758,6 +746,8 @@ void Key_Event(unsigned key, bool down, unsigned time)
     if (!down) {
         if (cls.key_dest & KEY_MENU)
             UI_KeyEvent(key, down);
+        if (cls.key_dest & KEY_GAME)
+            cge->KeyEvent(key, down);
         return;     // other subsystems only care about key down events
     }
 
@@ -767,6 +757,8 @@ void Key_Event(unsigned key, bool down, unsigned time)
         UI_KeyEvent(key, down);
     } else if (cls.key_dest & KEY_MESSAGE) {
         Key_Message(key);
+    } else if (cls.key_dest & KEY_GAME) {
+        cge->KeyEvent(key, down);
     }
 
     if (Key_IsDown(K_CTRL) || Key_IsDown(K_ALT)) {
@@ -836,6 +828,8 @@ void Key_Event(unsigned key, bool down, unsigned time)
         UI_CharEvent(key);
     } else if (cls.key_dest & KEY_MESSAGE) {
         Char_Message(key);
+    } else if (cls.key_dest & KEY_GAME) {
+        cge->CharEvent(key);
     }
 }
 

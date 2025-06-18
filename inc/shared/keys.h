@@ -113,8 +113,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define K_MOUSELAST     213
 
 typedef enum {
-    KEY_GAME    = 0,
+    KEY_NONE    = 0,
     KEY_CONSOLE = BIT(0),
     KEY_MESSAGE = BIT(1),
-    KEY_MENU    = BIT(2)
+    KEY_MENU    = BIT(2),
+    KEY_GAME    = BIT(3),
 } keydest_t;

@@ -79,7 +79,7 @@ static bool IN_GetCurrentGrab(void)
     if (r_config.flags & QVF_FULLSCREEN)
         return true;    // full screen
 
-    if (cls.key_dest & (KEY_MENU | KEY_CONSOLE))
+    if (cls.key_dest & (KEY_CONSOLE | KEY_MENU | KEY_GAME))
         return false;   // menu or console is up
 
     if (sv_paused->integer)
@@ -455,7 +455,7 @@ static void CL_MouseMove(void)
     if (!vid || !vid->get_mouse_motion) {
         return;
     }
-    if (cls.key_dest & (KEY_MENU | KEY_CONSOLE)) {
+    if (cls.key_dest & (KEY_CONSOLE | KEY_MENU | KEY_GAME)) {
         return;
     }
     if (!vid->get_mouse_motion(&dx, &dy)) {
@@ -770,7 +770,7 @@ void CL_FinalizeCmd(void)
     if (in_use.state & 3)
         cl.cmd.buttons |= BUTTON_USE;
 
-    if (cls.key_dest == KEY_GAME && Key_AnyKeyDown()) {
+    if (cls.key_dest == KEY_NONE && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
     }
 

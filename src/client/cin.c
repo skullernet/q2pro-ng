@@ -459,7 +459,7 @@ void SCR_RunCinematic(void)
     if (!cin.video.frame)
         return;     // static image
 
-    if (cls.key_dest != KEY_GAME) {
+    if (cls.key_dest != KEY_NONE) {
         // pause if menu or console is up
         cin.start_time = cls.realtime - cin.video.timestamp;
         return;

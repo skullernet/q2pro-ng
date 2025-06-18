@@ -46,6 +46,10 @@ typedef struct {
     unsigned    framenum;
 } cg_demo_info_t;
 
+//===============================================================
+
+#ifndef Q2_VM
+
 //
 // functions provided by the main engine
 //
@@ -88,6 +92,8 @@ typedef struct {
     bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
 
     bool (*GetDemoInfo)(cg_demo_info_t *info);
+
+    void (*ClientCommand)(const char *cmd);
 
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
@@ -206,4 +212,8 @@ typedef struct {
     bool (*ConsoleCommand)(void);
     void (*ServerCommand)(void);
     void (*UpdateConfigstring)(unsigned index);
+    bool (*KeyEvent)(unsigned key, bool down);
+    void (*CharEvent)(unsigned key);
 } cgame_export_t;
+
+#endif
