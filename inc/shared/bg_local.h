@@ -455,7 +455,6 @@ typedef struct {
     vec3_t      mins, maxs;         // bounding box size
 
     int             groundentity;
-    cplane_t        groundplane;
     contents_t      watertype;
     water_level_t   waterlevel;
 

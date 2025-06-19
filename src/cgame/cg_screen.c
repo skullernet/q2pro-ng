@@ -724,6 +724,9 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = trap_R_RegisterPic("loading");
     scr.net_pic = trap_R_RegisterPic("net");
     scr.hit_marker_pic = trap_R_RegisterPic("marker");
+
+    scr_font.modified = true;
+    scr_crosshair.modified = true;
 }
 
 static const vm_cvar_reg_t scr_cvars[] = {

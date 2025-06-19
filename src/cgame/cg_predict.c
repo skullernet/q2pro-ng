@@ -124,6 +124,7 @@ void CG_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t m
 static void CG_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
                     const vec3_t end, unsigned clipent, contents_t contentmask)
 {
+    // only clip to world for now
     trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
     tr->entnum = ENTITYNUM_WORLD;
 }
@@ -160,10 +161,8 @@ void CG_PredictAngles(void)
     trap_GetUsercmdNumber(NULL, &current);
     trap_GetUsercmd(current, &cmd);
 
-    for (int i = 0; i < 3; i++) {
-        int16_t temp = cmd.angles[i] + cg.frame->ps.pmove.delta_angles[i];
-        cg.predicted_angles[i] = SHORT2ANGLE(temp);
-    }
+    for (int i = 0; i < 3; i++)
+        cg.predicted_angles[i] = SHORT2ANGLE((short)(cmd.angles[i] + cg.frame->ps.pmove.delta_angles[i]));
 }
 
 static void CG_RunUsercmd(pmove_t *pm, unsigned frame)

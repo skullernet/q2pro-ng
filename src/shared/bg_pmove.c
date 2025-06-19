@@ -374,6 +374,7 @@ typedef struct {
     vec3_t forward, right, up;
     float  frametime;
 
+    cplane_t groundplane;
     int groundsurface_flags;
     int groundcontents;
 
@@ -527,7 +528,7 @@ static void PM_StepSlideMove(void)
         // no stepping if walking along the same plane
         VectorSet(down, pml.origin[0], pml.origin[1], pml.origin[2] - 0.25f);
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, down, pml.clipmask);
-        if (memcmp(&trace.plane, &pm->groundplane, sizeof(trace.plane)))
+        if (memcmp(&trace.plane, &pml.groundplane, sizeof(trace.plane)))
             pm->step_height = step_size;
     } else {
         // no stepping down if not on ground
@@ -935,7 +936,7 @@ static void PM_CategorizePosition(void)
         pm->groundentity = ENTITYNUM_NONE;
     } else {
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, point, pml.clipmask);
-        pm->groundplane = trace.plane;
+        pml.groundplane = trace.plane;
         pml.groundsurface_flags = trace.surface_flags;
         pml.groundcontents = trace.contents;
 
@@ -970,14 +971,14 @@ static void PM_CategorizePosition(void)
                 // just hit the ground
 
                 // [Paril-KEX]
-                if (!pm_config.n64_physics && pml.velocity[2] >= 100.0f && pm->groundplane.normal[2] >= 0.9f && !(pm->s.pm_flags & PMF_DUCKED)) {
+                if (!pm_config.n64_physics && pml.velocity[2] >= 100.0f && pml.groundplane.normal[2] >= 0.9f && !(pm->s.pm_flags & PMF_DUCKED)) {
                     pm->s.pm_flags |= PMF_TIME_TRICK;
                     pm->s.pm_time = 64;
                 }
 
                 // [Paril-KEX] calculate impact delta; this also fixes triple jumping
                 vec3_t clipped_velocity;
-                PM_ClipVelocity(pml.velocity, pm->groundplane.normal, clipped_velocity, 1.01f);
+                PM_ClipVelocity(pml.velocity, pml.groundplane.normal, clipped_velocity, 1.01f);
 
                 pm->impact_delta = pml.start_velocity[2] - clipped_velocity[2];
 
