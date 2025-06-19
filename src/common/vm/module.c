@@ -42,7 +42,7 @@ static void *try_load_lib(const char *libdir, const char *gamedir, const char *n
     }
 
     if (os_access(path, X_OK)) {
-        Com_Printf("Can't access %s: %s\n", path, strerror(errno));
+        Com_DPrintf("Can't access %s: %s\n", path, strerror(errno));
         return NULL;
     }
 
@@ -64,7 +64,7 @@ const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
     char buffer[MAX_QPATH];
     Q_concat(buffer, sizeof(buffer), "vm/", iface->name, ".qvm");
 
-    if (!Cvar_VariableInteger("vm_native") && FS_FileExists(buffer)) {
+    if (!com_native_modules->integer && FS_FileExists(buffer)) {
         mod->vm = VM_Load(buffer, iface->vm_imports, iface->vm_exports);
         if (mod->vm) {
             List_Append(&vm_modules, &mod->entry);

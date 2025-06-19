@@ -168,7 +168,7 @@ extern cvar_t   *cl_paused;
 extern cvar_t   *sv_running;
 extern cvar_t   *sv_paused;
 extern cvar_t   *com_timedemo;
-extern cvar_t   *com_sleep;
+extern cvar_t   *com_native_modules;
 
 extern cvar_t   *allow_download;
 extern cvar_t   *allow_download_players;
@@ -180,12 +180,6 @@ extern cvar_t   *allow_download_pics;
 extern cvar_t   *allow_download_others;
 
 extern cvar_t   *rcon_password;
-
-extern cvar_t   *sys_forcegamelib;
-
-#if USE_SAVEGAMES
-extern cvar_t   *sys_allow_unsafe_savegames;
-#endif
 
 #if USE_SYSCON
 extern cvar_t   *sys_history;

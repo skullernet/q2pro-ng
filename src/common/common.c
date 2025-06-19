@@ -106,6 +106,7 @@ cvar_t  *com_time_format;
 cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
+cvar_t  *com_native_modules;
 
 cvar_t  *allow_download;
 cvar_t  *allow_download_players;
@@ -117,12 +118,6 @@ cvar_t  *allow_download_pics;
 cvar_t  *allow_download_others;
 
 cvar_t  *rcon_password;
-
-cvar_t  *sys_forcegamelib;
-
-#if USE_SAVEGAMES
-cvar_t  *sys_allow_unsafe_savegames;
-#endif
 
 #if USE_SYSCON
 cvar_t  *sys_history;
@@ -935,6 +930,7 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
+    com_native_modules = Cvar_Get("com_native_modules", "0", 0);
     com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
 
     allow_download = Cvar_Get("allow_download", COM_DEDICATED ? "0" : "1", CVAR_ARCHIVE);
@@ -947,16 +943,6 @@ void Qcommon_Init(int argc, char **argv)
     allow_download_others = Cvar_Get("allow_download_others", "0", 0);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
-
-    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
-
-#if USE_SAVEGAMES
-    sys_allow_unsafe_savegames = Cvar_Get("sys_allow_unsafe_savegames", "0", CVAR_NOSET);
-#endif
-
-#if USE_SYSCON
-    sys_history = Cvar_Get("sys_history", STRINGIFY(HISTORY_SIZE), 0);
-#endif
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
     Cmd_AddCommand("changevectors", MSG_ChangeVectors_f);
