@@ -678,6 +678,9 @@ void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float atte
 {
     Q_assert_soft(entnum < ENTITYNUM_WORLD);
 
+    if (!s_started || !s_active)
+        return;
+
     sfx_t *sfx = S_SfxForHandle(hSfx);
     if (!sfx)
         return;
@@ -699,9 +702,8 @@ void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float atte
 void S_UpdateEntity(unsigned entnum, const vec3_t origin)
 {
     Q_assert_soft(entnum < ENTITYNUM_WORLD);
-    vec3_t org;
-    VectorCopy(origin, org);
-    HashMap_Insert(s_entities, &entnum, &org);
+    if (s_entities)
+        HashMap_InsertImpl(s_entities, sizeof(entnum), sizeof(vec3_t), &entnum, origin);
 }
 
 void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater)

@@ -513,6 +513,8 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
 
     if (!index)
         return;
+    if (sv_paused.integer)
+        return;
     if (s_ambient.integer <= 0)
         return;
     if (s_ambient.integer == 2 && !ent->modelindex)
