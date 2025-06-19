@@ -2200,7 +2200,6 @@ unsigned CL_Frame(unsigned msec)
     }
 
     main_extra += msec;
-    ref_extra += msec;
     cls.realtime += msec;
 
     CL_ProcessEvents();
@@ -2233,6 +2232,7 @@ unsigned CL_Frame(unsigned msec)
         if (sync_mode == ASYNC_VIDEO) {
             ref_frame = R_VideoSync();
         } else {
+            ref_extra += main_extra;
             if (ref_extra < ref_msec) {
                 ref_frame = false;
             } else if (ref_extra > ref_msec * 4) {
