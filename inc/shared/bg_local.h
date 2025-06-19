@@ -473,6 +473,7 @@ typedef struct {
     int         rdflags;
     bool        jump_sound;
     bool        step_clip;
+    float       step_height;
     float       impact_delta;
 } pmove_t;
 

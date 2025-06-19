@@ -255,11 +255,16 @@ extern vm_cvar_t    cl_nolerp;
 #define SHOWMISS(...) \
     do { if (cl_showmiss.integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
+#define SHOWSTEP(...) \
+    do { if (cl_showstep.integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 extern vm_cvar_t    cl_showmiss;
 extern vm_cvar_t    cl_showclamp;
+extern vm_cvar_t    cl_showstep;
 #else
 #define SHOWMISS(...)
 #define SHOWCLAMP(...)
+#define SHOWSTEP(...)
 #endif
 
 extern vm_cvar_t    cl_vwep;

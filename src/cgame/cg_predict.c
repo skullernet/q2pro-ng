@@ -48,7 +48,7 @@ void CG_CheckPredictionError(void)
 
     // save the prediction error for interpolation
     len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
-    if (len < 0.001f || len > 80.0f) {
+    if (len < 0x1p-5f || len > 80.0f) {
         // > 80 world units is a teleport or something
         VectorClear(cg.prediction_error);
         return;
@@ -56,10 +56,6 @@ void CG_CheckPredictionError(void)
 
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
              cg.frame->number, len, delta[0], delta[1], delta[2]);
-
-    // don't predict steps against server returned data
-    if (cg.predicted_step_frame <= cmd)
-        cg.predicted_step_frame = cmd + 1;
 
     VectorCopy(cg.frame->ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK]);
 
@@ -170,32 +166,26 @@ void CG_PredictAngles(void)
     }
 }
 
-static void CG_RunUsercmd(pmove_t *pm, unsigned number)
+static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
 {
-    float oldz = pm->s.origin[2];
-
-    trap_GetUsercmd(number, &pm->cmd);
+    trap_GetUsercmd(frame, &pm->cmd);
     BG_Pmove(pm);
 
-    if (pm->s.pm_type != PM_SPECTATOR && (pm->s.pm_flags & PMF_ON_GROUND) && number > cg.predicted_step_frame) {
-        float step = pm->s.origin[2] - oldz;
-        float step_abs = fabsf(step);
+    if (cg.predicted_step_frame < frame && pm->groundentity != ENTITYNUM_NONE && fabsf(pm->step_height) > 1.0f) {
+        // check for stepping up before a previous step is completed
+        unsigned delta = cgs.realtime - cg.predicted_step_time;
+        float prev_step = 0;
+        if (delta < 100)
+            prev_step = cg.predicted_step * (100 - delta) * 0.01f;
 
-        if (step_abs > 1.0f && step_abs < 20.0f) {
-            // check for stepping up before a previous step is completed
-            unsigned delta = cgs.realtime - cg.predicted_step_time;
-            float prev_step = 0;
-            if (delta < 100)
-                prev_step = cg.predicted_step * (100 - delta) * 0.01f;
-
-            cg.predicted_step = Q_clipf(prev_step + step, -32, 32);
-            cg.predicted_step_time = cgs.realtime;
-            cg.predicted_step_frame = number;  // don't double step
-        }
+        cg.predicted_step = Q_clipf(prev_step + pm->step_height, -32, 32);
+        cg.predicted_step_time = cgs.realtime;
+        cg.predicted_step_frame = frame;  // don't double step
+        SHOWSTEP("%u: step %.3f\n", frame, pm->step_height);
     }
 
     // save for debug checking
-    VectorCopy(pm->s.origin, cg.predicted_origins[number & CMD_MASK]);
+    VectorCopy(pm->s.origin, cg.predicted_origins[frame & CMD_MASK]);
 }
 
 void CG_PredictMovement(void)

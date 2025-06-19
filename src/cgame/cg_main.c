@@ -41,8 +41,11 @@ vm_cvar_t   cl_rollhack;
 vm_cvar_t   cl_noglow;
 vm_cvar_t   cl_nobob;
 vm_cvar_t   cl_nolerp;
+#if USE_DEBUG
 vm_cvar_t   cl_showmiss;
 vm_cvar_t   cl_showclamp;
+vm_cvar_t   cl_showstep;
+#endif
 vm_cvar_t   cl_thirdperson;
 vm_cvar_t   cl_thirdperson_angle;
 vm_cvar_t   cl_thirdperson_range;
@@ -90,8 +93,11 @@ static vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cl_noglow, "0", 0),
     VM_CVAR(cl_nobob, "0", 0),
     VM_CVAR(cl_nolerp, "0", 0),
+#if USE_DEBUG
     VM_CVAR(cl_showmiss, "0", 0),
     VM_CVAR(cl_showclamp, "0", 0),
+    VM_CVAR(cl_showstep, "0", 0),
+#endif
     VM_CVAR(cl_thirdperson, "0", CVAR_CHEAT),
     VM_CVAR(cl_thirdperson_angle, "0", 0),
     VM_CVAR(cl_thirdperson_range, "60", 0),

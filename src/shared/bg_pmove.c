@@ -519,6 +519,21 @@ static void PM_StepSlideMove(void)
         if (trace.fraction < 1.0f)
             VectorCopy(trace.endpos, pml.origin);
     }
+
+    // export step height to client
+    step_size = pml.origin[2] - start_o[2];
+
+    if (pm->groundentity != ENTITYNUM_NONE) {
+        // no stepping if walking along the same plane
+        VectorSet(down, pml.origin[0], pml.origin[1], pml.origin[2] - 0.25f);
+        PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, down, pml.clipmask);
+        if (memcmp(&trace.plane, &pm->groundplane, sizeof(trace.plane)))
+            pm->step_height = step_size;
+    } else {
+        // no stepping down if not on ground
+        if (step_size > 0)
+            pm->step_height = step_size;
+    }
 }
 
 /*
@@ -1479,6 +1494,7 @@ void BG_Pmove(pmove_t *pmove)
     pm->rdflags = RDF_NONE;
     pm->jump_sound = false;
     pm->step_clip = false;
+    pm->step_height = 0;
     pm->impact_delta = 0;
 
     // clear all pmove local vars
