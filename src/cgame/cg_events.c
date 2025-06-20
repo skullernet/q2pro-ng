@@ -367,7 +367,7 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
@@ -386,7 +386,7 @@ static void CG_BFGExplosion(const vec3_t pos)
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
     ex->ent.model = cg_mod_bfg_explo;
@@ -412,7 +412,7 @@ void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale)
     else
         cg.weapon.muzzle.roll = 0;
     VectorCopy(offset, cg.weapon.muzzle.offset);
-    cg.weapon.muzzle.time = cg.servertime - BASE_FRAMETIME;
+    cg.weapon.muzzle.time = cg.oldframe->servertime;
 }
 
 void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, int skin, float scale)
@@ -433,7 +433,7 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
     ex->type = ex_mflash;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->ent.model = cg_mod_muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
@@ -455,7 +455,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_misc;
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->ent.model = cg_mod_smoke;
 
     ex = CG_AllocExplosion();
@@ -463,7 +463,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->type = ex_flash;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->ent.model = cg_mod_flash;
 }
 
@@ -872,7 +872,7 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->ent.scale = 3;
     ex->ent.skinnum = 2;
-    ex->start = cg.servertime - BASE_FRAMETIME;
+    ex->start = cg.oldframe->servertime;
     ex->light = 550;
     VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
     ex->frames = 4;
@@ -1091,7 +1091,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
             break;
         }
-        ex->start = cg.servertime - BASE_FRAMETIME;
+        ex->start = cg.oldframe->servertime;
         ex->light = 150;
         ex->ent.model = cg_mod_explode;
         ex->frames = 4;
