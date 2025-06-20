@@ -1930,7 +1930,7 @@ bool CL_CheatsOK(void)
         return true;
 
     // single player can cheat
-    if (cls.state > ca_connected && cl.maxclients == 1)
+    if (Cvar_VariableInteger("maxclients") == 1)
         return true;
 
     return false;

@@ -149,7 +149,6 @@ typedef struct {
     int         servercount;    // server identification for prespawns
     char        gamedir[MAX_QPATH];
     int         clientNum;            // never changed during gameplay, set by serverdata packet
-    int         maxclients;
 
     char        *baseconfigstrings[MAX_CONFIGSTRINGS];
     char        *configstrings[MAX_CONFIGSTRINGS];
@@ -340,20 +339,6 @@ extern client_static_t      cls;
 //
 // cvars
 //
-extern cvar_t   *cl_gun;
-extern cvar_t   *cl_gunalpha;
-extern cvar_t   *cl_gunfov;
-extern cvar_t   *cl_gun_x;
-extern cvar_t   *cl_gun_y;
-extern cvar_t   *cl_gun_z;
-extern cvar_t   *cl_predict;
-extern cvar_t   *cl_footsteps;
-extern cvar_t   *cl_noskins;
-extern cvar_t   *cl_kickangles;
-extern cvar_t   *cl_rollhack;
-extern cvar_t   *cl_noglow;
-extern cvar_t   *cl_nobob;
-extern cvar_t   *cl_nolerp;
 
 #if USE_DEBUG
 #define SHOWCLAMP(level, ...) \
@@ -369,27 +354,9 @@ extern cvar_t   *cl_showclamp;
 #define SHOWMISS(...)
 #endif
 
-extern cvar_t   *cl_vwep;
-
-extern cvar_t   *cl_disable_particles;
-extern cvar_t   *cl_disable_explosions;
-extern cvar_t   *cl_dlight_hacks;
-extern cvar_t   *cl_smooth_explosions;
-
-extern cvar_t   *cl_chat_notify;
-extern cvar_t   *cl_chat_sound;
-extern cvar_t   *cl_chat_filter;
-
 extern cvar_t   *cl_disconnectcmd;
 extern cvar_t   *cl_changemapcmd;
 extern cvar_t   *cl_beginmapcmd;
-
-extern cvar_t   *cl_gibs;
-extern cvar_t   *cl_flares;
-
-extern cvar_t   *cl_thirdperson;
-extern cvar_t   *cl_thirdperson_angle;
-extern cvar_t   *cl_thirdperson_range;
 
 extern cvar_t   *cl_async;
 
