@@ -195,7 +195,7 @@ static bool PF_GetUsercmd(unsigned number, usercmd_t *ucmd)
 static void PF_GetServerFrameNumber(unsigned *frame, unsigned *time)
 {
     *frame = cl.frame.number;
-    *time = cl.frame.number * BASE_FRAMETIME;
+    *time = cl.frame.servertime;
 }
 
 static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
@@ -210,6 +210,7 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
         return false;
 
     out->number = number;
+    out->servertime = frame->servertime;
     memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
 
     out->ps = frame->ps;

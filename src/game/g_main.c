@@ -37,6 +37,7 @@ vm_cvar_t maxspectators;
 vm_cvar_t g_select_empty;
 vm_cvar_t sv_dedicated;
 vm_cvar_t sv_running;
+vm_cvar_t sv_fps;
 
 vm_cvar_t filterban;
 
@@ -126,8 +127,6 @@ vm_cvar_t ai_allow_dm_spawn;
 vm_cvar_t ai_movement_disabled;
 vm_cvar_t g_monster_footsteps;
 vm_cvar_t g_auto_save_min_time;
-
-static vm_cvar_t g_frames_per_frame;
 
 /*
 ============
@@ -231,6 +230,7 @@ qvm_exported void G_Init(void)
     // noset vars
     trap_Cvar_Register(&sv_dedicated, "dedicated", "0", CVAR_NOSET);
     trap_Cvar_Register(&sv_running, "sv_running", NULL, 0);
+    trap_Cvar_Register(&sv_fps, "sv_fps", NULL, 0);
 
     // latched vars
     trap_Cvar_Register(&sv_cheats, "cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
@@ -279,8 +279,6 @@ qvm_exported void G_Init(void)
     trap_Cvar_Register(&g_monster_footsteps, "g_monster_footsteps", "1", 0);
     trap_Cvar_Register(&g_auto_save_min_time, "g_auto_save_min_time", "60", 0);
 
-    trap_Cvar_Register(&g_frames_per_frame, "g_frames_per_frame", "1", 0);
-
     trap_Cvar_Register(&g_coop_health_scaling, "g_coop_health_scaling", "0", CVAR_LATCH);
     trap_Cvar_Register(&g_weapon_respawn_time, "g_weapon_respawn_time", "30", 0);
 
@@ -322,21 +320,11 @@ qvm_exported void G_Init(void)
     // initialize all entities for this game
     trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
 
-#if USE_FPS
     // variable FPS support
-    if (cv.integer & GMF_VARIABLE_FPS) {
-        int fps = trap_Cvar_VariableInteger("sv_fps");
-        if (!fps)
-            G_Error("GMF_VARIABLE_FPS exported but no 'sv_fps' cvar");
-        game.tick_rate = fps;
-        game.frame_time = 1000 / game.tick_rate;
-        game.frame_time_sec = 1.0f / game.tick_rate;
-    } else {
-        game.tick_rate = BASE_FRAMERATE;
-        game.frame_time = BASE_FRAMETIME;
-        game.frame_time_sec = BASE_FRAMETIME_1000;
-    }
-#endif
+    Q_assert_soft(sv_fps.integer >= 10);
+    game.tick_rate = sv_fps.integer;
+    game.frame_time = 1000 / game.tick_rate;
+    game.frame_time_sec = 1.0f / game.tick_rate;
 
     //======
     // ROGUE
@@ -730,6 +718,14 @@ static void G_CheckCvars(void)
         level.gravity = sv_gravity.value;
         sv_gravity.modified = false;
     }
+
+    if (sv_fps.modified) {
+        Q_assert_soft(sv_fps.integer >= 10);
+        game.tick_rate = sv_fps.integer;
+        game.frame_time = 1000 / game.tick_rate;
+        game.frame_time_sec = 1.0f / game.tick_rate;
+        sv_fps.modified = false;
+    }
 }
 
 static bool G_AnyDeadPlayersWithoutLives(void)
@@ -750,13 +746,12 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-static void G_RunFrame_(bool main_loop)
+qvm_exported void G_RunFrame(unsigned time)
 {
     level.in_frame = true;
+    level.time = time;
 
     G_CheckCvars();
-
-    level.time += FRAME_TIME;
 
     if (level.intermission_fading) {
         if (level.intermission_fade_time > level.time) {
@@ -912,28 +907,6 @@ static void G_RunFrame_(bool main_loop)
     }
 
     level.in_frame = false;
-}
-
-static bool G_AnyPlayerSpawned(void)
-{
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (player->r.inuse && player->client && player->client->pers.spawned)
-            return true;
-    }
-
-    return false;
-}
-
-qvm_exported void G_RunFrame(void)
-{
-    bool main_loop = sv_running.integer >= 2;
-
-    if (main_loop && !G_AnyPlayerSpawned())
-        return;
-
-    for (int i = 0; i < g_frames_per_frame.integer; i++)
-        G_RunFrame_(main_loop);
 }
 
 /*

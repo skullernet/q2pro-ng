@@ -259,22 +259,7 @@ A valid frame has been parsed.
 void CG_DeltaFrame(void)
 {
     centity_t   *ent;
-    int         i, framenum;
-
-    // getting a valid frame message ends the connection process
-    //if (cgs.state == ca_precached)
-    //    set_active_state();
-
-    // set server time
-    framenum = cg.frame->number - cg.serverdelta;
-
-    if (framenum < 0)
-        Com_Error(ERR_DROP, "%s: server time went backwards", __func__);
-
-    if (framenum > INT_MAX / BASE_FRAMETIME)
-        Com_Error(ERR_DROP, "%s: server time overflowed", __func__);
-
-    cg.servertime = framenum * BASE_FRAMETIME;
+    int         i;
 
     // rebuild the list of solid entities for this frame
     cg.numSolidEntities = 0;

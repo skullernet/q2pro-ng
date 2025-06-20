@@ -97,33 +97,17 @@ typedef struct {
     edict_t     *edict;
 } server_entity_t;
 
-// variable server FPS
-#if USE_FPS
-#define SV_FRAMERATE        sv.framerate
-#define SV_FRAMETIME        sv.frametime.time
-#define SV_FRAMEDIV         sv.frametime.div
-#define SV_FRAMESYNC        !(sv.framenum % sv.frametime.div)
-#define SV_CLIENTSYNC(cl)   !(sv.framenum % (cl)->framediv)
-#else
-#define SV_FRAMERATE        BASE_FRAMERATE
-#define SV_FRAMETIME        BASE_FRAMETIME
-#define SV_FRAMEDIV         1
-#define SV_FRAMESYNC        1
-#define SV_CLIENTSYNC(cl)   1
-#endif
-
 typedef struct {
     server_state_t  state;      // precache commands are only valid during load
     int             spawncount; // random number generated each server spawn
     bool            nextserver_pending;
 
-#if USE_FPS
-    int         framerate;
-    frametime_t frametime;
-#endif
-
-    int         framenum;
+    unsigned    time;
+    unsigned    frametime;
     unsigned    frameresidual;
+
+    unsigned    last_calcping_time;
+    unsigned    last_givemsec_time;
 
     char        mapcmd[MAX_QPATH];          // ie: *intro.cin+base
 
@@ -225,9 +209,6 @@ typedef struct client_s {
     client_frame_t  frames[UPDATE_BACKUP];    // updates can be delta'd from here
     unsigned        frames_sent, frames_acked, frames_nodelta;
     int             framenum;
-#if USE_FPS
-    int             framediv;
-#endif
     unsigned        frameflags;
 
     // rate dropping
@@ -384,9 +365,7 @@ extern cvar_t       *sv_maxclients;
 extern cvar_t       *sv_password;
 extern cvar_t       *sv_reserved_slots;
 extern cvar_t       *sv_enforcetime;
-#if USE_FPS
 extern cvar_t       *sv_fps;
-#endif
 extern cvar_t       *sv_iplimit;
 
 #if USE_DEBUG

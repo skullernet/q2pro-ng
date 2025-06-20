@@ -34,9 +34,7 @@ cvar_t  *sv_timescale_time;
 cvar_t  *sv_timescale_warn;
 cvar_t  *sv_timescale_kick;
 cvar_t  *sv_allow_nodelta;
-#if USE_FPS
 cvar_t  *sv_fps;
-#endif
 
 cvar_t  *sv_timeout;            // seconds without any message
 cvar_t  *sv_zombietime;         // seconds to sink messages after disconnect
@@ -858,10 +856,6 @@ static void SVC_DirectConnect(void)
     newcl->has_zlib = params.has_zlib;
     newcl->edict = SV_EdictForNum(number);
     newcl->client = SV_ClientForNum(number);
-#if USE_FPS
-    newcl->framediv = sv.frametime.div;
-    newcl->settings[CLS_FPS] = BASE_FRAMERATE;
-#endif
     Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
     newcl->state = cs_assigned;
 
@@ -1135,7 +1129,7 @@ static void SV_CalcPings(void)
 {
     client_t    *cl;
     int         (*calc)(const client_t *);
-    int         res;
+    bool        res = false;
 
     switch (sv_calcpings_method->integer) {
         case 0:  calc = ping_nop; break;
@@ -1144,7 +1138,10 @@ static void SV_CalcPings(void)
     }
 
     // update avg ping and fps every 10 seconds
-    res = sv.framenum % (10 * SV_FRAMERATE);
+    if (sv.time - sv.last_calcping_time > 10000) {
+        res = true;
+        sv.last_calcping_time = sv.time;
+    }
 
     FOR_EACH_CLIENT(cl) {
         if (cl->state == cs_spawned) {
@@ -1155,12 +1152,12 @@ static void SV_CalcPings(void)
                 } else if (cl->ping > cl->max_ping) {
                     cl->max_ping = cl->ping;
                 }
-                if (!res) {
+                if (res) {
                     cl->avg_ping_time += cl->ping;
                     cl->avg_ping_count++;
                 }
             }
-            if (!res) {
+            if (res) {
                 cl->moves_per_sec = cl->num_moves / 10;
                 cl->num_moves = 0;
             }
@@ -1188,10 +1185,11 @@ static void SV_GiveMsec(void)
 {
     client_t    *cl;
 
-    if (!(sv.framenum % (16 * SV_FRAMEDIV))) {
+    if (sv.time - sv.last_givemsec_time > 1600) {
         FOR_EACH_CLIENT(cl) {
             cl->command_msec = 1800; // 1600 + some slop
         }
+        sv.last_givemsec_time = sv.time;
     }
 
     if (svs.realtime - svs.last_timescale_check < sv_timescale_time->integer)
@@ -1474,7 +1472,7 @@ static void SV_RunGameFrame(void)
         time_before_game = Sys_Milliseconds();
 #endif
 
-    ge->RunFrame();
+    ge->RunFrame(sv.time);
 
 #if USE_CLIENT
     if (host_speeds->integer)
@@ -1600,8 +1598,8 @@ unsigned SV_Frame(unsigned msec)
 
     // move autonomous things around if enough time has passed
     sv.frameresidual += msec;
-    if (sv.frameresidual < SV_FRAMETIME) {
-        return SV_FRAMETIME - sv.frameresidual;
+    if (sv.frameresidual < sv.frametime) {
+        return sv.frametime - sv.frameresidual;
     }
 
     if (svs.initialized && !check_paused()) {
@@ -1629,7 +1627,7 @@ unsigned SV_Frame(unsigned msec)
         ge->PrepFrame();
 
         // advance for next frame
-        sv.framenum++;
+        sv.time += sv.frametime;
     }
 
     if (COM_DEDICATED) {
@@ -1638,9 +1636,9 @@ unsigned SV_Frame(unsigned msec)
     }
 
     // decide how long to sleep next frame
-    sv.frameresidual -= SV_FRAMETIME;
-    if (sv.frameresidual < SV_FRAMETIME) {
-        return SV_FRAMETIME - sv.frameresidual;
+    sv.frameresidual -= sv.frametime;
+    if (sv.frameresidual < sv.frametime) {
+        return sv.frametime - sv.frameresidual;
     }
 
     // don't accumulate bogus residual
@@ -1795,6 +1793,14 @@ static void sv_hostname_changed(cvar_t *self)
 }
 #endif
 
+static void sv_fps_changed(cvar_t *self)
+{
+    if (svs.initialized) {
+        sv.frametime = 1000 / Cvar_ClampInteger(self, 10, 60);
+        sv.time = Q_align_up(sv.time, sv.frametime);
+    }
+}
+
 #if USE_ZLIB
 voidpf SV_zalloc(voidpf opaque, uInt items, uInt size)
 {
@@ -1859,9 +1865,8 @@ void SV_Init(void)
     sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
     sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
-#if USE_FPS
-    sv_fps = Cvar_Get("sv_fps", "10", CVAR_LATCH);
-#endif
+    sv_fps = Cvar_Get("sv_fps", "10", 0);
+    sv_fps->changed = sv_fps_changed;
     sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 
     sv_public = Cvar_Get("public", "0", CVAR_LATCH);
@@ -1925,11 +1930,8 @@ void SV_Init(void)
 
     init_rate_limits();
 
-#if USE_FPS
     // set up default frametime for main loop
-    sv.framerate = BASE_FRAMERATE;
-    sv.frametime = Com_ComputeFrametime(sv.framerate);
-#endif
+    sv.frametime = BASE_FRAMETIME;
 
 #if USE_SYSCON
     SV_SetConsoleTitle();
@@ -2038,11 +2040,8 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     // reset rate limits
     init_rate_limits();
 
-#if USE_FPS
     // set up default frametime for main loop
-    sv.framerate = BASE_FRAMERATE;
-    sv.frametime = Com_ComputeFrametime(sv.framerate);
-#endif
+    sv.frametime = BASE_FRAMETIME;
 
     sv_client = NULL;
     sv_player = NULL;

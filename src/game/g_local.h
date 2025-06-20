@@ -66,15 +66,9 @@ typedef int svflags_t;
 #define TO_SEC(f)   ((f) * 0.001f)
 #define TO_MSEC(f)  (f)
 
-#if USE_FPS
 #define TICK_RATE       game.tick_rate
 #define FRAME_TIME      game.frame_time
 #define FRAME_TIME_SEC  game.frame_time_sec
-#else
-#define TICK_RATE       BASE_FRAMERATE
-#define FRAME_TIME      ((gtime_t)BASE_FRAMETIME)
-#define FRAME_TIME_SEC  BASE_FRAMETIME_1000
-#endif
 
 // view pitching times
 #define DAMAGE_TIME SEC(0.5f)
@@ -616,11 +610,9 @@ typedef struct {
     precache_t precaches[MAX_PRECACHES];
     int num_precaches;
 
-#if USE_FPS
     int tick_rate;
     gtime_t frame_time;
     float frame_time_sec;
-#endif
 } game_locals_t;
 
 #define MAX_HEALTH_BARS 2
@@ -1789,7 +1781,7 @@ void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float o
 //
 void G_Init(void);
 void G_Shutdown(void);
-void G_RunFrame(void);
+void G_RunFrame(unsigned time);
 void G_PrepFrame(void);
 void SaveClientData(void);
 void FetchClientEntData(edict_t *ent);

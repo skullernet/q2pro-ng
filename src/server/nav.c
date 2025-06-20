@@ -822,12 +822,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
 
         // simple link
         if (!link->traversal && !other_link->traversal) {
-            R_AddDebugLine(s, e, link_disabled ? A_RED : A_WHITE, SV_FRAMETIME, true);
+            R_AddDebugLine(s, e, link_disabled ? A_RED : A_WHITE, sv.frametime, true);
         } else {
             // one or both are traversals
             // render a->b
             if (!link->traversal) {
-                R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, SV_FRAMETIME, true);
+                R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, sv.frametime, true);
             } else {
                 vec3_t ctrl;
 
@@ -839,12 +839,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                     ctrl[2] = e[2];
                 }
 
-                R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
+                R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
             }
 
             // render b->a
             if (!other_link->traversal) {
-                R_AddDebugArrow(e, s, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, SV_FRAMETIME, true);
+                R_AddDebugArrow(e, s, 8.0f, link_disabled ? A_RED : A_WHITE, A_RED, sv.frametime, true);
             } else {
                 vec3_t ctrl;
 
@@ -861,7 +861,7 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                 ctrl[2] += 32;
                 e[2] += 32;
 
-                R_AddDebugCurveArrow(e, ctrl, s, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
+                R_AddDebugCurveArrow(e, ctrl, s, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
 
                 s[2] -= 32;
                 e[2] -= 32;
@@ -880,9 +880,9 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
                 ctrl[2] = e[2];
             }
 
-            R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, SV_FRAMETIME, true);
+            R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
         } else {
-            R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_CYAN, A_RED, SV_FRAMETIME, true);
+            R_AddDebugArrow(s, e, 8.0f, link_disabled ? A_RED : A_CYAN, A_RED, sv.frametime, true);
         }
     }
 
@@ -891,7 +891,7 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
         if (e && e->r.inuse) {
             vec3_t mid;
             VectorAvg(e->r.absmin, e->r.absmax, mid);
-            R_AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, SV_FRAMETIME, true);
+            R_AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, sv.frametime, true);
         }
     }
 }
@@ -911,7 +911,7 @@ static void Nav_DrawNode(const nav_node_t *node)
 
     int alpha = Q_clip_uint8((1.0f - ((dist - 32) / (nav_debug_range->value - 32))) * 255);
 
-    R_AddDebugCircle(node->origin, node->radius, A_CYAN, SV_FRAMETIME, true);
+    R_AddDebugCircle(node->origin, node->radius, A_CYAN, sv.frametime, true);
 
     vec3_t mins, maxs, origin;
     Nav_GetNodeBounds(node, mins, maxs);
@@ -920,7 +920,7 @@ static void Nav_DrawNode(const nav_node_t *node)
     VectorAdd(mins, origin, mins);
     VectorAdd(maxs, origin, maxs);
 
-    R_AddDebugBounds(mins, maxs, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, SV_FRAMETIME, true);
+    R_AddDebugBounds(mins, maxs, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, sv.frametime, true);
 
     if (node->flags & NodeFlag_CheckHasFloor) {
         vec3_t floormins, floormaxs;
@@ -931,13 +931,13 @@ static void Nav_DrawNode(const nav_node_t *node)
         floormins[2] = origin[2] - NavFloorDistance;
         floormaxs[2] = mins_z;
 
-        R_AddDebugBounds(floormins, floormaxs, A_RED, SV_FRAMETIME, true);
+        R_AddDebugBounds(floormins, floormaxs, A_RED, sv.frametime, true);
     }
 
-    R_AddDebugLine(node->origin, origin, A_CYAN, SV_FRAMETIME, true);
+    R_AddDebugLine(node->origin, origin, A_CYAN, sv.frametime, true);
 
     origin[2] += 40;
-    R_AddDebugText(origin, NULL, va("%d", node->id), 5.0f, A_CYAN, SV_FRAMETIME, true);
+    R_AddDebugText(origin, NULL, va("%d", node->id), 5.0f, A_CYAN, sv.frametime, true);
 
     char node_text_buffer[128];
     *node_text_buffer = 0;
@@ -948,7 +948,7 @@ static void Nav_DrawNode(const nav_node_t *node)
 
     if (*node_text_buffer) {
         origin[2] -= 18;
-        R_AddDebugText(origin, NULL, node_text_buffer, 2.5f, A_GREEN, SV_FRAMETIME, true);
+        R_AddDebugText(origin, NULL, node_text_buffer, 2.5f, A_GREEN, sv.frametime, true);
     }
 
     for (int i = 0; i < node->num_links; i++)
@@ -1126,7 +1126,7 @@ static void Nav_SetupEntities(void)
 
 void Nav_Frame(void)
 {
-    if (!nav_data.setup_entities && sv.framenum >= SV_FRAMERATE) {
+    if (!nav_data.setup_entities && sv.time >= 1000) {
         Nav_SetupEntities();
         nav_data.setup_entities = true;
     }

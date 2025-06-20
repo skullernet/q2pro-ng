@@ -592,11 +592,11 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
     } else {
         // coming back to a level after being in a different
         // level, so run it for ten seconds
-        frames = 10 * SV_FRAMERATE;
+        frames = 10000 / sv.frametime;
     }
 
-    for (int i = 0; i < frames; i++, sv.framenum++)
-        ge->RunFrame();
+    for (int i = 0; i < frames; i++, sv.time += sv.frametime)
+        ge->RunFrame(sv.time);
 }
 
 static bool have_enhanced_savegames(void)

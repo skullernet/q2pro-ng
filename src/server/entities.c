@@ -163,6 +163,7 @@ void SV_WriteFrameToClient(client_t *client)
     MSG_WriteByte(svc_frame);
     MSG_WriteBits(client->framenum, FRAMENUM_BITS);
     MSG_WriteBits(delta, DELTAFRAME_BITS);
+    MSG_WriteBits(sv.time, 32);
     MSG_WriteBits(client->frameflags, FRAMEFLAGS_BITS);
 
     // send over the areabits

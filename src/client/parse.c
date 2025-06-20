@@ -209,6 +209,7 @@ static void CL_ParseFrame(void)
 
     currentframe = MSG_ReadBits(FRAMENUM_BITS);
     delta = MSG_ReadBits(DELTAFRAME_BITS);
+    frame.servertime = MSG_ReadBits(32);
 
     if (delta == 31) {
         deltaframe = -1;
@@ -313,9 +314,6 @@ static void CL_ParseFrame(void)
 
     if (!frame.valid) {
         cl.frame.valid = false;
-#if USE_FPS
-        cl.keyframe.valid = false;
-#endif
         return; // do not change anything
     }
 
@@ -460,12 +458,6 @@ static void CL_ParseServerData(void)
 
     // get the full level name
     MSG_ReadString(levelname, sizeof(levelname));
-
-#if USE_FPS
-    // setup default frame times
-    cl.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
-    cl.frametime_inv = cl.frametime.div * BASE_1_FRAMETIME;
-#endif
 
     // setup default server state
     cl.serverstate = ss_game;

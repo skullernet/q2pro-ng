@@ -34,8 +34,12 @@ static void CG_SetClientTime(void)
         return;
     }
 
-    prevtime = cg.servertime - BASE_FRAMETIME;
-    if (cg.time > cg.servertime) {
+    prevtime = cg.oldframe->servertime;
+    if (prevtime >= cg.servertime) {
+        SHOWCLAMP(2, "bad time %i\n", prevtime);
+        cg.time = prevtime;
+        cg.lerpfrac = 0;
+    } else if (cg.time > cg.servertime) {
         SHOWCLAMP(2, "high clamp %i\n", cg.time - cg.servertime);
         cg.time = cg.servertime;
         cg.lerpfrac = 1.0f;
@@ -44,7 +48,7 @@ static void CG_SetClientTime(void)
         cg.time = prevtime;
         cg.lerpfrac = 0;
     } else {
-        cg.lerpfrac = (cg.time - prevtime) * BASE_1_FRAMETIME;
+        cg.lerpfrac = (float)(cg.time - prevtime) / (cg.servertime - prevtime);
     }
 
     SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
@@ -82,15 +86,14 @@ void CG_ProcessFrames(void)
         CG_SetActiveState();
     }
 
-    CG_SetClientTime();
-
-    //if (cg.time < cg.servertime)
-    //    return;
-
     cg_server_frame_t *frame = CG_ReadNextFrame();
     if (frame) {
         cg.oldframe = cg.frame;
         cg.frame = frame;
-        CG_DeltaFrame();
     }
+
+    CG_SetClientTime();
+
+    if (frame)
+        CG_DeltaFrame();
 }

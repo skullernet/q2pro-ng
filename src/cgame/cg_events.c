@@ -322,7 +322,7 @@ typedef struct {
     int         frames;
     float       light;
     vec3_t      lightcolor;
-    float       start;
+    unsigned    start;
     int         baseframe;
 } explosion_t;
 
@@ -336,8 +336,8 @@ static void CG_ClearExplosions(void)
 static explosion_t *CG_AllocExplosion(void)
 {
     explosion_t *e, *oldest;
-    int     i;
-    int     time;
+    int         i;
+    unsigned    time;
 
     for (i = 0, e = cl_explosions; i < MAX_EXPLOSIONS; i++, e++) {
         if (e->type == ex_free) {

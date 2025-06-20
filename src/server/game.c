@@ -749,7 +749,7 @@ static const vm_export_t game_vm_exports[] = {
     VM_EXPORT(G_ClientCommand, "i"),
     VM_EXPORT(G_ClientThink, "i"),
     VM_EXPORT(G_PrepFrame, ""),
-    VM_EXPORT(G_RunFrame, ""),
+    VM_EXPORT(G_RunFrame, "i"),
     VM_EXPORT(G_ServerCommand, ""),
     VM_EXPORT(G_RestartFilesystem, ""),
 
@@ -830,8 +830,8 @@ static void thunk_G_PrepFrame(void) {
     VM_Call(game.vm, vm_G_PrepFrame);
 }
 
-static void thunk_G_RunFrame(void) {
-    VM_Call(game.vm, vm_G_RunFrame);
+static void thunk_G_RunFrame(unsigned time) {
+    call_single(vm_G_RunFrame, time);
 }
 
 static void thunk_G_ServerCommand(void) {

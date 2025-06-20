@@ -29,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct {
     int             number;
-    int             delta;
+    unsigned        servertime;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;

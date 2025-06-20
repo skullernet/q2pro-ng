@@ -38,15 +38,6 @@ void SV_ClientReset(client_t *client)
     memset(&client->lastcmd, 0, sizeof(client->lastcmd));
 }
 
-static void set_frame_time(void)
-{
-#if USE_FPS
-    sv.frametime = Com_ComputeFrametime(sv_fps->integer);
-    sv.framerate = sv.frametime.div * BASE_FRAMERATE;
-    Cvar_SetInteger(sv_fps, sv.framerate, FROM_CODE);
-#endif
-}
-
 static void resolve_masters(void)
 {
 #if USE_SERVER
@@ -130,7 +121,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     sv.spawncount = Q_rand() & INT_MAX;
 
     // set framerate parameters
-    set_frame_time();
+    sv.frametime = 1000 / Cvar_ClampInteger(sv_fps, 10, 60);
 
     // save name for levels that don't set message
     sv.configstrings[CS_NAME] = SV_CopyString(cmd->server);
@@ -167,8 +158,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     ge->SpawnEntities();
 
     // run two frames to allow everything to settle
-    for (i = 0; i < 2; i++, sv.framenum++)
-        ge->RunFrame();
+    for (i = 0; i < 2; i++, sv.time += sv.frametime)
+        ge->RunFrame(sv.time);
 
     // check for a savegame
     SV_CheckForSavegame(cmd);
@@ -360,10 +351,8 @@ void SV_InitGame(void)
         CM_FreeMap(&sv.cm);
         memset(&sv, 0, sizeof(sv));
 
-#if USE_FPS
         // set up default frametime for main loop
-        sv.frametime = Com_ComputeFrametime(BASE_FRAMERATE);
-#endif
+        sv.frametime = BASE_FRAMETIME;
     }
 
     // get any latched variable changes (maxclients, etc)

@@ -65,6 +65,7 @@ typedef struct {
 
 typedef struct {
     bool            valid;
+    unsigned        servertime;
 
     int             number;
     int             delta;
@@ -149,11 +150,6 @@ typedef struct {
     char        gamedir[MAX_QPATH];
     int         clientNum;            // never changed during gameplay, set by serverdata packet
     int         maxclients;
-
-#if USE_FPS
-    frametime_t frametime;
-    float       frametime_inv;  // 1/frametime
-#endif
 
     char        *baseconfigstrings[MAX_CONFIGSTRINGS];
     char        *configstrings[MAX_CONFIGSTRINGS];
