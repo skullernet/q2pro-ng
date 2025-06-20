@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// cl_view.c -- player rendering positioning
+// cg_view.c -- player rendering positioning
 
 #include "cg_local.h"
 
@@ -78,7 +78,7 @@ void V_RenderView(void)
     cg.refdef.height = scr_vrect.height;
 
     // adjust for non-4/3 screens
-    if (cl_adjustfov.integer) {
+    if (cg_adjustfov.integer) {
         cg.refdef.fov_y = cg.fov_y;
         cg.refdef.fov_x = V_CalcFov(cg.refdef.fov_y, cg.refdef.height, cg.refdef.width);
     } else {

@@ -28,12 +28,12 @@ static void CG_Chat(char *text)
 {
     // disable notify
     print_type_t type = PRINT_TALK;
-    if (!cl_chat_notify.integer)
+    if (!cg_chat_notify.integer)
         type |= PRINT_SKIPNOTIFY;
 
     // filter text
     const char *fmt = "%s";
-    if (cl_chat_filter.integer) {
+    if (cg_chat_filter.integer) {
         COM_strclr(text);
         fmt = "%s\n";
     }
@@ -43,9 +43,9 @@ static void CG_Chat(char *text)
     SCR_AddToChatHUD(text);
 
     // play sound
-    if (cl_chat_sound.integer > 1)
+    if (cg_chat_sound.integer > 1)
         CG_StartLocalSoundOnce("misc/talk1.wav");
-    else if (cl_chat_sound.integer > 0)
+    else if (cg_chat_sound.integer > 0)
         CG_StartLocalSoundOnce("misc/talk.wav");
 }
 

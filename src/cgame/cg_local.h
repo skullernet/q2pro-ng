@@ -57,7 +57,7 @@ typedef struct {
     float           flashlightfrac;
 } centity_t;
 
-extern centity_t    cl_entities[MAX_EDICTS];
+extern centity_t    cg_entities[MAX_EDICTS];
 
 #define MAX_CLIENTWEAPONMODELS        256       // PGM -- upped from 16 to fit the chainfist vwep
 
@@ -233,69 +233,69 @@ extern cgame_static_t   cgs;
 //
 // cvars
 //
-extern vm_cvar_t    cl_gun;
-extern vm_cvar_t    cl_gunalpha;
-extern vm_cvar_t    cl_gunfov;
-extern vm_cvar_t    cl_gun_x;
-extern vm_cvar_t    cl_gun_y;
-extern vm_cvar_t    cl_gun_z;
-extern vm_cvar_t    cl_predict;
-extern vm_cvar_t    cl_footsteps;
-extern vm_cvar_t    cl_noskins;
-extern vm_cvar_t    cl_kickangles;
-extern vm_cvar_t    cl_rollhack;
-extern vm_cvar_t    cl_noglow;
-extern vm_cvar_t    cl_nobob;
-extern vm_cvar_t    cl_nolerp;
+extern vm_cvar_t    cg_gun;
+extern vm_cvar_t    cg_gunalpha;
+extern vm_cvar_t    cg_gunfov;
+extern vm_cvar_t    cg_gun_x;
+extern vm_cvar_t    cg_gun_y;
+extern vm_cvar_t    cg_gun_z;
+extern vm_cvar_t    cg_predict;
+extern vm_cvar_t    cg_footsteps;
+extern vm_cvar_t    cg_noskins;
+extern vm_cvar_t    cg_kickangles;
+extern vm_cvar_t    cg_rollhack;
+extern vm_cvar_t    cg_noglow;
+extern vm_cvar_t    cg_nobob;
+extern vm_cvar_t    cg_nolerp;
 
 #if USE_DEBUG
 #define SHOWCLAMP(level, ...) \
-    do { if (cl_showclamp.integer >= level) \
+    do { if (cg_showclamp.integer >= level) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWMISS(...) \
-    do { if (cl_showmiss.integer) \
+    do { if (cg_showmiss.integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
 #define SHOWSTEP(...) \
-    do { if (cl_showstep.integer) \
+    do { if (cg_showstep.integer) \
         Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
-extern vm_cvar_t    cl_showmiss;
-extern vm_cvar_t    cl_showclamp;
-extern vm_cvar_t    cl_showstep;
+extern vm_cvar_t    cg_showmiss;
+extern vm_cvar_t    cg_showclamp;
+extern vm_cvar_t    cg_showstep;
 #else
 #define SHOWMISS(...)
 #define SHOWCLAMP(...)
 #define SHOWSTEP(...)
 #endif
 
-extern vm_cvar_t    cl_vwep;
+extern vm_cvar_t    cg_vwep;
 
-extern vm_cvar_t    cl_disable_particles;
-extern vm_cvar_t    cl_disable_explosions;
-extern vm_cvar_t    cl_dlight_hacks;
-extern vm_cvar_t    cl_smooth_explosions;
+extern vm_cvar_t    cg_disable_particles;
+extern vm_cvar_t    cg_disable_explosions;
+extern vm_cvar_t    cg_dlight_hacks;
+extern vm_cvar_t    cg_smooth_explosions;
 
-extern vm_cvar_t    cl_chat_notify;
-extern vm_cvar_t    cl_chat_sound;
-extern vm_cvar_t    cl_chat_filter;
+extern vm_cvar_t    cg_chat_notify;
+extern vm_cvar_t    cg_chat_sound;
+extern vm_cvar_t    cg_chat_filter;
 
-extern vm_cvar_t    cl_gibs;
-extern vm_cvar_t    cl_flares;
+extern vm_cvar_t    cg_gibs;
+extern vm_cvar_t    cg_flares;
 
-extern vm_cvar_t    cl_thirdperson;
-extern vm_cvar_t    cl_thirdperson_angle;
-extern vm_cvar_t    cl_thirdperson_range;
+extern vm_cvar_t    cg_thirdperson;
+extern vm_cvar_t    cg_thirdperson_angle;
+extern vm_cvar_t    cg_thirdperson_range;
 
-extern vm_cvar_t    cl_adjustfov;
-extern vm_cvar_t    cl_lerp_lightstyles;
-extern vm_cvar_t    cl_muzzlelight_time;
-extern vm_cvar_t    cl_muzzleflashes;
-extern vm_cvar_t    cl_hit_markers;
-extern vm_cvar_t    cl_railtrail_type;
-extern vm_cvar_t    cl_railtrail_time;
-extern vm_cvar_t    cl_railcore_color;
-extern vm_cvar_t    cl_railcore_width;
-extern vm_cvar_t    cl_railspiral_color;
-extern vm_cvar_t    cl_railspiral_radius;
+extern vm_cvar_t    cg_adjustfov;
+extern vm_cvar_t    cg_lerp_lightstyles;
+extern vm_cvar_t    cg_muzzlelight_time;
+extern vm_cvar_t    cg_muzzleflashes;
+extern vm_cvar_t    cg_hit_markers;
+extern vm_cvar_t    cg_railtrail_type;
+extern vm_cvar_t    cg_railtrail_time;
+extern vm_cvar_t    cg_railcore_color;
+extern vm_cvar_t    cg_railcore_width;
+extern vm_cvar_t    cg_railspiral_color;
+extern vm_cvar_t    cg_railspiral_radius;
 
 extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
@@ -385,7 +385,7 @@ void V_RenderView(void);
 // tent.c
 //
 
-typedef struct cl_sustain_s {
+typedef struct cg_sustain_s {
     int     id;
     int     type;
     int     endtime;
@@ -395,8 +395,8 @@ typedef struct cl_sustain_s {
     int     color;
     int     count;
     int     magnitude;
-    void    (*think)(struct cl_sustain_s *self);
-} cl_sustain_t;
+    void    (*think)(struct cg_sustain_s *self);
+} cg_sustain_t;
 
 typedef enum {
     MFLASH_MACHN,
@@ -413,10 +413,10 @@ typedef enum {
     MFLASH_BEAMER,
 
     MFLASH_TOTAL
-} cl_muzzlefx_t;
+} cg_muzzlefx_t;
 
-void CG_AddWeaponMuzzleFX(cl_muzzlefx_t fx, const vec3_t offset, float scale);
-void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cl_muzzlefx_t fx, int skin, float scale);
+void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale);
+void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, int skin, float scale);
 
 void CG_SmokeAndFlash(const vec3_t origin);
 
@@ -522,8 +522,8 @@ void CG_Tracker_Shell(const centity_t *cent, const vec3_t origin);
 void CG_MonsterPlasma_Shell(const vec3_t origin);
 void CG_ColorExplosionParticles(const vec3_t org, int color, int run);
 void CG_ParticleSmokeEffect(const vec3_t org, const vec3_t dir, int color, int count, int magnitude);
-void CG_Widowbeamout(cl_sustain_t *self);
-void CG_Nukeblast(cl_sustain_t *self);
+void CG_Widowbeamout(cg_sustain_t *self);
+void CG_Nukeblast(cg_sustain_t *self);
 void CG_WidowSplash(const vec3_t pos);
 void CG_IonripperTrail(centity_t *ent, const vec3_t end);
 void CG_TrapParticles(centity_t *ent, const vec3_t origin);

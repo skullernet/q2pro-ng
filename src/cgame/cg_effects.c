@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// cl_fx.c -- entity effects parsing and management
+// cg_effects.c -- entity effects parsing and management
 
 #include "cg_local.h"
 
@@ -36,11 +36,11 @@ typedef struct {
     float   map[MAX_QPATH - 1];
 } clightstyle_t;
 
-static clightstyle_t    cl_lightstyles[MAX_LIGHTSTYLES];
+static clightstyle_t    cg_lightstyles[MAX_LIGHTSTYLES];
 
 static void CG_ClearLightStyles(void)
 {
-    memset(cl_lightstyles, 0, sizeof(cl_lightstyles));
+    memset(cg_lightstyles, 0, sizeof(cg_lightstyles));
 }
 
 /*
@@ -53,7 +53,7 @@ void CG_SetLightStyle(int index, const char *s)
     int     i;
     clightstyle_t   *ls;
 
-    ls = &cl_lightstyles[index];
+    ls = &cg_lightstyles[index];
     ls->length = strlen(s);
     Q_assert(ls->length < MAX_QPATH);
 
@@ -71,11 +71,11 @@ void CG_AddLightStyles(void)
     int     i, ofs = cg.time / 100;
     clightstyle_t   *ls;
 
-    if (cl_lerp_lightstyles.integer) {
+    if (cg_lerp_lightstyles.integer) {
         float f = (cg.time % 100) * 0.01f;
         float b = 1.0f - f;
 
-        for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+        for (i = 0, ls = cg_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = 1.0f;
 
             if (ls->length > 1)
@@ -86,7 +86,7 @@ void CG_AddLightStyles(void)
             trap_R_SetLightStyle(i, value);
         }
     } else {
-        for (i = 0, ls = cl_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+        for (i = 0, ls = cg_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
             trap_R_SetLightStyle(i, value);
         }
@@ -101,11 +101,11 @@ DLIGHT MANAGEMENT
 ==============================================================
 */
 
-static cdlight_t       cl_dlights[MAX_DLIGHTS];
+static cdlight_t       cg_dlights[MAX_DLIGHTS];
 
 static void CG_ClearDlights(void)
 {
-    memset(cl_dlights, 0, sizeof(cl_dlights));
+    memset(cg_dlights, 0, sizeof(cg_dlights));
 }
 
 /*
@@ -120,7 +120,7 @@ cdlight_t *CG_AllocDlight(int key)
 
 // first look for an exact key match
     if (key) {
-        dl = cl_dlights;
+        dl = cg_dlights;
         for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
             if (dl->key == key) {
                 memset(dl, 0, sizeof(*dl));
@@ -131,7 +131,7 @@ cdlight_t *CG_AllocDlight(int key)
     }
 
 // then look for anything else
-    dl = cl_dlights;
+    dl = cg_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cg.time) {
             memset(dl, 0, sizeof(*dl));
@@ -140,7 +140,7 @@ cdlight_t *CG_AllocDlight(int key)
         }
     }
 
-    dl = &cl_dlights[0];
+    dl = &cg_dlights[0];
     memset(dl, 0, sizeof(*dl));
     dl->key = key;
     return dl;
@@ -156,7 +156,7 @@ void CG_AddDLights(void)
     int         i;
     cdlight_t   *dl;
 
-    dl = cl_dlights;
+    dl = cg_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cg.time)
             continue;
@@ -193,7 +193,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     VectorMA(dl->origin, 18, fv, dl->origin);
     VectorMA(dl->origin, 16, rv, dl->origin);
     dl->radius = 100 * (2 - silenced) + (Q_rand() & 31);
-    dl->die = cg.time + Q_clip(cl_muzzlelight_time.integer, 0, 1000);
+    dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
     volume = 1.0f - 0.8f * silenced;
 
@@ -382,7 +382,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         break;
     }
 
-    if (cl_dlight_hacks.integer & DLHACK_NO_MUZZLEFLASH) {
+    if (cg_dlight_hacks.integer & DLHACK_NO_MUZZLEFLASH) {
         switch (weapon) {
         case MZ_MACHINEGUN:
         case MZ_CHAINGUN1:
@@ -431,7 +431,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     dl = CG_AllocDlight(entnum);
     VectorCopy(origin, dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    dl->die = cg.time + Q_clip(cl_muzzlelight_time.integer, 0, 1000);
+    dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
     switch (weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1:
@@ -2108,7 +2108,7 @@ void CG_MonsterPlasma_Shell(const vec3_t origin)
     }
 }
 
-void CG_Widowbeamout(cl_sustain_t *self)
+void CG_Widowbeamout(cg_sustain_t *self)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     vec3_t          dir;
@@ -2135,7 +2135,7 @@ void CG_Widowbeamout(cl_sustain_t *self)
     }
 }
 
-void CG_Nukeblast(cl_sustain_t *self)
+void CG_Nukeblast(cg_sustain_t *self)
 {
     static const byte   colortable[4] = {110, 112, 114, 116};
     vec3_t          dir;

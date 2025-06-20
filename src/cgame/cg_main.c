@@ -25,51 +25,51 @@ cgame_static_t  cgs;
 const cgame_import_t    *cgi;
 #endif
 
-centity_t   cl_entities[MAX_EDICTS];
+centity_t   cg_entities[MAX_EDICTS];
 
-vm_cvar_t   cl_noskins;
-vm_cvar_t   cl_footsteps;
-vm_cvar_t   cl_predict;
-vm_cvar_t   cl_gun;
-vm_cvar_t   cl_gunalpha;
-vm_cvar_t   cl_gunfov;
-vm_cvar_t   cl_gun_x;
-vm_cvar_t   cl_gun_y;
-vm_cvar_t   cl_gun_z;
-vm_cvar_t   cl_kickangles;
-vm_cvar_t   cl_rollhack;
-vm_cvar_t   cl_noglow;
-vm_cvar_t   cl_nobob;
-vm_cvar_t   cl_nolerp;
+vm_cvar_t   cg_noskins;
+vm_cvar_t   cg_footsteps;
+vm_cvar_t   cg_predict;
+vm_cvar_t   cg_gun;
+vm_cvar_t   cg_gunalpha;
+vm_cvar_t   cg_gunfov;
+vm_cvar_t   cg_gun_x;
+vm_cvar_t   cg_gun_y;
+vm_cvar_t   cg_gun_z;
+vm_cvar_t   cg_kickangles;
+vm_cvar_t   cg_rollhack;
+vm_cvar_t   cg_noglow;
+vm_cvar_t   cg_nobob;
+vm_cvar_t   cg_nolerp;
 #if USE_DEBUG
-vm_cvar_t   cl_showmiss;
-vm_cvar_t   cl_showclamp;
-vm_cvar_t   cl_showstep;
+vm_cvar_t   cg_showmiss;
+vm_cvar_t   cg_showclamp;
+vm_cvar_t   cg_showstep;
 #endif
-vm_cvar_t   cl_thirdperson;
-vm_cvar_t   cl_thirdperson_angle;
-vm_cvar_t   cl_thirdperson_range;
-vm_cvar_t   cl_gibs;
-vm_cvar_t   cl_flares;
-vm_cvar_t   cl_vwep;
-vm_cvar_t   cl_disable_particles;
-vm_cvar_t   cl_disable_explosions;
-vm_cvar_t   cl_dlight_hacks;
-vm_cvar_t   cl_smooth_explosions;
-vm_cvar_t   cl_chat_notify;
-vm_cvar_t   cl_chat_sound;
-vm_cvar_t   cl_chat_filter;
-vm_cvar_t   cl_adjustfov;
-vm_cvar_t   cl_lerp_lightstyles;
-vm_cvar_t   cl_muzzlelight_time;
-vm_cvar_t   cl_muzzleflashes;
-vm_cvar_t   cl_hit_markers;
-vm_cvar_t   cl_railtrail_type;
-vm_cvar_t   cl_railtrail_time;
-vm_cvar_t   cl_railcore_color;
-vm_cvar_t   cl_railcore_width;
-vm_cvar_t   cl_railspiral_color;
-vm_cvar_t   cl_railspiral_radius;
+vm_cvar_t   cg_thirdperson;
+vm_cvar_t   cg_thirdperson_angle;
+vm_cvar_t   cg_thirdperson_range;
+vm_cvar_t   cg_gibs;
+vm_cvar_t   cg_flares;
+vm_cvar_t   cg_vwep;
+vm_cvar_t   cg_disable_particles;
+vm_cvar_t   cg_disable_explosions;
+vm_cvar_t   cg_dlight_hacks;
+vm_cvar_t   cg_smooth_explosions;
+vm_cvar_t   cg_chat_notify;
+vm_cvar_t   cg_chat_sound;
+vm_cvar_t   cg_chat_filter;
+vm_cvar_t   cg_adjustfov;
+vm_cvar_t   cg_lerp_lightstyles;
+vm_cvar_t   cg_muzzlelight_time;
+vm_cvar_t   cg_muzzleflashes;
+vm_cvar_t   cg_hit_markers;
+vm_cvar_t   cg_railtrail_type;
+vm_cvar_t   cg_railtrail_time;
+vm_cvar_t   cg_railcore_color;
+vm_cvar_t   cg_railcore_width;
+vm_cvar_t   cg_railspiral_color;
+vm_cvar_t   cg_railspiral_radius;
 vm_cvar_t   cl_paused;
 vm_cvar_t   sv_paused;
 vm_cvar_t   com_timedemo;
@@ -79,49 +79,49 @@ vm_cvar_t   info_fov;
 vm_cvar_t   info_uf;
 
 static vm_cvar_reg_t cg_cvars[] = {
-    VM_CVAR(cl_gun, "1", 0),
-    VM_CVAR(cl_gunalpha, "1", 0),
-    VM_CVAR(cl_gunfov, "90", 0),
-    VM_CVAR(cl_gun_x, "0", 0),
-    VM_CVAR(cl_gun_y, "0", 0),
-    VM_CVAR(cl_gun_z, "0", 0),
-    VM_CVAR(cl_footsteps, "1", 0),
-    VM_CVAR(cl_noskins, "0", 0),
-    VM_CVAR(cl_predict, "1", 0),
-    VM_CVAR(cl_kickangles, "1", CVAR_CHEAT),
-    VM_CVAR(cl_rollhack, "1", 0),
-    VM_CVAR(cl_noglow, "0", 0),
-    VM_CVAR(cl_nobob, "0", 0),
-    VM_CVAR(cl_nolerp, "0", 0),
+    VM_CVAR(cg_gun, "1", 0),
+    VM_CVAR(cg_gunalpha, "1", 0),
+    VM_CVAR(cg_gunfov, "90", 0),
+    VM_CVAR(cg_gun_x, "0", 0),
+    VM_CVAR(cg_gun_y, "0", 0),
+    VM_CVAR(cg_gun_z, "0", 0),
+    VM_CVAR(cg_footsteps, "1", 0),
+    VM_CVAR(cg_noskins, "0", 0),
+    VM_CVAR(cg_predict, "1", 0),
+    VM_CVAR(cg_kickangles, "1", CVAR_CHEAT),
+    VM_CVAR(cg_rollhack, "1", 0),
+    VM_CVAR(cg_noglow, "0", 0),
+    VM_CVAR(cg_nobob, "0", 0),
+    VM_CVAR(cg_nolerp, "0", 0),
 #if USE_DEBUG
-    VM_CVAR(cl_showmiss, "0", 0),
-    VM_CVAR(cl_showclamp, "0", 0),
-    VM_CVAR(cl_showstep, "0", 0),
+    VM_CVAR(cg_showmiss, "0", 0),
+    VM_CVAR(cg_showclamp, "0", 0),
+    VM_CVAR(cg_showstep, "0", 0),
 #endif
-    VM_CVAR(cl_thirdperson, "0", CVAR_CHEAT),
-    VM_CVAR(cl_thirdperson_angle, "0", 0),
-    VM_CVAR(cl_thirdperson_range, "60", 0),
-    VM_CVAR(cl_disable_particles, "0", 0),
-    VM_CVAR(cl_disable_explosions, "0", 0),
-    VM_CVAR(cl_dlight_hacks, "0", 0),
-    VM_CVAR(cl_smooth_explosions, "1", 0),
-    VM_CVAR(cl_gibs, "1", 0),
-    VM_CVAR(cl_flares, "1", 0),
-    VM_CVAR(cl_vwep, "1", CVAR_ARCHIVE),
-    VM_CVAR(cl_chat_notify, "1", 0),
-    VM_CVAR(cl_chat_sound, "1", 0),
-    VM_CVAR(cl_chat_filter, "0", 0),
-    VM_CVAR(cl_adjustfov, "1", 0),
-    VM_CVAR(cl_lerp_lightstyles, "0", 0),
-    VM_CVAR(cl_muzzlelight_time, "16", 0),
-    VM_CVAR(cl_muzzleflashes, "1", 0),
-    VM_CVAR(cl_hit_markers, "2", 0),
-    VM_CVAR(cl_railtrail_type, "0", 0),
-    VM_CVAR(cl_railtrail_time, "1.0", 0),
-    VM_CVAR(cl_railcore_color, "red", 0),
-    VM_CVAR(cl_railcore_width, "2", 0),
-    VM_CVAR(cl_railspiral_color, "blue", 0),
-    VM_CVAR(cl_railspiral_radius, "3", 0),
+    VM_CVAR(cg_thirdperson, "0", CVAR_CHEAT),
+    VM_CVAR(cg_thirdperson_angle, "0", 0),
+    VM_CVAR(cg_thirdperson_range, "60", 0),
+    VM_CVAR(cg_disable_particles, "0", 0),
+    VM_CVAR(cg_disable_explosions, "0", 0),
+    VM_CVAR(cg_dlight_hacks, "0", 0),
+    VM_CVAR(cg_smooth_explosions, "1", 0),
+    VM_CVAR(cg_gibs, "1", 0),
+    VM_CVAR(cg_flares, "1", 0),
+    VM_CVAR(cg_vwep, "1", CVAR_ARCHIVE),
+    VM_CVAR(cg_chat_notify, "1", 0),
+    VM_CVAR(cg_chat_sound, "1", 0),
+    VM_CVAR(cg_chat_filter, "0", 0),
+    VM_CVAR(cg_adjustfov, "1", 0),
+    VM_CVAR(cg_lerp_lightstyles, "0", 0),
+    VM_CVAR(cg_muzzlelight_time, "16", 0),
+    VM_CVAR(cg_muzzleflashes, "1", 0),
+    VM_CVAR(cg_hit_markers, "2", 0),
+    VM_CVAR(cg_railtrail_type, "0", 0),
+    VM_CVAR(cg_railtrail_time, "1.0", 0),
+    VM_CVAR(cg_railcore_color, "red", 0),
+    VM_CVAR(cg_railcore_width, "2", 0),
+    VM_CVAR(cg_railspiral_color, "blue", 0),
+    VM_CVAR(cg_railspiral_radius, "3", 0),
     VM_CVAR(cl_paused, "0", CVAR_ROM),
     VM_CVAR(sv_paused, "0", CVAR_ROM),
     VM_CVAR(s_ambient, "1", 0),

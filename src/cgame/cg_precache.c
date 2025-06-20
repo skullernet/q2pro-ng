@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 //
-// cl_precache.c
+// cg_precache.c
 //
 
 #include "cg_local.h"
@@ -120,10 +120,10 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *
         strcpy(model, "male");
 
     // apply restrictions on skins
-    if (cl_noskins.integer == 2 || !COM_IsPath(skin))
+    if (cg_noskins.integer == 2 || !COM_IsPath(skin))
         goto default_skin;
 
-    if (cl_noskins.integer || !COM_IsPath(model))
+    if (cg_noskins.integer || !COM_IsPath(model))
         goto default_model;
 
     return;
@@ -278,7 +278,7 @@ void CG_RegisterVWepModels(void)
     strcpy(cg.weaponModels[0], "weapon.md2");
 
     // only default model when vwep is off
-    if (!cl_vwep.integer)
+    if (!cg_vwep.integer)
         return;
 
     for (i = 1; i < MAX_MODELS; i++) {

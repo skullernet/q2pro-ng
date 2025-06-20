@@ -37,7 +37,7 @@ void CG_CheckPredictionError(void)
         return;
     }
 
-    if (!cl_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
+    if (!cg_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
@@ -198,7 +198,7 @@ void CG_PredictMovement(void)
     if (sv_paused.integer)
         return;
 
-    if (!cl_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cg_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
         CG_PredictAngles();
         return;
