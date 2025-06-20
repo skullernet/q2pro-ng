@@ -233,12 +233,12 @@ static void SV_CalcViewOffset(edict_t *ent)
 
     //===================================
 
-    float kick_factor = 0;
+    //float kick_factor = 0;
 
     // [Paril-KEX] kicks in vanilla take place over 2 10hz server
     // frames; this is to mimic that visual behavior on any tickrate.
-    if (ent->client->kick.time > level.time)
-        kick_factor = (float)(ent->client->kick.time - level.time) / ent->client->kick.total;
+    //if (ent->client->kick.time > level.time)
+    //    kick_factor = (float)(ent->client->kick.time - level.time) / ent->client->kick.total;
 
     // base angles
     vec3_t angles = { 0 };
@@ -255,7 +255,7 @@ static void SV_CalcViewOffset(edict_t *ent)
         ent->client->ps.viewangles[YAW] = ent->client->killer_yaw;
     } else if (!SkipViewModifiers()) {
         // add angles based on weapon kick
-        VectorScale(ent->client->kick.angles, kick_factor, angles);
+        //VectorScale(ent->client->kick.angles, kick_factor, angles);
 
         // add angles based on damage kick
         if (ent->client->v_dmg_time > level.time) {
@@ -335,7 +335,7 @@ static void SV_CalcViewOffset(edict_t *ent)
         }
 
         // add kick offset
-        VectorMA(v, kick_factor, ent->client->kick.origin, v);
+        //VectorMA(v, kick_factor, ent->client->kick.origin, v);
     }
 
     // absolutely bound offsets

@@ -1249,12 +1249,24 @@ static void CG_AddViewWeapon(void)
 
 static void CG_SetupFirstPersonView(void)
 {
+    float kick_factor = 0.0f;
+
+    if (cg.weapon.kick.time > cg.time) {
+        int half = cg.weapon.kick.total / 2;
+        int peak = cg.weapon.kick.time - half;
+        kick_factor = 1.0f - fabsf((float)(peak - cg.time) / half);
+    }
+
     // add kick angles
     if (cg_kickangles.integer) {
         vec3_t kickangles;
         LerpAngles(cg.oldframe->ps.kick_angles, cg.frame->ps.kick_angles, cg.lerpfrac, kickangles);
+        VectorMA(kickangles, kick_factor, cg.weapon.kick.angles, kickangles);
         VectorAdd(cg.refdef.viewangles, kickangles, cg.refdef.viewangles);
     }
+
+    // add kick offset
+    VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
 
     // add the weapon
     CG_AddViewWeapon();

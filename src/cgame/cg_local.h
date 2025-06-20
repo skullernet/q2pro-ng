@@ -187,6 +187,11 @@ typedef struct {
             float       roll, scale;
             vec3_t      offset;
         } muzzle;
+        struct {
+            vec3_t origin;
+            vec3_t angles;
+            int total, time;
+        } kick;
     } weapon;
 
     unsigned hit_marker_time;
