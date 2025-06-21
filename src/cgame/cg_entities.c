@@ -71,10 +71,8 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
 
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
-#if USE_FPS
     ent->prev_frame = state->frame;
-    ent->event_frame = cg.frame->number;
-#endif
+    //ent->event_frame = cg.frame->number;
 
     if (state->event[0] == EV_PLAYER_TELEPORT ||
         state->event[0] == EV_OTHER_TELEPORT ||
@@ -121,21 +119,18 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
 
         // duplicate the current state so lerping doesn't hurt anything
         ent->prev = *state;
-#if USE_FPS
         ent->prev_frame = state->frame;
-#endif
+
         // no lerping if teleported or morphed
         VectorCopy(origin, ent->lerp_origin);
         return;
     }
 
-#if USE_FPS
     // start alias model animation
     if (state->frame != ent->current.frame) {
         ent->prev_frame = ent->current.frame;
-        ent->anim_start = cg.servertime - cg.frametime.time;
+        ent->anim_start = cg.oldframe->servertime;
     }
-#endif
 
     // shuffle the last state to previous
     ent->prev = ent->current;
@@ -627,7 +622,7 @@ static void CG_AddPacketEntities(void)
                            cg.lerpfrac, ent.origin);
                 VectorCopy(ent.origin, ent.oldorigin);
             }
-#if USE_FPS
+
             // run alias model animation
             if (cent->prev_frame != s1->frame) {
                 int delta = cg.time - cent->anim_start;
@@ -645,7 +640,6 @@ static void CG_AddPacketEntities(void)
                 ent.oldframe = cent->prev_frame;
                 ent.backlerp = 1.0f - frac;
             }
-#endif
         }
 
         if (effects & EF_BOB && !cg_nobob.integer) {

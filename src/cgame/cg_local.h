@@ -45,12 +45,10 @@ typedef struct {
     int             trailcount;         // for diminishing grenade trails
     vec3_t          lerp_origin;        // for trails (variable hz)
 
-#if USE_FPS
     int             prev_frame;
     int             anim_start;
 
-    int             event_frame;
-#endif
+    //int           event_frame;
 
     int             fly_stoptime;
 
