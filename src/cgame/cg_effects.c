@@ -168,7 +168,7 @@ void CG_AddDLights(void)
 // ==============================================================
 
 #define DAMAGE_TIME 500
-#define KICK_TIME   200
+#define KICK_TIME   100
 
 static void CG_AddWeaponKick(float scale, float pitch)
 {
@@ -177,7 +177,7 @@ static void CG_AddWeaponKick(float scale, float pitch)
     VectorScale(cg.v_forward, scale, cg.weapon.kick.origin);
     VectorSet(cg.weapon.kick.angles, pitch, 0, 0);
     cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + cg.weapon.kick.total;
+    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
 }
 
 static void CG_AddMachinegunKick(void)
@@ -189,7 +189,7 @@ static void CG_AddMachinegunKick(void)
         cg.weapon.kick.angles[i] = crand() * 0.7f;
     }
     cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + cg.weapon.kick.total;
+    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
 }
 
 static void CG_AddChaingunKick(int shots)
@@ -201,7 +201,7 @@ static void CG_AddChaingunKick(int shots)
         cg.weapon.kick.angles[i] = crand() * (0.5f + (shots * 0.15f));
     }
     cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + cg.weapon.kick.total;
+    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
 }
 
 static void CG_AddBFGKick(void)
@@ -211,7 +211,7 @@ static void CG_AddBFGKick(void)
     VectorScale(cg.v_forward, -2, cg.weapon.kick.origin);
     VectorSet(cg.weapon.kick.angles, -20, 0, crand() * 8);
     cg.weapon.kick.total = DAMAGE_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + cg.weapon.kick.total;
+    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
 }
 
 /*

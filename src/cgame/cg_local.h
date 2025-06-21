@@ -102,6 +102,8 @@ typedef struct {
 #define FF_OLDENT       BIT(7)
 #define FF_NODELTA      BIT(8)
 
+#define FALL_TIME   300
+
 //
 // the client_state_t structure is wiped completely at every
 // server map change
@@ -193,6 +195,9 @@ typedef struct {
             int total, time;
         } kick;
     } weapon;
+
+    int fall_time;
+    int fall_value;
 
     unsigned hit_marker_time;
     int hit_marker_count;

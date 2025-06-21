@@ -264,11 +264,13 @@ static void SV_CalcViewOffset(edict_t *ent)
             angles[ROLL] += ratio * ent->client->v_dmg_roll;
         }
 
+#if 0
         // add pitch based on fall kick
         if (ent->client->fall_time > level.time) {
             ratio = (float)(ent->client->fall_time - level.time) / FALL_TIME;
             angles[PITCH] += ratio * ent->client->fall_value;
         }
+#endif
 
         // add angles based on velocity
         if (!ent->client->pers.bob_skip) {
@@ -320,11 +322,13 @@ static void SV_CalcViewOffset(edict_t *ent)
     v[2] += ent->viewheight;
 
     if (!SkipViewModifiers()) {
+#if 0
         // add fall height
         if (ent->client->fall_time > level.time) {
             ratio = (float)(ent->client->fall_time - level.time) / FALL_TIME;
             v[2] -= ratio * ent->client->fall_value * 0.4f;
         }
+#endif
 
         // add bob height
         if (!ent->client->pers.bob_skip) {
@@ -606,18 +610,17 @@ static void P_FallingDamage(edict_t *ent)
         return;
     }
 
+#if 0
     ent->client->fall_value = delta * 0.5f;
     if (ent->client->fall_value > 40)
         ent->client->fall_value = 40;
     ent->client->fall_time = level.time + FALL_TIME;
+#endif
+
+    G_AddEvent(ent, EV_FALL, delta + 0.5f);
 
     if (delta > 30) {
         static const vec3_t dir = { 0, 0, 1 };
-
-        if (delta >= 55)
-            G_AddEvent(ent, EV_FALLFAR, 0);
-        else
-            G_AddEvent(ent, EV_FALL, 0);
 
         ent->pain_debounce_time = level.time + FRAME_TIME; // no normal pain sound
         damage = (int)((delta - 30) / 2);
@@ -626,8 +629,7 @@ static void P_FallingDamage(edict_t *ent)
 
         if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
             T_Damage(ent, world, world, dir, ent->s.origin, vec3_origin, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
-    } else
-        G_AddEvent(ent, EV_FALLSHORT, 0);
+    }
 
     // Paril: falling damage noises alert monsters
     if (ent->health)
@@ -1218,6 +1220,8 @@ void ClientEndServerFrame(edict_t *ent)
             bobmove = FRAME_TIME_SEC / 0.8f;
         else
             bobmove = FRAME_TIME_SEC / 1.6f;
+    } else {
+        bobmove = 0;
     }
 
     bobtime = (current_client->bobtime += bobmove);

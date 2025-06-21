@@ -1247,26 +1247,40 @@ static void CG_AddViewWeapon(void)
     trap_R_AddEntity(&gun);
 }
 
+static float CG_KickFactor(int end, int duration)
+{
+    float factor = 0.0f;
+
+    if (end > cg.time) {
+        int start = end - duration;
+        if (cg.time < start) // rising edge
+            factor = (cg.time - start + BASE_FRAMETIME) * BASE_1_FRAMETIME;
+        else // falling edge
+            factor = (float)(end - cg.time) / duration;
+    }
+
+    return factor;
+}
+
 static void CG_SetupFirstPersonView(void)
 {
-    float kick_factor = 0.0f;
-
-    if (cg.weapon.kick.time > cg.time) {
-        int half = cg.weapon.kick.total / 2;
-        int peak = cg.weapon.kick.time - half;
-        kick_factor = 1.0f - fabsf((float)(peak - cg.time) / half);
-    }
+    float kick_factor = CG_KickFactor(cg.weapon.kick.time, cg.weapon.kick.total);
+    float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
 
     // add kick angles
     if (cg_kickangles.integer) {
         vec3_t kickangles;
         LerpAngles(cg.oldframe->ps.kick_angles, cg.frame->ps.kick_angles, cg.lerpfrac, kickangles);
         VectorMA(kickangles, kick_factor, cg.weapon.kick.angles, kickangles);
+        kickangles[PITCH] += fall_ratio * cg.fall_value;
         VectorAdd(cg.refdef.viewangles, kickangles, cg.refdef.viewangles);
     }
 
     // add kick offset
     VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
+
+    // add fall height
+    cg.refdef.vieworg[2] -= fall_ratio * cg.fall_value * 0.4f;
 
     // add the weapon
     CG_AddViewWeapon();

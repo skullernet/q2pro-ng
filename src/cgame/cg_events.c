@@ -1213,14 +1213,17 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     case EV_LADDER_STEP:
         CG_PlayFootstepSfx(MATERIAL_ID_LADDER, number, 0.5f, ATTN_IDLE);
         break;
-    case EV_FALLSHORT:
-        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
-        break;
     case EV_FALL:
-        CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM);
-        break;
-    case EV_FALLFAR:
-        CG_SexedSound(number, CHAN_AUTO, SS_FALL1, 1, ATTN_NORM);
+        if (param >= 55)
+            CG_SexedSound(number, CHAN_AUTO, SS_FALL1, 1, ATTN_NORM);
+        else if (param > 30)
+            CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM);
+        else
+            trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
+        if (number == cg.frame->ps.clientnum) {
+            cg.fall_time = cg.oldframe->servertime + BASE_FRAMETIME + FALL_TIME;
+            cg.fall_value = min(param / 2, 40);
+        }
         break;
     case EV_DEATH1 ... EV_DEATH4:
         CG_SexedSound(number, CHAN_VOICE, SS_DEATH1 + (event - EV_DEATH1), 1, ATTN_NORM);
