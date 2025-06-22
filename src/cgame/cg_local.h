@@ -100,7 +100,9 @@ typedef struct {
 #define FF_OLDENT       BIT(7)
 #define FF_NODELTA      BIT(8)
 
+#define DAMAGE_TIME 500
 #define FALL_TIME   300
+#define KICK_TIME   100
 
 //
 // the client_state_t structure is wiped completely at every
@@ -198,9 +200,14 @@ typedef struct {
     float bobfracsin;
     vec3_t slow_view_angles;
     vec3_t viewangles_delta;
+    vec3_t oldviewangles;
 
     int fall_time;
     int fall_value;
+
+    int damage_time;
+    vec3_t damage_dir;
+    float damage_kick;
 
     unsigned hit_marker_time;
     int hit_marker_count;

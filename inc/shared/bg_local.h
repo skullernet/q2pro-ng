@@ -339,49 +339,48 @@ typedef enum {
     STAT_ARMOR_ICON,
     STAT_ARMOR,
     STAT_SELECTED_ICON,
+    STAT_SELECTED_ITEM,
+    STAT_SELECTED_ITEM_NAME,
     STAT_PICKUP_ICON,
     STAT_PICKUP_STRING,
     STAT_TIMER_ICON,
     STAT_TIMER,
     STAT_HELPICON,
-    STAT_SELECTED_ITEM,
     STAT_LAYOUTS,
     STAT_FLASHES,           // cleared each frame, 1 = health, 2 = armor
     STAT_CHASE,
     STAT_SPECTATOR,
     STAT_HITS,
+    STAT_DAMAGE,
 
-    STAT_CTF_TEAM1_PIC = 18,
-    STAT_CTF_TEAM1_CAPS = 19,
-    STAT_CTF_TEAM2_PIC = 20,
-    STAT_CTF_TEAM2_CAPS = 21,
-    STAT_CTF_FLAG_PIC = 22,
-    STAT_CTF_JOINED_TEAM1_PIC = 23,
-    STAT_CTF_JOINED_TEAM2_PIC = 24,
-    STAT_CTF_TEAM1_HEADER = 25,
-    STAT_CTF_TEAM2_HEADER = 26,
-    STAT_CTF_TECH = 27,
-    STAT_CTF_ID_VIEW = 28,
-    STAT_CTF_MATCH = 29,
-    STAT_CTF_ID_VIEW_COLOR = 30,
-    STAT_CTF_TEAMINFO = 31,
+    STAT_CTF_TEAM1_PIC = STAT_DAMAGE + 1,
+    STAT_CTF_TEAM1_CAPS,
+    STAT_CTF_TEAM2_PIC,
+    STAT_CTF_TEAM2_CAPS,
+    STAT_CTF_FLAG_PIC,
+    STAT_CTF_JOINED_TEAM1_PIC,
+    STAT_CTF_JOINED_TEAM2_PIC,
+    STAT_CTF_TEAM1_HEADER,
+    STAT_CTF_TEAM2_HEADER,
+    STAT_CTF_TECH,
+    STAT_CTF_ID_VIEW,
+    STAT_CTF_MATCH,
+    STAT_CTF_ID_VIEW_COLOR,
+    STAT_CTF_TEAMINFO,
 
     // [Paril-KEX] Key display
-    STAT_KEY_A = 18,
-    STAT_KEY_B = 19,
-    STAT_KEY_C = 20,
+    STAT_KEY_A = STAT_DAMAGE + 1,
+    STAT_KEY_B,
+    STAT_KEY_C,
 
     // [Paril-KEX] top of screen coop respawn state
-    STAT_COOP_RESPAWN = 21,
+    STAT_COOP_RESPAWN,
 
     // [Paril-KEX] respawns remaining
-    STAT_LIVES = 22,
+    STAT_LIVES,
 
     // [Paril-KEX]
-    STAT_HEALTH_BARS = 23, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
-
-    // [Paril-KEX]
-    STAT_SELECTED_ITEM_NAME = 31,
+    STAT_HEALTH_BARS, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
 } stat_index_t;
 
 #define GUNINDEX_BITS       13  // upper 3 bits are skinnum

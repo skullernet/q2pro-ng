@@ -292,6 +292,12 @@ void CG_DeltaFrame(void)
         }
     }
 
+    if (cg.frame->ps.stats[STAT_DAMAGE] && cg.damage_time < cg.time) {
+        ByteToDir(cg.frame->ps.stats[STAT_DAMAGE] & 255, cg.damage_dir);
+        cg.damage_kick = ((cg.frame->ps.stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
+        cg.damage_time = cg.oldframe->servertime + BASE_FRAMETIME + DAMAGE_TIME;
+    }
+
     CG_CheckPredictionError();
 
     SCR_SetCrosshairColor();
@@ -1276,6 +1282,7 @@ static void CG_AddViewWeapon(void)
     trap_R_AddEntity(&gun);
 }
 
+// simulates kick_angles interpolation
 static float CG_KickFactor(int end, int duration)
 {
     float factor = 0.0f;
@@ -1296,17 +1303,28 @@ static float CG_KickFactor(int end, int duration)
 
 static void CG_CalcViewOffset(void)
 {
-    float kick_factor = CG_KickFactor(cg.weapon.kick.time, cg.weapon.kick.total);
-    float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
+    float *angles = cg.refdef.viewangles;
 
-    // add kick angles
-    if (cg_kickangles.integer) {
-        vec3_t kickangles;
-        LerpAngles(cg.oldframe->ps.kick_angles, cg.frame->ps.kick_angles, cg.lerpfrac, kickangles);
-        VectorMA(kickangles, kick_factor, cg.weapon.kick.angles, kickangles);
-        kickangles[PITCH] += fall_ratio * cg.fall_value;
-        VectorAdd(cg.refdef.viewangles, kickangles, cg.refdef.viewangles);
+    // add angles based on weapon kick
+    float kick_factor = CG_KickFactor(cg.weapon.kick.time, cg.weapon.kick.total);
+    VectorMA(angles, kick_factor, cg.weapon.kick.angles, angles);
+
+    // add angles based on damage kick
+    float damage_ratio = CG_KickFactor(cg.damage_time, DAMAGE_TIME);
+    if (damage_ratio) {
+        float side;
+        damage_ratio *= cg.damage_kick;
+
+        side = -DotProduct(cg.damage_dir, cg.v_forward);
+        angles[PITCH] += side * damage_ratio;
+
+        side = DotProduct(cg.damage_dir, cg.v_right);
+        angles[ROLL] += side * damage_ratio;
     }
+
+    // add pitch based on fall kick
+    float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
+    angles[PITCH] += fall_ratio * cg.fall_value;
 
     vec3_t vel;
     LerpVector(cg.oldframe->ps.pmove.velocity, cg.frame->ps.pmove.velocity, cg.lerpfrac, vel);
@@ -1325,7 +1343,6 @@ static void CG_CalcViewOffset(void)
     //    bobtime *= 4;
 
     float bobfracsin = sinf(bobtime * (M_PIf / 128));
-    float *angles = cg.refdef.viewangles;
 
     if (true) {
         float delta;
@@ -1503,7 +1520,7 @@ loop if rendering is disabled but sound is running.
 void CG_CalcViewValues(void)
 {
     const player_state_t *ps, *ops;
-    vec3_t viewoffset, oldviewangles;
+    vec3_t viewoffset;
     float lerp;
 
     // find states to interpolate between
@@ -1532,8 +1549,6 @@ void CG_CalcViewValues(void)
         }
     }
 
-    VectorCopy(cg.refdef.viewangles, oldviewangles);
-
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
         if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
@@ -1555,7 +1570,8 @@ void CG_CalcViewValues(void)
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
     }
 
-    VectorSubtract(oldviewangles, cg.refdef.viewangles, cg.viewangles_delta);
+    VectorSubtract(cg.oldviewangles, cg.refdef.viewangles, cg.viewangles_delta);
+    VectorCopy(cg.refdef.viewangles, cg.oldviewangles);
 
     // interpolate blend
     if (ops->screen_blend[3])

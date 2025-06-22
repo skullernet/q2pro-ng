@@ -167,9 +167,6 @@ void CG_AddDLights(void)
 
 // ==============================================================
 
-#define DAMAGE_TIME 500
-#define KICK_TIME   100
-
 static void CG_AddWeaponKick(float scale, float pitch)
 {
     if (cg.weapon.kick.time > cg.oldframe->servertime)

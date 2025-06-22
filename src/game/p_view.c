@@ -74,7 +74,7 @@ static void P_DamageFeedback(edict_t *player)
 {
     gclient_t   *client;
     float        side;
-    float        realcount, count, kick;
+    float        realcount, count;
     vec3_t       v;
     static const vec3_t armor_color = { 1.0f, 1.0f, 1.0f };
     static const vec3_t power_color = { 0.0f, 1.0f, 0.0f };
@@ -95,6 +95,8 @@ static void P_DamageFeedback(edict_t *player)
         client->ps.stats[STAT_FLASHES] = want_flashes;
     } else if (client->flash_time < level.time)
         client->ps.stats[STAT_FLASHES] = 0;
+
+    client->ps.stats[STAT_DAMAGE] = 0;
 
     // total points of damage shot at the player this frame
     count = client->damage_blood + client->damage_armor + client->damage_parmor;
@@ -177,7 +179,7 @@ static void P_DamageFeedback(edict_t *player)
     //
     // calculate view angle kicks
     //
-    kick = abs(client->damage_knockback);
+    int kick = abs(client->damage_knockback);
     if (kick && player->health > 0) { // kick of 0 means no view adjust at all
         kick = kick * 100 / player->health;
 
@@ -188,6 +190,8 @@ static void P_DamageFeedback(edict_t *player)
 
         VectorSubtract(client->damage_from, player->s.origin, v);
         VectorNormalize(v);
+
+        client->ps.stats[STAT_DAMAGE] = DirToByte(v) | kick << 8;
 
         side = DotProduct(v, right);
         client->v_dmg_roll = kick * side * 0.3f;
@@ -256,12 +260,14 @@ static void SV_CalcViewOffset(edict_t *ent)
         // add angles based on weapon kick
         //VectorScale(ent->client->kick.angles, kick_factor, angles);
 
+#if 0
         // add angles based on damage kick
         if (ent->client->v_dmg_time > level.time) {
             ratio = (float)(ent->client->v_dmg_time - level.time) / DAMAGE_TIME;
             angles[PITCH] += ratio * ent->client->v_dmg_pitch;
             angles[ROLL] += ratio * ent->client->v_dmg_roll;
         }
+#endif
 
 #if 0
         // add pitch based on fall kick
