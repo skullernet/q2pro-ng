@@ -194,6 +194,11 @@ typedef struct {
         } kick;
     } weapon;
 
+    float xyspeed;
+    float bobfracsin;
+    vec3_t slow_view_angles;
+    vec3_t viewangles_delta;
+
     int fall_time;
     int fall_value;
 
@@ -247,6 +252,11 @@ extern vm_cvar_t    cg_gunfov;
 extern vm_cvar_t    cg_gun_x;
 extern vm_cvar_t    cg_gun_y;
 extern vm_cvar_t    cg_gun_z;
+extern vm_cvar_t    cg_run_pitch;
+extern vm_cvar_t    cg_run_roll;
+extern vm_cvar_t    cg_bob_up;
+extern vm_cvar_t    cg_bob_pitch;
+extern vm_cvar_t    cg_bob_roll;
 extern vm_cvar_t    cg_predict;
 extern vm_cvar_t    cg_footsteps;
 extern vm_cvar_t    cg_noskins;

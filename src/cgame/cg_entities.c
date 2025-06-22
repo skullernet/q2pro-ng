@@ -1169,11 +1169,46 @@ static void CG_AddViewWeapon(void)
         return;
 
     // set up gun position
-    for (i = 0; i < 3; i++) {
-        gun.origin[i] = cg.refdef.vieworg[i] + ops->gunoffset[i] +
-                        cg.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
-        gun.angles[i] = cg.refdef.viewangles[i] + LerpAngle(ops->gunangles[i],
-                        ps->gunangles[i], cg.lerpfrac);
+    VectorCopy(cg.refdef.vieworg, gun.origin);
+    VectorCopy(cg.refdef.viewangles, gun.angles);
+
+    if (true) {
+        // gun angles from bobbing
+        gun.angles[ROLL] += cg.xyspeed * cg.bobfracsin * 0.005f;
+        gun.angles[YAW] += cg.xyspeed * cg.bobfracsin * 0.01f;
+        gun.angles[PITCH] += cg.xyspeed * fabsf(cg.bobfracsin) * 0.005f;
+
+        VectorAdd(cg.slow_view_angles, cg.viewangles_delta, cg.slow_view_angles);
+
+        // gun angles from delta movement
+        for (i = 0; i < 3; i++) {
+            float d = cg.slow_view_angles[i];
+
+            if (!d)
+                continue;
+
+            if (d > 180)
+                d -= 360;
+            if (d < -180)
+                d += 360;
+
+            d = Q_clipf(d, -45, 45);
+
+            // [Sam-KEX] Apply only half-delta. Makes the weapons look less detached from the player.
+            if (i == ROLL)
+                gun.angles[i] += (0.1f * d) * 0.5f;
+            else
+                gun.angles[i] += (0.2f * d) * 0.5f;
+
+            float reduction_factor = cg.viewangles_delta[i] ? 50 : 150;
+
+            if (d > 0)
+                d = max(0, d - cgs.frametime * reduction_factor);
+            else if (d < 0)
+                d = min(0, d + cgs.frametime * reduction_factor);
+
+            cg.slow_view_angles[i] = d;
+        }
     }
 
     VectorMA(gun.origin, cg_gun_y.value, cg.v_forward, gun.origin);
@@ -1256,7 +1291,10 @@ static float CG_KickFactor(int end, int duration)
     return factor;
 }
 
-static void CG_SetupFirstPersonView(void)
+#define IS_CROUCHING(frame) \
+    (((frame)->ps.pmove.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
+
+static void CG_CalcViewOffset(void)
 {
     float kick_factor = CG_KickFactor(cg.weapon.kick.time, cg.weapon.kick.total);
     float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
@@ -1270,11 +1308,64 @@ static void CG_SetupFirstPersonView(void)
         VectorAdd(cg.refdef.viewangles, kickangles, cg.refdef.viewangles);
     }
 
-    // add kick offset
-    VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
+    vec3_t vel;
+    LerpVector(cg.oldframe->ps.pmove.velocity, cg.frame->ps.pmove.velocity, cg.lerpfrac, vel);
+    float xyspeed = sqrtf(vel[0] * vel[0] + vel[1] * vel[1]);
+
+    float delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
+    if (delta < 0)
+        delta += 256;
+    float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
+
+    float crouch1 = IS_CROUCHING(cg.oldframe) ? 6 : 1;
+    float crouch2 = IS_CROUCHING(cg.frame)    ? 6 : 1;
+    float crouch_factor = crouch1 + cg.lerpfrac * (crouch2 - crouch1);
+
+    //if (crouching)
+    //    bobtime *= 4;
+
+    float bobfracsin = sinf(bobtime * (M_PIf / 128));
+    float *angles = cg.refdef.viewangles;
+
+    if (true) {
+        float delta;
+
+        // add angles based on velocity
+        delta = DotProduct(vel, cg.v_forward);
+        angles[PITCH] += delta * cg_run_pitch.value;
+
+        delta = DotProduct(vel, cg.v_right);
+        angles[ROLL] += delta * cg_run_roll.value;
+
+        // add angles based on bob
+        delta = fabsf(bobfracsin) * cg_bob_pitch.value * xyspeed * crouch_factor;
+        angles[PITCH] += delta;
+
+        delta = bobfracsin * cg_bob_roll.value * xyspeed * crouch_factor;
+        angles[ROLL] += delta;
+    }
+
+    cg.xyspeed = xyspeed;
+    cg.bobfracsin = bobfracsin;
 
     // add fall height
     cg.refdef.vieworg[2] -= fall_ratio * cg.fall_value * 0.4f;
+
+    // add bob height
+    if (true) {
+        float bob = fabsf(bobfracsin) * xyspeed * cg_bob_up.value;
+        if (bob > 6)
+            bob = 6;
+        cg.refdef.vieworg[2] += bob;
+    }
+
+    // add kick offset
+    VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
+}
+
+static void CG_SetupFirstPersonView(void)
+{
+    CG_CalcViewOffset();
 
     // add the weapon
     CG_AddViewWeapon();
@@ -1412,7 +1503,7 @@ loop if rendering is disabled but sound is running.
 void CG_CalcViewValues(void)
 {
     const player_state_t *ps, *ops;
-    vec3_t viewoffset;
+    vec3_t viewoffset, oldviewangles;
     float lerp;
 
     // find states to interpolate between
@@ -1441,6 +1532,8 @@ void CG_CalcViewValues(void)
         }
     }
 
+    VectorCopy(cg.refdef.viewangles, oldviewangles);
+
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
         if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
@@ -1461,6 +1554,8 @@ void CG_CalcViewValues(void)
         // just use interpolated values
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
     }
+
+    VectorSubtract(oldviewangles, cg.refdef.viewangles, cg.viewangles_delta);
 
     // interpolate blend
     if (ops->screen_blend[3])

@@ -1191,6 +1191,7 @@ typedef struct {
     // these fields do not need to be communicated bit-precise
     int         clientnum;      // current POV number
 
+    int         bobtime;
     vec3_t      viewangles;     // for fixed views
     vec3_t      viewoffset;     // add to pmovestate->origin
     vec3_t      kick_angles;    // add to view direction to get render angles

@@ -505,6 +505,7 @@ static const netfield_t player_state_fields[] = {
     NETF(pmove.delta_angles[2], -16),
 
     NETF(clientnum, ENTITYNUM_BITS),
+    NETF(bobtime, 8),
     NETF(viewangles[0], 0),
     NETF(viewangles[1], 0),
     NETF(viewangles[2], 0),

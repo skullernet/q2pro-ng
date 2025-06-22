@@ -10,8 +10,7 @@ static gclient_t *current_client;
 static vec3_t forward, right, up;
 float         xyspeed;
 
-static float bobmove;
-static int   bobcycle, bobcycle_run;     // odd cycles are right foot going forward
+static bool  bobcycle, bobcycle_run;     // odd cycles are right foot going forward
 static float bobfracsin; // sinf(bobfrac*M_PI)
 
 /*
@@ -272,6 +271,7 @@ static void SV_CalcViewOffset(edict_t *ent)
         }
 #endif
 
+#if 0
         // add angles based on velocity
         if (!ent->client->pers.bob_skip) {
             delta = DotProduct(ent->velocity, forward);
@@ -290,10 +290,11 @@ static void SV_CalcViewOffset(edict_t *ent)
             if ((ent->client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
                 delta *= 6; // crouching
             delta = min(delta, 1.2f);
-            if (bobcycle & 1)
+            if (bobcycle)
                 delta = -delta;
             angles[ROLL] += delta;
         }
+#endif
 
         // add earthquake angles
         if (ent->client->quake_time > level.time) {
@@ -328,7 +329,6 @@ static void SV_CalcViewOffset(edict_t *ent)
             ratio = (float)(ent->client->fall_time - level.time) / FALL_TIME;
             v[2] -= ratio * ent->client->fall_value * 0.4f;
         }
-#endif
 
         // add bob height
         if (!ent->client->pers.bob_skip) {
@@ -339,7 +339,8 @@ static void SV_CalcViewOffset(edict_t *ent)
         }
 
         // add kick offset
-        //VectorMA(v, kick_factor, ent->client->kick.origin, v);
+        VectorMA(v, kick_factor, ent->client->kick.origin, v);
+#endif
     }
 
     // absolutely bound offsets
@@ -365,10 +366,11 @@ static void SV_CalcGunOffset(edict_t *ent)
         !((ent->client->pers.weapon->id == IT_WEAPON_PLASMABEAM || ent->client->pers.weapon->id == IT_WEAPON_GRAPPLE) && ent->client->weaponstate == WEAPON_FIRING)
         && !SkipViewModifiers()) {
     // ROGUE
+#if 0
         // gun angles from bobbing
         ent->client->ps.gunangles[ROLL] = xyspeed * bobfracsin * 0.005f;
         ent->client->ps.gunangles[YAW] = xyspeed * bobfracsin * 0.01f;
-        if (bobcycle & 1) {
+        if (bobcycle) {
             ent->client->ps.gunangles[ROLL] = -ent->client->ps.gunangles[ROLL];
             ent->client->ps.gunangles[YAW] = -ent->client->ps.gunangles[YAW];
         }
@@ -409,6 +411,7 @@ static void SV_CalcGunOffset(edict_t *ent)
 
             ent->client->slow_view_angles[i] = d;
         }
+#endif
     // ROGUE
     } else {
         VectorClear(ent->client->ps.gunangles);
@@ -596,7 +599,7 @@ static void P_FallingDamage(edict_t *ent)
         return;
 
     // restart footstep timer
-    ent->client->bobtime = 0;
+    //ent->client->ps.bobtime = 0;
 
     if (ent->client->landmark_free_fall) {
         delta = min(30, delta);
@@ -756,7 +759,7 @@ static void P_WorldEffects(void)
         }
     } else {
         if (waterlevel == WATER_WAIST && level.is_psx)
-            if ((int)(current_client->bobtime + bobmove) != bobcycle_run)
+            if (bobcycle_run)
                 G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM);
 
         current_player->air_finished = level.time + SEC(12);
@@ -901,7 +904,7 @@ static void G_SetClientEvent(edict_t *ent)
             current_client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
         }
     } else if (ent->groundentity && xyspeed > 225) {
-        if ((int)(current_client->bobtime + bobmove) != bobcycle_run)
+        if (bobcycle_run)
             G_AddEvent(ent, EV_FOOTSTEP, 0);
     }
 }
@@ -1135,8 +1138,6 @@ void ClientEndServerFrame(edict_t *ent)
     if (!ent->client->pers.spawned)
         return;
 
-    float bobtime, bobtime_run;
-
     current_player = ent;
     current_client = ent->client;
 
@@ -1207,32 +1208,39 @@ void ClientEndServerFrame(edict_t *ent)
     // calculate speed and cycle to be used for
     // all cyclic walking effects
     //
-    xyspeed = sqrtf(ent->velocity[0] * ent->velocity[0] + ent->velocity[1] * ent->velocity[1]);
+    xyspeed = truncf(sqrtf(ent->velocity[0] * ent->velocity[0] + ent->velocity[1] * ent->velocity[1]));
+
+    int bobmove, bobtime, bobtime_run;
 
     if (xyspeed < 5) {
         bobmove = 0;
-        current_client->bobtime = 0; // start at beginning of cycle again
+        current_client->ps.bobtime = 0; // start at beginning of cycle again
     } else if (ent->groundentity) {
         // so bobbing only cycles when on ground
         if (xyspeed > 210)
-            bobmove = FRAME_TIME_SEC / 0.4f;
+            bobmove = 128 * (FRAME_TIME_SEC / 0.4f);
         else if (xyspeed > 100)
-            bobmove = FRAME_TIME_SEC / 0.8f;
+            bobmove = 128 * (FRAME_TIME_SEC / 0.8f);
         else
-            bobmove = FRAME_TIME_SEC / 1.6f;
+            bobmove = 128 * (FRAME_TIME_SEC / 1.6f);
+        if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
+            bobmove *= 4;
+        current_client->ps.bobtime = (current_client->ps.bobtime + bobmove) & 255;
     } else {
         bobmove = 0;
     }
 
-    bobtime = (current_client->bobtime += bobmove);
-    bobtime_run = bobtime;
+    bobtime = bobtime_run = current_client->ps.bobtime;
 
-    if ((current_client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
-        bobtime *= 4;
+    //if ((current_client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
+    //    bobtime *= 4;
 
-    bobcycle = (int)bobtime;
-    bobcycle_run = (int)bobtime_run;
-    bobfracsin = fabsf(sinf(bobtime * M_PIf));
+    bobcycle = (bobtime >> 7) & 1;
+    bobcycle_run = (((bobtime_run + bobmove) >> 7) ^ (bobtime_run >> 7)) & 1;
+    bobfracsin = fabsf(sinf(bobtime * (M_PIf / 128)));
+
+    //if (bobmove)
+    //    Com_Printf("%f %d %d %d %d\n", xyspeed, bobtime, bobmove, bobcycle, bobcycle_run);
 
     // detect hitting the floor
     P_FallingDamage(ent);

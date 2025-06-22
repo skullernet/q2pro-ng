@@ -651,7 +651,6 @@ static const save_field_t gclient_t_fields[] = {
     V(damage_blend),
     V(v_angle),
     V(v_forward),
-    F(bobtime),
     V(oldviewangles),
     V(oldvelocity),
     E(oldgroundentity),
