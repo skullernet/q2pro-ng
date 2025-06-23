@@ -237,6 +237,10 @@ typedef struct {
      (e)[2]=(a)[2]*(c)+(b)[2]*(d))
 #define PlaneDiff(v,p)   (DotProduct(v,(p)->normal)-(p)->dist)
 
+#define Vector2Subtract(a,b,c)  ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1])
+#define Dot2Product(x,y)        ((x)[0]*(y)[0]+(x)[1]*(y)[1])
+#define Vector2Length(v)        (sqrtf(Dot2Product((v),(v))))
+
 #define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])
 #define Vector4Add(a,b,c)           ((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2],(c)[3]=(a)[3]+(b)[3])
 #define Vector4Scale(a,s,b)         ((b)[0]=(a)[0]*(s),(b)[1]=(a)[1]*(s),(b)[2]=(a)[2]*(s),(b)[3]=(a)[3]*(s))
@@ -1086,6 +1090,7 @@ typedef struct {
 //ROGUE
 
 #define RDF_TELEPORT_BIT    BIT(4)      // used by Q2PRO (extended servers)
+#define RDF_NO_WEAPON_BOB   BIT(5)
 
 // hack to encode ATTN_STATIC more efficiently
 #define ATTN_ESCAPE_CODE    (ATTN_STATIC * 64)
@@ -1191,14 +1196,11 @@ typedef struct {
     // these fields do not need to be communicated bit-precise
     int         clientnum;      // current POV number
 
-    int         bobtime;
     vec3_t      viewangles;     // for fixed views
-    vec3_t      viewoffset;     // add to pmovestate->origin
-    vec3_t      kick_angles;    // add to view direction to get render angles
-                                // set by weapon kicks, pain effects, etc
+    int         viewheight;
 
-    vec3_t      gunangles;
-    vec3_t      gunoffset;
+    int         bobtime;
+
     int         gunindex;
     int         gunframe;
 

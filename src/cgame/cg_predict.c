@@ -223,7 +223,6 @@ void CG_PredictMovement(void)
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
     pm.s = cg.frame->ps.pmove;
-    VectorCopy(cg.frame->ps.viewoffset, pm.viewoffset);
     pm.snapinitial = true;
 
     // run frames

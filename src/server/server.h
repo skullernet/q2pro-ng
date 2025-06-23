@@ -554,7 +554,8 @@ bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info);
 static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
 {
     const gclient_t *cl = client->client;
-    VectorAdd(cl->ps.pmove.origin, cl->ps.viewoffset, org);
+    VectorCopy(cl->ps.pmove.origin, org);
+    org[2] += cl->ps.viewheight;
 }
 
 static inline int SV_GetClient_Stat(const client_t *client, int stat)

@@ -334,7 +334,6 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     int         framenum;
     float       model_length;
     float       hand_multiplier = 0;
-    player_state_t  *ps, *ops;
 
     if (entnum < cg.maxclients) {
         if (model == cg_mod_heatbeam)
@@ -359,12 +358,11 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
             hand_multiplier = 1;
 
         // set up gun position
-        ps = &cg.frame->ps;
-        ops = &cg.oldframe->ps;
+        VectorCopy(cg.refdef.vieworg, org);
 
-        for (i = 0; i < 3; i++)
-            org[i] = cg.refdef.vieworg[i] + ops->gunoffset[i] +
-                cg.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
+        VectorMA(org, cg_gun_y.value, cg.v_forward, org);
+        VectorMA(org, cg_gun_x.value, cg.v_right, org);
+        VectorMA(org, cg_gun_z.value, cg.v_up, org);
 
         x = offset[0];
         y = offset[1];
@@ -1178,7 +1176,7 @@ static void CG_AddViewWeapon(void)
     VectorCopy(cg.refdef.vieworg, gun.origin);
     VectorCopy(cg.refdef.viewangles, gun.angles);
 
-    if (true) {
+    if (!(cg.frame->ps.rdflags & RDF_NO_WEAPON_BOB)) {
         // gun angles from bobbing
         gun.angles[ROLL] += cg.xyspeed * cg.bobfracsin * 0.005f;
         gun.angles[YAW] += cg.xyspeed * cg.bobfracsin * 0.01f;
@@ -1303,6 +1301,11 @@ static float CG_KickFactor(int end, int duration)
 
 static void CG_CalcViewOffset(void)
 {
+    if (cg.frame->ps.pmove.pm_type != PM_NORMAL)
+        return;
+    if (cg_skip_view_modifiers.integer)
+        return;
+
     float *angles = cg.refdef.viewangles;
 
     // add angles based on weapon kick
@@ -1326,55 +1329,33 @@ static void CG_CalcViewOffset(void)
     float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
     angles[PITCH] += fall_ratio * cg.fall_value;
 
-    vec3_t vel;
-    LerpVector(cg.oldframe->ps.pmove.velocity, cg.frame->ps.pmove.velocity, cg.lerpfrac, vel);
-    float xyspeed = sqrtf(vel[0] * vel[0] + vel[1] * vel[1]);
-
-    float delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
-    if (delta < 0)
-        delta += 256;
-    float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
-
     float crouch1 = IS_CROUCHING(cg.oldframe) ? 6 : 1;
     float crouch2 = IS_CROUCHING(cg.frame)    ? 6 : 1;
     float crouch_factor = crouch1 + cg.lerpfrac * (crouch2 - crouch1);
+    float delta;
 
-    //if (crouching)
-    //    bobtime *= 4;
+    // add angles based on velocity
+    delta = DotProduct(cg.predicted_velocity, cg.v_forward);
+    angles[PITCH] += delta * cg_run_pitch.value;
 
-    float bobfracsin = sinf(bobtime * (M_PIf / 128));
+    delta = DotProduct(cg.predicted_velocity, cg.v_right);
+    angles[ROLL] += delta * cg_run_roll.value;
 
-    if (true) {
-        float delta;
+    // add angles based on bob
+    delta = fabsf(cg.bobfracsin) * cg_bob_pitch.value * cg.xyspeed * crouch_factor;
+    angles[PITCH] += delta;
 
-        // add angles based on velocity
-        delta = DotProduct(vel, cg.v_forward);
-        angles[PITCH] += delta * cg_run_pitch.value;
-
-        delta = DotProduct(vel, cg.v_right);
-        angles[ROLL] += delta * cg_run_roll.value;
-
-        // add angles based on bob
-        delta = fabsf(bobfracsin) * cg_bob_pitch.value * xyspeed * crouch_factor;
-        angles[PITCH] += delta;
-
-        delta = bobfracsin * cg_bob_roll.value * xyspeed * crouch_factor;
-        angles[ROLL] += delta;
-    }
-
-    cg.xyspeed = xyspeed;
-    cg.bobfracsin = bobfracsin;
+    delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * crouch_factor;
+    angles[ROLL] += delta;
 
     // add fall height
     cg.refdef.vieworg[2] -= fall_ratio * cg.fall_value * 0.4f;
 
     // add bob height
-    if (true) {
-        float bob = fabsf(bobfracsin) * xyspeed * cg_bob_up.value;
-        if (bob > 6)
-            bob = 6;
-        cg.refdef.vieworg[2] += bob;
-    }
+    float bob = fabsf(cg.bobfracsin) * cg.xyspeed * cg_bob_up.value;
+    if (bob > 6)
+        bob = 6;
+    cg.refdef.vieworg[2] += bob;
 
     // add kick offset
     VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
@@ -1382,6 +1363,14 @@ static void CG_CalcViewOffset(void)
 
 static void CG_SetupFirstPersonView(void)
 {
+    float delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
+    if (delta < 0)
+        delta += 256;
+    float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
+
+    cg.bobfracsin = sinf(bobtime * (M_PIf / 128));
+    cg.xyspeed = Vector2Length(cg.predicted_velocity);
+
     CG_CalcViewOffset();
 
     // add the weapon
@@ -1599,7 +1588,7 @@ void CG_CalcViewValues(void)
     cg.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
     cg.fov_y = V_CalcFov(cg.fov_x, 4, 3);
 
-    LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
+    //LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
 
     AngleVectors(cg.refdef.viewangles, cg.v_forward, cg.v_right, cg.v_up);
 
@@ -1612,7 +1601,7 @@ void CG_CalcViewValues(void)
 
     cg.playerEntityAngles[PITCH] = cg.playerEntityAngles[PITCH] / 3;
 
-    VectorAdd(cg.refdef.vieworg, viewoffset, cg.refdef.vieworg);
+    //VectorAdd(cg.refdef.vieworg, viewoffset, cg.refdef.vieworg);
 
     vec3_t axis[3];
     AnglesToAxis(cg.refdef.viewangles, axis);

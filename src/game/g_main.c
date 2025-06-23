@@ -44,19 +44,8 @@ vm_cvar_t filterban;
 vm_cvar_t sv_maxvelocity;
 vm_cvar_t sv_gravity;
 
-vm_cvar_t g_skipViewModifiers;
-
 vm_cvar_t sv_rollspeed;
 vm_cvar_t sv_rollangle;
-vm_cvar_t gun_x;
-vm_cvar_t gun_y;
-vm_cvar_t gun_z;
-
-vm_cvar_t run_pitch;
-vm_cvar_t run_roll;
-vm_cvar_t bob_up;
-vm_cvar_t bob_pitch;
-vm_cvar_t bob_roll;
 
 vm_cvar_t sv_cheats;
 
@@ -190,17 +179,11 @@ qvm_exported void G_Init(void)
     // seed RNG
     Q_srand(trap_RealTime());
 
-    trap_Cvar_Register(&gun_x, "gun_x", "0", 0);
-    trap_Cvar_Register(&gun_y, "gun_y", "0", 0);
-    trap_Cvar_Register(&gun_z, "gun_z", "0", 0);
-
     // FIXME: sv_ prefix is wrong for these
     trap_Cvar_Register(&sv_rollspeed, "sv_rollspeed", "200", 0);
     trap_Cvar_Register(&sv_rollangle, "sv_rollangle", "2", 0);
     trap_Cvar_Register(&sv_maxvelocity, "sv_maxvelocity", "2000", 0);
     trap_Cvar_Register(&sv_gravity, "sv_gravity", "800", 0);
-
-    trap_Cvar_Register(&g_skipViewModifiers, "g_skipViewModifiers", "0", 0);
 
     trap_Cvar_Register(&sv_stopspeed, "sv_stopspeed", "100", 0); // PGM - was #define in g_phys.c
 
@@ -254,12 +237,6 @@ qvm_exported void G_Init(void)
     trap_Cvar_Register(&filterban, "filterban", "1", 0);
 
     trap_Cvar_Register(&g_select_empty, "g_select_empty", "0", CVAR_ARCHIVE);
-
-    trap_Cvar_Register(&run_pitch, "run_pitch", "0.002", 0);
-    trap_Cvar_Register(&run_roll, "run_roll", "0.005", 0);
-    trap_Cvar_Register(&bob_up, "bob_up", "0.005", 0);
-    trap_Cvar_Register(&bob_pitch, "bob_pitch", "0.002", 0);
-    trap_Cvar_Register(&bob_roll, "bob_roll", "0.002", 0);
 
     // flood control
     trap_Cvar_Register(&flood_msgs, "flood_msgs", "4", 0);

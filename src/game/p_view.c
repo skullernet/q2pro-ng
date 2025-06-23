@@ -10,29 +10,7 @@ static gclient_t *current_client;
 static vec3_t forward, right, up;
 float         xyspeed;
 
-static bool  bobcycle, bobcycle_run;     // odd cycles are right foot going forward
-static float bobfracsin; // sinf(bobfrac*M_PI)
-
-/*
-===============
-SkipViewModifiers
-===============
-*/
-static bool SkipViewModifiers(void)
-{
-    if (g_skipViewModifiers.integer && sv_cheats.integer)
-        return true;
-
-    // don't do bobbing, etc on grapple
-    if (current_client->ctf_grapple && current_client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY)
-        return true;
-
-    // spectator mode
-    if (current_client->resp.spectator || (G_TeamplayEnabled() && current_client->resp.ctf_team == CTF_NOTEAM))
-        return true;
-
-    return false;
-}
+static bool footstep;
 
 /*
 ===============
@@ -42,9 +20,6 @@ SV_CalcRoll
 */
 static float SV_CalcRoll(const vec3_t angles, const vec3_t velocity)
 {
-    if (SkipViewModifiers())
-        return 0.0f;
-
     float sign;
     float side;
     float value;
@@ -214,38 +189,10 @@ static void P_DamageFeedback(edict_t *player)
 /*
 ===============
 SV_CalcViewOffset
-
-Auto pitching on slopes?
-
-  fall from 128: 400 = 160000
-  fall from 256: 580 = 336400
-  fall from 384: 720 = 518400
-  fall from 512: 800 = 640000
-  fall from 640: 960 =
-
-  damage = deltavelocity*deltavelocity  * 0.0001
-
 ===============
 */
 static void SV_CalcViewOffset(edict_t *ent)
 {
-    float  bob;
-    float  ratio;
-    float  delta;
-    vec3_t v;
-
-    //===================================
-
-    //float kick_factor = 0;
-
-    // [Paril-KEX] kicks in vanilla take place over 2 10hz server
-    // frames; this is to mimic that visual behavior on any tickrate.
-    //if (ent->client->kick.time > level.time)
-    //    kick_factor = (float)(ent->client->kick.time - level.time) / ent->client->kick.total;
-
-    // base angles
-    vec3_t angles = { 0 };
-
     // if dead, fix the angle and don't add any kick
     if (ent->deadflag && !ent->client->resp.spectator) {
         if (ent->flags & FL_SAM_RAIMI) {
@@ -256,52 +203,9 @@ static void SV_CalcViewOffset(edict_t *ent)
             ent->client->ps.viewangles[PITCH] = -15;
         }
         ent->client->ps.viewangles[YAW] = ent->client->killer_yaw;
-    } else if (!SkipViewModifiers()) {
-        // add angles based on weapon kick
-        //VectorScale(ent->client->kick.angles, kick_factor, angles);
+    }
 
 #if 0
-        // add angles based on damage kick
-        if (ent->client->v_dmg_time > level.time) {
-            ratio = (float)(ent->client->v_dmg_time - level.time) / DAMAGE_TIME;
-            angles[PITCH] += ratio * ent->client->v_dmg_pitch;
-            angles[ROLL] += ratio * ent->client->v_dmg_roll;
-        }
-#endif
-
-#if 0
-        // add pitch based on fall kick
-        if (ent->client->fall_time > level.time) {
-            ratio = (float)(ent->client->fall_time - level.time) / FALL_TIME;
-            angles[PITCH] += ratio * ent->client->fall_value;
-        }
-#endif
-
-#if 0
-        // add angles based on velocity
-        if (!ent->client->pers.bob_skip) {
-            delta = DotProduct(ent->velocity, forward);
-            angles[PITCH] += delta * run_pitch.value;
-
-            delta = DotProduct(ent->velocity, right);
-            angles[ROLL] += delta * run_roll.value;
-
-            // add angles based on bob
-            delta = bobfracsin * bob_pitch.value * xyspeed;
-            if ((ent->client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
-                delta *= 6; // crouching
-            delta = min(delta, 1.2f);
-            angles[PITCH] += delta;
-            delta = bobfracsin * bob_roll.value * xyspeed;
-            if ((ent->client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
-                delta *= 6; // crouching
-            delta = min(delta, 1.2f);
-            if (bobcycle)
-                delta = -delta;
-            angles[ROLL] += delta;
-        }
-#endif
-
         // add earthquake angles
         if (ent->client->quake_time > level.time) {
             float factor = ((float)ent->client->quake_time / level.time) * 0.25f;
@@ -311,50 +215,7 @@ static void SV_CalcViewOffset(edict_t *ent)
             angles[1] += crandom_open() * factor;
             angles[2] += crandom_open() * factor;
         }
-    }
-
-    // [Paril-KEX] clamp angles
-    ent->client->ps.kick_angles[0] = Q_clipf(angles[0], -31, 31);
-    ent->client->ps.kick_angles[1] = Q_clipf(angles[1], -31, 31);
-    ent->client->ps.kick_angles[2] = Q_clipf(angles[2], -31, 31);
-
-    //===================================
-
-    // base origin
-
-    VectorClear(v);
-
-    // add view height
-
-    v[2] += ent->viewheight;
-
-    if (!SkipViewModifiers()) {
-#if 0
-        // add fall height
-        if (ent->client->fall_time > level.time) {
-            ratio = (float)(ent->client->fall_time - level.time) / FALL_TIME;
-            v[2] -= ratio * ent->client->fall_value * 0.4f;
-        }
-
-        // add bob height
-        if (!ent->client->pers.bob_skip) {
-            bob = bobfracsin * xyspeed * bob_up.value;
-            if (bob > 6)
-                bob = 6;
-            v[2] += bob;
-        }
-
-        // add kick offset
-        VectorMA(v, kick_factor, ent->client->kick.origin, v);
 #endif
-    }
-
-    // absolutely bound offsets
-    // so the view can never be outside the player box
-
-    ent->client->ps.viewoffset[0] = Q_clipf(v[0], -14, 14);
-    ent->client->ps.viewoffset[1] = Q_clipf(v[1], -14, 14);
-    ent->client->ps.viewoffset[2] = Q_clipf(v[2], -22, 30);
 }
 
 /*
@@ -364,75 +225,15 @@ SV_CalcGunOffset
 */
 static void SV_CalcGunOffset(edict_t *ent)
 {
-    int   i;
-
     // ROGUE
     // ROGUE - heatbeam shouldn't bob so the beam looks right
     if (ent->client->pers.weapon &&
-        !((ent->client->pers.weapon->id == IT_WEAPON_PLASMABEAM || ent->client->pers.weapon->id == IT_WEAPON_GRAPPLE) && ent->client->weaponstate == WEAPON_FIRING)
-        && !SkipViewModifiers()) {
+        (ent->client->pers.weapon->id == IT_WEAPON_PLASMABEAM ||
+         ent->client->pers.weapon->id == IT_WEAPON_GRAPPLE) && ent->client->weaponstate == WEAPON_FIRING)
+        ent->client->ps.rdflags |= RDF_NO_WEAPON_BOB;
+    else
+        ent->client->ps.rdflags &= ~RDF_NO_WEAPON_BOB;
     // ROGUE
-#if 0
-        // gun angles from bobbing
-        ent->client->ps.gunangles[ROLL] = xyspeed * bobfracsin * 0.005f;
-        ent->client->ps.gunangles[YAW] = xyspeed * bobfracsin * 0.01f;
-        if (bobcycle) {
-            ent->client->ps.gunangles[ROLL] = -ent->client->ps.gunangles[ROLL];
-            ent->client->ps.gunangles[YAW] = -ent->client->ps.gunangles[YAW];
-        }
-
-        ent->client->ps.gunangles[PITCH] = xyspeed * bobfracsin * 0.005f;
-
-        vec3_t viewangles_delta;
-        VectorSubtract(ent->client->oldviewangles, ent->client->ps.viewangles, viewangles_delta);
-
-        VectorAdd(ent->client->slow_view_angles, viewangles_delta, ent->client->slow_view_angles);
-
-        // gun angles from delta movement
-        for (i = 0; i < 3; i++) {
-            float d = ent->client->slow_view_angles[i];
-
-            if (!d)
-                continue;
-
-            if (d > 180)
-                d -= 360;
-            if (d < -180)
-                d += 360;
-
-            d = Q_clipf(d, -45, 45);
-
-            // [Sam-KEX] Apply only half-delta. Makes the weapons look less detatched from the player.
-            if (i == ROLL)
-                ent->client->ps.gunangles[i] += (0.1f * d) * 0.5f;
-            else
-                ent->client->ps.gunangles[i] += (0.2f * d) * 0.5f;
-
-            float reduction_factor = viewangles_delta[i] ? 50 : 150;
-
-            if (d > 0)
-                d = max(0, d - FRAME_TIME_SEC * reduction_factor);
-            else if (d < 0)
-                d = min(0, d + FRAME_TIME_SEC * reduction_factor);
-
-            ent->client->slow_view_angles[i] = d;
-        }
-#endif
-    // ROGUE
-    } else {
-        VectorClear(ent->client->ps.gunangles);
-    }
-    // ROGUE
-
-    // gun height
-    VectorClear(ent->client->ps.gunoffset);
-
-    // gun_x / gun_y / gun_z are development tools
-    for (i = 0; i < 3; i++) {
-        ent->client->ps.gunoffset[i] += forward[i] * gun_y.value;
-        ent->client->ps.gunoffset[i] += right[i] * gun_x.value;
-        ent->client->ps.gunoffset[i] += up[i] * -gun_z.value;
-    }
 }
 
 /*
@@ -449,7 +250,8 @@ static void SV_CalcBlend(edict_t *ent)
 
     // add for contents
     vec3_t vieworg;
-    VectorAdd(ent->s.origin, ent->client->ps.viewoffset, vieworg);
+    VectorCopy(ent->s.origin, vieworg);
+    vieworg[2] += ent->client->ps.viewheight;
     contents_t contents = trap_PointContents(vieworg);
 
     if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
@@ -619,13 +421,6 @@ static void P_FallingDamage(edict_t *ent)
         return;
     }
 
-#if 0
-    ent->client->fall_value = delta * 0.5f;
-    if (ent->client->fall_value > 40)
-        ent->client->fall_value = 40;
-    ent->client->fall_time = level.time + FALL_TIME;
-#endif
-
     G_AddEvent(ent, EV_FALL, delta + 0.5f);
 
     if (delta > 30) {
@@ -764,9 +559,8 @@ static void P_WorldEffects(void)
             }
         }
     } else {
-        if (waterlevel == WATER_WAIST && level.is_psx)
-            if (bobcycle_run)
-                G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM);
+        if (waterlevel == WATER_WAIST && level.is_psx && footstep)
+            G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM);
 
         current_player->air_finished = level.time + SEC(12);
         current_player->dmg = 2;
@@ -909,9 +703,8 @@ static void G_SetClientEvent(edict_t *ent)
             VectorCopy(ent->s.origin, current_client->last_ladder_pos);
             current_client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
         }
-    } else if (ent->groundentity && xyspeed > 225) {
-        if (bobcycle_run)
-            G_AddEvent(ent, EV_FOOTSTEP, 0);
+    } else if (ent->groundentity && xyspeed > 225 && footstep) {
+        G_AddEvent(ent, EV_FOOTSTEP, 0);
     }
 }
 
@@ -1207,7 +1000,6 @@ void ClientEndServerFrame(edict_t *ent)
         ent->s.angles[PITCH] = ent->client->v_angle[PITCH] / 3;
 
     ent->s.angles[YAW] = ent->client->v_angle[YAW];
-    ent->s.angles[ROLL] = 0;
     ent->s.angles[ROLL] = SV_CalcRoll(ent->s.angles, ent->velocity) * 4;
 
     //
@@ -1216,37 +1008,25 @@ void ClientEndServerFrame(edict_t *ent)
     //
     xyspeed = truncf(sqrtf(ent->velocity[0] * ent->velocity[0] + ent->velocity[1] * ent->velocity[1]));
 
-    int bobmove, bobtime, bobtime_run;
+    int bobmove = 0;
 
     if (xyspeed < 5) {
-        bobmove = 0;
         current_client->ps.bobtime = 0; // start at beginning of cycle again
     } else if (ent->groundentity) {
         // so bobbing only cycles when on ground
         if (xyspeed > 210)
-            bobmove = 128 * (FRAME_TIME_SEC / 0.4f);
+            bobmove = 320 * FRAME_TIME_SEC;
         else if (xyspeed > 100)
-            bobmove = 128 * (FRAME_TIME_SEC / 0.8f);
+            bobmove = 160 * FRAME_TIME_SEC;
         else
-            bobmove = 128 * (FRAME_TIME_SEC / 1.6f);
+            bobmove = 80 * FRAME_TIME_SEC;
         if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
             bobmove *= 4;
         current_client->ps.bobtime = (current_client->ps.bobtime + bobmove) & 255;
-    } else {
-        bobmove = 0;
     }
 
-    bobtime = bobtime_run = current_client->ps.bobtime;
-
-    //if ((current_client->ps.pmove.pm_flags & PMF_DUCKED) && ent->groundentity)
-    //    bobtime *= 4;
-
-    bobcycle = (bobtime >> 7) & 1;
-    bobcycle_run = (((bobtime_run + bobmove) >> 7) ^ (bobtime_run >> 7)) & 1;
-    bobfracsin = fabsf(sinf(bobtime * (M_PIf / 128)));
-
-    //if (bobmove)
-    //    Com_Printf("%f %d %d %d %d\n", xyspeed, bobtime, bobmove, bobcycle, bobcycle_run);
+    int bobtime = current_client->ps.bobtime;
+    footstep = ((bobtime + bobmove) ^ bobtime) & 128;
 
     // detect hitting the floor
     P_FallingDamage(ent);

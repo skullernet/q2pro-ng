@@ -438,10 +438,6 @@ static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, c
     }
 }
 
-#define Vector2Subtract(a,b,c)  ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1])
-#define Dot2Product(x,y)        ((x)[0]*(y)[0]+(x)[1]*(y)[1])
-#define Vector2Length(v)        (sqrtf(Dot2Product((v),(v))))
-
 static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, const vec3_t p)
 {
     const PathRequest *req = path->request;

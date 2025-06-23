@@ -1143,15 +1143,8 @@ extern vm_cvar_t filterban;
 extern vm_cvar_t sv_gravity;
 extern vm_cvar_t sv_maxvelocity;
 
-extern vm_cvar_t gun_x, gun_y, gun_z;
 extern vm_cvar_t sv_rollspeed;
 extern vm_cvar_t sv_rollangle;
-
-extern vm_cvar_t run_pitch;
-extern vm_cvar_t run_roll;
-extern vm_cvar_t bob_up;
-extern vm_cvar_t bob_pitch;
-extern vm_cvar_t bob_roll;
 
 extern vm_cvar_t sv_cheats;
 extern vm_cvar_t g_debug_monster_paths;
@@ -1163,8 +1156,6 @@ extern vm_cvar_t flood_persecond;
 extern vm_cvar_t flood_waitdelay;
 
 extern vm_cvar_t sv_maplist;
-
-extern vm_cvar_t g_skipViewModifiers;
 
 extern vm_cvar_t sv_stopspeed; // PGM - this was a define in g_phys.c
 

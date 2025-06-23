@@ -41,7 +41,7 @@ vm_cvar_t   cg_run_roll;
 vm_cvar_t   cg_bob_up;
 vm_cvar_t   cg_bob_pitch;
 vm_cvar_t   cg_bob_roll;
-vm_cvar_t   cg_kickangles;
+vm_cvar_t   cg_skip_view_modifiers;
 vm_cvar_t   cg_rollhack;
 vm_cvar_t   cg_noglow;
 vm_cvar_t   cg_nobob;
@@ -95,10 +95,10 @@ static vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_bob_up, "0.005", 0),
     VM_CVAR(cg_bob_pitch, "0.002", 0),
     VM_CVAR(cg_bob_roll, "0.002", 0),
+    VM_CVAR(cg_skip_view_modifiers, "0", CVAR_CHEAT),
     VM_CVAR(cg_footsteps, "1", 0),
     VM_CVAR(cg_noskins, "0", 0),
     VM_CVAR(cg_predict, "1", 0),
-    VM_CVAR(cg_kickangles, "1", CVAR_CHEAT),
     VM_CVAR(cg_rollhack, "1", 0),
     VM_CVAR(cg_noglow, "0", 0),
     VM_CVAR(cg_nobob, "0", 0),

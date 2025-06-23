@@ -605,11 +605,10 @@ static const save_field_t gclient_t_fields[] = {
     IA(ps.pmove.delta_angles, 3),
 
     V(ps.viewangles),
-    V(ps.viewoffset),
-    V(ps.kick_angles),
+    I(ps.viewheight),
 
-    V(ps.gunangles),
-    V(ps.gunoffset),
+    I(ps.bobtime),
+
     I(ps.gunindex),
     I(ps.gunframe),
 
