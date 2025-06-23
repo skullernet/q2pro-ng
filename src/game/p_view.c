@@ -248,24 +248,6 @@ static void SV_CalcBlend(edict_t *ent)
     Vector4Clear(ent->client->ps.screen_blend);
     Vector4Clear(ent->client->ps.damage_blend);
 
-    // add for contents
-    vec3_t vieworg;
-    VectorCopy(ent->s.origin, vieworg);
-    vieworg[2] += ent->client->ps.viewheight;
-    contents_t contents = trap_PointContents(vieworg);
-
-    if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
-        ent->client->ps.rdflags |= RDF_UNDERWATER;
-    else
-        ent->client->ps.rdflags &= ~RDF_UNDERWATER;
-
-    if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, ent->client->ps.screen_blend);
-    else if (contents & CONTENTS_SLIME)
-        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, ent->client->ps.screen_blend);
-    else if (contents & CONTENTS_WATER)
-        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, ent->client->ps.screen_blend);
-
     // add for powerups
     if (ent->client->quad_time > level.time) {
         remaining = ent->client->quad_time - level.time;

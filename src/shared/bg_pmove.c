@@ -1451,28 +1451,6 @@ static void PM_ClampAngles(void)
     AngleVectors(pm->s.viewangles, pml.forward, pml.right, pml.up);
 }
 
-// [Paril-KEX]
-static void PM_ScreenEffects(void)
-{
-    // add for contents
-    vec3_t vieworg;
-    VectorCopy(pm->s.origin, vieworg);
-    vieworg[2] += pm->s.viewheight;
-    contents_t contents = pm->pointcontents(vieworg);
-
-    if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
-        pm->s.rdflags |= RDF_UNDERWATER;
-    else
-        pm->s.rdflags &= ~RDF_UNDERWATER;
-
-    if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, pm->s.screen_blend);
-    else if (contents & CONTENTS_SLIME)
-        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, pm->s.screen_blend);
-    else if (contents & CONTENTS_WATER)
-        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, pm->s.screen_blend);
-}
-
 /*
 ================
 BG_Pmove
@@ -1599,9 +1577,6 @@ void BG_Pmove(pmove_t *pmove)
     // trick jump
     if (pm->s.pm_flags & PMF_TIME_TRICK)
         PM_CheckJump();
-
-    // [Paril-KEX]
-    PM_ScreenEffects();
 
     PM_SnapPosition();
 }

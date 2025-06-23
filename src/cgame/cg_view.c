@@ -95,10 +95,7 @@ void V_RenderView(void)
         cg.refdef.heightfog = (player_heightfog_t){ 0 };
     }
 
-    cg.refdef.rdflags = cg.frame->ps.rdflags;
-
     trap_R_RenderScene(&cg.refdef);
 
     V_SetLightLevel();
 }
-

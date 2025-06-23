@@ -463,6 +463,7 @@ void CG_PredictMovement(void);
 void CG_CheckPredictionError(void);
 void CG_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
               const vec3_t end, unsigned passent, contents_t contentmask);
+contents_t CG_PointContents(const vec3_t point);
 
 
 //

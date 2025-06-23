@@ -129,7 +129,7 @@ static void CG_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const ve
     tr->entnum = ENTITYNUM_WORLD;
 }
 
-static contents_t CG_PointContents(const vec3_t point)
+contents_t CG_PointContents(const vec3_t point)
 {
     contents_t contents = trap_PointContents(point, MODELINDEX_WORLD);
 

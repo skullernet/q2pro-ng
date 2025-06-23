@@ -1499,6 +1499,24 @@ static inline void lerp_values(const void *from, const void *to, float lerp, voi
         ((float *)out)[i] = ((const float *)from)[i] * backlerp + ((const float *)to)[i] * lerp;
 }
 
+static void CG_ScreenEffects(void)
+{
+    // add for contents
+    contents_t contents = CG_PointContents(cg.refdef.vieworg);
+
+    if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
+        cg.refdef.rdflags |= RDF_UNDERWATER;
+    else
+        cg.refdef.rdflags &= ~RDF_UNDERWATER;
+
+    if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
+        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, cg.refdef.screen_blend);
+    else if (contents & CONTENTS_SLIME)
+        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, cg.refdef.screen_blend);
+    else if (contents & CONTENTS_WATER)
+        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, cg.refdef.screen_blend);
+}
+
 /*
 ===============
 CG_CalcViewValues
@@ -1604,9 +1622,13 @@ void CG_CalcViewValues(void)
 
     cg.playerEntityAngles[PITCH] = cg.playerEntityAngles[PITCH] / 3;
 
+    cg.refdef.rdflags = ps->rdflags;
+
+    CG_ScreenEffects();
+
     vec3_t axis[3];
     AnglesToAxis(cg.refdef.viewangles, axis);
-    trap_S_UpdateListener(cg.frame->ps.clientnum, cg.refdef.vieworg, axis, cg.frame->ps.rdflags & RDF_UNDERWATER);
+    trap_S_UpdateListener(cg.frame->ps.clientnum, cg.refdef.vieworg, axis, cg.refdef.rdflags & RDF_UNDERWATER);
 }
 
 /*
