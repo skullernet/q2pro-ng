@@ -121,7 +121,7 @@ static void weapon_chainfist_fire(edict_t *ent)
     // start the animation
     if (ent->client->anim_priority != ANIM_ATTACK || frandom() < 0.25f) {
         ent->client->anim_priority = ANIM_ATTACK;
-        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+        if (ent->client->ps.pm_flags & PMF_DUCKED) {
             ent->s.frame = FRAME_crattak1 - 1;
             ent->client->anim_end = FRAME_crattak9;
         } else {
@@ -293,7 +293,7 @@ static void weapon_etf_rifle_fire(edict_t *ent)
     G_RemoveAmmo(ent);
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pm_flags & PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (int)(frandom() + 0.25f);
         ent->client->anim_end = FRAME_crattak9;
     } else {
@@ -379,7 +379,7 @@ static void Heatbeam_Fire(edict_t *ent)
     G_RemoveAmmo(ent);
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pm_flags & PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (int)(frandom() + 0.25f);
         ent->client->anim_end = FRAME_crattak9;
     } else {

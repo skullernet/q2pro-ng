@@ -364,7 +364,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
                 // Paril: disabled because in vanilla delta_angles are never
                 // lerped. delta_angles can probably be lerped as long as event
                 // isn't EV_PLAYER_TELEPORT or a new RDF flag is set
-                // check->client->ps.pmove.delta_angles[YAW] += amove[YAW];
+                // check->client->ps.delta_angles[YAW] += amove[YAW];
             } else
                 check->s.angles[YAW] += amove[YAW];
 
@@ -413,7 +413,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
             VectorCopy(p->angles, p->ent->s.angles);
             if (p->rotated) {
                 //if (p->ent->client)
-                //  p->ent->client->ps.pmove.delta_angles[YAW] = p->yaw;
+                //  p->ent->client->ps.delta_angles[YAW] = p->yaw;
                 //else
                 p->ent->s.angles[YAW] = p->yaw;
             }

@@ -468,7 +468,7 @@ static void Cmd_Teleport_f(edict_t *ent)
         }
 
         for (i = 0; i < 3; i++)
-            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ang[i] - ent->client->resp.cmd_angles[i]);
+            ent->client->ps.delta_angles[i] = ANGLE2SHORT(ang[i] - ent->client->resp.cmd_angles[i]);
         VectorCopy(ang, ent->client->ps.viewangles);
         VectorCopy(ang, ent->client->v_angle);
     }
@@ -1125,7 +1125,7 @@ static void Cmd_Wave_f(edict_t *ent)
         return;
 
     // can't wave when ducked
-    bool do_animate = ent->client->anim_priority <= ANIM_WAVE && !(ent->client->ps.pmove.pm_flags & PMF_DUCKED);
+    bool do_animate = ent->client->anim_priority <= ANIM_WAVE && !(ent->client->ps.pm_flags & PMF_DUCKED);
 
     if (do_animate)
         ent->client->anim_priority = ANIM_WAVE;

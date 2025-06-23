@@ -439,7 +439,7 @@ typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, 
 
 typedef struct {
     // state (in / out)
-    pmove_state_t   s;
+    player_state_t  s;
 
     // command (in)
     usercmd_t       cmd;
@@ -447,12 +447,7 @@ typedef struct {
 
     // results (out)
     touch_list_t    touch;
-
-    vec3_t      viewangles;         // clamped
-    float       viewheight;
-
-    vec3_t      mins, maxs;         // bounding box size
-
+    vec3_t          mins, maxs;         // bounding box size
     int             groundentity;
     contents_t      watertype;
     water_level_t   waterlevel;
@@ -462,13 +457,7 @@ typedef struct {
     clip_func_t     clip;
     contents_t      (*pointcontents)(const vec3_t point);
 
-    // [KEX] variables (in)
-    vec3_t      viewoffset;
-    int         playernum;
-
     // [KEX] results (out)
-    vec4_t      screen_blend;
-    int         rdflags;
     bool        jump_sound;
     bool        step_clip;
     float       step_height;

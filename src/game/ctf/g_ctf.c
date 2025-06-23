@@ -2187,7 +2187,7 @@ static void CTFStartMatch(void)
             ent->flags &= ~FL_GODMODE;
 
             ent->client->respawn_time = level.time + random_time_sec(1, 4);
-            ent->client->ps.pmove.pm_type = PM_DEAD;
+            ent->client->ps.pm_type = PM_DEAD;
             ent->client->anim_priority = ANIM_DEATH;
             ent->s.frame = FRAME_death308 - 1;
             ent->client->anim_end = FRAME_death308;
@@ -2924,8 +2924,8 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
 
     // clear the velocity and hold them in place briefly
     VectorClear(other->velocity);
-    other->client->ps.pmove.pm_time = 160; // hold time
-    other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+    other->client->ps.pm_time = 160; // hold time
+    other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
 
     // draw the teleport splash at source and on the player
     G_AddEvent(self->enemy, EV_PLAYER_TELEPORT, 0);
@@ -2933,7 +2933,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
 
     // set angles
     for (int i = 0; i < 3; i++)
-        other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
+        other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
 
     other->s.angles[PITCH] = 0;
     other->s.angles[YAW] = dest->s.angles[YAW];

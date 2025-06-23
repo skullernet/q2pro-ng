@@ -57,15 +57,15 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
     VectorClear(other->velocity);
 
     if (other->client) {
-        other->client->ps.pmove.pm_time = 160; // hold time
-        other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+        other->client->ps.pm_time = 160; // hold time
+        other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
 
         // draw the teleport splash at source and on the player
         G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
 
         // set angles
         for (int i = 0; i < 3; i++)
-            other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
+            other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
 
         VectorCopy(dest->s.angles, other->client->ps.viewangles);
         VectorCopy(dest->s.angles, other->client->v_angle);

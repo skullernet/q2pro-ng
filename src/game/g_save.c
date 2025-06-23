@@ -595,14 +595,14 @@ static const save_field_t client_persistent_t_fields[] = {
 
 static const save_field_t gclient_t_fields[] = {
 #define _OFS CLOFS
-    I(ps.pmove.pm_type),
+    I(ps.pm_type),
 
-    V(ps.pmove.origin),
-    V(ps.pmove.velocity),
-    I(ps.pmove.pm_flags),
-    I(ps.pmove.pm_time),
-    I(ps.pmove.gravity),
-    IA(ps.pmove.delta_angles, 3),
+    V(ps.origin),
+    V(ps.velocity),
+    I(ps.pm_flags),
+    I(ps.pm_time),
+    I(ps.gravity),
+    IA(ps.delta_angles, 3),
 
     V(ps.viewangles),
     I(ps.viewheight),

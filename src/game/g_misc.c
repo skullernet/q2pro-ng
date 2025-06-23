@@ -1763,8 +1763,8 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // clear the velocity and hold them in place briefly
     VectorClear(other->velocity);
-    other->client->ps.pmove.pm_time = 160; // hold time
-    other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
+    other->client->ps.pm_time = 160; // hold time
+    other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
 
     edict_t *owner = &g_edicts[self->r.ownernum];
 
@@ -1779,7 +1779,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 
     // set angles
     for (int i = 0; i < 3; i++)
-        other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
+        other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
 
     VectorCopy(dest->s.angles, other->s.angles);
     VectorCopy(dest->s.angles, other->client->ps.viewangles);

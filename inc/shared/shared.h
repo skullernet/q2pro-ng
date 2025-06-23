@@ -1158,19 +1158,6 @@ typedef struct {
 
 //==============================================
 
-// if any part of the game code modifies this struct, it
-// will result in a prediction error of some degree.
-typedef struct {
-    uint32_t    pm_type;
-    vec3_t      origin;
-    vec3_t      velocity;
-    uint32_t    pm_flags;       // ducked, jump_held, etc
-    uint32_t    pm_time;        // in msec
-    int32_t     gravity;
-    int32_t     delta_angles[3];    // add to command angles to get view direction
-                                    // changed by spawns, rotating objects, and teleporters
-} pmove_state_t;
-
 typedef struct {
     vec3_t color;
     float density;
@@ -1186,12 +1173,18 @@ typedef struct {
     float falloff;
 } player_heightfog_t;
 
-// player_state_t is the information needed in addition to pmove_state_t
-// to rendered a view.  There will only be 10 player_state_t sent each second,
-// but the number of pmove_state_t changes will be relative to client
-// frame rates
+// player_state_t is the information needed to render a view.
 typedef struct {
-    pmove_state_t   pmove;  // for prediction
+    // if any part of the game code modifies these fields, it
+    // will result in a prediction error of some degree.
+    uint32_t    pm_type;
+    vec3_t      origin;
+    vec3_t      velocity;
+    uint32_t    pm_flags;       // ducked, jump_held, etc
+    uint32_t    pm_time;        // in msec
+    int32_t     gravity;
+    int32_t     delta_angles[3];    // add to command angles to get view direction
+                                    // changed by spawns, rotating objects, and teleporters
 
     // these fields do not need to be communicated bit-precise
     int         clientnum;      // current POV number

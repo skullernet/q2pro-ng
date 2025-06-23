@@ -16,7 +16,7 @@ void UpdateChaseCam(edict_t *ent)
         ChaseNext(ent);
         if (ent->client->chase_target == old) {
             ent->client->chase_target = NULL;
-            ent->client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+            ent->client->ps.pm_flags &= ~PMF_NO_PREDICTION;
             return;
         }
     }
@@ -64,13 +64,13 @@ void UpdateChaseCam(edict_t *ent)
     }
 
     if (targ->deadflag)
-        ent->client->ps.pmove.pm_type = PM_DEAD;
+        ent->client->ps.pm_type = PM_DEAD;
     else
-        ent->client->ps.pmove.pm_type = PM_FREEZE;
+        ent->client->ps.pm_type = PM_FREEZE;
 
     VectorCopy(goal, ent->s.origin);
     for (int i = 0; i < 3; i++)
-        ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(targ->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+        ent->client->ps.delta_angles[i] = ANGLE2SHORT(targ->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
 
     if (targ->deadflag) {
         ent->client->ps.viewangles[ROLL] = 40;
@@ -83,7 +83,7 @@ void UpdateChaseCam(edict_t *ent)
     }
 
     ent->viewheight = 0;
-    ent->client->ps.pmove.pm_flags |= PMF_NO_PREDICTION;
+    ent->client->ps.pm_flags |= PMF_NO_PREDICTION;
     trap_LinkEntity(ent);
 }
 

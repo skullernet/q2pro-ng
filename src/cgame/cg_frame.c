@@ -6,15 +6,11 @@ static void CG_SetActiveState(void)
     cg.oldframe = cg.frame;
 
     if (!cgs.demoplayback) {
-        // set initial cg.predicted_origin and cg.predicted_angles
-        VectorCopy(cg.frame->ps.pmove.origin, cg.predicted_origin);
-        VectorCopy(cg.frame->ps.pmove.velocity, cg.predicted_velocity);
-        if (cg.frame->ps.pmove.pm_type < PM_DEAD) {
+        // set initial cg.predicted_ps
+        cg.predicted_ps = cg.frame->ps;
+        if (cg.frame->ps.pm_type < PM_DEAD) {
             // enhanced servers don't send viewangles
             CG_PredictAngles();
-        } else {
-            // just use what server provided
-            VectorCopy(cg.frame->ps.viewangles, cg.predicted_angles);
         }
     }
 

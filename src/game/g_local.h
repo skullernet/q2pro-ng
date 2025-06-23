@@ -2070,7 +2070,6 @@ struct gclient_s {
     // private to game
     client_persistent_t pers;
     client_respawn_t    resp;
-    pmove_state_t       old_pmove; // for detecting out-of-pmove changes
 
     bool showscores;    // set layout stat
     bool showeou;       // end of unit screen

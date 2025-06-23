@@ -425,13 +425,13 @@ static void PM_Trace(trace_t *tr, const vec3_t start, const vec3_t mins,
     if (pm->s.pm_type == PM_SPECTATOR)
         pm->clip(tr, start, mins, maxs, end, ENTITYNUM_WORLD, MASK_SOLID);
     else
-        pm->trace(tr, start, mins, maxs, end, pm->playernum, mask);
+        pm->trace(tr, start, mins, maxs, end, pm->s.clientnum, mask);
 }
 
 static inline void PM_StepSlideMove_(void)
 {
     PM_StepSlideMove_Generic(pml.origin, pml.velocity, pml.frametime, pm->mins, pm->maxs,
-                             pm->playernum, pml.clipmask, &pm->touch, pm->s.pm_time, pm->trace);
+                             pm->s.clientnum, pml.clipmask, &pm->touch, pm->s.pm_time, pm->trace);
 }
 
 /*
@@ -653,7 +653,7 @@ static void PM_AddCurrents(vec3_t wishvel)
             float ladder_speed = Q_clipf(pm->cmd.forwardmove, -200, 200);
 
             if (pm->cmd.forwardmove > 0) {
-                if (pm->viewangles[PITCH] < 15)
+                if (pm->s.viewangles[PITCH] < 15)
                     wishvel[2] = ladder_speed;
                 else
                     wishvel[2] = -ladder_speed;
@@ -889,7 +889,7 @@ static void PM_GetWaterLevel(const vec3_t position, water_level_t *level, conten
     *level = WATER_NONE;
     *type = CONTENTS_NONE;
 
-    int sample2 = pm->viewheight - pm->mins[2];
+    int sample2 = pm->s.viewheight - pm->mins[2];
     int sample1 = sample2 / 2;
 
     vec3_t point;
@@ -1118,7 +1118,7 @@ static void PM_CheckSpecialMovement(void)
             has_time = false;
 
         PM_StepSlideMove_Generic(waterjump_origin, waterjump_vel, time, pm->mins, pm->maxs,
-                                 pm->playernum, pml.clipmask, NULL, has_time, pm->trace);
+                                 pm->s.clientnum, pml.clipmask, NULL, has_time, pm->trace);
     }
 
     // snap down to ground
@@ -1169,7 +1169,7 @@ static void PM_FlyMove(bool doclip)
     vec3_t  wishdir;
     float   wishspeed;
 
-    pm->viewheight = doclip ? 0 : 22;
+    pm->s.viewheight = doclip ? 0 : 22;
 
     // friction
 
@@ -1255,7 +1255,7 @@ static void PM_SetDimensions(void)
     if (pm->s.pm_type == PM_GIB) {
         pm->mins[2] = 0;
         pm->maxs[2] = 16;
-        pm->viewheight = 8;
+        pm->s.viewheight = 8;
         return;
     }
 
@@ -1263,10 +1263,10 @@ static void PM_SetDimensions(void)
 
     if ((pm->s.pm_flags & PMF_DUCKED) || pm->s.pm_type == PM_DEAD) {
         pm->maxs[2] = 4;
-        pm->viewheight = -2;
+        pm->s.viewheight = -2;
     } else {
         pm->maxs[2] = 32;
-        pm->viewheight = 22;
+        pm->s.viewheight = 22;
     }
 }
 
@@ -1278,11 +1278,11 @@ static bool PM_AboveWater(void)
     VectorCopy(pml.origin, below);
     below[2] -= 8;
 
-    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->playernum, MASK_SOLID);
+    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->s.clientnum, MASK_SOLID);
     if (tr.fraction < 1.0f)
         return false;
 
-    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->playernum, MASK_WATER);
+    pm->trace(&tr, pml.origin, pm->mins, pm->maxs, below, pm->s.clientnum, MASK_WATER);
     if (tr.fraction < 1.0f)
         return true;
 
@@ -1293,7 +1293,7 @@ static bool PM_AboveWater(void)
 ==============
 PM_CheckDuck
 
-Sets mins, maxs, and pm->viewheight
+Sets mins, maxs, and pm->s.viewheight
 ==============
 */
 static bool PM_CheckDuck(void)
@@ -1394,7 +1394,7 @@ static void PM_SnapPosition(void)
     if (PM_GoodPosition())
         return;
 
-    if (G_FixStuckObject_Generic(pm->s.origin, pm->mins, pm->maxs, pm->playernum, pml.clipmask, pm->trace) == NO_GOOD_POSITION) {
+    if (G_FixStuckObject_Generic(pm->s.origin, pm->mins, pm->maxs, pm->s.clientnum, pml.clipmask, pm->trace) == NO_GOOD_POSITION) {
         VectorCopy(pml.previous_origin, pm->s.origin);
         return;
     }
@@ -1437,18 +1437,18 @@ PM_ClampAngles
 static void PM_ClampAngles(void)
 {
     if (pm->s.pm_flags & PMF_TIME_TELEPORT) {
-        pm->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
-        pm->viewangles[PITCH] = 0;
-        pm->viewangles[ROLL] = 0;
+        pm->s.viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
+        pm->s.viewangles[PITCH] = 0;
+        pm->s.viewangles[ROLL] = 0;
     } else {
         // circularly clamp the angles with deltas
         for (int i = 0; i < 3; i++)
-            pm->viewangles[i] = SHORT2ANGLE((short)(pm->cmd.angles[i] + pm->s.delta_angles[i]));
+            pm->s.viewangles[i] = SHORT2ANGLE((short)(pm->cmd.angles[i] + pm->s.delta_angles[i]));
 
         // don't let the player look up or down more than 90 degrees
-        pm->viewangles[PITCH] = Q_clipf(pm->viewangles[PITCH], -89, 89);
+        pm->s.viewangles[PITCH] = Q_clipf(pm->s.viewangles[PITCH], -89, 89);
     }
-    AngleVectors(pm->viewangles, pml.forward, pml.right, pml.up);
+    AngleVectors(pm->s.viewangles, pml.forward, pml.right, pml.up);
 }
 
 // [Paril-KEX]
@@ -1456,21 +1456,21 @@ static void PM_ScreenEffects(void)
 {
     // add for contents
     vec3_t vieworg;
-    VectorAdd(pml.origin, pm->viewoffset, vieworg);
-    vieworg[2] += pm->viewheight;
+    VectorCopy(pm->s.origin, vieworg);
+    vieworg[2] += pm->s.viewheight;
     contents_t contents = pm->pointcontents(vieworg);
 
     if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
-        pm->rdflags |= RDF_UNDERWATER;
+        pm->s.rdflags |= RDF_UNDERWATER;
     else
-        pm->rdflags &= ~RDF_UNDERWATER;
+        pm->s.rdflags &= ~RDF_UNDERWATER;
 
     if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, pm->screen_blend);
+        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, pm->s.screen_blend);
     else if (contents & CONTENTS_SLIME)
-        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, pm->screen_blend);
+        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, pm->s.screen_blend);
     else if (contents & CONTENTS_WATER)
-        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, pm->screen_blend);
+        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, pm->s.screen_blend);
 }
 
 /*
@@ -1486,13 +1486,9 @@ void BG_Pmove(pmove_t *pmove)
 
     // clear results
     pm->touch.num = 0;
-    VectorClear(pm->viewangles);
-    pm->viewheight = 0;
     pm->groundentity = ENTITYNUM_NONE;
     pm->watertype = CONTENTS_NONE;
     pm->waterlevel = WATER_NONE;
-    Vector4Clear(pm->screen_blend);
-    pm->rdflags = RDF_NONE;
     pm->jump_sound = false;
     pm->step_clip = false;
     pm->step_height = 0;
@@ -1586,7 +1582,7 @@ void BG_Pmove(pmove_t *pmove)
         else {
             vec3_t angles;
 
-            VectorCopy(pm->viewangles, angles);
+            VectorCopy(pm->s.viewangles, angles);
             if (angles[PITCH] > 180)
                 angles[PITCH] = angles[PITCH] - 360;
             angles[PITCH] /= 3;

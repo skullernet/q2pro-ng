@@ -37,14 +37,14 @@ void CG_CheckPredictionError(void)
         return;
     }
 
-    if (!cg_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
+    if (!cg_predict.integer || (cg.frame->ps.pm_flags & PMF_NO_PREDICTION))
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
     trap_GetUsercmdNumber(&cmd, NULL);
 
     // compare what the server returned with what we had predicted it to be
-    VectorSubtract(cg.frame->ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
+    VectorSubtract(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
 
     // save the prediction error for interpolation
     len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
@@ -57,7 +57,7 @@ void CG_CheckPredictionError(void)
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
              cg.frame->number, len, delta[0], delta[1], delta[2]);
 
-    VectorCopy(cg.frame->ps.pmove.origin, cg.predicted_origins[cmd & CMD_MASK]);
+    VectorCopy(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK]);
 
     // save for error interpolation
     VectorCopy(delta, cg.prediction_error);
@@ -162,7 +162,7 @@ void CG_PredictAngles(void)
     trap_GetUsercmd(current, &cmd);
 
     for (int i = 0; i < 3; i++)
-        cg.predicted_angles[i] = SHORT2ANGLE((short)(cmd.angles[i] + cg.frame->ps.pmove.delta_angles[i]));
+        cg.predicted_ps.viewangles[i] = SHORT2ANGLE((short)(cmd.angles[i] + cg.frame->ps.delta_angles[i]));
 }
 
 static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
@@ -198,7 +198,7 @@ void CG_PredictMovement(void)
     if (sv_paused.integer)
         return;
 
-    if (!cg_predict.integer || (cg.frame->ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cg_predict.integer || (cg.frame->ps.pm_flags & PMF_NO_PREDICTION)) {
         // just set angles
         CG_PredictAngles();
         return;
@@ -222,7 +222,7 @@ void CG_PredictMovement(void)
     pm.trace = CG_Trace;
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
-    pm.s = cg.frame->ps.pmove;
+    pm.s = cg.frame->ps;
     pm.snapinitial = true;
 
     // run frames
@@ -231,8 +231,12 @@ void CG_PredictMovement(void)
         pm.snapinitial = false;
     }
 
+    // check for ducking
+    if (pm.s.viewheight != cg.predicted_ps.viewheight) {
+        cg.duck_time = cg.time + DUCK_TIME;
+        cg.duck_factor = (float)(pm.s.viewheight - cg.predicted_ps.viewheight) / DUCK_TIME;
+    }
+
     // copy results out for rendering
-    VectorCopy(pm.s.origin, cg.predicted_origin);
-    VectorCopy(pm.s.velocity, cg.predicted_velocity);
-    VectorCopy(pm.viewangles, cg.predicted_angles);
+    cg.predicted_ps = pm.s;
 }

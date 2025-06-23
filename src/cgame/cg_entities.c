@@ -38,7 +38,7 @@ static void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es
 {
     vec_t pitch;
 
-    VectorCopy(ps->pmove.origin, es->origin);
+    VectorCopy(ps->origin, es->origin);
 
     pitch = ps->viewangles[PITCH];
     if (pitch > 180) {
@@ -60,7 +60,7 @@ FRAME PARSING
 // returns true if origin/angles update has been optimized out
 static inline bool entity_is_optimized(const entity_state_t *state)
 {
-    return state->number == cg.frame->ps.clientnum && cg.frame->ps.pmove.pm_type < PM_DEAD;
+    return state->number == cg.frame->ps.clientnum && cg.frame->ps.pm_type < PM_DEAD;
 }
 
 static inline void
@@ -179,7 +179,7 @@ static void parse_entity_update(const entity_state_t *state)
 
     // work around Q2PRO server bandwidth optimization
     if (entity_is_optimized(state)) {
-        VectorCopy(cg.frame->ps.pmove.origin, origin_v);
+        VectorCopy(cg.frame->ps.origin, origin_v);
         origin = origin_v;
     } else {
         origin = state->origin;
@@ -212,12 +212,14 @@ static void check_player_lerp(void)
     ps = &cg.frame->ps;
     ops = &cg.oldframe->ps;
 
+#if 0
     // no lerping if player entity was teleported (origin check)
-    if (fabsf(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 ||
-        fabsf(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 ||
-        fabsf(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256) {
+    if (fabsf(ops->origin[0] - ps->origin[0]) > 256 ||
+        fabsf(ops->origin[1] - ps->origin[1]) > 256 ||
+        fabsf(ops->origin[2] - ps->origin[2]) > 256) {
         goto dup;
     }
+#endif
 
     // no lerping if player entity was teleported (event check)
     ent = &cg_entities[ps->clientnum];
@@ -276,7 +278,7 @@ void CG_DeltaFrame(void)
     if (cgs.demoplayback) {
         // this delta has nothing to do with local viewangles,
         // clear it to avoid interfering with demo freelook hack
-        VectorClear(cg.frame->ps.pmove.delta_angles);
+        VectorClear(cg.frame->ps.delta_angles);
     }
 
     check_player_lerp();
@@ -1297,11 +1299,11 @@ static float CG_KickFactor(int end, int duration)
 }
 
 #define IS_CROUCHING(frame) \
-    (((frame)->ps.pmove.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
+    (((frame)->ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
 
 static void CG_CalcViewOffset(void)
 {
-    if (cg.frame->ps.pmove.pm_type != PM_NORMAL)
+    if (cg.frame->ps.pm_type != PM_NORMAL)
         return;
     if (cg_skip_view_modifiers.integer)
         return;
@@ -1335,10 +1337,10 @@ static void CG_CalcViewOffset(void)
     float delta;
 
     // add angles based on velocity
-    delta = DotProduct(cg.predicted_velocity, cg.v_forward);
+    delta = DotProduct(cg.predicted_ps.velocity, cg.v_forward);
     angles[PITCH] += delta * cg_run_pitch.value;
 
-    delta = DotProduct(cg.predicted_velocity, cg.v_right);
+    delta = DotProduct(cg.predicted_ps.velocity, cg.v_right);
     angles[ROLL] += delta * cg_run_roll.value;
 
     // add angles based on bob
@@ -1369,7 +1371,7 @@ static void CG_SetupFirstPersonView(void)
     float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
 
     cg.bobfracsin = sinf(bobtime * (M_PIf / 128));
-    cg.xyspeed = Vector2Length(cg.predicted_velocity);
+    cg.xyspeed = Vector2Length(cg.predicted_ps.velocity);
 
     CG_CalcViewOffset();
 
@@ -1509,7 +1511,6 @@ loop if rendering is disabled but sound is running.
 void CG_CalcViewValues(void)
 {
     const player_state_t *ps, *ops;
-    vec3_t viewoffset;
     float lerp;
 
     // find states to interpolate between
@@ -1519,41 +1520,45 @@ void CG_CalcViewValues(void)
     lerp = cg.lerpfrac;
 
     // calculate the origin
-    if (!cgs.demoplayback && cg_predict.integer && !(ps->pmove.pm_flags & PMF_NO_PREDICTION)) {
+    if (!cgs.demoplayback && cg_predict.integer && !(ps->pm_flags & PMF_NO_PREDICTION)) {
         // use predicted values
         unsigned delta = cgs.realtime - cg.predicted_step_time;
         float backlerp = lerp - 1.0f;
 
-        VectorMA(cg.predicted_origin, backlerp, cg.prediction_error, cg.refdef.vieworg);
+        VectorMA(cg.predicted_ps.origin, backlerp, cg.prediction_error, cg.refdef.vieworg);
 
         // smooth out stair climbing
         if (delta < 100) {
             cg.refdef.vieworg[2] -= cg.predicted_step * (100 - delta) * 0.01f;
         }
+
+        cg.refdef.vieworg[2] += cg.predicted_ps.viewheight;
+
+        if (cg.duck_time > cg.time)
+            cg.refdef.vieworg[2] -= (cg.duck_time - cg.time) * cg.duck_factor;
     } else {
         // just use interpolated values
         for (int i = 0; i < 3; i++) {
-            cg.refdef.vieworg[i] = ops->pmove.origin[i] +
-                lerp * (ps->pmove.origin[i] - ops->pmove.origin[i]);
+            cg.refdef.vieworg[i] = ops->origin[i] + lerp * (ps->origin[i] - ops->origin[i]);
         }
+        cg.refdef.vieworg[2] += ops->viewheight + lerp * (ps->viewheight - ops->viewheight);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
         if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
             CG_PredictAngles();
-            VectorCopy(cg.predicted_angles, cg.refdef.viewangles);
+            VectorCopy(cg.predicted_ps.viewangles, cg.refdef.viewangles);
         } else {
-            LerpAngles(ops->viewangles, ps->viewangles, lerp,
-                       cg.refdef.viewangles);
+            LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
         }
-    } else if (ps->pmove.pm_type < PM_DEAD) {
+    } else if (ps->pm_type < PM_DEAD) {
         // use predicted values
-        VectorCopy(cg.predicted_angles, cg.refdef.viewangles);
-    } else if (ops->pmove.pm_type < PM_DEAD) {
+        VectorCopy(cg.predicted_ps.viewangles, cg.refdef.viewangles);
+    } else if (ops->pm_type < PM_DEAD) {
         // lerp from predicted angles, since enhanced servers
         // do not send viewangles each frame
-        LerpAngles(cg.predicted_angles, ps->viewangles, lerp, cg.refdef.viewangles);
+        LerpAngles(cg.predicted_ps.viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
     } else {
         // just use interpolated values
         LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
@@ -1588,8 +1593,6 @@ void CG_CalcViewValues(void)
     cg.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
     cg.fov_y = V_CalcFov(cg.fov_x, 4, 3);
 
-    //LerpVector(ops->viewoffset, ps->viewoffset, lerp, viewoffset);
-
     AngleVectors(cg.refdef.viewangles, cg.v_forward, cg.v_right, cg.v_up);
 
     VectorCopy(cg.refdef.vieworg, cg.playerEntityOrigin);
@@ -1600,8 +1603,6 @@ void CG_CalcViewValues(void)
     }
 
     cg.playerEntityAngles[PITCH] = cg.playerEntityAngles[PITCH] / 3;
-
-    //VectorAdd(cg.refdef.vieworg, viewoffset, cg.refdef.vieworg);
 
     vec3_t axis[3];
     AnglesToAxis(cg.refdef.viewangles, axis);

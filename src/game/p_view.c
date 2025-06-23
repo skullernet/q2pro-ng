@@ -83,7 +83,7 @@ static void P_DamageFeedback(edict_t *player)
         static int i;
 
         client->anim_priority = ANIM_PAIN;
-        if (client->ps.pmove.pm_flags & PMF_DUCKED) {
+        if (client->ps.pm_flags & PMF_DUCKED) {
             player->s.frame = FRAME_crpain1 - 1;
             client->anim_end = FRAME_crpain4;
         } else {
@@ -416,7 +416,7 @@ static void P_FallingDamage(edict_t *ent)
     }
 
     if (delta < 15) {
-        if (!(ent->client->ps.pmove.pm_flags & PMF_ON_LADDER))
+        if (!(ent->client->ps.pm_flags & PMF_ON_LADDER))
             G_AddEvent(ent, EV_FOOTSTEP, 0);
         return;
     }
@@ -695,7 +695,7 @@ G_SetClientEvent
 */
 static void G_SetClientEvent(edict_t *ent)
 {
-    if (ent->client->ps.pmove.pm_flags & PMF_ON_LADDER) {
+    if (ent->client->ps.pm_flags & PMF_ON_LADDER) {
         if (!deathmatch.integer &&
             current_client->last_ladder_sound < level.time &&
             Distance(current_client->last_ladder_pos, ent->s.origin) > 48) {
@@ -776,7 +776,7 @@ void G_SetClientFrame(edict_t *ent)
 
     client = ent->client;
 
-    if (client->ps.pmove.pm_flags & PMF_DUCKED)
+    if (client->ps.pm_flags & PMF_DUCKED)
         duck = true;
     else
         duck = false;
@@ -954,8 +954,8 @@ void ClientEndServerFrame(edict_t *ent)
     // If it wasn't updated here, the view position would lag a frame
     // behind the body position when pushed -- "sinking into plats"
     //
-    VectorCopy(ent->s.origin, current_client->ps.pmove.origin);
-    VectorCopy(ent->velocity, current_client->ps.pmove.velocity);
+    VectorCopy(ent->s.origin, current_client->ps.origin);
+    VectorCopy(ent->velocity, current_client->ps.velocity);
 
     //
     // If the end of unit layout is displayed, don't give
@@ -1020,7 +1020,7 @@ void ClientEndServerFrame(edict_t *ent)
             bobmove = 160 * FRAME_TIME_SEC;
         else
             bobmove = 80 * FRAME_TIME_SEC;
-        if (current_client->ps.pmove.pm_flags & PMF_DUCKED)
+        if (current_client->ps.pm_flags & PMF_DUCKED)
             bobmove *= 4;
         current_client->ps.bobtime = (current_client->ps.bobtime + bobmove) & 255;
     }

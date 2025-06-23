@@ -301,7 +301,7 @@ void ChangeWeapon(edict_t *ent)
     ent->client->weapon_sound = 0;
 
     ent->client->anim_priority = ANIM_PAIN;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pm_flags & PMF_DUCKED) {
         ent->s.frame = FRAME_crpain1;
         ent->client->anim_end = FRAME_crpain4;
     } else {
@@ -616,7 +616,7 @@ static bool Weapon_HandleDropping(edict_t *ent, int FRAME_DEACTIVATE_LAST)
             }
             if ((FRAME_DEACTIVATE_LAST - ent->client->ps.gunframe) == 4) {
                 ent->client->anim_priority = ANIM_ATTACK | ANIM_REVERSED;
-                if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+                if (ent->client->ps.pm_flags & PMF_DUCKED) {
                     ent->s.frame = FRAME_crpain4 + 1;
                     ent->client->anim_end = FRAME_crpain1;
                 } else {
@@ -683,7 +683,7 @@ static bool Weapon_HandleNewWeapon(edict_t *ent, int FRAME_DEACTIVATE_FIRST, int
 
             if ((FRAME_DEACTIVATE_LAST - FRAME_DEACTIVATE_FIRST) < 4) {
                 ent->client->anim_priority = ANIM_ATTACK | ANIM_REVERSED;
-                if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+                if (ent->client->ps.pm_flags & PMF_DUCKED) {
                     ent->s.frame = FRAME_crpain4 + 1;
                     ent->client->anim_end = FRAME_crpain1;
                 } else {
@@ -813,7 +813,7 @@ void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, 
 
             // start the animation
             ent->client->anim_priority = ANIM_ATTACK;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pm_flags & PMF_DUCKED) {
                 ent->s.frame = FRAME_crattak1 - 1;
                 ent->client->anim_end = FRAME_crattak9;
             } else {
@@ -1027,7 +1027,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
                         ent->client->grenade_finished_time = level.time + grenade_wait_time;
 
                     if (!ent->deadflag && ent->s.modelindex == MODELINDEX_PLAYER && ent->health > 0) { // VWep animations screw up corpses
-                        if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+                        if (ent->client->ps.pm_flags & PMF_DUCKED) {
                             ent->client->anim_priority = ANIM_ATTACK;
                             ent->s.frame = FRAME_crattak1 - 1;
                             ent->client->anim_end = FRAME_crattak3;
@@ -1277,7 +1277,7 @@ static void Weapon_HyperBlaster_Fire(edict_t *ent)
             G_RemoveAmmo(ent);
 
             ent->client->anim_priority = ANIM_ATTACK;
-            if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (ent->client->ps.pm_flags & PMF_DUCKED) {
                 ent->s.frame = FRAME_crattak1 - (int)(frandom() + 0.25f);
                 ent->client->anim_end = FRAME_crattak9;
             } else {
@@ -1352,7 +1352,7 @@ static void Machinegun_Fire(edict_t *ent)
     G_RemoveAmmo(ent);
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pm_flags & PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (int)(frandom() + 0.25f);
         ent->client->anim_end = FRAME_crattak9;
     } else {
@@ -1406,7 +1406,7 @@ static void Chaingun_Fire(edict_t *ent)
     ent->client->weapon_sound = G_SoundIndex("weapons/chngnl1a.wav");
 
     ent->client->anim_priority = ANIM_ATTACK;
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
+    if (ent->client->ps.pm_flags & PMF_DUCKED) {
         ent->s.frame = FRAME_crattak1 - (ent->client->ps.gunframe & 1);
         ent->client->anim_end = FRAME_crattak9;
     } else {

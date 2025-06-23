@@ -16,12 +16,12 @@ void DeathmatchScoreboard(edict_t *ent);
 void MoveClientToIntermission(edict_t *ent)
 {
     // [Paril-KEX]
-    if (ent->client->ps.pmove.pm_type != PM_FREEZE)
+    if (ent->client->ps.pm_type != PM_FREEZE)
         G_AddEvent(ent, EV_OTHER_TELEPORT, 0);
     VectorCopy(level.intermission_origin, ent->s.origin);
-    VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
+    VectorCopy(level.intermission_origin, ent->client->ps.origin);
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
-    ent->client->ps.pmove.pm_type = PM_FREEZE;
+    ent->client->ps.pm_type = PM_FREEZE;
     ent->client->ps.gunindex = 0;
     ent->client->ps.screen_blend[3] = 0;
     ent->client->ps.damage_blend[3] = 0;

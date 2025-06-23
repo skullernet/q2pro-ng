@@ -540,7 +540,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             self->client->respawn_time = (level.time + SEC(1));
 
         LookAtKiller(self, inflictor, attacker);
-        self->client->ps.pmove.pm_type = PM_DEAD;
+        self->client->ps.pm_type = PM_DEAD;
         ClientObituary(self, inflictor, attacker, mod);
 
         CTFFragBonuses(self, inflictor, attacker);
@@ -649,7 +649,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         if (!self->deadflag) {
             // start a death animation
             self->client->anim_priority = ANIM_DEATH;
-            if (self->client->ps.pmove.pm_flags & PMF_DUCKED) {
+            if (self->client->ps.pm_flags & PMF_DUCKED) {
                 self->s.frame = FRAME_crdeath1 - 1;
                 self->client->anim_end = FRAME_crdeath5;
             } else {
@@ -1601,8 +1601,8 @@ void G_PostRespawn(edict_t *self)
     G_AddEvent(self, EV_PLAYER_TELEPORT, 0);
 
     // hold in place briefly
-    self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-    self->client->ps.pmove.pm_time = 112;
+    self->client->ps.pm_flags = PMF_TIME_TELEPORT;
+    self->client->ps.pm_time = 112;
 
     self->client->respawn_time = level.time;
 }
@@ -1691,8 +1691,8 @@ static void spectator_respawn(edict_t *ent)
         G_AddEvent(ent, EV_MUZZLEFLASH, MZ_LOGIN);
 
         // hold in place briefly
-        ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-        ent->client->ps.pmove.pm_time = 112;
+        ent->client->ps.pm_flags = PMF_TIME_TELEPORT;
+        ent->client->ps.pm_time = 112;
     }
 
     ent->client->respawn_time = level.time;
@@ -1735,11 +1735,11 @@ static void PutClientOnSpawnPoint(edict_t *ent, const vec3_t spawn_origin, const
     if (!use_squad_respawn)
         ent->s.origin[2] += 1; // make sure off ground
     VectorCopy(ent->s.origin, ent->s.old_origin);
-    VectorCopy(ent->s.origin, client->ps.pmove.origin);
+    VectorCopy(ent->s.origin, client->ps.origin);
 
     // set the delta angle
     for (int i = 0; i < 3; i++)
-        client->ps.pmove.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
+        client->ps.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
 
     VectorCopy(spawn_angles, ent->s.angles);
     ent->s.angles[PITCH] /= 3;
@@ -1829,11 +1829,11 @@ void PutClientInServer(edict_t *ent)
         }
 
         VectorCopy(level.intermission_origin, ent->s.origin);
-        VectorCopy(level.intermission_origin, ent->client->ps.pmove.origin);
+        VectorCopy(level.intermission_origin, ent->client->ps.origin);
         VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
 
         client->awaiting_respawn = true;
-        client->ps.pmove.pm_type = PM_FREEZE;
+        client->ps.pm_type = PM_FREEZE;
         client->ps.rdflags = RDF_NONE;
         client->wanted_fog = client->ps.fog = world->fog;
         client->wanted_heightfog = client->ps.heightfog = world->heightfog;
@@ -1943,6 +1943,7 @@ void PutClientInServer(edict_t *ent)
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
     client->ps.clientnum = index;
+    client->ps.viewheight = ent->viewheight;
 
     char *val = Info_ValueForKey(ent->client->pers.userinfo, "fov");
     ent->client->ps.fov = Q_clip(Q_atoi(val), 1, 160);
@@ -2212,7 +2213,7 @@ qvm_exported void G_ClientBegin(int clientnum)
         // state when the game is saved, so we need to compensate
         // with deltaangles
         for (int i = 0; i < 3; i++)
-            ent->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(ent->client->ps.viewangles[i]);
+            ent->client->ps.delta_angles[i] = ANGLE2SHORT(ent->client->ps.viewangles[i]);
     } else {
         // a spawn point will completely reinitialize the entity
         // except for the persistent data that was initialized at
@@ -2484,7 +2485,7 @@ qvm_exported void G_ClientThink(int clientnum)
     client->cmd = ucmd;
 
     if (level.intermissiontime || ent->client->awaiting_respawn) {
-        client->ps.pmove.pm_type = PM_FREEZE;
+        client->ps.pm_type = PM_FREEZE;
 
         bool n64_sp = false;
 
@@ -2516,52 +2517,53 @@ qvm_exported void G_ClientThink(int clientnum)
 
         if (ent->movetype == MOVETYPE_NOCLIP) {
             if (ent->client->menu) {
-                client->ps.pmove.pm_type = PM_FREEZE;
+                client->ps.pm_type = PM_FREEZE;
 
                 // [Paril-KEX] handle menu movement
                 HandleMenuMovement(ent, &ucmd);
             } else if (ent->client->awaiting_respawn)
-                client->ps.pmove.pm_type = PM_FREEZE;
+                client->ps.pm_type = PM_FREEZE;
             else if (ent->client->resp.spectator || (G_TeamplayEnabled() && ent->client->resp.ctf_team == CTF_NOTEAM))
-                client->ps.pmove.pm_type = PM_SPECTATOR;
+                client->ps.pm_type = PM_SPECTATOR;
             else
-                client->ps.pmove.pm_type = PM_NOCLIP;
+                client->ps.pm_type = PM_NOCLIP;
         } else if (ent->s.modelindex != MODELINDEX_PLAYER)
-            client->ps.pmove.pm_type = PM_GIB;
+            client->ps.pm_type = PM_GIB;
         else if (ent->deadflag)
-            client->ps.pmove.pm_type = PM_DEAD;
+            client->ps.pm_type = PM_DEAD;
         else if (ent->client->ctf_grapplestate >= CTF_GRAPPLE_STATE_PULL)
-            client->ps.pmove.pm_type = PM_GRAPPLE;
+            client->ps.pm_type = PM_GRAPPLE;
         else
-            client->ps.pmove.pm_type = PM_NORMAL;
+            client->ps.pm_type = PM_NORMAL;
 
         // [Paril-KEX]
         if (!G_ShouldPlayersCollide(false) ||
             (coop.integer && !(ent->clipmask & CONTENTS_PLAYER)) // if player collision is on and we're temporarily ghostly...
            )
         {
-            client->ps.pmove.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
+            client->ps.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
         } else {
-            client->ps.pmove.pm_flags &= ~PMF_IGNORE_PLAYER_COLLISION;
+            client->ps.pm_flags &= ~PMF_IGNORE_PLAYER_COLLISION;
         }
 
         // PGM  trigger_gravity support
         if (ent->no_gravity_time > level.time) {
-            client->ps.pmove.gravity = 0;
-            client->ps.pmove.pm_flags |= PMF_NO_GROUND_SEEK;
+            client->ps.gravity = 0;
+            client->ps.pm_flags |= PMF_NO_GROUND_SEEK;
         } else {
-            client->ps.pmove.gravity = (int)(level.gravity * ent->gravity);
-            client->ps.pmove.pm_flags &= ~PMF_NO_GROUND_SEEK;
+            client->ps.gravity = (int)(level.gravity * ent->gravity);
+            client->ps.pm_flags &= ~PMF_NO_GROUND_SEEK;
         }
 
-        pm.s = client->ps.pmove;
-        pm.playernum = ent->s.number;
+        pm.s = client->ps;
 
         VectorCopy(ent->s.origin, pm.s.origin);
         VectorCopy(ent->velocity, pm.s.velocity);
 
+#if 0
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
             pm.snapinitial = true;
+#endif
 
         pm.cmd = ucmd;
         pm.trace = trap_Trace;
@@ -2580,7 +2582,7 @@ qvm_exported void G_ClientThink(int clientnum)
 
         // [Paril-KEX] if we stepped onto/off of a ladder, reset the
         // last ladder pos
-        if ((pm.s.pm_flags & PMF_ON_LADDER) != (client->ps.pmove.pm_flags & PMF_ON_LADDER)) {
+        if ((pm.s.pm_flags & PMF_ON_LADDER) != (client->ps.pm_flags & PMF_ON_LADDER)) {
             VectorCopy(ent->s.origin, client->last_ladder_pos);
 
             if (pm.s.pm_flags & PMF_ON_LADDER) {
@@ -2591,7 +2593,7 @@ qvm_exported void G_ClientThink(int clientnum)
             }
         }
 
-        if (~client->ps.pmove.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
+        if (~client->ps.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
             G_AddEvent(ent, EV_JUMP, 0);
             // Paril: removed to make ambushes more effective and to
             // not have monsters around corners come to jumps
@@ -2599,8 +2601,7 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         // save results of pmove
-        client->ps.pmove = pm.s;
-        client->old_pmove = pm.s;
+        client->ps = pm.s;
 
         VectorCopy(pm.mins, ent->r.mins);
         VectorCopy(pm.maxs, ent->r.maxs);
@@ -2612,10 +2613,10 @@ qvm_exported void G_ClientThink(int clientnum)
         // ROGUE sam raimi cam support
         if (ent->flags & FL_SAM_RAIMI)
             ent->viewheight = 8;
-        else if (client->ps.pmove.pm_type == PM_FREEZE)
+        else if (client->ps.pm_type == PM_FREEZE)
             ent->viewheight = 22; // FIXME: pmenu hack
         else
-            ent->viewheight = pm.viewheight;
+            ent->viewheight = pm.s.viewheight;
         // ROGUE
 
         ent->waterlevel = pm.waterlevel;
@@ -2632,8 +2633,7 @@ qvm_exported void G_ClientThink(int clientnum)
             client->ps.viewangles[PITCH] = -15;
             client->ps.viewangles[YAW] = client->killer_yaw;
         } else if (!ent->client->menu) {
-            VectorCopy(pm.viewangles, client->v_angle);
-            VectorCopy(pm.viewangles, client->ps.viewangles);
+            VectorCopy(client->ps.viewangles, client->v_angle);
             AngleVectors(client->v_angle, client->v_forward, NULL, NULL);
         }
 
@@ -2670,7 +2670,7 @@ qvm_exported void G_ClientThink(int clientnum)
 
             if (client->chase_target) {
                 client->chase_target = NULL;
-                client->ps.pmove.pm_flags &= ~PMF_NO_PREDICTION;
+                client->ps.pm_flags &= ~PMF_NO_PREDICTION;
             } else
                 GetChaseTarget(ent);
         } else if (!ent->client->weapon_thunk) {
@@ -2690,15 +2690,15 @@ qvm_exported void G_ClientThink(int clientnum)
     if (client->resp.spectator) {
         if (!HandleMenuMovement(ent, &ucmd)) {
             if (ucmd.buttons & BUTTON_JUMP) {
-                if (!(client->ps.pmove.pm_flags & PMF_JUMP_HELD)) {
-                    client->ps.pmove.pm_flags |= PMF_JUMP_HELD;
+                if (!(client->ps.pm_flags & PMF_JUMP_HELD)) {
+                    client->ps.pm_flags |= PMF_JUMP_HELD;
                     if (client->chase_target)
                         ChaseNext(ent);
                     else
                         GetChaseTarget(ent);
                 }
             } else
-                client->ps.pmove.pm_flags &= ~PMF_JUMP_HELD;
+                client->ps.pm_flags &= ~PMF_JUMP_HELD;
         }
     }
 
