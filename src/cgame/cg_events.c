@@ -1253,6 +1253,19 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     case EV_GUNCMDR_SLAM:
         CG_BerserkSlam(cent, event);
         break;
+    case EV_EARTHQUAKE:
+        if (cg.quake_time < cg.time) {
+            VectorSet(cg.quake_angles[0], crand(), crand(), crand());
+            VectorSet(cg.quake_angles[1], crand(), crand(), crand());
+            cg.quake_time = cg.oldframe->servertime + QUAKE_TIME;
+        }
+        break;
+    case EV_EARTHQUAKE2:
+        if (cg.quake2_time < cg.time) {
+            cg.quake2_factor = param * 0.1f;
+            cg.quake2_time = cg.oldframe->servertime + BASE_FRAMETIME + DAMAGE_TIME;
+        }
+        break;
 
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:

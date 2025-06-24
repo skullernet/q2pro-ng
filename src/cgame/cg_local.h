@@ -104,6 +104,7 @@ typedef struct {
 #define FALL_TIME   300
 #define KICK_TIME   100
 #define DUCK_TIME   100
+#define QUAKE_TIME  1000
 
 //
 // the client_state_t structure is wiped completely at every
@@ -210,6 +211,13 @@ typedef struct {
 
     int duck_time;
     float duck_factor;
+
+    int quake_time;
+    int quake_frame;
+    vec3_t quake_angles[2];
+
+    int quake2_time;
+    float quake2_factor;
 
     unsigned hit_marker_time;
     int hit_marker_count;

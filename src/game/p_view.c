@@ -204,18 +204,6 @@ static void SV_CalcViewOffset(edict_t *ent)
         }
         ent->client->ps.viewangles[YAW] = ent->client->killer_yaw;
     }
-
-#if 0
-        // add earthquake angles
-        if (ent->client->quake_time > level.time) {
-            float factor = ((float)ent->client->quake_time / level.time) * 0.25f;
-            factor = min(1.0f, factor);
-
-            angles[0] += crandom_open() * factor;
-            angles[1] += crandom_open() * factor;
-            angles[2] += crandom_open() * factor;
-        }
-#endif
 }
 
 /*

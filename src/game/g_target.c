@@ -1012,9 +1012,6 @@ All players are affected with a screen shake.
 
 void THINK(target_earthquake_think)(edict_t *self)
 {
-    int      i;
-    edict_t *e;
-
     // PGM
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) {
     // PGM
@@ -1024,11 +1021,7 @@ void THINK(target_earthquake_think)(edict_t *self)
         }
     }
 
-    for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
-        if (!e->r.inuse)
-            continue;
-        e->client->quake_time = level.time + SEC(1);
-    }
+    G_AddEvent(self, EV_EARTHQUAKE, self->speed);
 
     if (level.time < self->timestamp)
         self->nextthink = level.time + HZ(10);
@@ -1037,16 +1030,7 @@ void THINK(target_earthquake_think)(edict_t *self)
 void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     if (self->spawnflags & SPAWNFLAGS_EARTHQUAKE_ONE_SHOT) {
-        int      i;
-        edict_t *e;
-
-        for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
-            if (!e->r.inuse)
-                continue;
-            e->client->v_dmg_pitch = -self->speed * 0.1f;
-            e->client->v_dmg_time = level.time + DAMAGE_TIME;
-        }
-
+        G_AddEvent(self, EV_EARTHQUAKE2, self->speed);
         return;
     }
 
@@ -1086,12 +1070,11 @@ void SP_target_earthquake(edict_t *self)
     self->think = target_earthquake_think;
     self->use = target_earthquake_use;
 
-    if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) { // PGM
+    if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) // PGM
         self->noise_index = G_SoundIndex("world/quake.wav");
-        trap_LinkEntity(self);
-    } else {
-        self->r.svflags |= SVF_NOCLIENT;
-    }
+
+    self->r.svflags |= SVF_NOCULL;
+    trap_LinkEntity(self);
 }
 
 /*QUAKED target_camera (1 0 0) (-8 -8 -8) (8 8 8)

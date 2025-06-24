@@ -1350,6 +1350,25 @@ static void CG_CalcViewOffset(void)
     delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * crouch_factor;
     angles[ROLL] += delta;
 
+    // add earthquake angles
+    if (cg.quake_time > cg.time) {
+        int ofs = (cg.time / 25) & 1;
+        float f = (cg.time % 25) * 0.04f;
+
+        if (cg.quake_frame != ofs) {
+            VectorSet(cg.quake_angles[ofs ^ 1], crand(), crand(), crand());
+            cg.quake_frame = ofs;
+        }
+
+        vec3_t quake;
+        LerpVector(cg.quake_angles[ofs], cg.quake_angles[ofs ^ 1], f, quake);
+
+        f = cg.quake_time * 0.25f / cg.time;
+        VectorMA(angles, f, quake, angles);
+    }
+
+    angles[PITCH] -= CG_KickFactor(cg.quake2_time, DAMAGE_TIME) * cg.quake2_factor;
+
     // add fall height
     cg.refdef.vieworg[2] -= fall_ratio * cg.fall_value * 0.4f;
 
@@ -1365,8 +1384,8 @@ static void CG_CalcViewOffset(void)
 
 static void CG_SetupFirstPersonView(void)
 {
-    float delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
-    if (delta < 0)
+    int delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
+    if (delta < -128)
         delta += 256;
     float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
 

@@ -135,9 +135,7 @@ typedef enum {
     EV_NONE,
     EV_ITEM_RESPAWN,
     EV_FOOTSTEP,
-    EV_FALLSHORT,
     EV_FALL,
-    EV_FALLFAR,
     EV_DEATH1,
     EV_DEATH2,
     EV_DEATH3,
@@ -161,6 +159,8 @@ typedef enum {
     EV_BUBBLETRAIL2,
     EV_BFG_LASER,
     EV_BFG_ZAP,
+    EV_EARTHQUAKE,
+    EV_EARTHQUAKE2,
 
     EV_SPLASH_UNKNOWN,
     EV_SPLASH_SPARKS,
