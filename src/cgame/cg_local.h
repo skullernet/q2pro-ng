@@ -373,9 +373,6 @@ static inline void CG_AdvanceValue(float *restrict val, float target, float spee
 // main.c
 //
 
-int CG_CvarClampInteger(vm_cvar_t *var, int min, int max);
-int CG_CvarClampValue(vm_cvar_t *var, float min, float max);
-
 void CG_Init(void);
 void CG_Shutdown(void);
 
@@ -406,14 +403,14 @@ void CG_UpdateConfigstring(unsigned index);
 
 void CG_DeltaFrame(void);
 void CG_AddEntities(void);
-void CG_CalcViewValues(void);
+float CG_LerpEntityAlpha(const centity_t *ent);
 void CG_SetEntitySoundOrigin(const centity_t *ent);
 
 //
 // view.c
 //
 
-void V_RenderView(void);
+void CG_RenderView(void);
 
 
 //

@@ -1565,7 +1565,7 @@ qvm_exported void CG_DrawActiveFrame(unsigned time)
     SCR_TileClear();
 
     // draw 3D game view
-    V_RenderView();
+    CG_RenderView();
 
     // draw all 2D elements
     SCR_Draw2D();
