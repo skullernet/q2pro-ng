@@ -68,10 +68,13 @@ typedef unsigned int qhandle_t;
 //
 // per-level limits
 //
+#define ENTITYNUM_BITS      13
+#define MODELINDEX_BITS     12
+
 #define MAX_CLIENTS         256     // absolute limit
 #define MAX_EDICTS_OLD      1024
-#define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS, can't be increased
-#define MAX_MODELS          4096
+#define MAX_EDICTS          8192    // sent as ENTITYNUM_BITS
+#define MAX_MODELS          4096    // sent as MODELINDEX_BITS
 #define MAX_SOUNDS          2048
 #define MAX_IMAGES          2048
 #define MAX_LIGHTSTYLES     256
@@ -1124,9 +1127,6 @@ typedef struct {
 
 #define CS_NAME             0
 #define MAX_CONFIGSTRINGS   0x4000
-
-#define ENTITYNUM_BITS      13
-#define ENTITYNUM_MASK      MASK(ENTITYNUM_BITS)
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
