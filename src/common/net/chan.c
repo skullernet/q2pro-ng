@@ -171,9 +171,19 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable, more_fragments;
-    unsigned    w1, w2, offset, fragment_length;
+    unsigned    w1, w2, fragment_length;
 
     send_reliable = chan->reliable_length;
+
+    fragment_length = chan->fragment_out.cursize - chan->fragment_out.readcount;
+    if (fragment_length > chan->maxpacketlen) {
+        fragment_length = chan->maxpacketlen;
+    }
+
+    more_fragments = true;
+    if (chan->fragment_out.readcount + fragment_length == chan->fragment_out.cursize) {
+        more_fragments = false;
+    }
 
     // write the packet header
     w1 = (chan->outgoing_sequence & NEW_MASK) | FRG_BIT;
@@ -183,6 +193,8 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     w2 = chan->incoming_sequence & NEW_MASK;
     if (chan->incoming_reliable_sequence)
         w2 |= REL_BIT;
+    if (more_fragments)
+        w2 |= FRG_BIT;
 
     SZ_Init(&send, send_buf, sizeof(send_buf), "nc_send_frg");
 
@@ -196,21 +208,8 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     }
 #endif
 
-    fragment_length = chan->fragment_out.cursize - chan->fragment_out.readcount;
-    if (fragment_length > chan->maxpacketlen) {
-        fragment_length = chan->maxpacketlen;
-    }
-
-    more_fragments = true;
-    if (chan->fragment_out.readcount + fragment_length == chan->fragment_out.cursize) {
-        more_fragments = false;
-    }
-
     // write fragment offset
-    offset = chan->fragment_out.readcount & 0x7FFF;
-    if (more_fragments)
-        offset |= 0x8000;
-    SZ_WriteShort(&send, offset);
+    SZ_WriteShort(&send, chan->fragment_out.readcount);
 
     // write fragment contents
     SZ_Write(&send, chan->fragment_out.data + chan->fragment_out.readcount, fragment_length);
@@ -372,16 +371,15 @@ bool Netchan_Process(netchan_t *chan)
     reliable_message = sequence & REL_BIT;
     reliable_ack = sequence_ack & REL_BIT;
     fragmented_message = sequence & FRG_BIT;
+    more_fragments = sequence_ack & FRG_BIT;
 
     sequence &= NEW_MASK;
     sequence_ack &= NEW_MASK;
 
-    fragment_offset = 0;
-    more_fragments = false;
     if (fragmented_message) {
         fragment_offset = MSG_ReadWord();
-        more_fragments = fragment_offset & 0x8000;
-        fragment_offset &= 0x7FFF;
+    } else {
+        fragment_offset = 0;
     }
 
     if (msg_read.readcount > msg_read.cursize) {

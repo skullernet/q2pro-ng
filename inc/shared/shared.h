@@ -60,7 +60,7 @@ typedef unsigned int qhandle_t;
 #define MAX_STRING_CHARS    1024    // max length of a string passed to Cmd_TokenizeString
 #define MAX_STRING_TOKENS   256     // max tokens resulting from Cmd_TokenizeString
 #define MAX_TOKEN_CHARS     1024    // max length of an individual token
-#define MAX_NET_STRING      2048    // max length of a string used in network protocol
+#define MAX_NET_STRING      4096    // max length of a string used in network protocol
 
 #define MAX_QPATH           64      // max length of a quake game pathname
 #define MAX_OSPATH          256     // max length of a filesystem pathname
@@ -798,7 +798,7 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
 //
 #define MAX_INFO_KEY        64
 #define MAX_INFO_VALUE      64
-#define MAX_INFO_STRING     512
+#define MAX_INFO_STRING     1024
 
 char    *Info_ValueForKey(const char *s, const char *key);
 void    Info_RemoveKey(char *s, const char *key);
