@@ -140,6 +140,8 @@ static int write_level_file(void)
     MSG_WriteByte(len);
     MSG_WriteData(portalbits, len);
 
+    MSG_WriteLong(sv.time);
+
     FS_Write(msg_write.data, msg_write.cursize, f);
     SZ_Clear(&msg_write);
 
@@ -470,6 +472,9 @@ static int read_level_file(void)
 
     len = MSG_ReadByte();
     CM_SetPortalStates(&sv.cm, MSG_ReadData(len), len);
+
+    sv.time = MSG_ReadLong();
+    sv.time = Q_align_up(sv.time, sv.frametime);
 
     Com_AbortFunc(NULL, NULL);
     FS_FreeFile(data);
