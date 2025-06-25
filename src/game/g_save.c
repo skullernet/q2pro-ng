@@ -585,7 +585,6 @@ static const save_field_t client_persistent_t_fields[] = {
     T(help_time),
 
     O(spectator),
-    O(bob_skip),
 
     T(megahealth_time),
     I(lives),
@@ -635,16 +634,6 @@ static const save_field_t gclient_t_fields[] = {
 
     I(weaponstate),
 
-    V(kick.angles),
-    V(kick.origin),
-    T(kick.total),
-    T(kick.time),
-    T(quake_time),
-    F(v_dmg_roll),
-    F(v_dmg_pitch),
-    T(v_dmg_time),
-    T(fall_time),
-    F(fall_value),
     F(damage_alpha),
     F(bonus_alpha),
     V(damage_blend),

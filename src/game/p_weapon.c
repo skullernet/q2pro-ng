@@ -51,14 +51,6 @@ int P_DamageModifier(edict_t *ent)
 // ROGUE
 //========
 
-void P_AddWeaponKick(edict_t *ent, float scale, float pitch)
-{
-    VectorScale(ent->client->v_forward, scale, ent->client->kick.origin);
-    VectorSet(ent->client->kick.angles, pitch, 0, 0);
-    ent->client->kick.total = KICK_TIME;
-    ent->client->kick.time = level.time + ent->client->kick.total;
-}
-
 void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance, vec3_t result_start, vec3_t result_dir, bool adjust_for_pierce)
 {
     vec3_t distance;
@@ -1111,8 +1103,6 @@ static void weapon_grenadelauncher_fire(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, angles, (const vec3_t) { 8, 0, -8 }, start, dir, false);
 
-    P_AddWeaponKick(ent, -2, -1);
-
     fire_grenade(ent, start, dir, damage, 600, SEC(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f), false);
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_GRENADE | is_silenced);
@@ -1156,8 +1146,6 @@ static void Weapon_RocketLauncher_Fire(edict_t *ent)
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -8 }, start, dir, false);
     fire_rocket(ent, start, dir, damage, 650, damage_radius, radius_damage);
 
-    P_AddWeaponKick(ent, -2, -1);
-
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_ROCKET | is_silenced);
 
@@ -1192,10 +1180,6 @@ static void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool h
 
     vec3_t start, dir;
     P_ProjectSource(ent, ent->client->v_angle, offset, start, dir, false);
-
-    P_AddWeaponKick(ent, -2, -1);
-    if (hyper)
-        crandom_vec(ent->client->kick.angles, 0.7f);
 
     // let the regular blaster projectiles travel a bit faster because it is a completely useless gun
     int speed = hyper ? 1000 : 1500;
@@ -1306,7 +1290,6 @@ MACHINEGUN / CHAINGUN
 
 static void Machinegun_Fire(edict_t *ent)
 {
-    int i;
     int damage = 8;
     int kick = 2;
 
@@ -1330,13 +1313,6 @@ static void Machinegun_Fire(edict_t *ent)
         damage *= damage_multiplier;
         kick *= damage_multiplier;
     }
-
-    for (i = 0; i < 3; i++) {
-        ent->client->kick.origin[i] = crandom() * 0.35f;
-        ent->client->kick.angles[i] = crandom() * 0.7f;
-    }
-    ent->client->kick.total = KICK_TIME;
-    ent->client->kick.time = level.time + ent->client->kick.total;
 
     // get start / end positions
     vec3_t start, dir;
@@ -1438,13 +1414,6 @@ static void Chaingun_Fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    for (i = 0; i < 3; i++) {
-        ent->client->kick.origin[i] = crandom() * 0.35f;
-        ent->client->kick.angles[i] = crandom() * (0.5f + (shots * 0.15f));
-    }
-    ent->client->kick.total = KICK_TIME;
-    ent->client->kick.time = level.time + ent->client->kick.total;
-
     vec3_t start, dir;
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -8 }, start, dir, true);
 
@@ -1491,8 +1460,6 @@ static void weapon_shotgun_fire(edict_t *ent)
     vec3_t start, dir;
     // Paril: kill sideways angle on hitscan
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -8 }, start, dir, true);
-
-    P_AddWeaponKick(ent, -2, -2);
 
     if (is_quad) {
         damage *= damage_multiplier;
@@ -1541,8 +1508,6 @@ static void weapon_supershotgun_fire(edict_t *ent)
     P_ProjectSource(ent, v, (const vec3_t) { 0, 0, -8 }, start, dir, true);
     fire_shotgun(ent, start, dir, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT / 2, (mod_t) { MOD_SSHOTGUN });
 
-    P_AddWeaponKick(ent, -2, -2);
-
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_SSHOTGUN | is_silenced);
 
@@ -1588,8 +1553,6 @@ static void weapon_railgun_fire(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 7, -8 }, start, dir, true);
     fire_rail(ent, start, dir, damage, kick);
-
-    P_AddWeaponKick(ent, -3, -3);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_RAILGUN | is_silenced);
@@ -1645,11 +1608,6 @@ static void weapon_bfg_fire(edict_t *ent)
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -8 }, start, dir, false);
     fire_bfg(ent, start, dir, damage, 400, damage_radius);
 
-    VectorScale(ent->client->v_forward, -2, ent->client->kick.origin);
-    VectorSet(ent->client->kick.angles, -20, 0, crandom() * 8);
-    ent->client->kick.total = DAMAGE_TIME;
-    ent->client->kick.time = level.time + ent->client->kick.total;
-
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_BFG2 | is_silenced);
 
@@ -1672,8 +1630,6 @@ static void weapon_disint_fire(edict_t *self)
 {
     vec3_t start, dir;
     P_ProjectSource(self, self->client->v_angle, (const vec3_t) { 24, 8, -8 }, start, dir, false);
-
-    P_AddWeaponKick(self, -2, -1);
 
     fire_disintegrator(self, start, dir, 800);
 

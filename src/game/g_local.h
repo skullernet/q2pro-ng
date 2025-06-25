@@ -1637,7 +1637,6 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
 void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed);
 // RAFAEL
 void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t dir, int speed);
-void P_AddWeaponKick(edict_t *ent, float scale, float pitch);
 void P_GetThrowAngles(edict_t *ent, vec3_t angles);
 
 //
@@ -2015,7 +2014,6 @@ typedef struct {
     gtime_t help_time;
 
     bool spectator; // client wants to be a spectator
-    bool bob_skip; // [Paril-KEX] client wants no movement bob
 
     gtime_t megahealth_time; // relative megahealth time value
     int lives; // player lives left (1 = no respawns remaining)
@@ -2103,15 +2101,6 @@ struct gclient_s {
     float killer_yaw; // when dead, look at killer
 
     weaponstate_t weaponstate;
-    struct {
-        vec3_t  angles, origin;
-        gtime_t time, total;
-    } kick;
-    gtime_t       quake_time;
-    float         v_dmg_roll, v_dmg_pitch;
-    gtime_t       v_dmg_time; // damage kicks
-    gtime_t       fall_time;
-    float         fall_value; // for view drop on fall
     float         damage_alpha;
     float         bonus_alpha;
     vec3_t        damage_blend;
@@ -2210,9 +2199,6 @@ struct gclient_s {
     gtime_t  sound_entity_time;
     edict_t *sound2_entity;
     gtime_t  sound2_entity_time;
-    // for high tickrate weapon angles
-    vec3_t   slow_view_angles;
-    gtime_t  slow_view_angle_time;
 
     // only set temporarily
     bool awaiting_respawn;

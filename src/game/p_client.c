@@ -821,14 +821,6 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
         ent->client->pers.autoshield = -1;
     }
 
-    // [Paril-KEX] wants bob
-    val = Info_ValueForKey(userinfo, "bobskip");
-    if (*val) {
-        ent->client->pers.bob_skip = !!Q_atoi(val);
-    } else {
-        ent->client->pers.bob_skip = false;
-    }
-
     // save off the userinfo in case we want to check something later
     Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
 }

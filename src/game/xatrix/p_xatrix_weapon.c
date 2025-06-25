@@ -27,8 +27,6 @@ static void weapon_ionripper_fire(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, tempang, (const vec3_t) { 16, 7, -8 }, start, dir, false);
 
-    P_AddWeaponKick(ent, -3, -3);
-
     fire_ionripper(ent, start, dir, damage, 500, EF_IONRIPPER);
 
     // send muzzle flash
@@ -93,8 +91,6 @@ static void weapon_phalanx_fire(edict_t *ent)
 
         PlayerNoise(ent, start, PNOISE_WEAPON);
     }
-
-    P_AddWeaponKick(ent, -2, -2);
 }
 
 void Weapon_Phalanx(edict_t *ent)

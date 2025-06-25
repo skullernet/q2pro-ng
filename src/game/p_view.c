@@ -48,7 +48,6 @@ Handles color blends and view kicks
 static void P_DamageFeedback(edict_t *player)
 {
     gclient_t   *client;
-    float        side;
     float        realcount, count;
     vec3_t       v;
     static const vec3_t armor_color = { 1.0f, 1.0f, 1.0f };
@@ -167,14 +166,6 @@ static void P_DamageFeedback(edict_t *player)
         VectorNormalize(v);
 
         client->ps.stats[STAT_DAMAGE] = DirToByte(v) | kick << 8;
-
-        side = DotProduct(v, right);
-        client->v_dmg_roll = kick * side * 0.3f;
-
-        side = -DotProduct(v, forward);
-        client->v_dmg_pitch = kick * side * 0.3f;
-
-        client->v_dmg_time = level.time + DAMAGE_TIME;
     }
 
     //

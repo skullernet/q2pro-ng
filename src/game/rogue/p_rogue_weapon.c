@@ -14,8 +14,6 @@ static void weapon_prox_fire(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, angles, (const vec3_t) { 8, 0, -8 }, start, dir, false);
 
-    P_AddWeaponKick(ent, -2, -1);
-
     fire_prox(ent, start, dir, damage_multiplier, 600);
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PROX | is_silenced);
@@ -205,8 +203,6 @@ static void weapon_tracker_fire(edict_t *self)
     if (hit != world && ((hit->r.svflags & SVF_MONSTER) || hit->client || (hit->flags & FL_DAMAGEABLE)) && hit->health > 0)
         enemy = hit;
 
-    P_AddWeaponKick(self, -2, -1);
-
     fire_tracker(self, start, dir, damage, 1000, enemy);
 
     // send muzzle flash
@@ -266,13 +262,6 @@ static void weapon_etf_rifle_fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    for (i = 0; i < 3; i++) {
-        ent->client->kick.origin[i] = crandom() * 0.85f;
-        ent->client->kick.angles[i] = crandom() * 0.85f;
-    }
-    ent->client->kick.total = KICK_TIME;
-    ent->client->kick.time = level.time + ent->client->kick.total;
-
     // get start / end positions
     if (ent->client->ps.gunframe == 6)
         VectorSet(offset, 15, 8, -8);
@@ -280,7 +269,8 @@ static void weapon_etf_rifle_fire(edict_t *ent)
         VectorSet(offset, 15, 6, -8);
 
     vec3_t start, dir, angles;
-    VectorAdd(ent->client->v_angle, ent->client->kick.angles, angles);
+    for (i = 0; i < 3; i++)
+        angles[i] = ent->client->v_angle[i] + crandom() * 0.85f;
     P_ProjectSource(ent, angles, offset, start, dir, false);
     fire_flechette(ent, start, dir, damage, 1150, kick);
     Weapon_PowerupSound(ent);
@@ -360,8 +350,6 @@ static void Heatbeam_Fire(edict_t *ent)
         damage *= damage_multiplier;
         kick *= damage_multiplier;
     }
-
-    ent->client->kick.time = 0;
 
     // This offset is the "view" offset for the beam start (used by trace)
     vec3_t start, dir;
