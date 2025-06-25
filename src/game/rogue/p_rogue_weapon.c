@@ -136,8 +136,10 @@ static void chainfist_smoke(edict_t *ent)
     vec3_t start, dir;
     P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -4 }, start, dir, false);
 
-    // TODO: unicast!!!
-    G_TempEntity(start, EV_CHAINFIST_SMOKE, 0);
+    edict_t *te = G_TempEntity(start, EV_CHAINFIST_SMOKE, 0);
+    te->r.svflags |= SVF_CLIENTMASK;
+    memset(te->r.clientmask, 255, sizeof(te->r.clientmask));
+    Q_ClearBit(te->r.clientmask, ent->s.number);
 }
 
 void Weapon_ChainFist(edict_t *ent)
