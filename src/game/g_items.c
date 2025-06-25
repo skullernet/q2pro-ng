@@ -845,11 +845,6 @@ static void Drop_PowerArmor(edict_t *ent, const gitem_t *item)
 
 //======================================================================
 
-bool G_EntityVisibleToClient(edict_t *client, edict_t *ent)
-{
-    return !ent->item || !Q_IsBitSet(ent->item_picked_up_by, client->s.number);
-}
-
 /*
 ===============
 Touch_Item
@@ -867,7 +862,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
         return; // not a grabbable item?
 
     // already got this instanced item
-    if (coop.integer && P_UseCoopInstancedItems() && Q_IsBitSet(ent->item_picked_up_by, other->s.number))
+    if (coop.integer && P_UseCoopInstancedItems() && Q_IsBitSet(ent->r.clientmask, other->s.number))
         return;
 
     // ZOID
@@ -900,7 +895,8 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
             G_StartSound(other, CHAN_ITEM, G_SoundIndex(ent->item->pickup_sound), 1, ATTN_NORM);
 
         if (coop.integer && P_UseCoopInstancedItems()) {
-            Q_SetBit(ent->item_picked_up_by, other->s.number);
+            Q_SetBit(ent->r.clientmask, other->s.number);
+            ent->r.svflags |= SVF_CLIENTMASK;
 
             // [Paril-KEX] this is to fix a coop quirk where items
             // that send a message on pick up will only print on the

@@ -42,6 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_LOCKED              BIT(12)
 #define SVF_LASER_FIELD         BIT(13)
 #define SVF_TRAP                BIT(14)
+#define SVF_CLIENTMASK          BIT(15)     // don't send entity to clients in r.clientmask
 
 // edict->solid values
 typedef enum {
@@ -146,6 +147,7 @@ typedef struct {
     vec3_t      absmin, absmax, size;
     solid_t     solid;
     int         ownernum;
+    byte        clientmask[MAX_CLIENTS / CHAR_BIT];
 } entity_shared_t;
 
 #ifndef GAME_INCLUDE

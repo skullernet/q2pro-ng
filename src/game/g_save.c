@@ -336,6 +336,7 @@ static const save_field_t edict_t_fields[] = {
     V(r.maxs),
     I(r.solid),
     I(r.ownernum),
+    BA(r.clientmask, MAX_CLIENTS / CHAR_BIT),
 
     I(spawn_count),
     I(movetype),
@@ -476,7 +477,6 @@ static const save_field_t edict_t_fields[] = {
     R(player_heightfog_t, heightfog_off),
     R(player_heightfog_t, heightfog),
 
-    BA(item_picked_up_by, MAX_CLIENTS / 8),
     T(slime_debounce_time),
 
     R(bmodel_anim_t, bmodel_anim),

@@ -1270,7 +1270,6 @@ bool      G_CanDropItem(const gitem_t *item);
 void      Touch_Item(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self);
 void      droptofloor(edict_t *ent);
 void      P_ToggleFlashlight(edict_t *ent, bool state);
-bool      G_EntityVisibleToClient(edict_t *client, edict_t *ent);
 
 //
 // g_utils.c
@@ -2398,8 +2397,6 @@ struct edict_s {
     player_fog_t fog_off, fog;
     player_heightfog_t heightfog_off, heightfog;
 
-    // instanced coop items
-    byte    item_picked_up_by[MAX_CLIENTS / 8];
     gtime_t slime_debounce_time;
 
     // [Paril-KEX]

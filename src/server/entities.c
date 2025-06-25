@@ -26,9 +26,6 @@ Encode a client frame onto the network channel
 =============================================================================
 */
 
-// some protocol optimizations are disabled when recording a demo
-#define Q2PRO_OPTIMIZE(c) (!(c)->settings[CLS_RECORDING])
-
 /*
 =============
 SV_EmitPacketEntities
@@ -280,22 +277,13 @@ void SV_BuildClientFrame(client_t *client)
         if (ent->r.svflags & SVF_NOCLIENT)
             continue;
 
-        // ignore ents without visible models unless they have an effect
-        if (!HAS_EFFECTS(ent))
+        // ignore if pov number matches mask
+        if (ent->r.svflags & SVF_CLIENTMASK && (unsigned)frame->ps.clientnum < MAX_CLIENTS
+            && Q_IsBitSet(ent->r.clientmask, frame->ps.clientnum))
             continue;
 
-#if 0
-        // ignore gibs if client says so
-        if (client->settings[CLS_NOGIBS]) {
-            if (ent->s.effects & EF_GIB && !(ent->s.effects & EF_ROCKET))
-                continue;
-            if (ent->s.effects & EF_GREENGIB)
-                continue;
-        }
-#endif
-
-        // ignore flares if client says so
-        if (ent->s.renderfx & RF_FLARE && client->settings[CLS_NOFLARES])
+        // ignore ents without visible models unless they have an effect
+        if (!HAS_EFFECTS(ent))
             continue;
 
         // ignore if not touching a PV leaf
@@ -328,19 +316,6 @@ void SV_BuildClientFrame(client_t *client)
         // add it to the circular client_entities array
         state = &client->entities[client->next_entity & (client->num_entities - 1)];
         *state = ent->s;
-
-#if 0
-        // clear footsteps
-        if (client->settings[CLS_NOFOOTSTEPS] && (state->event[0] == EV_FOOTSTEP ||
-            state->event[0] == EV_OTHER_FOOTSTEP || state->event[0] == EV_LADDER_STEP)) {
-            state->event[0] = 0;
-        }
-#endif
-
-        // hide POV entity from renderer, unless this is player's own entity
-        if (e == frame->ps.clientnum && ent != clent && !Q2PRO_OPTIMIZE(client)) {
-            state->modelindex = 0;
-        }
 
         if (ent->r.ownernum == clent->s.number) {
             // don't mark players missiles as solid

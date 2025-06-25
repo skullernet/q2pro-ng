@@ -64,6 +64,10 @@ static void SV_CreateBaselines(void)
 
         Q_assert_soft(ent->s.number == i);
 
+        if (ent->r.svflags & SVF_NOCLIENT) {
+            continue;
+        }
+
         if (!HAS_EFFECTS(ent)) {
             continue;
         }
