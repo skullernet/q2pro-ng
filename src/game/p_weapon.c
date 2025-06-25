@@ -284,12 +284,14 @@ void ChangeWeapon(edict_t *ent)
     if (!ent->client->pers.weapon) {
         // dead
         ent->client->ps.gunindex = 0;
+        ent->client->ps.gunskin = 0;
         return;
     }
 
     ent->client->weaponstate = WEAPON_ACTIVATING;
     ent->client->ps.gunframe = 0;
     ent->client->ps.gunindex = G_ModelIndex(ent->client->pers.weapon->view_model);
+    ent->client->ps.gunskin = 0;
     ent->client->weapon_sound = 0;
 
     ent->client->anim_priority = ANIM_PAIN;

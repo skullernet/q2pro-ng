@@ -609,6 +609,7 @@ static const save_field_t gclient_t_fields[] = {
     I(ps.bobtime),
 
     I(ps.gunindex),
+    I(ps.gunskin),
     I(ps.gunframe),
 
     FA(ps.screen_blend, 4),

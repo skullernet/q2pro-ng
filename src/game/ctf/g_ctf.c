@@ -2194,6 +2194,7 @@ static void CTFStartMatch(void)
             ent->deadflag = true;
             ent->movetype = MOVETYPE_NOCLIP;
             ent->client->ps.gunindex = 0;
+            ent->client->ps.gunskin = 0;
             trap_LinkEntity(ent);
         }
     }
@@ -2717,6 +2718,7 @@ bool CTFStartClient(edict_t *ent)
         ent->client->resp.ctf_team = CTF_NOTEAM;
         ent->client->resp.spectator = true;
         ent->client->ps.gunindex = 0;
+        ent->client->ps.gunskin = 0;
         trap_LinkEntity(ent);
 
         CTFOpenJoinMenu(ent);
@@ -2743,6 +2745,7 @@ void CTFObserver(edict_t *ent)
     ent->r.svflags |= SVF_NOCLIENT;
     ent->client->resp.ctf_team = CTF_NOTEAM;
     ent->client->ps.gunindex = 0;
+    ent->client->ps.gunskin = 0;
     ent->client->resp.score = 0;
     PutClientInServer(ent);
 }

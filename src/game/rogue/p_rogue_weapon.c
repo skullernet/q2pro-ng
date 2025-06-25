@@ -311,7 +311,7 @@ static void Heatbeam_Fire(edict_t *ent)
     if (!firing || !has_ammo) {
         ent->client->ps.gunframe = 13;
         ent->client->weapon_sound = 0;
-        ent->client->ps.gunindex &= GUNINDEX_MASK;  // normal skin
+        ent->client->ps.gunskin = 0; // normal skin
 
         if (firing && !has_ammo)
             NoAmmoWeaponChange(ent, true);
@@ -329,7 +329,7 @@ static void Heatbeam_Fire(edict_t *ent)
 
     // play weapon sound for firing
     ent->client->weapon_sound = G_SoundIndex("weapons/bfg__l1a.wav");
-    ent->client->ps.gunindex |= BIT(GUNINDEX_BITS); // alternate skin
+    ent->client->ps.gunskin = 1; // alternate skin
 
     int damage;
     int kick;

@@ -383,9 +383,6 @@ typedef enum {
     STAT_HEALTH_BARS, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
 } stat_index_t;
 
-#define GUNINDEX_BITS       13  // upper 3 bits are skinnum
-#define GUNINDEX_MASK       MASK(GUNINDEX_BITS)
-
 //==============================================
 
 // pmove_state_t is the information necessary for client side movement

@@ -1948,6 +1948,7 @@ void PutClientInServer(edict_t *ent)
         client->ps.gunindex = G_ModelIndex(client->pers.weapon->view_model);
     else
         client->ps.gunindex = 0;
+    client->ps.gunskin = 0;
     // PGM
 
     // clear entity state values
@@ -1981,6 +1982,7 @@ void PutClientInServer(edict_t *ent)
         ent->r.solid = SOLID_NOT;
         ent->r.svflags |= SVF_NOCLIENT;
         ent->client->ps.gunindex = 0;
+        ent->client->ps.gunskin = 0;
         trap_LinkEntity(ent);
         return;
     }

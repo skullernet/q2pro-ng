@@ -78,8 +78,8 @@ static void CG_AddViewWeapon(void)
 
     memset(&gun, 0, sizeof(gun));
 
-    gun.model = cg.model_draw[ps->gunindex & GUNINDEX_MASK];
-    gun.skinnum = ps->gunindex >> GUNINDEX_BITS;
+    gun.model = cg.model_draw[ps->gunindex];
+    gun.skinnum = ps->gunskin;
     if (!gun.model)
         return;
 

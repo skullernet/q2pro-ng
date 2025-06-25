@@ -928,6 +928,7 @@ void ClientEndServerFrame(edict_t *ent)
             current_client->ps.damage_blend[3] = 0;
             current_client->ps.fov = 90;
             current_client->ps.gunindex = 0;
+            current_client->ps.gunskin = 0;
         }
         G_SetStats(ent);
         G_SetCoopStats(ent);
