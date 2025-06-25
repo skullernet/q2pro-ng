@@ -234,9 +234,8 @@ typedef struct client_s {
     entity_state_t      *baselines[SV_BASELINES_CHUNKS];
 
     // per-client packet entities
-    unsigned            num_entities;   // UPDATE_BACKUP*MAX_PACKET_ENTITIES(_OLD)
     unsigned            next_entity;    // next state to use
-    entity_state_t      *entities;      // [num_entities]
+    entity_state_t      *entities;      // [MAX_PARSE_ENTITIES]
 
     // The datagram is written to by sound calls, prints, temp ents, etc.
     // It can be harmlessly overflowed.

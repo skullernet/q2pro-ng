@@ -264,10 +264,8 @@ void SV_Begin_f(void)
     sv_client->http_download = false;
 
     // allocate packet entities if not done yet
-    if (!sv_client->entities) {
-        sv_client->num_entities = MAX_PACKET_ENTITIES * UPDATE_BACKUP;
-        sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * sv_client->num_entities);
-    }
+    if (!sv_client->entities)
+        sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * MAX_PARSE_ENTITIES);
 
     // call the game begin function
     ge->ClientBegin(sv_client->number);

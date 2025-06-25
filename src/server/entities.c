@@ -50,7 +50,7 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, 
         if (newindex >= to->num_entities) {
             newnum = MAX_EDICTS;
         } else {
-            i = (to->first_entity + newindex) & (client->num_entities - 1);
+            i = (to->first_entity + newindex) & PARSE_ENTITIES_MASK;
             newent = &client->entities[i];
             newnum = newent->number;
         }
@@ -58,7 +58,7 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, 
         if (oldindex >= from_num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (from->first_entity + oldindex) & (client->num_entities - 1);
+            i = (from->first_entity + oldindex) & PARSE_ENTITIES_MASK;
             oldent = &client->entities[i];
             oldnum = oldent->number;
         }
@@ -127,7 +127,7 @@ static client_frame_t *get_last_frame(client_t *client)
         return NULL;
     }
 
-    if (client->next_entity - frame->first_entity > client->num_entities) {
+    if (client->next_entity - frame->first_entity > MAX_PARSE_ENTITIES) {
         // but entities are too old
         Com_DPrintf("%s: delta request from out-of-date entities.\n", client->name);
         return NULL;
@@ -314,7 +314,7 @@ void SV_BuildClientFrame(client_t *client)
         }
 
         // add it to the circular client_entities array
-        state = &client->entities[client->next_entity & (client->num_entities - 1)];
+        state = &client->entities[client->next_entity & PARSE_ENTITIES_MASK];
         *state = ent->s;
 
         if (ent->r.ownernum == clent->s.number) {

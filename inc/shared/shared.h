@@ -1123,7 +1123,7 @@ typedef struct {
 #define SHORT2COORD(x)  ((x)*(1.0f/8))
 
 #define MAX_MAP_AREA_BYTES      32
-#define MAX_PACKET_ENTITIES     512
+#define MAX_PACKET_ENTITIES     MAX_EDICTS_OLD
 
 #define CS_NAME             0
 #define MAX_CONFIGSTRINGS   0x4000

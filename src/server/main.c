@@ -124,7 +124,6 @@ void SV_CleanClient(client_t *client)
 
     // free packet entities
     Z_Freep(&client->entities);
-    client->num_entities = 0;
 
     // free datagram
     Z_Free(client->datagram.data);
