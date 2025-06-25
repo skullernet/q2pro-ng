@@ -87,7 +87,7 @@ static void CG_AddViewWeapon(void)
     VectorCopy(cg.refdef.vieworg, gun.origin);
     VectorCopy(cg.refdef.viewangles, gun.angles);
 
-    if (!(cg.frame->ps.rdflags & RDF_NO_WEAPON_BOB)) {
+    if (!(cg.frame->ps.rdflags & RDF_NO_WEAPON_BOB) && !cg_skip_view_modifiers.integer) {
         // gun angles from bobbing
         gun.angles[ROLL] += cg.xyspeed * cg.bobfracsin * 0.005f;
         gun.angles[YAW] += cg.xyspeed * cg.bobfracsin * 0.01f;
@@ -191,24 +191,38 @@ static void CG_AddViewWeapon(void)
     trap_R_AddEntity(&gun);
 }
 
-// simulates kick_angles interpolation
-static float CG_KickFactor(int end, int duration)
+static void CG_RunViewKicks(int frame)
 {
-    float factor = 0.0f;
+    vec3_t angles, origin;
+    float ratio;
 
-    if (end > cg.time) {
-        int start = end - duration;
-        if (cg.time < start) // rising edge
-            factor = (cg.time - start + BASE_FRAMETIME) * BASE_1_FRAMETIME;
-        else // falling edge
-            factor = (float)(end - cg.time) / duration;
+    // add angles based on weapon kick
+    VectorCopy(cg.weapon.kick.angles, angles);
+    VectorClear(cg.weapon.kick.angles);
+
+    // add offset based on weapon kick
+    VectorCopy(cg.weapon.kick.origin, origin);
+    VectorClear(cg.weapon.kick.origin);
+
+    // add angles based on damage kick
+    if (cg.v_dmg_time > cg.time) {
+        ratio = (float)(cg.v_dmg_time - cg.time) / DAMAGE_TIME;
+        angles[PITCH] += ratio * cg.v_dmg_pitch;
+        angles[ROLL] += ratio * cg.v_dmg_roll;
     }
 
-    return factor;
-}
+    // add pitch based on fall kick
+    if (cg.fall_time > cg.time) {
+        ratio = (float)(cg.fall_time - cg.time) / FALL_TIME;
+        angles[PITCH] += ratio * cg.fall_value;
 
-#define IS_CROUCHING(frame) \
-    (((frame)->ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
+        // add fall height
+        origin[2] -= ratio * cg.fall_value * 0.4f;
+    }
+
+    VectorCopy(angles, cg.kick_angles[frame]);
+    VectorCopy(origin, cg.kick_origin[frame]);
+}
 
 static void CG_CalcViewOffset(void)
 {
@@ -217,29 +231,45 @@ static void CG_CalcViewOffset(void)
     if (cg_skip_view_modifiers.integer)
         return;
 
-    float *angles = cg.refdef.viewangles;
+    // run kick angles at 10 Hz
+    if (true) {
+        int ofs = (cg.time / 100) & 1;
+        float f = (cg.time % 100) * 0.01f;
 
-    // add angles based on weapon kick
-    float kick_factor = CG_KickFactor(cg.weapon.kick.time, cg.weapon.kick.total);
-    VectorMA(angles, kick_factor, cg.weapon.kick.angles, angles);
+        if (cg.kick_frame != ofs) {
+            CG_RunViewKicks(ofs ^ 1);
+            cg.kick_frame = ofs;
+        }
 
-    // add angles based on damage kick
-    float damage_ratio = CG_KickFactor(cg.damage_time, DAMAGE_TIME);
-    if (damage_ratio) {
-        float side;
-        damage_ratio *= cg.damage_kick;
+        vec3_t kick;
+        LerpVector(cg.kick_angles[ofs], cg.kick_angles[ofs ^ 1], f, kick);
+        VectorAdd(cg.refdef.viewangles, kick, cg.refdef.viewangles);
 
-        side = -DotProduct(cg.damage_dir, cg.v_forward);
-        angles[PITCH] += side * damage_ratio;
-
-        side = DotProduct(cg.damage_dir, cg.v_right);
-        angles[ROLL] += side * damage_ratio;
+        LerpVector(cg.kick_origin[ofs], cg.kick_origin[ofs ^ 1], f, kick);
+        VectorAdd(cg.refdef.vieworg, kick, cg.refdef.vieworg);
     }
 
-    // add pitch based on fall kick
-    float fall_ratio = CG_KickFactor(cg.fall_time, FALL_TIME);
-    angles[PITCH] += fall_ratio * cg.fall_value;
+    // run earthquake angles at 40 Hz
+    if (cg.quake_time > cg.time) {
+        int ofs = (cg.time / 25) & 1;
+        float f = (cg.time % 25) * 0.04f;
 
+        if (cg.quake_frame != ofs) {
+            VectorSet(cg.quake_angles[ofs ^ 1], crand(), crand(), crand());
+            cg.quake_frame = ofs;
+        }
+
+        vec3_t kick;
+        LerpVector(cg.quake_angles[ofs], cg.quake_angles[ofs ^ 1], f, kick);
+
+        f = cg.quake_time * 0.25f / cg.time;
+        VectorMA(cg.refdef.viewangles, f, kick, cg.refdef.viewangles);
+    }
+
+#define IS_CROUCHING(frame) \
+    (((frame)->ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
+
+    float *angles = cg.refdef.viewangles;
     float crouch1 = IS_CROUCHING(cg.oldframe) ? 6 : 1;
     float crouch2 = IS_CROUCHING(cg.frame)    ? 6 : 1;
     float crouch_factor = crouch1 + cg.lerpfrac * (crouch2 - crouch1);
@@ -259,36 +289,11 @@ static void CG_CalcViewOffset(void)
     delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * crouch_factor;
     angles[ROLL] += delta;
 
-    // add earthquake angles
-    if (cg.quake_time > cg.time) {
-        int ofs = (cg.time / 25) & 1;
-        float f = (cg.time % 25) * 0.04f;
-
-        if (cg.quake_frame != ofs) {
-            VectorSet(cg.quake_angles[ofs ^ 1], crand(), crand(), crand());
-            cg.quake_frame = ofs;
-        }
-
-        vec3_t quake;
-        LerpVector(cg.quake_angles[ofs], cg.quake_angles[ofs ^ 1], f, quake);
-
-        f = cg.quake_time * 0.25f / cg.time;
-        VectorMA(angles, f, quake, angles);
-    }
-
-    angles[PITCH] -= CG_KickFactor(cg.quake2_time, DAMAGE_TIME) * cg.quake2_factor;
-
-    // add fall height
-    cg.refdef.vieworg[2] -= fall_ratio * cg.fall_value * 0.4f;
-
     // add bob height
     float bob = fabsf(cg.bobfracsin) * cg.xyspeed * cg_bob_up.value;
     if (bob > 6)
         bob = 6;
     cg.refdef.vieworg[2] += bob;
-
-    // add kick offset
-    VectorMA(cg.refdef.vieworg, kick_factor, cg.weapon.kick.origin, cg.refdef.vieworg);
 }
 
 static void CG_SetupFirstPersonView(void)

@@ -1221,7 +1221,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         else
             trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
         if (number == cg.frame->ps.clientnum) {
-            cg.fall_time = cg.oldframe->servertime + BASE_FRAMETIME + FALL_TIME;
+            cg.fall_time = cg.oldframe->servertime + FALL_TIME;
             cg.fall_value = min(param / 2, 40);
         }
         break;
@@ -1261,10 +1261,8 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         }
         break;
     case EV_EARTHQUAKE2:
-        if (cg.quake2_time < cg.time) {
-            cg.quake2_factor = param * 0.1f;
-            cg.quake2_time = cg.oldframe->servertime + BASE_FRAMETIME + DAMAGE_TIME;
-        }
+        cg.v_dmg_pitch = param * -0.1f;
+        cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
         break;
 
     case EV_RAILTRAIL:

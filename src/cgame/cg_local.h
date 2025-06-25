@@ -192,7 +192,6 @@ typedef struct {
         struct {
             vec3_t origin;
             vec3_t angles;
-            int total, time;
         } kick;
     } weapon;
 
@@ -202,12 +201,16 @@ typedef struct {
     vec3_t viewangles_delta;
     vec3_t oldviewangles;
 
-    int fall_time;
-    int fall_value;
+    vec3_t kick_angles[2];
+    vec3_t kick_origin[2];
+    int kick_frame;
 
-    int damage_time;
-    vec3_t damage_dir;
-    float damage_kick;
+    int fall_time;
+    float fall_value;
+
+    int v_dmg_time;
+    float v_dmg_pitch;
+    float v_dmg_roll;
 
     int duck_time;
     float duck_factor;
@@ -215,9 +218,6 @@ typedef struct {
     int quake_time;
     int quake_frame;
     vec3_t quake_angles[2];
-
-    int quake2_time;
-    float quake2_factor;
 
     unsigned hit_marker_time;
     int hit_marker_count;

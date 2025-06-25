@@ -294,10 +294,20 @@ void CG_DeltaFrame(void)
         }
     }
 
-    if (cg.frame->ps.stats[STAT_DAMAGE] && cg.damage_time < cg.time) {
-        ByteToDir(cg.frame->ps.stats[STAT_DAMAGE] & 255, cg.damage_dir);
-        cg.damage_kick = ((cg.frame->ps.stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
-        cg.damage_time = cg.oldframe->servertime + BASE_FRAMETIME + DAMAGE_TIME;
+    if (cg.frame->ps.stats[STAT_DAMAGE]) {
+        vec3_t dir;
+        float kick, side;
+
+        ByteToDir(cg.frame->ps.stats[STAT_DAMAGE] & 255, dir);
+        kick = ((cg.frame->ps.stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
+
+        side = -DotProduct(dir, cg.v_forward);
+        cg.v_dmg_pitch = kick * side;
+
+        side = DotProduct(dir, cg.v_right);
+        cg.v_dmg_roll = kick * side;
+
+        cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
     }
 
     CG_CheckPredictionError();

@@ -169,46 +169,47 @@ void CG_AddDLights(void)
 
 static void CG_AddWeaponKick(float scale, float pitch)
 {
-    if (cg.weapon.kick.time > cg.oldframe->servertime)
-        return;
     VectorScale(cg.v_forward, scale, cg.weapon.kick.origin);
     VectorSet(cg.weapon.kick.angles, pitch, 0, 0);
-    cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
+}
+
+static void CG_AddHyperblasterKick(void)
+{
+    VectorScale(cg.v_forward, -2, cg.weapon.kick.origin);
+    for (int i = 0; i < 3; i++)
+        cg.weapon.kick.angles[i] = crand() * 0.7f;
 }
 
 static void CG_AddMachinegunKick(void)
 {
-    if (cg.weapon.kick.time > cg.oldframe->servertime)
-        return;
     for (int i = 0; i < 3; i++) {
         cg.weapon.kick.origin[i] = crand() * 0.35f;
         cg.weapon.kick.angles[i] = crand() * 0.7f;
     }
-    cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
 }
 
 static void CG_AddChaingunKick(int shots)
 {
-    if (cg.weapon.kick.time > cg.oldframe->servertime)
-        return;
     for (int i = 0; i < 3; i++) {
         cg.weapon.kick.origin[i] = crand() * 0.35f;
         cg.weapon.kick.angles[i] = crand() * (0.5f + (shots * 0.15f));
     }
-    cg.weapon.kick.total = KICK_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
+}
+
+static void CG_AddETFRifleKick(void)
+{
+    for (int i = 0; i < 3; i++) {
+        cg.weapon.kick.origin[i] = crand() * 0.85f;
+        cg.weapon.kick.angles[i] = crand() * 0.85f;
+    }
 }
 
 static void CG_AddBFGKick(void)
 {
-    if (cg.weapon.kick.time > cg.oldframe->servertime)
-        return;
     VectorScale(cg.v_forward, -2, cg.weapon.kick.origin);
-    VectorSet(cg.weapon.kick.angles, -20, 0, crand() * 8);
-    cg.weapon.kick.total = DAMAGE_TIME;
-    cg.weapon.kick.time = cg.oldframe->servertime + BASE_FRAMETIME + cg.weapon.kick.total;
+    cg.v_dmg_pitch = -40;
+    cg.v_dmg_roll = crand() * 8;
+    cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
 }
 
 /*
@@ -259,7 +260,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 23.5f, 6.0f, -6.0f }, 9.0f);
-            CG_AddWeaponKick(-2, -1);
+            CG_AddHyperblasterKick();
         }
         break;
     case MZ_MACHINEGUN:
@@ -412,14 +413,18 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     case MZ_ETF_RIFLE:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-        if (local)
+        if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 5.25f, -5.5f }, 4.0f);
+            CG_AddETFRifleKick();
+        }
         break;
     case MZ_ETF_RIFLE_2:
         VectorSet(dl->color, 0.9f, 0.7f, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
-        if (local)
+        if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, (const vec3_t) { 24.0f, 4.0f, -5.5f }, 4.0f);
+            CG_AddETFRifleKick();
+        }
         break;
     case MZ_HEATBEAM:
         VectorSet(dl->color, 1, 1, 0);
