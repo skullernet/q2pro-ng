@@ -219,6 +219,8 @@ typedef struct {
     int quake_frame;
     vec3_t quake_angles[2];
 
+    int last_effects_time;
+
     unsigned hit_marker_time;
     int hit_marker_count;
 
@@ -452,6 +454,7 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
 
 void CG_SmokeAndFlash(const vec3_t origin);
 
+void CG_EntityEffects(centity_t *cent);
 void CG_EntityEvents(centity_t *cent);
 
 void CG_RegisterTEntSounds(void);

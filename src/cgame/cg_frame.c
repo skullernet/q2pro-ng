@@ -80,6 +80,7 @@ void CG_ProcessFrames(void)
         if (!cg.frame)
             return;
         CG_SetActiveState();
+        CG_DeltaFrame();
     }
 
     cg_server_frame_t *frame = CG_ReadNextFrame();

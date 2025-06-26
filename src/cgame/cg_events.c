@@ -1337,11 +1337,10 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     }
 }
 
-void CG_EntityEvents(centity_t *cent)
+void CG_EntityEffects(centity_t *cent)
 {
-    entity_state_t *s = &cent->current;
+    const entity_state_t *s = &cent->current;
 
-    // EF_TELEPORTER acts like an event, but is not cleared each frame
     if (s->effects & EF_TELEPORTER)
         CG_TeleporterParticles(s->origin);
 
@@ -1360,6 +1359,11 @@ void CG_EntityEvents(centity_t *cent)
         ByteToDir(param & 0xff, dir);
         CG_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
     }
+}
+
+void CG_EntityEvents(centity_t *cent)
+{
+    const entity_state_t *s = &cent->current;
 
 #if USE_FPS
     if (cent->event_frame != cg.frame->number)

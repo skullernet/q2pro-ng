@@ -267,13 +267,23 @@ void CG_DeltaFrame(void)
     ent = &cg_entities[cg.frame->ps.clientnum];
     Com_PlayerToEntityState(&cg.frame->ps, &ent->current);
 
+    bool effects = false;
+    if (cg.frame->servertime - cg.last_effects_time >= BASE_FRAMETIME) {
+        effects = true;
+        cg.last_effects_time = cg.frame->servertime;
+    }
+
     // set current and prev, unpack solid, etc
     for (i = 0; i < cg.frame->num_entities; i++)
         parse_entity_update(&cg.frame->entities[i]);
 
     // fire events. due to footstep tracing this must be after updating entities.
-    for (i = 0; i < cg.frame->num_entities; i++)
-        CG_EntityEvents(&cg_entities[cg.frame->entities[i].number]);
+    for (i = 0; i < cg.frame->num_entities; i++) {
+        ent = &cg_entities[cg.frame->entities[i].number];
+        if (effects)
+            CG_EntityEffects(ent);
+        CG_EntityEvents(ent);
+    }
 
     if (cgs.demoplayback) {
         // this delta has nothing to do with local viewangles,
