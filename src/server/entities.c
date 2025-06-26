@@ -205,10 +205,20 @@ static bool SV_EntityVisible(int e, const visrow_t *mask)
     return false;
 }
 
+static float SV_GetEntityLoopDistMult(const edict_t *ent)
+{
+    int att = (ent->s.sound >> 16) & 255;
+    if (att == ATTN_ESCAPE_CODE)
+        return 0;
+    if (att == 0)
+        return SOUND_LOOPATTENUATE;
+    return att * (SOUND_LOOPATTENUATE_MULT / 64.0f);
+}
+
 static bool SV_EntityAttenuatedAway(const edict_t *ent)
 {
-    float mult = Com_GetEntityLoopDistMult(&ent->s);
     float dist = Distance(clientorg, ent->s.origin) - SOUND_FULLVOLUME;
+    float mult = SV_GetEntityLoopDistMult(ent);
 
     return dist * mult > 1.0f;
 }

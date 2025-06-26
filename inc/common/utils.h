@@ -34,8 +34,6 @@ bool Com_ParseTimespec(const char *s, int *frames);
 #define SOUND_LOOPATTENUATE         (ATTN_STATIC * 0.001f)
 #define SOUND_LOOPATTENUATE_MULT    0.0006f
 
-float Com_GetEntityLoopDistMult(const entity_state_t *ent);
-
 bool Com_ParseMapName(char *out, const char *in, size_t size);
 
 unsigned Com_HashString(const char *s, unsigned size);
