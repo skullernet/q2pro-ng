@@ -507,6 +507,7 @@ void    SCR_Shutdown(void);
 void    SCR_UpdateScreen(void);
 void    SCR_BeginLoadingPlaque(void);
 void    SCR_EndLoadingPlaque(void);
+void    SCR_RegisterMedia(void);
 void    SCR_ModeChanged(void);
 void    SCR_AddNetgraph(void);
 

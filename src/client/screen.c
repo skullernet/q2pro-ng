@@ -25,6 +25,12 @@ static cvar_t   *scr_debuggraph;
 static cvar_t   *scr_graphheight;
 static cvar_t   *scr_graphscale;
 static cvar_t   *scr_graphshift;
+static cvar_t   *scr_showstats;
+
+static qhandle_t    scr_font;
+static int          scr_width;
+static int          scr_height;
+static float        scr_scale;
 
 #define GRAPH_SAMPLES   4096
 #define GRAPH_MASK      (GRAPH_SAMPLES - 1)
@@ -109,8 +115,8 @@ static void SCR_DrawDebugGraph(void)
     if (height < 1)
         return;
 
-    w = r_config.width;
-    y = r_config.height;
+    w = scr_width;
+    y = scr_height;
 
     for (a = 0; a < w; a++) {
         i = (graph.current - 1 - a) & GRAPH_MASK;
@@ -124,6 +130,24 @@ static void SCR_DrawDebugGraph(void)
     }
 }
 
+static void SCR_DrawStats(void)
+{
+    if (!scr_showstats->integer)
+        return;
+
+    static const char *const names[4] = {
+        "c_fps", "r_fps", "c_mps", "c_pps"
+    };
+
+    int x = scr_width - 11 * CONCHAR_WIDTH;
+    int y = scr_height - 5 * CONCHAR_HEIGHT;
+
+    for (int i = 0; i < 4; i++) {
+        R_DrawString(x, y, 0, -1, va("%4d %s", cls.measure.fps[i], names[i]), scr_font);
+        y += CONCHAR_HEIGHT;
+    }
+}
+
 void SCR_ModeChanged(void)
 {
     IN_Activate();
@@ -131,6 +155,9 @@ void SCR_ModeChanged(void)
     UI_ModeChanged();
     if (cge)
         cge->ModeChanged();
+    scr_scale = R_ClampScale(NULL);
+    scr_width = r_config.width * scr_scale;
+    scr_height = r_config.height * scr_scale;
     cls.disable_screen = 0;
 }
 
@@ -147,10 +174,16 @@ void SCR_Init(void)
     scr_graphheight = Cvar_Get("graphheight", "32", 0);
     scr_graphscale = Cvar_Get("graphscale", "1", 0);
     scr_graphshift = Cvar_Get("graphshift", "0", 0);
+    scr_showstats = Cvar_Get("scr_showstats", "0", 0);
 }
 
 void SCR_Shutdown(void)
 {
+}
+
+void SCR_RegisterMedia(void)
+{
+    scr_font = R_RegisterFont("conchars");
 }
 
 /*
@@ -246,11 +279,17 @@ static void SCR_DrawActive(void)
 
     cge->DrawActiveFrame(cls.realtime);
 
+    R_SetScale(scr_scale);
+
+    SCR_DrawStats();
+
     if (scr_timegraph->integer)
         SCR_DebugGraph(cls.frametime * 300, 0xdc);
 
     if (scr_debuggraph->integer || scr_timegraph->integer || scr_netgraph->integer)
         SCR_DrawDebugGraph();
+
+    R_SetScale(1.0f);
 }
 
 /*

@@ -1610,6 +1610,7 @@ void CL_RestartFilesystem(bool total)
 
         R_Init(false);
 
+        SCR_RegisterMedia();
         Con_RegisterMedia();
         UI_Init();
     } else {
@@ -1665,6 +1666,7 @@ void CL_RestartRefresh(bool total)
         UI_Shutdown();
         R_Shutdown(false);
         R_Init(false);
+        SCR_RegisterMedia();
         Con_RegisterMedia();
         UI_Init();
     }
