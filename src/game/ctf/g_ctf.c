@@ -1154,7 +1154,7 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
     if (other->takedamage) {
         if (self->dmg)
-            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
+            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
         CTFResetGrapple(self);
         return;
     }

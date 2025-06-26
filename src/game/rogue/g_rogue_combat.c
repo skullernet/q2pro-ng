@@ -69,7 +69,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
             if (ent->client)
                 ent->client->nuke_time = level.time + SEC(2);
             VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
-            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, points, points, DAMAGE_RADIUS, mod);
+            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
     }
     ent = g_edicts; // skip the worldspawn
@@ -119,7 +119,7 @@ void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, ch
             points = points * 0.5f;
         if (points > 0 && CanDamage(ent, inflictor)) {
             VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
-            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, points, points, DAMAGE_RADIUS, mod);
+            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
     }
 }

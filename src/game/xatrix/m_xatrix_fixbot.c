@@ -369,7 +369,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     if (!(tr.surface_flags & SURF_SKY)) {
         if (tr.fraction < 1.0f) {
             if (hit->takedamage) {
-                T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
+                T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
                 G_TempEntity(tr.endpos, te_impact, tr.plane.dir);
 

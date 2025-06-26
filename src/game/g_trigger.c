@@ -701,7 +701,7 @@ void THINK(hurt_think)(edict_t *self)
             }
         }
 
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
     }
 
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
@@ -737,7 +737,7 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     else
         dflags = DAMAGE_NONE;
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
+    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
 }
 
 void SP_trigger_hurt(edict_t *self)

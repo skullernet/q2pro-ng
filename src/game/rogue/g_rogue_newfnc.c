@@ -102,7 +102,7 @@ void MOVEINFO_ENDFUNC(fd_secret_done)(edict_t *self)
 void MOVEINFO_BLOCKED(secret_blocked)(edict_t *self, edict_t *other)
 {
     if (!(self->flags & FL_TEAMSLAVE))
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 0, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 0, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 }
 
 /*

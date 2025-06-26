@@ -95,9 +95,9 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
 SpawnDamage
 ================
 */
-static void SpawnDamage(entity_event_t type, const vec3_t origin, const vec3_t normal, int damage)
+static void SpawnDamage(entity_event_t type, const vec3_t origin, int normal, int damage)
 {
-    G_TempEntity(origin, type, DirToByte(normal));
+    G_TempEntity(origin, type, normal);
 }
 
 /*
@@ -124,7 +124,7 @@ dflags      these flags are used to control how T_Damage works
     DAMAGE_NO_PROTECTION    kills godmode, armor, everything
 ============
 */
-static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int damage, damageflags_t dflags)
+static int CheckPowerArmor(edict_t *ent, const vec3_t point, int normal, int damage, damageflags_t dflags)
 {
     gclient_t *client;
     int        save;
@@ -227,7 +227,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, const vec3_t normal
     return save;
 }
 
-static int CheckArmor(edict_t *ent, const vec3_t point, const vec3_t normal, int damage, entity_event_t te_sparks, damageflags_t dflags)
+static int CheckArmor(edict_t *ent, const vec3_t point, int normal, int damage, entity_event_t te_sparks, damageflags_t dflags)
 {
     gclient_t     *client;
     int            save;
@@ -452,7 +452,7 @@ bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
 }
 
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t dir, const vec3_t point,
-              const vec3_t normal, int damage, int knockback, damageflags_t dflags, mod_t mod)
+              int normal, int damage, int knockback, damageflags_t dflags, mod_t mod)
 {
     gclient_t *client;
     int        take;
@@ -763,6 +763,6 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         // to spawn damage effect
         closest_point_to_box(inflictor_center, ent->r.absmin, ent->r.absmax, v);
 
-        T_Damage(ent, inflictor, attacker, dir, v, dir, points, points, dflags | DAMAGE_RADIUS, mod);
+        T_Damage(ent, inflictor, attacker, dir, v, DirToByte(dir), points, points, dflags | DAMAGE_RADIUS, mod);
     }
 }

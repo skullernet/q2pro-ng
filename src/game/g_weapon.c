@@ -69,7 +69,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     VectorSubtract(point, self->enemy->s.origin, dir);
 
     // do the damage
-    T_Damage(hit, self, self, dir, point, vec3_origin, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
+    T_Damage(hit, self, self, dir, point, 0, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
 
     if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client))
         return false;
@@ -143,7 +143,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 
         // did we hit an hurtable entity?
         if (hit->takedamage) {
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, mod.id == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, mod.id == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
 
             // only deadmonster is pierceable, or actual dead monsters
             // that haven't been made non-solid yet
@@ -277,7 +277,7 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
         G_FreeEdict(self);
     } else {
         entity_event_t event = (self->style != MOD_BLUEBLASTER) ? EV_BLASTER : EV_BLUEHYPERBLASTER;
@@ -351,7 +351,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
             mod = MOD_HANDGRENADE;
         else
             mod = MOD_GRENADE;
-        T_Damage(other, ent, owner, dir, ent->s.origin, normal, ent->dmg, ent->dmg,
+        T_Damage(other, ent, owner, dir, ent->s.origin, DirToByte(normal), ent->dmg, ent->dmg,
                  mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, (mod_t) { mod });
     }
 
@@ -547,7 +547,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
+        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.dir, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
         // don't throw any debris in net games
     } else if (!deathmatch.integer && !coop.integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
@@ -626,7 +626,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
 
         // try to kill it first
         if ((hit != self) && (hit->takedamage))
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
 
         // dead, so we don't need to care about checking pierce
         if (!hit->r.inuse || (!hit->r.solid || hit->r.solid == SOLID_TRIGGER))
@@ -754,7 +754,7 @@ void THINK(bfg_explode)(edict_t *self)
             dist = Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-            T_Damage(ent, self, owner, self->velocity, centroid, vec3_origin, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
+            T_Damage(ent, self, owner, self->velocity, centroid, 0, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
 
             // Paril: draw BFG lightning laser to enemies
             G_SpawnTrail(self->s.origin, centroid, EV_BFG_ZAP);
@@ -784,7 +784,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
     T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
@@ -870,7 +870,7 @@ void THINK(bfg_think)(edict_t *self)
 
             // hurt it if we can
             if ((hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
-                T_Damage(hit, self, owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+                T_Damage(hit, self, owner, dir, tr.endpos, 0, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
 
             // if we hit something that's not a monster or player we're done
             if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && (!hit->client)) {

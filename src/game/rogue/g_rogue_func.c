@@ -204,7 +204,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
         // if it's still there, nuke it
         if (other && other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
@@ -213,9 +213,9 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 
     // gib dead things
     if (other->health < 1)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 100, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     // [Paril-KEX] killed, so don't change direction
     if (!other->r.inuse || !other->r.solid)

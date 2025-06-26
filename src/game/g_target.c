@@ -443,7 +443,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
     // if noexit, do a ton of damage to other
     if (deathmatch.integer && !g_dm_allow_exit.integer && other != world) {
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, (mod_t) { MOD_EXIT });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 10 * other->max_health, 1000, DAMAGE_NONE, (mod_t) { MOD_EXIT });
         return;
     }
 
@@ -765,7 +765,7 @@ void THINK(target_laser_think)(edict_t *self)
         // hurt it if we can
         if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {
             damaged_thing = true;
-            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, dmg, (mod_t) { MOD_TARGET_LASER });
+            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, 0, self->dmg, 1, dmg, (mod_t) { MOD_TARGET_LASER });
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done

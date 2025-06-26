@@ -447,7 +447,7 @@ static void brain_tounge_attack(edict_t *self)
     trap_LinkEntity(te);
 
     VectorSubtract(start, end, dir);
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_BRAINTENTACLE });
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, damage, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_BRAINTENTACLE });
 
     // pull the enemy in
     vec3_t forward;

@@ -635,7 +635,7 @@ void TOUCH(func_object_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 
     vec3_t pos;
     closest_point_to_box(other->s.origin, self->r.absmin, self->r.absmax, pos);
-    T_Damage(other, self, self, vec3_origin, pos, tr->plane.normal, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+    T_Damage(other, self, self, vec3_origin, pos, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
 
     other->damage_debounce_time = level.time + HZ(10);
 }
@@ -1949,7 +1949,7 @@ void TOUCH(fire_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     }
 
     if (other->takedamage)
-        T_Damage(other, self, self, vec3_origin, self->s.origin, vec3_origin, 20, 0, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
+        T_Damage(other, self, self, vec3_origin, self->s.origin, 0, 20, 0, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
 
     if (trap_PointContents(self->s.origin) & CONTENTS_LAVA)
         G_FreeEdict(self);

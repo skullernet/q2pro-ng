@@ -627,7 +627,7 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
 
     G_StartSound(self, CHAN_AUTO, loogie_hit, 1.0f, ATTN_NORM);
 
@@ -870,7 +870,7 @@ void TOUCH(gekk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 200) {
         VectorMA(self->s.origin, self->r.maxs[0], normal, point);
         damage = irandom2(10, 20);
-        T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, (mod_t) { MOD_GEKK });
+        T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, (mod_t) { MOD_GEKK });
         self->style = 0;
     }
 

@@ -246,7 +246,7 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
 
         // keep the point at their feet so they always get knocked up
         point[2] = ent->r.absmin[2];
-        T_Damage(ent, inflictor, attacker, dir, point, dir, points, kick * amount, DAMAGE_RADIUS, mod);
+        T_Damage(ent, inflictor, attacker, dir, point, DirToByte(dir), points, kick * amount, DAMAGE_RADIUS, mod);
 
         if (ent->client)
             ent->velocity[2] = max(270, ent->velocity[2]);

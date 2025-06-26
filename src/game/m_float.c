@@ -505,7 +505,7 @@ static void floater_zap(edict_t *self)
     // FIXME use the flash, Luke
     G_TempEntity(origin, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
 
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
 }
 
 void MONSTERINFO_ATTACK(floater_attack)(edict_t *self)

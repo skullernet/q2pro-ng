@@ -617,7 +617,7 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
         if (allow_safety && G_FixStuckObject(hit, hit->s.origin) != NO_GOOD_POSITION)
             continue;
 
-        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, vec3_origin, 100000, 0, DAMAGE_NO_PROTECTION, (mod_t) { mod });
+        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, (mod_t) { mod });
     }
 
     return true; // all clear

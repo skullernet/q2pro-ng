@@ -443,7 +443,7 @@ static void Widow2Tongue(edict_t *self)
     trap_LinkEntity(te);
 
     VectorSubtract(start, end, dir);
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 2, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, 2, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
 }
 
 static void Widow2TonguePull(edict_t *self)
@@ -837,7 +837,7 @@ static void KillChildren(edict_t *self)
     while ((ent = G_Find(ent, FOFS(classname), "monster_stalker")) != NULL) {
         // FIXME - may need to stagger
         if ((ent->r.inuse) && (ent->health > 0))
-            T_Damage(ent, self, self, vec3_origin, self->enemy->s.origin, vec3_origin, (ent->health + 1), 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
+            T_Damage(ent, self, self, vec3_origin, self->enemy->s.origin, 0, (ent->health + 1), 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
     }
 }
 

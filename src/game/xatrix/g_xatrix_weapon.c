@@ -65,7 +65,7 @@ void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (!other->takedamage)
         return;
 
-    T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.normal, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
+    T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_RIPPER });
     G_FreeEdict(self);
 }
 
@@ -242,7 +242,7 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.normal, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
+        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.dir, ent->dmg, ent->dmg, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
@@ -476,7 +476,7 @@ void THINK(Trap_Think)(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     ent->die = NULL;
 
-    T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, vec3_origin, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_TRAP });
+    T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, 0, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_TRAP });
 
     if (best->r.svflags & SVF_MONSTER)
         M_ProcessPain(best);

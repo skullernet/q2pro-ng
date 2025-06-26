@@ -394,7 +394,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     }
 
     if (other->takedamage)
-        T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.normal, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+        T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.dir, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
     G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM);
 
@@ -516,7 +516,7 @@ void THINK(proboscis_think)(edict_t *self)
             } else {
                 // succ & drain
                 if (self->timestamp <= level.time) {
-                    T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.normal, 2, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+                    T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.dir, 2, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
                     owner->health = min(owner->max_health, owner->health + 2);
                     owner->monsterinfo.setskin(owner);
                     self->timestamp = level.time + HZ(10);

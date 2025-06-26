@@ -393,7 +393,7 @@ static void P_FallingDamage(edict_t *ent)
             damage = 1;
 
         if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
-            T_Damage(ent, world, world, dir, ent->s.origin, vec3_origin, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
+            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
     }
 
     // Paril: falling damage noises alert monsters
@@ -509,7 +509,7 @@ static void P_WorldEffects(void)
 
                 current_player->pain_debounce_time = level.time;
 
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, vec3_origin, current_player->dmg, 0, DAMAGE_NO_ARMOR, (mod_t) { MOD_WATER });
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, current_player->dmg, 0, DAMAGE_NO_ARMOR, (mod_t) { MOD_WATER });
             }
         // Paril: almost-drowning sounds
         } else if (current_player->air_finished <= level.time + SEC(3)) {
@@ -542,14 +542,14 @@ static void P_WorldEffects(void)
 
             int dmg = (envirosuit ? 1 : 3) * waterlevel; // take 1/3 damage with envirosuit
 
-            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, vec3_origin, dmg, 0, DAMAGE_NONE, (mod_t) { MOD_LAVA });
+            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, dmg, 0, DAMAGE_NONE, (mod_t) { MOD_LAVA });
             current_player->slime_debounce_time = level.time + HZ(10);
         }
 
         if (current_player->watertype & CONTENTS_SLIME) {
             if (!envirosuit) {
                 // no damage from slime with envirosuit
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, vec3_origin, 1 * waterlevel, 0, DAMAGE_NONE, (mod_t) { MOD_SLIME });
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, 1 * waterlevel, 0, DAMAGE_NONE, (mod_t) { MOD_SLIME });
                 current_player->slime_debounce_time = level.time + HZ(10);
             }
         }

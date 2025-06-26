@@ -236,7 +236,7 @@ static void flyer_kamikaze_explode(edict_t *self)
 
     if (self->enemy) {
         VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-        T_Damage(self->enemy, self, self, dir, self->s.origin, vec3_origin, 50, 50, DAMAGE_RADIUS, (mod_t) { MOD_UNKNOWN });
+        T_Damage(self->enemy, self, self, dir, self->s.origin, 0, 50, 50, DAMAGE_RADIUS, (mod_t) { MOD_UNKNOWN });
     }
 
     flyer_die(self, NULL, NULL, 0, dir, (mod_t) { MOD_EXPLOSIVE });
@@ -648,7 +648,7 @@ bool MONSTERINFO_BLOCKED(flyer_blocked)(edict_t *self, float dist)
 
         // if the above didn't blow us up (i.e. I got blocked by the player)
         if (self->r.inuse)
-            T_Damage(self, self, self, vec3_origin, self->s.origin, vec3_origin, 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+            T_Damage(self, self, self, vec3_origin, self->s.origin, 0, 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 
         return true;
     }
@@ -660,7 +660,7 @@ void TOUCH(kamikaze_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool
 {
     vec3_t dir;
     VectorNormalize2(ent->velocity, dir);
-    T_Damage(ent, ent, ent, dir, ent->s.origin, dir, 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+    T_Damage(ent, ent, ent, dir, ent->s.origin, DirToByte(dir), 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
 }
 
 void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)

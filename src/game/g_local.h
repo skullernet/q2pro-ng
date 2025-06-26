@@ -1401,7 +1401,7 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2);
 bool CanDamage(edict_t *targ, edict_t *inflictor);
 bool CheckTeamDamage(edict_t *targ, edict_t *attacker);
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t dir, const vec3_t point,
-              const vec3_t normal, int damage, int knockback, damageflags_t dflags, mod_t mod);
+              int normal, int damage, int knockback, damageflags_t dflags, mod_t mod);
 void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius,
                     damageflags_t dflags, mod_t mod);
 void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod);

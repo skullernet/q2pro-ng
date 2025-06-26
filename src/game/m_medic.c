@@ -193,7 +193,6 @@ void cleanupHeal(edict_t *self)
 void abortHeal(edict_t *self, bool gib, bool mark)
 {
     int              hurt;
-    static const vec3_t pain_normal = { 0, 0, 1 };
 
     if (self->enemy && self->enemy->r.inuse && !self->enemy->client && (self->monsterinfo.aiflags & AI_MEDIC)) {
         cleanupHealTarget(self->enemy);
@@ -217,7 +216,7 @@ void abortHeal(edict_t *self, bool gib, bool mark)
                 hurt = 500;
 
             T_Damage(self->enemy, self, self, vec3_origin, self->enemy->s.origin,
-                     pain_normal, hurt, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+                     DIRTOBYTE_UP, hurt, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
         }
 
         cleanupHeal(self);

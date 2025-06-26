@@ -284,7 +284,7 @@ void TOUCH(mutant_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 30) {
         VectorMA(self->s.origin, self->r.maxs[0], normal, point);
         damage = irandom2(40, 50);
-        T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+        T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
         self->style = 0;
     }
 

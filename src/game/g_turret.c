@@ -37,7 +37,7 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
             attacker = &g_edicts[self->teammaster->r.ownernum];
         else
             attacker = self->teammaster;
-        T_Damage(other, self, attacker, vec3_origin, other->s.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, attacker, vec3_origin, other->s.origin, 0, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
     }
 }
 
