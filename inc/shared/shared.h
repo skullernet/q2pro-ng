@@ -81,7 +81,7 @@ typedef unsigned int qhandle_t;
 
 #define MODELINDEX_WORLD    0
 #define MODELINDEX_DUMMY    1   // dummy index for beams
-#define MODELINDEX_PLAYER   255
+#define MODELINDEX_PLAYER   (MAX_MODELS - 1)
 
 #define ENTITYNUM_WORLD     (MAX_EDICTS - 2)
 #define ENTITYNUM_NONE      (MAX_EDICTS - 1)

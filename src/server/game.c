@@ -179,7 +179,7 @@ static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
     return Q_strlcpy_null(buf, sv.configstrings[index], size);
 }
 
-static int PF_FindConfigstring(const char *name, int start, int max, int skip)
+static int PF_FindConfigstring(const char *name, int start, int max, bool create)
 {
     char *string;
     int i;
@@ -188,21 +188,17 @@ static int PF_FindConfigstring(const char *name, int start, int max, int skip)
         return 0;
 
     for (i = 1; i < max; i++) {
-        if (i == skip) {
-            continue;
-        }
         string = sv.configstrings[start + i];
-        if (!string) {
+        if (!string)
             break;
-        }
-        if (!strcmp(string, name)) {
+        if (!strcmp(string, name))
             return i;
-        }
     }
 
-    if (i == max)
-        Com_Error(ERR_DROP, "%s(%s): overflow", __func__, name);
+    if (!create)
+        return 0;
 
+    Q_assert_soft(i < max);
     PF_SetConfigstring(i + start, name);
 
     return i;

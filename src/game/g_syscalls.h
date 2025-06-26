@@ -22,7 +22,7 @@ q_noreturn void trap_Error(const char *msg);
 
 void trap_SetConfigstring(unsigned index, const char *str);
 size_t trap_GetConfigstring(unsigned index, char *buf, size_t size);
-int trap_FindConfigstring(const char *name, int start, int max, int skip);
+int trap_FindConfigstring(const char *name, int start, int max, bool create);
 
 void trap_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
 void trap_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);

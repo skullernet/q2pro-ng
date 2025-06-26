@@ -282,8 +282,6 @@ void CG_RegisterVWepModels(void)
         return;
 
     for (i = 1; i < MAX_MODELS; i++) {
-        if (i == MODELINDEX_PLAYER)
-            continue;
         trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
         if (name[0] != '#')
             continue;
@@ -361,8 +359,6 @@ void CG_PrepRefresh(void)
     CG_RegisterTEntModels();
 
     for (i = 1; i < MAX_MODELS; i++) {
-        if (i == MODELINDEX_PLAYER)
-            continue;
         trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
         if (!name[0])
             break;

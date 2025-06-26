@@ -185,7 +185,7 @@ typedef struct {
     // they connect, and changes are sent to all connected clients.
     void (*SetConfigstring)(unsigned index, const char *str);
     size_t (*GetConfigstring)(unsigned index, char *buf, size_t size);
-    int (*FindConfigstring)(const char *name, int start, int max, int skip);
+    int (*FindConfigstring)(const char *name, int start, int max, bool create);
 
     // collision detection
     void (*Trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
