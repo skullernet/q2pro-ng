@@ -1521,7 +1521,7 @@ static size_t CL_WeaponModel_m(char *buffer, size_t size)
 
 static size_t CL_NumEntities_m(char *buffer, size_t size)
 {
-    return Q_snprintf(buffer, size, "%i", cl.frame.numEntities);
+    return Q_snprintf(buffer, size, "%i", cl.frame.num_entities);
 }
 
 static size_t CL_Surface_m(char *buffer, size_t size)

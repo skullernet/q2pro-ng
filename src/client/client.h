@@ -75,8 +75,8 @@ typedef struct {
 
     player_state_t  ps;
 
-    int             numEntities;
-    unsigned        firstEntity;
+    int             num_entities;
+    unsigned        first_entity;
 } server_frame_t;
 
 // locally calculated frame flags for debug display
@@ -107,8 +107,8 @@ typedef struct {
     // rebuilt each valid frame
     entity_state_t  baselines[MAX_EDICTS];
 
-    entity_state_t  entityStates[MAX_PARSE_ENTITIES];
-    unsigned        numEntityStates;
+    entity_state_t  entities[MAX_PARSE_ENTITIES];
+    unsigned        next_entity;
 
     server_frame_t  frames[UPDATE_BACKUP];
     unsigned        frameflags;

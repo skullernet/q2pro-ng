@@ -32,13 +32,13 @@ static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
 {
     entity_state_t  *state;
 
-    if (frame->numEntities >= MAX_PACKET_ENTITIES) {
+    if (frame->num_entities >= MAX_PACKET_ENTITIES) {
         Com_Error(ERR_DROP, "%s: too many entities", __func__);
     }
 
-    state = &cl.entityStates[cl.numEntityStates & PARSE_ENTITIES_MASK];
-    cl.numEntityStates++;
-    frame->numEntities++;
+    state = &cl.entities[cl.next_entity & PARSE_ENTITIES_MASK];
+    cl.next_entity++;
+    frame->num_entities++;
 
     *state = *old;
 
@@ -58,8 +58,8 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     const entity_state_t    *oldstate;
     int                     i, oldindex, oldnum, newnum;
 
-    frame->firstEntity = cl.numEntityStates;
-    frame->numEntities = 0;
+    frame->first_entity = cl.next_entity;
+    frame->num_entities = 0;
 
     // delta from the entities present in oldframe
     oldindex = 0;
@@ -67,11 +67,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
     if (!oldframe) {
         oldnum = MAX_EDICTS;
     } else {
-        if (oldindex >= oldframe->numEntities) {
+        if (oldindex >= oldframe->num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-            oldstate = &cl.entityStates[i];
+            i = (oldframe->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+            oldstate = &cl.entities[i];
             oldnum = oldstate->number;
         }
     }
@@ -98,11 +98,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
             oldindex++;
 
-            if (oldindex >= oldframe->numEntities) {
+            if (oldindex >= oldframe->num_entities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-                oldstate = &cl.entityStates[i];
+                i = (oldframe->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entities[i];
                 oldnum = oldstate->number;
             }
         }
@@ -119,11 +119,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
             oldindex++;
 
-            if (oldindex >= oldframe->numEntities) {
+            if (oldindex >= oldframe->num_entities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-                oldstate = &cl.entityStates[i];
+                i = (oldframe->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entities[i];
                 oldnum = oldstate->number;
             }
             continue;
@@ -137,11 +137,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
             oldindex++;
 
-            if (oldindex >= oldframe->numEntities) {
+            if (oldindex >= oldframe->num_entities) {
                 oldnum = MAX_EDICTS;
             } else {
-                i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-                oldstate = &cl.entityStates[i];
+                i = (oldframe->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+                oldstate = &cl.entities[i];
                 oldnum = oldstate->number;
             }
             continue;
@@ -164,11 +164,11 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
 
         oldindex++;
 
-        if (oldindex >= oldframe->numEntities) {
+        if (oldindex >= oldframe->num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (oldframe->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-            oldstate = &cl.entityStates[i];
+            i = (oldframe->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+            oldstate = &cl.entities[i];
             oldnum = oldstate->number;
         }
     }
@@ -253,7 +253,7 @@ static void CL_ParseFrame(void)
             // should never happen
             Com_DPrintf("%s: delta from invalid frame\n", __func__);
             cl.frameflags |= FF_BADFRAME;
-        } else if (cl.numEntityStates - oldframe->firstEntity >
+        } else if (cl.next_entity - oldframe->first_entity >
                    MAX_PARSE_ENTITIES - MAX_PACKET_ENTITIES) {
             Com_DPrintf("%s: delta entities too old\n", __func__);
             cl.frameflags |= FF_OLDENT;

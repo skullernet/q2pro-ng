@@ -206,7 +206,7 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
         return false;
     if (frame->number != number)
         return false;
-    if (cl.numEntityStates - frame->firstEntity > MAX_PARSE_ENTITIES)
+    if (cl.next_entity - frame->first_entity > MAX_PARSE_ENTITIES)
         return false;
 
     out->number = number;
@@ -215,9 +215,9 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
 
     out->ps = frame->ps;
 
-    for (int i = 0; i < frame->numEntities; i++)
-        out->entities[i] = cl.entityStates[(frame->firstEntity + i) & PARSE_ENTITIES_MASK];
-    out->num_entities = frame->numEntities;
+    for (int i = 0; i < frame->num_entities; i++)
+        out->entities[i] = cl.entities[(frame->first_entity + i) & PARSE_ENTITIES_MASK];
+    out->num_entities = frame->num_entities;
 
     return true;
 }

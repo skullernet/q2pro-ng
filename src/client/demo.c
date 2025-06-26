@@ -84,25 +84,25 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
     if (!from)
         from_num_entities = 0;
     else
-        from_num_entities = from->numEntities;
+        from_num_entities = from->num_entities;
 
     newindex = 0;
     oldindex = 0;
     oldent = newent = NULL;
-    while (newindex < to->numEntities || oldindex < from_num_entities) {
-        if (newindex >= to->numEntities) {
+    while (newindex < to->num_entities || oldindex < from_num_entities) {
+        if (newindex >= to->num_entities) {
             newnum = MAX_EDICTS;
         } else {
-            i = (to->firstEntity + newindex) & PARSE_ENTITIES_MASK;
-            newent = &cl.entityStates[i];
+            i = (to->first_entity + newindex) & PARSE_ENTITIES_MASK;
+            newent = &cl.entities[i];
             newnum = newent->number;
         }
 
         if (oldindex >= from_num_entities) {
             oldnum = MAX_EDICTS;
         } else {
-            i = (from->firstEntity + oldindex) & PARSE_ENTITIES_MASK;
-            oldent = &cl.entityStates[i];
+            i = (from->first_entity + oldindex) & PARSE_ENTITIES_MASK;
+            oldent = &cl.entities[i];
             oldnum = oldent->number;
         }
 
@@ -184,7 +184,7 @@ void CL_EmitDemoFrame(void)
         oldframe = &cl.frames[cls.demo.last_server_frame & UPDATE_MASK];
         lastframe = FRAME_PRE;
         if (oldframe->number != cls.demo.last_server_frame || !oldframe->valid ||
-            cl.numEntityStates - oldframe->firstEntity > MAX_PARSE_ENTITIES) {
+            cl.next_entity - oldframe->first_entity > MAX_PARSE_ENTITIES) {
             oldframe = NULL;
             lastframe = -1;
         }
@@ -768,7 +768,7 @@ void CL_EmitDemoSnapshot(void)
         j = cl.frame.number - (UPDATE_BACKUP - 1) + i;
         frame = &cl.frames[j & UPDATE_MASK];
         if (frame->number != j || !frame->valid ||
-            cl.numEntityStates - frame->firstEntity > MAX_PARSE_ENTITIES) {
+            cl.next_entity - frame->first_entity > MAX_PARSE_ENTITIES) {
             continue;
         }
 
