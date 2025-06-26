@@ -254,12 +254,12 @@ void PrecacheGibs(const gib_def_t *gibs)
 
 void BecomeExplosion1(edict_t *self)
 {
-    G_BecomeExplosion(self, EV_EXPLOSION1, NULL);
+    G_BecomeEvent(self, EV_EXPLOSION1, 0);
 }
 
 static void BecomeExplosion2(edict_t *self)
 {
-    G_BecomeExplosion(self, EV_EXPLOSION2, NULL);
+    G_BecomeEvent(self, EV_EXPLOSION2, 0);
 }
 
 /*QUAKED path_corner (.5 .3 0) (-8 -8 -8) (8 8 8) TELEPORT

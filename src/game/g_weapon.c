@@ -281,7 +281,7 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         G_FreeEdict(self);
     } else {
         entity_event_t event = (self->style != MOD_BLUEBLASTER) ? EV_BLASTER : EV_BLUEHYPERBLASTER;
-        G_BecomeExplosion(self, event, tr->plane.normal);
+        G_BecomeEvent(self, event, tr->plane.dir);
     }
 }
 
@@ -368,7 +368,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
         event = ent->groundentity ? EV_GRENADE_EXPLOSION_WATER : EV_ROCKET_EXPLOSION_WATER;
     else
         event = ent->groundentity ? EV_GRENADE_EXPLOSION : EV_ROCKET_EXPLOSION;
-    G_BecomeExplosion(ent, event, NULL);
+    G_BecomeEvent(ent, event, 0);
 }
 
 void THINK(Grenade_Explode)(edict_t *ent)
@@ -558,7 +558,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
 
     VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
-    G_BecomeExplosion(ent, ent->waterlevel ? EV_ROCKET_EXPLOSION_WATER : EV_ROCKET_EXPLOSION, NULL);
+    G_BecomeEvent(ent, ent->waterlevel ? EV_ROCKET_EXPLOSION_WATER : EV_ROCKET_EXPLOSION, 0);
 }
 
 edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)

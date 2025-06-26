@@ -731,11 +731,6 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
     trap_LinkEntity(ent);
 }
 
-void G_BecomeExplosion(edict_t *ent, entity_event_t event, const vec3_t normal)
-{
-    G_BecomeEvent(ent, event, normal ? DirToByte(normal) : 0);
-}
-
 void G_SnapVectorTowards(vec3_t v, const vec3_t to)
 {
     for (int i = 0; i < 3; i++) {

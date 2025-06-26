@@ -247,7 +247,7 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, (mod_t) { MOD_PHALANX });
 
     VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
-    G_BecomeExplosion(ent, EV_EXPLOSION1, NULL);
+    G_BecomeEvent(ent, EV_EXPLOSION1, 0);
 }
 
 void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
