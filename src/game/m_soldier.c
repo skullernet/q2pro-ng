@@ -521,7 +521,7 @@ void PRETHINK(soldierh_laser_update)(edict_t *laser)
     if (!self->deadflag)
         PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), axis[0], NULL);
 
-    VectorCopy(start, laser->s.origin);
+    G_SnapVector(start, laser->s.origin);
     VectorCopy(axis[0], laser->movedir);
     trap_LinkEntity(laser);
     dabeam_update(laser, false);

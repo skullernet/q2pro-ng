@@ -1024,8 +1024,8 @@ static void medic_cable_attack(edict_t *self)
         te->think = medic_cable_think;
     }
 
-    VectorCopy(start, te->s.old_origin);
-    VectorCopy(end, te->s.origin);
+    G_SnapVector(start, te->s.old_origin);
+    G_SnapVector(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }

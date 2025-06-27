@@ -92,7 +92,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
     pierce_t pierce;
     pierce_begin(&pierce);
 
-    vec3_t end;
+    vec3_t end, pos;
     VectorCopy(end_, end);
     while (1) {
         trap_Trace(&tr, start, NULL, NULL, end, self->s.number, *mask);
@@ -119,8 +119,10 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
                 else
                     color = EV_SPLASH_UNKNOWN;
 
-                if (color != EV_SPLASH_UNKNOWN)
-                    G_TempEntity(tr.endpos, color, MakeLittleShort(tr.plane.dir, 8));
+                if (color != EV_SPLASH_UNKNOWN) {
+                    G_SnapVectorTowards(tr.endpos, start, pos);
+                    G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
+                }
 
                 // change bullet's course when it enters water
                 vec3_t dir, forward, right, up;
@@ -155,7 +157,8 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             // send gun puff / flash
             // don't mark the sky
             if (te_impact != EV_NONE && !(tr.surface_flags & SURF_SKY)) {
-                G_TempEntity(tr.endpos, te_impact, tr.plane.dir);
+                G_SnapVectorTowards(tr.endpos, start, pos);
+                G_TempEntity(pos, te_impact, tr.plane.dir);
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -650,7 +653,8 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
 
     // send gun puff / flash
     entity_event_t te = (deathmatch.integer && g_instagib.integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
-    G_SpawnTrail(start, tr.endpos, te);
+    G_SnapVectorTowards(tr.endpos, start, end);
+    G_SpawnTrail(start, end, te);
 
     if (self->client)
         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -681,7 +685,7 @@ void THINK(bfg_laser_update)(edict_t *self)
         return;
     }
 
-    VectorCopy(owner->s.origin, self->s.origin);
+    G_SnapVector(owner->s.origin, self->s.origin);
     self->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(self);
 }
@@ -702,8 +706,8 @@ static void bfg_spawn_laser(edict_t *self)
     laser->movetype = MOVETYPE_NONE;
     laser->r.solid = SOLID_NOT;
     laser->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
-    VectorCopy(self->s.origin, laser->s.origin);
-    VectorCopy(tr.endpos, laser->s.old_origin);
+    G_SnapVector(self->s.origin, laser->s.origin);
+    G_SnapVectorTowards(tr.endpos, self->s.origin, laser->s.old_origin);
     laser->s.skinnum = 0xD0D0D0D0;
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
@@ -806,10 +810,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 void THINK(bfg_think)(edict_t *self)
 {
     edict_t *ent, *owner, *hit;
-    vec3_t   point;
-    vec3_t   dir;
-    vec3_t   start;
-    vec3_t   end;
+    vec3_t   point, dir, start, end, pos;
     int      dmg;
     trace_t  tr;
 
@@ -874,9 +875,7 @@ void THINK(bfg_think)(edict_t *self)
 
             // if we hit something that's not a monster or player we're done
             if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && (!hit->client)) {
-                vec3_t pos;
-                VectorAdd(tr.endpos, tr.plane.normal, pos);
-
+                G_SnapVectorTowards(tr.endpos, start, pos);
                 G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, 208, 4, 0));
                 break;
             }
@@ -884,7 +883,8 @@ void THINK(bfg_think)(edict_t *self)
 
         pierce_end(&pierce);
 
-        G_SpawnTrail(self->s.origin, tr.endpos, EV_BFG_LASER);
+        G_SnapVectorTowards(tr.endpos, start, pos);
+        G_SpawnTrail(self->s.origin, pos, EV_BFG_LASER);
     }
 
     self->nextthink = level.time + HZ(10);

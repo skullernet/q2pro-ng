@@ -440,8 +440,8 @@ static void brain_tounge_attack(edict_t *self)
     te->s.renderfx = RF_BEAM;
     te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
     te->s.othernum = ENTITYNUM_NONE;
-    VectorCopy(start, te->s.old_origin);
-    VectorCopy(end, te->s.origin);
+    G_SnapVector(start, te->s.old_origin);
+    G_SnapVector(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     te->think = G_FreeEdict;
     trap_LinkEntity(te);
@@ -523,7 +523,7 @@ void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 
     PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), dir, NULL);
 
-    VectorCopy(start, laser->s.origin);
+    G_SnapVector(start, laser->s.origin);
     VectorCopy(dir, laser->movedir);
     trap_LinkEntity(laser);
     dabeam_update(laser, false);

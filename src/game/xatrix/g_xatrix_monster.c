@@ -62,15 +62,18 @@ void dabeam_update(edict_t *self, bool damage)
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client)) {
-            if (damage)
-                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, 10, 0));
+            if (damage) {
+                vec3_t pos;
+                G_SnapVectorTowards(tr.endpos, start, pos);
+                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, 10, 0));
+            }
             break;
         }
     } while (pierce_mark(&pierce, hit));
 
     pierce_end(&pierce);
 
-    VectorAdd(tr.endpos, tr.plane.normal, self->s.old_origin);
+    G_SnapVectorTowards(tr.endpos, start, self->s.old_origin);
     trap_LinkEntity(self);
 }
 

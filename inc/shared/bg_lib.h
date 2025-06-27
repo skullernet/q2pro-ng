@@ -60,3 +60,4 @@ float sqrtf(float f);
 float floorf(float f);
 float ceilf(float f);
 float truncf(float f);
+float rintf(float f);

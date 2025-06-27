@@ -221,14 +221,15 @@ static void TurretAim(edict_t *self)
         return;
 
     // Paril: improved turrets; draw lasersight
-    if (!self->target_ent) {
-        self->target_ent = G_Spawn();
-        self->target_ent->s.modelindex = MODELINDEX_DUMMY;
-        self->target_ent->s.renderfx = RF_BEAM;
-        self->target_ent->s.frame = 1;
-        self->target_ent->s.skinnum = 0xf0f0f0f0;
-        self->target_ent->classname = "turret_lasersight";
-        VectorCopy(self->s.origin, self->target_ent->s.origin);
+    edict_t *te = self->target_ent;
+    if (!te) {
+        self->target_ent = te = G_Spawn();
+        te->s.modelindex = MODELINDEX_DUMMY;
+        te->s.renderfx = RF_BEAM;
+        te->s.frame = 1;
+        te->s.skinnum = 0xf0f0f0f0;
+        te->classname = "turret_lasersight";
+        G_SnapVector(self->s.origin, te->s.origin);
     }
 
     vec3_t forward;
@@ -253,8 +254,8 @@ static void TurretAim(edict_t *self)
     VectorMA(self->s.origin, 8192, forward, end);
     trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_SOLID);
 
-    VectorCopy(tr.endpos, self->target_ent->s.old_origin);
-    trap_LinkEntity(self->target_ent);
+    G_SnapVectorTowards(tr.endpos, self->s.origin, te->s.old_origin);
+    trap_LinkEntity(te);
 }
 
 void MONSTERINFO_SIGHT(turret_sight)(edict_t *self, edict_t *other)

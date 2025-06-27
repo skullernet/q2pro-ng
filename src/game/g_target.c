@@ -732,7 +732,7 @@ void THINK(target_laser_think)(edict_t *self)
             self->spawnflags |= SPAWNFLAG_LASER_ZAP;
     }
 
-    vec3_t start, end;
+    vec3_t start, end, pos;
     VectorCopy(self->s.origin, start);
     VectorMA(start, 2048, self->movedir, end);
 
@@ -774,7 +774,8 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                G_TempEntity(tr.endpos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, count, 0));
+                G_SnapVectorTowards(tr.endpos, start, pos);
+                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, count, 0));
             }
             break;
         }
@@ -782,7 +783,7 @@ void THINK(target_laser_think)(edict_t *self)
 
     pierce_end(&pierce);
 
-    VectorCopy(tr.endpos, self->s.old_origin);
+    G_SnapVectorTowards(tr.endpos, start, self->s.old_origin);
 
     if (damaged_thing)
         self->damage_debounce_time = level.time + HZ(10);

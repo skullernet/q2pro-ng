@@ -297,8 +297,8 @@ static void ShamblerCastLightning(edict_t *self)
         te->think = shambler_lightning_think;
     }
 
-    VectorCopy(start, te->s.old_origin);
-    VectorCopy(tr.endpos, te->s.origin);
+    G_SnapVector(start, te->s.old_origin);
+    G_SnapVectorTowards(tr.endpos, start, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 

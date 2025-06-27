@@ -374,7 +374,7 @@ void PRETHINK(guardian_fire_update)(edict_t *laser)
         M_ProjectFlashSource(self, laser_positions[sec], forward, right, start);
         PredictAim(self, self->enemy, start, 0, false, 0.3f, forward, target);
 
-        VectorCopy(start, laser->s.origin);
+        G_SnapVector(start, laser->s.origin);
         forward[0] += crandom() * 0.02f;
         forward[1] += crandom() * 0.02f;
         VectorNormalize2(forward, laser->movedir);

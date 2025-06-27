@@ -298,7 +298,7 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     trace_t    tr;
     vec3_t     dir;
     vec3_t     forward, right, up;
-    vec3_t     end;
+    vec3_t     end, pos;
     float      r;
     float      u;
     vec3_t     water_start;
@@ -344,8 +344,10 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
                 else
                     color = EV_SPLASH_UNKNOWN;
 
-                if (color != EV_SPLASH_UNKNOWN)
-                    G_TempEntity(tr.endpos, color, MakeLittleShort(tr.plane.dir, 8));
+                if (color != EV_SPLASH_UNKNOWN) {
+                    G_SnapVectorTowards(tr.endpos, start, pos);
+                    G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
+                }
 
                 // change bullet's course when it enters water
                 VectorSubtract(end, start, dir);
@@ -371,7 +373,8 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
             if (hit->takedamage) {
                 T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
             } else {
-                G_TempEntity(tr.endpos, te_impact, tr.plane.dir);
+                G_SnapVectorTowards(tr.endpos, start, pos);
+                G_TempEntity(pos, te_impact, tr.plane.dir);
 
                 if (self->client)
                     PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -381,8 +384,6 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
 
     // if went through water, determine where the end and make a bubble trail
     if (water) {
-        vec3_t pos;
-
         VectorSubtract(tr.endpos, water_start, dir);
         VectorNormalize(dir);
         VectorMA(tr.endpos, -2, dir, pos);
@@ -799,7 +800,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
         VectorNormalize(dir);
     }
 
-    VectorCopy(start, laser->s.origin);
+    G_SnapVector(start, laser->s.origin);
     VectorCopy(dir, laser->movedir);
     trap_LinkEntity(laser);
     dabeam_update(laser, true);

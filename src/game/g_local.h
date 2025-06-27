@@ -1321,7 +1321,8 @@ void G_AddEvent(edict_t *ent, entity_event_t event, int param);
 edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param);
 edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event);
 void G_BecomeEvent(edict_t *ent, entity_event_t event, int param);
-void G_SnapVectorTowards(vec3_t v, const vec3_t to);
+void G_SnapVectorTowards(const vec3_t v, const vec3_t to, vec3_t out);
+void G_SnapVector(const vec3_t v, vec3_t out);
 
 int G_ModelIndex(const char *name);
 int G_SoundIndex(const char *name);

@@ -844,8 +844,8 @@ void THINK(tesla_think_active)(edict_t *self)
                 te->think = G_FreeEdict;
             }
 
-            VectorCopy(start, te->s.old_origin);
-            VectorCopy(tr.endpos, te->s.origin);
+            G_SnapVector(start, te->s.old_origin);
+            G_SnapVectorTowards(tr.endpos, start, te->s.origin);
             te->nextthink = level.time + SEC(0.2f);
             trap_LinkEntity(te);
         }
@@ -1038,7 +1038,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
     trace_t    tr;
     vec3_t     dir;
     vec3_t     forward, right, up;
-    vec3_t     end;
+    vec3_t     end, pos;
     vec3_t     water_start, endpoint;
     bool       water = false, underwater = false;
     contents_t content_mask = MASK_PROJECTILE | MASK_WATER;
@@ -1065,13 +1065,15 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         water = true;
         VectorCopy(tr.endpos, water_start);
 
-        if (!VectorCompare(start, tr.endpos))
-            G_TempEntity(water_start, EV_HEATBEAM_SPARKS, tr.plane.dir);
+        if (!VectorCompare(start, tr.endpos)) {
+            G_SnapVectorTowards(water_start, start, pos);
+            G_TempEntity(pos, EV_HEATBEAM_SPARKS, tr.plane.dir);
+        }
 
         // re-trace ignoring water this time
         trap_Trace(&tr, water_start, NULL, NULL, end, self->s.number, content_mask & ~MASK_WATER);
     }
-    VectorCopy(tr.endpos, endpoint);
+    G_SnapVectorTowards(tr.endpos, start, endpoint);
 
     // halve the damage if target underwater
     if (water)
@@ -1084,7 +1086,8 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         if (hit->takedamage) {
             T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_ENERGY, (mod_t) { MOD_HEATBEAM });
         } else if (!water) {
-            G_TempEntity(tr.endpos, EV_HEATBEAM_STEAM, tr.plane.dir);
+            G_SnapVectorTowards(tr.endpos, start, pos);
+            G_TempEntity(pos, EV_HEATBEAM_STEAM, tr.plane.dir);
 
             if (self->client)
                 PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -1093,8 +1096,6 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
 
     // if went through water, determine where the end and make a bubble trail
     if ((water) || (underwater)) {
-        vec3_t pos;
-
         VectorSubtract(tr.endpos, water_start, dir);
         VectorNormalize(dir);
         VectorMA(tr.endpos, -2, dir, pos);
@@ -1116,7 +1117,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
         te->think = heatbeam_think;
     }
 
-    VectorCopy(start, te->s.old_origin);
+    G_SnapVector(start, te->s.old_origin);
     VectorCopy(endpoint, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);

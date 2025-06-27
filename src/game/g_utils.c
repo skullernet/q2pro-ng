@@ -686,7 +686,7 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param)
     edict_t *ent;
 
     ent = G_Spawn();
-    VectorCopy(origin, ent->s.origin);
+    G_SnapVector(origin, ent->s.origin);
     ent->s.event[0] = event;
     ent->s.event_param[0] = param;
     ent->free_after_event = true;
@@ -701,8 +701,8 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
 
     ent = G_Spawn();
     ent->s.renderfx = RF_BEAM_TEMP;
-    VectorCopy(start, ent->s.old_origin);
-    VectorCopy(end, ent->s.origin);
+    G_SnapVector(start, ent->s.old_origin);
+    G_SnapVector(end, ent->s.origin);
     ent->s.event[0] = event;
     ent->free_after_event = true;
     trap_LinkEntity(ent);
@@ -731,14 +731,30 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
     trap_LinkEntity(ent);
 }
 
-void G_SnapVectorTowards(vec3_t v, const vec3_t to)
+void G_SnapVectorTowards(const vec3_t v, const vec3_t to, vec3_t out)
 {
     for (int i = 0; i < 3; i++) {
-        if (v[i] >= to[i])
-            v[i] = (int)v[i];
-        else
-            v[i] = (int)v[i] + 1;
+        float t = truncf(v[i]);
+
+        if (v[i] >= to[i]) {
+            if (v[i] < 0)
+               out[i] = t - 1;
+            else
+               out[i] = t;
+        } else {
+            if (v[i] < 0)
+                out[i] = t;
+            else
+                out[i] = t + 1;
+        }
     }
+}
+
+void G_SnapVector(const vec3_t v, vec3_t out)
+{
+    out[0] = rintf(v[0]);
+    out[1] = rintf(v[1]);
+    out[2] = rintf(v[2]);
 }
 
 int G_ModelIndex(const char *name)

@@ -1201,8 +1201,8 @@ static void CTFGrappleDrawCable(edict_t *self)
         te->think = CTFGrappleCableThink;
     }
 
-    VectorCopy(start, te->s.old_origin);
-    VectorCopy(self->s.origin, te->s.origin);
+    G_SnapVector(start, te->s.old_origin);
+    G_SnapVectorTowards(self->s.origin, start, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }
