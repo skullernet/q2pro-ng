@@ -363,9 +363,9 @@ typedef struct {
 #define NETF(f, bits)  { #f, offsetof(entity_state_t, f), bits }
 
 static const netfield_t entity_state_fields[] = {
-    NETF(angles[0], 0),
-    NETF(angles[1], 0),
-    NETF(angles[2], 0),
+    NETF(angles[0], -2),
+    NETF(angles[1], -2),
+    NETF(angles[2], -2),
     NETF(origin[0], 0),
     NETF(origin[1], 0),
     NETF(origin[2], 0),
@@ -448,6 +448,8 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
             }
         } else if (f->bits == -1) {
             MSG_WriteLeb32(to_v);
+        } else if (f->bits == -2) {
+            MSG_WriteBits(ANGLE2SHORT(LongToFloat(to_v)), 16);
         } else {
             MSG_WriteBits(to_v, f->bits);
         }
@@ -505,9 +507,9 @@ static const netfield_t player_state_fields[] = {
     NETF(delta_angles[2], -16),
 
     NETF(clientnum, ENTITYNUM_BITS),
-    NETF(viewangles[0], 0),
-    NETF(viewangles[1], 0),
-    NETF(viewangles[2], 0),
+    NETF(viewangles[0], -2),
+    NETF(viewangles[1], -2),
+    NETF(viewangles[2], -2),
     NETF(viewheight, -8),
     NETF(bobtime, 8),
     NETF(gunindex, MODELINDEX_BITS),
@@ -910,10 +912,13 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             } else {
                 to_v = FloatToLong(0.0f);
             }
-            SHOWNET(3, "%s:%f ", f->name, LongToFloat(to_v));
+            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
         } else if (f->bits == -1) {
             to_v = MSG_ReadLeb32();
             SHOWNET(3, "%s:%#x ", f->name, to_v);
+        } else if (f->bits == -2) {
+            to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(16)));
+            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
         } else {
             to_v = MSG_ReadBits(f->bits);
             SHOWNET(3, "%s:%d ", f->name, to_v);
