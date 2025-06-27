@@ -398,7 +398,7 @@ static void CL_Record_f(void)
     MSG_WriteByte(svc_baselinestream);
     for (i = 0; i < ENTITYNUM_WORLD; i++) {
         ent = &cl.baselines[i];
-        if (!ent->number)
+        if (i && !ent->number)
             continue;
 
         if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
@@ -410,7 +410,7 @@ static void CL_Record_f(void)
             MSG_WriteByte(svc_baselinestream);
         }
 
-        MSG_WriteDeltaEntity(NULL, ent, true);
+        MSG_WriteBaseEntity(ent);
     }
     MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
     MSG_FlushBits();

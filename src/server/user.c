@@ -138,7 +138,7 @@ static void write_baseline_stream(void)
             continue;
         }
         for (j = 0; j < SV_BASELINES_PER_CHUNK; j++, base++) {
-            if (!base->number) {
+            if ((i || j) && !base->number) {
                 continue;
             }
             // check if this baseline will overflow
@@ -149,7 +149,7 @@ static void write_baseline_stream(void)
                 MSG_BeginWriting();
                 MSG_WriteByte(svc_baselinestream);
             }
-            MSG_WriteDeltaEntity(NULL, base, true);
+            MSG_WriteBaseEntity(base);
         }
     }
 

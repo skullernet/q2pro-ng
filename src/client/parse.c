@@ -391,14 +391,8 @@ static void CL_ParseBaseline(unsigned index)
         Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
     }
 
-    if (MSG_ReadBit()) {
-        Com_Error(ERR_DROP, "%s: removed entity", __func__);
-        return;
-    }
-
     SHOWNET(3, "    baseline:%i ", index);
-    if (MSG_ReadBit())
-        MSG_ParseDeltaEntity(&cl.baselines[index], index);
+    MSG_ParseDeltaEntity(&cl.baselines[index], index);
     SHOWNET(3, "\n");
 }
 

@@ -460,14 +460,14 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
 {
     if (!to) {
         Q_assert(from);
-        Q_assert(from->number >= 0 && from->number < ENTITYNUM_WORLD);
+        Q_assert(from->number < ENTITYNUM_WORLD);
 
         MSG_WriteBits(from->number, ENTITYNUM_BITS);
         MSG_WriteBit(1);    // removed
         return;
     }
 
-    Q_assert(to->number >= 0 && to->number < ENTITYNUM_WORLD);
+    Q_assert(to->number < ENTITYNUM_WORLD);
 
     if (!from)
         from = &nullEntityState;
@@ -485,6 +485,21 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
     MSG_WriteBits(to->number, ENTITYNUM_BITS);
     MSG_WriteBit(0);    // not removed
     MSG_WriteBit(1);    // changed
+    MSG_WriteBits(nc, 5);
+    MSG_WriteDeltaFields(entity_state_fields, nc, from, to);
+}
+
+void MSG_WriteBaseEntity(const entity_state_t *to)
+{
+    Q_assert(to->number < ENTITYNUM_WORLD);
+
+    const entity_state_t *from = &nullEntityState;
+
+    int nc = MSG_CountDeltaFields(entity_state_fields, q_countof(entity_state_fields), from, to, entity_state_counts);
+    if (!nc)
+        return;
+
+    MSG_WriteBits(to->number, ENTITYNUM_BITS);
     MSG_WriteBits(nc, 5);
     MSG_WriteDeltaFields(entity_state_fields, nc, from, to);
 }
@@ -935,10 +950,10 @@ MSG_ParseDeltaEntity
 Can go from either a baseline or a previous packet_entity
 ==================
 */
-void MSG_ParseDeltaEntity(entity_state_t *to, int number)
+void MSG_ParseDeltaEntity(entity_state_t *to, unsigned number)
 {
     Q_assert(to);
-    Q_assert(number >= 0 && number < ENTITYNUM_WORLD);
+    Q_assert(number < ENTITYNUM_WORLD);
 
     to->number = number;
 

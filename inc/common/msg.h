@@ -52,6 +52,7 @@ void    MSG_FlushBits(void);
 void    MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *to);
 #endif
 void    MSG_WriteDir(const vec3_t vector);
+void    MSG_WriteBaseEntity(const entity_state_t *to);
 void    MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, bool force);
 void    MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t *to);
 
@@ -83,7 +84,7 @@ void    MSG_ReadDir(vec3_t vector);
 int     MSG_ReadBits(int bits);
 bool    MSG_ReadBit(void);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
-void    MSG_ParseDeltaEntity(entity_state_t *to, int number);
+void    MSG_ParseDeltaEntity(entity_state_t *to, unsigned number);
 #if USE_CLIENT
 void    MSG_ParseDeltaPlayerstate(player_state_t *to);
 #endif
