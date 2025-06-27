@@ -394,6 +394,8 @@ static const netfield_t entity_state_fields[] = {
 
 static unsigned entity_state_counts[q_countof(entity_state_fields)];
 
+static const int entity_state_nc_bits = 32 - __builtin_clz(q_countof(entity_state_fields));
+
 #undef NETF
 
 static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, const void *to, unsigned *counts)
@@ -485,7 +487,7 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
     MSG_WriteBits(to->number, ENTITYNUM_BITS);
     MSG_WriteBit(0);    // not removed
     MSG_WriteBit(1);    // changed
-    MSG_WriteBits(nc, 5);
+    MSG_WriteBits(nc, entity_state_nc_bits);
     MSG_WriteDeltaFields(entity_state_fields, nc, from, to);
 }
 
@@ -500,7 +502,7 @@ void MSG_WriteBaseEntity(const entity_state_t *to)
         return;
 
     MSG_WriteBits(to->number, ENTITYNUM_BITS);
-    MSG_WriteBits(nc, 5);
+    MSG_WriteBits(nc, entity_state_nc_bits);
     MSG_WriteDeltaFields(entity_state_fields, nc, from, to);
 }
 
@@ -563,6 +565,8 @@ static const netfield_t player_state_fields[] = {
 
 static unsigned player_state_counts[q_countof(player_state_fields)];
 
+static const int player_state_nc_bits = 32 - __builtin_clz(q_countof(player_state_fields));
+
 #undef NETF
 
 void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t *to)
@@ -584,7 +588,7 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
     }
 
     MSG_WriteBit(1);
-    MSG_WriteBits(nc, 6);
+    MSG_WriteBits(nc, player_state_nc_bits);
     MSG_WriteDeltaFields(player_state_fields, nc, from, to);
 
     MSG_WriteLeb64(statbits);
@@ -957,7 +961,7 @@ void MSG_ParseDeltaEntity(entity_state_t *to, unsigned number)
 
     to->number = number;
 
-    int nc = MSG_ReadBits(5);
+    int nc = MSG_ReadBits(entity_state_nc_bits);
     if (nc > q_countof(entity_state_fields))
         Com_Error(ERR_DROP, "%s: bad number of fields", __func__);
 
@@ -976,7 +980,7 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
     if (!MSG_ReadBit())
         return;
 
-    int nc = MSG_ReadBits(6);
+    int nc = MSG_ReadBits(player_state_nc_bits);
     if (nc > q_countof(player_state_fields))
         Com_Error(ERR_DROP, "%s: bad number of fields", __func__);
 
