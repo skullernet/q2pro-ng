@@ -482,17 +482,11 @@ static void CG_CalcViewValues(void)
         if (delta < 100) {
             cg.refdef.vieworg[2] -= cg.predicted_step * (100 - delta) * 0.01f;
         }
-
-        cg.refdef.vieworg[2] += cg.predicted_ps.viewheight;
-
-        if (cg.duck_time > cg.time)
-            cg.refdef.vieworg[2] -= (cg.duck_time - cg.time) * cg.duck_factor;
     } else {
         // just use interpolated values
         for (int i = 0; i < 3; i++) {
             cg.refdef.vieworg[i] = ops->origin[i] + lerp * (ps->origin[i] - ops->origin[i]);
         }
-        cg.refdef.vieworg[2] += ops->viewheight + lerp * (ps->viewheight - ops->viewheight);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
@@ -554,6 +548,11 @@ static void CG_CalcViewValues(void)
     }
 
     cg.playerEntityAngles[PITCH] = cg.playerEntityAngles[PITCH] / 3;
+
+    // add view height
+    cg.refdef.vieworg[2] += cg.predicted_ps.viewheight;
+    if (cg.duck_time > cg.time)
+        cg.refdef.vieworg[2] -= (cg.duck_time - cg.time) * cg.duck_factor;
 
     cg.refdef.rdflags = ps->rdflags;
 
