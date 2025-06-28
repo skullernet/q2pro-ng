@@ -48,12 +48,16 @@ static struct {
 
     int         hud_width, hud_height;
     float       hud_scale;
+
+    unsigned    timestamp;
+    int         frames, fps;
 } scr;
 
 static vm_cvar_t scr_viewsize;
 static vm_cvar_t scr_centertime;
 static vm_cvar_t scr_printspeed;
 static vm_cvar_t scr_showpause;
+static vm_cvar_t scr_showfps;
 
 static vm_cvar_t scr_draw2d;
 static vm_cvar_t scr_lag_x;
@@ -740,6 +744,7 @@ void SCR_RegisterMedia(void)
 static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_viewsize, "viewsize", "100", CVAR_ARCHIVE },
     { &scr_showpause, "scr_showpause", "1", 0 },
+    { &scr_showfps, "scr_showfps", "0", 0 },
     { &scr_centertime, "scr_centertime", "2.5", 0 },
     { &scr_printspeed, "scr_printspeed", "16", 0 },
     { &scr_demobar, "scr_demobar", "1", 0 },
@@ -1392,6 +1397,19 @@ static void SCR_ExecuteLayoutString(const char *s)
 
 //=============================================================================
 
+static void SCR_DrawFps(void)
+{
+    if (!scr_showfps.integer)
+        return;
+    scr.frames++;
+    if (cgs.realtime - scr.timestamp > 250) {
+        scr.fps = scr.frames * 1000 / (cgs.realtime - scr.timestamp);
+        scr.timestamp = cgs.realtime;
+        scr.frames = 0;
+    }
+    SCR_DrawString(scr.hud_width, 0, UI_RIGHT | UI_BIGFONT, va("%dfps", scr.fps));
+}
+
 static void SCR_DrawPause(void)
 {
     int x, y, w, h;
@@ -1539,6 +1557,8 @@ static void SCR_Draw2D(void)
     SCR_DrawChatHUD();
 
     SCR_DrawPause();
+
+    SCR_DrawFps();
 
     trap_R_ClearColor();
 
