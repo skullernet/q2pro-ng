@@ -26,12 +26,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "vm.h"
-#include "common/sizebuf.h"
 #include "common/files.h"
-#include "common/common.h"
-
-#define ASSERT(cond, ...) \
-    do { if (!(cond)) { Com_SetLastError(va(__VA_ARGS__)); return false; } } while (0)
 
 static bool vm_string_eq(const vm_string_t *s, const char *str)
 {
@@ -47,7 +42,7 @@ static const vm_type_t block_types[5] = {
     { .form = BLOCK, .num_results = 1, .results = { F64 } }
 };
 
-static const vm_type_t *get_block_type(uint32_t value_type)
+const vm_type_t *VM_GetBlockType(uint32_t value_type)
 {
     switch (value_type) {
     case BLOCK:
@@ -66,21 +61,6 @@ static const vm_type_t *get_block_type(uint32_t value_type)
     }
 }
 
-static uint64_t get_type_mask(const vm_type_t *type)
-{
-    uint64_t mask = 0x80;
-
-    if (type->num_results == 1)
-        mask |= 0x80 - type->results[0];
-
-    mask = mask << 4;
-    for (uint32_t p = 0; p < type->num_params; p++) {
-        mask <<= 4;
-        mask |= 0x80 - type->params[p];
-    }
-    return mask;
-}
-
 static int get_value_type(int c)
 {
     switch (c) {
@@ -96,28 +76,33 @@ static int get_value_type(int c)
     return 0;
 }
 
-static uint64_t calc_type_mask(const char *s)
+static bool vm_type_eq(const vm_type_t *type, const char *s)
 {
-    uint64_t mask = 0x80;
+    int t;
 
-    if (*s && s[1] == ' ') {
-        mask |= 0x80 - get_value_type(*s);
+    if (type->num_results == 1) {
+        if (!(t = get_value_type(*s)))
+            return false;
+        if (s[1] != ' ' || type->results[0] != t)
+            return false;
         s += 2;
     }
-    mask <<= 4;
 
-    while (*s) {
-        mask <<= 4;
-        mask |= 0x80 - get_value_type(*s);
-        s++;
+    for (uint32_t p = 0; p < type->num_params; p++, s++) {
+        if (!(t = get_value_type(*s)))
+            return false;
+        if (type->params[p] != t)
+            return false;
     }
 
-    return mask;
+    return *s == 0;
 }
 
 static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_t *name, const vm_type_t *type)
 {
     const vm_import_t *import;
+
+    ASSERT(vm_string_eq(module, "env"), "Unknown import module %.*s", module->len, module->data);
 
     for (import = m->imports; import->name; import++)
         if (vm_string_eq(name, import->name))
@@ -125,8 +110,9 @@ static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_
 
     ASSERT(import->name, "Import %.*s not found", name->len, name->data);
 
-    ASSERT(calc_type_mask(import->mask) == type->mask, "Import %.*s type mismatch", name->len, name->data);
+    ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", name->len, name->data);
 
+    ASSERT(m->num_funcs < MAX_FUNCS, "Too many functions");
     m->num_imports++;
     m->num_funcs++;
     m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
@@ -137,35 +123,12 @@ static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_
     return true;
 }
 
-#if 0
-static bool import_global(vm_t *m, const char *module, const char *name, uint32_t type)
-{
-    m->num_globals++;
-    m->globals = VM_Realloc(m->globals, m->num_globals * sizeof(m->globals[0]));
-    vm_value_t *glob = &m->globals[m->num_globals - 1];
-
-    glob->value_type = type;
-    switch (type) {
-    case I32:
-    case F32:
-        glob->value.u32 = RN32(val);
-        break;
-    case I64:
-    case F64:
-        glob->value.u64 = RN64(val);
-        break;
-    default:
-        ASSERT(0, "Import of type %d not supported", type);
-    }
-
-    return true;
-}
-#endif
-
-static void vm_read_string(sizebuf_t *sz, vm_string_t *s)
+static bool vm_read_string(sizebuf_t *sz, vm_string_t *s)
 {
     s->len = SZ_ReadLeb(sz);
     s->data = SZ_ReadData(sz, s->len);
+    ASSERT(s->data, "Read past end of file");
+    return true;
 }
 
 static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
@@ -203,23 +166,24 @@ static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
 static bool parse_types(vm_t *m, sizebuf_t *sz)
 {
     m->num_types = SZ_ReadLeb(sz);
-    ASSERT(m->num_types <= SZ_Remaining(sz) / 3, "Too many types");
+    ASSERT(m->num_types <= MAX_TYPES, "Too many types");
     m->types = VM_Malloc(m->num_types * sizeof(m->types[0]));
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
         type->form = SZ_ReadLeb(sz);
         ASSERT(type->form == FUNC, "Must be function type");
+
         type->num_params = SZ_ReadLeb(sz);
-        ASSERT(type->num_params <= SZ_Remaining(sz) / 3, "Too many parameters");
+        ASSERT(type->num_params <= MAX_LOCALS, "Too many parameters");
         type->params = VM_Malloc(type->num_params * sizeof(type->params[0]));
         for (uint32_t p = 0; p < type->num_params; p++)
             type->params[p] = SZ_ReadLeb(sz);
+
         type->num_results = SZ_ReadLeb(sz);
         ASSERT(type->num_results <= MAX_RESULTS, "Too many results");
         for (uint32_t r = 0; r < type->num_results; r++)
             type->results[r] = SZ_ReadLeb(sz);
-        type->mask = get_type_mask(type);
     }
 
     return true;
@@ -230,29 +194,18 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
     uint32_t num_imports = SZ_ReadLeb(sz);
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         vm_string_t module, name;
-        vm_read_string(sz, &module);
-        vm_read_string(sz, &name);
-        uint32_t kind = SZ_ReadByte(sz);
-        uint32_t tidx;
+        if (!vm_read_string(sz, &module))
+            return false;
+        if (!vm_read_string(sz, &name))
+            return false;
 
-        switch (kind) {
-        case KIND_FUNCTION:
-            tidx = SZ_ReadLeb(sz);
-            ASSERT(tidx < m->num_types, "Bad type index");
-            if (!import_function(m, &module, &name, &m->types[tidx]))
-                return false;
-            break;
-#if 0
-        case KIND_GLOBAL:
-            tidx = SZ_ReadLeb(sz);
-            SZ_ReadByte(sz); // mutability
-            if (!import_global(m, &modue, &name, tidx))
-                return false;
-            break;
-#endif
-        default:
-            ASSERT(0, "Import of kind %d not supported", kind);
-        }
+        uint32_t kind = SZ_ReadByte(sz);
+        ASSERT(kind == KIND_FUNCTION, "Import of kind %d not supported", kind);
+
+        uint32_t tidx = SZ_ReadLeb(sz);
+        ASSERT(tidx < m->num_types, "Bad type index");
+        if (!import_function(m, &module, &name, &m->types[tidx]))
+            return false;
     }
 
     return true;
@@ -261,7 +214,7 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
 static bool parse_functions(vm_t *m, sizebuf_t *sz)
 {
     uint32_t count = SZ_ReadLeb(sz);
-    ASSERT(count <= SZ_Remaining(sz), "Too many functions");
+    ASSERT(count <= MAX_FUNCS - m->num_funcs, "Too many functions");
     m->num_funcs += count;
     m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
 
@@ -286,7 +239,7 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
     uint32_t tsize = SZ_ReadLeb(sz); // Initial size
     m->table.initial = tsize;
     m->table.size = tsize;
-    // Limit maximum to 64K
+    // Limit the maximum to 64K elements
     if (flags & 0x1) {
         tsize = SZ_ReadLeb(sz); // Max size
         m->table.maximum = min(0x10000, tsize);
@@ -309,7 +262,7 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
     uint32_t pages = SZ_ReadLeb(sz); // Initial size
     m->memory.initial = pages;
     m->memory.pages = pages;
-    // Limit the maximum to 100MB
+    // Limit the maximum to 1.5K pages (100MB)
     if (flags & 0x1) {
         pages = SZ_ReadLeb(sz); // Max size
         m->memory.maximum = min(0x600, pages);
@@ -329,7 +282,7 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
 static bool parse_globals(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_globals = SZ_ReadLeb(sz);
-    ASSERT(num_globals <= SZ_Remaining(sz) / 2, "Too many globals");
+    ASSERT(num_globals <= MAX_GLOBALS, "Too many globals");
     m->globals = VM_Malloc(num_globals * sizeof(m->globals[0]));
     m->num_globals = num_globals;
 
@@ -354,7 +307,8 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
 
     for (uint32_t e = 0; e < num_exports; e++) {
         wa_export_t *export = &m->exports[e];
-        vm_read_string(sz, &export->name);
+        if (!vm_read_string(sz, &export->name))
+            return false;
         uint32_t kind = SZ_ReadByte(sz);
         uint32_t index = SZ_ReadLeb(sz);
         export->kind = kind;
@@ -399,7 +353,7 @@ static bool parse_elements(vm_t *m, sizebuf_t *sz)
     uint32_t element_count = SZ_ReadLeb(sz);
     for (uint32_t c = 0; c < element_count; c++) {
         uint32_t flags = SZ_ReadLeb(sz);
-        ASSERT(flags == 0, "Flags must be 0");
+        ASSERT(flags == 0, "Element flags %#x not supported", flags);
 
         // Run the init_expr to get offset
         vm_value_t init = { 0 };
@@ -421,7 +375,7 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
     uint32_t seg_count = SZ_ReadLeb(sz);
     for (uint32_t s = 0; s < seg_count; s++) {
         uint32_t flags = SZ_ReadLeb(sz);
-        ASSERT(flags == 0, "Flags must be 0");
+        ASSERT(flags == 0, "Segment flags %#x not supported", flags);
 
         // Run the init_expr to get the offset
         vm_value_t init = { 0 };
@@ -432,7 +386,9 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         uint32_t offset = init.u32;
         uint32_t size = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + size <= m->memory.pages * VM_PAGE_SIZE, "Memory init out of bounds");
-        memcpy(m->memory.bytes + offset, SZ_ReadData(sz, size), size);
+        void *data = SZ_ReadData(sz, size);
+        ASSERT(data, "Read past end of file");
+        memcpy(m->memory.bytes + offset, data, size);
     }
 
     return true;
@@ -446,6 +402,7 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
     for (uint32_t b = 0; b < body_count; b++) {
         vm_block_t *func = &m->funcs[m->num_imports + b];
         uint32_t body_size = SZ_ReadLeb(sz);
+        ASSERT(body_size > 0, "Empty function");
         ASSERT(body_size <= SZ_Remaining(sz), "Function out of bounds");
         uint32_t payload_start = sz->readcount;
         uint32_t num_locals = SZ_ReadLeb(sz);
@@ -482,157 +439,6 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
     return true;
 }
 
-static bool find_blocks(vm_t *m, const vm_block_t *func, sizebuf_t *sz)
-{
-    vm_block_t  *block;
-    uint16_t     blockstack[BLOCKSTACK_SIZE];
-    int          top = -1;
-    uint32_t     opcode = Unreachable;
-    uint32_t     count, index;
-
-    sz->readcount = func->start_addr;
-    while (sz->readcount <= func->end_addr) {
-        uint32_t pos = sz->readcount;
-        opcode = SZ_ReadByte(sz);
-        switch (opcode) {
-        case Block:
-        case Loop:
-        case If:
-            ASSERT(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
-            ASSERT(m->num_blocks < MAX_BLOCKS, "Too many blocks");
-            if (!(m->num_blocks & 1023))
-                m->blocks = VM_Realloc(m->blocks, (m->num_blocks + 1024) * sizeof(m->blocks[0]));
-            index = m->num_blocks++;
-            block = &m->blocks[index];
-            block->block_type = opcode;
-            block->type = get_block_type(SZ_ReadLeb(sz));
-            if (!block->type)
-                return false;
-            if (opcode == Loop)
-                block->end_addr = sz->readcount;    // loop: label after start
-            blockstack[++top] = index;
-            m->block_lookup[pos] = index;
-            break;
-
-        case Else:
-            ASSERT(top >= 0, "Blockstack underflow");
-            block = &m->blocks[blockstack[top]];
-            ASSERT(block->block_type == If, "Else not matched with if");
-            block->start_addr = pos + 1;
-            break;
-
-        case End:
-            if (pos == func->end_addr)
-                break;
-            ASSERT(top >= 0, "Blockstack underflow");
-            block = &m->blocks[blockstack[top--]];
-            if (block->block_type != Loop)
-                block->end_addr = pos; // block, if: label at end
-            break;
-
-        case Br:
-        case BrIf:
-            index = SZ_ReadLeb(sz);
-            ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
-            break;
-
-        case BrTable:
-            count = SZ_ReadLeb(sz); // target count
-            ASSERT(count <= BR_TABLE_SIZE, "BrTable size too big");
-            for (uint32_t i = 0; i < count; i++) {
-                index = SZ_ReadLeb(sz);
-                ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
-            }
-            index = SZ_ReadLeb(sz); // default target
-            ASSERT(index < BLOCKSTACK_SIZE, "Bad label");
-            break;
-
-        case LocalGet:
-        case LocalSet:
-        case LocalTee:
-            index = SZ_ReadLeb(sz);
-            ASSERT(index < func->type->num_params + func->num_locals, "Bad local index");
-            break;
-
-        case GlobalGet:
-        case GlobalSet:
-            index = SZ_ReadLeb(sz);
-            ASSERT(index < m->num_globals, "Bad global index");
-            break;
-
-        case MemorySize:
-        case MemoryGrow:
-            sz->readcount++;
-            break;
-
-        case I32_Load ... I64_Store32:
-            SZ_ReadLeb(sz);
-            SZ_ReadLeb(sz);
-            break;
-
-        case I32_Const:
-            SZ_ReadSignedLeb(sz, 32);
-            break;
-
-        case I64_Const:
-            SZ_ReadSignedLeb(sz, 64);
-            break;
-
-        case Call:
-            index = SZ_ReadLeb(sz);
-            ASSERT(index < m->num_funcs, "Bad function index");
-            break;
-
-        case CallIndirect:
-            index = SZ_ReadLeb(sz);
-            ASSERT(index < m->num_types, "Bad type index");
-            index = SZ_ReadLeb(sz);
-            ASSERT(index == 0, "Only 1 default table supported");
-            break;
-
-        case F32_Const:
-            sz->readcount += 4;
-            break;
-
-        case F64_Const:
-            sz->readcount += 8;
-            break;
-
-        case Unreachable:
-        case Nop:
-        case Return:
-        case Drop:
-        case Select:
-        case I32_Eqz ... I64_Extend32_s:
-            break;
-
-        case Extended:
-            opcode = SZ_ReadLeb(sz);
-            switch (opcode) {
-            case I32_Trunc_sat_f32_s ... I64_Trunc_sat_f64_u:
-                break;
-            case MemoryCopy:
-                sz->readcount += 2;
-                break;
-            case MemoryFill:
-                sz->readcount += 1;
-                break;
-            default:
-               ASSERT(0, "Unrecognized extended opcode %#x", opcode);
-            }
-            break;
-
-        default:
-            ASSERT(0, "Unrecognized opcode %#x", opcode);
-        }
-    }
-
-    ASSERT(top == -1, "Function ended in middle of block");
-    ASSERT(opcode == End, "Function block doesn't end with End opcode");
-
-    return true;
-}
-
 #define NUM_SECTIONS    13
 
 typedef struct {
@@ -657,40 +463,6 @@ static const parsefunc_t parsefuncs[NUM_SECTIONS] = {
     NULL
 };
 
-static int vm_load_file(const char *name, byte **data)
-{
-    qhandle_t f;
-    int64_t len;
-    int ret;
-
-    *data = NULL;
-
-    len = FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
-    if (len < 0)
-        return len;
-
-    if (len < 8) {
-        FS_CloseFile(f);
-        return Q_ERR_FILE_TOO_SMALL;
-    }
-
-    if (len > MAX_LOADFILE) {
-        FS_CloseFile(f);
-        return Q_ERR(EFBIG);
-    }
-
-    *data = VM_Malloc(Q_ALIGN(len, 1024) + 1024);
-    ret = FS_Read(*data, len, f);
-    FS_CloseFile(f);
-
-    if (ret < 0)
-        return ret;
-    if (ret != len)
-        return Q_ERR_UNEXPECTED_EOF;
-
-    return ret;
-}
-
 static bool parse_sections(vm_t *m, sizebuf_t *sz)
 {
     // Read the sections
@@ -705,47 +477,63 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
         sz->readcount += len;
     }
 
+    uint32_t cursize = sz->cursize;
     for (uint32_t id = 0; id < NUM_SECTIONS; id++) {
         if (!sections[id].len)
             continue;
         if (!parsefuncs[id])
             continue;
         sz->readcount = sections[id].pos;
+        sz->cursize = sections[id].pos + sections[id].len;
         if (!parsefuncs[id](m, sz))
             return false;
     }
 
+    sz->readcount = 0;
+    sz->cursize = cursize;
     return true;
+}
+
+static const wa_export_t *find_export(vm_t *m, uint32_t kind, const char *name)
+{
+    for (uint32_t e = 0; e < m->num_exports; e++) {
+        const wa_export_t *export = &m->exports[e];
+        if (export->kind == kind && vm_string_eq(&export->name, name))
+            return export;
+    }
+    return NULL;
 }
 
 static bool fill_exports(vm_t *m, const vm_export_t *exports)
 {
     const vm_export_t *exp;
-    int i;
+    const wa_export_t *export;
+    uint32_t e;
 
-    for (i = 0, exp = exports; exp->name; i++, exp++)
+    for (e = 0, exp = exports; exp->name; e++, exp++)
         ;
-    m->num_func_exports = i;
+    m->num_func_exports = e;
     m->func_exports = VM_Malloc(m->num_func_exports * sizeof(m->func_exports[0]));
 
-    for (i = 0, exp = exports; i < m->num_func_exports; i++, exp++) {
-        uint32_t e;
-
-        for (e = 0; e < m->num_exports; e++) {
-            const wa_export_t *export = &m->exports[e];
-            if (export->kind != KIND_FUNCTION)
-                continue;
-            if (!vm_string_eq(&export->name, exp->name))
-                continue;
-
-            const vm_block_t *func = export->value;
-            ASSERT(func->type->mask == calc_type_mask(exp->mask), "Export %s type mismatch", exp->name);
-            m->func_exports[i] = func - m->funcs;
-            break;
-        }
-
-        ASSERT(e < m->num_exports, "Export %s not found", exp->name);
+    // Find function exports
+    for (e = 0, exp = exports; e < m->num_func_exports; e++, exp++) {
+        export = find_export(m, KIND_FUNCTION, exp->name);
+        ASSERT(export, "Export %s not found", exp->name);
+        const vm_block_t *func = export->value;
+        ASSERT(vm_type_eq(func->type, exp->mask), "Export %s type mismatch", exp->name);
+        m->func_exports[e] = func - m->funcs;
     }
+
+    // Find LLVM stack pointer
+    export = find_export(m, KIND_GLOBAL, "__stack_pointer");
+    if (export)
+        m->llvm_stack_pointer = export->value;
+    else
+        Com_WPrintf("Export __stack_pointer not found\n");
+
+    // Prevent dangling pointers after file is freed
+    for (e = 0; e < m->num_exports; e++)
+        m->exports[e].name = (vm_string_t){ 0 };
 
     return true;
 }
@@ -757,7 +545,7 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
     byte        *data;
     int         len;
 
-    len = vm_load_file(name, &data);
+    len = FS_LoadFile(name, (void **)&data);
     if (len < 0) {
         Com_SetLastError(Q_ErrorString(len));
         goto fail1;
@@ -783,8 +571,6 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
     m->fp  = -1;
     m->csp = -1;
 
-    m->bytes = data;
-    m->num_bytes = len;
     m->start_func = -1;
     m->imports = imports;
 
@@ -794,27 +580,24 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
     if (!fill_exports(m, exports))
         goto fail2;
 
-    m->block_lookup = VM_Malloc(m->num_bytes * sizeof(m->block_lookup[0]));
+    if (!VM_PrepareInterpreter(m, &sz))
+        goto fail2;
 
-    for (uint32_t f = m->num_imports; f < m->num_funcs; f++)
-        if (!find_blocks(m, &m->funcs[f], &sz))
-            goto fail2;
+    FS_FreeFile(data);
 
-    // assume first global is LLVM stack pointer
-    if (m->num_globals)
-        m->llvm_stack_start = m->globals[0];
+    // Save LLVM stack start
+    if (m->llvm_stack_pointer)
+        m->llvm_stack_start = *m->llvm_stack_pointer;
 
-    Com_Printf("Loaded %s: %d bytes of code, %d MB of memory\n", name,
-               m->num_bytes, m->memory.pages * VM_PAGE_SIZE / 1000000);
+    Com_Printf("Loaded %s: %d KB of code, %d MB of memory\n", name,
+               m->num_bytes / 1000, m->memory.pages * VM_PAGE_SIZE / 1000000);
 
     return m;
 
-fail1:
-    Z_Free(data);
-    return NULL;
-
 fail2:
     VM_Free(m);
+fail1:
+    FS_FreeFile(data);
     return NULL;
 }
 
@@ -838,9 +621,8 @@ void VM_Free(vm_t *m)
     Z_Free(m->func_exports);
     Z_Free(m->table.entries);
     Z_Free(m->memory.bytes);
-    Z_Free(m->block_lookup);
     Z_Free(m->blocks);
-    Z_Free(m->bytes);
+    Z_Free(m->code);
     Z_Free(m);
 }
 
@@ -876,12 +658,12 @@ void VM_Reset(vm_t *m)
     if (!m)
         return;
 
-    // empty stacks
+    // Empty stacks
     m->sp  = -1;
     m->fp  = -1;
     m->csp = -1;
 
-    // reset LLVM stack pointer
-    if (m->num_globals)
-        m->globals[0] = m->llvm_stack_start;
+    // Reset LLVM stack pointer
+    if (m->llvm_stack_pointer)
+        *m->llvm_stack_pointer = m->llvm_stack_start;
 }

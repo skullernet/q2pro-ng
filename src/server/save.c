@@ -702,6 +702,8 @@ static void SV_Savegame_f(void)
         type = SAVE_MANUAL;
     }
 
+    unsigned start = Sys_Milliseconds();
+
     // archive current level, including all client edicts.
     // when the level is reloaded, they will be shells awaiting
     // a connecting client
@@ -728,7 +730,7 @@ static void SV_Savegame_f(void)
         return;
     }
 
-    Com_Printf("Game saved.\n");
+    Com_Printf("Game saved in %d msec.\n", Sys_Milliseconds() - start);
 }
 
 static const cmdreg_t c_savegames[] = {

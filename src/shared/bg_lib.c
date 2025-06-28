@@ -167,6 +167,7 @@ strncmp(const char *s1, const char *s2, size_t n)
     return (0);
 }
 
+#if 0
 /*
  * Compare memory regions.
  */
@@ -183,6 +184,7 @@ memcmp(const void *s1, const void *s2, size_t n)
     }
     return (0);
 }
+#endif
 
 // ============================================================================
 

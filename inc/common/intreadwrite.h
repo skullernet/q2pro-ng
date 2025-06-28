@@ -56,6 +56,13 @@ struct unaligned64 { uint64_t u; } __attribute__((packed, may_alias));
 
 #endif
 
+#define RN8(p)      (*(const uint8_t *)(p))
+#define WN8(p, v)   (*(uint8_t *)(p) = (v))
+
+#define RN8S(p)     ((int8_t)RN8(p))
+#define RN16S(p)    ((int16_t)RN16(p))
+#define RN32S(p)    ((int32_t)RN32(p))
+
 #if USE_LITTLE_ENDIAN
 // We only optimize for little-endian arches here.
 

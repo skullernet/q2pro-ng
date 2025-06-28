@@ -196,6 +196,8 @@ typedef enum {
     I64_Extend8_s       = 0xC2,
     I64_Extend16_s      = 0xC3,
     I64_Extend32_s      = 0xC4,
+    ExtMemoryCopy       = 0xD0, // fake
+    ExtMemoryFill       = 0xD1, // fake
     Extended            = 0xFC,
 } Opcode;
 

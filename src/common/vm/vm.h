@@ -26,32 +26,40 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "shared/shared.h"
+#include "common/common.h"
+#include "common/sizebuf.h"
 #include "common/vm.h"
 #include "opcodes.h"
 
-#define VM_MAGIC   0x6d736100
-#define VM_VERSION 0x01
+#define ASSERT(cond, ...) \
+    do { if (!(cond)) { Com_SetLastError(va(__VA_ARGS__)); return false; } } while (0)
 
-#define STACK_SIZE      0x10000  // 65536
-#define BLOCKSTACK_SIZE 0x1000   // 4096
-#define CALLSTACK_SIZE  0x1000   // 4096
-#define BR_TABLE_SIZE   0x10000  // 65536
+#define VM_MAGIC    MakeLittleLong(0, 'a', 's', 'm')
+#define VM_VERSION  0x01
+
+#define STACK_SIZE      0x10000     // 65536
+#define BLOCKSTACK_SIZE 0x1000      // 4096
+#define CALLSTACK_SIZE  0x1000      // 4096
+#define BR_TABLE_SIZE   0x10000     // 65536
 #define MAX_BLOCKS      0x10000
+#define MAX_FUNCS       0x10000
 #define MAX_LOCALS      0x1000
+#define MAX_GLOBALS     0x10000
+#define MAX_TYPES       0x10000
 #define MAX_RESULTS     1
 
-#define I32       0x7f  // -0x01
-#define I64       0x7e  // -0x02
-#define F32       0x7d  // -0x03
-#define F64       0x7c  // -0x04
-#define FUNCREF   0x70  // -0x10
-#define FUNC      0x60  // -0x20
-#define BLOCK     0x40  // -0x40
+#define I32         0x7f    // -0x01
+#define I64         0x7e    // -0x02
+#define F32         0x7d    // -0x03
+#define F64         0x7c    // -0x04
+#define FUNCREF     0x70    // -0x10
+#define FUNC        0x60    // -0x20
+#define BLOCK       0x40    // -0x40
 
-#define KIND_FUNCTION 0
-#define KIND_TABLE    1
-#define KIND_MEMORY   2
-#define KIND_GLOBAL   3
+#define KIND_FUNCTION   0
+#define KIND_TABLE      1
+#define KIND_MEMORY     2
+#define KIND_GLOBAL     3
 
 typedef struct {
     uint32_t  form;
@@ -59,12 +67,11 @@ typedef struct {
     uint32_t *params;
     uint32_t  num_results;
     uint32_t  results[MAX_RESULTS];
-    uint64_t  mask; // unique mask value for each type
 } vm_type_t;
 
 // A block or function
 typedef struct {
-    uint32_t   block_type;      // 0x00: function, 0x02: block, 0x03: loop, 0x04: if
+    uint32_t   opcode;          // 0x00: function, 0x02: block, 0x03: loop, 0x04: if
     uint32_t   num_locals;      // function only
     union {
         uint32_t  *locals;      // function only
@@ -75,12 +82,13 @@ typedef struct {
     const vm_type_t *type;      // params/results type
 } vm_block_t;
 
+typedef const uint8_t *vm_pc_t;
+
 typedef struct {
     const vm_block_t  *block;
     // Saved state
-    int         sp;
-    int         fp;
-    uint32_t    ra;
+    int sp, fp;
+    vm_pc_t ra;
 } vm_frame_t;
 
 typedef struct {
@@ -106,7 +114,7 @@ typedef struct vm_s {
     const vm_import_t  *imports;
 
     uint32_t    num_bytes;      // number of bytes in the module
-    uint8_t    *bytes;          // module content/bytes
+    uint8_t    *code;           // module content/bytes
 
     uint32_t    num_types;      // number of function types
     vm_type_t  *types;          // function types
@@ -118,10 +126,11 @@ typedef struct vm_s {
 
     uint32_t    num_blocks;
     vm_block_t *blocks;
-    uint16_t   *block_lookup;   // map of module byte position to block index
-                                // same length as byte_count
+
     vm_table_t  table;
     vm_memory_t memory;
+
+    vm_value_t *llvm_stack_pointer;
     vm_value_t  llvm_stack_start;
 
     uint32_t    num_globals;    // number of globals
@@ -134,14 +143,15 @@ typedef struct vm_s {
     uint32_t   *func_exports;
 
     // Runtime state
-    uint32_t    pc;                // program counter
+    vm_pc_t     pc;                // program counter
     int         sp;                // operand stack pointer
     int         fp;                // current frame pointer into stack
     vm_value_t  stack[STACK_SIZE]; // main operand stack
     int         csp;               // callstack pointer
     vm_frame_t  callstack[CALLSTACK_SIZE]; // callstack
-    uint32_t    br_table[BR_TABLE_SIZE]; // br_table branch indexes
 } vm_t;
 
 void VM_SetupCall(vm_t *m, uint32_t fidx);
 void VM_Interpret(vm_t *m);
+const vm_type_t *VM_GetBlockType(uint32_t value_type);
+bool VM_PrepareInterpreter(vm_t *m, sizebuf_t *sz);
