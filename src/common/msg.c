@@ -38,19 +38,21 @@ byte        msg_write_buffer[MAX_MSGLEN];
 sizebuf_t   msg_read;
 byte        msg_read_buffer[MAX_MSGLEN];
 
+uint32_t    msg_max_entity_bytes;
+
 const entity_state_t    nullEntityState;
 const player_state_t    nullPlayerState;
 const usercmd_t         nullUserCmd;
 
 /*
 =============
-MSG_Init
+MSG_Clear
 
 Initialize default buffers (also called from Com_Error).
 This is the only place where writing buffer is initialized.
 =============
 */
-void MSG_Init(void)
+void MSG_Clear(void)
 {
     SZ_Init(&msg_read, msg_read_buffer, MAX_MSGLEN, "msg_read");
     SZ_Init(&msg_write, msg_write_buffer, MAX_MSGLEN, "msg_write");
@@ -397,6 +399,25 @@ static unsigned entity_state_counts[q_countof(entity_state_fields)];
 static const int entity_state_nc_bits = 32 - __builtin_clz(q_countof(entity_state_fields));
 
 #undef NETF
+
+static int MSG_CountDeltaMaxBits(const netfield_t *f, int n)
+{
+    int bits = 0;
+
+    for (int i = 0; i < n; i++, f++) {
+        bits++;
+        if (f->bits == 0)
+            bits += 2 + 32;
+        else if (f->bits == -1)
+            bits += 4 * 9;
+        else if (f->bits == -2)
+            bits += 16;
+        else
+            bits += abs(f->bits);
+    }
+
+    return bits;
+}
 
 static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, const void *to, unsigned *counts)
 {
@@ -1031,7 +1052,7 @@ const char *MSG_ServerCommandString(int cmd)
 
 #endif // USE_CLIENT && USE_DEBUG
 
-void MSG_ChangeVectors_f(void)
+static void MSG_ChangeVectors_f(void)
 {
     Com_Printf("\n");
     for (int i = 0; i < q_countof(entity_state_fields); i++)
@@ -1040,4 +1061,14 @@ void MSG_ChangeVectors_f(void)
     Com_Printf("\n");
     for (int i = 0; i < q_countof(player_state_fields); i++)
         Com_Printf("%s: %u\n", player_state_fields[i].name, player_state_counts[i]);
+}
+
+void MSG_Init(void)
+{
+    int bits = ENTITYNUM_BITS + 2 + MSG_CountDeltaMaxBits(entity_state_fields, q_countof(entity_state_fields));
+    msg_max_entity_bytes = (bits + 7) / 8;
+
+    MSG_Clear();
+
+    Cmd_AddCommand("changevectors", MSG_ChangeVectors_f);
 }

@@ -142,7 +142,7 @@ static void write_baseline_stream(void)
                 continue;
             }
             // check if this baseline will overflow
-            if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
+            if (msg_write.cursize + msg_max_entity_bytes > msg_write.maxsize) {
                 MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
                 MSG_FlushBits();
                 SV_ClientAddMessage(sv_client, MSG_GAMESTATE);

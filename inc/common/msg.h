@@ -22,8 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 
-#define MAX_PACKETENTITY_BYTES  70  // 68 bytes worst case + 2 byte eof
-
 extern sizebuf_t    msg_write;
 extern byte         msg_write_buffer[MAX_MSGLEN];
 
@@ -34,7 +32,10 @@ extern const entity_state_t     nullEntityState;
 extern const player_state_t     nullPlayerState;
 extern const usercmd_t          nullUserCmd;
 
+extern uint32_t     msg_max_entity_bytes;
+
 void    MSG_Init(void);
+void    MSG_Clear(void);
 
 void    MSG_BeginWriting(void);
 void    MSG_WriteChar(int c);
@@ -100,5 +101,3 @@ const char *MSG_ServerCommandString(int cmd);
 #define SHOWNET(...)
 #endif
 #endif // USE_CLIENT
-
-void MSG_ChangeVectors_f(void);

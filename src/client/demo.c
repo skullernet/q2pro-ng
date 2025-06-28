@@ -401,7 +401,7 @@ static void CL_Record_f(void)
         if (i && !ent->number)
             continue;
 
-        if (msg_write.cursize + MAX_PACKETENTITY_BYTES > msg_write.maxsize) {
+        if (msg_write.cursize + msg_max_entity_bytes > msg_write.maxsize) {
             MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
             MSG_FlushBits();
             if (!CL_WriteDemoMessage(&msg_write))

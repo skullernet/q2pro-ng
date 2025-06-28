@@ -531,7 +531,7 @@ void Com_Error(error_type_t code, const char *fmt, ...)
     memcpy(com_errorMsg, msg, len + 1);
 
     // fix up dirty message buffers
-    MSG_Init();
+    MSG_Clear();
 
     // abort any console redirects
     Com_AbortRedirect();
@@ -881,10 +881,10 @@ void Qcommon_Init(int argc, char **argv)
     // cvar and command buffer management
     Z_Init();
     Hunk_Init();
-    MSG_Init();
     Cbuf_Init();
     Cmd_Init();
     Cvar_Init();
+    MSG_Init();
     CL_PreInit();
     Prompt_Init();
     Con_Init();
@@ -945,7 +945,6 @@ void Qcommon_Init(int argc, char **argv)
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
-    Cmd_AddCommand("changevectors", MSG_ChangeVectors_f);
 
     //Cmd_AddCommand("setenv", Com_Setenv_f);
 
