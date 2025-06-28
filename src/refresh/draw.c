@@ -342,7 +342,7 @@ void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
     GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
 }
 
-static inline void draw_char(int x, int y, int flags, int c, const image_t *image)
+static inline void draw_char(int x, int y, int w, int h, int flags, int c, const image_t *image)
 {
     float s, t;
 
@@ -361,37 +361,51 @@ static inline void draw_char(int x, int y, int flags, int c, const image_t *imag
     if (flags & UI_DROPSHADOW && c != 0x83) {
         uint32_t black = draw.colors[0].u32 & U32_ALPHA;
 
-        GL_StretchPic(x + 1, y + 1, CONCHAR_WIDTH, CONCHAR_HEIGHT, s, t,
+        GL_StretchPic(x + 1, y + 1, w, h, s, t,
                       s + 0.0625f, t + 0.0625f, black, image);
 
         if (gl_fontshadow->integer > 1)
-            GL_StretchPic(x + 2, y + 2, CONCHAR_WIDTH, CONCHAR_HEIGHT, s, t,
+            GL_StretchPic(x + 2, y + 2, w, h, s, t,
                           s + 0.0625f, t + 0.0625f, black, image);
     }
 
-    GL_StretchPic(x, y, CONCHAR_WIDTH, CONCHAR_HEIGHT, s, t,
-                  s + 0.0625f, t + 0.0625f, draw.colors[c >> 7].u32, image);
+    GL_StretchPic(x, y, w, h, s, t, s + 0.0625f, t + 0.0625f, draw.colors[c >> 7].u32, image);
 }
 
 void R_DrawChar(int x, int y, int flags, int c, qhandle_t font)
 {
+    int w = CONCHAR_WIDTH;
+    int h = CONCHAR_HEIGHT;
+
     if (gl_fontshadow->integer > 0)
         flags |= UI_DROPSHADOW;
 
-    draw_char(x, y, flags, c & 255, IMG_ForHandle(font));
+    if (flags & UI_BIGFONT) {
+        w = BIGCHAR_WIDTH;
+        h = BIGCHAR_HEIGHT;
+    }
+
+    draw_char(x, y, w, h, flags, c & 255, IMG_ForHandle(font));
 }
 
 int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font)
 {
     const image_t *image = IMG_ForHandle(font);
+    int w = CONCHAR_WIDTH;
+    int h = CONCHAR_HEIGHT;
 
     if (gl_fontshadow->integer > 0)
         flags |= UI_DROPSHADOW;
 
+    if (flags & UI_BIGFONT) {
+        w = BIGCHAR_WIDTH;
+        h = BIGCHAR_HEIGHT;
+    }
+
     while (maxlen-- && *s) {
         byte c = *s++;
-        draw_char(x, y, flags, c, image);
-        x += CONCHAR_WIDTH;
+        draw_char(x, y, w, h, flags, c, image);
+        x += w;
     }
 
     return x;

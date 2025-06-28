@@ -109,15 +109,19 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
                      const char *s, qhandle_t font)
 {
     size_t len = strlen(s);
+    int w = CONCHAR_WIDTH;
 
     if (len > maxlen) {
         len = maxlen;
     }
 
+    if (flags & UI_BIGFONT)
+        w = BIGCHAR_WIDTH;
+
     if ((flags & UI_CENTER) == UI_CENTER) {
-        x -= len * CONCHAR_WIDTH / 2;
+        x -= len * w / 2;
     } else if (flags & UI_RIGHT) {
-        x -= len * CONCHAR_WIDTH;
+        x -= len * w;
     }
 
     return trap_R_DrawString(x, y, flags, maxlen, s, font);
@@ -135,6 +139,10 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
     size_t  len;
     int     last_x = x;
     int     last_y = y;
+    int     h = CONCHAR_HEIGHT;
+
+    if (flags & UI_BIGFONT)
+        h = BIGCHAR_HEIGHT;
 
     while (*s && maxlen) {
         p = strchr(s, '\n');
@@ -149,7 +157,7 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
         last_y = y;
         maxlen -= len;
 
-        y += CONCHAR_HEIGHT;
+        y += h;
         s = p + 1;
     }
 
