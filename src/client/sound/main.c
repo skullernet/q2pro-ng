@@ -48,6 +48,7 @@ bool        listener_underwater;
 bool        s_registering;
 
 int         s_paintedtime;  // sample PAIRS
+unsigned    s_framecount;
 
 // during registration it is possible to have more sounds
 // than could actually be referenced during gameplay,

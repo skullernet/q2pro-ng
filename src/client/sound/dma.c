@@ -792,6 +792,8 @@ static void DMA_Update(void)
         }
     }
 
+    s_framecount++;
+
     // add loopsounds
     AddLoopSounds();
 

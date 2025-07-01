@@ -173,6 +173,8 @@ extern int          s_numloopsounds;
 extern hash_map_t   *s_entities;
 
 extern int          s_paintedtime;
+extern unsigned     s_framecount;
+
 extern list_t       s_pendingplays;
 
 extern wavinfo_t    s_info;

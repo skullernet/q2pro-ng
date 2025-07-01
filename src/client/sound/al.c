@@ -34,7 +34,6 @@ static ALuint       s_stream_buffers;
 static bool         s_stream_paused;
 static bool         s_loop_points;
 static bool         s_source_spatialize;
-static ALuint       s_framecount;
 static ALint        s_merge_looping_minval;
 
 static ALuint       s_underwater_filter;
