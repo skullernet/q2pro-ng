@@ -12,8 +12,8 @@
 #define VER_FILEFLAGS   0x0L
 #endif
 
-#define VER_FILEDESCRIPTION_STR     "Q2PRO-NG dedicated server"
-#define VER_ORIGINALFILENAME_STR    "q2proded-ng.exe"
+#define VER_FILEDESCRIPTION_STR     "Q2PRO-NG cgame module"
+#define VER_ORIGINALFILENAME_STR    "cgame" CPUSTRING ".dll"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
@@ -23,7 +23,7 @@ VS_VERSION_INFO VERSIONINFO
     FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
     FILEFLAGS       VER_FILEFLAGS
     FILEOS          VOS_NT_WINDOWS32
-    FILETYPE        VFT_APP
+    FILETYPE        VFT_DLL
     FILESUBTYPE     VFT2_UNKNOWN
 BEGIN
     BLOCK "StringFileInfo"
@@ -35,7 +35,7 @@ BEGIN
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
-            VALUE "InternalName", "q2proded-ng"
+            VALUE "InternalName", "cgame"
             VALUE "LegalCopyright", "Copyright © 2025 skuller.net"
             VALUE "ProductName", "Q2PRO-NG"
             VALUE "ProductVersion", VERSION
@@ -46,8 +46,3 @@ BEGIN
         VALUE "Translation", 0x409, 0x4B0
     END
 END
-
-LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
-
-100 ICON "q2proded.ico"
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "q2proded.exe.manifest"

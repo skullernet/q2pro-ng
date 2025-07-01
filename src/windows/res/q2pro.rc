@@ -12,13 +12,8 @@
 #define VER_FILEFLAGS   0x0L
 #endif
 
-#ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO client (64-bit)"
-#define VER_ORIGINALFILENAME_STR    "q2pro64.exe"
-#else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO client"
-#define VER_ORIGINALFILENAME_STR    "q2pro.exe"
-#endif
+#define VER_FILEDESCRIPTION_STR     "Q2PRO-NG client"
+#define VER_ORIGINALFILENAME_STR    "q2pro-ng.exe"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
@@ -40,9 +35,9 @@ BEGIN
             VALUE "FileDescription", VER_FILEDESCRIPTION_STR
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
-            VALUE "InternalName", "q2pro"
-            VALUE "LegalCopyright", "Copyright © 2023 skuller.net"
-            VALUE "ProductName", "Q2PRO"
+            VALUE "InternalName", "q2pro-ng"
+            VALUE "LegalCopyright", "Copyright © 2025 skuller.net"
+            VALUE "ProductName", "Q2PRO-NG"
             VALUE "ProductVersion", VERSION
         END
     END

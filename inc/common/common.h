@@ -26,24 +26,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "Q2PRO-NG"
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#define APPLICATION     "q2pro-ng"
 #else
-#define APPLICATION     "q2proded"
+#define APPLICATION     "q2proded-ng"
 #endif
 
 #define COM_DEFAULT_CFG     "default.cfg"
 #define COM_AUTOEXEC_CFG    "autoexec.cfg"
 #define COM_POSTEXEC_CFG    "postexec.cfg"
 #define COM_POSTINIT_CFG    "postinit.cfg"
-
-#ifdef _WIN32
-#define COM_CONFIG_CFG      "q2config.cfg"
-#else
 #define COM_CONFIG_CFG      "config.cfg"
-#endif
 
 // FIXME: rename these
 #define COM_HISTORYFILE_NAME    ".conhistory"

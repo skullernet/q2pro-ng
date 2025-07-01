@@ -12,12 +12,7 @@
 #define VER_FILEFLAGS   0x0L
 #endif
 
-#ifdef _WIN64
-#define VER_FILEDESCRIPTION_STR     "Q2PRO game module (64-bit)"
-#else
-#define VER_FILEDESCRIPTION_STR     "Q2PRO game module"
-#endif
-
+#define VER_FILEDESCRIPTION_STR     "Q2PRO-NG game module"
 #define VER_ORIGINALFILENAME_STR    "game" CPUSTRING ".dll"
 
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -41,8 +36,8 @@ BEGIN
             VALUE "OriginalFilename", VER_ORIGINALFILENAME_STR
             VALUE "FileVersion", VERSION
             VALUE "InternalName", "game"
-            VALUE "LegalCopyright", "Copyright © 2023 skuller.net"
-            VALUE "ProductName", "Q2PRO"
+            VALUE "LegalCopyright", "Copyright © 2025 skuller.net"
+            VALUE "ProductName", "Q2PRO-NG"
             VALUE "ProductVersion", VERSION
         END
     END

@@ -364,7 +364,7 @@ if get_option('debug')
   refresh_src += 'src/refresh/debug.c'
 endif
 
-executable('q2pro', common_src, client_src, refresh_src,
+executable('q2pro-ng', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
@@ -374,7 +374,7 @@ executable('q2pro', common_src, client_src, refresh_src,
   install:               system_wide,
 )
 
-executable('q2proded', common_src, server_src,
+executable('q2proded-ng', common_src, server_src,
   dependencies:          common_deps + server_deps,
   include_directories:   'inc',
   gnu_symbol_visibility: 'hidden',
