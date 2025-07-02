@@ -16,16 +16,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#define OP(op) [op] = &&do_##op
+#define OP(op) [OP_##op] = &&do_##op
 
-static const void *dispatch_table[256] = {
+static const void *dispatch_table[] = {
     OP(Unreachable),
-    OP(Block),
-    OP(If),
-    OP(Else),
-    OP(End),
     OP(Br),
     OP(BrIf),
+    OP(BrUnless),
     OP(BrTable),
     OP(Return),
     OP(Call),
@@ -61,8 +58,8 @@ static const void *dispatch_table[256] = {
 
     OP(MemorySize),
     OP(MemoryGrow),
-    OP(ExtMemoryCopy),
-    OP(ExtMemoryFill),
+    OP(MemoryCopy),
+    OP(MemoryFill),
 
     OP(I32_Const),
     OP(I64_Const),

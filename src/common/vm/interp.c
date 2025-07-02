@@ -32,46 +32,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 // Stack machine (byte code related functions)
 //
 
-// Used for control blocks.
-static void VM_PushBlock(vm_t *m, const vm_block_t *block, intptr_t sp, intptr_t *csp)
-{
-    VM_ASSERT(*csp < CALLSTACK_SIZE - 1, "Call stack overflow");
-
-    vm_frame_t *frame = &m->callstack[++(*csp)];
-    frame->block = block;
-    frame->sp = sp;
-}
-
-// Used for both function and control blocks.
-static const vm_block_t *VM_PopBlock(vm_t *m, vm_pc_t *pc, intptr_t *sp, intptr_t *csp)
-{
-    VM_ASSERT(*csp >= 0, "Call stack underflow");
-
-    const vm_frame_t *frame = &m->callstack[(*csp)--];
-    const vm_type_t  *type = frame->block->type;
-
-    // Restore stack pointer
-    if (type->num_results == 1) {
-        // Save top value as result
-        if (frame->sp < *sp) {
-            m->stack[frame->sp + 1] = m->stack[*sp];
-            *sp = frame->sp + 1;
-        }
-    } else {
-        if (frame->sp < *sp) {
-            *sp = frame->sp;
-        }
-    }
-
-    if (frame->block->opcode == 0x00) {
-        // Function, restore frame pointer and set pc to return address
-        m->fp = frame->fp;
-        *pc = frame->ra;
-    }
-
-    return frame->block;
-}
-
 // Setup a function
 // Push params and locals on the stack and save a call frame on the call stack
 // Sets new pc value for the start of the function
@@ -180,13 +140,11 @@ static uint64_t rotr64(uint64_t n, int c)
 
 #define save_reg \
     m->pc = cur_pc; \
-    m->sp = cur_sp; \
-    m->csp = cur_csp
+    m->sp = cur_sp
 
 #define load_reg \
     cur_pc = m->pc; \
-    cur_sp = m->sp; \
-    cur_csp = m->csp
+    cur_sp = m->sp
 
 #define fetch_op \
     opcode = *cur_pc++
@@ -269,16 +227,14 @@ void VM_Interpret(vm_t *m)
 {
     vm_value_t *const   stack = m->stack;
     const uint64_t      msize = m->memory.pages * VM_PAGE_SIZE;
-    const intptr_t      enter_csp = m->csp;
-    const vm_block_t   *block;
-    uint32_t     arg, val, fidx, tidx, cond, depth, count, index;
+    const int    enter_csp = m->csp;
+    uint32_t     arg, val, fidx, tidx, cond, count, index;
     uint32_t     offset, addr, dst, src, n;
     uint8_t     *maddr;
     vm_value_t   sval;
     uint32_t     opcode;
     vm_pc_t      cur_pc = m->pc;
     intptr_t     cur_sp = m->sp;
-    intptr_t     cur_csp = m->csp;
 
     VM_ASSERT(enter_csp >= 0, "Call stack underflow");
 
@@ -292,90 +248,70 @@ void VM_Interpret(vm_t *m)
     do_Unreachable:
         VM_ASSERT(0, "Unreachable instruction");
 
-    do_Block:
-        index = get_u16(&cur_pc);
-        VM_PushBlock(m, &m->blocks[index], cur_sp, &cur_csp);
-        dispatch;
-
-    do_If:
-        index = get_u16(&cur_pc);
-        block = &m->blocks[index];
-        VM_PushBlock(m, block, cur_sp, &cur_csp);
-
-        have(1);
-        cond = stack[cur_sp--].u32;
-        if (cond == 0) { // if false
-            // branch to else block or after end of if
-            if (block->start_addr == 0) {
-                // no else block, pop if block and skip end
-                cur_csp--;
-                cur_pc = m->code + block->end_addr + 1;
-            } else {
-                cur_pc = m->code + block->start_addr;
-            }
-        }
-        // if true, keep going
-        dispatch;
-
-    do_Else:
-        cur_pc = m->code + m->callstack[cur_csp].block->end_addr;
-        dispatch;
-
-    do_End:
-        block = VM_PopBlock(m, &cur_pc, &cur_sp, &cur_csp);
-        if (cur_csp < enter_csp) {
-            VM_ASSERT(block->opcode == 0x00, "Not a function");
-            save_reg;
-            return; // return to top-level from function
-        }
-        dispatch;
-
     do_Br:
-        depth = get_u16(&cur_pc);
-        VM_ASSERT(cur_csp >= depth, "Call stack underflow");
-        cur_csp -= depth;
-        // set to end for VM_PopBlock
-        cur_pc = m->code + m->callstack[cur_csp].block->end_addr;
+        addr = get_u32(&cur_pc);
+        cur_pc = m->code + addr;
         dispatch;
 
     do_BrIf:
-        depth = get_u16(&cur_pc);
+        addr = get_u32(&cur_pc);
         have(1);
         cond = stack[cur_sp--].u32;
-        if (cond) { // if true
-            VM_ASSERT(cur_csp >= depth, "Call stack underflow");
-            cur_csp -= depth;
-            // set to end for VM_PopBlock
-            cur_pc = m->code + m->callstack[cur_csp].block->end_addr;
-        }
+        if (cond) // if true
+            cur_pc = m->code + addr;
+        dispatch;
+
+    do_BrUnless:
+        addr = get_u32(&cur_pc);
+        have(1);
+        cond = stack[cur_sp--].u32;
+        if (!cond) // if false
+            cur_pc = m->code + addr;
         dispatch;
 
     do_BrTable:
-        cur_pc += (uintptr_t)cur_pc & 1;
         count = get_u16(&cur_pc);
-        const uint16_t *br_table = (const uint16_t *)cur_pc;
-        cur_pc += count * 2;
+        cur_pc += -(uintptr_t)cur_pc & 3;
+        const uint32_t *br_table = (const uint32_t *)cur_pc;
+        cur_pc += (count + 1) * 4;
 
-        depth = get_u16(&cur_pc);
+        addr = br_table[count];
 
         have(1);
         index = stack[cur_sp--].u32;
         if (index < count)
-            depth = br_table[index];
+            addr = br_table[index];
 
-        VM_ASSERT(cur_csp >= depth, "Call stack underflow");
-        cur_csp -= depth;
-        // set to end for VM_PopBlock
-        cur_pc = m->code + m->callstack[cur_csp].block->end_addr;
+        cur_pc = m->code + addr;
         dispatch;
 
     do_Return:
-        while (cur_csp >= 0 && m->callstack[cur_csp].block->opcode != 0x00)
-            cur_csp--;
-        // Set the program count to the end of the function
-        // The actual VM_PopBlock and return is handled by the end opcode.
-        VM_ASSERT(cur_csp >= 0, "Call stack underflow");
-        cur_pc = m->code + m->callstack[cur_csp].block->end_addr;
+        VM_ASSERT(m->csp >= 0, "Call stack underflow");
+
+        const vm_frame_t *frame = &m->callstack[m->csp--];
+        const vm_type_t  *type = frame->block->type;
+
+        // Restore stack pointer
+        if (type->num_results == 1) {
+            // Save top value as result
+            if (frame->sp < cur_sp) {
+                stack[frame->sp + 1] = stack[cur_sp];
+                cur_sp = frame->sp + 1;
+            }
+        } else {
+            if (frame->sp < cur_sp) {
+                cur_sp = frame->sp;
+            }
+        }
+
+        // Restore frame pointer and set pc to return address
+        m->fp = frame->fp;
+        cur_pc = frame->ra;
+
+        if (m->csp < enter_csp) {
+            save_reg;
+            return; // return to top-level from function
+        }
         dispatch;
 
     //
@@ -383,26 +319,7 @@ void VM_Interpret(vm_t *m)
     //
     do_Call:
         fidx = get_u16(&cur_pc);
-        save_reg;
-        if (fidx < m->num_imports) {
-            VM_ThunkOut(m, fidx);   // import/thunk call
-        } else {
-            VM_ASSERT(fidx < m->num_funcs, "Bad function index");
-            VM_SetupCall(m, fidx);  // regular function call
-        }
-        load_reg;
-        dispatch;
-
-    do_CallIndirect:
-        tidx = get_u16(&cur_pc);
-        VM_ASSERT(tidx < m->num_types, "Bad type index");
-        have(1);
-        val = stack[cur_sp--].u32;
-        VM_ASSERT(val < m->table.maximum, "Undefined element in table");
-        fidx = m->table.entries[val];
-        VM_ASSERT(fidx < m->num_funcs, "Bad function index");
-        VM_ASSERT(m->funcs[fidx].type == &m->types[tidx], "Indirect call function type differ");
-
+    do_Call2:
         save_reg;
         if (fidx < m->num_imports)
             VM_ThunkOut(m, fidx);   // import/thunk call
@@ -410,6 +327,16 @@ void VM_Interpret(vm_t *m)
             VM_SetupCall(m, fidx);  // regular function call
         load_reg;
         dispatch;
+
+    do_CallIndirect:
+        tidx = get_u16(&cur_pc);
+        have(1);
+        val = stack[cur_sp--].u32;
+        VM_ASSERT(val < m->table.maximum, "Undefined element in table");
+        fidx = m->table.entries[val];
+        VM_ASSERT(fidx < m->num_funcs, "Bad function index");
+        VM_ASSERT(m->funcs[fidx].type == &m->types[tidx], "Indirect call function type differ");
+        goto do_Call2;
 
     //
     // Parametric operators
@@ -486,7 +413,7 @@ void VM_Interpret(vm_t *m)
             stack[cur_sp].u32 = -1; // resize not supported
         dispatch_op;
 
-    do_ExtMemoryCopy:
+    do_MemoryCopy:
         fetch_op;
         have(3);
         dst = stack[cur_sp - 2].u32;
@@ -498,7 +425,7 @@ void VM_Interpret(vm_t *m)
         cur_sp -= 3;
         dispatch_op;
 
-    do_ExtMemoryFill:
+    do_MemoryFill:
         fetch_op;
         have(3);
         dst = stack[cur_sp - 2].u32;
@@ -747,39 +674,41 @@ void VM_Interpret(vm_t *m)
     SEX_OP(I64_Extend32_s, i64, 32)
 }
 
-static uint32_t remap_extended_opcode(uint32_t opcode)
+static vm_opcode_t extended_opcode(wa_extended_opcode_t opcode)
 {
     switch (opcode) {
         // we don't support saturating conversions
-        case I32_Trunc_sat_f32_s: return I32_Trunc_f32_s;
-        case I32_Trunc_sat_f32_u: return I32_Trunc_f32_u;
-        case I32_Trunc_sat_f64_s: return I32_Trunc_f64_s;
-        case I32_Trunc_sat_f64_u: return I32_Trunc_f64_u;
-        case I64_Trunc_sat_f32_s: return I64_Trunc_f32_s;
-        case I64_Trunc_sat_f32_u: return I64_Trunc_f32_u;
-        case I64_Trunc_sat_f64_s: return I64_Trunc_f64_s;
-        case I64_Trunc_sat_f64_u: return I64_Trunc_f64_u;
-
-        // remap to unused opcodes
-        case MemoryCopy: return ExtMemoryCopy;
-        case MemoryFill: return ExtMemoryFill;
+        case I32_Trunc_sat_f32_s: return OP_I32_Trunc_f32_s;
+        case I32_Trunc_sat_f32_u: return OP_I32_Trunc_f32_u;
+        case I32_Trunc_sat_f64_s: return OP_I32_Trunc_f64_s;
+        case I32_Trunc_sat_f64_u: return OP_I32_Trunc_f64_u;
+        case I64_Trunc_sat_f32_s: return OP_I64_Trunc_f32_s;
+        case I64_Trunc_sat_f32_u: return OP_I64_Trunc_f32_u;
+        case I64_Trunc_sat_f64_s: return OP_I64_Trunc_f64_s;
+        case I64_Trunc_sat_f64_u: return OP_I64_Trunc_f64_u;
+        case MemoryCopy: return OP_MemoryCopy;
+        case MemoryFill: return OP_MemoryFill;
+        default: ASSERT(0, "Unrecognized extended opcode %#x", opcode);
     }
-    return 0;
 }
 
-// merge some opcodes to avoid code duplication
-static uint32_t simplify_opcode(uint32_t opcode)
+static vm_opcode_t memload_opcode(wa_opcode_t opcode)
 {
     switch (opcode) {
-        case F32_Load: return I32_Load;
-        case F64_Load: return I64_Load;
-        case F32_Store: return I32_Store;
-        case F64_Store: return I64_Store;
-        case F32_Const: return I32_Const;
-        case F64_Const: return I64_Const;
-        case Loop: return Block;
+        case I32_Load: return OP_I32_Load;
+        case I64_Load: return OP_I64_Load;
+        case F32_Load: return OP_I32_Load;
+        case F64_Load: return OP_I64_Load;
+        case I32_Load8_s ... I64_Load32_u:
+            return opcode + OP_I32_Load8_s - I32_Load8_s;
+        case I32_Store: return OP_I32_Store;
+        case I64_Store: return OP_I64_Store;
+        case F32_Store: return OP_I32_Store;
+        case F64_Store: return OP_I64_Store;
+        case I32_Store8 ... I64_Store32:
+            return opcode + OP_I32_Store8 - I32_Store8;
+        default: q_unreachable();
     }
-    return opcode;
 }
 
 static void put_u8(sizebuf_t *out, uint8_t v)
@@ -802,70 +731,84 @@ static void put_u64(sizebuf_t *out, uint64_t v)
     WN64(SZ_GetSpace(out, 8), v);
 }
 
-static bool VM_PrepareFunction(vm_t *m, vm_block_t *func, sizebuf_t *in, sizebuf_t *out)
+static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
+                              sizebuf_t *in, sizebuf_t *out, vm_block_t *blocks, int pass)
 {
     vm_block_t  *block;
-    uint16_t     blockstack[BLOCKSTACK_SIZE];
+    vm_block_t  *blockstack[BLOCKSTACK_SIZE];
     int          top = -1;
-    uint32_t     opcode = Unreachable;
+    int          num_blocks = 0;
+    wa_opcode_t  opcode = Unreachable;
     uint32_t     count, index;
 
-    in->readcount = func->start_addr;
     func->start_addr = out->cursize;
-    while (in->readcount <= func->end_addr) {
+    while (in->readcount <= func_end_addr) {
         uint32_t pos = in->readcount;
 
         opcode = SZ_ReadByte(in);
         switch (opcode) {
-        case Extended:
-            index = SZ_ReadLeb(in);
-            opcode = remap_extended_opcode(index);
-            ASSERT(opcode, "Unrecognized extended opcode %#x", index);
+        case Unreachable:
+            put_u8(out, OP_Unreachable);
             break;
+
         case Nop:
-        case I32_Reinterpret_f32 ... F64_Reinterpret_i64:
-            continue;
-        case ExtMemoryCopy:
-        case ExtMemoryFill:
-            goto badcode;
-        }
+            break;
 
-        put_u8(out, simplify_opcode(opcode));
-
-        switch (opcode) {
         case Block:
         case Loop:
         case If:
+            ASSERT(num_blocks < BLOCKSTACK_SIZE, "Too many blocks");
+            block = &blocks[num_blocks++];
+
+            index = SZ_ReadLeb(in);
+            if (pass == 0) {
+                memset(block, 0, sizeof(*block));
+                block->opcode = opcode;
+                block->type = VM_GetBlockType(index);
+                if (!block->type)
+                    return false;
+            } else {
+                Q_assert(block->opcode == opcode);
+            }
+
             ASSERT(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
-            ASSERT(m->num_blocks < MAX_BLOCKS, "Too many blocks");
-            if (!(m->num_blocks & 1023))
-                m->blocks = VM_Realloc(m->blocks, (m->num_blocks + 1024) * sizeof(m->blocks[0]));
-            index = m->num_blocks++;
-            block = &m->blocks[index];
-            block->opcode = opcode;
-            block->type = VM_GetBlockType(SZ_ReadLeb(in));
-            if (!block->type)
-                return false;
-            blockstack[++top] = index;
-            put_u16(out, index);
+            blockstack[++top] = block;
+
             if (opcode == Loop)
                 block->end_addr = out->cursize;    // loop: label after start
+
+            if (opcode == If) {
+                put_u8(out, OP_BrUnless);
+                // branch to else block or after end of if
+                if (block->start_addr == 0)
+                    put_u32(out, block->end_addr);
+                else
+                    put_u32(out, block->start_addr);
+            }
             break;
 
         case Else:
             ASSERT(top >= 0, "Blockstack underflow");
-            block = &m->blocks[blockstack[top]];
+            block = blockstack[top];
             ASSERT(block->opcode == If, "Else not matched with if");
+            put_u8(out, OP_Br);
+            put_u32(out, block->end_addr);
             block->start_addr = out->cursize;
             break;
 
         case End:
-            if (pos == func->end_addr)
+            if (pos == func_end_addr) {
+                put_u8(out, OP_Return);
                 break;
+            }
             ASSERT(top >= 0, "Blockstack underflow");
-            block = &m->blocks[blockstack[top--]];
+            block = blockstack[top--];
             if (block->opcode != Loop)
-                block->end_addr = out->cursize - 1; // block, if: label at end
+                block->end_addr = out->cursize; // block, if: label at end
+            break;
+
+        case Return:
+            put_u8(out, OP_Return);
             break;
 
         case Br:
@@ -873,23 +816,53 @@ static bool VM_PrepareFunction(vm_t *m, vm_block_t *func, sizebuf_t *in, sizebuf
             ASSERT(top >= 0, "Blockstack underflow");
             index = SZ_ReadLeb(in);
             ASSERT(index <= top, "Bad label");
-            put_u16(out, index);
+            put_u8(out, opcode + OP_Br - Br);
+            put_u32(out, blockstack[top - index]->end_addr);
             break;
 
         case BrTable:
             ASSERT(top >= 0, "Blockstack underflow");
+
             count = SZ_ReadLeb(in); // target count
             ASSERT(count < BR_TABLE_SIZE, "BrTable size too big");
-            out->cursize += out->cursize & 1;
+
+            put_u8(out, OP_BrTable);
             put_u16(out, count);
+
+            out->cursize += -out->cursize & 3;
             for (uint32_t i = 0; i < count; i++) {
                 index = SZ_ReadLeb(in);
                 ASSERT(index <= top, "Bad label");
-                put_u16(out, index);
+                put_u32(out, blockstack[top - index]->end_addr);
             }
+
             index = SZ_ReadLeb(in); // default target
             ASSERT(index <= top, "Bad label");
+            put_u32(out, blockstack[top - index]->end_addr);
+            break;
+
+        case Call:
+            index = SZ_ReadLeb(in);
+            ASSERT(index < m->num_funcs, "Bad function index");
+            put_u8(out, OP_Call);
             put_u16(out, index);
+            break;
+
+        case CallIndirect:
+            index = SZ_ReadLeb(in);
+            ASSERT(index < m->num_types, "Bad type index");
+            put_u8(out, OP_CallIndirect);
+            put_u16(out, index);
+            index = SZ_ReadLeb(in);
+            ASSERT(index == 0, "Only 1 default table supported");
+            break;
+
+        case Drop:
+            put_u8(out, OP_Drop);
+            break;
+
+        case Select:
+            put_u8(out, OP_Select);
             break;
 
         case LocalGet:
@@ -897,6 +870,7 @@ static bool VM_PrepareFunction(vm_t *m, vm_block_t *func, sizebuf_t *in, sizebuf
         case LocalTee:
             index = SZ_ReadLeb(in);
             ASSERT(index < func->type->num_params + func->num_locals, "Bad local index");
+            put_u8(out, opcode + OP_LocalGet - LocalGet);
             put_u16(out, index);
             break;
 
@@ -904,65 +878,69 @@ static bool VM_PrepareFunction(vm_t *m, vm_block_t *func, sizebuf_t *in, sizebuf
         case GlobalSet:
             index = SZ_ReadLeb(in);
             ASSERT(index < m->num_globals, "Bad global index");
+            put_u8(out, opcode + OP_GlobalGet - GlobalGet);
             put_u16(out, index);
             break;
 
         case MemorySize:
         case MemoryGrow:
             in->readcount++;
+            put_u8(out, opcode + OP_MemorySize - MemorySize);
             break;
 
         case I32_Load ... I64_Store32:
-            SZ_ReadLeb(in);
+            SZ_ReadLeb(in); // skip flags
+            put_u8(out, memload_opcode(opcode));
             put_u32(out, SZ_ReadLeb(in));
             break;
 
         case I32_Const:
+            put_u8(out, OP_I32_Const);
             put_u32(out, SZ_ReadSignedLeb(in, 32));
             break;
 
         case I64_Const:
+            put_u8(out, OP_I64_Const);
             put_u64(out, SZ_ReadSignedLeb(in, 64));
             break;
 
-        case Call:
-            index = SZ_ReadLeb(in);
-            ASSERT(index < m->num_funcs, "Bad function index");
-            put_u16(out, index);
-            break;
-
-        case CallIndirect:
-            index = SZ_ReadLeb(in);
-            ASSERT(index < m->num_types, "Bad type index");
-            put_u16(out, index);
-            index = SZ_ReadLeb(in);
-            ASSERT(index == 0, "Only 1 default table supported");
-            break;
-
         case F32_Const:
+            put_u8(out, OP_I32_Const);
             put_u32(out, SZ_ReadLong(in));
             break;
 
         case F64_Const:
+            put_u8(out, OP_I64_Const);
             put_u64(out, SZ_ReadLong64(in));
             break;
 
-        case Unreachable:
-        case Return:
-        case Drop:
-        case Select:
-        case I32_Eqz ... I64_Extend32_s:
+        case I32_Eqz ... F64_Promote_f32:
+            put_u8(out, opcode + OP_I32_Eqz - I32_Eqz);
             break;
 
-        case ExtMemoryCopy:
-            in->readcount += 2;
+        case I32_Reinterpret_f32 ... F64_Reinterpret_i64:
             break;
-        case ExtMemoryFill:
-            in->readcount += 1;
+
+        case I32_Extend8_s ... I64_Extend32_s:
+            put_u8(out, opcode + OP_I32_Extend8_s - I32_Extend8_s);
+            break;
+
+        case Extended:
+            index = extended_opcode(SZ_ReadLeb(in));
+            if (!index)
+                return false;
+            put_u8(out, index);
+            switch (index) {
+            case OP_MemoryCopy:
+                in->readcount += 2;
+                break;
+            case OP_MemoryFill:
+                in->readcount += 1;
+                break;
+            }
             break;
 
         default:
-        badcode:
             ASSERT(0, "Unrecognized opcode %#x", opcode);
         }
     }
@@ -973,19 +951,33 @@ static bool VM_PrepareFunction(vm_t *m, vm_block_t *func, sizebuf_t *in, sizebuf
     ASSERT(top == -1, "Function ended in middle of block");
     ASSERT(opcode == End, "Function block doesn't end with End opcode");
 
-    return true;
+    return num_blocks + 1;
 }
 
 bool VM_PrepareInterpreter(vm_t *m, sizebuf_t *in)
 {
-    sizebuf_t out;
+    vm_block_t  blocks[BLOCKSTACK_SIZE];
+    sizebuf_t   out;
 
     m->code = VM_Malloc(in->cursize * 2);
     SZ_InitWrite(&out, m->code, in->cursize * 2);
 
-    for (uint32_t f = m->num_imports; f < m->num_funcs; f++)
-        if (!VM_PrepareFunction(m, &m->funcs[f], in, &out))
-            return false;
+    for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
+        vm_block_t *func = &m->funcs[f];
+        uint32_t start_addr = func->start_addr;
+        uint32_t end_addr   = func->end_addr;
+        uint32_t pos        = out.cursize;
+
+        for (int pass = 0; pass < 2; pass++) {
+            in->readcount = start_addr;
+            out.cursize   = pos;
+            int ret = VM_PrepareFunction(m, func, end_addr, in, &out, blocks, pass);
+            if (!ret)
+                return false;
+            if (ret == 1)
+                break;
+        }
+    }
 
     m->code = VM_Realloc(m->code, Q_ALIGN(out.cursize, 64) + 64);
     m->num_bytes = out.cursize;

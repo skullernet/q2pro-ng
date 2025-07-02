@@ -124,9 +124,6 @@ typedef struct vm_s {
     vm_block_t  *funcs;         // imported and locally defined functions
     uint32_t    start_func;     // function to run on module load
 
-    uint32_t    num_blocks;
-    vm_block_t *blocks;
-
     vm_table_t  table;
     vm_memory_t memory;
 

@@ -621,7 +621,6 @@ void VM_Free(vm_t *m)
     Z_Free(m->func_exports);
     Z_Free(m->table.entries);
     Z_Free(m->memory.bytes);
-    Z_Free(m->blocks);
     Z_Free(m->code);
     Z_Free(m);
 }
