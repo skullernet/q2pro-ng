@@ -1,32 +1,21 @@
-Q2PRO
-=====
+Q2PRO-ng
+========
 
-Q2PRO is an enhanced Quake 2 client and server for Windows and Linux. Supported
-features include:
+Experimental Q2PRO fork aimed at cleaning up codebase and modernizing engine
+architecture. My interpretation of what should constitute truly _remastered_
+Quake II. Compatible with 2023 remaster assets. Not backward compatible with
+vanilla Quake II.
 
-* unified OpenGL renderer with support for wide range of OpenGL versions
-* enhanced console with persistent command history and autocompletion
-* rendering / physics / packet rate separation
-* syncing to GPU for reduced input lag with vsync on
-* ZIP packfiles (.pkz)
-* JPEG/PNG textures and screenshots
-* MD3 and MD5 (re-release) models
-* Ogg Vorbis music and Ogg Theora cinematics
-* compatibility with re-release assets
-* fast and secure HTTP downloads
-* multichannel sound using OpenAL
-* stereo WAV files support
-* seeking in demos, recording from demos, server side multiview demos
-* live game broadcasting capabilities
-* network protocol extensions for larger maps
-* eliminates frame overflows (even for legacy clients)
-* won't crash if game data is corrupted
+Project goals:
 
-Q2PRO doesn't have releases. It is always recommended to use the latest nighly
-build from the top of Releases page.
+* Unified network model: everything is entity.
+* Escape flags hell: parse delta updates at bitstream level.
+* Rich cgame module: move all high level client logic into it.
+* Predict/derive more player state values on the client.
+* Remove raw network message access from game/cgame.
+* Remove server access to client console.
+* Remove UDP downloading: server pushes compressed packfiles over HTTP.
+* Run portable game/cgame/ui modules in WASM-based QVM sandbox.
 
-Linux binaries are not provided. Users are advised to build from source. See
-BUILDING.md file for instructions.
-
-For information on using and configuring Q2PRO, refer to client and server
-manuals available in doc/ subdirectory.
+**This project is work in progress and alpha quality.** Expect frequent game API
+breakage, incompatible network protocol changes, savegame format changes, etc.
