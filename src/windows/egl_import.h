@@ -53,7 +53,7 @@ static void egl_shutdown_import(void)
 
 static bool egl_init_import(void)
 {
-    Sys_LoadLibrary("libEGL.dll", NULL, &egl.handle);
+    egl.handle = Sys_LoadLibrary("libEGL.dll");
     if (!egl.handle)
         return false;
 
