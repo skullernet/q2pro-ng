@@ -485,3 +485,5 @@ void BG_Pmove(pmove_t *pmove);
 void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend);
 
 void vectoangles(const vec3_t value1, vec3_t angles);
+
+const char *BG_EventName(entity_event_t event);

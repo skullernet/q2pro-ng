@@ -631,6 +631,7 @@ void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, floa
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
     G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
+    ent->r.svflags |= SVF_PHS;
 }
 
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
@@ -664,28 +665,45 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
     return vol << 24 | att << 16 | channel << 13 | index;
 }
 
-void G_AddEvent(edict_t *ent, entity_event_t event, int param)
+void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
-    if (ent->s.event[0]) {
-        if (ent->s.event[1]) {
-            extern vm_cvar_t sv_running;
-            if (sv_running.integer >= 2)
-                G_Printf("Too many events for %s: %d, %d, %d\n", etos(ent), ent->s.event[0], ent->s.event[1], event);
+    if (!event)
+        return;
+
+    for (int i = 0; i < MAX_EVENTS; i++) {
+        if (ent->s.event[i] == event) {
+            ent->s.event_param[i] = param;
             return;
         }
-        ent->s.event[1] = event;
-        ent->s.event_param[1] = param;
-    } else {
-        ent->s.event[0] = event;
-        ent->s.event_param[0] = param;
+        if (!ent->s.event[i]) {
+            ent->s.event[i] = event;
+            ent->s.event_param[i] = param;
+            return;
+        }
+    }
+
+    for (int i = 0; i < MAX_EVENTS; i++) {
+        if (ent->s.event[i] == EV_FOOTSTEP || ent->s.event[i] == EV_OTHER_FOOTSTEP) {
+            ent->s.event[i] = event;
+            ent->s.event_param[i] = param;
+            return;
+        }
+    }
+
+    if (sv_running.integer >= 2) {
+        G_Printf("Too many events for %s: ", etos(ent));
+        for (int i = 0; i < MAX_EVENTS; i++)
+            G_Printf("%s, ", BG_EventName(ent->s.event[i]));
+        G_Printf("%s\n", BG_EventName(event));
     }
 }
 
-edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param)
+edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param)
 {
     edict_t *ent;
 
     ent = G_Spawn();
+    ent->r.svflags = SVF_PHS;
     G_SnapVector(origin, ent->s.origin);
     ent->s.event[0] = event;
     ent->s.event_param[0] = param;
@@ -710,10 +728,12 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
     return ent;
 }
 
-void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
+void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     ent->r.solid = SOLID_NOT;
-    ent->r.svflags = SVF_NONE;
+    ent->r.svflags = SVF_PHS;
+    VectorClear(ent->r.mins);
+    VectorClear(ent->r.maxs);
 
     ent->s.modelindex = 0;
     ent->s.modelindex2 = 0;
@@ -724,6 +744,7 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, int param)
     ent->think = NULL;
     ent->nextthink = 0;
     ent->use = NULL;
+    ent->targetname = NULL;
 
     G_AddEvent(ent, event, param);
 

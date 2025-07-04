@@ -63,6 +63,14 @@ static inline bool entity_is_optimized(const entity_state_t *state)
     return state->number == cg.frame->ps.clientnum && cg.frame->ps.pm_type < PM_DEAD;
 }
 
+static inline bool entity_was_teleported(const entity_state_t *state)
+{
+    for (int i = 0; i < MAX_EVENTS; i++)
+        if (state->event[i] == EV_PLAYER_TELEPORT || state->event[i] == EV_OTHER_TELEPORT)
+            return true;
+    return false;
+}
+
 static inline void
 entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
@@ -72,11 +80,8 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
     ent->prev_frame = state->frame;
-    //ent->event_frame = cg.frame->number;
 
-    if (state->event[0] == EV_PLAYER_TELEPORT ||
-        state->event[0] == EV_OTHER_TELEPORT ||
-        (state->renderfx & RF_BEAM)) {
+    if (entity_was_teleported(state) || (state->renderfx & RF_BEAM)) {
         // no lerping if teleported
         VectorCopy(origin, ent->lerp_origin);
         return;
@@ -91,27 +96,11 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
 static inline void
 entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
-    int event = state->event[0];
-
-#if USE_FPS
-    // check for new event
-    if (state->event != ent->current.event)
-        ent->event_frame = cg.frame->number; // new
-    else if (cg.frame->number - ent->event_frame >= cg.frametime.div)
-        ent->event_frame = cg.frame->number; // refreshed
-    else
-        event = 0; // duplicated
-#endif
-
     if (state->modelindex != ent->current.modelindex
         || state->modelindex2 != ent->current.modelindex2
         || state->modelindex3 != ent->current.modelindex3
         || state->modelindex4 != ent->current.modelindex4
-        || event == EV_PLAYER_TELEPORT
-        || event == EV_OTHER_TELEPORT
-        || fabsf(origin[0] - ent->current.origin[0]) > 512
-        || fabsf(origin[1] - ent->current.origin[1]) > 512
-        || fabsf(origin[2] - ent->current.origin[2]) > 512
+        || entity_was_teleported(state)
         || cg_nolerp.integer == 1) {
         // some data changes will force no lerping
         ent->trailcount = 1024;     // for diminishing rocket / grenade trails
@@ -212,19 +201,9 @@ static void check_player_lerp(void)
     ps = &cg.frame->ps;
     ops = &cg.oldframe->ps;
 
-#if 0
-    // no lerping if player entity was teleported (origin check)
-    if (fabsf(ops->origin[0] - ps->origin[0]) > 256 ||
-        fabsf(ops->origin[1] - ps->origin[1]) > 256 ||
-        fabsf(ops->origin[2] - ps->origin[2]) > 256) {
-        goto dup;
-    }
-#endif
-
-    // no lerping if player entity was teleported (event check)
+    // no lerping if player entity was teleported
     ent = &cg_entities[ps->clientnum];
-    if (ent->current.event[0] == EV_PLAYER_TELEPORT ||
-        ent->current.event[0] == EV_OTHER_TELEPORT)
+    if (ent->serverframe == cg.frame->number && entity_was_teleported(&ent->current))
         goto dup;
 
     // no lerping if teleport bit was flipped

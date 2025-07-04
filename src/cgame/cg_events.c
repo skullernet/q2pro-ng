@@ -1370,8 +1370,9 @@ void CG_EntityEvents(centity_t *cent)
         return;
 #endif
 
-    CG_EntityEvent(cent, s->event[0], s->event_param[0]);
-    CG_EntityEvent(cent, s->event[1], s->event_param[1]);
+    for (int i = 0; i < MAX_EVENTS; i++)
+        if (s->event[i])
+            CG_EntityEvent(cent, s->event[i], s->event_param[i]);
 }
 
 /*

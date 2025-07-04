@@ -1137,6 +1137,7 @@ extern vm_cvar_t spectator_password;
 extern vm_cvar_t needpass;
 extern vm_cvar_t g_select_empty;
 extern vm_cvar_t sv_dedicated;
+extern vm_cvar_t sv_running;
 
 extern vm_cvar_t filterban;
 
@@ -1317,10 +1318,10 @@ void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, floa
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation);
-void G_AddEvent(edict_t *ent, entity_event_t event, int param);
-edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, int param);
+void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param);
+edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param);
 edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event);
-void G_BecomeEvent(edict_t *ent, entity_event_t event, int param);
+void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param);
 void G_SnapVectorTowards(const vec3_t v, const vec3_t to, vec3_t out);
 void G_SnapVector(const vec3_t v, vec3_t out);
 

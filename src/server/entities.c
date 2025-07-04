@@ -287,6 +287,10 @@ void SV_BuildClientFrame(client_t *client)
         if (ent->r.svflags & SVF_NOCLIENT)
             continue;
 
+        // ignore if not linked anywhere
+        if (!ent->r.linked && !(ent->r.svflags & SVF_NOCULL))
+            continue;
+
         // ignore if pov number matches mask
         if (ent->r.svflags & SVF_CLIENTMASK && (unsigned)frame->ps.clientnum < MAX_CLIENTS
             && Q_IsBitSet(ent->r.clientmask, frame->ps.clientnum))
@@ -314,11 +318,11 @@ void SV_BuildClientFrame(client_t *client)
                 if (SV_EntityAttenuatedAway(ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!SV_EntityVisible(e, &clientpvs))
+                    if (!(ent->r.svflags & SVF_PHS) && !SV_EntityVisible(e, &clientpvs))
                         continue;
                 }
             } else {
-                if (!SV_EntityVisible(e, &clientpvs))
+                if (!SV_EntityVisible(e, (ent->r.svflags & SVF_PHS) ? &clientphs : &clientpvs))
                     continue;
             }
         }

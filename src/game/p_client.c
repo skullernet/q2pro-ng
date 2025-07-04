@@ -1563,12 +1563,13 @@ static void CopyToBodyQue(edict_t *ent)
     body->movetype = ent->movetype;
     body->health = ent->health;
     body->gib_health = ent->gib_health;
-    body->s.event[0] = EV_OTHER_TELEPORT;
-    body->s.event[1] = 0;
+    memset(body->s.event, 0, sizeof(body->s.event));
     VectorCopy(ent->velocity, body->velocity);
     VectorCopy(ent->avelocity, body->avelocity);
     body->groundentity = ent->groundentity;
     body->groundentity_linkcount = ent->groundentity_linkcount;
+
+    G_AddEvent(body, EV_OTHER_TELEPORT, 0);
 
     if (ent->takedamage) {
         VectorCopy(ent->r.mins, body->r.mins);

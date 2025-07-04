@@ -43,6 +43,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SVF_LASER_FIELD         BIT(13)
 #define SVF_TRAP                BIT(14)
 #define SVF_CLIENTMASK          BIT(15)     // don't send entity to clients in r.clientmask
+#define SVF_PHS                 BIT(16)
 
 // edict->solid values
 typedef enum {

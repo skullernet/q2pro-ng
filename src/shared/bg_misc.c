@@ -20,6 +20,99 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "shared/bg_local.h"
 
+#define EV(n)   [EV_##n] = #n
+
+static const char *const event_names[] = {
+    EV(NONE),
+    EV(ITEM_RESPAWN),
+    EV(FOOTSTEP),
+    EV(FALL),
+    EV(DEATH1),
+    EV(DEATH2),
+    EV(DEATH3),
+    EV(DEATH4),
+    EV(PAIN),
+    EV(GURP),
+    EV(DROWN),
+    EV(JUMP),
+    EV(PLAYER_TELEPORT),
+    EV(OTHER_TELEPORT),
+    EV(OTHER_FOOTSTEP),
+    EV(LADDER_STEP),
+    EV(MUZZLEFLASH),
+    EV(MUZZLEFLASH2),
+    EV(SOUND),
+    EV(BERSERK_SLAM),
+    EV(GUNCMDR_SLAM),
+    EV(RAILTRAIL),
+    EV(RAILTRAIL2),
+    EV(BUBBLETRAIL),
+    EV(BUBBLETRAIL2),
+    EV(BFG_LASER),
+    EV(BFG_ZAP),
+    EV(EARTHQUAKE),
+    EV(EARTHQUAKE2),
+
+    EV(SPLASH_UNKNOWN),
+    EV(SPLASH_SPARKS),
+    EV(SPLASH_BLUE_WATER),
+    EV(SPLASH_BROWN_WATER),
+    EV(SPLASH_SLIME),
+    EV(SPLASH_LAVA),
+    EV(SPLASH_BLOOD),
+    EV(SPLASH_ELECTRIC_N64),
+
+    EV(BLOOD),
+    EV(MORE_BLOOD),
+    EV(GREEN_BLOOD),
+    EV(GUNSHOT),
+    EV(SHOTGUN),
+    EV(SPARKS),
+    EV(BULLET_SPARKS),
+    EV(HEATBEAM_SPARKS),
+    EV(HEATBEAM_STEAM),
+    EV(SCREEN_SPARKS),
+    EV(SHIELD_SPARKS),
+    EV(ELECTRIC_SPARKS),
+    EV(LASER_SPARKS),
+    EV(WELDING_SPARKS),
+    EV(TUNNEL_SPARKS),
+
+    EV(EXPLOSION_PLAIN),
+    EV(EXPLOSION1),
+    EV(EXPLOSION1_NL),
+    EV(EXPLOSION1_NP),
+    EV(EXPLOSION1_BIG),
+    EV(EXPLOSION2),
+    EV(EXPLOSION2_NL),
+    EV(BLASTER),
+    EV(BLASTER2),
+    EV(FLECHETTE),
+    EV(BLUEHYPERBLASTER),
+    EV(GRENADE_EXPLOSION),
+    EV(GRENADE_EXPLOSION_WATER),
+    EV(ROCKET_EXPLOSION),
+    EV(ROCKET_EXPLOSION_WATER),
+    EV(BFG_EXPLOSION),
+    EV(BFG_EXPLOSION_BIG),
+    EV(TRACKER_EXPLOSION),
+
+    EV(POWER_SPLASH),
+    EV(BOSSTPORT),
+    EV(TELEPORT_EFFECT),
+    EV(CHAINFIST_SMOKE),
+    EV(NUKEBLAST),
+    EV(WIDOWBEAMOUT),
+    EV(WIDOWSPLASH),
+};
+
+const char *BG_EventName(entity_event_t event)
+{
+    if (event < q_countof(event_names))
+        return event_names[event];
+    return "unknown";
+}
+
 void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
 {
     if (a <= 0)

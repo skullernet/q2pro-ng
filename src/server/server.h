@@ -487,7 +487,7 @@ void SV_PrintMiscInfo(void);
 //
 
 #define HAS_EFFECTS(ent) \
-    ((ent)->s.modelindex || (ent)->s.effects || (ent)->s.sound || (ent)->s.event)
+    ((ent)->s.modelindex || (ent)->s.effects || (ent)->s.sound || (ent)->s.event[0])
 
 void SV_BuildClientFrame(client_t *client);
 void SV_WriteFrameToClient(client_t *client);
