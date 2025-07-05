@@ -410,7 +410,7 @@ static void CL_Record_f(void)
             MSG_WriteByte(svc_baselinestream);
         }
 
-        MSG_WriteBaseEntity(ent);
+        MSG_WriteDeltaEntity(NULL, ent, false);
     }
     MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);
     MSG_FlushBits();

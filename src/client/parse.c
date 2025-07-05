@@ -41,15 +41,10 @@ static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
     frame->num_entities++;
 
     *state = *old;
-
-    // shuffle previous origin to old
-    if (/*!(bits & U_OLDORIGIN) &&*/ !(state->renderfx & RF_BEAM))
-        VectorCopy(old->origin, state->old_origin);
+    state->number = newnum;
 
     if (changed)
-        MSG_ParseDeltaEntity(state, newnum);
-    else
-        state->number = newnum;
+        MSG_ParseDeltaEntity(old, state);
 }
 
 static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_t *frame)
@@ -392,7 +387,9 @@ static void CL_ParseBaseline(unsigned index)
     }
 
     SHOWNET(3, "    baseline:%i ", index);
-    MSG_ParseDeltaEntity(&cl.baselines[index], index);
+    entity_state_t *s = &cl.baselines[index];
+    s->number = index;
+    MSG_ParseDeltaEntity(s, s);
     SHOWNET(3, "\n");
 }
 

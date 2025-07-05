@@ -149,7 +149,7 @@ static void write_baseline_stream(void)
                 MSG_BeginWriting();
                 MSG_WriteByte(svc_baselinestream);
             }
-            MSG_WriteBaseEntity(base);
+            MSG_WriteDeltaEntity(NULL, base, false);
         }
     }
 

@@ -69,8 +69,6 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, 
             // not changed at all. Note that players are always 'newentities',
             // this updates their old_origin always and prevents warping in case
             // of packet loss.
-            if (newnum <= svs.maxclients) {
-            }
             MSG_WriteDeltaEntity(oldent, newent, false);
             oldindex++;
             newindex++;
