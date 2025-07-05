@@ -455,9 +455,8 @@ static void CL_ParseServerData(void)
 
     // setup default server state
     cl.serverstate = ss_game;
-    cinematic = cl.clientNum == -1;
 
-    i = MSG_ReadWord();
+    i = MSG_ReadShort();
     if (!Q2PRO_SUPPORTED(i)) {
         Com_Error(ERR_DROP,
                   "Q2PRO server reports unsupported protocol version %d.\n"
@@ -600,8 +599,8 @@ static void CL_ParseZPacket(void)
         Com_Error(ERR_DROP, "%s: recursively entered", __func__);
     }
 
-    inlen = MSG_ReadWord();
-    outlen = MSG_ReadWord();
+    inlen = MSG_ReadShort();
+    outlen = MSG_ReadShort();
     if (outlen > MAX_MSGLEN) {
         Com_Error(ERR_DROP, "%s: invalid output length", __func__);
     }
@@ -688,7 +687,7 @@ void CL_ParseServerMessage(void)
             continue;
 
         case svc_configstring:
-            index = MSG_ReadWord();
+            index = MSG_ReadShort();
             CL_ParseConfigstring(index);
             break;
 
@@ -710,7 +709,7 @@ void CL_ParseServerMessage(void)
 
         case svc_configstringstream:
             while (1) {
-                index = MSG_ReadWord();
+                index = MSG_ReadShort();
                 if (index == MAX_CONFIGSTRINGS) {
                     break;
                 }
@@ -804,7 +803,7 @@ bool CL_SeekDemoMessage(void)
             break;
 
         case svc_configstring:
-            index = MSG_ReadWord();
+            index = MSG_ReadShort();
             CL_ParseConfigstring(index);
             break;
 

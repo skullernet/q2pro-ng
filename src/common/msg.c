@@ -84,36 +84,12 @@ void MSG_BeginWriting(void)
 
 /*
 =============
-MSG_WriteChar
-=============
-*/
-void MSG_WriteChar(int c)
-{
-    byte    *buf;
-
-#ifdef PARANOID
-    Q_assert(c >= -128 && c <= 127);
-#endif
-
-    buf = SZ_GetSpace(&msg_write, 1);
-    buf[0] = c;
-}
-
-/*
-=============
 MSG_WriteByte
 =============
 */
 void MSG_WriteByte(int c)
 {
-    byte    *buf;
-
-#ifdef PARANOID
-    Q_assert(c >= 0 && c <= 255);
-#endif
-
-    buf = SZ_GetSpace(&msg_write, 1);
-    buf[0] = c;
+    WN8(SZ_GetSpace(&msg_write, 1), c);
 }
 
 /*
@@ -123,14 +99,7 @@ MSG_WriteShort
 */
 void MSG_WriteShort(int c)
 {
-    byte    *buf;
-
-#ifdef PARANOID
-    Q_assert(c >= -0x8000 && c <= 0x7fff);
-#endif
-
-    buf = SZ_GetSpace(&msg_write, 2);
-    WL16(buf, c);
+    WL16(SZ_GetSpace(&msg_write, 2), c);
 }
 
 /*
@@ -140,18 +109,7 @@ MSG_WriteLong
 */
 void MSG_WriteLong(int c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace(&msg_write, 4);
-    WL32(buf, c);
-}
-
-static void MSG_WriteFloat(float c)
-{
-    byte    *buf;
-
-    buf = SZ_GetSpace(&msg_write, 4);
-    WL32(buf, FloatToLong(c));
+    WL32(SZ_GetSpace(&msg_write, 4), c);
 }
 
 /*
@@ -161,10 +119,7 @@ MSG_WriteLong64
 */
 void MSG_WriteLong64(int64_t c)
 {
-    byte    *buf;
-
-    buf = SZ_GetSpace(&msg_write, 8);
-    WL64(buf, c);
+    WL64(SZ_GetSpace(&msg_write, 8), c);
 }
 
 /*
@@ -175,32 +130,6 @@ MSG_WriteString
 void MSG_WriteString(const char *string)
 {
     SZ_WriteString(&msg_write, string);
-}
-
-/*
-=============
-MSG_WritePos
-=============
-*/
-void MSG_WritePos(const vec3_t pos)
-{
-    MSG_WriteFloat(pos[0]);
-    MSG_WriteFloat(pos[1]);
-    MSG_WriteFloat(pos[2]);
-}
-
-/*
-=============
-MSG_WriteAngle
-=============
-*/
-
-#define ANGLE2BYTE(x)   ((int)((x)*256.0f/360)&255)
-#define BYTE2ANGLE(x)   ((x)*(360.0f/256))
-
-void MSG_WriteAngle(float f)
-{
-    MSG_WriteByte(ANGLE2BYTE(f));
 }
 
 /*
@@ -347,14 +276,6 @@ void MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *to)
 }
 
 #endif // USE_CLIENT
-
-void MSG_WriteDir(const vec3_t dir)
-{
-    int     best;
-
-    best = DirToByte(dir);
-    MSG_WriteByte(best);
-}
 
 typedef struct {
     const char *name;
@@ -644,105 +565,28 @@ byte *MSG_ReadData(size_t len)
     return SZ_ReadData(&msg_read, len);
 }
 
-// returns -1 if no more characters are available
-int MSG_ReadChar(void)
-{
-    byte *buf = MSG_ReadData(1);
-    int c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = (int8_t)buf[0];
-    }
-
-    return c;
-}
-
 int MSG_ReadByte(void)
 {
     byte *buf = MSG_ReadData(1);
-    int c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = (uint8_t)buf[0];
-    }
-
-    return c;
+    return buf ? RN8(buf) : -1;
 }
 
 int MSG_ReadShort(void)
 {
     byte *buf = MSG_ReadData(2);
-    int c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = (int16_t)RL16(buf);
-    }
-
-    return c;
-}
-
-int MSG_ReadWord(void)
-{
-    byte *buf = MSG_ReadData(2);
-    int c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = (uint16_t)RL16(buf);
-    }
-
-    return c;
+    return buf ? RL16(buf) : -1;
 }
 
 int MSG_ReadLong(void)
 {
     byte *buf = MSG_ReadData(4);
-    int c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = (int32_t)RL32(buf);
-    }
-
-    return c;
+    return buf ? RL32(buf) : -1;
 }
-
-#if USE_CLIENT
-static int MSG_ReadFloat(void)
-{
-    byte *buf = MSG_ReadData(4);
-    float c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = LongToFloat(RL32(buf));
-    }
-
-    return c;
-}
-#endif
 
 int64_t MSG_ReadLong64(void)
 {
     byte *buf = MSG_ReadData(8);
-    int64_t c;
-
-    if (!buf) {
-        c = -1;
-    } else {
-        c = RL64(buf);
-    }
-
-    return c;
+    return buf ? RL64(buf) : -1;
 }
 
 size_t MSG_ReadString(char *dest, size_t size)
@@ -788,41 +632,6 @@ size_t MSG_ReadStringLine(char *dest, size_t size)
 
     return len;
 }
-
-#if USE_CLIENT
-
-static inline float MSG_ReadCoord(void)
-{
-    return SHORT2COORD(MSG_ReadShort());
-}
-
-static inline float MSG_ReadAngle(void)
-{
-    return BYTE2ANGLE(MSG_ReadChar());
-}
-
-static inline float MSG_ReadAngle16(void)
-{
-    return SHORT2ANGLE(MSG_ReadShort());
-}
-
-void MSG_ReadPos(vec3_t pos)
-{
-    pos[0] = MSG_ReadFloat();
-    pos[1] = MSG_ReadFloat();
-    pos[2] = MSG_ReadFloat();
-}
-
-void MSG_ReadDir(vec3_t dir)
-{
-    int     b;
-
-    b = MSG_ReadByte();
-    if (b < 0 || b >= NUMVERTEXNORMALS)
-        Com_Error(ERR_DROP, "MSG_ReadDir: out of range");
-    VectorCopy(bytedirs[b], dir);
-}
-#endif
 
 int MSG_ReadBits(int bits)
 {

@@ -263,13 +263,13 @@ void Nav_Load(void)
         nav_node_t *node = nav_data.nodes + i;
 
         node->id        = i;
-        node->flags     = SZ_ReadWord(&b);
-        node->num_links = SZ_ReadWord(&b);
-        int first_link  = SZ_ReadWord(&b);
+        node->flags     = SZ_ReadShort(&b);
+        node->num_links = SZ_ReadShort(&b);
+        int first_link  = SZ_ReadShort(&b);
         NAV_VERIFY(first_link != -1, "Read past end of file");
         NAV_VERIFY(first_link + node->num_links <= nav_data.num_links, "Bad node links");
         node->links     = &nav_data.links[first_link];
-        node->radius    = SZ_ReadWord(&b);
+        node->radius    = SZ_ReadShort(&b);
 
         if (node->flags & NodeFlag_ConditionalMask)
             nav_data.num_conditional_nodes++;
@@ -289,7 +289,7 @@ void Nav_Load(void)
     for (int i = 0; i < nav_data.num_links; i++) {
         nav_link_t *link = nav_data.links + i;
 
-        int target   = SZ_ReadWord(&b);
+        int target   = SZ_ReadShort(&b);
         NAV_VERIFY(target < nav_data.num_nodes, "Bad link target");
         link->target = &nav_data.nodes[target];
         link->type   = SZ_ReadByte(&b);
@@ -303,7 +303,7 @@ void Nav_Load(void)
 
         link->traversal = NULL;
         link->edict     = NULL;
-        int traversal   = SZ_ReadWord(&b);
+        int traversal   = SZ_ReadShort(&b);
         if (traversal != INVALID_ID) {
             NAV_VERIFY(traversal < nav_data.num_traversals, "Bad link traversal");
             link->traversal = &nav_data.traversals[traversal];
@@ -329,7 +329,7 @@ void Nav_Load(void)
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *edict = nav_data.edicts + i;
 
-        int link = SZ_ReadWord(&b);
+        int link = SZ_ReadShort(&b);
         NAV_VERIFY(link < nav_data.num_links, "Bad edict link");
         edict->link = &nav_data.links[link];
         edict->link->edict = edict;

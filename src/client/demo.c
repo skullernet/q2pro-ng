@@ -1139,7 +1139,7 @@ bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
         if (c != svc_configstring) {
             break;
         }
-        index = MSG_ReadWord();
+        index = MSG_ReadShort();
         if (index < 0 || index >= MAX_CONFIGSTRINGS) {
             goto fail;
         }

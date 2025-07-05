@@ -377,7 +377,7 @@ bool Netchan_Process(netchan_t *chan)
     sequence_ack &= NEW_MASK;
 
     if (fragmented_message) {
-        fragment_offset = MSG_ReadWord();
+        fragment_offset = MSG_ReadShort();
     } else {
         fragment_offset = 0;
     }

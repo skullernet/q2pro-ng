@@ -528,12 +528,12 @@ IMG_LOAD(TGA)
     id_length       = SZ_ReadByte(&s);
     colormap_type   = SZ_ReadByte(&s);
     image_type      = SZ_ReadByte(&s);
-    colormap_start  = SZ_ReadWord(&s);
-    colormap_length = SZ_ReadWord(&s);
+    colormap_start  = SZ_ReadShort(&s);
+    colormap_length = SZ_ReadShort(&s);
     colormap_size   = SZ_ReadByte(&s);
     s.readcount     += 4;
-    w               = SZ_ReadWord(&s);
-    h               = SZ_ReadWord(&s);
+    w               = SZ_ReadShort(&s);
+    h               = SZ_ReadShort(&s);
     pixel_size      = SZ_ReadByte(&s);
     attributes      = SZ_ReadByte(&s);
 
