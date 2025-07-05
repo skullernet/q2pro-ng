@@ -195,10 +195,7 @@ void SV_New_f(void)
     MSG_WriteLong(sv.spawncount);
     MSG_WriteByte(0);   // no attract loop
     MSG_WriteString(fs_game->string);
-    if (sv.state == ss_pic || sv.state == ss_cinematic)
-        MSG_WriteShort(-1);
-    else
-        MSG_WriteShort(sv_client->number);
+    MSG_WriteByte(sv_client->number);
     MSG_WriteString(sv.name);
     MSG_WriteString(sv.configstrings[CS_NAME]);
 

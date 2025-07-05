@@ -32,9 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     ((x) >= PROTOCOL_VERSION_MINOR_OLDEST && \
      (x) <= PROTOCOL_VERSION_MINOR)
 
-#define VALIDATE_CLIENTNUM(x) \
-    ((x) >= -1 && (x) < MAX_EDICTS - 1)
-
 //=========================================
 
 #define UPDATE_BACKUP   16  // copies of entity_state_t to keep buffered
