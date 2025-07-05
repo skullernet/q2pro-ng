@@ -637,35 +637,20 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
 static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed)
 {
     edict_t *loogie;
-    trace_t  tr;
 
-    loogie = G_Spawn();
-    VectorCopy(start, loogie->s.origin);
-    VectorCopy(start, loogie->s.old_origin);
-    vectoangles(dir, loogie->s.angles);
-    VectorScale(dir, speed, loogie->velocity);
-    loogie->movetype = MOVETYPE_FLYMISSILE;
-    loogie->clipmask = MASK_PROJECTILE;
-    loogie->r.solid = SOLID_BBOX;
+    loogie = G_SpawnMissile(self, start, dir, speed);
     // Paril: this was originally the wrong effect,
     // but it makes it look more acid-y.
     loogie->s.effects |= EF_BLASTER;
     loogie->s.renderfx |= RF_FULLBRIGHT;
     loogie->s.modelindex = G_ModelIndex("models/objects/loogy/tris.md2");
-    loogie->r.ownernum = self->s.number;
     loogie->touch = loogie_touch;
     loogie->nextthink = level.time + SEC(2);
     loogie->think = G_FreeEdict;
     loogie->dmg = damage;
-    loogie->r.svflags |= SVF_PROJECTILE;
     trap_LinkEntity(loogie);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, loogie->s.origin,
-               loogie->s.number, MASK_PROJECTILE);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, loogie->s.origin);
-        loogie->touch(loogie, &g_edicts[tr.entnum], &tr, false);
-    }
+    G_CheckMissileImpact(self, loogie);
 }
 
 static void loogie(edict_t *self)

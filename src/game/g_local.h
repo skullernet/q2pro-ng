@@ -1610,6 +1610,8 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
 //
 // g_weapon.c
 //
+edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int speed);
+void G_CheckMissileImpact(edict_t *self, edict_t *bolt);
 bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick);
 void fire_bullet(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick,
                  int hspread, int vspread, mod_t mod);

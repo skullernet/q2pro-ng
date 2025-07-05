@@ -288,13 +288,12 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     }
 }
 
-edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
+edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int speed)
 {
-    edict_t *bolt;
-    trace_t  tr;
-
-    bolt = G_Spawn();
+    edict_t *bolt = G_Spawn();
     bolt->r.svflags = SVF_PROJECTILE;
+    bolt->r.solid = SOLID_BBOX;
+    bolt->r.ownernum = self->s.number;
     VectorCopy(start, bolt->s.origin);
     VectorCopy(start, bolt->s.old_origin);
     vectoangles(dir, bolt->s.angles);
@@ -304,13 +303,29 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     // [Paril-KEX]
     if (self->client && !G_ShouldPlayersCollide(true))
         bolt->clipmask &= ~CONTENTS_PLAYER;
+    return bolt;
+}
+
+void G_CheckMissileImpact(edict_t *self, edict_t *bolt)
+{
+    trace_t tr;
+    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
+    if (tr.fraction < 1.0f) {
+        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
+        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
+    }
+}
+
+edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
+{
+    edict_t *bolt;
+
+    bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->flags |= FL_DODGE;
-    bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
-    bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -319,12 +334,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->style = mod.id;
     trap_LinkEntity(bolt);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
-    }
-
+    G_CheckMissileImpact(self, bolt);
     return bolt;
 }
 
@@ -568,28 +578,17 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
 {
     edict_t *rocket;
 
-    rocket = G_Spawn();
-    VectorCopy(start, rocket->s.origin);
-    vectoangles(dir, rocket->s.angles);
-    VectorScale(dir, speed, rocket->velocity);
-    rocket->movetype = MOVETYPE_FLYMISSILE;
-    rocket->r.svflags |= SVF_PROJECTILE;
+    rocket = G_SpawnMissile(self, start, dir, speed);
     rocket->flags |= FL_DODGE;
-    rocket->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        rocket->clipmask &= ~CONTENTS_PLAYER;
-    rocket->r.solid = SOLID_BBOX;
     rocket->s.effects |= EF_ROCKET;
     rocket->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
-    rocket->r.ownernum = self->s.number;
+    rocket->s.sound = G_SoundIndex("weapons/rockfly.wav");
     rocket->touch = rocket_touch;
     rocket->nextthink = level.time + SEC(8000.0f / speed);
     rocket->think = G_FreeEdict;
     rocket->dmg = damage;
     rocket->radius_dmg = radius_damage;
     rocket->dmg_radius = damage_radius;
-    rocket->s.sound = G_SoundIndex("weapons/rockfly.wav");
     rocket->classname = "rocket";
 
     trap_LinkEntity(rocket);
@@ -894,28 +893,16 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
 {
     edict_t *bfg;
 
-    bfg = G_Spawn();
-    VectorCopy(start, bfg->s.origin);
-    vectoangles(dir, bfg->s.angles);
-    VectorScale(dir, speed, bfg->velocity);
-    bfg->movetype = MOVETYPE_FLYMISSILE;
-    bfg->clipmask = MASK_PROJECTILE;
-    bfg->r.svflags = SVF_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        bfg->clipmask &= ~CONTENTS_PLAYER;
-    bfg->r.solid = SOLID_BBOX;
+    bfg = G_SpawnMissile(self, start, dir, speed);
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
     bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
-    bfg->r.ownernum = self->s.number;
+    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
     bfg->radius_dmg = damage;
     bfg->dmg_radius = damage_radius;
     bfg->classname = "bfg blast";
-    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
-
     bfg->think = bfg_think;
     bfg->nextthink = level.time + FRAME_TIME;
     bfg->teammaster = bfg;
@@ -939,31 +926,20 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
     }
 }
 
-void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t forward, int speed)
+void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t dir, int speed)
 {
     edict_t *bfg;
 
-    bfg = G_Spawn();
-    VectorCopy(start, bfg->s.origin);
-    vectoangles(forward, bfg->s.angles);
-    VectorScale(forward, speed, bfg->velocity);
-    bfg->movetype = MOVETYPE_FLYMISSILE;
-    bfg->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        bfg->clipmask &= ~CONTENTS_PLAYER;
-    bfg->r.solid = SOLID_BBOX;
+    bfg = G_SpawnMissile(self, start, dir, speed);
+    bfg->flags |= FL_DODGE;
     bfg->s.effects |= EF_TAGTRAIL | EF_ANIM_ALL;
     bfg->s.renderfx |= RF_TRANSLUCENT;
-    bfg->r.svflags |= SVF_PROJECTILE;
-    bfg->flags |= FL_DODGE;
     bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
-    bfg->r.ownernum = self->s.number;
+    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     bfg->touch = disintegrator_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);
     bfg->think = G_FreeEdict;
     bfg->classname = "disint ball";
-    bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
 
     trap_LinkEntity(bfg);
 }

@@ -33,42 +33,20 @@ void TOUCH(flechette_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
 void fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, int kick)
 {
-    edict_t *flechette;
+    edict_t *bolt;
 
-    flechette = G_Spawn();
-    VectorCopy(start, flechette->s.origin);
-    VectorCopy(start, flechette->s.old_origin);
-    vectoangles(dir, flechette->s.angles);
-    VectorScale(dir, speed, flechette->velocity);
-    flechette->r.svflags |= SVF_PROJECTILE;
-    flechette->movetype = MOVETYPE_FLYMISSILE;
-    flechette->clipmask = MASK_PROJECTILE;
-    flechette->flags |= FL_DODGE;
+    bolt = G_SpawnMissile(self, start, dir, speed);
+    bolt->flags |= FL_DODGE;
+    bolt->s.renderfx |= RF_FULLBRIGHT;
+    bolt->s.modelindex = G_ModelIndex("models/proj/flechette/tris.md2");
+    bolt->touch = flechette_touch;
+    bolt->nextthink = level.time + SEC(8000.0f / speed);
+    bolt->think = G_FreeEdict;
+    bolt->dmg = damage;
+    bolt->dmg_radius = kick;
+    trap_LinkEntity(bolt);
 
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        flechette->clipmask &= ~CONTENTS_PLAYER;
-
-    flechette->r.solid = SOLID_BBOX;
-    flechette->s.renderfx = RF_FULLBRIGHT;
-    flechette->s.modelindex = G_ModelIndex("models/proj/flechette/tris.md2");
-
-    flechette->r.ownernum = self->s.number;
-    flechette->touch = flechette_touch;
-    flechette->nextthink = level.time + SEC(8000.0f / speed);
-    flechette->think = G_FreeEdict;
-    flechette->dmg = damage;
-    flechette->dmg_radius = kick;
-
-    trap_LinkEntity(flechette);
-
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, flechette->s.origin,
-               flechette->s.number, flechette->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, flechette->s.origin);
-        flechette->touch(flechette, &g_edicts[tr.entnum], &tr, false);
-    }
+    G_CheckMissileImpact(self, bolt);
 }
 
 // **************************
@@ -1177,43 +1155,24 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
 void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, bool hyper)
 {
     edict_t *bolt;
-    trace_t  tr;
 
-    bolt = G_Spawn();
-    VectorCopy(start, bolt->s.origin);
-    VectorCopy(start, bolt->s.old_origin);
-    vectoangles(dir, bolt->s.angles);
-    VectorScale(dir, speed, bolt->velocity);
-    bolt->r.svflags |= SVF_PROJECTILE;
-    bolt->movetype = MOVETYPE_FLYMISSILE;
-    bolt->clipmask = MASK_PROJECTILE;
+    bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->flags |= FL_DODGE;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        bolt->clipmask &= ~CONTENTS_PLAYER;
-
-    bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     if (effect)
         bolt->s.effects |= EF_TRACKER;
-    bolt->dmg_radius = 128;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
-    bolt->r.ownernum = self->s.number;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
+    bolt->dmg_radius = 128;
     bolt->classname = "bolt";
     trap_LinkEntity(bolt);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
-    }
+    G_CheckMissileImpact(self, bolt);
 }
 
 // *************************
@@ -1365,29 +1324,14 @@ void THINK(tracker_fly)(edict_t *self)
 void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, edict_t *enemy)
 {
     edict_t *bolt;
-    trace_t  tr;
 
-    bolt = G_Spawn();
-    VectorCopy(start, bolt->s.origin);
-    VectorCopy(start, bolt->s.old_origin);
-    vectoangles(dir, bolt->s.angles);
-    VectorScale(dir, speed, bolt->velocity);
-    bolt->r.svflags |= SVF_PROJECTILE;
-    bolt->movetype = MOVETYPE_FLYMISSILE;
-    bolt->clipmask = MASK_PROJECTILE;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        bolt->clipmask &= ~CONTENTS_PLAYER;
-
-    bolt->r.solid = SOLID_BBOX;
+    bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->speed = speed;
     bolt->s.effects = EF_TRACKER;
     bolt->s.sound = G_SoundIndex("weapons/disrupt.wav");
     bolt->s.modelindex = G_ModelIndex("models/proj/disintegrator/tris.md2");
     bolt->touch = tracker_touch;
     bolt->enemy = enemy;
-    bolt->r.ownernum = self->s.number;
     bolt->dmg = damage;
     bolt->classname = "tracker";
     trap_LinkEntity(bolt);
@@ -1400,9 +1344,5 @@ void fire_tracker(edict_t *self, const vec3_t start, const vec3_t dir, int damag
         bolt->think = G_FreeEdict;
     }
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
-    }
+    G_CheckMissileImpact(self, bolt);
 }

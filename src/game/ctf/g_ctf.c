@@ -1279,41 +1279,22 @@ void DIE(grapple_die)(edict_t *self, edict_t *other, edict_t *inflictor, int dam
 static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect)
 {
     edict_t *grapple;
-    trace_t  tr;
 
-    grapple = G_Spawn();
-    VectorCopy(start, grapple->s.origin);
-    VectorCopy(start, grapple->s.old_origin);
-    vectoangles(dir, grapple->s.angles);
-    VectorScale(dir, speed, grapple->velocity);
-    grapple->movetype = MOVETYPE_FLYMISSILE;
-    grapple->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        grapple->clipmask &= ~CONTENTS_PLAYER;
-    grapple->r.solid = SOLID_BBOX;
+    grapple = G_SpawnMissile(self, start, dir, speed);
+    grapple->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
     grapple->s.effects |= effect;
     grapple->s.modelindex = G_ModelIndex("models/weapons/grapple/hook/tris.md2");
-    grapple->r.ownernum = self->s.number;
+    grapple->s.sound = G_SoundIndex("weapons/grapple/grfly.wav");
     grapple->touch = CTFGrappleTouch;
     grapple->dmg = damage;
-    grapple->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
     grapple->takedamage = true;
     grapple->die = grapple_die;
-    self->client->ctf_grapple = grapple;
-    self->client->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     trap_LinkEntity(grapple);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, grapple->s.origin,
-               grapple->s.number, grapple->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, grapple->s.origin);
-        grapple->touch(grapple, &g_edicts[tr.entnum], &tr, false);
-        return false;
-    }
+    self->client->ctf_grapple = grapple;
+    self->client->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
 
-    grapple->s.sound = G_SoundIndex("weapons/grapple/grfly.wav");
-
+    G_CheckMissileImpact(self, grapple);
     return true;
 }
 

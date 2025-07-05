@@ -571,25 +571,17 @@ void PRETHINK(proboscis_segment_draw)(edict_t *self)
 
 static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
 {
-    edict_t *tip = G_Spawn();
-    vectoangles(dir, tip->s.angles);
-    tip->s.modelindex = G_ModelIndex("models/monsters/parasite/tip/tris.md2");
-    tip->movetype = MOVETYPE_FLYMISSILE;
-    tip->r.ownernum = self->s.number;
-    self->proboscus = tip;
-    tip->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
-    VectorCopy(start, tip->s.origin);
-    VectorCopy(start, tip->s.old_origin);
-    tip->speed = speed;
-    VectorScale(dir, speed, tip->velocity);
-    tip->r.solid = SOLID_BBOX;
-    tip->takedamage = true;
+    edict_t *tip = G_SpawnMissile(self, start, dir, speed);
+    tip->clipmask &= ~CONTENTS_DEADMONSTER;
     tip->flags |= FL_NO_DAMAGE_EFFECTS | FL_NO_KNOCKBACK;
+    tip->s.modelindex = G_ModelIndex("models/monsters/parasite/tip/tris.md2");
+    tip->speed = speed;
+    tip->takedamage = true;
     tip->die = proboscis_die;
     tip->touch = proboscis_touch;
     tip->think = proboscis_think;
     tip->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
-    tip->r.svflags |= SVF_PROJECTILE;
+    self->proboscus = tip;
 
     edict_t *segment = G_Spawn();
     segment->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");

@@ -6,23 +6,13 @@
 void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect)
 {
     edict_t *bolt;
-    trace_t  tr;
 
-    bolt = G_Spawn();
-    VectorCopy(start, bolt->s.origin);
-    VectorCopy(start, bolt->s.old_origin);
-    vectoangles(dir, bolt->s.angles);
-    VectorScale(dir, speed, bolt->velocity);
-    bolt->r.svflags |= SVF_PROJECTILE;
-    bolt->movetype = MOVETYPE_FLYMISSILE;
+    bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->flags |= FL_DODGE;
-    bolt->clipmask = MASK_PROJECTILE;
-    bolt->r.solid = SOLID_BBOX;
     bolt->s.effects |= effect;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 1;
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
-    bolt->r.ownernum = self->s.number;
     bolt->touch = blaster_touch;
     bolt->nextthink = level.time + SEC(2);
     bolt->think = G_FreeEdict;
@@ -31,11 +21,7 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->style = MOD_BLUEBLASTER;
     trap_LinkEntity(bolt);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
-        bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
-    }
+    G_CheckMissileImpact(self, bolt);
 }
 
 /*
@@ -72,28 +58,14 @@ void TOUCH(ionripper_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect)
 {
     edict_t *ion;
-    trace_t  tr;
 
-    ion = G_Spawn();
-    VectorCopy(start, ion->s.origin);
-    VectorCopy(start, ion->s.old_origin);
-    vectoangles(dir, ion->s.angles);
-    VectorScale(dir, speed, ion->velocity);
+    ion = G_SpawnMissile(self, start, dir, speed);
     ion->movetype = MOVETYPE_WALLBOUNCE;
-    ion->clipmask = MASK_PROJECTILE;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        ion->clipmask &= ~CONTENTS_PLAYER;
-
-    ion->r.solid = SOLID_BBOX;
-    ion->s.effects |= effect;
-    ion->r.svflags |= SVF_PROJECTILE;
     ion->flags |= FL_DODGE;
+    ion->s.effects |= effect;
     ion->s.renderfx |= RF_FULLBRIGHT;
     ion->s.modelindex = G_ModelIndex("models/objects/boomrang/tris.md2");
     ion->s.sound = G_SoundIndex("misc/lasfly.wav");
-    ion->r.ownernum = self->s.number;
     ion->touch = ionripper_touch;
     ion->nextthink = level.time + SEC(3);
     ion->think = ionripper_sparks;
@@ -101,11 +73,7 @@ void fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int dam
     ion->dmg_radius = 100;
     trap_LinkEntity(ion);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, ion->s.origin, ion->s.number, ion->clipmask);
-    if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, ion->s.origin);
-        ion->touch(ion, g_edicts + tr.entnum, &tr, false);
-    }
+    G_CheckMissileImpact(self, ion);
 }
 
 /*
@@ -189,30 +157,19 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
 {
     edict_t *heat;
 
-    heat = G_Spawn();
-    VectorCopy(start, heat->s.origin);
-    VectorCopy(dir, heat->movedir);
-    vectoangles(dir, heat->s.angles);
-    VectorScale(dir, speed, heat->velocity);
+    heat = G_SpawnMissile(self, start, dir, speed);
     heat->flags |= FL_DODGE;
-    heat->movetype = MOVETYPE_FLYMISSILE;
-    heat->r.svflags |= SVF_PROJECTILE;
-    heat->clipmask = MASK_PROJECTILE;
-    heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
-    heat->r.ownernum = self->s.number;
+    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
     heat->touch = rocket_touch;
     heat->speed = speed;
     heat->accel = turn_fraction;
-
     heat->nextthink = level.time + FRAME_TIME;
     heat->think = heat_think;
-
     heat->dmg = damage;
     heat->radius_dmg = radius_damage;
     heat->dmg_radius = damage_radius;
-    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
 
     if (visible(heat, self->enemy)) {
         heat->enemy = self->enemy;
@@ -254,32 +211,17 @@ void fire_plasma(edict_t *self, const vec3_t start, const vec3_t dir, int damage
 {
     edict_t *plasma;
 
-    plasma = G_Spawn();
-    VectorCopy(start, plasma->s.origin);
-    VectorCopy(dir, plasma->movedir);
-    vectoangles(dir, plasma->s.angles);
-    VectorScale(dir, speed, plasma->velocity);
-    plasma->movetype = MOVETYPE_FLYMISSILE;
-    plasma->clipmask = MASK_PROJECTILE;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        plasma->clipmask &= ~CONTENTS_PLAYER;
-
-    plasma->r.solid = SOLID_BBOX;
-    plasma->r.svflags |= SVF_PROJECTILE;
+    plasma = G_SpawnMissile(self, start, dir, speed);
     plasma->flags |= FL_DODGE;
-    plasma->r.ownernum = self->s.number;
+    plasma->s.effects |= EF_PLASMA | EF_ANIM_ALLFAST;
+    plasma->s.modelindex = G_ModelIndex("sprites/s_photon.sp2");
+    plasma->s.sound = G_SoundIndex("weapons/rockfly.wav");
     plasma->touch = plasma_touch;
     plasma->nextthink = level.time + SEC(8000.0f / speed);
     plasma->think = G_FreeEdict;
     plasma->dmg = damage;
     plasma->radius_dmg = radius_damage;
     plasma->dmg_radius = damage_radius;
-    plasma->s.sound = G_SoundIndex("weapons/rockfly.wav");
-
-    plasma->s.modelindex = G_ModelIndex("sprites/s_photon.sp2");
-    plasma->s.effects |= EF_PLASMA | EF_ANIM_ALLFAST;
 
     trap_LinkEntity(plasma);
 }

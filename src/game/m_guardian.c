@@ -557,19 +557,12 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
 {
     edict_t *heat;
 
-    heat = G_Spawn();
-    VectorCopy(start, heat->s.origin);
-    VectorCopy(dir, heat->movedir);
-    vectoangles(dir, heat->s.angles);
-    VectorScale(dir, speed, heat->velocity);
-    heat->movetype = MOVETYPE_FLYMISSILE;
-    heat->clipmask = MASK_PROJECTILE;
+    heat = G_SpawnMissile(self, start, dir, speed);
     heat->flags |= FL_DAMAGEABLE;
-    heat->r.solid = SOLID_BBOX;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
+    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
     heat->s.scale = 1.5f;
-    heat->r.ownernum = self->s.number;
     heat->touch = rocket_touch;
     heat->speed = speed / 2;
     heat->yaw_speed = speed * 2;
@@ -587,7 +580,6 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->dmg = damage;
     heat->radius_dmg = radius_damage;
     heat->dmg_radius = damage_radius;
-    heat->s.sound = G_SoundIndex("weapons/rockfly.wav");
 
     if (visible(heat, self->enemy)) {
         heat->oldenemy = self->enemy;
