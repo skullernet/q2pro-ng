@@ -69,33 +69,6 @@ jobs:
           ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
 
-  msvc:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        arch: ["x86", "x64"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        with:
-          path: subprojects/packagecache
-          key: ${{ hashFiles('subprojects/*.wrap') }}
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: ${{ matrix.arch }}
-
-      - uses: ilammy/setup-nasm@v1
-
-      - name: Install dependencies
-        run: pip3 install --no-input meson ninja
-
-      - name: Build
-        run: |
-          meson setup ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
-          meson compile -C builddir
-
   linux:
     runs-on: ubuntu-latest
     strategy:

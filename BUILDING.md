@@ -135,25 +135,3 @@ Setup build directory:
 Build:
 
     meson compile -C builddir
-
-
-Visual Studio
--------------
-
-It is possible to build Q2PRO on Windows using Visual Studio 2022 and Meson.
-
-Install Visual Studio and Meson using official installers.
-
-Optionally, download and install nasm executable. The easiest way to add it
-into PATH is to put it into `Program Files/Meson`.
-
-The build needs to be launched from appropriate Visual Studio command line
-shell, e.g. `x64 Native Tools Command Prompt`.
-
-Change to Q2PRO source directory, then setup build directory:
-
-    meson setup -Dwrap_mode=forcefallback builddir
-
-Build:
-
-    meson compile -C builddir
