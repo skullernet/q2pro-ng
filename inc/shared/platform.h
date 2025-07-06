@@ -34,8 +34,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <unistd.h>
 #endif
 
-#endif
-
 #ifdef _WIN32
 #define LIBSUFFIX   ".dll"
 #elif (defined __APPLE__)
@@ -85,6 +83,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define R_OK    4
 #endif
 
+#endif /* !Q2_VM */
+
 #ifdef __has_builtin
 #define q_has_builtin(x)    __has_builtin(x)
 #else
@@ -108,12 +108,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_likely(x)         __builtin_expect(!!(x), 1)
 #define q_unlikely(x)       __builtin_expect(!!(x), 0)
 #define q_alignof(t)        __alignof__(t)
-
-#if USE_GAME_ABI_HACK
-#define q_gameabi           __attribute__((callee_pop_aggregate_return(0)))
-#else
-#define q_gameabi
-#endif
 
 #ifdef _WIN32
 #define q_exported          __attribute__((dllexport))
