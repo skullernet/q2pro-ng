@@ -25,7 +25,7 @@ extern const vec3_t player_mins;
 extern const vec3_t player_maxs;
 
 #ifndef Q2_VM
-extern game_import_t    gi;
+extern const game_import_t  *gi;
 #endif
 
 extern bool use_psx_assets;

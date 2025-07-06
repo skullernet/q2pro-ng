@@ -95,77 +95,77 @@ void trap_R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3
 void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
                          float size, uint32_t color, uint32_t time, bool depth_test);
 #else
-#define trap_Print gi.Print
-#define trap_Error gi.Error
+#define trap_Print gi->Print
+#define trap_Error gi->Error
 
-#define trap_SetConfigstring gi.SetConfigstring
-#define trap_GetConfigstring gi.GetConfigstring
-#define trap_FindConfigstring gi.FindConfigstring
+#define trap_SetConfigstring gi->SetConfigstring
+#define trap_GetConfigstring gi->GetConfigstring
+#define trap_FindConfigstring gi->FindConfigstring
 
-#define trap_Trace gi.Trace
-#define trap_Clip gi.Clip
-#define trap_PointContents gi.PointContents
-#define trap_BoxEdicts gi.BoxEdicts
+#define trap_Trace gi->Trace
+#define trap_Clip gi->Clip
+#define trap_PointContents gi->PointContents
+#define trap_BoxEdicts gi->BoxEdicts
 
-#define trap_InVis gi.InVis
-#define trap_SetAreaPortalState gi.SetAreaPortalState
-#define trap_AreasConnected gi.AreasConnected
+#define trap_InVis gi->InVis
+#define trap_SetAreaPortalState gi->SetAreaPortalState
+#define trap_AreasConnected gi->AreasConnected
 
-#define trap_LinkEntity gi.LinkEntity
-#define trap_UnlinkEntity gi.UnlinkEntity
-#define trap_SetBrushModel gi.SetBrushModel
+#define trap_LinkEntity gi->LinkEntity
+#define trap_UnlinkEntity gi->UnlinkEntity
+#define trap_SetBrushModel gi->SetBrushModel
 
-#define trap_GetSurfaceInfo gi.GetSurfaceInfo
-#define trap_GetMaterialInfo gi.GetMaterialInfo
+#define trap_GetSurfaceInfo gi->GetSurfaceInfo
+#define trap_GetMaterialInfo gi->GetMaterialInfo
 
-#define trap_ClientCommand gi.ClientCommand
+#define trap_ClientCommand gi->ClientCommand
 
-#define trap_LocateGameData gi.LocateGameData
-#define trap_ParseEntityString gi.ParseEntityString
-#define trap_GetLevelName gi.GetLevelName
-#define trap_GetSpawnPoint gi.GetSpawnPoint
-#define trap_GetUserinfo gi.GetUserinfo
-#define trap_GetConnectinfo gi.GetConnectinfo
-#define trap_GetUsercmd gi.GetUsercmd
-#define trap_GetPathToGoal gi.GetPathToGoal
+#define trap_LocateGameData gi->LocateGameData
+#define trap_ParseEntityString gi->ParseEntityString
+#define trap_GetLevelName gi->GetLevelName
+#define trap_GetSpawnPoint gi->GetSpawnPoint
+#define trap_GetUserinfo gi->GetUserinfo
+#define trap_GetConnectinfo gi->GetConnectinfo
+#define trap_GetUsercmd gi->GetUsercmd
+#define trap_GetPathToGoal gi->GetPathToGoal
 
-#define trap_RealTime gi.RealTime
-#define trap_LocalTime gi.LocalTime
+#define trap_RealTime gi->RealTime
+#define trap_LocalTime gi->LocalTime
 
-#define trap_Cvar_Register gi.Cvar_Register
-#define trap_Cvar_Set gi.Cvar_Set
-#define trap_Cvar_ForceSet gi.Cvar_ForceSet
-#define trap_Cvar_VariableInteger gi.Cvar_VariableInteger
-#define trap_Cvar_VariableValue gi.Cvar_VariableValue
-#define trap_Cvar_VariableString gi.Cvar_VariableString
+#define trap_Cvar_Register gi->Cvar_Register
+#define trap_Cvar_Set gi->Cvar_Set
+#define trap_Cvar_ForceSet gi->Cvar_ForceSet
+#define trap_Cvar_VariableInteger gi->Cvar_VariableInteger
+#define trap_Cvar_VariableValue gi->Cvar_VariableValue
+#define trap_Cvar_VariableString gi->Cvar_VariableString
 
-#define trap_Argc gi.Argc
-#define trap_Argv gi.Argv
-#define trap_Args gi.Args
-#define trap_AddCommandString gi.AddCommandString
+#define trap_Argc gi->Argc
+#define trap_Argv gi->Argv
+#define trap_Args gi->Args
+#define trap_AddCommandString gi->AddCommandString
 
-#define trap_DebugGraph gi.DebugGraph
+#define trap_DebugGraph gi->DebugGraph
 
-#define trap_FS_OpenFile gi.FS_OpenFile
-#define trap_FS_CloseFile gi.FS_CloseFile
-#define trap_FS_ReadFile gi.FS_ReadFile
-#define trap_FS_WriteFile gi.FS_WriteFile
-#define trap_FS_FlushFile gi.FS_FlushFile
-#define trap_FS_TellFile gi.FS_TellFile
-#define trap_FS_SeekFile gi.FS_SeekFile
-#define trap_FS_ReadLine gi.FS_ReadLine
-#define trap_FS_ListFiles gi.FS_ListFiles
-#define trap_FS_ErrorString gi.FS_ErrorString
+#define trap_FS_OpenFile gi->FS_OpenFile
+#define trap_FS_CloseFile gi->FS_CloseFile
+#define trap_FS_ReadFile gi->FS_ReadFile
+#define trap_FS_WriteFile gi->FS_WriteFile
+#define trap_FS_FlushFile gi->FS_FlushFile
+#define trap_FS_TellFile gi->FS_TellFile
+#define trap_FS_SeekFile gi->FS_SeekFile
+#define trap_FS_ReadLine gi->FS_ReadLine
+#define trap_FS_ListFiles gi->FS_ListFiles
+#define trap_FS_ErrorString gi->FS_ErrorString
 
-#define trap_R_ClearDebugLines gi.R_ClearDebugLines
-#define trap_R_AddDebugLine gi.R_AddDebugLine
-#define trap_R_AddDebugPoint gi.R_AddDebugPoint
-#define trap_R_AddDebugAxis gi.R_AddDebugAxis
-#define trap_R_AddDebugBounds gi.R_AddDebugBounds
-#define trap_R_AddDebugSphere gi.R_AddDebugSphere
-#define trap_R_AddDebugCircle gi.R_AddDebugCircle
-#define trap_R_AddDebugCylinder gi.R_AddDebugCylinder
-#define trap_R_AddDebugArrow gi.R_AddDebugArrow
-#define trap_R_AddDebugCurveArrow gi.R_AddDebugCurveArrow
-#define trap_R_AddDebugText gi.R_AddDebugText
+#define trap_R_ClearDebugLines gi->R_ClearDebugLines
+#define trap_R_AddDebugLine gi->R_AddDebugLine
+#define trap_R_AddDebugPoint gi->R_AddDebugPoint
+#define trap_R_AddDebugAxis gi->R_AddDebugAxis
+#define trap_R_AddDebugBounds gi->R_AddDebugBounds
+#define trap_R_AddDebugSphere gi->R_AddDebugSphere
+#define trap_R_AddDebugCircle gi->R_AddDebugCircle
+#define trap_R_AddDebugCylinder gi->R_AddDebugCylinder
+#define trap_R_AddDebugArrow gi->R_AddDebugArrow
+#define trap_R_AddDebugCurveArrow gi->R_AddDebugCurveArrow
+#define trap_R_AddDebugText gi->R_AddDebugText
 #endif

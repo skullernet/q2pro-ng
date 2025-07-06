@@ -7,7 +7,7 @@ game_locals_t  game;
 level_locals_t level;
 
 #ifndef Q2_VM
-game_import_t   gi;
+const game_import_t *gi;
 #endif
 
 bool use_psx_assets;
@@ -374,7 +374,7 @@ q_exported const game_export_t *GetGameAPI(const game_import_t *import)
         .RestartFilesystem = G_RestartFilesystem,
     };
 
-    gi = *import;
+    gi = import;
     return &ge;
 }
 
