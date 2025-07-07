@@ -170,7 +170,7 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
     trap_GetUsercmd(frame, &pm->cmd);
     BG_Pmove(pm);
 
-    if (cg.predicted_step_frame < frame && pm->groundentity != ENTITYNUM_NONE && fabsf(pm->step_height) > 1.0f) {
+    if (cg.predicted_step_frame < frame && fabsf(pm->step_height) > 1.0f) {
         // check for stepping up before a previous step is completed
         unsigned delta = cgs.realtime - cg.predicted_step_time;
         float prev_step = 0;

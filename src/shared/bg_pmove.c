@@ -524,17 +524,8 @@ static void PM_StepSlideMove(void)
     // export step height to client
     step_size = pml.origin[2] - start_o[2];
 
-    if (pm->groundentity != ENTITYNUM_NONE) {
-        // no stepping if walking along the same plane
-        VectorSet(down, pml.origin[0], pml.origin[1], pml.origin[2] - 0.25f);
-        PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, down, pml.clipmask);
-        if (memcmp(&trace.plane, &pml.groundplane, sizeof(trace.plane)))
-            pm->step_height = step_size;
-    } else {
-        // no stepping down if not on ground
-        if (step_size > 0)
-            pm->step_height = step_size;
-    }
+    if (pm->groundentity != ENTITYNUM_NONE || step_size > 0)
+        pm->step_height = step_size;
 }
 
 /*
@@ -934,8 +925,12 @@ static void PM_CategorizePosition(void)
     if ((pm->s.pm_flags & PMF_NO_GROUND_SEEK) || pml.velocity[2] > 180 || pm->s.pm_type == PM_GRAPPLE) { //!!ZOID changed from 100 to 180 (ramp accel)
         pm->s.pm_flags &= ~PMF_ON_GROUND;
         pm->groundentity = ENTITYNUM_NONE;
+        pm->step_height = 0;
     } else {
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, point, pml.clipmask);
+        // no stepping if walking along the same plane
+        if (!memcmp(&pml.groundplane, &trace.plane, sizeof(pml.groundplane)))
+            pm->step_height = 0;
         pml.groundplane = trace.plane;
         pml.groundsurface_flags = trace.surface_flags;
         pml.groundcontents = trace.contents;
