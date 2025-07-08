@@ -388,7 +388,7 @@ void CG_PrepRefresh(void)
     for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
         trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name));
         if (!name[0])
-            break;
+            continue;
         CG_SetLightStyle(i, name);
     }
 
