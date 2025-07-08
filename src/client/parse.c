@@ -174,7 +174,7 @@ static void CL_SetActiveState(void)
     cls.state = ca_active;
 
     cl.serverdelta = cl.frame.number;
-    cl.time = cl.servertime = 0; // set time, needed for demos
+    cl.time = cl.frame.servertime; // set time, needed for demos
     cl.frameflags = 0;
     cl.initialSeq = cls.netchan.outgoing_sequence;
 
@@ -302,8 +302,8 @@ static void CL_ParseFrame(void)
     if (cl_shownet->integer >= 3) {
         int seq = cls.netchan.incoming_acknowledged & CMD_MASK;
         int rtt = cls.demo.playback ? 0 : cls.realtime - cl.history[seq].sent;
-        Com_LPrintf(PRINT_DEVELOPER, "%3u:frame:%d  delta:%d  rtt:%d\n",
-                    msg_read.readcount, frame.number, frame.delta, rtt);
+        Com_LPrintf(PRINT_DEVELOPER, "%3u:frame:%d  delta:%d  rtt:%d  svtime:%d\n",
+                    msg_read.readcount, frame.number, frame.delta, rtt, frame.servertime);
     }
 #endif
 

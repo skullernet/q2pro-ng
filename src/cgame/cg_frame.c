@@ -5,13 +5,11 @@ static void CG_SetActiveState(void)
     // initialize oldframe so lerping doesn't hurt anything
     cg.oldframe = cg.frame;
 
-    if (!cgs.demoplayback) {
-        // set initial cg.predicted_ps
-        cg.predicted_ps = cg.frame->ps;
-        if (cg.frame->ps.pm_type < PM_DEAD) {
-            // enhanced servers don't send viewangles
-            CG_PredictAngles();
-        }
+    // set initial cg.predicted_ps
+    cg.predicted_ps = cg.frame->ps;
+    if (cg.frame->ps.pm_type < PM_DEAD) {
+        // enhanced servers don't send viewangles
+        CG_PredictAngles();
     }
 
     SCR_LagClear();

@@ -26,6 +26,7 @@ extern qhandle_t cg_mod_heatbeam;
 extern qhandle_t cg_mod_lightning;
 extern qhandle_t cg_mod_grapple_cable;
 extern qhandle_t cg_img_flare;
+extern qhandle_t cg_sfx_hit_marker;
 
 /*
 ================
@@ -192,37 +193,48 @@ static void parse_entity_update(const entity_state_t *state)
     CG_SetEntitySoundOrigin(ent);
 }
 
-static void check_player_lerp(void)
+static void CG_TransitionPlayerstate(void)
 {
-    player_state_t *ps, *ops;
-    const centity_t *ent;
-
     // find states to interpolate between
-    ps = &cg.frame->ps;
-    ops = &cg.oldframe->ps;
+    const player_state_t *ps = &cg.frame->ps;
+    player_state_t *ops = &cg.oldframe->ps;
 
-    // no lerping if player entity was teleported
-    ent = &cg_entities[ps->clientnum];
-    if (ent->serverframe == cg.frame->number && entity_was_teleported(&ent->current))
-        goto dup;
+    // no lerping if teleport bit was flipped or POV number changed
+    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT || ops->clientnum != ps->clientnum || cg_nolerp.integer == 1)
+        // duplicate the current state so lerping doesn't hurt anything
+        *ops = *ps;
 
-    // no lerping if teleport bit was flipped
-    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
-        goto dup;
+    if (ps->stats[STAT_HITS] > ops->stats[STAT_HITS]) {
+        if (cg_hit_markers.integer > 0) {
+            cg.hit_marker_count = ps->stats[STAT_HITS] - ops->stats[STAT_HITS];
+            cg.hit_marker_time = cgs.realtime;
+            if (cg_hit_markers.integer > 1)
+                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cg_sfx_hit_marker, 1, ATTN_NONE, 0);
+        }
+    }
 
-    // no lerping if POV number changed
-    if (ops->clientnum != ps->clientnum)
-        goto dup;
+    if (ps->stats[STAT_DAMAGE]) {
+        vec3_t dir;
+        float kick, side;
 
-    // developer option
-    if (cg_nolerp.integer == 1)
-        goto dup;
+        ByteToDir(ps->stats[STAT_DAMAGE] & 255, dir);
+        kick = ((ps->stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
 
-    return;
+        side = -DotProduct(dir, cg.v_forward);
+        cg.v_dmg_pitch = kick * side;
 
-dup:
-    // duplicate the current state so lerping doesn't hurt anything
-    *ops = *ps;
+        side = DotProduct(dir, cg.v_right);
+        cg.v_dmg_roll = kick * side;
+
+        cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
+    }
+
+    if (!CG_PredictionEnabled()) {
+        if (ps->viewheight != ops->viewheight) {
+            cg.duck_time = cg.oldframe->servertime + DUCK_TIME;
+            cg.duck_factor = (float)(ps->viewheight - ops->viewheight) / DUCK_TIME;
+        }
+    }
 }
 
 /*
@@ -270,34 +282,7 @@ void CG_DeltaFrame(void)
         VectorClear(cg.frame->ps.delta_angles);
     }
 
-    check_player_lerp();
-
-    if (cg.frame->ps.stats[STAT_HITS] > cg.oldframe->ps.stats[STAT_HITS]) {
-        extern qhandle_t cg_sfx_hit_marker;
-
-        if (cg_hit_markers.integer > 0) {
-            cg.hit_marker_count = cg.frame->ps.stats[STAT_HITS] - cg.oldframe->ps.stats[STAT_HITS];
-            cg.hit_marker_time = cgs.realtime;
-            if (cg_hit_markers.integer > 1)
-                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cg_sfx_hit_marker, 1, ATTN_NONE, 0);
-        }
-    }
-
-    if (cg.frame->ps.stats[STAT_DAMAGE]) {
-        vec3_t dir;
-        float kick, side;
-
-        ByteToDir(cg.frame->ps.stats[STAT_DAMAGE] & 255, dir);
-        kick = ((cg.frame->ps.stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
-
-        side = -DotProduct(dir, cg.v_forward);
-        cg.v_dmg_pitch = kick * side;
-
-        side = DotProduct(dir, cg.v_right);
-        cg.v_dmg_roll = kick * side;
-
-        cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
-    }
+    CG_TransitionPlayerstate();
 
     CG_CheckPredictionError();
 

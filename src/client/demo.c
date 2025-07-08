@@ -140,13 +140,15 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
                              int fromnum, int tonum)
 {
     MSG_WriteByte(svc_frame);
-    MSG_WriteLong(tonum);
-    MSG_WriteLong(fromnum); // what we are delta'ing from
-    MSG_WriteByte(cl.suppress_count);   // rate dropped packets
+    MSG_WriteBits(tonum, FRAMENUM_BITS);
+    MSG_WriteBits(fromnum, DELTAFRAME_BITS); // what we are delta'ing from
+    MSG_WriteBits(to->servertime, 32);
+    MSG_WriteBits(0, SUPPRESSCOUNT_BITS);   // rate dropped packets
 
     // send over the areabits
-    MSG_WriteByte(to->areabytes);
-    MSG_WriteData(to->areabits, to->areabytes);
+    MSG_WriteBits(to->areabytes, 6);
+    for (int i = 0; i < to->areabytes; i++)
+        MSG_WriteBits(to->areabits[i], 8);
 
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(from ? &from->ps : NULL, &to->ps);
@@ -179,14 +181,14 @@ void CL_EmitDemoFrame(void)
     // the first frame is delta uncompressed
     if (cls.demo.last_server_frame == -1) {
         oldframe = NULL;
-        lastframe = -1;
+        lastframe = 31;
     } else {
         oldframe = &cl.frames[cls.demo.last_server_frame & UPDATE_MASK];
-        lastframe = FRAME_PRE;
+        lastframe = 1;
         if (oldframe->number != cls.demo.last_server_frame || !oldframe->valid ||
             cl.next_entity - oldframe->first_entity > MAX_PARSE_ENTITIES) {
             oldframe = NULL;
-            lastframe = -1;
+            lastframe = 31;
         }
     }
 
@@ -371,8 +373,12 @@ static void CL_Record_f(void)
     MSG_WriteLong(cl.servercount);
     MSG_WriteByte(1);      // demos are always attract loops
     MSG_WriteString(cl.gamedir);
-    MSG_WriteShort(cl.clientNum);
+    MSG_WriteByte(cl.clientNum);
+    MSG_WriteString(cl.mapname);
     MSG_WriteString(cl.configstrings[CS_NAME]);
+    MSG_WriteShort(cls.protocolVersion);
+    MSG_WriteByte(cl.serverstate);
+    MSG_WriteLong(cl.mapchecksum);
 
     // configstrings
     MSG_WriteByte(svc_configstringstream);
@@ -386,6 +392,7 @@ static void CL_Record_f(void)
             MSG_WriteShort(MAX_CONFIGSTRINGS);
             if (!CL_WriteDemoMessage(&msg_write))
                 return;
+            MSG_BeginWriting();
             MSG_WriteByte(svc_configstringstream);
         }
 
@@ -763,7 +770,7 @@ void CL_EmitDemoSnapshot(void)
     // write all the backups, since we can't predict what frame the next
     // delta will come from
     lastframe = NULL;
-    lastnum = -1;
+    lastnum = 31;
     for (i = 0; i < UPDATE_BACKUP; i++) {
         j = cl.frame.number - (UPDATE_BACKUP - 1) + i;
         frame = &cl.frames[j & UPDATE_MASK];
@@ -774,7 +781,7 @@ void CL_EmitDemoSnapshot(void)
 
         emit_delta_frame(lastframe, frame, lastnum, j);
         lastframe = frame;
-        lastnum = frame->number;
+        lastnum = 1;
     }
 
     // write configstrings
@@ -1213,7 +1220,7 @@ void CL_DemoFrame(void)
 
     // cl.time has already been advanced for this client frame
     // read the next frame to start lerp cycle again
-    while (cl.servertime < cl.time) {
+    while (cl.frame.servertime < cl.time) {
         if (parse_next_message(cl_demowait->integer))
             break;
         if (cls.state != ca_active)

@@ -2264,6 +2264,9 @@ unsigned CL_Frame(unsigned msec)
     if (cls.frametime > 1.0f / 5)
         cls.frametime = 1.0f / 5;
 
+    if (!sv_paused->integer && cls.demo.playback)
+        cl.time += main_extra;
+
     // read next demo frame
     CL_DemoFrame();
 

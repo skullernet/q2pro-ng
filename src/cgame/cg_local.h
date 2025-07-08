@@ -466,6 +466,12 @@ void CG_ClearTEnts(void);
 //
 // predict.c
 //
+
+static inline bool CG_PredictionEnabled(void)
+{
+    return !cgs.demoplayback && cg_predict.integer && !(cg.frame->ps.pm_flags & PMF_NO_PREDICTION);
+}
+
 void CG_PredictAngles(void);
 void CG_PredictMovement(void);
 void CG_CheckPredictionError(void);

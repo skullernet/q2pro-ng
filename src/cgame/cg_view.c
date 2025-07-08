@@ -471,7 +471,7 @@ static void CG_CalcViewValues(void)
     lerp = cg.lerpfrac;
 
     // calculate the origin
-    if (!cgs.demoplayback && cg_predict.integer && !(ps->pm_flags & PMF_NO_PREDICTION)) {
+    if (CG_PredictionEnabled()) {
         // use predicted values
         unsigned delta = cgs.realtime - cg.predicted_step_time;
         float backlerp = lerp - 1.0f;
@@ -484,15 +484,14 @@ static void CG_CalcViewValues(void)
         }
     } else {
         // just use interpolated values
-        for (int i = 0; i < 3; i++) {
-            cg.refdef.vieworg[i] = ops->origin[i] + lerp * (ps->origin[i] - ops->origin[i]);
-        }
+        LerpVector(ops->origin, ps->origin, lerp, cg.refdef.vieworg);
+        LerpVector(ops->velocity, ps->velocity, lerp, cg.predicted_ps.velocity);
+        cg.predicted_ps.viewheight = ps->viewheight;
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
         if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
-            CG_PredictAngles();
             VectorCopy(cg.predicted_ps.viewangles, cg.refdef.viewangles);
         } else {
             LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);

@@ -488,6 +488,9 @@ static void SCR_DrawNet(void)
         SCR_LagDraw(x, y);
     }
 
+    if (cgs.demoplayback)
+        return;
+
     // draw phone jack
     unsigned ack, cur;
     trap_GetUsercmdNumber(&ack, &cur);

@@ -192,13 +192,10 @@ void CG_PredictMovement(void)
     unsigned    ack, current;
     pmove_t     pm;
 
-    if (cgs.demoplayback)
-        return;
-
     if (sv_paused.integer)
         return;
 
-    if (!cg_predict.integer || (cg.frame->ps.pm_flags & PMF_NO_PREDICTION)) {
+    if (!CG_PredictionEnabled()) {
         // just set angles
         CG_PredictAngles();
         return;
