@@ -23,12 +23,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static cvar_t    *cl_nodelta;
 static cvar_t    *cl_maxpackets;
 static cvar_t    *cl_packetdup;
-static cvar_t    *cl_fuzzhack;
 #if USE_DEBUG
 static cvar_t    *cl_showpackets;
 #endif
 static cvar_t    *cl_instantpacket;
-static cvar_t    *cl_batchcmds;
 
 static cvar_t    *m_filter;
 static cvar_t    *m_accel;
@@ -706,14 +704,12 @@ void CL_RegisterInput(void)
     Cmd_Register(c_input);
 
     cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
-    cl_maxpackets = Cvar_Get("cl_maxpackets", "30", 0);
-    cl_fuzzhack = Cvar_Get("cl_fuzzhack", "0", 0);
+    cl_maxpackets = Cvar_Get("cl_maxpackets", "62", 0);
     cl_packetdup = Cvar_Get("cl_packetdup", "1", 0);
 #if USE_DEBUG
     cl_showpackets = Cvar_Get("cl_showpackets", "0", 0);
 #endif
     cl_instantpacket = Cvar_Get("cl_instantpacket", "1", 0);
-    cl_batchcmds = Cvar_Get("cl_batchcmds", "1", 0);
 
     cl_upspeed = Cvar_Get("cl_upspeed", "200", 0);
     cl_forwardspeed = Cvar_Get("cl_forwardspeed", "200", 0);
