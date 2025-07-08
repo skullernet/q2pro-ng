@@ -1765,6 +1765,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     VectorClear(other->velocity);
     other->client->ps.pm_time = 160; // hold time
     other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
+    other->client->ps.rdflags ^= RDF_TELEPORT_BIT;
 
     edict_t *owner = &g_edicts[self->r.ownernum];
 

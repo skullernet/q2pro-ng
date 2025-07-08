@@ -1596,6 +1596,7 @@ void G_PostRespawn(edict_t *self)
     // hold in place briefly
     self->client->ps.pm_flags = PMF_TIME_TELEPORT;
     self->client->ps.pm_time = 112;
+    self->client->ps.rdflags ^= RDF_TELEPORT_BIT;
 
     self->client->respawn_time = level.time;
 }

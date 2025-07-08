@@ -2910,6 +2910,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     VectorClear(other->velocity);
     other->client->ps.pm_time = 160; // hold time
     other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
+    other->client->ps.rdflags ^= RDF_TELEPORT_BIT;
 
     // draw the teleport splash at source and on the player
     G_AddEvent(self->enemy, EV_PLAYER_TELEPORT, 0);
