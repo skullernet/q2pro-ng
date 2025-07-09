@@ -365,14 +365,7 @@ void SP_func_plat2(edict_t *ent)
 
     trap_LinkEntity(ent);
 
-    ent->moveinfo.speed = ent->speed;
-    ent->moveinfo.accel = ent->accel;
-    ent->moveinfo.decel = ent->decel;
-    ent->moveinfo.wait = ent->wait;
-    VectorCopy(ent->pos1, ent->moveinfo.start_origin);
-    VectorCopy(ent->pos2, ent->moveinfo.end_origin);
-    VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
-    VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
+    G_SetMoveinfoParams(ent);
 
     G_SetMoveinfoSounds(ent, "plats/pt1_strt.wav", "plats/pt1_mid.wav", "plats/pt1_end.wav");
 }

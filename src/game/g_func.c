@@ -72,6 +72,29 @@ void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *d
     self->moveinfo.sound_end = G_GetMoveinfoSound(self, default_end, st.noise_end);
 }
 
+static void G_ScaleMoveinfoAccel(edict_t *ent)
+{
+    if (ent->moveinfo.speed != ent->moveinfo.accel || ent->moveinfo.speed != ent->moveinfo.decel) {
+        ent->moveinfo.speed *=  10 * FRAME_TIME_SEC;
+        ent->moveinfo.accel *= 100 * FRAME_TIME_SEC * FRAME_TIME_SEC;
+        ent->moveinfo.decel *= 100 * FRAME_TIME_SEC * FRAME_TIME_SEC;
+    }
+}
+
+void G_SetMoveinfoParams(edict_t *ent)
+{
+    ent->moveinfo.speed = ent->speed;
+    ent->moveinfo.accel = ent->accel;
+    ent->moveinfo.decel = ent->decel;
+    ent->moveinfo.wait = ent->wait;
+    VectorCopy(ent->pos1, ent->moveinfo.start_origin);
+    VectorCopy(ent->pos2, ent->moveinfo.end_origin);
+    VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
+    VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
+
+    G_ScaleMoveinfoAccel(ent);
+}
+
 //
 // Support routines for movement (changes in origin using velocity)
 //
@@ -373,8 +396,8 @@ void THINK(Think_AccelMove)(edict_t *ent)
         return;
     }
 
-    VectorScale(ent->moveinfo.dir, ent->moveinfo.current_speed * 10, ent->velocity);
-    ent->nextthink = level.time + HZ(10);
+    VectorScale(ent->moveinfo.dir, ent->moveinfo.current_speed * TICK_RATE, ent->velocity);
+    ent->nextthink = level.time + FRAME_TIME;
     ent->think = Think_AccelMove;
 }
 
@@ -611,14 +634,7 @@ void SP_func_plat(edict_t *ent)
         ent->moveinfo.state = STATE_BOTTOM;
     }
 
-    ent->moveinfo.speed = ent->speed;
-    ent->moveinfo.accel = ent->accel;
-    ent->moveinfo.decel = ent->decel;
-    ent->moveinfo.wait = ent->wait;
-    VectorCopy(ent->pos1, ent->moveinfo.start_origin);
-    VectorCopy(ent->pos2, ent->moveinfo.end_origin);
-    VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
-    VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
+    G_SetMoveinfoParams(ent);
 
     G_SetMoveinfoSounds(ent, "plats/pt1_strt.wav", "plats/pt1_mid.wav", "plats/pt1_end.wav");
 }
@@ -990,14 +1006,7 @@ void SP_func_button(edict_t *ent)
 
     ent->moveinfo.state = STATE_BOTTOM;
 
-    ent->moveinfo.speed = ent->speed;
-    ent->moveinfo.accel = ent->accel;
-    ent->moveinfo.decel = ent->decel;
-    ent->moveinfo.wait = ent->wait;
-    VectorCopy(ent->pos1, ent->moveinfo.start_origin);
-    VectorCopy(ent->pos2, ent->moveinfo.end_origin);
-    VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
-    VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
+    G_SetMoveinfoParams(ent);
 
     trap_LinkEntity(ent);
 }
@@ -1518,14 +1527,7 @@ void SP_func_door(edict_t *ent)
         ent->r.svflags |= SVF_LOCKED;
     }
 
-    ent->moveinfo.speed = ent->speed;
-    ent->moveinfo.accel = ent->accel;
-    ent->moveinfo.decel = ent->decel;
-    ent->moveinfo.wait = ent->wait;
-    VectorCopy(ent->pos1, ent->moveinfo.start_origin);
-    VectorCopy(ent->pos2, ent->moveinfo.end_origin);
-    VectorCopy(ent->s.angles, ent->moveinfo.start_angles);
-    VectorCopy(ent->s.angles, ent->moveinfo.end_angles);
+    G_SetMoveinfoParams(ent);
 
     if (ent->spawnflags & SPAWNFLAG_DOOR_ANIMATED)
         ent->s.effects |= EF_ANIM_ALL;
@@ -1963,6 +1965,7 @@ again:
         else
             self->moveinfo.decel = ent->speed;
         self->moveinfo.current_speed = 0;
+        G_ScaleMoveinfoAccel(self);
     }
     // PGM
 
@@ -2043,6 +2046,7 @@ static void train_resume(edict_t *self)
         else
             self->moveinfo.decel = ent->speed;
         self->moveinfo.current_speed = 0;
+        G_ScaleMoveinfoAccel(self);
     }
     // PGM
 

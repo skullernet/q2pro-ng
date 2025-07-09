@@ -1430,6 +1430,7 @@ void func_train_find(edict_t *self);
 edict_t *plat_spawn_inside_trigger(edict_t *ent);
 void Move_Calc(edict_t *ent, const vec3_t dest, void (*endfunc)(edict_t *self));
 void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *default_mid, const char *default_end);
+void G_SetMoveinfoParams(edict_t *ent);
 
 #define SPAWNFLAG_TRAIN_START_ON        1
 #define SPAWNFLAG_WATER_SMART           2
