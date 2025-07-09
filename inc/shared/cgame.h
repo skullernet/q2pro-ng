@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef struct {
     int             number;
     unsigned        servertime;
+    unsigned        cmdnum;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
@@ -85,10 +86,10 @@ typedef struct {
     bool (*GetMaterialInfo)(unsigned material_id, material_info_t *info);
     void (*GetBrushModelBounds)(unsigned index, vec3_t mins, vec3_t maxs);
 
-    void (*GetUsercmdNumber)(unsigned *ack, unsigned *current);
+    unsigned (*GetUsercmdNumber)(void);
     bool (*GetUsercmd)(unsigned number, usercmd_t *ucmd);
 
-    void (*GetServerFrameNumber)(unsigned *frame, unsigned *time);
+    unsigned (*GetServerFrameNumber)(void);
     bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
 
     bool (*GetDemoInfo)(cg_demo_info_t *info);

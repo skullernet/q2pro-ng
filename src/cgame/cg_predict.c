@@ -41,7 +41,7 @@ void CG_CheckPredictionError(void)
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
-    trap_GetUsercmdNumber(&cmd, NULL);
+    cmd = cg.frame->cmdnum;
 
     // compare what the server returned with what we had predicted it to be
     VectorSubtract(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
@@ -155,11 +155,8 @@ Sets cg.predicted_origin and cg.predicted_angles
 */
 void CG_PredictAngles(void)
 {
-    unsigned current;
     usercmd_t cmd;
-
-    trap_GetUsercmdNumber(NULL, &current);
-    trap_GetUsercmd(current, &cmd);
+    trap_GetUsercmd(trap_GetUsercmdNumber(), &cmd);
 
     for (int i = 0; i < 3; i++)
         cg.predicted_ps.viewangles[i] = SHORT2ANGLE((short)(cmd.angles[i] + cg.frame->ps.delta_angles[i]));
@@ -201,7 +198,8 @@ void CG_PredictMovement(void)
         return;
     }
 
-    trap_GetUsercmdNumber(&ack, &current);
+    current = trap_GetUsercmdNumber();
+    ack = cg.frame->cmdnum;
 
     // if we are too far out of date, just freeze
     if (current - ack > CMD_BACKUP) {

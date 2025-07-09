@@ -68,7 +68,7 @@ typedef struct {
     unsigned        servertime;
 
     int             number;
-    int             delta;
+    unsigned        cmdnum;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;

@@ -45,10 +45,10 @@ bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
 bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
 void trap_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs);
 
-void trap_GetUsercmdNumber(unsigned *ack, unsigned *current);
+unsigned trap_GetUsercmdNumber(void);
 bool trap_GetUsercmd(unsigned number, usercmd_t *ucmd);
 
-void trap_GetServerFrameNumber(unsigned *frame, unsigned *time);
+unsigned trap_GetServerFrameNumber(void);
 bool trap_GetServerFrame(unsigned frame, cg_server_frame_t *out);
 
 bool trap_GetDemoInfo(cg_demo_info_t *info);

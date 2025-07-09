@@ -127,9 +127,7 @@ typedef struct {
     cg_server_frame_t   *frame;     // received from server
     cg_server_frame_t   *oldframe;
     cg_server_frame_t   frames[2];
-    unsigned            processed_framenum, current_framenum;
-    unsigned        servertime;
-    int             serverdelta;
+    unsigned        serverframe;
 
     int         time;           // this is the time value that the client
                                 // is rendering at.  always <= cl.servertime

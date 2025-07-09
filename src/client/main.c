@@ -2278,7 +2278,7 @@ unsigned CL_Frame(unsigned msec)
 
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
-    if (phys_frame) {
+    if (phys_frame && ref_frame) {
         CL_FinalizeCmd();
         phys_extra -= phys_msec;
         M_FRAMES++;

@@ -488,13 +488,12 @@ static void SCR_DrawNet(void)
         SCR_LagDraw(x, y);
     }
 
-    if (cgs.demoplayback)
+    if (cgs.demoplayback || !cg.frame)
         return;
 
     // draw phone jack
-    unsigned ack, cur;
-    trap_GetUsercmdNumber(&ack, &cur);
-    if (cur - ack > CMD_BACKUP) {
+    unsigned current = trap_GetUsercmdNumber();
+    if (current - cg.frame->cmdnum > CMD_BACKUP) {
         if ((cgs.realtime >> 8) & 3) {
             trap_R_DrawStretchPic(x, y, LAG_WIDTH, LAG_HEIGHT, scr.net_pic);
         }

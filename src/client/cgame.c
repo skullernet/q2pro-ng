@@ -163,15 +163,9 @@ static float PF_R_GetAutoScale(void)
     return R_ClampScale(NULL);
 }
 
-static void PF_GetUsercmdNumber(unsigned *ack_p, unsigned *cur_p)
+static unsigned PF_GetUsercmdNumber(void)
 {
-    unsigned ack = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
-    unsigned cur = cl.cmdNumber + !!cl.cmd.msec;
-
-    if (ack_p)
-        *ack_p = ack;
-    if (cur_p)
-        *cur_p = cur;
+    return cl.cmdNumber + !!cl.cmd.msec;
 }
 
 static bool PF_GetUsercmd(unsigned number, usercmd_t *ucmd)
@@ -192,10 +186,9 @@ static bool PF_GetUsercmd(unsigned number, usercmd_t *ucmd)
     return true;
 }
 
-static void PF_GetServerFrameNumber(unsigned *frame, unsigned *time)
+static unsigned PF_GetServerFrameNumber(void)
 {
-    *frame = cl.frame.number;
-    *time = cl.frame.servertime;
+    return cl.frame.number;
 }
 
 static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
@@ -210,6 +203,7 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
         return false;
 
     out->number = number;
+    out->cmdnum = frame->cmdnum;
     out->servertime = frame->servertime;
     memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
 
@@ -285,7 +279,7 @@ VM_THUNK(GetBrushModelBounds) {
 }
 
 VM_THUNK(GetUsercmdNumber) {
-    PF_GetUsercmdNumber(VM_PTR_NULL(0, unsigned), VM_PTR_NULL(1, unsigned));
+    VM_U32(0) = PF_GetUsercmdNumber();
 }
 
 VM_THUNK(GetUsercmd) {
@@ -293,7 +287,7 @@ VM_THUNK(GetUsercmd) {
 }
 
 VM_THUNK(GetServerFrameNumber) {
-    PF_GetServerFrameNumber(VM_PTR(0, unsigned), VM_PTR(1, unsigned));
+    VM_U32(0) = PF_GetServerFrameNumber();
 }
 
 VM_THUNK(GetServerFrame) {
@@ -688,9 +682,9 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(GetMaterialInfo, "i ii"),
     VM_IMPORT(GetBrushModelBounds, "iii"),
-    VM_IMPORT(GetUsercmdNumber, "ii"),
+    VM_IMPORT(GetUsercmdNumber, "i "),
     VM_IMPORT(GetUsercmd, "i ii"),
-    VM_IMPORT(GetServerFrameNumber, "ii"),
+    VM_IMPORT(GetServerFrameNumber, "i "),
     VM_IMPORT(GetServerFrame, "i ii"),
     VM_IMPORT(GetDemoInfo, "i i"),
     VM_IMPORT(ClientCommand, "i"),

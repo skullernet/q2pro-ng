@@ -1,3 +1,21 @@
+/*
+Copyright (C) 2025 Andrey Nazarov
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "cg_local.h"
 
 static void CG_SetActiveState(void)
@@ -17,78 +35,72 @@ static void CG_SetActiveState(void)
 
 static void CG_SetClientTime(void)
 {
-    int prevtime;
+    int prevtime, servertime;
 
     if (sv_paused.integer)
         return;
 
+    if (!cg.frame)
+        return;
+
     if (com_timedemo.integer) {
-        cg.time = cg.servertime;
+        cg.time = cg.frame->servertime;
         cg.lerpfrac = 1.0f;
         return;
     }
 
     prevtime = cg.oldframe->servertime;
-    if (prevtime >= cg.servertime) {
-        SHOWCLAMP(2, "bad time %i\n", prevtime);
-        cg.time = prevtime;
-        cg.lerpfrac = 0;
-    } else if (cg.time > cg.servertime) {
-        SHOWCLAMP(2, "high clamp %i\n", cg.time - cg.servertime);
-        cg.time = cg.servertime;
+    servertime = cg.frame->servertime;
+    if (prevtime >= servertime) {
+        SHOWCLAMP(2, "reset time %i\n", servertime);
+        cg.time = servertime;
+        cg.lerpfrac = 1.0f;
+    } else if (cg.time > servertime) {
+        SHOWCLAMP(2, "high clamp %i\n", cg.time - servertime);
+        cg.time = servertime;
         cg.lerpfrac = 1.0f;
     } else if (cg.time < prevtime) {
         SHOWCLAMP(2, "low clamp %i\n", prevtime - cg.time);
         cg.time = prevtime;
         cg.lerpfrac = 0;
     } else {
-        cg.lerpfrac = (float)(cg.time - prevtime) / (cg.servertime - prevtime);
+        cg.lerpfrac = (float)(cg.time - prevtime) / (servertime - prevtime);
     }
 
     SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
-              cg.time, cg.servertime, cg.lerpfrac);
-}
-
-static cg_server_frame_t *CG_ReadNextFrame(void)
-{
-    cg_server_frame_t *frame = &cg.frames[0];
-    if (frame == cg.frame)
-        frame = &cg.frames[1];
-
-    while (cg.processed_framenum < cg.current_framenum) {
-        cg.processed_framenum++;
-
-        if (trap_GetServerFrame(cg.processed_framenum, frame)) {
-            SCR_LagSample(frame);
-            return frame;
-        }
-
-        SCR_LagSample(NULL);
-    }
-
-    return NULL;
+              cg.time, servertime, cg.lerpfrac);
 }
 
 void CG_ProcessFrames(void)
 {
-    trap_GetServerFrameNumber(&cg.current_framenum, &cg.servertime);
+    unsigned current = trap_GetServerFrameNumber();
 
-    if (!cg.frame) {
-        cg.frame = CG_ReadNextFrame();
-        if (!cg.frame)
-            return;
-        CG_SetActiveState();
-        CG_DeltaFrame();
-    }
+    if (cg.serverframe > current)
+        cg.serverframe = current;
 
-    cg_server_frame_t *frame = CG_ReadNextFrame();
-    if (frame) {
+    // read and process all pending server frames
+    while (cg.serverframe < current) {
+        cg_server_frame_t *frame = &cg.frames[++cg.serverframe & 1];
+
+        if (!trap_GetServerFrame(cg.serverframe, frame)) {
+            // frame was dropped, invalid or too old
+            SCR_LagSample(NULL);
+            continue;
+        }
+
         cg.oldframe = cg.frame;
         cg.frame = frame;
+
+        // once valid, oldframe will never turn invalid, but can be copy of
+        // current if dropped
+        if (!cg.oldframe)
+            CG_SetActiveState();
+        else if (cg.oldframe->number != cg.serverframe - 1)
+            cg.oldframe = cg.frame;
+
+        SCR_LagSample(frame);
+        CG_DeltaFrame();
     }
 
     CG_SetClientTime();
-
-    if (frame)
-        CG_DeltaFrame();
 }
