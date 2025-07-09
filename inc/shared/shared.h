@@ -1205,6 +1205,7 @@ typedef struct {
     int         gunindex;
     int         gunskin;
     int         gunframe;
+    int         gunrate;
 
     vec4_t      screen_blend;       // rgba full screen effect
     vec4_t      damage_blend;

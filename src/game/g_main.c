@@ -228,8 +228,8 @@ qvm_exported void G_Init(void)
     trap_Cvar_Register(&timelimit, "timelimit", "0", CVAR_SERVERINFO);
     // ZOID
     trap_Cvar_Register(&capturelimit, "capturelimit", "0", CVAR_SERVERINFO);
-    trap_Cvar_Register(&g_quick_weapon_switch, "g_quick_weapon_switch", "1", CVAR_LATCH);
-    trap_Cvar_Register(&g_instant_weapon_switch, "g_instant_weapon_switch", "0", CVAR_LATCH);
+    trap_Cvar_Register(&g_quick_weapon_switch, "g_quick_weapon_switch", "1", 0);
+    trap_Cvar_Register(&g_instant_weapon_switch, "g_instant_weapon_switch", "0", 0);
     // ZOID
     trap_Cvar_Register(&password, "password", "", CVAR_USERINFO);
     trap_Cvar_Register(&spectator_password, "spectator_password", "", CVAR_USERINFO);

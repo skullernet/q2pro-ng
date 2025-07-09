@@ -60,7 +60,7 @@ CG_AddViewWeapon
 static void CG_AddViewWeapon(void)
 {
     const centity_t *ent;
-    const player_state_t *ps, *ops;
+    const player_state_t *ps;
     entity_t    gun;        // view model
     int         i, flags;
 
@@ -74,7 +74,6 @@ static void CG_AddViewWeapon(void)
 
     // find states to interpolate between
     ps = &cg.frame->ps;
-    ops = &cg.oldframe->ps;
 
     memset(&gun, 0, sizeof(gun));
 
@@ -87,7 +86,7 @@ static void CG_AddViewWeapon(void)
     VectorCopy(cg.refdef.vieworg, gun.origin);
     VectorCopy(cg.refdef.viewangles, gun.angles);
 
-    if (!(cg.frame->ps.rdflags & RDF_NO_WEAPON_BOB) && !cg_skip_view_modifiers.integer) {
+    if (!(ps->rdflags & RDF_NO_WEAPON_BOB) && !cg_skip_view_modifiers.integer) {
         // gun angles from bobbing
         gun.angles[ROLL] += cg.xyspeed * cg.bobfracsin * 0.005f;
         gun.angles[YAW] += cg.xyspeed * cg.bobfracsin * 0.01f;
@@ -136,8 +135,26 @@ static void CG_AddViewWeapon(void)
     if (gun.frame == 0) {
         gun.oldframe = 0;   // just changed weapons, don't lerp from old
     } else {
-        gun.oldframe = ops->gunframe;
-        gun.backlerp = 1.0f - cg.lerpfrac;
+        // run alias model animation
+        if (cg.weapon.prev_frame != ps->gunframe) {
+            int delta = cg.time - cg.weapon.anim_start;
+            int frametime = BASE_FRAMETIME >> ps->gunrate;
+            float frac;
+
+            if (delta > frametime) {
+                cg.weapon.prev_frame = ps->gunframe;
+                frac = 1;
+            } else if (delta > 0) {
+                frac = (float)delta / frametime;
+            } else {
+                frac = 0;
+            }
+
+            gun.oldframe = cg.weapon.prev_frame;
+            gun.backlerp = 1.0f - frac;
+        } else {
+            gun.oldframe = ps->gunframe;
+        }
     }
 
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;

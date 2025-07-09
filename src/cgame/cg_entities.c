@@ -235,6 +235,11 @@ static void CG_TransitionPlayerstate(void)
             cg.duck_factor = (float)(ps->viewheight - ops->viewheight) / DUCK_TIME;
         }
     }
+
+    if (ps->gunframe != ops->gunframe) {
+        cg.weapon.prev_frame = ops->gunframe;
+        cg.weapon.anim_start = cg.oldframe->servertime;
+    }
 }
 
 /*

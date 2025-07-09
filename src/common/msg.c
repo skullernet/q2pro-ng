@@ -492,6 +492,7 @@ static const netfield_t player_state_fields[] = {
     NETF(gunindex, MODELINDEX_BITS),
     NETF(gunskin, 4),
     NETF(gunframe, 8),
+    NETF(gunrate, 2),
     NETF(screen_blend[0], 0),
     NETF(screen_blend[1], 0),
     NETF(screen_blend[2], 0),

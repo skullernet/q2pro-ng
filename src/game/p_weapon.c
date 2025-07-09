@@ -388,20 +388,22 @@ static gtime_t Weapon_AnimationTime(edict_t *ent)
 {
     int gunrate;
 
-    if (g_quick_weapon_switch.integer && ent->client->ps.gunframe != 0 &&
+    if (g_quick_weapon_switch.integer && (TICK_RATE >= 20 || ent->client->ps.gunframe != 0) &&
         (ent->client->weaponstate == WEAPON_ACTIVATING || ent->client->weaponstate == WEAPON_DROPPING))
-        gunrate = 20;
+        gunrate = 1;
     else
-        gunrate = 10;
+        gunrate = 0;
 
     if (ent->client->ps.gunframe != 0 && (!(ent->client->pers.weapon->flags & IF_NO_HASTE) || ent->client->weaponstate != WEAPON_FIRING)) {
         if (is_quadfire)
-            gunrate *= 2;
+            gunrate++;
         if (CTFApplyHaste(ent))
-            gunrate *= 2;
+            gunrate++;
     }
 
-    return SEC(1.0f / gunrate);
+    ent->client->ps.gunrate = min(gunrate, TICK_RATE / BASE_FRAMERATE - 1);
+
+    return MSEC(BASE_FRAMETIME >> gunrate);
 }
 
 /*
@@ -434,7 +436,7 @@ void Think_Weapon(edict_t *ent)
     // check remainder from haste; on 100ms/50ms server frames we may have
     // 'run next frame in' times that we can't possibly catch up to,
     // so we have to run them now.
-    if (MSEC(33) < FRAME_TIME) {
+    if (true) {
         gtime_t relative_time = Weapon_AnimationTime(ent);
 
         if (relative_time < FRAME_TIME) {
@@ -633,8 +635,6 @@ static bool Weapon_HandleActivating(edict_t *ent, int FRAME_ACTIVATE_LAST, int F
 {
     if (ent->client->weaponstate == WEAPON_ACTIVATING) {
         if (ent->client->weapon_think_time <= level.time || g_instant_weapon_switch.integer) {
-            ent->client->weapon_think_time = level.time + Weapon_AnimationTime(ent);
-
             if (ent->client->ps.gunframe == FRAME_ACTIVATE_LAST || g_instant_weapon_switch.integer) {
                 ent->client->weaponstate = WEAPON_READY;
                 ent->client->ps.gunframe = FRAME_IDLE_FIRST;
@@ -643,10 +643,11 @@ static bool Weapon_HandleActivating(edict_t *ent, int FRAME_ACTIVATE_LAST, int F
                     Weapon_SetFinished(ent);
                 else
                     ent->client->weapon_fire_finished = 0;
-                return true;
+            } else {
+                ent->client->ps.gunframe++;
             }
 
-            ent->client->ps.gunframe++;
+            ent->client->weapon_think_time = level.time + Weapon_AnimationTime(ent);
             return true;
         }
     }

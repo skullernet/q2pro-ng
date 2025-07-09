@@ -193,6 +193,8 @@ typedef struct {
             vec3_t origin;
             vec3_t angles;
         } kick;
+        int prev_frame;
+        int anim_start;
     } weapon;
 
     float xyspeed;
