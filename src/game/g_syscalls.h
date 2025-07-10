@@ -49,7 +49,7 @@ size_t trap_GetSpawnPoint(char *buf, size_t size);
 size_t trap_GetUserinfo(unsigned clientnum, char *buf, size_t size);
 size_t trap_GetConnectinfo(unsigned clientnum, char *buf, size_t size);
 void trap_GetUsercmd(unsigned clientnum, usercmd_t *ucmd);
-bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info);
+bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints);
 
 int64_t trap_RealTime(void);
 bool trap_LocalTime(int64_t time, vm_time_t *localtime);

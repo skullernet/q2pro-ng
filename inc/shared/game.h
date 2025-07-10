@@ -115,13 +115,6 @@ typedef struct {
         float dropHeight;   // 0 = don't drop down
         float jumpHeight;   // 0 = don't jump up
     } traversals;
-
-#if 0
-    struct PathArray {
-        vec3_t  *posArray;  // array to store raw path points
-        int     count;      // number of elements in array
-    } pathPoints;
-#endif
 } PathRequest;
 
 typedef struct {
@@ -218,7 +211,7 @@ typedef struct {
     size_t (*GetUserinfo)(unsigned clientnum, char *buf, size_t size);
     size_t (*GetConnectinfo)(unsigned clientnum, char *buf, size_t size);
     void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
-    bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info);
+    bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints);
 
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);

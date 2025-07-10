@@ -160,6 +160,8 @@ typedef struct {
     const PathRequest   *request;
     PathInfo            *info;
     nav_ctx_t           *ctx;
+    vec3_t              *points;
+    int                 maxPoints;
     const nav_node_t    *start, *goal;
 } nav_path_t;
 
@@ -568,22 +570,21 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
         }
     }
 
-#if 0
     // store resulting path for compass, etc
-    if (request->pathPoints.count) {
+    if (path->maxPoints) {
         // if we're too far from the first node, add in our current position.
         float dist = DistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
 
         if (dist > PATH_POINT_TOO_CLOSE) {
-            if (info->numPathPoints < request->pathPoints.count)
-                VectorCopy(request->start, request->pathPoints.posArray[info->numPathPoints]);
+            if (info->numPathPoints < path->maxPoints)
+                VectorCopy(request->start, path->points[info->numPathPoints]);
             info->numPathPoints++;
         }
 
         // crawl forwards and add nodes
         for (p = first_point; p < num_points; p++) {
-            if (info->numPathPoints < request->pathPoints.count)
-                VectorCopy(nav_data.nodes[ctx->went_to[p]].origin, request->pathPoints.posArray[info->numPathPoints]);
+            if (info->numPathPoints < path->maxPoints)
+                VectorCopy(nav_data.nodes[ctx->went_to[p]].origin, path->points[info->numPathPoints]);
             info->numPathPoints++;
         }
 
@@ -591,12 +592,11 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
         dist = DistanceSquared(request->goal, nav_data.nodes[ctx->went_to[current]].origin);
 
         if (dist > PATH_POINT_TOO_CLOSE) {
-            if (info->numPathPoints < request->pathPoints.count)
-                VectorCopy(request->goal, request->pathPoints.posArray[info->numPathPoints]);
+            if (info->numPathPoints < path->maxPoints)
+                VectorCopy(request->goal, path->points[info->numPathPoints]);
             info->numPathPoints++;
         }
     }
-#endif
 
     if (request->nodeSearch.ignoreNodeFlags) {
         info->returnCode = PathReturnCode_RawPathFound;
@@ -725,53 +725,52 @@ static void Nav_Path(nav_path_t *path)
     info->returnCode = PathReturnCode_NoPathFound;
 }
 
-static void Nav_DebugPath(const PathRequest *request, const PathInfo *path)
+static void Nav_DebugPath(const nav_path_t *path)
 {
 #if NAV_DEBUG
+    const PathRequest *request = path->request;
+    const PathInfo *info = path->info;
     uint32_t time = request->debugging.drawTime * 1000;
 
     R_AddDebugSphere(request->start, 8.0f, U32_YELLOW, time, false);
     R_AddDebugSphere(request->goal, 8.0f, U32_YELLOW, time, false);
 
-#if 0
-    int count = min(path->numPathPoints, request->pathPoints.count);
+    int count = min(info->numPathPoints, path->maxPoints);
 
     if (count > 0) {
-        R_AddDebugArrow(request->start, request->pathPoints.posArray[0],
+        R_AddDebugArrow(request->start, path->points[0],
                         8.0f, U32_YELLOW, U32_YELLOW, time, false);
 
         for (int i = 0; i < count - 1; i++)
-            R_AddDebugArrow(request->pathPoints.posArray[i    ],
-                            request->pathPoints.posArray[i + 1],
+            R_AddDebugArrow(path->points[i], path->points[i + 1],
                             8.0f, U32_YELLOW, U32_YELLOW, time, false);
 
-        R_AddDebugArrow(request->pathPoints.posArray[count - 1],
-                        request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
+        R_AddDebugArrow(path->points[count - 1], request->goal,
+                        8.0f, U32_YELLOW, U32_YELLOW, time, false);
     } else {
         R_AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
     }
-#else
-    R_AddDebugArrow(request->start, request->goal, 8.0f, U32_YELLOW, U32_YELLOW, time, false);
-#endif
 
-    if (path->returnCode == PathReturnCode_TraversalPending || path->returnCode == PathReturnCode_InProgress) {
-        R_AddDebugSphere(path->firstMovePoint, 16.0f, U32_RED, time, false);
-        R_AddDebugArrow(path->firstMovePoint, path->secondMovePoint, 16.0f, U32_RED, U32_RED, time, false);
+    if (info->returnCode == PathReturnCode_TraversalPending || info->returnCode == PathReturnCode_InProgress) {
+        R_AddDebugSphere(info->firstMovePoint, 16.0f, U32_RED, time, false);
+        R_AddDebugArrow(info->firstMovePoint, info->secondMovePoint, 16.0f, U32_RED, U32_RED, time, false);
     }
 #endif
 }
 
-bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info)
+bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints)
 {
     nav_path_t path = {
         .request = request,
         .info = info,
         .ctx = &nav_data.ctx,
+        .points = points,
+        .maxPoints = maxPoints,
     };
     Nav_Path(&path);
 
     if (request->debugging.drawTime > 0)
-        Nav_DebugPath(request, info);
+        Nav_DebugPath(&path);
 
     return info->returnCode < PathReturnCode_StartPathErrors;
 }

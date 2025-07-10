@@ -445,7 +445,7 @@ VM_THUNK(GetUsercmd) {
 }
 
 VM_THUNK(GetPathToGoal) {
-    VM_U32(0) = Nav_GetPathToGoal(VM_PTR(0, PathRequest), VM_PTR(1, PathInfo));
+    VM_U32(0) = Nav_GetPathToGoal(VM_PTR(0, PathRequest), VM_PTR(1, PathInfo), VM_VEC3_BUF(2, 3), VM_U32(3));
 }
 
 VM_THUNK(RealTime) {
@@ -645,7 +645,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(GetUserinfo, "i iii"),
     VM_IMPORT(GetConnectinfo, "i iii"),
     VM_IMPORT(GetUsercmd, "ii"),
-    VM_IMPORT(GetPathToGoal, "i ii"),
+    VM_IMPORT(GetPathToGoal, "i iiii"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
