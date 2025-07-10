@@ -107,6 +107,7 @@ typedef struct {
 #define DUCK_TIME   100
 #define STEP_TIME   100
 #define QUAKE_TIME  1000
+#define FLASH_TIME  400
 
 #define MAX_STEP    32
 

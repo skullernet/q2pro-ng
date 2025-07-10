@@ -1234,7 +1234,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value > 25)
                 color = 0;  // green
             else if (value > 0)
-                color = (cg.frame->number >> 2) & 1;     // flash
+                color = (cg.time / FLASH_TIME) & 1; // flash
             else
                 color = 1;
 
@@ -1254,7 +1254,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value > 5)
                 color = 0;  // green
             else if (value >= 0)
-                color = (cg.frame->number >> 2) & 1;     // flash
+                color = (cg.time / FLASH_TIME) & 1; // flash
             else
                 continue;   // negative number = don't show
 
