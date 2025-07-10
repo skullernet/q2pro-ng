@@ -39,6 +39,7 @@ static const char *const event_names[] = {
     EV(OTHER_TELEPORT),
     EV(OTHER_FOOTSTEP),
     EV(LADDER_STEP),
+    EV(STAIR_STEP),
     EV(MUZZLEFLASH),
     EV(MUZZLEFLASH2),
     EV(SOUND),

@@ -2569,6 +2569,9 @@ qvm_exported void G_ClientThink(int clientnum)
         // perform a pmove
         BG_Pmove(&pm);
 
+        if (TICK_RATE > 10 && fabsf(pm.step_height) > 4)
+            G_AddEvent(ent, EV_STAIR_STEP, 0);
+
         // [Paril-KEX] save old position for G_TouchProjectiles
         vec3_t old_origin;
         VectorCopy(ent->s.origin, old_origin);

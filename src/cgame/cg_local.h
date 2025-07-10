@@ -48,7 +48,8 @@ typedef struct {
     int             prev_frame;
     int             anim_start;
 
-    //int           event_frame;
+    int             step_time;
+    float           step_factor;
 
     int             fly_stoptime;
 
@@ -104,7 +105,10 @@ typedef struct {
 #define FALL_TIME   300
 #define KICK_TIME   100
 #define DUCK_TIME   100
+#define STEP_TIME   100
 #define QUAKE_TIME  1000
+
+#define MAX_STEP    32
 
 //
 // the client_state_t structure is wiped completely at every

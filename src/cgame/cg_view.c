@@ -487,23 +487,26 @@ static void CG_CalcViewValues(void)
 
     lerp = cg.lerpfrac;
 
+    unsigned delta = cgs.realtime - cg.predicted_step_time;
+
     // calculate the origin
     if (CG_PredictionEnabled()) {
         // use predicted values
-        unsigned delta = cgs.realtime - cg.predicted_step_time;
         float backlerp = lerp - 1.0f;
-
         VectorMA(cg.predicted_ps.origin, backlerp, cg.prediction_error, cg.refdef.vieworg);
 
         // smooth out stair climbing
-        if (delta < 100) {
-            cg.refdef.vieworg[2] -= cg.predicted_step * (100 - delta) * 0.01f;
-        }
+        if (delta < STEP_TIME)
+            cg.refdef.vieworg[2] -= cg.predicted_step * (STEP_TIME - delta);
     } else {
         // just use interpolated values
         LerpVector(ops->origin, ps->origin, lerp, cg.refdef.vieworg);
         LerpVector(ops->velocity, ps->velocity, lerp, cg.predicted_ps.velocity);
         cg.predicted_ps.viewheight = ps->viewheight;
+
+        // smooth out stair climbing
+        if (delta < STEP_TIME)
+            cg.refdef.vieworg[2] = ps->origin[2] - cg.predicted_step * (STEP_TIME - delta);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement

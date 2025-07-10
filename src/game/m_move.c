@@ -873,8 +873,8 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             G_TouchTriggers(ent);
     }
 
-    if (stepped)
-        ent->s.renderfx |= RF_STAIR_STEP;
+    if (stepped && TICK_RATE > 10)
+        G_AddEvent(ent, EV_STAIR_STEP, 0);
 
     if (trace.fraction < 1.0f)
         G_Impact(ent, &trace);

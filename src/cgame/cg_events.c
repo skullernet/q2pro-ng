@@ -1187,6 +1187,34 @@ static void CG_PainEvent(int number, int health)
     CG_SexedSound(number, CHAN_VOICE, l + (Q_rand() & 1), 1, ATTN_NORM);
 }
 
+static void CG_StairStep(centity_t *cent)
+{
+    float step_height = cent->current.origin[2] - cent->prev.origin[2];
+    float prev_step   = 0;
+
+    // check for stepping up before a previous step is completed
+    int delta = cg.time - cent->step_time;
+    if (delta < STEP_TIME)
+        prev_step = cent->step_factor * (STEP_TIME - delta);
+
+    cent->step_factor = Q_clipf(prev_step + step_height, -MAX_STEP, MAX_STEP) / STEP_TIME;
+    cent->step_time   = cg.oldframe->servertime;
+
+    // step local view too for demos if this is player entity
+    if (cent->current.number == cg.frame->ps.clientnum && !CG_PredictionEnabled()) {
+        step_height = cg.frame->ps.origin[2] - cg.oldframe->ps.origin[2];
+        prev_step   = 0;
+
+        // check for stepping up before a previous step is completed
+        delta = cgs.realtime - cg.predicted_step_time;
+        if (delta < STEP_TIME)
+            prev_step = cg.predicted_step * (STEP_TIME - delta);
+
+        cg.predicted_step = Q_clipf(prev_step + step_height, -MAX_STEP, MAX_STEP) / STEP_TIME;
+        cg.predicted_step_time = cgs.realtime;
+    }
+}
+
 // an entity has just been parsed that has an event value
 static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
@@ -1212,6 +1240,9 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
     case EV_LADDER_STEP:
         CG_PlayFootstepSfx(MATERIAL_ID_LADDER, number, 0.5f, ATTN_IDLE);
+        break;
+    case EV_STAIR_STEP:
+        CG_StairStep(cent);
         break;
     case EV_FALL:
         if (param >= 55)
@@ -1364,11 +1395,6 @@ void CG_EntityEffects(centity_t *cent)
 void CG_EntityEvents(centity_t *cent)
 {
     const entity_state_t *s = &cent->current;
-
-#if USE_FPS
-    if (cent->event_frame != cg.frame->number)
-        return;
-#endif
 
     for (int i = 0; i < MAX_EVENTS; i++)
         if (s->event[i])

@@ -567,7 +567,6 @@ static void G_SetClientEffects(edict_t *ent)
 
     ent->s.effects = EF_NONE;
     ent->s.morefx = EFX_NONE;
-    ent->s.renderfx &= RF_STAIR_STEP;
     ent->s.renderfx |= RF_IR_VISIBLE;
     ent->s.alpha = 0.0f;
 

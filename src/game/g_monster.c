@@ -769,8 +769,6 @@ static void M_CheckDodge(edict_t *self)
 
 void THINK(monster_think)(edict_t *self)
 {
-    self->s.renderfx &= ~(RF_STAIR_STEP | RF_OLD_FRAME_LERP);
-
     M_ProcessPain(self);
 
     // pain/die above freed us

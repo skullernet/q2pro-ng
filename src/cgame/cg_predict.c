@@ -171,10 +171,10 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
         // check for stepping up before a previous step is completed
         unsigned delta = cgs.realtime - cg.predicted_step_time;
         float prev_step = 0;
-        if (delta < 100)
-            prev_step = cg.predicted_step * (100 - delta) * 0.01f;
+        if (delta < STEP_TIME)
+            prev_step = cg.predicted_step * (STEP_TIME - delta);
 
-        cg.predicted_step = Q_clipf(prev_step + pm->step_height, -32, 32);
+        cg.predicted_step = Q_clipf(prev_step + pm->step_height, -MAX_STEP, MAX_STEP) / STEP_TIME;
         cg.predicted_step_time = cgs.realtime;
         cg.predicted_step_frame = frame;  // don't double step
         SHOWSTEP("%u: step %.3f\n", frame, pm->step_height);

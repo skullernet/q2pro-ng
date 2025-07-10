@@ -615,6 +615,10 @@ static void CG_AddPacketEntities(void)
                 // interpolate origin
                 LerpVector(cent->prev.origin, cent->current.origin,
                            cg.lerpfrac, ent.origin);
+                // smooth out stair climbing
+                int delta = cg.time - cent->step_time;
+                if (delta < STEP_TIME)
+                    ent.origin[2] = cent->current.origin[2] - cent->step_factor * (STEP_TIME - delta);
                 VectorCopy(ent.origin, ent.oldorigin);
             }
 
