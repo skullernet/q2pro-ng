@@ -1204,10 +1204,6 @@ q_exported void G_SpawnEntities(void)
     int      inhibit;
     char     com_token[MAX_QPATH];
 
-    int skill_level = Q_clip(skill.integer, 0, 3);
-    if (skill.integer != skill_level)
-        trap_Cvar_ForceSet("skill", va("%d", skill_level));
-
     SaveClientData();
 
     G_FreeMemory();

@@ -226,7 +226,6 @@ typedef struct {
     // console variable interaction
     bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, unsigned flags);
     void (*Cvar_Set)(const char *name, const char *value);
-    void (*Cvar_ForceSet)(const char *name, const char *value);
     int (*Cvar_VariableInteger)(const char *name);
     float (*Cvar_VariableValue)(const char *name);
     size_t (*Cvar_VariableString)(const char *name, char *buf, size_t size);

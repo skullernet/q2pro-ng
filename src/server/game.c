@@ -215,11 +215,6 @@ static void PF_Cvar_Set(const char *name, const char *value)
     Cvar_UserSet(name, value);
 }
 
-static void PF_Cvar_ForceSet(const char *name, const char *value)
-{
-    Cvar_Set(name, value);
-}
-
 static void PF_AddCommandString(const char *string)
 {
 #if USE_CLIENT
@@ -469,10 +464,6 @@ VM_THUNK(Cvar_Set) {
     PF_Cvar_Set(VM_STR(0), VM_STR(1));
 }
 
-VM_THUNK(Cvar_ForceSet) {
-    PF_Cvar_ForceSet(VM_STR(0), VM_STR(1));
-}
-
 VM_THUNK(Cvar_VariableInteger) {
     VM_U32(0) = Cvar_VariableInteger(VM_STR(0));
 }
@@ -659,7 +650,6 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
     VM_IMPORT(Cvar_Set, "ii"),
-    VM_IMPORT(Cvar_ForceSet, "ii"),
     VM_IMPORT(Cvar_VariableInteger, "i i"),
     VM_IMPORT(Cvar_VariableValue, "f i"),
     VM_IMPORT(Cvar_VariableString, "i iii"),
@@ -884,7 +874,6 @@ static const game_import_t game_dll_imports = {
 
     .Cvar_Register = PF_Cvar_Register,
     .Cvar_Set = PF_Cvar_Set,
-    .Cvar_ForceSet = PF_Cvar_ForceSet,
     .Cvar_VariableInteger = Cvar_VariableInteger,
     .Cvar_VariableValue = Cvar_VariableValue,
     .Cvar_VariableString = Cvar_VariableStringBuffer,

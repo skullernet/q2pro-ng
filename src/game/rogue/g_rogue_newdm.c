@@ -273,7 +273,7 @@ void InitGameRules(void)
             break;
         // reset gamerules if it's not a valid number
         default:
-            trap_Cvar_ForceSet("gamerules", "0");
+            trap_Cvar_Set("gamerules", "0");
             break;
         }
     }

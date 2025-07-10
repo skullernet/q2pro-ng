@@ -60,7 +60,6 @@ bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 
 bool trap_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, unsigned flags);
 void trap_Cvar_Set(const char *name, const char *value);
-void trap_Cvar_ForceSet(const char *name, const char *value);
 int trap_Cvar_VariableInteger(const char *name);
 float trap_Cvar_VariableValue(const char *name);
 size_t trap_Cvar_VariableString(const char *name, char *buf, size_t size);
@@ -189,7 +188,6 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 
 #define trap_Cvar_Register cgi->Cvar_Register
 #define trap_Cvar_Set cgi->Cvar_Set
-#define trap_Cvar_ForceSet cgi->Cvar_ForceSet
 #define trap_Cvar_VariableInteger cgi->Cvar_VariableInteger
 #define trap_Cvar_VariableValue cgi->Cvar_VariableValue
 #define trap_Cvar_VariableString cgi->Cvar_VariableString

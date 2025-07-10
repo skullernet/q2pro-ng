@@ -144,14 +144,14 @@ static void DBall_GameInit(void)
 {
     // we don't want a minimum speed for friction to take effect.
     // this will allow any knockback to move stuff.
-    trap_Cvar_ForceSet("sv_stopspeed", "0");
+    trap_Cvar_Set("sv_stopspeed", "0");
     dball_team1_goalscore = 0;
     dball_team2_goalscore = 0;
 
-    trap_Cvar_ForceSet("g_no_mines", "1");
-    trap_Cvar_ForceSet("g_no_nukes", "1");
-    trap_Cvar_ForceSet("g_dm_no_stack_double", "1");
-    trap_Cvar_ForceSet("g_friendly_fire", "0");
+    trap_Cvar_Set("g_no_mines", "1");
+    trap_Cvar_Set("g_no_nukes", "1");
+    trap_Cvar_Set("g_dm_no_stack_double", "1");
+    trap_Cvar_Set("g_friendly_fire", "0");
 
     trap_Cvar_Register(&dball_team1_skin, "dball_team1_skin", "male/ctf_r", 0);
     trap_Cvar_Register(&dball_team2_skin, "dball_team2_skin", "male/ctf_b", 0);

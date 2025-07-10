@@ -253,6 +253,11 @@ qvm_exported void G_PreInit(void)
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
 
+    if (skill.integer < 0)
+        trap_Cvar_Set("skill", "0");
+    else if (skill.integer > 3)
+        trap_Cvar_Set("skill", "3");
+
     if (coop.integer && deathmatch.integer) {
         G_Printf("Deathmatch and Coop both set, disabling Coop\n");
         trap_Cvar_Set("coop", "0");
@@ -302,6 +307,9 @@ qvm_exported void G_PreInit(void)
     } else {    // non-deathmatch, non-coop is one player
         trap_Cvar_Set("maxclients", "1");
     }
+
+    if (gamerules.integer != RDM_TAG && gamerules.integer != RDM_DEATHBALL)
+        trap_Cvar_Set("gamerules", "0");
 }
 
 /*
