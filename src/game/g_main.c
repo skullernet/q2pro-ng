@@ -48,6 +48,7 @@ vm_cvar_t sv_rollspeed;
 vm_cvar_t sv_rollangle;
 
 vm_cvar_t sv_cheats;
+vm_cvar_t sv_maxclients;
 
 vm_cvar_t g_debug_monster_paths;
 vm_cvar_t g_debug_monster_kills;
@@ -117,53 +118,12 @@ vm_cvar_t ai_movement_disabled;
 vm_cvar_t g_monster_footsteps;
 vm_cvar_t g_auto_save_min_time;
 
-/*
-============
-PreInitGame
-
-This will be called when the dll is first loaded, which
-only happens when a new game is started or a save game
-is loaded.
-============
-*/
-static void PreInitGame(void)
-{
-    trap_Cvar_Register(&developer, "developer", "0", 0);
-    trap_Cvar_Register(&deathmatch, "deathmatch", "0", CVAR_LATCH);
-    trap_Cvar_Register(&coop, "coop", "0", CVAR_LATCH);
-    trap_Cvar_Register(&teamplay, "teamplay", "0", CVAR_LATCH);
-
-    // ZOID
-    CTFInit();
-    // ZOID
-
-    // ZOID
-    // This gamemode only supports deathmatch
-    if (ctf.integer) {
-        if (!deathmatch.integer) {
-            G_Printf("Forcing deathmatch.\n");
-            trap_Cvar_Set("deathmatch", "1");
-        }
-        // force coop off
-        if (coop.integer)
-            trap_Cvar_Set("coop", "0");
-        // force tdm off
-        if (teamplay.integer)
-            trap_Cvar_Set("teamplay", "0");
-    }
-    if (teamplay.integer) {
-        if (!deathmatch.integer) {
-            G_Printf("Forcing deathmatch.\n");
-            trap_Cvar_Set("deathmatch", "1");
-        }
-        // force coop off
-        if (coop.integer)
-            trap_Cvar_Set("coop", "0");
-    }
-    // ZOID
-}
-
 static const vm_cvar_reg_t g_cvars[] = {
+    { &developer, "developer", "0", 0 },
+    { &deathmatch, "deathmatch", "0", CVAR_LATCH },
+    { &coop, "coop", "0", CVAR_LATCH },
+    { &teamplay, "teamplay", "0", CVAR_LATCH },
+
     // FIXME: sv_ prefix is wrong for these
     { &sv_rollspeed, "sv_rollspeed", "200", 0 },
     { &sv_rollangle, "sv_rollangle", "2", 0 },
@@ -202,6 +162,7 @@ static const vm_cvar_reg_t g_cvars[] = {
 
     // latched vars
     { &sv_cheats, "cheats", "0", CVAR_SERVERINFO | CVAR_LATCH },
+    { &sv_maxclients, "maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH },
     { NULL, "gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH },
 
     { &maxspectators, "maxspectators", "4", CVAR_SERVERINFO },
@@ -275,6 +236,76 @@ static const vm_cvar_reg_t g_cvars[] = {
 
 /*
 ============
+PreInitGame
+
+This will be called when the dll is first loaded, which
+only happens when a new game is started or a save game
+is loaded.
+
+Called at early initialization stage to allow the game modify cvars like
+maxclients, etc. Game is only allowed to register/set cvars at this point.
+============
+*/
+qvm_exported void G_PreInit(void)
+{
+    for (int i = 0; i < q_countof(g_cvars); i++) {
+        const vm_cvar_reg_t *reg = &g_cvars[i];
+        trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
+    }
+
+    if (coop.integer && deathmatch.integer) {
+        G_Printf("Deathmatch and Coop both set, disabling Coop\n");
+        trap_Cvar_Set("coop", "0");
+    }
+
+    // dedicated servers can't be single player and are usually DM
+    // so unless they explicitly set coop, force it to deathmatch
+    if (sv_dedicated.integer && !coop.integer)
+        trap_Cvar_Set("deathmatch", "1");
+
+    // ZOID
+    CTFInit();
+    // ZOID
+
+    // ZOID
+    // This gamemode only supports deathmatch
+    if (ctf.integer) {
+        if (!deathmatch.integer) {
+            G_Printf("Forcing deathmatch.\n");
+            trap_Cvar_Set("deathmatch", "1");
+        }
+        // force coop off
+        if (coop.integer)
+            trap_Cvar_Set("coop", "0");
+        // force tdm off
+        if (teamplay.integer)
+            trap_Cvar_Set("teamplay", "0");
+    }
+    if (teamplay.integer) {
+        if (!deathmatch.integer) {
+            G_Printf("Forcing deathmatch.\n");
+            trap_Cvar_Set("deathmatch", "1");
+        }
+        // force coop off
+        if (coop.integer)
+            trap_Cvar_Set("coop", "0");
+    }
+    // ZOID
+ 
+    // init maxclients
+    if (deathmatch.integer) {
+        if (sv_maxclients.integer <= 1)
+            trap_Cvar_Set("maxclients", "8");
+    } else if (coop.integer) {
+        if (sv_maxclients.integer <= 1)
+            trap_Cvar_Set("maxclients", "4");
+    } else {    // non-deathmatch, non-coop is one player
+        trap_Cvar_Set("maxclients", "1");
+    }
+}
+
+/*
+============
 InitGame
 
 Called after PreInitGame when the game has set up cvars.
@@ -284,21 +315,14 @@ qvm_exported void G_Init(void)
 {
     G_Printf("==== InitGame ====\n");
 
-    PreInitGame();
-
     // seed RNG
     Q_srand(trap_RealTime());
-
-    for (int i = 0; i < q_countof(g_cvars); i++) {
-        const vm_cvar_reg_t *reg = &g_cvars[i];
-        trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
-    }
 
     // items
     InitItems();
 
     // initialize all clients for this game
-    game.maxclients = trap_Cvar_VariableInteger("maxclients");
+    game.maxclients = sv_maxclients.integer;
     level.num_edicts = game.maxclients;
 
     // initialize all entities for this game
@@ -357,6 +381,7 @@ q_exported const game_export_t *GetGameAPI(const game_import_t *import)
         .apiversion = GAME_API_VERSION,
         .structsize = sizeof(ge),
 
+        .PreInit = G_PreInit,
         .Init = G_Init,
         .Shutdown = G_Shutdown,
         .SpawnEntities = G_SpawnEntities,

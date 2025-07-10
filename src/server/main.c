@@ -1817,16 +1817,6 @@ void SV_Init(void)
 
     Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_MAJOR), CVAR_SERVERINFO | CVAR_ROM);
 
-    Cvar_Get("skill", "1", CVAR_LATCH);
-    Cvar_Get("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
-    Cvar_Get("coop", "0", /*CVAR_SERVERINFO|*/CVAR_LATCH);
-    Cvar_Get("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-#if 0
-    Cvar_Get("dmflags", va("%i", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
-    Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
-    Cvar_Get("timelimit", "0", CVAR_SERVERINFO);
-#endif
-
     sv_maxclients = Cvar_Get("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
     sv_reserved_slots = Cvar_Get("sv_reserved_slots", "0", CVAR_LATCH);
     sv_hostname = Cvar_Get("hostname", "noname", CVAR_SERVERINFO | CVAR_ARCHIVE);

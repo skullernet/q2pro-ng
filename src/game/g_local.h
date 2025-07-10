@@ -1357,7 +1357,7 @@ void G_WriteGame(qhandle_t handle, bool autosave);
 void G_ReadGame(qhandle_t handle);
 void G_WriteLevel(qhandle_t handle);
 void G_ReadLevel(qhandle_t handle);
-bool G_CanSave(void);
+bool G_CanSave(bool autosave);
 
 //
 // g_target.c

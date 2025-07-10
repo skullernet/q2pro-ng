@@ -42,8 +42,6 @@ typedef enum {
 
 static cvar_t   *sv_noreload;
 
-static bool have_enhanced_savegames(void);
-
 static int write_server_file(savetype_t autosave)
 {
     cvar_t      *var;
@@ -397,10 +395,6 @@ static int read_server_file(void)
     // start a new game fresh with new cvars
     SV_InitGame();
 
-    // error out immediately if game doesn't support safe savegames
-    if (!have_enhanced_savegames())
-        Com_Error(ERR_DROP, "Game does not support enhanced savegames");
-
     // read game state
     FS_OpenFile("save/" SAVE_CURRENT "/game.ssv", &svs.savefile, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
     if (!svs.savefile)
@@ -494,17 +488,6 @@ static int read_level_file(void)
     return 0;
 }
 
-static bool no_save_games(void)
-{
-    if (!have_enhanced_savegames())
-        return true;
-
-    if (Cvar_VariableInteger("deathmatch"))
-        return true;
-
-    return false;
-}
-
 void SV_AutoSaveBegin(const mapcmd_t *cmd)
 {
     byte        bitmap[MAX_CLIENTS / CHAR_BIT];
@@ -520,7 +503,7 @@ void SV_AutoSaveBegin(const mapcmd_t *cmd)
     if (sv.state != ss_game)
         return;
 
-    if (no_save_games())
+    if (!ge->CanSave(true))
         return;
 
     memset(bitmap, 0, sizeof(bitmap));
@@ -552,7 +535,7 @@ void SV_AutoSaveEnd(void)
     if (sv.state != ss_game)
         return;
 
-    if (no_save_games())
+    if (!ge->CanSave(true))
         return;
 
     // save server state
@@ -578,9 +561,9 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 {
     int frames;
 
-    if (no_save_games())
-        return;
     if (sv_noreload->integer)
+        return;
+    if (!ge->CanSave(true))
         return;
 
     if (read_level_file()) {
@@ -602,15 +585,6 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 
     for (int i = 0; i < frames; i++, sv.time += sv.frametime)
         ge->RunFrame(sv.time);
-}
-
-static bool have_enhanced_savegames(void)
-{
-    return true;
-}
-
-void SV_CheckForEnhancedSavegames(void)
-{
 }
 
 static void SV_Savegame_c(genctx_t *ctx, int argnum)
@@ -671,18 +645,7 @@ static void SV_Savegame_f(void)
         return;
     }
 
-    // don't bother saving if we can't read them back!
-    if (!have_enhanced_savegames()) {
-        Com_Printf("Game does not support enhanced savegames.\n");
-        return;
-    }
-
-    if (Cvar_VariableInteger("deathmatch")) {
-        Com_Printf("Can't savegame in a deathmatch.\n");
-        return;
-    }
-
-    if (!ge->CanSave())
+    if (!ge->CanSave(false))
         return;
 
     if (!strcmp(Cmd_Argv(0), "autosave")) {

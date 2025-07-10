@@ -133,11 +133,7 @@ static void PF_SetConfigstring(unsigned index, const char *val)
     char **dst;
 
     Q_assert_soft(index < MAX_CONFIGSTRINGS);
-
-    if (sv.state == ss_dead) {
-        Com_DWPrintf("%s: not yet initialized\n", __func__);
-        return;
-    }
+    Q_assert_soft(sv.state > ss_dead);
 
     dst = &sv.configstrings[index];
     if (!Q_strcmp_null(*dst, val))
@@ -709,6 +705,7 @@ static const vm_import_t game_vm_imports[] = {
 //==============================================
 
 typedef enum {
+    vm_G_PreInit,
     vm_G_Init,
     vm_G_Shutdown,
     vm_G_SpawnEntities,
@@ -730,6 +727,7 @@ typedef enum {
 } game_entry_t;
 
 static const vm_export_t game_vm_exports[] = {
+    VM_EXPORT(G_PreInit, ""),
     VM_EXPORT(G_Init, ""),
     VM_EXPORT(G_Shutdown, ""),
     VM_EXPORT(G_SpawnEntities, ""),
@@ -737,7 +735,7 @@ static const vm_export_t game_vm_exports[] = {
     VM_EXPORT(G_ReadGame, "i"),
     VM_EXPORT(G_WriteLevel, "i"),
     VM_EXPORT(G_ReadLevel, "i"),
-    VM_EXPORT(G_CanSave, "i "),
+    VM_EXPORT(G_CanSave, "i i"),
     VM_EXPORT(G_ClientConnect, "i i"),
     VM_EXPORT(G_ClientBegin, "i"),
     VM_EXPORT(G_ClientUserinfoChanged, "i"),
@@ -751,6 +749,10 @@ static const vm_export_t game_vm_exports[] = {
 
     { 0 }
 };
+
+static void thunk_G_PreInit(void) {
+    VM_Call(game.vm, vm_G_PreInit);
+}
 
 static void thunk_G_Init(void) {
     VM_Call(game.vm, vm_G_Init);
@@ -789,8 +791,8 @@ static void thunk_G_ReadLevel(qhandle_t handle) {
     call_single(vm_G_ReadLevel, handle);
 }
 
-static bool thunk_G_CanSave(void) {
-    VM_Call(game.vm, vm_G_CanSave);
+static bool thunk_G_CanSave(bool autosave) {
+    call_single(vm_G_CanSave, autosave);
     const vm_value_t *stack = VM_Pop(game.vm);
     return VM_U32(0);
 }
@@ -923,6 +925,7 @@ static const game_export_t game_dll_exports = {
     .apiversion = GAME_API_VERSION,
     .structsize = sizeof(game_export_t),
 
+    .PreInit = thunk_G_PreInit,
     .Init = thunk_G_Init,
     .Shutdown = thunk_G_Shutdown,
     .SpawnEntities = thunk_G_SpawnEntities,
@@ -989,5 +992,5 @@ void SV_InitGameProgs(void)
     ge = VM_LoadModule(&game, &game_iface);
 
     // initialize
-    ge->Init();
+    ge->PreInit();
 }

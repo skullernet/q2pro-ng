@@ -518,13 +518,11 @@ void SV_ShutdownGameProgs(void);
 void SV_AutoSaveBegin(const mapcmd_t *cmd);
 void SV_AutoSaveEnd(void);
 void SV_CheckForSavegame(const mapcmd_t *cmd);
-void SV_CheckForEnhancedSavegames(void);
 void SV_RegisterSavegames(void);
 #else
 #define SV_AutoSaveBegin(cmd)           (void)0
 #define SV_AutoSaveEnd()                (void)0
 #define SV_CheckForSavegame(cmd)        (void)0
-#define SV_CheckForEnhancedSavegames()  (void)0
 #define SV_RegisterSavegames()          (void)0
 #endif
 

@@ -218,8 +218,6 @@ void Nav_Load(void)
         return; // no real map
     if (!nav_enable->integer)
         return;
-    if (Cvar_VariableInteger("deathmatch"))
-        return;
 
     const char *err = NULL;
 

@@ -280,6 +280,7 @@ typedef struct {
     // the init function will only be called when a game starts,
     // not each time a level is loaded.  Persistent data for clients
     // and the server can be allocated in init
+    void (*PreInit)(void);
     void (*Init)(void);
     void (*Shutdown)(void);
 
@@ -298,7 +299,7 @@ typedef struct {
     void (*WriteLevel)(qhandle_t handle);
     void (*ReadLevel)(qhandle_t handle);
 
-    bool (*CanSave)(void);
+    bool (*CanSave)(bool autosave);
 
     const char *(*ClientConnect)(int clientnum);
     void (*ClientBegin)(int clientnum);

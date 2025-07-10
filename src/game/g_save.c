@@ -1767,17 +1767,26 @@ qvm_exported void G_ReadLevel(qhandle_t handle)
 }
 
 // [Paril-KEX]
-qvm_exported bool G_CanSave(void)
+qvm_exported bool G_CanSave(bool autosave)
 {
+    // autosave silently checks if savegames are enabled
+    if (autosave)
+        return !deathmatch.integer;
+
+    if (deathmatch.integer) {
+        G_Printf("Can't savegame in a deathmatch.\n");
+        return false;
+    }
+
     if (game.maxclients == 1 && g_edicts[0].health <= 0) {
-        G_ClientPrintf(&g_edicts[0], PRINT_HIGH, "Can't savegame while dead!\n");
+        G_Printf("Can't savegame while dead!\n");
         return false;
     }
 
     // don't allow saving during cameras/intermissions as this
     // causes the game to act weird when these are loaded
     if (level.intermissiontime) {
-        G_ClientPrintf(&g_edicts[0], PRINT_HIGH, "Can't savegame during intermission!\n");
+        G_Printf("Can't savegame during intermission!\n");
         return false;
     }
 

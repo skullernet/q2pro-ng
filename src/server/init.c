@@ -362,29 +362,8 @@ void SV_InitGame(void)
     Cvar_Reset(sv_recycle);
 #endif
 
-    if (Cvar_VariableInteger("coop") &&
-        Cvar_VariableInteger("deathmatch")) {
-        Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
-        Cvar_Set("coop", "0");
-    }
+    SV_InitGameProgs();
 
-    // dedicated servers can't be single player and are usually DM
-    // so unless they explicitly set coop, force it to deathmatch
-    if (COM_DEDICATED) {
-        if (!Cvar_VariableInteger("coop"))
-            Cvar_Set("deathmatch", "1");
-    }
-
-    // init clients
-    if (Cvar_VariableInteger("deathmatch")) {
-        if (sv_maxclients->integer <= 1)
-            Cvar_Set("maxclients", "8");
-    } else if (Cvar_VariableInteger("coop")) {
-        if (sv_maxclients->integer <= 1)
-            Cvar_Set("maxclients", "4");
-    } else {    // non-deathmatch, non-coop is one player
-        Cvar_Set("maxclients", "1");
-    }
     Cvar_ClampInteger(sv_maxclients, 1, MAX_CLIENTS);
 
     // enable networking
@@ -408,8 +387,7 @@ void SV_InitGame(void)
 #endif
 
     // init game
-    SV_InitGameProgs();
-    SV_CheckForEnhancedSavegames();
+    ge->Init();
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;
