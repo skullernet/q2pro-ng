@@ -1788,14 +1788,6 @@ static void sv_hostname_changed(cvar_t *self)
 }
 #endif
 
-static void sv_fps_changed(cvar_t *self)
-{
-    if (svs.initialized) {
-        sv.frametime = 1000 / Cvar_ClampInteger(self, 10, 60);
-        sv.time = Q_align_up(sv.time, sv.frametime);
-    }
-}
-
 #if USE_ZLIB
 voidpf SV_zalloc(voidpf opaque, uInt items, uInt size)
 {
@@ -1860,8 +1852,7 @@ void SV_Init(void)
     sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
     sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
-    sv_fps = Cvar_Get("sv_fps", "10", 0);
-    sv_fps->changed = sv_fps_changed;
+    sv_fps = Cvar_Get("sv_fps", "40", CVAR_LATCH);
     sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 
     sv_public = Cvar_Get("public", "0", CVAR_LATCH);

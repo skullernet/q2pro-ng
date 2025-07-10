@@ -695,14 +695,6 @@ static void G_CheckCvars(void)
         level.gravity = sv_gravity.value;
         sv_gravity.modified = false;
     }
-
-    if (sv_fps.modified) {
-        Q_assert_soft(sv_fps.integer >= 10);
-        game.tick_rate = sv_fps.integer;
-        game.frame_time = 1000 / game.tick_rate;
-        game.frame_time_sec = 1.0f / game.tick_rate;
-        sv_fps.modified = false;
-    }
 }
 
 static bool G_AnyDeadPlayersWithoutLives(void)
