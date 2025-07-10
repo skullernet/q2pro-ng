@@ -66,7 +66,6 @@ cvar_t  *sv_min_rate;
 cvar_t  *sv_max_rate;
 cvar_t  *sv_calcpings_method;
 cvar_t  *sv_changemapcmd;
-cvar_t  *sv_max_download_size;
 
 cvar_t  *sv_strafejump_hack;
 cvar_t  *sv_waterjump_hack;
@@ -112,9 +111,6 @@ void SV_RemoveClient(client_t *client)
 
 void SV_CleanClient(client_t *client)
 {
-    // close any existing download
-    SV_CloseDownload(client);
-
     Z_Freep(&client->version_string);
 
     // free baselines allocated for this client
@@ -1887,7 +1883,6 @@ void SV_Init(void)
     sv_max_rate->changed(sv_max_rate);
     sv_calcpings_method = Cvar_Get("sv_calcpings_method", "2", 0);
     sv_changemapcmd = Cvar_Get("sv_changemapcmd", "", 0);
-    sv_max_download_size = Cvar_Get("sv_max_download_size", "8388608", 0);
 
     sv_strafejump_hack = Cvar_Get("sv_strafejump_hack", "1", CVAR_LATCH);
     sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "1", CVAR_LATCH);

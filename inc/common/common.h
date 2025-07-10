@@ -165,15 +165,6 @@ extern cvar_t   *sv_paused;
 extern cvar_t   *com_timedemo;
 extern cvar_t   *com_native_modules;
 
-extern cvar_t   *allow_download;
-extern cvar_t   *allow_download_players;
-extern cvar_t   *allow_download_models;
-extern cvar_t   *allow_download_sounds;
-extern cvar_t   *allow_download_maps;
-extern cvar_t   *allow_download_textures;
-extern cvar_t   *allow_download_pics;
-extern cvar_t   *allow_download_others;
-
 extern cvar_t   *rcon_password;
 
 #if USE_SYSCON

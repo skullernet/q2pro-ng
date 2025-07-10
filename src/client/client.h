@@ -299,12 +299,6 @@ typedef struct {
         dlqueue_t   *current;           // path being downloaded
         int         percent;            // how much downloaded
         int64_t     position;           // how much downloaded (in bytes)
-        qhandle_t   file;               // UDP file transfer from server
-        char        temp[MAX_QPATH + 4];// account 4 bytes for .tmp suffix
-#if USE_ZLIB
-        z_stream    z;                  // UDP download zlib stream
-#endif
-        string_entry_t  *ignores;       // list of ignored paths
     } download;
 
 // demo recording info must be here, so it isn't cleared on level change
@@ -360,6 +354,8 @@ extern cvar_t   *cl_beginmapcmd;
 
 extern cvar_t   *cl_async;
 
+extern cvar_t   *allow_download;
+
 //
 // userinfo
 //
@@ -411,21 +407,6 @@ void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 
 void cl_timeout_changed(cvar_t *self);
-
-
-//
-// download.c
-//
-int CL_QueueDownload(const char *path, dltype_t type);
-bool CL_IgnoreDownload(const char *path);
-void CL_FinishDownload(dlqueue_t *q);
-void CL_CleanupDownloads(void);
-void CL_HandleDownload(const byte *data, int size, int percent, int decompressed_size);
-bool CL_CheckDownloadExtension(const char *ext);
-void CL_StartNextDownload(void);
-void CL_RequestNextDownload(void);
-void CL_ResetPrecacheCheck(void);
-void CL_InitDownloads(void);
 
 
 //

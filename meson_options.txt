@@ -35,7 +35,7 @@ option('icmp-errors',
 
 option('libcurl',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'libcurl support')
 
 option('libjpeg',

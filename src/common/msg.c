@@ -877,17 +877,15 @@ const char *MSG_ServerCommandString(int cmd)
 #define S(x) case svc_##x: return "svc_" #x;
         S(bad)
         S(nop)
+        S(zpacket)
         S(disconnect)
         S(reconnect)
         S(stringcmd)
-        S(serverdata)
         S(configstring)
-        S(download)
-        S(frame)
-        S(zpacket)
-        S(zdownload)
+        S(serverdata)
         S(configstringstream)
         S(baselinestream)
+        S(frame)
 #undef S
     }
 }

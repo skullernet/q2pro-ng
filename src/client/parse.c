@@ -546,38 +546,6 @@ static void CL_ParseServerCommand(void)
         cge->ServerCommand();
 }
 
-static void CL_ParseDownload(int cmd)
-{
-    int size, percent;
-
-    if (!cls.download.temp[0]) {
-        Com_Error(ERR_DROP, "%s: no download requested", __func__);
-    }
-
-    // read the data
-    size = MSG_ReadShort();
-    percent = MSG_ReadByte();
-    if (size == -1) {
-        //CL_HandleDownload(NULL, size, percent, 0);
-        return;
-    }
-
-    // read optional decompressed packet size
-    if (cmd == svc_zdownload) {
-#if !USE_ZLIB
-        Com_Error(ERR_DROP, "Compressed server packet received, "
-                  "but no zlib support linked in.");
-#endif
-    }
-
-    if (size < 0) {
-        Com_Error(ERR_DROP, "%s: bad size: %d", __func__, size);
-    }
-
-    (void)percent;
-    //CL_HandleDownload(MSG_ReadData(size), size, percent, cmd);
-}
-
 static void CL_ParseZPacket(void)
 {
 #if USE_ZLIB
@@ -682,20 +650,12 @@ void CL_ParseServerMessage(void)
             CL_ParseConfigstring(index);
             break;
 
-        case svc_download:
-            CL_ParseDownload(cmd);
-            continue;
-
         case svc_frame:
             CL_ParseFrame();
             continue;
 
         case svc_zpacket:
             CL_ParseZPacket();
-            continue;
-
-        case svc_zdownload:
-            CL_ParseDownload(cmd);
             continue;
 
         case svc_configstringstream:

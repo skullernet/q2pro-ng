@@ -48,6 +48,8 @@ cvar_t  *cl_protocol;
 
 cvar_t  *gender_auto;
 
+cvar_t  *allow_download;
+
 //
 // userinfo
 //
@@ -1855,6 +1857,7 @@ static void CL_InitLocal(void)
 
     gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
 
+    allow_download = Cvar_Get("allow_download", "1", CVAR_ARCHIVE);
     allow_download->changed = cl_allow_download_changed;
     cl_allow_download_changed(allow_download);
 

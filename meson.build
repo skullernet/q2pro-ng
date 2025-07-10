@@ -39,7 +39,6 @@ client_src = [
   'src/client/cgame.c',
   'src/client/console.c',
   'src/client/demo.c',
-  #'src/client/download.c',
   'src/client/input.c',
   'src/client/keys.c',
   'src/client/main.c',

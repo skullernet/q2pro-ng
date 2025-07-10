@@ -144,7 +144,7 @@ typedef enum {
     LIST_FOR_EACH(client_t, client, &sv_clientlist, entry)
 
 #define CLIENT_ACTIVE(cl) \
-    ((cl)->state == cs_spawned && !(cl)->download && !(cl)->nodata)
+    ((cl)->state == cs_spawned && !(cl)->nodata)
 
 #define PL_S2C(cl) (cl->frames_sent ? \
     (1.0f - (float)cl->frames_acked / cl->frames_sent) * 100.0f : 0.0f)
@@ -177,7 +177,7 @@ typedef struct client_s {
 #if USE_ICMP
     bool            unreachable: 1;
 #endif
-    bool            http_download: 1;
+    bool            download: 1;
 
     // userinfo
     char            userinfo[MAX_INFO_STRING];  // name, etc
@@ -215,14 +215,6 @@ typedef struct client_s {
     unsigned        message_size[RATE_MESSAGES];    // used to rate drop normal packets
     int             suppress_count;                 // number of messages rate suppressed
     unsigned        send_time, send_delta;          // used to rate drop async packets
-
-    // current download
-    byte            *download;      // file being downloaded
-    int             downloadsize;   // total bytes (can't use EOF because of paks)
-    int             downloadcount;  // bytes sent
-    char            *downloadname;  // name of the file
-    int             downloadcmd;    // svc_(z)download
-    bool            downloadpending;
 
     // protocol stuff
     int             challenge;  // challenge of this user, randomly generated
@@ -375,7 +367,6 @@ extern cvar_t       *sv_novis;
 extern cvar_t       *sv_lan_force_rate;
 extern cvar_t       *sv_calcpings_method;
 extern cvar_t       *sv_changemapcmd;
-extern cvar_t       *sv_max_download_size;
 
 extern cvar_t       *sv_strafejump_hack;
 #if USE_PACKETDUP

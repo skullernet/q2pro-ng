@@ -543,8 +543,6 @@ static void dump_clients(void)
         case cs_primed:
             if (client->download) {
                 ping = "DNLD";
-            } else if (client->http_download) {
-                ping = "HTTP";
             } else if (client->state == cs_connected) {
                 ping = "CNCT";
             } else {
@@ -576,34 +574,6 @@ static void dump_versions(void)
         Com_Printf("%3i %-15.15s %.52s\n",
                    client->number, client->name,
                    client->version_string ? client->version_string : "-");
-    }
-}
-
-static void dump_downloads(void)
-{
-    client_t    *client;
-    int         size, percent;
-    const char  *name;
-
-    Com_Printf(
-        "num name            download                                 size    done\n"
-        "--- --------------- ---------------------------------------- ------- ----\n");
-
-    FOR_EACH_CLIENT(client) {
-        if (client->download) {
-            name = client->downloadname;
-            size = client->downloadsize;
-            if (!size)
-                size = 1;
-            percent = client->downloadcount * 100 / size;
-        } else if (client->http_download) {
-            name = "<HTTP download>";
-            size = percent = 0;
-        } else {
-            continue;
-        }
-        Com_Printf("%3i %-15.15s %-40.40s %-7d %3d%%\n",
-                   client->number, client->name, name, size, percent);
     }
 }
 
@@ -707,14 +677,13 @@ static void SV_Status_f(void)
         if (Cmd_Argc() > 1) {
             char *w = Cmd_Argv(1);
             switch (*w) {
-            case 'd': dump_downloads(); break;
             case 'l': dump_lag();       break;
             case 'p': dump_protocols(); break;
             case 's': dump_settings();  break;
             case 't': dump_time();      break;
             case 'v': dump_versions();  break;
             default:
-                Com_Printf("Usage: %s [d|l|p|s|t|v]\n", Cmd_Argv(0));
+                Com_Printf("Usage: %s [l|p|s|t|v]\n", Cmd_Argv(0));
                 dump_clients();
                 break;
             }

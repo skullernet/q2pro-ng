@@ -60,20 +60,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 typedef enum {
     svc_bad,
-
-    // the rest are private to the client and server
     svc_nop,
+    svc_zpacket,
     svc_disconnect,
     svc_reconnect,
     svc_stringcmd,
-    svc_serverdata,
     svc_configstring,
-    svc_download,
-    svc_frame,
-    svc_zpacket,
-    svc_zdownload,
+    svc_serverdata,
     svc_configstringstream,
     svc_baselinestream,
+    svc_frame,
 
     svc_num_types
 } svc_ops_t;
