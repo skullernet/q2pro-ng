@@ -83,7 +83,7 @@ vm_cvar_t   info_hand;
 vm_cvar_t   info_fov;
 vm_cvar_t   info_uf;
 
-static vm_cvar_reg_t cg_cvars[] = {
+static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_gun, "1", 0),
     VM_CVAR(cg_gunalpha, "1", 0),
     VM_CVAR(cg_gunfov, "90", 0),

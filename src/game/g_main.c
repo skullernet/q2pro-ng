@@ -163,6 +163,116 @@ static void PreInitGame(void)
     // ZOID
 }
 
+static const vm_cvar_reg_t g_cvars[] = {
+    // FIXME: sv_ prefix is wrong for these
+    { &sv_rollspeed, "sv_rollspeed", "200", 0 },
+    { &sv_rollangle, "sv_rollangle", "2", 0 },
+    { &sv_maxvelocity, "sv_maxvelocity", "2000", 0 },
+    { &sv_gravity, "sv_gravity", "800", 0 },
+
+    { &sv_stopspeed, "sv_stopspeed", "100", 0 }, // PGM - was #define in g_phys.c
+
+    // ROGUE
+    { &huntercam, "huntercam", "1", CVAR_SERVERINFO | CVAR_LATCH },
+    { &g_dm_strong_mines, "g_dm_strong_mines", "0", 0 },
+    { &g_dm_random_items, "g_dm_random_items", "0", 0 },
+    // ROGUE
+
+    // [Kex] Instagib
+    { &g_instagib, "g_instagib", "0", 0 },
+
+    // [Paril-KEX]
+    { &g_coop_player_collision, "g_coop_player_collision", "0", CVAR_LATCH },
+    { &g_coop_squad_respawn, "g_coop_squad_respawn", "1", CVAR_LATCH },
+    { &g_coop_enable_lives, "g_coop_enable_lives", "0", CVAR_LATCH },
+    { &g_coop_num_lives, "g_coop_num_lives", "2", CVAR_LATCH },
+    { &g_coop_instanced_items, "g_coop_instanced_items", "1", CVAR_LATCH },
+    { &g_allow_grapple, "g_allow_grapple", "auto", 0 },
+    { &g_grapple_fly_speed, "g_grapple_fly_speed", STRINGIFY(CTF_DEFAULT_GRAPPLE_SPEED), 0 },
+    { &g_grapple_pull_speed, "g_grapple_pull_speed", STRINGIFY(CTF_DEFAULT_GRAPPLE_PULL_SPEED), 0 },
+    { &g_grapple_damage, "g_grapple_damage", "10", 0 },
+
+    { &g_debug_monster_paths, "g_debug_monster_paths", "0", 0 },
+    { &g_debug_monster_kills, "g_debug_monster_kills", "0", CVAR_LATCH },
+
+    // noset vars
+    { &sv_dedicated, "dedicated", "0", CVAR_NOSET },
+    { &sv_running, "sv_running", NULL, 0 },
+    { &sv_fps, "sv_fps", NULL, 0 },
+
+    // latched vars
+    { &sv_cheats, "cheats", "0", CVAR_SERVERINFO | CVAR_LATCH },
+    { NULL, "gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH },
+
+    { &maxspectators, "maxspectators", "4", CVAR_SERVERINFO },
+    { &skill, "skill", "1", CVAR_LATCH },
+    { &gamerules, "gamerules", "0", CVAR_LATCH }, // PGM
+
+    // change anytime vars
+    { &fraglimit, "fraglimit", "0", CVAR_SERVERINFO },
+    { &timelimit, "timelimit", "0", CVAR_SERVERINFO },
+    // ZOID
+    { &capturelimit, "capturelimit", "0", CVAR_SERVERINFO },
+    { &g_quick_weapon_switch, "g_quick_weapon_switch", "1", 0 },
+    { &g_instant_weapon_switch, "g_instant_weapon_switch", "0", 0 },
+    // ZOID
+    { &password, "password", "", CVAR_USERINFO },
+    { &spectator_password, "spectator_password", "", CVAR_USERINFO },
+    { &needpass, "needpass", "0", CVAR_SERVERINFO },
+    { &filterban, "filterban", "1", 0 },
+
+    { &g_select_empty, "g_select_empty", "0", CVAR_ARCHIVE },
+
+    // flood control
+    { &flood_msgs, "flood_msgs", "4", 0 },
+    { &flood_persecond, "flood_persecond", "4", 0 },
+    { &flood_waitdelay, "flood_waitdelay", "10", 0 },
+
+    { &g_strict_saves, "g_strict_saves", "1", 0 },
+
+    { &sv_airaccelerate, "sv_airaccelerate", "0", 0 },
+
+    { &g_damage_scale, "g_damage_scale", "1", 0 },
+    { &g_disable_player_collision, "g_disable_player_collision", "0", 0 },
+    { &ai_damage_scale, "ai_damage_scale", "1", 0 },
+    { &ai_model_scale, "ai_model_scale", "0", 0 },
+    { &ai_allow_dm_spawn, "ai_allow_dm_spawn", "0", 0 },
+    { &ai_movement_disabled, "ai_movement_disabled", "0", 0 },
+    { &g_monster_footsteps, "g_monster_footsteps", "1", 0 },
+    { &g_auto_save_min_time, "g_auto_save_min_time", "60", 0 },
+
+    { &g_coop_health_scaling, "g_coop_health_scaling", "0", CVAR_LATCH },
+    { &g_weapon_respawn_time, "g_weapon_respawn_time", "30", 0 },
+
+    // dm "flags"
+    { &g_no_health, "g_no_health", "0", 0 },
+    { &g_no_items, "g_no_items", "0", 0 },
+    { &g_dm_weapons_stay, "g_dm_weapons_stay", "0", CVAR_LATCH },
+    { &g_dm_no_fall_damage, "g_dm_no_fall_damage", "0", 0 },
+    { &g_dm_instant_items, "g_dm_instant_items", "1", 0 },
+    { &g_dm_same_level, "g_dm_same_level", "0", 0 },
+    { &g_friendly_fire, "g_friendly_fire", "0", 0 },
+    { &g_dm_force_respawn, "g_dm_force_respawn", "0", 0 },
+    { &g_dm_force_respawn_time, "g_dm_force_respawn_time", "0", 0 },
+    { &g_dm_spawn_farthest, "g_dm_spawn_farthest", "1", 0 },
+    { &g_no_armor, "g_no_armor", "0", 0 },
+    { &g_dm_allow_exit, "g_dm_allow_exit", "0", 0 },
+    { &g_infinite_ammo, "g_infinite_ammo", "0", CVAR_LATCH },
+    { &g_dm_no_quad_drop, "g_dm_no_quad_drop", "0", 0 },
+    { &g_dm_no_quadfire_drop, "g_dm_no_quadfire_drop", "0", 0 },
+    { &g_no_mines, "g_no_mines", "0", 0 },
+    { &g_dm_no_stack_double, "g_dm_no_stack_double", "0", 0 },
+    { &g_no_nukes, "g_no_nukes", "0", 0 },
+    { &g_no_spheres, "g_no_spheres", "0", 0 },
+    { &g_teamplay_force_join, "g_teamplay_force_join", "0", 0 },
+    { &g_teamplay_armor_protect, "g_teamplay_armor_protect", "0", 0 },
+    { &g_allow_techs, "g_allow_techs", "auto", 0 },
+
+    { &g_start_items, "g_start_items", "", CVAR_LATCH },
+    { &g_map_list, "g_map_list", "", 0 },
+    { &g_map_list_shuffle, "g_map_list_shuffle", "0", 0 },
+};
+
 /*
 ============
 InitGame
@@ -179,113 +289,10 @@ qvm_exported void G_Init(void)
     // seed RNG
     Q_srand(trap_RealTime());
 
-    // FIXME: sv_ prefix is wrong for these
-    trap_Cvar_Register(&sv_rollspeed, "sv_rollspeed", "200", 0);
-    trap_Cvar_Register(&sv_rollangle, "sv_rollangle", "2", 0);
-    trap_Cvar_Register(&sv_maxvelocity, "sv_maxvelocity", "2000", 0);
-    trap_Cvar_Register(&sv_gravity, "sv_gravity", "800", 0);
-
-    trap_Cvar_Register(&sv_stopspeed, "sv_stopspeed", "100", 0); // PGM - was #define in g_phys.c
-
-    // ROGUE
-    trap_Cvar_Register(&huntercam, "huntercam", "1", CVAR_SERVERINFO | CVAR_LATCH);
-    trap_Cvar_Register(&g_dm_strong_mines, "g_dm_strong_mines", "0", 0);
-    trap_Cvar_Register(&g_dm_random_items, "g_dm_random_items", "0", 0);
-    // ROGUE
-
-    // [Kex] Instagib
-    trap_Cvar_Register(&g_instagib, "g_instagib", "0", 0);
-
-    // [Paril-KEX]
-    trap_Cvar_Register(&g_coop_player_collision, "g_coop_player_collision", "0", CVAR_LATCH);
-    trap_Cvar_Register(&g_coop_squad_respawn, "g_coop_squad_respawn", "1", CVAR_LATCH);
-    trap_Cvar_Register(&g_coop_enable_lives, "g_coop_enable_lives", "0", CVAR_LATCH);
-    trap_Cvar_Register(&g_coop_num_lives, "g_coop_num_lives", "2", CVAR_LATCH);
-    trap_Cvar_Register(&g_coop_instanced_items, "g_coop_instanced_items", "1", CVAR_LATCH);
-    trap_Cvar_Register(&g_allow_grapple, "g_allow_grapple", "auto", 0);
-    trap_Cvar_Register(&g_grapple_fly_speed, "g_grapple_fly_speed", va("%d", CTF_DEFAULT_GRAPPLE_SPEED), 0);
-    trap_Cvar_Register(&g_grapple_pull_speed, "g_grapple_pull_speed", va("%d", CTF_DEFAULT_GRAPPLE_PULL_SPEED), 0);
-    trap_Cvar_Register(&g_grapple_damage, "g_grapple_damage", "10", 0);
-
-    trap_Cvar_Register(&g_debug_monster_paths, "g_debug_monster_paths", "0", 0);
-    trap_Cvar_Register(&g_debug_monster_kills, "g_debug_monster_kills", "0", CVAR_LATCH);
-
-    // noset vars
-    trap_Cvar_Register(&sv_dedicated, "dedicated", "0", CVAR_NOSET);
-    trap_Cvar_Register(&sv_running, "sv_running", NULL, 0);
-    trap_Cvar_Register(&sv_fps, "sv_fps", NULL, 0);
-
-    // latched vars
-    trap_Cvar_Register(&sv_cheats, "cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-    trap_Cvar_Register(NULL, "gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
-
-    trap_Cvar_Register(&maxspectators, "maxspectators", "4", CVAR_SERVERINFO);
-    trap_Cvar_Register(&skill, "skill", "1", CVAR_LATCH);
-    trap_Cvar_Register(&gamerules, "gamerules", "0", CVAR_LATCH); // PGM
-
-    // change anytime vars
-    trap_Cvar_Register(&fraglimit, "fraglimit", "0", CVAR_SERVERINFO);
-    trap_Cvar_Register(&timelimit, "timelimit", "0", CVAR_SERVERINFO);
-    // ZOID
-    trap_Cvar_Register(&capturelimit, "capturelimit", "0", CVAR_SERVERINFO);
-    trap_Cvar_Register(&g_quick_weapon_switch, "g_quick_weapon_switch", "1", 0);
-    trap_Cvar_Register(&g_instant_weapon_switch, "g_instant_weapon_switch", "0", 0);
-    // ZOID
-    trap_Cvar_Register(&password, "password", "", CVAR_USERINFO);
-    trap_Cvar_Register(&spectator_password, "spectator_password", "", CVAR_USERINFO);
-    trap_Cvar_Register(&needpass, "needpass", "0", CVAR_SERVERINFO);
-    trap_Cvar_Register(&filterban, "filterban", "1", 0);
-
-    trap_Cvar_Register(&g_select_empty, "g_select_empty", "0", CVAR_ARCHIVE);
-
-    // flood control
-    trap_Cvar_Register(&flood_msgs, "flood_msgs", "4", 0);
-    trap_Cvar_Register(&flood_persecond, "flood_persecond", "4", 0);
-    trap_Cvar_Register(&flood_waitdelay, "flood_waitdelay", "10", 0);
-
-    trap_Cvar_Register(&g_strict_saves, "g_strict_saves", "1", 0);
-
-    trap_Cvar_Register(&sv_airaccelerate, "sv_airaccelerate", "0", 0);
-
-    trap_Cvar_Register(&g_damage_scale, "g_damage_scale", "1", 0);
-    trap_Cvar_Register(&g_disable_player_collision, "g_disable_player_collision", "0", 0);
-    trap_Cvar_Register(&ai_damage_scale, "ai_damage_scale", "1", 0);
-    trap_Cvar_Register(&ai_model_scale, "ai_model_scale", "0", 0);
-    trap_Cvar_Register(&ai_allow_dm_spawn, "ai_allow_dm_spawn", "0", 0);
-    trap_Cvar_Register(&ai_movement_disabled, "ai_movement_disabled", "0", 0);
-    trap_Cvar_Register(&g_monster_footsteps, "g_monster_footsteps", "1", 0);
-    trap_Cvar_Register(&g_auto_save_min_time, "g_auto_save_min_time", "60", 0);
-
-    trap_Cvar_Register(&g_coop_health_scaling, "g_coop_health_scaling", "0", CVAR_LATCH);
-    trap_Cvar_Register(&g_weapon_respawn_time, "g_weapon_respawn_time", "30", 0);
-
-    // dm "flags"
-    trap_Cvar_Register(&g_no_health, "g_no_health", "0", 0);
-    trap_Cvar_Register(&g_no_items, "g_no_items", "0", 0);
-    trap_Cvar_Register(&g_dm_weapons_stay, "g_dm_weapons_stay", "0", CVAR_LATCH);
-    trap_Cvar_Register(&g_dm_no_fall_damage, "g_dm_no_fall_damage", "0", 0);
-    trap_Cvar_Register(&g_dm_instant_items, "g_dm_instant_items", "1", 0);
-    trap_Cvar_Register(&g_dm_same_level, "g_dm_same_level", "0", 0);
-    trap_Cvar_Register(&g_friendly_fire, "g_friendly_fire", "0", 0);
-    trap_Cvar_Register(&g_dm_force_respawn, "g_dm_force_respawn", "0", 0);
-    trap_Cvar_Register(&g_dm_force_respawn_time, "g_dm_force_respawn_time", "0", 0);
-    trap_Cvar_Register(&g_dm_spawn_farthest, "g_dm_spawn_farthest", "1", 0);
-    trap_Cvar_Register(&g_no_armor, "g_no_armor", "0", 0);
-    trap_Cvar_Register(&g_dm_allow_exit, "g_dm_allow_exit", "0", 0);
-    trap_Cvar_Register(&g_infinite_ammo, "g_infinite_ammo", "0", CVAR_LATCH);
-    trap_Cvar_Register(&g_dm_no_quad_drop, "g_dm_no_quad_drop", "0", 0);
-    trap_Cvar_Register(&g_dm_no_quadfire_drop, "g_dm_no_quadfire_drop", "0", 0);
-    trap_Cvar_Register(&g_no_mines, "g_no_mines", "0", 0);
-    trap_Cvar_Register(&g_dm_no_stack_double, "g_dm_no_stack_double", "0", 0);
-    trap_Cvar_Register(&g_no_nukes, "g_no_nukes", "0", 0);
-    trap_Cvar_Register(&g_no_spheres, "g_no_spheres", "0", 0);
-    trap_Cvar_Register(&g_teamplay_force_join, "g_teamplay_force_join", "0", 0);
-    trap_Cvar_Register(&g_teamplay_armor_protect, "g_teamplay_armor_protect", "0", 0);
-    trap_Cvar_Register(&g_allow_techs, "g_allow_techs", "auto", 0);
-
-    trap_Cvar_Register(&g_start_items, "g_start_items", "", CVAR_LATCH);
-    trap_Cvar_Register(&g_map_list, "g_map_list", "", 0);
-    trap_Cvar_Register(&g_map_list_shuffle, "g_map_list_shuffle", "0", 0);
+    for (int i = 0; i < q_countof(g_cvars); i++) {
+        const vm_cvar_reg_t *reg = &g_cvars[i];
+        trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
+    }
 
     // items
     InitItems();

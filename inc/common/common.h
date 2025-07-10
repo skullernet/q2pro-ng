@@ -48,9 +48,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAXPRINTMSG     4096
 #define MAXERRORMSG     1024
 
-#define STRINGIFY2(x)   #x
-#define STRINGIFY(x)    STRINGIFY2(x)
-
 typedef struct {
     const char *name;
     void (*func)(void);

@@ -49,6 +49,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define CONST_STR_LEN(x)    x, sizeof("" x) - 1
 
+#define STRINGIFY2(x)   #x
+#define STRINGIFY(x)    STRINGIFY2(x)
+
 typedef unsigned char byte;
 typedef unsigned int qhandle_t;
 
