@@ -2421,6 +2421,88 @@ bool G_ShouldPlayersCollide(bool weaponry)
     return g_coop_player_collision.integer;
 }
 
+/*
+=================
+P_FallingDamage
+=================
+*/
+static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
+{
+    float  delta;
+    int    damage;
+
+    // dead stuff can't crater
+    if (ent->health <= 0 || ent->deadflag)
+        return;
+
+    if (ent->s.modelindex != MODELINDEX_PLAYER)
+        return; // not in the player model
+
+    if (ent->movetype == MOVETYPE_NOCLIP)
+        return;
+
+    // never take falling damage if completely underwater
+    if (pm->waterlevel == WATER_UNDER)
+        return;
+
+    // ZOID
+    //  never take damage if just release grapple or on grapple
+    if (ent->client->ctf_grapplereleasetime >= level.time || (ent->client->ctf_grapple && ent->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY))
+        return;
+    // ZOID
+
+    delta = pm->impact_delta;
+
+    if (level.is_psx)
+        delta = delta * delta * 0.000078f;
+    else
+        delta = delta * delta * 0.0001f;
+
+    if (pm->waterlevel == WATER_WAIST)
+        delta *= 0.25f;
+    if (pm->waterlevel == WATER_FEET)
+        delta *= 0.5f;
+
+    if (delta < 1)
+        return;
+
+    // restart footstep timer
+    //ent->client->ps.bobtime = 0;
+
+    if (ent->client->landmark_free_fall) {
+        delta = min(30, delta);
+        ent->client->landmark_free_fall = false;
+        ent->client->landmark_noise_time = level.time + HZ(10);
+    }
+
+    if (delta < 15) {
+        if (!(ent->client->ps.pm_flags & PMF_ON_LADDER))
+            G_AddEvent(ent, EV_FOOTSTEP, 0);
+        return;
+    }
+
+    G_AddEvent(ent, EV_FALL, delta + 0.5f);
+
+    if (delta > 30) {
+        static const vec3_t dir = { 0, 0, 1 };
+
+        ent->pain_debounce_time = level.time + FRAME_TIME; // no normal pain sound
+        damage = (int)((delta - 30) / 2);
+        if (damage < 1)
+            damage = 1;
+
+        if (level.is_psx)
+            damage = min(4, damage);
+
+        if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
+            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
+    }
+
+    // Paril: falling damage noises alert monsters
+    if (ent->health)
+        PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
+}
+
 static bool HandleMenuMovement(edict_t *ent, usercmd_t *ucmd)
 {
     if (!ent->client->menu)
@@ -2572,6 +2654,14 @@ qvm_exported void G_ClientThink(int clientnum)
         if (TICK_RATE > 10 && fabsf(pm.step_height) > 4)
             G_AddEvent(ent, EV_STAIR_STEP, 0);
 
+        // detect hitting the floor
+        P_FallingDamage(ent, &pm);
+
+        if (ent->client->landmark_free_fall && pm.groundentity) {
+            ent->client->landmark_free_fall = false;
+            ent->client->landmark_noise_time = level.time + HZ(10);
+        }
+
         // [Paril-KEX] save old position for G_TouchProjectiles
         vec3_t old_origin;
         VectorCopy(ent->s.origin, old_origin);
@@ -2581,7 +2671,7 @@ qvm_exported void G_ClientThink(int clientnum)
 
         // [Paril-KEX] if we stepped onto/off of a ladder, reset the
         // last ladder pos
-        if ((pm.s.pm_flags & PMF_ON_LADDER) != (client->ps.pm_flags & PMF_ON_LADDER)) {
+        if ((pm.s.pm_flags ^ client->ps.pm_flags) & PMF_ON_LADDER) {
             VectorCopy(ent->s.origin, client->last_ladder_pos);
 
             if (pm.s.pm_flags & PMF_ON_LADDER) {
@@ -2592,7 +2682,7 @@ qvm_exported void G_ClientThink(int clientnum)
             }
         }
 
-        if (~client->ps.pm_flags & pm.s.pm_flags & PMF_JUMP_HELD && pm.waterlevel == 0) {
+        if (pm.jump_sound) {
             G_AddEvent(ent, EV_JUMP, 0);
             // Paril: removed to make ambushes more effective and to
             // not have monsters around corners come to jumps

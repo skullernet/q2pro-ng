@@ -320,88 +320,6 @@ static void SV_CalcBlend(edict_t *ent)
 }
 
 /*
-=================
-P_FallingDamage
-=================
-*/
-static void P_FallingDamage(edict_t *ent)
-{
-    float  delta;
-    int    damage;
-
-    // dead stuff can't crater
-    if (ent->health <= 0 || ent->deadflag)
-        return;
-
-    if (ent->s.modelindex != MODELINDEX_PLAYER)
-        return; // not in the player model
-
-    if (ent->movetype == MOVETYPE_NOCLIP)
-        return;
-
-    // never take falling damage if completely underwater
-    if (ent->waterlevel == WATER_UNDER)
-        return;
-
-    // ZOID
-    //  never take damage if just release grapple or on grapple
-    if (ent->client->ctf_grapplereleasetime >= level.time || (ent->client->ctf_grapple && ent->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY))
-        return;
-    // ZOID
-
-    if ((ent->client->oldvelocity[2] < 0) && (ent->velocity[2] > ent->client->oldvelocity[2]) && (!ent->groundentity)) {
-        delta = ent->client->oldvelocity[2];
-    } else {
-        if (!ent->groundentity)
-            return;
-        delta = ent->velocity[2] - ent->client->oldvelocity[2];
-    }
-
-    delta = delta * delta * 0.0001f;
-
-    if (ent->waterlevel == WATER_WAIST)
-        delta *= 0.25f;
-    if (ent->waterlevel == WATER_FEET)
-        delta *= 0.5f;
-
-    if (delta < 1)
-        return;
-
-    // restart footstep timer
-    //ent->client->ps.bobtime = 0;
-
-    if (ent->client->landmark_free_fall) {
-        delta = min(30, delta);
-        ent->client->landmark_free_fall = false;
-        ent->client->landmark_noise_time = level.time + HZ(10);
-    }
-
-    if (delta < 15) {
-        if (!(ent->client->ps.pm_flags & PMF_ON_LADDER))
-            G_AddEvent(ent, EV_FOOTSTEP, 0);
-        return;
-    }
-
-    G_AddEvent(ent, EV_FALL, delta + 0.5f);
-
-    if (delta > 30) {
-        static const vec3_t dir = { 0, 0, 1 };
-
-        ent->pain_debounce_time = level.time + FRAME_TIME; // no normal pain sound
-        damage = (int)((delta - 30) / 2);
-        if (damage < 1)
-            damage = 1;
-
-        if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
-            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
-    }
-
-    // Paril: falling damage noises alert monsters
-    if (ent->health)
-        PlayerNoise(ent, ent->s.origin, PNOISE_SELF);
-}
-
-/*
 =============
 P_WorldEffects
 =============
@@ -988,14 +906,6 @@ void ClientEndServerFrame(edict_t *ent)
 
     int bobtime = current_client->ps.bobtime;
     footstep = ((bobtime + bobmove) ^ bobtime) & 128;
-
-    // detect hitting the floor
-    P_FallingDamage(ent);
-
-    if (ent->client->landmark_free_fall && ent->groundentity) {
-        ent->client->landmark_free_fall = false;
-        ent->client->landmark_noise_time = level.time + HZ(10);
-    }
 
     // apply all the damage taken this frame
     P_DamageFeedback(ent);
