@@ -56,11 +56,13 @@ static void V_Fog_f(void)
     float args[5];
 
     if (argc == 1) {
-        if (cg.custom_fog.density || cg.custom_fog.sky_factor) {
+        if (cg_custom_fog.density || cg_custom_fog.sky_factor) {
             Com_Printf("User set global fog:\n");
-            dump_fog(&cg.custom_fog);
+            dump_fog(&cg_custom_fog);
             return;
         }
+        if (!cg.frame)
+            return;
         if (cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor) {
             Com_Printf("Global fog:\n");
             dump_fog(&cg.frame->ps.fog);
@@ -85,13 +87,13 @@ static void V_Fog_f(void)
         args[i] = Q_clipf(Q_atof(buf), 0, 1);
     }
 
-    cg.custom_fog.color[0]   = args[0];
-    cg.custom_fog.color[1]   = args[1];
-    cg.custom_fog.color[2]   = args[2];
-    cg.custom_fog.density    = args[3];
-    cg.custom_fog.sky_factor = args[4];
+    cg_custom_fog.color[0]   = args[0];
+    cg_custom_fog.color[1]   = args[1];
+    cg_custom_fog.color[2]   = args[2];
+    cg_custom_fog.density    = args[3];
+    cg_custom_fog.sky_factor = args[4];
 
-    cg.refdef.fog = cg.custom_fog;
+    cg.refdef.fog = cg_custom_fog;
     cg.refdef.heightfog = (player_heightfog_t){ 0 };
 }
 

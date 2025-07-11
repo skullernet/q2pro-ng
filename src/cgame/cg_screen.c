@@ -741,6 +741,8 @@ void SCR_RegisterMedia(void)
 
     scr_font.modified = true;
     scr_crosshair.modified = true;
+
+    SCR_UpdateCvars();
 }
 
 static const vm_cvar_reg_t scr_cvars[] = {
@@ -792,10 +794,6 @@ void SCR_Init(void)
         const vm_cvar_reg_t *reg = &scr_cvars[i];
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
-
-    SCR_RegisterMedia();
-
-    SCR_UpdateCvars();
 
     CG_ModeChanged();
 }
@@ -1124,7 +1122,7 @@ static void SCR_ExecuteLayoutString(const char *s)
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
             if (value) {
-                trap_R_DrawPic(x, y, cg.image_precache[value]);
+                trap_R_DrawPic(x, y, cgs.image_precache[value]);
             }
             continue;
         }
@@ -1143,7 +1141,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_CLIENTS) {
                 Com_Error(ERR_DROP, "%s: invalid client index", __func__);
             }
-            ci = &cg.clientinfo[value];
+            ci = &cgs.clientinfo[value];
 
             token = COM_Parse(&s);
             score = Q_atoi(token);
@@ -1164,7 +1162,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             HUD_DrawString(x + 32, y + 3 * CONCHAR_HEIGHT, buffer);
 
             if (!ci->icon) {
-                ci = &cg.baseclientinfo;
+                ci = &cgs.baseclientinfo;
             }
             trap_R_DrawPic(x, y, ci->icon);
             continue;
@@ -1184,7 +1182,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value < 0 || value >= MAX_CLIENTS) {
                 Com_Error(ERR_DROP, "%s: invalid client index", __func__);
             }
-            ci = &cg.clientinfo[value];
+            ci = &cgs.clientinfo[value];
 
             token = COM_Parse(&s);
             score = Q_atoi(token);
@@ -1508,7 +1506,7 @@ static void SCR_DrawStats(void)
     if (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_HIDE_HUD)
         return;
 
-    SCR_ExecuteLayoutString(cg.statusbar);
+    SCR_ExecuteLayoutString(cgs.statusbar);
 }
 
 static void SCR_DrawLayout(void)
@@ -1580,6 +1578,14 @@ qvm_exported void CG_DrawActiveFrame(unsigned time)
     trap_R_ClearScene();
 
     trap_S_ClearLoopingSounds();
+
+    CG_ProcessFrames();
+
+    // draw black background if not active
+    if (!cg.frame) {
+        trap_R_DrawFill8(0, 0, scr.config.width, scr.config.height, 0);
+        return;
+    }
 
     // start with full screen HUD
     scr.hud_height = scr.config.height;

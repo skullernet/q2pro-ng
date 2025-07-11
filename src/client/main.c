@@ -1233,7 +1233,11 @@ static void CL_RestartSound_f(void)
 {
     S_Shutdown();
     S_Init();
-    //CL_RegisterSounds();
+    if (cge) {
+        S_BeginRegistration();
+        cge->Precache();
+        S_EndRegistration();
+    }
 }
 
 /*
@@ -1655,7 +1659,7 @@ void CL_RestartRefresh(bool total)
 
     Con_Popup(false);
 
-    CL_ShutdownCGame();
+    //CL_ShutdownCGame();
 
     S_StopAllSounds();
 

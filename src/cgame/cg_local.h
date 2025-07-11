@@ -58,42 +58,6 @@ typedef struct {
 
 extern centity_t    cg_entities[MAX_EDICTS];
 
-#define MAX_CLIENTWEAPONMODELS        256       // PGM -- upped from 16 to fit the chainfist vwep
-
-typedef enum {
-    SS_DEATH1,
-    SS_DEATH2,
-    SS_DEATH3,
-    SS_DEATH4,
-    SS_FALL1,
-    SS_FALL2,
-    SS_GURP1,
-    SS_GURP2,
-    SS_DROWN,
-    SS_JUMP,
-    SS_PAIN25_1,
-    SS_PAIN25_2,
-    SS_PAIN50_1,
-    SS_PAIN50_2,
-    SS_PAIN75_1,
-    SS_PAIN75_2,
-    SS_PAIN100_1,
-    SS_PAIN100_2,
-
-    SS_MAX
-} sexed_sound_t;
-
-typedef struct {
-    char name[MAX_QPATH];
-    qhandle_t skin;
-    qhandle_t icon;
-    char model_name[MAX_QPATH];
-    char skin_name[MAX_QPATH];
-    qhandle_t model;
-    qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
-    qhandle_t sounds[SS_MAX];
-} clientinfo_t;
-
 // locally calculated frame flags for debug display
 #define FF_SERVERDROP   BIT(4)
 #define FF_BADFRAME     BIT(5)
@@ -112,8 +76,8 @@ typedef struct {
 #define MAX_STEP    32
 
 //
-// the client_state_t structure is wiped completely at every
-// server map change
+// the cgame_state_t structure is wiped completely at every map restart, demo
+// seek, etc
 //
 typedef struct {
     vec3_t      predicted_origins[CMD_BACKUP];  // for debug comparing against server
@@ -148,41 +112,12 @@ typedef struct {
     bool        thirdPersonView;
     float       thirdPersonAlpha;
 
-    // predicted values, used for smooth player entity movement in thirdperson view
-    vec3_t      playerEntityOrigin;
-    vec3_t      playerEntityAngles;
-
-    //
-    // transient data from server
-    //
-    char        statusbar[MAX_NET_STRING];
     char        layout[MAX_NET_STRING];     // general 2D overlay
     int         inventory[MAX_ITEMS];
 
-    //
-    // server state information
-    //
-    int         serverstate;    // ss_* constants
-    int         servercount;    // server identification for prespawns
-    char        gamedir[MAX_QPATH];
-    int         clientNum;            // never changed during gameplay, set by serverdata packet
-    int         maxclients;
-
-    char        mapname[MAX_QPATH]; // short format - q2dm1, etc
-
-    //
-    // locally derived information from server state
-    //
-    qhandle_t model_draw[MAX_MODELS];
-
-    qhandle_t sound_precache[MAX_SOUNDS];
-    qhandle_t image_precache[MAX_IMAGES];
-
-    clientinfo_t    clientinfo[MAX_CLIENTS];
-    clientinfo_t    baseclientinfo;
-
-    char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
-    int     numWeaponModels;
+    // predicted values, used for smooth player entity movement in thirdperson view
+    vec3_t      playerEntityOrigin;
+    vec3_t      playerEntityAngles;
 
     // data for view weapon
     struct {
@@ -228,28 +163,74 @@ typedef struct {
 
     unsigned hit_marker_time;
     int hit_marker_count;
-
-    player_fog_t custom_fog;
 } cgame_state_t;
 
 extern cgame_state_t    cg;
 
-/*
-==================================================================
+#define MAX_CLIENTWEAPONMODELS      256     // PGM -- upped from 16 to fit the chainfist vwep
 
-the client_static_t structure is persistent through an arbitrary number
-of server connections
+typedef enum {
+    SS_DEATH1,
+    SS_DEATH2,
+    SS_DEATH3,
+    SS_DEATH4,
+    SS_FALL1,
+    SS_FALL2,
+    SS_GURP1,
+    SS_GURP2,
+    SS_DROWN,
+    SS_JUMP,
+    SS_PAIN25_1,
+    SS_PAIN25_2,
+    SS_PAIN50_1,
+    SS_PAIN50_2,
+    SS_PAIN75_1,
+    SS_PAIN75_2,
+    SS_PAIN100_1,
+    SS_PAIN100_2,
 
-==================================================================
-*/
+    SS_MAX
+} sexed_sound_t;
 
 typedef struct {
-    bool demoplayback;
-    float frametime;
-    unsigned realtime;
+    char name[MAX_QPATH];
+    qhandle_t skin;
+    qhandle_t icon;
+    char model_name[MAX_QPATH];
+    char skin_name[MAX_QPATH];
+    qhandle_t model;
+    qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
+    qhandle_t sounds[SS_MAX];
+} clientinfo_t;
+
+//
+// the cgame_static_t structure is persistent through an arbitrary number
+// of map restarts, but wiped out at map change
+//
+typedef struct {
+    unsigned    realtime;
+    float       frametime;
+
+    int         maxclients;
+    bool        demoplayback;
+
+    char        statusbar[MAX_NET_STRING];
+
+    qhandle_t       model_draw[MAX_MODELS];
+
+    qhandle_t       sound_precache[MAX_SOUNDS];
+    qhandle_t       image_precache[MAX_IMAGES];
+
+    clientinfo_t    clientinfo[MAX_CLIENTS];
+    clientinfo_t    baseclientinfo;
+
+    char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
+    int     numWeaponModels;
 } cgame_static_t;
 
 extern cgame_static_t   cgs;
+
+extern player_fog_t     cg_custom_fog;
 
 //=============================================================================
 
@@ -388,11 +369,8 @@ void CG_Shutdown(void);
 //
 
 bool CG_FileExists(const char *name);
-void CG_RegisterSounds(void);
-void CG_RegisterBspModels(void);
-void CG_RegisterVWepModels(void);
+void CG_RegisterMedia(void);
 void CG_SetSky(void);
-void CG_PrepRefresh(void);
 void CG_UpdateConfigstring(unsigned index);
 
 

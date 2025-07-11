@@ -783,6 +783,8 @@ static const vm_import_t cgame_vm_imports[] = {
 typedef enum {
     vm_CG_Init,
     vm_CG_Shutdown,
+    vm_CG_Precache,
+    vm_CG_ClearState,
     vm_CG_DrawActiveFrame,
     vm_CG_ModeChanged,
     vm_CG_ConsoleCommand,
@@ -796,6 +798,8 @@ typedef enum {
 static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_Init, ""),
     VM_EXPORT(CG_Shutdown, ""),
+    VM_EXPORT(CG_Precache, ""),
+    VM_EXPORT(CG_ClearState, ""),
     VM_EXPORT(CG_DrawActiveFrame, "i"),
     VM_EXPORT(CG_ModeChanged, ""),
     VM_EXPORT(CG_ConsoleCommand, "i "),
@@ -814,6 +818,14 @@ static void thunk_CG_Init(void) {
 
 static void thunk_CG_Shutdown(void) {
     VM_Call(cgame.vm, vm_CG_Shutdown);
+}
+
+static void thunk_CG_Precache(void) {
+    VM_Call(cgame.vm, vm_CG_Precache);
+}
+
+static void thunk_CG_ClearState(void) {
+    VM_Call(cgame.vm, vm_CG_ClearState);
 }
 
 static void thunk_CG_DrawActiveFrame(unsigned msec) {
@@ -1001,6 +1013,8 @@ static const cgame_export_t cgame_dll_exports = {
 
     .Init = thunk_CG_Init,
     .Shutdown = thunk_CG_Shutdown,
+    .Precache = thunk_CG_Precache,
+    .ClearState = thunk_CG_ClearState,
     .DrawActiveFrame = thunk_CG_DrawActiveFrame,
     .ModeChanged = thunk_CG_ModeChanged,
     .ConsoleCommand = thunk_CG_ConsoleCommand,
@@ -1079,17 +1093,18 @@ void CL_InitCGame(void)
 {
     CL_LoadMap();
 
-    // load cgame module
-    if (!cge)
+    // load cgame module if not done yet
+    if (!cge) {
         cge = VM_LoadModule(&cgame, &cgame_iface);
+        cge->Init();
+    }
 
     // register models, pics, and skins
     R_BeginRegistration(cl.mapname);
 
     S_BeginRegistration();
 
-    // initialize
-    cge->Init();
+    cge->Precache();
 
     S_EndRegistration();
 

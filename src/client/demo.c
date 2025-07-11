@@ -1062,8 +1062,7 @@ static void CL_Seek_f(void)
     memset(&cl.oldframe, 0, sizeof(cl.oldframe));
 
     // clear old effects
-    //CL_ClearEffects();
-    //CL_ClearTEnts();
+    cge->ClearState();
 
     // fix time delta
     cl.time = cl.frame.servertime;

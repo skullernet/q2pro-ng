@@ -181,7 +181,7 @@ static void CL_SetActiveState(void)
     SCR_EndLoadingPlaque();     // get rid of loading plaque
     Con_Close(false);           // get rid of connection screen
 
-    CL_CheckForPause();
+    //CL_CheckForPause();
 
     CL_UpdateFrameTimes();
 
@@ -367,6 +367,9 @@ static void CL_ParseConfigstring(unsigned index)
         memcpy(*dst, string, len + 1);
     }
 
+    if (cls.state < ca_precached)
+        return;
+
     if (cls.demo.seeking) {
         Q_SetBit(cl.dcs, index);
         return;
@@ -377,8 +380,7 @@ static void CL_ParseConfigstring(unsigned index)
     }
 
     // do something appropriate
-    if (cge)
-        cge->UpdateConfigstring(index);
+    cge->UpdateConfigstring(index);
 }
 
 static void CL_ParseBaseline(unsigned index)

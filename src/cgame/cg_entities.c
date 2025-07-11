@@ -326,7 +326,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     float       model_length;
     float       hand_multiplier = 0;
 
-    if (entnum < cg.maxclients) {
+    if (entnum < cgs.maxclients) {
         if (model == cg_mod_heatbeam)
             VectorSet(offset, 2, 7, -3);
         else if (model == cg_mod_grapple_cable)
@@ -398,7 +398,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
         vectoangles(dist, angles);
 
         // if it's a player, use the hardcoded player offset
-        if (entnum < cg.maxclients) {
+        if (entnum < cgs.maxclients) {
             vec3_t  tmp, f, r, u;
 
             tmp[0] = -angles[0];
@@ -507,7 +507,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
 
-    trap_S_AddLoopingSound(ent->number, cg.sound_precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
+    trap_S_AddLoopingSound(ent->number, cgs.sound_precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
 }
 
 /*
@@ -673,7 +673,7 @@ static void CG_AddPacketEntities(void)
                 ent.alpha = (d - fade_start) / (fade_end - fade_start);
             ent.skin = 0;
             if (renderfx & RF_CUSTOMSKIN && s1->frame < MAX_IMAGES)
-                ent.skin = cg.image_precache[s1->frame];
+                ent.skin = cgs.image_precache[s1->frame];
             if (!ent.skin)
                 ent.skin = cg_img_flare;
             ent.scale = s1->scale ? s1->scale : 1;
@@ -701,7 +701,7 @@ static void CG_AddPacketEntities(void)
         }
 
         if (renderfx & RF_BEAM && s1->modelindex > 1) {
-            CG_DrawBeam(ent.oldorigin, ent.origin, cg.model_draw[s1->modelindex], s1->othernum);
+            CG_DrawBeam(ent.oldorigin, ent.origin, cgs.model_draw[s1->modelindex], s1->othernum);
             goto skip;
         }
 
@@ -720,13 +720,13 @@ static void CG_AddPacketEntities(void)
             } else if (s1->modelindex == MODELINDEX_PLAYER) {
                 // use custom player skin
                 ent.skinnum = 0;
-                ci = &cg.clientinfo[s1->skinnum & 0xff];
+                ci = &cgs.clientinfo[s1->skinnum & 0xff];
                 ent.skin = ci->skin;
                 ent.model = ci->model;
                 if (!ent.skin || !ent.model) {
-                    ent.skin = cg.baseclientinfo.skin;
-                    ent.model = cg.baseclientinfo.model;
-                    ci = &cg.baseclientinfo;
+                    ent.skin = cgs.baseclientinfo.skin;
+                    ent.model = cgs.baseclientinfo.model;
+                    ci = &cgs.baseclientinfo;
                 }
                 if (renderfx & RF_USE_DISGUISE) {
                     char buffer[MAX_QPATH];
@@ -737,7 +737,7 @@ static void CG_AddPacketEntities(void)
             } else {
                 ent.skinnum = s1->skinnum;
                 ent.skin = 0;
-                ent.model = cg.model_draw[s1->modelindex];
+                ent.model = cgs.model_draw[s1->modelindex];
                 if (ent.model == cg_mod_laser || ent.model == cg_mod_dmspot)
                     renderfx |= RF_NOSHADOW;
             }
@@ -745,7 +745,7 @@ static void CG_AddPacketEntities(void)
 
         // allow skin override for remaster
         if (renderfx & RF_CUSTOMSKIN && s1->skinnum < MAX_IMAGES) {
-            ent.skin = cg.image_precache[s1->skinnum];
+            ent.skin = cgs.image_precache[s1->skinnum];
             ent.skinnum = 0;
         }
 
@@ -926,19 +926,19 @@ static void CG_AddPacketEntities(void)
         if (s1->modelindex2) {
             if (s1->modelindex2 == MODELINDEX_PLAYER) {
                 // custom weapon
-                ci = &cg.clientinfo[s1->skinnum & 0xff];
+                ci = &cgs.clientinfo[s1->skinnum & 0xff];
                 i = (s1->skinnum >> 8) & 0xff; // 0 is default weapon model
-                if (i >= cg.numWeaponModels)
+                if (i >= cgs.numWeaponModels)
                     i = 0;
                 ent.model = ci->weaponmodel[i];
                 if (!ent.model) {
                     if (i != 0)
                         ent.model = ci->weaponmodel[0];
                     if (!ent.model)
-                        ent.model = cg.baseclientinfo.weaponmodel[0];
+                        ent.model = cgs.baseclientinfo.weaponmodel[0];
                 }
             } else
-                ent.model = cg.model_draw[s1->modelindex2];
+                ent.model = cgs.model_draw[s1->modelindex2];
 
 #if 0
             // PMM - check for the defender sphere shell .. make it translucent
@@ -956,12 +956,12 @@ static void CG_AddPacketEntities(void)
         }
 
         if (s1->modelindex3) {
-            ent.model = cg.model_draw[s1->modelindex3];
+            ent.model = cgs.model_draw[s1->modelindex3];
             trap_R_AddEntity(&ent);
         }
 
         if (s1->modelindex4) {
-            ent.model = cg.model_draw[s1->modelindex4];
+            ent.model = cgs.model_draw[s1->modelindex4];
             trap_R_AddEntity(&ent);
         }
 

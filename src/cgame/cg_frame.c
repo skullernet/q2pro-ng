@@ -22,6 +22,7 @@ static void CG_SetActiveState(void)
 {
     // initialize oldframe so lerping doesn't hurt anything
     cg.oldframe = cg.frame;
+    cg.weapon.prev_frame = cg.frame->ps.gunframe;
 
     // set initial cg.predicted_ps
     cg.predicted_ps = cg.frame->ps;
@@ -29,6 +30,7 @@ static void CG_SetActiveState(void)
         // enhanced servers don't send viewangles
         CG_PredictAngles();
     }
+    VectorCopy(cg.predicted_ps.viewangles, cg.oldviewangles);
 
     SCR_LagClear();
 }

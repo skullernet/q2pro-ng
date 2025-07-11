@@ -77,7 +77,7 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     for (int i = 0; i < cg.numSolidEntities; i++) {
         const centity_t *ent = cg.solidEntities[i];
 
-        if (ent->current.number <= cg.maxclients && !(contentmask & CONTENTS_PLAYER))
+        if (ent->current.number <= cgs.maxclients && !(contentmask & CONTENTS_PLAYER))
             continue;
 
         if (ent->current.solid == PACKED_BSP) {

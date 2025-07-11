@@ -77,7 +77,7 @@ static void CG_AddViewWeapon(void)
 
     memset(&gun, 0, sizeof(gun));
 
-    gun.model = cg.model_draw[ps->gunindex];
+    gun.model = cgs.model_draw[ps->gunindex];
     gun.skinnum = ps->gunskin;
     if (!gun.model)
         return;
@@ -590,11 +590,6 @@ CG_RenderView
 */
 void CG_RenderView(void)
 {
-    CG_ProcessFrames();
-
-    if (!cg.frame)
-        return;
-
     CG_PredictMovement();
 
     CG_CalcViewValues();
@@ -629,8 +624,8 @@ void CG_RenderView(void)
     cg.refdef.time = cg.time * 0.001f;
     memcpy(cg.refdef.areabits, cg.frame->areabits, sizeof(cg.refdef.areabits));
 
-    if (cg.custom_fog.density) {
-        cg.refdef.fog = cg.custom_fog;
+    if (cg_custom_fog.density) {
+        cg.refdef.fog = cg_custom_fog;
         cg.refdef.heightfog = (player_heightfog_t){ 0 };
     }
 

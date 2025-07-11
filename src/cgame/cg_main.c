@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 cgame_state_t   cg;
 cgame_static_t  cgs;
 
+player_fog_t    cg_custom_fog;
+
 #ifndef Q2_VM
 const cgame_import_t    *cgi;
 #endif
@@ -144,8 +146,6 @@ static const vm_cvar_reg_t cg_cvars[] = {
 
 qvm_exported void CG_Init(void)
 {
-    memset(&cg, 0, sizeof(cg));
-
     // seed RNG
     Q_srand(trap_RealTime());
 
@@ -154,21 +154,39 @@ qvm_exported void CG_Init(void)
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
 
+    SCR_Init();
+    CG_InitEffects();
+}
+
+qvm_exported void CG_Shutdown(void)
+{
+}
+
+qvm_exported void CG_ClearState(void)
+{
+    memset(&cg, 0, sizeof(cg));
+
+    CG_ClearEffects();
+    CG_ClearTEnts();
+
+    // refresh current frame
+    cg.serverframe = trap_GetServerFrameNumber() - 1;
+}
+
+qvm_exported void CG_Precache(void)
+{
+    memset(&cgs, 0, sizeof(cgs));
+
     cgs.demoplayback = trap_GetDemoInfo(NULL);
 
     CG_UpdateConfigstring(CS_MAXCLIENTS);
     CG_UpdateConfigstring(CS_AIRACCEL);
     CG_UpdateConfigstring(CS_STATUSBAR);
 
-    SCR_Init();
-    CG_InitEffects();
-    CG_RegisterVWepModels();
-    CG_PrepRefresh();
-    CG_RegisterSounds();
-}
+    SCR_RegisterMedia();
+    CG_RegisterMedia();
 
-qvm_exported void CG_Shutdown(void)
-{
+    CG_ClearState();
 }
 
 qvm_exported bool CG_KeyEvent(unsigned key, bool down)
@@ -211,6 +229,8 @@ q_exported const cgame_export_t *GetCGameAPI(const cgame_import_t *import)
 
         .Init = CG_Init,
         .Shutdown = CG_Shutdown,
+        .Precache = CG_Precache,
+        .ClearState = CG_ClearState,
         .ConsoleCommand = CG_ConsoleCommand,
         .ServerCommand = CG_ServerCommand,
         .UpdateConfigstring = CG_UpdateConfigstring,

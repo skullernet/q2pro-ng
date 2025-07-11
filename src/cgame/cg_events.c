@@ -890,7 +890,7 @@ static void CG_SoundEvent(centity_t *cent, uint32_t param)
         att = 0;
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
-    trap_S_StartSound(NULL, cent->current.number, channel, cg.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
+    trap_S_StartSound(NULL, cent->current.number, channel, cgs.sound_precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
 static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
@@ -1164,9 +1164,9 @@ static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, 
     const clientinfo_t *ci;
 
     if (number < MAX_CLIENTS)
-        ci = &cg.clientinfo[number];
+        ci = &cgs.clientinfo[number];
     else
-        ci = &cg.baseclientinfo;
+        ci = &cgs.baseclientinfo;
 
     trap_S_StartSound(NULL, number, channel, ci->sounds[index], volume, attenuation, 0);
 }

@@ -204,14 +204,14 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     }
 
     // weapon file
-    for (i = 0; i < cg.numWeaponModels; i++) {
+    for (i = 0; i < cgs.numWeaponModels; i++) {
         Q_concat(weapon_filename, sizeof(weapon_filename),
-                 "players/", model_name, "/", cg.weaponModels[i]);
+                 "players/", model_name, "/", cgs.weaponModels[i]);
         ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
             Q_concat(weapon_filename, sizeof(weapon_filename),
-                     "players/male/", cg.weaponModels[i]);
+                     "players/male/", cgs.weaponModels[i]);
             ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         }
     }
@@ -229,7 +229,7 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
         ci->sounds[i] = CG_RegisterSexedSound(model_name, sexed_sounds[i]);
 
     // base info should be at least partially valid
-    if (ci == &cg.baseclientinfo)
+    if (ci == &cgs.baseclientinfo)
         return;
 
     // must have loaded all data types to be valid
@@ -245,38 +245,18 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
 
 /*
 =================
-CG_RegisterSounds
-=================
-*/
-void CG_RegisterSounds(void)
-{
-    int     i;
-    char    name[MAX_QPATH];
-
-    trap_SetLoadState("sounds");
-    CG_RegisterTEntSounds();
-    for (i = 1; i < MAX_SOUNDS; i++) {
-        trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
-        if (!name[0])
-            break;
-        cg.sound_precache[i] = trap_S_RegisterSound(name);
-    }
-}
-
-/*
-=================
 CG_RegisterVWepModels
 
 Builds a list of visual weapon models
 =================
 */
-void CG_RegisterVWepModels(void)
+static void CG_RegisterVWepModels(void)
 {
     int     i;
     char    name[MAX_QPATH];
 
-    cg.numWeaponModels = 1;
-    strcpy(cg.weaponModels[0], "weapon.md2");
+    cgs.numWeaponModels = 1;
+    strcpy(cgs.weaponModels[0], "weapon.md2");
 
     // only default model when vwep is off
     if (!cg_vwep.integer)
@@ -288,9 +268,9 @@ void CG_RegisterVWepModels(void)
             continue;
 
         // special player weapon model
-        Q_strlcpy(cg.weaponModels[cg.numWeaponModels++], name + 1, sizeof(cg.weaponModels[0]));
+        Q_strlcpy(cgs.weaponModels[cgs.numWeaponModels++], name + 1, sizeof(cgs.weaponModels[0]));
 
-        if (cg.numWeaponModels == MAX_CLIENTWEAPONMODELS)
+        if (cgs.numWeaponModels == MAX_CLIENTWEAPONMODELS)
             break;
     }
 }
@@ -345,18 +325,18 @@ static qhandle_t CG_RegisterImage(const char *s)
 
 /*
 =================
-CG_PrepRefresh
+CG_RegisterMedia
 
 Call before entering a new level, or after changing dlls
 =================
 */
-void CG_PrepRefresh(void)
+void CG_RegisterMedia(void)
 {
     int     i;
     char    name[MAX_QPATH];
 
     trap_SetLoadState("models");
-
+    CG_RegisterVWepModels();
     CG_RegisterTEntModels();
 
     for (i = 1; i < MAX_MODELS; i++) {
@@ -365,7 +345,7 @@ void CG_PrepRefresh(void)
             break;
         if (name[0] == '#')
             continue;
-        cg.model_draw[i] = trap_R_RegisterModel(name);
+        cgs.model_draw[i] = trap_R_RegisterModel(name);
     }
 
     trap_SetLoadState("images");
@@ -373,7 +353,7 @@ void CG_PrepRefresh(void)
         trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
         if (!name[0])
             break;
-        cg.image_precache[i] = CG_RegisterImage(name);
+        cgs.image_precache[i] = CG_RegisterImage(name);
     }
 
     trap_SetLoadState("clients");
@@ -381,10 +361,19 @@ void CG_PrepRefresh(void)
         trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name));
         if (!name[0])
             continue;
-        CG_LoadClientinfo(&cg.clientinfo[i], name);
+        CG_LoadClientinfo(&cgs.clientinfo[i], name);
     }
 
-    CG_LoadClientinfo(&cg.baseclientinfo, "unnamed\\male/grunt");
+    CG_LoadClientinfo(&cgs.baseclientinfo, "unnamed\\male/grunt");
+
+    trap_SetLoadState("sounds");
+    CG_RegisterTEntSounds();
+    for (i = 1; i < MAX_SOUNDS; i++) {
+        trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
+        if (!name[0])
+            break;
+        cgs.sound_precache[i] = trap_S_RegisterSound(name);
+    }
 
     for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
         trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name));
@@ -414,7 +403,7 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
     trap_GetConfigstring(index, s, sizeof(s));
 
     if (index == CS_MAXCLIENTS) {
-        cg.maxclients = Q_atoi(s);
+        cgs.maxclients = Q_atoi(s);
         return;
     }
 
@@ -429,7 +418,7 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
     }
 
     if (index == CS_STATUSBAR) {
-        trap_GetConfigstring(index, cg.statusbar, sizeof(cg.statusbar));
+        trap_GetConfigstring(index, cgs.statusbar, sizeof(cgs.statusbar));
         return;
     }
 
@@ -439,22 +428,22 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
     }
 
     if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
-        cg.model_draw[index - CS_MODELS] = trap_R_RegisterModel(s);
+        cgs.model_draw[index - CS_MODELS] = trap_R_RegisterModel(s);
         return;
     }
 
     if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
-        cg.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
+        cgs.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
         return;
     }
 
     if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
-        cg.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
+        cgs.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
         return;
     }
 
     if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
-        CG_LoadClientinfo(&cg.clientinfo[index - CS_PLAYERSKINS], s);
+        CG_LoadClientinfo(&cgs.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 
