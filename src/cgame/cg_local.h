@@ -160,6 +160,7 @@ typedef struct {
     vec3_t quake_angles[2];
 
     int last_effects_time;
+    qhandle_t last_footstep;
 
     unsigned hit_marker_time;
     int hit_marker_count;
@@ -203,6 +204,69 @@ typedef struct {
     qhandle_t sounds[SS_MAX];
 } clientinfo_t;
 
+typedef struct {
+    qhandle_t   ric1;
+    qhandle_t   ric2;
+    qhandle_t   ric3;
+    qhandle_t   lashit;
+    qhandle_t   spark5;
+    qhandle_t   spark6;
+    qhandle_t   spark7;
+    qhandle_t   railg;
+    qhandle_t   rockexp;
+    qhandle_t   grenexp;
+    qhandle_t   watrexp;
+    qhandle_t   land1;
+    qhandle_t   lightning;
+    qhandle_t   disrexp;
+    qhandle_t   hit_marker;
+} cg_media_sfx_t;
+
+typedef enum {
+    MFLASH_MACHN,
+    MFLASH_SHOTG2,
+    MFLASH_SHOTG,
+    MFLASH_ROCKET,
+    MFLASH_RAIL,
+    MFLASH_LAUNCH,
+    MFLASH_ETF_RIFLE,
+    MFLASH_DIST,
+    MFLASH_BOOMER,
+    MFLASH_BLAST, // 0 = orange, 1 = blue, 2 = green
+    MFLASH_BFG,
+    MFLASH_BEAMER,
+
+    MFLASH_TOTAL
+} cg_muzzlefx_t;
+
+typedef struct {
+    qhandle_t   explode;
+    qhandle_t   smoke;
+    qhandle_t   flash;
+    qhandle_t   parasite_segment;
+    qhandle_t   grapple_cable;
+    qhandle_t   explo4;
+    qhandle_t   bfg_explo;
+    qhandle_t   powerscreen;
+    qhandle_t   laser;
+    qhandle_t   dmspot;
+    qhandle_t   lightning;
+    qhandle_t   heatbeam;
+    qhandle_t   muzzles[MFLASH_TOTAL];
+} cg_media_mod_t;
+
+typedef struct {
+    qhandle_t   flare;
+} cg_media_img_t;
+
+#define MAX_MATERIALS       256
+#define MAX_FOOTSTEP_SFX    15
+
+typedef struct {
+    int         num_sfx;
+    qhandle_t   sfx[MAX_FOOTSTEP_SFX];
+} cg_footstep_sfx_t;
+
 //
 // the cgame_static_t structure is persistent through an arbitrary number
 // of map restarts, but wiped out at map change
@@ -226,6 +290,13 @@ typedef struct {
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
+
+    cg_media_sfx_t  sfx;
+    cg_media_mod_t  mod;
+    cg_media_img_t  img;
+
+    cg_footstep_sfx_t   footsteps[MAX_MATERIALS];
+    int                 num_footsteps;
 } cgame_static_t;
 
 extern cgame_static_t   cgs;
@@ -414,23 +485,6 @@ typedef struct cg_sustain_s {
     int     magnitude;
     void    (*think)(struct cg_sustain_s *self);
 } cg_sustain_t;
-
-typedef enum {
-    MFLASH_MACHN,
-    MFLASH_SHOTG2,
-    MFLASH_SHOTG,
-    MFLASH_ROCKET,
-    MFLASH_RAIL,
-    MFLASH_LAUNCH,
-    MFLASH_ETF_RIFLE,
-    MFLASH_DIST,
-    MFLASH_BOOMER,
-    MFLASH_BLAST, // 0 = orange, 1 = blue, 2 = green
-    MFLASH_BFG,
-    MFLASH_BEAMER,
-
-    MFLASH_TOTAL
-} cg_muzzlefx_t;
 
 void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale);
 void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, int skin, float scale);

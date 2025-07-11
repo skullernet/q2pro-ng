@@ -19,53 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
-qhandle_t   cg_sfx_ric1;
-qhandle_t   cg_sfx_ric2;
-qhandle_t   cg_sfx_ric3;
-qhandle_t   cg_sfx_lashit;
-qhandle_t   cg_sfx_spark5;
-qhandle_t   cg_sfx_spark6;
-qhandle_t   cg_sfx_spark7;
-qhandle_t   cg_sfx_railg;
-qhandle_t   cg_sfx_rockexp;
-qhandle_t   cg_sfx_grenexp;
-qhandle_t   cg_sfx_watrexp;
-
-qhandle_t   cg_sfx_lightning;
-qhandle_t   cg_sfx_disrexp;
-
-qhandle_t   cg_sfx_hit_marker;
-
-qhandle_t   cg_mod_explode;
-qhandle_t   cg_mod_smoke;
-qhandle_t   cg_mod_flash;
-qhandle_t   cg_mod_parasite_segment;
-qhandle_t   cg_mod_grapple_cable;
-qhandle_t   cg_mod_explo4;
-qhandle_t   cg_mod_bfg_explo;
-qhandle_t   cg_mod_powerscreen;
-qhandle_t   cg_mod_laser;
-qhandle_t   cg_mod_dmspot;
-
-qhandle_t   cg_mod_lightning;
-qhandle_t   cg_mod_heatbeam;
-
-qhandle_t   cg_mod_muzzles[MFLASH_TOTAL];
-
-qhandle_t   cg_img_flare;
-
-#define MAX_MATERIALS       256
-#define MAX_FOOTSTEP_SFX    15
-
-typedef struct {
-    int         num_sfx;
-    qhandle_t   sfx[MAX_FOOTSTEP_SFX];
-} cg_footstep_sfx_t;
-
-static cg_footstep_sfx_t    cg_footstep_sfx[MAX_MATERIALS];
-static int                  cg_num_footsteps;
-static qhandle_t            cg_last_footstep;
-
 /*
 =================
 CG_FindFootstepSurface
@@ -76,7 +29,7 @@ static int CG_FindFootstepSurface(int entnum)
     const centity_t *cent = &cg_entities[entnum];
 
     // skip if no materials loaded
-    if (cg_num_footsteps <= MATERIAL_RESERVED_COUNT)
+    if (cgs.num_footsteps <= MATERIAL_RESERVED_COUNT)
         return MATERIAL_ID_DEFAULT;
 
     // allow custom footsteps to be disabled
@@ -149,28 +102,28 @@ static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float
 
     if (!cg_footsteps.integer)
         return;
-    if (!cg_num_footsteps)
+    if (!cgs.num_footsteps)
         return; // should not really happen
 
     if (step_id == MATERIAL_ID_DEFAULT)
         step_id = CG_FindFootstepSurface(entnum);
-    if (step_id >= cg_num_footsteps)
+    if (step_id >= cgs.num_footsteps)
         step_id = MATERIAL_ID_DEFAULT;
 
-    sfx = &cg_footstep_sfx[step_id];
+    sfx = &cgs.footsteps[step_id];
     if (sfx->num_sfx <= 0)
-        sfx = &cg_footstep_sfx[0];
+        sfx = &cgs.footsteps[0];
     if (sfx->num_sfx <= 0)
         return; // no footsteps, not even fallbacks
 
     // pick a random footstep sound, but avoid playing the same one twice in a row
     sfx_num = Q_rand_uniform(sfx->num_sfx);
     footstep_sfx = sfx->sfx[sfx_num];
-    if (footstep_sfx == cg_last_footstep)
+    if (footstep_sfx == cg.last_footstep)
         footstep_sfx = sfx->sfx[(sfx_num + 1) % sfx->num_sfx];
 
     trap_S_StartSound(NULL, entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
-    cg_last_footstep = footstep_sfx;
+    cg.last_footstep = footstep_sfx;
 }
 
 /*
@@ -211,18 +164,17 @@ static void CG_RegisterFootsteps(void)
     int i;
 
     // load reserved footsteps
-    CG_RegisterFootstep(&cg_footstep_sfx[MATERIAL_ID_DEFAULT], NULL);
-    CG_RegisterFootstep(&cg_footstep_sfx[MATERIAL_ID_LADDER], "ladder");
+    CG_RegisterFootstep(&cgs.footsteps[MATERIAL_ID_DEFAULT], NULL);
+    CG_RegisterFootstep(&cgs.footsteps[MATERIAL_ID_LADDER], "ladder");
 
     // load the rest
     for (i = MATERIAL_RESERVED_COUNT; i < MAX_MATERIALS; i++) {
         if (!trap_GetMaterialInfo(i, &info))
             break;
-        CG_RegisterFootstep(&cg_footstep_sfx[i], info.material);
+        CG_RegisterFootstep(&cgs.footsteps[i], info.material);
     }
 
-    cg_num_footsteps = i;
-    cg_last_footstep = 0;
+    cgs.num_footsteps = i;
 }
 
 /*
@@ -232,28 +184,23 @@ CG_RegisterTEntSounds
 */
 void CG_RegisterTEntSounds(void)
 {
-    cg_sfx_ric1 = trap_S_RegisterSound("world/ric1.wav");
-    cg_sfx_ric2 = trap_S_RegisterSound("world/ric2.wav");
-    cg_sfx_ric3 = trap_S_RegisterSound("world/ric3.wav");
-    cg_sfx_lashit = trap_S_RegisterSound("weapons/lashit.wav");
-    cg_sfx_spark5 = trap_S_RegisterSound("world/spark5.wav");
-    cg_sfx_spark6 = trap_S_RegisterSound("world/spark6.wav");
-    cg_sfx_spark7 = trap_S_RegisterSound("world/spark7.wav");
-    cg_sfx_railg = trap_S_RegisterSound("weapons/railgf1a.wav");
-    cg_sfx_rockexp = trap_S_RegisterSound("weapons/rocklx1a.wav");
-    cg_sfx_grenexp = trap_S_RegisterSound("weapons/grenlx1a.wav");
-    cg_sfx_watrexp = trap_S_RegisterSound("weapons/xpld_wat.wav");
-
-    trap_S_RegisterSound("player/land1.wav");
-    trap_S_RegisterSound("player/fall2.wav");
-    trap_S_RegisterSound("player/fall1.wav");
+    cgs.sfx.ric1 = trap_S_RegisterSound("world/ric1.wav");
+    cgs.sfx.ric2 = trap_S_RegisterSound("world/ric2.wav");
+    cgs.sfx.ric3 = trap_S_RegisterSound("world/ric3.wav");
+    cgs.sfx.lashit = trap_S_RegisterSound("weapons/lashit.wav");
+    cgs.sfx.spark5 = trap_S_RegisterSound("world/spark5.wav");
+    cgs.sfx.spark6 = trap_S_RegisterSound("world/spark6.wav");
+    cgs.sfx.spark7 = trap_S_RegisterSound("world/spark7.wav");
+    cgs.sfx.railg = trap_S_RegisterSound("weapons/railgf1a.wav");
+    cgs.sfx.rockexp = trap_S_RegisterSound("weapons/rocklx1a.wav");
+    cgs.sfx.grenexp = trap_S_RegisterSound("weapons/grenlx1a.wav");
+    cgs.sfx.watrexp = trap_S_RegisterSound("weapons/xpld_wat.wav");
+    cgs.sfx.land1 = trap_S_RegisterSound("player/land1.wav");
+    cgs.sfx.lightning = trap_S_RegisterSound("weapons/tesla.wav");
+    cgs.sfx.disrexp = trap_S_RegisterSound("weapons/disrupthit.wav");
+    cgs.sfx.hit_marker = trap_S_RegisterSound("weapons/marker.wav");
 
     CG_RegisterFootsteps();
-
-    cg_sfx_lightning = trap_S_RegisterSound("weapons/tesla.wav");
-    cg_sfx_disrexp = trap_S_RegisterSound("weapons/disrupthit.wav");
-
-    cg_sfx_hit_marker = trap_S_RegisterSound("weapons/marker.wav");
 }
 
 static const char *const muzzlenames[MFLASH_TOTAL] = {
@@ -278,24 +225,21 @@ CG_RegisterTEntModels
 */
 void CG_RegisterTEntModels(void)
 {
-    cg_mod_explode = trap_R_RegisterModel("models/objects/explode/tris.md2");
-    cg_mod_smoke = trap_R_RegisterModel("models/objects/smoke/tris.md2");
-    cg_mod_flash = trap_R_RegisterModel("models/objects/flash/tris.md2");
-    cg_mod_parasite_segment = trap_R_RegisterModel("models/monsters/parasite/segment/tris.md2");
-    cg_mod_grapple_cable = trap_R_RegisterModel("models/ctf/segment/tris.md2");
-    cg_mod_explo4 = trap_R_RegisterModel("models/objects/r_explode/tris.md2");
-    cg_mod_bfg_explo = trap_R_RegisterModel("sprites/s_bfg2.sp2");
-    cg_mod_powerscreen = trap_R_RegisterModel("models/items/armor/effect/tris.md2");
-    cg_mod_laser = trap_R_RegisterModel("models/objects/laser/tris.md2");
-    cg_mod_dmspot = trap_R_RegisterModel("models/objects/dmspot/tris.md2");
-
-    cg_mod_lightning = trap_R_RegisterModel("models/proj/lightning/tris.md2");
-    cg_mod_heatbeam = trap_R_RegisterModel("models/proj/beam/tris.md2");
+    cgs.mod.explode = trap_R_RegisterModel("models/objects/explode/tris.md2");
+    cgs.mod.smoke = trap_R_RegisterModel("models/objects/smoke/tris.md2");
+    cgs.mod.flash = trap_R_RegisterModel("models/objects/flash/tris.md2");
+    cgs.mod.parasite_segment = trap_R_RegisterModel("models/monsters/parasite/segment/tris.md2");
+    cgs.mod.grapple_cable = trap_R_RegisterModel("models/ctf/segment/tris.md2");
+    cgs.mod.explo4 = trap_R_RegisterModel("models/objects/r_explode/tris.md2");
+    cgs.mod.bfg_explo = trap_R_RegisterModel("sprites/s_bfg2.sp2");
+    cgs.mod.powerscreen = trap_R_RegisterModel("models/items/armor/effect/tris.md2");
+    cgs.mod.laser = trap_R_RegisterModel("models/objects/laser/tris.md2");
+    cgs.mod.dmspot = trap_R_RegisterModel("models/objects/dmspot/tris.md2");
+    cgs.mod.lightning = trap_R_RegisterModel("models/proj/lightning/tris.md2");
+    cgs.mod.heatbeam = trap_R_RegisterModel("models/proj/beam/tris.md2");
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
-        cg_mod_muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
-
-    cg_img_flare = trap_R_RegisterSprite("misc/flare.tga");
+        cgs.mod.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 }
 
 /*
@@ -371,7 +315,7 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
     ex->ent.angles[1] = Q_rand() % 360;
-    ex->ent.model = cg_mod_explo4;
+    ex->ent.model = cgs.mod.explo4;
     ex->baseframe = 15 * (Q_rand() & 1);
     ex->frames = 15;
 
@@ -389,7 +333,7 @@ static void CG_BFGExplosion(const vec3_t pos)
     ex->start = cg.oldframe->servertime;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
-    ex->ent.model = cg_mod_bfg_explo;
+    ex->ent.model = cgs.mod.bfg_explo;
     ex->ent.flags |= RF_TRANSLUCENT;
     ex->ent.alpha = 0.30f;
     ex->frames = 4;
@@ -400,12 +344,12 @@ void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale)
     if (!cg_muzzleflashes.integer)
         return;
 
-    Q_assert(fx < q_countof(cg_mod_muzzles));
+    Q_assert(fx < q_countof(cgs.mod.muzzles));
 
-    if (!cg_mod_muzzles[fx])
+    if (!cgs.mod.muzzles[fx])
         return;
 
-    cg.weapon.muzzle.model = cg_mod_muzzles[fx];
+    cg.weapon.muzzle.model = cgs.mod.muzzles[fx];
     cg.weapon.muzzle.scale = scale;
     if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
         cg.weapon.muzzle.roll = Q_rand() % 360;
@@ -422,9 +366,9 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
     if (!cg_muzzleflashes.integer)
         return;
 
-    Q_assert(fx < q_countof(cg_mod_muzzles));
+    Q_assert(fx < q_countof(cgs.mod.muzzles));
 
-    if (!cg_mod_muzzles[fx])
+    if (!cgs.mod.muzzles[fx])
         return;
 
     ex = CG_AllocExplosion();
@@ -434,7 +378,7 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
     ex->start = cg.oldframe->servertime;
-    ex->ent.model = cg_mod_muzzles[fx];
+    ex->ent.model = cgs.mod.muzzles[fx];
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
     if (fx != MFLASH_BOOMER)
@@ -456,7 +400,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
     ex->start = cg.oldframe->servertime;
-    ex->ent.model = cg_mod_smoke;
+    ex->ent.model = cgs.mod.smoke;
 
     ex = CG_AllocExplosion();
     VectorCopy(origin, ex->ent.origin);
@@ -464,7 +408,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
     ex->start = cg.oldframe->servertime;
-    ex->ent.model = cg_mod_flash;
+    ex->ent.model = cgs.mod.flash;
 }
 
 static void CG_AddExplosions(void)
@@ -712,11 +656,11 @@ static void CG_ParseNuke(const vec3_t pos)
     explosion_t     *ex;
     cg_sustain_t    *s;
 
-    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cg_sfx_grenexp, 1, ATTN_NONE, 0);
-    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_rockexp, 1, ATTN_NORM, 0);
+    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cgs.sfx.grenexp, 1, ATTN_NONE, 0);
+    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.rockexp, 1, ATTN_NORM, 0);
 
     ex = CG_PlainExplosion(pos);
-    ex->ent.model = cg_mod_explo4;
+    ex->ent.model = cgs.mod.explo4;
     ex->ent.scale = 2.0f;
 
     s = CG_AllocSustain();
@@ -868,7 +812,7 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     VectorCopy(tr.endpos, ex->ent.origin);
     dirtoangles(dir, ex->ent.angles);
     ex->type = ex_misc;
-    ex->ent.model = cg_mod_explode;
+    ex->ent.model = cgs.mod.explode;
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->ent.scale = 3;
     ex->ent.skinnum = 2;
@@ -918,11 +862,11 @@ static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     if (color == EV_SPLASH_SPARKS) {
         r = Q_rand() & 3;
         if (r == 0)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_spark5, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.spark5, 1, ATTN_STATIC, 0);
         else if (r == 1)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_spark6, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.spark6, 1, ATTN_STATIC, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_spark7, 1, ATTN_STATIC, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.spark7, 1, ATTN_STATIC, 0);
     }
 }
 
@@ -992,12 +936,12 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         break;
     case EV_HEATBEAM_SPARKS:
     case EV_HEATBEAM_STEAM:
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.lashit, 1, ATTN_NORM, 0);
         break;
     case EV_SCREEN_SPARKS:
     case EV_SHIELD_SPARKS:
     case EV_ELECTRIC_SPARKS:
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, 257, cg_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, 257, cgs.sfx.lashit, 1, ATTN_NORM, 0);
         break;
     default:
         break;
@@ -1006,11 +950,11 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     if (type == EV_GUNSHOT || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
         if (r == 1)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_ric1, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.ric1, 1, ATTN_NORM, 0);
         else if (r == 2)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_ric2, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.ric2, 1, ATTN_NORM, 0);
         else if (r == 3)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_ric3, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.ric3, 1, ATTN_NORM, 0);
     }
 
     if (type == EV_WELDING_SPARKS) {
@@ -1040,19 +984,19 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION1_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_NP:
         CG_PlainExplosion(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_BIG:
         ex = CG_PlainExplosion(pos);
-        ex->ent.model = cg_mod_explo4;
+        ex->ent.model = cgs.mod.explo4;
         ex->ent.scale = 2.0f;
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_rockexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION2:
@@ -1063,7 +1007,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION2_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_grenexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLASTER:            // blaster hitting wall
@@ -1093,9 +1037,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         }
         ex->start = cg.oldframe->servertime;
         ex->light = 150;
-        ex->ent.model = cg_mod_explode;
+        ex->ent.model = cgs.mod.explode;
         ex->frames = 4;
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLUEHYPERBLASTER:
@@ -1117,9 +1061,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_GRENADE_EXPLOSION_WATER)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_watrexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.watrexp, 1, ATTN_NORM, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_grenexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_ROCKET_EXPLOSION:
@@ -1135,9 +1079,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_ROCKET_EXPLOSION_WATER)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_watrexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.watrexp, 1, ATTN_NORM, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_rockexp, 1, ATTN_NORM, 0);
+            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_EXPLOSION:
@@ -1151,7 +1095,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     case EV_TRACKER_EXPLOSION:
         CG_ColorFlash(pos, 0, 150, -1, -1, -1);
         CG_ColorExplosionParticles(pos, 0, 1);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_disrexp, 1, ATTN_NORM, 0);
+        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.disrexp, 1, ATTN_NORM, 0);
         break;
 
     default:
@@ -1250,7 +1194,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         else if (param > 30)
             CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM);
         else
-            trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("player/land1.wav"), 1, ATTN_NORM, 0);
+            trap_S_StartSound(NULL, number, CHAN_AUTO, cgs.sfx.land1, 1, ATTN_NORM, 0);
         if (number == cg.frame->ps.clientnum) {
             cg.fall_time = cg.oldframe->servertime + FALL_TIME;
             cg.fall_value = min(param / 2, 40);
@@ -1299,7 +1243,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
         CG_RailTrail(start, s->origin, event);
-        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_railg, 1, ATTN_NORM, 0);
+        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.railg, 1, ATTN_NORM, 0);
         break;
 
     case EV_BUBBLETRAIL:
@@ -1308,7 +1252,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
 
     case EV_BUBBLETRAIL2:
         CG_BubbleTrail2(start, s->origin, 8);
-        trap_S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cg_sfx_lashit, 1, ATTN_NORM, 0);
+        trap_S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sfx.lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_LASER:

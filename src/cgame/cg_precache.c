@@ -355,6 +355,7 @@ void CG_RegisterMedia(void)
             break;
         cgs.image_precache[i] = CG_RegisterImage(name);
     }
+    cgs.img.flare = trap_R_RegisterSprite("misc/flare.tga");
 
     trap_SetLoadState("clients");
     for (i = 0; i < MAX_CLIENTS; i++) {
