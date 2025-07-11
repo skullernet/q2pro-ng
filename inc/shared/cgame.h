@@ -96,6 +96,8 @@ typedef struct {
 
     void (*ClientCommand)(const char *cmd);
 
+    void (*SetLoadState)(const char *state);
+
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
 

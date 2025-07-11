@@ -465,7 +465,7 @@ void Con_Popup(bool force);
 void Con_SkipNotify(bool skip);
 void Con_RegisterMedia(void);
 void Con_CheckResize(void);
-void Con_LoadState(const char *state);
+void Con_SetLoadState(const char *state);
 
 void Key_Console(int key);
 void Key_Message(int key);

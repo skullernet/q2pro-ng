@@ -55,6 +55,8 @@ bool trap_GetDemoInfo(cg_demo_info_t *info);
 
 void trap_ClientCommand(const char *cmd);
 
+void trap_SetLoadState(const char *state);
+
 int64_t trap_RealTime(void);
 bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 
@@ -182,6 +184,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_GetDemoInfo cgi->GetDemoInfo
 
 #define trap_ClientCommand cgi->ClientCommand
+
+#define trap_SetLoadState cgi->SetLoadState
 
 #define trap_RealTime cgi->RealTime
 #define trap_LocalTime cgi->LocalTime

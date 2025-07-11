@@ -253,6 +253,7 @@ void CG_RegisterSounds(void)
     int     i;
     char    name[MAX_QPATH];
 
+    trap_SetLoadState("sounds");
     CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
         trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
@@ -354,7 +355,7 @@ void CG_PrepRefresh(void)
     int     i;
     char    name[MAX_QPATH];
 
-    //trap_SetLoadState("models");
+    trap_SetLoadState("models");
 
     CG_RegisterTEntModels();
 
@@ -367,7 +368,7 @@ void CG_PrepRefresh(void)
         cg.model_draw[i] = trap_R_RegisterModel(name);
     }
 
-    //trap_SetLoadState("images");
+    trap_SetLoadState("images");
     for (i = 1; i < MAX_IMAGES; i++) {
         trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
         if (!name[0])
@@ -375,7 +376,7 @@ void CG_PrepRefresh(void)
         cg.image_precache[i] = CG_RegisterImage(name);
     }
 
-    //trap_SetLoadState("clients");
+    trap_SetLoadState("clients");
     for (i = 0; i < MAX_CLIENTS; i++) {
         trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name));
         if (!name[0])

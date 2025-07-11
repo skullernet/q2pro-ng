@@ -563,11 +563,13 @@ void Con_SetColor(color_index_t color)
 
 /*
 =================
-Con_LoadState
+Con_SetLoadState
 =================
 */
-void Con_LoadState(const char *state)
+void Con_SetLoadState(const char *state)
 {
+    if (cls.state != ca_loading)
+        return;
     Q_strlcpy(con.loadstate, state, sizeof(con.loadstate));
     SCR_UpdateScreen();
     if (vid)

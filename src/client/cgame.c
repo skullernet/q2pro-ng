@@ -297,6 +297,10 @@ VM_THUNK(ClientCommand) {
     CL_ClientCommand(VM_STR(0));
 }
 
+VM_THUNK(SetLoadState) {
+    Con_SetLoadState(VM_STR(0));
+}
+
 VM_THUNK(RealTime) {
     VM_I64(0) = Com_RealTime();
 }
@@ -679,6 +683,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetServerFrame, "i ii"),
     VM_IMPORT(GetDemoInfo, "i i"),
     VM_IMPORT(ClientCommand, "i"),
+    VM_IMPORT(SetLoadState, "i"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
@@ -891,6 +896,8 @@ static const cgame_import_t cgame_dll_imports = {
 
     .ClientCommand = CL_ClientCommand,
 
+    .SetLoadState = Con_SetLoadState,
+
     .RealTime = Com_RealTime,
     .LocalTime = Com_LocalTime,
 
@@ -1048,6 +1055,8 @@ static void CL_LoadMap(void)
         return;
 
     Q_snprintf(name, sizeof(name), "maps/%s.bsp", cl.mapname);
+    Con_SetLoadState(name);
+
     ret = BSP_Load(name, &cl.bsp);
     if (cl.bsp == NULL) {
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
