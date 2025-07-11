@@ -692,6 +692,12 @@ bool MSG_ReadBit(void)
     return v;
 }
 
+void MSG_AlignBits(void)
+{
+    msg_read.bits_buf  = 0;
+    msg_read.bits_left = 0;
+}
+
 static int MSG_ReadDeltaAngle(int from)
 {
     if (!MSG_ReadBit())

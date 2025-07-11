@@ -73,6 +73,7 @@ size_t  MSG_ReadString(char *dest, size_t size);
 size_t  MSG_ReadStringLine(char *dest, size_t size);
 int     MSG_ReadBits(int bits);
 bool    MSG_ReadBit(void);
+void    MSG_AlignBits(void);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
 void    MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to);
 #if USE_CLIENT

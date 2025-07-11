@@ -202,6 +202,7 @@ static void CL_ParseFrame(void)
 
     cl.frameflags = 0;
 
+    MSG_AlignBits();
     currentframe = MSG_ReadBits(FRAMENUM_BITS);
     delta = MSG_ReadBits(DELTAFRAME_BITS);
     frame.servertime = MSG_ReadBits(32);
@@ -669,6 +670,7 @@ void CL_ParseServerMessage(void)
             break;
 
         case svc_baselinestream:
+            MSG_AlignBits();
             while (1) {
                 index = MSG_ReadBits(ENTITYNUM_BITS);
                 if (index == ENTITYNUM_NONE) {
