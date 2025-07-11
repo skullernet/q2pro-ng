@@ -770,7 +770,6 @@ void CL_EmitDemoSnapshot(void)
     // write all the backups, since we can't predict what frame the next
     // delta will come from
     lastframe = NULL;
-    lastnum = 31;
     for (i = 0; i < UPDATE_BACKUP; i++) {
         j = cl.frame.number - (UPDATE_BACKUP - 1) + i;
         frame = &cl.frames[j & UPDATE_MASK];
@@ -779,9 +778,12 @@ void CL_EmitDemoSnapshot(void)
             continue;
         }
 
+        if (lastframe)
+            lastnum = frame->number - lastframe->number;
+        else
+            lastnum = 31;
         emit_delta_frame(lastframe, frame, lastnum, j);
         lastframe = frame;
-        lastnum = 1;
     }
 
     // write configstrings
@@ -806,6 +808,7 @@ void CL_EmitDemoSnapshot(void)
     } else {
         snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
         snap->framenum = cls.demo.frames_read;
+        snap->servertime = cl.frame.servertime;
         snap->filepos = pos;
         snap->msglen = msg_write.cursize;
         memcpy(snap->data, msg_write.data, msg_write.cursize);
@@ -832,7 +835,7 @@ static demosnap_t *find_snapshot(int64_t dest, bool byte_seek)
     do {
         int m = (l + r) / 2;
         demosnap_t *snap = cls.demo.snapshots[m];
-        int64_t pos = byte_seek ? snap->filepos : snap->framenum;
+        int64_t pos = byte_seek ? snap->filepos : snap->servertime;
         if (pos < dest)
             l = m + 1;
         else if (pos > dest)
@@ -859,6 +862,7 @@ void CL_FirstDemoFrame(void)
         return;
 
     Com_DPrintf("[%d] first frame\n", cl.frame.number);
+    cls.demo.starttime = cl.frame.servertime;
 
     // save base configstrings
     for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
@@ -904,8 +908,8 @@ CL_Seek_f
 static void CL_Seek_f(void)
 {
     demosnap_t *snap;
-    int i, j, ret, index, frames, prev;
-    int64_t dest;
+    int i, j, ret, index;
+    int64_t dest, frames;
     bool byte_seek, back_seek;
     char *from, *to;
 
@@ -948,15 +952,15 @@ static void CL_Seek_f(void)
             }
             if (*to == '-')
                 frames = -frames;
-            dest = cls.demo.frames_read + frames;
+            dest = cl.frame.servertime + frames;
         } else {
             // relative to first frame
-            if (!Com_ParseTimespec(to, &i)) {
+            if (!Com_ParseTimespec(to, &frames)) {
                 Com_Printf("Invalid absolute timespec.\n");
                 return;
             }
-            dest = i;
-            frames = i - cls.demo.frames_read;
+            dest = cls.demo.starttime + frames;
+            frames = dest - cl.frame.servertime;
         }
 
         if (!frames)
@@ -977,9 +981,6 @@ static void CL_Seek_f(void)
 
     // stop sounds
     S_StopAllSounds();
-
-    // save previous server frame number
-    prev = cl.frame.number;
 
     Com_DPrintf("[%d] seeking to %"PRId64"\n", cls.demo.frames_read, dest);
 
@@ -1024,7 +1025,7 @@ static void CL_Seek_f(void)
 
     // skip forward to destination frame/position
     while (1) {
-        int64_t pos = byte_seek ? FS_Tell(cls.demo.playback) : cls.demo.frames_read;
+        int64_t pos = byte_seek ? FS_Tell(cls.demo.playback) : cl.frame.servertime;
         if (pos >= dest)
             break;
 
@@ -1065,7 +1066,7 @@ static void CL_Seek_f(void)
     //CL_ClearTEnts();
 
     // fix time delta
-    cl.serverdelta += cl.frame.number - prev;
+    cl.time = cl.frame.servertime;
 
     // fire up destination frame
     //CL_DeltaFrame();

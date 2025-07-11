@@ -223,9 +223,10 @@ typedef struct {
 } dlqueue_t;
 
 typedef struct {
-    int         framenum;
-    unsigned    msglen;
+    int64_t     servertime;
     int64_t     filepos;
+    uint32_t    framenum;
+    uint32_t    msglen;
     byte        data[1];
 } demosnap_t;
 
@@ -313,6 +314,7 @@ typedef struct {
         int         others_dropped;     // number of misc svc_* messages that didn't fit
         int         frames_read;        // number of frames read from demo file
         int         last_snapshot;      // number of demo frame the last snapshot was saved
+        int         starttime;          // server time of first demo frame
         int64_t     file_size;
         int64_t     file_offset;
         float       file_progress;

@@ -261,37 +261,37 @@ Parses time/frame specification for seeking in demos.
 Does not check for integer overflow...
 ================
 */
-bool Com_ParseTimespec(const char *s, int *frames)
+bool Com_ParseTimespec(const char *s, int64_t *msec)
 {
-    unsigned long c1, c2, c3;
+    unsigned long long c1, c2, c3;
     char *p;
 
-    c1 = strtoul(s, &p, 10);
+    c1 = strtoull(s, &p, 10);
     if (!*p) {
-        *frames = c1 * 10; // sec
+        *msec = c1 * 1000; // sec
         return true;
     }
 
     if (*p == '.') {
-        c2 = strtoul(p + 1, &p, 10);
+        c2 = strtoull(p + 1, &p, 10);
         if (*p)
             return false;
-        *frames = c1 * 10 + c2; // sec.frac
+        *msec = c1 * 1000 + c2 * 100; // sec.frac
         return true;
     }
 
     if (*p == ':') {
-        c2 = strtoul(p + 1, &p, 10);
+        c2 = strtoull(p + 1, &p, 10);
         if (!*p) {
-            *frames = c1 * 600 + c2 * 10; // min:sec
+            *msec = c1 * 60000 + c2 * 1000; // min:sec
             return true;
         }
 
         if (*p == '.') {
-            c3 = strtoul(p + 1, &p, 10);
+            c3 = strtoull(p + 1, &p, 10);
             if (*p)
                 return false;
-            *frames = c1 * 600 + c2 * 10 + c3; // min:sec.frac
+            *msec = c1 * 60000 + c2 * 1000 + c3 * 100; // min:sec.frac
             return true;
         }
 
