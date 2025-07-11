@@ -209,9 +209,9 @@ typedef struct {
 
     void (*Init)(void);
     void (*Shutdown)(void);
-    void (*Precache)(void);
+    void (*PrepRefresh)(bool demoplayback);
     void (*ClearState)(void);
-    void (*DrawActiveFrame)(unsigned msec);
+    void (*DrawFrame)(unsigned msec, bool active, bool loading);
     void (*ModeChanged)(void);
     bool (*ConsoleCommand)(void);
     void (*ServerCommand)(void);

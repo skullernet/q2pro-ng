@@ -215,8 +215,6 @@ static bool PF_GetDemoInfo(cg_demo_info_t *info)
 {
     if (!cls.demo.playback)
         return false;
-    if (!info)
-        return true;
     Q_strlcpy(info->name, cls.servername, sizeof(info->name));
     info->progress = cls.demo.file_progress;
     info->framenum = cls.demo.frames_read;
@@ -290,7 +288,7 @@ VM_THUNK(GetServerFrame) {
 }
 
 VM_THUNK(GetDemoInfo) {
-    VM_U32(0) = PF_GetDemoInfo(VM_PTR_NULL(0, cg_demo_info_t));
+    VM_U32(0) = PF_GetDemoInfo(VM_PTR(0, cg_demo_info_t));
 }
 
 VM_THUNK(ClientCommand) {
@@ -783,9 +781,9 @@ static const vm_import_t cgame_vm_imports[] = {
 typedef enum {
     vm_CG_Init,
     vm_CG_Shutdown,
-    vm_CG_Precache,
+    vm_CG_PrepRefresh,
     vm_CG_ClearState,
-    vm_CG_DrawActiveFrame,
+    vm_CG_DrawFrame,
     vm_CG_ModeChanged,
     vm_CG_ConsoleCommand,
     vm_CG_ServerCommand,
@@ -798,9 +796,9 @@ typedef enum {
 static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_Init, ""),
     VM_EXPORT(CG_Shutdown, ""),
-    VM_EXPORT(CG_Precache, ""),
+    VM_EXPORT(CG_PrepRefresh, "i"),
     VM_EXPORT(CG_ClearState, ""),
-    VM_EXPORT(CG_DrawActiveFrame, "i"),
+    VM_EXPORT(CG_DrawFrame, "iii"),
     VM_EXPORT(CG_ModeChanged, ""),
     VM_EXPORT(CG_ConsoleCommand, "i "),
     VM_EXPORT(CG_ServerCommand, ""),
@@ -820,18 +818,22 @@ static void thunk_CG_Shutdown(void) {
     VM_Call(cgame.vm, vm_CG_Shutdown);
 }
 
-static void thunk_CG_Precache(void) {
-    VM_Call(cgame.vm, vm_CG_Precache);
+static void thunk_CG_PrepRefresh(bool demoplayback) {
+    vm_value_t *stack = VM_Push(cgame.vm, 1);
+    VM_U32(0) = demoplayback;
+    VM_Call(cgame.vm, vm_CG_PrepRefresh);
 }
 
 static void thunk_CG_ClearState(void) {
     VM_Call(cgame.vm, vm_CG_ClearState);
 }
 
-static void thunk_CG_DrawActiveFrame(unsigned msec) {
-    vm_value_t *stack = VM_Push(cgame.vm, 1);
+static void thunk_CG_DrawFrame(unsigned msec, bool active, bool loading) {
+    vm_value_t *stack = VM_Push(cgame.vm, 3);
     VM_U32(0) = msec;
-    VM_Call(cgame.vm, vm_CG_DrawActiveFrame);
+    VM_U32(1) = active;
+    VM_U32(2) = loading;
+    VM_Call(cgame.vm, vm_CG_DrawFrame);
 }
 
 static void thunk_CG_ModeChanged(void) {
@@ -1013,9 +1015,9 @@ static const cgame_export_t cgame_dll_exports = {
 
     .Init = thunk_CG_Init,
     .Shutdown = thunk_CG_Shutdown,
-    .Precache = thunk_CG_Precache,
+    .PrepRefresh = thunk_CG_PrepRefresh,
     .ClearState = thunk_CG_ClearState,
-    .DrawActiveFrame = thunk_CG_DrawActiveFrame,
+    .DrawFrame = thunk_CG_DrawFrame,
     .ModeChanged = thunk_CG_ModeChanged,
     .ConsoleCommand = thunk_CG_ConsoleCommand,
     .ServerCommand = thunk_CG_ServerCommand,
@@ -1051,6 +1053,15 @@ void CL_ShutdownCGame(void)
     cls.key_dest &= ~KEY_GAME;
 
     VM_FreeModule(&cgame);
+}
+
+void CL_InitCGame(void)
+{
+    // load cgame module if not done yet
+    if (!cge) {
+        cge = VM_LoadModule(&cgame, &cgame_iface);
+        cge->Init();
+    }
 }
 
 /*
@@ -1089,22 +1100,25 @@ static void CL_LoadMap(void)
     box_headnode = CM_HeadnodeForBox(vec3_origin, vec3_origin);
 }
 
-void CL_InitCGame(void)
+/*
+=================
+CL_PrepRefresh
+
+Call before entering a new level, or after changing dlls
+=================
+*/
+void CL_PrepRefresh(void)
 {
     CL_LoadMap();
 
-    // load cgame module if not done yet
-    if (!cge) {
-        cge = VM_LoadModule(&cgame, &cgame_iface);
-        cge->Init();
-    }
+    CL_InitCGame();
 
     // register models, pics, and skins
     R_BeginRegistration(cl.mapname);
 
     S_BeginRegistration();
 
-    cge->Precache();
+    cge->PrepRefresh(cls.demo.playback);
 
     S_EndRegistration();
 

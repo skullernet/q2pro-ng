@@ -130,7 +130,7 @@ static void SCR_DrawDebugGraph(void)
     }
 }
 
-static void SCR_DrawStats(void)
+static void SCR_DrawDebugStats(void)
 {
     if (!scr_showstats->integer)
         return;
@@ -217,6 +217,7 @@ void SCR_BeginLoadingPlaque(void)
 
     cls.draw_loading = true;
     SCR_UpdateScreen();
+    cls.draw_loading = false;
 
     cls.disable_screen = Sys_Milliseconds();
 }
@@ -235,31 +236,6 @@ void SCR_EndLoadingPlaque(void)
     Con_ClearNotify_f();
 }
 
-static void SCR_DrawLoading(void)
-{
-    int x, y, w, h;
-    qhandle_t pic;
-    float scale;
-
-    if (!cls.draw_loading)
-        return;
-
-    cls.draw_loading = false;
-
-    pic = R_RegisterPic("loading");
-    scale = R_ClampScale(NULL);
-
-    R_SetScale(scale);
-
-    R_GetPicSize(&w, &h, pic);
-    x = (r_config.width * scale - w) / 2;
-    y = (r_config.height * scale - h) / 2;
-
-    R_DrawPic(x, y, pic);
-
-    R_SetScale(1.0f);
-}
-
 static void SCR_DrawActive(void)
 {
     // if full screen menu is up, do nothing at all
@@ -272,16 +248,15 @@ static void SCR_DrawActive(void)
         return;
     }
 
-    if (cls.state == ca_cinematic) {
+    if (cls.state == ca_cinematic)
         SCR_DrawCinematic();
-        return;
-    }
 
-    cge->DrawActiveFrame(cls.realtime);
+    if (cls.state == ca_active || cls.draw_loading)
+        cge->DrawFrame(cls.realtime, cls.state == ca_active, cls.draw_loading);
 
     R_SetScale(scr_scale);
 
-    SCR_DrawStats();
+    SCR_DrawDebugStats();
 
     if (scr_timegraph->integer)
         SCR_DebugGraph(cls.frametime * 300, 0xdc);
@@ -336,9 +311,6 @@ void SCR_UpdateScreen(void)
 
     // draw console
     Con_DrawConsole();
-
-    // draw loading plaque
-    SCR_DrawLoading();
 
     R_EndFrame();
 

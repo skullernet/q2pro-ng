@@ -1235,7 +1235,7 @@ static void CL_RestartSound_f(void)
     S_Init();
     if (cge) {
         S_BeginRegistration();
-        cge->Precache();
+        cge->PrepRefresh(cls.demo.playback);
         S_EndRegistration();
     }
 }
@@ -1282,7 +1282,7 @@ void CL_Begin(void)
 {
     Cvar_FixCheats();
 
-    CL_InitCGame();
+    CL_PrepRefresh();
     cls.state = ca_precached;
 
     CL_ClientCommand(va("begin %i\n", precache_spawncount));
@@ -1308,7 +1308,7 @@ void CL_Precache_f(void)
 
     // demos use different precache sequence
     if (cls.demo.playback) {
-        CL_InitCGame();
+        CL_PrepRefresh();
         cls.state = ca_precached;
         return;
     }
@@ -1628,7 +1628,7 @@ void CL_RestartFilesystem(bool total)
     if (cls_state == ca_disconnected) {
         UI_OpenMenu(UIMENU_DEFAULT);
     } else if (cls_state >= ca_loading && cls_state <= ca_active) {
-        CL_InitCGame();
+        CL_PrepRefresh();
     } else if (cls_state == ca_cinematic) {
         SCR_ReloadCinematic();
     }
@@ -1680,7 +1680,7 @@ void CL_RestartRefresh(bool total)
     if (cls_state == ca_disconnected) {
         UI_OpenMenu(UIMENU_DEFAULT);
     } else if (cls_state >= ca_loading && cls_state <= ca_active) {
-        CL_InitCGame();
+        CL_PrepRefresh();
     } else if (cls_state == ca_cinematic) {
         SCR_ReloadCinematic();
     }

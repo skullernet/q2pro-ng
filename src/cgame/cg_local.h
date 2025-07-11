@@ -637,7 +637,7 @@ void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
 void    CG_ModeChanged(void);
-void    CG_DrawActiveFrame(unsigned msec);
+void    CG_DrawFrame(unsigned msec, bool active, bool loading);
 
 //
 // servercmd.c

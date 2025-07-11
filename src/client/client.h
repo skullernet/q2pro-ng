@@ -558,3 +558,4 @@ extern const cgame_export_t *cge;
 
 void CL_InitCGame(void);
 void CL_ShutdownCGame(void);
+void CL_PrepRefresh(void);

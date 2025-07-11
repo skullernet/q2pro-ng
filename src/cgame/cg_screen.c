@@ -1428,17 +1428,15 @@ static void SCR_DrawPause(void)
     trap_R_DrawPic(x, y, scr.pause_pic);
 }
 
-#if 0
 static void SCR_DrawLoading(void)
 {
     int x, y, w, h;
 
-    if (!scr.draw_loading)
-        return;
-
-    scr.draw_loading = false;
-
     trap_R_SetScale(scr.hud_scale);
+
+    // register pic if not precached yet
+    if (!scr.loading_pic)
+        scr.loading_pic = trap_R_RegisterPic("loading");
 
     trap_R_GetPicSize(&w, &h, scr.loading_pic);
     x = (scr.config.width * scr.hud_scale - w) / 2;
@@ -1448,7 +1446,6 @@ static void SCR_DrawLoading(void)
 
     trap_R_SetScale(1.0f);
 }
-#endif
 
 static void SCR_DrawHitMarker(void)
 {
@@ -1565,16 +1562,8 @@ static void SCR_Draw2D(void)
     trap_R_SetScale(1.0f);
 }
 
-qvm_exported void CG_DrawActiveFrame(unsigned time)
+static void SCR_DrawActive(void)
 {
-    unsigned msec = time - cgs.realtime;
-    cgs.realtime = time;
-
-    if (!sv_paused.integer)
-        cg.time += msec;
-
-    cgs.frametime = msec * 0.001f;
-
     trap_R_ClearScene();
 
     trap_S_ClearLoopingSounds();
@@ -1605,6 +1594,26 @@ qvm_exported void CG_DrawActiveFrame(unsigned time)
 
     // draw all 2D elements
     SCR_Draw2D();
+}
+
+// if not active, all we can draw is loading plaque
+qvm_exported void CG_DrawFrame(unsigned time, bool active, bool loading)
+{
+    unsigned msec = time - cgs.realtime;
+    cgs.realtime = time;
+
+    if (!sv_paused.integer)
+        cg.time += msec;
+
+    cgs.frametime = msec * 0.001f;
+
+    // do 3D refresh drawing
+    if (active)
+        SCR_DrawActive();
+
+    // draw loading plaque
+    if (loading)
+        SCR_DrawLoading();
 }
 
 qvm_exported void CG_ModeChanged(void)

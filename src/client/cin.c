@@ -731,6 +731,8 @@ SCR_ReloadCinematic
 */
 void SCR_ReloadCinematic(void)
 {
+    CL_InitCGame();
+
     if (cin.video.frame) {
         R_UpdateRawPic(cin.width, cin.height, (uint32_t *)cin.video.frame->data[0]);
     } else if (cl.mapname[0]) {
@@ -769,6 +771,9 @@ void SCR_PlayCinematic(const char *name)
         SCR_FinishCinematic();
         return;
     }
+
+    // init cgame for drawing loading plaque, etc
+    CL_InitCGame();
 
     cls.state = ca_cinematic;
 

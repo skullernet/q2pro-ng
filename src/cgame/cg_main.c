@@ -162,6 +162,7 @@ qvm_exported void CG_Shutdown(void)
 {
 }
 
+// Called after demo seek
 qvm_exported void CG_ClearState(void)
 {
     memset(&cg, 0, sizeof(cg));
@@ -173,11 +174,11 @@ qvm_exported void CG_ClearState(void)
     cg.serverframe = trap_GetServerFrameNumber() - 1;
 }
 
-qvm_exported void CG_Precache(void)
+// Called before entering a new level, or after subsystem restart
+qvm_exported void CG_PrepRefresh(bool demoplayback)
 {
     memset(&cgs, 0, sizeof(cgs));
-
-    cgs.demoplayback = trap_GetDemoInfo(NULL);
+    cgs.demoplayback = demoplayback;
 
     CG_UpdateConfigstring(CS_MAXCLIENTS);
     CG_UpdateConfigstring(CS_AIRACCEL);
@@ -229,12 +230,12 @@ q_exported const cgame_export_t *GetCGameAPI(const cgame_import_t *import)
 
         .Init = CG_Init,
         .Shutdown = CG_Shutdown,
-        .Precache = CG_Precache,
+        .PrepRefresh = CG_PrepRefresh,
         .ClearState = CG_ClearState,
         .ConsoleCommand = CG_ConsoleCommand,
         .ServerCommand = CG_ServerCommand,
         .UpdateConfigstring = CG_UpdateConfigstring,
-        .DrawActiveFrame = CG_DrawActiveFrame,
+        .DrawFrame = CG_DrawFrame,
         .ModeChanged = CG_ModeChanged,
         .KeyEvent = CG_KeyEvent,
         .CharEvent = CG_CharEvent,
