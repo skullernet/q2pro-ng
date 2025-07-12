@@ -182,20 +182,13 @@ int VM_CloseFile(vm_module_t *mod, qhandle_t f)
 
 void VM_FreeModule(vm_module_t *mod)
 {
-    int i, j, index;
-
     VM_Free(mod->vm);
     Sys_FreeLibrary(mod->lib);
     Z_Free(mod->cvars);
 
-    for (i = 0; i < q_countof(mod->open_files); i++) {
-        if (mod->open_files[i] == 0)
-            continue;
-        index = i * BC_BITS;
-        for (j = 0; j < BC_BITS; j++, index++)
-            if (Q_IsBitSet(mod->open_files, index))
-                FS_CloseFile(index + 1);
-    }
+    BC_FOR_EACH(mod->open_files, index) {
+        FS_CloseFile(index + 1);
+    } BC_FOR_EACH_END
 
     if (mod->entry.next)
         List_Remove(&mod->entry);

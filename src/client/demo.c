@@ -435,35 +435,25 @@ static void CL_Record_f(void)
 // configstrings and frame into single packet for seamless 'stitch'
 static void resume_record(void)
 {
-    int i, j, index;
     size_t len;
     const char *s;
 
     // write dirty configstrings
-    for (i = 0; i < q_countof(cl.dcs); i++) {
-        if (cl.dcs[i] == 0)
-            continue;
+    BC_FOR_EACH(cl.dcs, index) {
+        s = cl.configstrings[index];
+        len = s ? strlen(s) : 0;
 
-        index = i * BC_BITS;
-        for (j = 0; j < BC_BITS; j++, index++) {
-            if (!Q_IsBitSet(cl.dcs, index))
-                continue;
-
-            s = cl.configstrings[index];
-            len = s ? strlen(s) : 0;
-
-            if (cls.demo.buffer.cursize + len + 4 > cls.demo.buffer.maxsize) {
-                if (!CL_WriteDemoMessage(&cls.demo.buffer))
-                    return;
-                // multiple packets = not seamless
-            }
-
-            SZ_WriteByte(&cls.demo.buffer, svc_configstring);
-            SZ_WriteShort(&cls.demo.buffer, index);
-            SZ_Write(&cls.demo.buffer, s, len);
-            SZ_WriteByte(&cls.demo.buffer, 0);
+        if (cls.demo.buffer.cursize + len + 4 > cls.demo.buffer.maxsize) {
+            if (!CL_WriteDemoMessage(&cls.demo.buffer))
+                return;
+            // multiple packets = not seamless
         }
-    }
+
+        SZ_WriteByte(&cls.demo.buffer, svc_configstring);
+        SZ_WriteShort(&cls.demo.buffer, index);
+        SZ_Write(&cls.demo.buffer, s, len);
+        SZ_WriteByte(&cls.demo.buffer, 0);
+    } BC_FOR_EACH_END
 
     // write delta uncompressed frame
     //cls.demo.last_server_frame = -1;
@@ -908,10 +898,10 @@ CL_Seek_f
 static void CL_Seek_f(void)
 {
     demosnap_t *snap;
-    int i, j, ret, index;
     int64_t dest, frames;
     bool byte_seek, back_seek;
     char *from, *to;
+    int ret;
 
     if (Cmd_Argc() < 2) {
         Com_Printf("Usage: %s [+-]<timespec|percent>[%%]\n", Cmd_Argv(0));
@@ -1000,7 +990,7 @@ static void CL_Seek_f(void)
             cls.demo.eof = false;
 
             // reset configstrings
-            for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
+            for (int i = 0; i < MAX_CONFIGSTRINGS; i++) {
                 from = cl.baseconfigstrings[i];
                 to = cl.configstrings[i];
 
@@ -1047,16 +1037,9 @@ static void CL_Seek_f(void)
     Com_DPrintf("[%d] after skip %d\n", cls.demo.frames_read, cl.frame.number);
 
     // update dirty configstrings
-    for (i = 0; i < q_countof(cl.dcs); i++) {
-        if (cl.dcs[i] == 0)
-            continue;
-
-        index = i * BC_BITS;
-        for (j = 0; j < BC_BITS; j++, index++) {
-            if (Q_IsBitSet(cl.dcs, index))
-                cge->UpdateConfigstring(index);
-        }
-    }
+    BC_FOR_EACH(cl.dcs, index) {
+        cge->UpdateConfigstring(index);
+    } BC_FOR_EACH_END
 
     // don't lerp to old
     memset(&cl.oldframe, 0, sizeof(cl.oldframe));

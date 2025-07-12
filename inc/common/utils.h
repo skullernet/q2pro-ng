@@ -76,6 +76,16 @@ char *UTF8_TranslitString(const char *src);
 #define BC_BITS         (sizeof(size_t) * CHAR_BIT)
 #define BC_COUNT(n)     (((n) + BC_BITS - 1) / BC_BITS)
 
+#define BC_FOR_EACH(array, index) \
+    for (int i_ = 0; i_ < q_countof(array); i_++) { \
+        if ((array)[i_] == 0) \
+            continue; \
+        int index = i_ * BC_BITS; \
+        for (int j_ = 0; j_ < BC_BITS; j_++, index++) { \
+            if (Q_IsBitSet(array, index))
+
+#define BC_FOR_EACH_END }}
+
 // Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
 static inline size_t Com_ConfigstringSize(int cs)
 {
