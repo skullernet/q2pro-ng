@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64 dos2unix nasm meson ninja-build
+          sudo apt-get install -y gcc-mingw-w64 dos2unix nasm meson ninja-build clang-19 lld-19 binaryen
 
       - name: Build
         run: ./.ci/nightly.sh
