@@ -893,7 +893,6 @@ static void CL_SendBatchedCmd(void)
         MSG_WriteByte(clc_move_nodelta); // no compression
     } else {
         MSG_WriteByte(clc_move_batched);
-        MSG_WriteLong(cl.frame.number);
     }
 
     // send lightlevel

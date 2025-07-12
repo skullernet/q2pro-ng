@@ -25,7 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static byte     demo_buffer[MAX_MSGLEN];
 
 static cvar_t   *cl_demosnaps;
-static cvar_t   *cl_demomsglen;
 static cvar_t   *cl_demowait;
 static cvar_t   *cl_demosuspendtoggle;
 
@@ -136,19 +135,15 @@ static void emit_packet_entities(const server_frame_t *from, const server_frame_
     MSG_WriteBits(ENTITYNUM_NONE, ENTITYNUM_BITS);  // end of packetentities
 }
 
-static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to,
-                             int fromnum, int tonum)
+static void emit_delta_frame(const server_frame_t *from, const server_frame_t *to)
 {
     MSG_WriteByte(svc_frame);
-    MSG_WriteBits(tonum, FRAMENUM_BITS);
-    MSG_WriteBits(fromnum, DELTAFRAME_BITS); // what we are delta'ing from
-    MSG_WriteBits(to->servertime, 32);
-    MSG_WriteBits(0, SUPPRESSCOUNT_BITS);   // rate dropped packets
+    MSG_WriteBits(from ? 1 : 0, FRAMEDELTA_BITS);
+    MSG_WriteBits(to->flags, FRAMEFLAGS_BITS);
+    MSG_WriteLeb32(to->servertime);
 
     // send over the areabits
-    MSG_WriteBits(to->areabytes, 6);
-    for (int i = 0; i < to->areabytes; i++)
-        MSG_WriteBits(to->areabits[i], 8);
+    MSG_WriteAreaBits(to->areabits, to->areabytes);
 
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(from ? &from->ps : NULL, &to->ps);
@@ -157,11 +152,6 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     emit_packet_entities(from, to);
     MSG_FlushBits();
 }
-
-// frames_written counter starts at 0, but we add 1 to every frame number
-// because frame 0 can't be used due to protocol limitation (hack).
-#define FRAME_PRE   (cls.demo.frames_written)
-#define FRAME_CUR   (cls.demo.frames_written + 1)
 
 /*
 ====================
@@ -173,7 +163,6 @@ Writes delta from the last frame we got to the current frame.
 void CL_EmitDemoFrame(void)
 {
     server_frame_t  *oldframe;
-    int             lastframe;
 
     if (!cl.frame.valid)
         return;
@@ -181,19 +170,16 @@ void CL_EmitDemoFrame(void)
     // the first frame is delta uncompressed
     if (cls.demo.last_server_frame == -1) {
         oldframe = NULL;
-        lastframe = 31;
     } else {
         oldframe = &cl.frames[cls.demo.last_server_frame & UPDATE_MASK];
-        lastframe = 1;
         if (oldframe->number != cls.demo.last_server_frame || !oldframe->valid ||
             cl.next_entity - oldframe->first_entity > MAX_PARSE_ENTITIES) {
             oldframe = NULL;
-            lastframe = 31;
         }
     }
 
     // emit and flush frame
-    emit_delta_frame(oldframe, &cl.frame, lastframe, FRAME_CUR);
+    emit_delta_frame(oldframe, &cl.frame);
 
     if (msg_write.overflowed) {
         Com_WPrintf("%s: message buffer overflowed\n", __func__);
@@ -201,13 +187,6 @@ void CL_EmitDemoFrame(void)
         Com_DPrintf("Demo frame overflowed (%u + %u > %u)\n",
                     cls.demo.buffer.cursize, msg_write.cursize, cls.demo.buffer.maxsize);
         cls.demo.frames_dropped++;
-
-        // warn the user if drop rate is too high
-        if (cls.demo.frames_written < 10 && !(cls.demo.frames_dropped % 50)) {
-            Com_WPrintf("Too many demo frames don't fit into %u bytes!\n", cls.demo.buffer.maxsize);
-            if (cls.demo.frames_dropped == 50)
-                Com_WPrintf("Try to increase 'cl_demomsglen' value and restart recording.\n");
-        }
     } else {
         SZ_Write(&cls.demo.buffer, msg_write.data, msg_write.cursize);
         cls.demo.last_server_frame = cl.frame.number;
@@ -733,13 +712,8 @@ void CL_EmitDemoSnapshot(void)
     demosnap_t *snap;
     int64_t pos;
     const char *from, *to;
-    server_frame_t *lastframe, *frame;
-    int i, j, lastnum;
 
     if (cl_demosnaps->integer <= 0)
-        return;
-
-    if (cls.demo.frames_read < cls.demo.last_snapshot + cl_demosnaps->integer * BASE_FRAMERATE)
         return;
 
     if (cls.demo.numsnapshots >= MAX_SNAPSHOTS)
@@ -752,32 +726,16 @@ void CL_EmitDemoSnapshot(void)
         return;
 
     pos = FS_Tell(cls.demo.playback);
-    if (pos < cls.demo.file_offset)
+    if (pos < cls.demo.last_snapshot_pos + cl_demosnaps->integer * 1000LL)
         return;
 
     MSG_BeginWriting();
 
-    // write all the backups, since we can't predict what frame the next
-    // delta will come from
-    lastframe = NULL;
-    for (i = 0; i < UPDATE_BACKUP; i++) {
-        j = cl.frame.number - (UPDATE_BACKUP - 1) + i;
-        frame = &cl.frames[j & UPDATE_MASK];
-        if (frame->number != j || !frame->valid ||
-            cl.next_entity - frame->first_entity > MAX_PARSE_ENTITIES) {
-            continue;
-        }
-
-        if (lastframe)
-            lastnum = frame->number - lastframe->number;
-        else
-            lastnum = 31;
-        emit_delta_frame(lastframe, frame, lastnum, j);
-        lastframe = frame;
-    }
+    // write uncompressed frame
+    emit_delta_frame(NULL, &cl.frame);
 
     // write configstrings
-    for (i = 0; i < MAX_CONFIGSTRINGS; i++) {
+    for (int i = 0; i < MAX_CONFIGSTRINGS; i++) {
         from = cl.baseconfigstrings[i];
         to = cl.configstrings[i];
 
@@ -797,7 +755,7 @@ void CL_EmitDemoSnapshot(void)
         Com_DWPrintf("%s: message buffer overflowed\n", __func__);
     } else {
         snap = Z_Malloc(sizeof(*snap) + msg_write.cursize - 1);
-        snap->framenum = cls.demo.frames_read;
+        snap->framenum = cls.demo.frames_read - 1;
         snap->servertime = cl.frame.servertime;
         snap->filepos = pos;
         snap->msglen = msg_write.cursize;
@@ -811,7 +769,7 @@ void CL_EmitDemoSnapshot(void)
 
     SZ_Clear(&msg_write);
 
-    cls.demo.last_snapshot = cls.demo.frames_read;
+    cls.demo.last_snapshot_pos = pos;
 }
 
 static demosnap_t *find_snapshot(int64_t dest, bool byte_seek)
@@ -873,7 +831,7 @@ void CL_FirstDemoFrame(void)
     }
 
     // force initial snapshot
-    cls.demo.last_snapshot = INT_MIN;
+    cls.demo.last_snapshot_pos = INT64_MIN;
 }
 
 /*
@@ -898,7 +856,7 @@ CL_Seek_f
 static void CL_Seek_f(void)
 {
     demosnap_t *snap;
-    int64_t dest, frames;
+    int64_t dest, frames, pos;
     bool byte_seek, back_seek;
     char *from, *to;
     int ret;
@@ -974,8 +932,10 @@ static void CL_Seek_f(void)
 
     Com_DPrintf("[%d] seeking to %"PRId64"\n", cls.demo.frames_read, dest);
 
+    pos = FS_Tell(cls.demo.playback);
+
     // seek to the previous most recent snapshot
-    if (back_seek || cls.demo.last_snapshot > cls.demo.frames_read) {
+    if (back_seek || cls.demo.last_snapshot_pos > pos) {
         snap = find_snapshot(dest, byte_seek);
 
         if (snap) {
@@ -1004,8 +964,8 @@ static void CL_Seek_f(void)
 
             SZ_InitRead(&msg_read, snap->data, snap->msglen);
 
-            CL_SeekDemoMessage();
             cls.demo.frames_read = snap->framenum;
+            CL_SeekDemoMessage();
             Com_DPrintf("[%d] after snap parse %d\n", cls.demo.frames_read, cl.frame.number);
         } else if (back_seek) {
             Com_Printf("Couldn't seek backwards without snapshots!\n");
@@ -1015,7 +975,7 @@ static void CL_Seek_f(void)
 
     // skip forward to destination frame/position
     while (1) {
-        int64_t pos = byte_seek ? FS_Tell(cls.demo.playback) : cl.frame.servertime;
+        pos = byte_seek ? FS_Tell(cls.demo.playback) : cl.frame.servertime;
         if (pos >= dest)
             break;
 
@@ -1051,8 +1011,6 @@ static void CL_Seek_f(void)
         resume_record();
 
     update_status();
-
-    cl.frameflags = 0;
 
 done:
     cls.demo.seeking = false;
@@ -1223,8 +1181,7 @@ CL_InitDemos
 */
 void CL_InitDemos(void)
 {
-    cl_demosnaps = Cvar_Get("cl_demosnaps", "10", 0);
-    cl_demomsglen = Cvar_Get("cl_demomsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
+    cl_demosnaps = Cvar_Get("cl_demosnaps", "100", 0);
     cl_demowait = Cvar_Get("cl_demowait", "0", 0);
     cl_demosuspendtoggle = Cvar_Get("cl_demosuspendtoggle", "1", 0);
 

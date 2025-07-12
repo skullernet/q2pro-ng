@@ -485,13 +485,15 @@ static void SV_SetLastFrame(int lastframe)
     client_frame_t *frame;
 
     if (lastframe > 0) {
-        if (lastframe >= sv_client->framenum)
+        int nextframe = sv_client->netchan.outgoing_sequence;
+
+        if (lastframe >= nextframe)
             return; // ignore invalid acks
 
         if (lastframe <= sv_client->lastframe)
             return; // ignore duplicate acks
 
-        if (sv_client->framenum - lastframe <= UPDATE_BACKUP) {
+        if (nextframe - lastframe <= UPDATE_BACKUP) {
             frame = &sv_client->frames[lastframe & UPDATE_MASK];
 
             if (frame->number == lastframe) {
@@ -532,7 +534,7 @@ static void SV_NewClientExecuteMove(int c)
     if (c == clc_move_nodelta) {
         lastframe = -1;
     } else {
-        lastframe = MSG_ReadLong();
+        lastframe = sv_client->netchan.incoming_acknowledged;
     }
 
     lightlevel = MSG_ReadByte();

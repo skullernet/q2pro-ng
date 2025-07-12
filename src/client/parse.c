@@ -32,9 +32,7 @@ static void CL_ParseDeltaEntity(server_frame_t *frame, int newnum,
 {
     entity_state_t  *state;
 
-    if (frame->num_entities >= MAX_PACKET_ENTITIES) {
-        Com_Error(ERR_DROP, "%s: too many entities", __func__);
-    }
+    Q_assert_soft(frame->num_entities < MAX_PACKET_ENTITIES);
 
     state = &cl.entities[cl.next_entity & PARSE_ENTITIES_MASK];
     cl.next_entity++;
@@ -79,9 +77,7 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
         if (newnum == ENTITYNUM_NONE) {
             break;
         }
-        if (newnum < 0 || newnum >= ENTITYNUM_WORLD) {
-            Com_Error(ERR_DROP, "%s: bad number: %d", __func__, newnum);
-        }
+        Q_assert_soft(newnum < ENTITYNUM_WORLD);
 
         removed = MSG_ReadBit();
         changed = !removed && MSG_ReadBit();
@@ -108,10 +104,8 @@ static void CL_ParsePacketEntities(const server_frame_t *oldframe, server_frame_
             if (oldnum != newnum) {
                 Com_DPrintf("U_REMOVE: oldnum != newnum\n");
             }
-            if (!oldframe) {
-                Com_Error(ERR_DROP, "%s: U_REMOVE with NULL oldframe", __func__);
-            }
 
+            Q_assert_soft(oldframe);
             oldindex++;
 
             if (oldindex >= oldframe->num_entities) {
@@ -174,7 +168,6 @@ static void CL_SetActiveState(void)
     cls.state = ca_active;
 
     cl.time = cl.frame.servertime; // set time, needed for demos
-    cl.frameflags = 0;
     cl.initialSeq = cls.netchan.outgoing_sequence;
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque
@@ -192,102 +185,65 @@ static void CL_SetActiveState(void)
 
 static void CL_ParseFrame(void)
 {
-    int                     currentframe, deltaframe, delta, suppressed, length;
-    server_frame_t          frame;
-    const server_frame_t    *oldframe;
-    const player_state_t    *from;
-
-    memset(&frame, 0, sizeof(frame));
-
-    cl.frameflags = 0;
+    server_frame_t          frame = { 0 };
+    const server_frame_t   *oldframe;
+    int                     deltaframe;
 
     MSG_AlignBits();
-    currentframe = MSG_ReadBits(FRAMENUM_BITS);
-    delta = MSG_ReadBits(DELTAFRAME_BITS);
-    frame.servertime = MSG_ReadBits(32);
 
-    if (delta == 31) {
-        deltaframe = -1;
+    frame.delta = MSG_ReadBits(FRAMEDELTA_BITS);
+    frame.flags = MSG_ReadBits(FRAMEFLAGS_BITS);
+    frame.servertime = MSG_ReadLeb32();
+
+    if (cls.demo.playback) {
+        frame.number = cls.demo.frames_read++;
+        frame.cmdnum = 0;
     } else {
-        deltaframe = currentframe - delta;
-    }
-
-    suppressed = MSG_ReadBits(SUPPRESSCOUNT_BITS);
-    if (suppressed & FF_CLIENTPRED) {
-        // CLIENTDROP is implied, don't draw both
-        suppressed &= ~FF_CLIENTDROP;
-    }
-    if (suppressed & FF_SUPPRESSED) {
-        cl.suppress_count = 1;
-    }
-    cl.frameflags |= suppressed;
-
-    frame.number = currentframe;
-    frame.cmdnum = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
-
-    if (cls.netchan.dropped) {
-        cl.frameflags |= FF_SERVERDROP;
+        frame.number = cls.netchan.incoming_sequence;
+        frame.cmdnum = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
     }
 
     // if the frame is delta compressed from data that we no longer have
     // available, we must suck up the rest of the frame, but not use it, then
     // ask for a non-compressed message
-    if (deltaframe > 0) {
+    if (frame.delta) {
+        deltaframe = frame.number - frame.delta;
         oldframe = &cl.frames[deltaframe & UPDATE_MASK];
-        from = &oldframe->ps;
-        if (deltaframe == currentframe) {
-            // old servers may cause this on map change
-            Com_DPrintf("%s: delta from current frame\n", __func__);
-            cl.frameflags |= FF_BADFRAME;
-        } else if (oldframe->number != deltaframe) {
+        if (oldframe->number != deltaframe) {
             // the frame that the server did the delta from
             // is too old, so we can't reconstruct it properly.
             Com_DPrintf("%s: delta frame was never received or too old\n", __func__);
-            cl.frameflags |= FF_OLDFRAME;
         } else if (!oldframe->valid) {
             // should never happen
             Com_DPrintf("%s: delta from invalid frame\n", __func__);
-            cl.frameflags |= FF_BADFRAME;
         } else if (cl.next_entity - oldframe->first_entity >
                    MAX_PARSE_ENTITIES - MAX_PACKET_ENTITIES) {
             Com_DPrintf("%s: delta entities too old\n", __func__);
-            cl.frameflags |= FF_OLDENT;
         } else {
             frame.valid = true; // valid delta parse
         }
-        if (!frame.valid && cl.frame.valid && cls.demo.playback) {
-            Com_DPrintf("%s: recovering broken demo\n", __func__);
-            oldframe = &cl.frame;
-            from = &oldframe->ps;
-            frame.valid = true;
-        }
     } else {
+        deltaframe = -1;
         oldframe = NULL;
-        from = NULL;
         frame.valid = true; // uncompressed frame
-        cl.frameflags |= FF_NODELTA;
     }
 
     // read areabits
-    length = MSG_ReadBits(6);
-    memset(frame.areabits, 255, sizeof(frame.areabits));
-    if (length) {
-        if (length > sizeof(frame.areabits)) {
-            Com_Error(ERR_DROP, "%s: invalid areabits length", __func__);
-        }
+    if (MSG_ReadBit()) {
+        int length = MSG_ReadBits(5) + 1;
         for (int i = 0; i < length; i++)
             frame.areabits[i] = MSG_ReadBits(8);
-        //memcpy(frame.areabits, MSG_ReadData(length), length);
         frame.areabytes = length;
     } else {
-        frame.areabytes = 0;
+        frame.areabits[0] = 0x02;
+        frame.areabytes   = 1;
     }
 
-    SHOWNET(3, "%3u:playerinfo\n", msg_read.readcount);
+    SHOWNET(3, "%3u:playerinfo ", msg_read.readcount);
 
     // parse playerstate
-    if (from)
-        frame.ps = *from;
+    if (oldframe)
+        frame.ps = oldframe->ps;
     MSG_ParseDeltaPlayerstate(&frame.ps);
 
     SHOWNET(3, "\n%3u:packetentities\n", msg_read.readcount);
@@ -296,7 +252,7 @@ static void CL_ParseFrame(void)
     CL_ParsePacketEntities(oldframe, &frame);
 
     // save the frame off in the backup array for later delta comparisons
-    cl.frames[currentframe & UPDATE_MASK] = frame;
+    cl.frames[frame.number & UPDATE_MASK] = frame;
 
 #if USE_DEBUG
     if (cl_shownet->integer >= 3) {
@@ -312,17 +268,10 @@ static void CL_ParseFrame(void)
         return; // do not change anything
     }
 
-    if (!frame.ps.fov) {
-        // fail out early to prevent spurious errors later
-        Com_Error(ERR_DROP, "%s: bad fov", __func__);
-    }
-
     if (cls.state < ca_precached)
         return;
 
     cl.frame = frame;
-
-    cls.demo.frames_read++;
 
     // getting a valid frame message ends the connection process
     if (cls.state == ca_precached)
@@ -346,12 +295,10 @@ static void CL_ParseConfigstring(unsigned index)
     size_t  len;
     char    **dst;
 
-    if (index >= MAX_CONFIGSTRINGS)
-        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
+    Q_assert_soft(index < MAX_CONFIGSTRINGS);
 
     len = MSG_ReadString(string, sizeof(string));
-    if (len >= sizeof(string))
-        Com_Error(ERR_DROP, "%s: oversize string: %d", __func__, index);
+    Q_assert_soft(len < sizeof(string));
 
     SHOWNET(3, "    %d \"%s\"\n", index, COM_MakePrintable(string));
 
@@ -383,11 +330,8 @@ static void CL_ParseConfigstring(unsigned index)
 
 static void CL_ParseBaseline(unsigned index)
 {
-    if (index >= ENTITYNUM_WORLD) {
-        Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
-    }
-
     SHOWNET(3, "    baseline:%i ", index);
+    Q_assert_soft(index < ENTITYNUM_WORLD);
     entity_state_t *s = &cl.baselines[index];
     s->number = index;
     MSG_ParseDeltaEntity(s, s);

@@ -631,6 +631,7 @@ static void dump_protocols(void)
     }
 }
 
+#if 0
 static void dump_settings(void)
 {
     client_t    *cl;
@@ -654,6 +655,7 @@ static void dump_settings(void)
                    cl->settings[CLS_PLAYERUPDATES], cl->settings[CLS_FPS]);
     }
 }
+#endif
 
 /*
 ================
@@ -679,7 +681,6 @@ static void SV_Status_f(void)
             switch (*w) {
             case 'l': dump_lag();       break;
             case 'p': dump_protocols(); break;
-            case 's': dump_settings();  break;
             case 't': dump_time();      break;
             case 'v': dump_versions();  break;
             default:

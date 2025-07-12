@@ -354,23 +354,19 @@ void SV_SendClientMessages(void)
 
         // don't overrun bandwidth
         if (SV_RateDrop(client))
-            goto advance;
+            goto finish;
 
         // don't write any frame data until all fragments are sent
         if (client->netchan.fragment_pending) {
             client->frameflags |= FF_SUPPRESSED;
             cursize = Netchan_TransmitNextFragment(&client->netchan);
             SV_CalcSendTime(client, cursize);
-            goto advance;
+            goto finish;
         }
 
         // build the new frame and write it
         SV_BuildClientFrame(client);
         SV_SendClientDatagram(client);
-
-advance:
-        // advance for next frame
-        client->framenum++;
 
 finish:
         // clear all unreliable messages still left
@@ -413,7 +409,7 @@ void SV_SendAsyncPackets(void)
         }
 
         // spawned clients are handled elsewhere
-        if (CLIENT_ACTIVE(client) && !SV_PAUSED) {
+        if (CLIENT_ACTIVE(client)) {
             continue;
         }
 

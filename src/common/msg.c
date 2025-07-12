@@ -173,7 +173,7 @@ void MSG_WriteBit(bool value)
     msg_write.bits_left--;
 }
 
-static void MSG_WriteLeb32(uint32_t v)
+void MSG_WriteLeb32(uint32_t v)
 {
     while (v) {
         MSG_WriteBit(1);
@@ -559,6 +559,18 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
                 MSG_WriteBits(to->stats[i], -16);
 }
 
+void MSG_WriteAreaBits(const byte *areabits, unsigned areabytes)
+{
+    Q_assert(areabytes <= MAX_MAP_AREA_BYTES);
+    if (areabytes == 0 || (areabytes == 1 && areabits[0] == 0x02)) {
+        MSG_WriteBit(0);
+    } else {
+        MSG_WriteBit(1);
+        MSG_WriteBits(areabytes - 1, 5);
+        for (int i = 0; i < areabytes; i++)
+            MSG_WriteBits(areabits[i], 8);
+    }
+}
 
 /*
 ==============================================================================
@@ -738,7 +750,7 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 #if USE_CLIENT
 
-static uint32_t MSG_ReadLeb32(void)
+uint32_t MSG_ReadLeb32(void)
 {
     uint32_t v = 0;
     int bits = 0;

@@ -38,11 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
                             // must be power of two
 #define UPDATE_MASK     (UPDATE_BACKUP - 1)
 
-#define SVCMD_BITS              5
-#define FRAMENUM_BITS           27
-#define DELTAFRAME_BITS         5
+#define FRAMEDELTA_BITS         4
 #define FRAMEFLAGS_BITS         4
-#define SUPPRESSCOUNT_BITS      4
 
 #define MAX_PARSE_ENTITIES      (MAX_PACKET_ENTITIES * UPDATE_BACKUP)
 #define PARSE_ENTITIES_MASK     (MAX_PARSE_ENTITIES - 1)
@@ -91,36 +88,6 @@ typedef enum {
 
 //==============================================
 
-// a client with this number will never be included in MVD stream
-#define CLIENTNUM_NONE      (MAX_CLIENTS - 1)
-
-typedef enum {
-    // R1Q2 specific
-    CLS_NOGUN,
-    CLS_NOBLEND,
-    CLS_RECORDING,
-    CLS_PLAYERUPDATES,
-    CLS_FPS,
-
-    // Q2PRO specific
-    CLS_NOGIBS            = 10,
-    CLS_NOFOOTSTEPS,
-    CLS_NOPREDICT,
-    CLS_NOFLARES,
-
-    CLS_MAX
-} clientSetting_t;
-
-typedef enum {
-    // R1Q2 specific
-    SVS_PLAYERUPDATES,
-    SVS_FPS,
-
-    SVS_MAX
-} serverSetting_t;
-
-// Q2PRO frame flags sent by the server
-// only SUPPRESSCOUNT_BITS can be used
 #define FF_SUPPRESSED   BIT(0)
 #define FF_CLIENTDROP   BIT(1)
 #define FF_CLIENTPRED   BIT(2)

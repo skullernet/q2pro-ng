@@ -58,13 +58,6 @@ typedef struct {
 
 extern centity_t    cg_entities[MAX_EDICTS];
 
-// locally calculated frame flags for debug display
-#define FF_SERVERDROP   BIT(4)
-#define FF_BADFRAME     BIT(5)
-#define FF_OLDFRAME     BIT(6)
-#define FF_OLDENT       BIT(7)
-#define FF_NODELTA      BIT(8)
-
 #define DAMAGE_TIME 500
 #define FALL_TIME   300
 #define KICK_TIME   100

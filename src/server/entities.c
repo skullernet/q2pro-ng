@@ -111,7 +111,7 @@ static client_frame_t *get_last_frame(client_t *client)
 
     client->frames_nodelta = 0;
 
-    if (client->framenum - client->lastframe >= UPDATE_BACKUP) {
+    if (client->netchan.outgoing_sequence - client->lastframe >= UPDATE_BACKUP) {
         // client hasn't gotten a good message through in a long time
         Com_DPrintf("%s: delta request from out-of-date packet.\n", client->name);
         return NULL;
@@ -141,30 +141,27 @@ SV_WriteFrameToClient
 */
 void SV_WriteFrameToClient(client_t *client)
 {
-    client_frame_t  *frame, *oldframe;
+    const client_frame_t *frame, *oldframe;
     int delta;
 
     // this is the frame we are creating
-    frame = &client->frames[client->framenum & UPDATE_MASK];
+    frame = &client->frames[client->netchan.outgoing_sequence & UPDATE_MASK];
 
     // this is the frame we are delta'ing from
     oldframe = get_last_frame(client);
     if (oldframe)
-        delta = client->framenum - client->lastframe;
+        delta = frame->number - client->lastframe;
     else
-        delta = 31;
+        delta = 0;
 
     MSG_BeginWriting();
     MSG_WriteByte(svc_frame);
-    MSG_WriteBits(client->framenum, FRAMENUM_BITS);
-    MSG_WriteBits(delta, DELTAFRAME_BITS);
-    MSG_WriteBits(sv.time, 32);
+    MSG_WriteBits(delta, FRAMEDELTA_BITS);
     MSG_WriteBits(client->frameflags, FRAMEFLAGS_BITS);
+    MSG_WriteLeb32(sv.time);
 
     // send over the areabits
-    MSG_WriteBits(frame->areabytes, 6);
-    for (int i = 0; i < frame->areabytes; i++)
-        MSG_WriteBits(frame->areabits[i], 8);
+    MSG_WriteAreaBits(frame->areabits, frame->areabytes);
 
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(oldframe ? &oldframe->ps : NULL, &frame->ps);
@@ -245,8 +242,8 @@ void SV_BuildClientFrame(client_t *client)
     Q_assert(client->entities);
 
     // this is the frame we are creating
-    frame = &client->frames[client->framenum & UPDATE_MASK];
-    frame->number = client->framenum;
+    frame = &client->frames[client->netchan.outgoing_sequence & UPDATE_MASK];
+    frame->number = client->netchan.outgoing_sequence;
     frame->sentTime = com_eventTime; // save it for ping calc later
     frame->latency = -1; // not yet acked
 

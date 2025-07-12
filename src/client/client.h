@@ -65,9 +65,11 @@ typedef struct {
 
 typedef struct {
     bool            valid;
-    unsigned        servertime;
+    int             flags;
 
-    int             number;
+    unsigned        servertime;
+    unsigned        delta;
+    unsigned        number;
     unsigned        cmdnum;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
@@ -78,13 +80,6 @@ typedef struct {
     int             num_entities;
     unsigned        first_entity;
 } server_frame_t;
-
-// locally calculated frame flags for debug display
-#define FF_SERVERDROP   BIT(4)
-#define FF_BADFRAME     BIT(5)
-#define FF_OLDFRAME     BIT(6)
-#define FF_OLDENT       BIT(7)
-#define FF_NODELTA      BIT(8)
 
 //
 // the client_state_t structure is wiped completely at every
@@ -111,9 +106,6 @@ typedef struct {
     unsigned        next_entity;
 
     server_frame_t  frames[UPDATE_BACKUP];
-    unsigned        frameflags;
-    int             suppress_count;
-
     server_frame_t  frame;          // received from server
 
     size_t          dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
@@ -310,7 +302,7 @@ typedef struct {
         int         frames_dropped;     // number of svc_frames that didn't fit
         int         others_dropped;     // number of misc svc_* messages that didn't fit
         int         frames_read;        // number of frames read from demo file
-        int         last_snapshot;      // number of demo frame the last snapshot was saved
+        int64_t     last_snapshot_pos;  // file position of last snapshot
         int         starttime;          // server time of first demo frame
         int64_t     file_size;
         int64_t     file_offset;

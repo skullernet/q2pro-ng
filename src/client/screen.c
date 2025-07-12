@@ -73,7 +73,7 @@ void SCR_AddNetgraph(void)
     for (i = 0; i < cls.netchan.dropped; i++)
         SCR_DebugGraph(30, 0x40);
 
-    for (i = 0; i < cl.suppress_count; i++)
+    if (cl.frame.flags & FF_SUPPRESSED)
         SCR_DebugGraph(30, 0xdf);
 
     if (scr_netgraph->integer > 1) {
