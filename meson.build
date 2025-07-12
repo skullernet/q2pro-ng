@@ -1,7 +1,7 @@
 project('q2pro', 'c',
   license: 'GPL-2.0-or-later',
   version: run_command(find_program('python3'), 'version.py', check: true).stdout().strip(),
-  meson_version: '>= 0.59.0',
+  meson_version: '>= 0.60.0',
   default_options: [
     'c_std=c11',
     'buildtype=debugoptimized',
@@ -223,18 +223,11 @@ texture_formats = []
 
 fallback_opt = ['default_library=static']
 
-zlib = dependency('zlib-ng',
+zlib = dependency('zlib-ng', 'zlib',
+  fallback:        'zlib-ng',
   required:        get_option('zlib'),
   default_options: fallback_opt + [ 'tests=disabled', 'zlib-compat=true', 'force-sse2=true' ],
 )
-
-if not zlib.found()
-  zlib = dependency('zlib', required: get_option('zlib'))
-endif
-
-if not zlib.found()
-  warning('zlib not found, client will be unable to connect to protocol 35 servers')
-endif
 
 png = dependency('libpng',
   version:         '>= 1.6.11',

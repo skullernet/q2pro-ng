@@ -44,6 +44,14 @@ int memcmp(const void *s1, const void *s2, size_t n);
 #define isfinite(f) __builtin_isfinite(f)
 #define signbit(f)  __builtin_signbit(f)
 
+#ifndef NAN
+#define NAN __builtin_nanf("")
+#endif
+
+#ifndef INFINITY
+#define INFINITY __builtin_inff()
+#endif
+
 int abs(int i);
 double fabs(double f);
 double copysign(double x, double y);
