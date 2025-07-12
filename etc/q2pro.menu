@@ -56,7 +56,7 @@ end
 
 background black
 font conchars
-cursor ch1
+cursor ch2
 weapon w_railgun.md2
 
 color normal #0f90eb64
@@ -136,6 +136,8 @@ begin effects
     values "ground shadows" gl_shadows no yes fade
     toggle "screen blending" gl_polyblend
     toggle "screen warping" gl_waterwarp
+    toggle "fog" gl_fog
+    toggle "bloom" gl_bloom
     toggle "grenade explosions" cl_disable_explosions ~0
     toggle "rocket explosions" cl_disable_explosions ~1
     blank
@@ -144,7 +146,9 @@ end
 
 begin crosshair
     title "Crosshair Setup"
-    values "crosshair type" crosshair none cross dot angle
+    values "crosshair type" crosshair "none" "circle" "small cross" \
+        "cross" "alpha circle" "alpha circle 2" "dot" "circled cross" \
+        "double cross" "large cross"
     pairs "crosshair scale" ch_scale 0.5x 0.5 1x 1 2x 2
     toggle "color by health" ch_health
     range "red channel" ch_red 0 1
@@ -182,18 +186,18 @@ end
 
 begin gameflags
     title "Deathmatch Flags"
-    toggle "falling damage" dmflags ~3
-    toggle "weapons stay" dmflags 2
-    toggle "instant powerups" dmflags 4
-    toggle "allow powerups" dmflags ~1
-    toggle "allow health" dmflags ~0
-    toggle "allow armor" dmflags ~11
-    toggle "spawn farthest" dmflags 9
-    toggle "same map" dmflags 5
-    toggle "force respawn" dmflags 10
-    toggle "infinite ammo" dmflags 13
-    toggle "fixed FOV" dmflags 15
-    toggle "quad drop" dmflags 14
+    toggle "falling damage" g_dm_no_fall_damage ~
+    toggle "weapons stay" g_dm_weapons_stay
+    toggle "instant powerups" g_dm_instant_items
+    toggle "allow powerups" g_no_items ~
+    toggle "allow health" g_no_health ~
+    toggle "allow armor" g_no_armor ~
+    toggle "spawn farthest" g_dm_spawn_farthest
+    toggle "same map" g_dm_same_level
+    toggle "force respawn" g_dm_force_respawn
+    toggle "infinite ammo" g_infinite_ammo
+    toggle "quad drop" g_dm_no_quad_drop ~
+    toggle "quadfire drop" g_dm_no_quadfire_drop ~
 end
 
 begin startserver
@@ -220,10 +224,14 @@ end
 
 begin singleplayer
     banner m_banner_game
-    action easy "skill 0; deathmatch 0; coop 0; maxclients 1; newgame"
-    action medium "skill 1; deathmatch 0; coop 0; maxclients 1; newgame"
-    action hard "skill 2; deathmatch 0; coop 0; maxclients 1; newgame"
-    action nightmare "skill 3; deathmatch 0; coop 0; maxclients 1; newgame"
+    values "skill" skill easy medium hard nightmare
+    blank
+    //action "Tutorial" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_tutorial"
+    action "Quake II" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame"
+    action "Call of the Machine" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_mg2"
+    action "The Reckoning" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_rogue"
+    action "Ground Zero" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_xatrix"
+    action "Quake II N64" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_n64"
     blank
     action "load game..." pushmenu loadgame
     action "save game..." pushmenu savegame
@@ -232,8 +240,8 @@ end
 begin loadgame
     banner m_banner_load_game
     loadgame save0
-    blank
     loadgame save1
+    blank
     loadgame save2
     loadgame save3
     loadgame save4
@@ -252,7 +260,6 @@ end
 
 begin savegame
     banner m_banner_save_game
-    savegame save1
     savegame save2
     savegame save3
     savegame save4
