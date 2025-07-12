@@ -173,7 +173,6 @@ static void CL_SetActiveState(void)
 {
     cls.state = ca_active;
 
-    cl.serverdelta = cl.frame.number;
     cl.time = cl.frame.servertime; // set time, needed for demos
     cl.frameflags = 0;
     cl.initialSeq = cls.netchan.outgoing_sequence;
@@ -321,7 +320,6 @@ static void CL_ParseFrame(void)
     if (cls.state < ca_precached)
         return;
 
-    cl.oldframe = cl.frame;
     cl.frame = frame;
 
     cls.demo.frames_read++;

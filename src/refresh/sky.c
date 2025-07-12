@@ -436,6 +436,8 @@ static void R_UnsetSky(void)
     R_SKYTEXTURE->texnum = TEXNUM_CUBEMAP_BLACK;
 }
 
+static const char com_env_suf[6][3] = { "rt", "lf", "bk", "ft", "up", "dn" };
+
 /*
 ============
 R_SetSky

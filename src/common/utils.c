@@ -189,10 +189,6 @@ bool Com_WildCmpEx(const char *filter, const char *string,
 ==============================================================================
 */
 
-#if USE_CLIENT
-const char com_env_suf[6][3] = { "rt", "lf", "bk", "ft", "up", "dn" };
-#endif
-
 #if USE_REF
 /*
 ================

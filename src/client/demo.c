@@ -1041,17 +1041,11 @@ static void CL_Seek_f(void)
         cge->UpdateConfigstring(index);
     } BC_FOR_EACH_END
 
-    // don't lerp to old
-    memset(&cl.oldframe, 0, sizeof(cl.oldframe));
-
     // clear old effects
     cge->ClearState();
 
     // fix time delta
     cl.time = cl.frame.servertime;
-
-    // fire up destination frame
-    //CL_DeltaFrame();
 
     if (cls.demo.recording && !cls.demo.paused)
         resume_record();
@@ -1189,7 +1183,7 @@ void CL_DemoFrame(void)
 
     if (com_timedemo->integer) {
         parse_next_message(0);
-        cl.time = cl.servertime;
+        cl.time = cl.frame.servertime;
         cls.demo.time_frames++;
         return;
     }

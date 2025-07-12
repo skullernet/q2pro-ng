@@ -18,14 +18,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#if USE_CLIENT
-extern const char com_env_suf[6][3];
-#endif
-
 bool Com_WildCmpEx(const char *filter, const char *string, int term, bool ignorecase);
 #define Com_WildCmp(filter, string)  Com_WildCmpEx(filter, string, 0, false)
 
-#if USE_CLIENT || USE_MVD_CLIENT
+#if USE_CLIENT
 bool Com_ParseTimespec(const char *s, int64_t *msec);
 #endif
 
@@ -85,23 +81,3 @@ char *UTF8_TranslitString(const char *src);
             if (Q_IsBitSet(array, index))
 
 #define BC_FOR_EACH_END }}
-
-// Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
-static inline size_t Com_ConfigstringSize(int cs)
-{
-    return MAX_QPATH * (MAX_CONFIGSTRINGS - cs);
-}
-
-#if USE_FPS
-typedef struct {
-    int         time;      // variable server frame time
-    int         div;       // BASE_FRAMETIME/frametime
-} frametime_t;
-
-// Compute frametime based on requested frame rate
-static inline frametime_t Com_ComputeFrametime(int rate)
-{
-    int framediv = Q_clip(rate / BASE_FRAMERATE, 1, MAX_FRAMEDIV);
-    return (frametime_t){ .time = BASE_FRAMETIME / framediv, .div = framediv };
-}
-#endif // USE_FPS

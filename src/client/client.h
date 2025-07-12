@@ -114,10 +114,7 @@ typedef struct {
     unsigned        frameflags;
     int             suppress_count;
 
-    server_frame_t  frame;                // received from server
-    server_frame_t  oldframe;
-    int             servertime;
-    int             serverdelta;
+    server_frame_t  frame;          // received from server
 
     size_t          dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
 
