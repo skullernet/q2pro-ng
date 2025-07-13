@@ -225,7 +225,7 @@ static void Boss2HyperBlaster(edict_t *self)
 {
     vec3_t forward, right, target;
     vec3_t start;
-    monster_muzzleflash_id_t id = (self->s.frame & 1) ? MZ2_BOSS2_MACHINEGUN_L2 : MZ2_BOSS2_MACHINEGUN_R2;
+    monster_muzzleflash_id_t id = (self->s.frame & 1) ? MZ2_BOSS2_HYPERBLASTER_L1 : MZ2_BOSS2_HYPERBLASTER_R1;
 
     AngleVectors(self->s.angles, forward, right, NULL);
     M_ProjectFlashSource(self, monster_flash_offset[id], forward, right, start);

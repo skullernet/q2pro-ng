@@ -519,28 +519,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
     switch (weapon) {
-    case MZ2_INFANTRY_MACHINEGUN_1:
-    case MZ2_INFANTRY_MACHINEGUN_2:
-    case MZ2_INFANTRY_MACHINEGUN_3:
-    case MZ2_INFANTRY_MACHINEGUN_4:
-    case MZ2_INFANTRY_MACHINEGUN_5:
-    case MZ2_INFANTRY_MACHINEGUN_6:
-    case MZ2_INFANTRY_MACHINEGUN_7:
-    case MZ2_INFANTRY_MACHINEGUN_8:
-    case MZ2_INFANTRY_MACHINEGUN_9:
-    case MZ2_INFANTRY_MACHINEGUN_10:
-    case MZ2_INFANTRY_MACHINEGUN_11:
-    case MZ2_INFANTRY_MACHINEGUN_12:
-    case MZ2_INFANTRY_MACHINEGUN_13:
-    case MZ2_INFANTRY_MACHINEGUN_14:
-    case MZ2_INFANTRY_MACHINEGUN_15:
-    case MZ2_INFANTRY_MACHINEGUN_16:
-    case MZ2_INFANTRY_MACHINEGUN_17:
-    case MZ2_INFANTRY_MACHINEGUN_18:
-    case MZ2_INFANTRY_MACHINEGUN_19:
-    case MZ2_INFANTRY_MACHINEGUN_20:
-    case MZ2_INFANTRY_MACHINEGUN_21:
-    case MZ2_INFANTRY_MACHINEGUN_22:
+    case MZ2_INFANTRY_MACHINEGUN_1 ... MZ2_INFANTRY_MACHINEGUN_22:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -548,15 +527,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 18.0f * scale);
         break;
 
-    case MZ2_SOLDIER_MACHINEGUN_1:
-    case MZ2_SOLDIER_MACHINEGUN_2:
-    case MZ2_SOLDIER_MACHINEGUN_3:
-    case MZ2_SOLDIER_MACHINEGUN_4:
-    case MZ2_SOLDIER_MACHINEGUN_5:
-    case MZ2_SOLDIER_MACHINEGUN_6:
-    case MZ2_SOLDIER_MACHINEGUN_7:
-    case MZ2_SOLDIER_MACHINEGUN_8:
-    case MZ2_SOLDIER_MACHINEGUN_9:
+    case MZ2_SOLDIER_MACHINEGUN_1 ... MZ2_SOLDIER_MACHINEGUN_9:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -564,14 +535,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 13.0f * scale);
         break;
 
-    case MZ2_GUNNER_MACHINEGUN_1:
-    case MZ2_GUNNER_MACHINEGUN_2:
-    case MZ2_GUNNER_MACHINEGUN_3:
-    case MZ2_GUNNER_MACHINEGUN_4:
-    case MZ2_GUNNER_MACHINEGUN_5:
-    case MZ2_GUNNER_MACHINEGUN_6:
-    case MZ2_GUNNER_MACHINEGUN_7:
-    case MZ2_GUNNER_MACHINEGUN_8:
+    case MZ2_GUNNER_MACHINEGUN_1 ... MZ2_GUNNER_MACHINEGUN_8:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -579,14 +543,12 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 24.0f * scale);
         break;
 
+    case MZ2_SUPERTANK_MACHINEGUN_1 ... MZ2_SUPERTANK_MACHINEGUN_6:
     case MZ2_ACTOR_MACHINEGUN_1:
-    case MZ2_SUPERTANK_MACHINEGUN_1:
-    case MZ2_SUPERTANK_MACHINEGUN_2:
-    case MZ2_SUPERTANK_MACHINEGUN_3:
-    case MZ2_SUPERTANK_MACHINEGUN_4:
-    case MZ2_SUPERTANK_MACHINEGUN_5:
-    case MZ2_SUPERTANK_MACHINEGUN_6:
     case MZ2_TURRET_MACHINEGUN:
+    case MZ2_BOSS2_MACHINEGUN_L1:
+    case MZ2_CARRIER_MACHINEGUN_L1:
+    case MZ2_CARRIER_MACHINEGUN_L2:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -594,34 +556,23 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
-    case MZ2_BOSS2_MACHINEGUN_L1:
-    case MZ2_BOSS2_MACHINEGUN_L2:
-    case MZ2_BOSS2_MACHINEGUN_L3:
-    case MZ2_BOSS2_MACHINEGUN_L4:
-    case MZ2_BOSS2_MACHINEGUN_L5:
-    case MZ2_CARRIER_MACHINEGUN_L1:
-    case MZ2_CARRIER_MACHINEGUN_L2:
+    case MZ2_BOSS2_MACHINEGUN_R1:
+    case MZ2_CARRIER_MACHINEGUN_R1:
+    case MZ2_CARRIER_MACHINEGUN_R2:
         VectorSet(dl->color, 1, 1, 0);
-        if (weapon == MZ2_BOSS2_MACHINEGUN_L2) {
-            trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
-            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
-        } else {
-            CG_ParticleEffect(origin, vec3_origin, 0, 40);
-            CG_SmokeAndFlash(origin);
-            trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NONE, 0);
-            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
-        }
+        CG_ParticleEffect(origin, vec3_origin, 0, 40);
+        CG_SmokeAndFlash(origin);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
-    case MZ2_SOLDIER_BLASTER_1:
-    case MZ2_SOLDIER_BLASTER_2:
-    case MZ2_SOLDIER_BLASTER_3:
-    case MZ2_SOLDIER_BLASTER_4:
-    case MZ2_SOLDIER_BLASTER_5:
-    case MZ2_SOLDIER_BLASTER_6:
-    case MZ2_SOLDIER_BLASTER_7:
-    case MZ2_SOLDIER_BLASTER_8:
-    case MZ2_SOLDIER_BLASTER_9:
+    case MZ2_BOSS2_HYPERBLASTER_L1:
+    case MZ2_BOSS2_HYPERBLASTER_R1:
+        VectorSet(dl->color, 1, 1, 0);
+        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
+        break;
+
+    case MZ2_SOLDIER_BLASTER_1 ... MZ2_SOLDIER_BLASTER_9:
     case MZ2_TURRET_BLASTER:
         VectorSet(dl->color, 1, 1, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck2.wav"), 1, ATTN_NORM, 0);
@@ -636,18 +587,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         break;
 
     case MZ2_MEDIC_BLASTER_1:
-    case MZ2_MEDIC_HYPERBLASTER1_1:
-    case MZ2_MEDIC_HYPERBLASTER1_2:
-    case MZ2_MEDIC_HYPERBLASTER1_3:
-    case MZ2_MEDIC_HYPERBLASTER1_4:
-    case MZ2_MEDIC_HYPERBLASTER1_5:
-    case MZ2_MEDIC_HYPERBLASTER1_6:
-    case MZ2_MEDIC_HYPERBLASTER1_7:
-    case MZ2_MEDIC_HYPERBLASTER1_8:
-    case MZ2_MEDIC_HYPERBLASTER1_9:
-    case MZ2_MEDIC_HYPERBLASTER1_10:
-    case MZ2_MEDIC_HYPERBLASTER1_11:
-    case MZ2_MEDIC_HYPERBLASTER1_12:
+    case MZ2_MEDIC_HYPERBLASTER1_1 ... MZ2_MEDIC_HYPERBLASTER1_12:
         VectorSet(dl->color, 1, 1, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("medic/medatck1.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
@@ -666,48 +606,20 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
-    case MZ2_SOLDIER_SHOTGUN_1:
-    case MZ2_SOLDIER_SHOTGUN_2:
-    case MZ2_SOLDIER_SHOTGUN_3:
-    case MZ2_SOLDIER_SHOTGUN_4:
-    case MZ2_SOLDIER_SHOTGUN_5:
-    case MZ2_SOLDIER_SHOTGUN_6:
-    case MZ2_SOLDIER_SHOTGUN_7:
-    case MZ2_SOLDIER_SHOTGUN_8:
-    case MZ2_SOLDIER_SHOTGUN_9:
+    case MZ2_SOLDIER_SHOTGUN_1 ... MZ2_SOLDIER_SHOTGUN_9:
         VectorSet(dl->color, 1, 1, 0);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_SHOTG, 0, 17.0f * scale);
         break;
 
-    case MZ2_TANK_BLASTER_1:
-    case MZ2_TANK_BLASTER_2:
-    case MZ2_TANK_BLASTER_3:
+    case MZ2_TANK_BLASTER_1 ... MZ2_TANK_BLASTER_3:
         VectorSet(dl->color, 1, 1, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 24.0f * scale);
         break;
 
-    case MZ2_TANK_MACHINEGUN_1:
-    case MZ2_TANK_MACHINEGUN_2:
-    case MZ2_TANK_MACHINEGUN_3:
-    case MZ2_TANK_MACHINEGUN_4:
-    case MZ2_TANK_MACHINEGUN_5:
-    case MZ2_TANK_MACHINEGUN_6:
-    case MZ2_TANK_MACHINEGUN_7:
-    case MZ2_TANK_MACHINEGUN_8:
-    case MZ2_TANK_MACHINEGUN_9:
-    case MZ2_TANK_MACHINEGUN_10:
-    case MZ2_TANK_MACHINEGUN_11:
-    case MZ2_TANK_MACHINEGUN_12:
-    case MZ2_TANK_MACHINEGUN_13:
-    case MZ2_TANK_MACHINEGUN_14:
-    case MZ2_TANK_MACHINEGUN_15:
-    case MZ2_TANK_MACHINEGUN_16:
-    case MZ2_TANK_MACHINEGUN_17:
-    case MZ2_TANK_MACHINEGUN_18:
-    case MZ2_TANK_MACHINEGUN_19:
+    case MZ2_TANK_MACHINEGUN_1 ... MZ2_TANK_MACHINEGUN_19:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -723,38 +635,21 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 16.0f * scale);
         break;
 
-    case MZ2_TANK_ROCKET_1:
-    case MZ2_TANK_ROCKET_2:
-    case MZ2_TANK_ROCKET_3:
+    case MZ2_TANK_ROCKET_1 ... MZ2_TANK_ROCKET_3:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck1.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
-    case MZ2_SUPERTANK_ROCKET_1:
-    case MZ2_SUPERTANK_ROCKET_2:
-    case MZ2_SUPERTANK_ROCKET_3:
-    case MZ2_BOSS2_ROCKET_1:
-    case MZ2_BOSS2_ROCKET_2:
-    case MZ2_BOSS2_ROCKET_3:
-    case MZ2_BOSS2_ROCKET_4:
+    case MZ2_SUPERTANK_ROCKET_1 ... MZ2_SUPERTANK_ROCKET_3:
+    case MZ2_BOSS2_ROCKET_1 ... MZ2_BOSS2_ROCKET_4:
     case MZ2_CARRIER_ROCKET_1:
-//  case MZ2_CARRIER_ROCKET_2:
-//  case MZ2_CARRIER_ROCKET_3:
-//  case MZ2_CARRIER_ROCKET_4:
         VectorSet(dl->color, 1, 0.5f, 0.2f);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
-    case MZ2_GUNNER_GRENADE_1:
-    case MZ2_GUNNER_GRENADE_2:
-    case MZ2_GUNNER_GRENADE_3:
-    case MZ2_GUNNER_GRENADE_4:
-    case MZ2_GUNNER_GRENADE2_1:
-    case MZ2_GUNNER_GRENADE2_2:
-    case MZ2_GUNNER_GRENADE2_3:
-    case MZ2_GUNNER_GRENADE2_4:
+    case MZ2_GUNNER_GRENADE_1 ... MZ2_GUNNER_GRENADE2_4:
     case MZ2_SUPERTANK_GRENADE_1:
     case MZ2_SUPERTANK_GRENADE_2:
         VectorSet(dl->color, 1, 0.5f, 0);
@@ -776,38 +671,16 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
 
     case MZ2_MAKRON_BFG:
         VectorSet(dl->color, 0.5f, 1, 0.5f);
-        //trap_S_StartSound (NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
-    case MZ2_MAKRON_BLASTER_1:
-    case MZ2_MAKRON_BLASTER_2:
-    case MZ2_MAKRON_BLASTER_3:
-    case MZ2_MAKRON_BLASTER_4:
-    case MZ2_MAKRON_BLASTER_5:
-    case MZ2_MAKRON_BLASTER_6:
-    case MZ2_MAKRON_BLASTER_7:
-    case MZ2_MAKRON_BLASTER_8:
-    case MZ2_MAKRON_BLASTER_9:
-    case MZ2_MAKRON_BLASTER_10:
-    case MZ2_MAKRON_BLASTER_11:
-    case MZ2_MAKRON_BLASTER_12:
-    case MZ2_MAKRON_BLASTER_13:
-    case MZ2_MAKRON_BLASTER_14:
-    case MZ2_MAKRON_BLASTER_15:
-    case MZ2_MAKRON_BLASTER_16:
-    case MZ2_MAKRON_BLASTER_17:
+    case MZ2_MAKRON_BLASTER_1 ... MZ2_MAKRON_BLASTER_17:
         VectorSet(dl->color, 1, 1, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/blaster.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 22.0f * scale);
         break;
 
-    case MZ2_JORG_MACHINEGUN_L1:
-    case MZ2_JORG_MACHINEGUN_L2:
-    case MZ2_JORG_MACHINEGUN_L3:
-    case MZ2_JORG_MACHINEGUN_L4:
-    case MZ2_JORG_MACHINEGUN_L5:
-    case MZ2_JORG_MACHINEGUN_L6:
+    case MZ2_JORG_MACHINEGUN_L1 ... MZ2_JORG_MACHINEGUN_L6:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -815,12 +688,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
-    case MZ2_JORG_MACHINEGUN_R1:
-    case MZ2_JORG_MACHINEGUN_R2:
-    case MZ2_JORG_MACHINEGUN_R3:
-    case MZ2_JORG_MACHINEGUN_R4:
-    case MZ2_JORG_MACHINEGUN_R5:
-    case MZ2_JORG_MACHINEGUN_R6:
+    case MZ2_JORG_MACHINEGUN_R1 ... MZ2_JORG_MACHINEGUN_R6:
         VectorSet(dl->color, 1, 1, 0);
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
@@ -832,76 +700,13 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
-    case MZ2_BOSS2_MACHINEGUN_R1:
-    case MZ2_BOSS2_MACHINEGUN_R2:
-    case MZ2_BOSS2_MACHINEGUN_R3:
-    case MZ2_BOSS2_MACHINEGUN_R4:
-    case MZ2_BOSS2_MACHINEGUN_R5:
-    case MZ2_CARRIER_MACHINEGUN_R1:
-    case MZ2_CARRIER_MACHINEGUN_R2:
-        if (weapon == MZ2_BOSS2_MACHINEGUN_R2) {
-            trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
-            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
-        } else {
-            VectorSet(dl->color, 1, 1, 0);
-            CG_ParticleEffect(origin, vec3_origin, 0, 40);
-            CG_SmokeAndFlash(origin);
-            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
-        }
-        break;
-
     case MZ2_STALKER_BLASTER:
-    case MZ2_DAEDALUS_BLASTER:
+    case MZ2_DAEDALUS_BLASTER_1:
     case MZ2_DAEDALUS_BLASTER_2:
     case MZ2_MEDIC_BLASTER_2:
     case MZ2_WIDOW_BLASTER:
-    case MZ2_WIDOW_BLASTER_SWEEP1:
-    case MZ2_WIDOW_BLASTER_SWEEP2:
-    case MZ2_WIDOW_BLASTER_SWEEP3:
-    case MZ2_WIDOW_BLASTER_SWEEP4:
-    case MZ2_WIDOW_BLASTER_SWEEP5:
-    case MZ2_WIDOW_BLASTER_SWEEP6:
-    case MZ2_WIDOW_BLASTER_SWEEP7:
-    case MZ2_WIDOW_BLASTER_SWEEP8:
-    case MZ2_WIDOW_BLASTER_SWEEP9:
-    case MZ2_WIDOW_BLASTER_100:
-    case MZ2_WIDOW_BLASTER_90:
-    case MZ2_WIDOW_BLASTER_80:
-    case MZ2_WIDOW_BLASTER_70:
-    case MZ2_WIDOW_BLASTER_60:
-    case MZ2_WIDOW_BLASTER_50:
-    case MZ2_WIDOW_BLASTER_40:
-    case MZ2_WIDOW_BLASTER_30:
-    case MZ2_WIDOW_BLASTER_20:
-    case MZ2_WIDOW_BLASTER_10:
-    case MZ2_WIDOW_BLASTER_0:
-    case MZ2_WIDOW_BLASTER_10L:
-    case MZ2_WIDOW_BLASTER_20L:
-    case MZ2_WIDOW_BLASTER_30L:
-    case MZ2_WIDOW_BLASTER_40L:
-    case MZ2_WIDOW_BLASTER_50L:
-    case MZ2_WIDOW_BLASTER_60L:
-    case MZ2_WIDOW_BLASTER_70L:
-    case MZ2_WIDOW_RUN_1:
-    case MZ2_WIDOW_RUN_2:
-    case MZ2_WIDOW_RUN_3:
-    case MZ2_WIDOW_RUN_4:
-    case MZ2_WIDOW_RUN_5:
-    case MZ2_WIDOW_RUN_6:
-    case MZ2_WIDOW_RUN_7:
-    case MZ2_WIDOW_RUN_8:
-    case MZ2_MEDIC_HYPERBLASTER2_1:
-    case MZ2_MEDIC_HYPERBLASTER2_2:
-    case MZ2_MEDIC_HYPERBLASTER2_3:
-    case MZ2_MEDIC_HYPERBLASTER2_4:
-    case MZ2_MEDIC_HYPERBLASTER2_5:
-    case MZ2_MEDIC_HYPERBLASTER2_6:
-    case MZ2_MEDIC_HYPERBLASTER2_7:
-    case MZ2_MEDIC_HYPERBLASTER2_8:
-    case MZ2_MEDIC_HYPERBLASTER2_9:
-    case MZ2_MEDIC_HYPERBLASTER2_10:
-    case MZ2_MEDIC_HYPERBLASTER2_11:
-    case MZ2_MEDIC_HYPERBLASTER2_12:
+    case MZ2_WIDOW_BLASTER_SWEEP1 ... MZ2_WIDOW_RUN_8:
+    case MZ2_MEDIC_HYPERBLASTER2_1 ... MZ2_MEDIC_HYPERBLASTER2_12:
         VectorSet(dl->color, 0, 1, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 2, 22.0f * scale);
@@ -914,51 +719,20 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         break;
 
     case MZ2_WIDOW_PLASMABEAM:
-    case MZ2_WIDOW2_BEAMER_1:
-    case MZ2_WIDOW2_BEAMER_2:
-    case MZ2_WIDOW2_BEAMER_3:
-    case MZ2_WIDOW2_BEAMER_4:
-    case MZ2_WIDOW2_BEAMER_5:
-    case MZ2_WIDOW2_BEAM_SWEEP_1:
-    case MZ2_WIDOW2_BEAM_SWEEP_2:
-    case MZ2_WIDOW2_BEAM_SWEEP_3:
-    case MZ2_WIDOW2_BEAM_SWEEP_4:
-    case MZ2_WIDOW2_BEAM_SWEEP_5:
-    case MZ2_WIDOW2_BEAM_SWEEP_6:
-    case MZ2_WIDOW2_BEAM_SWEEP_7:
-    case MZ2_WIDOW2_BEAM_SWEEP_8:
-    case MZ2_WIDOW2_BEAM_SWEEP_9:
-    case MZ2_WIDOW2_BEAM_SWEEP_10:
-    case MZ2_WIDOW2_BEAM_SWEEP_11:
+    case MZ2_WIDOW2_BEAMER_1 ... MZ2_WIDOW2_BEAM_SWEEP_11:
         dl->radius = 300 + (Q_rand() & 100);
         VectorSet(dl->color, 1, 1, 0);
         dl->die = cg.time + 200;
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BEAMER, 0, 32.0f * scale);
         break;
 
-    case MZ2_SOLDIER_RIPPER_1:
-    case MZ2_SOLDIER_RIPPER_2:
-    case MZ2_SOLDIER_RIPPER_3:
-    case MZ2_SOLDIER_RIPPER_4:
-    case MZ2_SOLDIER_RIPPER_5:
-    case MZ2_SOLDIER_RIPPER_6:
-    case MZ2_SOLDIER_RIPPER_7:
-    case MZ2_SOLDIER_RIPPER_8:
-    case MZ2_SOLDIER_RIPPER_9:
+    case MZ2_SOLDIER_RIPPER_1 ... MZ2_SOLDIER_RIPPER_9:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/rippfire.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BOOMER, 0, 32.0f * scale);
         break;
 
-    case MZ2_SOLDIER_HYPERGUN_1:
-    case MZ2_SOLDIER_HYPERGUN_2:
-    case MZ2_SOLDIER_HYPERGUN_3:
-    case MZ2_SOLDIER_HYPERGUN_4:
-    case MZ2_SOLDIER_HYPERGUN_5:
-    case MZ2_SOLDIER_HYPERGUN_6:
-    case MZ2_SOLDIER_HYPERGUN_7:
-    case MZ2_SOLDIER_HYPERGUN_8:
-    case MZ2_SOLDIER_HYPERGUN_9:
+    case MZ2_SOLDIER_HYPERGUN_1 ... MZ2_SOLDIER_HYPERGUN_9:
         VectorSet(dl->color, 0, 0, 1);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 1, 8.0f * scale);
@@ -977,12 +751,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 16.0f * scale);
         break;
 
-    case MZ2_GUNCMDR_GRENADE_MORTAR_1:
-    case MZ2_GUNCMDR_GRENADE_MORTAR_2:
-    case MZ2_GUNCMDR_GRENADE_MORTAR_3:
-    case MZ2_GUNCMDR_GRENADE_FRONT_1:
-    case MZ2_GUNCMDR_GRENADE_FRONT_2:
-    case MZ2_GUNCMDR_GRENADE_FRONT_3:
+    case MZ2_GUNCMDR_GRENADE_MORTAR_1 ... MZ2_GUNCMDR_GRENADE_FRONT_3:
         VectorSet(dl->color, 1, 0.5f, 0);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("guncmdr/gcdratck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);

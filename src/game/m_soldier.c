@@ -475,36 +475,6 @@ void MONSTERINFO_SETSKIN(soldier_setskin)(edict_t *self)
 // ATTACK
 //
 
-static const uint16_t blaster_flash[] = {
-    MZ2_SOLDIER_BLASTER_1, MZ2_SOLDIER_BLASTER_2, MZ2_SOLDIER_BLASTER_3,
-    MZ2_SOLDIER_BLASTER_4, MZ2_SOLDIER_BLASTER_5, MZ2_SOLDIER_BLASTER_6,
-    MZ2_SOLDIER_BLASTER_7, MZ2_SOLDIER_BLASTER_8, MZ2_SOLDIER_BLASTER_9
-};
-
-static const uint16_t shotgun_flash[] = {
-    MZ2_SOLDIER_SHOTGUN_1, MZ2_SOLDIER_SHOTGUN_2, MZ2_SOLDIER_SHOTGUN_3,
-    MZ2_SOLDIER_SHOTGUN_4, MZ2_SOLDIER_SHOTGUN_5, MZ2_SOLDIER_SHOTGUN_6,
-    MZ2_SOLDIER_SHOTGUN_7, MZ2_SOLDIER_SHOTGUN_8, MZ2_SOLDIER_SHOTGUN_9
-};
-
-static const uint16_t machinegun_flash[] = {
-    MZ2_SOLDIER_MACHINEGUN_1, MZ2_SOLDIER_MACHINEGUN_2, MZ2_SOLDIER_MACHINEGUN_3,
-    MZ2_SOLDIER_MACHINEGUN_4, MZ2_SOLDIER_MACHINEGUN_5, MZ2_SOLDIER_MACHINEGUN_6,
-    MZ2_SOLDIER_MACHINEGUN_7, MZ2_SOLDIER_MACHINEGUN_8, MZ2_SOLDIER_MACHINEGUN_9
-};
-
-static const uint16_t ripper_flash[] = {
-    MZ2_SOLDIER_RIPPER_1, MZ2_SOLDIER_RIPPER_2, MZ2_SOLDIER_RIPPER_3,
-    MZ2_SOLDIER_RIPPER_4, MZ2_SOLDIER_RIPPER_5, MZ2_SOLDIER_RIPPER_6,
-    MZ2_SOLDIER_RIPPER_7, MZ2_SOLDIER_RIPPER_8, MZ2_SOLDIER_RIPPER_9
-};
-
-static const uint16_t hyper_flash[] = {
-    MZ2_SOLDIER_HYPERGUN_1, MZ2_SOLDIER_HYPERGUN_2, MZ2_SOLDIER_HYPERGUN_3,
-    MZ2_SOLDIER_HYPERGUN_4, MZ2_SOLDIER_HYPERGUN_5, MZ2_SOLDIER_HYPERGUN_6,
-    MZ2_SOLDIER_HYPERGUN_7, MZ2_SOLDIER_HYPERGUN_8, MZ2_SOLDIER_HYPERGUN_9
-};
-
 void PRETHINK(soldierh_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
@@ -550,19 +520,19 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
 
     switch (soldier_style()) {
     case Blaster:
-        flash_index = blaster_flash[flash_number];
+        flash_index = MZ2_SOLDIER_BLASTER_1 + flash_number;
         break;
     case Shotgun:
-        flash_index = shotgun_flash[flash_number];
+        flash_index = MZ2_SOLDIER_SHOTGUN_1 + flash_number;
         break;
     case Ripper:
-        flash_index = ripper_flash[flash_number];
+        flash_index = MZ2_SOLDIER_RIPPER_1 + flash_number;
         break;
     case BlueHyper:
-        flash_index = hyper_flash[flash_number];
+        flash_index = MZ2_SOLDIER_HYPERGUN_1 + flash_number;
         break;
     default:
-        flash_index = machinegun_flash[flash_number];
+        flash_index = MZ2_SOLDIER_MACHINEGUN_1 + flash_number;
         break;
     }
 
