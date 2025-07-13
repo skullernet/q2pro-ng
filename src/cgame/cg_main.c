@@ -183,6 +183,7 @@ qvm_exported void CG_PrepRefresh(bool demoplayback)
     CG_UpdateConfigstring(CS_MAXCLIENTS);
     CG_UpdateConfigstring(CS_AIRACCEL);
     CG_UpdateConfigstring(CS_STATUSBAR);
+    CG_UpdateConfigstring(CONFIG_PHYSICS_FLAGS);
 
     SCR_RegisterMedia();
     CG_RegisterMedia();

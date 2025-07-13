@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define STOP_EPSILON 0.1f
 
+#define PSX_PHYSICS_SCALAR  0.875f
+
 //
 // config strings are a general means of communication from
 // the server to all connected clients.
@@ -324,8 +326,8 @@ enum {
     CONFIG_COOP_RESPAWN_STRING,
     CONFIG_COOP_RESPAWN_STRING_END = CONFIG_COOP_RESPAWN_STRING + (COOP_RESPAWN_TOTAL - 1),
 
-    // [Paril-KEX] if 1, n64 player physics apply
-    CONFIG_N64_PHYSICS,
+    // [Paril-KEX] see enum physics_flags_t
+    CONFIG_PHYSICS_FLAGS,
     CONFIG_HEALTH_BAR_NAME, // active health bar name
 
     CONFIG_LAST
@@ -471,12 +473,44 @@ typedef enum {
 stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
                                         int ignore, contents_t mask, trace_func_t trace_func);
 
+typedef enum {
+    PHYSICS_PC = 0,
+    PHYSICS_N64_MOVEMENT = BIT(0),
+    PHYSICS_PSX_MOVEMENT = BIT(1),
+    PHYSICS_PSX_SCALE    = BIT(2),
+    PHYSICS_DEATHMATCH   = BIT(3),
+} physics_flags_t;
+
 typedef struct {
     float airaccel;
-    bool n64_physics;
+    physics_flags_t physics_flags;
 } pm_config_t;
 
 extern pm_config_t pm_config;
+
+// In PSX SP, step-ups aren't allowed
+static inline bool PM_AllowStepUp(void)
+{
+    return !(pm_config.physics_flags & PHYSICS_PSX_MOVEMENT) || (pm_config.physics_flags & PHYSICS_DEATHMATCH);
+}
+
+// PSX / N64 can't trick-jump except in DM
+static inline bool PM_AllowTrickJump(void)
+{
+    return !(pm_config.physics_flags & (PHYSICS_N64_MOVEMENT | PHYSICS_PSX_MOVEMENT)) || (pm_config.physics_flags & PHYSICS_DEATHMATCH);
+}
+
+// PSX / N64 (single player) require landing before a next jump
+static inline bool PM_NeedsLandTime(void)
+{
+    return (pm_config.physics_flags & (PHYSICS_N64_MOVEMENT | PHYSICS_PSX_MOVEMENT)) && !(pm_config.physics_flags & PHYSICS_DEATHMATCH);
+}
+
+// can't crouch in single player N64
+static inline bool PM_CrouchingDisabled(void)
+{
+    return (pm_config.physics_flags & PHYSICS_N64_MOVEMENT) && !(pm_config.physics_flags & PHYSICS_DEATHMATCH);
+}
 
 void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
                               int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);

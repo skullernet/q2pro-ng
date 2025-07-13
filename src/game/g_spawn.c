@@ -592,6 +592,8 @@ static const spawn_field_t temp_fields[] = {
     { "start_items", STOFS(start_items), F_LSTRING },
     { "no_grapple", STOFS(no_grapple), F_INT },
     { "health_multiplier", STOFS(health_multiplier), F_FLOAT },
+    { "physics_flags_sp", STOFS(physics_flags_sp), F_INT },
+    { "physics_flags_dm", STOFS(physics_flags_dm), F_INT },
     { "reinforcements", STOFS(reinforcements), F_LSTRING },
     { "noise_start", STOFS(noise_start), F_LSTRING },
     { "noise_middle", STOFS(noise_middle), F_LSTRING },
@@ -1646,10 +1648,28 @@ void SP_worldspawn(edict_t *ent)
 
     trap_SetConfigstring(CS_MAXCLIENTS, va("%d", game.maxclients));
 
-    if (level.is_n64 && !deathmatch.integer) {
-        trap_SetConfigstring(CONFIG_N64_PHYSICS, "1");
-        pm_config.n64_physics = true;
+    int override_physics = g_override_physics_flags.integer;
+
+    if (override_physics < 0) {
+        if (deathmatch.integer && ED_WasKeySpecified("physics_flags_dm"))
+            override_physics = st.physics_flags_dm;
+        else if (!deathmatch.integer && ED_WasKeySpecified("physics_flags_sp"))
+            override_physics = st.physics_flags_sp;
     }
+
+    if (override_physics >= 0) {
+        pm_config.physics_flags = override_physics;
+    } else {
+        pm_config.physics_flags = PHYSICS_PC;
+        if (level.is_n64)
+            pm_config.physics_flags |= PHYSICS_N64_MOVEMENT;
+        if (level.is_psx)
+            pm_config.physics_flags |= PHYSICS_PSX_MOVEMENT | PHYSICS_PSX_SCALE;
+        if (deathmatch.integer)
+            pm_config.physics_flags |= PHYSICS_DEATHMATCH;
+    }
+
+    trap_SetConfigstring(CONFIG_PHYSICS_FLAGS, va("%d", pm_config.physics_flags));
 
     trap_SetConfigstring(CS_AIRACCEL, va("%d", sv_airaccelerate.integer));
     pm_config.airaccel = sv_airaccelerate.integer;

@@ -109,6 +109,8 @@ vm_cvar_t g_map_list;
 vm_cvar_t g_map_list_shuffle;
 
 vm_cvar_t sv_airaccelerate;
+vm_cvar_t g_override_physics_flags;
+
 vm_cvar_t g_damage_scale;
 vm_cvar_t g_disable_player_collision;
 vm_cvar_t ai_damage_scale;
@@ -192,6 +194,7 @@ static const vm_cvar_reg_t g_cvars[] = {
     { &g_strict_saves, "g_strict_saves", "1", 0 },
 
     { &sv_airaccelerate, "sv_airaccelerate", "0", 0 },
+    { &g_override_physics_flags, "g_override_physics_flags", "-1", 0 },
 
     { &g_damage_scale, "g_damage_scale", "1", 0 },
     { &g_disable_player_collision, "g_disable_player_collision", "0", 0 },

@@ -762,6 +762,7 @@ typedef struct {
     const char *start_items;
     int no_grapple;
     float health_multiplier;
+    int physics_flags_sp, physics_flags_dm;
 
     const char *reinforcements; // [Paril-KEX]
     const char *noise_start, *noise_middle, *noise_end; // [Paril-KEX]
@@ -1210,6 +1211,7 @@ extern vm_cvar_t g_grapple_pull_speed;
 extern vm_cvar_t g_grapple_damage;
 
 extern vm_cvar_t sv_airaccelerate;
+extern vm_cvar_t g_override_physics_flags;
 
 extern vm_cvar_t g_damage_scale;
 extern vm_cvar_t g_disable_player_collision;
@@ -1923,8 +1925,6 @@ const char *G_GetL10nString(const char *key);
 // ZOID
 
 //============================================================================
-
-#define PSX_PHYSICS_SCALAR  0.875f
 
 // client_t->anim_priority
 typedef enum {

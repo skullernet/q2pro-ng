@@ -413,8 +413,8 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
-    if (index == CONFIG_N64_PHYSICS) {
-        pm_config.n64_physics = Q_atoi(s);
+    if (index == CONFIG_PHYSICS_FLAGS) {
+        pm_config.physics_flags = Q_atoi(s);
         return;
     }
 
