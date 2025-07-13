@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
-#include "shared/list.h"
+#include "common/list.h"
 #include <assert.h>
 
 #define MAX_DEBUG_LINES     TESS_MAX_VERTICES

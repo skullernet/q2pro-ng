@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "shared/shared.h"
-#include "shared/list.h"
 #include "shared/cgame.h"
 
 #include "common/bsp.h"
@@ -31,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/files.h"
+#include "common/list.h"
 #include "common/math.h"
 #include "common/msg.h"
 #include "common/net/chan.h"

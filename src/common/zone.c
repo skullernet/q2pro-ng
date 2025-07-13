@@ -17,8 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
-#include "shared/list.h"
 #include "common/common.h"
+#include "common/list.h"
 #include "common/zone.h"
 
 #define Z_MAGIC     0x1d0d

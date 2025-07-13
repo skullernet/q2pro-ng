@@ -21,10 +21,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "shared/shared.h"
-#include "shared/bg_local.h"
 #include "shared/cgame.h"
-#include "shared/m_flash.h"
 #include "shared/refresh.h"
+#include "bgame/bg_local.h"
+#include "bgame/m_flash.h"
 #include "cg_syscalls.h"
 
 #ifndef Q2_VM

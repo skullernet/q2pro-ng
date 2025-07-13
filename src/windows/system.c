@@ -17,10 +17,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "client.h"
+#include "common/atomic.h"
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/prompt.h"
-#include "shared/atomic.h"
 
 #if USE_WINSVC
 #include <winsvc.h>

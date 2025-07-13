@@ -2,7 +2,7 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "shared/shared.h"
-#include "shared/bg_local.h"
+#include "bgame/bg_local.h"
 #include <float.h>
 
 #define NUM_SIDE_CHECKS 6

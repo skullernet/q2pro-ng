@@ -27,9 +27,9 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
 
-#include "shared/list.h"
 #include "common/cvar.h"
 #include "common/files.h"
+#include "common/list.h"
 #include "common/utils.h"
 #include "common/zone.h"
 

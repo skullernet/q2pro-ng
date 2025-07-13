@@ -33,7 +33,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "shared/bg_lib.h"
+#include "bgame/bg_lib.h"
 
 int errno;
 

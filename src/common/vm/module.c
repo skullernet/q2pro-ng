@@ -17,10 +17,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
-#include "shared/list.h"
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
+#include "common/list.h"
 #include "common/vm.h"
 #include "system/system.h"
 #include <errno.h>

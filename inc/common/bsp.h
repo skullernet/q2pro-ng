@@ -19,8 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#include "shared/list.h"
 #include "common/error.h"
+#include "common/list.h"
 #include "system/hunk.h"
 #include "format/bsp.h"
 

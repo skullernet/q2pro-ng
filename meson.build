@@ -101,15 +101,18 @@ server_src = [
 ]
 
 game_src = files(
-  'src/shared/bg_misc.c',
-  'src/shared/bg_pmove.c',
-  'src/shared/m_flash.c',
+  'src/bgame/bg_misc.c',
+  'src/bgame/bg_pmove.c',
+  'src/bgame/m_flash.c',
   'src/shared/shared.c'
 )
 
 subdir('src/game')
 
 cgame_src = files(
+  'src/bgame/bg_misc.c',
+  'src/bgame/bg_pmove.c',
+  'src/bgame/m_flash.c',
   'src/cgame/cg_consolecmds.c',
   'src/cgame/cg_effects.c',
   'src/cgame/cg_entities.c',
@@ -121,9 +124,6 @@ cgame_src = files(
   'src/cgame/cg_screen.c',
   'src/cgame/cg_servercmds.c',
   'src/cgame/cg_view.c',
-  'src/shared/bg_misc.c',
-  'src/shared/bg_pmove.c',
-  'src/shared/m_flash.c',
   'src/shared/shared.c',
 )
 

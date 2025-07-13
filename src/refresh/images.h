@@ -23,8 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // images.h -- common image manager
 //
 
-#include "shared/list.h"
 #include "common/files.h"
+#include "common/list.h"
 #include "common/zone.h"
 #include "common/error.h"
 #include "refresh/refresh.h"

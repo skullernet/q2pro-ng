@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // bsp.c -- model loading
 
 #include "shared/shared.h"
-#include "shared/list.h"
 #include "common/bsp.h"
 #include "common/cmd.h"
 #include "common/common.h"
@@ -28,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/files.h"
 #include "common/hash_map.h"
 #include "common/intreadwrite.h"
+#include "common/list.h"
 #include "common/math.h"
 #include "common/mdfour.h"
 #include "common/sizebuf.h"

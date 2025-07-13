@@ -24,15 +24,13 @@ GAME_PTR=`mktemp /tmp/XXXXXXXXXX.c`
 ./src/game/genptr.py $GAME_SRC $GAME_PTR
 
 $WASM_CC -o $WASM_DIR/game.qvm $WASM_OPT -Isrc/game \
-    src/shared/bg_*.c \
-    src/shared/m_flash.c \
     src/shared/shared.c \
+    src/bgame/*.c \
     $GAME_SRC $GAME_PTR
 
 rm $GAME_PTR
 
 $WASM_CC -o $WASM_DIR/cgame.qvm $WASM_OPT \
-    src/shared/bg_*.c \
-    src/shared/m_flash.c \
     src/shared/shared.c \
+    src/bgame/*.c \
     src/cgame/*.c

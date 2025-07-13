@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 #include "../client.h"
-#include "shared/list.h"
+#include "common/list.h"
 #include "common/hash_map.h"
 
 #if USE_SNDDMA

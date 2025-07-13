@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
-#include "shared/bg_local.h"
+#include "bgame/bg_local.h"
 
 #define EV(n)   [EV_##n] = #n
 

@@ -5,8 +5,8 @@
 #pragma once
 
 #include "shared/shared.h"
-#include "shared/bg_local.h"
-#include "shared/m_flash.h"
+#include "bgame/bg_local.h"
+#include "bgame/m_flash.h"
 
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
