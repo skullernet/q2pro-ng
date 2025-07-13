@@ -903,10 +903,10 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         CG_ParticleEffect(pos, dir, 0xe0, 6);
         break;
     case EV_HEATBEAM_SPARKS:
-        CG_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
+        CG_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
         break;
     case EV_HEATBEAM_STEAM:
-        CG_ParticleSteamEffect(pos, dir, 0xe0, 20, 60);
+        CG_ParticleSteamEffect(pos, dir, 0x08, 50, 60);
         break;
     case EV_SCREEN_SPARKS:
         CG_ParticleEffect(pos, dir, 0xd0, 40);

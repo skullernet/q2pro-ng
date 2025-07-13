@@ -1045,7 +1045,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
 
         if (!VectorCompare(start, tr.endpos)) {
             G_SnapVectorTowards(water_start, start, pos);
-            G_TempEntity(pos, EV_HEATBEAM_SPARKS, tr.plane.dir);
+            G_TempEntity(pos, EV_HEATBEAM_STEAM, tr.plane.dir);
         }
 
         // re-trace ignoring water this time
@@ -1065,7 +1065,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
             T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_ENERGY, (mod_t) { MOD_HEATBEAM });
         } else if (!water) {
             G_SnapVectorTowards(tr.endpos, start, pos);
-            G_TempEntity(pos, EV_HEATBEAM_STEAM, tr.plane.dir);
+            G_TempEntity(pos, EV_HEATBEAM_SPARKS, tr.plane.dir);
 
             if (self->client)
                 PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
