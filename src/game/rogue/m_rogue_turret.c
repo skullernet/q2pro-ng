@@ -254,7 +254,7 @@ static void TurretAim(edict_t *self)
     VectorMA(self->s.origin, 8192, forward, end);
     trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_SOLID);
 
-    G_SnapVectorTowards(tr.endpos, self->s.origin, te->s.old_origin);
+    VectorCopy(tr.endpos, te->s.old_origin);
     trap_LinkEntity(te);
 }
 
