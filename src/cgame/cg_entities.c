@@ -384,13 +384,13 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     } else {
         VectorCopy(start, org);
 
-        // calculate pitch and yaw
-        VectorSubtract(end, org, dist);
-        vectoangles(dist, angles);
-
         // if it's a player, use the hardcoded player offset
         if (entnum < cgs.maxclients) {
             vec3_t  tmp, f, r, u;
+
+            // calculate pitch and yaw
+            VectorSubtract(end, org, dist);
+            vectoangles(dist, angles);
 
             tmp[0] = -angles[0];
             tmp[1] = angles[1] + 180.0f;
@@ -404,6 +404,10 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
             // if it's a monster, do the particle effect
             CG_MonsterPlasma_Shell(start);
         }
+
+        // calculate pitch and yaw
+        VectorSubtract(end, org, dist);
+        vectoangles(dist, angles);
 
         framenum = 2;
     }
