@@ -1273,6 +1273,8 @@ Feel free to add any other conditions needed.
 */
 static bool M_MoveToPath(edict_t *self, float dist)
 {
+    if (!level.have_path_data)
+        return false;
     if (self->flags & FL_STATIONARY)
         return false;
     if (self->monsterinfo.aiflags & AI_NO_PATH_FINDING)

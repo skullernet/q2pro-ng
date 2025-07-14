@@ -1222,6 +1222,9 @@ q_exported void G_SpawnEntities(void)
     trap_GetLevelName(level.mapname, sizeof(level.mapname));
     trap_GetSpawnPoint(game.spawnpoint, sizeof(game.spawnpoint));
 
+    if (!deathmatch.integer)
+        level.have_path_data = trap_LoadPathData();
+
     level.is_n64 = strncmp(level.mapname, "q64/", 4) == 0;
     level.is_psx = strncmp(level.mapname, "psx/", 4) == 0;
 

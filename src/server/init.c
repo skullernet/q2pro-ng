@@ -151,8 +151,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // map initialization
     SV_SetState(ss_loading);
 
-    Nav_Load();
-
     // load and spawn all other entities
     sv.entitystring = sv.cm.entitystring;
     ge->SpawnEntities();

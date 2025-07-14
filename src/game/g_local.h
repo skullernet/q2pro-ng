@@ -718,6 +718,8 @@ typedef struct {
 
     float skyrotate;
     int skyautorotate;
+
+    bool have_path_data;
 } level_locals_t;
 
 // spawn_temp_t is only used to hold entity field values that

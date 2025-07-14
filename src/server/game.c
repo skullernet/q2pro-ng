@@ -444,6 +444,10 @@ VM_THUNK(GetUsercmd) {
     PF_GetUsercmd(VM_U32(0), VM_PTR(1, usercmd_t));
 }
 
+VM_THUNK(LoadPathData) {
+    VM_U32(0) = Nav_Load();
+}
+
 VM_THUNK(GetPathToGoal) {
     VM_U32(0) = Nav_GetPathToGoal(VM_PTR(0, PathRequest), VM_PTR(1, PathInfo), VM_VEC3_BUF(2, 3), VM_U32(3));
 }
@@ -645,6 +649,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(GetUserinfo, "i iii"),
     VM_IMPORT(GetConnectinfo, "i iii"),
     VM_IMPORT(GetUsercmd, "ii"),
+    VM_IMPORT(LoadPathData, "i "),
     VM_IMPORT(GetPathToGoal, "i iiii"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
@@ -867,6 +872,8 @@ static const game_import_t game_dll_imports = {
     .GetSpawnPoint = PF_GetSpawnPoint,
     .GetUserinfo = PF_GetUserinfo,
     .GetUsercmd = PF_GetUsercmd,
+
+    .LoadPathData = Nav_Load,
     .GetPathToGoal = Nav_GetPathToGoal,
 
     .RealTime = Com_RealTime,

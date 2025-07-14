@@ -211,6 +211,8 @@ typedef struct {
     size_t (*GetUserinfo)(unsigned clientnum, char *buf, size_t size);
     size_t (*GetConnectinfo)(unsigned clientnum, char *buf, size_t size);
     void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
+
+    bool (*LoadPathData)(void);
     bool (*GetPathToGoal)(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints);
 
     int64_t (*RealTime)(void);

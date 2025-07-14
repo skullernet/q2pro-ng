@@ -212,25 +212,25 @@ static void Nav_ReadVector(sizebuf_t *b, vec3_t v)
 #define NAV_VERIFY(condition, error) \
     if (!(condition)) { err = error; goto fail; }
 
-void Nav_Load(void)
+bool Nav_Load(void)
 {
-    Q_assert(!nav_data.nodes);
-
+    if (nav_data.nodes)
+        return true;
     if (!sv.cm.cache)
-        return; // no real map
+        return false; // no real map
     if (!nav_enable->integer)
-        return;
+        return false;
 
     const char *err = NULL;
 
     char filename[MAX_QPATH];
     if (Q_snprintf(filename, sizeof(filename), "bots/navigation/%s.nav", sv.name) >= sizeof(filename))
-        return;
+        return false;
 
     void *data;
     int len = FS_LoadFile(filename, &data);
     if (!data)
-        return;
+        return false;
 
     NAV_VERIFY(len >= 7*4, "File too small");
 
@@ -347,12 +347,13 @@ void Nav_Load(void)
 
     FS_FreeFile(data);
     Nav_AllocContext(&nav_data.ctx);
-    return;
+    return true;
 
 fail:
     FS_FreeFile(data);
     Com_Printf("Couldn't load %s: %s\n", filename, err);
     Nav_Unload();
+    return false;
 }
 
 void Nav_Unload(void)

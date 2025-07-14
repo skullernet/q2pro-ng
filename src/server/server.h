@@ -529,7 +529,7 @@ void SV_RegisterSavegames(void);
 // sv_nav.c
 //
 void Nav_Register(void);
-void Nav_Load(void);
+bool Nav_Load(void);
 void Nav_Unload(void);
 void Nav_Frame(void);
 bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints);

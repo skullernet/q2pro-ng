@@ -49,6 +49,8 @@ size_t trap_GetSpawnPoint(char *buf, size_t size);
 size_t trap_GetUserinfo(unsigned clientnum, char *buf, size_t size);
 size_t trap_GetConnectinfo(unsigned clientnum, char *buf, size_t size);
 void trap_GetUsercmd(unsigned clientnum, usercmd_t *ucmd);
+
+bool trap_LoadPathData(void);
 bool trap_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *points, int maxPoints);
 
 int64_t trap_RealTime(void);
@@ -126,6 +128,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_GetUserinfo gi->GetUserinfo
 #define trap_GetConnectinfo gi->GetConnectinfo
 #define trap_GetUsercmd gi->GetUsercmd
+
+#define trap_LoadPathData gi->LoadPathData
 #define trap_GetPathToGoal gi->GetPathToGoal
 
 #define trap_RealTime gi->RealTime
