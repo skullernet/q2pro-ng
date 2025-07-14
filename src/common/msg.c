@@ -283,43 +283,51 @@ typedef struct {
     int bits;
 } netfield_t;
 
+// special values for bits
+typedef enum {
+    NETF_FLOAT = 0,
+    NETF_LEB   = -1,
+    NETF_ANGLE = -2,
+    NETF_COLOR = -3,
+} netfield_kind_t;
+
 #define NETF(f, bits)  { #f, offsetof(entity_state_t, f), bits }
 
 static const netfield_t entity_state_fields[] = {
-    NETF(angles[0], -2),
-    NETF(angles[1], -2),
-    NETF(angles[2], -2),
-    NETF(origin[0], 0),
-    NETF(origin[1], 0),
-    NETF(origin[2], 0),
+    NETF(angles[0], NETF_ANGLE),
+    NETF(angles[1], NETF_ANGLE),
+    NETF(angles[2], NETF_ANGLE),
+    NETF(origin[0], NETF_FLOAT),
+    NETF(origin[1], NETF_FLOAT),
+    NETF(origin[2], NETF_FLOAT),
     NETF(modelindex, MODELINDEX_BITS),
     NETF(modelindex2, MODELINDEX_BITS),
     NETF(modelindex3, MODELINDEX_BITS),
     NETF(modelindex4, MODELINDEX_BITS),
-    NETF(skinnum, -1),
-    NETF(effects, -1),
-    NETF(renderfx, -1),
+    NETF(skinnum, NETF_LEB),
+    NETF(effects, NETF_LEB),
+    NETF(renderfx, NETF_LEB),
     NETF(solid, 32),
-    NETF(morefx, -1),
-    NETF(frame, -1),
-    NETF(sound, -1),
+    NETF(morefx, NETF_LEB),
+    NETF(frame, NETF_LEB),
+    NETF(sound, NETF_LEB),
     NETF(event[0], 8),
     NETF(event[1], 8),
     NETF(event[2], 8),
     NETF(event[3], 8),
-    NETF(event_param[0], -1),
-    NETF(event_param[1], -1),
-    NETF(event_param[2], -1),
-    NETF(event_param[3], -1),
-    NETF(alpha, 0),
-    NETF(scale, 0),
+    NETF(event_param[0], NETF_LEB),
+    NETF(event_param[1], NETF_LEB),
+    NETF(event_param[2], NETF_LEB),
+    NETF(event_param[3], NETF_LEB),
+    NETF(alpha, NETF_FLOAT),
+    NETF(scale, NETF_FLOAT),
     NETF(othernum, ENTITYNUM_BITS),
 };
 
 static const netfield_t entity_state_fields2[] = {
-    NETF(old_origin[0], 0),
-    NETF(old_origin[1], 0),
-    NETF(old_origin[2], 0),
+    NETF(old_origin[0], NETF_FLOAT),
+    NETF(old_origin[1], NETF_FLOAT),
+    NETF(old_origin[2], NETF_FLOAT),
 };
 
 static unsigned entity_state_counts[q_countof(entity_state_fields)];
@@ -334,14 +342,23 @@ static int MSG_CountDeltaMaxBits(const netfield_t *f, int n)
 
     for (int i = 0; i < n; i++, f++) {
         bits++;
-        if (f->bits == 0)
+        switch (f->bits) {
+        case NETF_FLOAT:
             bits += 2 + 32;
-        else if (f->bits == -1)
+            break;
+        case NETF_LEB:
             bits += 4 * 9;
-        else if (f->bits == -2)
+            break;
+        case NETF_ANGLE:
             bits += 16;
-        else
+            break;
+        case NETF_COLOR:
+            bits += 8;
+            break;
+        default:
             bits += abs(f->bits);
+            break;
+        }
     }
 
     return bits;
@@ -400,14 +417,22 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
 
         MSG_WriteBit(1);
 
-        if (f->bits == 0) {
+        switch (f->bits) {
+        case NETF_FLOAT:
             MSG_WriteFloat(to_v);
-        } else if (f->bits == -1) {
+            break;
+        case NETF_LEB:
             MSG_WriteLeb32(to_v);
-        } else if (f->bits == -2) {
+            break;
+        case NETF_ANGLE:
             MSG_WriteBits(ANGLE2SHORT(LongToFloat(to_v)), 16);
-        } else {
+            break;
+        case NETF_COLOR:
+            MSG_WriteBits(Q_clip_uint8(LongToFloat(to_v) * 255), 8);
+            break;
+        default:
             MSG_WriteBits(to_v, f->bits);
+            break;
         }
     }
 }
@@ -470,12 +495,12 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
 
 static const netfield_t player_state_fields[] = {
     NETF(pm_type, 8),
-    NETF(origin[0], 0),
-    NETF(origin[1], 0),
-    NETF(origin[2], 0),
-    NETF(velocity[0], 0),
-    NETF(velocity[1], 0),
-    NETF(velocity[2], 0),
+    NETF(origin[0], NETF_FLOAT),
+    NETF(origin[1], NETF_FLOAT),
+    NETF(origin[2], NETF_FLOAT),
+    NETF(velocity[0], NETF_FLOAT),
+    NETF(velocity[1], NETF_FLOAT),
+    NETF(velocity[2], NETF_FLOAT),
     NETF(pm_flags, 16),
     NETF(pm_time, 16),
     NETF(gravity, -16),
@@ -484,44 +509,44 @@ static const netfield_t player_state_fields[] = {
     NETF(delta_angles[2], -16),
 
     NETF(clientnum, ENTITYNUM_BITS),
-    NETF(viewangles[0], -2),
-    NETF(viewangles[1], -2),
-    NETF(viewangles[2], -2),
+    NETF(viewangles[0], NETF_ANGLE),
+    NETF(viewangles[1], NETF_ANGLE),
+    NETF(viewangles[2], NETF_ANGLE),
     NETF(viewheight, -8),
     NETF(bobtime, 8),
     NETF(gunindex, MODELINDEX_BITS),
     NETF(gunskin, 4),
     NETF(gunframe, 8),
     NETF(gunrate, 2),
-    NETF(screen_blend[0], 0),
-    NETF(screen_blend[1], 0),
-    NETF(screen_blend[2], 0),
-    NETF(screen_blend[3], 0),
-    NETF(damage_blend[0], 0),
-    NETF(damage_blend[1], 0),
-    NETF(damage_blend[2], 0),
-    NETF(damage_blend[3], 0),
+    NETF(screen_blend[0], NETF_COLOR),
+    NETF(screen_blend[1], NETF_COLOR),
+    NETF(screen_blend[2], NETF_COLOR),
+    NETF(screen_blend[3], NETF_COLOR),
+    NETF(damage_blend[0], NETF_COLOR),
+    NETF(damage_blend[1], NETF_COLOR),
+    NETF(damage_blend[2], NETF_COLOR),
+    NETF(damage_blend[3], NETF_COLOR),
     NETF(fov, 8),
     NETF(rdflags, 8),
 
-    NETF(fog.color[0], 0),
-    NETF(fog.color[1], 0),
-    NETF(fog.color[2], 0),
-    NETF(fog.density, 0),
-    NETF(fog.sky_factor, 0),
+    NETF(fog.color[0], NETF_COLOR),
+    NETF(fog.color[1], NETF_COLOR),
+    NETF(fog.color[2], NETF_COLOR),
+    NETF(fog.density, NETF_FLOAT),
+    NETF(fog.sky_factor, NETF_FLOAT),
 
-    NETF(heightfog.start.color[0], 0),
-    NETF(heightfog.start.color[1], 0),
-    NETF(heightfog.start.color[2], 0),
-    NETF(heightfog.start.dist, 0),
+    NETF(heightfog.start.color[0], NETF_COLOR),
+    NETF(heightfog.start.color[1], NETF_COLOR),
+    NETF(heightfog.start.color[2], NETF_COLOR),
+    NETF(heightfog.start.dist, NETF_FLOAT),
 
-    NETF(heightfog.end.color[0], 0),
-    NETF(heightfog.end.color[1], 0),
-    NETF(heightfog.end.color[2], 0),
-    NETF(heightfog.end.dist, 0),
+    NETF(heightfog.end.color[0], NETF_COLOR),
+    NETF(heightfog.end.color[1], NETF_COLOR),
+    NETF(heightfog.end.color[2], NETF_COLOR),
+    NETF(heightfog.end.dist, NETF_FLOAT),
 
-    NETF(heightfog.density, 0),
-    NETF(heightfog.falloff, 0),
+    NETF(heightfog.density, NETF_FLOAT),
+    NETF(heightfog.falloff, NETF_FLOAT),
 };
 
 static unsigned player_state_counts[q_countof(player_state_fields)];
@@ -800,18 +825,27 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
         if (!MSG_ReadBit())
             continue;
 
-        if (f->bits == 0) {
+        switch (f->bits) {
+        case NETF_FLOAT:
             to_v = MSG_ReadFloat();
             SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
-        } else if (f->bits == -1) {
+            break;
+        case NETF_LEB:
             to_v = MSG_ReadLeb32();
             SHOWNET(3, "%s:%#x ", f->name, to_v);
-        } else if (f->bits == -2) {
+            break;
+        case NETF_ANGLE:
             to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(16)));
             SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
-        } else {
+            break;
+        case NETF_COLOR:
+            to_v = FloatToLong(MSG_ReadBits(8) / 255.0f);
+            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
+            break;
+        default:
             to_v = MSG_ReadBits(f->bits);
-            SHOWNET(3, "%s:%d ", f->name, to_v);
+            SHOWNET(3, f->bits == 32 ? "%s:%#x " : "%s:%d ", f->name, to_v);
+            break;
         }
 
         WN32((byte *)to + f->offset, to_v);
@@ -868,10 +902,15 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
     MSG_ReadDeltaFields(player_state_fields, nc, to);
 
     uint64_t statbits = MSG_ReadLeb64();
-    if (statbits)
-        for (int i = 0; i < MAX_STATS; i++)
-            if (statbits & BIT_ULL(i))
+    if (statbits) {
+        SHOWNET(3, "stats");
+        for (int i = 0; i < MAX_STATS; i++) {
+            if (statbits & BIT_ULL(i)) {
                 to->stats[i] = MSG_ReadBits(-16);
+                SHOWNET(3, "[%d]:%d ", i, to->stats[i]);
+            }
+        }
+    }
 }
 
 #endif // USE_CLIENT
@@ -887,39 +926,73 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
 
 #if USE_CLIENT && USE_DEBUG
 
+#define SVC(x) [svc_##x] = "svc_" #x
+
+static const char *const svc_names[] = {
+    SVC(bad),
+    SVC(nop),
+    SVC(zpacket),
+    SVC(disconnect),
+    SVC(reconnect),
+    SVC(stringcmd),
+    SVC(configstring),
+    SVC(serverdata),
+    SVC(configstringstream),
+    SVC(baselinestream),
+    SVC(frame),
+};
+
+#undef SVC
+
 const char *MSG_ServerCommandString(int cmd)
 {
-    switch (cmd) {
-    case -1: return "END OF MESSAGE";
-    default: return "UNKNOWN COMMAND";
-#define S(x) case svc_##x: return "svc_" #x;
-        S(bad)
-        S(nop)
-        S(zpacket)
-        S(disconnect)
-        S(reconnect)
-        S(stringcmd)
-        S(configstring)
-        S(serverdata)
-        S(configstringstream)
-        S(baselinestream)
-        S(frame)
-#undef S
-    }
+    if (cmd < 0)
+        return "END OF MESSAGE";
+    if (cmd < q_countof(svc_names))
+        return svc_names[cmd];
+    return "UNKNOWN COMMAND";
 }
 
-#endif // USE_CLIENT && USE_DEBUG
+typedef struct {
+    const char *name;
+    unsigned count;
+} changevec_t;
+
+static int veccmp(const void *p1, const void *p2)
+{
+    const changevec_t *v1 = p1;
+    const changevec_t *v2 = p2;
+    if (v1->count > v2->count)
+        return -1;
+    if (v1->count < v2->count)
+        return 1;
+    return 0;
+}
+
+static void dumpvecs(changevec_t *vecs, const netfield_t *f, int n, const unsigned *counts)
+{
+    for (int i = 0; i < n; i++) {
+        vecs[i].name  = f[i].name;
+        vecs[i].count = counts[i];
+    }
+    qsort(vecs, n, sizeof(vecs[0]), veccmp);
+
+    for (int i = 0; i < n; i++)
+        Com_Printf("%s: %u\n", vecs[i].name, vecs[i].count);
+}
 
 static void MSG_ChangeVectors_f(void)
 {
-    Com_Printf("\n");
-    for (int i = 0; i < q_countof(entity_state_fields); i++)
-        Com_Printf("%s: %u\n", entity_state_fields[i].name, entity_state_counts[i]);
+    changevec_t vecs[max(q_countof(entity_state_fields), q_countof(player_state_fields))];
 
     Com_Printf("\n");
-    for (int i = 0; i < q_countof(player_state_fields); i++)
-        Com_Printf("%s: %u\n", player_state_fields[i].name, player_state_counts[i]);
+    dumpvecs(vecs, entity_state_fields, q_countof(entity_state_fields), entity_state_counts);
+
+    Com_Printf("\n");
+    dumpvecs(vecs, player_state_fields, q_countof(player_state_fields), player_state_counts);
 }
+
+#endif // USE_CLIENT && USE_DEBUG
 
 void MSG_Init(void)
 {
@@ -930,5 +1003,7 @@ void MSG_Init(void)
 
     MSG_Clear();
 
+#if USE_CLIENT && USE_DEBUG
     Cmd_AddCommand("changevectors", MSG_ChangeVectors_f);
+#endif
 }
