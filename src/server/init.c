@@ -154,8 +154,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // load and spawn all other entities
     ge->SpawnEntities();
 
-    // run two frames to allow everything to settle
-    for (i = 0; i < 2; i++, sv.time += sv.frametime)
+    // run for 0.2 seconds to allow everything to settle
+    for (i = 0; i < 200 / sv.frametime; i++, sv.time += sv.frametime)
         ge->RunFrame(sv.time);
 
     // check for a savegame

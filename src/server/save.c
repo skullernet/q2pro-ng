@@ -576,7 +576,7 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
 
     if (cmd->loadgame == LOAD_NORMAL) {
         // called from SV_Loadgame_f
-        frames = 2;
+        frames = 200 / sv.frametime;
     } else {
         // coming back to a level after being in a different
         // level, so run it for ten seconds

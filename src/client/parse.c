@@ -169,6 +169,7 @@ static void CL_SetActiveState(void)
 
     cl.time = cl.frame.servertime; // set time, needed for demos
     cl.initialSeq = cls.netchan.outgoing_sequence;
+    cl.sendPacketNow = true;
 
     SCR_EndLoadingPlaque();     // get rid of loading plaque
     Con_Close(false);           // get rid of connection screen
