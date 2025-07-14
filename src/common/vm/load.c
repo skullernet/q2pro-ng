@@ -127,7 +127,7 @@ static bool vm_read_string(sizebuf_t *sz, vm_string_t *s)
 {
     s->len = SZ_ReadLeb(sz);
     s->data = SZ_ReadData(sz, s->len);
-    ASSERT(s->data, "Read past end of file");
+    ASSERT(s->data, "Read past end of section");
     return true;
 }
 
@@ -377,7 +377,7 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         uint32_t size = SZ_ReadLeb(sz);
         ASSERT((uint64_t)offset + size <= m->memory.pages * VM_PAGE_SIZE, "Memory init out of bounds");
         void *data = SZ_ReadData(sz, size);
-        ASSERT(data, "Read past end of file");
+        ASSERT(data, "Read past end of section");
         memcpy(m->memory.bytes + offset, data, size);
     }
 
@@ -477,6 +477,7 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
         sz->cursize = sections[id].pos + sections[id].len;
         if (!parsefuncs[id](m, sz))
             return false;
+        ASSERT(sz->readcount <= sz->cursize, "Read past end of section");
     }
 
     sz->readcount = 0;
