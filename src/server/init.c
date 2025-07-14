@@ -152,7 +152,6 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     SV_SetState(ss_loading);
 
     // load and spawn all other entities
-    sv.entitystring = sv.cm.entitystring;
     ge->SpawnEntities();
 
     // run two frames to allow everything to settle

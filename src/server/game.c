@@ -274,7 +274,9 @@ static size_t PF_GetSpawnPoint(char *buf, size_t size)
 
 static bool PF_ParseEntityString(char *buf, size_t size)
 {
-    COM_ParseToken(&sv.entitystring, buf, size);
+    if (!sv.entitystring)
+        sv.entitystring = sv.cm.entitystring;
+    Q_assert_soft(COM_ParseToken(&sv.entitystring, buf, size) < size);
     return sv.entitystring;
 }
 
