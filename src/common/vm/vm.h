@@ -122,7 +122,6 @@ typedef struct vm_s {
     uint32_t    num_imports;    // number of leading imports in functions
     uint32_t    num_funcs;      // number of function (including imports)
     vm_block_t  *funcs;         // imported and locally defined functions
-    uint32_t    start_func;     // function to run on module load
 
     vm_table_t  table;
     vm_memory_t memory;

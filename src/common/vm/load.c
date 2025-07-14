@@ -338,16 +338,6 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
     return true;
 }
 
-static bool parse_start(vm_t *m, sizebuf_t *sz)
-{
-    m->start_func = SZ_ReadLeb(sz);
-    ASSERT(m->start_func < m->num_funcs - m->num_imports, "Bad start function index");
-    m->start_func += m->num_imports;
-    const vm_type_t *type = m->funcs[m->start_func].type;
-    ASSERT(type->num_params == 0 && type->num_results == 0, "Bad start function type");
-    return true;
-}
-
 static bool parse_elements(vm_t *m, sizebuf_t *sz)
 {
     uint32_t element_count = SZ_ReadLeb(sz);
@@ -448,7 +438,7 @@ typedef struct {
 typedef bool (*parsefunc_t)(vm_t *m, sizebuf_t *sz);
 
 static const parsefunc_t parsefuncs[NUM_SECTIONS] = {
-    NULL,
+    NULL,   // custom
     parse_types,
     parse_imports,
     parse_functions,
@@ -456,11 +446,11 @@ static const parsefunc_t parsefuncs[NUM_SECTIONS] = {
     parse_memory,
     parse_globals,
     parse_exports,
-    parse_start,
+    NULL,   // start
     parse_elements,
     parse_code,
     parse_data,
-    NULL
+    NULL,   // data count
 };
 
 static bool parse_sections(vm_t *m, sizebuf_t *sz)
@@ -571,7 +561,6 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
     m->fp  = -1;
     m->csp = -1;
 
-    m->start_func = -1;
     m->imports = imports;
 
     if (!parse_sections(m, &sz))
