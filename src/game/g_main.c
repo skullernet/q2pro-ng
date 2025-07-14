@@ -935,10 +935,13 @@ qvm_exported void G_PrepFrame(void)
         edict_t *ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
-        memset(ent->s.event, 0, sizeof(ent->s.event));
-        ent->r.svflags &= ~SVF_PHS;
-        if (ent->free_after_event)
+        if (ent->free_after_event) {
             G_FreeEdict(ent);
+            continue;
+        }
+        memset(ent->s.event, 0, sizeof(ent->s.event));
+        memset(ent->s.event_param, 0, sizeof(ent->s.event_param));
+        ent->r.svflags &= ~SVF_PHS;
     }
 }
 
