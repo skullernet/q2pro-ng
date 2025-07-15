@@ -70,17 +70,6 @@ typedef int svflags_t;
 #define FRAME_TIME      game.frame_time
 #define FRAME_TIME_SEC  game.frame_time_sec
 
-// view pitching times
-#define DAMAGE_TIME SEC(0.5f)
-#define FALL_TIME   SEC(0.3f)
-#define KICK_TIME   SEC(0.2f)
-
-// memory tags to allow dynamic memory to be cleaned up
-enum {
-    TAG_GAME = 765, // clear when unloading the dll
-    TAG_LEVEL,      // clear when loading a new level
-};
-
 #define MELEE_DISTANCE  50
 
 #define BODY_QUEUE_SIZE 8

@@ -125,8 +125,6 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 #define Q_assert_soft(expr) Q_assert_type(ERR_DROP, expr)
 #define Q_assert(expr) Q_assert_type(ERR_FATAL, expr)
 
-typedef char configstring_t[MAX_QPATH];
-
 /*
 ==============================================================
 
@@ -1096,14 +1094,8 @@ typedef struct {
 #define BASE_1_FRAMETIME        0.01f   // 1/BASE_FRAMETIME
 #define BASE_FRAMETIME_1000     0.1f    // BASE_FRAMETIME/1000
 
-// maximum variable FPS factor
-#define MAX_FRAMEDIV    6
-
 #define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
 #define SHORT2ANGLE(x)  ((x)*(360.0f/65536))
-
-#define COORD2SHORT(x)  ((int)((x)*8.0f))
-#define SHORT2COORD(x)  ((x)*(1.0f/8))
 
 #define MAX_MAP_AREA_BYTES      32
 #define MAX_PACKET_ENTITIES     MAX_EDICTS_OLD
