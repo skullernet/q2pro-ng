@@ -273,7 +273,7 @@ float V_CalcFov(float fov_x, float width, float height);
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 
 #define DIRTOBYTE_NONE  0
-#define DIRTOBYTE_UP    5
+#define DIRTOBYTE_UP    6   // DirToByte({0, 0, 1})
 
 int DirToByte(const vec3_t dir);
 void ByteToDir(unsigned index, vec3_t dir);

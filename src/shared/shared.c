@@ -378,7 +378,7 @@ int DirToByte(const vec3_t dir)
         d = DotProduct(dir, bytedirs[i]);
         if (d > bestd) {
             bestd = d;
-            best = i;
+            best = i + 1;
         }
     }
 
@@ -387,8 +387,12 @@ int DirToByte(const vec3_t dir)
 
 void ByteToDir(unsigned index, vec3_t dir)
 {
-    Q_assert_soft(index < NUMVERTEXNORMALS);
-    VectorCopy(bytedirs[index], dir);
+    if (index) {
+        Q_assert_soft(index <= NUMVERTEXNORMALS);
+        VectorCopy(bytedirs[index - 1], dir);
+    } else {
+        VectorClear(dir);
+    }
 }
 
 //====================================================================================
