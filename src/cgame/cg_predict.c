@@ -181,13 +181,14 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
     }
 
     // save for debug checking
-    VectorCopy(pm->s.origin, cg.predicted_origins[frame & CMD_MASK]);
+    VectorCopy(pm->s->origin, cg.predicted_origins[frame & CMD_MASK]);
 }
 
 void CG_PredictMovement(void)
 {
     unsigned    ack, current;
     pmove_t     pm;
+    int         viewheight;
 
     if (sv_paused.integer)
         return;
@@ -207,6 +208,9 @@ void CG_PredictMovement(void)
         return;
     }
 
+    viewheight = cg.predicted_ps.viewheight;
+    cg.predicted_ps = cg.frame->ps;
+
     if (current == ack) {
         SHOWMISS("%i: not moved\n", cg.frame->number);
         return;
@@ -217,7 +221,7 @@ void CG_PredictMovement(void)
     pm.trace = CG_Trace;
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
-    pm.s = cg.frame->ps;
+    pm.s = &cg.predicted_ps;
     pm.snapinitial = true;
 
     // run frames
@@ -227,11 +231,8 @@ void CG_PredictMovement(void)
     }
 
     // check for ducking
-    if (pm.s.viewheight != cg.predicted_ps.viewheight) {
+    if (cg.predicted_ps.viewheight != viewheight) {
         cg.duck_time = cg.time + DUCK_TIME;
-        cg.duck_factor = (float)(pm.s.viewheight - cg.predicted_ps.viewheight) / DUCK_TIME;
+        cg.duck_factor = (float)(cg.predicted_ps.viewheight - viewheight) / DUCK_TIME;
     }
-
-    // copy results out for rendering
-    cg.predicted_ps = pm.s;
 }

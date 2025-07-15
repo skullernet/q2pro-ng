@@ -439,7 +439,7 @@ typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, 
 
 typedef struct {
     // state (in / out)
-    player_state_t  s;
+    player_state_t  *s;
 
     // command (in)
     usercmd_t       cmd;

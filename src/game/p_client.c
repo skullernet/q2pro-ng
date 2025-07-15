@@ -2633,10 +2633,11 @@ qvm_exported void G_ClientThink(int clientnum)
             client->ps.pm_flags &= ~PMF_NO_GROUND_SEEK;
         }
 
-        pm.s = client->ps;
+        pm.s = &client->ps;
+        uint32_t old_flags = pm.s->pm_flags;
 
-        VectorCopy(ent->s.origin, pm.s.origin);
-        VectorCopy(ent->velocity, pm.s.velocity);
+        VectorCopy(ent->s.origin, pm.s->origin);
+        VectorCopy(ent->velocity, pm.s->velocity);
 
 #if 0
         if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
@@ -2666,15 +2667,15 @@ qvm_exported void G_ClientThink(int clientnum)
         vec3_t old_origin;
         VectorCopy(ent->s.origin, old_origin);
 
-        VectorCopy(pm.s.origin, ent->s.origin);
-        VectorCopy(pm.s.velocity, ent->velocity);
+        VectorCopy(pm.s->origin, ent->s.origin);
+        VectorCopy(pm.s->velocity, ent->velocity);
 
         // [Paril-KEX] if we stepped onto/off of a ladder, reset the
         // last ladder pos
-        if ((pm.s.pm_flags ^ client->ps.pm_flags) & PMF_ON_LADDER) {
+        if ((old_flags ^ pm.s->pm_flags) & PMF_ON_LADDER) {
             VectorCopy(ent->s.origin, client->last_ladder_pos);
 
-            if (pm.s.pm_flags & PMF_ON_LADDER) {
+            if (pm.s->pm_flags & PMF_ON_LADDER) {
                 if (!deathmatch.integer && client->last_ladder_sound < level.time) {
                     G_AddEvent(ent, EV_LADDER_STEP, 0);
                     client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
@@ -2690,8 +2691,6 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         // save results of pmove
-        client->ps = pm.s;
-
         VectorCopy(pm.mins, ent->r.mins);
         VectorCopy(pm.maxs, ent->r.maxs);
 
@@ -2705,7 +2704,7 @@ qvm_exported void G_ClientThink(int clientnum)
         else if (client->ps.pm_type == PM_FREEZE)
             ent->viewheight = 22; // FIXME: pmenu hack
         else
-            ent->viewheight = pm.s.viewheight;
+            ent->viewheight = pm.s->viewheight;
         // ROGUE
 
         ent->waterlevel = pm.waterlevel;
