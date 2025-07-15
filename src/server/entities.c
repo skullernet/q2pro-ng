@@ -287,7 +287,7 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore if pov number matches mask
-        if (ent->r.svflags & SVF_CLIENTMASK && (unsigned)frame->ps.clientnum < MAX_CLIENTS
+        if (ent->r.svflags & SVF_CLIENTMASK && frame->ps.clientnum < MAX_CLIENTS
             && Q_IsBitSet(ent->r.clientmask, frame->ps.clientnum))
             continue;
 

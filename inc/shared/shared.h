@@ -1172,17 +1172,17 @@ typedef struct {
                                     // changed by spawns, rotating objects, and teleporters
 
     // these fields do not need to be communicated bit-precise
-    int         clientnum;      // current POV number
+    uint32_t    clientnum;      // current POV number
 
     vec3_t      viewangles;     // for fixed views
-    int         viewheight;
+    int32_t     viewheight;
 
-    int         bobtime;
+    int32_t     bobtime;
 
-    int         gunindex;
-    int         gunskin;
-    int         gunframe;
-    int         gunrate;
+    uint32_t    gunindex;
+    uint32_t    gunskin;
+    uint32_t    gunframe;
+    uint32_t    gunrate;
 
     vec4_t      screen_blend;       // rgba full screen effect
     vec4_t      damage_blend;
@@ -1190,11 +1190,11 @@ typedef struct {
     player_fog_t        fog;
     player_heightfog_t  heightfog;
 
-    int         fov;            // horizontal field of view
+    int32_t     fov;            // horizontal field of view
 
-    int         rdflags;        // refdef flags
+    uint32_t    rdflags;        // refdef flags
 
-    int16_t     stats[MAX_STATS];   // fast status bar updates
+    int32_t     stats[MAX_STATS];   // fast status bar updates
 } player_state_t;
 
 //==============================================

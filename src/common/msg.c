@@ -183,6 +183,11 @@ void MSG_WriteLeb32(uint32_t v)
     MSG_WriteBit(0);
 }
 
+static void MSG_WriteSignedLeb32(int32_t v)
+{
+    MSG_WriteLeb32(((uint32_t)v << 1) ^ (v >> 31));
+}
+
 static void MSG_WriteLeb64(uint64_t v)
 {
     while (v) {
@@ -515,7 +520,7 @@ static const netfield_t player_state_fields[] = {
     NETF(viewheight, -8),
     NETF(bobtime, 8),
     NETF(gunindex, MODELINDEX_BITS),
-    NETF(gunskin, 4),
+    NETF(gunskin, 8),
     NETF(gunframe, 8),
     NETF(gunrate, 2),
     NETF(screen_blend[0], NETF_COLOR),
@@ -527,7 +532,7 @@ static const netfield_t player_state_fields[] = {
     NETF(damage_blend[2], NETF_COLOR),
     NETF(damage_blend[3], NETF_COLOR),
     NETF(fov, 8),
-    NETF(rdflags, 8),
+    NETF(rdflags, NETF_LEB),
 
     NETF(fog.color[0], NETF_COLOR),
     NETF(fog.color[1], NETF_COLOR),
@@ -581,7 +586,7 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
     if (statbits)
         for (int i = 0; i < MAX_STATS; i++)
             if (statbits & BIT_ULL(i))
-                MSG_WriteBits(to->stats[i], -16);
+                MSG_WriteSignedLeb32(to->stats[i]);
 }
 
 void MSG_WriteAreaBits(const byte *areabits, unsigned areabytes)
@@ -759,7 +764,7 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
         from = &nullUserCmd;
 
     if (!MSG_ReadBit()) {
-        memcpy(to, from, sizeof(*to));
+        *to = *from;
         return;
     }
 
@@ -781,13 +786,18 @@ uint32_t MSG_ReadLeb32(void)
     int bits = 0;
 
     while (MSG_ReadBit()) {
-        if (bits == 32)
-            Com_Error(ERR_DROP, "%s: overlong", __func__);
+        Q_assert_soft(bits < 32);
         v |= (uint32_t)MSG_ReadBits(8) << bits;
         bits += 8;
     }
 
     return v;
+}
+
+static int32_t MSG_ReadSignedLeb32(void)
+{
+    uint32_t v = MSG_ReadLeb32();
+    return (v >> 1) ^ -(v & 1);
 }
 
 static uint64_t MSG_ReadLeb64(void)
@@ -796,8 +806,7 @@ static uint64_t MSG_ReadLeb64(void)
     int bits = 0;
 
     while (MSG_ReadBit()) {
-        if (bits == 64)
-            Com_Error(ERR_DROP, "%s: overlong", __func__);
+        Q_assert_soft(bits < 64);
         v |= (uint64_t)MSG_ReadBits(8) << bits;
         bits += 8;
     }
@@ -865,8 +874,7 @@ void MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to)
     Q_assert(to->number < ENTITYNUM_WORLD);
 
     int nc = MSG_ReadBits(entity_state_nc_bits);
-    if (nc > q_countof(entity_state_fields))
-        Com_Error(ERR_DROP, "%s: bad number of fields", __func__);
+    Q_assert_soft(nc <= q_countof(entity_state_fields));
 
     MSG_ReadDeltaFields(entity_state_fields, nc, to);
 
@@ -896,8 +904,7 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
         return;
 
     int nc = MSG_ReadBits(player_state_nc_bits);
-    if (nc > q_countof(player_state_fields))
-        Com_Error(ERR_DROP, "%s: bad number of fields", __func__);
+    Q_assert_soft(nc <= q_countof(player_state_fields));
 
     MSG_ReadDeltaFields(player_state_fields, nc, to);
 
@@ -906,7 +913,7 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
         SHOWNET(3, "stats");
         for (int i = 0; i < MAX_STATS; i++) {
             if (statbits & BIT_ULL(i)) {
-                to->stats[i] = MSG_ReadBits(-16);
+                to->stats[i] = MSG_ReadSignedLeb32();
                 SHOWNET(3, "[%d]:%d ", i, to->stats[i]);
             }
         }
