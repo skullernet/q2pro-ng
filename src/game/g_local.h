@@ -2193,6 +2193,7 @@ struct gclient_s {
     gtime_t invisibility_fade_time; // [Paril-KEX] at this time, the player will be mostly fully cloaked
     gtime_t chase_msg_time; // to prevent CTF message spamming
     int menu_sign; // menu sign
+    int last_step_time;
     vec3_t last_ladder_pos; // for ladder step sounds
     gtime_t last_ladder_sound;
     coop_respawn_t coop_respawn_state;

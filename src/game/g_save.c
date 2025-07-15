@@ -688,6 +688,8 @@ static const save_field_t gclient_t_fields[] = {
     T(landmark_noise_time),
 
     T(invisibility_fade_time),
+
+    I(last_step_time),
     V(last_ladder_pos),
     T(last_ladder_sound),
 

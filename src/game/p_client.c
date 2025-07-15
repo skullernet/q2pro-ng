@@ -2467,7 +2467,7 @@ static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
         return;
 
     // restart footstep timer
-    //ent->client->ps.bobtime = 0;
+    ent->client->last_step_time = ent->client->ps.bobtime;
 
     if (ent->client->landmark_free_fall) {
         delta = min(30, delta);
@@ -2670,17 +2670,25 @@ qvm_exported void G_ClientThink(int clientnum)
         VectorCopy(pm.s->origin, ent->s.origin);
         VectorCopy(pm.s->velocity, ent->velocity);
 
+        bool bobcycle = (pm.s->bobtime - ent->client->last_step_time) & 128;
+
         // [Paril-KEX] if we stepped onto/off of a ladder, reset the
         // last ladder pos
-        if ((old_flags ^ pm.s->pm_flags) & PMF_ON_LADDER) {
-            VectorCopy(ent->s.origin, client->last_ladder_pos);
-
-            if (pm.s->pm_flags & PMF_ON_LADDER) {
-                if (!deathmatch.integer && client->last_ladder_sound < level.time) {
-                    G_AddEvent(ent, EV_LADDER_STEP, 0);
-                    client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
-                }
+        if (pm.s->pm_flags & PMF_ON_LADDER) {
+            if (!deathmatch.integer && client->last_ladder_sound < level.time &&
+                (!(old_flags & PMF_ON_LADDER) || DistanceSquared(client->last_ladder_pos, ent->s.origin) > 48 * 48)) {
+                G_AddEvent(ent, EV_LADDER_STEP, 0);
+                VectorCopy(ent->s.origin, client->last_ladder_pos);
+                client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
             }
+        } else if (pm.step_sound && bobcycle) {
+            G_AddEvent(ent, EV_FOOTSTEP, 0);
+            ent->client->last_step_time = pm.s->bobtime;
+        }
+
+        if (pm.waterlevel == WATER_WAIST && level.is_psx && bobcycle) {
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM);
+            ent->client->last_step_time = pm.s->bobtime;
         }
 
         if (pm.jump_sound) {

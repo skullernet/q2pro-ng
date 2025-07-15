@@ -530,9 +530,11 @@ static void PM_StepSlideMove(void)
         PM_Trace(&real_trace, pml.origin, pm->mins, pm->maxs, original_down, pml.clipmask);
         VectorCopy(real_trace.endpos, pml.origin);
 
+#if 0
         // only an upwards jump is a stair clip
         if (pml.velocity[2] > 0)
             pm->step_clip = true;
+#endif
     }
 
     VectorCopy(pml.origin, up);
@@ -1493,6 +1495,44 @@ static void PM_ClampAngles(void)
     AngleVectors(pm->s->viewangles, pml.forward, pml.right, pml.up);
 }
 
+// calculate speed and cycle to be used for all cyclic walking effects
+static void PM_SetBobTime(void)
+{
+    float xyspeed = truncf(Vector2Length(pml.velocity));
+    int bobmove;
+
+    if (xyspeed < 5) {
+        // start at beginning of cycle again
+        if (pm->s->bobtime) {
+            if (pm->s->bobtime < 128) {
+                pm->s->bobtime -= 160 * pml.frametime + 0.5f;
+                if (pm->s->bobtime < 0)
+                    pm->s->bobtime = 0;
+            } else {
+                pm->s->bobtime += 160 * pml.frametime + 0.5f;
+                if (pm->s->bobtime > 256)
+                    pm->s->bobtime = 256;
+            }
+            pm->s->bobtime &= 255;
+        }
+    } else if (pm->s->pm_flags & PMF_ON_GROUND) {
+        // so bobbing only cycles when on ground
+        if (xyspeed > 210)
+            bobmove = 320;
+        else if (xyspeed > 100)
+            bobmove = 160;
+        else
+            bobmove = 80;
+        if (pm->s->pm_flags & PMF_DUCKED)
+            bobmove *= 4;
+        bobmove = bobmove * pml.frametime + 0.5f;
+        pm->s->bobtime = (pm->s->bobtime + bobmove) & 255;
+    }
+
+    if (xyspeed > 225)
+        pm->step_sound = true;
+}
+
 /*
 ================
 BG_Pmove
@@ -1515,7 +1555,7 @@ void BG_Pmove(pmove_t *pmove)
     pm->watertype = CONTENTS_NONE;
     pm->waterlevel = WATER_NONE;
     pm->jump_sound = false;
-    pm->step_clip = false;
+    pm->step_sound = false;
     pm->step_height = 0;
     pm->impact_delta = 0;
 
@@ -1620,6 +1660,9 @@ void BG_Pmove(pmove_t *pmove)
 
     // set groundentity, watertype, and waterlevel for final spot
     PM_CategorizePosition();
+
+    if (pm->s->pm_type == PM_NORMAL)
+        PM_SetBobTime();
 
     // trick jump
     if (pm->s->pm_flags & PMF_TIME_TRICK)

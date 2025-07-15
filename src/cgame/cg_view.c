@@ -283,13 +283,7 @@ static void CG_CalcViewOffset(void)
         VectorMA(cg.refdef.viewangles, f, kick, cg.refdef.viewangles);
     }
 
-#define IS_CROUCHING(frame) \
-    (((frame)->ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
-
     float *angles = cg.refdef.viewangles;
-    float crouch1 = IS_CROUCHING(cg.oldframe) ? 6 : 1;
-    float crouch2 = IS_CROUCHING(cg.frame)    ? 6 : 1;
-    float crouch_factor = crouch1 + cg.lerpfrac * (crouch2 - crouch1);
     float delta;
 
     // add angles based on velocity
@@ -299,11 +293,16 @@ static void CG_CalcViewOffset(void)
     delta = DotProduct(cg.predicted_ps.velocity, cg.v_right);
     angles[ROLL] += delta * cg_run_roll.value;
 
+    float factor = 1;
+    if ((cg.predicted_ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
+        factor = 6;
+    CG_AdvanceValue(&cg.bob_factor, factor, 50);
+
     // add angles based on bob
-    delta = fabsf(cg.bobfracsin) * cg_bob_pitch.value * cg.xyspeed * crouch_factor;
+    delta = fabsf(cg.bobfracsin) * cg_bob_pitch.value * cg.xyspeed * cg.bob_factor;
     angles[PITCH] += delta;
 
-    delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * crouch_factor;
+    delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * cg.bob_factor;
     angles[ROLL] += delta;
 
     // add bob height
@@ -315,12 +314,7 @@ static void CG_CalcViewOffset(void)
 
 static void CG_SetupFirstPersonView(void)
 {
-    int delta = cg.frame->ps.bobtime - cg.oldframe->ps.bobtime;
-    if (delta < -128)
-        delta += 256;
-    float bobtime = cg.oldframe->ps.bobtime + cg.lerpfrac * delta;
-
-    cg.bobfracsin = sinf(bobtime * (M_PIf / 128));
+    cg.bobfracsin = sinf(cg.predicted_ps.bobtime * (M_PIf / 128));
     cg.xyspeed = Vector2Length(cg.predicted_ps.velocity);
 
     CG_CalcViewOffset();
@@ -487,7 +481,7 @@ static void CG_CalcViewValues(void)
 
     lerp = cg.lerpfrac;
 
-    unsigned delta = cgs.realtime - cg.predicted_step_time;
+    unsigned steptime = cgs.realtime - cg.predicted_step_time;
 
     // calculate the origin
     if (CG_PredictionEnabled()) {
@@ -496,17 +490,23 @@ static void CG_CalcViewValues(void)
         VectorMA(cg.predicted_ps.origin, backlerp, cg.prediction_error, cg.refdef.vieworg);
 
         // smooth out stair climbing
-        if (delta < STEP_TIME)
-            cg.refdef.vieworg[2] -= cg.predicted_step * (STEP_TIME - delta);
+        if (steptime < STEP_TIME)
+            cg.refdef.vieworg[2] -= cg.predicted_step * (STEP_TIME - steptime);
     } else {
         // just use interpolated values
         LerpVector(ops->origin, ps->origin, lerp, cg.refdef.vieworg);
         LerpVector(ops->velocity, ps->velocity, lerp, cg.predicted_ps.velocity);
         cg.predicted_ps.viewheight = ps->viewheight;
 
+        int delta = ps->bobtime - ops->bobtime;
+        if (delta < -128)
+            delta += 256;
+        cg.predicted_ps.bobtime = ops->bobtime + cg.lerpfrac * delta;
+        cg.predicted_ps.pm_flags = ps->pm_flags;
+
         // smooth out stair climbing
-        if (delta < STEP_TIME)
-            cg.refdef.vieworg[2] = ps->origin[2] - cg.predicted_step * (STEP_TIME - delta);
+        if (steptime < STEP_TIME)
+            cg.refdef.vieworg[2] = ps->origin[2] - cg.predicted_step * (STEP_TIME - steptime);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement

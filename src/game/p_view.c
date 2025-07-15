@@ -8,9 +8,6 @@ static edict_t   *current_player;
 static gclient_t *current_client;
 
 static vec3_t forward, right, up;
-float         xyspeed;
-
-static bool footstep;
 
 /*
 ===============
@@ -438,9 +435,6 @@ static void P_WorldEffects(void)
             }
         }
     } else {
-        if (waterlevel == WATER_WAIST && level.is_psx && footstep)
-            G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va("player/wade%d.wav", irandom2(1, 4))), 1, ATTN_NORM);
-
         current_player->air_finished = level.time + SEC(12);
         current_player->dmg = 2;
     }
@@ -568,26 +562,6 @@ static void G_SetClientEffects(edict_t *ent)
 
 /*
 ===============
-G_SetClientEvent
-===============
-*/
-static void G_SetClientEvent(edict_t *ent)
-{
-    if (ent->client->ps.pm_flags & PMF_ON_LADDER) {
-        if (!deathmatch.integer &&
-            current_client->last_ladder_sound < level.time &&
-            Distance(current_client->last_ladder_pos, ent->s.origin) > 48) {
-            G_AddEvent(ent, EV_LADDER_STEP, 0);
-            VectorCopy(ent->s.origin, current_client->last_ladder_pos);
-            current_client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
-        }
-    } else if (ent->groundentity && xyspeed > 225 && footstep) {
-        G_AddEvent(ent, EV_FOOTSTEP, 0);
-    }
-}
-
-/*
-===============
 G_SetClientSound
 ===============
 */
@@ -658,7 +632,7 @@ void G_SetClientFrame(edict_t *ent)
         duck = true;
     else
         duck = false;
-    if (xyspeed)
+    if (ent->velocity[0] || ent->velocity[1])
         run = true;
     else
         run = false;
@@ -881,32 +855,6 @@ void ClientEndServerFrame(edict_t *ent)
     ent->s.angles[YAW] = ent->client->v_angle[YAW];
     ent->s.angles[ROLL] = SV_CalcRoll(ent->s.angles, ent->velocity) * 4;
 
-    //
-    // calculate speed and cycle to be used for
-    // all cyclic walking effects
-    //
-    xyspeed = truncf(sqrtf(ent->velocity[0] * ent->velocity[0] + ent->velocity[1] * ent->velocity[1]));
-
-    int bobmove = 0;
-
-    if (xyspeed < 5) {
-        current_client->ps.bobtime = 0; // start at beginning of cycle again
-    } else if (ent->groundentity) {
-        // so bobbing only cycles when on ground
-        if (xyspeed > 210)
-            bobmove = 320 * FRAME_TIME_SEC;
-        else if (xyspeed > 100)
-            bobmove = 160 * FRAME_TIME_SEC;
-        else
-            bobmove = 80 * FRAME_TIME_SEC;
-        if (current_client->ps.pm_flags & PMF_DUCKED)
-            bobmove *= 4;
-        current_client->ps.bobtime = (current_client->ps.bobtime + bobmove) & 255;
-    }
-
-    int bobtime = current_client->ps.bobtime;
-    footstep = ((bobtime + bobmove) ^ bobtime) & 128;
-
     // apply all the damage taken this frame
     P_DamageFeedback(ent);
 
@@ -930,8 +878,6 @@ void ClientEndServerFrame(edict_t *ent)
     G_CheckChaseStats(ent);
 
     G_SetCoopStats(ent);
-
-    G_SetClientEvent(ent);
 
     G_SetClientEffects(ent);
 

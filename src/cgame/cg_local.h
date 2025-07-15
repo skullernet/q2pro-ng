@@ -148,6 +148,8 @@ typedef struct {
     int duck_time;
     float duck_factor;
 
+    float bob_factor;
+
     int quake_time;
     int quake_frame;
     vec3_t quake_angles[2];

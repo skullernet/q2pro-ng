@@ -459,7 +459,7 @@ typedef struct {
 
     // [KEX] results (out)
     bool        jump_sound;
-    bool        step_clip;
+    bool        step_sound;
     float       step_height;
     float       impact_delta;
 } pmove_t;

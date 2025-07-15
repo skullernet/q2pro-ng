@@ -1187,14 +1187,11 @@ void THINK(update_target_camera)(edict_t *self)
 
 void G_SetClientFrame(edict_t *ent);
 
-extern float xyspeed;
-
 void THINK(target_camera_dummy_think)(edict_t *self)
 {
     // bit of a hack, but this will let the dummy
     // move like a player
     self->client = g_edicts[self->r.ownernum].client;
-    xyspeed = sqrtf(self->velocity[0] * self->velocity[0] + self->velocity[1] * self->velocity[1]);
     G_SetClientFrame(self);
     self->client = NULL;
 
