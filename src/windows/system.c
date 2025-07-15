@@ -17,7 +17,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "client.h"
-#include "common/atomic.h"
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/prompt.h"
@@ -26,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <winsvc.h>
 #include <setjmp.h>
 #endif
+
+#include <stdatomic.h>
 
 HINSTANCE                       hGlobalInstance;
 

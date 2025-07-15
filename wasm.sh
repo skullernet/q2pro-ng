@@ -11,7 +11,7 @@ fi
 WASM_OPT="-O2 -flto -target wasm32 -nostdlib -mbulk-memory -mnontrapping-fptoint
     -Wl,--no-entry,--export-dynamic,--import-undefined,--export=__stack_pointer
     -Wl,--no-growable-memory,--stack-first,-z,stack-size=0x100000
-    -Iinc -Wall -DQ2_VM -DUSE_LITTLE_ENDIAN=1 -DUSE_DEBUG=1 $WASM_OPT"
+    -Iinc -Wall -DQ2_VM -DUSE_DEBUG=1 $WASM_OPT"
 
 GAME_SRC="
     src/game/xatrix/*.c

@@ -317,18 +317,7 @@ static inline uint32_t Q_npot32(uint32_t k)
 
 static inline int Q_log2(uint32_t k)
 {
-#if q_has_builtin(__builtin_clz)
     return 31 - __builtin_clz(k | 1);
-#elif (defined _MSC_VER)
-    unsigned long index;
-    _BitScanReverse(&index, k | 1);
-    return index;
-#else
-    for (int i = 31; i > 0; i--)
-        if (k & BIT(i))
-            return i;
-    return 0;
-#endif
 }
 
 static inline float LerpAngle(float a2, float a1, float frac)
@@ -690,27 +679,6 @@ char    *vtos(const vec3_t v);
 
 //=============================================
 
-static inline uint16_t ShortSwap(uint16_t s)
-{
-#if q_has_builtin(__builtin_bswap16)
-    return __builtin_bswap16(s);
-#else
-    s = (s >> 8) | (s << 8);
-    return s;
-#endif
-}
-
-static inline uint32_t LongSwap(uint32_t l)
-{
-#if q_has_builtin(__builtin_bswap32)
-    return __builtin_bswap32(l);
-#else
-    l = ((l >> 8) & 0x00ff00ff) | ((l << 8) & 0xff00ff00);
-    l = (l >> 16) | (l << 16);
-    return l;
-#endif
-}
-
 static inline float FloatSwap(float f)
 {
     union {
@@ -719,7 +687,7 @@ static inline float FloatSwap(float f)
     } dat1, dat2;
 
     dat1.f = f;
-    dat2.l = LongSwap(dat1.l);
+    dat2.l = __builtin_bswap32(dat1.l);
     return dat2.f;
 }
 
@@ -755,33 +723,39 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
     return (int64_t)(v << (64 - bits)) >> (64 - bits);
 }
 
-#if USE_LITTLE_ENDIAN
-#define BigShort(x)     ShortSwap(x)
-#define BigLong(x)      LongSwap(x)
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define BigShort(x)     __builtin_bswap16(x)
+#define BigLong(x)      __builtin_bswap32(x)
 #define BigFloat(x)     FloatSwap(x)
 #define LittleShort(x)  ((uint16_t)(x))
 #define LittleLong(x)   ((uint32_t)(x))
 #define LittleFloat(x)  ((float)(x))
 #define MakeRawLong(b1,b2,b3,b4) MakeLittleLong(b1,b2,b3,b4)
-#define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
-#elif USE_BIG_ENDIAN
+#define MakeRawShort(b1,b2) MakeLittleShort(b1,b2)
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BigShort(x)     ((uint16_t)(x))
 #define BigLong(x)      ((uint32_t)(x))
 #define BigFloat(x)     ((float)(x))
-#define LittleShort(x)  ShortSwap(x)
-#define LittleLong(x)   LongSwap(x)
+#define LittleShort(x)  __builtin_bswap16(x)
+#define LittleLong(x)   __builtin_bswap32(x)
 #define LittleFloat(x)  FloatSwap(x)
 #define MakeRawLong(b1,b2,b3,b4) MakeBigLong(b1,b2,b3,b4)
-#define MakeRawShort(b1,b2) (((b1)<<8)|(b2))
+#define MakeRawShort(b1,b2) MakeBigShort(b1,b2)
 #else
 #error Unknown byte order
 #endif
 
-#define MakeLittleShort(b1,b2) (((uint32_t)(b2)<<8)|(uint32_t)(b1))
-#define MakeLittleLong(b1,b2,b3,b4) (((uint32_t)(b4)<<24)|((uint32_t)(b3)<<16)|((uint32_t)(b2)<<8)|(uint32_t)(b1))
+#define MakeLittleShort(b1,b2) \
+    (((uint32_t)(b2)<<8)|(uint32_t)(b1))
 
-#define MakeBigShort(b1,b2) (((uint32_t)(b1)<<8)|(uint32_t)(b2))
-#define MakeBigLong(b1,b2,b3,b4) (((uint32_t)(b1)<<24)|((uint32_t)(b2)<<16)|((uint32_t)(b3)<<8)|(uint32_t)(b4))
+#define MakeBigShort(b1,b2) \
+    (((uint32_t)(b1)<<8)|(uint32_t)(b2))
+
+#define MakeLittleLong(b1,b2,b3,b4) \
+    (((uint32_t)(b4)<<24)|((uint32_t)(b3)<<16)|((uint32_t)(b2)<<8)|(uint32_t)(b1))
+
+#define MakeBigLong(b1,b2,b3,b4) \
+    (((uint32_t)(b1)<<24)|((uint32_t)(b2)<<16)|((uint32_t)(b3)<<8)|(uint32_t)(b4))
 
 #define LittleVector(a,b) \
     ((b)[0]=LittleFloat((a)[0]),\

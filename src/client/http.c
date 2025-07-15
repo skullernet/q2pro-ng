@@ -22,7 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <assert.h>
 #include <curl/curl.h>
 
-#include "common/atomic.h"
+#include <stdatomic.h>
 #include "system/pthread.h"
 
 static cvar_t  *cl_http_downloads;
