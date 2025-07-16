@@ -841,7 +841,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             break;
         case NETF_LEB:
             to_v = MSG_ReadLeb32();
-            SHOWNET(3, "%s:%#x ", f->name, to_v);
+            SHOWNET(3, to_v > 255 ? "%s:%#x " : "%s:%d ", f->name, to_v);
             break;
         case NETF_ANGLE:
             to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(16)));
