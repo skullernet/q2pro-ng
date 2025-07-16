@@ -244,10 +244,9 @@ typedef struct {
     qhandle_t   explo4;
     qhandle_t   bfg_explo;
     qhandle_t   powerscreen;
-    qhandle_t   laser;
-    qhandle_t   dmspot;
     qhandle_t   lightning;
     qhandle_t   heatbeam;
+    qhandle_t   shell;
     qhandle_t   muzzles[MFLASH_TOTAL];
     qhandle_t   precache[MAX_MODELS];
 } cg_models_t;

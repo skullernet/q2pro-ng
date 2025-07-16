@@ -233,10 +233,9 @@ void CG_RegisterTEntModels(void)
     cgs.models.explo4 = trap_R_RegisterModel("models/objects/r_explode/tris.md2");
     cgs.models.bfg_explo = trap_R_RegisterModel("sprites/s_bfg2.sp2");
     cgs.models.powerscreen = trap_R_RegisterModel("models/items/armor/effect/tris.md2");
-    cgs.models.laser = trap_R_RegisterModel("models/objects/laser/tris.md2");
-    cgs.models.dmspot = trap_R_RegisterModel("models/objects/dmspot/tris.md2");
     cgs.models.lightning = trap_R_RegisterModel("models/proj/lightning/tris.md2");
     cgs.models.heatbeam = trap_R_RegisterModel("models/proj/beam/tris.md2");
+    cgs.models.shell = trap_R_RegisterModel("models/items/shell/tris.md2");
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cgs.models.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));

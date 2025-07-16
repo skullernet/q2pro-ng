@@ -733,8 +733,6 @@ static void CG_AddPacketEntities(void)
                 ent.skinnum = s1->skinnum;
                 ent.skin = 0;
                 ent.model = cgs.models.precache[s1->modelindex];
-                if (ent.model == cgs.models.laser || ent.model == cgs.models.dmspot)
-                    renderfx |= RF_NOSHADOW;
             }
         }
 
@@ -932,16 +930,15 @@ static void CG_AddPacketEntities(void)
                     if (!ent.model)
                         ent.model = cgs.baseclientinfo.weaponmodel[0];
                 }
-            } else
+            } else {
                 ent.model = cgs.models.precache[s1->modelindex2];
 
-#if 0
-            // PMM - check for the defender sphere shell .. make it translucent
-            if (!Q_strcasecmp(cg.configstrings[CS_MODELS + s1->modelindex2], "models/items/shell/tris.md2")) {
-                ent.alpha = custom_alpha * 0.32f;
-                ent.flags = RF_TRANSLUCENT;
+                // PMM - check for the defender sphere shell .. make it translucent
+                if (ent.model == cgs.models.shell) {
+                    ent.alpha = custom_alpha * 0.32f;
+                    ent.flags = RF_TRANSLUCENT;
+                }
             }
-#endif
 
             trap_R_AddEntity(&ent);
 
