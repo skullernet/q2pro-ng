@@ -148,7 +148,10 @@ static void parse_entity_update(const entity_state_t *state)
         && cg.numSolidEntities < MAX_PACKET_ENTITIES)
         cg.solidEntities[cg.numSolidEntities++] = ent;
 
-    if (state->solid && state->solid != PACKED_BSP) {
+    if (state->solid == PACKED_BSP) {
+        trap_GetBrushModelBounds(state->modelindex, ent->mins, ent->maxs);
+        ent->radius = 0;
+    } else if (state->solid) {
         // encoded bbox
         MSG_UnpackSolid(state->solid, ent->mins, ent->maxs);
         ent->radius = Distance(ent->maxs, ent->mins) * 0.5f;
@@ -1128,9 +1131,8 @@ void CG_SetEntitySoundOrigin(const centity_t *ent)
 
     // offset the origin for BSP models
     if (ent->current.solid == PACKED_BSP) {
-        vec3_t mins, maxs, mid;
-        trap_GetBrushModelBounds(ent->current.modelindex, mins, maxs);
-        VectorAvg(mins, maxs, mid);
+        vec3_t mid;
+        VectorAvg(ent->mins, ent->maxs, mid);
         VectorAdd(org, mid, org);
     }
 
