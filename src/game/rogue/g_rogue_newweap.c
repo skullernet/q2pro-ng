@@ -500,7 +500,7 @@ void THINK(Nuke_Quake)(edict_t *self)
     edict_t *e;
 
     if (self->last_move_time < level.time) {
-        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE);
+        G_StartSound(self, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE);
         self->last_move_time = level.time + SEC(0.5f);
     }
 
@@ -534,10 +534,10 @@ static void Nuke_Explode(edict_t *ent)
     if (ent->dmg > NUKE_DAMAGE)
         G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
-    G_TempEntity(ent->s.origin, EV_NUKEBLAST, 0)->r.svflags |= SVF_NOCULL;
+    G_AddEvent(ent, EV_NUKEBLAST, 0);
 
     // become a quake
-    ent->r.svflags |= SVF_NOCLIENT;
+    ent->s.modelindex = 0;
     ent->noise_index = G_SoundIndex("world/rumble.wav");
     ent->think = Nuke_Quake;
     ent->speed = NUKE_QUAKE_STRENGTH;
@@ -609,16 +609,16 @@ void THINK(Nuke_Think)(edict_t *ent)
 
         if (ent->pain_debounce_time <= level.time) {
             if (remaining <= (NUKE_TIME_TO_LIVE / 2.0f)) {
-                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
+                G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
                 ent->pain_debounce_time = level.time + SEC(0.3f);
             } else {
-                G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
+                G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
                 ent->pain_debounce_time = level.time + SEC(0.5f);
             }
         }
     } else {
         if (ent->pain_debounce_time <= level.time) {
-            G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
+            G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
             ent->pain_debounce_time = level.time + SEC(1);
         }
         ent->nextthink = level.time + FRAME_TIME;
@@ -655,6 +655,7 @@ void fire_nuke(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     scale = crandom() * 10.0f;
     VectorMA(nuke->velocity, scale, right, nuke->velocity);
 
+    nuke->r.svflags |= SVF_NOCULL;
     nuke->movetype = MOVETYPE_BOUNCE;
     nuke->clipmask = MASK_PROJECTILE;
     nuke->r.solid = SOLID_BBOX;

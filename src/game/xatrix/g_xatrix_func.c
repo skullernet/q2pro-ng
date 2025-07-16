@@ -21,7 +21,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
         self->think = NULL;
         self->nextthink = 0;
     } else {
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_STATIC);
         self->nextthink = level.time + SEC(1);
     }
 }
@@ -81,7 +81,7 @@ void SP_rotating_light(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_ROTATING_LIGHT_ALARM)
-        self->moveinfo.sound_start = G_SoundIndex("misc/alarm.wav");
+        self->noise_index = G_SoundIndex("misc/alarm.wav");
 
     trap_LinkEntity(self);
 }

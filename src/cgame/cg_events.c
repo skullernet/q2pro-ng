@@ -823,10 +823,10 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
 
 static void CG_SoundEvent(centity_t *cent, uint32_t param)
 {
-    int channel = (param >> 13) & 7;
     int index = param & (MAX_SOUNDS - 1);
     int vol = (param >> 24) & 255;
     int att = (param >> 16) & 255;
+    int channel = (param >> 11) & 31;
     if (vol == 0)
         vol = 255;
     if (att == ATTN_ESCAPE_CODE)

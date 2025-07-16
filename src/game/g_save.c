@@ -110,9 +110,9 @@ static const save_field_t moveinfo_t_fields[] = {
     V(end_angles),
     V(end_angles_reversed),
 
-    I(sound_start),
-    I(sound_middle),
-    I(sound_end),
+    H(sound_start),
+    H(sound_middle),
+    H(sound_end),
 
     F(accel),
     F(speed),
@@ -323,7 +323,7 @@ static const save_field_t edict_t_fields[] = {
     H(s.skinnum),
     H(s.effects),
     H(s.renderfx),
-    I(s.sound),
+    H(s.sound),
     H(s.morefx),
     F(s.alpha),
     F(s.scale),

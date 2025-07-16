@@ -625,19 +625,22 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
 {
-    G_TempEntity(origin, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
+    G_TempEntity(origin, EV_SOUND, G_EncodeSound(channel, index, volume, attenuation));
 }
 
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
-    G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
-    ent->r.svflags |= SVF_PHS;
+    G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel, index, volume, attenuation));
 }
 
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
-    // TODO: make this local
-    G_AddEvent(ent, EV_SOUND, G_EncodeSound(channel & 7, index, volume, attenuation));
+    trap_ClientCommand(ent, va("sound %d %d %d %g %g", ent->s.number, channel, index, volume, attenuation), false);
+}
+
+void G_ReliableSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
+{
+    trap_ClientCommand(NULL, va("sound %d %d %d %g %g", ent->s.number, channel, index, volume, attenuation), true);
 }
 
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation)
@@ -648,7 +651,7 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
         return 0;
 
     Q_assert(index < MAX_SOUNDS);
-    Q_assert(channel < 8);
+    Q_assert(channel < 32);
 
     vol = Q_clip(volume * 255, 1, 255);
     if (vol == 255)
@@ -662,13 +665,35 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
             att = 0;
     }
 
-    return vol << 24 | att << 16 | channel << 13 | index;
+    return vol << 24 | att << 16 | channel << 11 | index;
+}
+
+// returns true if event should be added to PHS
+static bool G_IsHearableEvent(entity_event_t event)
+{
+    switch (event) {
+    case EV_ITEM_RESPAWN:
+    case EV_FOOTSTEP:
+    case EV_OTHER_FOOTSTEP:
+    case EV_LADDER_STEP:
+    case EV_STAIR_STEP:
+    case EV_PLAYER_TELEPORT:
+    case EV_OTHER_TELEPORT:
+    case EV_SPLASH_UNKNOWN ... EV_TUNNEL_SPARKS:
+    case EV_CHAINFIST_SMOKE:
+        return false;
+    default:
+        return true;
+    }
 }
 
 void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     if (!event)
         return;
+
+    if (G_IsHearableEvent(event))
+        ent->r.svflags |= SVF_PHS;
 
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (ent->s.event[i] == event) {
@@ -703,7 +728,8 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param)
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->r.svflags = SVF_PHS;
+    if (G_IsHearableEvent(event))
+        ent->r.svflags |= SVF_PHS;
     G_SnapVector(origin, ent->s.origin);
     ent->s.event[0] = event;
     ent->s.event_param[0] = param;
@@ -731,7 +757,7 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
 void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     ent->r.solid = SOLID_NOT;
-    ent->r.svflags = SVF_PHS;
+    ent->r.svflags = SVF_NONE;
     VectorClear(ent->r.mins);
     VectorClear(ent->r.maxs);
 

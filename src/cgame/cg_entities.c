@@ -497,6 +497,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
 
     int vol = (ent->sound >> 24) & 255;
     int att = (ent->sound >> 16) & 255;
+    int channel = (ent->sound >> 11) & 31;
 
     if (vol == 0)
         vol = 255;
@@ -505,7 +506,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
 
-    trap_S_AddLoopingSound(ent->number, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
+    trap_S_AddLoopingSound(ent->number, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, !(channel & CHAN_NO_STEREO));
 }
 
 /*

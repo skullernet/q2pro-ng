@@ -289,8 +289,7 @@ typedef enum {
     CHAN_FOOTSTEP,
 
     // modifier flags
-    CHAN_NO_PHS_ADD     = BIT(3),   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
-    CHAN_RELIABLE       = BIT(4),   // send by reliable message, not datagram
+    CHAN_NO_STEREO      = BIT(3),   // don't use stereo panning
 } soundchan_t;
 
 // game print flags

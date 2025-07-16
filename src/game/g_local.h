@@ -1310,6 +1310,7 @@ static inline bool KillBox(edict_t *ent, bool from_spawning)
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation);
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
+void G_ReliableSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation);
 void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param);
 edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param);

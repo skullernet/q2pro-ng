@@ -64,6 +64,31 @@ static void CG_Inventory(void)
         cg.inventory[i] = 0;
 }
 
+// for reliable and local sounds
+static void CG_Sound(void)
+{
+    char buf[MAX_QPATH];
+
+    trap_Argv(1, buf, sizeof(buf));
+    unsigned entnum = Q_atoi(buf);
+    Q_assert_soft(entnum < MAX_EDICTS);
+
+    trap_Argv(2, buf, sizeof(buf));
+    unsigned channel = Q_atoi(buf);
+
+    trap_Argv(3, buf, sizeof(buf));
+    unsigned index = Q_atoi(buf);
+    Q_assert_soft(index < MAX_SOUNDS);
+
+    trap_Argv(4, buf, sizeof(buf));
+    float volume = Q_atof(buf);
+
+    trap_Argv(5, buf, sizeof(buf));
+    float attenuation = Q_atof(buf);
+
+    trap_S_StartSound(NULL, entnum, channel, cgs.sounds.precache[index], volume, attenuation, 0);
+}
+
 qvm_exported void CG_ServerCommand(void)
 {
     char cmd[MAX_QPATH];
@@ -76,6 +101,11 @@ qvm_exported void CG_ServerCommand(void)
 
     if (!strcmp(cmd, "inven")) {
         CG_Inventory();
+        return;
+    }
+
+    if (!strcmp(cmd, "sound")) {
+        CG_Sound();
         return;
     }
 

@@ -31,6 +31,7 @@ enum {
     TE_EXPLOSION2_NL = 63,
 };
 
+// table to remap all single-byte temporary entities to events
 static const byte events_remap[] = {
     [TE_PLAIN_EXPLOSION]         = EV_EXPLOSION_PLAIN,
     [TE_PLASMA_EXPLOSION]        = EV_EXPLOSION1,
@@ -80,8 +81,6 @@ void SP_target_temp_entity(edict_t *ent)
 
 //==========================================================
 
-//==========================================================
-
 /*QUAKED target_speaker (1 0 0) (-8 -8 -8) (8 8 8) looped-on looped-off reliable
 "noise"     wav file to play
 "attenuation"
@@ -103,23 +102,23 @@ Normal sounds play each time the target is used.  The reliable flag can be set f
 
 void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    soundchan_t chan;
-
     if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_ON | SPAWNFLAG_SPEAKER_LOOPED_OFF)) {
+        soundchan_t chan = CHAN_AUTO;
+
+        if (ent->spawnflags & SPAWNFLAG_SPEAKER_NO_STEREO)
+            chan |= CHAN_NO_STEREO;
+
         // looping sound toggles
         if (ent->s.sound)
             ent->s.sound = 0; // turn it off
         else
-            ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, ent->volume, ent->attenuation); // start it
+            ent->s.sound = G_EncodeSound(chan, ent->noise_index, ent->volume, ent->attenuation); // start it
+    } else if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE) {
+        // reliable
+        G_ReliableSound(ent, CHAN_VOICE, ent->noise_index, ent->volume, ent->attenuation);
     } else {
         // normal sound
-        if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE)
-            chan = CHAN_VOICE | CHAN_RELIABLE;
-        else
-            chan = CHAN_VOICE;
-        // use a positioned_sound, because this entity won't normally be
-        // sent to any clients because it is invisible
-        G_StartSound(ent, chan, ent->noise_index, ent->volume, ent->attenuation);
+        G_StartSound(ent, CHAN_VOICE, ent->noise_index, ent->volume, ent->attenuation);
     }
 }
 
@@ -146,14 +145,15 @@ void SP_target_speaker(edict_t *ent)
     } else if (ent->attenuation == ATTN_NONE)
         ent->r.svflags |= SVF_NOCULL;
 
-    // check for prestarted looping sound
-    if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
-        ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, ent->volume, ent->attenuation);
-
-    if (ent->spawnflags & SPAWNFLAG_SPEAKER_NO_STEREO)
-        ent->s.renderfx |= RF_NO_STEREO;
+    // reliable sounds are sent to everyone
+    if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE)
+        ent->r.svflags |= SVF_NOCULL;
 
     ent->use = Use_Target_Speaker;
+
+    // check for prestarted looping sound
+    if (ent->spawnflags & SPAWNFLAG_SPEAKER_LOOPED_ON)
+        ent->use(ent, NULL, NULL);
 
     // must link the entity so we get areas and clusters so
     // the server can determine who to send updates to
@@ -310,7 +310,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
         if (player->client->pers.game_help1changed != game.help1changed) {
             G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", game.helpmessage1);
-            G_LocalSound(player, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk.wav"), 1.0f, ATTN_NONE);
+            G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/talk.wav"), 1.0f, ATTN_NONE);
 
             player->client->pers.game_help1changed = game.help1changed;
         }

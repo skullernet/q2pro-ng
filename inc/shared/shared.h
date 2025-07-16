@@ -1057,7 +1057,6 @@ typedef struct {
 #define RF_NO_LOD           BIT(25)
 #define RF_STAIR_STEP       BIT(26)
 
-#define RF_NO_STEREO        RF_WEAPONMODEL
 #define RF_FLARE_LOCK_ANGLE RF_MINLIGHT
 #define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
 //KEX

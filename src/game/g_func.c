@@ -51,25 +51,28 @@
 #define SPAWNFLAG_DOOR_ROTATING_NO_COLLISION 0x40000
 
 // support routine for setting moveinfo sounds
-static int G_GetMoveinfoSound(edict_t *self, const char *default_value, const char *wanted_value)
+static int G_EncodeMoveinfoSound(edict_t *self, soundchan_t channel, const char *default_value, const char *wanted_value)
 {
     if (!wanted_value) {
         if (default_value)
-            return G_EncodeSound(CHAN_AUTO, G_SoundIndex(default_value), 1, self->attenuation);
+            return G_EncodeSound(channel, G_SoundIndex(default_value), 1, self->attenuation);
         return 0;
     }
 
     if (!*wanted_value || *wanted_value == '0' || *wanted_value == ' ')
         return 0;
 
-    return G_EncodeSound(CHAN_AUTO, G_SoundIndex(wanted_value), 1, self->attenuation);
+    return G_EncodeSound(channel, G_SoundIndex(wanted_value), 1, self->attenuation);
 }
 
 void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *default_mid, const char *default_end)
 {
-    self->moveinfo.sound_start = G_GetMoveinfoSound(self, default_start, st.noise_start);
-    self->moveinfo.sound_middle = G_GetMoveinfoSound(self, default_mid, st.noise_middle);
-    self->moveinfo.sound_end = G_GetMoveinfoSound(self, default_end, st.noise_end);
+    self->moveinfo.sound_start  = G_EncodeMoveinfoSound(self, CHAN_VOICE, default_start, st.noise_start);
+    self->moveinfo.sound_middle = G_EncodeMoveinfoSound(self, CHAN_AUTO,  default_mid,   st.noise_middle);
+    self->moveinfo.sound_end    = G_EncodeMoveinfoSound(self, CHAN_VOICE, default_end,   st.noise_end);
+
+    if (self->attenuation == ATTN_NONE)
+        self->r.svflags |= SVF_NOCULL;
 }
 
 static void G_ScaleMoveinfoAccel(edict_t *ent)
@@ -406,7 +409,7 @@ void plat_go_down(edict_t *ent);
 void MOVEINFO_ENDFUNC(plat_hit_top)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_end)
-        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC);
+        G_AddEvent(ent, EV_SOUND, ent->moveinfo.sound_end);
 
     ent->s.sound = 0;
     ent->moveinfo.state = STATE_TOP;
@@ -418,7 +421,7 @@ void MOVEINFO_ENDFUNC(plat_hit_top)(edict_t *ent)
 void MOVEINFO_ENDFUNC(plat_hit_bottom)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_end)
-        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_end, 1, ATTN_STATIC);
+        G_AddEvent(ent, EV_SOUND, ent->moveinfo.sound_end);
 
     ent->s.sound = 0;
     ent->moveinfo.state = STATE_BOTTOM;
@@ -431,7 +434,7 @@ void MOVEINFO_ENDFUNC(plat_hit_bottom)(edict_t *ent)
 void THINK(plat_go_down)(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_start)
-        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_AddEvent(ent, EV_SOUND, ent->moveinfo.sound_start);
 
     ent->s.sound = ent->moveinfo.sound_middle;
 
@@ -442,7 +445,7 @@ void THINK(plat_go_down)(edict_t *ent)
 static void plat_go_up(edict_t *ent)
 {
     if (!(ent->flags & FL_TEAMSLAVE) && ent->moveinfo.sound_start)
-        G_StartSound(ent, CHAN_NO_PHS_ADD | CHAN_VOICE, ent->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_AddEvent(ent, EV_SOUND, ent->moveinfo.sound_start);
 
     ent->s.sound = ent->moveinfo.sound_middle;
 
@@ -734,7 +737,7 @@ void USE(rotating_use)(edict_t *self, edict_t *other, edict_t *activator)
         }
         // PGM
     } else {
-        self->s.sound = G_EncodeSound(CHAN_AUTO, self->moveinfo.sound_middle, 1, self->attenuation);
+        self->s.sound = self->moveinfo.sound_middle;
         // PGM
         if (self->spawnflags & SPAWNFLAG_ROTATING_ACCEL) // accelerate
             rotating_accel(self);
@@ -757,7 +760,7 @@ void SP_func_rotating(edict_t *ent)
         ent->movetype = MOVETYPE_PUSH;
 
     if (st.noise)
-        ent->moveinfo.sound_middle = G_SoundIndex(st.noise);
+        ent->moveinfo.sound_middle = G_EncodeSound(CHAN_AUTO, G_SoundIndex(st.noise), 1, ent->attenuation);
 
     // set the axis of rotation
     VectorClear(ent->movedir);
@@ -928,7 +931,7 @@ static void button_fire(edict_t *self)
 
     self->moveinfo.state = STATE_UP;
     if (!(self->flags & FL_TEAMSLAVE) && self->moveinfo.sound_start)
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_AddEvent(self, EV_SOUND, self->moveinfo.sound_start);
     Move_Calc(self, self->moveinfo.end_origin, button_wait);
 }
 
@@ -1061,7 +1064,7 @@ void door_go_down(edict_t *self);
 static void door_play_sound(edict_t *self, int sound)
 {
     if (!self->teammaster) {
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation);
+        G_AddEvent(self, EV_SOUND, sound);
         return;
     }
 
@@ -1076,18 +1079,18 @@ static void door_play_sound(edict_t *self, int sound)
     }
 
     if (c == 1) {
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation);
+        G_AddEvent(self, EV_SOUND, sound);
         return;
     }
 
     VectorScale(p, 1.0f / c, p);
 
     if (trap_PointContents(p) & CONTENTS_SOLID) {
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation);
+        G_AddEvent(self, EV_SOUND, sound);
         return;
     }
 
-    G_PositionedSound(p, CHAN_NO_PHS_ADD | CHAN_VOICE, sound, 1, self->attenuation);
+    G_TempEntity(p, EV_SOUND, sound);
 }
 
 void MOVEINFO_ENDFUNC(door_hit_top)(edict_t *self)
@@ -1201,7 +1204,7 @@ void THINK(smart_water_go_up)(edict_t *self)
     }
 
     if (!(self->flags & FL_TEAMSLAVE) && self->moveinfo.sound_start)
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_AddEvent(self, EV_SOUND, self->moveinfo.sound_start);
 
     self->s.sound = self->moveinfo.sound_middle;
 
@@ -1763,8 +1766,6 @@ void SP_func_water(edict_t *self)
     self->r.solid = SOLID_BSP;
     trap_SetBrushModel(self, self->model);
 
-    self->attenuation = ATTN_STATIC;
-
     switch (self->sounds) {
     default:
         G_SetMoveinfoSounds(self, NULL, NULL, NULL);
@@ -1893,7 +1894,7 @@ void MOVEINFO_ENDFUNC(train_wait)(edict_t *self)
         }
 
         if (!(self->flags & FL_TEAMSLAVE) && self->moveinfo.sound_end)
-            G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_end, 1, ATTN_STATIC);
+            G_AddEvent(self, EV_SOUND, self->moveinfo.sound_end);
 
         self->s.sound = 0;
     } else {
@@ -1973,7 +1974,7 @@ again:
     self->target_ent = ent;
 
     if (!(self->flags & FL_TEAMSLAVE) && self->moveinfo.sound_start)
-        G_StartSound(self, CHAN_NO_PHS_ADD | CHAN_VOICE, self->moveinfo.sound_start, 1, ATTN_STATIC);
+        G_AddEvent(self, EV_SOUND, self->moveinfo.sound_start);
 
     self->s.sound = self->moveinfo.sound_middle;
 
@@ -2129,7 +2130,7 @@ void SP_func_train(edict_t *self)
     trap_SetBrushModel(self, self->model);
 
     if (st.noise)
-        self->moveinfo.sound_middle = G_SoundIndex(st.noise);
+        self->moveinfo.sound_middle = G_EncodeSound(CHAN_AUTO, G_SoundIndex(st.noise), 1, self->attenuation);
 
     if (!self->speed)
         self->speed = 100;
@@ -2411,8 +2412,6 @@ void SP_func_door_secret(edict_t *ent)
     float  side;
     float  width;
     float  length;
-
-    ent->attenuation = ATTN_STATIC;
 
     G_SetMoveinfoSounds(ent, "doors/dr1_strt.wav", "doors/dr1_mid.wav", "doors/dr1_end.wav");
 

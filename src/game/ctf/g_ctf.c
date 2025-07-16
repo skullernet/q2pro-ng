@@ -614,7 +614,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                 else
                     ctfgame.team2++;
 
-                G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagcap.wav"), 1, ATTN_NONE);
+                G_ReliableSound(ent, CHAN_AUX, G_SoundIndex("ctf/flagcap.wav"), 1, ATTN_NONE);
 
                 // other gets another 10 frag bonus
                 other->client->resp.score += CTF_CAPTURE_BONUS;
@@ -654,7 +654,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                        other->client->pers.netname, CTFTeamName(ctf_team));
         other->client->resp.score += CTF_RECOVERY_BONUS;
         other->client->resp.ctf_lastreturnedflag = level.time;
-        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
+        G_ReliableSound(ent, CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
         // CTFResetFlag will remove this entity!  We must return false
         CTFResetFlag(ctf_team);
         return false;
@@ -703,7 +703,7 @@ void THINK(CTFDropFlagThink)(edict_t *ent)
                        CTFTeamName(CTF_TEAM2));
     }
 
-    G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
+    G_ReliableSound(ent, CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
 }
 
 // Called from PlayerDie, to drop the flag from a dying player
@@ -998,7 +998,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM1);
                         G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM1));
-                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
+                        G_ReliableSound(ent, CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -1026,7 +1026,7 @@ void SetCTFStats(edict_t *ent)
                     if (e == NULL) {
                         CTFResetFlag(CTF_TEAM2);
                         G_ClientPrintf(NULL, PRINT_HIGH, "The %s flag has returned!\n", CTFTeamName(CTF_TEAM2));
-                        G_StartSound(ent, CHAN_RELIABLE | CHAN_NO_PHS_ADD | CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
+                        G_ReliableSound(ent, CHAN_AUX, G_SoundIndex("ctf/flagret.wav"), 1, ATTN_NONE);
                     }
                 }
             } else if (e->spawnflags & SPAWNFLAG_ITEM_DROPPED)
@@ -2343,7 +2343,7 @@ void CTFReady(edict_t *ent)
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime.value);
         ctfgame.countdown = false;
-        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
+        G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
     }
 }
 
@@ -2772,13 +2772,13 @@ bool CTFCheckRules(void)
             case MATCH_PREGAME:
                 // match started!
                 CTFStartMatch();
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/tele_up.wav"), 1, ATTN_NONE);
+                G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/tele_up.wav"), 1, ATTN_NONE);
                 return false;
 
             case MATCH_GAME:
                 // match ended!
                 CTFEndMatch();
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/bigtele.wav"), 1, ATTN_NONE);
+                G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/bigtele.wav"), 1, ATTN_NONE);
                 return false;
 
             default:
@@ -2816,7 +2816,7 @@ bool CTFCheckRules(void)
 
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
+                G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
             }
             break;
 
@@ -2825,7 +2825,7 @@ bool CTFCheckRules(void)
             trap_SetConfigstring(CONFIG_CTF_MATCH, text);
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
-                G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
+                G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
             }
             break;
 
@@ -3206,7 +3206,7 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime.value);
-        G_PositionedSound(world->s.origin, CHAN_AUTO | CHAN_RELIABLE, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
+        G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to terminate.\n");
