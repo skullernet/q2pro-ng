@@ -345,7 +345,7 @@ void CG_RegisterMedia(void)
             break;
         if (name[0] == '#')
             continue;
-        cgs.model_draw[i] = trap_R_RegisterModel(name);
+        cgs.models.precache[i] = trap_R_RegisterModel(name);
     }
 
     trap_SetLoadState("images");
@@ -353,9 +353,9 @@ void CG_RegisterMedia(void)
         trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
         if (!name[0])
             break;
-        cgs.image_precache[i] = CG_RegisterImage(name);
+        cgs.images.precache[i] = CG_RegisterImage(name);
     }
-    cgs.img.flare = trap_R_RegisterSprite("misc/flare.tga");
+    cgs.images.flare = trap_R_RegisterSprite("misc/flare.tga");
 
     trap_SetLoadState("clients");
     for (i = 0; i < MAX_CLIENTS; i++) {
@@ -373,7 +373,7 @@ void CG_RegisterMedia(void)
         trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
         if (!name[0])
             break;
-        cgs.sound_precache[i] = trap_S_RegisterSound(name);
+        cgs.sounds.precache[i] = trap_S_RegisterSound(name);
     }
 
     for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
@@ -429,17 +429,17 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
     }
 
     if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
-        cgs.model_draw[index - CS_MODELS] = trap_R_RegisterModel(s);
+        cgs.models.precache[index - CS_MODELS] = trap_R_RegisterModel(s);
         return;
     }
 
     if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
-        cgs.sound_precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
+        cgs.sounds.precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
         return;
     }
 
     if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
-        cgs.image_precache[index - CS_IMAGES] = CG_RegisterImage(s);
+        cgs.images.precache[index - CS_IMAGES] = CG_RegisterImage(s);
         return;
     }
 

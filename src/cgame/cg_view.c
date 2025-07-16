@@ -77,7 +77,7 @@ static void CG_AddViewWeapon(void)
 
     memset(&gun, 0, sizeof(gun));
 
-    gun.model = cgs.model_draw[ps->gunindex];
+    gun.model = cgs.models.precache[ps->gunindex];
     gun.skinnum = ps->gunskin;
     if (!gun.model)
         return;

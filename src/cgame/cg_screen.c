@@ -1122,7 +1122,7 @@ static void SCR_ExecuteLayoutString(const char *s)
                 Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
             }
             if (value) {
-                trap_R_DrawPic(x, y, cgs.image_precache[value]);
+                trap_R_DrawPic(x, y, cgs.images.precache[value]);
             }
             continue;
         }

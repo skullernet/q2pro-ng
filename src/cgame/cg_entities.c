@@ -200,7 +200,7 @@ static void CG_TransitionPlayerstate(void)
             cg.hit_marker_count = ps->stats[STAT_HITS] - ops->stats[STAT_HITS];
             cg.hit_marker_time = cgs.realtime;
             if (cg_hit_markers.integer > 1)
-                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cgs.sfx.hit_marker, 1, ATTN_NONE, 0);
+                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
         }
     }
 
@@ -318,11 +318,11 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     float       hand_multiplier = 0;
 
     if (entnum < cgs.maxclients) {
-        if (model == cgs.mod.heatbeam)
+        if (model == cgs.models.heatbeam)
             VectorSet(offset, 2, 7, -3);
-        else if (model == cgs.mod.grapple_cable)
+        else if (model == cgs.models.grapple_cable)
             VectorSet(offset, 9, 12, -3);
-        else if (model == cgs.mod.lightning)
+        else if (model == cgs.models.lightning)
             VectorSet(offset, 0, 12, -12);
     }
 
@@ -368,7 +368,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
         // calculate pitch and yaw
         VectorSubtract(end, org, dist);
 
-        if (model != cgs.mod.grapple_cable) {
+        if (model != cgs.models.grapple_cable) {
             d = VectorLength(dist);
             VectorScale(cg.v_forward, d, dist);
         }
@@ -377,7 +377,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
         vectoangles(dist, angles);
 
         // if it's the heatbeam, draw the particle effect
-        if (model == cgs.mod.heatbeam && !sv_paused.integer)
+        if (model == cgs.models.heatbeam && !sv_paused.integer)
             CG_Heatbeam(org, dist);
 
         framenum = 1;
@@ -400,7 +400,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
             VectorMA(org, -offset[0] + 1, r, org);
             VectorMA(org, -offset[1], f, org);
             VectorMA(org, -offset[2] - 10, u, org);
-        } else if (model == cgs.mod.heatbeam) {
+        } else if (model == cgs.models.heatbeam) {
             // if it's a monster, do the particle effect
             CG_MonsterPlasma_Shell(start);
         }
@@ -414,9 +414,9 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
     // add new entities for the beams
     d = VectorNormalize(dist);
-    if (model == cgs.mod.heatbeam) {
+    if (model == cgs.models.heatbeam) {
         model_length = 32.0f;
-    } else if (model == cgs.mod.lightning) {
+    } else if (model == cgs.models.lightning) {
         model_length = 35.0f;
         d -= 20.0f; // correction so it doesn't end in middle of tesla
     } else {
@@ -424,7 +424,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     }
 
     // correction for grapple cable model, which has origin in the middle
-    if (entnum == cg.frame->ps.clientnum && model == cgs.mod.grapple_cable && hand_multiplier) {
+    if (entnum == cg.frame->ps.clientnum && model == cgs.models.grapple_cable && hand_multiplier) {
         VectorMA(org, model_length * 0.5f, dist, org);
         d -= model_length * 0.5f;
     }
@@ -437,7 +437,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     // PMM - special case for lightning model .. if the real length is shorter than the model,
     // flip it around & draw it from the end to the start.  This prevents the model from going
     // through the tesla mine (instead it goes through the target)
-    if ((model == cgs.mod.lightning) && (steps <= 1)) {
+    if ((model == cgs.models.lightning) && (steps <= 1)) {
         VectorCopy(end, ent.origin);
         ent.flags = RF_FULLBRIGHT;
         ent.angles[0] = angles[0];
@@ -452,13 +452,13 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
         VectorScale(dist, len, dist);
     }
 
-    if (model == cgs.mod.heatbeam) {
+    if (model == cgs.models.heatbeam) {
         ent.frame = framenum;
         ent.flags = RF_FULLBRIGHT;
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
         ent.angles[2] = cg.time % 360;
-    } else if (model == cgs.mod.lightning) {
+    } else if (model == cgs.models.lightning) {
         ent.flags = RF_FULLBRIGHT;
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
@@ -470,7 +470,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
     VectorCopy(org, ent.origin);
     for (i = 0; i < steps; i++) {
-        if (model != cgs.mod.heatbeam)
+        if (model != cgs.models.heatbeam)
             ent.angles[2] = Com_SlowRand() % 360;
         trap_R_AddEntity(&ent);
         VectorAdd(ent.origin, dist, ent.origin);
@@ -502,7 +502,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
 
-    trap_S_AddLoopingSound(ent->number, cgs.sound_precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
+    trap_S_AddLoopingSound(ent->number, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, !(ent->renderfx & RF_NO_STEREO));
 }
 
 /*
@@ -668,9 +668,9 @@ static void CG_AddPacketEntities(void)
                 ent.alpha = (d - fade_start) / (fade_end - fade_start);
             ent.skin = 0;
             if (renderfx & RF_CUSTOMSKIN && s1->frame < MAX_IMAGES)
-                ent.skin = cgs.image_precache[s1->frame];
+                ent.skin = cgs.images.precache[s1->frame];
             if (!ent.skin)
-                ent.skin = cgs.img.flare;
+                ent.skin = cgs.images.flare;
             ent.scale = s1->scale ? s1->scale : 1;
             ent.flags = renderfx | RF_TRANSLUCENT;
             if (!s1->skinnum)
@@ -696,7 +696,7 @@ static void CG_AddPacketEntities(void)
         }
 
         if (renderfx & RF_BEAM && s1->modelindex > 1) {
-            CG_DrawBeam(ent.oldorigin, ent.origin, cgs.model_draw[s1->modelindex], s1->othernum);
+            CG_DrawBeam(ent.oldorigin, ent.origin, cgs.models.precache[s1->modelindex], s1->othernum);
             goto skip;
         }
 
@@ -732,15 +732,15 @@ static void CG_AddPacketEntities(void)
             } else {
                 ent.skinnum = s1->skinnum;
                 ent.skin = 0;
-                ent.model = cgs.model_draw[s1->modelindex];
-                if (ent.model == cgs.mod.laser || ent.model == cgs.mod.dmspot)
+                ent.model = cgs.models.precache[s1->modelindex];
+                if (ent.model == cgs.models.laser || ent.model == cgs.models.dmspot)
                     renderfx |= RF_NOSHADOW;
             }
         }
 
         // allow skin override for remaster
         if (renderfx & RF_CUSTOMSKIN && s1->skinnum < MAX_IMAGES) {
-            ent.skin = cgs.image_precache[s1->skinnum];
+            ent.skin = cgs.images.precache[s1->skinnum];
             ent.skinnum = 0;
         }
 
@@ -933,7 +933,7 @@ static void CG_AddPacketEntities(void)
                         ent.model = cgs.baseclientinfo.weaponmodel[0];
                 }
             } else
-                ent.model = cgs.model_draw[s1->modelindex2];
+                ent.model = cgs.models.precache[s1->modelindex2];
 
 #if 0
             // PMM - check for the defender sphere shell .. make it translucent
@@ -951,17 +951,17 @@ static void CG_AddPacketEntities(void)
         }
 
         if (s1->modelindex3) {
-            ent.model = cgs.model_draw[s1->modelindex3];
+            ent.model = cgs.models.precache[s1->modelindex3];
             trap_R_AddEntity(&ent);
         }
 
         if (s1->modelindex4) {
-            ent.model = cgs.model_draw[s1->modelindex4];
+            ent.model = cgs.models.precache[s1->modelindex4];
             trap_R_AddEntity(&ent);
         }
 
         if (effects & EF_POWERSCREEN) {
-            ent.model = cgs.mod.powerscreen;
+            ent.model = cgs.models.powerscreen;
             ent.oldframe = 0;
             ent.frame = 0;
             ent.flags = RF_TRANSLUCENT;

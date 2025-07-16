@@ -215,7 +215,8 @@ typedef struct {
     qhandle_t   lightning;
     qhandle_t   disrexp;
     qhandle_t   hit_marker;
-} cg_media_sfx_t;
+    qhandle_t   precache[MAX_SOUNDS];
+} cg_sounds_t;
 
 typedef enum {
     MFLASH_MACHN,
@@ -248,11 +249,13 @@ typedef struct {
     qhandle_t   lightning;
     qhandle_t   heatbeam;
     qhandle_t   muzzles[MFLASH_TOTAL];
-} cg_media_mod_t;
+    qhandle_t   precache[MAX_MODELS];
+} cg_models_t;
 
 typedef struct {
     qhandle_t   flare;
-} cg_media_img_t;
+    qhandle_t   precache[MAX_IMAGES];
+} cg_images_t;
 
 #define MAX_MATERIALS       256
 #define MAX_FOOTSTEP_SFX    15
@@ -275,20 +278,15 @@ typedef struct {
 
     char        statusbar[MAX_NET_STRING];
 
-    qhandle_t       model_draw[MAX_MODELS];
-
-    qhandle_t       sound_precache[MAX_SOUNDS];
-    qhandle_t       image_precache[MAX_IMAGES];
-
     clientinfo_t    clientinfo[MAX_CLIENTS];
     clientinfo_t    baseclientinfo;
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
 
-    cg_media_sfx_t  sfx;
-    cg_media_mod_t  mod;
-    cg_media_img_t  img;
+    cg_sounds_t     sounds;
+    cg_models_t     models;
+    cg_images_t     images;
 
     cg_footstep_sfx_t   footsteps[MAX_MATERIALS];
     int                 num_footsteps;
