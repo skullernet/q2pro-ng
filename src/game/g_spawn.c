@@ -1273,7 +1273,8 @@ q_exported void G_SpawnEntities(void)
 
         ED_CallSpawn(ent);
 
-        ent->s.renderfx |= RF_IR_VISIBLE; // PGM
+        if (ent->r.solid != SOLID_BSP && (ent->item || ent->s.modelindex > MODELINDEX_DUMMY))
+            ent->s.renderfx |= RF_IR_VISIBLE; // PGM
     }
 
     G_Printf("%d entities inhibited\n", inhibit);
