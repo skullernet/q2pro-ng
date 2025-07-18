@@ -103,6 +103,7 @@ server_src = [
 game_src = files(
   'src/bgame/bg_misc.c',
   'src/bgame/bg_pmove.c',
+  'src/bgame/bg_slidemove.c',
   'src/bgame/m_flash.c',
   'src/shared/shared.c'
 )
@@ -112,6 +113,7 @@ subdir('src/game')
 cgame_src = files(
   'src/bgame/bg_misc.c',
   'src/bgame/bg_pmove.c',
+  'src/bgame/bg_slidemove.c',
   'src/bgame/m_flash.c',
   'src/cgame/cg_consolecmds.c',
   'src/cgame/cg_effects.c',

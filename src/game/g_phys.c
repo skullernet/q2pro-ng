@@ -132,12 +132,12 @@ void G_Impact(edict_t *e1, const trace_t *trace)
 
 /*
 ==================
-ClipVelocity
+G_ClipVelocity
 
 Slide off of the impacting object
 ==================
 */
-void ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce)
+void G_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce)
 {
     float dot = DotProduct(in, normal);
 
@@ -146,17 +146,6 @@ void ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbo
 
     if (VectorLengthSquared(out) < STOP_EPSILON * STOP_EPSILON)
         VectorClear(out);
-}
-
-void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce)
-{
-    float backoff = DotProduct(in, normal) * overbounce;
-
-    VectorMA(in, -backoff, normal, out);
-
-    for (int i = 0; i < 3; i++)
-        if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
-            out[i] = 0;
 }
 
 /*
@@ -171,6 +160,7 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
     ent->groundentity = NULL;
 
     touch_list_t touch;
+    touch.num = 0;
     PM_StepSlideMove_Generic(ent->s.origin, ent->velocity, time, ent->r.mins,
                              ent->r.maxs, ent->s.number, mask, &touch, false, trap_Trace);
 
@@ -620,7 +610,7 @@ static void SV_Physics_Toss(edict_t *ent)
         time_left -= time_left * trace.fraction;
 
         if (ent->movetype == MOVETYPE_TOSS)
-            SlideClipVelocity(ent->velocity, trace.plane.normal, ent->velocity, 0.5f);
+            PM_ClipVelocity(ent->velocity, trace.plane.normal, ent->velocity, 0.5f);
         else {
             // RAFAEL
             if (ent->movetype == MOVETYPE_WALLBOUNCE)
@@ -629,7 +619,7 @@ static void SV_Physics_Toss(edict_t *ent)
             else
                 backoff = 1.6f;
 
-            ClipVelocity(ent->velocity, trace.plane.normal, ent->velocity, backoff);
+            G_ClipVelocity(ent->velocity, trace.plane.normal, ent->velocity, backoff);
         }
 
         // RAFAEL

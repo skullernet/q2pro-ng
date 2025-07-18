@@ -1760,8 +1760,7 @@ void SV_CheckVelocity(edict_t *ent);
 void SV_FlyMove(edict_t *ent, float time, contents_t mask);
 contents_t G_GetClipMask(edict_t *ent);
 void G_Impact(edict_t *e1, const trace_t *trace);
-void ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce);
-void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce);
+void G_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce);
 
 //
 // g_main.c

@@ -779,7 +779,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             vec3_t fwd;
             AngleVectors((const vec3_t) { 0, ent->ideal_yaw, 0 }, fwd, NULL, NULL);
             vec3_t dir;
-            SlideClipVelocity(fwd, chosen_forward->plane.normal, dir, 1.0f);
+            PM_ClipVelocity(fwd, chosen_forward->plane.normal, dir, 1.0f);
             float new_yaw = vectoyaw(dir);
 
             if (VectorLengthSquared(dir) > 0.1f && ent->ideal_yaw != new_yaw) {

@@ -938,7 +938,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
                     break;
 
                 VectorAdd(origin, tr.plane.normal, origin);
-                ClipVelocity(velocity, tr.plane.normal, velocity, 1.6f);
+                G_ClipVelocity(velocity, tr.plane.normal, velocity, 1.6f);
 
                 float dist = DistanceSquared(origin, target);
                 edict_t *hit = &g_edicts[tr.entnum];

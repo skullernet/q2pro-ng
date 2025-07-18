@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define STOP_EPSILON 0.1f
 
+#define MIN_STEP_NORMAL     0.7f // can't step up onto very steep slopes
+
 #define PSX_PHYSICS_SCALAR  0.875f
 
 //
@@ -510,6 +512,10 @@ static inline bool PM_CrouchingDisabled(void)
 {
     return (pm_config.physics_flags & PHYSICS_N64_MOVEMENT) && !(pm_config.physics_flags & PHYSICS_DEATHMATCH);
 }
+
+void PM_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce);
+
+void PM_RecordTrace(touch_list_t *touch, const trace_t *tr);
 
 void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
                               int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
