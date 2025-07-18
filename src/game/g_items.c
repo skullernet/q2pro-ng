@@ -1072,22 +1072,27 @@ void THINK(droptofloor)(edict_t *ent)
         dest[2] -= 128;
 
         trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
-        if (tr.startsolid) {
-            if (G_FixStuckObject(ent, ent->s.origin) == NO_GOOD_POSITION) {
-                // RAFAEL
-                if (strcmp(ent->classname, "item_foodcube") == 0)
-                    ent->velocity[2] = 0;
-                else {
-                // RAFAEL
-                    G_Printf("%s: droptofloor: startsolid\n", etos(ent));
-                    G_FreeEdict(ent);
-                    return;
-                // RAFAEL
-                }
-                // RAFAEL
+        if (!tr.startsolid) {
+            G_SnapVectorTowards(tr.endpos, ent->s.origin, ent->s.origin);
+            if (tr.fraction < 1.0f) {
+                ent->groundentity = &g_edicts[tr.entnum];
+                ent->groundentity_linkcount = ent->groundentity->r.linkcount;
             }
-        } else
-            VectorCopy(tr.endpos, ent->s.origin);
+        }
+
+        if (G_FixStuckObject(ent, ent->s.origin) == NO_GOOD_POSITION) {
+            // RAFAEL
+            if (strcmp(ent->classname, "item_foodcube") == 0)
+                ent->velocity[2] = 0;
+            else {
+            // RAFAEL
+                G_Printf("%s: droptofloor: startsolid\n", etos(ent));
+                G_FreeEdict(ent);
+                return;
+            // RAFAEL
+            }
+            // RAFAEL
+        }
     }
 
     if (ent->team) {
