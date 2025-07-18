@@ -758,7 +758,7 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-qvm_exported void G_RunFrame(unsigned time)
+qvm_exported void G_RunFrame(int64_t time)
 {
     level.in_frame = true;
     level.time = time;

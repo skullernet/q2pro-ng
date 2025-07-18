@@ -303,7 +303,7 @@ typedef struct {
     void (*ClientThink)(int clientnum);
 
     void (*PrepFrame)(void);
-    void (*RunFrame)(unsigned time);
+    void (*RunFrame)(int64_t time);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
     // server console.

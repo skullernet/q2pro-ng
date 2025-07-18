@@ -194,11 +194,13 @@ static void CL_ParseFrame(void)
 
     frame.delta = MSG_ReadBits(FRAMEDELTA_BITS);
     frame.flags = MSG_ReadBits(FRAMEFLAGS_BITS);
-    frame.servertime = MSG_ReadLeb32();
+    frame.servertime = MSG_ReadBits(SERVERTIME_BITS);
 
     if (cls.demo.playback) {
         frame.number = cls.demo.frames_read++;
         frame.cmdnum = 0;
+        if (cl.frame.servertime > frame.servertime)
+            cl.time = frame.servertime;
     } else {
         frame.number = cls.netchan.incoming_sequence;
         frame.cmdnum = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;

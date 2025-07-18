@@ -90,6 +90,13 @@ void CG_ProcessFrames(void)
             continue;
         }
 
+        // handle server time wraparound
+        if (cg.frame && frame->servertime < cg.frame->servertime) {
+            SHOWCLAMP(1, "reset time %i\n", frame->servertime);
+            CG_ClearState();
+            continue;
+        }
+
         cg.oldframe = cg.frame;
         cg.frame = frame;
 

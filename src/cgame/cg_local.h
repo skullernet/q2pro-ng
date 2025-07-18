@@ -426,6 +426,7 @@ static inline void CG_AdvanceValue(float *restrict val, float target, float spee
 
 void CG_Init(void);
 void CG_Shutdown(void);
+void CG_ClearState(void);
 
 //
 // precache.c

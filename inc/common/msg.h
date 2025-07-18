@@ -46,7 +46,6 @@ void    MSG_WriteString(const char *s);
 void    MSG_WriteBits(int value, int bits);
 void    MSG_WriteBit(bool value);
 void    MSG_FlushBits(void);
-void    MSG_WriteLeb32(uint32_t v);
 #if USE_CLIENT
 void    MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *to);
 #endif
@@ -76,7 +75,6 @@ size_t  MSG_ReadStringLine(char *dest, size_t size);
 int     MSG_ReadBits(int bits);
 bool    MSG_ReadBit(void);
 void    MSG_AlignBits(void);
-uint32_t MSG_ReadLeb32(void);
 void    MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *cmd);
 void    MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to);
 #if USE_CLIENT

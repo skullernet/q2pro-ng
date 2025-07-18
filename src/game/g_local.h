@@ -1768,7 +1768,7 @@ void SlideClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float o
 //
 void G_Init(void);
 void G_Shutdown(void);
-void G_RunFrame(unsigned time);
+void G_RunFrame(int64_t time);
 void G_PrepFrame(void);
 void SaveClientData(void);
 void FetchClientEntData(edict_t *ent);

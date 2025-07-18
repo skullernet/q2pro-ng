@@ -102,12 +102,12 @@ typedef struct {
     int             spawncount; // random number generated each server spawn
     bool            nextserver_pending;
 
-    unsigned    time;
+    int64_t     time;
     unsigned    frametime;
     unsigned    frameresidual;
 
-    unsigned    last_calcping_time;
-    unsigned    last_givemsec_time;
+    int64_t     last_calcping_time;
+    int64_t     last_givemsec_time;
 
     char        mapcmd[MAX_QPATH];          // ie: *intro.cin+base
 
@@ -210,6 +210,7 @@ typedef struct client_s {
     unsigned        frames_sent, frames_acked, frames_nodelta;
     int             framenum;
     unsigned        frameflags;
+    int64_t         begin_time;     // sv.time client has entered the game
 
     // rate dropping
     unsigned        message_size[RATE_MESSAGES];    // used to rate drop normal packets

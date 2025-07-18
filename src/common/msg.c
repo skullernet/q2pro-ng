@@ -173,7 +173,7 @@ void MSG_WriteBit(bool value)
     msg_write.bits_left--;
 }
 
-void MSG_WriteLeb32(uint32_t v)
+static void MSG_WriteLeb32(uint32_t v)
 {
     while (v) {
         MSG_WriteBit(1);
@@ -780,7 +780,7 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 #if USE_CLIENT
 
-uint32_t MSG_ReadLeb32(void)
+static uint32_t MSG_ReadLeb32(void)
 {
     uint32_t v = 0;
     int bits = 0;
@@ -935,7 +935,7 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
 
 #define SVC(x) [svc_##x] = "svc_" #x
 
-static const char *const svc_names[] = {
+static const char *const svc_names[svc_num_types] = {
     SVC(bad),
     SVC(nop),
     SVC(zpacket),

@@ -158,7 +158,7 @@ void SV_WriteFrameToClient(client_t *client)
     MSG_WriteByte(svc_frame);
     MSG_WriteBits(delta, FRAMEDELTA_BITS);
     MSG_WriteBits(client->frameflags, FRAMEFLAGS_BITS);
-    MSG_WriteLeb32(sv.time);
+    MSG_WriteBits(sv.time - client->begin_time, SERVERTIME_BITS);
 
     // send over the areabits
     MSG_WriteAreaBits(frame->areabits, frame->areabytes);

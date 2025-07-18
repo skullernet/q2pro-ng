@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define FRAMEDELTA_BITS         4
 #define FRAMEFLAGS_BITS         4
+#define SERVERTIME_BITS         28  // avoid cg.time floating point issues
 
 #define MAX_PARSE_ENTITIES      (MAX_PACKET_ENTITIES * UPDATE_BACKUP)
 #define PARSE_ENTITIES_MASK     (MAX_PARSE_ENTITIES - 1)

@@ -162,7 +162,7 @@ qvm_exported void CG_Shutdown(void)
 {
 }
 
-// Called after demo seek
+// Called after demo seek, or whenever server time goes backwards
 qvm_exported void CG_ClearState(void)
 {
     memset(&cg, 0, sizeof(cg));

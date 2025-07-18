@@ -68,6 +68,7 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
     ent->flashlightfrac = 1.0f;
+    ent->step_time = 0;
 
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
@@ -97,6 +98,7 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
         // some data changes will force no lerping
         ent->trailcount = 1024;     // for diminishing rocket / grenade trails
         ent->flashlightfrac = 1.0f;
+        ent->step_time = 0;
 
         // duplicate the current state so lerping doesn't hurt anything
         ent->prev = *state;
@@ -531,7 +533,7 @@ static void CG_AddPacketEntities(void)
     uint64_t                custom_flags;
 
     // bonus items rotate at a fixed rate
-    autorotate = anglemod(cg.time * 0.1f);
+    autorotate = cg.time * 0.1f;
 
     // brush models can auto animate their frames
     autoanim = cg.time / 500;
@@ -766,7 +768,7 @@ static void CG_AddPacketEntities(void)
             vec3_t start;
 
             ent.angles[0] = 0;
-            ent.angles[1] = anglemod(cg.time / 2) + s1->angles[1];
+            ent.angles[1] = cg.time / 2 + s1->angles[1];
             ent.angles[2] = 180;
 
             AngleVectors(ent.angles, forward, NULL, NULL);

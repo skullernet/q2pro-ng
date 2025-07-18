@@ -140,7 +140,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteByte(svc_frame);
     MSG_WriteBits(from ? 1 : 0, FRAMEDELTA_BITS);
     MSG_WriteBits(to->flags, FRAMEFLAGS_BITS);
-    MSG_WriteLeb32(to->servertime);
+    MSG_WriteBits(to->servertime, SERVERTIME_BITS);
 
     // send over the areabits
     MSG_WriteAreaBits(to->areabits, to->areabytes);
