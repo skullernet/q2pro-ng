@@ -159,6 +159,7 @@ void fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, 
     edict_t *heat;
 
     heat = G_SpawnMissile(self, start, dir, speed);
+    VectorCopy(dir, heat->movedir);
     heat->flags |= FL_DODGE;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
