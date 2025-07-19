@@ -87,7 +87,7 @@ void G_LoadL10nFile(void)
 
     G_FreeL10nFile();
 
-    ret = trap_FS_OpenFile(L10N_FILE, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
+    ret = trap_FS_OpenFile(L10N_FILE, &f, FS_MODE_READ);
     if (!f) {
         trap_FS_ErrorString(ret, buf, sizeof(buf));
         G_Printf("Couldn't open %s: %s\n", L10N_FILE, buf);

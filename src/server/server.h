@@ -318,10 +318,6 @@ typedef struct {
     unsigned        z_buffer_size;
 #endif
 
-#if USE_SAVEGAMES
-    qhandle_t       savefile;
-#endif
-
     unsigned        last_heartbeat;
     unsigned        last_timescale_check;
 
@@ -507,6 +503,9 @@ static inline server_entity_t *SV_SentForEdict(const edict_t *e)
 {
     return &sv.entities[SV_NumForEdict(e)];
 }
+
+int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode);
+int PF_CloseFile(qhandle_t f);
 
 void SV_InitGameProgs(void);
 void SV_ShutdownGameProgs(void);

@@ -1993,10 +1993,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     SV_MasterShutdown();
     SV_ShutdownGameProgs();
 
-#if USE_SAVEGAMES
-    FS_CloseFile(svs.savefile);
-#endif
-
     // free current level
     for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
         Z_Free(sv.configstrings[i]);

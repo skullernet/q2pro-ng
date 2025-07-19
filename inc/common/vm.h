@@ -28,9 +28,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #pragma once
 
 #include "common/cvar.h"
-#include "common/files.h"
 #include "common/list.h"
-#include "common/utils.h"
 #include "common/zone.h"
 
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
@@ -148,13 +146,19 @@ typedef struct {
     cvar_t *var;
 } vm_cvar_glue_t;
 
+#define MAX_VM_HANDLES  64
+
+#define VM_HANDLE_CHECK(f) \
+    do { if (f < 1 || f > MAX_VM_HANDLES) \
+        return Q_ERR(EBADF); } while (0)
+
 typedef struct {
     list_t entry;
     vm_t *vm;
     void *lib;
     vm_cvar_glue_t *cvars;
     int num_cvars;
-    size_t open_files[BC_COUNT(MAX_FILE_HANDLES)];
+    qhandle_t handles[MAX_VM_HANDLES];
 } vm_module_t;
 
 const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface);
@@ -164,4 +168,3 @@ bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const c
 void VM_CvarChanged(const cvar_t *var);
 
 int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned mode);
-int VM_CloseFile(vm_module_t *mod, qhandle_t f);

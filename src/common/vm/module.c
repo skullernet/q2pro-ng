@@ -166,17 +166,45 @@ void VM_CvarChanged(const cvar_t *var)
 
 int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned mode)
 {
-    int64_t ret = FS_OpenFile(path, f, mode);
-    if (*f)
-        Q_SetBit(mod->open_files, *f - 1);
-    return ret;
-}
+    qhandle_t h;
+    int64_t ret;
+    int i;
 
-int VM_CloseFile(vm_module_t *mod, qhandle_t f)
-{
-    int ret = FS_CloseFile(f);
-    if (f >= 1 && f <= MAX_FILE_HANDLES)
-        Q_ClearBit(mod->open_files, f - 1);
+    // NULL handle tests for file existence
+    if (!f) {
+        if ((mode & FS_MODE_MASK) != FS_MODE_READ)
+            return Q_ERR(EINVAL);
+        ret = FS_OpenFile(path, &h, mode | FS_FLAG_LOADFILE);
+        if (h)
+            FS_CloseFile(h);
+        return ret;
+    }
+
+    *f = 0;
+
+    if (mode & FS_FLAG_LOADFILE)
+        return Q_ERR(EPERM);
+
+    if ((mode & FS_MODE_MASK) != FS_MODE_READ) {
+        char normalized[MAX_OSPATH];
+        if (FS_NormalizePathBuffer(normalized, path, sizeof(normalized)) >= sizeof(normalized))
+            return Q_ERR(ENAMETOOLONG);
+        if (!strchr(normalized, '/'))
+            return Q_ERR(EPERM);
+    }
+
+    for (i = 0; i < MAX_VM_HANDLES; i++)
+        if (!mod->handles[i])
+            break;
+    if (i == MAX_VM_HANDLES)
+        return Q_ERR(EMFILE);
+
+    ret = FS_OpenFile(path, &h, mode);
+    if (h) {
+        *f = i + 1;
+        mod->handles[i] = h;
+    }
+
     return ret;
 }
 
@@ -186,9 +214,9 @@ void VM_FreeModule(vm_module_t *mod)
     Sys_FreeLibrary(mod->lib);
     Z_Free(mod->cvars);
 
-    BC_FOR_EACH(mod->open_files, index) {
-        FS_CloseFile(index + 1);
-    } BC_FOR_EACH_END
+    for (int i = 0; i < MAX_VM_HANDLES; i++)
+        if (mod->handles[i])
+            FS_CloseFile(mod->handles[i]);
 
     if (mod->entry.next)
         List_Remove(&mod->entry);

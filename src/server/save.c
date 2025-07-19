@@ -46,6 +46,7 @@ static int write_server_file(savetype_t autosave)
 {
     cvar_t      *var;
     int         ret;
+    qhandle_t   f;
 
     // write magic
     MSG_WriteLong(SAVE_MAGIC1);
@@ -87,15 +88,13 @@ static int write_server_file(savetype_t autosave)
         return -1;
 
     // write game state
-    FS_OpenFile("save/" SAVE_CURRENT "/game.ssv", &svs.savefile, FS_MODE_WRITE | FS_FLAG_GZIP);
-    if (!svs.savefile)
+    PF_OpenFile("save/" SAVE_CURRENT "/game.ssv", &f, FS_MODE_WRITE | FS_FLAG_GZIP);
+    if (!f)
         return -1;
 
-    ge->WriteGame(svs.savefile, autosave == SAVE_LEVEL_START);
+    ge->WriteGame(f, autosave == SAVE_LEVEL_START);
 
-    ret = FS_CloseFile(svs.savefile);
-    svs.savefile = 0;
-    return ret;
+    return PF_CloseFile(f);
 }
 
 static int write_level_file(void)
@@ -151,15 +150,13 @@ static int write_level_file(void)
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sav", sv.name) >= MAX_QPATH)
         return -1;
 
-    FS_OpenFile(name, &svs.savefile, FS_MODE_WRITE | FS_FLAG_GZIP);
-    if (!svs.savefile)
+    PF_OpenFile(name, &f, FS_MODE_WRITE | FS_FLAG_GZIP);
+    if (!f)
         return -1;
 
-    ge->WriteLevel(svs.savefile);
+    ge->WriteLevel(f);
 
-    ret = FS_CloseFile(svs.savefile);
-    svs.savefile = 0;
-    return ret;
+    return PF_CloseFile(f);
 }
 
 static int copy_file(const char *src, const char *dst, const char *name)
@@ -339,6 +336,7 @@ static int read_server_file(void)
 {
     char        name[MAX_QPATH], string[MAX_STRING_CHARS];
     mapcmd_t    cmd;
+    qhandle_t   f;
 
     // errors like missing file, bad version, etc are
     // non-fatal and just return to the command handler
@@ -396,14 +394,13 @@ static int read_server_file(void)
     SV_InitGame();
 
     // read game state
-    FS_OpenFile("save/" SAVE_CURRENT "/game.ssv", &svs.savefile, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
-    if (!svs.savefile)
+    PF_OpenFile("save/" SAVE_CURRENT "/game.ssv", &f, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
+    if (!f)
         return -1;
 
-    ge->ReadGame(svs.savefile);
+    ge->ReadGame(f);
 
-    FS_CloseFile(svs.savefile);
-    svs.savefile = 0;
+    PF_CloseFile(f);
 
     // clear pending CM
     Com_AbortFunc(NULL, NULL);
@@ -420,6 +417,7 @@ static int read_level_file(void)
     size_t  len;
     int     index;
     void    *data;
+    qhandle_t f;
 
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sv2", sv.name) >= MAX_QPATH)
         return -1;
@@ -477,14 +475,13 @@ static int read_level_file(void)
     if (Q_snprintf(name, MAX_QPATH, "save/" SAVE_CURRENT "/%s.sav", sv.name) >= MAX_QPATH)
         Com_Error(ERR_DROP, "Savegame path too long");
 
-    FS_OpenFile(name, &svs.savefile, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
-    if (!svs.savefile)
+    PF_OpenFile(name, &f, SAVE_LOOKUP_FLAGS | FS_FLAG_GZIP);
+    if (!f)
         return -1;
 
-    ge->ReadLevel(svs.savefile);
+    ge->ReadLevel(f);
 
-    FS_CloseFile(svs.savefile);
-    svs.savefile = 0;
+    PF_CloseFile(f);
     return 0;
 }
 

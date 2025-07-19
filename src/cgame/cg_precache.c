@@ -44,17 +44,6 @@ static const char *const sexed_sounds[SS_MAX] = {
     [SS_PAIN100_2] = "pain100_2",
 };
 
-bool CG_FileExists(const char *name)
-{
-    qhandle_t f;
-    trap_FS_OpenFile(name, &f, FS_MODE_READ | FS_FLAG_LOADFILE);
-    if (f) {
-        trap_FS_CloseFile(f);
-        return true;
-    }
-    return false;
-}
-
 static qhandle_t CG_RegisterSexedSound(const char *model, const char *base)
 {
     char buffer[MAX_QPATH];
@@ -64,7 +53,7 @@ static qhandle_t CG_RegisterSexedSound(const char *model, const char *base)
         Q_concat(buffer, MAX_QPATH, "#players/male/", base, ".wav");
 
     // see if it exists
-    if (CG_FileExists(buffer + 1))
+    if (trap_FS_OpenFile(buffer + 1, NULL, 0) >= 0)
         return trap_S_RegisterSound(buffer);
 
     // no, revert to the male sound in the pak0.pak

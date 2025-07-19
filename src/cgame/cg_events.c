@@ -145,7 +145,7 @@ static void CG_RegisterFootstep(cg_footstep_sfx_t *sfx, const char *material)
         else
             len = Q_snprintf(name, sizeof(name), "#sound/player/step%i.wav", i + 1);
         Q_assert(len < sizeof(name));
-        if (!CG_FileExists(name + 1))
+        if (trap_FS_OpenFile(name + 1, NULL, 0) < 0)
             break;
         sfx->sfx[i] = trap_S_RegisterSound(name);
     }

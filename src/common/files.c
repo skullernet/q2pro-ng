@@ -49,6 +49,8 @@ QUAKE FILESYSTEM
 =============================================================================
 */
 
+#define MAX_FILE_HANDLES    1024
+
 #if USE_ZLIB
 #define ZIP_BUFSIZE     (1 << 16)   // inflate in blocks of 64k
 #define ZIP_MAXFILES    (1 << 20)   // 1 million files

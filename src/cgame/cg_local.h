@@ -432,7 +432,6 @@ void CG_ClearState(void);
 // precache.c
 //
 
-bool CG_FileExists(const char *name);
 void CG_RegisterMedia(void);
 void CG_SetSky(void);
 void CG_UpdateConfigstring(unsigned index);

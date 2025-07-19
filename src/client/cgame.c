@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MODELINDEX_TEMPBOX  -1
 
+#define VM_HANDLE(f) cgame.handles[f - 1]
+
 static vm_module_t      cgame;
 const cgame_export_t    *cge;
 
@@ -140,7 +142,46 @@ static int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode)
 
 static int PF_CloseFile(qhandle_t f)
 {
-    return VM_CloseFile(&cgame, f);
+    VM_HANDLE_CHECK(f);
+    qhandle_t h = VM_HANDLE(f);
+    VM_HANDLE(f) = 0;
+    return FS_CloseFile(h);
+}
+
+static int PF_ReadFile(void *buffer, size_t len, qhandle_t f)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_Read(buffer, len, VM_HANDLE(f));
+}
+
+static int PF_WriteFile(const void *buffer, size_t len, qhandle_t f)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_Write(buffer, len, VM_HANDLE(f));
+}
+
+static int PF_FlushFile(qhandle_t f)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_Flush(VM_HANDLE(f));
+}
+
+static int64_t PF_TellFile(qhandle_t f)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_Tell(VM_HANDLE(f));
+}
+
+static int PF_SeekFile(qhandle_t f, int64_t offset, int whence)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_Seek(VM_HANDLE(f), offset, whence);
+}
+
+static int PF_ReadLine(qhandle_t f, char *buffer, size_t size)
+{
+    VM_HANDLE_CHECK(f);
+    return FS_ReadLine(VM_HANDLE(f), buffer, size);
 }
 
 static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
@@ -540,7 +581,7 @@ VM_THUNK(S_UpdateListener) {
 }
 
 VM_THUNK(FS_OpenFile) {
-    VM_U64(0) = PF_OpenFile(VM_STR(0), VM_PTR(1, qhandle_t), VM_U32(2));
+    VM_U64(0) = PF_OpenFile(VM_STR(0), VM_PTR_NULL(1, qhandle_t), VM_U32(2));
 }
 
 VM_THUNK(FS_CloseFile) {
@@ -548,27 +589,27 @@ VM_THUNK(FS_CloseFile) {
 }
 
 VM_THUNK(FS_ReadFile) {
-    VM_I32(0) = FS_Read(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
+    VM_I32(0) = PF_ReadFile(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
 }
 
 VM_THUNK(FS_WriteFile) {
-    VM_I32(0) = FS_Write(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
+    VM_I32(0) = PF_WriteFile(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
 }
 
 VM_THUNK(FS_FlushFile) {
-    VM_I32(0) = FS_Flush(VM_U32(0));
+    VM_I32(0) = PF_FlushFile(VM_U32(0));
 }
 
 VM_THUNK(FS_TellFile) {
-    VM_I64(0) = FS_Tell(VM_U32(0));
+    VM_I64(0) = PF_TellFile(VM_U32(0));
 }
 
 VM_THUNK(FS_SeekFile) {
-    VM_I32(0) = FS_Seek(VM_U32(0), VM_I64(1), VM_U32(2));
+    VM_I32(0) = PF_SeekFile(VM_U32(0), VM_I64(1), VM_U32(2));
 }
 
 VM_THUNK(FS_ReadLine) {
-    VM_I32(0) = FS_ReadLine(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
+    VM_I32(0) = PF_ReadLine(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
 VM_THUNK(FS_ListFiles) {
@@ -952,12 +993,12 @@ static const cgame_import_t cgame_dll_imports = {
 
     .FS_OpenFile = PF_OpenFile,
     .FS_CloseFile = PF_CloseFile,
-    .FS_ReadFile = FS_Read,
-    .FS_WriteFile = FS_Write,
-    .FS_FlushFile = FS_Flush,
-    .FS_TellFile = FS_Tell,
-    .FS_SeekFile = FS_Seek,
-    .FS_ReadLine = FS_ReadLine,
+    .FS_ReadFile = PF_ReadFile,
+    .FS_WriteFile = PF_WriteFile,
+    .FS_FlushFile = PF_FlushFile,
+    .FS_TellFile = PF_TellFile,
+    .FS_SeekFile = PF_SeekFile,
+    .FS_ReadLine = PF_ReadLine,
     .FS_ListFiles = PF_ListFiles,
     .FS_ErrorString = Q_ErrorStringBuffer,
 
