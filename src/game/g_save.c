@@ -327,6 +327,7 @@ static const save_field_t edict_t_fields[] = {
     H(s.morefx),
     F(s.alpha),
     F(s.scale),
+    I(s.othernum),
 
     // [...]
 
