@@ -90,11 +90,11 @@ typedef struct {
 #define MAX_ENT_CLUSTERS    16
 
 typedef struct {
-    list_t      area;               // linked to a division node or leaf
-    int         num_clusters;       // if -1, use headnode instead
-    int         clusternums[MAX_ENT_CLUSTERS];
-    int         headnode;           // unused if num_clusters != -1
-    edict_t     *edict;
+    list_t          area;               // linked to a division node or leaf
+    int             num_clusters;       // if -1, use headnode instead
+    int             clusternums[MAX_ENT_CLUSTERS];
+    const mnode_t  *headnode;           // unused if num_clusters != -1
+    edict_t        *edict;
 } server_entity_t;
 
 typedef struct {

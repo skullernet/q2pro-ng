@@ -228,33 +228,6 @@ int CM_LoadMap(cm_t *cm, const char *name)
     return Q_ERR_SUCCESS;
 }
 
-const mnode_t *CM_NodeNum(const cm_t *cm, int number)
-{
-    if (!cm->cache) {
-        return (const mnode_t *)&nullleaf;
-    }
-    if (number == -1) {
-        return (const mnode_t *)cm->cache->leafs;   // special case for solid leaf
-    }
-    if (number < 0 || number >= cm->cache->numnodes) {
-        Com_EPrintf("%s: bad number: %d\n", __func__, number);
-        return (const mnode_t *)&nullleaf;
-    }
-    return cm->cache->nodes + number;
-}
-
-const mleaf_t *CM_LeafNum(const cm_t *cm, int number)
-{
-    if (!cm->cache) {
-        return &nullleaf;
-    }
-    if (number < 0 || number >= cm->cache->numleafs) {
-        Com_EPrintf("%s: bad number: %d\n", __func__, number);
-        return &nullleaf;
-    }
-    return cm->cache->leafs + number;
-}
-
 //=======================================================================
 
 static cplane_t box_planes[12];

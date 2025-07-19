@@ -190,7 +190,7 @@ static bool SV_EntityVisible(int e, const visrow_t *mask)
 
     if (ent->num_clusters == -1)
         // too many leafs for individual check, go by headnode
-        return CM_HeadnodeVisible(CM_NodeNum(&sv.cm, ent->headnode), mask->b);
+        return CM_HeadnodeVisible(ent->headnode, mask->b);
 
     // check individual leafs
     for (int i = 0; i < ent->num_clusters; i++)

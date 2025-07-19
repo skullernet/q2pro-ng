@@ -202,7 +202,7 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
     if (num_leafs == q_countof(leafs)) {
         // assume we missed some leafs, and mark by headnode
         sent->num_clusters = -1;
-        sent->headnode = CM_NumNode(cm, topnode);
+        sent->headnode = topnode;
     } else {
         sent->num_clusters = 0;
         for (i = 0; i < num_leafs; i++) {
@@ -215,7 +215,7 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
                 if (sent->num_clusters == MAX_ENT_CLUSTERS) {
                     // assume we missed some leafs, and mark by headnode
                     sent->num_clusters = -1;
-                    sent->headnode = CM_NumNode(cm, topnode);
+                    sent->headnode = topnode;
                     break;
                 }
 
