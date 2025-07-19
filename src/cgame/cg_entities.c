@@ -210,17 +210,23 @@ static void CG_TransitionPlayerstate(void)
     }
 
     if (ps->stats[STAT_DAMAGE]) {
-        vec3_t dir;
-        float kick, side;
+        float kick = (ps->stats[STAT_DAMAGE] & 255) * 0.3f;
+        int dir_b = (ps->stats[STAT_DAMAGE] >> 8) & 255;
 
-        ByteToDir(ps->stats[STAT_DAMAGE] & 255, dir);
-        kick = ((ps->stats[STAT_DAMAGE] >> 8) & 63) * 0.3f;
+        if (dir_b) {
+            vec3_t dir;
+            ByteToDir(dir_b, dir);
 
-        side = -DotProduct(dir, cg.v_forward);
-        cg.v_dmg_pitch = kick * side;
+            float side = DotProduct(dir, cg.v_forward);
+            cg.v_dmg_pitch = -kick * side;
 
-        side = DotProduct(dir, cg.v_right);
-        cg.v_dmg_roll = kick * side;
+            side = DotProduct(dir, cg.v_right);
+            cg.v_dmg_roll = kick * side;
+        } else {
+            // make non-directional damage always centered
+            cg.v_dmg_pitch = -kick;
+            cg.v_dmg_roll = 0;
+        }
 
         cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
     }

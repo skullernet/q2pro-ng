@@ -162,7 +162,7 @@ static void P_DamageFeedback(edict_t *player)
         VectorSubtract(client->damage_from, player->s.origin, v);
         VectorNormalize(v);
 
-        client->ps.stats[STAT_DAMAGE] = DirToByte(v) | kick << 8;
+        client->ps.stats[STAT_DAMAGE] = DirToByte(v) << 8 | kick;
     }
 
     //
