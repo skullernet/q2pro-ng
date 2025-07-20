@@ -1741,36 +1741,18 @@ static void add_texture_format(imageformat_t fmt)
 
 static void r_texture_formats_changed(cvar_t *self)
 {
-    const char *s;
-
     // reset the search order
     img_total = 0;
 
     // parse the string
-    s = self->string;
+    const char *s = self->string;
     while (s) {
         char *tok = COM_Parse(&s);
-        int i;
-
-        // handle "png jpg tga" format
-        for (i = IM_WAL + 1; i < IM_MAX; i++) {
+        for (int i = IM_WAL + 1; i < IM_MAX; i++) {
             if (!Q_stricmp(tok, img_loaders[i].ext)) {
                 add_texture_format(i);
                 break;
             }
-        }
-        if (i != IM_MAX)
-            continue;
-
-        // handle legacy "pjt" format
-        while (*tok) {
-            for (i = IM_WAL + 1; i < IM_MAX; i++) {
-                if (Q_tolower(*tok) == img_loaders[i].ext[0]) {
-                    add_texture_format(i);
-                    break;
-                }
-            }
-            tok++;
         }
     }
 }
