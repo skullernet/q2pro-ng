@@ -1481,6 +1481,7 @@ static cvar_t   *r_texture_overrides;
 #endif
 
 static cvar_t   *r_glowmaps;
+static cvar_t   *r_default_flare_list;
 
 static const cmd_option_t o_imagelist[] = {
     { "8", "pal", "list paletted images" },
@@ -2137,8 +2138,19 @@ qhandle_t R_RegisterSkin(const char *name) {
     return IMG_Register(name, IT_SKIN, IF_NONE);
 }
 
-qhandle_t R_RegisterSprite(const char *name) {
-    return IMG_Register(name, IT_SPRITE, IF_NONE);
+qhandle_t R_RegisterSprite(const char *name)
+{
+    imageflags_t flags = IF_NONE;
+
+    const char *s = r_default_flare_list->string;
+    while (s) {
+        if (!Q_stricmp(name, COM_Parse(&s))) {
+            flags = IF_DEFAULT_FLARE;
+            break;
+        }
+    }
+
+    return IMG_Register(name, IT_SPRITE, flags);
 }
 
 /*
@@ -2299,6 +2311,7 @@ void IMG_Init(void)
 #endif // USE_PNG || USE_JPG || USE_TGA
 
     r_glowmaps = Cvar_Get("r_glowmaps", "1", CVAR_FILES);
+    r_default_flare_list = Cvar_Get("r_default_flare_list", "misc/flare.tga sprites/psx_flare.tga", CVAR_FILES);
 
     Cmd_Register(img_cmd);
 
