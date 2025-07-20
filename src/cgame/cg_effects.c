@@ -31,18 +31,6 @@ LIGHT STYLE MANAGEMENT
 ==============================================================
 */
 
-typedef struct {
-    int     length;
-    float   map[MAX_QPATH - 1];
-} clightstyle_t;
-
-static clightstyle_t    cg_lightstyles[MAX_LIGHTSTYLES];
-
-static void CG_ClearLightStyles(void)
-{
-    memset(cg_lightstyles, 0, sizeof(cg_lightstyles));
-}
-
 /*
 ================
 CG_SetLightStyle
@@ -51,9 +39,9 @@ CG_SetLightStyle
 void CG_SetLightStyle(int index, const char *s)
 {
     int     i;
-    clightstyle_t   *ls;
+    cg_lightstyle_t *ls;
 
-    ls = &cg_lightstyles[index];
+    ls = &cgs.lightstyles[index];
     ls->length = strlen(s);
     Q_assert(ls->length < MAX_QPATH);
 
@@ -69,13 +57,13 @@ CG_AddLightStyles
 void CG_AddLightStyles(void)
 {
     int     i, ofs = cg.time / 100;
-    clightstyle_t   *ls;
+    cg_lightstyle_t *ls;
 
     if (cg_lerp_lightstyles.integer) {
         float f = (cg.time % 100) * 0.01f;
         float b = 1.0f - f;
 
-        for (i = 0, ls = cg_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+        for (i = 0, ls = cgs.lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = 1.0f;
 
             if (ls->length > 1)
@@ -86,7 +74,7 @@ void CG_AddLightStyles(void)
             trap_R_SetLightStyle(i, value);
         }
     } else {
-        for (i = 0, ls = cg_lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
+        for (i = 0, ls = cgs.lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
             float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
             trap_R_SetLightStyle(i, value);
         }
@@ -2666,7 +2654,6 @@ CG_ClearEffects
 */
 void CG_ClearEffects(void)
 {
-    CG_ClearLightStyles();
     CG_ClearParticles();
     CG_ClearDlights();
 }

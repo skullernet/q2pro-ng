@@ -69,8 +69,8 @@ extern centity_t    cg_entities[MAX_EDICTS];
 #define MAX_STEP    32
 
 //
-// the cgame_state_t structure is wiped completely at every map restart, demo
-// seek, etc
+// the cgame_state_t structure contains transient data from server. it
+// is wiped completely at every time reset or demo seek.
 //
 typedef struct {
     vec3_t      predicted_origins[CMD_BACKUP];  // for debug comparing against server
@@ -264,9 +264,15 @@ typedef struct {
     qhandle_t   sfx[MAX_FOOTSTEP_SFX];
 } cg_footstep_sfx_t;
 
+typedef struct {
+    int     length;
+    float   map[MAX_QPATH - 1];
+} cg_lightstyle_t;
+
 //
-// the cgame_static_t structure is persistent through an arbitrary number
-// of map restarts, but wiped out at map change
+// the cgame_static_t structure contains static information derived from server
+// state. it is persistent through an arbitrary number of time resets and demo
+// seeks, but wiped out at map change.
 //
 typedef struct {
     unsigned    realtime;
@@ -289,6 +295,8 @@ typedef struct {
 
     cg_footstep_sfx_t   footsteps[MAX_MATERIALS];
     int                 num_footsteps;
+
+    cg_lightstyle_t     lightstyles[MAX_LIGHTSTYLES];
 } cgame_static_t;
 
 extern cgame_static_t   cgs;
