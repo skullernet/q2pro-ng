@@ -162,13 +162,14 @@ qvm_exported void CG_Shutdown(void)
 {
 }
 
-// Called after demo seek, or whenever server time goes backwards
+// Called after demo seek, or whenever server time reset occurs
 qvm_exported void CG_ClearState(void)
 {
     memset(&cg, 0, sizeof(cg));
 
     CG_ClearEffects();
     CG_ClearTEnts();
+    SCR_ClearCenterPrints();
 
     // refresh current frame
     cg.serverframe = trap_GetServerFrameNumber() - 1;

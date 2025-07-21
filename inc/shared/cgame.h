@@ -28,7 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 typedef struct {
-    int             number;
+    unsigned        number;
     unsigned        servertime;
     unsigned        cmdnum;
 

@@ -40,7 +40,7 @@ typedef struct {
     vec3_t          mins, maxs;
     float           radius;             // from mid point
 
-    int             serverframe;        // if not current, this ent isn't in the frame
+    unsigned        serverframe;        // if not current, this ent isn't in the frame
 
     int             trailcount;         // for diminishing grenade trails
     vec3_t          lerp_origin;        // for trails (variable hz)
@@ -58,6 +58,7 @@ typedef struct {
 
 extern centity_t    cg_entities[MAX_EDICTS];
 
+// view pitching times
 #define DAMAGE_TIME 500
 #define FALL_TIME   300
 #define KICK_TIME   100
@@ -121,44 +122,44 @@ typedef struct {
             vec3_t      offset;
         } muzzle;
         struct {
-            vec3_t origin;
-            vec3_t angles;
+            vec3_t      origin;
+            vec3_t      angles;
         } kick;
-        int prev_frame;
-        int anim_start;
+        int     prev_frame;
+        int     anim_start;
     } weapon;
 
-    float xyspeed;
-    float bobfracsin;
-    vec3_t slow_view_angles;
-    vec3_t viewangles_delta;
-    vec3_t oldviewangles;
+    float       xyspeed;
+    float       bobfracsin;
+    vec3_t      slow_view_angles;
+    vec3_t      viewangles_delta;
+    vec3_t      oldviewangles;
 
-    vec3_t kick_angles[2];
-    vec3_t kick_origin[2];
-    int kick_frame;
+    vec3_t      kick_angles[2];
+    vec3_t      kick_origin[2];
+    int         kick_frame;
 
-    int fall_time;
-    float fall_value;
+    int         fall_time;
+    float       fall_value;
 
-    int v_dmg_time;
-    float v_dmg_pitch;
-    float v_dmg_roll;
+    int         v_dmg_time;
+    float       v_dmg_pitch;
+    float       v_dmg_roll;
 
-    int duck_time;
-    float duck_factor;
+    int         duck_time;
+    float       duck_factor;
 
-    float bob_factor;
+    float       bob_factor;
 
-    int quake_time;
-    int quake_frame;
-    vec3_t quake_angles[2];
+    int         quake_time;
+    int         quake_frame;
+    vec3_t      quake_angles[2];
 
-    int last_effects_time;
-    qhandle_t last_footstep;
+    int         last_effects_time;
+    qhandle_t   last_footstep;
 
-    unsigned hit_marker_time;
-    int hit_marker_count;
+    unsigned    hit_marker_time;
+    int         hit_marker_count;
 } cgame_state_t;
 
 extern cgame_state_t    cg;
@@ -189,14 +190,14 @@ typedef enum {
 } sexed_sound_t;
 
 typedef struct {
-    char name[MAX_QPATH];
-    qhandle_t skin;
-    qhandle_t icon;
-    char model_name[MAX_QPATH];
-    char skin_name[MAX_QPATH];
-    qhandle_t model;
-    qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
-    qhandle_t sounds[SS_MAX];
+    char        name[MAX_QPATH];
+    qhandle_t   skin;
+    qhandle_t   icon;
+    char        model_name[MAX_QPATH];
+    char        skin_name[MAX_QPATH];
+    qhandle_t   model;
+    qhandle_t   weaponmodel[MAX_CLIENTWEAPONMODELS];
+    qhandle_t   sounds[SS_MAX];
 } clientinfo_t;
 
 typedef struct {
