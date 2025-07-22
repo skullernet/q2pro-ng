@@ -161,7 +161,7 @@ void SV_WriteFrameToClient(client_t *client)
     MSG_WriteBits(sv.time - client->begin_time, SERVERTIME_BITS);
 
     // send over the areabits
-    MSG_WriteAreaBits(frame->areabits, frame->areabytes);
+    MSG_WriteDeltaAreaBits(oldframe ? oldframe->areabits : NULL, frame->areabits, frame->areabytes);
 
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(oldframe ? &oldframe->ps : NULL, &frame->ps);

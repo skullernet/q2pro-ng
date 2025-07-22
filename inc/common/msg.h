@@ -51,7 +51,7 @@ void    MSG_WriteDeltaUsercmd(const usercmd_t *from, const usercmd_t *to);
 #endif
 void    MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, bool force);
 void    MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t *to);
-void    MSG_WriteAreaBits(const byte *areabits, unsigned areabytes);
+void    MSG_WriteDeltaAreaBits(const byte *from, const byte *to, unsigned areabytes);
 
 static inline void *MSG_WriteData(const void *data, size_t len)
 {

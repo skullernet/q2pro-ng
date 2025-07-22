@@ -233,13 +233,14 @@ static void CL_ParseFrame(void)
 
     // read areabits
     if (MSG_ReadBit()) {
+        SHOWNET(3, "%3u:areabytes\n", msg_read.readcount);
         int length = MSG_ReadBits(5) + 1;
         for (int i = 0; i < length; i++)
             frame.areabits[i] = MSG_ReadBits(8);
         frame.areabytes = length;
-    } else {
-        frame.areabits[0] = 0x02;
-        frame.areabytes   = 1;
+    } else if (oldframe) {
+        memcpy(frame.areabits, oldframe->areabits, oldframe->areabytes);
+        frame.areabytes = oldframe->areabytes;
     }
 
     SHOWNET(3, "%3u:playerinfo ", msg_read.readcount);

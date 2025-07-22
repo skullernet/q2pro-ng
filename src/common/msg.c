@@ -589,16 +589,16 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
                 MSG_WriteSignedLeb32(to->stats[i]);
 }
 
-void MSG_WriteAreaBits(const byte *areabits, unsigned areabytes)
+void MSG_WriteDeltaAreaBits(const byte *from, const byte *to, unsigned areabytes)
 {
     Q_assert(areabytes <= MAX_MAP_AREA_BYTES);
-    if (areabytes == 0 || (areabytes == 1 && areabits[0] == 0x02)) {
+    if (areabytes == 0 || (from && !memcmp(from, to, areabytes))) {
         MSG_WriteBit(0);
     } else {
         MSG_WriteBit(1);
         MSG_WriteBits(areabytes - 1, 5);
         for (int i = 0; i < areabytes; i++)
-            MSG_WriteBits(areabits[i], 8);
+            MSG_WriteBits(to[i], 8);
     }
 }
 

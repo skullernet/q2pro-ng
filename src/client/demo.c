@@ -143,7 +143,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteBits(to->servertime, SERVERTIME_BITS);
 
     // send over the areabits
-    MSG_WriteAreaBits(to->areabits, to->areabytes);
+    MSG_WriteDeltaAreaBits(from ? from->areabits : NULL, to->areabits, to->areabytes);
 
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(from ? &from->ps : NULL, &to->ps);
