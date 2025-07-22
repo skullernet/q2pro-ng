@@ -76,8 +76,6 @@ typedef struct {
                                 qhandle_t hmodel, contents_t contentmask,
                                 const vec3_t origin, const vec3_t angles);
 
-    void (*ClipEntity)(trace_t *dst, const trace_t *src, int entnum);
-
     contents_t (*PointContents)(const vec3_t point, qhandle_t hmodel);
     contents_t (*TransformedPointContents)(const vec3_t point, qhandle_t hmodel,
                                            const vec3_t origin, const vec3_t angles);

@@ -94,7 +94,7 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
                                  mins, maxs, hmodel, contentmask,
                                  ent->current.origin, ent->current.angles);
 
-        trap_ClipEntity(tr, &trace, ent->current.number);
+        CM_ClipEntity(tr, &trace, ent->current.number);
     }
 }
 

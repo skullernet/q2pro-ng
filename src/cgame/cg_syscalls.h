@@ -33,8 +33,6 @@ void trap_TransformedBoxTrace(trace_t *trace,
                               qhandle_t hmodel, contents_t contentmask,
                               const vec3_t origin, const vec3_t angles);
 
-void trap_ClipEntity(trace_t *dst, const trace_t *src, int entnum);
-
 contents_t trap_PointContents(const vec3_t point, qhandle_t hmodel);
 contents_t trap_TransformedPointContents(const vec3_t point, qhandle_t hmodel,
                                          const vec3_t origin, const vec3_t angles);
@@ -165,7 +163,6 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 
 #define trap_BoxTrace cgi->BoxTrace
 #define trap_TransformedBoxTrace cgi->TransformedBoxTrace
-#define trap_ClipEntity cgi->ClipEntity
 #define trap_PointContents cgi->PointContents
 #define trap_TransformedPointContents cgi->TransformedPointContents
 

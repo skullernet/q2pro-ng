@@ -353,7 +353,7 @@ static void CG_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         trap_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                  ent->current.modelindex, contentmask, org, ang);
 
-        trap_ClipEntity(tr, &trace, ent->current.number);
+        CM_ClipEntity(tr, &trace, ent->current.number);
     }
 }
 

@@ -288,10 +288,6 @@ VM_THUNK(TransformedBoxTrace) {
     PF_TransformedBoxTrace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3(2), VM_VEC3(3), VM_VEC3(4), VM_U32(5), VM_U32(6), VM_VEC3(7), VM_VEC3(8));
 }
 
-VM_THUNK(ClipEntity) {
-    CM_ClipEntity(VM_PTR(0, trace_t), VM_PTR(1, trace_t), VM_U32(2));
-}
-
 VM_THUNK(PointContents) {
     VM_U32(0) = PF_PointContents(VM_VEC3(0), VM_U32(1));
 }
@@ -713,7 +709,6 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetConfigstring, "i iii"),
     VM_IMPORT(BoxTrace, "iiiiiii"),
     VM_IMPORT(TransformedBoxTrace, "iiiiiiiii"),
-    VM_IMPORT(ClipEntity, "iii"),
     VM_IMPORT(PointContents, "i ii"),
     VM_IMPORT(TransformedPointContents, "i iiii"),
     VM_IMPORT(TempBoxModel, "i ii"),
@@ -936,7 +931,6 @@ static const cgame_import_t cgame_dll_imports = {
 
     .BoxTrace = PF_BoxTrace,
     .TransformedBoxTrace = PF_TransformedBoxTrace,
-    .ClipEntity = CM_ClipEntity,
     .PointContents = PF_PointContents,
     .TransformedPointContents = PF_TransformedPointContents,
     .TempBoxModel = PF_TempBoxModel,

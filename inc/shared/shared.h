@@ -993,6 +993,21 @@ typedef struct {
     int             entnum;         // not set by CM_*() functions
 } trace_t;
 
+static inline void CM_ClipEntity(trace_t *dst, const trace_t *src, int entnum)
+{
+    dst->allsolid |= src->allsolid;
+    dst->startsolid |= src->startsolid;
+    if (src->fraction < dst->fraction) {
+        dst->fraction = src->fraction;
+        VectorCopy(src->endpos, dst->endpos);
+        dst->plane = src->plane;
+        dst->surface_flags = src->surface_flags;
+        dst->surface_id = src->surface_id;
+        dst->contents = src->contents;
+        dst->entnum = entnum;
+    }
+}
+
 /*
 ==========================================================
 

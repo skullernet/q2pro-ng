@@ -61,7 +61,6 @@ void        CM_TransformedBoxTrace(trace_t *trace,
                                    const vec3_t mins, const vec3_t maxs,
                                    const mnode_t *headnode, int brushmask,
                                    const vec3_t origin, const vec3_t angles);
-void        CM_ClipEntity(trace_t *dst, const trace_t *src, int entnum);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
