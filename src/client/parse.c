@@ -188,29 +188,30 @@ static void CL_ParseFrame(void)
 {
     server_frame_t          frame = { 0 };
     const server_frame_t   *oldframe;
-    int                     deltaframe;
+    int                     delta, deltaframe;
 
     MSG_AlignBits();
 
-    frame.delta = MSG_ReadBits(FRAMEDELTA_BITS);
+    delta = MSG_ReadBits(FRAMEDELTA_BITS);
     frame.flags = MSG_ReadBits(FRAMEFLAGS_BITS);
     frame.servertime = MSG_ReadBits(SERVERTIME_BITS);
 
     if (cls.demo.playback) {
         frame.number = cls.demo.frames_read++;
-        frame.cmdnum = 0;
         if (cl.frame.servertime > frame.servertime)
             cl.time = frame.servertime;
     } else {
+        const client_history_t *h = &cl.history[cls.netchan.incoming_acknowledged & CMD_MASK];
         frame.number = cls.netchan.incoming_sequence;
-        frame.cmdnum = cl.history[cls.netchan.incoming_acknowledged & CMD_MASK].cmdNumber;
+        frame.cmdnum = h->cmdNumber;
+        frame.latency = cls.realtime - h->sent;
     }
 
     // if the frame is delta compressed from data that we no longer have
     // available, we must suck up the rest of the frame, but not use it, then
     // ask for a non-compressed message
-    if (frame.delta) {
-        deltaframe = frame.number - frame.delta;
+    if (delta) {
+        deltaframe = frame.number - delta;
         oldframe = &cl.frames[deltaframe & UPDATE_MASK];
         if (oldframe->number != deltaframe) {
             // the frame that the server did the delta from
@@ -258,14 +259,8 @@ static void CL_ParseFrame(void)
     // save the frame off in the backup array for later delta comparisons
     cl.frames[frame.number & UPDATE_MASK] = frame;
 
-#if USE_DEBUG
-    if (cl_shownet->integer >= 3) {
-        int seq = cls.netchan.incoming_acknowledged & CMD_MASK;
-        int rtt = cls.demo.playback ? 0 : cls.realtime - cl.history[seq].sent;
-        Com_LPrintf(PRINT_DEVELOPER, "%3u:frame:%d  delta:%d  rtt:%d  svtime:%d\n",
-                    msg_read.readcount, frame.number, deltaframe, rtt, frame.servertime);
-    }
-#endif
+    SHOWNET(3, "%3u:frame:%d  delta:%d  rtt:%d  svtime:%d\n",
+            msg_read.readcount, frame.number, deltaframe, frame.latency, frame.servertime);
 
     if (!frame.valid) {
         cl.frame.valid = false;

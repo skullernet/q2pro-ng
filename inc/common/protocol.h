@@ -86,10 +86,3 @@ typedef enum {
     clc_userinfo_delta,
     clc_stringcmd,
 } clc_ops_t;
-
-//==============================================
-
-#define FF_SUPPRESSED   BIT(0)
-#define FF_CLIENTDROP   BIT(1)
-#define FF_CLIENTPRED   BIT(2)
-#define FF_RESERVED     BIT(3)

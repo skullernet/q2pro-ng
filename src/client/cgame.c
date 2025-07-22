@@ -238,10 +238,14 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     if (cl.next_entity - frame->first_entity > MAX_PARSE_ENTITIES)
         return false;
 
-    out->number = number;
-    out->cmdnum = frame->cmdnum;
+    out->flags = frame->flags;
+    out->number = frame->number;
     out->servertime = frame->servertime;
+    out->cmdnum = frame->cmdnum;
+    out->latency = frame->latency;
+
     memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
+    out->areabytes = out->areabytes;
 
     out->ps = frame->ps;
 

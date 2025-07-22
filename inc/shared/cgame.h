@@ -28,9 +28,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 typedef struct {
+    unsigned        flags;
     unsigned        number;
     unsigned        servertime;
     unsigned        cmdnum;
+    unsigned        latency;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;

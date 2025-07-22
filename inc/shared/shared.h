@@ -1102,6 +1102,12 @@ typedef struct {
 #define CS_NAME             0
 #define MAX_CONFIGSTRINGS   0x4000
 
+// server frame flags
+#define FF_SUPPRESSED   BIT(0)
+#define FF_CLIENTDROP   BIT(1)
+#define FF_CLIENTPRED   BIT(2)
+#define FF_RESERVED     BIT(3)
+
 #define MAX_EVENTS      4
 
 // entity_state_t is the information conveyed from the server

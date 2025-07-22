@@ -410,28 +410,18 @@ void SCR_LagClear(void)
 
 void SCR_LagSample(const cg_server_frame_t *frame)
 {
-#if 0
-    int i = cgs.netchan.incoming_acknowledged & CMD_MASK;
-    client_history_t *h = &cg.history[i];
     unsigned ping;
 
-    h->rcvd = cgs.realtime;
-    if (!h->cmdNumber || h->rcvd < h->sent) {
+    if (!frame) {
+        lag.samples[lag.head++ % LAG_WIDTH] = 200 | LAG_CRIT_BIT;
         return;
     }
 
-    ping = h->rcvd - h->sent;
-    for (i = 0; i < cgs.netchan.dropped; i++) {
-        lag.samples[lag.head % LAG_WIDTH] = ping | LAG_CRIT_BIT;
-        lag.head++;
-    }
-
-    if (cg.frameflags & FF_SUPPRESSED) {
+    ping = frame->latency;
+    if (frame->flags)
         ping |= LAG_WARN_BIT;
-    }
-    lag.samples[lag.head % LAG_WIDTH] = ping;
-    lag.head++;
-#endif
+
+    lag.samples[lag.head++ % LAG_WIDTH] = ping;
 }
 
 static void SCR_LagDraw(int x, int y)

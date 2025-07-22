@@ -65,12 +65,12 @@ typedef struct {
 
 typedef struct {
     bool            valid;
-    int             flags;
 
-    unsigned        servertime;
-    unsigned        delta;
+    unsigned        flags;
     unsigned        number;
+    unsigned        servertime;
     unsigned        cmdnum;
+    unsigned        latency;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
