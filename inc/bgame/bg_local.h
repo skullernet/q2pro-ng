@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define STOP_EPSILON 0.1f
 
+#define MIN_STEP_HEIGHT     4.0f
+
 #define MIN_STEP_NORMAL     0.7f // can't step up onto very steep slopes
 
 #define PSX_PHYSICS_SCALAR  0.875f

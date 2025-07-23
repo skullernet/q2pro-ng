@@ -2652,7 +2652,7 @@ qvm_exported void G_ClientThink(int clientnum)
         // perform a pmove
         BG_Pmove(&pm);
 
-        if (TICK_RATE > 10 && fabsf(pm.step_height) > 4)
+        if (TICK_RATE > 10 && fabsf(pm.step_height) >= MIN_STEP_HEIGHT)
             G_AddEvent(ent, EV_STAIR_STEP, 0);
 
         // detect hitting the floor

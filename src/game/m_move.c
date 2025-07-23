@@ -737,7 +737,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     trace_t trace;
     trap_Trace(&trace, chosen_forward->endpos, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
 
-    if (fabsf(ent->s.origin[2] - trace.endpos[2]) > 8)
+    if (fabsf(ent->s.origin[2] - trace.endpos[2]) >= MIN_STEP_HEIGHT)
         stepped = true;
 
     // Paril: improved the water handling here.
