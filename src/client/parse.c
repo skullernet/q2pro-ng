@@ -311,8 +311,15 @@ static void CL_ParseConfigstring(unsigned index)
         memcpy(*dst, string, len + 1);
     }
 
-    if (cls.state < ca_precached)
+    if (cls.state < ca_precached) {
+        // print the full level name
+        if (index == CS_NAME) {
+            Com_SetColor(COLOR_ALT);
+            Com_Printf("%s\n", string);
+            Com_SetColor(COLOR_NONE);
+        }
         return;
+    }
 
     if (cls.demo.seeking) {
         Q_SetBit(cl.dcs, index);
@@ -339,33 +346,31 @@ static void CL_ParseBaseline(unsigned index)
 
 static void CL_ParseServerData(void)
 {
-    char    levelname[MAX_QPATH];
-    int     i, protocol, attractloop q_unused;
-    bool    cinematic;
+    int     protocol;
 
     // wipe the client_state_t struct
     CL_ClearState();
 
-    // parse protocol version number
+    // parse major protocol version
     protocol = MSG_ReadLong();
-    cl.servercount = MSG_ReadLong();
-    attractloop = MSG_ReadByte();
-
-    Com_DPrintf("Serverdata packet received "
-                "(protocol=%d, servercount=%d, attractloop=%d)\n",
-                protocol, cl.servercount, attractloop);
-
-    // check protocol
-    if (cls.serverProtocol != protocol) {
-        if (!cls.demo.playback) {
-            Com_Error(ERR_DROP, "Requested protocol version %d, but server returned %d.",
-                      cls.serverProtocol, protocol);
-        }
-        if (protocol != PROTOCOL_VERSION_MAJOR) {
-            Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
-        }
-        cls.serverProtocol = protocol;
+    if (protocol != PROTOCOL_VERSION_MAJOR) {
+        Com_Error(ERR_DROP, "Unsupported major protocol version %d.", protocol);
     }
+
+    // parse minor protocol version
+    protocol = MSG_ReadLong();
+    if (!Q2PRO_SUPPORTED(protocol)) {
+        Com_Error(ERR_DROP, "Server reports unsupported minor protocol version %d.\n"
+                            "Current client version is %d.", protocol, PROTOCOL_VERSION_MINOR);
+    }
+
+    cls.protocol   = protocol;
+    cl.servercount = MSG_ReadLong();
+    cl.serverstate = MSG_ReadByte();
+    cl.clientnum   = MSG_ReadByte();
+
+    Com_DPrintf("Serverdata packet received (protocol=%d, servercount=%d, serverstate=%d, clientnum=%d)\n",
+                protocol, cl.servercount, cl.serverstate, cl.clientnum);
 
     // game directory
     if (MSG_ReadString(cl.gamedir, sizeof(cl.gamedir)) >= sizeof(cl.gamedir)) {
@@ -385,46 +390,19 @@ static void CL_ParseServerData(void)
         fs_game->flags |= CVAR_ROM;
     }
 
-    // parse player entity number
-    cl.clientNum = MSG_ReadByte();
-
     // get the map name
     MSG_ReadString(cl.mapname, sizeof(cl.mapname));
-
-    // get the full level name
-    MSG_ReadString(levelname, sizeof(levelname));
-
-    // setup default server state
-    cl.serverstate = ss_game;
-
-    i = MSG_ReadShort();
-    if (!Q2PRO_SUPPORTED(i)) {
-        Com_Error(ERR_DROP,
-                  "Q2PRO server reports unsupported protocol version %d.\n"
-                  "Current client version is %d.", i, PROTOCOL_VERSION_MINOR);
-    }
-    Com_DPrintf("Using minor Q2PRO protocol version %d\n", i);
-    cls.protocolVersion = i;
-    i = MSG_ReadByte();
-    Com_DPrintf("Q2PRO server state %d\n", i);
-    cl.serverstate = i;
-    cinematic = i == ss_pic || i == ss_cinematic;
     cl.mapchecksum = MSG_ReadLong();
 
-    if (cinematic) {
+    if (cl.serverstate == ss_pic || cl.serverstate == ss_cinematic) {
         SCR_PlayCinematic(cl.mapname);
     } else {
-        // separate the printfs so the server message can have a color
         Con_Printf(
             "\n\n"
             "\35\36\36\36\36\36\36\36\36\36\36\36"
             "\36\36\36\36\36\36\36\36\36\36\36\36"
             "\36\36\36\36\36\36\36\36\36\36\36\37"
             "\n\n");
-
-        Com_SetColor(COLOR_ALT);
-        Com_Printf("%s\n", levelname);
-        Com_SetColor(COLOR_NONE);
     }
 }
 

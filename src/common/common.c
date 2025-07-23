@@ -922,7 +922,7 @@ void Qcommon_Init(int argc, char **argv)
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
     com_native_modules = Cvar_Get("com_native_modules", "0", 0);
-    com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
+    com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
 

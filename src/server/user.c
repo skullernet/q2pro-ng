@@ -191,17 +191,13 @@ void SV_New_f(void)
 
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
+    MSG_WriteLong(PROTOCOL_VERSION_MAJOR);
     MSG_WriteLong(sv_client->protocol);
     MSG_WriteLong(sv.spawncount);
-    MSG_WriteByte(0);   // no attract loop
-    MSG_WriteString(fs_game->string);
-    MSG_WriteByte(sv_client->number);
-    MSG_WriteString(sv.name);
-    MSG_WriteString(sv.configstrings[CS_NAME]);
-
-    // send protocol specific stuff
-    MSG_WriteShort(sv_client->version);
     MSG_WriteByte(sv.state);
+    MSG_WriteByte(sv_client->number);
+    MSG_WriteString(fs_game->string);
+    MSG_WriteString(sv.name);
     MSG_WriteLong(sv.cm.checksum);
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
@@ -244,11 +240,6 @@ void SV_Begin_f(void)
     }
     if (sv.state == ss_pic || sv.state == ss_cinematic) {
         Com_DPrintf("Begin not valid -- map not loaded\n");
-        return;
-    }
-
-    if (!sv_client->version_string&&0) {
-        SV_DropClient(sv_client, "!failed version probe");
         return;
     }
 
@@ -356,27 +347,6 @@ static void SV_Lag_f(void)
                     PL_S2C(cl), PL_C2S(cl), cl->timescale);
 }
 
-#if USE_PACKETDUP
-static void SV_PacketdupHack_f(void)
-{
-    int numdups = sv_client->numpackets - 1;
-
-    if (Cmd_Argc() > 1) {
-        numdups = Q_atoi(Cmd_Argv(1));
-        if (numdups < 0 || numdups > sv_packetdup_hack->integer) {
-            SV_ClientCommand(sv_client, "print \"Packetdup of %d is not allowed on this server.\n\"", numdups);
-            return;
-        }
-
-        sv_client->numpackets = numdups + 1;
-    }
-
-    SV_ClientCommand(sv_client,
-                    "print \"Server is sending %d duplicate packet%s to you.\n\"",
-                    numdups, numdups == 1 ? "" : "s");
-}
-#endif
-
 static const ucmd_t ucmds[] = {
     // auto issued
     { "new", SV_New_f },
@@ -390,9 +360,6 @@ static const ucmd_t ucmds[] = {
 
     { "nogamedata", SV_NoGameData_f },
     { "lag", SV_Lag_f },
-#if USE_PACKETDUP
-    { "packetdup", SV_PacketdupHack_f },
-#endif
 
     { NULL, NULL }
 };

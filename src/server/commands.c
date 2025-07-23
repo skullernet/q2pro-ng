@@ -277,7 +277,7 @@ static void SV_Map(bool restart)
     SV_AutoSaveBegin(&cmd);
 
     // any error will drop from this point
-    if (sv.state < ss_game || sv.state == ss_broadcast || restart)
+    if (sv.state < ss_game || restart)
         SV_InitGame();  // the game is just starting
 
     // clear pending CM
@@ -348,7 +348,7 @@ static int should_really_restart(void)
 {
     static bool warned;
 
-    if (sv.state < ss_game || sv.state == ss_broadcast)
+    if (sv.state < ss_game)
         return 1;   // the game is just starting
 
 #if USE_SERVER
@@ -571,9 +571,8 @@ static void dump_versions(void)
         "--- --------------- -----------------------------------------\n");
 
     FOR_EACH_CLIENT(client) {
-        Com_Printf("%3i %-15.15s %.52s\n",
-                   client->number, client->name,
-                   client->version_string ? client->version_string : "-");
+        Com_Printf("%3i %-15.15s %.52s\n", client->number, client->name,
+                   Info_ValueForKey(client->userinfo, "version"));
     }
 }
 
@@ -604,14 +603,13 @@ static void dump_lag(void)
     client_t    *cl;
 
     Com_Printf(
-        "num name            PLs2c PLc2s Rmin Ravg Rmax dup scale\n"
-        "--- --------------- ----- ----- ---- ---- ---- --- -----\n");
+        "num name            PLs2c PLc2s Rmin Ravg Rmax scale\n"
+        "--- --------------- ----- ----- ---- ---- ---- -----\n");
 
     FOR_EACH_CLIENT(cl) {
-        Com_Printf("%3i %-15.15s %5.2f %5.2f %4d %4d %4d %3d %5.3f\n",
+        Com_Printf("%3i %-15.15s %5.2f %5.2f %4d %4d %4d %5.3f\n",
                    cl->number, cl->name, PL_S2C(cl), PL_C2S(cl),
-                   cl->min_ping, AVG_PING(cl), cl->max_ping,
-                   cl->numpackets - 1, cl->timescale);
+                   cl->min_ping, AVG_PING(cl), cl->max_ping, cl->timescale);
     }
 }
 
@@ -620,12 +618,12 @@ static void dump_protocols(void)
     client_t    *cl;
 
     Com_Printf(
-        "num name            major minor msglen zlib\n"
-        "--- --------------- ----- ----- ------ ----\n");
+        "num name            proto msglen zlib\n"
+        "--- --------------- ----- ------ ----\n");
 
     FOR_EACH_CLIENT(cl) {
-        Com_Printf("%3i %-15.15s %5d %5d %6u  %s\n",
-                   cl->number, cl->name, cl->protocol, cl->version,
+        Com_Printf("%3i %-15.15s %5d %6u  %s\n",
+                   cl->number, cl->name, cl->protocol,
                    cl->netchan.maxpacketlen,
                    cl->has_zlib ? "yes" : "no ");
     }
@@ -759,24 +757,15 @@ void SV_PrintMiscInfo(void)
 {
     char buffer[MAX_QPATH];
 
-    Com_Printf("version              %s\n",
-               sv_client->version_string ? sv_client->version_string : "-");
-    Com_Printf("protocol (maj/min)   %d/%d\n",
-               sv_client->protocol, sv_client->version);
+    Com_Printf("protocol             %d\n", sv_client->protocol);
     Com_Printf("maxmsglen            %u\n", sv_client->netchan.maxpacketlen);
     Com_Printf("zlib support         %s\n", sv_client->has_zlib ? "yes" : "no");
     Com_Printf("ping                 %d\n", sv_client->ping);
     Com_Printf("movement fps         %d\n", sv_client->moves_per_sec);
-#if USE_FPS
-    Com_Printf("update rate          %d\n", sv_client->settings[CLS_FPS]);
-#endif
     Com_Printf("RTT (min/avg/max)    %d/%d/%d ms\n",
                sv_client->min_ping, AVG_PING(sv_client), sv_client->max_ping);
     Com_Printf("PL server to client  %.2f%% (approx)\n", PL_S2C(sv_client));
     Com_Printf("PL client to server  %.2f%%\n", PL_C2S(sv_client));
-#if USE_PACKETDUP
-    Com_Printf("packetdup            %d\n", sv_client->numpackets - 1);
-#endif
     Com_Printf("timescale            %.3f\n", sv_client->timescale);
     Com_TimeDiff(buffer, sizeof(buffer),
                  &sv_client->connect_time, time(NULL));

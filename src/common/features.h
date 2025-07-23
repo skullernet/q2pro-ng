@@ -19,12 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static const char *Com_GetFeatures(void)
 {
     return
-#if USE_AC_SERVER
-    "anticheat-server "
-#endif
-#if USE_AUTOREPLY
-    "auto-reply "
-#endif
 #if USE_AVCODEC
     "avcodec "
 #endif
@@ -33,9 +27,6 @@ static const char *Com_GetFeatures(void)
 #endif
 #if USE_DEBUG
     "debug "
-#endif
-#if USE_GAME_ABI_HACK
-    "game-abi-hack "
 #endif
 #if USE_ICMP
     "icmp-errors "
@@ -58,9 +49,6 @@ static const char *Com_GetFeatures(void)
 #if USE_OPENAL
     "openal "
 #endif
-#if USE_PACKETDUP
-    "packetdup-hack "
-#endif
 #if USE_SAVEGAMES
     "save-games "
 #endif
@@ -78,9 +66,6 @@ static const char *Com_GetFeatures(void)
 #endif
 #if USE_TGA
     "tga "
-#endif
-#if USE_FPS
-    "variable-fps "
 #endif
 #if USE_WAYLAND
     "wayland "

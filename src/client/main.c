@@ -40,12 +40,6 @@ cvar_t  *cl_beginmapcmd;
 
 cvar_t  *cl_allow_vid_restart;
 
-#if USE_FPS
-cvar_t  *cl_updaterate;
-#endif
-
-cvar_t  *cl_protocol;
-
 cvar_t  *gender_auto;
 
 cvar_t  *allow_download;
@@ -239,7 +233,6 @@ void CL_CheckForResend(void)
     if (cls.state < ca_connecting && sv_running->integer > ss_loading) {
         strcpy(cls.servername, "localhost");
         cls.serverAddress.type = NA_LOOPBACK;
-        cls.serverProtocol = PROTOCOL_VERSION_MAJOR;
 
         // we don't need a challenge on the localhost
         cls.state = ca_connecting;
@@ -324,11 +317,6 @@ static void CL_Connect_f(void)
         return;
     }
 
-    if (Cmd_Argc() > 2) {
-        Com_Printf("Second argument to `%s' is now ignored. "
-                   "Set protocol via `cl_protocol' variable.\n", Cmd_Argv(0));
-    }
-
     server = Cmd_Argv(1);
 
     // support quake2://<address>[/] scheme
@@ -355,7 +343,6 @@ static void CL_Connect_f(void)
     CL_Disconnect(ERR_RECONNECT);
 
     cls.serverAddress = address;
-    cls.serverProtocol = cl_protocol->integer;
     cls.passive = false;
     cls.state = ca_challenging;
     cls.connect_time -= CONNECT_FAST;
@@ -845,7 +832,6 @@ void CL_Reconnect_f(void)
 
     Com_Printf("Reconnecting...\n");
 
-    cls.serverProtocol = cl_protocol->integer;
     cls.state = ca_challenging;
     cls.connect_time -= CONNECT_FAST;
     cls.connect_count = 0;
@@ -959,9 +945,6 @@ static void CL_ConnectionlessPacket(void)
         cls.state = ca_connecting;
         cls.connect_time -= CONNECT_INSTANT; // fire immediately
         //cls.connect_count = 0;
-        cls.serverProtocol = PROTOCOL_VERSION_MAJOR;
-
-        Com_DPrintf("Selected protocol %d\n", cls.serverProtocol);
 
         CL_CheckForResend();
         return;
@@ -1005,8 +988,7 @@ static void CL_ConnectionlessPacket(void)
             HTTP_SetServer(NULL);
         }
 
-        Com_Printf("Connected to %s (protocol %d).\n",
-                   NET_AdrToString(&cls.serverAddress), cls.serverProtocol);
+        Com_Printf("Connected to %s.\n", NET_AdrToString(&cls.serverAddress));
         Netchan_Close(&cls.netchan);
         Netchan_Setup(&cls.netchan, NS_CLIENT, &cls.serverAddress, cls.quakePort, 1024);
 
@@ -1028,7 +1010,6 @@ static void CL_ConnectionlessPacket(void)
         Com_Printf("Received passive connect from %s.\n", adr);
 
         cls.serverAddress = net_from;
-        cls.serverProtocol = cl_protocol->integer;
         Q_strlcpy(cls.servername, adr, sizeof(cls.servername));
         cls.passive = false;
 
@@ -1844,18 +1825,11 @@ static void CL_InitLocal(void)
     rcon_address = Cvar_Get("rcon_address", "", CVAR_PRIVATE);
     rcon_address->generator = Com_Address_g;
 
-#if USE_FPS
-    cl_updaterate = Cvar_Get("cl_updaterate", "0", 0);
-    cl_updaterate->changed = cl_updaterate_changed;
-#endif
-
     cl_disconnectcmd = Cvar_Get("cl_disconnectcmd", "", 0);
     cl_changemapcmd = Cvar_Get("cl_changemapcmd", "", 0);
     cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
 
     cl_allow_vid_restart = Cvar_Get("cl_allow_vid_restart", "0", 0);
-
-    cl_protocol = Cvar_Get("cl_protocol", "0", 0);
 
     gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
 

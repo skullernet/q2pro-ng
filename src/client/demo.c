@@ -349,14 +349,12 @@ static void CL_Record_f(void)
     // send the serverdata
     MSG_WriteByte(svc_serverdata);
     MSG_WriteLong(PROTOCOL_VERSION_MAJOR);
+    MSG_WriteLong(cls.protocol);
     MSG_WriteLong(cl.servercount);
-    MSG_WriteByte(1);      // demos are always attract loops
-    MSG_WriteString(cl.gamedir);
-    MSG_WriteByte(cl.clientNum);
-    MSG_WriteString(cl.mapname);
-    MSG_WriteString(cl.configstrings[CS_NAME]);
-    MSG_WriteShort(cls.protocolVersion);
     MSG_WriteByte(cl.serverstate);
+    MSG_WriteByte(cl.clientnum);
+    MSG_WriteString(cl.gamedir);
+    MSG_WriteString(cl.mapname);
     MSG_WriteLong(cl.mapchecksum);
 
     // configstrings

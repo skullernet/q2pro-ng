@@ -209,7 +209,6 @@ typedef struct {
     size_t (*GetLevelName)(char *buf, size_t size);
     size_t (*GetSpawnPoint)(char *buf, size_t size);
     size_t (*GetUserinfo)(unsigned clientnum, char *buf, size_t size);
-    size_t (*GetConnectinfo)(unsigned clientnum, char *buf, size_t size);
     void (*GetUsercmd)(unsigned clientnum, usercmd_t *ucmd);
 
     bool (*LoadPathData)(void);

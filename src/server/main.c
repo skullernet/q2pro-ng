@@ -111,8 +111,6 @@ void SV_RemoveClient(client_t *client)
 
 void SV_CleanClient(client_t *client)
 {
-    Z_Freep(&client->version_string);
-
     // free baselines allocated for this client
     for (int i = 0; i < SV_BASELINES_CHUNKS; i++) {
         Z_Freep(&client->baselines[i]);
@@ -562,13 +560,11 @@ A connection request that did not come from the master
 */
 
 typedef struct {
-    int         protocol;   // major version
-    int         version;    // minor version
+    int         protocol;   // minor version
     int         qport;
     int         challenge;
 
     int         maxlength;
-    int         nctype;
     bool        has_zlib;
 
     int         maxclients; // hidden client slots
@@ -583,21 +579,21 @@ typedef struct {
 
 static bool parse_basic_params(conn_params_t *p)
 {
-    p->protocol = Q_atoi(Cmd_Argv(1));
-    p->qport = Q_atoi(Cmd_Argv(2)) ;
+    // parse major protocol version
+    int protocol = Q_atoi(Cmd_Argv(1));
+    if (protocol != PROTOCOL_VERSION_MAJOR)
+        return reject("Unsupported major protocol version %d.\n", protocol);
+
+    p->qport = Q_atoi(Cmd_Argv(2));
     p->challenge = Q_atoi(Cmd_Argv(3));
 
-    // check for invalid protocol version
-    if (p->protocol != PROTOCOL_VERSION_MAJOR)
-        return reject("Unsupported protocol version %d.\n", p->protocol);
-
     // parse minor protocol version
-    p->version = Q_atoi(Cmd_Argv(5));
-    if (p->version < PROTOCOL_VERSION_MINOR_OLDEST)
+    p->protocol = Q_atoi(Cmd_Argv(5));
+    if (p->protocol < PROTOCOL_VERSION_MINOR_OLDEST)
         return reject("Your client version is too old for this server.\n");
 
-    if (p->version > PROTOCOL_VERSION_MINOR)
-        p->version = PROTOCOL_VERSION_MINOR;
+    if (p->protocol > PROTOCOL_VERSION_MINOR)
+        p->protocol = PROTOCOL_VERSION_MINOR;
 
     // set maximum packet length
     p->maxlength = Q_atoi(Cmd_Argv(6));
@@ -801,7 +797,7 @@ static client_t *find_client_slot(conn_params_t *params)
     return reject_ptr("Server is full.\n");
 }
 
-static void send_connect_packet(client_t *newcl, int nctype)
+static void send_connect_packet(client_t *newcl)
 {
     const char *dlstring1   = "";
     const char *dlstring2   = "";
@@ -847,7 +843,6 @@ static void SVC_DirectConnect(void)
     newcl->number = number;
     newcl->challenge = params.challenge; // save challenge for checksumming
     newcl->protocol = params.protocol;
-    newcl->version = params.version;
     newcl->has_zlib = params.has_zlib;
     newcl->edict = SV_EdictForNum(number);
     newcl->client = SV_ClientForNum(number);
@@ -872,22 +867,16 @@ static void SVC_DirectConnect(void)
 
     // setup netchan
     Netchan_Setup(&newcl->netchan, NS_SERVER, &net_from, params.qport, params.maxlength);
-    newcl->numpackets = 1;
 
     // parse some info from the info strings
     SV_UserinfoChanged(newcl);
 
     // send the connect packet to the client
-    send_connect_packet(newcl, params.nctype);
+    send_connect_packet(newcl);
 
     SV_RateInit(&newcl->ratelimit_namechange, sv_namechange_limit->string);
 
     SZ_InitWrite(&newcl->datagram, SV_Mallocz(MAX_MSGLEN), MAX_MSGLEN);
-
-    // loopback client doesn't need to reconnect
-    if (NET_IsLocalAddress(&net_from)) {
-        newcl->reconnected = true;
-    }
 
     // add them to the linked list of connected clients
     List_SeqAdd(&sv_clientlist, &newcl->entry);

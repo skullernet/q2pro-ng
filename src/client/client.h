@@ -137,7 +137,7 @@ typedef struct {
     int         serverstate;    // ss_* constants
     int         servercount;    // server identification for prespawns
     char        gamedir[MAX_QPATH];
-    int         clientNum;            // never changed during gameplay, set by serverdata packet
+    int         clientnum;          // never changed during gameplay, set by serverdata packet
 
     char        *baseconfigstrings[MAX_CONFIGSTRINGS];
     char        *configstrings[MAX_CONFIGSTRINGS];
@@ -268,8 +268,7 @@ typedef struct {
     int         quakePort;          // a 16 bit value that allows quake servers
                                     // to work around address translating routers
     netchan_t   netchan;
-    int         serverProtocol;     // in case we are doing some kind of version hack
-    int         protocolVersion;    // minor version
+    int         protocol;           // minor version
 
     int         challenge;          // from the server to use for connecting
 

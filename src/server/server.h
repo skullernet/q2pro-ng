@@ -170,7 +170,6 @@ typedef struct client_s {
     int             number;     // client slot number
 
     // client flags
-    bool            reconnected: 1;
     bool            nodata: 1;
     bool            has_zlib: 1;
     bool            drop_hack: 1;
@@ -185,10 +184,6 @@ typedef struct client_s {
     int             messagelevel;               // for filtering printed messages
     unsigned        rate;
     ratelimit_t     ratelimit_namechange;       // for suppressing "foo changed name" flood
-
-    // console var probes
-    char            *version_string;
-    int             console_queries;
 
     // usercmd stuff
     unsigned        lastmessage;    // svs.realtime when packet was last received
@@ -219,8 +214,7 @@ typedef struct client_s {
 
     // protocol stuff
     int             challenge;  // challenge of this user, randomly generated
-    int             protocol;   // major version
-    int             version;    // minor version
+    int             protocol;   // minor version
 
     // per-client baseline chunks
     entity_state_t      *baselines[SV_BASELINES_CHUNKS];
@@ -235,7 +229,6 @@ typedef struct client_s {
 
     // netchan
     netchan_t       netchan;
-    int             numpackets; // for that nasty packetdup hack
 
     // misc
     time_t          connect_time; // time of initial connect

@@ -68,11 +68,6 @@ option('opengl-es1',
   value: false,
   description: 'Build OpenGL ES 1 compatible renderer')
 
-option('packetdup-hack',
-  type: 'boolean',
-  value: false,
-  description: 'Server side packet duplication hack')
-
 option('save-games',
   type: 'boolean',
   value: true,

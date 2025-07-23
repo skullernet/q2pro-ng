@@ -47,7 +47,6 @@ bool trap_ParseEntityString(char *buf, size_t size);
 size_t trap_GetLevelName(char *buf, size_t size);
 size_t trap_GetSpawnPoint(char *buf, size_t size);
 size_t trap_GetUserinfo(unsigned clientnum, char *buf, size_t size);
-size_t trap_GetConnectinfo(unsigned clientnum, char *buf, size_t size);
 void trap_GetUsercmd(unsigned clientnum, usercmd_t *ucmd);
 
 bool trap_LoadPathData(void);
@@ -126,7 +125,6 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_GetLevelName gi->GetLevelName
 #define trap_GetSpawnPoint gi->GetSpawnPoint
 #define trap_GetUserinfo gi->GetUserinfo
-#define trap_GetConnectinfo gi->GetConnectinfo
 #define trap_GetUsercmd gi->GetUsercmd
 
 #define trap_LoadPathData gi->LoadPathData

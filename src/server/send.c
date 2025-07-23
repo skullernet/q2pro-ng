@@ -70,10 +70,6 @@ static bool SV_RateDrop(client_t *client)
         total += client->message_size[i];
     }
 
-#if USE_FPS
-    total = total * sv.frametime.div / client->framediv;
-#endif
-
     if (total > client->rate) {
         SV_DPrintf(1, "Frame %d suppressed for %s (total = %zu)\n",
                    client->framenum, client->name, total);
@@ -307,8 +303,7 @@ static void SV_SendClientDatagram(client_t *client)
     // send the datagram
     cursize = Netchan_Transmit(&client->netchan,
                                msg_write.cursize,
-                               msg_write.data,
-                               client->numpackets);
+                               msg_write.data, 1);
 
     // record the size for rate estimation
     SV_CalcSendTime(client, cursize);

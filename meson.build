@@ -420,7 +420,6 @@ config.set10('USE_GLES',          get_option('opengl-es1'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())
 config.set10('USE_MD3',           get_option('md3'))
 config.set10('USE_MD5',           get_option('md5'))
-config.set10('USE_PACKETDUP',     get_option('packetdup-hack'))
 config.set10('USE_TGA',           get_option('tga'))
 
 if host_machine.system() == 'darwin'
@@ -448,7 +447,6 @@ summary({
   'md3'                : config.get('USE_MD3', 0) != 0,
   'md5'                : config.get('USE_MD5', 0) != 0,
   'openal'             : config.get('USE_OPENAL', 0) != 0,
-  'packetdup-hack'     : config.get('USE_PACKETDUP', 0) != 0,
   'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
   'sdl2'               : config.get('USE_SDL', '') != '',
   'software-sound'     : config.get('USE_SNDDMA', 0) != 0,

@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // sv_game.c -- interface to the game dll
 
 #include "server.h"
-#include "common/math.h"
 #include "common/vm.h"
 
 #define VM_HANDLE(f) game.handles[f - 1]
@@ -244,18 +243,6 @@ static size_t PF_GetUserinfo(unsigned clientnum, char *buf, size_t size)
     return Q_strlcpy(buf, cl->userinfo, size);
 }
 
-static size_t PF_GetConnectinfo(unsigned clientnum, char *buf, size_t size)
-{
-    Q_assert_soft(clientnum < svs.maxclients);
-    const client_t *cl = &svs.client_pool[clientnum];
-    Q_assert_soft(cl->state > cs_zombie);
-
-    return Q_snprintf(buf, size,
-                      "\\challenge\\%d\\ip\\%s\\major\\%d\\minor\\%d\\zlib\\%d",
-                      cl->challenge, NET_AdrToString(&cl->netchan.remote_address),
-                      cl->protocol, cl->version, cl->has_zlib);
-}
-
 static void PF_GetUsercmd(unsigned clientnum, usercmd_t *ucmd)
 {
     Q_assert_soft(clientnum < svs.maxclients);
@@ -479,10 +466,6 @@ VM_THUNK(GetUserinfo) {
     VM_U32(0) = PF_GetUserinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
 }
 
-VM_THUNK(GetConnectinfo) {
-    VM_U32(0) = PF_GetConnectinfo(VM_U32(0), VM_STR_BUF(1, 2), VM_U32(2));
-}
-
 VM_THUNK(GetUsercmd) {
     PF_GetUsercmd(VM_U32(0), VM_PTR(1, usercmd_t));
 }
@@ -690,7 +673,6 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(GetLevelName, "i ii"),
     VM_IMPORT(GetSpawnPoint, "i ii"),
     VM_IMPORT(GetUserinfo, "i iii"),
-    VM_IMPORT(GetConnectinfo, "i iii"),
     VM_IMPORT(GetUsercmd, "ii"),
     VM_IMPORT(LoadPathData, "i "),
     VM_IMPORT(GetPathToGoal, "i iiii"),

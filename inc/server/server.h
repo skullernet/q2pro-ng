@@ -26,7 +26,6 @@ typedef enum {
     ss_loading,         // spawning level edicts
     ss_game,            // actively running
     ss_pic,             // showing static picture
-    ss_broadcast,       // running MVD client
     ss_cinematic,       // playing a cinematic
     ss_demo = -1,       // hack for demomap command, not a real server state
 } server_state_t;
