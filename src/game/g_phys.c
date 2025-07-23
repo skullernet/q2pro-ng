@@ -68,7 +68,7 @@ static bool SV_TestEntityPosition(edict_t *ent)
     trace_t     trace;
 
     trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs,
-              ent->s.origin, ent->s.number, G_GetClipMask(ent));
+               ent->s.origin, ent->s.number, G_GetClipMask(ent));
 
     return trace.startsolid;
 }
@@ -312,7 +312,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
         return NULL;
 
     int list[MAX_EDICTS_OLD];
-    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID | AREA_TRIGGERS);
 
     // see if any solid entities are inside the final position
     for (int i = 0; i < count; i++) {

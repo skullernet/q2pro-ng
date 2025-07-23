@@ -342,26 +342,12 @@ void PF_LinkEdict(edict_t *ent)
     List_Append(&sort->area, &sent->area);
 }
 
-
-/*
-====================
-SV_AreaEdicts_r
-
-====================
-*/
-static void SV_AreaEdicts_r(areanode_t *node)
+static void SV_TouchAreaEdicts(const list_t *list)
 {
-    list_t          *start;
-    server_entity_t *sent;
+    const server_entity_t *sent;
 
-    // touch linked edicts
-    if (area_type == AREA_SOLID)
-        start = &node->solid_edicts;
-    else
-        start = &node->trigger_edicts;
-
-    LIST_FOR_EACH(server_entity_t, sent, start, area) {
-        edict_t *check = sent->edict;
+    LIST_FOR_EACH(server_entity_t, sent, list, area) {
+        const edict_t *check = sent->edict;
 
         if (check->r.solid == SOLID_NOT)
             continue;        // deactivated
@@ -381,9 +367,28 @@ static void SV_AreaEdicts_r(areanode_t *node)
         area_list[area_count] = sent - sv.entities;
         area_count++;
     }
+}
+
+/*
+====================
+SV_AreaEdicts_r
+
+====================
+*/
+static void SV_AreaEdicts_r(const areanode_t *node)
+{
+    // touch linked edicts
+    if (q_likely(area_type & AREA_SOLID))
+        SV_TouchAreaEdicts(&node->solid_edicts);
+
+    if (q_likely(area_type & AREA_TRIGGERS))
+        SV_TouchAreaEdicts(&node->trigger_edicts);
+
+    if (area_count == area_maxcount)
+        return;     // no free space
 
     if (node->axis == -1)
-        return;        // terminal node
+        return;     // terminal node
 
     // recurse down both sides
     if (area_maxs[node->axis] > node->dist)
