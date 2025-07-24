@@ -53,7 +53,6 @@ static struct {
     int         frames, fps;
 } scr;
 
-static vm_cvar_t scr_viewsize;
 static vm_cvar_t scr_centertime;
 static vm_cvar_t scr_printspeed;
 static vm_cvar_t scr_showpause;
@@ -92,6 +91,7 @@ static vm_cvar_t ch_y;
 static vm_cvar_t scr_hit_marker_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
+vm_cvar_t   scr_viewsize;
 
 /*
 ===============================================================================
@@ -797,6 +797,8 @@ static void SCR_CalcVrect(void)
 
     // bound viewsize
     size = Q_clip(scr_viewsize.integer, 40, 100);
+    if (size != scr_viewsize.integer)
+        trap_Cvar_Set("viewsize", va("%d", size));
 
     scr_vrect.width = scr.hud_width * size / 100;
     scr_vrect.height = scr.hud_height * size / 100;

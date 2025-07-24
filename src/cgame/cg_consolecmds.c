@@ -61,8 +61,10 @@ static void V_Fog_f(void)
             dump_fog(&cg_custom_fog);
             return;
         }
-        if (!cg.frame)
+        if (!cg.frame) {
+            Com_Printf("No fog.\n");
             return;
+        }
         if (cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor) {
             Com_Printf("Global fog:\n");
             dump_fog(&cg.frame->ps.fog);
@@ -106,7 +108,7 @@ Keybinding command
 */
 static void SCR_SizeUp_f(void)
 {
-    //trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer + 10));
+    trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer + 10));
 }
 
 /*
@@ -118,7 +120,7 @@ Keybinding command
 */
 static void SCR_SizeDown_f(void)
 {
-    //trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer - 10));
+    trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer - 10));
 }
 
 /*

@@ -614,7 +614,9 @@ void CG_BarrelExplodingParticles(const vec3_t org);
 //
 // cg_screen.c
 //
+
 extern vrect_t      scr_vrect;        // position of render window
+extern vm_cvar_t    scr_viewsize;
 
 void    SCR_Init(void);
 void    SCR_Shutdown(void);
