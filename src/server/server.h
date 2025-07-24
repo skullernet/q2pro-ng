@@ -91,10 +91,12 @@ typedef struct {
 
 typedef struct {
     list_t          area;               // linked to a division node or leaf
+    int             number;
     int             num_clusters;       // if -1, use headnode instead
-    int             clusternums[MAX_ENT_CLUSTERS];
-    const mnode_t  *headnode;           // unused if num_clusters != -1
-    edict_t        *edict;
+    union {
+        int             clusternums[MAX_ENT_CLUSTERS];
+        const mnode_t  *headnode;       // unused if num_clusters != -1
+    };
 } server_entity_t;
 
 typedef struct {

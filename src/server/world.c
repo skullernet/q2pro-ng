@@ -116,7 +116,7 @@ void SV_ClearWorld(void)
 
         server_entity_t *sent = &sv.entities[i];
         List_Init(&sent->area);
-        sent->edict = ent;
+        sent->number = i;
     }
 }
 
@@ -231,7 +231,7 @@ void PF_UnlinkEdict(edict_t *ent)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
 
     server_entity_t *sent = SV_SentForEdict(ent);
-    if (sent->edict)
+    if (sent->area.next)
         List_Delete(&sent->area);
 
     ent->r.linked = false;
@@ -347,7 +347,7 @@ static void SV_TouchAreaEdicts(const list_t *list)
     const server_entity_t *sent;
 
     LIST_FOR_EACH(server_entity_t, sent, list, area) {
-        const edict_t *check = sent->edict;
+        const edict_t *check = SV_EdictForNum(sent->number);
 
         if (check->r.solid == SOLID_NOT)
             continue;        // deactivated
@@ -364,7 +364,7 @@ static void SV_TouchAreaEdicts(const list_t *list)
             return;
         }
 
-        area_list[area_count] = sent - sv.entities;
+        area_list[area_count] = sent->number;
         area_count++;
     }
 }
