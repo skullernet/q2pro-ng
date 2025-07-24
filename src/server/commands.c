@@ -220,7 +220,6 @@ static bool SV_SetPlayer(void)
     }
 
     sv_client = cl;
-    sv_player = sv_client->edict;
     return true;
 }
 
@@ -518,7 +517,6 @@ static void SV_Kick_f(void)
     }
 
     sv_client = NULL;
-    sv_player = NULL;
 }
 
 static void dump_clients(void)
@@ -803,7 +801,6 @@ static void SV_DumpUser_f(void)
     SV_PrintMiscInfo();
 
     sv_client = NULL;
-    sv_player = NULL;
 }
 
 /*

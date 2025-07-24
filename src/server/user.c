@@ -375,7 +375,6 @@ static void SV_ExecuteUserCommand(const char *s)
     char *c;
 
     Cmd_TokenizeString(s, false);
-    sv_player = sv_client->edict;
 
     c = Cmd_Argv(0);
     if (!c[0]) {
@@ -727,7 +726,6 @@ void SV_ExecuteClientMessage(client_t *client)
     int c;
 
     sv_client = client;
-    sv_player = sv_client->edict;
 
     // only allow one move command
     moveIssued = false;
@@ -775,5 +773,4 @@ void SV_ExecuteClientMessage(client_t *client)
     }
 
     sv_client = NULL;
-    sv_player = NULL;
 }

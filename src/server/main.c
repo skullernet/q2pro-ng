@@ -27,7 +27,6 @@ LIST_DECL(sv_lrconlist);
 LIST_DECL(sv_clientlist);   // linked list of non-free clients
 
 client_t    *sv_client;         // current client
-edict_t     *sv_player;         // current client edict
 
 cvar_t  *sv_enforcetime;
 cvar_t  *sv_timescale_time;
@@ -851,10 +850,8 @@ static void SVC_DirectConnect(void)
 
     // get the game a chance to reject this connection or modify the userinfo
     sv_client = newcl;
-    sv_player = newcl->edict;
     denied = ge->ClientConnect(number);
     sv_client = NULL;
-    sv_player = NULL;
     if (denied) {
         if (*denied) {
             reject_printf("%s\nConnection refused.\n", denied);
@@ -2004,7 +2001,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     sv.frametime = BASE_FRAMETIME;
 
     sv_client = NULL;
-    sv_player = NULL;
 
     Cvar_Set("sv_running", "0");
     Cvar_Set("sv_paused", "0");
