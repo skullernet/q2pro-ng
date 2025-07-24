@@ -89,22 +89,10 @@ Command execution takes a null terminated string, breaks it into tokens,
 then searches for a command or variable that matches the first token.
 */
 
-typedef struct genctx_s {
-    const char  *partial;
-    size_t length;
-    int argnum;
-    char **matches;
-    int count, size;
-    void *data;
-    bool ignorecase;
-    bool ignoredups;
-    bool stripquotes;
-} genctx_t;
-
 typedef void (*xcommand_t)(void);
 typedef size_t (*xmacro_t)(char *, size_t);
-typedef void (*xcompleter_t)(struct genctx_s *, int);
-typedef void (*xgenerator_t)(struct genctx_s *);
+typedef void (*xcompleter_t)(int, int);
+typedef void (*xgenerator_t)(void);
 
 typedef struct cmd_macro_s {
     struct cmd_macro_s  *next, *hashNext;
@@ -136,11 +124,11 @@ xcompleter_t Cmd_FindCompleter(const char *name);
 char *Cmd_AliasCommand(const char *name);
 void Cmd_AliasSet(const char *name, const char *cmd);
 
-void Cmd_Command_g(genctx_t *ctx);
-void Cmd_Alias_g(genctx_t *ctx);
-void Cmd_Macro_g(genctx_t *ctx);
-void Cmd_Config_g(genctx_t *ctx);
-void Cmd_Option_c(const cmd_option_t *opt, xgenerator_t g, genctx_t *ctx, int argnum);
+void Cmd_Command_g(void);
+void Cmd_Alias_g(void);
+void Cmd_Macro_g(void);
+void Cmd_Config_g(void);
+void Cmd_Option_c(const cmd_option_t *opt, xgenerator_t g, int firstarg, int argnum);
 // attempts to match a partial command for automatic command line completion
 // returns NULL if nothing fits
 

@@ -2997,11 +2997,10 @@ void FS_FreeList(void **list)
     Z_Free(list);
 }
 
-void FS_File_g(const char *path, const char *ext, unsigned flags, genctx_t *ctx)
+void FS_File_g(const char *path, const char *ext, unsigned flags)
 {
     int i, numFiles;
     void **list;
-    char *s;
 
     list = FS_ListFiles(path, ext, flags, &numFiles);
     if (!list) {
@@ -3009,13 +3008,7 @@ void FS_File_g(const char *path, const char *ext, unsigned flags, genctx_t *ctx)
     }
 
     for (i = 0; i < numFiles; i++) {
-        s = list[i];
-        if (ctx->count < ctx->size && !strncmp(s, ctx->partial, ctx->length)) {
-            ctx->matches = Z_Realloc(ctx->matches, Q_ALIGN(ctx->count + 1, MIN_MATCHES) * sizeof(char *));
-            ctx->matches[ctx->count++] = s;
-        } else {
-            Z_Free(s);
-        }
+        Prompt_AddMatchNoAlloc(list[i]);
     }
 
     Z_Free(list);
@@ -3341,24 +3334,21 @@ static void FS_Stats_f(void)
 }
 #endif // USE_DEBUG
 
-static void FS_Link_g(genctx_t *ctx)
+static void FS_Link_g(const list_t *list)
 {
-    list_t *list;
-    symlink_t *link;
-
-    if (!strncmp(Cmd_Argv(ctx->argnum - 1), "soft", 4))
-        list = &fs_soft_links;
-    else
-        list = &fs_hard_links;
+    const symlink_t *link;
 
     FOR_EACH_SYMLINK(link, list)
-        Prompt_AddMatch(ctx, link->name);
+        Prompt_AddMatch(link->name);
 }
 
-static void FS_Link_c(genctx_t *ctx, int argnum)
+static void FS_Link_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        FS_Link_g(ctx);
+        if (!strncmp(Cmd_Argv(firstarg), "soft", 4))
+            FS_Link_g(&fs_soft_links);
+        else
+            FS_Link_g(&fs_hard_links);
     }
 }
 
@@ -3757,7 +3747,7 @@ static void fs_game_changed(cvar_t *self)
     FS_AddConfigFiles(false);
 }
 
-static void list_dirs(genctx_t *ctx, const char *path)
+static void list_dirs(const char *path)
 {
     listfiles_t list = {
         .flags = FS_SEARCH_DIRSONLY,
@@ -3770,7 +3760,7 @@ static void list_dirs(genctx_t *ctx, const char *path)
         char *s = list.files[i];
 
         if (COM_IsPath(s))
-            Prompt_AddMatch(ctx, s);
+            Prompt_AddMatch(s);
 
         Z_Free(s);
     }
@@ -3778,17 +3768,17 @@ static void list_dirs(genctx_t *ctx, const char *path)
     Z_Free(list.files);
 }
 
-static void fs_game_generator(genctx_t *ctx)
+static void fs_game_generator(void)
 {
-    ctx->ignoredups = true;
+    Prompt_SetOptions(CMPL_CHECKDUPS);
 #ifdef _WIN32
-    ctx->ignorecase = true;
+    Prompt_SetOptions(CMPL_CASELESS);
 #endif
 
-    list_dirs(ctx, sys_basedir->string);
+    list_dirs(sys_basedir->string);
 
     if (sys_homedir->string[0])
-        list_dirs(ctx, sys_homedir->string);
+        list_dirs(sys_homedir->string);
 }
 
 /*

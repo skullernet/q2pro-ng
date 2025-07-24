@@ -86,10 +86,10 @@ void        Com_Quit(const char *reason, error_type_t type);
 
 void        Com_SetColor(color_index_t color);
 
-void        Com_Address_g(genctx_t *ctx);
-void        Com_Generic_c(genctx_t *ctx, int argnum);
+void        Com_Address_g(void);
+void        Com_Generic_c(int firstarg, int argnum);
 #if USE_CLIENT
-void        Com_Color_g(genctx_t *ctx);
+void        Com_Color_g(void);
 #endif
 
 size_t      Com_Time_m(char *buffer, size_t size);

@@ -814,7 +814,7 @@ int SCR_CheckForCinematic(const char *name)
 SCR_Cinematic_g
 ==================
 */
-void SCR_Cinematic_g(genctx_t *ctx)
+void SCR_Cinematic_g(void)
 {
     const unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT | FS_TYPE_REAL;
     int count;
@@ -823,9 +823,9 @@ void SCR_Cinematic_g(genctx_t *ctx)
     if (!*extensions)
         return;
 
-    ctx->ignoredups = true;
+    Prompt_SetOptions(CMPL_CHECKDUPS);
     list = FS_ListFiles("video", extensions, flags, &count);
     for (int i = 0; i < count; i++)
-        Prompt_AddMatch(ctx, va("%s.cin", (char *)list[i]));
+        Prompt_AddMatch(va("%s.cin", (char *)list[i]));
     FS_FreeList(list);
 }

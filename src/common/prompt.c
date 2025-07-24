@@ -27,6 +27,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/files.h"
 #include "common/prompt.h"
 
+#define MIN_MATCHES     64
+#define MAX_MATCHES     250000000
+
+typedef struct {
+    const char *partial;
+    int length, count;
+    char **matches;
+    completion_option_t options;
+} genctx_t;
+
+static genctx_t ctx;
+
 static cvar_t   *com_completion_mode;
 static cvar_t   *com_completion_treshold;
 
@@ -105,15 +117,32 @@ static void Prompt_ShowIndividualMatches(const commandPrompt_t *prompt, char **m
     }
 }
 
-static bool find_dup(genctx_t *ctx, const char *s)
+static bool ignore(const char *s)
 {
     int i, r;
 
-    for (i = 0; i < ctx->count; i++) {
-        if (ctx->ignorecase)
-            r = Q_strcasecmp(ctx->matches[i], s);
+    if (ctx.count >= MAX_MATCHES)
+        return true;
+
+    if (!s || !*s)
+        return true;
+
+    if (ctx.options & CMPL_CASELESS)
+        r = Q_strncasecmp(ctx.partial, s, ctx.length);
+    else
+        r = strncmp(ctx.partial, s, ctx.length);
+
+    if (r)
+        return true;
+
+    if (!(ctx.options & CMPL_CHECKDUPS))
+        return false;
+
+    for (i = 0; i < ctx.count; i++) {
+        if (ctx.options & CMPL_CASELESS)
+            r = Q_strcasecmp(ctx.matches[i], s);
         else
-            r = strcmp(ctx->matches[i], s);
+            r = strcmp(ctx.matches[i], s);
 
         if (!r)
             return true;
@@ -122,28 +151,35 @@ static bool find_dup(genctx_t *ctx, const char *s)
     return false;
 }
 
-void Prompt_AddMatch(genctx_t *ctx, const char *s)
+static void add_match(char *s)
 {
-    int r;
+    if (!(ctx.count & (MIN_MATCHES - 1)))
+        ctx.matches = Z_Realloc(ctx.matches, (ctx.count + MIN_MATCHES) * sizeof(char *));
 
-    if (!*s)
-        return;
-    if (ctx->count >= ctx->size)
-        return;
+    ctx.matches[ctx.count++] = s;
+}
 
-    if (ctx->ignorecase)
-        r = Q_strncasecmp(ctx->partial, s, ctx->length);
-    else
-        r = strncmp(ctx->partial, s, ctx->length);
+void Prompt_SetOptions(completion_option_t opt)
+{
+    ctx.options |= opt;
+}
 
-    if (r)
-        return;
-
-    if (ctx->ignoredups && find_dup(ctx, s))
+void Prompt_AddMatch(const char *s)
+{
+    if (ignore(s))
         return;
 
-    ctx->matches = Z_Realloc(ctx->matches, Q_ALIGN(ctx->count + 1, MIN_MATCHES) * sizeof(char *));
-    ctx->matches[ctx->count++] = Z_CopyString(s);
+    add_match(Z_CopyString(s));
+}
+
+void Prompt_AddMatchNoAlloc(char *s)
+{
+    if (ignore(s)) {
+        Z_Free(s);
+        return;
+    }
+
+    add_match(s);
 }
 
 static bool needs_quotes(const char *s)
@@ -170,7 +206,6 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     inputField_t *inputLine = &prompt->inputLine;
     char *first, *last, *text, **sorted;
     int i, j, c, pos, size, argnum;
-    genctx_t ctx;
     int numCommands, numCvars, numAliases;
 
     if (!inputLine->maxChars)
@@ -215,22 +250,20 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     memset(&ctx, 0, sizeof(ctx));
     ctx.partial = Cmd_Argv(argnum);
     ctx.length = strlen(ctx.partial);
-    ctx.argnum = argnum;
-    ctx.size = MAX_MATCHES;
 
     if (argnum) {
         // complete a command/cvar argument
-        Com_Generic_c(&ctx, argnum);
+        Com_Generic_c(0, argnum);
         numCommands = numCvars = numAliases = 0;
     } else {
         // complete a command/cvar/alias name
-        Cmd_Command_g(&ctx);
+        Cmd_Command_g();
         numCommands = ctx.count;
 
-        Cvar_Variable_g(&ctx);
+        Cvar_Variable_g();
         numCvars = ctx.count - numCommands;
 
-        Cmd_Alias_g(&ctx);
+        Cmd_Alias_g();
         numAliases = ctx.count - numCvars - numCommands;
     }
 
@@ -259,7 +292,7 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
 
     if (ctx.count == 1) {
         // we have finished completion!
-        if (!ctx.stripquotes && needs_quotes(ctx.matches[0])) {
+        if (!(ctx.options & CMPL_STRIPQUOTES) && needs_quotes(ctx.matches[0])) {
             Q_strlcat(text, "\"", size);
             Q_strlcat(text, ctx.matches[0], size);
             Q_strlcat(text, "\"", size);
@@ -281,7 +314,7 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     // sort matches alphabethically
     sorted = Z_Malloc(ctx.count * sizeof(sorted[0]));
     memcpy(sorted, ctx.matches, ctx.count * sizeof(sorted[0]));
-    qsort(sorted, ctx.count, sizeof(sorted[0]), ctx.ignorecase ? SortStricmp : SortStrcmp);
+    qsort(sorted, ctx.count, sizeof(sorted[0]), (ctx.options & CMPL_CASELESS) ? SortStricmp : SortStrcmp);
 
     // add opening quote if needed
     for (i = 0; i < ctx.count; i++)
@@ -294,7 +327,7 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     first = sorted[0];
     last = sorted[ctx.count - 1];
     do {
-        if (*first != *last && (!ctx.ignorecase || Q_tolower(*first) != Q_tolower(*last))) {
+        if (*first != *last && (!(ctx.options & CMPL_CASELESS) || Q_tolower(*first) != Q_tolower(*last))) {
             break;
         }
         first++;

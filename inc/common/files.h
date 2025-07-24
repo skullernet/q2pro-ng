@@ -124,7 +124,7 @@ void FS_CleanupPath(char *s);
 char *FS_ReplaceSeparators(char *s, int separator);
 #endif
 
-void FS_File_g(const char *path, const char *ext, unsigned flags, genctx_t *ctx);
+void FS_File_g(const char *path, const char *ext, unsigned flags);
 
 FILE *Q_fopen(const char *path, const char *mode);
 

@@ -283,21 +283,21 @@ void CL_CheckForResend(void)
                       cls.challenge, userinfo, PROTOCOL_VERSION_MINOR, maxmsglen, USE_ZLIB);
 }
 
-static void CL_RecentIP_g(genctx_t *ctx)
+static void CL_RecentIP_g(void)
 {
     for (int i = 0; i < RECENT_ADDR; i++) {
         const netadr_t *a = &cls.recent_addr[(cls.recent_head - i - 1) & RECENT_MASK];
         if (a->type) {
-            Prompt_AddMatch(ctx, NET_AdrToString(a));
+            Prompt_AddMatch(NET_AdrToString(a));
         }
     }
 }
 
-static void CL_Connect_c(genctx_t *ctx, int argnum)
+static void CL_Connect_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        CL_RecentIP_g(ctx);
-        Com_Address_g(ctx);
+        CL_RecentIP_g();
+        Com_Address_g();
     }
 }
 
@@ -451,9 +451,9 @@ static void CL_Rcon_f(void)
     CL_SendRcon(&address, rcon_password->string, COM_StripQuotes(Cmd_RawArgs()));
 }
 
-static void CL_Rcon_c(genctx_t *ctx, int argnum)
+static void CL_Rcon_c(int firstarg, int argnum)
 {
-    Com_Generic_c(ctx, argnum - 1);
+    Com_Generic_c(firstarg + 1, argnum - 1);
 }
 
 /*
@@ -568,11 +568,11 @@ static void CL_Disconnect_f(void)
     }
 }
 
-static void CL_ServerStatus_c(genctx_t *ctx, int argnum)
+static void CL_ServerStatus_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        CL_RecentIP_g(ctx);
-        Com_Address_g(ctx);
+        CL_RecentIP_g();
+        Com_Address_g();
     }
 }
 
@@ -1226,9 +1226,9 @@ CL_PlaySound_f
 Moved here from sound code so that command is always registered.
 =================
 */
-static void CL_PlaySound_c(genctx_t *ctx, int state)
+static void CL_PlaySound_c(int firstarg, int argnum)
 {
-    FS_File_g("sound", ".wav", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, ctx);
+    FS_File_g("sound", ".wav", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT);
 }
 
 static void CL_PlaySound_f(void)
@@ -1312,9 +1312,9 @@ static const cmd_option_t o_writeconfig[] = {
     { NULL }
 };
 
-static void CL_WriteConfig_c(genctx_t *ctx, int argnum)
+static void CL_WriteConfig_c(int firstarg, int argnum)
 {
-    Cmd_Option_c(o_writeconfig, Cmd_Config_g, ctx, argnum);
+    Cmd_Option_c(o_writeconfig, Cmd_Config_g, firstarg, argnum);
 }
 
 /*

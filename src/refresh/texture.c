@@ -125,13 +125,13 @@ static void gl_texturemode_changed(cvar_t *self)
     update_image_params(BIT(IT_WALL) | BIT(IT_SKIN));
 }
 
-static void gl_texturemode_g(genctx_t *ctx)
+static void gl_texturemode_g(void)
 {
     int i;
 
-    ctx->ignorecase = true;
+    Prompt_SetOptions(CMPL_CASELESS);
     for (i = 0; i < numFilterModes; i++)
-        Prompt_AddMatch(ctx, filterModes[i].name);
+        Prompt_AddMatch(filterModes[i].name);
 }
 
 static void gl_anisotropy_changed(cvar_t *self)

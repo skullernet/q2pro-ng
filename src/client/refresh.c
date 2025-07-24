@@ -315,10 +315,10 @@ static void vid_modelist_changed(cvar_t *self)
     mode_changed |= MODE_MODELIST;
 }
 
-static void vid_driver_g(genctx_t *ctx)
+static void vid_driver_g(void)
 {
     for (int i = 0; vid_drivers[i]; i++)
-        Prompt_AddMatch(ctx, vid_drivers[i]->name);
+        Prompt_AddMatch(vid_drivers[i]->name);
 }
 
 /*

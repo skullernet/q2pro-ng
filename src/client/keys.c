@@ -348,38 +348,38 @@ void Key_SetBinding(int keynum, const char *binding)
     keybindings[keynum] = Z_CopyString(binding);
 }
 
-static void Key_Name_g(genctx_t *ctx)
+static void Key_Name_g(void)
 {
     const keyname_t *k;
 
-    ctx->ignorecase = true;
+    Prompt_SetOptions(CMPL_CASELESS);
     for (k = keynames; k->name; k++)
-        Prompt_AddMatch(ctx, k->name);
+        Prompt_AddMatch(k->name);
 }
 
-static void Key_Bound_g(genctx_t *ctx)
+static void Key_Bound_g(void)
 {
     int i;
 
-    ctx->ignorecase = true;
+    Prompt_SetOptions(CMPL_CASELESS);
     for (i = 0; i < 256; i++)
         if (keybindings[i])
-            Prompt_AddMatch(ctx, Key_KeynumToString(i));
+            Prompt_AddMatch(Key_KeynumToString(i));
 }
 
-static void Key_Bind_c(genctx_t *ctx, int argnum)
+static void Key_Bind_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Key_Name_g(ctx);
+        Key_Name_g();
     } else {
-        Com_Generic_c(ctx, argnum - 2);
+        Com_Generic_c(firstarg + 2, argnum - 2);
     }
 }
 
-static void Key_Unbind_c(genctx_t *ctx, int argnum)
+static void Key_Unbind_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Key_Bound_g(ctx);
+        Key_Bound_g();
     }
 }
 

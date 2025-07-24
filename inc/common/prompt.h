@@ -24,9 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define HISTORY_SIZE    128
 #define HISTORY_MASK    (HISTORY_SIZE - 1)
 
-#define MIN_MATCHES     64
-#define MAX_MATCHES     250000000
-
 typedef struct {
     unsigned    inputLineNum;
     unsigned    historyLineNum;
@@ -42,7 +39,9 @@ typedef struct {
 } commandPrompt_t;
 
 void Prompt_Init(void);
-void Prompt_AddMatch(genctx_t *ctx, const char *s);
+void Prompt_SetOptions(completion_option_t opt);
+void Prompt_AddMatch(const char *s);
+void Prompt_AddMatchNoAlloc(char *s);
 void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash);
 void Prompt_CompleteHistory(commandPrompt_t *prompt, bool forward);
 void Prompt_ClearState(commandPrompt_t *prompt);

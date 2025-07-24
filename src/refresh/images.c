@@ -1497,9 +1497,9 @@ static const cmd_option_t o_imagelist[] = {
     { NULL }
 };
 
-static void IMG_List_c(genctx_t *ctx, int argnum)
+static void IMG_List_c(int firstarg, int argnum)
 {
-    Cmd_Option_c(o_imagelist, NULL, ctx, argnum);
+    Cmd_Option_c(o_imagelist, NULL, firstarg, argnum);
 }
 
 /*

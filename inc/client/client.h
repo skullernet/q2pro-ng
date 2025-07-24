@@ -117,7 +117,7 @@ void SCR_UpdateScreen(void);
 
 #if USE_CLIENT && USE_AVCODEC
 int SCR_CheckForCinematic(const char *name);
-void SCR_Cinematic_g(genctx_t *ctx);
+void SCR_Cinematic_g(void);
 #else
 #define SCR_CheckForCinematic(name)     Q_ERR(ENOSYS)
 #define SCR_Cinematic_g(ctx)            (void)0

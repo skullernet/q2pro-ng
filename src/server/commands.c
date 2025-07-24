@@ -183,7 +183,7 @@ client_t *SV_GetPlayer(const char *s, bool partial)
     return match;
 }
 
-static void SV_Player_g(genctx_t *ctx)
+static void SV_Player_g(void)
 {
     client_t *cl;
 
@@ -193,13 +193,13 @@ static void SV_Player_g(genctx_t *ctx)
 
     FOR_EACH_CLIENT(cl)
         if (cl->state > cs_zombie)
-            Prompt_AddMatch(ctx, cl->name);
+            Prompt_AddMatch(cl->name);
 }
 
-static void SV_SetPlayer_c(genctx_t *ctx, int argnum)
+static void SV_SetPlayer_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        SV_Player_g(ctx);
+        SV_Player_g();
     }
 }
 
@@ -406,7 +406,7 @@ static void SV_Map_f(void)
     SV_Map(res);
 }
 
-static void SV_Map_c(genctx_t *ctx, int argnum)
+static void SV_Map_c(int firstarg, int argnum)
 {
     const char *path;
     void **list;
@@ -416,7 +416,7 @@ static void SV_Map_c(genctx_t *ctx, int argnum)
         return;
 
     // complete regular maps
-    FS_File_g("maps", ".bsp", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, ctx);
+    FS_File_g("maps", ".bsp", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT);
 
     // complete overrides
     path = Cvar_VariableString("map_override_path");
@@ -427,22 +427,22 @@ static void SV_Map_c(genctx_t *ctx, int argnum)
     if (!list)
         return;
 
-    ctx->ignoredups = true;
+    Prompt_SetOptions(CMPL_CHECKDUPS);
     for (int i = 0; i < count; i++) {
         const char *s = list[i];
         const int len = strlen(s) - strlen(".bsp.override");
-        Prompt_AddMatch(ctx, va("%.*s", len, s));
+        Prompt_AddMatch(va("%.*s", len, s));
     }
 
     FS_FreeList(list);
 }
 
-static void SV_DemoMap_c(genctx_t *ctx, int argnum)
+static void SV_DemoMap_c(int firstarg, int argnum)
 {
 #if USE_CLIENT
     if (argnum == 1) {
-        FS_File_g("demos", ".dm2", FS_SEARCH_RECURSIVE, ctx);
-        SCR_Cinematic_g(ctx);
+        FS_File_g("demos", ".dm2", FS_SEARCH_RECURSIVE);
+        SCR_Cinematic_g();
     }
 #endif
 }

@@ -533,18 +533,18 @@ void UI_CharEvent(int key)
     UI_StartSound(sound);
 }
 
-static void UI_Menu_g(genctx_t *ctx)
+static void UI_Menu_g(void)
 {
     menuFrameWork_t *menu;
 
     LIST_FOR_EACH(menuFrameWork_t, menu, &ui_menus, entry)
-        Prompt_AddMatch(ctx, menu->name);
+        Prompt_AddMatch(menu->name);
 }
 
-static void UI_PushMenu_c(genctx_t *ctx, int argnum)
+static void UI_PushMenu_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        UI_Menu_g(ctx);
+        UI_Menu_g();
     }
 }
 

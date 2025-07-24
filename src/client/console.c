@@ -213,10 +213,10 @@ static void Con_Clear_f(void)
     con.newline = '\r';
 }
 
-static void Con_Dump_c(genctx_t *ctx, int argnum)
+static void Con_Dump_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        FS_File_g("condumps", ".txt", FS_SEARCH_STRIPEXT, ctx);
+        FS_File_g("condumps", ".txt", FS_SEARCH_STRIPEXT);
     }
 }
 
@@ -351,10 +351,10 @@ static void Con_RemoteMode_f(void)
     con.remotePassword = Z_CopyString(s);
 }
 
-static void CL_RemoteMode_c(genctx_t *ctx, int argnum)
+static void CL_RemoteMode_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Com_Address_g(ctx);
+        Com_Address_g();
     }
 }
 

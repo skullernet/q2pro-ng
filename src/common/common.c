@@ -700,7 +700,7 @@ static void Com_LastError_f(void)
     Com_Printf("%s\n", com_errorMsg);
 }
 
-void Com_Address_g(genctx_t *ctx)
+void Com_Address_g(void)
 {
     int i;
     cvar_t *var;
@@ -711,50 +711,42 @@ void Com_Address_g(genctx_t *ctx)
             break;
         }
         if (var->string[0]) {
-            Prompt_AddMatch(ctx, var->string);
+            Prompt_AddMatch(var->string);
         }
     }
 }
 
-void Com_Generic_c(genctx_t *ctx, int argnum)
+void Com_Generic_c(int firstarg, int argnum)
 {
     xcompleter_t c;
-    xgenerator_t g;
     cvar_t *var;
     char *s;
 
     // complete command, alias or cvar name
     if (!argnum) {
-        Cmd_Command_g(ctx);
-        Cvar_Variable_g(ctx);
-        Cmd_Alias_g(ctx);
+        Cmd_Command_g();
+        Cvar_Variable_g();
+        Cmd_Alias_g();
         return;
     }
 
-    // protect against possible duplicates
-    ctx->ignoredups = true;
-
-    s = Cmd_Argv(ctx->argnum - argnum);
+    s = Cmd_Argv(firstarg);
 
     // complete command argument or cvar value
     if ((c = Cmd_FindCompleter(s)) != NULL) {
-        c(ctx, argnum);
+        c(firstarg, argnum);
     } else if (argnum == 1 && (var = Cvar_FindVar(s)) != NULL) {
-        g = var->generator;
-        if (g) {
-            ctx->data = var;
-            g(ctx);
-        }
+        Cvar_Argument_g(var);
     }
 }
 
 #if USE_CLIENT
-void Com_Color_g(genctx_t *ctx)
+void Com_Color_g(void)
 {
     int color;
 
     for (color = 0; color < COLOR_ALT; color++)
-        Prompt_AddMatch(ctx, colorNames[color]);
+        Prompt_AddMatch(colorNames[color]);
 }
 #endif
 

@@ -838,6 +838,12 @@ typedef struct {
 
 #define VM_CVAR(name, def, flags) { &name, #name, def, flags }
 
+typedef enum {
+    CMPL_CASELESS    = BIT(0),
+    CMPL_CHECKDUPS   = BIT(1),
+    CMPL_STRIPQUOTES = BIT(2),
+} completion_option_t;
+
 /*
 ==========================================================
 

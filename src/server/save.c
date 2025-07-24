@@ -584,10 +584,10 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
         ge->RunFrame(sv.time);
 }
 
-static void SV_Savegame_c(genctx_t *ctx, int argnum)
+static void SV_Savegame_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        FS_File_g("save", NULL, SAVE_LOOKUP_FLAGS | FS_SEARCH_DIRSONLY, ctx);
+        FS_File_g("save", NULL, SAVE_LOOKUP_FLAGS | FS_SEARCH_DIRSONLY);
     }
 }
 

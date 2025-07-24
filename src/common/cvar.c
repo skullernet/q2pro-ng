@@ -136,23 +136,23 @@ size_t Cvar_VariableStringBuffer(const char *var_name, char *buffer, size_t size
     return Q_strlcpy(buffer, Cvar_VariableString(var_name), size);
 }
 
-void Cvar_Variable_g(genctx_t *ctx)
+void Cvar_Variable_g(void)
 {
     cvar_t *c;
 
     for (c = cvar_vars; c; c = c->next)
-        Prompt_AddMatch(ctx, c->name);
+        Prompt_AddMatch(c->name);
 }
 
-void Cvar_Default_g(genctx_t *ctx)
+void Cvar_Argument_g(cvar_t *c)
 {
-    cvar_t *c = ctx->data;
-
-    if (c) {
+    if (c->generator) {
+        c->generator();
+    } else {
         if (strcmp(c->string, c->default_string)) {
-            Prompt_AddMatch(ctx, c->string);
+            Prompt_AddMatch(c->string);
         }
-        Prompt_AddMatch(ctx, c->default_string);
+        Prompt_AddMatch(c->default_string);
     }
 }
 
@@ -305,7 +305,7 @@ cvar_t *Cvar_Get(const char *var_name, const char *var_value, int flags)
     parse_string_value(var);
     var->flags = flags;
     var->changed = NULL;
-    var->generator = Cvar_Default_g;
+    var->generator = NULL;
     var->modified = true;
 
     // sort the variable in
@@ -673,23 +673,15 @@ void Cvar_Command(cvar_t *v)
     }
 }
 
-static void Cvar_Set_c(genctx_t *ctx, int argnum)
+static void Cvar_Set_c(int firstarg, int argnum)
 {
-    char *s;
     cvar_t *var;
-    xgenerator_t g;
 
     if (argnum == 1) {
-        Cvar_Variable_g(ctx);
+        Cvar_Variable_g();
     } else if (argnum == 2) {
-        s = Cmd_Argv(ctx->argnum - 1);
-        if ((var = Cvar_FindVar(s)) != NULL) {
-            g = var->generator;
-            if (g) {
-                ctx->data = var;
-                g(ctx);
-            }
-        }
+        if ((var = Cvar_FindVar(Cmd_Argv(firstarg + 1))) != NULL)
+            Cvar_Argument_g(var);
     }
 }
 
@@ -823,9 +815,9 @@ static const cmd_option_t o_cvarlist[] = {
     { NULL }
 };
 
-static void Cvar_List_c(genctx_t *ctx, int argnum)
+static void Cvar_List_c(int firstarg, int argnum)
 {
-    Cmd_Option_c(o_cvarlist, NULL, ctx, argnum);
+    Cmd_Option_c(o_cvarlist, NULL, firstarg, argnum);
 }
 
 static void Cvar_List_f(void)
@@ -985,18 +977,15 @@ static void Cvar_Toggle_f(void)
     Com_Printf("\"%s\" is \"%s\", can't cycle\n", var->name, var->string);
 }
 
-static void Cvar_Toggle_c(genctx_t *ctx, int argnum)
+static void Cvar_Toggle_c(int firstarg, int argnum)
 {
-    char *s;
-    xgenerator_t g;
+    cvar_t *var;
 
     if (argnum == 1) {
-        Cvar_Variable_g(ctx);
+        Cvar_Variable_g();
     } else {
-        s = Cmd_Argv(ctx->argnum - argnum + 1);
-        if ((g = Cvar_FindGenerator(s)) != NULL) {
-            g(ctx);
-        }
+        if ((var = Cvar_FindVar(Cmd_Argv(firstarg + 1))) != NULL)
+            Cvar_Argument_g(var);
     }
 }
 
@@ -1037,10 +1026,10 @@ static void Cvar_Inc_f(void)
     Cvar_SetValue(var, var->value + value, Cmd_From());
 }
 
-static void Cvar_Inc_c(genctx_t *ctx, int argnum)
+static void Cvar_Inc_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Cvar_Variable_g(ctx);
+        Cvar_Variable_g();
     }
 }
 
@@ -1067,14 +1056,14 @@ static void Cvar_Reset_f(void)
     Cvar_SetByVar(var, var->default_string, Cmd_From());
 }
 
-static void Cvar_Reset_c(genctx_t *ctx, int argnum)
+static void Cvar_Reset_c(int firstarg, int argnum)
 {
     cvar_t *var;
 
     if (argnum == 1)
         for (var = cvar_vars; var; var = var->next)
             if (strcmp(var->latched_string ? var->latched_string : var->string, var->default_string))
-                Prompt_AddMatch(ctx, var->name);
+                Prompt_AddMatch(var->name);
 }
 
 static void Cvar_ResetAll_f(void)

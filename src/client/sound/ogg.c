@@ -705,21 +705,21 @@ static void OGG_Info_f(void)
         Com_Printf("Playback stopped.\n");
 }
 
-static void OGG_Cmd_c(genctx_t *ctx, int argnum)
+static void OGG_Cmd_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Prompt_AddMatch(ctx, "info");
-        Prompt_AddMatch(ctx, "play");
-        Prompt_AddMatch(ctx, "stop");
-        Prompt_AddMatch(ctx, "next");
-        Prompt_AddMatch(ctx, "pause");
+        Prompt_AddMatch("info");
+        Prompt_AddMatch("play");
+        Prompt_AddMatch("stop");
+        Prompt_AddMatch("next");
+        Prompt_AddMatch("pause");
         return;
     }
 
-    if (argnum == 2 && !strcmp(Cmd_Argv(1), "play")) {
-        ctx->ignorecase = true;
+    if (argnum == 2 && !strcmp(Cmd_Argv(firstarg + 1), "play")) {
+        Prompt_SetOptions(CMPL_CASELESS);
         for (int i = 0; i < trackcount; i++)
-            Prompt_AddMatch(ctx, *HashMap_GetKey(const char *, trackmap, i));
+            Prompt_AddMatch(*HashMap_GetKey(const char *, trackmap, i));
     }
 }
 

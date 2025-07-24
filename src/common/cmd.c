@@ -295,12 +295,12 @@ void Cmd_AliasSet(const char *name, const char *cmd)
     List_Append(&cmd_aliasHash[hash], &a->hashEntry);
 }
 
-void Cmd_Alias_g(genctx_t *ctx)
+void Cmd_Alias_g(void)
 {
     cmdalias_t *a;
 
     FOR_EACH_ALIAS(a)
-        Prompt_AddMatch(ctx, a->name);
+        Prompt_AddMatch(a->name);
 }
 
 
@@ -419,19 +419,19 @@ void Cmd_WriteAliases(qhandle_t f)
 }
 #endif
 
-static void Cmd_Alias_c(genctx_t *ctx, int argnum)
+static void Cmd_Alias_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Cmd_Alias_g(ctx);
+        Cmd_Alias_g();
     } else {
-        Com_Generic_c(ctx, argnum - 2);
+        Com_Generic_c(firstarg + 2, argnum - 2);
     }
 }
 
-static void Cmd_UnAlias_c(genctx_t *ctx, int argnum)
+static void Cmd_UnAlias_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Cmd_Alias_g(ctx);
+        Cmd_Alias_g();
     }
 }
 
@@ -725,12 +725,12 @@ cmd_macro_t *Cmd_FindMacro(const char *name)
     return NULL;
 }
 
-void Cmd_Macro_g(genctx_t *ctx)
+void Cmd_Macro_g(void)
 {
     cmd_macro_t *m;
 
     for (m = cmd_macros; m; m = m->next)
-        Prompt_AddMatch(ctx, m->name);
+        Prompt_AddMatch(m->name);
 }
 
 /*
@@ -1114,23 +1114,23 @@ void Cmd_PrintHint(void)
     Com_Printf("Try '%s --help' for more information.\n", cmd_argv[0]);
 }
 
-void Cmd_Option_c(const cmd_option_t *opt, xgenerator_t g, genctx_t *ctx, int argnum)
+void Cmd_Option_c(const cmd_option_t *opt, xgenerator_t g, int firstarg, int argnum)
 {
     int i;
 
     for (i = 1; i < argnum; i++) {
-        if (!strcmp(cmd_argv[i], "--")) {
+        if (!strcmp(Cmd_Argv(firstarg + i), "--")) {
             if (g)
-                g(ctx);
+                g();
             return;
         }
     }
 
-    if (ctx->partial[0] != '-' && g) {
-        g(ctx);
+    if (*Cmd_Argv(firstarg + argnum) != '-' && g) {
+        g();
     } else for (; opt->sh; opt++) {
-        Prompt_AddMatch(ctx, va("--%s", opt->lo));
-        Prompt_AddMatch(ctx, va("-%c", opt->sh[0]));
+        Prompt_AddMatch(va("--%s", opt->lo));
+        Prompt_AddMatch(va("-%c", opt->sh[0]));
     }
 }
 
@@ -1540,14 +1540,14 @@ xcompleter_t Cmd_FindCompleter(const char *name)
     return cmd ? cmd->completer : NULL;
 }
 
-void Cmd_Command_g(genctx_t *ctx)
+void Cmd_Command_g(void)
 {
     cmd_function_t *cmd;
 
     FOR_EACH_CMD(cmd) {
         if (COM_DEDICATED && !cmd->function)
             continue;
-        Prompt_AddMatch(ctx, cmd->name);
+        Prompt_AddMatch(cmd->name);
     }
 }
 
@@ -1704,15 +1704,15 @@ fail:
     }
 }
 
-void Cmd_Config_g(genctx_t *ctx)
+void Cmd_Config_g(void)
 {
-    FS_File_g(NULL, ".cfg", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, ctx);
+    FS_File_g(NULL, ".cfg", FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT);
 }
 
-static void Cmd_Exec_c(genctx_t *ctx, int argnum)
+static void Cmd_Exec_c(int firstarg, int argnum)
 {
     if (argnum == 1) {
-        Cmd_Config_g(ctx);
+        Cmd_Config_g();
     }
 }
 
@@ -1737,9 +1737,9 @@ static const cmd_option_t o_echo[] = {
     { NULL }
 };
 
-static void Cmd_EchoEx_c(genctx_t *ctx, int argnum)
+static void Cmd_EchoEx_c(int firstarg, int argnum)
 {
-    Cmd_Option_c(o_echo, NULL, ctx, argnum);
+    Cmd_Option_c(o_echo, NULL, firstarg, argnum);
 }
 
 static char *unescape_string(char *dst, const char *src)
