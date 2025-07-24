@@ -440,7 +440,7 @@ edict_t *G_Spawn(void)
     level.num_edicts++;
 
     // inform the server that num_edicts has changed
-    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
+    trap_SetNumEdicts(level.num_edicts);
 
     G_InitEdict(e);
     return e;

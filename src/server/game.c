@@ -279,14 +279,13 @@ static bool PF_GetMaterialInfo(unsigned material_id, material_info_t *info)
     return BSP_GetMaterialInfo(sv.cm.cache, material_id, info);
 }
 
-static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size)
+static void PF_LocateGameData(edict_t *edicts, size_t edict_size, gclient_t *clients, size_t client_size)
 {
+    Q_assert_soft(!svs.edicts);
+
     Q_assert_soft(edict_size >= sizeof(edict_t));
     Q_assert_soft(edict_size <= INT_MAX / MAX_EDICTS);
     Q_assert_soft(!(edict_size % q_alignof(edict_t)));
-
-    Q_assert_soft(num_edicts >= svs.maxclients);
-    Q_assert_soft(num_edicts <= ENTITYNUM_WORLD);
 
     Q_assert_soft(client_size >= sizeof(gclient_t));
     Q_assert_soft(client_size <= INT_MAX / MAX_CLIENTS);
@@ -294,9 +293,15 @@ static void PF_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_e
 
     svs.edicts = edicts;
     svs.edict_size = edict_size;
-    svs.num_edicts = num_edicts;
     svs.clients = clients;
     svs.client_size = client_size;
+}
+
+static void PF_SetNumEdicts(unsigned num_edicts)
+{
+    Q_assert_soft(num_edicts >= svs.maxclients);
+    Q_assert_soft(num_edicts <= ENTITYNUM_WORLD);
+    svs.num_edicts = num_edicts;
 }
 
 int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode)
@@ -440,14 +445,17 @@ VM_THUNK(GetMaterialInfo) {
 VM_THUNK(LocateGameData) {
     uint32_t edicts_ptr = VM_U32(0);
     uint32_t edict_size = VM_U32(1);
-    uint32_t num_edicts = VM_U32(2);
 
     edict_t *edicts = VM_GetPointer(m, edicts_ptr, edict_size, MAX_EDICTS, q_alignof(*edicts), __func__);
-    gclient_t *clients = VM_GetPointer(m, VM_U32(3), VM_U32(4), svs.maxclients, q_alignof(*clients), __func__);
-    PF_LocateGameData(edicts, edict_size, num_edicts, clients, VM_U32(4));
+    gclient_t *clients = VM_GetPointer(m, VM_U32(2), VM_U32(3), svs.maxclients, q_alignof(*clients), __func__);
+    PF_LocateGameData(edicts, edict_size, clients, VM_U32(3));
 
     svs.vm_edicts_minptr = edicts_ptr;
     svs.vm_edicts_maxptr = edicts_ptr + (MAX_EDICTS - 1) * edict_size;
+}
+
+VM_THUNK(SetNumEdicts) {
+    PF_SetNumEdicts(VM_U32(0));
 }
 
 VM_THUNK(ParseEntityString) {
@@ -668,7 +676,8 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(ClientCommand, "iii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(GetMaterialInfo, "i ii"),
-    VM_IMPORT(LocateGameData, "iiiii"),
+    VM_IMPORT(LocateGameData, "iiii"),
+    VM_IMPORT(SetNumEdicts, "i"),
     VM_IMPORT(ParseEntityString, "i ii"),
     VM_IMPORT(GetLevelName, "i ii"),
     VM_IMPORT(GetSpawnPoint, "i ii"),
@@ -894,6 +903,8 @@ static const game_import_t game_dll_imports = {
     .ClientCommand = PF_ClientCommand,
 
     .LocateGameData = PF_LocateGameData,
+    .SetNumEdicts = PF_SetNumEdicts,
+
     .ParseEntityString = PF_ParseEntityString,
     .GetLevelName = PF_GetLevelName,
     .GetSpawnPoint = PF_GetSpawnPoint,

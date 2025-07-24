@@ -204,7 +204,9 @@ typedef struct {
     // network messaging
     void (*ClientCommand)(edict_t *ent, const char *str, bool reliable);
 
-    void (*LocateGameData)(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
+    void (*LocateGameData)(edict_t *edicts, size_t edict_size, gclient_t *clients, size_t client_size);
+    void (*SetNumEdicts)(unsigned num_edicts);
+
     bool (*ParseEntityString)(char *buf, size_t size);
     size_t (*GetLevelName)(char *buf, size_t size);
     size_t (*GetSpawnPoint)(char *buf, size_t size);

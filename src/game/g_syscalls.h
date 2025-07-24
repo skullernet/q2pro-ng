@@ -42,7 +42,9 @@ bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
 
 void trap_ClientCommand(edict_t *ent, const char *str, bool reliable);
 
-void trap_LocateGameData(edict_t *edicts, size_t edict_size, unsigned num_edicts, gclient_t *clients, size_t client_size);
+void trap_LocateGameData(edict_t *edicts, size_t edict_size, gclient_t *clients, size_t client_size);
+void trap_SetNumEdicts(unsigned num_edicts);
+
 bool trap_ParseEntityString(char *buf, size_t size);
 size_t trap_GetLevelName(char *buf, size_t size);
 size_t trap_GetSpawnPoint(char *buf, size_t size);
@@ -121,6 +123,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_ClientCommand gi->ClientCommand
 
 #define trap_LocateGameData gi->LocateGameData
+#define trap_SetNumEdicts gi->SetNumEdicts
+
 #define trap_ParseEntityString gi->ParseEntityString
 #define trap_GetLevelName gi->GetLevelName
 #define trap_GetSpawnPoint gi->GetSpawnPoint

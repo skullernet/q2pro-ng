@@ -1734,7 +1734,7 @@ qvm_exported void G_ReadLevel(qhandle_t handle)
     }
 
     // set final amount of edicts
-    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
+    trap_SetNumEdicts(level.num_edicts);
 
     // mark all clients as unconnected
     for (i = 0; i < game.maxclients; i++) {

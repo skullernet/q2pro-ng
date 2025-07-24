@@ -337,7 +337,8 @@ qvm_exported void G_Init(void)
     level.num_edicts = game.maxclients;
 
     // initialize all entities for this game
-    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), level.num_edicts, g_clients, sizeof(g_clients[0]));
+    trap_LocateGameData(g_edicts, sizeof(g_edicts[0]), g_clients, sizeof(g_clients[0]));
+    trap_SetNumEdicts(level.num_edicts);
 
     // variable FPS support
     Q_assert_soft(sv_fps.integer >= 10);
