@@ -430,7 +430,7 @@ static inline void CG_AdvanceValue(float *restrict val, float target, float spee
 #define Com_SlowRand  Q_rand
 
 //
-// main.c
+// cg_main.c
 //
 
 void CG_Init(void);
@@ -438,7 +438,7 @@ void CG_Shutdown(void);
 void CG_ClearState(void);
 
 //
-// precache.c
+// cg_precache.c
 //
 
 void CG_RegisterMedia(void);
@@ -447,7 +447,7 @@ void CG_UpdateConfigstring(unsigned index);
 
 
 //
-// entities.c
+// cg_entities.c
 //
 
 #define EF_TRAIL_MASK   (EF_ROCKET | EF_BLASTER | EF_HYPERBLASTER | EF_GIB | EF_GRENADE | \
@@ -464,14 +464,14 @@ float CG_LerpEntityAlpha(const centity_t *ent);
 void CG_SetEntitySoundOrigin(const centity_t *ent);
 
 //
-// view.c
+// cg_view.c
 //
 
 void CG_RenderView(void);
 
 
 //
-// tent.c
+// cg_events.c
 //
 
 typedef struct cg_sustain_s {
@@ -502,7 +502,7 @@ void CG_ClearTEnts(void);
 
 
 //
-// predict.c
+// cg_predict.c
 //
 
 static inline bool CG_PredictionEnabled(void)
@@ -519,7 +519,7 @@ contents_t CG_PointContents(const vec3_t point);
 
 
 //
-// effects.c
+// cg_effects.c
 //
 #define PARTICLE_GRAVITY    40
 #define INSTANT_PARTICLE    -10000.0f
@@ -583,10 +583,6 @@ void CG_AddDLights(void);
 void CG_SetLightStyle(int index, const char *s);
 void CG_AddLightStyles(void);
 
-//
-// newfx.c
-//
-
 void CG_BlasterParticles2(const vec3_t org, const vec3_t dir, unsigned int color);
 void CG_BlasterTrail2(centity_t *ent, const vec3_t end);
 void CG_DebugTrail(const vec3_t start, const vec3_t end);
@@ -616,7 +612,7 @@ void CG_BarrelExplodingParticles(const vec3_t org);
 
 
 //
-// screen.c
+// cg_screen.c
 //
 extern vrect_t      scr_vrect;        // position of render window
 
@@ -641,13 +637,20 @@ void    CG_ModeChanged(void);
 void    CG_DrawFrame(unsigned msec, bool active, bool loading);
 
 //
-// servercmd.c
+// cg_servercmds.c
 //
 
 void CG_ServerCommand(void);
-bool CG_ConsoleCommand(void);
 
 //
-// frame.c
+// cg_consolecmds.c
+//
+
+void CG_RegisterCommands(void);
+bool CG_ConsoleCommand(void);
+void CG_CompleteCommand(int firstarg, int argnum);
+
+//
+// cg_frame.c
 //
 void CG_ProcessFrames(void);

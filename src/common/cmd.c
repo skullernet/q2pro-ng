@@ -784,6 +784,8 @@ void Cmd_AddMacro(const char *name, xmacro_t function)
     LIST_FOR_EACH(cmd_function_t, cmd, &cmd_hash[hash], hashEntry)
 #define FOR_EACH_CMD(cmd) \
     LIST_FOR_EACH(cmd_function_t, cmd, &cmd_functions, listEntry)
+#define FOR_EACH_CMD_SAFE(cmd, next) \
+    LIST_FOR_EACH_SAFE(cmd_function_t, cmd, next, &cmd_functions, listEntry)
 
 typedef struct {
     list_t          hashEntry;
@@ -1494,6 +1496,19 @@ void Cmd_Deregister(const cmdreg_t *reg)
 {
     for (; reg->name; reg++)
         Cmd_RemoveCommand(reg->name);
+}
+
+void Cmd_RemoveForwarded(void)
+{
+    cmd_function_t *cmd, *next;
+
+    FOR_EACH_CMD_SAFE(cmd, next) {
+        if (cmd->function)
+            continue;
+        List_Remove(&cmd->listEntry);
+        List_Remove(&cmd->hashEntry);
+        Z_Free(cmd);
+    }
 }
 
 /*

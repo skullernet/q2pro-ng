@@ -52,6 +52,10 @@ bool trap_GetServerFrame(unsigned frame, cg_server_frame_t *out);
 bool trap_GetDemoInfo(cg_demo_info_t *info);
 
 void trap_ClientCommand(const char *cmd);
+void trap_RegisterCommand(const char *cmd);
+
+void trap_SetCompletionOptions(completion_option_t opt);
+void trap_AddCommandCompletion(const char *s);
 
 void trap_SetLoadState(const char *state);
 
@@ -181,6 +185,10 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_GetDemoInfo cgi->GetDemoInfo
 
 #define trap_ClientCommand cgi->ClientCommand
+#define trap_RegisterCommand cgi->RegisterCommand
+
+#define trap_SetCompletionOptions cgi->SetCompletionOptions
+#define trap_AddCommandCompletion cgi->AddCommandCompletion
 
 #define trap_SetLoadState cgi->SetLoadState
 

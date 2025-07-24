@@ -266,6 +266,18 @@ static bool PF_GetDemoInfo(cg_demo_info_t *info)
     return true;
 }
 
+static void CG_CompleteCommand(int firstarg, int argnum)
+{
+    if (cge)
+        cge->CompleteCommand(firstarg, argnum);
+}
+
+static void PF_RegisterCommand(const char *name)
+{
+    cmdreg_t reg[2] = { { .name = name, .completer = CG_CompleteCommand } };
+    Cmd_Register(reg);
+}
+
 //==============================================
 
 VM_THUNK(Print) {
@@ -334,6 +346,18 @@ VM_THUNK(GetDemoInfo) {
 
 VM_THUNK(ClientCommand) {
     CL_ClientCommand(VM_STR(0));
+}
+
+VM_THUNK(RegisterCommand) {
+    PF_RegisterCommand(VM_STR(0));
+}
+
+VM_THUNK(SetCompletionOptions) {
+    Prompt_SetOptions(VM_U32(0));
+}
+
+VM_THUNK(AddCommandCompletion) {
+    Prompt_AddMatch(VM_STR(0));
 }
 
 VM_THUNK(SetLoadState) {
@@ -721,6 +745,9 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetServerFrame, "i ii"),
     VM_IMPORT(GetDemoInfo, "i i"),
     VM_IMPORT(ClientCommand, "i"),
+    VM_IMPORT(RegisterCommand, "i"),
+    VM_IMPORT(SetCompletionOptions, "i"),
+    VM_IMPORT(AddCommandCompletion, "i"),
     VM_IMPORT(SetLoadState, "i"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
@@ -826,6 +853,7 @@ typedef enum {
     vm_CG_DrawFrame,
     vm_CG_ModeChanged,
     vm_CG_ConsoleCommand,
+    vm_CG_CompleteCommand,
     vm_CG_ServerCommand,
     vm_CG_UpdateConfigstring,
     vm_CG_KeyEvent,
@@ -841,6 +869,7 @@ static const vm_export_t cgame_vm_exports[] = {
     VM_EXPORT(CG_DrawFrame, "iii"),
     VM_EXPORT(CG_ModeChanged, ""),
     VM_EXPORT(CG_ConsoleCommand, "i "),
+    VM_EXPORT(CG_CompleteCommand, "ii"),
     VM_EXPORT(CG_ServerCommand, ""),
     VM_EXPORT(CG_UpdateConfigstring, "i"),
     VM_EXPORT(CG_KeyEvent, "i ii"),
@@ -884,6 +913,13 @@ static bool thunk_CG_ConsoleCommand(void) {
     VM_Call(cgame.vm, vm_CG_ConsoleCommand);
     const vm_value_t *stack = VM_Pop(cgame.vm);
     return VM_U32(0);
+}
+
+static void thunk_CG_CompleteCommand(int firstarg, int argnum) {
+    vm_value_t *stack = VM_Push(cgame.vm, 2);
+    VM_U32(0) = firstarg;
+    VM_U32(1) = argnum;
+    VM_Call(cgame.vm, vm_CG_CompleteCommand);
 }
 
 static void thunk_CG_ServerCommand(void) {
@@ -948,6 +984,10 @@ static const cgame_import_t cgame_dll_imports = {
     .GetDemoInfo = PF_GetDemoInfo,
 
     .ClientCommand = CL_ClientCommand,
+    .RegisterCommand = PF_RegisterCommand,
+
+    .SetCompletionOptions = Prompt_SetOptions,
+    .AddCommandCompletion = Prompt_AddMatch,
 
     .SetLoadState = Con_SetLoadState,
 
@@ -1059,6 +1099,7 @@ static const cgame_export_t cgame_dll_exports = {
     .DrawFrame = thunk_CG_DrawFrame,
     .ModeChanged = thunk_CG_ModeChanged,
     .ConsoleCommand = thunk_CG_ConsoleCommand,
+    .CompleteCommand = thunk_CG_CompleteCommand,
     .ServerCommand = thunk_CG_ServerCommand,
     .UpdateConfigstring = thunk_CG_UpdateConfigstring,
     .KeyEvent = thunk_CG_KeyEvent,
@@ -1090,6 +1131,9 @@ void CL_ShutdownCGame(void)
 
     // ungrab keys
     cls.key_dest &= ~KEY_GAME;
+
+    // unregister forwarded commands
+    Cmd_RemoveForwarded();
 
     VM_FreeModule(&cgame);
 }

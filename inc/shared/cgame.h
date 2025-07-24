@@ -95,6 +95,10 @@ typedef struct {
     bool (*GetDemoInfo)(cg_demo_info_t *info);
 
     void (*ClientCommand)(const char *cmd);
+    void (*RegisterCommand)(const char *cmd);
+
+    void (*SetCompletionOptions)(completion_option_t opt);
+    void (*AddCommandCompletion)(const char *s);
 
     void (*SetLoadState)(const char *state);
 
@@ -214,6 +218,7 @@ typedef struct {
     void (*DrawFrame)(unsigned msec, bool active, bool loading);
     void (*ModeChanged)(void);
     bool (*ConsoleCommand)(void);
+    void (*CompleteCommand)(int firstarg, int argnum);
     void (*ServerCommand)(void);
     void (*UpdateConfigstring)(unsigned index);
     bool (*KeyEvent)(unsigned key, bool down);

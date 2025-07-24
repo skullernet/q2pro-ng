@@ -164,9 +164,33 @@ static void SCR_Sky_f(void)
     trap_R_SetSky(name, rotate, true, axis);
 }
 
+static void CG_Say_c(int firstarg, int argnum)
+{
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        char buffer[MAX_CLIENT_NAME];
+        Q_strlcpy(buffer, cgs.clientinfo[i].name, sizeof(buffer));
+        if (COM_strclr(buffer))
+            trap_AddCommandCompletion(buffer);
+    }
+}
+
+static void CG_Item_c(int firstarg, int argnum)
+{
+    if (argnum != 1)
+        return;
+
+    trap_SetCompletionOptions(CMPL_CASELESS | CMPL_STRIPQUOTES);
+    for (int i = 0; i < MAX_ITEMS; i++) {
+        char buffer[MAX_QPATH];
+        if (trap_GetConfigstring(CS_ITEMS + i, buffer, sizeof(buffer)))
+            trap_AddCommandCompletion(buffer);
+    }
+}
+
 typedef struct {
     const char *name;
     void (*func)(void);
+    void (*comp)(int firstarg, int argnum);
 } vm_cmd_reg_t;
 
 static vm_cmd_reg_t cg_consolecmds[] = {
@@ -176,7 +200,25 @@ static vm_cmd_reg_t cg_consolecmds[] = {
     { "sizedown", SCR_SizeDown_f },
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
+
+    // forward to server commands
+    { "players" }, { "score" }, { "help" },
+    { "say", NULL, CG_Say_c }, { "say_team", NULL, CG_Say_c },
+    { "showsecrets" }, { "target" }, { "spawn" }, { "teleport" },
+    { "wave" }, { "kill" }, { "use", NULL, CG_Item_c },
+    { "drop", NULL, CG_Item_c }, { "give", NULL, CG_Item_c },
+    { "god" }, { "notarget" }, { "noclip" }, { "immortal" },
+    { "novisible" }, { "inven" }, { "invuse" }, { "invprev" },
+    { "invnext" }, { "invdrop" }, { "invnextw" }, { "invprevw" },
+    { "invnextp" }, { "invprevp" }, { "weapnext" }, { "weapprev" },
+    { "weaplast" }
 };
+
+void CG_RegisterCommands(void)
+{
+    for (int i = 0; i < q_countof(cg_consolecmds); i++)
+        trap_RegisterCommand(cg_consolecmds[i].name);
+}
 
 qvm_exported bool CG_ConsoleCommand(void)
 {
@@ -184,11 +226,30 @@ qvm_exported bool CG_ConsoleCommand(void)
     trap_Argv(0, cmd, sizeof(cmd));
 
     for (int i = 0; i < q_countof(cg_consolecmds); i++) {
-        if (!strcmp(cmd, cg_consolecmds[i].name)) {
-            cg_consolecmds[i].func();
+        const vm_cmd_reg_t *reg = &cg_consolecmds[i];
+        if (strcmp(cmd, reg->name))
+            continue;
+        if (reg->func) {
+            reg->func();
             return true;
         }
+        return false;
     }
 
     return false;
+}
+
+qvm_exported void CG_CompleteCommand(int firstarg, int argnum)
+{
+    char cmd[MAX_QPATH];
+    trap_Argv(firstarg, cmd, sizeof(cmd));
+
+    for (int i = 0; i < q_countof(cg_consolecmds); i++) {
+        const vm_cmd_reg_t *reg = &cg_consolecmds[i];
+        if (strcmp(cmd, reg->name))
+            continue;
+        if (reg->comp)
+            reg->comp(firstarg, argnum);
+        break;
+    }
 }

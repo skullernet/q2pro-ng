@@ -1753,21 +1753,6 @@ static const cmdreg_t c_client[] = {
     { "vid_restart", CL_RestartRefresh_f },
     { "r_reload", CL_ReloadRefresh_f },
 
-    //
-    // forward to server commands
-    //
-    // the only thing this does is allow command completion
-    // to work -- all unknown commands are automatically
-    // forwarded to the server
-    { "say" },
-    { "say_team" },
-
-    { "wave" }, { "inven" }, { "kill" }, { "use" },
-    { "drop" }, { "info" }, { "prog" },
-    { "give" }, { "god" }, { "notarget" }, { "noclip" },
-    { "invuse" }, { "invprev" }, { "invnext" }, { "invdrop" },
-    { "weapnext" }, { "weapprev" },
-
     { NULL }
 };
 

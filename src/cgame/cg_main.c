@@ -154,6 +154,8 @@ qvm_exported void CG_Init(void)
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
 
+    CG_RegisterCommands();
+
     SCR_Init();
     CG_InitEffects();
 }
@@ -235,6 +237,7 @@ q_exported const cgame_export_t *GetCGameAPI(const cgame_import_t *import)
         .PrepRefresh = CG_PrepRefresh,
         .ClearState = CG_ClearState,
         .ConsoleCommand = CG_ConsoleCommand,
+        .CompleteCommand = CG_CompleteCommand,
         .ServerCommand = CG_ServerCommand,
         .UpdateConfigstring = CG_UpdateConfigstring,
         .DrawFrame = CG_DrawFrame,

@@ -157,6 +157,7 @@ void Cmd_AddCommand(const char *cmd_name, xcommand_t function);
 // as a clc_stringcmd instead of executed locally
 void Cmd_Deregister(const cmdreg_t *reg);
 void Cmd_RemoveCommand(const char *cmd_name);
+void Cmd_RemoveForwarded(void);
 
 void Cmd_AddMacro(const char *name, xmacro_t function);
 
