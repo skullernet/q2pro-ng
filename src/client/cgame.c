@@ -245,7 +245,7 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     out->latency = frame->latency;
 
     memcpy(out->areabits, frame->areabits, sizeof(out->areabits));
-    out->areabytes = out->areabytes;
+    out->areabytes = frame->areabytes;
 
     out->ps = frame->ps;
 

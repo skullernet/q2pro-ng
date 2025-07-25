@@ -719,24 +719,24 @@ char *ED_NewString(const char *string)
 
 static int ED_ParseColor(const char *value)
 {
+    const char *s = value;
+    float scale = 255.0f;
     vec4_t v;
     int i, n;
 
     // parse rgba as values
-    const char *s = value;
-    for (n = 0; n < 4 && s; n++)
+    for (n = 0; n < 4; n++) {
         v[n] = Q_atof(COM_Parse(&s));
+        if (!s)
+            break;
+        if (v[n] > 1.0f)
+            scale = 1.0f;
+    }
 
     if (n < 2)
         return strtoul(value, NULL, 0); // integral
 
-    for (i = 0; i < n; i++)
-        if (v[i] > 1.0f)
-            break;
-
-    float scale = i < n ? 1.0f : 255.0f;
     int c[4] = { 0, 0, 0, 255 };
-
     for (i = 0; i < n; i++)
         c[i] = Q_clip_uint8(v[i] * scale);
 
