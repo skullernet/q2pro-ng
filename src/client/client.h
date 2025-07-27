@@ -180,11 +180,6 @@ typedef enum {
     ca_cinematic        // running a cinematic
 } connstate_t;
 
-#define FOR_EACH_DLQ(q) \
-    LIST_FOR_EACH(dlqueue_t, q, &cls.download.queue, entry)
-#define FOR_EACH_DLQ_SAFE(q, n) \
-    LIST_FOR_EACH_SAFE(dlqueue_t, q, n, &cls.download.queue, entry)
-
 typedef enum {
     // generic types
     DL_OTHER,

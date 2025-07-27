@@ -1627,7 +1627,7 @@ static image_t *lookup_image(const char *name,
     image_t *image;
 
     // look for it
-    LIST_FOR_EACH(image_t, image, &r_imageHash[hash], entry) {
+    LIST_FOR_EACH(image, &r_imageHash[hash], entry) {
         if (image->type != type)
             continue;
         if (image->baselen != baselen)

@@ -93,7 +93,7 @@ void Z_LeakTest(memtag_t tag)
     zhead_t *z;
     size_t numLeaks = 0, numBytes = 0;
 
-    LIST_FOR_EACH(zhead_t, z, &z_chain, entry) {
+    LIST_FOR_EACH(z, &z_chain, entry) {
         Z_Validate(z);
         if (z->tag == tag || (tag == TAG_FREE && z->tag >= TAG_MAX)) {
             numLeaks++;
@@ -190,7 +190,7 @@ void Z_FreeTags(memtag_t tag)
 {
     zhead_t *z, *n;
 
-    LIST_FOR_EACH_SAFE(zhead_t, z, n, &z_chain, entry) {
+    LIST_FOR_EACH_SAFE(z, n, &z_chain, entry) {
         Z_Validate(z);
         if (z->tag == tag) {
             Z_Free(z + 1);

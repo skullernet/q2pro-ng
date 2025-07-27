@@ -335,7 +335,7 @@ void PF_LinkEdict(edict_t *ent)
     else
         list = &node->solid_edicts;
 
-    LIST_FOR_EACH(server_entity_t, sort, list, area)
+    LIST_FOR_EACH(sort, list, area)
         if (sort > sent)
             break;
 
@@ -346,7 +346,7 @@ static void SV_TouchAreaEdicts(const list_t *list)
 {
     const server_entity_t *sent;
 
-    LIST_FOR_EACH(server_entity_t, sent, list, area) {
+    LIST_FOR_EACH(sent, list, area) {
         const edict_t *check = SV_EdictForNum(sent->number);
 
         if (check->r.solid == SOLID_NOT)

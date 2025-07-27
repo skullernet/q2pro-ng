@@ -515,7 +515,7 @@ static void Nav_PushOpenSet(nav_ctx_t *ctx, const nav_node_t *node, float f)
     o->f_score = f;
 
     nav_open_t *open_where;
-    LIST_FOR_EACH(nav_open_t, open_where, &ctx->open_set_head, entry)
+    LIST_FOR_EACH(open_where, &ctx->open_set_head, entry)
         if (f < open_where->f_score)
             break;
 

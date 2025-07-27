@@ -713,7 +713,7 @@ static void rescan_queue(void)
 {
     dlqueue_t   *q;
 
-    FOR_EACH_DLQ(q) {
+    LIST_FOR_EACH(q, &cls.download.queue, entry) {
         if (q->state == DL_PENDING && q->type < DL_LIST && FS_FileExists(q->path))
             CL_FinishDownload(q);
     }
@@ -731,7 +731,7 @@ static void abort_downloads(void)
     cls.download.percent = 0;
     cls.download.position = 0;
 
-    FOR_EACH_DLQ(q) {
+    LIST_FOR_EACH(q, &cls.download.queue, entry) {
         if (q->state != DL_DONE && q->type >= DL_LIST)
             CL_FinishDownload(q);
         else if (q->state == DL_RUNNING)
@@ -927,7 +927,7 @@ static void start_next_download(void)
         return;
 
     //not enough downloads running, queue some more!
-    FOR_EACH_DLQ(q) {
+    LIST_FOR_EACH(q, &cls.download.queue, entry) {
         if (q->state == DL_PENDING) {
             dlhandle_t *dl = get_free_handle();
             if (!dl)

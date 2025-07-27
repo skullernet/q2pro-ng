@@ -321,7 +321,7 @@ addrmatch_t *SV_MatchAddress(const list_t *list, const netadr_t *addr)
 {
     addrmatch_t *match;
 
-    LIST_FOR_EACH(addrmatch_t, match, list, entry) {
+    LIST_FOR_EACH(match, list, entry) {
         if (NET_IsEqualBaseAdrMask(addr, &match->addr, &match->mask)) {
             match->hits++;
             match->time = time(NULL);
@@ -908,7 +908,7 @@ static bool lrcon_validate(const char *s)
 {
     stuffcmd_t *cmd;
 
-    LIST_FOR_EACH(stuffcmd_t, cmd, &sv_lrconlist, entry)
+    LIST_FOR_EACH(cmd, &sv_lrconlist, entry)
         if (!strncmp(s, cmd->string, strlen(cmd->string)))
             return true;
 

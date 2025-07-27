@@ -158,7 +158,7 @@ void VM_CvarChanged(const cvar_t *var)
 {
     vm_module_t *mod;
 
-    LIST_FOR_EACH(vm_module_t, mod, &vm_modules, entry)
+    LIST_FOR_EACH(mod, &vm_modules, entry)
         for (int i = 0; i < mod->num_cvars; i++)
             if (mod->cvars[i].var == var)
                 VM_UpdateCvar(mod->cvars[i].vmc, var);

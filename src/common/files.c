@@ -79,12 +79,6 @@ QUAKE FILESYSTEM
 #define FS_ERR_READ(fp) \
     (ferror(fp) ? Q_ERR_FAILURE : Q_ERR_UNEXPECTED_EOF)
 
-#define FOR_EACH_SYMLINK(link, list) \
-    LIST_FOR_EACH(symlink_t, link, list, entry)
-
-#define FOR_EACH_SYMLINK_SAFE(link, next, list) \
-    LIST_FOR_EACH_SAFE(symlink_t, link, next, list, entry)
-
 #define IS_UNIQUE(file) \
     q_unlikely(!((file)->mode & FS_FLAG_LOADFILE))
 
@@ -429,7 +423,7 @@ static symlink_t *expand_links(const list_t *list, char *buffer, size_t *len_p)
     symlink_t   *link;
     size_t      namelen = *len_p;
 
-    FOR_EACH_SYMLINK(link, list) {
+    LIST_FOR_EACH(link, list, entry) {
         if (link->namelen > namelen) {
             continue;
         }
@@ -3338,7 +3332,7 @@ static void FS_Link_g(const list_t *list)
 {
     const symlink_t *link;
 
-    FOR_EACH_SYMLINK(link, list)
+    LIST_FOR_EACH(link, list, entry)
         Prompt_AddMatch(link->name);
 }
 
@@ -3356,7 +3350,7 @@ static void free_all_links(list_t *list)
 {
     symlink_t *link, *next;
 
-    FOR_EACH_SYMLINK_SAFE(link, next, list) {
+    LIST_FOR_EACH_SAFE(link, next, list, entry) {
         Z_Free(link->target);
         Z_Free(link);
     }
@@ -3404,7 +3398,7 @@ static void FS_UnLink_f(void)
         return;
     }
 
-    FOR_EACH_SYMLINK(link, list) {
+    LIST_FOR_EACH(link, list, entry) {
         if (!FS_pathcmp(link->name, name)) {
             List_Remove(&link->entry);
             Z_Free(link->target);
@@ -3433,7 +3427,7 @@ static void FS_Link_f(void)
     argc = Cmd_Argc();
     if (argc == 1) {
         count = 0;
-        FOR_EACH_SYMLINK(link, list) {
+        LIST_FOR_EACH(link, list, entry) {
             Com_Printf("%s --> %s\n", link->name, link->target);
             count++;
         }
@@ -3464,7 +3458,7 @@ static void FS_Link_f(void)
     }
 
     // search for existing link with this name
-    FOR_EACH_SYMLINK(link, list) {
+    LIST_FOR_EACH(link, list, entry) {
         if (!FS_pathcmp(link->name, name)) {
             Z_Free(link->target);
             goto update;

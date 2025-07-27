@@ -974,7 +974,7 @@ static void SV_AddMatch_f(list_t *list)
         return;
     }
 
-    LIST_FOR_EACH(addrmatch_t, match, list, entry) {
+    LIST_FOR_EACH(match, list, entry) {
         if (NET_IsEqualBaseAdr(&match->addr, &addr) &&
             NET_IsEqualBaseAdr(&match->mask, &mask)) {
             format_mask(match, buf, sizeof(buf));
@@ -1013,7 +1013,7 @@ static void SV_DelMatch_f(list_t *list)
 
     s = Cmd_Argv(1);
     if (!strcmp(s, "all")) {
-        LIST_FOR_EACH_SAFE(addrmatch_t, match, next, list, entry) {
+        LIST_FOR_EACH_SAFE(match, next, list, entry) {
             Z_Free(match);
         }
         List_Init(list);
@@ -1035,7 +1035,7 @@ static void SV_DelMatch_f(list_t *list)
         return;
     }
 
-    LIST_FOR_EACH(addrmatch_t, match, list, entry) {
+    LIST_FOR_EACH(match, list, entry) {
         if (NET_IsEqualBaseAdr(&match->addr, &addr) &&
             NET_IsEqualBaseAdr(&match->mask, &mask)) {
 remove:
@@ -1061,7 +1061,7 @@ static void SV_ListMatches_f(list_t *list)
 
     Com_Printf("id address/mask       hits last hit     comment\n"
                "-- ------------------ ---- ------------ -------\n");
-    LIST_FOR_EACH(addrmatch_t, match, list, entry) {
+    LIST_FOR_EACH(match, list, entry) {
         format_mask(match, addr, sizeof(addr));
         if (!match->time) {
             strcpy(last, "never");
@@ -1113,7 +1113,7 @@ static void SV_AddLrconCmd_f(void)
     }
 
     s = COM_StripQuotes(Cmd_RawArgsFrom(1));
-    LIST_FOR_EACH(stuffcmd_t, stuff, &sv_lrconlist, entry) {
+    LIST_FOR_EACH(stuff, &sv_lrconlist, entry) {
         if (!strcmp(stuff->string, s)) {
             Com_Printf("Lrconcmd already exists: %s\n", s);
             return;
@@ -1144,7 +1144,7 @@ static void SV_DelLrconCmd_f(void)
 
     s = COM_StripQuotes(Cmd_RawArgsFrom(1));
     if (!strcmp(s, "all")) {
-        LIST_FOR_EACH_SAFE(stuffcmd_t, stuff, next, &sv_lrconlist, entry) {
+        LIST_FOR_EACH_SAFE(stuff, next, &sv_lrconlist, entry) {
             Z_Free(stuff);
         }
         List_Init(&sv_lrconlist);
@@ -1159,7 +1159,7 @@ static void SV_DelLrconCmd_f(void)
             return;
         }
     } else {
-        LIST_FOR_EACH(stuffcmd_t, stuff, &sv_lrconlist, entry) {
+        LIST_FOR_EACH(stuff, &sv_lrconlist, entry) {
             if (!strcmp(stuff->string, s)) {
                 goto remove;
             }
@@ -1185,7 +1185,7 @@ static void SV_ListLrconCmds_f(void)
 
     Com_Printf("id command\n"
                "-- -------\n");
-    LIST_FOR_EACH(stuffcmd_t, stuff, &sv_lrconlist, entry) {
+    LIST_FOR_EACH(stuff, &sv_lrconlist, entry) {
         Com_Printf("%-2d %s\n", ++id, stuff->string);
     }
 }

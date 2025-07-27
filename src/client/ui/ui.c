@@ -183,7 +183,7 @@ menuFrameWork_t *UI_FindMenu(const char *name)
 {
     menuFrameWork_t *menu;
 
-    LIST_FOR_EACH(menuFrameWork_t, menu, &ui_menus, entry) {
+    LIST_FOR_EACH(menu, &ui_menus, entry) {
         if (!strcmp(menu->name, name)) {
             return menu;
         }
@@ -537,7 +537,7 @@ static void UI_Menu_g(void)
 {
     menuFrameWork_t *menu;
 
-    LIST_FOR_EACH(menuFrameWork_t, menu, &ui_menus, entry)
+    LIST_FOR_EACH(menu, &ui_menus, entry)
         Prompt_AddMatch(menu->name);
 }
 
@@ -598,7 +598,7 @@ static void UI_FreeMenus(void)
 {
     menuFrameWork_t *menu, *next;
 
-    LIST_FOR_EACH_SAFE(menuFrameWork_t, menu, next, &ui_menus, entry) {
+    LIST_FOR_EACH_SAFE(menu, next, &ui_menus, entry) {
         if (menu->free) {
             menu->free(menu);
         }

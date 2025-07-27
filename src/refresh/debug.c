@@ -71,7 +71,7 @@ void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32
                 List_Append(&debug_lines_free, &debug_lines[i].entry);
         } else {
             debug_line_t *next;
-            LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
+            LIST_FOR_EACH_SAFE(l, next, &debug_lines_active, entry) {
                 if (l->time <= com_localTime2) {
                     List_Remove(&l->entry);
                     List_Insert(&debug_lines_free, &l->entry);
@@ -340,7 +340,7 @@ static void R_AddDebugTextInternal(const vec3_t origin, const vec3_t angles, con
                 List_Append(&debug_texts_free, &debug_texts[i].entry);
         } else {
             debug_text_t *next;
-            LIST_FOR_EACH_SAFE(debug_text_t, t, next, &debug_texts_active, entry) {
+            LIST_FOR_EACH_SAFE(t, next, &debug_texts_active, entry) {
                 if (t->time <= com_localTime2) {
                     List_Remove(&t->entry);
                     List_Insert(&debug_texts_free, &t->entry);
@@ -432,7 +432,7 @@ static void GL_DrawDebugLines(void)
 
     dst_vert = tess.vertices;
     numverts = 0;
-    LIST_FOR_EACH_SAFE(debug_line_t, l, next, &debug_lines_active, entry) {
+    LIST_FOR_EACH_SAFE(l, next, &debug_lines_active, entry) {
         if (l->time < com_localTime2) { // expired
             List_Remove(&l->entry);
             List_Insert(&debug_lines_free, &l->entry);
@@ -570,7 +570,7 @@ static void GL_DrawDebugTexts(void)
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindArrays(VA_EFFECT);
 
-    LIST_FOR_EACH_SAFE(debug_text_t, text, next, &debug_texts_active, entry) {
+    LIST_FOR_EACH_SAFE(text, next, &debug_texts_active, entry) {
         vec3_t right, down, pos;
         const char *s, *p;
 

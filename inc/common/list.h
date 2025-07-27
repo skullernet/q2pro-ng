@@ -116,14 +116,14 @@ static inline void List_Remove(list_t *elem)
 #define LIST_PREV(type, entry, member) \
     LIST_ENTRY(type, (entry)->member.prev, member)
 
-#define LIST_FOR_EACH(type, cursor, list, member) \
-    for (cursor = LIST_FIRST(type, list, member); \
+#define LIST_FOR_EACH(cursor, list, member) \
+    for (cursor = LIST_FIRST(__typeof__(*cursor), list, member); \
          !LIST_TERM(cursor, list, member); \
-         cursor = LIST_NEXT(type, cursor, member))
+         cursor = LIST_NEXT(__typeof__(*cursor), cursor, member))
 
-#define LIST_FOR_EACH_SAFE(type, cursor, next, list, member) \
-    for (cursor = LIST_FIRST(type, list, member); \
-         next = LIST_NEXT(type, cursor, member), \
+#define LIST_FOR_EACH_SAFE(cursor, next, list, member) \
+    for (cursor = LIST_FIRST(__typeof__(*cursor), list, member); \
+         next = LIST_NEXT(__typeof__(*cursor), cursor, member), \
          !LIST_TERM(cursor, list, member); \
          cursor = next)
 

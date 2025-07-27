@@ -143,7 +143,7 @@ typedef enum {
 #define RATE_MESSAGES   10
 
 #define FOR_EACH_CLIENT(client) \
-    LIST_FOR_EACH(client_t, client, &sv_clientlist, entry)
+    LIST_FOR_EACH(client, &sv_clientlist, entry)
 
 #define CLIENT_ACTIVE(cl) \
     ((cl)->state == cs_spawned && !(cl)->nodata)

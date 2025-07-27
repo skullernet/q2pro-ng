@@ -223,11 +223,6 @@ void Cbuf_Clear(cmdbuf_t *buf)
 
 #define ALIAS_HASH_SIZE    64
 
-#define FOR_EACH_ALIAS_HASH(alias, hash) \
-    LIST_FOR_EACH(cmdalias_t, alias, &cmd_aliasHash[hash], hashEntry)
-#define FOR_EACH_ALIAS(alias) \
-    LIST_FOR_EACH(cmdalias_t, alias, &cmd_alias, listEntry)
-
 typedef struct {
     list_t  hashEntry;
     list_t  listEntry;
@@ -249,7 +244,7 @@ static cmdalias_t *Cmd_AliasFind(const char *name)
     cmdalias_t *alias;
 
     hash = Com_HashString(name, ALIAS_HASH_SIZE);
-    FOR_EACH_ALIAS_HASH(alias, hash) {
+    LIST_FOR_EACH(alias, &cmd_aliasHash[hash], hashEntry) {
         if (!strcmp(name, alias->name)) {
             return alias;
         }
@@ -299,7 +294,7 @@ void Cmd_Alias_g(void)
 {
     cmdalias_t *a;
 
-    FOR_EACH_ALIAS(a)
+    LIST_FOR_EACH(a, &cmd_alias, listEntry)
         Prompt_AddMatch(a->name);
 }
 
@@ -322,7 +317,7 @@ void Cmd_Alias_f(void)
             return;
         }
         Com_Printf("Registered alias commands:\n");
-        FOR_EACH_ALIAS(a) {
+        LIST_FOR_EACH(a, &cmd_alias, listEntry) {
             Com_Printf("\"%s\" = \"%s\"\n", a->name, a->value);
         }
         return;
@@ -373,7 +368,7 @@ static void Cmd_UnAlias_f(void)
             Cmd_PrintHelp(options);
             return;
         case 'a':
-            LIST_FOR_EACH_SAFE(cmdalias_t, a, n, &cmd_alias, listEntry) {
+            LIST_FOR_EACH_SAFE(a, n, &cmd_alias, listEntry) {
                 Z_Free(a->value);
                 Z_Free(a);
             }
@@ -413,7 +408,7 @@ void Cmd_WriteAliases(qhandle_t f)
 {
     cmdalias_t *a;
 
-    FOR_EACH_ALIAS(a) {
+    LIST_FOR_EACH(a, &cmd_alias, listEntry) {
         FS_FPrintf(f, "alias \"%s\" \"%s\"\n", a->name, a->value);
     }
 }
@@ -443,11 +438,6 @@ MESSAGE TRIGGERS
 =============================================================================
 */
 
-#define FOR_EACH_TRIGGER(trig) \
-    LIST_FOR_EACH(cmd_trigger_t, trig, &cmd_triggers, entry)
-#define FOR_EACH_TRIGGER_SAFE(trig, next) \
-    LIST_FOR_EACH_SAFE(cmd_trigger_t, trig, next, &cmd_triggers, entry)
-
 typedef struct {
     list_t  entry;
     char    *match;
@@ -460,7 +450,7 @@ static cmd_trigger_t *find_trigger(const char *command, const char *match)
 {
     cmd_trigger_t *trigger;
 
-    FOR_EACH_TRIGGER(trigger) {
+    LIST_FOR_EACH(trigger, &cmd_triggers, entry) {
         if (!strcmp(trigger->command, command) && !strcmp(trigger->match, match)) {
             return trigger;
         }
@@ -479,7 +469,7 @@ static void list_triggers(void)
     }
 
     Com_Printf("Current message triggers:\n");
-    FOR_EACH_TRIGGER(trigger) {
+    LIST_FOR_EACH(trigger, &cmd_triggers, entry) {
         Com_Printf("\"%s\" = \"%s\"\n", trigger->command, trigger->match);
     }
 }
@@ -547,7 +537,7 @@ static void Cmd_UnTrigger_f(void)
         if (!Q_stricmp(Cmd_Argv(1), "all")) {
             int count = 0;
 
-            FOR_EACH_TRIGGER_SAFE(trigger, next) {
+            LIST_FOR_EACH_SAFE(trigger, next, &cmd_triggers, entry) {
                 Z_Free(trigger);
                 count++;
             }
@@ -585,7 +575,7 @@ void Cmd_ExecTrigger(const char *string)
     char *match;
 
     // execute matching triggers
-    FOR_EACH_TRIGGER(trigger) {
+    LIST_FOR_EACH(trigger, &cmd_triggers, entry) {
         match = Cmd_MacroExpandString(trigger->match, false);
         if (match && Com_WildCmp(match, string)) {
             Cbuf_AddText(&cmd_buffer, trigger->command);
@@ -779,13 +769,6 @@ void Cmd_AddMacro(const char *name, xmacro_t function)
 */
 
 #define CMD_HASH_SIZE    128
-
-#define FOR_EACH_CMD_HASH(cmd, hash) \
-    LIST_FOR_EACH(cmd_function_t, cmd, &cmd_hash[hash], hashEntry)
-#define FOR_EACH_CMD(cmd) \
-    LIST_FOR_EACH(cmd_function_t, cmd, &cmd_functions, listEntry)
-#define FOR_EACH_CMD_SAFE(cmd, next) \
-    LIST_FOR_EACH_SAFE(cmd_function_t, cmd, next, &cmd_functions, listEntry)
 
 typedef struct {
     list_t          hashEntry;
@@ -1422,7 +1405,7 @@ static cmd_function_t *Cmd_Find(const char *name)
     unsigned hash;
 
     hash = Com_HashString(name, CMD_HASH_SIZE);
-    FOR_EACH_CMD_HASH(cmd, hash) {
+    LIST_FOR_EACH(cmd, &cmd_hash[hash], hashEntry) {
         if (!strcmp(cmd->name, name)) {
             return cmd;
         }
@@ -1436,7 +1419,7 @@ static void Cmd_LinkCommand(cmd_function_t *cmd)
     cmd_function_t *cur;
     unsigned hash;
 
-    FOR_EACH_CMD(cur)
+    LIST_FOR_EACH(cur, &cmd_functions, listEntry)
         if (strcmp(cmd->name, cur->name) < 0)
             break;
     List_Append(&cur->listEntry, &cmd->listEntry);
@@ -1502,7 +1485,7 @@ void Cmd_RemoveForwarded(void)
 {
     cmd_function_t *cmd, *next;
 
-    FOR_EACH_CMD_SAFE(cmd, next) {
+    LIST_FOR_EACH_SAFE(cmd, next, &cmd_functions, listEntry) {
         if (cmd->function)
             continue;
         List_Remove(&cmd->listEntry);
@@ -1559,7 +1542,7 @@ void Cmd_Command_g(void)
 {
     cmd_function_t *cmd;
 
-    FOR_EACH_CMD(cmd) {
+    LIST_FOR_EACH(cmd, &cmd_functions, listEntry) {
         if (COM_DEDICATED && !cmd->function)
             continue;
         Prompt_AddMatch(cmd->name);
@@ -1871,7 +1854,7 @@ static void Cmd_List_f(void)
     }
 
     i = total = 0;
-    FOR_EACH_CMD(cmd) {
+    LIST_FOR_EACH(cmd, &cmd_functions, listEntry) {
         total++;
         if (COM_DEDICATED && !cmd->function) {
             continue;

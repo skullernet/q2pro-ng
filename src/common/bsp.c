@@ -204,7 +204,7 @@ static void BSP_List_f(void)
     Com_Printf("------------------\n");
     bytes = 0;
 
-    LIST_FOR_EACH(bsp_t, bsp, &bsp_cache, entry) {
+    LIST_FOR_EACH(bsp, &bsp_cache, entry) {
         Com_Printf("%8zu : %s (%d refs)\n",
                    bsp->hunk.mapped, bsp->name, bsp->refcount);
         if (verbose)
@@ -218,7 +218,7 @@ static bsp_t *BSP_Find(const char *name)
 {
     bsp_t *bsp;
 
-    LIST_FOR_EACH(bsp_t, bsp, &bsp_cache, entry) {
+    LIST_FOR_EACH(bsp, &bsp_cache, entry) {
         if (!FS_pathcmp(bsp->name, name)) {
             return bsp;
         }

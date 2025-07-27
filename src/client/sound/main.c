@@ -642,7 +642,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     ps->begin = s_api->get_begin_ofs(timeofs);
 
     // sort into the pending sound list
-    LIST_FOR_EACH(playsound_t, sort, &s_pendingplays, entry)
+    LIST_FOR_EACH(sort, &s_pendingplays, entry)
         if (sort->begin >= ps->begin)
             break;
 
