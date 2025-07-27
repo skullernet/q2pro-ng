@@ -1218,7 +1218,7 @@ typedef struct {
 //==============================================
 
 // a SOLID_BBOX will never create this value
-#define PACKED_BSP      31
+#define PACKED_BSP      255
 
 static inline uint32_t MSG_PackSolid(const vec3_t mins, const vec3_t maxs)
 {

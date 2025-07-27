@@ -312,7 +312,7 @@ static const netfield_t entity_state_fields[] = {
     NETF(skinnum, NETF_LEB),
     NETF(effects, NETF_LEB),
     NETF(renderfx, NETF_LEB),
-    NETF(solid, 32),
+    NETF(solid, NETF_LEB),
     NETF(morefx, NETF_LEB),
     NETF(frame, NETF_LEB),
     NETF(sound, NETF_LEB),
@@ -841,7 +841,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             break;
         case NETF_LEB:
             to_v = MSG_ReadLeb32();
-            SHOWNET(3, to_v > 255 ? "%s:%#x " : "%s:%d ", f->name, to_v);
+            SHOWNET(3, to_v > 1023 ? "%s:%#x " : "%s:%d ", f->name, to_v);
             break;
         case NETF_ANGLE:
             to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(16)));
@@ -853,7 +853,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             break;
         default:
             to_v = MSG_ReadBits(f->bits);
-            SHOWNET(3, f->bits == 32 ? "%s:%#x " : "%s:%d ", f->name, to_v);
+            SHOWNET(3, "%s:%d ", f->name, to_v);
             break;
         }
 
