@@ -114,6 +114,24 @@ const char *BG_EventName(entity_event_t event)
     return "unknown";
 }
 
+bool BG_ParseSkyParams(const char *s, sky_params_t *sky)
+{
+    COM_ParseToken(&s, sky->name, sizeof(sky->name));
+    sky->rotate     = Q_atof(COM_Parse(&s));
+    sky->autorotate = Q_atoi(COM_Parse(&s));
+    sky->axis[0]    = Q_atof(COM_Parse(&s));
+    sky->axis[1]    = Q_atof(COM_Parse(&s));
+    sky->axis[2]    = Q_atof(COM_Parse(&s));
+    return s;
+}
+
+const char *BG_FormatSkyParams(const sky_params_t *sky)
+{
+    return va("\"%s\" %f %d %f %f %f",
+              sky->name, sky->rotate, sky->autorotate,
+              sky->axis[0], sky->axis[1], sky->axis[2]);
+}
+
 void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
 {
     if (a <= 0)

@@ -705,9 +705,6 @@ typedef struct {
     const char *primary_objective_title;
     const char *secondary_objective_title;
 
-    float skyrotate;
-    int skyautorotate;
-
     bool have_path_data;
 } level_locals_t;
 
@@ -1081,12 +1078,6 @@ static inline void crandom_vec(vec3_t v, float f)
     v[2] = crandom() * f;
 }
 
-// raw unsigned int32 value from random
-static inline uint32_t irandom(void)
-{
-    return Q_rand();
-}
-
 // uniform int [min, max)
 // always returns min if min == (max - 1)
 // undefined behavior if min > (max - 1)
@@ -1108,7 +1099,7 @@ static inline int irandom1(int max_exclusive)
 // flip a coin
 static inline bool brandom(void)
 {
-    return irandom() & 1;
+    return Q_rand() & 1;
 }
 
 #define random_element(array)   ((array)[irandom1(q_countof(array))])

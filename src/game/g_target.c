@@ -1677,21 +1677,25 @@ void SP_target_autosave(edict_t *self)
 
 void USE(use_target_sky)(edict_t *self, edict_t *other, edict_t *activator)
 {
+    char buffer[MAX_STRING_CHARS];
+    sky_params_t sky;
+
+    trap_GetConfigstring(CS_SKY, buffer, sizeof(buffer));
+    BG_ParseSkyParams(buffer, &sky);
+
     if (self->map)
-        trap_SetConfigstring(CS_SKY, self->map);
+        Q_strlcpy(sky.name, self->map, sizeof(sky.name));
 
-    if (self->count & 3) {
-        if (self->count & 1)
-            level.skyrotate = self->accel;
+    if (self->count & 1)
+        sky.rotate = self->accel;
 
-        if (self->count & 2)
-            level.skyautorotate = self->style;
-
-        trap_SetConfigstring(CS_SKYROTATE, va("%f %d", level.skyrotate, level.skyautorotate));
-    }
+    if (self->count & 2)
+        sky.autorotate = self->style;
 
     if (self->count & 4)
-        trap_SetConfigstring(CS_SKYAXIS, va("%f %f %f", self->movedir[0], self->movedir[1], self->movedir[2]));
+        VectorCopy(self->movedir, sky.axis);
+
+    trap_SetConfigstring(CS_SKY, BG_FormatSkyParams(&sky));
 }
 
 void SP_target_sky(edict_t *self)
@@ -1699,10 +1703,6 @@ void SP_target_sky(edict_t *self)
     self->use = use_target_sky;
     if (ED_WasKeySpecified("sky"))
         self->map = st.sky;
-    if (ED_WasKeySpecified("skyaxis")) {
-        self->count |= 4;
-        VectorCopy(st.skyaxis, self->movedir);
-    }
     if (ED_WasKeySpecified("skyrotate")) {
         self->count |= 1;
         self->accel = st.skyrotate;
@@ -1710,6 +1710,10 @@ void SP_target_sky(edict_t *self)
     if (ED_WasKeySpecified("skyautorotate")) {
         self->count |= 2;
         self->style = st.skyautorotate;
+    }
+    if (ED_WasKeySpecified("skyaxis")) {
+        self->count |= 4;
+        VectorCopy(st.skyaxis, self->movedir);
     }
 }
 

@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "cg_local.h"
-#include "shared/files.h"
 
 static const char *const sexed_sounds[SS_MAX] = {
     [SS_DEATH1]    = "death1",
@@ -252,7 +251,8 @@ static void CG_RegisterVWepModels(void)
         return;
 
     for (i = 1; i < MAX_MODELS; i++) {
-        trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
+        if (!trap_GetConfigstring(CS_MODELS + i, name, sizeof(name)))
+            break;
         if (name[0] != '#')
             continue;
 
@@ -272,22 +272,12 @@ CG_SetSky
 */
 void CG_SetSky(void)
 {
-    float       rotate = 0;
-    int         autorotate = 1;
-    vec3_t      axis;
-    char        name[MAX_QPATH];
+    char buffer[MAX_STRING_CHARS];
+    sky_params_t sky;
 
-    trap_GetConfigstring(CS_SKYROTATE, name, sizeof(name));
-    sscanf(name, "%f %d", &rotate, &autorotate);
-
-    trap_GetConfigstring(CS_SKYAXIS, name, sizeof(name));
-    if (sscanf(name, "%f %f %f", &axis[0], &axis[1], &axis[2]) != 3) {
-        Com_Printf("Couldn't parse CS_SKYAXIS\n");
-        VectorClear(axis);
-    }
-
-    trap_GetConfigstring(CS_SKY, name, sizeof(name));
-    trap_R_SetSky(name, rotate, autorotate, axis);
+    trap_GetConfigstring(CS_SKY, buffer, sizeof(buffer));
+    BG_ParseSkyParams(buffer, &sky);
+    trap_R_SetSky(sky.name, sky.rotate, sky.autorotate, sky.axis);
 }
 
 /*
@@ -327,10 +317,8 @@ void CG_RegisterMedia(void)
     trap_SetLoadState("models");
     CG_RegisterVWepModels();
     CG_RegisterTEntModels();
-
     for (i = 1; i < MAX_MODELS; i++) {
-        trap_GetConfigstring(CS_MODELS + i, name, sizeof(name));
-        if (!name[0])
+        if (!trap_GetConfigstring(CS_MODELS + i, name, sizeof(name)))
             break;
         if (name[0] == '#')
             continue;
@@ -338,36 +326,31 @@ void CG_RegisterMedia(void)
     }
 
     trap_SetLoadState("images");
+    cgs.images.flare = trap_R_RegisterSprite("misc/flare.tga");
     for (i = 1; i < MAX_IMAGES; i++) {
-        trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name));
-        if (!name[0])
+        if (!trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name)))
             break;
         cgs.images.precache[i] = CG_RegisterImage(name);
     }
-    cgs.images.flare = trap_R_RegisterSprite("misc/flare.tga");
-
-    trap_SetLoadState("clients");
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name));
-        if (!name[0])
-            continue;
-        CG_LoadClientinfo(&cgs.clientinfo[i], name);
-    }
-
-    CG_LoadClientinfo(&cgs.baseclientinfo, "unnamed\\male/grunt");
 
     trap_SetLoadState("sounds");
     CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
-        trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name));
-        if (!name[0])
+        if (!trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name)))
             break;
         cgs.sounds.precache[i] = trap_S_RegisterSound(name);
     }
 
+    trap_SetLoadState("clients");
+    CG_LoadClientinfo(&cgs.baseclientinfo, "unnamed\\male/grunt");
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (!trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name)))
+            continue;
+        CG_LoadClientinfo(&cgs.clientinfo[i], name);
+    }
+
     for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
-        trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name));
-        if (!name[0])
+        if (!trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name)))
             continue;
         CG_SetLightStyle(i, name);
     }
@@ -389,21 +372,8 @@ A configstring update has been parsed.
 */
 qvm_exported void CG_UpdateConfigstring(unsigned index)
 {
-    char s[MAX_QPATH];
-    trap_GetConfigstring(index, s, sizeof(s));
-
-    if (index == CS_MAXCLIENTS) {
-        cgs.maxclients = Q_atoi(s);
-        return;
-    }
-
-    if (index == CS_AIRACCEL) {
-        pm_config.airaccel = Q_atoi(s);
-        return;
-    }
-
-    if (index == CONFIG_PHYSICS_FLAGS) {
-        pm_config.physics_flags = Q_atoi(s);
+    if (index == CS_SKY) {
+        CG_SetSky();
         return;
     }
 
@@ -412,23 +382,41 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
-    if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
-        CG_SetLightStyle(index - CS_LIGHTS, s);
+    char s[MAX_QPATH];
+    trap_GetConfigstring(index, s, sizeof(s));
+
+    if (index == CS_CDTRACK) {
+        trap_S_StartBackgroundTrack(s);
         return;
     }
 
-    if (index >= CS_MODELS && index < CS_MODELS + MAX_MODELS) {
+    if (index == CS_AIRACCEL) {
+        pm_config.airaccel = Q_atoi(s);
+        return;
+    }
+
+    if (index == CS_MAXCLIENTS) {
+        cgs.maxclients = Q_atoi(s);
+        return;
+    }
+
+    if (index >= CS_MODELS + 1 && index < CS_MODELS + MAX_MODELS) {
         cgs.models.precache[index - CS_MODELS] = trap_R_RegisterModel(s);
         return;
     }
 
-    if (index >= CS_SOUNDS && index < CS_SOUNDS + MAX_SOUNDS) {
+    if (index >= CS_SOUNDS + 1 && index < CS_SOUNDS + MAX_SOUNDS) {
         cgs.sounds.precache[index - CS_SOUNDS] = trap_S_RegisterSound(s);
         return;
     }
 
-    if (index >= CS_IMAGES && index < CS_IMAGES + MAX_IMAGES) {
+    if (index >= CS_IMAGES + 1 && index < CS_IMAGES + MAX_IMAGES) {
         cgs.images.precache[index - CS_IMAGES] = CG_RegisterImage(s);
+        return;
+    }
+
+    if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
+        CG_SetLightStyle(index - CS_LIGHTS, s);
         return;
     }
 
@@ -437,13 +425,8 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
-    if (index == CS_CDTRACK) {
-        trap_S_StartBackgroundTrack(s);
-        return;
-    }
-
-    if (index == CS_SKYROTATE || index == CS_SKYAXIS) {
-        CG_SetSky();
+    if (index == CONFIG_PHYSICS_FLAGS) {
+        pm_config.physics_flags = Q_atoi(s);
         return;
     }
 }

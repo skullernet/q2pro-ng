@@ -1611,16 +1611,17 @@ void SP_worldspawn(edict_t *ent)
     } else
         Q_strlcpy(level.level_name, level.mapname, sizeof(level.level_name));
 
+    sky_params_t sky;
     if (st.sky && st.sky[0])
-        trap_SetConfigstring(CS_SKY, st.sky);
+        Q_strlcpy(sky.name, st.sky, sizeof(sky.name));
     else
-        trap_SetConfigstring(CS_SKY, "unit1_");
+        strcpy(sky.name, "unit1_");
 
-    trap_SetConfigstring(CS_SKYROTATE, va("%f %d", st.skyrotate, st.skyautorotate));
-    level.skyrotate = st.skyrotate;
-    level.skyautorotate = st.skyautorotate;
+    sky.rotate = st.skyrotate;
+    sky.autorotate = st.skyautorotate;
+    VectorCopy(st.skyaxis, sky.axis);
 
-    trap_SetConfigstring(CS_SKYAXIS, va("%f %f %f", st.skyaxis[0], st.skyaxis[1], st.skyaxis[2]));
+    trap_SetConfigstring(CS_SKY, BG_FormatSkyParams(&sky));
 
     if (st.music && st.music[0])
         trap_SetConfigstring(CS_CDTRACK, st.music);

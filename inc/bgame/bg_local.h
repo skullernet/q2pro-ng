@@ -40,12 +40,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CS_NAME             0       // server and game both reference!!!
 #define CS_CDTRACK          1
 #define CS_SKY              2
-#define CS_SKYAXIS          3       // %f %f %f format
-#define CS_SKYROTATE        4
-#define CS_STATUSBAR        5       // display program string
-#define CS_AIRACCEL         6
-#define CS_MAXCLIENTS       7
-#define CS_MODELS           8
+#define CS_STATUSBAR        3       // display program string
+#define CS_AIRACCEL         4
+#define CS_MAXCLIENTS       5
+#define CS_MODELS           6
 #define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
 #define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
 #define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
@@ -388,6 +386,16 @@ typedef enum {
     // [Paril-KEX]
     STAT_HEALTH_BARS, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
 } stat_index_t;
+
+typedef struct {
+    char        name[MAX_QPATH];
+    float       rotate;
+    bool        autorotate;
+    vec3_t      axis;
+} sky_params_t;
+
+bool BG_ParseSkyParams(const char *s, sky_params_t *sky);
+const char *BG_FormatSkyParams(const sky_params_t *sky);
 
 //==============================================
 

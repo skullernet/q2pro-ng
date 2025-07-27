@@ -550,8 +550,6 @@ static const save_field_t level_locals_t_fields[] = {
     L(primary_objective_title),
     L(secondary_objective_title),
 
-    F(skyrotate),
-    I(skyautorotate),
 #undef _OFS
     { 0 }
 };
