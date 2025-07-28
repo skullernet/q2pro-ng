@@ -1448,7 +1448,7 @@ void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_target_light(edict_t *self)
 {
-    self->s.modelindex = 1;
+    self->s.modelindex = MODELINDEX_DUMMY;
     self->s.renderfx = RF_CUSTOM_LIGHT;
     self->s.frame = st.radius ? st.radius : 150;
     self->count = self->s.skinnum;

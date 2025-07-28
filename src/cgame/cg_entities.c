@@ -670,11 +670,6 @@ static void CG_AddPacketEntities(void)
                 goto skip;
         }
 
-        if (s1->morefx & EFX_STEAM)
-            goto skip;
-        if ((renderfx & RF_BEAM_TEMP) == RF_BEAM_TEMP)
-            goto skip;
-
         // create a new entity
         if (renderfx & RF_FLARE) {
             if (!cg_flares.integer)

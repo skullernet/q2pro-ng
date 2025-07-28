@@ -1081,7 +1081,6 @@ typedef struct {
 #define RF_FLARE_LOCK_ANGLE RF_MINLIGHT
 #define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
 //KEX
-#define RF_BEAM_TEMP        (RF_BEAM | RF_MINLIGHT)
 
 // player_state_t->refdef flags
 #define RDF_NONE            0U

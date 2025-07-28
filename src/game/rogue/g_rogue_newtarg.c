@@ -31,7 +31,6 @@ Creates a steam effect (particles w/ velocity in a line).
 void THINK(target_steam_think)(edict_t *self)
 {
     self->s.morefx = EFX_NONE;
-    self->s.modelindex = 0;
 }
 
 void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
@@ -57,7 +56,6 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
 
     self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, DirToByte(self->movedir));
     self->s.morefx = EFX_STEAM;
-    self->s.modelindex = MODELINDEX_DUMMY;
 
     self->nextthink = level.time + SEC(self->wait);
     self->think = target_steam_think;

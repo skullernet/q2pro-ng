@@ -467,8 +467,11 @@ void SV_PrintMiscInfo(void);
 // sv_ents.c
 //
 
-#define HAS_EFFECTS(ent) \
-    ((ent)->s.modelindex || (ent)->s.effects || (ent)->s.sound || (ent)->s.event[0])
+static inline bool SV_EntityHasEffects(const edict_t *ent)
+{
+    return ent->s.modelindex || ent->s.effects ||
+        ent->s.morefx || ent->s.sound || ent->s.event[0];
+}
 
 void SV_BuildClientFrame(client_t *client);
 void SV_WriteFrameToClient(client_t *client);

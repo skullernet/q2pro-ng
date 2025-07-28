@@ -1875,7 +1875,7 @@ void USE(misc_flare_use)(edict_t *ent, edict_t *other, edict_t *activator)
 
 void SP_misc_flare(edict_t *ent)
 {
-    ent->s.modelindex = 1;
+    ent->s.modelindex = MODELINDEX_DUMMY;
     ent->s.renderfx = RF_FLARE;
     ent->r.solid = SOLID_NOT;
     ent->s.scale = st.radius;

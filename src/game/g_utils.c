@@ -744,7 +744,7 @@ edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->s.renderfx = RF_BEAM_TEMP;
+    ent->s.renderfx = RF_BEAM;
     G_SnapVector(start, ent->s.old_origin);
     G_SnapVector(end, ent->s.origin);
     ent->s.event[0] = event;

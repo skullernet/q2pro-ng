@@ -68,7 +68,7 @@ static void SV_CreateBaselines(void)
             continue;
         }
 
-        if (!HAS_EFFECTS(ent)) {
+        if (!SV_EntityHasEffects(ent)) {
             continue;
         }
 

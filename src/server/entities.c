@@ -290,7 +290,7 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore ents without visible models unless they have an effect
-        if (!HAS_EFFECTS(ent))
+        if (!SV_EntityHasEffects(ent))
             continue;
 
         // ignore if not touching a PV leaf
