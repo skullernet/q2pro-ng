@@ -7,10 +7,7 @@
 // ROGUE
 void USE(misc_nuke_core_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    if (self->r.svflags & SVF_NOCLIENT)
-        self->r.svflags &= ~SVF_NOCLIENT;
-    else
-        self->r.svflags |= SVF_NOCLIENT;
+    self->r.svflags ^= SVF_NOCLIENT;
 }
 
 /*QUAKED misc_nuke_core (1 0 0) (-16 -16 -16) (16 16 16)

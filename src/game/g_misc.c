@@ -1871,7 +1871,6 @@ Creates a flare seen in the N64 version.
 void USE(misc_flare_use)(edict_t *ent, edict_t *other, edict_t *activator)
 {
     ent->r.svflags ^= SVF_NOCLIENT;
-    trap_LinkEntity(ent);
 }
 
 void SP_misc_flare(edict_t *ent)
