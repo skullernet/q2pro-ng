@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
-static const centity_t *get_player_entity(void)
+static const centity_t *CG_GetPlayerEntity(void)
 {
     const centity_t *ent = &cg_entities[cg.frame->ps.clientnum];
 
@@ -30,26 +30,6 @@ static const centity_t *get_player_entity(void)
         return NULL;
 
     return ent;
-}
-
-static int shell_effect_hack(const centity_t *ent)
-{
-    int flags = 0;
-
-    if (ent->current.effects & EF_PENT)
-        flags |= RF_SHELL_RED;
-    if (ent->current.effects & EF_QUAD)
-        flags |= RF_SHELL_BLUE;
-    if (ent->current.effects & EF_DOUBLE)
-        flags |= RF_SHELL_DOUBLE;
-    if (ent->current.effects & EF_HALF_DAMAGE)
-        flags |= RF_SHELL_HALF_DAM;
-    if (ent->current.morefx & EFX_DUALFIRE)
-        flags |= RF_SHELL_LITE_GREEN;
-    if (ent->current.effects & EF_COLOR_SHELL)
-        flags |= ent->current.renderfx & RF_SHELL_MASK;
-
-    return flags;
 }
 
 /*
@@ -160,7 +140,7 @@ static void CG_AddViewWeapon(void)
     gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
     gun.alpha = Q_clipf(cg_gunalpha.value, 0.1f, 1.0f);
 
-    ent = get_player_entity();
+    ent = CG_GetPlayerEntity();
 
     // add alpha from cvar or player entity
     if (ent && gun.alpha == 1.0f)
@@ -172,7 +152,7 @@ static void CG_AddViewWeapon(void)
     trap_R_AddEntity(&gun);
 
     // add shell effect from player entity
-    if (ent && (flags = shell_effect_hack(ent))) {
+    if (ent && (flags = CG_EntityShellEffect(&ent->current))) {
         gun.alpha *= 0.30f;
         gun.flags |= flags | RF_TRANSLUCENT;
         trap_R_AddEntity(&gun);
@@ -405,7 +385,7 @@ static void CG_SetupThirdPersionView(void)
 
 static void CG_FinishViewValues(void)
 {
-    if (cg_thirdperson.integer && get_player_entity())
+    if (cg_thirdperson.integer && CG_GetPlayerEntity())
         CG_SetupThirdPersionView();
     else
         CG_SetupFirstPersonView();

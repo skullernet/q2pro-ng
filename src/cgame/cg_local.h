@@ -449,12 +449,15 @@ void CG_UpdateConfigstring(unsigned index);
                          EF_TRACKERTRAIL | EF_TRACKER | EF_GREENGIB | EF_IONRIPPER | \
                          EF_BLUEHYPERBLASTER | EF_PLASMA)
 
+#define EF_SHELL_MASK   (EF_COLOR_SHELL | EF_PENT | EF_QUAD | EF_DOUBLE | EF_HALF_DAMAGE)
+
 #define IS_TRACKER(effects) \
     (((effects) & (EF_TRACKERTRAIL | EF_TRACKER)) == EF_TRACKERTRAIL)
 
 void CG_DeltaFrame(void);
 void CG_AddEntities(void);
 float CG_LerpEntityAlpha(const centity_t *ent);
+int CG_EntityShellEffect(const entity_state_t *s);
 
 //
 // cg_view.c

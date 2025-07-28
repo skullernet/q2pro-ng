@@ -503,6 +503,60 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
     trap_S_AddLoopingSound(ent->number, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, !(channel & CHAN_NO_STEREO));
 }
 
+int CG_EntityShellEffect(const entity_state_t *s)
+{
+    int renderfx = 0;
+
+    if (s->effects & EF_PENT)
+        renderfx |= RF_SHELL_RED;
+
+    if (s->effects & EF_QUAD)
+        renderfx |= RF_SHELL_BLUE;
+
+    if (s->effects & EF_DOUBLE)
+        renderfx |= RF_SHELL_DOUBLE;
+
+    if (s->effects & EF_HALF_DAMAGE)
+        renderfx |= RF_SHELL_HALF_DAM;
+
+    if (s->morefx & EFX_DUALFIRE)
+        renderfx |= RF_SHELL_LITE_GREEN;
+
+    if (s->effects & EF_COLOR_SHELL)
+        renderfx |= s->renderfx & RF_SHELL_MASK;
+
+    // PMM - at this point, all of the shells have been handled
+    // if we're in the rogue pack, set up the custom mixing, otherwise just
+    // keep going
+
+    // all of the solo colors are fine.  we need to catch any of the combinations that look bad
+    // (double & half) and turn them into the appropriate color, and make double/quad something special
+    if (renderfx & RF_SHELL_HALF_DAM) {
+        // ditch the half damage shell if any of red, blue, or double are on
+        if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_DOUBLE))
+            renderfx &= ~RF_SHELL_HALF_DAM;
+    }
+
+    if (renderfx & RF_SHELL_DOUBLE) {
+        // lose the yellow shell if we have a red, blue, or green shell
+        if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_GREEN))
+            renderfx &= ~RF_SHELL_DOUBLE;
+        // if we have a red shell, turn it to purple by adding blue
+        if (renderfx & RF_SHELL_RED)
+            renderfx |= RF_SHELL_BLUE;
+        // if we have a blue shell (and not a red shell), turn it to cyan by adding green
+        else if (renderfx & RF_SHELL_BLUE) {
+            // go to green if it's on already, otherwise do cyan (flash green)
+            if (renderfx & RF_SHELL_GREEN)
+                renderfx &= ~RF_SHELL_BLUE;
+            else
+                renderfx |= RF_SHELL_GREEN;
+        }
+    }
+
+    return renderfx;
+}
+
 /*
 ===============
 CG_AddPacketEntities
@@ -555,36 +609,6 @@ static void CG_AddPacketEntities(void)
             ent.frame = cg.time / 100;
         else
             ent.frame = s1->frame;
-
-        // quad and pent can do different things on client
-        if (effects & EF_PENT) {
-            effects &= ~EF_PENT;
-            effects |= EF_COLOR_SHELL;
-            renderfx |= RF_SHELL_RED;
-        }
-
-        if (effects & EF_QUAD) {
-            effects &= ~EF_QUAD;
-            effects |= EF_COLOR_SHELL;
-            renderfx |= RF_SHELL_BLUE;
-        }
-
-        if (effects & EF_DOUBLE) {
-            effects &= ~EF_DOUBLE;
-            effects |= EF_COLOR_SHELL;
-            renderfx |= RF_SHELL_DOUBLE;
-        }
-
-        if (effects & EF_HALF_DAMAGE) {
-            effects &= ~EF_HALF_DAMAGE;
-            effects |= EF_COLOR_SHELL;
-            renderfx |= RF_SHELL_HALF_DAM;
-        }
-
-        if (s1->morefx & EFX_DUALFIRE) {
-            effects |= EF_COLOR_SHELL;
-            renderfx |= RF_SHELL_LITE_GREEN;
-        }
 
         // optionally remove the glowing effect
         if (cg_noglow.integer && !(renderfx & RF_BEAM))
@@ -745,10 +769,7 @@ static void CG_AddPacketEntities(void)
             ent.alpha = 0.70f;
 
         // render effects (fullbright, translucent, etc)
-        if (effects & EF_COLOR_SHELL)
-            ent.flags = 0;  // renderfx go on color shell entity
-        else
-            ent.flags = renderfx;
+        ent.flags = renderfx;
 
         // calculate angles
         if (effects & EF_ROTATE) {  // some bonus items auto-rotate
@@ -871,38 +892,8 @@ static void CG_AddPacketEntities(void)
         trap_R_AddEntity(&ent);
 
         // color shells generate a separate entity for the main model
-        if (effects & EF_COLOR_SHELL) {
-            // PMM - at this point, all of the shells have been handled
-            // if we're in the rogue pack, set up the custom mixing, otherwise just
-            // keep going
-#if 0
-            if (!strcmp(fs_game->string, "rogue")) {
-                // all of the solo colors are fine.  we need to catch any of the combinations that look bad
-                // (double & half) and turn them into the appropriate color, and make double/quad something special
-                if (renderfx & RF_SHELL_HALF_DAM) {
-                    // ditch the half damage shell if any of red, blue, or double are on
-                    if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_DOUBLE))
-                        renderfx &= ~RF_SHELL_HALF_DAM;
-                }
-
-                if (renderfx & RF_SHELL_DOUBLE) {
-                    // lose the yellow shell if we have a red, blue, or green shell
-                    if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_GREEN))
-                        renderfx &= ~RF_SHELL_DOUBLE;
-                    // if we have a red shell, turn it to purple by adding blue
-                    if (renderfx & RF_SHELL_RED)
-                        renderfx |= RF_SHELL_BLUE;
-                    // if we have a blue shell (and not a red shell), turn it to cyan by adding green
-                    else if (renderfx & RF_SHELL_BLUE) {
-                        // go to green if it's on already, otherwise do cyan (flash green)
-                        if (renderfx & RF_SHELL_GREEN)
-                            renderfx &= ~RF_SHELL_BLUE;
-                        else
-                            renderfx |= RF_SHELL_GREEN;
-                    }
-                }
-            }
-#endif
+        if ((effects & EF_SHELL_MASK) || (s1->morefx & EFX_DUALFIRE)) {
+            renderfx |= CG_EntityShellEffect(s1);
             ent.flags = renderfx | RF_TRANSLUCENT;
             ent.alpha = custom_alpha * 0.30f;
             trap_R_AddEntity(&ent);
