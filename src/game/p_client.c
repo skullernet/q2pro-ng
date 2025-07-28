@@ -1711,7 +1711,7 @@ void P_AssignClientSkinnum(edict_t *ent)
     int vwep_index = 0;
     const gitem_t *item = ent->client->pers.weapon;
     if (item)
-        vwep_index = G_ModelIndex(item->vwep_model) - level.vwep_offset + 1;
+        vwep_index = trap_FindConfigstring(item->vwep_model, CS_CLIENTWEAPONS, MAX_CLIENTWEAPONS, false);
 
     ent->s.skinnum = client_num | (vwep_index << 8);
 }

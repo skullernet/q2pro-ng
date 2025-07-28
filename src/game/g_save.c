@@ -533,8 +533,6 @@ static const save_field_t level_locals_t_fields[] = {
     L(goals),
     I(goal_num),
 
-    I(vwep_offset),
-
     L(start_items),
     O(no_grapple),
 

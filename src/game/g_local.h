@@ -667,10 +667,6 @@ typedef struct {
     const char *goals; // NULL if no goals in world
     int goal_num; // current relative goal number, increased with each target_goal
 
-    // offset for the first vwep model, for
-    // skinnum encoding
-    int vwep_offset;
-
     // coop health scaling factor;
     // this percentage of health is added
     // to the monster's health per player.

@@ -1523,7 +1523,7 @@ const gitem_t itemlist[] = {
         .pickup_name_definite = "the Grapple",
         .chain = IT_WEAPON_CHAINFIST,
         .flags = IF_WEAPON | IF_NO_HASTE | IF_POWERUP_WHEEL | IF_NOT_RANDOM,
-        .vwep_model = "#w_grapple.md2",
+        .vwep_model = "w_grapple.md2",
         .precaches = "weapons/grapple/grfire.wav weapons/grapple/grpull.wav weapons/grapple/grhang.wav weapons/grapple/grreset.wav weapons/grapple/grhit.wav weapons/grapple/grfly.wav"
     },
 
@@ -1546,7 +1546,7 @@ const gitem_t itemlist[] = {
         .pickup_name_definite = "the Blaster",
         .chain = IT_WEAPON_GRAPPLE,
         .flags = IF_WEAPON | IF_STAY_COOP | IF_NOT_RANDOM,
-        .vwep_model = "#w_blaster.md2",
+        .vwep_model = "w_blaster.md2",
         .precaches = "models/objects/laser/tris.md2 weapons/blastf1a.wav misc/lasfly.wav"
     },
 
@@ -1569,7 +1569,7 @@ const gitem_t itemlist[] = {
         .pickup_name_definite = "the Chainfist",
         .chain = IT_WEAPON_BLASTER,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_chainfist.md2",
+        .vwep_model = "w_chainfist.md2",
         .precaches = "weapons/sawidle.wav weapons/sawhit.wav weapons/sawslice.wav",
     },
 
@@ -1595,7 +1595,7 @@ const gitem_t itemlist[] = {
         .quantity = 1,
         .ammo = IT_AMMO_SHELLS,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_shotgun.md2",
+        .vwep_model = "w_shotgun.md2",
         .precaches = "weapons/shotgf1b.wav weapons/shotgr1b.wav"
     },
 
@@ -1619,7 +1619,7 @@ const gitem_t itemlist[] = {
         .quantity = 2,
         .ammo = IT_AMMO_SHELLS,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_sshotgun.md2",
+        .vwep_model = "w_sshotgun.md2",
         .precaches = "weapons/sshotf1b.wav",
         .quantity_warn = 10
     },
@@ -1645,7 +1645,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_BULLETS,
         .chain = IT_WEAPON_ETF_RIFLE,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_machinegun.md2",
+        .vwep_model = "w_machinegun.md2",
         .precaches = "weapons/machgf1b.wav weapons/machgf2b.wav weapons/machgf3b.wav weapons/machgf4b.wav weapons/machgf5b.wav",
         .quantity_warn = 30
     },
@@ -1672,7 +1672,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_FLECHETTES,
         .chain = IT_WEAPON_MACHINEGUN,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_etfrifle.md2",
+        .vwep_model = "w_etfrifle.md2",
         .precaches = "weapons/nail1.wav models/proj/flechette/tris.md2",
         .quantity_warn = 30
     },
@@ -1698,7 +1698,7 @@ const gitem_t itemlist[] = {
         .quantity = 1,
         .ammo = IT_AMMO_BULLETS,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_chaingun.md2",
+        .vwep_model = "w_chaingun.md2",
         .precaches = "weapons/machgf1b.wav weapons/machgf2b.wav weapons/machgf3b.wav weapons/machgf4b.wav weapons/machgf5b.wav weapons/chngnu1a.wav weapons/chngnl1a.wav weapons/chngnd1a.wav",
         .quantity_warn = 60
     },
@@ -1723,7 +1723,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_GRENADES,
         .chain = IT_AMMO_TRAP,
         .flags = IF_AMMO | IF_WEAPON,
-        .vwep_model = "#a_grenades.md2",
+        .vwep_model = "a_grenades.md2",
         .tag = AMMO_GRENADES,
         .precaches = "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav models/objects/grenade3/tris.md2",
         .quantity_warn = 2
@@ -1751,7 +1751,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_TRAP,
         .chain = IT_AMMO_TESLA,
         .flags = IF_AMMO | IF_WEAPON | IF_NO_INFINITE_AMMO,
-        .vwep_model = "#a_trap.md2",
+        .vwep_model = "a_trap.md2",
         .tag = AMMO_TRAP,
         .precaches = "misc/fhit3.wav weapons/trapcock.wav weapons/traploop.wav weapons/trapsuck.wav weapons/trapdown.wav items/s_health.wav items/n_health.wav items/l_health.wav items/m_health.wav models/weapons/z_trap/tris.md2",
         .quantity_warn = 1
@@ -1778,7 +1778,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_TESLA,
         .chain = IT_AMMO_GRENADES,
         .flags = IF_AMMO | IF_WEAPON | IF_NO_INFINITE_AMMO,
-        .vwep_model = "#a_tesla.md2",
+        .vwep_model = "a_tesla.md2",
         .tag = AMMO_TESLA,
         .precaches = "weapons/teslaopen.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav models/weapons/g_tesla/tris.md2",
         .quantity_warn = 1
@@ -1807,7 +1807,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_GRENADES,
         .chain = IT_WEAPON_PROXLAUNCHER,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_glauncher.md2",
+        .vwep_model = "w_glauncher.md2",
         .precaches = "models/objects/grenade4/tris.md2 weapons/grenlf1a.wav weapons/grenlr1b.wav weapons/grenlb1b.wav"
     },
 
@@ -1833,7 +1833,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_PROX,
         .chain = IT_WEAPON_GLAUNCHER,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_plauncher.md2",
+        .vwep_model = "w_plauncher.md2",
         .tag = AMMO_PROX,
         .precaches = "weapons/grenlf1a.wav weapons/grenlr1b.wav weapons/grenlb1b.wav weapons/proxlr1a.wav weapons/proxwarn.wav weapons/proxopen.wav",
     },
@@ -1859,7 +1859,7 @@ const gitem_t itemlist[] = {
         .quantity = 1,
         .ammo = IT_AMMO_ROCKETS,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_rlauncher.md2",
+        .vwep_model = "w_rlauncher.md2",
         .precaches = "models/objects/rocket/tris.md2 weapons/rockfly.wav weapons/rocklf1a.wav weapons/rocklr1b.wav models/objects/debris2/tris.md2"
     },
 
@@ -1884,7 +1884,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_CELLS,
         .chain = IT_WEAPON_IONRIPPER,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_hyperblaster.md2",
+        .vwep_model = "w_hyperblaster.md2",
         .precaches = "models/objects/laser/tris.md2 weapons/hyprbu1a.wav weapons/hyprbl1a.wav weapons/hyprbf1a.wav weapons/hyprbd1a.wav misc/lasfly.wav",
         .quantity_warn = 30
     },
@@ -1911,7 +1911,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_CELLS,
         .chain = IT_WEAPON_PLASMABEAM,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_ripper.md2",
+        .vwep_model = "w_ripper.md2",
         .precaches = "weapons/rippfire.wav models/objects/boomrang/tris.md2 misc/lasfly.wav",
         .quantity_warn = 30
     },
@@ -1939,7 +1939,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_CELLS,
         .chain = IT_WEAPON_HYPERBLASTER,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_plasma.md2",
+        .vwep_model = "w_plasma.md2",
         .precaches = "weapons/bfg__l1a.wav",
         .quantity_warn = 50
     },
@@ -1966,7 +1966,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_SLUGS,
         .chain = IT_WEAPON_PHALANX,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_railgun.md2",
+        .vwep_model = "w_railgun.md2",
         .precaches = "weapons/rg_hum.wav"
     },
 
@@ -1992,7 +1992,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_MAGSLUG,
         .chain = IT_WEAPON_RAILGUN,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_phalanx.md2",
+        .vwep_model = "w_phalanx.md2",
         .precaches = "weapons/phaloop.wav weapons/plasshot.wav sprites/s_photon.sp2 weapons/rockfly.wav"
     },
 // RAFAEL
@@ -2018,7 +2018,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_CELLS,
         .chain = IT_WEAPON_DISRUPTOR,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_bfg.md2",
+        .vwep_model = "w_bfg.md2",
         .precaches = "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__f1y.wav weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav",
         .quantity_warn = 50
     },
@@ -2046,7 +2046,7 @@ const gitem_t itemlist[] = {
         .ammo = IT_AMMO_ROUNDS,
         .chain = IT_WEAPON_BFG,
         .flags = IF_WEAPON | IF_STAY_COOP,
-        .vwep_model = "#w_disrupt.md2",
+        .vwep_model = "w_disrupt.md2",
         .precaches = "models/proj/disintegrator/tris.md2 weapons/disrupt.wav weapons/disint2.wav weapons/disrupthit.wav",
     },
     // ROGUE WEAPONS

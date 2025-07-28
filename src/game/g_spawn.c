@@ -1726,17 +1726,12 @@ void SP_worldspawn(edict_t *ent)
     G_SoundIndex("items/respawn1.wav");
     G_SoundIndex("misc/mon_power2.wav");
 
-    // sexed models
+    // weapon models
+    trap_SetConfigstring(CS_CLIENTWEAPONS, "weapon.md2");   // 0 is default weapon model
     for (item_id_t id = IT_NULL; id < IT_TOTAL; id++) {
         const gitem_t *item = &itemlist[id];
-
-        if (!item->vwep_model)
-            continue;
-
-        int model = G_ModelIndex(item->vwep_model);
-
-        if (!level.vwep_offset)
-            level.vwep_offset = model;
+        if (item->vwep_model)
+            trap_FindConfigstring(item->vwep_model, CS_CLIENTWEAPONS, MAX_CLIENTWEAPONS, true);
     }
 
     //-------------------

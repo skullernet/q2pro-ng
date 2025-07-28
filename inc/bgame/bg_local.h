@@ -35,6 +35,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // Each config string can be at most MAX_QPATH characters.
 //
 #define MAX_ITEMS           256
+#define MAX_CLIENTWEAPONS   256     // PGM -- upped from 16 to fit the chainfist vwep
 #define MAX_GENERAL         512     // general config strings
 
 #define CS_NAME             0       // server and game both reference!!!
@@ -48,7 +49,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
 #define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
 #define CS_ITEMS            (CS_LIGHTS + MAX_LIGHTSTYLES)
-#define CS_PLAYERSKINS      (CS_ITEMS + MAX_ITEMS)
+#define CS_CLIENTWEAPONS    (CS_ITEMS + MAX_ITEMS)
+#define CS_PLAYERSKINS      (CS_CLIENTWEAPONS + MAX_CLIENTWEAPONS)
 #define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
 #define CS_END              (CS_GENERAL + MAX_GENERAL)
 

@@ -164,8 +164,6 @@ typedef struct {
 
 extern cgame_state_t    cg;
 
-#define MAX_CLIENTWEAPONMODELS      256     // PGM -- upped from 16 to fit the chainfist vwep
-
 typedef enum {
     SS_DEATH1,
     SS_DEATH2,
@@ -196,7 +194,7 @@ typedef struct {
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
     qhandle_t   model;
-    qhandle_t   weaponmodel[MAX_CLIENTWEAPONMODELS];
+    qhandle_t   weaponmodel[MAX_CLIENTWEAPONS];
     qhandle_t   sounds[SS_MAX];
 } clientinfo_t;
 
@@ -286,9 +284,6 @@ typedef struct {
 
     clientinfo_t    clientinfo[MAX_CLIENTS];
     clientinfo_t    baseclientinfo;
-
-    char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
-    int     numWeaponModels;
 
     cg_sounds_t     sounds;
     cg_models_t     models;

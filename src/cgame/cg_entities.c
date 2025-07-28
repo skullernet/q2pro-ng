@@ -727,7 +727,7 @@ static void CG_AddPacketEntities(void)
             } else if (s1->modelindex == MODELINDEX_PLAYER) {
                 // use custom player skin
                 ent.skinnum = 0;
-                ci = &cgs.clientinfo[s1->skinnum & 0xff];
+                ci = &cgs.clientinfo[s1->skinnum & (MAX_CLIENTS - 1)];
                 ent.skin = ci->skin;
                 ent.model = ci->model;
                 if (!ent.skin || !ent.model) {
@@ -931,10 +931,8 @@ static void CG_AddPacketEntities(void)
         if (s1->modelindex2) {
             if (s1->modelindex2 == MODELINDEX_PLAYER) {
                 // custom weapon
-                ci = &cgs.clientinfo[s1->skinnum & 0xff];
-                i = (s1->skinnum >> 8) & 0xff; // 0 is default weapon model
-                if (i >= cgs.numWeaponModels)
-                    i = 0;
+                ci = &cgs.clientinfo[s1->skinnum & (MAX_CLIENTS - 1)];
+                i = (s1->skinnum >> 8) & (MAX_CLIENTWEAPONS - 1); // 0 is default weapon model
                 ent.model = ci->weaponmodel[i];
                 if (!ent.model) {
                     if (i != 0)

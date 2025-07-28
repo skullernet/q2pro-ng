@@ -192,16 +192,22 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     }
 
     // weapon file
-    for (i = 0; i < cgs.numWeaponModels; i++) {
+    for (i = 0; i < MAX_CLIENTWEAPONS; i++) {
+        char name[MAX_QPATH];
+        if (!trap_GetConfigstring(CS_CLIENTWEAPONS + i, name, sizeof(name)))
+            break;
         Q_concat(weapon_filename, sizeof(weapon_filename),
-                 "players/", model_name, "/", cgs.weaponModels[i]);
+                 "players/", model_name, "/", name);
         ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
             Q_concat(weapon_filename, sizeof(weapon_filename),
-                     "players/male/", cgs.weaponModels[i]);
+                     "players/male/", name);
             ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
         }
+        // only default model when vwep is off
+        if (!cg_vwep.integer)
+            break;
     }
 
     // icon file
@@ -228,39 +234,6 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
         ci->weaponmodel[0] = 0;
         ci->model_name[0] = 0;
         ci->skin_name[0] = 0;
-    }
-}
-
-/*
-=================
-CG_RegisterVWepModels
-
-Builds a list of visual weapon models
-=================
-*/
-static void CG_RegisterVWepModels(void)
-{
-    int     i;
-    char    name[MAX_QPATH];
-
-    cgs.numWeaponModels = 1;
-    strcpy(cgs.weaponModels[0], "weapon.md2");
-
-    // only default model when vwep is off
-    if (!cg_vwep.integer)
-        return;
-
-    for (i = 1; i < MAX_MODELS; i++) {
-        if (!trap_GetConfigstring(CS_MODELS + i, name, sizeof(name)))
-            break;
-        if (name[0] != '#')
-            continue;
-
-        // special player weapon model
-        Q_strlcpy(cgs.weaponModels[cgs.numWeaponModels++], name + 1, sizeof(cgs.weaponModels[0]));
-
-        if (cgs.numWeaponModels == MAX_CLIENTWEAPONMODELS)
-            break;
     }
 }
 
@@ -315,13 +288,10 @@ void CG_RegisterMedia(void)
     char    name[MAX_QPATH];
 
     trap_SetLoadState("models");
-    CG_RegisterVWepModels();
     CG_RegisterTEntModels();
     for (i = 1; i < MAX_MODELS; i++) {
         if (!trap_GetConfigstring(CS_MODELS + i, name, sizeof(name)))
             break;
-        if (name[0] == '#')
-            continue;
         cgs.models.precache[i] = trap_R_RegisterModel(name);
     }
 
