@@ -68,6 +68,15 @@ Finally, invoke build command:
 
 To enable verbose output during the build, use `meson compile -C builddir -v`.
 
+Building QVMs
+-------------
+
+For building WASM-based Quake Virtual Machine (QVM) modules Clang 19 or higher
+is required. Run `wasm.sh` shell script from the root of source tree to build.
+
+Additionally, `binaryen` package can be installed to run some automatic
+optimization passes on generated QVMs (but benefits of this are marginal at
+best).
 
 Installation
 ------------
