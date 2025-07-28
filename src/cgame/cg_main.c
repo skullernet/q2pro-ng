@@ -47,7 +47,6 @@ vm_cvar_t   cg_skip_view_modifiers;
 vm_cvar_t   cg_rollhack;
 vm_cvar_t   cg_noglow;
 vm_cvar_t   cg_nobob;
-vm_cvar_t   cg_nolerp;
 #if USE_DEBUG
 vm_cvar_t   cg_showmiss;
 vm_cvar_t   cg_showclamp;
@@ -104,7 +103,6 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_rollhack, "1", 0),
     VM_CVAR(cg_noglow, "0", 0),
     VM_CVAR(cg_nobob, "0", 0),
-    VM_CVAR(cg_nolerp, "0", 0),
 #if USE_DEBUG
     VM_CVAR(cg_showmiss, "0", 0),
     VM_CVAR(cg_showclamp, "0", 0),

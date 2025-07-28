@@ -84,11 +84,12 @@ static void SV_CreateBaselines(void)
         if (i < svs.maxclients) {
             VectorClear(base->origin);
             VectorClear(base->angles);
+            VectorClear(base->old_origin);
             base->frame = 0;
         }
 
         // don't ever transmit event
-        base->event[0] = base->event[1] = 0;
+        memset(base->event, 0, sizeof(base->event));
     }
 }
 

@@ -19,14 +19,24 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
+static void CG_SetEntitySoundOrigin(const centity_t *ent);
+
+/*
+=========================================================================
+
+FRAME PARSING
+
+=========================================================================
+*/
+
 /*
 ================
-Com_PlayerToEntityState
+CG_PlayerToEntityState
 
 Restores entity origin and angles from player state
 ================
 */
-static void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
+static void CG_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
 {
     vec_t pitch;
 
@@ -41,21 +51,7 @@ static void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es
     es->angles[ROLL] = 0;
 }
 
-/*
-=========================================================================
-
-FRAME PARSING
-
-=========================================================================
-*/
-
-// returns true if origin/angles update has been optimized out
-static inline bool entity_is_optimized(const entity_state_t *state)
-{
-    return state->number == cg.frame->ps.clientnum && cg.frame->ps.pm_type < PM_DEAD;
-}
-
-static inline bool entity_was_teleported(const entity_state_t *state)
+static bool CG_EntityWasTeleported(const entity_state_t *state)
 {
     for (int i = 0; i < MAX_EVENTS; i++)
         if (state->event[i] == EV_PLAYER_TELEPORT || state->event[i] == EV_OTHER_TELEPORT)
@@ -63,8 +59,7 @@ static inline bool entity_was_teleported(const entity_state_t *state)
     return false;
 }
 
-static inline void
-entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *origin)
+static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
     ent->flashlightfrac = 1.0f;
@@ -74,27 +69,25 @@ entity_update_new(centity_t *ent, const entity_state_t *state, const vec_t *orig
     ent->prev = *state;
     ent->prev_frame = state->frame;
 
-    if (entity_was_teleported(state) || (state->renderfx & RF_BEAM)) {
-        // no lerping if teleported
-        VectorCopy(origin, ent->lerp_origin);
+    if (CG_EntityWasTeleported(state) || (state->renderfx & RF_BEAM) || state->number == cg.frame->ps.clientnum) {
+        // no lerping if teleported, or no valid old_origin
+        VectorCopy(state->origin, ent->lerp_origin);
         return;
     }
 
-    // old_origin is valid for new entities,
-    // so use it as starting point for interpolating between
+    // old_origin is valid for new entities, use it as starting point for
+    // interpolating between
     VectorCopy(state->old_origin, ent->prev.origin);
     VectorCopy(state->old_origin, ent->lerp_origin);
 }
 
-static inline void
-entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *origin)
+static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
 {
     if (state->modelindex != ent->current.modelindex
         || state->modelindex2 != ent->current.modelindex2
         || state->modelindex3 != ent->current.modelindex3
         || state->modelindex4 != ent->current.modelindex4
-        || entity_was_teleported(state)
-        || cg_nolerp.integer == 1) {
+        || CG_EntityWasTeleported(state)) {
         // some data changes will force no lerping
         ent->trailcount = 1024;     // for diminishing rocket / grenade trails
         ent->flashlightfrac = 1.0f;
@@ -105,7 +98,7 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
         ent->prev_frame = state->frame;
 
         // no lerping if teleported or morphed
-        VectorCopy(origin, ent->lerp_origin);
+        VectorCopy(state->origin, ent->lerp_origin);
         return;
     }
 
@@ -119,19 +112,10 @@ entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *orig
     ent->prev = ent->current;
 }
 
-static inline bool entity_is_new(const centity_t *ent)
+static bool CG_EntityIsNew(const centity_t *ent)
 {
-    //if (!cg.oldframe->valid)
-    //    return true;    // last received frame was invalid
-
     if (ent->serverframe != cg.oldframe->number)
         return true;    // wasn't in last received frame
-
-    if (cg_nolerp.integer == 2)
-        return true;    // developer option, always new
-
-    if (cg_nolerp.integer == 3)
-        return false;   // developer option, lerp from last received frame
 
     if (cg.oldframe->number != cg.frame->number - 1)
         return true;    // previous server frame was dropped
@@ -139,11 +123,9 @@ static inline bool entity_is_new(const centity_t *ent)
     return false;
 }
 
-static void parse_entity_update(const entity_state_t *state)
+static void CG_DeltaEntity(entity_state_t *state)
 {
     centity_t *ent = &cg_entities[state->number];
-    const vec_t *origin;
-    vec3_t origin_v;
 
     // if entity is solid, decode mins/maxs and add to the list
     if (state->solid && state->number != cg.frame->ps.clientnum
@@ -164,40 +146,31 @@ static void parse_entity_update(const entity_state_t *state)
     }
 
     // work around Q2PRO server bandwidth optimization
-    if (entity_is_optimized(state)) {
-        VectorCopy(cg.frame->ps.origin, origin_v);
-        origin = origin_v;
-    } else {
-        origin = state->origin;
-    }
+    if (state->number == cg.frame->ps.clientnum)
+        CG_PlayerToEntityState(&cg.frame->ps, state);
 
-    if (entity_is_new(ent)) {
+    if (CG_EntityIsNew(ent)) {
         // wasn't in last update, so initialize some things
-        entity_update_new(ent, state, origin);
+        CG_DeltaEntityNew(ent, state);
     } else {
-        entity_update_old(ent, state, origin);
+        CG_DeltaEntityOld(ent, state);
     }
 
     ent->serverframe = cg.frame->number;
     ent->current = *state;
 
-    // work around Q2PRO server bandwidth optimization
-    if (entity_is_optimized(state)) {
-        Com_PlayerToEntityState(&cg.frame->ps, &ent->current);
-    }
-
+    // set sound origin for events
     CG_SetEntitySoundOrigin(ent);
 }
 
-static void CG_TransitionPlayerstate(void)
+static void CG_DeltaPlayerstate(void)
 {
     // find states to interpolate between
     const player_state_t *ps = &cg.frame->ps;
     player_state_t *ops = &cg.oldframe->ps;
 
-    // no lerping if teleport bit was flipped or POV number changed
-    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT || ops->clientnum != ps->clientnum || cg_nolerp.integer == 1)
-        // duplicate the current state so lerping doesn't hurt anything
+    // no lerping or hit markers if POV number changed
+    if (ops->clientnum != ps->clientnum)
         *ops = *ps;
 
     if (ps->stats[STAT_HITS] > ops->stats[STAT_HITS]) {
@@ -208,6 +181,10 @@ static void CG_TransitionPlayerstate(void)
                 trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
         }
     }
+
+    // no lerping if teleport bit was flipped
+    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
+        *ops = *ps;
 
     if (ps->stats[STAT_DAMAGE]) {
         float kick = (ps->stats[STAT_DAMAGE] & 255) * 0.3f;
@@ -253,17 +230,8 @@ A valid frame has been parsed.
 */
 void CG_DeltaFrame(void)
 {
-    centity_t   *ent;
-    int         i;
-
     // rebuild the list of solid entities for this frame
     cg.numSolidEntities = 0;
-
-    // initialize position of the player's own entity from playerstate.
-    // this is needed in situations when player entity is invisible, but
-    // server sends an effect referencing it's origin (such as MZ_LOGIN, etc)
-    ent = &cg_entities[cg.frame->ps.clientnum];
-    Com_PlayerToEntityState(&cg.frame->ps, &ent->current);
 
     bool effects = false;
     if (cg.frame->servertime - cg.last_effects_time >= BASE_FRAMETIME) {
@@ -272,12 +240,13 @@ void CG_DeltaFrame(void)
     }
 
     // set current and prev, unpack solid, etc
-    for (i = 0; i < cg.frame->num_entities; i++)
-        parse_entity_update(&cg.frame->entities[i]);
+    for (int i = 0; i < cg.frame->num_entities; i++)
+        CG_DeltaEntity(&cg.frame->entities[i]);
 
-    // fire events. due to footstep tracing this must be after updating entities.
-    for (i = 0; i < cg.frame->num_entities; i++) {
-        ent = &cg_entities[cg.frame->entities[i].number];
+    // fire events. due to footstep tracing this must be done
+    // after updating all entities.
+    for (int i = 0; i < cg.frame->num_entities; i++) {
+        centity_t *ent = &cg_entities[cg.frame->entities[i].number];
         if (effects)
             CG_EntityEffects(ent);
         CG_EntityEvents(ent);
@@ -289,7 +258,7 @@ void CG_DeltaFrame(void)
         VectorClear(cg.frame->ps.delta_angles);
     }
 
-    CG_TransitionPlayerstate();
+    CG_DeltaPlayerstate();
 
     CG_CheckPredictionError();
 
@@ -488,6 +457,23 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     }
 }
 
+static void CG_SetEntitySoundOrigin(const centity_t *ent)
+{
+    vec3_t org;
+
+    // interpolate origin
+    LerpVector(ent->prev.origin, ent->current.origin, cg.lerpfrac, org);
+
+    // offset the origin for BSP models
+    if (ent->current.solid == PACKED_BSP) {
+        vec3_t mid;
+        VectorAvg(ent->mins, ent->maxs, mid);
+        VectorAdd(org, mid, org);
+    }
+
+    trap_S_UpdateEntity(ent->current.number, org);
+}
+
 static void CG_AddEntityLoopingSound(const entity_state_t *ent)
 {
     int index = ent->sound & (MAX_SOUNDS - 1);
@@ -505,7 +491,7 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
 
     int vol = (ent->sound >> 24) & 255;
     int att = (ent->sound >> 16) & 255;
-    int channel = (ent->sound >> 11) & 31;
+    int channel = (ent->sound >> 11) & 31;  // only used for NO_STEREO flag
 
     if (vol == 0)
         vol = 255;
@@ -707,7 +693,7 @@ static void CG_AddPacketEntities(void)
             goto skip;
         }
 
-        if (renderfx & RF_BEAM && s1->modelindex > 1) {
+        if (renderfx & RF_BEAM && s1->modelindex > MODELINDEX_DUMMY) {
             CG_DrawBeam(ent.oldorigin, ent.origin, cgs.models.precache[s1->modelindex], s1->othernum);
             goto skip;
         }
@@ -1120,28 +1106,4 @@ void CG_AddEntities(void)
     CG_AddParticles();
     CG_AddDLights();
     CG_AddLightStyles();
-}
-
-/*
-===============
-CG_SetEntitySoundOrigin
-
-Called to get the sound spatialization origin
-===============
-*/
-void CG_SetEntitySoundOrigin(const centity_t *ent)
-{
-    vec3_t org;
-
-    // interpolate origin
-    LerpVector(ent->prev.origin, ent->current.origin, cg.lerpfrac, org);
-
-    // offset the origin for BSP models
-    if (ent->current.solid == PACKED_BSP) {
-        vec3_t mid;
-        VectorAvg(ent->mins, ent->maxs, mid);
-        VectorAdd(org, mid, org);
-    }
-
-    trap_S_UpdateEntity(ent->current.number, org);
 }

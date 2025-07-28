@@ -230,7 +230,6 @@ void SV_BuildClientFrame(client_t *client)
 {
     int         e;
     edict_t     *ent;
-    edict_t     *clent;
     client_frame_t  *frame;
     entity_state_t  *state;
     const mleaf_t   *leaf;
@@ -238,7 +237,6 @@ void SV_BuildClientFrame(client_t *client)
     visrow_t    clientphs;
     visrow_t    clientpvs;
 
-    clent = client->edict;
     Q_assert(client->entities);
 
     // this is the frame we are creating
@@ -296,7 +294,7 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore if not touching a PV leaf
-        if (ent != clent && !sv_novis->integer && !(ent->r.svflags & SVF_NOCULL)) {
+        if (e != frame->ps.clientnum && !sv_novis->integer && !(ent->r.svflags & SVF_NOCULL)) {
             // check area
             if (!CM_AreasConnected(&sv.cm, clientarea, ent->r.areanum)) {
                 // doors can legally straddle two areas, so
@@ -326,7 +324,13 @@ void SV_BuildClientFrame(client_t *client)
         state = &client->entities[client->next_entity & PARSE_ENTITIES_MASK];
         *state = ent->s;
 
-        if (ent->r.ownernum == clent->s.number) {
+        if (e == frame->ps.clientnum) {
+            // don't waste bandwidth
+            VectorClear(state->origin);
+            VectorClear(state->angles);
+            VectorClear(state->old_origin);
+        }
+        if (ent->r.ownernum == frame->ps.clientnum) {
             // don't mark players missiles as solid
             state->solid = 0;
         }

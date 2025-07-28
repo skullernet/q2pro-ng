@@ -336,7 +336,6 @@ extern vm_cvar_t    cg_noskins;
 extern vm_cvar_t    cg_rollhack;
 extern vm_cvar_t    cg_noglow;
 extern vm_cvar_t    cg_nobob;
-extern vm_cvar_t    cg_nolerp;
 
 #if USE_DEBUG
 #define SHOWCLAMP(level, ...) \
@@ -456,7 +455,6 @@ void CG_UpdateConfigstring(unsigned index);
 void CG_DeltaFrame(void);
 void CG_AddEntities(void);
 float CG_LerpEntityAlpha(const centity_t *ent);
-void CG_SetEntitySoundOrigin(const centity_t *ent);
 
 //
 // cg_view.c
