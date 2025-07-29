@@ -893,6 +893,8 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawAlphaFaces();
 
+    memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
+
     GL_DrawBeams();
 
     GL_DrawParticles();
