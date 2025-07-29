@@ -19,7 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #pragma once
 
 typedef enum {
-    MZ2_TANK_BLASTER_1 = 1,
+    MZ2_NONE,
+
+    MZ2_TANK_BLASTER_1,
     MZ2_TANK_BLASTER_2,
     MZ2_TANK_BLASTER_3,
     MZ2_TANK_MACHINEGUN_1,

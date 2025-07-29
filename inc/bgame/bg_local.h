@@ -226,36 +226,34 @@ typedef enum {
 // muzzle flashes / player effects
 //
 typedef enum {
+    MZ_NONE,
     MZ_BLASTER,
+    MZ_HYPERBLASTER,
     MZ_MACHINEGUN,
     MZ_SHOTGUN,
+    MZ_SSHOTGUN,
     MZ_CHAINGUN1,
     MZ_CHAINGUN2,
     MZ_CHAINGUN3,
     MZ_RAILGUN,
     MZ_ROCKET,
     MZ_GRENADE,
+    MZ_BFG,
+    MZ_BFG2,
     MZ_LOGIN,
     MZ_LOGOUT,
-    MZ_RESPAWN,
-    MZ_BFG,
-    MZ_SSHOTGUN,
-    MZ_HYPERBLASTER,
-    MZ_ITEMRESPAWN,
 
 // RAFAEL
     MZ_IONRIPPER,
     MZ_BLUEHYPERBLASTER,
     MZ_PHALANX,
-
-// KEX
-    MZ_BFG2,
     MZ_PHALANX2,
+// RAFAEL
 
 //ROGUE
-    MZ_ETF_RIFLE = 30,
-    MZ_PROX,            // KEX
-    MZ_ETF_RIFLE_2,     // MZ_ETF_RIFLE_2 in KEX
+    MZ_PROX,
+    MZ_ETF_RIFLE,
+    MZ_ETF_RIFLE_2,
     MZ_HEATBEAM,
     MZ_BLASTER2,
     MZ_TRACKER,
@@ -266,7 +264,6 @@ typedef enum {
 //ROGUE
 
     MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
-    MZ_NONE = 0,
 } player_muzzle_t;
 
 typedef enum {

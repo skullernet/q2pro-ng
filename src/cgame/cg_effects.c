@@ -239,9 +239,11 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
             CG_AddWeaponKick(-2, -1);
         }
         break;
-    case MZ_BLUEHYPERBLASTER:
-        VectorSet(dl->color, 0, 0, 1);
-        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
+    case MZ_BLASTER2:
+        VectorSet(dl->color, 0, 1, 0);
+        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
+        if (local)
+            CG_AddWeaponKick(-2, -1);
         break;
     case MZ_HYPERBLASTER:
         VectorSet(dl->color, 1, 1, 0);
@@ -250,6 +252,10 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
             CG_AddWeaponMuzzleFX(MFLASH_BLAST, (const vec3_t) { 23.5f, 6.0f, -6.0f }, 9.0f);
             CG_AddHyperblasterKick();
         }
+        break;
+    case MZ_BLUEHYPERBLASTER:
+        VectorSet(dl->color, 0, 0, 1);
+        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
         break;
     case MZ_MACHINEGUN:
         VectorSet(dl->color, 1, 1, 0);
@@ -362,11 +368,6 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
         CG_LogoutEffect(pl->current.origin, 0x40);  // red
         break;
-    case MZ_RESPAWN:
-        VectorSet(dl->color, 1, 1, 0);
-        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CG_LogoutEffect(pl->current.origin, 0xe0);  // yellow
-        break;
     case MZ_PHALANX:
         VectorSet(dl->color, 1, 0.5f, 0.5f);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/plasshot.wav"), volume, ATTN_NORM, 0);
@@ -417,19 +418,10 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
     case MZ_HEATBEAM:
         VectorSet(dl->color, 1, 1, 0);
         dl->die = cg.time + 100;
-//      trap_S_StartSound (NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/bfg__l1a.wav"), volume, ATTN_NORM, 0);
         if (local)
             CG_AddWeaponMuzzleFX(MFLASH_BEAMER, (const vec3_t) { 18.0f, 6.0f, -8.5f }, 16.0f);
         break;
-    case MZ_BLASTER2:
-        VectorSet(dl->color, 0, 1, 0);
-        // FIXME - different sound for blaster2 ??
-        trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
-        if (local)
-            CG_AddWeaponKick(-2, -1);
-        break;
     case MZ_TRACKER:
-        // negative flashes handled the same in gl/soft until CG_AddDLights
         VectorSet(dl->color, -1, -1, -1);
         trap_S_StartSound(NULL, entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/disint2.wav"), volume, ATTN_NORM, 0);
         if (local) {
