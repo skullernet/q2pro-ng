@@ -1260,6 +1260,7 @@ void G_ProjectSource2(const vec3_t point, const vec3_t distance, const vec3_t fo
 void closest_point_to_box(const vec3_t from, const vec3_t mins, const vec3_t maxs, vec3_t point);
 float distance_between_boxes(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2);
 bool boxes_intersect(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2);
+bool G_EntitiesContact(const edict_t *a, const edict_t *b);
 edict_t *G_Find(edict_t *from, int fieldofs, const char *match);
 edict_t *findradius(edict_t *from, const vec3_t org, float rad);
 edict_t *G_PickTarget(const char *targetname);
@@ -1273,6 +1274,7 @@ void     G_InitEdict(edict_t *e);
 edict_t *G_Spawn(void);
 void     G_FreeEdict(edict_t *e);
 
+bool G_BrushModelClip(edict_t *self, edict_t *other);
 void G_TouchTriggers(edict_t *ent);
 void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin);
 

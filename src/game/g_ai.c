@@ -42,7 +42,7 @@ edict_t *AI_GetSightClient(edict_t *self)
             continue;
 
         // if we're touching them, allow to pass through
-        if (!boxes_intersect(self->r.absmin, self->r.absmax, player->r.absmin, player->r.absmax))
+        if (!G_EntitiesContact(self, player))
             if ((!(self->monsterinfo.aiflags & AI_THIRD_EYE) && !infront(self, player)) || !visible(self, player))
                 continue;
 
@@ -92,7 +92,7 @@ void ai_stand(edict_t *self, float dist)
         // [Paril-KEX] check if we've been pushed out of our point_combat
         if (!(self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND) &&
             self->movetarget && self->movetarget->classname && !strcmp(self->movetarget->classname, "point_combat")) {
-            if (!boxes_intersect(self->r.absmin, self->r.absmax, self->movetarget->r.absmin, self->movetarget->r.absmax)) {
+            if (!G_EntitiesContact(self, self->movetarget)) {
                 self->monsterinfo.aiflags &= ~AI_STAND_GROUND;
                 self->monsterinfo.aiflags |= AI_COMBAT_POINT;
                 self->goalentity = self->movetarget;

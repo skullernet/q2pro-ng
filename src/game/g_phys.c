@@ -326,8 +326,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
         // if the entity is standing on the pusher, it will definitely be moved
         if (check->groundentity != pusher) {
             // see if the ent needs to be tested
-            if (!boxes_intersect(check->r.absmin, check->r.absmax,
-                                 pusher->r.absmin, pusher->r.absmax))
+            if (!G_EntitiesContact(check, pusher))
                 continue;
             // see if the ent's bbox is inside the pusher's final position
             if (!SV_TestEntityPosition(check))

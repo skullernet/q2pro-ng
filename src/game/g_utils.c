@@ -57,6 +57,11 @@ bool boxes_intersect(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2,
     return true;
 }
 
+bool G_EntitiesContact(const edict_t *a, const edict_t *b)
+{
+    return boxes_intersect(a->r.absmin, a->r.absmax, b->r.absmin, b->r.absmax);
+}
+
 /*
 =============
 G_Find
@@ -561,6 +566,19 @@ Kill box
 ==============================================================================
 */
 
+bool G_BrushModelClip(edict_t *self, edict_t *other)
+{
+    if (self->r.solid == SOLID_BSP || (self->r.svflags & SVF_HULL)) {
+        trace_t clip;
+        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
+
+        if (clip.fraction == 1.0f)
+            return false;
+    }
+
+    return true;
+}
+
 /*
 =================
 KillBox
@@ -592,18 +610,12 @@ bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping
 
         if (hit == ent)
             continue;
-        if (!hit->r.inuse || !hit->takedamage || !hit->r.solid || hit->r.solid == SOLID_TRIGGER || hit->r.solid == SOLID_BSP)
+        if (!hit->r.inuse || !hit->takedamage || hit->r.solid != SOLID_BBOX)
             continue;
         if (hit->client && !(mask & CONTENTS_PLAYER))
             continue;
-
-        if ((ent->r.solid == SOLID_BSP || (ent->r.svflags & SVF_HULL)) && bsp_clipping) {
-            trace_t clip;
-            trap_Clip(&clip, hit->s.origin, hit->r.mins, hit->r.maxs, hit->s.origin, ent->s.number, G_GetClipMask(hit));
-
-            if (clip.fraction == 1.0f)
-                continue;
-        }
+        if (bsp_clipping && !G_BrushModelClip(ent, hit))
+            continue;
 
         // [Paril-KEX] don't allow telefragging of friends in coop.
         // the player that is about to be telefragged will have collision

@@ -80,13 +80,8 @@ void TOUCH(Touch_Multi)(edict_t *self, edict_t *other, const trace_t *tr, bool o
     } else
         return;
 
-    if (self->spawnflags & SPAWNFLAG_TRIGGER_CLIP) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return;
-    }
+    if (!G_BrushModelClip(self, other))
+        return;
 
     if (!VectorEmpty(self->movedir)) {
         vec3_t forward;
@@ -457,13 +452,8 @@ trigger_push
 
 void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (self->spawnflags & SPAWNFLAG_PUSH_CLIP) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return;
-    }
+    if (!G_BrushModelClip(self, other))
+        return;
 
     if (strcmp(other->classname, "grenade") == 0 || other->health > 0) {
         if (self->spawnflags & SPAWNFLAG_PUSH_ADDITIVE) {
@@ -664,14 +654,8 @@ static bool can_hurt(edict_t *self, edict_t *other)
         return false;
     if ((self->spawnflags & SPAWNFLAG_HURT_NO_PLAYERS) && (other->client))
         return false;
-
-    if (self->spawnflags & SPAWNFLAG_HURT_CLIPPED) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return false;
-    }
+    if (!G_BrushModelClip(self, other))
+        return false;
 
     return true;
 }
@@ -808,13 +792,8 @@ void USE(trigger_gravity_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void TOUCH(trigger_gravity_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (self->spawnflags & SPAWNFLAG_GRAVITY_CLIPPED) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return;
-    }
+    if (!G_BrushModelClip(self, other))
+        return;
 
     other->gravity = self->gravity;
 }
@@ -887,14 +866,8 @@ void TOUCH(trigger_monsterjump_touch)(edict_t *self, edict_t *other, const trace
         return;
     if (!(other->r.svflags & SVF_MONSTER))
         return;
-
-    if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_CLIPPED) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return;
-    }
+    if (!G_BrushModelClip(self, other))
+        return;
 
     // set XY even if not on ground, so the jump will clear lips
     other->velocity[0] = self->movedir[0] * self->speed;
@@ -953,14 +926,8 @@ void TOUCH(trigger_flashlight_touch)(edict_t *self, edict_t *other, const trace_
 {
     if (!other->client)
         return;
-
-    if (self->spawnflags & SPAWNFLAG_FLASHLIGHT_CLIPPED) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
-        if (clip.fraction == 1.0f)
-            return;
-    }
+    if (!G_BrushModelClip(self, other))
+        return;
 
     if (self->style == 1)
         P_ToggleFlashlight(other, true);
@@ -1161,7 +1128,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
         if (!trigger_coop_relay_ok(player))
             continue;
 
-        if (boxes_intersect(player->r.absmin, player->r.absmax, self->r.absmin, self->r.absmax))
+        if (G_EntitiesContact(player, self))
             continue;
 
         if (self->timestamp < level.time)
@@ -1190,17 +1157,16 @@ void USE(trigger_coop_relay_use)(edict_t *self, edict_t *other, edict_t *activat
 
 void THINK(trigger_coop_relay_think)(edict_t *self)
 {
-    int players[MAX_EDICTS_OLD];
-    int i, j, num_active = 0, num_present = 0;
+    int num_active = 0, num_present = 0;
 
-    for (i = 0; i < game.maxclients; i++)
-        if (trigger_coop_relay_ok(&g_edicts[i]))
-            num_active++;
-
-    int count = trap_BoxEdicts(self->r.absmin, self->r.absmax, players, q_countof(players), AREA_SOLID);
-    for (i = 0; i < count; i++)
-        if (trigger_coop_relay_ok(g_edicts + players[i]))
-            players[num_present++] = players[i];
+    for (int i = 0; i < game.maxclients; i++) {
+        edict_t *player = &g_edicts[i];
+        if (!trigger_coop_relay_ok(player))
+            continue;
+        num_active++;
+        if (G_EntitiesContact(player, self))
+            num_present++;
+    }
 
     if (num_present == num_active) {
         const char *msg = self->message;
@@ -1213,17 +1179,13 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
     }
 
     if (num_present && self->timestamp < level.time) {
-        for (i = 0; i < num_present; i++)
-            G_ClientPrintf(&g_edicts[players[i]], PRINT_CENTER, "%s", self->message);
-
-        for (i = 0; i < game.maxclients; i++) {
+        for (int i = 0; i < game.maxclients; i++) {
             edict_t *player = &g_edicts[i];
             if (!trigger_coop_relay_ok(player))
                 continue;
-            for (j = 0; j < num_present; j++)
-                if (players[j] == i)
-                    break;
-            if (j == num_present)
+            if (G_EntitiesContact(player, self))
+                G_ClientPrintf(player, PRINT_CENTER, "%s", self->message);
+            else
                 G_ClientPrintf(player, PRINT_CENTER, "%s", self->map);
         }
 
@@ -1254,7 +1216,6 @@ void SP_trigger_coop_relay(edict_t *self)
         self->nextthink = level.time + SEC(self->wait);
     } else
         self->use = trigger_coop_relay_use;
-    self->r.svflags |= SVF_NOCLIENT;
     trap_LinkEntity(self);
 }
 
@@ -1275,7 +1236,5 @@ void SP_trigger_safe_fall(edict_t *self)
 {
     InitTrigger(self);
     self->touch = trigger_safe_fall_touch;
-    self->r.svflags |= SVF_NOCLIENT;
-    self->r.solid = SOLID_TRIGGER;
     trap_LinkEntity(self);
 }
