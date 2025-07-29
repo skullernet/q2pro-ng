@@ -302,7 +302,7 @@ static void CG_SetupFirstPersonView(void)
     // add the weapon
     CG_AddViewWeapon();
 
-    cg.thirdPersonView = false;
+    cg.third_person_view = false;
 }
 
 // need to interpolate bmodel positions, or third person view would be very jerky
@@ -320,8 +320,8 @@ static void CG_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         return;     // blocked by the world
 
     // check all other solid models
-    for (int i = 0; i < cg.numSolidEntities; i++) {
-        ent = cg.solidEntities[i];
+    for (int i = 0; i < cg.num_solid_entities; i++) {
+        ent = cg.solid_entities[i];
 
         // special value for bmodel
         if (ent->current.solid != PACKED_BSP)
@@ -370,9 +370,9 @@ static void CG_SetupThirdPersionView(void)
     VectorMA(cg.refdef.vieworg, -range * fscale, cg.v_forward, cg.refdef.vieworg);
     VectorMA(cg.refdef.vieworg, -range * rscale, cg.v_right, cg.refdef.vieworg);
 
-    CG_LerpedTrace(&trace, cg.playerEntityOrigin, cg.refdef.vieworg, mins, maxs, CONTENTS_SOLID);
+    CG_LerpedTrace(&trace, cg.player_entity_origin, cg.refdef.vieworg, mins, maxs, CONTENTS_SOLID);
     VectorCopy(trace.endpos, cg.refdef.vieworg);
-    cg.thirdPersonAlpha = trace.fraction;
+    cg.third_person_alpha = trace.fraction;
 
     VectorSubtract(focus, cg.refdef.vieworg, focus);
     dist = sqrtf(focus[0] * focus[0] + focus[1] * focus[1]);
@@ -380,7 +380,7 @@ static void CG_SetupThirdPersionView(void)
     cg.refdef.viewangles[PITCH] = -RAD2DEG(atan2f(focus[2], dist));
     cg.refdef.viewangles[YAW] -= cg_thirdperson_angle.value;
 
-    cg.thirdPersonView = true;
+    cg.third_person_view = true;
 }
 
 static void CG_FinishViewValues(void)
@@ -539,14 +539,14 @@ static void CG_CalcViewValues(void)
 
     AngleVectors(cg.refdef.viewangles, cg.v_forward, cg.v_right, cg.v_up);
 
-    VectorCopy(cg.refdef.vieworg, cg.playerEntityOrigin);
-    VectorCopy(cg.refdef.viewangles, cg.playerEntityAngles);
+    VectorCopy(cg.refdef.vieworg, cg.player_entity_origin);
+    VectorCopy(cg.refdef.viewangles, cg.player_entity_angles);
 
-    if (cg.playerEntityAngles[PITCH] > 180) {
-        cg.playerEntityAngles[PITCH] -= 360;
+    if (cg.player_entity_angles[PITCH] > 180) {
+        cg.player_entity_angles[PITCH] -= 360;
     }
 
-    cg.playerEntityAngles[PITCH] = cg.playerEntityAngles[PITCH] / 3;
+    cg.player_entity_angles[PITCH] = cg.player_entity_angles[PITCH] / 3;
 
     // add view height
     cg.refdef.vieworg[2] += cg.predicted_ps.viewheight;

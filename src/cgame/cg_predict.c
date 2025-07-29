@@ -74,8 +74,8 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     trace_t     trace;
     qhandle_t   hmodel;
 
-    for (int i = 0; i < cg.numSolidEntities; i++) {
-        const centity_t *ent = cg.solidEntities[i];
+    for (int i = 0; i < cg.num_solid_entities; i++) {
+        const centity_t *ent = cg.solid_entities[i];
 
         if (ent->current.number <= cgs.maxclients && !(contentmask & CONTENTS_PLAYER))
             continue;
@@ -133,8 +133,8 @@ contents_t CG_PointContents(const vec3_t point)
 {
     contents_t contents = trap_PointContents(point, MODELINDEX_WORLD);
 
-    for (int i = 0; i < cg.numSolidEntities; i++) {
-        const centity_t *ent = cg.solidEntities[i];
+    for (int i = 0; i < cg.num_solid_entities; i++) {
+        const centity_t *ent = cg.solid_entities[i];
 
         if (ent->current.solid != PACKED_BSP) // special value for bmodel
             continue;

@@ -128,9 +128,8 @@ static void CG_DeltaEntity(entity_state_t *state)
     centity_t *ent = &cg_entities[state->number];
 
     // if entity is solid, decode mins/maxs and add to the list
-    if (state->solid && state->number != cg.frame->ps.clientnum
-        && cg.numSolidEntities < MAX_PACKET_ENTITIES)
-        cg.solidEntities[cg.numSolidEntities++] = ent;
+    if (state->solid && state->number != cg.frame->ps.clientnum)
+        cg.solid_entities[cg.num_solid_entities++] = ent;
 
     if (state->solid == PACKED_BSP) {
         trap_GetBrushModelBounds(state->modelindex, ent->mins, ent->maxs);
@@ -231,7 +230,7 @@ A valid frame has been parsed.
 void CG_DeltaFrame(void)
 {
     // rebuild the list of solid entities for this frame
-    cg.numSolidEntities = 0;
+    cg.num_solid_entities = 0;
 
     bool effects = false;
     if (cg.frame->servertime - cg.last_effects_time >= BASE_FRAMETIME) {
@@ -626,8 +625,8 @@ static void CG_AddPacketEntities(void)
         } else {
             if (s1->number == cg.frame->ps.clientnum) {
                 // use predicted origin
-                VectorCopy(cg.playerEntityOrigin, ent.origin);
-                VectorCopy(cg.playerEntityOrigin, ent.oldorigin);
+                VectorCopy(cg.player_entity_origin, ent.origin);
+                VectorCopy(cg.player_entity_origin, ent.oldorigin);
             } else {
                 // interpolate origin
                 LerpVector(cent->prev.origin, cent->current.origin,
@@ -783,7 +782,7 @@ static void CG_AddPacketEntities(void)
             VectorMA(ent.origin, 64, forward, start);
             trap_R_AddLight(start, 100, 1, 0, 0);
         } else if (s1->number == cg.frame->ps.clientnum) {
-            VectorCopy(cg.playerEntityAngles, ent.angles);      // use predicted angles
+            VectorCopy(cg.player_entity_angles, ent.angles);    // use predicted angles
         } else { // interpolate angles
             LerpAngles(cent->prev.angles, cent->current.angles,
                        cg.lerpfrac, ent.angles);
@@ -817,7 +816,7 @@ static void CG_AddPacketEntities(void)
         if (s1->morefx & EFX_GRENADE_LIGHT)
             trap_R_AddLight(ent.origin, 100, 1, 1, 0);
 
-        if (s1->number == cg.frame->ps.clientnum && !cg.thirdPersonView) {
+        if (s1->number == cg.frame->ps.clientnum && !cg.third_person_view) {
             if (effects & EF_FLAG1)
                 trap_R_AddLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
             else if (effects & EF_FLAG2)
@@ -861,8 +860,8 @@ static void CG_AddPacketEntities(void)
             has_alpha = true;
         }
 
-        if (s1->number == cg.frame->ps.clientnum && cg.thirdPersonView && cg.thirdPersonAlpha != 1.0f) {
-            custom_alpha *= cg.thirdPersonAlpha;
+        if (s1->number == cg.frame->ps.clientnum && cg.third_person_view && cg.third_person_alpha != 1.0f) {
+            custom_alpha *= cg.third_person_alpha;
             has_alpha = true;
         }
 
