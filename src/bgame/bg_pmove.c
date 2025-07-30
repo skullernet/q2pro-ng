@@ -170,12 +170,6 @@ static void PM_StepSlideMove(void)
         trace_t real_trace;
         PM_Trace(&real_trace, pml.origin, pm->mins, pm->maxs, original_down, pml.clipmask);
         VectorCopy(real_trace.endpos, pml.origin);
-
-#if 0
-        // only an upwards jump is a stair clip
-        if (pml.velocity[2] > 0)
-            pm->step_clip = true;
-#endif
     }
 
     VectorCopy(pml.origin, up);
@@ -203,11 +197,9 @@ static void PM_StepSlideMove(void)
             VectorCopy(trace.endpos, pml.origin);
     }
 
-    // export step height to client
-    step_size = pml.origin[2] - start_o[2];
-
-    if (pm->groundentity != ENTITYNUM_NONE || step_size > 0)
-        pm->step_height = step_size;
+    // export step height
+    if (memcmp(&pml.groundplane, &trace.plane, sizeof(pml.groundplane)))
+        pm->step_height = truncf(pml.origin[2] - down_o[2]);
 }
 
 /*
@@ -612,12 +604,8 @@ static void PM_CategorizePosition(void)
     if ((pm->s->pm_flags & PMF_NO_GROUND_SEEK) || pml.velocity[2] > 180 || pm->s->pm_type == PM_GRAPPLE) { //!!ZOID changed from 100 to 180 (ramp accel)
         pm->s->pm_flags &= ~PMF_ON_GROUND;
         pm->groundentity = ENTITYNUM_NONE;
-        pm->step_height = 0;
     } else {
         PM_Trace(&trace, pml.origin, pm->mins, pm->maxs, point, pml.clipmask);
-        // no stepping if walking along the same plane
-        if (!memcmp(&pml.groundplane, &trace.plane, sizeof(pml.groundplane)))
-            pm->step_height = 0;
         pml.groundplane = trace.plane;
         pml.groundsurface_flags = trace.surface_flags;
         pml.groundcontents = trace.contents;
