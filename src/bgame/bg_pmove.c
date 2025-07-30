@@ -832,7 +832,7 @@ static void PM_CheckSpecialMovement(void)
 PM_FlyMove
 ===============
 */
-static void PM_FlyMove(bool doclip)
+static void PM_FlyMove(void)
 {
     float   speed, drop, friction, control, newspeed;
     float   currentspeed, addspeed, accelspeed;
@@ -841,8 +841,6 @@ static void PM_FlyMove(bool doclip)
     float   fmove, smove;
     vec3_t  wishdir;
     float   wishspeed;
-
-    pm->s->viewheight = doclip ? 0 : 22;
 
     // friction
 
@@ -903,17 +901,11 @@ static void PM_FlyMove(bool doclip)
             pml.velocity[i] += accelspeed * wishdir[i];
     }
 
-    if (doclip) {
-        /*for (i = 0; i < 3; i++)
-            end[i] = pml.origin[i] + pml.frametime * pml.velocity[i];
-
-        trace = PM_Trace(pml.origin, pm->mins, pm->maxs, end);
-
-        pml.origin = trace.endpos;*/
-        PM_StepSlideMove();
-    } else {
-        // move
+    // move
+    if (pm->s->pm_type == PM_NOCLIP) {
         VectorMA(pml.origin, pml.frametime, pml.velocity, pml.origin);
+    } else {
+        PM_StepSlideMove();
     }
 }
 
@@ -1207,13 +1199,9 @@ void BG_Pmove(pmove_t *pmove)
 
     if (pm->s->pm_type == PM_SPECTATOR || pm->s->pm_type == PM_NOCLIP) {
         pm->s->pm_flags = PMF_NONE;
-
-        if (pm->s->pm_type == PM_SPECTATOR) {
-            VectorSet(pm->mins, -8, -8, -8);
-            VectorSet(pm->maxs,  8,  8,  8);
-        }
-
-        PM_FlyMove(pm->s->pm_type == PM_SPECTATOR);
+        pm->s->pm_time = 0;
+        PM_SetDimensions();
+        PM_FlyMove();
         PM_SnapPosition();
         return;
     }
