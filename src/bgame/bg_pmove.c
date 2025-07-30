@@ -958,26 +958,19 @@ static bool PM_AboveWater(void)
 ==============
 PM_CheckDuck
 
-Sets mins, maxs, and pm->s->viewheight
+Returns true if flags changed
 ==============
 */
 static bool PM_CheckDuck(void)
 {
-    if (pm->s->pm_type == PM_GIB)
+    trace_t trace;
+
+    if (pm->s->pm_type >= PM_DEAD)
         return false;
 
-    trace_t trace;
-    bool flags_changed = false;
-
-    if (pm->s->pm_type == PM_DEAD) {
-        if (!(pm->s->pm_flags & PMF_DUCKED)) {
-            pm->s->pm_flags |= PMF_DUCKED;
-            flags_changed = true;
-        }
-    } else if ((pm->cmd.buttons & BUTTON_CROUCH) &&
-               (pm->groundentity != ENTITYNUM_NONE || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
-               !(pm->s->pm_flags & PMF_ON_LADDER) &&
-               !PM_CrouchingDisabled()) {
+    if ((pm->cmd.buttons & BUTTON_CROUCH) &&
+        (pm->groundentity != ENTITYNUM_NONE || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
+        !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
         // duck
         if (!(pm->s->pm_flags & PMF_DUCKED)) {
             // check that duck won't be blocked
@@ -985,7 +978,7 @@ static bool PM_CheckDuck(void)
             PM_Trace(&trace, pml.origin, pm->mins, check_maxs, pml.origin, pml.clipmask);
             if (!trace.allsolid) {
                 pm->s->pm_flags |= PMF_DUCKED;
-                flags_changed = true;
+                return true;
             }
         }
     } else {
@@ -996,16 +989,12 @@ static bool PM_CheckDuck(void)
             PM_Trace(&trace, pml.origin, pm->mins, check_maxs, pml.origin, pml.clipmask);
             if (!trace.allsolid) {
                 pm->s->pm_flags &= ~PMF_DUCKED;
-                flags_changed = true;
+                return true;
             }
         }
     }
 
-    if (!flags_changed)
-        return false;
-
-    PM_SetDimensions();
-    return true;
+    return false;
 }
 
 /*
@@ -1145,7 +1134,7 @@ static void PM_SetBobTime(void)
         else
             bobmove = 80;
         if (pm->s->pm_flags & PMF_DUCKED)
-            bobmove *= 4;
+            bobmove = min(bobmove * 4, 320);
         bobmove = bobmove * pml.frametime + 0.5f;
         pm->s->bobtime = (pm->s->bobtime + bobmove) & 255;
     }
@@ -1225,8 +1214,10 @@ void BG_Pmove(pmove_t *pmove)
         PM_InitialSnapPosition();
 
     // set groundentity, watertype, and waterlevel
-    if (PM_CheckDuck())
+    if (PM_CheckDuck()) {
+        PM_SetDimensions();
         PM_CategorizePosition();
+    }
 
     if (pm->s->pm_type == PM_DEAD)
         PM_DeadMove();
