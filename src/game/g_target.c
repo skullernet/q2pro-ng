@@ -220,10 +220,12 @@ These are single use targets.
 */
 void USE(use_target_secret)(edict_t *ent, edict_t *other, edict_t *activator)
 {
+    G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
+
     level.found_secrets++;
 
     G_UseTargets(ent, activator);
-    G_BecomeEvent(ent, EV_SOUND, G_EncodeSound(CHAN_VOICE, ent->noise_index, 1, ATTN_NORM));
+    G_FreeEdict(ent);
 }
 
 void THINK(G_VerifyTargetted)(edict_t *ent)
@@ -249,6 +251,7 @@ void SP_target_secret(edict_t *ent)
     if (!st.noise)
         st.noise = "misc/secret.wav";
     ent->noise_index = G_SoundIndex(st.noise);
+    ent->r.svflags = SVF_NOCLIENT;
     level.total_secrets++;
 }
 
@@ -345,6 +348,9 @@ These are single use targets.
 
 void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
 {
+    if (!level.goals)
+        G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
+
     level.found_goals++;
 
     if (level.found_goals == level.total_goals && !(ent->spawnflags & SPAWNFLAG_GOAL_KEEP_MUSIC))
@@ -363,7 +369,7 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
     }
 
     G_UseTargets(ent, activator);
-    G_BecomeEvent(ent, EV_SOUND, G_EncodeSound(CHAN_VOICE, ent->noise_index, 1, ATTN_NORM));
+    G_FreeEdict(ent);
 }
 
 void SP_target_goal(edict_t *ent)
@@ -378,6 +384,7 @@ void SP_target_goal(edict_t *ent)
     if (!st.noise)
         st.noise = "misc/secret.wav";
     ent->noise_index = G_SoundIndex(st.noise);
+    ent->r.svflags = SVF_NOCLIENT;
     level.total_goals++;
 }
 
