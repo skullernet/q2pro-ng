@@ -708,10 +708,8 @@ void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
         ent->r.svflags |= SVF_PHS;
 
     for (int i = 0; i < MAX_EVENTS; i++) {
-        if (ent->s.event[i] == event) {
-            ent->s.event_param[i] = param;
+        if (ent->s.event[i] == event && ent->s.event_param[i] == param)
             return;
-        }
         if (!ent->s.event[i]) {
             ent->s.event[i] = event;
             ent->s.event_param[i] = param;
