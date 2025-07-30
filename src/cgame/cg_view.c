@@ -267,10 +267,10 @@ static void CG_CalcViewOffset(void)
     float delta;
 
     // add angles based on velocity
-    delta = DotProduct(cg.predicted_ps.velocity, cg.v_forward);
+    delta = DotProduct(cg.slowvelocity, cg.v_forward);
     angles[PITCH] += delta * cg_run_pitch.value;
 
-    delta = DotProduct(cg.predicted_ps.velocity, cg.v_right);
+    delta = DotProduct(cg.slowvelocity, cg.v_right);
     angles[ROLL] += delta * cg_run_roll.value;
 
     float factor = 1;
@@ -294,8 +294,12 @@ static void CG_CalcViewOffset(void)
 
 static void CG_SetupFirstPersonView(void)
 {
+    // smooth abrupt stops
+    for (int i = 0; i < 3; i++)
+        CG_AdvanceValue(&cg.slowvelocity[i], cg.predicted_ps.velocity[i], 1000);
+
     cg.bobfracsin = sinf(cg.predicted_ps.bobtime * (M_PIf / 128));
-    cg.xyspeed = Vector2Length(cg.predicted_ps.velocity);
+    cg.xyspeed = Vector2Length(cg.slowvelocity);
 
     CG_CalcViewOffset();
 

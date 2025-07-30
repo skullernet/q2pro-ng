@@ -32,6 +32,7 @@ static void CG_SetActiveState(void)
         CG_PredictAngles();
     }
     VectorCopy(cg.predicted_ps.viewangles, cg.oldviewangles);
+    VectorCopy(cg.predicted_ps.velocity, cg.slowvelocity);
 
     SCR_LagClear();
 }

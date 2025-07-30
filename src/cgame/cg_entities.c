@@ -169,8 +169,10 @@ static void CG_DeltaPlayerstate(void)
     player_state_t *ops = &cg.oldframe->ps;
 
     // no lerping or hit markers if POV number changed
-    if (ops->clientnum != ps->clientnum)
+    if (ops->clientnum != ps->clientnum) {
         *ops = *ps;
+        cg.weapon.prev_frame = ps->gunframe;
+    }
 
     if (ps->stats[STAT_HITS] > ops->stats[STAT_HITS]) {
         if (cg_hit_markers.integer > 0) {

@@ -134,6 +134,7 @@ typedef struct {
     vec3_t      slow_view_angles;
     vec3_t      viewangles_delta;
     vec3_t      oldviewangles;
+    vec3_t      slowvelocity;
 
     vec3_t      kick_angles[2];
     vec3_t      kick_origin[2];
