@@ -258,8 +258,7 @@ typedef struct {
     edict_t *ent;
     vec3_t   origin;
     vec3_t   angles;
-    bool     rotated;
-    float    yaw;
+    //int    deltayaw;
 } pushed_t;
 
 static pushed_t pushed[MAX_EDICTS];
@@ -276,7 +275,7 @@ otherwise riders would continue to slide.
 static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
 {
     edict_t  *check;
-    bool      block = false;
+    bool      block;
     vec3_t    mins, maxs;
     pushed_t *p;
     vec3_t    org, org2, move2, axis[3];
@@ -293,6 +292,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
 
     // we need this for pushing things later
     AnglesToAxis(amove, axis);
+    TransposeAxis(axis);
 
     // save the pusher's original position
     Q_assert(num_pushed < q_countof(pushed));
@@ -300,7 +300,6 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
     p->ent = pusher;
     VectorCopy(pusher->s.origin, p->origin);
     VectorCopy(pusher->s.angles, p->angles);
-    p->rotated = false;
 
     // move the pusher to it's final position
     VectorAdd(pusher->s.origin, move, pusher->s.origin);
@@ -340,12 +339,6 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
             p->ent = check;
             VectorCopy(check->s.origin, p->origin);
             VectorCopy(check->s.angles, p->angles);
-            p->rotated = !!amove[YAW];
-            if (p->rotated)
-                p->yaw = pusher->s.angles[YAW];
-
-            vec3_t old_position;
-            VectorCopy(check->s.origin, old_position);
 
             // try moving the contacted entity
             VectorAdd(check->s.origin, move, check->s.origin);
@@ -360,7 +353,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
             // figure movement due to the pusher's amove
             VectorSubtract(check->s.origin, pusher->s.origin, org);
             VectorRotate(org, axis, org2);
-            VectorSubtract(org, org2, move2);
+            VectorSubtract(org2, org, move2);
             VectorAdd(check->s.origin, move2, check->s.origin);
 
             // may have pushed them off an edge
@@ -372,7 +365,7 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
             // [Paril-KEX] this is a bit of a hack; allow dead player skulls
             // to be a blocker because otherwise elevators/doors get stuck
             if (block && check->client && !check->takedamage) {
-                VectorCopy(old_position, check->s.origin);
+                VectorCopy(p->origin, check->s.origin);
                 block = false;
             }
 
@@ -385,7 +378,8 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
 
             // if it is ok to leave in the old position, do it.
             // this is only relevent for riding entities, not pushed
-            VectorCopy(old_position, check->s.origin);
+            VectorCopy(p->origin, check->s.origin);
+            VectorCopy(p->angles, check->s.angles);
             block = SV_TestEntityPosition(check);
             if (!block) {
                 num_pushed--;
@@ -400,12 +394,8 @@ static edict_t *SV_Push(edict_t *pusher, const vec3_t move, const vec3_t amove)
             p = &pushed[i];
             VectorCopy(p->origin, p->ent->s.origin);
             VectorCopy(p->angles, p->ent->s.angles);
-            if (p->rotated) {
-                //if (p->ent->client)
-                //  p->ent->client->ps.delta_angles[YAW] = p->yaw;
-                //else
-                p->ent->s.angles[YAW] = p->yaw;
-            }
+            //if (p->ent->client)
+            //  p->ent->client->ps.delta_angles[YAW] = p->deltayaw;
             trap_LinkEntity(p->ent);
         }
 
