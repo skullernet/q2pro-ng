@@ -146,8 +146,12 @@ void SP_target_speaker(edict_t *ent)
         ent->r.svflags |= SVF_NOCULL;
 
     // reliable sounds are sent to everyone
-    if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE)
-        ent->r.svflags |= SVF_NOCULL;
+    if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE) {
+        if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
+            G_Printf("%s: mixed reliable and looped flags\n", etos(ent));
+        else
+            ent->r.svflags |= SVF_NOCULL;
+    }
 
     ent->use = Use_Target_Speaker;
 
