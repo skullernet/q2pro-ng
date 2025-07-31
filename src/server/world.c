@@ -140,17 +140,8 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
     // set the abs box
     if (ent->r.solid == SOLID_BSP && !VectorEmpty(ent->s.angles)) {
         // expand for rotation
-        float   max, v;
+        float max = RadiusFromBounds(ent->r.mins, ent->r.maxs);
 
-        max = 0;
-        for (i = 0; i < 3; i++) {
-            v = fabsf(ent->r.mins[i]);
-            if (v > max)
-                max = v;
-            v = fabsf(ent->r.maxs[i]);
-            if (v > max)
-                max = v;
-        }
         for (i = 0; i < 3; i++) {
             ent->r.absmin[i] = ent->s.origin[i] - max;
             ent->r.absmax[i] = ent->s.origin[i] + max;
@@ -242,9 +233,6 @@ static uint32_t SV_PackSolid(const edict_t *ent)
     uint32_t solid;
 
     solid = MSG_PackSolid(ent->r.mins, ent->r.maxs);
-
-    if (solid == PACKED_BSP)
-        solid = 0;  // can happen in pathological case if z mins > maxs
 
 #if USE_DEBUG
     if (developer->integer) {
