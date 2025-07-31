@@ -1091,7 +1091,7 @@ PM_ClampAngles
 static void PM_ClampAngles(void)
 {
     if (pm->s->pm_flags & PMF_TIME_TELEPORT) {
-        pm->s->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s->delta_angles[YAW]);
+        pm->s->viewangles[YAW] = SHORT2ANGLE((short)(pm->cmd.angles[YAW] + pm->s->delta_angles[YAW]));
         pm->s->viewangles[PITCH] = 0;
         pm->s->viewangles[ROLL] = 0;
     } else {

@@ -430,7 +430,7 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
             MSG_WriteLeb32(to_v);
             break;
         case NETF_ANGLE:
-            MSG_WriteBits(ANGLE2SHORT(LongToFloat(to_v)), 16);
+            MSG_WriteBits(ANGLE2SHORT(LongToFloat(to_v)), -16);
             break;
         case NETF_COLOR:
             MSG_WriteBits(Q_clip_uint8(LongToFloat(to_v) * 255), 8);
@@ -844,7 +844,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             SHOWNET(3, to_v > 1023 ? "%s:%#x " : "%s:%d ", f->name, to_v);
             break;
         case NETF_ANGLE:
-            to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(16)));
+            to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(-16)));
             SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
             break;
         case NETF_COLOR:
