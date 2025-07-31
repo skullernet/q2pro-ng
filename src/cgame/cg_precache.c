@@ -287,7 +287,7 @@ void CG_RegisterMedia(void)
     int     i;
     char    name[MAX_QPATH];
 
-    trap_SetLoadState("models");
+    trap_SetLoadText("models");
     CG_RegisterTEntModels();
     for (i = 1; i < MAX_MODELS; i++) {
         if (!trap_GetConfigstring(CS_MODELS + i, name, sizeof(name)))
@@ -295,7 +295,7 @@ void CG_RegisterMedia(void)
         cgs.models.precache[i] = trap_R_RegisterModel(name);
     }
 
-    trap_SetLoadState("images");
+    trap_SetLoadText("images");
     cgs.images.flare = trap_R_RegisterSprite("misc/flare.tga");
     for (i = 1; i < MAX_IMAGES; i++) {
         if (!trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name)))
@@ -303,7 +303,7 @@ void CG_RegisterMedia(void)
         cgs.images.precache[i] = CG_RegisterImage(name);
     }
 
-    trap_SetLoadState("sounds");
+    trap_SetLoadText("sounds");
     CG_RegisterTEntSounds();
     for (i = 1; i < MAX_SOUNDS; i++) {
         if (!trap_GetConfigstring(CS_SOUNDS + i, name, sizeof(name)))
@@ -311,7 +311,7 @@ void CG_RegisterMedia(void)
         cgs.sounds.precache[i] = trap_S_RegisterSound(name);
     }
 
-    trap_SetLoadState("clients");
+    trap_SetLoadText("clients");
     CG_LoadClientinfo(&cgs.baseclientinfo, "unnamed\\male/grunt");
     for (i = 0; i < MAX_CLIENTS; i++) {
         if (!trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name)))

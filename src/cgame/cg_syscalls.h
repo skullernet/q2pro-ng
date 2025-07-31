@@ -49,7 +49,7 @@ bool trap_GetUsercmd(unsigned number, usercmd_t *ucmd);
 unsigned trap_GetServerFrameNumber(void);
 bool trap_GetServerFrame(unsigned frame, cg_server_frame_t *out);
 
-bool trap_GetDemoInfo(cg_demo_info_t *info);
+void trap_GetClientInfo(cg_client_info_t *info);
 
 void trap_ClientCommand(const char *cmd);
 void trap_RegisterCommand(const char *cmd);
@@ -57,7 +57,7 @@ void trap_RegisterCommand(const char *cmd);
 void trap_SetCompletionOptions(completion_option_t opt);
 void trap_AddCommandCompletion(const char *s);
 
-void trap_SetLoadState(const char *state);
+void trap_SetLoadText(const char *text);
 
 int64_t trap_RealTime(void);
 bool trap_LocalTime(int64_t time, vm_time_t *localtime);
@@ -93,10 +93,6 @@ qhandle_t trap_R_RegisterPic(const char *name);
 qhandle_t trap_R_RegisterFont(const char *name);
 qhandle_t trap_R_RegisterSkin(const char *name);
 qhandle_t trap_R_RegisterSprite(const char *name);
-
-void    trap_R_GetConfig(refcfg_t *cfg);
-float   trap_R_GetAutoScale(void);
-
 void    trap_R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
 
 void    trap_R_ClearScene(void);
@@ -107,6 +103,8 @@ void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);
 void    trap_R_LightPoint(const vec3_t origin, vec3_t light);
 
+void    trap_R_GetConfig(refcfg_t *cfg);
+void    trap_R_GetPalette(uint32_t palette[256]);
 void    trap_R_ClearColor(void);
 void    trap_R_SetAlpha(float alpha);
 void    trap_R_SetColor(uint32_t color);
@@ -182,7 +180,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_GetServerFrameNumber cgi->GetServerFrameNumber
 #define trap_GetServerFrame cgi->GetServerFrame
 
-#define trap_GetDemoInfo cgi->GetDemoInfo
+#define trap_GetClientInfo cgi->GetClientInfo
 
 #define trap_ClientCommand cgi->ClientCommand
 #define trap_RegisterCommand cgi->RegisterCommand
@@ -190,7 +188,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_SetCompletionOptions cgi->SetCompletionOptions
 #define trap_AddCommandCompletion cgi->AddCommandCompletion
 
-#define trap_SetLoadState cgi->SetLoadState
+#define trap_SetLoadText cgi->SetLoadText
 
 #define trap_RealTime cgi->RealTime
 #define trap_LocalTime cgi->LocalTime
@@ -225,10 +223,6 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_R_RegisterFont cgi->R_RegisterFont
 #define trap_R_RegisterSkin cgi->R_RegisterSkin
 #define trap_R_RegisterSprite cgi->R_RegisterSprite
-
-#define trap_R_GetConfig cgi->R_GetConfig
-#define trap_R_GetAutoScale cgi->R_GetAutoScale
-
 #define trap_R_SetSky cgi->R_SetSky
 
 #define trap_R_ClearScene cgi->R_ClearScene
@@ -239,6 +233,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_R_RenderScene cgi->R_RenderScene
 #define trap_R_LightPoint cgi->R_LightPoint
 
+#define trap_R_GetConfig cgi->R_GetConfig
+#define trap_R_GetPalette cgi->R_GetPalette
 #define trap_R_ClearColor cgi->R_ClearColor
 #define trap_R_SetAlpha cgi->R_SetAlpha
 #define trap_R_SetColor cgi->R_SetColor

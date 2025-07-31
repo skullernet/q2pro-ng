@@ -30,7 +30,6 @@ static cvar_t   *scr_showstats;
 static qhandle_t    scr_font;
 static int          scr_width;
 static int          scr_height;
-static float        scr_scale;
 
 #define GRAPH_SAMPLES   4096
 #define GRAPH_MASK      (GRAPH_SAMPLES - 1)
@@ -155,9 +154,8 @@ void SCR_ModeChanged(void)
     UI_ModeChanged();
     if (cge)
         cge->ModeChanged();
-    scr_scale = R_ClampScale(NULL);
-    scr_width = r_config.width * scr_scale;
-    scr_height = r_config.height * scr_scale;
+    scr_width = r_config.width * r_config.scale;
+    scr_height = r_config.height * r_config.scale;
     cls.disable_screen = 0;
 }
 
@@ -254,7 +252,7 @@ static void SCR_DrawActive(void)
     if (cls.state == ca_active || cls.draw_loading)
         cge->DrawFrame(cls.realtime, cls.state == ca_active, cls.draw_loading);
 
-    R_SetScale(scr_scale);
+    R_SetScale(r_config.scale);
 
     SCR_DrawDebugStats();
 

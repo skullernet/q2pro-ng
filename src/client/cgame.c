@@ -194,11 +194,6 @@ static void PF_R_GetConfig(refcfg_t *cfg)
     *cfg = r_config;
 }
 
-static float PF_R_GetAutoScale(void)
-{
-    return R_ClampScale(NULL);
-}
-
 static unsigned PF_GetUsercmdNumber(void)
 {
     return cl.cmdNumber + !!cl.cmd.msec;
@@ -256,14 +251,10 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     return true;
 }
 
-static bool PF_GetDemoInfo(cg_demo_info_t *info)
+static void PF_GetClientInfo(cg_client_info_t *info)
 {
-    if (!cls.demo.playback)
-        return false;
-    Q_strlcpy(info->name, cls.servername, sizeof(info->name));
-    info->progress = cls.demo.file_progress;
-    info->framenum = cls.demo.frames_read;
-    return true;
+    Q_strlcpy(info->servername, cls.servername, sizeof(info->servername));
+    info->demoprogress = cls.demo.file_progress;
 }
 
 static void CG_CompleteCommand(int firstarg, int argnum)
@@ -340,8 +331,8 @@ VM_THUNK(GetServerFrame) {
     VM_U32(0) = PF_GetServerFrame(VM_U32(0), VM_PTR(1, cg_server_frame_t));
 }
 
-VM_THUNK(GetDemoInfo) {
-    VM_U32(0) = PF_GetDemoInfo(VM_PTR(0, cg_demo_info_t));
+VM_THUNK(GetClientInfo) {
+    PF_GetClientInfo(VM_PTR(0, cg_client_info_t));
 }
 
 VM_THUNK(ClientCommand) {
@@ -360,8 +351,8 @@ VM_THUNK(AddCommandCompletion) {
     Prompt_AddMatch(VM_STR(0));
 }
 
-VM_THUNK(SetLoadState) {
-    Con_SetLoadState(VM_STR(0));
+VM_THUNK(SetLoadText) {
+    Con_SetLoadText(VM_STR(0));
 }
 
 VM_THUNK(RealTime) {
@@ -476,14 +467,6 @@ VM_THUNK(R_RegisterSprite) {
     VM_U32(0) = R_RegisterSprite(VM_STR(0));
 }
 
-VM_THUNK(R_GetConfig) {
-    PF_R_GetConfig(VM_PTR(0, refcfg_t));
-}
-
-VM_THUNK(R_GetAutoScale) {
-    VM_F32(0) = PF_R_GetAutoScale();
-}
-
 VM_THUNK(R_SetSky) {
     R_SetSky(VM_STR(0), VM_F32(1), VM_U32(2), VM_VEC3(3));
 }
@@ -514,6 +497,14 @@ VM_THUNK(R_RenderScene) {
 
 VM_THUNK(R_LightPoint) {
     R_LightPoint(VM_VEC3(0), VM_VEC3(1));
+}
+
+VM_THUNK(R_GetConfig) {
+    PF_R_GetConfig(VM_PTR(0, refcfg_t));
+}
+
+VM_THUNK(R_GetPalette) {
+    R_GetPalette(VM_PTR_CNT(0, uint32_t, 256));
 }
 
 VM_THUNK(R_ClearColor) {
@@ -743,12 +734,12 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetUsercmd, "i ii"),
     VM_IMPORT(GetServerFrameNumber, "i "),
     VM_IMPORT(GetServerFrame, "i ii"),
-    VM_IMPORT(GetDemoInfo, "i i"),
+    VM_IMPORT(GetClientInfo, "i"),
     VM_IMPORT(ClientCommand, "i"),
     VM_IMPORT(RegisterCommand, "i"),
     VM_IMPORT(SetCompletionOptions, "i"),
     VM_IMPORT(AddCommandCompletion, "i"),
-    VM_IMPORT(SetLoadState, "i"),
+    VM_IMPORT(SetLoadText, "i"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
     VM_IMPORT(Cvar_Register, "i iiii"),
@@ -777,8 +768,6 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_RegisterFont, "i i"),
     VM_IMPORT(R_RegisterSkin, "i i"),
     VM_IMPORT(R_RegisterSprite, "i i"),
-    VM_IMPORT(R_GetConfig, "i"),
-    VM_IMPORT(R_GetAutoScale, "f "),
     VM_IMPORT(R_SetSky, "ifii"),
     VM_IMPORT(R_ClearScene, ""),
     VM_IMPORT(R_AddEntity, "i"),
@@ -787,6 +776,8 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_LocateParticles, "ii"),
     VM_IMPORT(R_RenderScene, "i"),
     VM_IMPORT(R_LightPoint, "ii"),
+    VM_IMPORT(R_GetConfig, "i"),
+    VM_IMPORT(R_GetPalette, "i"),
     VM_IMPORT(R_ClearColor, ""),
     VM_IMPORT(R_SetAlpha, "f"),
     VM_IMPORT(R_SetColor, "i"),
@@ -981,7 +972,7 @@ static const cgame_import_t cgame_dll_imports = {
     .GetServerFrameNumber = PF_GetServerFrameNumber,
     .GetServerFrame = PF_GetServerFrame,
 
-    .GetDemoInfo = PF_GetDemoInfo,
+    .GetClientInfo = PF_GetClientInfo,
 
     .ClientCommand = CL_ClientCommand,
     .RegisterCommand = PF_RegisterCommand,
@@ -989,7 +980,7 @@ static const cgame_import_t cgame_dll_imports = {
     .SetCompletionOptions = Prompt_SetOptions,
     .AddCommandCompletion = Prompt_AddMatch,
 
-    .SetLoadState = Con_SetLoadState,
+    .SetLoadText = Con_SetLoadText,
 
     .RealTime = Com_RealTime,
     .LocalTime = Com_LocalTime,
@@ -1045,10 +1036,6 @@ static const cgame_import_t cgame_dll_imports = {
     .R_RegisterFont = R_RegisterTempFont,
     .R_RegisterSkin = R_RegisterSkin,
     .R_RegisterSprite = R_RegisterSprite,
-
-    .R_GetConfig = PF_R_GetConfig,
-    .R_GetAutoScale = PF_R_GetAutoScale,
-
     .R_SetSky = R_SetSky,
 
     .R_ClearScene = R_ClearScene,
@@ -1059,6 +1046,8 @@ static const cgame_import_t cgame_dll_imports = {
     .R_RenderScene = R_RenderFrame,
     .R_LightPoint = R_LightPoint,
 
+    .R_GetConfig = PF_R_GetConfig,
+    .R_GetPalette = R_GetPalette,
     .R_ClearColor = R_ClearColor,
     .R_SetAlpha = R_SetAlpha,
     .R_SetColor = R_SetColor,
@@ -1163,7 +1152,7 @@ static void CL_LoadMap(void)
         return;
 
     Q_snprintf(name, sizeof(name), "maps/%s.bsp", cl.mapname);
-    Con_SetLoadState(name);
+    Con_SetLoadText(name);
 
     ret = BSP_Load(name, &cl.bsp);
     if (cl.bsp == NULL) {

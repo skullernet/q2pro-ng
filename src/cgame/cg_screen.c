@@ -207,7 +207,7 @@ DEMO BAR
 
 static void SCR_DrawDemo(void)
 {
-    cg_demo_info_t info;
+    cg_client_info_t info;
     char buffer[16];
     int x, w, h;
     size_t len;
@@ -216,10 +216,9 @@ static void SCR_DrawDemo(void)
         return;
     if (!cgs.demoplayback)
         return;
-    if (!trap_GetDemoInfo(&info))
-        return;
 
-    w = Q_rint(scr.hud_width * info.progress);
+    trap_GetClientInfo(&info);
+    w = Q_rint(scr.hud_width * info.demoprogress);
     h = Q_rint(CONCHAR_HEIGHT / scr.hud_scale);
 
     scr.hud_height -= h;
@@ -232,13 +231,13 @@ static void SCR_DrawDemo(void)
     w = Q_rint(scr.hud_width * scr.hud_scale);
     h = Q_rint(scr.hud_height * scr.hud_scale);
 
-    len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", info.progress * 100);
+    len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", info.demoprogress * 100);
     x = (w - len * CONCHAR_WIDTH) / 2;
     trap_R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
 
     if (scr_demobar.integer > 1) {
-        int sec = info.framenum / BASE_FRAMERATE;
-        int sub = info.framenum % BASE_FRAMERATE;
+        int sub = cg.frame->servertime / BASE_FRAMETIME;
+        int sec = sub / 10; sub %= 10;
         int min = sec / 60; sec %= 60;
 
         Q_snprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, sub);
@@ -673,7 +672,7 @@ static void scr_scale_changed(void)
     if (scr_scale.value >= 1.0f)
         scr.hud_scale = 1.0f / min(scr_scale.value, 10.0f);
     else
-        scr.hud_scale = trap_R_GetAutoScale();
+        scr.hud_scale = scr.config.scale;
 }
 
 static void SCR_UpdateCvars(void)

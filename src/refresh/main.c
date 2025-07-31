@@ -1564,6 +1564,7 @@ void R_ModeChanged(int width, int height, int flags)
     r_config.width = width;
     r_config.height = height;
     r_config.flags = flags;
+    r_config.scale = R_ClampScale(NULL);
 }
 
 /*

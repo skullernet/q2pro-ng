@@ -106,4 +106,5 @@ typedef struct {
     int         width;
     int         height;
     vidFlags_t  flags;
+    float       scale;
 } refcfg_t;

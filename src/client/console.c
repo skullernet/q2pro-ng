@@ -563,14 +563,14 @@ void Con_SetColor(color_index_t color)
 
 /*
 =================
-Con_SetLoadState
+Con_SetLoadText
 =================
 */
-void Con_SetLoadState(const char *state)
+void Con_SetLoadText(const char *text)
 {
     if (cls.state != ca_loading)
         return;
-    Q_strlcpy(con.loadstate, state, sizeof(con.loadstate));
+    Q_strlcpy(con.loadstate, text, sizeof(con.loadstate));
     SCR_UpdateScreen();
     if (vid)
         vid->pump_events();

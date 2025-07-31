@@ -44,10 +44,9 @@ typedef struct {
 } cg_server_frame_t;
 
 typedef struct {
-    char        name[MAX_QPATH];
-    float       progress;
-    unsigned    framenum;
-} cg_demo_info_t;
+    char        servername[MAX_QPATH];
+    float       demoprogress;
+} cg_client_info_t;
 
 //===============================================================
 
@@ -92,7 +91,7 @@ typedef struct {
     unsigned (*GetServerFrameNumber)(void);
     bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
 
-    bool (*GetDemoInfo)(cg_demo_info_t *info);
+    void (*GetClientInfo)(cg_client_info_t *info);
 
     void (*ClientCommand)(const char *cmd);
     void (*RegisterCommand)(const char *cmd);
@@ -100,7 +99,7 @@ typedef struct {
     void (*SetCompletionOptions)(completion_option_t opt);
     void (*AddCommandCompletion)(const char *s);
 
-    void (*SetLoadState)(const char *state);
+    void (*SetLoadText)(const char *text);
 
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
@@ -136,10 +135,6 @@ typedef struct {
     qhandle_t (*R_RegisterFont)(const char *name);
     qhandle_t (*R_RegisterSkin)(const char *name);
     qhandle_t (*R_RegisterSprite)(const char *name);
-
-    void    (*R_GetConfig)(refcfg_t *cfg);
-    float   (*R_GetAutoScale)(void);
-
     void    (*R_SetSky)(const char *name, float rotate, bool autorotate, const vec3_t axis);
 
     void    (*R_ClearScene)(void);
@@ -150,6 +145,8 @@ typedef struct {
     void    (*R_RenderScene)(const refdef_t *fd);
     void    (*R_LightPoint)(const vec3_t origin, vec3_t light);
 
+    void    (*R_GetConfig)(refcfg_t *cfg);
+    void    (*R_GetPalette)(uint32_t palette[256]);
     void    (*R_ClearColor)(void);
     void    (*R_SetAlpha)(float clpha);
     void    (*R_SetColor)(uint32_t color);

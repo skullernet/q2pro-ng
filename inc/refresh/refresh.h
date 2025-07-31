@@ -79,6 +79,7 @@ void    R_LocateParticles(const particle_t *p, int count);
 void    R_RenderFrame(const refdef_t *fd);
 void    R_LightPoint(const vec3_t origin, vec3_t light);
 
+void    R_GetPalette(uint32_t palette[256]);
 void    R_ClearColor(void);
 void    R_SetAlpha(float clpha);
 void    R_SetColor(uint32_t color);

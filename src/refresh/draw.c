@@ -169,6 +169,11 @@ void GL_Blend(void)
     }
 }
 
+void R_GetPalette(uint32_t palette[256])
+{
+    memcpy(palette, d_8to24table, sizeof(d_8to24table));
+}
+
 void R_ClearColor(void)
 {
     draw.colors[0].u32 = U32_WHITE;
