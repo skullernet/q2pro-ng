@@ -913,14 +913,12 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
-    com_native_modules = Cvar_Get("com_native_modules", "0", 0);
+    com_native_modules = Cvar_Get("com_native_modules", "0", CVAR_NOSET);
     com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
 
     Cmd_AddCommand("z_stats", Z_Stats_f);
-
-    //Cmd_AddCommand("setenv", Com_Setenv_f);
 
     Cmd_AddMacro("com_date", Com_Date_m);
     Cmd_AddMacro("com_time", Com_Time_m);

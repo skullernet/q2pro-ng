@@ -46,10 +46,11 @@ static cvar_t *map_visibility_patch;
 ===============================================================================
 */
 
-#define BSP_ALIGN   64
+#define BSP_ALIGN_BYTES     64
+#define BSP_ALIGN(n)        Q_ALIGN(n, BSP_ALIGN_BYTES)
 
 #define BSP_ALLOC(size) \
-    Hunk_Alloc(&bsp->hunk, size, BSP_ALIGN)
+    Hunk_Alloc(&bsp->hunk, size, BSP_ALIGN_BYTES)
 
 #define BSP_ERROR(msg) \
     Com_SetLastError(va("%s: %s", __func__, msg))
@@ -190,11 +191,10 @@ static void BSP_PrintStats(const bsp_t *bsp)
     Com_Printf("------------------\n");
 }
 
-static void BSP_List_f(void)
+static void BSP_Info_f(void)
 {
     bsp_t *bsp;
     size_t bytes;
-    bool verbose = Cmd_Argc() > 1;
 
     if (LIST_EMPTY(&bsp_cache)) {
         Com_Printf("BSP cache is empty\n");
@@ -207,8 +207,7 @@ static void BSP_List_f(void)
     LIST_FOR_EACH(bsp, &bsp_cache, entry) {
         Com_Printf("%8zu : %s (%d refs)\n",
                    bsp->hunk.mapped, bsp->name, bsp->refcount);
-        if (verbose)
-            BSP_PrintStats(bsp);
+        BSP_PrintStats(bsp);
         bytes += bsp->hunk.mapped;
     }
     Com_Printf("Total resident: %zu\n", bytes);
@@ -552,9 +551,9 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
     }
 
     return
-        Q_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes, BSP_ALIGN) +
-        Q_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs, BSP_ALIGN) +
-        Q_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles, BSP_ALIGN);
+        BSP_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes) +
+        BSP_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs) +
+        BSP_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles);
 }
 
 static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
@@ -839,7 +838,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
             count++;
 
         // round to cacheline
-        memsize += Q_ALIGN(count * info->memsize, BSP_ALIGN);
+        memsize += BSP_ALIGN(count * info->memsize);
         maxpos = max(maxpos, ofs + len);
     }
 
@@ -1173,7 +1172,7 @@ void BSP_Init(void)
 {
     map_visibility_patch = Cvar_Get("map_visibility_patch", "1", 0);
 
-    Cmd_AddCommand("bsplist", BSP_List_f);
+    Cmd_AddCommand("bspinfo", BSP_Info_f);
 
     List_Init(&bsp_cache);
 }

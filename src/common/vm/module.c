@@ -25,6 +25,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/system.h"
 #include <errno.h>
 
+#define MIN_VM_CVARS    64
+#define MAX_VM_CVARS    1024
+
 static LIST_DECL(vm_modules);
 
 typedef const void *(*dll_entry_t)(const void *);
@@ -71,7 +74,7 @@ const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
             return iface->dll_exports;
         }
 
-        Com_WPrintf("Couldn't load %s: %s\n", buffer, Com_GetLastError());
+        Com_Error(ERR_DROP, "Couldn't load %s: %s", buffer, Com_GetLastError());
     }
 
     void *handle = NULL;
@@ -138,13 +141,13 @@ bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const c
         if (mod->cvars[i].vmc == vmc)
             return true;
 
-    if (mod->num_cvars >= 1024) {
+    if (mod->num_cvars >= MAX_VM_CVARS) {
         Com_WPrintf("Too many VM cvars\n");
         return false;
     }
 
-    if (!(mod->num_cvars & 31))
-        mod->cvars = VM_Realloc(mod->cvars, (mod->num_cvars + 32) * sizeof(mod->cvars[0]));
+    if (!(mod->num_cvars & (MIN_VM_CVARS - 1)))
+        mod->cvars = VM_Realloc(mod->cvars, (mod->num_cvars + MIN_VM_CVARS) * sizeof(mod->cvars[0]));
 
     vm_cvar_glue_t *glue = &mod->cvars[mod->num_cvars++];
     glue->vmc = vmc;

@@ -81,11 +81,6 @@ static void Com_Freeze_f(void)
         ;
 }
 
-static q_noinline uint32_t *null_ptr(void)
-{
-    return (uint32_t *)1024;
-}
-
 // test crash dumps and NX support
 static void Com_Crash_f(void)
 {
@@ -115,7 +110,6 @@ static void Com_Crash_f(void)
         Z_Free(buf3);
         break;
     default:
-        *null_ptr() = 0x123456;
         break;
     }
 }

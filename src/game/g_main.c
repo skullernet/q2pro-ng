@@ -245,8 +245,8 @@ This will be called when the dll is first loaded, which
 only happens when a new game is started or a save game
 is loaded.
 
-Called at early initialization stage to allow the game modify cvars like
-maxclients, etc. Game is only allowed to register/set cvars at this point.
+Called at early initialization stage to allow the game override latched cvars
+like maxclients, etc. Game is only allowed to register/set cvars at this point.
 ============
 */
 qvm_exported void G_PreInit(void)
@@ -311,15 +311,16 @@ qvm_exported void G_PreInit(void)
         trap_Cvar_Set("maxclients", "1");
     }
 
-    if (gamerules.integer != RDM_TAG && gamerules.integer != RDM_DEATHBALL)
-        trap_Cvar_Set("gamerules", "0");
+    // ROGUE
+    InitGameRules(); // if there are game rules to set up, do so now.
+    // ROGUE
 }
 
 /*
 ============
 InitGame
 
-Called after PreInitGame when the game has set up cvars.
+Called after PreInitGame when the game has set up cvars, and server has allocated maxclients.
 ============
 */
 qvm_exported void G_Init(void)
@@ -345,13 +346,6 @@ qvm_exported void G_Init(void)
     game.tick_rate = sv_fps.integer;
     game.frame_time = 1000 / game.tick_rate;
     game.frame_time_sec = 1.0f / game.tick_rate;
-
-    //======
-    // ROGUE
-    if (gamerules.integer)
-        InitGameRules(); // if there are game rules to set up, do so now.
-    // ROGUE
-    //======
 
     G_LoadL10nFile();
 

@@ -1107,8 +1107,8 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 
     VectorCopy(check, self->s.origin);
 
-    if (result == STUCK_FIXED && developer.integer)
-        G_Printf("fixed stuck %s\n", etos(self));
+    if (result == STUCK_FIXED)
+        G_DPrintf("fixed stuck %s\n", etos(self));
 
     return result;
 }

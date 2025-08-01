@@ -452,11 +452,11 @@ VM_THUNK(R_RegisterModel) {
 }
 
 VM_THUNK(R_RegisterPic) {
-    VM_U32(0) = R_RegisterPic(VM_STR(0));
+    VM_U32(0) = R_RegisterTempPic(VM_STR(0));
 }
 
 VM_THUNK(R_RegisterFont) {
-    VM_U32(0) = R_RegisterFont(VM_STR(0));
+    VM_U32(0) = R_RegisterTempFont(VM_STR(0));
 }
 
 VM_THUNK(R_RegisterSkin) {

@@ -111,7 +111,7 @@ void G_LoadL10nFile(void)
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 
-    G_Printf("Loaded %d messages from %s\n", nb_messages, L10N_FILE);
+    G_DPrintf("Loaded %d messages from %s\n", nb_messages, L10N_FILE);
 }
 
 const char *G_GetL10nString(const char *key)

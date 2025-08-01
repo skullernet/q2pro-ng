@@ -579,8 +579,8 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
     if (m->llvm_stack_pointer)
         m->llvm_stack_start = *m->llvm_stack_pointer;
 
-    Com_Printf("Loaded %s: %d KB of code, %d MB of memory\n", name,
-               m->num_bytes / 1000, m->memory.pages * VM_PAGE_SIZE / 1000000);
+    Com_DPrintf("Loaded %s: %d KB of code, %d MB of memory\n", name,
+                m->num_bytes / 1000, m->memory.pages * VM_PAGE_SIZE / 1000000);
 
     return m;
 

@@ -263,19 +263,25 @@ void InitGameRules(void)
     // clear out the game rule structure before we start
     memset(&DMGame, 0, sizeof(DMGame));
 
-    if (gamerules.integer) {
-        switch (gamerules.integer) {
-        case RDM_TAG:
-            DMGame = DMGame_Tag;
-            break;
-        case RDM_DEATHBALL:
-            DMGame = DMGame_DBall;
-            break;
-        // reset gamerules if it's not a valid number
-        default:
-            trap_Cvar_Set("gamerules", "0");
-            break;
-        }
+    if (!gamerules.integer)
+        return;
+
+    if (!deathmatch.integer) {
+        trap_Cvar_Set("gamerules", "0");
+        return;
+    }
+
+    switch (gamerules.integer) {
+    case RDM_TAG:
+        DMGame = DMGame_Tag;
+        break;
+    case RDM_DEATHBALL:
+        DMGame = DMGame_DBall;
+        break;
+    // reset gamerules if it's not a valid number
+    default:
+        trap_Cvar_Set("gamerules", "0");
+        break;
     }
 
     // if we're set up to play, initialize the game as needed.

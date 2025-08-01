@@ -342,8 +342,8 @@ bool Nav_Load(void)
     // must not have consumed terminating NUL
     NAV_VERIFY(b.readcount < b.cursize, "Read past end of file");
 
-    Com_Printf("Loaded %s (version %d): %u nodes, %u links, %u traversals, %u edicts\n",
-               filename, v, nav_data.num_nodes, nav_data.num_links, nav_data.num_traversals, nav_data.num_edicts);
+    Com_DPrintf("Loaded %s (version %d): %u nodes, %u links, %u traversals, %u edicts\n",
+                filename, v, nav_data.num_nodes, nav_data.num_links, nav_data.num_traversals, nav_data.num_edicts);
 
     FS_FreeFile(data);
     Nav_AllocContext(&nav_data.ctx);
@@ -351,7 +351,7 @@ bool Nav_Load(void)
 
 fail:
     FS_FreeFile(data);
-    Com_Printf("Couldn't load %s: %s\n", filename, err);
+    Com_WPrintf("Couldn't load %s: %s\n", filename, err);
     Nav_Unload();
     return false;
 }

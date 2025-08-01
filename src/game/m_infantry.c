@@ -277,7 +277,7 @@ static void InfantryMachineGun(edict_t *self)
 
     if (self->s.frame == FRAME_attak103 || self->s.frame == FRAME_attak311 || is_run_attack || self->s.frame == FRAME_attak416) {
         if (is_run_attack)
-            flash_number = MZ2_INFANTRY_MACHINEGUN_14 + (self->s.frame - MZ2_INFANTRY_MACHINEGUN_14);
+            flash_number = MZ2_INFANTRY_MACHINEGUN_14 + (self->s.frame - FRAME_run201);
         else if (self->s.frame == FRAME_attak416)
             flash_number = MZ2_INFANTRY_MACHINEGUN_22;
         else
