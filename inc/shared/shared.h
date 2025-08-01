@@ -244,6 +244,9 @@ typedef struct {
 #define Vector2Subtract(a,b,c)  ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1])
 #define Dot2Product(x,y)        ((x)[0]*(y)[0]+(x)[1]*(y)[1])
 #define Vector2Length(v)        (sqrtf(Dot2Product((v),(v))))
+#define Distance2Squared(v1,v2) \
+    (((v1)[0]-(v2)[0])*((v1)[0]-(v2)[0])+ \
+     ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1]))
 
 #define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])
 #define Vector4Add(a,b,c)           ((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2],(c)[3]=(a)[3]+(b)[3])

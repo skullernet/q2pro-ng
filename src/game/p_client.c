@@ -2639,11 +2639,6 @@ qvm_exported void G_ClientThink(int clientnum)
         VectorCopy(ent->s.origin, pm.s->origin);
         VectorCopy(ent->velocity, pm.s->velocity);
 
-#if 0
-        if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
-            pm.snapinitial = true;
-#endif
-
         pm.cmd = ucmd;
         pm.trace = trap_Trace;
         pm.clip = trap_Clip;
@@ -2658,7 +2653,7 @@ qvm_exported void G_ClientThink(int clientnum)
         // detect hitting the floor
         P_FallingDamage(ent, &pm);
 
-        if (ent->client->landmark_free_fall && pm.groundentity) {
+        if (ent->client->landmark_free_fall && pm.groundentitynum != ENTITYNUM_NONE) {
             ent->client->landmark_free_fall = false;
             ent->client->landmark_noise_time = level.time + HZ(10);
         }
@@ -2717,10 +2712,10 @@ qvm_exported void G_ClientThink(int clientnum)
 
         ent->waterlevel = pm.waterlevel;
         ent->watertype = pm.watertype;
-        if (pm.groundentity == ENTITYNUM_NONE) {
+        if (pm.groundentitynum == ENTITYNUM_NONE) {
             ent->groundentity = NULL;
         } else {
-            ent->groundentity = g_edicts + pm.groundentity;
+            ent->groundentity = g_edicts + pm.groundentitynum;
             ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         }
 

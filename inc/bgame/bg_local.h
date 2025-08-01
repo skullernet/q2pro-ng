@@ -453,12 +453,11 @@ typedef struct {
 
     // command (in)
     usercmd_t       cmd;
-    bool            snapinitial;    // if s has been changed outside pmove
 
     // results (out)
     touch_list_t    touch;
     vec3_t          mins, maxs;         // bounding box size
-    int             groundentity;
+    int             groundentitynum;
     contents_t      watertype;
     water_level_t   waterlevel;
 

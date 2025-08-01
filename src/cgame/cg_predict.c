@@ -222,13 +222,10 @@ void CG_PredictMovement(void)
     pm.clip = CG_Clip;
     pm.pointcontents = CG_PointContents;
     pm.s = &cg.predicted_ps;
-    pm.snapinitial = true;
 
     // run frames
-    while (++ack <= current) {
+    while (++ack <= current)
         CG_RunUsercmd(&pm, ack);
-        pm.snapinitial = false;
-    }
 
     // check for ducking
     if (cg.predicted_ps.viewheight != viewheight) {
