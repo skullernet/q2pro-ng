@@ -1654,6 +1654,9 @@ void SP_target_healthbar(edict_t *self)
 
 void USE(use_target_autosave)(edict_t *ent, edict_t *other, edict_t *activator)
 {
+    if (g_auto_save_min_time.value < 0)
+        return;
+
     gtime_t save_time = SEC(g_auto_save_min_time.value);
 
     if (level.time - level.next_auto_save > save_time) {
