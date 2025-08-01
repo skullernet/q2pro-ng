@@ -295,6 +295,12 @@ typedef struct {
 
     lightgrid_t     lightgrid;
 
+    int             num_normals;
+    vec3_t          *normals;
+
+    int             num_normal_indices;
+    uint32_t        *normal_indices;
+
     bool            lm_decoupled;
 #endif
     bool            extended;   // QBSP extended format

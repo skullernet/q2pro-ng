@@ -170,6 +170,12 @@ static void BSP_PrintStats(const bsp_t *bsp)
             "%8u : lightgrid samples\n",
             grid->numstyles, grid->numnodes, grid->numleafs, grid->numsamples);
     }
+    if (bsp->normals) {
+        Com_Printf(
+            "%8u : face normals\n"
+            "%8u : face normal indices\n",
+            bsp->num_normals, bsp->num_normal_indices);
+    }
 #endif
 
     if (bsp->extended || bsp->has_bspx) {
@@ -183,6 +189,8 @@ static void BSP_PrintStats(const bsp_t *bsp)
             Com_Printf(" DECOUPLED_LM");
         if (grid->numleafs)
             Com_Printf(" LIGHTGRID_OCTREE");
+        if (bsp->normals)
+            Com_Printf(" FACENORMALS");
 #endif
         Com_Printf("\n");
     }
@@ -663,9 +671,81 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 }
 
+static size_t BSP_ParseFaceNormalsHeader(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    if (filelen < sizeof(uint32_t)) {
+        Com_WPrintf("FACENORMALS lump too short\n");
+        return 0;
+    }
+    filelen -= sizeof(uint32_t);
+
+    uint32_t num_normals = RL32(in);
+    if (num_normals > filelen / sizeof(vec3_t)) {
+        Com_WPrintf("FACENORMALS lump too short\n");
+        return 0;
+    }
+
+    filelen -= num_normals * sizeof(vec3_t);
+    if (filelen % (sizeof(uint32_t) * 3)) {
+        Com_WPrintf("FACENORMALS lump has odd size\n");
+        return 0;
+    }
+
+    bsp->num_normals = num_normals;
+    bsp->num_normal_indices = filelen / (sizeof(uint32_t) * 3);
+
+    if (!bsp->num_normals || !bsp->num_normal_indices) {
+        Com_WPrintf("Ignoring empty FACENORMALS lump\n");
+        return 0;
+    }
+
+    return
+        BSP_ALIGN(bsp->num_normals * sizeof(vec3_t)) +
+        BSP_ALIGN(bsp->num_normal_indices * sizeof(uint32_t));
+}
+
+static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
+{
+    int num_verts = 0;
+    bool errors = false;
+
+    if (!bsp->num_normals || !bsp->num_normal_indices)
+        return;
+
+    for (int i = 0; i < bsp->numfaces; i++)
+        num_verts += bsp->faces[i].numsurfedges;
+
+    if (bsp->num_normal_indices < num_verts) {
+        Com_WPrintf("FACENORMALS lump too short\n");
+        return;
+    }
+
+    bsp->normals = BSP_ALLOC(sizeof(bsp->normals[0]) * bsp->num_normals);
+    bsp->normal_indices = BSP_ALLOC(sizeof(bsp->normal_indices[0]) * bsp->num_normal_indices);
+
+    in += sizeof(uint32_t);
+    for (int i = 0; i < bsp->num_normals; i++)
+        BSP_Vector(bsp->normals[i]);
+
+    for (int i = 0; i < bsp->num_normal_indices; i++) {
+        // validate index
+        uint32_t index = BSP_Long();
+        if (index >= bsp->num_normals)
+            errors = true;
+        bsp->normal_indices[i] = index;
+
+        // skip tangent / bitangent
+        in += 2 * sizeof(uint32_t);
+    }
+
+    if (errors)
+        Com_WPrintf("FACENORMALS lump possibly corrupted\n");
+}
+
 static const xlump_info_t bspx_lumps[] = {
     { "DECOUPLED_LM", BSP_ParseDecoupledLM },
     { "LIGHTGRID_OCTREE", BSP_ParseLightgrid, BSP_ParseLightgridHeader },
+    { "FACENORMALS", BSP_ParseFaceNormals, BSP_ParseFaceNormalsHeader },
 };
 
 // returns amount of extra space to allocate
