@@ -47,9 +47,6 @@ static cvar_t *gl_saturation;
 static cvar_t *gl_gamma;
 static cvar_t *gl_invert;
 static cvar_t *gl_partshape;
-static cvar_t *gl_cubemaps;
-
-cvar_t *gl_intensity;
 
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
@@ -315,8 +312,6 @@ void Scrap_Upload(void)
 //=======================================================
 
 static byte gammatable[256];
-static byte intensitytable[256];
-static byte gammaintensitytable[256];
 static float colorscale;
 static bool lightscale;
 
@@ -381,13 +376,7 @@ static void GL_LightScaleTexture(byte *in, int inwidth, int inheight, imagetype_
     p = in;
     c = inwidth * inheight;
 
-    if (type == IT_WALL || type == IT_SKIN) {
-        for (i = 0; i < c; i++, p += 4) {
-            p[0] = gammaintensitytable[p[0]];
-            p[1] = gammaintensitytable[p[1]];
-            p[2] = gammaintensitytable[p[2]];
-        }
-    } else if (gl_gamma_scale_pics->integer) {
+    if (type == IT_WALL || type == IT_SKIN || gl_gamma_scale_pics->integer) {
         for (i = 0; i < c; i++, p += 4) {
             p[0] = gammatable[p[0]];
             p[1] = gammatable[p[1]];
@@ -949,27 +938,7 @@ int IMG_ReadPixels(screenshot_t *s)
     return Q_ERR_SUCCESS;
 }
 
-static void GL_BuildIntensityTable(void)
-{
-    int i, j;
-    float f = Cvar_ClampValue(gl_intensity, 1, 5);
-
-    if (gl_static.use_shaders || f == 1.0f) {
-        for (i = 0; i < 256; i++)
-            intensitytable[i] = i;
-        j = 255;
-    } else {
-        for (i = 0; i < 256; i++)
-            intensitytable[i] = min(i * f, 255);
-        j = 255.0f / f;
-    }
-
-    gl_static.inverse_intensity_33 = MakeColor(j, j, j, 85);
-    gl_static.inverse_intensity_66 = MakeColor(j, j, j, 170);
-    gl_static.inverse_intensity_100 = MakeColor(j, j, j, 255);
-}
-
-static void GL_BuildGammaTables(void)
+static void GL_BuildGammaTable(void)
 {
     int i;
     float inf, g = gl_gamma->value;
@@ -977,20 +946,18 @@ static void GL_BuildGammaTables(void)
     if (g == 1.0f) {
         for (i = 0; i < 256; i++) {
             gammatable[i] = i;
-            gammaintensitytable[i] = intensitytable[i];
         }
     } else {
         for (i = 0; i < 256; i++) {
             inf = 255 * pow((i + 0.5) / 255.5, g) + 0.5;
             gammatable[i] = min(inf, 255);
-            gammaintensitytable[i] = intensitytable[gammatable[i]];
         }
     }
 }
 
 static void gl_gamma_changed(cvar_t *self)
 {
-    GL_BuildGammaTables();
+    GL_BuildGammaTable();
     if (vid && vid->update_gamma)
         vid->update_gamma(gammatable);
 }
@@ -1137,10 +1104,6 @@ static void GL_InitRawTexture(void)
 
 static void GL_InitCubemaps(void)
 {
-    gl_static.use_cubemaps = gl_static.use_shaders && gl_cubemaps->integer;
-    if (!gl_static.use_cubemaps)
-        return;
-
     // default cubemap for legacy skybox
     GL_ForceCubemap(TEXNUM_CUBEMAP_DEFAULT);
     GL_SetCubemapFilterAndRepeat();
@@ -1273,12 +1236,10 @@ void GL_InitImages(void)
     gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
     gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
     gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
-    gl_intensity = Cvar_Get("intensity", "2", 0);
     gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
-    gl_cubemaps = Cvar_Get("gl_cubemaps", "0", CVAR_FILES);
 
     if (r_config.flags & QVF_GAMMARAMP) {
         gl_gamma->changed = gl_gamma_changed;
@@ -1286,11 +1247,6 @@ void GL_InitImages(void)
     } else {
         gl_gamma->flags |= CVAR_FILES;
     }
-
-    if (gl_static.use_shaders)
-        gl_intensity->flags &= ~CVAR_FILES;
-    else
-        gl_intensity->flags |= CVAR_FILES;
 
     gl_texturemode_changed(gl_texturemode);
     gl_texturebits_changed(gl_texturebits);
@@ -1303,24 +1259,20 @@ void GL_InitImages(void)
     if (gl_upscale_pcx->integer)
         HQ2x_Init();
 
-    GL_BuildIntensityTable();
-
     if (r_config.flags & QVF_GAMMARAMP)
         gl_gamma_changed(gl_gamma);
     else
-        GL_BuildGammaTables();
+        GL_BuildGammaTable();
 
     // FIXME: the name 'saturation' is misleading in this context
     colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
-    lightscale = !(gl_gamma->value == 1.0f && (gl_static.use_shaders || gl_intensity->value == 1.0f));
+    lightscale = gl_gamma->value != 1.0f;
 
     qglGenTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
 
-    if (gl_static.use_shaders) {
-        qglGenRenderbuffers(1, &gl_static.renderbuffer);
-        qglGenFramebuffers(FBO_COUNT, gl_static.framebuffers);
-    }
+    qglGenRenderbuffers(1, &gl_static.renderbuffer);
+    qglGenFramebuffers(FBO_COUNT, gl_static.framebuffers);
 
     Scrap_Init();
 
@@ -1360,15 +1312,14 @@ void GL_ShutdownImages(void)
 
     memset(gl_static.texnums, 0, sizeof(gl_static.texnums));
     memset(lm.texnums, 0, sizeof(lm.texnums));
+    gls.texnumcube = gls.texnumarray = 0;
 
     // delete framebuffers
-    if (gl_static.use_shaders) {
-        qglDeleteFramebuffers(FBO_COUNT, gl_static.framebuffers);
-        memset(gl_static.framebuffers, 0, sizeof(gl_static.framebuffers));
+    qglDeleteFramebuffers(FBO_COUNT, gl_static.framebuffers);
+    memset(gl_static.framebuffers, 0, sizeof(gl_static.framebuffers));
 
-        qglDeleteRenderbuffers(1, &gl_static.renderbuffer);
-        gl_static.renderbuffer = 0;
-    }
+    qglDeleteRenderbuffers(1, &gl_static.renderbuffer);
+    gl_static.renderbuffer = 0;
 
 #if USE_DEBUG
     r_charset = 0;

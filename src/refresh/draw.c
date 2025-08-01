@@ -131,7 +131,7 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
     for (int i = 0; i < 24; i++)
         dst_indices[i] = tess.numverts + indices[i];
 
-    tess.flags |= GLS_BLEND_BLEND | GLS_SHADE_SMOOTH;
+    tess.flags |= GLS_BLEND_BLEND;
 
     tess.numverts += 8;
     tess.numindices += 24;
@@ -449,10 +449,10 @@ void Draw_Stats(void)
     Draw_Stringf(x, y, "Spheres culled : %i", c.spheresCulled); y += 10;
     Draw_Stringf(x, y, "RtBoxes culled : %i", c.rotatedBoxesCulled); y += 10;
     Draw_Stringf(x, y, "Shadows culled : %i", c.shadowsCulled); y += 10;
+    Draw_Stringf(x, y, "Lights culled  : %i", c.lightsCulled); y += 10;
     Draw_Stringf(x, y, "Tris drawn     : %i", c.trisDrawn); y += 10;
     Draw_Stringf(x, y, "Tex switches   : %i", c.texSwitches); y += 10;
     Draw_Stringf(x, y, "Tex uploads    : %i", c.texUploads); y += 10;
-    Draw_Stringf(x, y, "LM texels      : %i", c.lightTexels); y += 10;
     Draw_Stringf(x, y, "Batches drawn  : %i", c.batchesDrawn); y += 10;
     Draw_Stringf(x, y, "Faces / batch  : %.1f", c.batchesDrawn ? (float)c.facesDrawn / c.batchesDrawn : 0.0f); y += 10;
     Draw_Stringf(x, y, "Tris / batch   : %.1f", c.batchesDrawn ? (float)c.facesTris / c.batchesDrawn : 0.0f); y += 10;
@@ -469,6 +469,7 @@ void Draw_Stats(void)
 
 void Draw_Lightmaps(void)
 {
+#if 0
     int block = lm.block_size;
     int rows = 0, cols = 0;
 
@@ -488,6 +489,7 @@ void Draw_Lightmaps(void)
                                0, 0, 1, 1, U32_WHITE, lm.texnums[k], 0);
         }
     }
+#endif
 }
 
 void Draw_Scrap(void)

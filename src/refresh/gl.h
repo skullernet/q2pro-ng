@@ -79,6 +79,9 @@ typedef uint64_t glStateBits_t;
 #define FBO_BLUR_0  gl_static.framebuffers[1]
 #define FBO_BLUR_1  gl_static.framebuffers[2]
 
+enum { UBO_UNIFORMS, UBO_LIGHTS, UBO_STYLES, UBO_SKELETON, UBO_COUNT };
+enum { SSBO_WEIGHTS, SSBO_JOINTNUMS, SSBO_COUNT };
+
 typedef struct {
     GLuint query;
     float frac;
@@ -89,42 +92,30 @@ typedef struct {
 
 typedef struct {
     bool            registering;
-    bool            use_shaders;
-    bool            use_cubemaps;
     bool            use_bmodel_skies;
-    bool            use_gpu_lerp;
     struct {
         bsp_t       *cache;
-        vec_t       *vertices;
         GLuint      buffer;
         size_t      buffer_size;
         vec_t       size;
     } world;
     GLuint          renderbuffer;
     GLuint          framebuffers[FBO_COUNT];
-    GLuint          uniform_buffer;
+    GLuint          uniform_buffers[UBO_COUNT];
 #if USE_MD5
-    GLuint          skeleton_buffer;
-    GLuint          skeleton_tex[2];
+    GLuint          skeleton_tex[SSBO_COUNT];
 #endif
     GLuint          array_object;
     GLuint          index_buffer;
     GLuint          vertex_buffer;
-    GLuint          warp_program;
     GLuint          texnums[NUM_AUTO_TEXTURES];
     GLenum          samples_passed;
-    GLbitfield      stencil_buffer_bit;
     GLsync          sync;
-    float           entity_modulate;
     float           bloom_sigma;
-    uint32_t        inverse_intensity_33;
-    uint32_t        inverse_intensity_66;
-    uint32_t        inverse_intensity_100;
     int             nolm_mask;
     int             hunk_align;
     float           sintab[256];
     byte            latlngtab[NUMVERTEXNORMALS][2];
-    byte            lightstylemap[MAX_LIGHTSTYLES];
     vec4_t          clearcolor;
     hash_map_t      *queries;
     hash_map_t      *programs;
@@ -137,13 +128,6 @@ typedef struct glentity_s {
     };
     struct glentity_s *next;
 } glentity_t;
-
-typedef struct {
-    vec3_t  origin;
-    vec3_t  transformed;
-    vec3_t  color;
-    float   intensity;
-} dlight_t;
 
 typedef struct {
     refdef_t        fd;
@@ -220,16 +204,23 @@ extern glRefdef_t glr;
 
 extern glentity_t gl_world;
 
+typedef struct {
+    vec3_t  origin;
+    float   radius;
+    vec3_t  color;
+    float   sphere;
+    vec3_t  dir;
+    float   cone;
+} glDynLight_t;
+
 extern int          r_numdlights;
-extern dlight_t     r_dlights[MAX_DLIGHTS];
+extern glDynLight_t r_dlights[MAX_DLIGHTS];
 
 extern int          r_numentities;
 extern glentity_t   r_entities[MAX_ENTITIES];
 
 extern int          r_numparticles;
 extern const particle_t *r_particles;
-
-extern lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
 
 extern unsigned     r_registration_sequence;
 
@@ -241,7 +232,6 @@ typedef struct {
     int facesTris;
     int texSwitches;
     int texUploads;
-    int lightTexels;
     int trisDrawn;
     int batchesDrawn;
     int nodesCulled;
@@ -250,6 +240,7 @@ typedef struct {
     int spheresCulled;
     int rotatedBoxesCulled;
     int shadowsCulled;
+    int lightsCulled;
     int batchesDrawn2D;
     int uniformUploads;
     int vertexArrayBinds;
@@ -266,18 +257,12 @@ extern cvar_t *gl_celshading;
 extern cvar_t *gl_dotshading;
 extern cvar_t *gl_shadows;
 extern cvar_t *gl_modulate;
-extern cvar_t *gl_modulate_world;
-extern cvar_t *gl_coloredlightmaps;
-extern cvar_t *gl_lightmap_bits;
-extern cvar_t *gl_brightness;
-extern cvar_t *gl_dynamic;
-extern cvar_t *gl_dlight_falloff;
 extern cvar_t *gl_modulate_entities;
-extern cvar_t *gl_doublelight_entities;
-extern cvar_t *gl_glowmap_intensity;
+extern cvar_t *gl_lightmap_add;
+extern cvar_t *gl_lightmap_bits;
+extern cvar_t *gl_dynamic;
 extern cvar_t *gl_flarespeed;
 extern cvar_t *gl_fontshadow;
-extern cvar_t *gl_shaders;
 #if USE_MD5
 extern cvar_t *gl_md5_load;
 extern cvar_t *gl_md5_use;
@@ -286,6 +271,7 @@ extern cvar_t *gl_md5_distance;
 extern cvar_t *gl_damageblend_frac;
 extern cvar_t *gl_waterwarp;
 extern cvar_t *gl_bloom;
+extern cvar_t *gl_bloom_sigma;
 
 // development variables
 extern cvar_t *gl_znear;
@@ -303,7 +289,6 @@ extern cvar_t *gl_novis;
 extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
 extern cvar_t *gl_fullbright;
-extern cvar_t *gl_vertexlight;
 extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
 
@@ -472,7 +457,7 @@ typedef struct {
 
     char name[MAX_QPATH];
     unsigned registration_sequence;
-    memhunk_t hunk;
+    unsigned size;
 
     int nummeshes;
     int numframes;
@@ -489,9 +474,8 @@ typedef struct {
     GLuint buffers[2];
 } model_t;
 
-// xyz[3] | color[1]  | st[2]    | lmst[2]
-// xyz[3] | unused[1] | color[4]
-#define VERTEX_SIZE 8
+// xyz[3] | color[1] | st[2] | lmst[2] | normal[3] | lightstyles[1]
+#define VERTEX_SIZE 12
 
 void MOD_FreeUnused(void);
 void MOD_FreeAll(void);
@@ -505,35 +489,19 @@ qhandle_t R_RegisterModel(const char *name);
  * gl_surf.c
  *
  */
-#define LIGHT_STYLE(i) \
-    &r_lightstyles[gl_static.lightstylemap[(i)]]
-
 #define LM_MAX_LIGHTMAPS    128
 #define LM_MAX_BLOCK_WIDTH  (1 << 10)
 
-typedef struct lightmap_s {
-    uint16_t    mins[2];
-    uint16_t    maxs[2];
-    byte        *buffer;
-} lightmap_t;
-
 typedef struct {
-    bool        dirty;
-    int         comp, block_size, block_shift;
-    float       add, modulate, scale;
-    int         nummaps, maxmaps, block_bytes;
+    int         block_size, block_shift, size_shift;
+    int         nummaps, numstyles;
     uint16_t    inuse[LM_MAX_BLOCK_WIDTH];
     GLuint      texnums[LM_MAX_LIGHTMAPS];
-    lightmap_t  lightmaps[LM_MAX_LIGHTMAPS];
+    byte        *buffer;
 } lightmap_builder_t;
 
 extern lightmap_builder_t lm;
 
-void GL_AdjustColor(vec3_t color);
-void GL_PushLights(mface_t *surf);
-void GL_UploadLightmaps(void);
-
-void GL_RebuildLighting(void);
 void GL_FreeWorld(void);
 void GL_LoadWorld(const char *name);
 
@@ -555,7 +523,7 @@ void GL_LoadWorld(const char *name);
 #define GLS_SCROLL_ENABLE       BIT_ULL(8)
 #define GLS_LIGHTMAP_ENABLE     BIT_ULL(9)
 #define GLS_WARP_ENABLE         BIT_ULL(10)
-#define GLS_INTENSITY_ENABLE    BIT_ULL(11)
+#define GLS_DYNAMIC_LIGHTS      BIT_ULL(11)
 #define GLS_GLOWMAP_ENABLE      BIT_ULL(12)
 #define GLS_CLASSIC_SKY         BIT_ULL(13)
 #define GLS_DEFAULT_SKY         BIT_ULL(14)
@@ -567,22 +535,21 @@ void GL_LoadWorld(const char *name);
 #define GLS_MESH_SHELL          BIT_ULL(19)
 #define GLS_MESH_SHADE          BIT_ULL(20)
 
-#define GLS_SHADE_SMOOTH        BIT_ULL(21)
-#define GLS_SCROLL_X            BIT_ULL(22)
-#define GLS_SCROLL_Y            BIT_ULL(23)
-#define GLS_SCROLL_FLIP         BIT_ULL(24)
-#define GLS_SCROLL_SLOW         BIT_ULL(25)
+#define GLS_SCROLL_X            BIT_ULL(21)
+#define GLS_SCROLL_Y            BIT_ULL(22)
+#define GLS_SCROLL_FLIP         BIT_ULL(23)
+#define GLS_SCROLL_SLOW         BIT_ULL(24)
 
-#define GLS_FOG_GLOBAL          BIT_ULL(26)
-#define GLS_FOG_HEIGHT          BIT_ULL(27)
-#define GLS_FOG_SKY             BIT_ULL(28)
+#define GLS_FOG_GLOBAL          BIT_ULL(25)
+#define GLS_FOG_HEIGHT          BIT_ULL(26)
+#define GLS_FOG_SKY             BIT_ULL(27)
 
-#define GLS_BLOOM_GENERATE      BIT_ULL(29)
-#define GLS_BLOOM_OUTPUT        BIT_ULL(30)
-#define GLS_BLOOM_SHELL         BIT_ULL(31)
+#define GLS_BLOOM_GENERATE      BIT_ULL(28)
+#define GLS_BLOOM_OUTPUT        BIT_ULL(29)
+#define GLS_BLOOM_SHELL         BIT_ULL(30)
 
-#define GLS_BLUR_GAUSS          BIT_ULL(32)
-#define GLS_BLUR_BOX            BIT_ULL(33)
+#define GLS_BLUR_GAUSS          BIT_ULL(31)
+#define GLS_BLUR_BOX            BIT_ULL(32)
 
 #define GLS_BLEND_MASK          (GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE)
 #define GLS_COMMON_MASK         (GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK)
@@ -590,13 +557,14 @@ void GL_LoadWorld(const char *name);
 #define GLS_FOG_MASK            (GLS_FOG_GLOBAL | GLS_FOG_HEIGHT | GLS_FOG_SKY)
 #define GLS_MESH_ANY            (GLS_MESH_MD2 | GLS_MESH_MD5)
 #define GLS_MESH_MASK           (GLS_MESH_ANY | GLS_MESH_LERP | GLS_MESH_SHELL | GLS_MESH_SHADE)
+#define GLS_MESH_NORMAL_MASK    (GLS_MESH_SHELL | GLS_MESH_SHADE | GLS_DYNAMIC_LIGHTS)
 #define GLS_BLOOM_MASK          (GLS_BLOOM_GENERATE | GLS_BLOOM_OUTPUT | GLS_BLOOM_SHELL)
 #define GLS_BLUR_MASK           (GLS_BLUR_GAUSS | GLS_BLUR_BOX)
 #define GLS_SHADER_MASK         (GLS_ALPHATEST_ENABLE | GLS_TEXTURE_REPLACE | GLS_SCROLL_ENABLE | \
-                                 GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_INTENSITY_ENABLE | \
+                                 GLS_LIGHTMAP_ENABLE | GLS_WARP_ENABLE | GLS_DYNAMIC_LIGHTS | \
                                  GLS_GLOWMAP_ENABLE | GLS_SKY_MASK | GLS_DEFAULT_FLARE | GLS_MESH_MASK | \
                                  GLS_FOG_MASK | GLS_BLOOM_MASK | GLS_BLUR_MASK)
-#define GLS_UNIFORM_MASK        (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_INTENSITY_ENABLE | \
+#define GLS_UNIFORM_MASK        (GLS_WARP_ENABLE | GLS_LIGHTMAP_ENABLE | GLS_DYNAMIC_LIGHTS | \
                                  GLS_SKY_MASK | GLS_FOG_MASK | GLS_BLUR_MASK)
 #define GLS_SCROLL_MASK         (GLS_SCROLL_ENABLE | GLS_SCROLL_X | GLS_SCROLL_Y | GLS_SCROLL_FLIP | GLS_SCROLL_SLOW)
 
@@ -605,6 +573,8 @@ typedef enum {
     VERT_ATTR_TC,
     VERT_ATTR_LMTC,
     VERT_ATTR_COLOR,
+    VERT_ATTR_NORMAL,
+    VERT_ATTR_LIGHTSTYLE,
     VERT_ATTR_COUNT,
 
     // MD2
@@ -623,6 +593,8 @@ typedef enum {
     GLA_TC          = BIT(VERT_ATTR_TC),
     GLA_LMTC        = BIT(VERT_ATTR_LMTC),
     GLA_COLOR       = BIT(VERT_ATTR_COLOR),
+    GLA_NORMAL      = BIT(VERT_ATTR_NORMAL),
+    GLA_LIGHTSTYLE  = BIT(VERT_ATTR_LIGHTSTYLE),
     GLA_MESH_STATIC = MASK(2),
     GLA_MESH_LERP   = MASK(3),
 } glArrayBits_t;
@@ -635,8 +607,6 @@ typedef enum {
     VA_NULLMODEL,
     VA_OCCLUDE,
     VA_POSTPROCESS,
-    VA_MESH_SHADE,
-    VA_MESH_FLAT,
     VA_2D,
     VA_3D,
 
@@ -661,9 +631,6 @@ typedef enum {
 
     GLB_COUNT
 } glBufferBinding_t;
-
-enum { UBO_UNIFORMS, UBO_SKELETON };
-enum { SSBO_WEIGHTS, SSBO_JOINTNUMS };
 
 typedef struct {
     vec4_t      oldscale;
@@ -693,7 +660,7 @@ typedef struct {
     GLfloat     modulate;
     GLfloat     add;
     GLfloat     intensity;
-    GLfloat     intensity2;
+    GLfloat     pad_4;
     GLfloat     fog_sky_factor;
     vec2_t      w_amp;
     vec2_t      w_phase;
@@ -703,15 +670,33 @@ typedef struct {
     vec4_t      heightfog_end;
     GLfloat     heightfog_density;
     GLfloat     heightfog_falloff;
-    vec2_t      pad_4;
+    GLfloat     pad_5;
+    GLuint      dlightbits;
     vec4_t      vieworg;
 } glUniformBlock_t;
 
 typedef struct {
-    glTmu_t             client_tmu;
+    int             num_dlights;
+    int             pad[3];
+    glDynLight_t    dlights[MAX_DLIGHTS];
+} glLightsBlock_t;
+
+typedef struct {
+    vec4_t          styles[MAX_LIGHTSTYLES];
+} glStylesBlock;
+
+typedef enum {
+    DIRTY_NONE   = 0,
+    DIRTY_BLOCK  = 1,
+    DIRTY_MATRIX = 2,
+} glUniformDirty_t;
+
+typedef struct {
     glTmu_t             server_tmu;
     GLuint              texnums[MAX_TMUS];
     GLuint              texnumcube;
+    GLuint              texnumarray;
+    uint64_t            light_bits;
     glStateBits_t       state_bits;
     glArrayBits_t       array_bits;
     GLuint              currentbuffer[GLB_COUNT];
@@ -720,7 +705,9 @@ typedef struct {
     mat4_t              view_matrix;
     mat4_t              proj_matrix;
     glUniformBlock_t    u_block;
-    bool                u_block_dirty;
+    glUniformDirty_t    u_block_dirty;
+    glLightsBlock_t     u_lights;
+    glStylesBlock       u_styles;
 } glState_t;
 
 extern glState_t gls;
@@ -734,30 +721,6 @@ typedef struct {
     uint8_t offset;
 } glVaDesc_t;
 
-typedef struct {
-    const char *name;
-
-    void (*init)(void);
-    void (*shutdown)(void);
-    void (*clear_state)(void);
-    void (*setup_2d)(void);
-    void (*setup_3d)(void);
-
-    void (*load_matrix)(GLenum mode, const GLfloat *matrix);
-    void (*load_uniforms)(void);
-    void (*update_blur)(void);
-
-    void (*state_bits)(glStateBits_t bits);
-    void (*array_bits)(glArrayBits_t bits);
-
-    void (*array_pointers)(const glVaDesc_t *desc, const GLfloat *ptr);
-    void (*tex_coord_pointer)(const GLfloat *ptr);
-
-    void (*color)(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
-} glbackend_t;
-
-extern const glbackend_t *gl_backend;
-
 extern const mat4_t gl_identity;
 
 static inline void GL_ActiveTexture(glTmu_t tmu)
@@ -768,50 +731,28 @@ static inline void GL_ActiveTexture(glTmu_t tmu)
     }
 }
 
-static inline void GL_ClientActiveTexture(glTmu_t tmu)
-{
-    if (gls.client_tmu != tmu) {
-        qglClientActiveTexture(GL_TEXTURE0 + tmu);
-        gls.client_tmu = tmu;
-    }
-}
+void GL_StateBits(glStateBits_t bits);
+void GL_ArrayBits(glArrayBits_t bits);
+void GL_PushLights(uint64_t bits);
+void GL_ForceUniforms(void);
 
-static inline void GL_StateBits(glStateBits_t bits)
+static inline void GL_LoadUniforms(void)
 {
-    if (gls.state_bits != bits) {
-        gl_backend->state_bits(bits);
-        gls.state_bits = bits;
-    }
-}
-
-static inline void GL_ArrayBits(glArrayBits_t bits)
-{
-    if (gls.array_bits != bits) {
-        gl_backend->array_bits(bits);
-        gls.array_bits = bits;
-    }
+    if (gls.u_block_dirty)
+        GL_ForceUniforms();
 }
 
 static inline void GL_ForceMatrix(const GLfloat *matrix)
 {
-    gl_backend->load_matrix(GL_MODELVIEW, matrix);
+    memcpy(gls.view_matrix, matrix, sizeof(gls.view_matrix));
+    gls.u_block_dirty |= DIRTY_MATRIX;
     gls.currentmatrix = matrix;
 }
 
 static inline void GL_LoadMatrix(const GLfloat *matrix)
 {
-    if (gls.currentmatrix != matrix) {
-        gl_backend->load_matrix(GL_MODELVIEW, matrix);
-        gls.currentmatrix = matrix;
-    }
-}
-
-static inline void GL_LoadUniforms(void)
-{
-    if (gls.u_block_dirty && gl_backend->load_uniforms) {
-        gl_backend->load_uniforms();
-        gls.u_block_dirty = false;
-    }
+    if (gls.currentmatrix != matrix)
+        GL_ForceMatrix(matrix);
 }
 
 static inline glBufferBinding_t GL_BindingForTarget(GLenum target)
@@ -860,7 +801,10 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
         qglDepthRange(n, f);
 }
 
-#define GL_Color(r, g, b, a) gl_backend->color(r, g, b, a)
+static inline void GL_Color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+    qglVertexAttrib4f(VERT_ATTR_COLOR, r, g, b, a);
+}
 
 typedef enum {
     SHOWTRIS_NONE   = 0,
@@ -874,9 +818,9 @@ void GL_ForceTexture(glTmu_t tmu, GLuint texnum);
 void GL_BindTexture(glTmu_t tmu, GLuint texnum);
 void GL_ForceCubemap(GLuint texnum);
 void GL_BindCubemap(GLuint texnum);
+void GL_ForceTextureArray(GLuint texnum);
+void GL_BindTextureArray(GLuint texnum);
 void GL_DeleteBuffers(GLsizei n, const GLuint *buffers);
-void GL_CommonStateBits(glStateBits_t bits);
-void GL_ScrollPos(vec2_t scroll, glStateBits_t bits);
 void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices);
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar);
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x);
@@ -885,6 +829,15 @@ void GL_Setup3D(void);
 void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
+
+/*
+ * shader.c
+ *
+ */
+void GL_ShaderStateBits(glStateBits_t key);
+void GL_ShaderUpdateBlur(void);
+void GL_InitShaders(void);
+void GL_ShutdownShaders(void);
 
 /*
  * gl_draw.c
@@ -937,6 +890,7 @@ typedef struct {
     int             numverts;
     int             numindices;
     glStateBits_t   flags;
+    uint64_t        dlightbits;
 } tesselator_t;
 
 extern tesselator_t tess;
@@ -967,16 +921,12 @@ void GL_ClearSolidFaces(void);
  */
 void GL_DrawBspModel(mmodel_t *model);
 void GL_DrawWorld(void);
-void GL_SampleLightPoint(vec3_t color);
 void GL_LightPoint(const vec3_t origin, vec3_t color);
 
 /*
  * gl_sky.c
  *
  */
-void R_AddSkySurface(const mface_t *surf);
-void R_ClearSkyBox(void);
-void R_DrawSkyBox(void);
 void R_RotateForSky(void);
 void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
 

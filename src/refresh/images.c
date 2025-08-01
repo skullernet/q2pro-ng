@@ -1839,16 +1839,10 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensio
 
 static void check_for_glow_map(image_t *image)
 {
-    extern cvar_t *gl_shaders;
     imagetype_t type = image->type;
     byte *glow_pic;
     size_t len;
     int ret;
-
-    // glow maps are not supported in legacy mode due to
-    // various corner cases that are not worth taking care of
-    if (!gl_shaders->integer)
-        return;
 
     // use a temporary image_t to hold glow map stuff.
     // it doesn't need to be registered.

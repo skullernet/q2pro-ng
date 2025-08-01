@@ -485,8 +485,8 @@ static void CG_AddExplosions(void)
             continue;
 
         if (ex->light)
-            trap_R_AddLight(ent->origin, ex->light * ent->alpha,
-                            ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+            trap_R_AddSphereLight(ent->origin, ex->light * ent->alpha,
+                                  ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
 
         if (ex->type != ex_light) {
             VectorCopy(ent->origin, ent->oldorigin);

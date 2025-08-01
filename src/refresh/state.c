@@ -20,8 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 glState_t gls;
 
-const glbackend_t *gl_backend;
-
 const mat4_t gl_identity = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
 
 // for uploading
@@ -92,29 +90,75 @@ void GL_BindCubemap(GLuint texnum)
     c.texSwitches++;
 }
 
-void GL_DeleteBuffers(GLsizei n, const GLuint *buffers)
+void GL_ForceTextureArray(GLuint texnum)
 {
-    int i, j;
+    GL_ActiveTexture(TMU_LIGHTMAP);
 
-    for (i = 0; i < n; i++)
-        if (buffers[i])
-            break;
-    if (i == n)
+    if (gls.texnumarray == texnum)
         return;
 
-    Q_assert(qglDeleteBuffers);
+    qglBindTexture(GL_TEXTURE_2D_ARRAY, texnum);
+    gls.texnumarray = texnum;
+
+    c.texSwitches++;
+}
+
+void GL_BindTextureArray(GLuint texnum)
+{
+    if (gls.texnumarray == texnum)
+        return;
+
+    if (qglBindTextureUnit) {
+        qglBindTextureUnit(TMU_LIGHTMAP, texnum);
+    } else {
+        GL_ActiveTexture(TMU_LIGHTMAP);
+        qglBindTexture(GL_TEXTURE_2D_ARRAY, texnum);
+    }
+    gls.texnumarray = texnum;
+
+    c.texSwitches++;
+}
+
+void GL_DeleteBuffers(GLsizei n, const GLuint *buffers)
+{
     qglDeleteBuffers(n, buffers);
 
     // invalidate bindings
-    for (i = 0; i < n; i++)
-        for (j = 0; j < GLB_COUNT; j++)
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < GLB_COUNT; j++)
             if (gls.currentbuffer[j] == buffers[i])
                 gls.currentbuffer[j] = 0;
 }
 
-void GL_CommonStateBits(glStateBits_t bits)
+static void GL_ScrollPos(vec2_t scroll, glStateBits_t bits)
+{
+    float speed = 1.6f;
+
+    if (bits & (GLS_SCROLL_X | GLS_SCROLL_Y))
+        speed = 0.78125f;
+    else if (bits & GLS_SCROLL_SLOW)
+        speed = 0.5f;
+
+    if (bits & GLS_SCROLL_FLIP)
+        speed = -speed;
+
+    speed *= glr.fd.time;
+
+    if (bits & GLS_SCROLL_Y) {
+        scroll[0] = 0;
+        scroll[1] = speed;
+    } else {
+        scroll[0] = -speed;
+        scroll[1] = 0;
+    }
+}
+
+void GL_StateBits(glStateBits_t bits)
 {
     glStateBits_t diff = bits ^ gls.state_bits;
+
+    if (!diff)
+        return;
 
     if (diff & GLS_BLEND_MASK) {
         if (bits & GLS_BLEND_MASK) {
@@ -150,35 +194,49 @@ void GL_CommonStateBits(glStateBits_t bits)
         else
             qglEnable(GL_CULL_FACE);
     }
+
+    if (diff & GLS_SHADER_MASK)
+        GL_ShaderStateBits(bits & GLS_SHADER_MASK);
+
+    if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
+        GL_ScrollPos(gls.u_block.scroll, bits);
+        gls.u_block_dirty |= DIRTY_BLOCK;
+    }
+
+    if (diff & GLS_BLOOM_GENERATE && glr.framebuffer_bound) {
+        int n = (bits & GLS_BLOOM_GENERATE) ? 2 : 1;
+        qglDrawBuffers(n, (const GLenum []) {
+            GL_COLOR_ATTACHMENT0,
+            GL_COLOR_ATTACHMENT1
+        });
+    }
+
+    gls.state_bits = bits;
 }
 
-void GL_ScrollPos(vec2_t scroll, glStateBits_t bits)
+void GL_ArrayBits(glArrayBits_t bits)
 {
-    float speed = 1.6f;
+    glArrayBits_t diff = bits ^ gls.array_bits;
 
-    if (bits & (GLS_SCROLL_X | GLS_SCROLL_Y))
-        speed = 0.78125f;
-    else if (bits & GLS_SCROLL_SLOW)
-        speed = 0.5f;
+    if (!diff)
+        return;
 
-    if (bits & GLS_SCROLL_FLIP)
-        speed = -speed;
-
-    speed *= glr.fd.time;
-
-    if (bits & GLS_SCROLL_Y) {
-        scroll[0] = 0;
-        scroll[1] = speed;
-    } else {
-        scroll[0] = -speed;
-        scroll[1] = 0;
+    for (int i = 0; i < VERT_ATTR_COUNT; i++) {
+        if (!(diff & BIT(i)))
+            continue;
+        if (bits & BIT(i))
+            qglEnableVertexAttribArray(i);
+        else
+            qglDisableVertexAttribArray(i);
     }
+
+    gls.array_bits = bits;
 }
 
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar)
 {
     GLfloat width, height, depth;
-    mat4_t matrix;
+    GLfloat *matrix = gls.proj_matrix;
 
     width  = xmax - xmin;
     height = ymax - ymin;
@@ -204,7 +262,7 @@ void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat zn
     matrix[11] = 0;
     matrix[15] = 1;
 
-    gl_backend->load_matrix(GL_PROJECTION, matrix);
+    gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
 void GL_Setup2D(void)
@@ -222,17 +280,24 @@ void GL_Setup2D(void)
         draw.scissor = false;
     }
 
-    if (gl_backend->setup_2d)
-        gl_backend->setup_2d();
+    gls.u_block.time = glr.fd.time;
+    gls.u_block.modulate = 1.0f;
+    gls.u_block.add = 0.0f;
+    gls.u_block.intensity = 1.0f;
 
-    gl_backend->load_matrix(GL_MODELVIEW, gl_identity);
+    gls.u_block.w_amp[0] = 0.0025f;
+    gls.u_block.w_amp[1] = 0.0025f;
+    gls.u_block.w_phase[0] = M_PIf * 10;
+    gls.u_block.w_phase[1] = M_PIf * 10;
+
+    GL_ForceMatrix(gl_identity);
 }
 
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 {
     GLfloat xmin, xmax, ymin, ymax, zfar, znear;
     GLfloat width, height, depth;
-    mat4_t matrix;
+    GLfloat *matrix = gls.proj_matrix;
 
     znear = gl_znear->value;
 
@@ -271,7 +336,7 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     matrix[11] = -1;
     matrix[15] = 0;
 
-    gl_backend->load_matrix(GL_PROJECTION, matrix);
+    gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
 static void GL_RotateForViewer(void)
@@ -311,8 +376,27 @@ void GL_Setup3D(void)
         qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
                     glr.fd.width, glr.fd.height);
 
-    if (gl_backend->setup_3d)
-        gl_backend->setup_3d();
+    gls.u_block.time = glr.fd.time;
+    gls.u_block.modulate = gl_modulate->value;
+    gls.u_block.add = gl_lightmap_add->value;
+
+    gls.u_block.w_amp[0] = 0.0625f;
+    gls.u_block.w_amp[1] = 0.0625f;
+    gls.u_block.w_phase[0] = 4;
+    gls.u_block.w_phase[1] = 4;
+
+    R_RotateForSky();
+
+    gls.light_bits = 0;
+
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_STYLES]);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_styles), &gls.u_styles, GL_DYNAMIC_DRAW);
+
+    // setup default matrices for world
+    memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(gls.u_block.m_sky));
+    memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
+
+    VectorCopy(glr.fd.vieworg, gls.u_block.vieworg);
 
     GL_Frustum(glr.fd.fov_x, glr.fd.fov_y, 1.0f);
 
@@ -321,7 +405,7 @@ void GL_Setup3D(void)
     // enable depth writes before clearing
     GL_StateBits(GLS_DEFAULT);
 
-    qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
+    qglClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
@@ -366,7 +450,40 @@ void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
     GL_DepthRange(0, 1);
 }
 
-void GL_ClearState(void)
+void GL_ForceUniforms(void)
+{
+    if (gls.u_block_dirty & DIRTY_MATRIX)
+        GL_MultMatrix(gls.u_block.m_vp, gls.proj_matrix, gls.view_matrix);
+
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_UNIFORMS]);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
+
+    gls.u_block_dirty = DIRTY_NONE;
+    c.uniformUploads++;
+}
+
+void GL_PushLights(uint64_t bits)
+{
+    if (gls.light_bits == bits)
+        return;
+
+    gls.light_bits = bits;
+    gls.u_lights.num_dlights = 0;
+
+    if (!bits)
+        return;
+
+    for (int i = 0; i < r_numdlights; i++)
+        if (bits & BIT_ULL(i))
+            gls.u_lights.dlights[gls.u_lights.num_dlights++] = r_dlights[i];
+
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_LIGHTS]);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_lights), NULL, GL_DYNAMIC_DRAW);
+    qglBufferSubData(GL_UNIFORM_BUFFER, 0, 16 + sizeof(glDynLight_t) * gls.u_lights.num_dlights, &gls.u_lights);
+    c.uniformUploads++;
+}
+
+void GL_InitState(void)
 {
     qglClearColor(Vector4Unpack(gl_static.clearcolor));
     GL_ClearDepth(1);
@@ -381,53 +498,16 @@ void GL_ClearState(void)
     qglCullFace(GL_BACK);
     qglEnable(GL_CULL_FACE);
 
-    // unbind buffers
-    if (qglBindBuffer) {
-        qglBindBuffer(GL_ARRAY_BUFFER, 0);
-        qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
+    GL_ShaderStateBits(GLS_DEFAULT);
 
-    gl_backend->clear_state();
-
-    qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
-
-    memset(&gls, 0, sizeof(gls));
-    GL_ShowErrors(__func__);
-}
-
-extern const glbackend_t backend_legacy;
-extern const glbackend_t backend_shader;
-
-void GL_InitState(void)
-{
-    gl_static.use_shaders = gl_shaders->integer > 0;
-
-    if (gl_static.use_shaders) {
-        if (!(gl_config.caps & QGL_CAP_SHADER)) {
-            Com_WPrintf("GLSL rendering backend not available.\n");
-            gl_static.use_shaders = false;
-            Cvar_Set("gl_shaders", "0");
-        }
-    } else {
-        if (!(gl_config.caps & QGL_CAP_LEGACY)) {
-            Com_WPrintf("Legacy rendering backend not available.\n");
-            gl_static.use_shaders = true;
-            Cvar_Set("gl_shaders", "1");
-        }
-    }
-
-    gl_shaders->modified = false;
-
-    gl_backend = gl_static.use_shaders ? &backend_shader : &backend_legacy;
-    gl_backend->init();
-
-    Com_Printf("Using %s rendering backend.\n", gl_backend->name);
+    if (gl_config.ver_gl >= QGL_VER(3, 2))
+        qglEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 void GL_ShutdownState(void)
 {
-    if (gl_backend) {
-        gl_backend->shutdown();
-        gl_backend = NULL;
-    }
+    for (int i = 0; i < VERT_ATTR_COUNT; i++)
+        qglDisableVertexAttribArray(i);
+
+    memset(&gls, 0, sizeof(gls));
 }

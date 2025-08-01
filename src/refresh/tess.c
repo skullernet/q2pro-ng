@@ -468,7 +468,6 @@ void GL_DrawFlares(void)
                 outer.u8[1] = 255;
             if (ent->flags & RF_SHELL_BLUE)
                 outer.u8[2] = 255;
-            tess.flags |= GLS_SHADE_SMOOTH;
         }
 
         WN32(dst_vert +  5, inner.u32);
@@ -512,45 +511,53 @@ static const glVaDesc_t arraydescs[VA_TOTAL][VERT_ATTR_COUNT] = {
         [VERT_ATTR_POS] = ATTR_FLOAT(2, 4, 0),
         [VERT_ATTR_TC]  = ATTR_FLOAT(2, 4, 2),
     },
-    [VA_MESH_SHADE] = {
-        [VERT_ATTR_POS]   = ATTR_FLOAT(3, VERTEX_SIZE, 0),
-        [VERT_ATTR_COLOR] = ATTR_FLOAT(4, VERTEX_SIZE, 4),
-    },
-    [VA_MESH_FLAT] = {
-        [VERT_ATTR_POS] = ATTR_FLOAT(3, 4, 0),
-    },
     [VA_2D] = {
         [VERT_ATTR_POS]   = ATTR_FLOAT(2, 5, 0),
         [VERT_ATTR_TC]    = ATTR_FLOAT(2, 5, 2),
         [VERT_ATTR_COLOR] = ATTR_UBYTE(4, 5, 4),
     },
     [VA_3D] = {
-        [VERT_ATTR_POS]   = ATTR_FLOAT(3, VERTEX_SIZE, 0),
-        [VERT_ATTR_TC]    = ATTR_FLOAT(2, VERTEX_SIZE, 4),
-        [VERT_ATTR_LMTC]  = ATTR_FLOAT(2, VERTEX_SIZE, 6),
-        [VERT_ATTR_COLOR] = ATTR_UBYTE(4, VERTEX_SIZE, 3),
+        [VERT_ATTR_POS]        = ATTR_FLOAT(3, VERTEX_SIZE, 0),
+        [VERT_ATTR_TC]         = ATTR_FLOAT(2, VERTEX_SIZE, 4),
+        [VERT_ATTR_LMTC]       = ATTR_FLOAT(2, VERTEX_SIZE, 6),
+        [VERT_ATTR_COLOR]      = ATTR_UBYTE(4, VERTEX_SIZE, 3),
+        [VERT_ATTR_NORMAL]     = ATTR_FLOAT(3, VERTEX_SIZE, 8),
+        [VERT_ATTR_LIGHTSTYLE] = ATTR_UBYTE(4, VERTEX_SIZE, 11),
     },
 };
 
 void GL_BindArrays(glVertexArray_t va)
 {
+    if (va == VA_NONE) {
+        gls.currentva = va;
+        return;
+    }
+
     if (gls.currentva == va)
         return;
 
-    if (va != VA_NONE) {
-        const GLfloat *ptr = tess.vertices;
-        GLuint buffer = 0;
+    uintptr_t base = (uintptr_t)tess.vertices;
+    GLuint buffer = 0;
 
-        if (va == VA_3D && !gl_static.world.vertices) {
-            buffer = gl_static.world.buffer;
-            ptr = NULL;
-        } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
-            buffer = gl_static.vertex_buffer;
-            ptr = NULL;
+    if (va == VA_3D) {
+        buffer = gl_static.world.buffer;
+        base = 0;
+    } else if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
+        buffer = gl_static.vertex_buffer;
+        base = 0;
+    }
+
+    GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
+
+    for (int i = 0; i < VERT_ATTR_COUNT; i++) {
+        const glVaDesc_t *d = &arraydescs[va][i];
+        if (d->size) {
+            const GLenum type = d->type ? GL_UNSIGNED_BYTE : GL_FLOAT;
+            if (i == VERT_ATTR_LIGHTSTYLE)
+                qglVertexAttribIPointer(i, d->size, type, d->stride, (void *)(base + d->offset));
+            else
+                qglVertexAttribPointer(i, d->size, type, d->type, d->stride, (void *)(base + d->offset));
         }
-
-        GL_BindBuffer(GL_ARRAY_BUFFER, buffer);
-        gl_backend->array_pointers(arraydescs[va], ptr);
     }
 
     gls.currentva = va;
@@ -559,9 +566,7 @@ void GL_BindArrays(glVertexArray_t va)
 
 void GL_LockArrays(GLsizei count)
 {
-    if (gls.currentva == VA_NONE)
-        return;
-    if (gls.currentva == VA_3D && !gl_static.world.vertices)
+    if (gls.currentva == VA_NONE || gls.currentva == VA_3D)
         return;
     if (gl_config.caps & QGL_CAP_CLIENT_VA) {
         if (qglLockArraysEXT)
@@ -575,9 +580,7 @@ void GL_LockArrays(GLsizei count)
 
 void GL_UnlockArrays(void)
 {
-    if (gls.currentva == VA_NONE)
-        return;
-    if (gls.currentva == VA_3D && !gl_static.world.vertices)
+    if (gls.currentva == VA_NONE || gls.currentva == VA_3D)
         return;
     if (!(gl_config.caps & QGL_CAP_CLIENT_VA))
         return;
@@ -646,13 +649,15 @@ void GL_Flush3D(void)
         array = GLA_VERTEX;
     } else if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
         state |= GLS_LIGHTMAP_ENABLE;
-        array |= GLA_LMTC;
-
-        if (q_unlikely(gl_lightmap->integer))
-            state &= ~GLS_INTENSITY_ENABLE;
+        array |= GLA_LMTC | GLA_LIGHTSTYLE;
 
         if (tess.texnum[TMU_GLOWMAP])
             state |= GLS_GLOWMAP_ENABLE;
+
+        if (tess.dlightbits) {
+            state |= GLS_DYNAMIC_LIGHTS;
+            array |= GLA_NORMAL;
+        }
     }
     if (glr.framebuffer_bound && gl_bloom->integer)
         state |= GLS_BLOOM_GENERATE;
@@ -686,9 +691,15 @@ void GL_Flush3D(void)
         if (count)
             qglBindTextures(0, count, tess.texnum);
     } else {
-        for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++)
-            GL_BindTexture(i, tess.texnum[i]);
+        for (int i = 0; i < MAX_TMUS && tess.texnum[i]; i++) {
+            if (i == TMU_LIGHTMAP && !(state & GLS_SKY_MASK))
+                GL_BindTextureArray(tess.texnum[i]);
+            else
+                GL_BindTexture(i, tess.texnum[i]);
+        }
     }
+
+    GL_PushLights(tess.dlightbits);
 
     GL_DrawIndexed(SHOWTRIS_WORLD);
 
@@ -698,22 +709,7 @@ void GL_Flush3D(void)
     tess.numindices = 0;
     tess.numverts = 0;
     tess.flags = 0;
-}
-
-static int GL_CopyVerts(const mface_t *surf)
-{
-    int firstvert;
-
-    if (tess.numverts + surf->numsurfedges > TESS_MAX_VERTICES)
-        GL_Flush3D();
-
-    memcpy(tess.vertices + tess.numverts * VERTEX_SIZE,
-           gl_static.world.vertices + surf->firstvert * VERTEX_SIZE,
-           surf->numsurfedges * VERTEX_SIZE * sizeof(GLfloat));
-
-    firstvert = tess.numverts;
-    tess.numverts += surf->numsurfedges;
-    return firstvert;
+    tess.dlightbits = 0;
 }
 
 static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
@@ -733,19 +729,22 @@ static void GL_DrawFace(const mface_t *surf)
     const int numtris = surf->numsurfedges - 2;
     const int numindices = numtris * 3;
     glStateBits_t state = surf->statebits;
+    uint64_t dlightbits = 0;
     GLuint texnum[MAX_TMUS] = { 0 };
     glIndex_t *dst_indices;
     int i, j;
 
     texnum[TMU_TEXTURE] = image->texnum;
-    if (q_likely(surf->light_m)) {
-        texnum[TMU_LIGHTMAP] = lm.texnums[surf->light_m - lm.lightmaps];
+    if (q_likely(surf->lm_texnum && !gl_fullbright->integer)) {
+        texnum[TMU_LIGHTMAP] = surf->lm_texnum;
         texnum[TMU_GLOWMAP ] = image->texnum2;
 
         if (q_unlikely(gl_lightmap->integer)) {
             texnum[TMU_TEXTURE] = TEXNUM_WHITE;
             texnum[TMU_GLOWMAP] = 0;
         }
+        if (surf->dlightframe == glr.dlightframe)
+            dlightbits = surf->dlightbits;
     } else if (state & GLS_CLASSIC_SKY) {
         if (q_likely(gl_drawsky->integer)) {
             texnum[TMU_LIGHTMAP] = image->texnum2;
@@ -756,15 +755,12 @@ static void GL_DrawFace(const mface_t *surf)
     }
 
     if (memcmp(tess.texnum, texnum, sizeof(texnum)) ||
+        tess.dlightbits != dlightbits ||
         tess.flags != state ||
         tess.numindices + numindices > TESS_MAX_INDICES)
         GL_Flush3D();
 
-    if (q_unlikely(gl_static.world.vertices))
-        j = GL_CopyVerts(surf);
-    else
-        j = surf->firstvert;
-
+    j = surf->firstvert;
     dst_indices = tess.indices + tess.numindices;
     for (i = 0; i < numtris; i++) {
         dst_indices[0] = j;
@@ -776,6 +772,7 @@ static void GL_DrawFace(const mface_t *surf)
 
     memcpy(tess.texnum, texnum, sizeof(texnum));
     tess.flags = state;
+    tess.dlightbits = dlightbits;
 
     c.facesTris += numtris;
     c.facesDrawn++;

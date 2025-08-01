@@ -89,21 +89,18 @@ typedef struct mface_s {
     mtexinfo_t      *texinfo;
     vec3_t          lm_axis[2];
     vec2_t          lm_offset;
-    vec2_t          lm_scale;
     uint16_t        lm_width;
     uint16_t        lm_height;
+    uint32_t        lm_texnum;
 
     int             drawflags; // DSURF_PLANEBACK, etc
     int             statebits;
     int             firstvert;
-    uint16_t        light_s, light_t;
-    float           stylecache[MAX_LIGHTMAPS];
 
-    unsigned        drawframe;
-    unsigned        dlightframe;
+    uint32_t        drawframe;
+    uint32_t        dlightframe;
     uint64_t        dlightbits;
 
-    struct lightmap_s   *light_m;
     struct glentity_s   *entity;
     struct mface_s      *next;
 } mface_t;

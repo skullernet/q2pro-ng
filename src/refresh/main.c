@@ -32,16 +32,14 @@ glentity_t gl_world;
 
 refcfg_t r_config;
 
-int         r_numdlights;
-dlight_t    r_dlights[MAX_DLIGHTS];
+int             r_numdlights;
+glDynLight_t    r_dlights[MAX_DLIGHTS];
 
 int         r_numentities;
 glentity_t  r_entities[MAX_ENTITIES];
 
-int         r_numparticles;
+int                 r_numparticles;
 const particle_t    *r_particles;
-
-lightstyle_t    r_lightstyles[MAX_LIGHTSTYLES];
 
 unsigned    r_registration_sequence;
 
@@ -53,18 +51,12 @@ cvar_t *gl_celshading;
 cvar_t *gl_dotshading;
 cvar_t *gl_shadows;
 cvar_t *gl_modulate;
-cvar_t *gl_modulate_world;
-cvar_t *gl_coloredlightmaps;
-cvar_t *gl_lightmap_bits;
-cvar_t *gl_brightness;
-cvar_t *gl_dynamic;
-cvar_t *gl_dlight_falloff;
 cvar_t *gl_modulate_entities;
-cvar_t *gl_doublelight_entities;
-cvar_t *gl_glowmap_intensity;
+cvar_t *gl_lightmap_add;
+cvar_t *gl_lightmap_bits;
+cvar_t *gl_dynamic;
 cvar_t *gl_flarespeed;
 cvar_t *gl_fontshadow;
-cvar_t *gl_shaders;
 #if USE_MD5
 cvar_t *gl_md5_load;
 cvar_t *gl_md5_use;
@@ -74,6 +66,7 @@ cvar_t *gl_damageblend_frac;
 cvar_t *gl_waterwarp;
 cvar_t *gl_fog;
 cvar_t *gl_bloom;
+cvar_t *gl_bloom_sigma;
 cvar_t *gl_swapinterval;
 
 // development variables
@@ -90,7 +83,6 @@ cvar_t *gl_showbloom;
 cvar_t *gl_showstats;
 cvar_t *gl_showscrap;
 cvar_t *gl_nobind;
-cvar_t *gl_novbo;
 cvar_t *gl_test;
 #endif
 cvar_t *gl_cull_nodes;
@@ -102,7 +94,6 @@ cvar_t *gl_novis;
 cvar_t *gl_lockpvs;
 cvar_t *gl_lightmap;
 cvar_t *gl_fullbright;
-cvar_t *gl_vertexlight;
 cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
@@ -329,15 +320,8 @@ void GL_RotationMatrix(GLfloat *matrix)
 
 void GL_RotateForEntity(void)
 {
-    bool skies = false;
-
-    if (glr.ent == &gl_world)
-        skies = gl_static.use_cubemaps;
-    else if (glr.ent->model & BIT(31))
-        skies = gl_static.use_bmodel_skies;
-
     GL_RotationMatrix(gls.u_block.m_model);
-    if (skies) {
+    if (glr.ent == &gl_world || (glr.ent->model & BIT(31) && gl_static.use_bmodel_skies)) {
         GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], gls.u_block.m_model);
         GL_MultMatrix(gls.u_block.m_sky[1], glr.skymatrix[1], gls.u_block.m_model);
     }
@@ -566,7 +550,7 @@ static int entitycmpfnc(const void *_a, const void *_b)
     return 0;
 }
 
-static void GL_ClassifyEntities(void)
+static void GL_SortEntities(void)
 {
     glentity_t *ent;
     int i;
@@ -731,7 +715,7 @@ static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
     GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
                  GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    gl_backend->load_uniforms();
+    GL_ForceUniforms();
 
     Vector4Set(tess.vertices,      x,     y,     0, 1);
     Vector4Set(tess.vertices +  4, x,     y + h, 0, 0);
@@ -801,9 +785,6 @@ static pp_flags_t GL_BindFramebuffer(void)
     pp_flags_t flags = PP_NONE;
     bool resized = false;
 
-    if (!gl_static.use_shaders)
-        return PP_NONE;
-
     if ((glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer)
         flags |= PP_WATERWARP;
 
@@ -820,7 +801,7 @@ static pp_flags_t GL_BindFramebuffer(void)
         gl_waterwarp->modified = false;
         gl_bloom->modified     = false;
         if (gl_bloom->integer)
-            gl_backend->update_blur();
+            GL_ShaderUpdateBlur();
     }
 
     if (!flags || !glr.framebuffer_ok)
@@ -845,6 +826,39 @@ static pp_flags_t GL_BindFramebuffer(void)
     return flags;
 }
 
+static void GL_SetupFog(void)
+{
+    glr.fog_bits = glr.fog_bits_sky = 0;
+
+    if (!gl_fog->integer)
+        return;
+
+    if (glr.fd.fog.density > 0)
+        glr.fog_bits |= GLS_FOG_GLOBAL;
+    if (glr.fd.heightfog.density > 0 && glr.fd.heightfog.falloff > 0)
+        glr.fog_bits |= GLS_FOG_HEIGHT;
+    if (glr.fd.fog.sky_factor > 0)
+        glr.fog_bits_sky |= GLS_FOG_SKY;
+
+    if (!(glr.fog_bits | glr.fog_bits_sky))
+        return;
+
+    VectorCopy(glr.fd.fog.color, gls.u_block.fog_color);
+    gls.u_block.fog_color[3] = glr.fd.fog.density / 64;
+    gls.u_block.fog_sky_factor = glr.fd.fog.sky_factor;
+
+    VectorCopy(glr.fd.heightfog.start.color, gls.u_block.heightfog_start);
+    gls.u_block.heightfog_start[3] = glr.fd.heightfog.start.dist;
+
+    VectorCopy(glr.fd.heightfog.end.color, gls.u_block.heightfog_end);
+    gls.u_block.heightfog_end[3] = glr.fd.heightfog.end.dist;
+
+    gls.u_block.heightfog_density = glr.fd.heightfog.density;
+    gls.u_block.heightfog_falloff = glr.fd.heightfog.falloff;
+
+    gls.u_block_dirty |= DIRTY_BLOCK;
+}
+
 void R_RenderFrame(const refdef_t *fd)
 {
     GL_Flush2D();
@@ -855,35 +869,18 @@ void R_RenderFrame(const refdef_t *fd)
 
     glr.fd = *fd;
 
-    if (gl_dynamic->integer != 1 || gl_vertexlight->integer)
-        r_numdlights = 0;
-
-    glr.fog_bits = glr.fog_bits_sky = 0;
-
-    if (gl_static.use_shaders && gl_fog->integer > 0) {
-        if (glr.fd.fog.density > 0)
-            glr.fog_bits |= GLS_FOG_GLOBAL;
-        if (glr.fd.heightfog.density > 0 && glr.fd.heightfog.falloff > 0)
-            glr.fog_bits |= GLS_FOG_HEIGHT;
-        if (glr.fd.fog.sky_factor > 0)
-            glr.fog_bits_sky |= GLS_FOG_SKY;
-    }
-
-    if (lm.dirty) {
-        GL_RebuildLighting();
-        lm.dirty = false;
-    }
-
     pp_flags_t pp_flags = GL_BindFramebuffer();
 
     GL_Setup3D();
 
     GL_SetupFrustum();
 
+    GL_SetupFog();
+
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer)
         GL_DrawWorld();
 
-    GL_ClassifyEntities();
+    GL_SortEntities();
 
     GL_DrawEntities(glr.ents.bmodels);
 
@@ -1026,11 +1023,6 @@ static void GL_Strings_f(void)
     qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &integer);
     Com_Printf("GL_MAX_TEXTURE_SIZE: %d\n", integer);
 
-    if (qglClientActiveTexture) {
-        qglGetIntegerv(GL_MAX_TEXTURE_UNITS, &integer);
-        Com_Printf("GL_MAX_TEXTURE_UNITS: %d\n", integer);
-    }
-
     if (gl_config.caps & QGL_CAP_TEXTURE_ANISOTROPY) {
         qglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &value);
         Com_Printf("GL_MAX_TEXTURE_MAX_ANISOTROPY: %.f\n", value);
@@ -1063,35 +1055,10 @@ static size_t GL_ViewLeaf_m(char *buffer, size_t size)
 
 #endif
 
-static void gl_lightmap_changed(cvar_t *self)
-{
-    lm.scale = Cvar_ClampValue(gl_coloredlightmaps, 0, 1);
-    lm.comp = !(gl_config.caps & QGL_CAP_TEXTURE_BITS) ? GL_RGBA : lm.scale ? GL_RGB : GL_LUMINANCE;
-    lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
-    lm.modulate = Cvar_ClampValue(gl_modulate, 0, 1e6f);
-    lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6f);
-    if (gl_static.use_shaders && (self == gl_brightness || self == gl_modulate || self == gl_modulate_world) && !gl_vertexlight->integer)
-        return;
-    lm.dirty = true; // rebuild all lightmaps next frame
-}
-
-static void gl_modulate_entities_changed(cvar_t *self)
-{
-    gl_static.entity_modulate = Cvar_ClampValue(gl_modulate, 0, 1e6f);
-    gl_static.entity_modulate *= Cvar_ClampValue(gl_modulate_entities, 0, 1e6f);
-}
-
-static void gl_modulate_changed(cvar_t *self)
-{
-    gl_lightmap_changed(self);
-    gl_modulate_entities_changed(self);
-}
-
 // ugly hack to reset sky
 static void gl_drawsky_changed(cvar_t *self)
 {
-    //if (gl_static.world.cache)
-    //    CL_SetSky();
+    Cbuf_AddText(&cmd_buffer, "sky \"\"\n");
 }
 
 static void gl_novis_changed(cvar_t *self)
@@ -1124,6 +1091,12 @@ static void gl_clearcolor_changed(cvar_t *self)
         qglClearColor(Vector4Unpack(gl_static.clearcolor));
 }
 
+static void gl_bloom_sigma_changed(cvar_t *self)
+{
+    if (gl_static.programs && gl_bloom->integer)
+        GL_ShaderUpdateBlur();
+}
+
 static void GL_Register(void)
 {
     // regular variables
@@ -1133,26 +1106,13 @@ static void GL_Register(void)
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
     gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
-    gl_modulate = Cvar_Get("gl_modulate", "1", CVAR_ARCHIVE);
-    gl_modulate->changed = gl_modulate_changed;
-    gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
-    gl_modulate_world->changed = gl_lightmap_changed;
-    gl_coloredlightmaps = Cvar_Get("gl_coloredlightmaps", "1", 0);
-    gl_coloredlightmaps->changed = gl_lightmap_changed;
-    gl_lightmap_bits = Cvar_Get("gl_lightmap_bits", "0", 0);
-    gl_lightmap_bits->changed = gl_lightmap_changed;
-    gl_brightness = Cvar_Get("gl_brightness", "0", 0);
-    gl_brightness->changed = gl_lightmap_changed;
+    gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
+    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1.5", 0);
+    gl_lightmap_add = Cvar_Get("gl_lightmap_add", "0", 0);
+    gl_lightmap_bits = Cvar_Get("gl_lightmap_bits", "0", CVAR_FILES);
     gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
-    gl_dynamic->changed = gl_lightmap_changed;
-    gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
-    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
-    gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
-    gl_glowmap_intensity = Cvar_Get("gl_glowmap_intensity", "0.75", 0);
     gl_flarespeed = Cvar_Get("gl_flarespeed", "8", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
-    gl_shaders = Cvar_Get("gl_shaders", "1", CVAR_FILES);
 #if USE_MD5
     gl_md5_load = Cvar_Get("gl_md5_load", "1", CVAR_FILES);
     gl_md5_use = Cvar_Get("gl_md5_use", "1", 0);
@@ -1162,6 +1122,8 @@ static void GL_Register(void)
     gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
     gl_fog = Cvar_Get("gl_fog", "1", 0);
     gl_bloom = Cvar_Get("gl_bloom", "0", 0);
+    gl_bloom_sigma = Cvar_Get("gl_bloom_sigma", "4", 0);
+    gl_bloom_sigma->changed = gl_bloom_sigma_changed;
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 
@@ -1180,7 +1142,6 @@ static void GL_Register(void)
     gl_showstats = Cvar_Get("gl_showstats", "0", 0);
     gl_showscrap = Cvar_Get("gl_showscrap", "0", 0);
     gl_nobind = Cvar_Get("gl_nobind", "0", CVAR_CHEAT);
-    gl_novbo = Cvar_Get("gl_novbo", "0", CVAR_FILES);
     gl_test = Cvar_Get("gl_test", "0", 0);
 #endif
     gl_cull_nodes = Cvar_Get("gl_cull_nodes", "1", 0);
@@ -1194,16 +1155,11 @@ static void GL_Register(void)
     gl_novis->changed = gl_novis_changed;
     gl_lockpvs = Cvar_Get("gl_lockpvs", "0", CVAR_CHEAT);
     gl_lightmap = Cvar_Get("gl_lightmap", "0", CVAR_CHEAT);
-    gl_fullbright = Cvar_Get("r_fullbright", "0", CVAR_CHEAT);
-    gl_fullbright->changed = gl_lightmap_changed;
-    gl_vertexlight = Cvar_Get("gl_vertexlight", "0", 0);
-    gl_vertexlight->changed = gl_lightmap_changed;
+    gl_fullbright = Cvar_Get("gl_fullbright", "0", CVAR_CHEAT);
     gl_lightgrid = Cvar_Get("gl_lightgrid", "1", 0);
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
 
-    gl_lightmap_changed(NULL);
-    gl_modulate_entities_changed(NULL);
     gl_swapinterval_changed(gl_swapinterval);
     gl_clearcolor_changed(gl_clearcolor);
 
@@ -1327,11 +1283,6 @@ static void GL_PostInit(void)
 {
     r_registration_sequence = 1;
 
-    if (gl_shaders->modified) {
-        GL_ShutdownState();
-        GL_InitState();
-    }
-    GL_ClearState();
     GL_InitImages();
     GL_InitQueries();
     MOD_Init();
@@ -1404,6 +1355,8 @@ bool R_Init(bool total)
 
     GL_InitArrays();
 
+    GL_InitShaders();
+
     GL_InitState();
 
     GL_InitTables();
@@ -1451,6 +1404,8 @@ void R_Shutdown(bool total)
     GL_ShutdownDebugDraw();
 
     GL_ShutdownState();
+
+    GL_ShutdownShaders();
 
     GL_ShutdownArrays();
 
@@ -1598,21 +1553,52 @@ void R_AddEntity(const entity_t *ent)
 
 /*
 ===============
-R_AddLight
+R_AddSphereLight
 ===============
 */
-void R_AddLight(const vec3_t org, float intensity, float r, float g, float b)
+void R_AddSphereLight(const vec3_t org, float radius, float r, float g, float b)
 {
-    dlight_t    *dl;
+    glDynLight_t    *dl;
 
     if (r_numdlights >= MAX_DLIGHTS)
         return;
+    if (gl_dynamic->integer != 1)
+        return;
+
     dl = &r_dlights[r_numdlights++];
     VectorCopy(org, dl->origin);
-    dl->intensity = intensity;
+    dl->radius = radius;
     dl->color[0] = r;
     dl->color[1] = g;
     dl->color[2] = b;
+    dl->sphere = 1.0f;
+    VectorClear(dl->dir);
+    dl->cone = 0.0f;
+}
+
+/*
+===============
+R_AddSpotLight
+===============
+*/
+void R_AddSpotLight(const vec3_t org, const vec3_t dir, float cone, float radius, float r, float g, float b)
+{
+    glDynLight_t    *dl;
+
+    if (r_numdlights >= MAX_DLIGHTS)
+        return;
+    if (gl_dynamic->integer != 1)
+        return;
+
+    dl = &r_dlights[r_numdlights++];
+    VectorCopy(org, dl->origin);
+    dl->radius = radius;
+    dl->color[0] = r;
+    dl->color[1] = g;
+    dl->color[2] = b;
+    dl->sphere = 0.0f;
+    VectorCopy(dir, dl->dir);
+    dl->cone = cosf(DEG2RAD(cone));
 }
 
 /*
@@ -1622,11 +1608,15 @@ R_SetLightStyle
 */
 void R_SetLightStyle(unsigned style, float value)
 {
-    lightstyle_t    *ls;
+    if (style >= 255)
+        return;
 
-    Q_assert_soft(style < MAX_LIGHTSTYLES);
-    ls = &r_lightstyles[style];
-    ls->white = value;
+    if (gl_dynamic->integer <= 0)
+        value = 1.0f;
+    else if (gl_dynamic->integer >= 2 && style < 32)
+        value = 1.0f;
+
+    gls.u_styles.styles[style][0] = value;
 }
 
 /*

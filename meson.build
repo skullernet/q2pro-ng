@@ -73,7 +73,6 @@ refresh_src = [
   'src/refresh/draw.c',
   'src/refresh/hq2x.c',
   'src/refresh/images.c',
-  'src/refresh/legacy.c',
   'src/refresh/main.c',
   'src/refresh/mesh.c',
   'src/refresh/models.c',

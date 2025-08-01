@@ -25,13 +25,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "format/sp2.h"
 
 #define MOD_GpuMalloc(size) \
-    Hunk_TryAlloc(gl_static.use_gpu_lerp ? &temp_hunk[0] : &model->hunk, size, gl_static.hunk_align)
+    Hunk_TryAlloc(&temp_hunk[0], size, gl_static.hunk_align)
 
 #define MOD_GpuMallocIndices(size) \
-    Hunk_TryAlloc(gl_static.use_gpu_lerp ? &temp_hunk[1] : &model->hunk, size, gl_static.hunk_align)
+    Hunk_TryAlloc(&temp_hunk[1], size, gl_static.hunk_align)
 
-#define MOD_CpuMalloc(size) \
-    (gl_static.use_gpu_lerp ? R_Mallocz(size) : Hunk_TryAlloc(&model->hunk, size, gl_static.hunk_align))
+#define MOD_CpuMalloc(size) R_Mallocz(size)
 
 #define ENSURE(x, e)    if (!(x)) return e
 
@@ -89,15 +88,14 @@ static void MOD_List_f(void)
         if (!model->type)
             continue;
 
-        size_t model_size = model->hunk.mapped;
         int flag = ' ';
 #if USE_MD5
         if (model->skeleton)
             flag = '*';
 #endif
-        Com_Printf("%c%c %8zu : %s\n", types[model->type],
-                   flag, model_size, model->name);
-        bytes += model_size;
+        Com_Printf("%c%c %8u : %s\n", types[model->type],
+                   flag, model->size, model->name);
+        bytes += model->size;
         count++;
     }
     Com_Printf("Total models: %d (out of %d slots)\n", count, r_numModels);
@@ -110,13 +108,7 @@ static void MD5_Free(md5_model_t *mdl);
 
 static void MOD_FreeAlias(model_t *model)
 {
-    Hunk_Free(&model->hunk);
-
     GL_DeleteBuffers(2, model->buffers);
-
-    // all memory is allocated on hunk if not using GPU lerp
-    if (!gl_static.use_gpu_lerp)
-        return;
 
 #if USE_MD5
     MD5_Free(model->skeleton);
@@ -161,10 +153,7 @@ void MOD_FreeUnused(void)
         if (!model->type)
             continue;
 
-        if (model->registration_sequence == r_registration_sequence) {
-            // make sure it is paged in
-            Com_PageInMemory(model->hunk.base, model->hunk.cursize);
-        } else {
+        if (model->registration_sequence != r_registration_sequence) {
             // don't need this model
             MOD_Free(model);
             count++;
@@ -289,12 +278,8 @@ static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
 
 static void MOD_HunkBegin(model_t *model)
 {
-    if (gl_static.use_gpu_lerp) {
-        Hunk_Begin(&temp_hunk[0], MOD_MAXSIZE_GPU);
-        Hunk_Begin(&temp_hunk[1], MOD_MAXSIZE_CPU);
-    } else {
-        Hunk_Begin(&model->hunk, MOD_MAXSIZE_CPU);
-    }
+    Hunk_Begin(&temp_hunk[0], MOD_MAXSIZE_GPU);
+    Hunk_Begin(&temp_hunk[1], MOD_MAXSIZE_CPU);
 }
 
 static bool MOD_AllocMesh(model_t *model, maliasmesh_t *mesh)
@@ -789,14 +774,9 @@ static void *MD5_HunkAlloc(memhunk_t *hunk, size_t size)
     return ptr;
 }
 
-#define MD5_GpuMalloc(size) \
-    MD5_HunkAlloc(gl_static.use_gpu_lerp ? &temp_hunk[0] : &model->hunk, size)
-
-#define MD5_GpuMallocIndices(size) \
-    MD5_HunkAlloc(gl_static.use_gpu_lerp ? &temp_hunk[1] : &model->hunk, size)
-
-#define MD5_CpuMalloc(size) \
-    (gl_static.use_gpu_lerp ? R_Mallocz(size) : MD5_HunkAlloc(&model->hunk, size))
+#define MD5_GpuMalloc(size) MD5_HunkAlloc(&temp_hunk[0], size)
+#define MD5_GpuMallocIndices(size) MD5_HunkAlloc(&temp_hunk[1], size)
+#define MD5_CpuMalloc(size) R_Mallocz(size)
 
 static void MD5_ParseExpect(const char **buffer, const char *expect)
 {
@@ -1404,7 +1384,7 @@ static bool MD5_LoadSkins(model_t *model)
 
 static void MD5_Free(md5_model_t *mdl)
 {
-    if (!mdl || !gl_static.use_gpu_lerp)
+    if (!mdl)
         return;
     Z_Free(mdl->meshes);
     Z_Free(mdl->skeleton_frames);
@@ -1427,8 +1407,6 @@ static void MOD_LoadMD5(model_t *model)
     if (!FS_FileExists(mesh_path) || !FS_FileExists(anim_path))
         return;
 
-    size_t watermark = model->hunk.cursize;
-
     if (!MD5_LoadFile(model, mesh_path, MD5_ParseMesh))
         goto fail;
     if (!MD5_LoadFile(model, anim_path, MD5_ParseAnim))
@@ -1441,7 +1419,6 @@ static void MOD_LoadMD5(model_t *model)
 fail:
     MD5_Free(model->skeleton);
     model->skeleton = NULL;
-    Hunk_FreeToWatermark(&model->hunk, watermark);
 }
 
 #endif  // USE_MD5
@@ -1509,7 +1486,7 @@ static bool MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
     }
 #endif
 
-    model->hunk.mapped += hunk->cursize; // for statistics
+    model->size += hunk->cursize; // for statistics
     Hunk_Free(hunk);
 
     return true;
@@ -1535,7 +1512,7 @@ static bool MOD_UploadIndexBuffer(model_t *model, memhunk_t *hunk)
             FIXUP_OFFSET(skel->meshes[i].indices);
 #endif
 
-    model->hunk.mapped += hunk->cursize; // for statistics
+    model->size += hunk->cursize; // for statistics
     Hunk_Free(hunk);
 
     return true;
@@ -1637,9 +1614,7 @@ qhandle_t R_RegisterModel(const char *name)
         MOD_LoadMD5(model);
 #endif
 
-    Hunk_End(&model->hunk);
-
-    if (model->type == MOD_ALIAS && gl_static.use_gpu_lerp) {
+    if (model->type == MOD_ALIAS) {
         qglGenBuffers(2, model->buffers);
         if (!MOD_UploadVertexBuffer(model, &temp_hunk[0]) ||
             !MOD_UploadIndexBuffer (model, &temp_hunk[1])) {
@@ -1658,10 +1633,8 @@ fail2:
 fail1:
     MOD_PrintError(normalized, ret);
 
-    if (gl_static.use_gpu_lerp) {
-        Hunk_Free(&temp_hunk[0]);
-        Hunk_Free(&temp_hunk[1]);
-    }
+    Hunk_Free(&temp_hunk[0]);
+    Hunk_Free(&temp_hunk[1]);
     return 0;
 }
 
@@ -1685,29 +1658,14 @@ void MOD_Init(void)
     Q_assert(!r_numModels);
 
     // set defaults
-    gl_static.use_gpu_lerp = false;
-    gl_static.hunk_align   = 64;
-
-    cvar_t *gl_gpulerp = Cvar_Get("gl_gpulerp", "1", 0);
-    gl_gpulerp->flags &= ~CVAR_FILES;
-
-    if (!(gl_config.caps & QGL_CAP_CLIENT_VA)) {
-        // MUST use GPU lerp if using core profile
-        Q_assert(gl_static.use_shaders);
-        gl_static.use_gpu_lerp = true;
-    } else if (gl_static.use_shaders) {
-        // restrict `auto' to GL 4.3 and higher
-        int minval = 1 + !(gl_config.caps & QGL_CAP_SHADER_STORAGE);
-        gl_static.use_gpu_lerp = gl_gpulerp->integer >= minval;
-        gl_gpulerp->flags |= CVAR_FILES;
-    }
+    gl_static.hunk_align = 64;
 
 #if USE_MD5
     // prefer shader storage, but support buffer textures as fallback.
-    // if neither are supported and GPU lerp is enabled, disable MD5.
-    if (gl_static.use_gpu_lerp && gl_md5_load->integer) {
+    // if neither are supported disable MD5.
+    if (gl_md5_load->integer) {
         if (gl_config.caps & QGL_CAP_SHADER_STORAGE) {
-            gl_static.hunk_align = max(16, gl_config.ssbo_align);
+            gl_static.hunk_align = max(64, gl_config.ssbo_align);
         } else if (!(gl_config.caps & QGL_CAP_BUFFER_TEXTURE)) {
             Com_WPrintf("Animating MD5 models on GPU is not supported "
                         "on this system. MD5 models will be disabled.\n");
@@ -1716,10 +1674,9 @@ void MOD_Init(void)
     }
 #endif
 
-    Com_DPrintf("GPU lerp %s\n", gl_static.use_gpu_lerp ?
-                (gl_config.caps & QGL_CAP_SHADER_STORAGE) ? "enabled (shader storage)" :
-                (gl_config.caps & QGL_CAP_BUFFER_TEXTURE) ? "enabled (buffer texture)" :
-                "enabled" : "disabled");
+    Com_DPrintf("GPU lerp enabled (%s)\n",
+                (gl_config.caps & QGL_CAP_SHADER_STORAGE) ? "shader storage" :
+                (gl_config.caps & QGL_CAP_BUFFER_TEXTURE) ? "buffer texture" : "none");
 
     Cmd_AddCommand("modellist", MOD_List_f);
 }

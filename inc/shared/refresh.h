@@ -74,10 +74,6 @@ typedef struct {
 } particle_t;
 
 typedef struct {
-    float   white;              // highest of RGB
-} lightstyle_t;
-
-typedef struct {
     int         x, y, width, height;// in virtual screen coordinates
     float       fov_x, fov_y;
     vec3_t      vieworg;

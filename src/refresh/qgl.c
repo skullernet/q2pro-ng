@@ -88,23 +88,6 @@ static const glsection_t sections[] = {
         .excl_gl = QGL_VER(3, 1),
         .excl_es = QGL_VER(2, 0),
         .caps = QGL_CAP_LEGACY | QGL_CAP_CLIENT_VA,
-        .functions = (const glfunction_t []) {
-            QGL_FN(AlphaFunc),
-            QGL_FN(Color4f),
-            QGL_FN(ColorPointer),
-            QGL_FN(DisableClientState),
-            QGL_FN(EnableClientState),
-            QGL_FN(LoadIdentity),
-            QGL_FN(LoadMatrixf),
-            QGL_FN(MatrixMode),
-            QGL_FN(Scalef),
-            QGL_FN(ShadeModel),
-            QGL_FN(TexCoordPointer),
-            QGL_FN(TexEnvf),
-            QGL_FN(Translatef),
-            QGL_FN(VertexPointer),
-            { NULL }
-        }
     },
 
     // GL 1.1, not ES
@@ -134,15 +117,6 @@ static const glsection_t sections[] = {
         .caps = QGL_CAP_UNPACK_SUBIMAGE,
     },
 
-    // GL 1.1, ES 3.0
-    // OES_element_index_uint
-    {
-        .extension = "GL_OES_element_index_uint",
-        .ver_gl = QGL_VER(1, 1),
-        .ver_es = QGL_VER(3, 0),
-        .caps = QGL_CAP_ELEMENT_INDEX_UINT,
-    },
-
     // GL 1.1, ES 1.0 up to 2.0
     {
         .ver_gl = QGL_VER(1, 1),
@@ -161,6 +135,10 @@ static const glsection_t sections[] = {
     {
         .ver_gl = QGL_VER(1, 2),
         .caps = QGL_CAP_TEXTURE_CLAMP_TO_EDGE | QGL_CAP_TEXTURE_MAX_LEVEL,
+        .functions = (const glfunction_t []) {
+            QGL_FN(TexImage3D),
+            { NULL }
+        }
     },
 
     // GL 1.3
@@ -172,21 +150,6 @@ static const glsection_t sections[] = {
         .ver_es = QGL_VER(1, 0),
         .functions = (const glfunction_t []) {
             QGL_FN(ActiveTexture),
-            { NULL }
-        }
-    },
-
-    // GL 1.3, compat
-    // ARB_multitexture
-    {
-        .extension = "GL_ARB_multitexture",
-        .suffix = "ARB",
-        .ver_gl = QGL_VER(1, 3),
-        .ver_es = QGL_VER(1, 0),
-        .excl_gl = QGL_VER(3, 1),
-        .excl_es = QGL_VER(2, 0),
-        .functions = (const glfunction_t []) {
-            QGL_FN(ClientActiveTexture),
             { NULL }
         }
     },
@@ -433,19 +396,6 @@ static const glsection_t sections[] = {
         .extension = "GL_EXT_texture_filter_anisotropic",
         .ver_gl = QGL_VER(4, 6),
         .caps = QGL_CAP_TEXTURE_ANISOTROPY
-    },
-
-    // ARB_fragment_program
-    {
-        .extension = "GL_ARB_fragment_program",
-        .functions = (const glfunction_t []) {
-            QGL_FN(BindProgramARB),
-            QGL_FN(DeleteProgramsARB),
-            QGL_FN(GenProgramsARB),
-            QGL_FN(ProgramLocalParameter4fvARB),
-            QGL_FN(ProgramStringARB),
-            { NULL }
-        }
     },
 
     // EXT_compiled_vertex_array
@@ -744,18 +694,10 @@ bool QGL_Init(void)
     }
 
     // reject unsupported configurations, such as GL ES 2.0
-    if (!(gl_config.caps & (QGL_CAP_LEGACY | QGL_CAP_SHADER))) {
+    if (!(gl_config.caps & QGL_CAP_SHADER)) {
         Com_EPrintf("Unsupported OpenGL version: %s\n", qglGetString(GL_VERSION));
         return false;
     }
-
-#if !USE_GLES
-    // reject if GL_UNSIGNED_INT indices are not supported
-    if (!(gl_config.caps & QGL_CAP_ELEMENT_INDEX_UINT)) {
-        Com_EPrintf("UINT indices are not supported, recompile with USE_GLES.\n");
-        return false;
-    }
-#endif
 
     // disable qglLineWidth in forward compatible core profile contexts
     if (non_compat_ver >= QGL_VER(3, 1)) {

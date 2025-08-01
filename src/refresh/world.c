@@ -18,12 +18,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-void GL_SampleLightPoint(vec3_t color)
+static void GL_SampleLightPoint(vec3_t color)
 {
     const mface_t       *surf = glr.lightpoint.surf;
     const byte          *lightmap;
     const byte          *b1, *b2, *b3, *b4;
-    const lightstyle_t  *style;
     float               fracu, fracv;
     float               w1, w2, w3, w4;
     vec3_t              temp;
@@ -59,8 +58,7 @@ void GL_SampleLightPoint(vec3_t color)
         temp[1] = w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1];
         temp[2] = w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2];
 
-        style = LIGHT_STYLE(surf->styles[i]);
-        VectorMA(color, style->white, temp, color);
+        VectorMA(color, gls.u_styles.styles[surf->styles[i]][0], temp, color);
 
         lightmap += size;
     }
@@ -96,10 +94,8 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 
         VectorClear(samples[i]);
 
-        for (j = 0; j < grid->numstyles && s->style != 255; j++, s++) {
-            const lightstyle_t *style = LIGHT_STYLE(s->style);
-            VectorMA(samples[i], style->white, s->rgb, samples[i]);
-        }
+        for (j = 0; j < grid->numstyles && s->style != 255; j++, s++)
+            VectorMA(samples[i], gls.u_styles.styles[s->style][0], s->rgb, samples[i]);
 
         // count non-occluded samples
         if (j) {
@@ -144,8 +140,6 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 
     LerpVector2(lerp_y[0], lerp_y[1], bz, fz, color);
 
-    GL_AdjustColor(color);
-
     return true;
 }
 
@@ -155,7 +149,7 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     int             index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
-    const glentity_t  *ent;
+    const glentity_t *ent;
     const mmodel_t  *model;
     const vec_t     *angles;
 
@@ -211,24 +205,22 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
 
     GL_SampleLightPoint(color);
 
-    GL_AdjustColor(color);
-
     return true;
 }
 
-static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, uint64_t lightbit)
+static void GL_MarkLights_r(const mnode_t *node, const glDynLight_t *light, const vec3_t transformed, uint64_t lightbit)
 {
     mface_t *face;
     vec_t dot;
     int i;
 
     while (node->plane) {
-        dot = PlaneDiffFast(light->transformed, node->plane);
-        if (dot > light->intensity - DLIGHT_CUTOFF) {
+        dot = PlaneDiffFast(transformed, node->plane);
+        if (dot > light->radius) {
             node = node->children[0];
             continue;
         }
-        if (dot < -light->intensity + DLIGHT_CUTOFF) {
+        if (dot < -light->radius) {
             node = node->children[1];
             continue;
         }
@@ -243,51 +235,32 @@ static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, uint64_t
             face->dlightbits |= lightbit;
         }
 
-        GL_MarkLights_r(node->children[0], light, lightbit);
+        GL_MarkLights_r(node->children[0], light, transformed, lightbit);
         node = node->children[1];
     }
 }
 
 static void GL_MarkLights(void)
 {
-    int i;
-    dlight_t *light;
-
     glr.dlightframe++;
 
-    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
-        VectorCopy(light->origin, light->transformed);
-        GL_MarkLights_r(gl_static.world.cache->nodes, light, BIT_ULL(i));
+    for (int i = 0; i < r_numdlights; i++) {
+        const glDynLight_t *light = &r_dlights[i];
+        GL_MarkLights_r(gl_static.world.cache->nodes, light, light->origin, BIT_ULL(i));
     }
 }
 
 static void GL_TransformLights(const mmodel_t *model)
 {
-    int i;
-    dlight_t *light;
-    vec3_t temp;
-
     glr.dlightframe++;
 
-    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
+    for (int i = 0; i < r_numdlights; i++) {
+        const glDynLight_t *light = &r_dlights[i];
+        vec3_t temp, transformed;
+
         VectorSubtract(light->origin, glr.ent->origin, temp);
-        VectorRotate(temp, glr.entaxis, light->transformed);
-        GL_MarkLights_r(model->headnode, light, BIT_ULL(i));
-    }
-}
-
-static void GL_AddLights(const vec3_t origin, vec3_t color)
-{
-    dlight_t *light;
-    vec_t f;
-    int i;
-
-    for (i = 0, light = r_dlights; i < r_numdlights; i++, light++) {
-        f = light->intensity - DLIGHT_CUTOFF - Distance(light->origin, origin);
-        if (f > 0) {
-            f *= (1.0f / 255);
-            VectorMA(color, f, light->color, color);
-        }
+        VectorRotate(temp, glr.entaxis, transformed);
+        GL_MarkLights_r(model->headnode, light, transformed, BIT_ULL(i));
     }
 }
 
@@ -299,16 +272,10 @@ void GL_LightPoint(const vec3_t origin, vec3_t color)
     }
 
     // get lighting from world
-    if (!GL_LightPoint_(origin, color))
+    if (GL_LightPoint_(origin, color))
+        VectorScale(color, gl_modulate_entities->value / 255.0f, color);
+    else
         VectorSet(color, 1, 1, 1);
-
-    // add dynamic lights
-    GL_AddLights(origin, color);
-
-    if (gl_doublelight_entities->integer) {
-        // apply modulate twice to mimic original ref_gl behavior
-        VectorScale(color, gl_static.entity_modulate, color);
-    }
 }
 
 void R_LightPoint(const vec3_t origin, vec3_t color)
@@ -452,9 +419,6 @@ void GL_DrawBspModel(mmodel_t *model)
             continue;
         }
 
-        if (gl_dynamic->integer)
-            GL_PushLights(face);
-
         if (face->drawflags & SURF_TRANS_MASK) {
             if (model->drawframe != glr.drawframe)
                 GL_AddAlphaFace(face);
@@ -463,9 +427,6 @@ void GL_DrawBspModel(mmodel_t *model)
 
         GL_AddSolidFace(face);
     }
-
-    if (gl_dynamic->integer)
-        GL_UploadLightmaps();
 
     GL_DrawSolidFaces();
 
@@ -525,16 +486,8 @@ static inline void GL_DrawNode(const mnode_t *node)
         if (face->drawframe != glr.drawframe)
             continue;
 
-        if (face->drawflags & SURF_SKY && !(face->statebits & GLS_SKY_MASK)) {
-            R_AddSkySurface(face);
-            continue;
-        }
-
         if (face->drawflags & SURF_NODRAW)
             continue;
-
-        if (gl_dynamic->integer)
-            GL_PushLights(face);
 
         if (face->drawflags & SURF_TRANS_MASK)
             GL_AddAlphaFace(face);
@@ -583,8 +536,6 @@ void GL_DrawWorld(void)
 
     GL_MarkLights();
 
-    R_ClearSkyBox();
-
     GL_LoadMatrix(glr.viewmatrix);
 
     GL_BindArrays(VA_3D);
@@ -594,12 +545,7 @@ void GL_DrawWorld(void)
     GL_WorldNode_r(gl_static.world.cache->nodes,
                    gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
 
-    if (gl_dynamic->integer)
-        GL_UploadLightmaps();
-
     GL_DrawSolidFaces();
 
     GL_Flush3D();
-
-    R_DrawSkyBox();
 }

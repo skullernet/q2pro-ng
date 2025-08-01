@@ -97,7 +97,8 @@ void    trap_R_SetSky(const char *name, float rotate, bool autorotate, const vec
 
 void    trap_R_ClearScene(void);
 void    trap_R_AddEntity(const entity_t *ent);
-void    trap_R_AddLight(const vec3_t org, float intensity, float r, float g, float b);
+void    trap_R_AddSphereLight(const vec3_t org, float intensity, float r, float g, float b);
+void    trap_R_AddSpotLight(const vec3_t org, const vec3_t dir, float cone, float radius, float r, float g, float b);
 void    trap_R_SetLightStyle(unsigned style, float value);
 void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);
@@ -227,7 +228,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 
 #define trap_R_ClearScene cgi->R_ClearScene
 #define trap_R_AddEntity cgi->R_AddEntity
-#define trap_R_AddLight cgi->R_AddLight
+#define trap_R_AddSphereLight cgi->R_AddSphereLight
+#define trap_R_AddSpotLight cgi->R_AddSpotLight
 #define trap_R_SetLightStyle cgi->R_SetLightStyle
 #define trap_R_LocateParticles cgi->R_LocateParticles
 #define trap_R_RenderScene cgi->R_RenderScene

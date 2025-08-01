@@ -74,32 +74,16 @@ QGLAPI void (APIENTRYP qglTexParameteri)(GLenum target, GLenum pname, GLint para
 QGLAPI void (APIENTRYP qglTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 QGLAPI void (APIENTRYP qglViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 
-// GL 1.1, compat
-QGLAPI void (APIENTRYP qglAlphaFunc)(GLenum func, GLclampf ref);
-QGLAPI void (APIENTRYP qglColor4f)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-QGLAPI void (APIENTRYP qglColorPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-QGLAPI void (APIENTRYP qglDisableClientState)(GLenum cap);
-QGLAPI void (APIENTRYP qglEnableClientState)(GLenum cap);
-QGLAPI void (APIENTRYP qglLoadIdentity)(void);
-QGLAPI void (APIENTRYP qglLoadMatrixf)(const GLfloat *m);
-QGLAPI void (APIENTRYP qglMatrixMode)(GLenum mode);
-QGLAPI void (APIENTRYP qglScalef)(GLfloat x, GLfloat y, GLfloat z);
-QGLAPI void (APIENTRYP qglShadeModel)(GLenum mode);
-QGLAPI void (APIENTRYP qglTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-QGLAPI void (APIENTRYP qglTexEnvf)(GLenum target, GLenum pname, GLfloat param);
-QGLAPI void (APIENTRYP qglTranslatef)(GLfloat x, GLfloat y, GLfloat z);
-QGLAPI void (APIENTRYP qglVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-
 // GL 1.1, not ES
 QGLAPI void (APIENTRYP qglClearDepth)(GLdouble depth);
 QGLAPI void (APIENTRYP qglDepthRange)(GLdouble near, GLdouble far);
 QGLAPI void (APIENTRYP qglPolygonMode)(GLenum face, GLenum mode);
 
+// GL 1.2
+QGLAPI void (APIENTRYP qglTexImage3D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels);
+
 // GL 1.3
 QGLAPI void (APIENTRYP qglActiveTexture)(GLenum texture);
-
-// GL 1.3, compat
-QGLAPI void (APIENTRYP qglClientActiveTexture)(GLenum texture);
 
 // GL 1.5
 QGLAPI void (APIENTRYP qglBindBuffer)(GLenum target, GLuint buffer);
@@ -188,13 +172,6 @@ QGLAPI void (APIENTRYP qglBindTextures)(GLuint first, GLsizei count, const GLuin
 // GL 4.5
 QGLAPI void (APIENTRYP qglBindTextureUnit)(GLuint unit, GLuint texture);
 QGLAPI void (APIENTRYP qglReadnPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, void *data);
-
-// GL_ARB_fragment_program
-QGLAPI void (APIENTRYP qglBindProgramARB)(GLenum target, GLuint program);
-QGLAPI void (APIENTRYP qglDeleteProgramsARB)(GLsizei n, const GLuint *programs);
-QGLAPI void (APIENTRYP qglGenProgramsARB)(GLsizei n, GLuint *programs);
-QGLAPI void (APIENTRYP qglProgramLocalParameter4fvARB)(GLenum target, GLuint index, const GLfloat *params);
-QGLAPI void (APIENTRYP qglProgramStringARB)(GLenum target, GLenum format, GLsizei len, const void *string);
 
 // GL_EXT_compiled_vertex_array
 QGLAPI void (APIENTRYP qglLockArraysEXT)(GLint first, GLsizei count);

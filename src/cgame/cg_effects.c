@@ -148,8 +148,8 @@ void CG_AddDLights(void)
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cg.time)
             continue;
-        trap_R_AddLight(dl->origin, dl->radius,
-                        dl->color[0], dl->color[1], dl->color[2]);
+        trap_R_AddSphereLight(dl->origin, dl->radius,
+                              dl->color[0], dl->color[1], dl->color[2]);
     }
 }
 
