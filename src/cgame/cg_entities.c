@@ -713,6 +713,46 @@ static void CG_AddPacketEntities(void)
             goto skip;
         }
 
+        if (renderfx & RF_CASTSHADOW) {
+            if (!cg_shadowlights.integer)
+                goto skip;
+
+            float scale = s1->scale / 255.0f;
+            float fade_start = s1->modelindex2;
+            float fade_end = s1->modelindex3;
+            if (fade_end > fade_start) {
+                float d = Distance(cg.refdef.vieworg, ent.origin);
+                if (d > fade_end)
+                    goto skip;
+                if (d > fade_start)
+                    scale *= 1.0f - (d - fade_start) / (fade_end - fade_start);
+            }
+
+            int style = (s1->frame >> 8) & 255;
+            if (style)
+                scale *= cg.lightstyles[style - 1];
+
+            color_t color;
+            if (!s1->skinnum)
+                color.u32 = U32_WHITE;
+            else
+                color.u32 = BigLong(s1->skinnum);
+
+            float r = color.u8[0] * scale;
+            float g = color.u8[1] * scale;
+            float b = color.u8[2] * scale;
+
+            int conedir = s1->frame & 255;
+            if (conedir) {
+                vec3_t dir;
+                ByteToDir(conedir, dir);
+                trap_R_AddSpotLight(ent.origin, dir, s1->angles[0], s1->modelindex4, r, g, b);
+            } else {
+                trap_R_AddSphereLight(ent.origin, s1->modelindex4, r, g, b);
+            }
+            goto skip;
+        }
+
         if (renderfx & RF_BEAM && s1->modelindex > MODELINDEX_DUMMY) {
             CG_DrawBeam(ent.oldorigin, ent.origin, cgs.models.precache[s1->modelindex], s1->othernum);
             goto skip;
@@ -1080,9 +1120,9 @@ Emits all entities, particles, and lights to the refresh
 */
 void CG_AddEntities(void)
 {
+    CG_AddLightStyles();
     CG_AddPacketEntities();
     CG_AddTEnts();
     CG_AddParticles();
     CG_AddDLights();
-    CG_AddLightStyles();
 }

@@ -57,6 +57,7 @@ vm_cvar_t   cg_thirdperson_angle;
 vm_cvar_t   cg_thirdperson_range;
 vm_cvar_t   cg_gibs;
 vm_cvar_t   cg_flares;
+vm_cvar_t   cg_shadowlights;
 vm_cvar_t   cg_vwep;
 vm_cvar_t   cg_disable_particles;
 vm_cvar_t   cg_disable_explosions;
@@ -117,6 +118,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_smooth_explosions, "1", 0),
     VM_CVAR(cg_gibs, "1", 0),
     VM_CVAR(cg_flares, "1", 0),
+    VM_CVAR(cg_shadowlights, "1", 0),
     VM_CVAR(cg_vwep, "1", CVAR_ARCHIVE),
     VM_CVAR(cg_chat_notify, "1", 0),
     VM_CVAR(cg_chat_sound, "1", 0),

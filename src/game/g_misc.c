@@ -462,6 +462,54 @@ void USE(light_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 // ---------------------------------------------------------------------------------
 
+void THINK(find_shadow_light_targets)(edict_t *self)
+{
+    edict_t *target;
+    vec3_t dir;
+    int conedir = 0;
+    int lightstyle = (self->s.frame >> 8) & 255;
+
+    if (self->target) {
+        target = G_Find(NULL, FOFS(targetname), self->target);
+        if (target) {
+            VectorSubtract(target->s.origin, self->s.origin, dir);
+            VectorNormalize(dir);
+            conedir = DirToByte(dir);
+        }
+    }
+
+    if (self->itemtarget) {
+        target = G_Find(NULL, FOFS(targetname), self->itemtarget);
+        if (target)
+            lightstyle = (target->style + 1) & 255;
+    }
+
+    self->s.frame = lightstyle << 8 | conedir;
+}
+
+static void setup_shadow_light(edict_t *self)
+{
+    self->itemtarget = st.sl.lightstyletarget;
+
+    if (self->target || self->itemtarget) {
+        self->think = find_shadow_light_targets;
+        self->nextthink = level.time + FRAME_TIME;
+    }
+
+    self->s.modelindex = MODELINDEX_DUMMY;
+    self->s.modelindex2 = st.sl.fade_start;
+    self->s.modelindex3 = st.sl.fade_end;
+    self->s.modelindex4 = st.sl.radius;
+    self->s.scale = st.sl.intensity;
+    self->s.frame = ((st.sl.lightstyle + 1) & 255) << 8;
+    self->s.angles[0] = st.sl.coneangle;
+
+    self->s.renderfx = RF_CASTSHADOW;
+    self->r.svflags |= SVF_PHS;
+
+    trap_LinkEntity(self);
+}
+
 void USE(dynamic_light_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->r.svflags ^= SVF_NOCLIENT;
@@ -469,6 +517,9 @@ void USE(dynamic_light_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_dynamic_light(edict_t *self)
 {
+    if (st.sl.radius > 0)
+        setup_shadow_light(self);
+
     if (self->targetname)
         self->use = dynamic_light_use;
 
@@ -502,6 +553,9 @@ void SP_light(edict_t *self)
         else
             trap_SetConfigstring(CS_LIGHTS + self->style, self->style_on);
     }
+
+    if (st.sl.radius > 0)
+        setup_shadow_light(self);
 }
 
 /*QUAKED func_wall (0 .5 .8) ? TRIGGER_SPAWN TOGGLE START_ON ANIMATED ANIMATED_FAST

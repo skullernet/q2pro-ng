@@ -604,6 +604,15 @@ static const spawn_field_t temp_fields[] = {
     { "secondary_objective_string", STOFS(secondary_objective_string), F_LSTRING },
     { "primary_objective_title", STOFS(primary_objective_title), F_LSTRING },
     { "secondary_objective_title", STOFS(secondary_objective_title), F_LSTRING },
+
+    { "shadowlightradius", STOFS(sl.radius), F_FLOAT },
+    { "shadowlightresolution", STOFS(sl.resolution), F_INT },
+    { "shadowlightintensity", STOFS(sl.intensity), F_FLOAT },
+    { "shadowlightstartfadedistance", STOFS(sl.fade_start), F_FLOAT },
+    { "shadowlightendfadedistance", STOFS(sl.fade_end), F_FLOAT },
+    { "shadowlightstyle", STOFS(sl.lightstyle), F_INT },
+    { "shadowlightconeangle", STOFS(sl.coneangle), F_FLOAT },
+    { "shadowlightstyletarget", STOFS(sl.lightstyletarget), F_LSTRING },
 };
 
 static byte entity_bitmap[(q_countof(entity_fields) + 7) / 8];
@@ -843,9 +852,6 @@ void ED_ParseField(const char *key, const char *value, edict_t *ent)
     const spawn_field_t *f;
     int i;
 
-    if (!Q_strncasecmp(key, "shadowlight", 11))
-        return;
-
     // check st first
     for (i = 0, f = temp_fields; i < q_countof(temp_fields); i++, f++) {
         if (Q_strcasecmp(f->name, key))
@@ -924,6 +930,9 @@ void ED_InitSpawnVars(void)
     st.fade_start_dist = 96;
     st.fade_end_dist = 384;
     st.health_multiplier = 1.0f;
+    st.sl.intensity = 1;
+    st.sl.lightstyle = -1;
+    st.sl.coneangle = 45;
 
     memset(temp_bitmap, 0, sizeof(temp_bitmap));
     memset(entity_bitmap, 0, sizeof(entity_bitmap));

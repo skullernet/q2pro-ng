@@ -936,7 +936,8 @@ qvm_exported void G_PrepFrame(void)
         }
         memset(ent->s.event, 0, sizeof(ent->s.event));
         memset(ent->s.event_param, 0, sizeof(ent->s.event_param));
-        ent->r.svflags &= ~SVF_PHS;
+        if (!(ent->s.renderfx & RF_CASTSHADOW))
+            ent->r.svflags &= ~SVF_PHS;
     }
 }
 

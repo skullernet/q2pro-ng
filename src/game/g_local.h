@@ -757,6 +757,18 @@ typedef struct {
 
     const char *primary_objective_title;
     const char *secondary_objective_title;
+
+    // shadow lights
+    struct {
+        float       radius;
+        int         resolution;
+        float       intensity;
+        float       fade_start;
+        float       fade_end;
+        int         lightstyle;
+        float       coneangle;
+        const char *lightstyletarget;
+    } sl;
 } spawn_temp_t;
 
 typedef enum {

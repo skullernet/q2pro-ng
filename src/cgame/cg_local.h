@@ -161,6 +161,8 @@ typedef struct {
 
     unsigned    hit_marker_time;
     int         hit_marker_count;
+
+    float       lightstyles[MAX_LIGHTSTYLES];
 } cgame_state_t;
 
 extern cgame_state_t    cg;
@@ -370,6 +372,7 @@ extern vm_cvar_t    cg_chat_filter;
 
 extern vm_cvar_t    cg_gibs;
 extern vm_cvar_t    cg_flares;
+extern vm_cvar_t    cg_shadowlights;
 
 extern vm_cvar_t    cg_thirdperson;
 extern vm_cvar_t    cg_thirdperson_angle;
