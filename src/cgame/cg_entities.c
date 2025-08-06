@@ -286,6 +286,24 @@ float CG_LerpEntityAlpha(const centity_t *ent)
     return curr ? curr : 1.0f;
 }
 
+static float CG_HandMultiplier(void)
+{
+    float hand_multiplier;
+
+    if (cg_gun.integer == 3)
+        hand_multiplier = -1;
+    else if (cg_gun.integer == 2)
+        hand_multiplier = 1;
+    else if (info_hand.integer == 2)
+        hand_multiplier = 0;
+    else if (info_hand.integer == 1)
+        hand_multiplier = -1;
+    else
+        hand_multiplier = 1;
+
+    return hand_multiplier;
+}
+
 static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entnum)
 {
     int         i, steps;
@@ -309,16 +327,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
     // if coming from the player, update the start position
     if (entnum == cg.frame->ps.clientnum) {
-        if (cg_gun.integer == 3)
-            hand_multiplier = -1;
-        else if (cg_gun.integer == 2)
-            hand_multiplier = 1;
-        else if (info_hand.integer == 2)
-            hand_multiplier = 0;
-        else if (info_hand.integer == 1)
-            hand_multiplier = -1;
-        else
-            hand_multiplier = 1;
+        hand_multiplier = CG_HandMultiplier();
 
         // set up gun position
         VectorCopy(cg.refdef.vieworg, org);
@@ -837,7 +846,8 @@ static void CG_AddPacketEntities(void)
             vec3_t start, forward;
 
             if (s1->number == cg.frame->ps.clientnum) {
-                VectorCopy(cg.refdef.vieworg, start);
+                float hand = CG_HandMultiplier();
+                VectorMA(cg.refdef.vieworg, 7.0f * hand, cg.v_right, start);
                 VectorCopy(cg.v_forward, forward);
             } else {
                 VectorCopy(ent.origin, start);

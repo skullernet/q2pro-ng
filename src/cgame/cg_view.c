@@ -109,8 +109,6 @@ static void CG_AddViewWeapon(void)
     VectorMA(gun.origin, cg_gun_x.value, cg.v_right, gun.origin);
     VectorMA(gun.origin, cg_gun_z.value, cg.v_up, gun.origin);
 
-    VectorCopy(gun.origin, gun.oldorigin);      // don't lerp at all
-
     gun.frame = ps->gunframe;
     if (gun.frame == 0) {
         gun.oldframe = 0;   // just changed weapons, don't lerp from old
@@ -149,6 +147,25 @@ static void CG_AddViewWeapon(void)
     if (gun.alpha != 1.0f)
         gun.flags |= RF_TRANSLUCENT;
 
+    if (cg_gunfov.value > 0) {
+        float fov_x, fov_y;
+
+        fov_x = Q_clipf(cg_gunfov.value, 30, 160);
+        if (cg_adjustfov.integer) {
+            fov_y = V_CalcFov(fov_x, 4, 3);
+            fov_x = V_CalcFov(fov_y, scr_vrect.height, scr_vrect.width);
+        } else {
+            fov_y = V_CalcFov(fov_x, scr_vrect.width, scr_vrect.height);
+        }
+
+        gun.oldorigin[0] = fov_x;
+        gun.oldorigin[1] = fov_y;
+        gun.flags |= RF_FOVHACK;
+    }
+
+    if ((info_hand.integer == 1 && cg_gun.integer == 1) || cg_gun.integer == 3)
+        gun.flags |= RF_LEFTHAND;
+
     trap_R_AddEntity(&gun);
 
     // add shell effect from player entity
@@ -167,7 +184,8 @@ static void CG_AddViewWeapon(void)
         return;
     }
 
-    gun.flags = RF_FULLBRIGHT | RF_DEPTHHACK | RF_WEAPONMODEL | RF_TRANSLUCENT;
+    gun.flags &= RF_FOVHACK | RF_LEFTHAND;
+    gun.flags |= RF_FULLBRIGHT | RF_DEPTHHACK | RF_WEAPONMODEL | RF_TRANSLUCENT;
     gun.alpha = 1.0f;
     gun.model = cg.weapon.muzzle.model;
     gun.skinnum = 0;
