@@ -164,14 +164,24 @@ static void setup_lights(void)
     for (int i = 0; i < r_numdlights; i++) {
         const glDynLight_t *light = &r_dlights[i];
         vec3_t dir;
-        float dist;
 
-        VectorSubtract(glr.ent->origin, light->origin, dir);
-        dist = VectorNormalize(dir);
-        if (dist > light->radius + radius ||
-            (light->cone > 0.0f && DotProduct(light->dir, dir) < 1.0f - light->cone)) {
+        VectorSubtract(origin, light->origin, dir);
+        if (VectorLength(dir) > light->radius + radius) {
             c.lightsCulled++;
             continue;
+        }
+
+        // https://geometrictools.com/Documentation/IntersectionSphereCone.pdf
+        if (light->cone > 0.0f) {
+            float c2 = light->cone * light->cone;
+            float sr = radius / sqrtf(1.0f - c2);
+            VectorMA(dir, sr, light->dir, dir);
+            float d1 = DotProduct(light->dir, dir);
+            float d2 = DotProduct(dir, dir);
+            if (d1 < 0 || d1 * d1 < d2 * c2) {
+                c.lightsCulled++;
+                continue;
+            }
         }
 
         dlightbits |= BIT_ULL(i);
@@ -211,7 +221,7 @@ static void setup_color(void)
     } else {
         float f, m;
 
-        GL_LightPoint(origin, color);
+        R_LightPoint(origin, color);
 
         if (flags & RF_MINLIGHT) {
             f = VectorLength(color);

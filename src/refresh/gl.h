@@ -92,7 +92,6 @@ typedef struct {
 
 typedef struct {
     bool            registering;
-    bool            use_bmodel_skies;
     struct {
         bsp_t       *cache;
         GLuint      buffer;
@@ -113,6 +112,7 @@ typedef struct {
     GLsync          sync;
     float           bloom_sigma;
     int             nolm_mask;
+    int             nodraw_mask;    // bmodels only
     int             hunk_align;
     float           sintab[256];
     byte            latlngtab[NUMVERTEXNORMALS][2];
@@ -163,21 +163,16 @@ typedef struct {
 } glRefdef_t;
 
 typedef enum {
-    QGL_CAP_LEGACY                      = BIT(0),
-    QGL_CAP_SHADER                      = BIT(1),
-    QGL_CAP_TEXTURE_BITS                = BIT(2),
-    QGL_CAP_TEXTURE_CLAMP_TO_EDGE       = BIT(3),
-    QGL_CAP_TEXTURE_MAX_LEVEL           = BIT(4),
-    QGL_CAP_TEXTURE_LOD_BIAS            = BIT(5),
-    QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = BIT(6),
-    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(7),
-    QGL_CAP_UNPACK_SUBIMAGE             = BIT(8),
-    QGL_CAP_ELEMENT_INDEX_UINT          = BIT(9),
-    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(10),
-    QGL_CAP_CLIENT_VA                   = BIT(11),
-    QGL_CAP_LINE_SMOOTH                 = BIT(12),
-    QGL_CAP_BUFFER_TEXTURE              = BIT(13),
-    QGL_CAP_SHADER_STORAGE              = BIT(14),
+    QGL_CAP_SHADER                      = BIT(0),
+    QGL_CAP_CLIENT_VA                   = BIT(1),
+    QGL_CAP_LINE_SMOOTH                 = BIT(2),
+    QGL_CAP_TEXTURE_BITS                = BIT(3),
+    QGL_CAP_TEXTURE_LOD_BIAS            = BIT(4),
+    QGL_CAP_TEXTURE_MAX_LEVEL           = BIT(5),
+    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(6),
+    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(7),
+    QGL_CAP_BUFFER_TEXTURE              = BIT(8),
+    QGL_CAP_SHADER_STORAGE              = BIT(9),
     QGL_CAP_SKELETON_MASK               = QGL_CAP_BUFFER_TEXTURE | QGL_CAP_SHADER_STORAGE,
 } glcap_t;
 
@@ -257,9 +252,8 @@ extern cvar_t *gl_celshading;
 extern cvar_t *gl_dotshading;
 extern cvar_t *gl_shadows;
 extern cvar_t *gl_modulate;
+extern cvar_t *gl_modulate_world;
 extern cvar_t *gl_modulate_entities;
-extern cvar_t *gl_lightmap_add;
-extern cvar_t *gl_lightmap_bits;
 extern cvar_t *gl_dynamic;
 extern cvar_t *gl_flarespeed;
 extern cvar_t *gl_fontshadow;
@@ -288,6 +282,7 @@ extern cvar_t *gl_clear;
 extern cvar_t *gl_novis;
 extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
+extern cvar_t *gl_lightmap_bits;
 extern cvar_t *gl_fullbright;
 extern cvar_t *gl_lightgrid;
 extern cvar_t *gl_showerrors;
@@ -657,21 +652,17 @@ typedef struct {
         glMeshBlock_t   mesh;
     };
     GLfloat     time;
-    GLfloat     modulate;
-    GLfloat     add;
-    GLfloat     intensity;
-    GLfloat     pad_4;
+    GLfloat     modulate_world;
+    GLfloat     modulate_entities;
     GLfloat     fog_sky_factor;
+    GLfloat     heightfog_density;
+    GLfloat     heightfog_falloff;
     vec2_t      w_amp;
     vec2_t      w_phase;
     vec2_t      scroll;
     vec4_t      fog_color;
     vec4_t      heightfog_start;
     vec4_t      heightfog_end;
-    GLfloat     heightfog_density;
-    GLfloat     heightfog_falloff;
-    GLfloat     pad_5;
-    GLuint      dlightbits;
     vec4_t      vieworg;
 } glUniformBlock_t;
 
@@ -826,7 +817,6 @@ void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat zn
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x);
 void GL_Setup2D(void);
 void GL_Setup3D(void);
-void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
 
@@ -921,7 +911,6 @@ void GL_ClearSolidFaces(void);
  */
 void GL_DrawBspModel(mmodel_t *model);
 void GL_DrawWorld(void);
-void GL_LightPoint(const vec3_t origin, vec3_t color);
 
 /*
  * gl_sky.c

@@ -63,11 +63,6 @@ option('openal',
   value: 'auto',
   description: 'OpenAL sound backend')
 
-option('opengl-es1',
-  type: 'boolean',
-  value: false,
-  description: 'Build OpenGL ES 1 compatible renderer')
-
 option('save-games',
   type: 'boolean',
   value: true,

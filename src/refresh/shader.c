@@ -62,8 +62,7 @@ static void write_header(sizebuf_t *buf, glStateBits_t bits)
 
     if (gl_config.ver_es) {
         GLSL(precision mediump float;)
-        if (bits & GLS_MESH_ANY)
-            GLSL(precision mediump int;)
+        GLSL(precision mediump int;)
     }
 }
 
@@ -96,21 +95,17 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
 
     GLSL(
         float u_time;
-        float u_modulate;
-        float u_add;
-        float u_intensity;
-        float pad_4;
+        float u_modulate_world;
+        float u_modulate_entities;
         float u_fog_sky_factor;
+        float u_heightfog_density;
+        float u_heightfog_falloff;
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
         vec4 u_fog_color;
         vec4 u_heightfog_start;
         vec4 u_heightfog_end;
-        float u_heightfog_density;
-        float u_heightfog_falloff;
-        float pad_5;
-        uint u_dlight_bits;
         vec4 u_vieworg;
     )
     GLSF("};\n");
@@ -586,8 +581,12 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         GLSL(in vec2 v_tc;)
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
+        if (gl_config.ver_es)
+            GLSL(uniform mediump)
+        else
+            GLSL(uniform)
         GLSL(
-             uniform sampler2DArray u_lightmap;
+             sampler2DArray u_lightmap;
              in vec2 v_lmtc;
              flat in vec4 v_lightstyle;
         )
@@ -674,7 +673,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_DYNAMIC_LIGHTS)
             GLSL(lightmap += calc_dynamic_lights();)
 
-        GLSL(diffuse.rgb *= (lightmap + u_add) * u_modulate;)
+        GLSL(diffuse.rgb *= lightmap * u_modulate_world;)
     }
 
     if (bits & GLS_DEFAULT_FLARE)
@@ -686,7 +685,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (!(bits & GLS_TEXTURE_REPLACE)) {
         GLSL(vec4 color = v_color;)
         if ((bits & (GLS_LIGHTMAP_ENABLE | GLS_DYNAMIC_LIGHTS)) == GLS_DYNAMIC_LIGHTS)
-            GLSL(color.rgb += calc_dynamic_lights() * u_modulate;)
+            GLSL(color.rgb += calc_dynamic_lights() * u_modulate_entities;)
         GLSL(diffuse *= color;)
     }
 
@@ -971,13 +970,8 @@ void GL_InitShaders(void)
 
     qglGenBuffers(UBO_COUNT, gl_static.uniform_buffers);
     GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffers[UBO_UNIFORMS]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), NULL, GL_DYNAMIC_DRAW);
-
     GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_LIGHTS, gl_static.uniform_buffers[UBO_LIGHTS]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_lights), NULL, GL_DYNAMIC_DRAW);
-
     GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_STYLES, gl_static.uniform_buffers[UBO_STYLES]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_styles), NULL, GL_DYNAMIC_DRAW);
 
 #if USE_MD5
     if (gl_config.caps & QGL_CAP_SKELETON_MASK) {

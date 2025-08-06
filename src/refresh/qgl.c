@@ -81,15 +81,6 @@ static const glsection_t sections[] = {
         }
     },
 
-    // GL 1.1, compat
-    {
-        .ver_gl = QGL_VER(1, 1),
-        .ver_es = QGL_VER(1, 0),
-        .excl_gl = QGL_VER(3, 1),
-        .excl_es = QGL_VER(2, 0),
-        .caps = QGL_CAP_LEGACY | QGL_CAP_CLIENT_VA,
-    },
-
     // GL 1.1, not ES
     {
         .ver_gl = QGL_VER(1, 1),
@@ -105,16 +96,7 @@ static const glsection_t sections[] = {
     {
         .ver_gl = QGL_VER(1, 1),
         .excl_gl = QGL_VER(3, 1),
-        .caps = QGL_CAP_TEXTURE_BITS,
-    },
-
-    // GL 1.1, ES 3.0
-    // EXT_unpack_subimage
-    {
-        .extension = "GL_EXT_unpack_subimage",
-        .ver_gl = QGL_VER(1, 1),
-        .ver_es = QGL_VER(3, 0),
-        .caps = QGL_CAP_UNPACK_SUBIMAGE,
+        .caps = QGL_CAP_TEXTURE_BITS | QGL_CAP_CLIENT_VA,
     },
 
     // GL 1.1, ES 1.0 up to 2.0
@@ -128,13 +110,14 @@ static const glsection_t sections[] = {
     // ES 1.1
     {
         .ver_es = QGL_VER(1, 1),
-        .caps = QGL_CAP_TEXTURE_CLAMP_TO_EDGE | QGL_CAP_CLIENT_VA,
+        .caps = QGL_CAP_CLIENT_VA,
     },
 
-    // GL 1.2
+    // GL 1.2, ES 3.0
     {
         .ver_gl = QGL_VER(1, 2),
-        .caps = QGL_CAP_TEXTURE_CLAMP_TO_EDGE | QGL_CAP_TEXTURE_MAX_LEVEL,
+        .ver_es = QGL_VER(3, 0),
+        .caps = QGL_CAP_TEXTURE_MAX_LEVEL,
         .functions = (const glfunction_t []) {
             QGL_FN(TexImage3D),
             { NULL }
@@ -142,10 +125,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.3
-    // ARB_multitexture
     {
-        .extension = "GL_ARB_multitexture",
-        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 3),
         .ver_es = QGL_VER(1, 0),
         .functions = (const glfunction_t []) {
@@ -162,10 +142,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.5
-    // ARB_vertex_buffer_object
     {
-        .extension = "GL_ARB_vertex_buffer_object",
-        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 5),
         .ver_es = QGL_VER(1, 1),
         .functions = (const glfunction_t []) {
@@ -179,10 +156,7 @@ static const glsection_t sections[] = {
     },
 
     // GL 1.5, ES 3.0
-    // ARB_occlusion_query
     {
-        .extension = "GL_ARB_occlusion_query",
-        .suffix = "ARB",
         .ver_gl = QGL_VER(1, 5),
         .ver_es = QGL_VER(3, 0),
         .functions = (const glfunction_t []) {
@@ -250,9 +224,6 @@ static const glsection_t sections[] = {
     {
         .ver_gl = QGL_VER(3, 0),
         .ver_es = QGL_VER(3, 0),
-        // NPOT textures are technically GL 2.0, but only enable them on 3.0 to
-        // ensure full hardware support, including mipmaps.
-        .caps = QGL_CAP_TEXTURE_MAX_LEVEL | QGL_CAP_TEXTURE_NON_POWER_OF_TWO,
         .functions = (const glfunction_t []) {
             QGL_FN(BindBufferBase),
             QGL_FN(BindBufferRange),
@@ -693,7 +664,7 @@ bool QGL_Init(void)
             gl_config.caps &= ~QGL_CAP_SHADER;
     }
 
-    // reject unsupported configurations, such as GL ES 2.0
+    // reject unsupported configurations
     if (!(gl_config.caps & QGL_CAP_SHADER)) {
         Com_EPrintf("Unsupported OpenGL version: %s\n", qglGetString(GL_VERSION));
         return false;

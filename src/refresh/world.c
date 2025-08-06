@@ -143,7 +143,7 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
     return true;
 }
 
-static bool GL_LightPoint_(const vec3_t start, vec3_t color)
+static bool GL_LightPoint(const vec3_t start, vec3_t color)
 {
     const bsp_t     *bsp = gl_static.world.cache;
     int             index;
@@ -152,6 +152,9 @@ static bool GL_LightPoint_(const vec3_t start, vec3_t color)
     const glentity_t *ent;
     const mmodel_t  *model;
     const vec_t     *angles;
+
+    if (gl_fullbright->integer)
+        return false;
 
     if (!bsp || !bsp->lightmap)
         return false;
@@ -264,27 +267,16 @@ static void GL_TransformLights(const mmodel_t *model)
     }
 }
 
-void GL_LightPoint(const vec3_t origin, vec3_t color)
+void R_LightPoint(const vec3_t origin, vec3_t color)
 {
-    if (gl_fullbright->integer) {
+    // get lighting from world
+    if (!GL_LightPoint(origin, color)) {
         VectorSet(color, 1, 1, 1);
         return;
     }
 
-    // get lighting from world
-    if (GL_LightPoint_(origin, color))
-        VectorScale(color, gl_modulate_entities->value / 255.0f, color);
-    else
-        VectorSet(color, 1, 1, 1);
-}
-
-void R_LightPoint(const vec3_t origin, vec3_t color)
-{
-    GL_LightPoint(origin, color);
-
-    color[0] = Q_clipf(color[0], 0, 1);
-    color[1] = Q_clipf(color[1], 0, 1);
-    color[2] = Q_clipf(color[2], 0, 1);
+    float scale = gl_modulate->value * gl_modulate_entities->value / 255.0f;
+    VectorScale(color, scale, color);
 }
 
 static void GL_MarkLeaves(void)
@@ -361,7 +353,6 @@ void GL_DrawBspModel(mmodel_t *model)
     vec3_t transformed, temp;
     glentity_t *ent = glr.ent;
     glCullResult_t cull;
-    glStateBits_t skymask;
     int i;
 
     if (!model->numfaces)
@@ -399,18 +390,13 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_RotateForEntity();
 
-    skymask = gl_static.use_bmodel_skies ? GLS_SKY_MASK : 0;
-
     GL_BindArrays(VA_3D);
 
     GL_ClearSolidFaces();
 
     // draw visible faces
     for (i = 0, face = model->firstface; i < model->numfaces; i++, face++) {
-        // sky faces don't have their polygon built
-        if (face->drawflags & SURF_SKY && !(face->statebits & skymask))
-            continue;
-        if (face->drawflags & SURF_NODRAW)
+        if (face->drawflags & gl_static.nodraw_mask)
             continue;
 
         dot = PlaneDiffFast(transformed, face->plane);

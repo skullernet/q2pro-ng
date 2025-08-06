@@ -639,12 +639,15 @@ void GL_LoadWorld(const char *name)
     gl_static.world.buffer_size = size;
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
-    gl_static.use_bmodel_skies = bsp->has_bspx;
+    gl_static.nodraw_mask = SURF_SKY | SURF_NODRAW;
 
-    // only supported in BSPX and N64 maps because vanilla maps have broken
-    // lightofs for liquids/alphas.
+    // allow lightmapped liquids in BSPX and N64 maps
     if (bsp->has_bspx || n64surfs > 100)
         gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
+
+    // allow bmodel skies in BSPX maps
+    if (bsp->has_bspx)
+        gl_static.nodraw_mask = SURF_NODRAW;
 
     // post process all surfaces
     upload_world_surfaces();

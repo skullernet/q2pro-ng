@@ -51,9 +51,8 @@ cvar_t *gl_celshading;
 cvar_t *gl_dotshading;
 cvar_t *gl_shadows;
 cvar_t *gl_modulate;
+cvar_t *gl_modulate_world;
 cvar_t *gl_modulate_entities;
-cvar_t *gl_lightmap_add;
-cvar_t *gl_lightmap_bits;
 cvar_t *gl_dynamic;
 cvar_t *gl_flarespeed;
 cvar_t *gl_fontshadow;
@@ -93,6 +92,7 @@ cvar_t *gl_finish;
 cvar_t *gl_novis;
 cvar_t *gl_lockpvs;
 cvar_t *gl_lightmap;
+cvar_t *gl_lightmap_bits;
 cvar_t *gl_fullbright;
 cvar_t *gl_lightgrid;
 cvar_t *gl_polyblend;
@@ -321,7 +321,7 @@ void GL_RotationMatrix(GLfloat *matrix)
 void GL_RotateForEntity(void)
 {
     GL_RotationMatrix(gls.u_block.m_model);
-    if (glr.ent == &gl_world || (glr.ent->model & BIT(31) && gl_static.use_bmodel_skies)) {
+    if (glr.ent == &gl_world || (glr.ent->model & BIT(31) && !(gl_static.nodraw_mask & SURF_SKY))) {
         GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], gls.u_block.m_model);
         GL_MultMatrix(gls.u_block.m_sky[1], glr.skymatrix[1], gls.u_block.m_model);
     }
@@ -1102,14 +1102,13 @@ static void GL_Register(void)
     // regular variables
     gl_partscale = Cvar_Get("gl_partscale", "2", 0);
     gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
-    gl_beamstyle = Cvar_Get("gl_beamstyle", "0", 0);
+    gl_beamstyle = Cvar_Get("gl_beamstyle", "1", 0);
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
-    gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
+    gl_dotshading = Cvar_Get("gl_dotshading", "0", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
     gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
-    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1.5", 0);
-    gl_lightmap_add = Cvar_Get("gl_lightmap_add", "0", 0);
-    gl_lightmap_bits = Cvar_Get("gl_lightmap_bits", "0", CVAR_FILES);
+    gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
+    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_flarespeed = Cvar_Get("gl_flarespeed", "8", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
@@ -1119,9 +1118,9 @@ static void GL_Register(void)
     gl_md5_distance = Cvar_Get("gl_md5_distance", "2048", 0);
 #endif
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
-    gl_waterwarp = Cvar_Get("gl_waterwarp", "0", 0);
+    gl_waterwarp = Cvar_Get("gl_waterwarp", "1", 0);
     gl_fog = Cvar_Get("gl_fog", "1", 0);
-    gl_bloom = Cvar_Get("gl_bloom", "0", 0);
+    gl_bloom = Cvar_Get("gl_bloom", "1", 0);
     gl_bloom_sigma = Cvar_Get("gl_bloom_sigma", "4", 0);
     gl_bloom_sigma->changed = gl_bloom_sigma_changed;
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
@@ -1155,6 +1154,7 @@ static void GL_Register(void)
     gl_novis->changed = gl_novis_changed;
     gl_lockpvs = Cvar_Get("gl_lockpvs", "0", CVAR_CHEAT);
     gl_lightmap = Cvar_Get("gl_lightmap", "0", CVAR_CHEAT);
+    gl_lightmap_bits = Cvar_Get("gl_lightmap_bits", "0", CVAR_FILES);
     gl_fullbright = Cvar_Get("gl_fullbright", "0", CVAR_CHEAT);
     gl_lightgrid = Cvar_Get("gl_lightgrid", "1", 0);
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
@@ -1568,9 +1568,7 @@ void R_AddSphereLight(const vec3_t org, float radius, float r, float g, float b)
     dl = &r_dlights[r_numdlights++];
     VectorCopy(org, dl->origin);
     dl->radius = radius;
-    dl->color[0] = r;
-    dl->color[1] = g;
-    dl->color[2] = b;
+    VectorSet(dl->color, r, g, b);
     dl->sphere = 1.0f;
     VectorClear(dl->dir);
     dl->cone = 0.0f;
@@ -1593,9 +1591,7 @@ void R_AddSpotLight(const vec3_t org, const vec3_t dir, float cone, float radius
     dl = &r_dlights[r_numdlights++];
     VectorCopy(org, dl->origin);
     dl->radius = radius;
-    dl->color[0] = r;
-    dl->color[1] = g;
-    dl->color[2] = b;
+    VectorSet(dl->color, r, g, b);
     dl->sphere = 0.0f;
     VectorCopy(dir, dl->dir);
     dl->cone = cosf(DEG2RAD(cone));

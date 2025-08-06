@@ -281,9 +281,8 @@ void GL_Setup2D(void)
     }
 
     gls.u_block.time = glr.fd.time;
-    gls.u_block.modulate = 1.0f;
-    gls.u_block.add = 0.0f;
-    gls.u_block.intensity = 1.0f;
+    gls.u_block.modulate_world = 1.0f;
+    gls.u_block.modulate_entities = 1.0f;
 
     gls.u_block.w_amp[0] = 0.0025f;
     gls.u_block.w_amp[1] = 0.0025f;
@@ -377,8 +376,8 @@ void GL_Setup3D(void)
                     glr.fd.width, glr.fd.height);
 
     gls.u_block.time = glr.fd.time;
-    gls.u_block.modulate = gl_modulate->value;
-    gls.u_block.add = gl_lightmap_add->value;
+    gls.u_block.modulate_world = gl_modulate->value * gl_modulate_world->value;
+    gls.u_block.modulate_entities = gl_modulate->value * gl_modulate_entities->value;
 
     gls.u_block.w_amp[0] = 0.0625f;
     gls.u_block.w_amp[1] = 0.0625f;
@@ -390,7 +389,7 @@ void GL_Setup3D(void)
     gls.light_bits = 0;
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_STYLES]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_styles), &gls.u_styles, GL_DYNAMIC_DRAW);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_styles), &gls.u_styles, GL_STREAM_DRAW);
 
     // setup default matrices for world
     memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(gls.u_block.m_sky));
@@ -456,7 +455,7 @@ void GL_ForceUniforms(void)
         GL_MultMatrix(gls.u_block.m_vp, gls.proj_matrix, gls.view_matrix);
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_UNIFORMS]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_DYNAMIC_DRAW);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_STREAM_DRAW);
 
     gls.u_block_dirty = DIRTY_NONE;
     c.uniformUploads++;
@@ -478,7 +477,7 @@ void GL_PushLights(uint64_t bits)
             gls.u_lights.dlights[gls.u_lights.num_dlights++] = r_dlights[i];
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_LIGHTS]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_lights), NULL, GL_DYNAMIC_DRAW);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_lights), NULL, GL_STREAM_DRAW);
     qglBufferSubData(GL_UNIFORM_BUFFER, 0, 16 + sizeof(glDynLight_t) * gls.u_lights.num_dlights, &gls.u_lights);
     c.uniformUploads++;
 }

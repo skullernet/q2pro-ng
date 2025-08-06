@@ -419,19 +419,6 @@ static bool GL_TextureHasAlpha(const byte *data, int width, int height)
     return false;
 }
 
-static bool GL_MakePowerOfTwo(int *width, int *height)
-{
-    if (!(*width & (*width - 1)) && !(*height & (*height - 1)))
-        return true;    // already power of two
-
-    if (gl_config.caps & QGL_CAP_TEXTURE_NON_POWER_OF_TWO)
-        return false;   // assume full NPOT texture support
-
-    *width = Q_npot32(*width);
-    *height = Q_npot32(*height);
-    return false;
-}
-
 static void GL_ClampTextureSize(int *width, int *height)
 {
     while (*width > gl_config.max_texture_size ||
@@ -459,7 +446,7 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
 
     scaled_width = width;
     scaled_height = height;
-    power_of_two = GL_MakePowerOfTwo(&scaled_width, &scaled_height);
+    power_of_two = !(width & (width - 1)) && !(height & (height - 1));
 
     if (type == IT_WALL || (type == IT_SKIN && gl_downsample_skins->integer)) {
         // round world textures down, if requested
@@ -561,8 +548,6 @@ static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t
     if (!(flags & (IF_PALETTED | IF_SCRAP)))
         return 0;
 
-    GL_MakePowerOfTwo(&width, &height);
-
     maxlevel = Cvar_ClampInteger(gl_upscale_pcx, 0, 2);
     while (maxlevel) {
         int maxsize = gl_config.max_texture_size >> maxlevel;
@@ -663,12 +648,9 @@ static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
     if (type == IT_WALL || type == IT_SKIN || (flags & IF_REPEAT)) {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    } else if (gl_config.caps & QGL_CAP_TEXTURE_CLAMP_TO_EDGE) {
+    } else {
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    } else {
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     }
 }
 
@@ -1227,7 +1209,7 @@ void GL_InitImages(void)
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
     gl_texturebits = Cvar_Get("gl_texturebits", "0", CVAR_FILES);
-    gl_anisotropy = Cvar_Get("gl_anisotropy", "1", 0);
+    gl_anisotropy = Cvar_Get("gl_anisotropy", "8", 0);
     gl_anisotropy->changed = gl_anisotropy_changed;
     gl_noscrap = Cvar_Get("gl_noscrap", "0", CVAR_FILES);
     gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
