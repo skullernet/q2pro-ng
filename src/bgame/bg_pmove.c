@@ -932,6 +932,7 @@ static void PM_SetDimensions(void)
     }
 }
 
+#if 0
 static bool PM_AboveWater(void)
 {
     trace_t tr;
@@ -950,6 +951,7 @@ static bool PM_AboveWater(void)
 
     return false;
 }
+#endif
 
 /*
 ==============
@@ -965,8 +967,7 @@ static bool PM_CheckDuck(void)
     if (pm->s->pm_type >= PM_DEAD)
         return false;
 
-    if ((pm->cmd.buttons & BUTTON_CROUCH) &&
-        (pm->groundentitynum != ENTITYNUM_NONE || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
+    if ((pm->cmd.buttons & BUTTON_CROUCH) && (pm->groundentitynum != ENTITYNUM_NONE) &&
         !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
         // duck
         if (!(pm->s->pm_flags & PMF_DUCKED)) {
