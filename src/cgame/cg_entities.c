@@ -583,7 +583,7 @@ static void CG_AddPacketEntities(void)
     centity_t               *cent;
     int                     autoanim;
     const clientinfo_t      *ci;
-    unsigned int            effects, renderfx;
+    unsigned int            effects, renderfx, shellfx;
     bool                    has_alpha, has_trail;
     float                   custom_alpha;
     uint64_t                custom_flags;
@@ -813,6 +813,10 @@ static void CG_AddPacketEntities(void)
         if ((renderfx & RF_TRANSLUCENT) && !(renderfx & RF_BEAM))
             ent.alpha = 0.70f;
 
+        // renderfx go on color shell entity
+        if (effects & EF_COLOR_SHELL)
+            renderfx &= ~RF_SHELL_MASK;
+
         // render effects (fullbright, translucent, etc)
         ent.flags = renderfx;
 
@@ -930,9 +934,9 @@ static void CG_AddPacketEntities(void)
         trap_R_AddEntity(&ent);
 
         // color shells generate a separate entity for the main model
-        if ((effects & EF_SHELL_MASK) || (s1->morefx & EFX_DUALFIRE)) {
-            renderfx |= CG_EntityShellEffect(s1);
-            ent.flags = renderfx | RF_TRANSLUCENT;
+        shellfx = CG_EntityShellEffect(s1);
+        if (shellfx) {
+            ent.flags = renderfx | shellfx | RF_TRANSLUCENT;
             ent.alpha = custom_alpha * 0.30f;
             trap_R_AddEntity(&ent);
         }
