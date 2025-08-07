@@ -35,10 +35,16 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
 {
     Q_assert(maxsize <= SIZE_MAX - (pagesize - 1));
 
+    if (hunk->base) {
+        Q_assert(hunk->maxsize == Q_ALIGN(maxsize, pagesize));
+        Q_assert(hunk->cursize == 0);
+        return;
+    }
+
     // reserve a huge chunk of memory, but don't commit any yet
     hunk->cursize = 0;
     hunk->maxsize = Q_ALIGN(maxsize, pagesize);
-    hunk->base = VirtualAlloc(NULL, hunk->maxsize, MEM_RESERVE, PAGE_NOACCESS);
+    hunk->base = VirtualAlloc(NULL, hunk->maxsize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (!hunk->base)
         Com_Error(ERR_FATAL,
                   "VirtualAlloc reserve %zu bytes failed with error %lu",
@@ -57,16 +63,9 @@ void *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align)
     if (size > hunk->maxsize - hunk->cursize)
         return NULL;
 
+    buf = (byte *)hunk->base + hunk->cursize;
     hunk->cursize += size;
-
-    // commit pages as needed
-    buf = VirtualAlloc(hunk->base, hunk->cursize, MEM_COMMIT, PAGE_READWRITE);
-    if (!buf)
-        Com_Error(ERR_FATAL,
-                  "VirtualAlloc commit %zu bytes failed with error %lu",
-                  hunk->cursize, GetLastError());
-
-    return (byte *)hunk->base + hunk->cursize - size;
+    return buf;
 }
 
 void *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align)
@@ -80,23 +79,22 @@ void *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align)
 void Hunk_FreeToWatermark(memhunk_t *hunk, size_t size)
 {
     Q_assert(size <= hunk->cursize);
-
-    size_t newsize = Q_ALIGN(size, pagesize);
-    if (newsize < hunk->cursize) {
-        Q_assert(hunk->base);
-        Q_assert(newsize <= hunk->maxsize);
-        VirtualFree((byte *)hunk->base + newsize, hunk->maxsize - newsize, MEM_DECOMMIT);
-    }
-
     hunk->cursize = size;
 }
 
 void Hunk_End(memhunk_t *hunk)
 {
-    Q_assert(hunk->cursize <= hunk->maxsize);
+    size_t newsize;
 
-    // for statistics
-    hunk->mapped = Q_ALIGN(hunk->cursize, pagesize);
+    Q_assert(hunk->cursize <= hunk->maxsize);
+    newsize = Q_ALIGN(hunk->cursize, pagesize);
+
+    if (newsize < hunk->maxsize) {
+        Q_assert(hunk->base);
+        VirtualFree((byte *)hunk->base + newsize, hunk->maxsize - newsize, MEM_DECOMMIT);
+    }
+
+    hunk->maxsize = newsize;
 }
 
 void Hunk_Free(memhunk_t *hunk)

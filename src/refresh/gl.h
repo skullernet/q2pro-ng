@@ -333,12 +333,6 @@ static inline void GL_AdvanceValue(float *restrict val, float target, float spee
 
 #define MOD_MAXSIZE_GPU     0x1000000
 
-#if (defined _WIN32) && !(defined _WIN64)
-#define MOD_MAXSIZE_CPU     0x400000
-#else
-#define MOD_MAXSIZE_CPU     0x800000
-#endif
-
 typedef struct {
     float   st[2];
 } maliastc_t;

@@ -214,9 +214,9 @@ static void BSP_Info_f(void)
 
     LIST_FOR_EACH(bsp, &bsp_cache, entry) {
         Com_Printf("%8zu : %s (%d refs)\n",
-                   bsp->hunk.mapped, bsp->name, bsp->refcount);
+                   bsp->hunk.cursize, bsp->name, bsp->refcount);
         BSP_PrintStats(bsp);
-        bytes += bsp->hunk.mapped;
+        bytes += bsp->hunk.cursize;
     }
     Com_Printf("Total resident: %zu\n", bytes);
 }

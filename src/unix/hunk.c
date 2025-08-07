@@ -36,6 +36,12 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
 
     Q_assert(maxsize <= SIZE_MAX - (pagesize - 1));
 
+    if (hunk->base) {
+        Q_assert(hunk->maxsize == Q_ALIGN(maxsize, pagesize));
+        Q_assert(hunk->cursize == 0);
+        return;
+    }
+
     // reserve a huge chunk of memory, but don't commit any yet
     hunk->cursize = 0;
     hunk->maxsize = Q_ALIGN(maxsize, pagesize);
@@ -45,7 +51,6 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
         Com_Error(ERR_FATAL, "%s: couldn't reserve %zu bytes: %s",
                   __func__, hunk->maxsize, strerror(errno));
     hunk->base = buf;
-    hunk->mapped = hunk->maxsize;
 }
 
 void *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align)
@@ -101,12 +106,12 @@ void Hunk_End(memhunk_t *hunk)
                       __func__, strerror(errno));
     }
 
-    hunk->mapped = newsize;
+    hunk->maxsize = newsize;
 }
 
 void Hunk_Free(memhunk_t *hunk)
 {
-    if (hunk->base && munmap(hunk->base, hunk->mapped))
+    if (hunk->base && munmap(hunk->base, hunk->maxsize))
         Com_Error(ERR_FATAL, "%s: munmap failed: %s",
                   __func__, strerror(errno));
 

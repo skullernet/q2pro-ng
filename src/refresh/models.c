@@ -149,6 +149,9 @@ void MOD_FreeUnused(void)
     model_t *model;
     int i, count = 0;
 
+    Hunk_Free(&temp_hunk[0]);
+    Hunk_Free(&temp_hunk[1]);
+
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
         if (!model->type)
             continue;
@@ -168,6 +171,9 @@ void MOD_FreeAll(void)
 {
     model_t *model;
     int i, count = 0;
+
+    Hunk_Free(&temp_hunk[0]);
+    Hunk_Free(&temp_hunk[1]);
 
     for (i = 0, model = r_models; i < r_numModels; i++, model++) {
         if (model->type) {
@@ -276,10 +282,21 @@ static const char *MOD_ValidateMD2(const dmd2header_t *header, size_t length)
     return NULL;
 }
 
-static void MOD_HunkBegin(model_t *model)
+static void MOD_HunkBegin(void)
 {
     Hunk_Begin(&temp_hunk[0], MOD_MAXSIZE_GPU);
-    Hunk_Begin(&temp_hunk[1], MOD_MAXSIZE_CPU);
+    Hunk_Begin(&temp_hunk[1], MOD_MAXSIZE_GPU / 2);
+}
+
+static void MOD_HunkEnd(void)
+{
+    if (gl_static.registering) {
+        Hunk_FreeToWatermark(&temp_hunk[0], 0);
+        Hunk_FreeToWatermark(&temp_hunk[1], 0);
+    } else {
+        Hunk_Free(&temp_hunk[0]);
+        Hunk_Free(&temp_hunk[1]);
+    }
 }
 
 static bool MOD_AllocMesh(model_t *model, maliasmesh_t *mesh)
@@ -405,7 +422,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    MOD_HunkBegin(model);
+    MOD_HunkBegin();
 
     model->type = MOD_ALIAS;
     model->nummeshes = 1;
@@ -674,7 +691,7 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
         return Q_ERR_INVALID_FORMAT;
     }
 
-    MOD_HunkBegin(model);
+    MOD_HunkBegin();
 
     model->type = MOD_ALIAS;
     model->numframes = header.num_frames;
@@ -1456,14 +1473,10 @@ static void MOD_Reference(model_t *model)
 
 #define FIXUP_OFFSET(ptr) ((ptr) = (void *)((uintptr_t)(ptr) - base))
 
-// upload hunk to GPU and free it
-static bool MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
+static void MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
 {
-    GL_ClearErrors();
     GL_BindBuffer(GL_ARRAY_BUFFER, model->buffers[0]);
     qglBufferData(GL_ARRAY_BUFFER, hunk->cursize, hunk->base, GL_STATIC_DRAW);
-    if (GL_ShowErrors(__func__))
-        return false;
 
     const uintptr_t base = (uintptr_t)hunk->base;
 
@@ -1487,18 +1500,12 @@ static bool MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
 #endif
 
     model->size += hunk->cursize; // for statistics
-    Hunk_Free(hunk);
-
-    return true;
 }
 
-static bool MOD_UploadIndexBuffer(model_t *model, memhunk_t *hunk)
+static void MOD_UploadIndexBuffer(model_t *model, memhunk_t *hunk)
 {
-    GL_ClearErrors();
     GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffers[1]);
     qglBufferData(GL_ELEMENT_ARRAY_BUFFER, hunk->cursize, hunk->base, GL_STATIC_DRAW);
-    if (GL_ShowErrors(__func__))
-        return false;
 
     const uintptr_t base = (uintptr_t)hunk->base;
 
@@ -1513,9 +1520,6 @@ static bool MOD_UploadIndexBuffer(model_t *model, memhunk_t *hunk)
 #endif
 
     model->size += hunk->cursize; // for statistics
-    Hunk_Free(hunk);
-
-    return true;
 }
 
 qhandle_t R_RegisterModel(const char *name)
@@ -1616,12 +1620,9 @@ qhandle_t R_RegisterModel(const char *name)
 
     if (model->type == MOD_ALIAS) {
         qglGenBuffers(2, model->buffers);
-        if (!MOD_UploadVertexBuffer(model, &temp_hunk[0]) ||
-            !MOD_UploadIndexBuffer (model, &temp_hunk[1])) {
-            MOD_Free(model);
-            ret = Q_ERR_LIBRARY_ERROR;
-            goto fail1;
-        }
+        MOD_UploadVertexBuffer(model, &temp_hunk[0]);
+        MOD_UploadIndexBuffer (model, &temp_hunk[1]);
+        MOD_HunkEnd();
     }
 
 done:
@@ -1632,9 +1633,7 @@ fail2:
     FS_FreeFile(rawdata);
 fail1:
     MOD_PrintError(normalized, ret);
-
-    Hunk_Free(&temp_hunk[0]);
-    Hunk_Free(&temp_hunk[1]);
+    MOD_HunkEnd();
     return 0;
 }
 

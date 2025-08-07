@@ -22,7 +22,6 @@ typedef struct {
     void    *base;
     size_t  maxsize;
     size_t  cursize;
-    size_t  mapped;
 } memhunk_t;
 
 void    Hunk_Init(void);
