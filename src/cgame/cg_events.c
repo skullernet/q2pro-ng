@@ -239,6 +239,9 @@ void CG_RegisterTEntModels(void)
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cgs.models.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
+
+    // check for remaster powerscreen model
+    cgs.need_powerscreen_scale = trap_FS_OpenFile("models/items/armor/effect/tris.md2", NULL, 0) == 2300;
 }
 
 /*

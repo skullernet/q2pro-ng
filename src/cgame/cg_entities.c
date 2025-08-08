@@ -584,9 +584,9 @@ static void CG_AddPacketEntities(void)
     int                     autoanim;
     const clientinfo_t      *ci;
     unsigned int            effects, renderfx, shellfx;
-    bool                    has_alpha, has_trail;
-    float                   custom_alpha;
-    uint64_t                custom_flags;
+    bool                    has_trail;
+    float                   ent_alpha;
+    uint64_t                ent_flags;
 
     // bonus items rotate at a fixed rate
     autorotate = cg.time * 0.1f;
@@ -619,10 +619,6 @@ static void CG_AddPacketEntities(void)
             ent.frame = cg.time / 100;
         else
             ent.frame = s1->frame;
-
-        // optionally remove the glowing effect
-        if (cg_noglow.integer && !(renderfx & RF_BEAM))
-            renderfx &= ~RF_GLOW;
 
         ent.oldframe = cent->prev.frame;
         ent.backlerp = 1.0f - cg.lerpfrac;
@@ -666,6 +662,10 @@ static void CG_AddPacketEntities(void)
                 ent.oldframe = cent->prev_frame;
                 ent.backlerp = 1.0f - frac;
             }
+
+            // optionally remove the glowing effect
+            if (cg_noglow.integer)
+                renderfx &= ~RF_GLOW;
         }
 
         if (effects & EF_BOB && !cg_nobob.integer) {
@@ -770,8 +770,8 @@ static void CG_AddPacketEntities(void)
         // tweak the color of beams
         if (renderfx & RF_BEAM) {
             // the four beam colors are encoded in 32 bits of skinnum (hack)
-            ent.alpha = 0.30f;
             ent.skinnum = (s1->skinnum >> ((Com_SlowRand() % 4) * 8)) & 0xff;
+            ent.skin = 0;
             ent.model = 0;
         } else {
             // set skin
@@ -808,17 +808,6 @@ static void CG_AddPacketEntities(void)
             ent.skin = cgs.images.precache[s1->skinnum];
             ent.skinnum = 0;
         }
-
-        // only used for black hole model right now, FIXME: do better
-        if ((renderfx & RF_TRANSLUCENT) && !(renderfx & RF_BEAM))
-            ent.alpha = 0.70f;
-
-        // renderfx go on color shell entity
-        if (effects & EF_COLOR_SHELL)
-            renderfx &= ~RF_SHELL_MASK;
-
-        // render effects (fullbright, translucent, etc)
-        ent.flags = renderfx;
 
         // calculate angles
         if (effects & EF_ROTATE) {  // some bonus items auto-rotate
@@ -880,71 +869,75 @@ static void CG_AddPacketEntities(void)
         if (!s1->modelindex)
             goto skip;
 
-        if (effects & EF_BFG) {
-            ent.flags |= RF_TRANSLUCENT;
-            ent.alpha = 0.30f;
-        }
+        // beams don't have color shells
+        if (renderfx & RF_BEAM)
+            shellfx = 0;
+        else
+            shellfx = CG_EntityShellEffect(s1);
 
-        if (effects & EF_PLASMA) {
-            ent.flags |= RF_TRANSLUCENT;
-            ent.alpha = 0.6f;
-        }
+        // renderfx go on color shell entity
+        if (shellfx)
+            renderfx &= ~RF_SHELL_MASK;
 
-        if (effects & EF_SPHERETRANS) {
-            ent.flags |= RF_TRANSLUCENT;
-            if (effects & EF_TRACKERTRAIL)
-                ent.alpha = 0.6f;
-            else
-                ent.alpha = 0.3f;
-        }
-
-        // custom alpha overrides any derived value
-        custom_alpha = 1.0f;
-        custom_flags = 0;
-        has_alpha = false;
-
-        if (s1->alpha) {
-            custom_alpha = CG_LerpEntityAlpha(cent);
-            has_alpha = true;
-        }
-
-        if (s1->number == cg.frame->ps.clientnum && cg.third_person_view && cg.third_person_alpha != 1.0f) {
-            custom_alpha *= cg.third_person_alpha;
-            has_alpha = true;
-        }
-
-        if (has_alpha) {
-            ent.alpha = custom_alpha;
-            if (custom_alpha == 1.0f)
-                ent.flags &= ~RF_TRANSLUCENT;
-            else
-                ent.flags |= RF_TRANSLUCENT;
-            custom_flags = ent.flags & RF_TRANSLUCENT;
-        }
+        // render effects (fullbright, translucent, etc)
+        ent_alpha = 1.0f;
+        ent_flags = renderfx & ~RF_TRANSLUCENT;
 
         // tracker effect is duplicated for linked models
-        if (IS_TRACKER(effects)) {
-            ent.flags    |= RF_TRACKER;
-            custom_flags |= RF_TRACKER;
+        if (IS_TRACKER(effects))
+            ent_flags |= RF_TRACKER;
+
+        // custom alpha overrides any derived value
+        if (s1->alpha) {
+            ent_alpha = CG_LerpEntityAlpha(cent);
+        } else {
+            if (renderfx & RF_BEAM)
+                ent_alpha = 0.3f;
+            else if (renderfx & RF_TRANSLUCENT)
+                ent_alpha = 0.7f;
+
+            if (effects & EF_BFG)
+                ent_alpha = 0.3f;
+
+            if (effects & EF_PLASMA)
+                ent_alpha = 0.6f;
+
+            if (effects & EF_SPHERETRANS) {
+                if (effects & EF_TRACKERTRAIL)
+                    ent_alpha = 0.6f;
+                else
+                    ent_alpha = 0.3f;
+            }
         }
 
+        // add third person alpha
+        if (s1->number == cg.frame->ps.clientnum && cg.third_person_view)
+            ent_alpha *= cg.third_person_alpha;
+
+        if (ent_alpha != 1.0f)
+            ent_flags |= RF_TRANSLUCENT;
+
+        ent.flags = ent_flags;
+        ent.alpha = ent_alpha;
         ent.scale = s1->scale;
 
         // add to refresh list
         trap_R_AddEntity(&ent);
 
         // color shells generate a separate entity for the main model
-        shellfx = CG_EntityShellEffect(s1);
         if (shellfx) {
-            ent.flags = renderfx | shellfx | RF_TRANSLUCENT;
-            ent.alpha = custom_alpha * 0.30f;
+            ent.flags = ent_flags | shellfx | RF_TRANSLUCENT;
+            ent.alpha = ent_alpha * 0.30f;
             trap_R_AddEntity(&ent);
         }
 
+        // never use beam flag on others
+        ent_flags &= ~(uint64_t)RF_BEAM;
+
         ent.skin = 0;       // never use a custom skin on others
         ent.skinnum = 0;
-        ent.flags = custom_flags;
-        ent.alpha = custom_alpha;
+        ent.flags = ent_flags;
+        ent.alpha = ent_alpha;
 
         // duplicate for linked models
         if (s1->modelindex2) {
@@ -964,16 +957,16 @@ static void CG_AddPacketEntities(void)
 
                 // PMM - check for the defender sphere shell .. make it translucent
                 if (ent.model == cgs.models.shell) {
-                    ent.alpha = custom_alpha * 0.32f;
-                    ent.flags = RF_TRANSLUCENT;
+                    ent.flags = ent_flags | RF_TRANSLUCENT;
+                    ent.alpha = ent_alpha * 0.32f;
                 }
             }
 
             trap_R_AddEntity(&ent);
 
-            //PGM - make sure these get reset.
-            ent.flags = custom_flags;
-            ent.alpha = custom_alpha;
+            // PGM - make sure these get reset.
+            ent.flags = ent_flags;
+            ent.alpha = ent_alpha;
         }
 
         if (s1->modelindex3) {
@@ -991,10 +984,10 @@ static void CG_AddPacketEntities(void)
             ent.oldframe = 0;
             ent.frame = 0;
             ent.flags = RF_TRANSLUCENT;
-            ent.alpha = custom_alpha * 0.30f;
+            ent.alpha = ent_alpha * 0.30f;
 
             // remaster powerscreen is tiny and needs scaling
-            if (true) {
+            if (cgs.need_powerscreen_scale) {
                 vec3_t forward, mid, tmp;
                 VectorCopy(ent.origin, tmp);
                 VectorAvg(cent->mins, cent->maxs, mid);

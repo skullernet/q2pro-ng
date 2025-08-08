@@ -282,6 +282,7 @@ typedef struct {
 
     int         maxclients;
     bool        demoplayback;
+    bool        need_powerscreen_scale;
 
     char        statusbar[MAX_NET_STRING];
 
