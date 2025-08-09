@@ -967,10 +967,9 @@ static bool PM_CheckDuck(void)
     if (pm->s->pm_type >= PM_DEAD)
         return false;
 
-    if ((pm->cmd.buttons & BUTTON_CROUCH) && (pm->groundentitynum != ENTITYNUM_NONE) &&
-        !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
+    if ((pm->cmd.buttons & BUTTON_CROUCH) && !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
         // duck
-        if (!(pm->s->pm_flags & PMF_DUCKED)) {
+        if (!(pm->s->pm_flags & PMF_DUCKED) && (pm->groundentitynum != ENTITYNUM_NONE)) {
             // check that duck won't be blocked
             vec3_t check_maxs = { pm->maxs[0], pm->maxs[1], 4 };
             PM_Trace(&trace, pml.origin, pm->mins, check_maxs, pml.origin, pml.clipmask);
