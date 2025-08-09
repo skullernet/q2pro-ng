@@ -1056,10 +1056,10 @@ static void CG_AddPacketEntities(void)
                 CG_BfgParticles(&ent);
                 i = 200;
             } else if (cg_smooth_explosions.integer) {
-                i = bfg_lightramp[Q_clip(ent.oldframe, 0, 5)] * ent.backlerp +
-                    bfg_lightramp[Q_clip(ent.frame,    0, 5)] * (1.0f - ent.backlerp);
+                i = bfg_lightramp[ent.oldframe % 6] * ent.backlerp +
+                    bfg_lightramp[ent.frame    % 6] * (1.0f - ent.backlerp);
             } else {
-                i = bfg_lightramp[Q_clip(s1->frame, 0, 5)];
+                i = bfg_lightramp[ent.frame % 6];
             }
             trap_R_AddSphereLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
