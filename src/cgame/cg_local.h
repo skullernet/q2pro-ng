@@ -46,14 +46,13 @@ typedef struct {
     vec3_t          lerp_origin;        // for trails (variable hz)
 
     int             prev_frame;
+    int             curr_frame;
     int             anim_start;
 
     int             step_time;
     float           step_factor;
 
     int             fly_stoptime;
-
-    float           flashlightfrac;
 } centity_t;
 
 extern centity_t    cg_entities[MAX_EDICTS];

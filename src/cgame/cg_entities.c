@@ -59,15 +59,20 @@ static bool CG_EntityWasTeleported(const entity_state_t *state)
     return false;
 }
 
-static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
+static void CG_InitEntity(centity_t *ent, const entity_state_t *state)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
-    ent->flashlightfrac = 1.0f;
     ent->step_time = 0;
 
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
-    ent->prev_frame = state->frame;
+    ent->prev_frame = ent->curr_frame = state->frame;
+    ent->anim_start = cg.oldframe->servertime;
+}
+
+static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
+{
+    CG_InitEntity(ent, state);
 
     if (CG_EntityWasTeleported(state) || (state->renderfx & RF_BEAM) || state->number == cg.frame->ps.clientnum) {
         // no lerping if teleported, or no valid old_origin
@@ -89,13 +94,7 @@ static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
         || state->modelindex4 != ent->current.modelindex4
         || CG_EntityWasTeleported(state)) {
         // some data changes will force no lerping
-        ent->trailcount = 1024;     // for diminishing rocket / grenade trails
-        ent->flashlightfrac = 1.0f;
-        ent->step_time = 0;
-
-        // duplicate the current state so lerping doesn't hurt anything
-        ent->prev = *state;
-        ent->prev_frame = state->frame;
+        CG_InitEntity(ent, state);
 
         // no lerping if teleported or morphed
         VectorCopy(state->origin, ent->lerp_origin);
@@ -103,8 +102,9 @@ static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
     }
 
     // start alias model animation
-    if (state->frame != ent->current.frame) {
-        ent->prev_frame = ent->current.frame;
+    if (cg.oldframe->servertime - ent->anim_start >= BASE_FRAMETIME) {
+        ent->prev_frame = ent->curr_frame;
+        ent->curr_frame = state->frame;
         ent->anim_start = cg.oldframe->servertime;
     }
 
@@ -577,11 +577,9 @@ static void CG_AddPacketEntities(void)
 {
     entity_t                ent;
     const entity_state_t    *s1;
-    float                   autorotate, autobob;
-    int                     i;
-    int                     pnum;
+    float                   autorotate, autobob, autolerp;
+    int                     i, pnum, autoanim;
     centity_t               *cent;
-    int                     autoanim;
     const clientinfo_t      *ci;
     unsigned int            effects, renderfx, shellfx;
     bool                    has_trail;
@@ -593,6 +591,7 @@ static void CG_AddPacketEntities(void)
 
     // brush models can auto animate their frames
     autoanim = cg.time / 500;
+    autolerp = 1.0f - (cg.time % 500) * 0.002;
 
     autobob = 5 * sinf(cg.time / 400.0f);
 
@@ -609,19 +608,46 @@ static void CG_AddPacketEntities(void)
         renderfx = s1->renderfx;
 
         // set frame
-        if (effects & EF_ANIM01)
+        if (effects & EF_ANIM01) {
             ent.frame = autoanim & 1;
-        else if (effects & EF_ANIM23)
+            ent.oldframe = ent.frame ^ 1;
+            ent.backlerp = autolerp;
+        } else if (effects & EF_ANIM23) {
             ent.frame = 2 + (autoanim & 1);
-        else if (effects & EF_ANIM_ALL)
+            ent.oldframe = ent.frame ^ 1;
+            ent.backlerp = autolerp;
+        } else if (effects & EF_ANIM_ALL) {
             ent.frame = autoanim;
-        else if (effects & EF_ANIM_ALLFAST)
+            ent.oldframe = ent.frame - 1;
+            ent.backlerp = autolerp;
+        } else if (effects & EF_ANIM_ALLFAST) {
             ent.frame = cg.time / 100;
-        else
-            ent.frame = s1->frame;
+            ent.oldframe = ent.frame - 1;
+            ent.backlerp = 1.0f - (cg.time % 100) * 0.01f;
+        } else if (renderfx & RF_BEAM) {
+            ent.frame = ent.oldframe = s1->frame;
+            ent.backlerp = 0;
+        } else if (cent->prev_frame != cent->curr_frame) {
+            // run alias model animation
+            int delta = cg.time - cent->anim_start;
 
-        ent.oldframe = cent->prev.frame;
-        ent.backlerp = 1.0f - cg.lerpfrac;
+            if (delta > BASE_FRAMETIME) {
+                cent->prev_frame = cent->curr_frame;
+                cent->curr_frame = s1->frame;
+                // start next frame
+                if (cent->prev_frame != cent->curr_frame) {
+                    cent->anim_start += BASE_FRAMETIME;
+                    delta = cg.time - cent->anim_start;
+                }
+            }
+
+            ent.frame = cent->curr_frame;
+            ent.oldframe = cent->prev_frame;
+            ent.backlerp = 1.0f - Q_clipf(delta * BASE_1_FRAMETIME, 0, 1);
+        } else {
+            ent.frame = ent.oldframe = cent->curr_frame;
+            ent.backlerp = 0;
+        }
 
         if (renderfx & RF_BEAM) {
             // interpolate start and end points for beams
@@ -643,24 +669,6 @@ static void CG_AddPacketEntities(void)
                 if (delta < STEP_TIME)
                     ent.origin[2] = cent->current.origin[2] - cent->step_factor * (STEP_TIME - delta);
                 VectorCopy(ent.origin, ent.oldorigin);
-            }
-
-            // run alias model animation
-            if (cent->prev_frame != s1->frame) {
-                int delta = cg.time - cent->anim_start;
-                float frac;
-
-                if (delta > BASE_FRAMETIME) {
-                    cent->prev_frame = s1->frame;
-                    frac = 1;
-                } else if (delta > 0) {
-                    frac = delta * BASE_1_FRAMETIME;
-                } else {
-                    frac = 0;
-                }
-
-                ent.oldframe = cent->prev_frame;
-                ent.backlerp = 1.0f - frac;
             }
 
             // optionally remove the glowing effect
