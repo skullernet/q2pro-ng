@@ -49,7 +49,7 @@ static const pmp_t pmp_default = {
     .flyfriction = 9,
     .waterfriction = 1,
     .waterspeed = 400,
-    .laddermod = 0.5f,
+    .laddermod = 0.75f,
     .jumpvel = 270.0f,
 };
 

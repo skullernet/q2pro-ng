@@ -1201,7 +1201,7 @@ void GL_InitImages(void)
 {
     gl_bilerp_chars = Cvar_Get("gl_bilerp_chars", "0", 0);
     gl_bilerp_chars->changed = gl_bilerp_chars_changed;
-    gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "1", 0);
+    gl_bilerp_pics = Cvar_Get("gl_bilerp_pics", "0", 0);
     gl_bilerp_pics->changed = gl_bilerp_pics_changed;
     gl_bilerp_skies = Cvar_Get("gl_bilerp_skies", "1", 0);
     gl_bilerp_skies->changed = gl_bilerp_skies_changed;
