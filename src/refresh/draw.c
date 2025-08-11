@@ -500,7 +500,7 @@ void Draw_Lightmaps(void)
 
 void Draw_Scrap(void)
 {
-    GL_StretchPic_(0, 0, 256, 256,
+    GL_StretchPic_(0, 0, 512, 512,
                    0, 0, 1, 1, U32_WHITE, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
 }
 

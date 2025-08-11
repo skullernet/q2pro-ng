@@ -263,8 +263,8 @@ static void IMG_MipMap(byte *out, const byte *in, int width, int height)
 =============================================================================
 */
 
-#define SCRAP_BLOCK_WIDTH       256
-#define SCRAP_BLOCK_HEIGHT      256
+#define SCRAP_BLOCK_WIDTH       512
+#define SCRAP_BLOCK_HEIGHT      512
 
 static uint16_t scrap_inuse[SCRAP_BLOCK_WIDTH];
 static byte scrap_data[SCRAP_BLOCK_WIDTH * SCRAP_BLOCK_HEIGHT * 4];
