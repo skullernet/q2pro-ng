@@ -409,7 +409,9 @@ typedef struct gitem_s {
     const char *vwep_model; // vwep model string (for weapons)
 
     const gitem_armor_t *armor_info;
-    int                  tag;
+
+    int tag;
+    int weapon;
 
     const char *precaches; // string of all models, sounds, and images this item will use
 
@@ -437,6 +439,32 @@ typedef enum {
     AMMO_MAX
 } ammo_t;
 
+// weapon IDs
+typedef enum {
+   WEAPON_GRAPPLE,
+   WEAPON_BLASTER,
+   WEAPON_CHAINFIST,
+   WEAPON_SHOTGUN,
+   WEAPON_SSHOTGUN,
+   WEAPON_MACHINEGUN,
+   WEAPON_ETF_RIFLE,
+   WEAPON_CHAINGUN,
+   WEAPON_GRENADES,
+   WEAPON_TRAP,
+   WEAPON_TESLA,
+   WEAPON_GLAUNCHER,
+   WEAPON_PROXLAUNCHER,
+   WEAPON_RLAUNCHER,
+   WEAPON_HYPERBLASTER,
+   WEAPON_IONRIPPER,
+   WEAPON_PLASMABEAM,
+   WEAPON_RAILGUN,
+   WEAPON_PHALANX,
+   WEAPON_BFG,
+   WEAPON_DISRUPTOR,
+   WEAPON_MAX
+} weapon_t;
+
 // powerup IDs
 typedef enum {
     POWERUP_SCREEN,
@@ -460,7 +488,7 @@ typedef enum {
     POWERUP_DOPPELGANGER,
 
     POWERUP_FLASHLIGHT,
-    POWERUP_COMPASS,
+    // POWERUP_COMPASS,
     POWERUP_TECH1,
     POWERUP_TECH2,
     POWERUP_TECH3,
@@ -1255,6 +1283,7 @@ item_id_t ArmorIndex(edict_t *ent);
 item_id_t PowerArmorType(edict_t *ent);
 const gitem_t *GetItemByIndex(item_id_t index);
 const gitem_t *GetItemByAmmo(ammo_t ammo);
+const gitem_t *GetItemByWeapon(weapon_t weapon);
 const gitem_t *GetItemByPowerup(powerup_t powerup);
 bool      Add_Ammo(edict_t *ent, const gitem_t *item, int count);
 void      G_CheckPowerArmor(edict_t *ent);

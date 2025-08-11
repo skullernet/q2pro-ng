@@ -106,6 +106,11 @@ static void PF_AddCommandString(const char *string)
     Cbuf_AddText(&cmd_buffer, string);
 }
 
+static void PF_InsertCommandString(const char *string)
+{
+    Cbuf_InsertText(&cmd_buffer, string);
+}
+
 static size_t PF_Key_KeynumToString(int keynum, char *buf, size_t size)
 {
     return Q_strlcpy(buf, Key_KeynumToString(keynum), size);
@@ -399,6 +404,14 @@ VM_THUNK(AddCommandString) {
     PF_AddCommandString(VM_STR(0));
 }
 
+VM_THUNK(InsertCommandString) {
+    PF_InsertCommandString(VM_STR(0));
+}
+
+VM_THUNK(WarpMouse) {
+    IN_WarpMouse(VM_U32(0), VM_U32(1));
+}
+
 VM_THUNK(Key_GetOverstrikeMode) {
     VM_U32(0) = Key_GetOverstrikeMode();
 }
@@ -519,7 +532,11 @@ VM_THUNK(R_SetAlpha) {
     R_SetAlpha(VM_F32(0));
 }
 
-VM_THUNK(R_SetColor) {
+VM_THUNK(R_SetColor24) {
+    R_SetColor24(VM_U32(0));
+}
+
+VM_THUNK(R_SetColor32) {
     R_SetColor(VM_U32(0));
 }
 
@@ -755,6 +772,8 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(Argv, "i iii"),
     VM_IMPORT(Args, "i ii"),
     VM_IMPORT(AddCommandString, "i"),
+    VM_IMPORT(InsertCommandString, "i"),
+    VM_IMPORT(WarpMouse, "ii"),
     VM_IMPORT(Key_GetOverstrikeMode, "i "),
     VM_IMPORT(Key_SetOverstrikeMode, "i"),
     VM_IMPORT(Key_GetDest, "i "),
@@ -785,7 +804,8 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_GetPalette, "i"),
     VM_IMPORT(R_ClearColor, ""),
     VM_IMPORT(R_SetAlpha, "f"),
-    VM_IMPORT(R_SetColor, "i"),
+    VM_IMPORT(R_SetColor24, "i"),
+    VM_IMPORT(R_SetColor32, "i"),
     VM_IMPORT(R_SetClipRect, "i"),
     VM_IMPORT(R_SetScale, "f"),
     VM_IMPORT(R_DrawChar, "iiiii"),
@@ -999,7 +1019,11 @@ static const cgame_import_t cgame_dll_imports = {
     .Argc = Cmd_Argc,
     .Argv = Cmd_ArgvBuffer,
     .Args = Cmd_RawArgsBuffer,
+
     .AddCommandString = PF_AddCommandString,
+    .InsertCommandString = PF_InsertCommandString,
+
+    .WarpMouse = IN_WarpMouse,
 
     .Key_GetOverstrikeMode = Key_GetOverstrikeMode,
     .Key_SetOverstrikeMode = Key_SetOverstrikeMode,
@@ -1056,7 +1080,8 @@ static const cgame_import_t cgame_dll_imports = {
     .R_GetPalette = R_GetPalette,
     .R_ClearColor = R_ClearColor,
     .R_SetAlpha = R_SetAlpha,
-    .R_SetColor = R_SetColor,
+    .R_SetColor24 = R_SetColor24,
+    .R_SetColor32 = R_SetColor,
     .R_SetClipRect = R_SetClipRect,
     .R_SetScale = R_SetScale,
     .R_DrawChar = R_DrawChar,
@@ -1126,6 +1151,9 @@ void CL_ShutdownCGame(void)
 
     // ungrab keys
     cls.key_dest &= ~KEY_GAME;
+
+    // release holster button
+    IN_HolsterUp();
 
     // unregister forwarded commands
     Cmd_RemoveForwarded();

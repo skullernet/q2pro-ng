@@ -162,6 +162,17 @@ typedef struct {
     int         hit_marker_count;
 
     float       lightstyles[MAX_LIGHTSTYLES];
+
+    int         weapon_select_time;
+    int         weapon_select;
+
+    bool        draw_weapon_wheel;
+    int         weapon_wheel_select;
+
+    bool        draw_powerup_wheel;
+    int         powerup_wheel_select;
+
+    int         mouse_x, mouse_y;
 } cgame_state_t;
 
 extern cgame_state_t    cg;
@@ -270,6 +281,20 @@ typedef struct {
     float   map[MAX_QPATH - 1];
 } cg_lightstyle_t;
 
+typedef struct {
+    unsigned id;
+    qhandle_t icon;
+} cg_wheel_ammo_t;
+
+typedef struct {
+    unsigned id;
+    qhandle_t icon[2];
+    unsigned ammo;
+    unsigned quantity;
+    unsigned quantity_warn;
+    bool droppable;
+} cg_wheel_item_t;
+
 //
 // the cgame_static_t structure contains static information derived from server
 // state. it is persistent through an arbitrary number of time resets and demo
@@ -287,6 +312,13 @@ typedef struct {
 
     clientinfo_t    clientinfo[MAX_CLIENTS];
     clientinfo_t    baseclientinfo;
+
+    struct {
+        cg_wheel_ammo_t ammo[MAX_WHEEL_ITEMS];
+        cg_wheel_item_t weapons[MAX_WHEEL_ITEMS];
+        cg_wheel_item_t powerups[MAX_WHEEL_ITEMS];
+        int num_ammo, num_weapons, num_powerups;
+    } wheel;
 
     cg_sounds_t     sounds;
     cg_models_t     models;
@@ -383,6 +415,7 @@ extern vm_cvar_t    cg_lerp_lightstyles;
 extern vm_cvar_t    cg_muzzlelight_time;
 extern vm_cvar_t    cg_muzzleflashes;
 extern vm_cvar_t    cg_hit_markers;
+extern vm_cvar_t    cg_weapon_select_msec;
 extern vm_cvar_t    cg_railtrail_type;
 extern vm_cvar_t    cg_railtrail_time;
 extern vm_cvar_t    cg_railcore_color;
@@ -637,6 +670,13 @@ void    SCR_AddToChatHUD(const char *text);
 
 void    CG_ModeChanged(void);
 void    CG_DrawFrame(unsigned msec, bool active, bool loading);
+
+void    CG_MouseEvent(int x, int y);
+
+void    CG_ShowWeaponWheel_f(void);
+void    CG_HideWeaponWheel_f(void);
+void    CG_ShowPowerupWheel_f(void);
+void    CG_HidePowerupWheel_f(void);
 
 //
 // cg_servercmds.c

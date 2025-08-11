@@ -567,13 +567,18 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
     if (!from)
         from = &nullPlayerState;
 
+    uint32_t ammobits = 0;
+    for (int i = 0; i < MAX_AMMO; i++)
+        if (to->ammo[i] != from->ammo[i])
+            ammobits |= BIT(i);
+
     uint64_t statbits = 0;
     for (int i = 0; i < MAX_STATS; i++)
         if (to->stats[i] != from->stats[i])
             statbits |= BIT_ULL(i);
 
     int nc = MSG_CountDeltaFields(player_state_fields, q_countof(player_state_fields), from, to, player_state_counts);
-    if (!nc && !statbits) {
+    if (!nc && !ammobits && !statbits) {
         MSG_WriteBit(0);
         return;
     }
@@ -581,6 +586,12 @@ void MSG_WriteDeltaPlayerstate(const player_state_t *from, const player_state_t 
     MSG_WriteBit(1);
     MSG_WriteBits(nc, player_state_nc_bits);
     MSG_WriteDeltaFields(player_state_fields, nc, from, to);
+
+    MSG_WriteLeb32(ammobits);
+    if (ammobits)
+        for (int i = 0; i < MAX_AMMO; i++)
+            if (ammobits & BIT(i))
+                MSG_WriteBits(to->ammo[i], AMMO_BITS);
 
     MSG_WriteLeb64(statbits);
     if (statbits)
@@ -907,6 +918,17 @@ void MSG_ParseDeltaPlayerstate(player_state_t *to)
     Q_assert_soft(nc <= q_countof(player_state_fields));
 
     MSG_ReadDeltaFields(player_state_fields, nc, to);
+
+    uint32_t ammobits = MSG_ReadLeb32();
+    if (ammobits) {
+        SHOWNET(3, "ammo");
+        for (int i = 0; i < MAX_AMMO; i++) {
+            if (ammobits & BIT(i)) {
+                to->ammo[i] = MSG_ReadBits(AMMO_BITS);
+                SHOWNET(3, "[%d]:%d ", i, to->ammo[i]);
+            }
+        }
+    }
 
     uint64_t statbits = MSG_ReadLeb64();
     if (statbits) {

@@ -83,6 +83,7 @@ void    R_LightPoint(const vec3_t origin, vec3_t light);
 void    R_GetPalette(uint32_t palette[256]);
 void    R_ClearColor(void);
 void    R_SetAlpha(float clpha);
+void    R_SetColor24(uint32_t color);
 void    R_SetColor(uint32_t color);
 void    R_SetClipRect(const clipRect_t *clip);
 float   R_ClampScale(cvar_t *var);

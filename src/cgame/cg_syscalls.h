@@ -71,7 +71,11 @@ size_t trap_Cvar_VariableString(const char *name, char *buf, size_t size);
 int trap_Argc(void);
 size_t trap_Argv(int arg, char *buf, size_t size);
 size_t trap_Args(char *buf, size_t size);
+
 void trap_AddCommandString(const char *text);
+void trap_InsertCommandString(const char *text);
+
+void trap_WarpMouse(int x, int y);
 
 bool        trap_Key_GetOverstrikeMode(void);
 void        trap_Key_SetOverstrikeMode(bool overstrike);
@@ -108,7 +112,8 @@ void    trap_R_GetConfig(refcfg_t *cfg);
 void    trap_R_GetPalette(uint32_t palette[256]);
 void    trap_R_ClearColor(void);
 void    trap_R_SetAlpha(float alpha);
-void    trap_R_SetColor(uint32_t color);
+void    trap_R_SetColor24(uint32_t color);
+void    trap_R_SetColor32(uint32_t color);
 void    trap_R_SetClipRect(const clipRect_t *clip);
 void    trap_R_SetScale(float scale);
 void    trap_R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
@@ -203,7 +208,11 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_Argc cgi->Argc
 #define trap_Argv cgi->Argv
 #define trap_Args cgi->Args
+
 #define trap_AddCommandString cgi->AddCommandString
+#define trap_InsertCommandString cgi->InsertCommandString
+
+#define trap_WarpMouse cgi->WarpMouse
 
 #define trap_Key_GetOverstrikeMode cgi->Key_GetOverstrikeMode
 #define trap_Key_SetOverstrikeMode cgi->Key_SetOverstrikeMode
@@ -239,7 +248,8 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_R_GetPalette cgi->R_GetPalette
 #define trap_R_ClearColor cgi->R_ClearColor
 #define trap_R_SetAlpha cgi->R_SetAlpha
-#define trap_R_SetColor cgi->R_SetColor
+#define trap_R_SetColor24 cgi->R_SetColor24
+#define trap_R_SetColor32 cgi->R_SetColor32
 #define trap_R_SetClipRect cgi->R_SetClipRect
 #define trap_R_SetScale cgi->R_SetScale
 #define trap_R_DrawChar cgi->R_DrawChar

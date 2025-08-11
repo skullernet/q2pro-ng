@@ -189,6 +189,80 @@ static void CG_Item_c(int firstarg, int argnum)
     }
 }
 
+static bool CG_CanSelectWeapon(int index)
+{
+    int owned = cg.frame->ps.stats[STAT_WEAPONS_OWNED];
+    if (!(owned & BIT(index)))
+        return false;
+
+    const cg_wheel_item_t *weap = &cgs.wheel.weapons[index];
+    if (weap->ammo < MAX_AMMO) {
+        int ammo = cg.frame->ps.ammo[weap->ammo];
+        if (ammo < weap->quantity)
+            return false;
+    }
+
+    return true;
+}
+
+static void CG_WeapPrev_f(void)
+{
+    int weapon = cg.frame->ps.stats[STAT_ACTIVE_WHEEL_WEAPON];
+    if (weapon < 1 || weapon > cgs.wheel.num_weapons) {
+        trap_ClientCommand("weapprev");
+        return;
+    }
+
+    if (!cg.weapon_select) {
+        trap_InsertCommandString("+holster");
+        cg.weapon_select = weapon;
+    } else {
+        weapon = cg.weapon_select;
+    }
+
+    while (1) {
+        if (cg.weapon_select > 1)
+            cg.weapon_select--;
+        else
+            cg.weapon_select = cgs.wheel.num_weapons;
+        if (cg.weapon_select == weapon)
+            break;
+        if (CG_CanSelectWeapon(cg.weapon_select - 1))
+            break;
+    }
+
+    cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
+}
+
+static void CG_WeapNext_f(void)
+{
+    int weapon = cg.frame->ps.stats[STAT_ACTIVE_WHEEL_WEAPON];
+    if (weapon < 1 || weapon > cgs.wheel.num_weapons) {
+        trap_ClientCommand("weapnext");
+        return;
+    }
+
+    if (!cg.weapon_select) {
+        trap_InsertCommandString("+holster");
+        cg.weapon_select = weapon;
+    } else {
+        weapon = cg.weapon_select;
+    }
+
+    while (1) {
+        if (cg.weapon_select < cgs.wheel.num_weapons)
+            cg.weapon_select++;
+        else
+            cg.weapon_select = 1;
+        if (cg.weapon_select == weapon)
+            break;
+        if (CG_CanSelectWeapon(cg.weapon_select - 1))
+            break;
+    }
+
+    cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
+}
+
 typedef struct {
     const char *name;
     void (*func)(void);
@@ -196,12 +270,24 @@ typedef struct {
 } vm_cmd_reg_t;
 
 static vm_cmd_reg_t cg_consolecmds[] = {
+    // use anytime commands
     { "viewpos", V_Viewpos_f },
     { "fog", V_Fog_f },
     { "sizeup", SCR_SizeUp_f },
     { "sizedown", SCR_SizeDown_f },
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
+
+    // commands below this separator are never executed during demos or if
+    // there is no valid server frame
+    { NULL },
+
+    { "cl_weapprev", CG_WeapPrev_f },
+    { "cl_weapnext", CG_WeapNext_f },
+    { "+wheel", CG_ShowWeaponWheel_f },
+    { "-wheel", CG_HideWeaponWheel_f },
+    { "+wheel2", CG_ShowPowerupWheel_f },
+    { "-wheel2", CG_HidePowerupWheel_f },
 
     // forward to server commands
     { "players" }, { "score" }, { "help" },
@@ -216,12 +302,16 @@ static vm_cmd_reg_t cg_consolecmds[] = {
     { "weaplast" }
 };
 
+// Register cgame commands for command completion.
 void CG_RegisterCommands(void)
 {
     for (int i = 0; i < q_countof(cg_consolecmds); i++)
-        trap_RegisterCommand(cg_consolecmds[i].name);
+        if (cg_consolecmds[i].name)
+            trap_RegisterCommand(cg_consolecmds[i].name);
 }
 
+// Cgame must return true if it handles the command, otherwise it will be
+// forwarded to server.
 qvm_exported bool CG_ConsoleCommand(void)
 {
     char cmd[MAX_QPATH];
@@ -229,18 +319,25 @@ qvm_exported bool CG_ConsoleCommand(void)
 
     for (int i = 0; i < q_countof(cg_consolecmds); i++) {
         const vm_cmd_reg_t *reg = &cg_consolecmds[i];
+        if (!reg->name) {
+            if (cgs.demoplayback || !cg.frame)
+                break;
+            continue;
+        }
         if (strcmp(cmd, reg->name))
             continue;
         if (reg->func) {
             reg->func();
             return true;
         }
-        return false;
+        break;
     }
 
     return false;
 }
 
+// firstarg is absolute argument index of command being completed.
+// argnum is relative argument number to that command.
 qvm_exported void CG_CompleteCommand(int firstarg, int argnum)
 {
     char cmd[MAX_QPATH];
@@ -248,6 +345,11 @@ qvm_exported void CG_CompleteCommand(int firstarg, int argnum)
 
     for (int i = 0; i < q_countof(cg_consolecmds); i++) {
         const vm_cmd_reg_t *reg = &cg_consolecmds[i];
+        if (!reg->name) {
+            if (cgs.demoplayback || !cg.frame)
+                break;
+            continue;
+        }
         if (strcmp(cmd, reg->name))
             continue;
         if (reg->comp)

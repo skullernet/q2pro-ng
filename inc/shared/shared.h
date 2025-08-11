@@ -1110,6 +1110,9 @@ typedef struct {
 #define STAT_FRAGS  0   // server and game both reference!!!
 #define MAX_STATS   64
 
+#define MAX_AMMO    32
+#define AMMO_BITS   10
+
 // default server FPS
 #define BASE_FRAMERATE          10
 #define BASE_FRAMETIME          100
@@ -1214,6 +1217,7 @@ typedef struct {
 
     uint32_t    rdflags;        // refdef flags
 
+    uint32_t    ammo[MAX_AMMO];
     int32_t     stats[MAX_STATS];   // fast status bar updates
 } player_state_t;
 

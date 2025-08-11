@@ -46,6 +46,12 @@ static struct {
     qhandle_t   net_pic;
     qhandle_t   font_pic;
 
+    qhandle_t   wheel_pic;
+    qhandle_t   wheel_cursor;
+    int         wheel_cursor_w, wheel_cursor_h;
+
+    qhandle_t   selected_pic;
+
     int         hud_width, hud_height;
     float       hud_scale;
 
@@ -727,6 +733,11 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = trap_R_RegisterPic("loading");
     scr.net_pic = trap_R_RegisterPic("net");
     scr.hit_marker_pic = trap_R_RegisterPic("marker");
+    scr.wheel_pic = trap_R_RegisterPic("/gfx/weaponwheel.png");
+    scr.wheel_cursor = trap_R_RegisterPic("/gfx/wheelbutton.png");
+    scr.selected_pic = trap_R_RegisterPic("carousel/selected");
+
+    trap_R_GetPicSize(&scr.wheel_cursor_w, &scr.wheel_cursor_h, scr.wheel_cursor);
 
     scr_font.modified = true;
     scr_crosshair.modified = true;
@@ -1237,10 +1248,15 @@ static void SCR_ExecuteLayoutString(const char *s)
         if (!strcmp(token, "anum")) {
             // ammo number
             int     color;
+            int     warn = 5;
+
+            value = cg.frame->ps.stats[STAT_ACTIVE_WEAPON];
+            if (value > 0 && value <= cgs.wheel.num_weapons)
+                warn = cgs.wheel.weapons[value - 1].quantity_warn;
 
             width = 3;
             value = cg.frame->ps.stats[STAT_AMMO];
-            if (value > 5)
+            if (value > warn)
                 color = 0;  // green
             else if (value >= 0)
                 color = (cg.time / FLASH_TIME) & 1; // flash
@@ -1355,7 +1371,7 @@ static void SCR_ExecuteLayoutString(const char *s)
             token = COM_Parse(&s);
             if (COM_ParseColor(token, &color)) {
                 color.u8[3] *= scr_alpha.value;
-                trap_R_SetColor(color.u32);
+                trap_R_SetColor32(color.u32);
             }
             continue;
         }
@@ -1384,6 +1400,289 @@ static void SCR_ExecuteLayoutString(const char *s)
 
     trap_R_ClearColor();
     trap_R_SetAlpha(scr_alpha.value);
+}
+
+/*
+===============================================================================
+
+ITEM WHEEL
+
+===============================================================================
+*/
+
+#define SELECTED_LOW    MakeColor(255,  62,  33, 255)
+#define SELECTED_NORM   MakeColor(255, 248, 134, 255)
+
+static void SCR_DrawAmmoCount(int x, int y, const cg_wheel_item_t *item, bool selected)
+{
+    if (item->ammo >= MAX_AMMO)
+        return;
+
+    int ammo = cg.frame->ps.ammo[item->ammo];
+    if (ammo == INFINITE_AMMO)
+        return;
+
+    if (ammo <= item->quantity_warn)
+        trap_R_SetColor24(selected ? SELECTED_LOW  : U32_RED);
+    else
+        trap_R_SetColor24(selected ? SELECTED_NORM : U32_WHITE);
+
+    SCR_DrawString(x, y, UI_CENTER | UI_DROPSHADOW, va("%d", ammo));
+    trap_R_SetColor24(U32_WHITE);
+}
+
+static void SCR_DrawWeaponSelect(void)
+{
+    char name[MAX_QPATH];
+    int x, y, count, owned;
+
+    if (!cg.weapon_select)
+        return;
+
+    if (cg.weapon_select_time < cg.time) {
+        trap_AddCommandString("-holster\n");
+        trap_ClientCommand(va("use_index_only %u", cgs.wheel.weapons[cg.weapon_select - 1].id));
+        cg.weapon_select = 0;
+        return;
+    }
+
+    owned = cg.frame->ps.stats[STAT_WEAPONS_OWNED] & MASK(cgs.wheel.num_weapons);
+    count = __builtin_popcount(owned);
+
+    x = (scr.hud_width - count * 32) / 2;
+    y = scr.hud_height - 150;
+
+    trap_GetConfigstring(CS_ITEMS + cgs.wheel.weapons[cg.weapon_select - 1].id, name, sizeof(name));
+    SCR_DrawString(scr.hud_width / 2, y, UI_CENTER | UI_DROPSHADOW | UI_BIGFONT, name);
+    y += 24;
+
+    for (int i = 0; i < cgs.wheel.num_weapons; i++) {
+        if (!(owned & BIT(i)))
+            continue;
+
+        const cg_wheel_item_t *weap = &cgs.wheel.weapons[i];
+        bool sel = i == cg.weapon_select - 1;
+
+        if (sel)
+            trap_R_DrawPic(x + 4, y, scr.selected_pic);
+        trap_R_DrawPic(x + 4, y, weap->icon[sel]);
+
+        SCR_DrawAmmoCount(x + 16, y + 28, weap, sel);
+        x += 32;
+    }
+}
+
+#define WHEEL_WIDTH     450
+#define WHEEL_HEIGHT    450
+#define WHEEL_RADIUS    116
+
+static void SCR_DrawItemWheel(int center_x, int center_y, int owned, const cg_wheel_item_t *items, int num_items, int selected)
+{
+    trap_R_DrawStretchPic(center_x - WHEEL_WIDTH / 2, center_y - WHEEL_HEIGHT / 2, WHEEL_WIDTH, WHEEL_HEIGHT, scr.wheel_pic);
+
+    int count = __builtin_popcount(owned & MASK(num_items));
+    float degrees = min(360.0f / count, 20.0f);
+    float angle = 0.0f;
+
+    for (int i = 0; i < num_items; i++) {
+        if (!(owned & BIT(i)))
+            continue;
+
+        const cg_wheel_item_t *item = &items[i];
+        bool sel = selected && selected == i + 1;
+
+        int x = center_x + WHEEL_RADIUS * sinf(DEG2RAD(angle));
+        int y = center_y - WHEEL_RADIUS * cosf(DEG2RAD(angle));
+        int w = 24 + 12 * sel;
+        int h = 24 + 12 * sel;
+        trap_R_DrawStretchPic(x - w / 2, y - h / 2, w, h, item->icon[sel]);
+
+        SCR_DrawAmmoCount(x, y + 12, item, sel);
+        angle += degrees;
+    }
+
+    if (selected) {
+        const cg_wheel_item_t *item = &items[selected - 1];
+        char name[MAX_QPATH];
+
+        trap_GetConfigstring(CS_ITEMS + item->id, name, sizeof(name));
+        SCR_DrawString(center_x, center_y - 24, UI_CENTER | UI_DROPSHADOW, name);
+
+        if (item->ammo < MAX_AMMO) {
+            trap_R_DrawPic(center_x - 12, center_y - 12, cgs.wheel.ammo[item->ammo].icon);
+
+            int ammo = cg.frame->ps.ammo[item->ammo];
+            if (ammo != INFINITE_AMMO) {
+                char num[4];
+                int l = Q_scnprintf(num, sizeof(num), "%u", ammo);
+                int x = center_x - l * DIGIT_WIDTH / 2;
+                int y = center_y + 16;
+                bool color = ammo <= item->quantity_warn;
+
+                for (int i = 0; i < l; i++) {
+                    trap_R_DrawPic(x, y, scr.sb_pics[color][num[i] - '0']);
+                    x += DIGIT_WIDTH;
+                }
+            }
+        }
+    }
+}
+
+static void SCR_DrawWeaponWheel(void)
+{
+    if (!cg.draw_weapon_wheel)
+        return;
+
+    SCR_DrawItemWheel(scr.hud_width - WHEEL_WIDTH / 2, scr.hud_height / 2,
+                      cg.frame->ps.stats[STAT_WEAPONS_OWNED], cgs.wheel.weapons,
+                      cgs.wheel.num_weapons, cg.weapon_wheel_select);
+}
+
+static void SCR_DrawPowerupWheel(void)
+{
+    if (!cg.draw_powerup_wheel)
+        return;
+
+    SCR_DrawItemWheel(WHEEL_WIDTH / 2, scr.hud_height / 2,
+                      cg.frame->ps.stats[STAT_POWERUPS_OWNED], cgs.wheel.powerups,
+                      cgs.wheel.num_powerups, cg.powerup_wheel_select);
+}
+
+static void SCR_DrawMouse(void)
+{
+    if (!(scr.config.flags & QVF_FULLSCREEN))
+        return;
+
+    if (!cg.draw_weapon_wheel && !cg.draw_powerup_wheel)
+        return;
+
+    trap_R_SetAlpha(scr_alpha.value * 0.5f);
+    trap_R_DrawPic(cg.mouse_x - scr.wheel_cursor_w / 2,
+                   cg.mouse_y - scr.wheel_cursor_h / 2, scr.wheel_cursor);
+    trap_R_SetAlpha(scr_alpha.value);
+}
+
+static int CG_MouseSelectWheel(int center_x, int center_y, int owned, int num_items)
+{
+    int count = __builtin_popcount(owned & MASK(num_items));
+    if (!count)
+        return 0;
+
+    float dx = cg.mouse_x - center_x;
+    float dy = center_y - cg.mouse_y;
+    float mouse_dist = sqrtf(dx * dx + dy * dy);
+    if (fabsf(mouse_dist - WHEEL_RADIUS) > 30.0f)
+        return 0;
+
+    float mouse_angle = RAD2DEG(atan2f(dx, dy));
+    float degrees = min(360.0f / count, 20.0f);
+    float angle = 0.0f;
+
+    for (int i = 0; i < num_items; i++) {
+        if (!(owned & BIT(i)))
+            continue;
+
+        float diff = mouse_angle - angle;
+        if (diff < -180)
+            diff += 360;
+        if (diff > 180)
+            diff -= 360;
+
+        if (fabsf(diff) < degrees * 0.5f)
+            return i + 1;
+
+        angle += degrees;
+    }
+
+    return 0;
+}
+
+qvm_exported void CG_MouseEvent(int x, int y)
+{
+    cg.mouse_x = Q_clip(x * scr.hud_scale + 0.5f, 0, scr.hud_width - 1);
+    cg.mouse_y = Q_clip(y * scr.hud_scale + 0.5f, 0, scr.hud_height - 1);
+
+    if (!cg.frame)
+        return;
+
+    if (cg.draw_weapon_wheel) {
+        cg.weapon_wheel_select = CG_MouseSelectWheel(scr.hud_width - WHEEL_WIDTH / 2,
+            scr.hud_height / 2, cg.frame->ps.stats[STAT_WEAPONS_OWNED], cgs.wheel.num_weapons);
+    }
+
+    if (cg.draw_powerup_wheel) {
+        cg.powerup_wheel_select = CG_MouseSelectWheel(WHEEL_WIDTH / 2, scr.hud_height / 2,
+            cg.frame->ps.stats[STAT_POWERUPS_OWNED], cgs.wheel.num_powerups);
+    }
+}
+
+static void CG_SetTimeScale(void)
+{
+    if (cgs.maxclients != 1)
+        return;
+
+    if (cg.draw_weapon_wheel || cg.draw_powerup_wheel)
+        trap_Cvar_Set("timescale", "0.3");
+    else
+        trap_Cvar_Set("timescale", "1");
+}
+
+void CG_ShowWeaponWheel_f(void)
+{
+    cg.draw_weapon_wheel = true;
+    cg.weapon_wheel_select = 0;
+
+    trap_Key_SetDest(trap_Key_GetDest() | KEY_GAME);
+    trap_InsertCommandString("+holster");
+
+    CG_SetTimeScale();
+
+    cg.mouse_x = scr.hud_width - WHEEL_WIDTH / 2;
+    cg.mouse_y = scr.hud_height / 2;
+    trap_WarpMouse(cg.mouse_x / scr.hud_scale, cg.mouse_y / scr.hud_scale);
+}
+
+void CG_HideWeaponWheel_f(void)
+{
+    cg.draw_weapon_wheel = false;
+
+    trap_Key_SetDest(trap_Key_GetDest() & ~KEY_GAME);
+    trap_InsertCommandString("-holster");
+
+    CG_SetTimeScale();
+
+    if (cg.weapon_wheel_select) {
+        trap_ClientCommand(va("use_index_only %u", cgs.wheel.weapons[cg.weapon_wheel_select - 1].id));
+        cg.weapon_wheel_select = 0;
+    }
+}
+
+void CG_ShowPowerupWheel_f(void)
+{
+    cg.draw_powerup_wheel = true;
+    cg.powerup_wheel_select = 0;
+
+    trap_Key_SetDest(trap_Key_GetDest() | KEY_GAME);
+
+    CG_SetTimeScale();
+
+    cg.mouse_x = WHEEL_WIDTH / 2;
+    cg.mouse_y = scr.hud_height / 2;
+    trap_WarpMouse(cg.mouse_x / scr.hud_scale, cg.mouse_y / scr.hud_scale);
+}
+
+void CG_HidePowerupWheel_f(void)
+{
+    cg.draw_powerup_wheel = false;
+
+    trap_Key_SetDest(trap_Key_GetDest() & ~KEY_GAME);
+
+    CG_SetTimeScale();
+
+    if (cg.powerup_wheel_select) {
+        trap_ClientCommand(va("use_index_only %u", cgs.wheel.powerups[cg.powerup_wheel_select - 1].id));
+        cg.powerup_wheel_select = 0;
+    }
 }
 
 //=============================================================================
@@ -1454,7 +1753,7 @@ static void SCR_DrawHitMarker(void)
     int x = (scr.hud_width - scr.hit_marker_width) / 2;
     int y = (scr.hud_height - scr.hit_marker_height) / 2;
 
-    trap_R_SetColor(MakeColor(255, 0, 0, alpha * 255));
+    trap_R_SetColor32(MakeColor(255, 0, 0, alpha * 255));
 
     trap_R_DrawStretchPic(x + ch_x.integer,
                           y + ch_y.integer,
@@ -1475,7 +1774,7 @@ static void SCR_DrawCrosshair(void)
     x = (scr.hud_width - scr.crosshair_width) / 2;
     y = (scr.hud_height - scr.crosshair_height) / 2;
 
-    trap_R_SetColor(scr.crosshair_color.u32);
+    trap_R_SetColor32(scr.crosshair_color.u32);
 
     trap_R_DrawStretchPic(x + ch_x.integer,
                           y + ch_y.integer,
@@ -1544,7 +1843,15 @@ static void SCR_Draw2D(void)
 
     SCR_DrawChatHUD();
 
+    SCR_DrawWeaponWheel();
+
+    SCR_DrawPowerupWheel();
+
+    SCR_DrawWeaponSelect();
+
     SCR_DrawPause();
+
+    SCR_DrawMouse();
 
     SCR_DrawFps();
 

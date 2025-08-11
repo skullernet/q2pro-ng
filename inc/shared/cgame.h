@@ -113,7 +113,11 @@ typedef struct {
     int (*Argc)(void);
     size_t (*Argv)(int arg, char *buf, size_t size);
     size_t (*Args)(char *buf, size_t size);
+
     void (*AddCommandString)(const char *text);
+    void (*InsertCommandString)(const char *text);
+
+    void (*WarpMouse)(int x, int y);
 
     bool        (*Key_GetOverstrikeMode)(void);
     void        (*Key_SetOverstrikeMode)(bool overstrike);
@@ -149,8 +153,9 @@ typedef struct {
     void    (*R_GetConfig)(refcfg_t *cfg);
     void    (*R_GetPalette)(uint32_t palette[256]);
     void    (*R_ClearColor)(void);
-    void    (*R_SetAlpha)(float clpha);
-    void    (*R_SetColor)(uint32_t color);
+    void    (*R_SetAlpha)(float alpha);
+    void    (*R_SetColor24)(uint32_t color);
+    void    (*R_SetColor32)(uint32_t color);
     void    (*R_SetClipRect)(const clipRect_t *clip);
     void    (*R_SetScale)(float scale);
     void    (*R_DrawChar)(int x, int y, int flags, int ch, qhandle_t font);

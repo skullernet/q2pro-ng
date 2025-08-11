@@ -401,6 +401,7 @@ void IN_Init(void);
 void IN_Shutdown(void);
 void IN_Frame(void);
 void IN_Activate(void);
+void IN_HolsterUp(void);
 
 void CL_RegisterInput(void);
 void CL_UpdateCmd(int msec);

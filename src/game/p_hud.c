@@ -636,6 +636,27 @@ void G_SetStats(edict_t *ent)
     ent->client->ps.stats[STAT_HEALTH] = ent->health;
 
     //
+    // weapons
+    //
+    uint32_t weaponbits = 0;
+
+    for (int i = 0; i < WEAPON_MAX; i++)
+        if (ent->client->pers.inventory[GetItemByWeapon(i)->id])
+            weaponbits |= BIT(i);
+
+    ent->client->ps.stats[STAT_WEAPONS_OWNED] = weaponbits;
+
+    if (ent->client->pers.weapon)
+        ent->client->ps.stats[STAT_ACTIVE_WEAPON] = ent->client->pers.weapon->weapon + 1;
+    else
+        ent->client->ps.stats[STAT_ACTIVE_WEAPON] = 0;
+
+    if (ent->client->newweapon)
+        ent->client->ps.stats[STAT_ACTIVE_WHEEL_WEAPON] = ent->client->newweapon->weapon + 1;
+    else
+        ent->client->ps.stats[STAT_ACTIVE_WHEEL_WEAPON] = ent->client->ps.stats[STAT_ACTIVE_WEAPON];
+
+    //
     // ammo
     //
     ent->client->ps.stats[STAT_AMMO_ICON] = 0;
@@ -648,6 +669,15 @@ void G_SetStats(edict_t *ent)
             ent->client->ps.stats[STAT_AMMO_ICON] = G_ImageIndex(item->icon);
             ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->pers.weapon->ammo];
         }
+    }
+
+    for (int i = 0; i < AMMO_MAX; i++) {
+        item = GetItemByAmmo(i);
+
+        if (G_CheckInfiniteAmmo(item))
+            ent->client->ps.ammo[i] = INFINITE_AMMO;
+        else
+            ent->client->ps.ammo[i] = Q_clip(ent->client->pers.inventory[item->id], 0, 999);
     }
 
     //
@@ -681,6 +711,17 @@ void G_SetStats(edict_t *ent)
 
     ent->client->ps.stats[STAT_TIMER_ICON] = 0;
     ent->client->ps.stats[STAT_TIMER] = 0;
+
+    //
+    // owned powerups
+    //
+    uint32_t powerupbits = 0;
+
+    for (int i = 0; i < POWERUP_MAX; i++)
+        if (ent->client->pers.inventory[GetItemByPowerup(i)->id])
+            powerupbits |= BIT(i);
+
+    ent->client->ps.stats[STAT_POWERUPS_OWNED] = powerupbits;
 
     //
     // timers

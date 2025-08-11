@@ -275,6 +275,69 @@ static qhandle_t CG_RegisterImage(const char *s)
     return trap_R_RegisterPic(s);
 }
 
+static void CG_ParseAmmo(const char *s, cg_wheel_ammo_t *item)
+{
+    char name[MAX_QPATH];
+    unsigned icon;
+
+    item->id = Q_atoi(COM_Parse(&s));
+    Q_assert_soft(item->id < MAX_ITEMS);
+
+    icon = Q_atoi(COM_Parse(&s));
+    Q_assert_soft(icon < MAX_IMAGES);
+
+    trap_GetConfigstring(CS_IMAGES + icon, name, sizeof(name));
+    item->icon = trap_R_RegisterPic(va("wheel/%s", name));
+}
+
+static void CG_ParseItem(const char *s, cg_wheel_item_t *item)
+{
+    char name[MAX_QPATH];
+    unsigned icon;
+
+    item->id = Q_atoi(COM_Parse(&s));
+    Q_assert_soft(item->id < MAX_ITEMS);
+
+    icon = Q_atoi(COM_Parse(&s));
+    Q_assert_soft(icon < MAX_IMAGES);
+
+    item->ammo = Q_atoi(COM_Parse(&s));
+    item->quantity = Q_atoi(COM_Parse(&s));
+    item->quantity_warn = Q_atoi(COM_Parse(&s));
+    item->droppable = Q_atoi(COM_Parse(&s));
+
+    trap_GetConfigstring(CS_IMAGES + icon, name, sizeof(name));
+    item->icon[0] = trap_R_RegisterPic(va("wheel/%s", name));
+    item->icon[1] = trap_R_RegisterPic(va("wheel/%s_selected", name));
+}
+
+static void CG_RegisterWheelItems(void)
+{
+    int     i;
+    char    name[MAX_QPATH];
+
+    for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
+        if (!trap_GetConfigstring(CS_WHEEL_AMMO + i, name, sizeof(name)))
+            break;
+        CG_ParseAmmo(name, &cgs.wheel.ammo[i]);
+    }
+    cgs.wheel.num_ammo = i;
+
+    for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
+        if (!trap_GetConfigstring(CS_WHEEL_WEAPONS + i, name, sizeof(name)))
+            break;
+        CG_ParseItem(name, &cgs.wheel.weapons[i]);
+    }
+    cgs.wheel.num_weapons = i;
+
+    for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
+        if (!trap_GetConfigstring(CS_WHEEL_POWERUPS + i, name, sizeof(name)))
+            break;
+        CG_ParseItem(name, &cgs.wheel.powerups[i]);
+    }
+    cgs.wheel.num_powerups = i;
+}
+
 /*
 =================
 CG_RegisterMedia
@@ -302,6 +365,8 @@ void CG_RegisterMedia(void)
             break;
         cgs.images.precache[i] = CG_RegisterImage(name);
     }
+
+    CG_RegisterWheelItems();
 
     trap_SetLoadText("sounds");
     CG_RegisterTEntSounds();

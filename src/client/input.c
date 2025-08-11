@@ -239,7 +239,7 @@ typedef struct {
 static kbutton_t    in_klook;
 static kbutton_t    in_left, in_right, in_forward, in_back;
 static kbutton_t    in_lookup, in_lookdown, in_moveleft, in_moveright;
-static kbutton_t    in_strafe, in_speed, in_use, in_attack;
+static kbutton_t    in_strafe, in_speed, in_use, in_attack, in_holster;
 static kbutton_t    in_up, in_down;
 
 static int          in_impulse;
@@ -356,6 +356,8 @@ static void IN_SpeedDown(void) { KeyDown(&in_speed); }
 static void IN_SpeedUp(void) { KeyUp(&in_speed); }
 static void IN_StrafeDown(void) { KeyDown(&in_strafe); }
 static void IN_StrafeUp(void) { KeyUp(&in_strafe); }
+static void IN_HolsterDown(void) { KeyDown(&in_holster); }
+void IN_HolsterUp(void) { KeyUp(&in_holster); }
 
 static void IN_AttackDown(void)
 {
@@ -685,6 +687,8 @@ static const cmdreg_t c_input[] = {
     { "-attack", IN_AttackUp },
     { "+use", IN_UseDown },
     { "-use", IN_UseUp },
+    { "+holster", IN_HolsterDown },
+    { "-holster", IN_HolsterUp },
     { "impulse", IN_Impulse },
     { "+klook", IN_KLookDown },
     { "-klook", IN_KLookUp },
@@ -765,6 +769,8 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_ATTACK;
     if (in_use.state & 3)
         cl.cmd.buttons |= BUTTON_USE;
+    if (in_holster.state & 3)
+        cl.cmd.buttons |= BUTTON_HOLSTER;
 
     if (cls.key_dest == KEY_NONE && Key_AnyKeyDown()) {
         cl.cmd.buttons |= BUTTON_ANY;
@@ -808,6 +814,7 @@ clear:
 
     in_attack.state &= ~2;
     in_use.state &= ~2;
+    in_holster.state &= ~2;
 
     KeyClear(&in_right);
     KeyClear(&in_left);

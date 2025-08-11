@@ -186,6 +186,12 @@ void R_SetAlpha(float alpha)
     draw.colors[1].u8[3] = alpha * 255;
 }
 
+void R_SetColor24(uint32_t color)
+{
+    draw.colors[0].u32 = color;
+    draw.colors[0].u8[3] = draw.colors[1].u8[3];
+}
+
 void R_SetColor(uint32_t color)
 {
     draw.colors[0].u32 = color;

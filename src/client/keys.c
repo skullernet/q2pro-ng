@@ -698,6 +698,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
 // if not a consolekey, send to the interpreter no matter what mode is
 //
     if ((cls.key_dest == KEY_NONE) ||
+        (cls.key_dest == KEY_GAME && !cge->KeyEvent(key, down)) ||
         ((cls.key_dest & KEY_CONSOLE) && !Q_IsBitSet(consolekeys, key)) ||
         ((cls.key_dest & KEY_MENU) && (key >= K_F1 && key <= K_F12)) ||
         (!down && Q_IsBitSet(buttondown, key))) {
@@ -760,8 +761,6 @@ void Key_Event(unsigned key, bool down, unsigned time)
         UI_KeyEvent(key, down);
     } else if (cls.key_dest & KEY_MESSAGE) {
         Key_Message(key);
-    } else if (cls.key_dest & KEY_GAME) {
-        cge->KeyEvent(key, down);
     }
 
     if (Key_IsDown(K_CTRL) || Key_IsDown(K_ALT)) {

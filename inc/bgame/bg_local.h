@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define PSX_PHYSICS_SCALAR  0.875f
 
+#define INFINITE_AMMO   MASK(AMMO_BITS)
+
 //
 // config strings are a general means of communication from
 // the server to all connected clients.
@@ -37,6 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_ITEMS           256
 #define MAX_CLIENTWEAPONS   256     // PGM -- upped from 16 to fit the chainfist vwep
 #define MAX_GENERAL         512     // general config strings
+#define MAX_WHEEL_ITEMS     32
 
 #define CS_NAME             0       // server and game both reference!!!
 #define CS_CDTRACK          1
@@ -52,6 +55,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CS_CLIENTWEAPONS    (CS_ITEMS + MAX_ITEMS)
 #define CS_PLAYERSKINS      (CS_CLIENTWEAPONS + MAX_CLIENTWEAPONS)
 #define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
+#define CS_WHEEL_WEAPONS    (CS_GENERAL + MAX_GENERAL)
+#define CS_WHEEL_AMMO       (CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS)
+#define CS_WHEEL_POWERUPS   (CS_WHEEL_AMMO + MAX_WHEEL_ITEMS)
 #define CS_END              (CS_GENERAL + MAX_GENERAL)
 
 #if CS_END > MAX_CONFIGSTRINGS
@@ -356,7 +362,13 @@ typedef enum {
     STAT_HITS,
     STAT_DAMAGE,
 
-    STAT_CTF_TEAM1_PIC = STAT_DAMAGE + 1,
+    // More stats for weapon wheel
+    STAT_ACTIVE_WEAPON,
+    STAT_ACTIVE_WHEEL_WEAPON,
+    STAT_WEAPONS_OWNED,
+    STAT_POWERUPS_OWNED,
+
+    STAT_CTF_TEAM1_PIC = STAT_POWERUPS_OWNED + 1,
     STAT_CTF_TEAM1_CAPS,
     STAT_CTF_TEAM2_PIC,
     STAT_CTF_TEAM2_CAPS,
@@ -372,7 +384,7 @@ typedef enum {
     STAT_CTF_TEAMINFO,
 
     // [Paril-KEX] Key display
-    STAT_KEY_A = STAT_DAMAGE + 1,
+    STAT_KEY_A = STAT_POWERUPS_OWNED + 1,
     STAT_KEY_B,
     STAT_KEY_C,
 

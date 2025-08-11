@@ -71,6 +71,7 @@ vm_cvar_t   cg_lerp_lightstyles;
 vm_cvar_t   cg_muzzlelight_time;
 vm_cvar_t   cg_muzzleflashes;
 vm_cvar_t   cg_hit_markers;
+vm_cvar_t   cg_weapon_select_msec;
 vm_cvar_t   cg_railtrail_type;
 vm_cvar_t   cg_railtrail_time;
 vm_cvar_t   cg_railcore_color;
@@ -128,6 +129,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_muzzlelight_time, "100", 0),
     VM_CVAR(cg_muzzleflashes, "1", 0),
     VM_CVAR(cg_hit_markers, "2", 0),
+    VM_CVAR(cg_weapon_select_msec, "500", 0),
     VM_CVAR(cg_railtrail_type, "0", 0),
     VM_CVAR(cg_railtrail_time, "1.0", 0),
     VM_CVAR(cg_railcore_color, "red", 0),
@@ -167,6 +169,14 @@ qvm_exported void CG_Shutdown(void)
 // Called after demo seek, or whenever server time reset occurs
 qvm_exported void CG_ClearState(void)
 {
+    // release holster button
+    if (cg.weapon_select || cg.draw_weapon_wheel)
+        trap_AddCommandString("-holster\n");
+
+    // restore timescale
+    if (cg.draw_weapon_wheel || cg.draw_powerup_wheel)
+        trap_Cvar_Set("timescale", "1");
+
     memset(&cg, 0, sizeof(cg));
 
     CG_ClearEffects();
@@ -194,8 +204,29 @@ qvm_exported void CG_PrepRefresh(bool demoplayback)
     CG_ClearState();
 }
 
+// Cgame must return true if it handles the key, otherwise it will be passed
+// to command interpreter as usual.
 qvm_exported bool CG_KeyEvent(unsigned key, bool down)
 {
+    if (!down)
+        return false;
+
+    if (key == K_MOUSE2) {
+        const cg_wheel_item_t *item = NULL;
+
+        if (cg.weapon_wheel_select)
+            item = &cgs.wheel.weapons[cg.weapon_wheel_select - 1];
+        else if (cg.powerup_wheel_select)
+            item = &cgs.wheel.powerups[cg.powerup_wheel_select - 1];
+
+        if (item && item->droppable) {
+            trap_ClientCommand(va("drop_index %u", item->id));
+            return true;
+        }
+
+        return false;
+    }
+
     if (key != K_ESCAPE)
         return false;
     if (cgs.demoplayback)
@@ -210,10 +241,6 @@ qvm_exported bool CG_KeyEvent(unsigned key, bool down)
 }
 
 qvm_exported void CG_CharEvent(unsigned key)
-{
-}
-
-qvm_exported void CG_MouseEvent(int x, int y)
 {
 }
 

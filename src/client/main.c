@@ -161,13 +161,15 @@ bool CL_ForwardToServer(void)
 {
     char    *cmd;
 
-    cmd = Cmd_Argv(0);
-    if (cls.state != ca_active || *cmd == '-' || *cmd == '+') {
+    if (cls.state != ca_active)
         return false;
-    }
 
     if (cge->ConsoleCommand())
         return true;
+
+    cmd = Cmd_Argv(0);
+    if (*cmd == '-' || *cmd == '+')
+        return false;
 
     CL_ClientCommand(Cmd_RawArgsFrom(0));
     return true;
