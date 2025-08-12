@@ -337,10 +337,11 @@ cvar_t *Cvar_WeakGet(const char *var_name)
 
 static void set_back_cvar(cvar_t *var)
 {
-    if (var->flags & CVAR_LATCH) {
-        // set back to current value
-        Z_Freep(&var->latched_string);
-    }
+    // free latched string, if any
+    Z_Freep(&var->latched_string);
+
+    // no longer weak if value was set
+    var->flags &= ~CVAR_WEAK;
 }
 
 /*
@@ -402,8 +403,7 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from)
         }
     }
 
-    // free latched string, if any
-    Z_Freep(&var->latched_string);
+    set_back_cvar(var);
 
     change_string_value(var, value, from);
 }
@@ -812,6 +812,7 @@ static const cmd_option_t o_cvarlist[] = {
     { "t", "custom", "list user-created cvars" },
     { "u", "userinfo", "list userinfo cvars" },
     { "v", "verbose", "display flags of each cvar" },
+    { "w", "weak", "list weak cvars" },
     { NULL }
 };
 
@@ -868,13 +869,16 @@ static void Cvar_List_f(void)
             mask |= CVAR_SERVERINFO;
             break;
         case 't':
-            mask |= CVAR_CUSTOM | CVAR_WEAK;
+            mask |= CVAR_CUSTOM;
             break;
         case 'u':
             mask |= CVAR_USERINFO;
             break;
         case 'v':
             verbose = true;
+            break;
+        case 'w':
+            mask |= CVAR_WEAK;
             break;
         default:
             return;
@@ -920,8 +924,10 @@ static void Cvar_List_f(void)
                 buffer[3] = 'N';
             else if (var->flags & CVAR_LATCH)
                 buffer[3] = 'L';
-            else if (var->flags & (CVAR_CUSTOM | CVAR_WEAK))
+            else if (var->flags & CVAR_CUSTOM)
                 buffer[3] = '?';
+            else if (var->flags & CVAR_WEAK)
+                buffer[3] = '!';
 
             Com_Printf("%.4s ", buffer);
         }
