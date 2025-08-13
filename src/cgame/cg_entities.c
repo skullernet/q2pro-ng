@@ -734,7 +734,7 @@ static void CG_AddPacketEntities(void)
             if (!cg_shadowlights.integer)
                 goto skip;
 
-            float scale = s1->scale / 255.0f;
+            float scale = s1->scale;
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
             if (fade_end > fade_start) {
@@ -755,6 +755,7 @@ static void CG_AddPacketEntities(void)
             else
                 color.u32 = BigLong(s1->skinnum);
 
+            scale /= 255.0f;
             float r = color.u8[0] * scale;
             float g = color.u8[1] * scale;
             float b = color.u8[2] * scale;

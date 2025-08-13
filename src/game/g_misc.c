@@ -497,10 +497,10 @@ static void setup_shadow_light(edict_t *self)
     }
 
     self->s.modelindex = MODELINDEX_DUMMY;
-    self->s.modelindex2 = st.sl.fade_start;
-    self->s.modelindex3 = st.sl.fade_end;
-    self->s.modelindex4 = st.sl.radius;
-    self->s.scale = st.sl.intensity;
+    self->s.modelindex2 = Q_clipf(st.sl.fade_start, 0, MAX_MODELS - 1);
+    self->s.modelindex3 = Q_clipf(st.sl.fade_end,   0, MAX_MODELS - 1);
+    self->s.modelindex4 = Q_clipf(st.sl.radius,     0, MAX_MODELS - 1);
+    self->s.scale = Q_clipf(st.sl.intensity, -5, 5);
     self->s.frame = ((st.sl.lightstyle + 1) & 255) << 8;
     self->s.angles[0] = st.sl.coneangle;
 
@@ -1954,8 +1954,8 @@ void SP_misc_flare(edict_t *ent)
     VectorSet(ent->r.mins, -32, -32, -32);
     VectorSet(ent->r.maxs, 32, 32, 32);
 
-    ent->s.modelindex2 = st.fade_start_dist;
-    ent->s.modelindex3 = st.fade_end_dist;
+    ent->s.modelindex2 = Q_clip(st.fade_start_dist, 0, MAX_MODELS - 1);
+    ent->s.modelindex3 = Q_clip(st.fade_end_dist,   0, MAX_MODELS - 1);
 
     if (ent->targetname)
         ent->use = misc_flare_use;
