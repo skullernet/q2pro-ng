@@ -20,8 +20,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static void CG_StartLocalSoundOnce(const char *sound)
 {
-    qhandle_t sfx = trap_S_RegisterSound(sound);
-    trap_S_StartSound(NULL, cg.frame->ps.clientnum, 256, sfx, 1, ATTN_NONE, 0);
+    if (cg.frame) {
+        qhandle_t sfx = trap_S_RegisterSound(sound);
+        trap_S_StartSound(NULL, cg.frame->ps.clientnum, CHAN_TALK, sfx, 1, ATTN_NONE, 0);
+    }
 }
 
 static void CG_Chat(char *text)

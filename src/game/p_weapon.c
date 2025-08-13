@@ -363,16 +363,7 @@ void G_RemoveAmmoEx(edict_t *ent, int quantity)
     if (G_CheckInfiniteAmmo(ent->client->pers.weapon))
         return;
 
-    bool pre_warning = ent->client->pers.inventory[ent->client->pers.weapon->ammo] <=
-                       ent->client->pers.weapon->quantity_warn;
-
     ent->client->pers.inventory[ent->client->pers.weapon->ammo] -= quantity;
-
-    bool post_warning = ent->client->pers.inventory[ent->client->pers.weapon->ammo] <=
-                        ent->client->pers.weapon->quantity_warn;
-
-    if (!pre_warning && post_warning)
-        G_LocalSound(ent, CHAN_AUTO, G_SoundIndex("weapons/lowammo.wav"), 1, ATTN_NORM);
 
     if (ent->client->pers.weapon->ammo == IT_AMMO_CELLS)
         G_CheckPowerArmor(ent);

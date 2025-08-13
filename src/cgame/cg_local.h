@@ -227,6 +227,7 @@ typedef struct {
     qhandle_t   lightning;
     qhandle_t   disrexp;
     qhandle_t   hit_marker;
+    qhandle_t   lowammo;
     qhandle_t   precache[MAX_SOUNDS];
 } cg_sounds_t;
 
@@ -349,6 +350,10 @@ extern player_fog_t     cg_custom_fog;
 #define DLHACK_ROCKET_COLOR         BIT(0)
 #define DLHACK_SMALLER_EXPLOSION    BIT(1)
 #define DLHACK_NO_MUZZLEFLASH       BIT(2)
+
+// local channel numbers that never override
+#define CHAN_TALK   256
+#define CHAN_HIT    257
 
 //
 // cvars

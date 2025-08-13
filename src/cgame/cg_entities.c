@@ -168,19 +168,28 @@ static void CG_DeltaPlayerstate(void)
     const player_state_t *ps = &cg.frame->ps;
     player_state_t *ops = &cg.oldframe->ps;
 
-    // no lerping or hit markers if POV number changed
+    // no lerping if POV number changed
     if (ops->clientnum != ps->clientnum) {
         *ops = *ps;
         cg.weapon.prev_frame = ps->gunframe;
     }
 
+    // hit markers
     if (ps->stats[STAT_HITS] > ops->stats[STAT_HITS]) {
         if (cg_hit_markers.integer > 0) {
             cg.hit_marker_count = ps->stats[STAT_HITS] - ops->stats[STAT_HITS];
             cg.hit_marker_time = cgs.realtime;
             if (cg_hit_markers.integer > 1)
-                trap_S_StartSound(NULL, cg.frame->ps.clientnum, 257, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
+                trap_S_StartSound(NULL, ps->clientnum, CHAN_HIT, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
         }
+    }
+
+    // low ammo warning
+    int weapon = ps->stats[STAT_ACTIVE_WEAPON];
+    if (weapon > 0 && weapon <= cgs.wheel.num_weapons && weapon == ops->stats[STAT_ACTIVE_WEAPON]) {
+        int warn = cgs.wheel.weapons[weapon - 1].quantity_warn;
+        if (ps->stats[STAT_AMMO] <= warn && ops->stats[STAT_AMMO] > warn)
+            trap_S_StartSound(NULL, ps->clientnum, CHAN_AUTO, cgs.sounds.lowammo, 1, ATTN_NONE, 0);
     }
 
     // no lerping if teleport bit was flipped

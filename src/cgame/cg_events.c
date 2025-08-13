@@ -199,6 +199,7 @@ void CG_RegisterTEntSounds(void)
     cgs.sounds.lightning = trap_S_RegisterSound("weapons/tesla.wav");
     cgs.sounds.disrexp = trap_S_RegisterSound("weapons/disrupthit.wav");
     cgs.sounds.hit_marker = trap_S_RegisterSound("weapons/marker.wav");
+    cgs.sounds.lowammo = trap_S_RegisterSound("weapons/lowammo.wav");
 
     CG_RegisterFootsteps();
 }
