@@ -508,15 +508,8 @@ void CG_RenderView(void);
 //
 
 typedef struct cg_sustain_s {
-    int     id;
-    int     type;
     int     endtime;
-    int     nextthink;
     vec3_t  org;
-    vec3_t  dir;
-    int     color;
-    int     count;
-    int     magnitude;
     void    (*think)(struct cg_sustain_s *self);
 } cg_sustain_t;
 

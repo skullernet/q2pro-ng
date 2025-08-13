@@ -617,7 +617,7 @@ static cg_sustain_t *CG_AllocSustain(void)
     int             i;
 
     for (i = 0, s = cg_sustains; i < MAX_SUSTAINS; i++, s++) {
-        if (s->id == 0)
+        if (!s->think)
             return s;
     }
 
@@ -631,9 +631,9 @@ static void CG_ProcessSustain(void)
 
     for (i = 0, s = cg_sustains; i < MAX_SUSTAINS; i++, s++) {
         if (s->think) {
-            if ((s->endtime >= cg.time) && (cg.time >= s->nextthink))
+            if (s->endtime >= cg.time)
                 s->think(s);
-            else if (s->endtime < cg.time)
+            else
                 s->think = NULL;
         }
     }
@@ -650,7 +650,6 @@ static void CG_ParseWidow(const vec3_t pos)
     VectorCopy(pos, s->org);
     s->endtime = cg.time + 2100;
     s->think = CG_Widowbeamout;
-    s->nextthink = cg.time;
 }
 
 static void CG_ParseNuke(const vec3_t pos)
@@ -672,7 +671,6 @@ static void CG_ParseNuke(const vec3_t pos)
     VectorCopy(pos, s->org);
     s->endtime = cg.time + 1000;
     s->think = CG_Nukeblast;
-    s->nextthink = cg.time;
 }
 
 //==============================================================
