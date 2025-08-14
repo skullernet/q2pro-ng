@@ -65,7 +65,6 @@ vm_cvar_t   cg_dlight_hacks;
 vm_cvar_t   cg_smooth_explosions;
 vm_cvar_t   cg_chat_notify;
 vm_cvar_t   cg_chat_sound;
-vm_cvar_t   cg_chat_filter;
 vm_cvar_t   cg_adjustfov;
 vm_cvar_t   cg_lerp_lightstyles;
 vm_cvar_t   cg_muzzlelight_time;
@@ -123,7 +122,6 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_vwep, "1", CVAR_ARCHIVE),
     VM_CVAR(cg_chat_notify, "1", 0),
     VM_CVAR(cg_chat_sound, "1", 0),
-    VM_CVAR(cg_chat_filter, "0", 0),
     VM_CVAR(cg_adjustfov, "1", 0),
     VM_CVAR(cg_lerp_lightstyles, "1", 0),
     VM_CVAR(cg_muzzlelight_time, "100", 0),

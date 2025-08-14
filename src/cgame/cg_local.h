@@ -405,7 +405,6 @@ extern vm_cvar_t    cg_smooth_explosions;
 
 extern vm_cvar_t    cg_chat_notify;
 extern vm_cvar_t    cg_chat_sound;
-extern vm_cvar_t    cg_chat_filter;
 
 extern vm_cvar_t    cg_gibs;
 extern vm_cvar_t    cg_flares;

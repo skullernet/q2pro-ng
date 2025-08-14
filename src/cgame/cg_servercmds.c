@@ -33,14 +33,7 @@ static void CG_Chat(char *text)
     if (!cg_chat_notify.integer)
         type |= PRINT_SKIPNOTIFY;
 
-    // filter text
-    const char *fmt = "%s";
-    if (cg_chat_filter.integer) {
-        COM_strclr(text);
-        fmt = "%s\n";
-    }
-
-    Com_LPrintf(type, fmt, text);
+    trap_Print(type, text);
 
     SCR_AddToChatHUD(text);
 
