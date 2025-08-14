@@ -2279,10 +2279,11 @@ unsigned CL_Frame(unsigned msec)
 
         ref_extra -= ref_msec;
         R_FRAMES++;
-
-        // update audio after the 3D view was drawn
-        S_Update();
     }
+
+    // update audio after the 3D view was drawn
+    if (ref_frame || sync_mode == SYNC_SLEEP_10)
+        S_Update();
 
     // check connection timeout
     CL_CheckTimeout();

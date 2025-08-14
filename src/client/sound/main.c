@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // =======================================================================
 
 unsigned    s_registration_sequence;
+bool        s_registering;
 
 channel_t   s_channels[MAX_CHANNELS];
 int         s_numchannels;
@@ -45,23 +46,20 @@ vec3_t      listener_up;
 int         listener_entnum;
 bool        listener_underwater;
 
-bool        s_registering;
-
-int         s_paintedtime;  // sample PAIRS
 unsigned    s_framecount;
 
 // during registration it is possible to have more sounds
 // than could actually be referenced during gameplay,
 // because we don't want to free anything until we are
 // sure we won't need it.
-#define     MAX_SFX     (MAX_SOUNDS*2)
+#define MAX_SFX     (MAX_SOUNDS * 2)
 static sfx_t        known_sfx[MAX_SFX];
 static int          num_sfx;
 
-#define     MAX_PLAYSOUNDS  128
-playsound_t s_playsounds[MAX_PLAYSOUNDS];
-list_t      s_freeplays;
-list_t      s_pendingplays;
+#define MAX_PLAYSOUNDS  128
+static playsound_t  s_playsounds[MAX_PLAYSOUNDS];
+static list_t       s_freeplays;
+static list_t       s_pendingplays;
 
 cvar_t      *s_volume;
 cvar_t      *s_ambient;
@@ -162,16 +160,16 @@ void S_Init(void)
     s_started = SS_NOT;
 
 #if USE_OPENAL
-    if (s_started == SS_NOT && s_enable->integer >= SS_OAL && snd_openal.init()) {
-        s_started = SS_OAL;
+    if (s_started == SS_NOT && s_enable->integer >= SS_OPENAL && snd_openal.init()) {
+        s_started = SS_OPENAL;
         s_api = &snd_openal;
     }
 #endif
 
-#if USE_SNDDMA
-    if (s_started == SS_NOT && s_enable->integer >= SS_DMA && snd_dma.init()) {
-        s_started = SS_DMA;
-        s_api = &snd_dma;
+#if USE_MINIAUDIO
+    if (s_started == SS_NOT && s_enable->integer >= SS_MINIAUDIO && snd_miniaudio.init()) {
+        s_started = SS_MINIAUDIO;
+        s_api = &snd_miniaudio;
     }
 #endif
 
@@ -193,9 +191,8 @@ void S_Init(void)
 
     s_entities = HashMap_TagCreate(unsigned, vec3_t, HashInt32, NULL, TAG_SOUND);
 
-    s_paintedtime = 0;
-
     s_registration_sequence = 1;
+    s_registering = false;
 
     // start the cd track
     OGG_Play();
@@ -469,17 +466,25 @@ channel_t *S_PickChannel(int entnum, int entchannel)
 {
     int         ch_idx;
     int         first_to_die;
-    int         life_left;
+    unsigned    life_left;
     channel_t   *ch;
 
 // Check for replacement sound, or find the best one to replace
     first_to_die = -1;
-    life_left = INT_MAX;
+    life_left = UINT_MAX;
     for (ch_idx = 0; ch_idx < s_numchannels; ch_idx++) {
         ch = &s_channels[ch_idx];
+        if (!ch->sfx) {
+            if (life_left) {
+                first_to_die = ch_idx;
+                life_left = 0;
+            }
+            continue;
+        }
+
         // channel 0 never overrides unless out of channels
-        if (ch->entnum == entnum && ch->entchannel == entchannel && entchannel != 0) {
-            if (entchannel > 255 && ch->sfx)
+        if (entchannel && ch->entnum == entnum && ch->entchannel == entchannel) {
+            if (entchannel > 255)
                 return NULL;    // channels >255 only allow single sfx on that channel
             // always override sound from same entity
             first_to_die = ch_idx;
@@ -487,11 +492,11 @@ channel_t *S_PickChannel(int entnum, int entchannel)
         }
 
         // don't let monster sounds override player sounds
-        if (ch->entnum == listener_entnum && entnum != listener_entnum && ch->sfx)
+        if (ch->entnum == listener_entnum && entnum != listener_entnum)
             continue;
 
-        if (ch->end - s_paintedtime < life_left) {
-            life_left = ch->end - s_paintedtime;
+        if (ch->end - cls.realtime < life_left) {
+            life_left = ch->end - cls.realtime;
             first_to_die = ch_idx;
         }
     }
@@ -500,8 +505,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
         return NULL;
 
     ch = &s_channels[first_to_die];
-    if (s_api->stop_channel)
-        s_api->stop_channel(ch);
+    s_api->stop_channel(ch);
     memset(ch, 0, sizeof(*ch));
 
     return ch;
@@ -548,7 +552,7 @@ This is never called directly by S_Play*, but only
 by the update loop.
 ===============
 */
-void S_IssuePlaysound(playsound_t *ps)
+static void S_IssuePlaysound(playsound_t *ps)
 {
     channel_t   *ch;
     sfxcache_t  *sc;
@@ -566,7 +570,7 @@ void S_IssuePlaysound(playsound_t *ps)
 
     sc = S_LoadSound(ps->sfx);
     if (!sc) {
-        Com_Printf("S_IssuePlaysound: couldn't load %s\n", ps->sfx->name);
+        // should never happen
         S_FreePlaysound(ps);
         return;
     }
@@ -582,13 +586,25 @@ void S_IssuePlaysound(playsound_t *ps)
     ch->sfx = ps->sfx;
     VectorCopy(ps->origin, ch->origin);
     ch->fixed_origin = ps->fixed_origin;
-    ch->pos = 0;
-    ch->end = s_paintedtime + sc->length;
+    ch->end = cls.realtime + sc->length;
 
     s_api->play_channel(ch);
 
     // free the playsound
     S_FreePlaysound(ps);
+}
+
+static void S_IssuePlaysounds(void)
+{
+    // start any playsounds
+    while (1) {
+        playsound_t *ps = PS_FIRST(&s_pendingplays);
+        if (PS_TERM(ps, &s_pendingplays))
+            break;  // no more pending sounds
+        if (ps->begin > cls.realtime)
+            break;
+        S_IssuePlaysound(ps);
+    }
 }
 
 // =======================================================================
@@ -610,9 +626,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     playsound_t *ps, *sort;
     sfx_t       *sfx;
 
-    if (!s_started)
-        return;
-    if (!s_active)
+    if (!s_started || !s_active)
         return;
     if (!(sfx = S_SfxForHandle(hSfx)))
         return;
@@ -639,7 +653,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     ps->attenuation = attenuation;
     ps->volume = vol;
     ps->sfx = sfx;
-    ps->begin = s_api->get_begin_ofs(timeofs);
+    ps->begin = cls.realtime + timeofs * 1000;
 
     // sort into the pending sound list
     LIST_FOR_EACH(sort, &s_pendingplays, entry)
@@ -754,7 +768,8 @@ void S_StopAllSounds(void)
     for (i = 0; i < MAX_PLAYSOUNDS; i++)
         List_Append(&s_freeplays, &s_playsounds[i].entry);
 
-    s_api->stop_all_sounds();
+    for (i = 0; i < s_numchannels; i++)
+        s_api->stop_channel(&s_channels[i]);
 
     // clear all the channels
     memset(s_channels, 0, sizeof(s_channels));
@@ -787,6 +802,24 @@ void S_PauseRawSamples(bool paused)
 // =======================================================================
 // Update sound buffer
 // =======================================================================
+
+channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx)
+{
+    int         i;
+    channel_t   *ch;
+
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
+        if (!ch->autosound)
+            continue;
+        if (entnum && ch->entnum != entnum)
+            continue;
+        if (ch->sfx != sfx)
+            continue;
+        return ch;
+    }
+
+    return NULL;
+}
 
 /*
 =================
@@ -848,18 +881,12 @@ void S_Update(void)
         return;
     }
 
-    if (!s_started)
+    if (!s_started || !s_active)
         return;
-
-    // if the loading plaque is up, clear everything
-    // out to make sure we aren't looping a dirty
-    // dma buffer while loading
-    if (cls.state == ca_loading) {
-        // S_ClearBuffer should be already done in S_StopAllSounds
-        return;
-    }
 
     OGG_Update();
+
+    S_IssuePlaysounds();
 
     s_api->update();
 }

@@ -294,7 +294,7 @@ openal = dependency('openal',
   default_options: fallback_opt,
 )
 if openal.found()
-  client_src += [ 'src/client/sound/al.c', 'src/client/sound/qal.c' ]
+  client_src += [ 'src/client/sound/openal.c', 'src/client/sound/qal.c' ]
   client_deps += openal.partial_dependency(compile_args: true, includes: true)
   config.set10('USE_OPENAL', true)
 endif
@@ -326,14 +326,12 @@ if get_option('client-ui')
   endif
 endif
 
-if get_option('software-sound').require(win32 or sdl2.found()).allowed()
-  client_src += 'src/client/sound/dma.c'
-  if sdl2.found()
-    client_src += 'src/unix/sound/sdl.c'
-  endif
-  config.set10('USE_SNDDMA', true)
+if get_option('miniaudio')
+  client_src += 'src/client/sound/miniaudio.c'
+  client_deps += subproject('miniaudio').get_variable('miniaudio_dep')
+  config.set10('USE_MINIAUDIO', true)
 elif not openal.found()
-  warning('Neither software sound nor OpenAL enabled, this is not supported')
+  warning('Neither Miniaudio nor OpenAL enabled, this is not supported')
 endif
 
 if get_option('save-games')

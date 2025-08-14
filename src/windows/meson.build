@@ -33,11 +33,6 @@ game_src += windows.compile_resources('res/game.rc',
 
 client_deps += subproject('khr-headers').get_variable('khr_headers_dep')
 
-if get_option('software-sound').allowed()
-  client_src += files('wave.c', 'dsound.c')
-  client_deps += cc.find_library('winmm')
-endif
-
 if get_option('windows-egl')
   client_src += files('egl.c')
   config.set10('USE_WIN32EGL', true)

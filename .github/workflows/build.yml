@@ -39,6 +39,7 @@ env:
     -Dicmp-errors=disabled
     -Dwindows-crash-dumps=disabled
     -Dwrap_mode=nofallback
+    -Dminiaudio:werror=false
 
 jobs:
   mingw:

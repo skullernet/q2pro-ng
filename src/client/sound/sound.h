@@ -24,8 +24,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/list.h"
 #include "common/hash_map.h"
 
-#if USE_SNDDMA
-#include "client/sound/dma.h"
+#if USE_MINIAUDIO
+#include <miniaudio.h>
+#include <stdatomic.h>
 #endif
 
 #define MAX_SFX_SAMPLES     ((1 << 23) - 1)
@@ -39,7 +40,10 @@ typedef struct {
 #if USE_OPENAL
     unsigned    bufnum;
 #endif
-#if USE_SNDDMA
+#if USE_MINIAUDIO
+    int         rate;
+    int         samples;
+    ma_format   format;
     byte        data[1];        // variable sized
 #endif
 } sfxcache_t;
@@ -66,15 +70,21 @@ typedef struct {
     int         entchannel;
     bool        fixed_origin;   // use origin field instead of entnum's origin
     vec3_t      origin;
-    int         begin;          // begin on this sample
+    unsigned    begin;          // cls.realtime this sound starts
 } playsound_t;
+
+#if USE_MINIAUDIO
+typedef struct {
+    ma_node_base base;
+    ma_uint32 channels;
+    _Atomic float left;
+    _Atomic float right;
+} my_panner_node;
+#endif
 
 typedef struct {
     sfx_t       *sfx;           // sfx number
-    float       leftvol;        // 0.0-1.0 volume
-    float       rightvol;       // 0.0-1.0 volume
-    int         end;            // end time in global paintsamples
-    int         pos;            // sample position in sfx
+    unsigned    end;            // cls.realtime this sound ends
     int         entnum;         // to allow overriding a specific sound
     int         entchannel;     //
     vec3_t      origin;         // only use if fixed_origin is set
@@ -82,10 +92,15 @@ typedef struct {
     float       master_vol;     // 0.0-1.0 master volume
     bool        fixed_origin;   // use origin instead of fetching entnum's origin
     bool        autosound;      // from an entity->sound, cleared each frame
-#if USE_OPENAL
     byte        fullvolume;
     unsigned    autoframe;
+#if USE_OPENAL
     unsigned    srcnum;
+#endif
+#if USE_MINIAUDIO
+    ma_sound            sound;
+    ma_audio_buffer_ref buffer;
+    my_panner_node      panner;
 #endif
 } channel_t;
 
@@ -123,23 +138,21 @@ typedef struct {
     void (*update)(void);
     void (*activate)(void);
     void (*sound_info)(void);
-    sfxcache_t *(*upload_sfx)(sfx_t *s);
+    int (*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
     bool (*raw_samples)(int samples, int rate, int width, int channels, const void *data, float volume);
-    int (*need_raw_samples)(void);
-    int (*have_raw_samples)(void);
+    bool (*need_raw_samples)(void);
+    bool (*have_raw_samples)(void);
     void (*drop_raw_samples)(void);
     void (*pause_raw_samples)(bool paused);
-    int (*get_begin_ofs)(float timeofs);
     void (*play_channel)(channel_t *ch);
     void (*stop_channel)(channel_t *ch);
-    void (*stop_all_sounds)(void);
     int (*get_sample_rate)(void);
 } sndapi_t;
 
-#if USE_SNDDMA
-extern const sndapi_t   snd_dma;
+#if USE_MINIAUDIO
+extern const sndapi_t   snd_miniaudio;
 #endif
 
 #if USE_OPENAL
@@ -150,11 +163,11 @@ extern const sndapi_t   snd_openal;
 
 typedef enum {
     SS_NOT,
-#if USE_SNDDMA
-    SS_DMA,
+#if USE_MINIAUDIO
+    SS_MINIAUDIO,
 #endif
 #if USE_OPENAL
-    SS_OAL
+    SS_OPENAL
 #endif
 } sndstarted_t;
 
@@ -172,10 +185,7 @@ extern int          s_numloopsounds;
 
 extern hash_map_t   *s_entities;
 
-extern int          s_paintedtime;
 extern unsigned     s_framecount;
-
-extern list_t       s_pendingplays;
 
 extern wavinfo_t    s_info;
 
@@ -206,6 +216,6 @@ extern cvar_t       *s_underwater_gain_hf;
 sfx_t *S_SfxForHandle(qhandle_t hSfx);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
-void S_IssuePlaysound(playsound_t *ps);
+channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx);
 void S_GetEntityOrigin(unsigned entnum, vec3_t origin);
 void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);

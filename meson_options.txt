@@ -58,6 +58,11 @@ option('md5',
   value: true,
   description: 'MD5 (re-release) models support')
 
+option('miniaudio',
+  type: 'boolean',
+  value: true,
+  description: 'Miniaudio sound backend')
+
 option('openal',
   type: 'feature',
   value: 'auto',
@@ -72,11 +77,6 @@ option('sdl2',
   type: 'feature',
   value: 'auto',
   description: 'SDL2 video and audio drivers')
-
-option('software-sound',
-  type: 'feature',
-  value: 'auto',
-  description: 'Software sound backend')
 
 option('system-console',
   type: 'boolean',

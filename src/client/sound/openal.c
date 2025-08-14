@@ -202,7 +202,7 @@ static ALenum AL_GetSampleFormat(int width, int channels)
     }
 }
 
-static sfxcache_t *AL_UploadSfx(sfx_t *s)
+static int AL_UploadSfx(sfx_t *s)
 {
     ALsizei size = s_info.samples * s_info.width * s_info.channels;
     ALenum format = AL_GetSampleFormat(s_info.width, s_info.channels);
@@ -210,21 +210,21 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
 
     if (!format) {
         Com_SetLastError("Unsupported sample format");
-        goto fail;
+        return Q_ERR(EINVAL);
     }
 
     qalGetError();
     qalGenBuffers(1, &buffer);
     if (qalGetError()) {
         Com_SetLastError("Failed to generate buffer");
-        goto fail;
+        return Q_ERR_LIBRARY_ERROR;
     }
 
     qalBufferData(buffer, format, s_info.data, size, s_info.rate);
     if (qalGetError()) {
         Com_SetLastError("Failed to upload samples");
         qalDeleteBuffers(1, &buffer);
-        goto fail;
+        return Q_ERR_LIBRARY_ERROR;
     }
 
     // specify OpenAL-Soft style loop points
@@ -242,11 +242,7 @@ static sfxcache_t *AL_UploadSfx(sfx_t *s)
     sc->size = size;
     sc->bufnum = buffer;
 
-    return sc;
-
-fail:
-    s->error = Q_ERR_LIBRARY_ERROR;
-    return NULL;
+    return Q_ERR_SUCCESS;
 }
 
 static void AL_DeleteSfx(sfx_t *s)
@@ -256,11 +252,6 @@ static void AL_DeleteSfx(sfx_t *s)
         ALuint name = sc->bufnum;
         qalDeleteBuffers(1, &name);
     }
-}
-
-static int AL_GetBeginofs(float timeofs)
-{
-    return s_paintedtime + timeofs * 1000;
 }
 
 static void AL_Spatialize(channel_t *ch)
@@ -339,49 +330,6 @@ static void AL_PlayChannel(channel_t *ch)
     }
 }
 
-static void AL_IssuePlaysounds(void)
-{
-    // start any playsounds
-    while (1) {
-        playsound_t *ps = PS_FIRST(&s_pendingplays);
-        if (PS_TERM(ps, &s_pendingplays))
-            break;  // no more pending sounds
-        if (ps->begin > s_paintedtime)
-            break;
-        S_IssuePlaysound(ps);
-    }
-}
-
-static void AL_StopAllSounds(void)
-{
-    int         i;
-    channel_t   *ch;
-
-    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
-        if (!ch->sfx)
-            continue;
-        AL_StopChannel(ch);
-    }
-}
-
-static channel_t *AL_FindLoopingSound(int entnum, const sfx_t *sfx)
-{
-    int         i;
-    channel_t   *ch;
-
-    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
-        if (!ch->autosound)
-            continue;
-        if (entnum && ch->entnum != entnum)
-            continue;
-        if (ch->sfx != sfx)
-            continue;
-        return ch;
-    }
-
-    return NULL;
-}
-
 static void AL_MergeLoopSounds(void)
 {
     int         i, j;
@@ -432,12 +380,12 @@ static void AL_MergeLoopSounds(void)
         pan  = (right_total - left_total) / (left_total + right_total);
         pan2 = -sqrtf(1.0f - pan * pan);
 
-        ch = AL_FindLoopingSound(0, sfx);
+        ch = S_FindAutoChannel(0, sfx);
         if (ch) {
             qalSourcef(ch->srcnum, AL_GAIN, gain);
             qalSource3f(ch->srcnum, AL_POSITION, pan, 0.0f, pan2);
             ch->autoframe = s_framecount;
-            ch->end = s_paintedtime + sc->length;
+            ch->end = cls.realtime + sc->length;
             continue;
         }
 
@@ -464,7 +412,7 @@ static void AL_MergeLoopSounds(void)
         ch->entnum = loop->entnum;
         ch->master_vol = loop->volume;
         ch->dist_mult = loop->dist_mult;
-        ch->end = s_paintedtime + sc->length;
+        ch->end = cls.realtime + sc->length;
 
         // play it
         qalSourcePlay(ch->srcnum);
@@ -490,10 +438,10 @@ static void AL_AddLoopSounds(void)
         if (!sc)
             continue;
 
-        ch = AL_FindLoopingSound(loop->entnum, sfx);
+        ch = S_FindAutoChannel(loop->entnum, sfx);
         if (ch) {
             ch->autoframe = s_framecount;
-            ch->end = s_paintedtime + sc->length;
+            ch->end = cls.realtime + sc->length;
             continue;
         }
 
@@ -503,7 +451,7 @@ static void AL_AddLoopSounds(void)
             continue;
 
         // attempt to synchronize with existing sounds of the same type
-        ch2 = AL_FindLoopingSound(0, sfx);
+        ch2 = S_FindAutoChannel(0, sfx);
         if (ch2) {
             ALfloat offset = 0;
             qalGetSourcef(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
@@ -516,7 +464,7 @@ static void AL_AddLoopSounds(void)
         ch->entnum = loop->entnum;
         ch->master_vol = loop->volume;
         ch->dist_mult = loop->dist_mult;
-        ch->end = s_paintedtime + sc->length;
+        ch->end = cls.realtime + sc->length;
 
         AL_PlayChannel(ch);
     }
@@ -568,14 +516,14 @@ static void AL_StreamPause(bool paused)
         qalSourcePlay(s_stream);
 }
 
-static int AL_NeedRawSamples(void)
+static bool AL_NeedRawSamples(void)
 {
-    return s_stream_buffers < MAX_STREAM_BUFFERS ? MAX_RAW_SAMPLES : 0;
+    return s_stream_buffers < MAX_STREAM_BUFFERS;
 }
 
-static int AL_HaveRawSamples(void)
+static bool AL_HaveRawSamples(void)
 {
-    return s_stream_buffers * MAX_RAW_SAMPLES;
+    return s_stream_buffers > 0;
 }
 
 static bool AL_RawSamples(int samples, int rate, int width, int channels, const void *data, float volume)
@@ -649,15 +597,6 @@ static void AL_Update(void)
     channel_t   *ch;
     ALfloat     orientation[6];
 
-    if (!s_active)
-        return;
-
-    // handle time wraparound. FIXME: get rid of this?
-    i = cls.realtime & MASK(30);
-    if (i < s_paintedtime)
-        S_StopAllSounds();
-    s_paintedtime = i;
-
     // set listener parameters
     qalListener3f(AL_POSITION, AL_UnpackVector(listener_origin));
     AL_CopyVector(listener_forward, orientation);
@@ -706,8 +645,6 @@ static void AL_Update(void)
         AL_AddLoopSounds();
     }
 
-    AL_IssuePlaysounds();
-
     AL_StreamUpdate();
 }
 
@@ -724,9 +661,7 @@ const sndapi_t snd_openal = {
     .have_raw_samples = AL_HaveRawSamples,
     .drop_raw_samples = AL_StreamStop,
     .pause_raw_samples = AL_StreamPause,
-    .get_begin_ofs = AL_GetBeginofs,
     .play_channel = AL_PlayChannel,
     .stop_channel = AL_StopChannel,
-    .stop_all_sounds = AL_StopAllSounds,
     .get_sample_rate = QAL_GetSampleRate,
 };

@@ -509,7 +509,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
     if (s_info.format == FORMAT_PCM)
         ConvertSamples();
 
-    sc = s_api->upload_sfx(s);
+    s->error = s_api->upload_sfx(s);
 
 #if USE_AVCODEC
     if (s_info.format != FORMAT_PCM)
@@ -517,8 +517,8 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 #endif
 
 fail:
-    if (!sc)
+    if (s->error)
         Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(s->name), Com_GetLastError());
     FS_FreeFile(data);
-    return sc;
+    return s->cache;
 }

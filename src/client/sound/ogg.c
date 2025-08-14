@@ -462,18 +462,16 @@ static int convert_audio(void)
 {
     AVFrame *in = ogg_frame_in;
     AVFrame *out = ogg_frame_out;
-    int ret = 0, need, have = 0;
+    int ret = 0, have = 0;
 
     if (ogg_paused)
         return 0;
 
     // get available free space
-    need = s_api->need_raw_samples();
-    if (need <= 0)
+    if (!s_api->need_raw_samples())
         return 0;
 
-    Q_assert(need <= MAX_RAW_SAMPLES);
-    out->nb_samples = need;
+    out->nb_samples = MAX_RAW_SAMPLES;
 
 drain:
     if (ogg_swr_draining) {
@@ -512,7 +510,7 @@ drain:
     }
 
     // buffer more frames to fill available space
-    while (have < need) {
+    while (have < MAX_RAW_SAMPLES) {
         if (!decode_next_frame()) {
             if (!swr_is_initialized(ogg_swr_ctx))
                 return 0;
@@ -535,7 +533,7 @@ drain:
         have = swr_get_out_samples(ogg_swr_ctx, in->nb_samples);
         if (have < 0)
             return have;
-        if (have < need) {
+        if (have < MAX_RAW_SAMPLES) {
             ret = convert_frame(NULL, in);
             if (ret < 0)
                 break;
