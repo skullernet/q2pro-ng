@@ -119,19 +119,15 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
                      const char *s, qhandle_t font)
 {
     size_t len = strlen(s);
-    int w = CONCHAR_WIDTH;
 
     if (len > maxlen) {
         len = maxlen;
     }
 
-    if (flags & UI_BIGFONT)
-        w = BIGCHAR_WIDTH;
-
     if ((flags & UI_CENTER) == UI_CENTER) {
-        x -= len * w / 2;
+        x -= len * CONCHAR_WIDTH / 2;
     } else if (flags & UI_RIGHT) {
-        x -= len * w;
+        x -= len * CONCHAR_WIDTH;
     }
 
     return trap_R_DrawString(x, y, flags, maxlen, s, font);
@@ -149,10 +145,6 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
     size_t  len;
     int     last_x = x;
     int     last_y = y;
-    int     h = CONCHAR_HEIGHT;
-
-    if (flags & UI_BIGFONT)
-        h = BIGCHAR_HEIGHT;
 
     while (*s && maxlen) {
         p = strchr(s, '\n');
@@ -167,7 +159,7 @@ void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
         last_y = y;
         maxlen -= len;
 
-        y += h;
+        y += CONCHAR_HEIGHT;
         s = p + 1;
     }
 
@@ -1427,7 +1419,13 @@ static void SCR_DrawAmmoCount(int x, int y, const cg_wheel_item_t *item, bool se
     else
         trap_R_SetColor24(selected ? SELECTED_NORM : U32_WHITE);
 
-    SCR_DrawString(x, y, UI_CENTER | UI_DROPSHADOW, va("%d", ammo));
+    float scale = rintf(0.66f / scr.hud_scale);
+    trap_R_SetScale(1.0f / scale);
+
+    scale *= scr.hud_scale;
+    SCR_DrawString(x / scale, y / scale, UI_CENTER | UI_DROPSHADOW, va("%d", ammo));
+
+    trap_R_SetScale(scr.hud_scale);
     trap_R_SetColor24(U32_WHITE);
 }
 
@@ -1453,8 +1451,8 @@ static void SCR_DrawWeaponSelect(void)
     y = scr.hud_height - 150;
 
     trap_GetConfigstring(CS_ITEMS + cgs.wheel.weapons[cg.weapon_select - 1].id, name, sizeof(name));
-    SCR_DrawString(scr.hud_width / 2, y, UI_CENTER | UI_DROPSHADOW | UI_BIGFONT, name);
-    y += 24;
+    SCR_DrawString(scr.hud_width / 2, y, UI_CENTER | UI_DROPSHADOW, name);
+    y += 12;
 
     for (int i = 0; i < cgs.wheel.num_weapons; i++) {
         if (!(owned & BIT(i)))
@@ -1697,7 +1695,9 @@ static void SCR_DrawFps(void)
         scr.timestamp = cgs.realtime;
         scr.frames = 0;
     }
-    SCR_DrawString(scr.hud_width, 0, UI_RIGHT | UI_BIGFONT, va("%dfps", scr.fps));
+    trap_R_SetScale(scr.hud_scale * 0.5f);
+    SCR_DrawString(scr.hud_width / 2, 0, UI_RIGHT, va("%dfps", scr.fps));
+    trap_R_SetScale(scr.hud_scale);
 }
 
 static void SCR_DrawPause(void)

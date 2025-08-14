@@ -661,9 +661,6 @@ char    *vtos(const vec3_t v);
 #define CONCHAR_WIDTH   8
 #define CONCHAR_HEIGHT  8
 
-#define BIGCHAR_WIDTH   16
-#define BIGCHAR_HEIGHT  16
-
 #define UI_LEFT             BIT(0)
 #define UI_RIGHT            BIT(1)
 #define UI_CENTER           (UI_LEFT | UI_RIGHT)
@@ -672,11 +669,10 @@ char    *vtos(const vec3_t v);
 #define UI_MIDDLE           (UI_BOTTOM | UI_TOP)
 #define UI_DROPSHADOW       BIT(4)
 #define UI_ALTCOLOR         BIT(5)
-#define UI_IGNORECOLOR      BIT(6)
-#define UI_XORCOLOR         BIT(7)
-#define UI_BIGFONT          BIT(8)
-#define UI_MULTILINE        BIT(9)
-#define UI_DRAWCURSOR       BIT(10)
+#define UI_XORCOLOR         BIT(6)
+#define UI_IGNORECOLOR      (UI_ALTCOLOR | UI_XORCOLOR)
+#define UI_MULTILINE        BIT(7)
+#define UI_DRAWCURSOR       BIT(8)
 
 //=============================================
 
