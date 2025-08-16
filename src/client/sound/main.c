@@ -68,6 +68,7 @@ cvar_t      *s_show;
 #endif
 cvar_t      *s_underwater;
 cvar_t      *s_underwater_gain_hf;
+cvar_t      *s_merge_looping;
 
 static cvar_t   *s_enable;
 static cvar_t   *s_auto_focus;
@@ -132,6 +133,17 @@ static void s_auto_focus_changed(cvar_t *self)
     S_Activate();
 }
 
+static void s_merge_looping_changed(cvar_t *self)
+{
+    int         i;
+    channel_t   *ch;
+
+    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
+        if (ch->autosound)
+            s_api->stop_channel(ch);
+    }
+}
+
 /*
 ================
 S_Init
@@ -155,6 +167,7 @@ void S_Init(void)
     s_auto_focus = Cvar_Get("s_auto_focus", "0", 0);
     s_underwater = Cvar_Get("s_underwater", "1", 0);
     s_underwater_gain_hf = Cvar_Get("s_underwater_gain_hf", "0.25", 0);
+    s_merge_looping = Cvar_Get("s_merge_looping", "1", 0);
 
     // start one of available sound engines
     s_started = SS_NOT;
@@ -186,6 +199,8 @@ void S_Init(void)
 
     s_auto_focus->changed = s_auto_focus_changed;
     s_auto_focus_changed(s_auto_focus);
+
+    s_merge_looping->changed = s_merge_looping_changed;
 
     num_sfx = 0;
 
@@ -254,6 +269,7 @@ void S_Shutdown(void)
     s_supports_float = false;
 
     s_auto_focus->changed = NULL;
+    s_merge_looping->changed = NULL;
 
     Cmd_Deregister(c_sound);
 
@@ -811,7 +827,7 @@ channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx)
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
         if (!ch->autosound)
             continue;
-        if (entnum && ch->entnum != entnum)
+        if (entnum != ENTITYNUM_NONE && ch->entnum != entnum)
             continue;
         if (ch->sfx != sfx)
             continue;

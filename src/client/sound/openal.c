@@ -26,8 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // OpenAL implementation should support at least this number of sources
 #define MIN_CHANNELS    16
 
-static cvar_t       *al_merge_looping;
-
 static ALuint       s_srcnums[MAX_CHANNELS];
 static ALuint       s_stream;
 static ALuint       s_stream_buffers;
@@ -60,17 +58,6 @@ static void s_underwater_gain_hf_changed(cvar_t *self)
     }
 
     qalFilterf(s_underwater_filter, AL_LOWPASS_GAINHF, Cvar_ClampValue(self, 0.001f, 1));
-}
-
-static void al_merge_looping_changed(cvar_t *self)
-{
-    int         i;
-    channel_t   *ch;
-
-    for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
-        if (ch->autosound)
-            AL_StopChannel(ch);
-    }
 }
 
 static void s_volume_changed(cvar_t *self)
@@ -113,9 +100,6 @@ static bool AL_Init(void)
 
     s_volume->changed = s_volume_changed;
     s_volume_changed(s_volume);
-
-    al_merge_looping = Cvar_Get("al_merge_looping", "1", 0);
-    al_merge_looping->changed = al_merge_looping_changed;
 
     s_loop_points = qalIsExtensionPresent("AL_SOFT_loop_points");
     s_source_spatialize = qalIsExtensionPresent("AL_SOFT_source_spatialize");
@@ -178,7 +162,6 @@ static void AL_Shutdown(void)
     s_underwater_flag = false;
     s_underwater_gain_hf->changed = NULL;
     s_volume->changed = NULL;
-    al_merge_looping->changed = NULL;
 
     QAL_Shutdown();
 }
@@ -257,7 +240,7 @@ static void AL_DeleteSfx(sfx_t *s)
 static void AL_Spatialize(channel_t *ch)
 {
     // merged autosounds are handled differently
-    if (ch->autosound && al_merge_looping->integer >= s_merge_looping_minval)
+    if (ch->autosound == AUTOSOUND_MERGED)
         return;
 
     // anything coming from the view entity will always be full volume
@@ -380,7 +363,7 @@ static void AL_MergeLoopSounds(void)
         pan  = (right_total - left_total) / (left_total + right_total);
         pan2 = -sqrtf(1.0f - pan * pan);
 
-        ch = S_FindAutoChannel(0, sfx);
+        ch = S_FindAutoChannel(ENTITYNUM_NONE, sfx);
         if (ch) {
             qalSourcef(ch->srcnum, AL_GAIN, gain);
             qalSource3f(ch->srcnum, AL_POSITION, pan, 0.0f, pan2);
@@ -390,7 +373,7 @@ static void AL_MergeLoopSounds(void)
         }
 
         // allocate a channel
-        ch = S_PickChannel(0, 0);
+        ch = S_PickChannel(ENTITYNUM_NONE, 0);
         if (!ch)
             continue;
 
@@ -406,7 +389,7 @@ static void AL_MergeLoopSounds(void)
         qalSourcef(ch->srcnum, AL_GAIN, gain);
         qalSource3f(ch->srcnum, AL_POSITION, pan, 0.0f, pan2);
 
-        ch->autosound = true;   // remove next frame
+        ch->autosound = AUTOSOUND_MERGED;   // remove next frame
         ch->autoframe = s_framecount;
         ch->sfx = sfx;
         ch->entnum = loop->entnum;
@@ -446,19 +429,19 @@ static void AL_AddLoopSounds(void)
         }
 
         // allocate a channel
-        ch = S_PickChannel(0, 0);
+        ch = S_PickChannel(ENTITYNUM_NONE, 0);
         if (!ch)
             continue;
 
         // attempt to synchronize with existing sounds of the same type
-        ch2 = S_FindAutoChannel(0, sfx);
+        ch2 = S_FindAutoChannel(ENTITYNUM_NONE, sfx);
         if (ch2) {
             ALfloat offset = 0;
             qalGetSourcef(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
             qalSourcef(s_srcnums[ch - s_channels], AL_SAMPLE_OFFSET, offset);
         }
 
-        ch->autosound = true;   // remove next frame
+        ch->autosound = AUTOSOUND_DISCRETE; // remove next frame
         ch->autoframe = s_framecount;
         ch->sfx = sfx;
         ch->entnum = loop->entnum;
@@ -639,7 +622,7 @@ static void AL_Update(void)
     s_framecount++;
 
     // add loopsounds
-    if (al_merge_looping->integer >= s_merge_looping_minval) {
+    if (s_merge_looping->integer >= s_merge_looping_minval) {
         AL_MergeLoopSounds();
     } else {
         AL_AddLoopSounds();

@@ -41,8 +41,9 @@ static void s_volume_changed(cvar_t *self)
 
 static ma_hishelf_config underwater_filter_config(cvar_t *self)
 {
-    float f = Cvar_ClampValue(self, 0.001f, 1);
-    return ma_hishelf2_config_init(ma_format_f32, 2, ma_engine_get_sample_rate(&engine), log10f(f) * 40, 1.0f, 5000.0f);
+    float gain = log10f(Cvar_ClampValue(self, 0.001f, 1)) * 40;
+    return ma_hishelf2_config_init(ma_format_f32, ma_engine_get_channels(&engine),
+                                   ma_engine_get_sample_rate(&engine), gain, 1.0f, 5000.0f);
 }
 
 static void s_underwater_gain_hf_changed(cvar_t *self)
@@ -67,22 +68,29 @@ static bool MA_Init(void)
 
     ma_pcm_rb_set_sample_rate(&stream_rb, ma_engine_get_sample_rate(&engine));
 
-    result = ma_sound_init_from_data_source(&engine, &stream_rb, MA_SOUND_FLAG_NO_SPATIALIZATION, NULL, &stream_sound);
+    ma_uint32 flags = MA_SOUND_FLAG_NO_SPATIALIZATION | MA_SOUND_FLAG_NO_PITCH;
+    result = ma_sound_init_from_data_source(&engine, &stream_rb, flags, NULL, &stream_sound);
     if (result < 0) {
         Com_EPrintf("Stream sound creation failed with error %d\n", result);
         goto fail2;
     }
 
-     ma_hishelf_node_config config = {
+    ma_hishelf_node_config config = {
         .nodeConfig = ma_node_config_init(),
         .hishelf = underwater_filter_config(s_underwater_gain_hf)
     };
+
     result = ma_hishelf_node_init(ma_engine_get_node_graph(&engine), &config, NULL, &underwater_filter);
     if (result < 0) {
         Com_EPrintf("Underwater filter creation failed with error %d\n", result);
         goto fail3;
     }
-    ma_node_attach_output_bus(&underwater_filter, 0, ma_engine_get_endpoint(&engine), 0);
+
+    result = ma_node_attach_output_bus(&underwater_filter, 0, ma_engine_get_endpoint(&engine), 0);
+    if (result < 0) {
+        Com_EPrintf("Underwater filter attachment failed with error %d\n", result);
+        goto fail4;
+    }
 
     result = ma_sound_group_init(&engine, 0, NULL, &main_group);
     if (result < 0) {
@@ -172,7 +180,8 @@ static void MA_StopChannel(channel_t *ch)
 {
     if (!ch->sfx)
         return;
-    ma_node_uninit(&ch->panner, NULL);
+    if (ch->autosound == AUTOSOUND_MERGED)
+        ma_node_uninit(&ch->panner, NULL);
     ma_sound_uninit(&ch->sound);
     ma_audio_buffer_ref_uninit(&ch->buffer);
     memset(ch, 0, sizeof(*ch));
@@ -181,7 +190,7 @@ static void MA_StopChannel(channel_t *ch)
 static void MA_Spatialize(channel_t *ch)
 {
     // merged autosounds are handled differently
-    if (ch->autosound)
+    if (ch->autosound == AUTOSOUND_MERGED)
         return;
 
     // anything coming from the view entity will always be full volume
@@ -201,19 +210,29 @@ static void MA_Spatialize(channel_t *ch)
     }
 }
 
+static ma_result my_audio_buffer_init(const sfxcache_t *sc, bool autosound, ma_audio_buffer_ref *buffer)
+{
+    ma_result result = ma_audio_buffer_ref_init(sc->format, sc->channels, sc->data, sc->samples, buffer);
+    if (result < 0)
+        return result;
+
+    // autolooping sounds always go back to start
+    if (sc->loopstart > 0 && !autosound)
+        ma_data_source_set_loop_point_in_pcm_frames(buffer, sc->loopstart, sc->samples);
+
+    buffer->sampleRate = sc->rate;
+    return MA_SUCCESS;
+}
+
 static void MA_PlayChannel(channel_t *ch)
 {
-    sfxcache_t *sc = ch->sfx->cache;
-    ma_result result;
-    ma_uint32 flags = 0;
+    const sfxcache_t *sc = ch->sfx->cache;
+    ma_result   result;
+    ma_uint32   flags = 0;
 
-    result = ma_audio_buffer_ref_init(sc->format, sc->channels, sc->data, sc->samples, &ch->buffer);
+    result = my_audio_buffer_init(sc, ch->autosound, &ch->buffer);
     if (result < 0)
         goto fail0;
-    ch->buffer.sampleRate = sc->rate;
-
-    if (sc->loopstart > 0)
-        ma_data_source_set_loop_point_in_pcm_frames(&ch->buffer, sc->loopstart, sc->samples);
 
     // no attenuation = no spatialization
     if (ch->dist_mult == 0)
@@ -241,13 +260,24 @@ static void MA_PlayChannel(channel_t *ch)
 
     MA_Spatialize(ch);
 
+    // attempt to synchronize with existing sounds of the same type
+    if (ch->autosound) {
+        ma_uint32 rate   = ma_engine_get_sample_rate(&engine);
+        ma_uint64 frames = ma_engine_get_time_in_pcm_frames(&engine);
+        if (!rate)
+            goto fail3;
+        frames = (frames * sc->rate / rate) % sc->samples;
+        result = ma_data_source_seek_pcm_frames(&ch->buffer, frames, NULL);
+        if (result < 0)
+            goto fail3;
+    }
+
     // play it
     result = ma_sound_start(&ch->sound);
-    if (result < 0)
-        goto fail2;
-    return;
+    if (result == MA_SUCCESS)
+        return;
 
-fail2:
+fail3:
     ma_sound_uninit(&ch->sound);
 fail1:
     ma_audio_buffer_ref_uninit(&ch->buffer);
@@ -354,14 +384,54 @@ static const ma_node_vtable my_panner_node_vtable = {
 
 static ma_result my_panner_node_init(ma_node_graph *pNodeGraph, my_panner_node *pNode)
 {
-    pNode->channels = 2;
+    ma_uint32 channels = 2;
 
     ma_node_config baseNodeConfig  = ma_node_config_init();
     baseNodeConfig.vtable          = &my_panner_node_vtable;
-    baseNodeConfig.pInputChannels  = &pNode->channels;
-    baseNodeConfig.pOutputChannels = &pNode->channels;
+    baseNodeConfig.pInputChannels  = &channels;
+    baseNodeConfig.pOutputChannels = &channels;
 
     return ma_node_init(pNodeGraph, &baseNodeConfig, NULL, pNode);
+}
+
+static void MA_PlayLoopSound(channel_t *ch)
+{
+    ma_result   result;
+    ma_uint32   flags = MA_SOUND_FLAG_NO_SPATIALIZATION | MA_SOUND_FLAG_NO_DEFAULT_ATTACHMENT | MA_SOUND_FLAG_LOOPING;
+
+    result = my_audio_buffer_init(ch->sfx->cache, true, &ch->buffer);
+    if (result < 0)
+        goto fail0;
+
+    result = ma_sound_init_from_data_source(&engine, &ch->buffer, flags, NULL, &ch->sound);
+    if (result < 0)
+        goto fail1;
+
+    result = my_panner_node_init(ma_engine_get_node_graph(&engine), &ch->panner);
+    if (result < 0)
+        goto fail2;
+
+    result = ma_node_attach_output_bus(&ch->sound, 0, &ch->panner, 0);
+    if (result < 0)
+        goto fail3;
+
+    result = ma_node_attach_output_bus(&ch->panner, 0, &main_group, 0);
+    if (result < 0)
+        goto fail3;
+
+    // play it
+    result = ma_sound_start(&ch->sound);
+    if (result == MA_SUCCESS)
+        return;
+
+fail3:
+    ma_node_uninit(&ch->panner, NULL);
+fail2:
+    ma_sound_uninit(&ch->sound);
+fail1:
+    ma_audio_buffer_ref_uninit(&ch->buffer);
+fail0:
+    memset(ch, 0, sizeof(*ch));
 }
 
 static void MA_MergeLoopSounds(void)
@@ -373,7 +443,6 @@ static void MA_MergeLoopSounds(void)
     sfx_t       *sfx;
     sfxcache_t  *sc;
     vec3_t      origin;
-    ma_result   result;
 
     for (i = 0; i < s_numloopsounds; i++) {
         loop = &s_loopsounds[i];
@@ -409,7 +478,7 @@ static void MA_MergeLoopSounds(void)
         left_total = min(1.0f, left_total);
         right_total = min(1.0f, right_total);
 
-        ch = S_FindAutoChannel(0, sfx);
+        ch = S_FindAutoChannel(ENTITYNUM_NONE, sfx);
         if (ch) {
             atomic_store(&ch->panner.left, left_total);
             atomic_store(&ch->panner.right, right_total);
@@ -419,38 +488,11 @@ static void MA_MergeLoopSounds(void)
         }
 
         // allocate a channel
-        ch = S_PickChannel(0, 0);
+        ch = S_PickChannel(ENTITYNUM_NONE, 0);
         if (!ch)
             continue;
 
-        result = ma_audio_buffer_ref_init(sc->format, sc->channels, sc->data, sc->samples, &ch->buffer);
-        if (result < 0)
-            continue;
-        ch->buffer.sampleRate = sc->rate;
-
-        if (sc->loopstart > 0)
-            ma_data_source_set_loop_point_in_pcm_frames(&ch->buffer, sc->loopstart, sc->samples);
-
-        result = ma_sound_init_from_data_source(&engine, &ch->buffer,
-            MA_SOUND_FLAG_NO_SPATIALIZATION | MA_SOUND_FLAG_LOOPING, &main_group, &ch->sound);
-        if (result < 0) {
-            ma_audio_buffer_ref_uninit(&ch->buffer);
-            continue;
-        }
-
-        result = my_panner_node_init(ma_engine_get_node_graph(&engine), &ch->panner);
-        if (result < 0) {
-            ma_sound_uninit(&ch->sound);
-            ma_audio_buffer_ref_uninit(&ch->buffer);
-            continue;
-        }
-        ma_node_attach_output_bus(&ch->sound, 0, &ch->panner, 0);
-        ma_node_attach_output_bus(&ch->panner, 0, &main_group, 0);
-
-        atomic_store(&ch->panner.left, left_total);
-        atomic_store(&ch->panner.right, right_total);
-
-        ch->autosound = true;   // remove next frame
+        ch->autosound = AUTOSOUND_MERGED;   // remove next frame
         ch->autoframe = s_framecount;
         ch->sfx = sfx;
         ch->entnum = loop->entnum;
@@ -458,12 +500,50 @@ static void MA_MergeLoopSounds(void)
         ch->dist_mult = loop->dist_mult;
         ch->end = cls.realtime + sc->length;
 
-        // play it
-        result = ma_sound_start(&ch->sound);
-        if (result < 0) {
-            MA_StopChannel(ch);
+        atomic_store(&ch->panner.left, left_total);
+        atomic_store(&ch->panner.right, right_total);
+
+        MA_PlayLoopSound(ch);
+    }
+}
+
+static void MA_AddLoopSounds(void)
+{
+    int         i;
+    loopsound_t *loop;
+    channel_t   *ch;
+    sfx_t       *sfx;
+    sfxcache_t  *sc;
+
+    for (i = 0; i < s_numloopsounds; i++) {
+        loop = &s_loopsounds[i];
+
+        sfx = loop->sfx;
+        sc = sfx->cache;
+        if (!sc)
+            continue;
+
+        ch = S_FindAutoChannel(loop->entnum, sfx);
+        if (ch) {
+            ch->autoframe = s_framecount;
+            ch->end = cls.realtime + sc->length;
             continue;
         }
+
+        // allocate a channel
+        ch = S_PickChannel(ENTITYNUM_NONE, 0);
+        if (!ch)
+            continue;
+
+        ch->autosound = AUTOSOUND_DISCRETE; // remove next frame
+        ch->autoframe = s_framecount;
+        ch->sfx = sfx;
+        ch->entnum = loop->entnum;
+        ch->master_vol = loop->volume;
+        ch->dist_mult = loop->dist_mult;
+        ch->end = cls.realtime + sc->length;
+
+        MA_PlayChannel(ch);
     }
 }
 
@@ -511,7 +591,10 @@ static void MA_Update(void)
     s_framecount++;
 
     // add loopsounds
-    MA_MergeLoopSounds();
+    if (s_merge_looping->integer && ma_engine_get_channels(&engine) == 2)
+        MA_MergeLoopSounds();
+    else
+        MA_AddLoopSounds();
 }
 
 static int MA_GetSampleRate(void)

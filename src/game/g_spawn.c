@@ -775,7 +775,7 @@ static int ED_ParsePowerArmor(const char *value)
     }
 }
 
-static int ED_ParseAttenuation(const char *value)
+static float ED_ParseAttenuation(const char *value)
 {
     float attenuation = Q_atof(value);
 

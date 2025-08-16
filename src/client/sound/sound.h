@@ -76,11 +76,16 @@ typedef struct {
 #if USE_MINIAUDIO
 typedef struct {
     ma_node_base base;
-    ma_uint32 channels;
     _Atomic float left;
     _Atomic float right;
 } my_panner_node;
 #endif
+
+typedef enum {
+    AUTOSOUND_NONE,
+    AUTOSOUND_DISCRETE,
+    AUTOSOUND_MERGED
+} autosound_t;
 
 typedef struct {
     sfx_t       *sfx;           // sfx number
@@ -91,7 +96,7 @@ typedef struct {
     vec_t       dist_mult;      // distance multiplier (attenuation/clipK)
     float       master_vol;     // 0.0-1.0 master volume
     bool        fixed_origin;   // use origin instead of fetching entnum's origin
-    bool        autosound;      // from an entity->sound, cleared each frame
+    byte        autosound;      // AUTOSOUND_*, cleared each frame
     byte        fullvolume;
     unsigned    autoframe;
 #if USE_OPENAL
@@ -203,6 +208,7 @@ extern cvar_t       *s_show;
 #endif
 extern cvar_t       *s_underwater;
 extern cvar_t       *s_underwater_gain_hf;
+extern cvar_t       *s_merge_looping;
 
 #define S_IsFullVolume(ch) \
     ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)

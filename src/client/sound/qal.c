@@ -278,7 +278,7 @@ int QAL_Init(void)
         al_hrtf->flags |= CVAR_SOUND;
 
     if (qalcIsExtensionPresent(device, "ALC_SOFT_output_mode")) {
-        ALCint mode = 0;
+        ALCint mode = ALC_STEREO_BASIC_SOFT;
         qalcGetIntegerv(device, ALC_OUTPUT_MODE_SOFT, 1, &mode);
         Com_DDPrintf("ALC_OUTPUT_MODE_SOFT: %#x\n", mode);
         if (mode != ALC_STEREO_BASIC_SOFT)
