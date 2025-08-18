@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/keys.h"
 #include "shared/refresh.h"
+#include "shared/sound.h"
 
 #define CGAME_API_VERSION    4000
 
@@ -176,8 +177,8 @@ typedef struct {
     void (*S_AddLoopingSound)(unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
     void (*S_StartBackgroundTrack)(const char *track);
     void (*S_StopBackgroundTrack)(void);
-    void (*S_UpdateEntity)(unsigned entnum, const vec3_t origin);
-    void (*S_UpdateListener)(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater);
+    void (*S_UpdateEntity)(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+    void (*S_UpdateListener)(const listener_t *listener);
 
     int64_t (*FS_OpenFile)(const char *path, qhandle_t *f, unsigned mode);
     int (*FS_CloseFile)(qhandle_t f);

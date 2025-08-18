@@ -71,6 +71,7 @@ static const alsection_t sections[] = {
             QAL_FN(DeleteSources),
             QAL_FN(Disable),
             QAL_FN(DistanceModel),
+            QAL_FN(DopplerFactor),
             QAL_FN(Enable),
             QAL_FN(GenBuffers),
             QAL_FN(GenSources),
@@ -92,6 +93,7 @@ static const alsection_t sections[] = {
             QAL_FN(SourceUnqueueBuffers),
             QAL_FN(Sourcef),
             QAL_FN(Sourcei),
+            QAL_FN(SpeedOfSound),
             { NULL }
         }
     },
@@ -178,7 +180,7 @@ static void print_device_list(void)
     } while (*list);
 }
 
-int QAL_Init(void)
+qal_initstat_t QAL_Init(void)
 {
     const alsection_t *sec;
     const alfunction_t *func;
@@ -195,7 +197,7 @@ int QAL_Init(void)
             break;
     }
     if (!handle)
-        return -1;
+        return QAL_INIT_FAILED;
 
     for (i = 0, sec = sections; i < q_countof(sections); i++, sec++) {
         if (sec->extension)
@@ -282,14 +284,14 @@ int QAL_Init(void)
         qalcGetIntegerv(device, ALC_OUTPUT_MODE_SOFT, 1, &mode);
         Com_DDPrintf("ALC_OUTPUT_MODE_SOFT: %#x\n", mode);
         if (mode != ALC_STEREO_BASIC_SOFT)
-            return 1;
+            return QAL_INIT_UNKNOWN;
     }
 
-    return 0;
+    return QAL_INIT_STEREO;
 
 fail:
     QAL_Shutdown();
-    return -1;
+    return QAL_INIT_FAILED;
 }
 
 int QAL_GetSampleRate(void)

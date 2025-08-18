@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // snd_main.c -- common sound functions
 
 #include "sound.h"
+#include "common/hash_map.h"
 
 // =======================================================================
 // Internal sound data & structures
@@ -32,19 +33,16 @@ int         s_numchannels;
 loopsound_t  s_loopsounds[MAX_PACKET_ENTITIES];
 int          s_numloopsounds;
 
-hash_map_t  *s_entities;
+static hash_map_t    *s_entities;
+static sound_entity_t s_listener_ent;
 
 sndstarted_t    s_started;
 bool            s_active;
 bool            s_supports_float;
 const sndapi_t  *s_api;
 
-vec3_t      listener_origin;
-vec3_t      listener_forward;
-vec3_t      listener_right;
-vec3_t      listener_up;
-int         listener_entnum;
-bool        listener_underwater;
+listener_t  s_listener;
+vec3_t      s_listener_right;
 
 unsigned    s_framecount;
 
@@ -62,13 +60,14 @@ static list_t       s_freeplays;
 static list_t       s_pendingplays;
 
 cvar_t      *s_volume;
-cvar_t      *s_ambient;
 #if USE_DEBUG
 cvar_t      *s_show;
 #endif
 cvar_t      *s_underwater;
 cvar_t      *s_underwater_gain_hf;
 cvar_t      *s_merge_looping;
+cvar_t      *s_doppler_factor;
+cvar_t      *s_speed_of_sound;
 
 static cvar_t   *s_enable;
 static cvar_t   *s_auto_focus;
@@ -160,7 +159,6 @@ void S_Init(void)
     Com_Printf("------- S_Init -------\n");
 
     s_volume = Cvar_Get("s_volume", "0.7", CVAR_ARCHIVE);
-    s_ambient = Cvar_Get("s_ambient", "1", 0);
 #if USE_DEBUG
     s_show = Cvar_Get("s_show", "0", 0);
 #endif
@@ -168,6 +166,8 @@ void S_Init(void)
     s_underwater = Cvar_Get("s_underwater", "1", 0);
     s_underwater_gain_hf = Cvar_Get("s_underwater_gain_hf", "0.25", 0);
     s_merge_looping = Cvar_Get("s_merge_looping", "1", 0);
+    s_doppler_factor = Cvar_Get("s_doppler_factor", "1", 0);
+    s_speed_of_sound = Cvar_Get("s_speed_of_sound", "10000", 0);
 
     // start one of available sound engines
     s_started = SS_NOT;
@@ -194,7 +194,6 @@ void S_Init(void)
     Cmd_Register(c_sound);
 
     // init playsound list
-    // clear DMA buffer
     S_StopAllSounds();
 
     s_auto_focus->changed = s_auto_focus_changed;
@@ -204,7 +203,7 @@ void S_Init(void)
 
     num_sfx = 0;
 
-    s_entities = HashMap_TagCreate(unsigned, vec3_t, HashInt32, NULL, TAG_SOUND);
+    s_entities = HashMap_TagCreate(unsigned, sound_entity_t, HashInt32, NULL, TAG_SOUND);
 
     s_registration_sequence = 1;
     s_registering = false;
@@ -267,6 +266,7 @@ void S_Shutdown(void)
     s_started = SS_NOT;
     s_active = false;
     s_supports_float = false;
+    s_listener = (listener_t){ 0 };
 
     s_auto_focus->changed = NULL;
     s_merge_looping->changed = NULL;
@@ -508,7 +508,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
         }
 
         // don't let monster sounds override player sounds
-        if (ch->entnum == listener_entnum && entnum != listener_entnum)
+        if (ch->entnum == s_listener.entnum && entnum != s_listener.entnum)
             continue;
 
         if (ch->end - cls.realtime < life_left) {
@@ -688,7 +688,7 @@ void S_StartLocalSound(const char *sound)
 {
     if (s_started) {
         qhandle_t sfx = S_RegisterSound(sound);
-        S_StartSound(NULL, listener_entnum, 0, sfx, 1, ATTN_NONE, 0);
+        S_StartSound(NULL, s_listener.entnum, 0, sfx, 1, ATTN_NONE, 0);
     }
 }
 
@@ -696,7 +696,7 @@ void S_StartLocalSoundOnce(const char *sound)
 {
     if (s_started) {
         qhandle_t sfx = S_RegisterSound(sound);
-        S_StartSound(NULL, listener_entnum, 256, sfx, 1, ATTN_NONE, 0);
+        S_StartSound(NULL, s_listener.entnum, 256, sfx, 1, ATTN_NONE, 0);
     }
 }
 
@@ -730,35 +730,33 @@ void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float atte
     loop->stereo_pan = stereo_pan;
 }
 
-void S_UpdateEntity(unsigned entnum, const vec3_t origin)
+void S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity)
 {
     Q_assert_soft(entnum < ENTITYNUM_WORLD);
-    if (s_entities)
-        HashMap_InsertImpl(s_entities, sizeof(entnum), sizeof(vec3_t), &entnum, origin);
-}
 
-void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater)
-{
-    Q_assert_soft(entnum < ENTITYNUM_WORLD);
-    listener_entnum = entnum;
-    VectorCopy(origin, listener_origin);
-    VectorCopy(axis[0], listener_forward);
-    VectorNegate(axis[1], listener_right);
-    VectorCopy(axis[2], listener_up);
-    listener_underwater = underwater;
-}
-
-void S_GetEntityOrigin(unsigned entnum, vec3_t origin)
-{
-    if (entnum == listener_entnum) {
-        VectorCopy(listener_origin, origin);
-    } else {
-        vec3_t *org = HashMap_Lookup(vec3_t, s_entities, &entnum);
-        if (org)
-            VectorCopy(*org, origin);
-        else
-            VectorClear(origin);
+    if (s_entities) {
+        sound_entity_t ent = {
+            .origin = VectorInit(origin),
+            .velocity = VectorInit(velocity),
+        };
+        HashMap_Insert(s_entities, &entnum, &ent);
     }
+}
+
+void S_UpdateListener(const listener_t *params)
+{
+    s_listener = *params;
+    CrossProduct(s_listener.v_forward, s_listener.v_up, s_listener_right);
+    VectorCopy(s_listener.origin, s_listener_ent.origin);
+    VectorCopy(s_listener.velocity, s_listener_ent.velocity);
+}
+
+sound_entity_t *S_FindEntity(unsigned entnum)
+{
+    if (entnum == s_listener.entnum)
+        return &s_listener_ent;
+
+    return HashMap_Lookup(sound_entity_t, s_entities, &entnum);
 }
 
 /*
@@ -852,7 +850,7 @@ void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, 
     vec3_t      source_vec;
 
 // calculate stereo separation and distance attenuation
-    VectorSubtract(origin, listener_origin, source_vec);
+    VectorSubtract(origin, s_listener.origin, source_vec);
 
     dist = VectorNormalize(source_vec);
     dist -= SOUND_FULLVOLUME;
@@ -865,7 +863,7 @@ void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, 
         rscale = 1.0f;
         lscale = 1.0f;
     } else {
-        dot = DotProduct(listener_right, source_vec);
+        dot = DotProduct(s_listener_right, source_vec);
         rscale = 0.5f * (1.0f + dot);
         lscale = 0.5f * (1.0f - dot);
     }

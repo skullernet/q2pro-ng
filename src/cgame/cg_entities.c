@@ -478,7 +478,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
 static void CG_SetEntitySoundOrigin(const centity_t *ent)
 {
-    vec3_t org;
+    vec3_t org, vel;
 
     // interpolate origin
     LerpVector(ent->prev.origin, ent->current.origin, cg.lerpfrac, org);
@@ -490,7 +490,16 @@ static void CG_SetEntitySoundOrigin(const centity_t *ent)
         VectorAdd(org, mid, org);
     }
 
-    trap_S_UpdateEntity(ent->current.number, org);
+    // set velocity for doppler effect
+    if (cg.frame->servertime > cg.oldframe->servertime) {
+        float time = 1000.0f / (cg.frame->servertime - cg.oldframe->servertime);
+        VectorSubtract(ent->current.origin, ent->prev.origin, vel);
+        VectorScale(vel, time, vel);
+    } else {
+        VectorClear(vel);
+    }
+
+    trap_S_UpdateEntity(ent->current.number, org, vel);
 }
 
 static void CG_AddEntityLoopingSound(const entity_state_t *ent)
@@ -501,11 +510,11 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
         return;
     if (sv_paused.integer)
         return;
-    if (s_ambient.integer <= 0)
+    if (cg_loopsounds.integer <= 0)
         return;
-    if (s_ambient.integer == 2 && !ent->modelindex)
+    if (cg_loopsounds.integer == 2 && !ent->modelindex)
         return;
-    if (s_ambient.integer == 3 && ent->number != cg.frame->ps.clientnum)
+    if (cg_loopsounds.integer == 3 && ent->number != cg.frame->ps.clientnum)
         return;
 
     int vol = (ent->sound >> 24) & 255;

@@ -65,14 +65,24 @@ static void s_volume_changed(cvar_t *self)
     qalListenerf(AL_GAIN, self->value);
 }
 
+static void s_doppler_factor_changed(cvar_t *self)
+{
+    qalDopplerFactor(self->value);
+}
+
+static void s_speed_of_sound_changed(cvar_t *self)
+{
+    qalSpeedOfSound(self->value);
+}
+
 static bool AL_Init(void)
 {
     int i;
 
     i = QAL_Init();
-    if (i < 0)
+    if (i == QAL_INIT_FAILED)
         goto fail0;
-    s_merge_looping_minval = i + 1;
+    s_merge_looping_minval = i;
 
     Com_DPrintf("AL_VENDOR: %s\n", qalGetString(AL_VENDOR));
     Com_DPrintf("AL_RENDERER: %s\n", qalGetString(AL_RENDERER));
@@ -100,6 +110,12 @@ static bool AL_Init(void)
 
     s_volume->changed = s_volume_changed;
     s_volume_changed(s_volume);
+
+    s_doppler_factor->changed = s_doppler_factor_changed;
+    s_doppler_factor_changed(s_doppler_factor);
+
+    s_speed_of_sound->changed = s_speed_of_sound_changed;
+    s_speed_of_sound_changed(s_speed_of_sound);
 
     s_loop_points = qalIsExtensionPresent("AL_SOFT_loop_points");
     s_source_spatialize = qalIsExtensionPresent("AL_SOFT_source_spatialize");
@@ -159,9 +175,11 @@ static void AL_Shutdown(void)
         s_underwater_filter = 0;
     }
 
-    s_underwater_flag = false;
-    s_underwater_gain_hf->changed = NULL;
     s_volume->changed = NULL;
+    s_doppler_factor->changed = NULL;
+    s_speed_of_sound->changed = NULL;
+    s_underwater_gain_hf->changed = NULL;
+    s_underwater_flag = false;
 
     QAL_Shutdown();
 }
@@ -257,14 +275,19 @@ static void AL_Spatialize(channel_t *ch)
         } else if (ch->fixed_origin) {
             qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(ch->origin));
         }
+        if (ch->fixed_origin || fullvolume) {
+            qalSource3f(ch->srcnum, AL_VELOCITY, 0, 0, 0);
+        }
         ch->fullvolume = fullvolume;
     }
 
     // update position if needed
     if (!ch->fixed_origin && !ch->fullvolume) {
-        vec3_t origin;
-        S_GetEntityOrigin(ch->entnum, origin);
-        qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(origin));
+        const sound_entity_t *ent = S_FindEntity(ch->entnum);
+        if (ent) {
+            qalSource3f(ch->srcnum, AL_POSITION, AL_UnpackVector(ent->origin));
+            qalSource3f(ch->srcnum, AL_VELOCITY, AL_UnpackVector(ent->velocity));
+        }
     }
 }
 
@@ -322,7 +345,7 @@ static void AL_MergeLoopSounds(void)
     channel_t   *ch;
     sfx_t       *sfx;
     sfxcache_t  *sc;
-    vec3_t      origin;
+    sound_entity_t *ent;
 
     for (i = 0; i < s_numloopsounds; i++) {
         loop = &s_loopsounds[i];
@@ -334,9 +357,12 @@ static void AL_MergeLoopSounds(void)
         if (!sc)
             continue;
 
+        ent = S_FindEntity(loop->entnum);
+        if (!ent)
+            continue;
+
         // find the total contribution of all sounds of this type
-        S_GetEntityOrigin(loop->entnum, origin);
-        S_SpatializeOrigin(origin, loop->volume, loop->dist_mult,
+        S_SpatializeOrigin(ent->origin, loop->volume, loop->dist_mult,
                            &left_total, &right_total, loop->stereo_pan);
         for (j = i + 1; j < s_numloopsounds; j++) {
             other = &s_loopsounds[j];
@@ -345,8 +371,10 @@ static void AL_MergeLoopSounds(void)
             // don't check this again later
             other->framecount = s_framecount;
 
-            S_GetEntityOrigin(other->entnum, origin);
-            S_SpatializeOrigin(origin, other->volume, other->dist_mult,
+            ent = S_FindEntity(other->entnum);
+            if (!ent)
+                continue;
+            S_SpatializeOrigin(ent->origin, other->volume, other->dist_mult,
                                &left, &right, other->stereo_pan);
             left_total += left;
             right_total += right;
@@ -388,6 +416,7 @@ static void AL_MergeLoopSounds(void)
         qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, 0.0f);
         qalSourcef(ch->srcnum, AL_GAIN, gain);
         qalSource3f(ch->srcnum, AL_POSITION, pan, 0.0f, pan2);
+        qalSource3f(ch->srcnum, AL_VELOCITY, 0, 0, 0);
 
         ch->autosound = AUTOSOUND_MERGED;   // remove next frame
         ch->autoframe = s_framecount;
@@ -581,9 +610,10 @@ static void AL_Update(void)
     ALfloat     orientation[6];
 
     // set listener parameters
-    qalListener3f(AL_POSITION, AL_UnpackVector(listener_origin));
-    AL_CopyVector(listener_forward, orientation);
-    AL_CopyVector(listener_up, orientation + 3);
+    qalListener3f(AL_POSITION, AL_UnpackVector(s_listener.origin));
+    qalListener3f(AL_VELOCITY, AL_UnpackVector(s_listener.velocity));
+    AL_CopyVector(s_listener.v_forward, orientation);
+    AL_CopyVector(s_listener.v_up, orientation + 3);
     qalListenerfv(AL_ORIENTATION, orientation);
 
     AL_UpdateUnderWater();

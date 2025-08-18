@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "shared/sound.h"
+
 void S_Init(void);
 void S_Shutdown(void);
 
@@ -38,8 +40,8 @@ static inline void S_StartBackgroundTrack(const char *track) { }
 static inline void S_StopBackgroundTrack(void) { }
 #endif
 
-void S_UpdateEntity(unsigned entnum, const vec3_t origin);
-void S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater);
+void S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+void S_UpdateListener(const listener_t *listener);
 
 void S_FreeAllSounds(void);
 void S_StopAllSounds(void);

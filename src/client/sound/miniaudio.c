@@ -39,6 +39,11 @@ static void s_volume_changed(cvar_t *self)
     ma_engine_set_volume(&engine, self->value);
 }
 
+static void s_speed_of_sound_changed(cvar_t *self)
+{
+    ma_spatializer_listener_set_speed_of_sound(&engine.listeners[0], self->value);
+}
+
 static ma_hishelf_config underwater_filter_config(cvar_t *self)
 {
     float gain = log10f(Cvar_ClampValue(self, 0.001f, 1)) * 40;
@@ -105,6 +110,9 @@ static bool MA_Init(void)
     s_volume->changed = s_volume_changed;
     s_volume_changed(s_volume);
 
+    s_speed_of_sound->changed = s_speed_of_sound_changed;
+    s_speed_of_sound_changed(s_speed_of_sound);
+
     s_underwater_gain_hf->changed = s_underwater_gain_hf_changed;
 
     return true;
@@ -131,6 +139,7 @@ static void MA_Shutdown(void)
     ma_engine_uninit(&engine);
 
     s_volume->changed = NULL;
+    s_speed_of_sound->changed = NULL;
     s_underwater_gain_hf->changed = NULL;
 }
 
@@ -204,9 +213,11 @@ static void MA_Spatialize(channel_t *ch)
 
     // update position if needed
     if (!ch->fixed_origin && !ch->fullvolume) {
-        vec3_t origin;
-        S_GetEntityOrigin(ch->entnum, origin);
-        ma_sound_set_position(&ch->sound, MA_UnpackVector(origin));
+        const sound_entity_t *ent = S_FindEntity(ch->entnum);
+        if (ent) {
+            ma_sound_set_position(&ch->sound, MA_UnpackVector(ent->origin));
+            ma_sound_set_velocity(&ch->sound, MA_UnpackVector(ent->velocity));
+        }
     }
 }
 
@@ -253,6 +264,7 @@ static void MA_PlayChannel(channel_t *ch)
         ma_sound_set_max_distance(&ch->sound, SOUND_FULLVOLUME + 1.0f / ch->dist_mult);
         if (ch->fixed_origin)
             ma_sound_set_position(&ch->sound, MA_UnpackVector(ch->origin));
+        ma_sound_set_doppler_factor(&ch->sound, s_doppler_factor->value);
         ch->fullvolume = -1; // force update
     } else {
         ch->fullvolume = 1;
@@ -442,7 +454,7 @@ static void MA_MergeLoopSounds(void)
     channel_t   *ch;
     sfx_t       *sfx;
     sfxcache_t  *sc;
-    vec3_t      origin;
+    sound_entity_t *ent;
 
     for (i = 0; i < s_numloopsounds; i++) {
         loop = &s_loopsounds[i];
@@ -454,9 +466,12 @@ static void MA_MergeLoopSounds(void)
         if (!sc)
             continue;
 
+        ent = S_FindEntity(loop->entnum);
+        if (!ent)
+            continue;
+
         // find the total contribution of all sounds of this type
-        S_GetEntityOrigin(loop->entnum, origin);
-        S_SpatializeOrigin(origin, loop->volume, loop->dist_mult,
+        S_SpatializeOrigin(ent->origin, loop->volume, loop->dist_mult,
                            &left_total, &right_total, loop->stereo_pan);
         for (j = i + 1; j < s_numloopsounds; j++) {
             other = &s_loopsounds[j];
@@ -465,8 +480,10 @@ static void MA_MergeLoopSounds(void)
             // don't check this again later
             other->framecount = s_framecount;
 
-            S_GetEntityOrigin(other->entnum, origin);
-            S_SpatializeOrigin(origin, other->volume, other->dist_mult,
+            ent = S_FindEntity(other->entnum);
+            if (!ent)
+                continue;
+            S_SpatializeOrigin(ent->origin, other->volume, other->dist_mult,
                                &left, &right, other->stereo_pan);
             left_total += left;
             right_total += right;
@@ -553,9 +570,10 @@ static void MA_Update(void)
     channel_t   *ch;
 
     // set listener parameters
-    ma_engine_listener_set_position(&engine, 0, MA_UnpackVector(listener_origin));
-    ma_engine_listener_set_direction(&engine, 0, MA_UnpackVector(listener_forward));
-    ma_engine_listener_set_world_up(&engine, 0, MA_UnpackVector(listener_up));
+    ma_engine_listener_set_position (&engine, 0, MA_UnpackVector(s_listener.origin));
+    ma_engine_listener_set_velocity (&engine, 0, MA_UnpackVector(s_listener.velocity));
+    ma_engine_listener_set_direction(&engine, 0, MA_UnpackVector(s_listener.v_forward));
+    ma_engine_listener_set_world_up (&engine, 0, MA_UnpackVector(s_listener.v_up));
 
     MA_UpdateUnderWater();
 

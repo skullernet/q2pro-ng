@@ -134,8 +134,8 @@ void trap_S_ClearLoopingSounds(void);
 void trap_S_AddLoopingSound(unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
 void trap_S_StartBackgroundTrack(const char *track);
 void trap_S_StopBackgroundTrack(void);
-void trap_S_UpdateEntity(unsigned entnum, const vec3_t origin);
-void trap_S_UpdateListener(unsigned entnum, const vec3_t origin, const vec3_t axis[3], bool underwater);
+void trap_S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+void trap_S_UpdateListener(const listener_t *listener);
 
 int64_t trap_FS_OpenFile(const char *path, qhandle_t *f, unsigned mode);
 int trap_FS_CloseFile(qhandle_t f);

@@ -409,6 +409,7 @@ extern vm_cvar_t    cg_chat_sound;
 extern vm_cvar_t    cg_gibs;
 extern vm_cvar_t    cg_flares;
 extern vm_cvar_t    cg_shadowlights;
+extern vm_cvar_t    cg_loopsounds;
 
 extern vm_cvar_t    cg_thirdperson;
 extern vm_cvar_t    cg_thirdperson_angle;
@@ -430,8 +431,6 @@ extern vm_cvar_t    cg_railspiral_radius;
 extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
 extern vm_cvar_t    com_timedemo;
-
-extern vm_cvar_t    s_ambient;
 
 //
 // userinfo

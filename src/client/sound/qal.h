@@ -39,6 +39,7 @@ QALAPI LPALDELETEBUFFERS qalDeleteBuffers;
 QALAPI LPALDELETESOURCES qalDeleteSources;
 QALAPI LPALDISABLE qalDisable;
 QALAPI LPALDISTANCEMODEL qalDistanceModel;
+QALAPI LPALDOPPLERFACTOR qalDopplerFactor;
 QALAPI LPALENABLE qalEnable;
 QALAPI LPALGENBUFFERS qalGenBuffers;
 QALAPI LPALGENSOURCES qalGenSources;
@@ -60,6 +61,7 @@ QALAPI LPALSOURCESTOP qalSourceStop;
 QALAPI LPALSOURCEUNQUEUEBUFFERS qalSourceUnqueueBuffers;
 QALAPI LPALSOURCEF qalSourcef;
 QALAPI LPALSOURCEI qalSourcei;
+QALAPI LPALSPEEDOFSOUND qalSpeedOfSound;
 
 // ALC_EXT_EFX
 QALAPI LPALDELETEFILTERS qalDeleteFilters;
@@ -67,6 +69,12 @@ QALAPI LPALFILTERF qalFilterf;
 QALAPI LPALFILTERI qalFilteri;
 QALAPI LPALGENFILTERS qalGenFilters;
 
-int QAL_Init(void);
+typedef enum {
+    QAL_INIT_FAILED,
+    QAL_INIT_STEREO,
+    QAL_INIT_UNKNOWN
+} qal_initstat_t;
+
+qal_initstat_t QAL_Init(void);
 void QAL_Shutdown(void);
 int QAL_GetSampleRate(void);

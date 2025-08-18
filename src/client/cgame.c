@@ -609,11 +609,11 @@ VM_THUNK(S_StopBackgroundTrack) {
 }
 
 VM_THUNK(S_UpdateEntity) {
-    S_UpdateEntity(VM_U32(0), VM_VEC3(1));
+    S_UpdateEntity(VM_U32(0), VM_VEC3(1), VM_VEC3(2));
 }
 
 VM_THUNK(S_UpdateListener) {
-    S_UpdateListener(VM_U32(0), VM_VEC3(1), VM_PTR_CNT(2, vec3_t, 3), VM_U32(3));
+    S_UpdateListener(VM_PTR(0, listener_t));
 }
 
 VM_THUNK(FS_OpenFile) {
@@ -823,8 +823,8 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(S_AddLoopingSound, "iiffi"),
     VM_IMPORT(S_StartBackgroundTrack, "i"),
     VM_IMPORT(S_StopBackgroundTrack, ""),
-    VM_IMPORT(S_UpdateEntity, "ii"),
-    VM_IMPORT(S_UpdateListener, "iiii"),
+    VM_IMPORT(S_UpdateEntity, "iii"),
+    VM_IMPORT(S_UpdateListener, "i"),
     VM_IMPORT(FS_OpenFile, "I iii"),
     VM_IMPORT(FS_CloseFile, "i i"),
     VM_IMPORT(FS_ReadFile, "i iii"),

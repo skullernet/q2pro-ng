@@ -579,9 +579,16 @@ static void CG_CalcViewValues(void)
 
     CG_ScreenEffects();
 
-    vec3_t axis[3];
-    AnglesToAxis(cg.refdef.viewangles, axis);
-    trap_S_UpdateListener(cg.frame->ps.clientnum, cg.refdef.vieworg, axis, cg.refdef.rdflags & RDF_UNDERWATER);
+    // update listener
+    listener_t listener = {
+        .entnum     = ps->clientnum,
+        .origin     = VectorInit(cg.refdef.vieworg),
+        .velocity   = VectorInit(cg.predicted_ps.velocity),
+        .v_forward  = VectorInit(cg.v_forward),
+        .v_up       = VectorInit(cg.v_up),
+        .underwater = cg.refdef.rdflags & RDF_UNDERWATER,
+    };
+    trap_S_UpdateListener(&listener);
 }
 
 /*

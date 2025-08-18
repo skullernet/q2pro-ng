@@ -22,7 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../client.h"
 #include "common/list.h"
-#include "common/hash_map.h"
 
 #if USE_MINIAUDIO
 #include <miniaudio.h>
@@ -129,6 +128,11 @@ typedef struct {
     byte        *data;
 } wavinfo_t;
 
+typedef struct {
+    vec3_t origin;
+    vec3_t velocity;
+} sound_entity_t;
+
 /*
 ====================================================================
 
@@ -188,33 +192,28 @@ extern int          s_numchannels;
 extern loopsound_t  s_loopsounds[MAX_PACKET_ENTITIES];
 extern int          s_numloopsounds;
 
-extern hash_map_t   *s_entities;
-
 extern unsigned     s_framecount;
 
 extern wavinfo_t    s_info;
 
-extern vec3_t   listener_origin;
-extern vec3_t   listener_forward;
-extern vec3_t   listener_right;
-extern vec3_t   listener_up;
-extern int      listener_entnum;
-extern bool     listener_underwater;
+extern listener_t   s_listener;
+extern vec3_t       s_listener_right;
 
 extern cvar_t       *s_volume;
-extern cvar_t       *s_ambient;
 #if USE_DEBUG
 extern cvar_t       *s_show;
 #endif
 extern cvar_t       *s_underwater;
 extern cvar_t       *s_underwater_gain_hf;
 extern cvar_t       *s_merge_looping;
+extern cvar_t       *s_doppler_factor;
+extern cvar_t       *s_speed_of_sound;
 
 #define S_IsFullVolume(ch) \
-    ((ch)->entnum == -1 || (ch)->entnum == listener_entnum || (ch)->dist_mult == 0)
+    ((ch)->entnum == -1 || (ch)->entnum == s_listener.entnum || (ch)->dist_mult == 0)
 
 #define S_IsUnderWater() \
-    (cls.state == ca_active && listener_underwater && s_underwater->integer)
+    (cls.state == ca_active && s_listener.underwater && s_underwater->integer)
 
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
@@ -223,5 +222,5 @@ sfx_t *S_SfxForHandle(qhandle_t hSfx);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx);
-void S_GetEntityOrigin(unsigned entnum, vec3_t origin);
+sound_entity_t *S_FindEntity(unsigned entnum);
 void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);

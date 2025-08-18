@@ -467,6 +467,7 @@ CL_ClearState
 void CL_ClearState(void)
 {
     S_StopAllSounds();
+    S_UpdateListener(&(listener_t){0});
     SCR_StopCinematic();
     R_ClearScene();
     CL_FreeDemoSnapshots();

@@ -58,6 +58,7 @@ vm_cvar_t   cg_thirdperson_range;
 vm_cvar_t   cg_gibs;
 vm_cvar_t   cg_flares;
 vm_cvar_t   cg_shadowlights;
+vm_cvar_t   cg_loopsounds;
 vm_cvar_t   cg_vwep;
 vm_cvar_t   cg_disable_particles;
 vm_cvar_t   cg_disable_explosions;
@@ -80,7 +81,6 @@ vm_cvar_t   cg_railspiral_radius;
 vm_cvar_t   cl_paused;
 vm_cvar_t   sv_paused;
 vm_cvar_t   com_timedemo;
-vm_cvar_t   s_ambient;
 vm_cvar_t   info_hand;
 vm_cvar_t   info_fov;
 vm_cvar_t   info_uf;
@@ -119,6 +119,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_gibs, "1", 0),
     VM_CVAR(cg_flares, "1", 0),
     VM_CVAR(cg_shadowlights, "1", 0),
+    VM_CVAR(cg_loopsounds, "1", 0),
     VM_CVAR(cg_vwep, "1", CVAR_ARCHIVE),
     VM_CVAR(cg_chat_notify, "1", 0),
     VM_CVAR(cg_chat_sound, "1", 0),
@@ -136,7 +137,6 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_railspiral_radius, "3", 0),
     VM_CVAR(cl_paused, "0", CVAR_ROM),
     VM_CVAR(sv_paused, "0", CVAR_ROM),
-    VM_CVAR(s_ambient, "1", 0),
 
     { &com_timedemo, "timedemo", "0", CVAR_CHEAT },
     { &info_hand, "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE },
