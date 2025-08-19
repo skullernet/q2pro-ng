@@ -24,6 +24,7 @@ static void CG_SetActiveState(void)
     cg.oldframe = cg.frame;
     cg.weapon.prev_frame = cg.frame->ps.gunframe;
     cg.time = cg.frame->servertime;
+    cg.reverb_time = cg.time + REVERB_TIME;
 
     // set initial cg.predicted_ps
     cg.predicted_ps = cg.frame->ps;

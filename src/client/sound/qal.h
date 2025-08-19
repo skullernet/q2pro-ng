@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <AL/al.h>
 #include <AL/alext.h>
 #include <AL/efx.h>
+#include <AL/efx-presets.h>
 
 #ifndef QALAPI
 #define QALAPI extern
@@ -54,6 +55,7 @@ QALAPI LPALLISTENER3F qalListener3f;
 QALAPI LPALLISTENERF qalListenerf;
 QALAPI LPALLISTENERFV qalListenerfv;
 QALAPI LPALSOURCE3F qalSource3f;
+QALAPI LPALSOURCE3I qalSource3i;
 QALAPI LPALSOURCEPAUSE qalSourcePause;
 QALAPI LPALSOURCEPLAY qalSourcePlay;
 QALAPI LPALSOURCEQUEUEBUFFERS qalSourceQueueBuffers;
@@ -64,9 +66,19 @@ QALAPI LPALSOURCEI qalSourcei;
 QALAPI LPALSPEEDOFSOUND qalSpeedOfSound;
 
 // ALC_EXT_EFX
+QALAPI LPALAUXILIARYEFFECTSLOTF qalAuxiliaryEffectSlotf;
+QALAPI LPALAUXILIARYEFFECTSLOTI qalAuxiliaryEffectSloti;
+QALAPI LPALDELETEAUXILIARYEFFECTSLOTS qalDeleteAuxiliaryEffectSlots;
+QALAPI LPALDELETEEFFECTS qalDeleteEffects;
 QALAPI LPALDELETEFILTERS qalDeleteFilters;
+QALAPI LPALEFFECTF qalEffectf;
+QALAPI LPALEFFECTFV qalEffectfv;
+QALAPI LPALEFFECTI qalEffecti;
+QALAPI LPALEFFECTIV qalEffectiv;
 QALAPI LPALFILTERF qalFilterf;
 QALAPI LPALFILTERI qalFilteri;
+QALAPI LPALGENAUXILIARYEFFECTSLOTS qalGenAuxiliaryEffectSlots;
+QALAPI LPALGENEFFECTS qalGenEffects;
 QALAPI LPALGENFILTERS qalGenFilters;
 
 typedef enum {

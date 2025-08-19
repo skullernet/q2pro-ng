@@ -208,6 +208,7 @@ extern cvar_t       *s_underwater_gain_hf;
 extern cvar_t       *s_merge_looping;
 extern cvar_t       *s_doppler_factor;
 extern cvar_t       *s_speed_of_sound;
+extern cvar_t       *s_reverb;
 
 #define S_IsFullVolume(ch) \
     ((ch)->entnum == -1 || (ch)->entnum == s_listener.entnum || (ch)->dist_mult == 0)

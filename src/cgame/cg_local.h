@@ -68,6 +68,11 @@ extern centity_t    cg_entities[MAX_EDICTS];
 
 #define MAX_STEP    32
 
+#define SIZE_PROBES     14
+#define SIZE_PROBE_TIME (REVERB_TIME / SIZE_PROBES)
+
+#define REVERB_TIME 1000
+
 //
 // the cgame_state_t structure contains transient data from server. it
 // is wiped completely at every time reset or demo seek.
@@ -173,6 +178,17 @@ typedef struct {
     int         powerup_wheel_select;
 
     int         mouse_x, mouse_y;
+
+    vec3_t      size_probes[SIZE_PROBES];
+    int         size_probe_index;
+    int         size_probe_time;
+    int         size_probe_ground_surf;
+
+    int         reverb_time;
+    int         reverb_index;
+    bool        reverb_lerp;
+
+    listener_t  listener;
 } cgame_state_t;
 
 extern cgame_state_t    cg;
@@ -430,6 +446,7 @@ extern vm_cvar_t    cg_railspiral_radius;
 
 extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
+extern vm_cvar_t    s_reverb;
 extern vm_cvar_t    com_timedemo;
 
 //

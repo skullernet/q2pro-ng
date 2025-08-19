@@ -80,6 +80,7 @@ vm_cvar_t   cg_railspiral_color;
 vm_cvar_t   cg_railspiral_radius;
 vm_cvar_t   cl_paused;
 vm_cvar_t   sv_paused;
+vm_cvar_t   s_reverb;
 vm_cvar_t   com_timedemo;
 vm_cvar_t   info_hand;
 vm_cvar_t   info_fov;
@@ -137,6 +138,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_railspiral_radius, "3", 0),
     VM_CVAR(cl_paused, "0", CVAR_ROM),
     VM_CVAR(sv_paused, "0", CVAR_ROM),
+    VM_CVAR(s_reverb, "1", 0),
 
     { &com_timedemo, "timedemo", "0", CVAR_CHEAT },
     { &info_hand, "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE },

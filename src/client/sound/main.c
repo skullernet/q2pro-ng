@@ -68,6 +68,7 @@ cvar_t      *s_underwater_gain_hf;
 cvar_t      *s_merge_looping;
 cvar_t      *s_doppler_factor;
 cvar_t      *s_speed_of_sound;
+cvar_t      *s_reverb;
 
 static cvar_t   *s_enable;
 static cvar_t   *s_auto_focus;
@@ -168,6 +169,7 @@ void S_Init(void)
     s_merge_looping = Cvar_Get("s_merge_looping", "1", 0);
     s_doppler_factor = Cvar_Get("s_doppler_factor", "1", 0);
     s_speed_of_sound = Cvar_Get("s_speed_of_sound", "10000", 0);
+    s_reverb = Cvar_Get("s_reverb", "1", 0);
 
     // start one of available sound engines
     s_started = SS_NOT;

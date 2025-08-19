@@ -463,13 +463,120 @@ static void CG_ScreenEffects(void)
         G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, cg.refdef.screen_blend);
 }
 
+#define S 0.57735f
+
+static const vec3_t size_probe_dirs[SIZE_PROBES] = {
+    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 },
+    {-1, 0, 0 }, { 0,-1, 0 }, { 0, 0,-1 },
+    { S, S, S }, {-S, S, S }, { S,-S, S }, {-S,-S, S },
+    { S, S,-S }, {-S, S,-S }, { S,-S,-S }, {-S,-S,-S },
+};
+
+#undef S
+
+static void CG_RunSizeProbes(void)
+{
+    vec3_t end;
+    trace_t tr;
+
+    if (cg.time < cg.size_probe_time)
+        return;
+
+    VectorMA(cg.refdef.vieworg, 8192, size_probe_dirs[cg.size_probe_index], end);
+    CG_Trace(&tr, cg.refdef.vieworg, NULL, NULL, end, ENTITYNUM_NONE, MASK_SOLID);
+    VectorSubtract(tr.endpos, cg.refdef.vieworg, cg.size_probes[cg.size_probe_index]);
+
+    if (cg.size_probe_index == 2 && (tr.surface_flags & SURF_SKY))
+        cg.size_probes[cg.size_probe_index][2] += 4096;
+    if (cg.size_probe_index == 5)
+        cg.size_probe_ground_surf = tr.surface_id;
+
+    cg.size_probe_index = (cg.size_probe_index + 1) % SIZE_PROBES;
+    cg.size_probe_time = cg.time + SIZE_PROBE_TIME;
+}
+
+static void CG_UpdateReverb(void)
+{
+    vec3_t mins, maxs, size;
+    reverb_preset_t preset;
+    surface_info_t info;
+    float len;
+
+    if (!s_reverb.integer)
+        return;
+
+    CG_RunSizeProbes();
+
+    if (cg.time < cg.reverb_time) {
+        if (cg.reverb_lerp) {
+            float lerp = 1.0f - (float)(cg.reverb_time - cg.time) / REVERB_TIME;
+            cg.listener.reverb[cg.reverb_index    ].gain = lerp;
+            cg.listener.reverb[cg.reverb_index ^ 1].gain = 1.0f - lerp;
+        }
+        return;
+    }
+
+    ClearBounds(mins, maxs);
+    for (int i = 0; i < SIZE_PROBES; i++)
+        AddPointToBounds(cg.size_probes[i], mins, maxs);
+
+    VectorSubtract(maxs, mins, size);
+    len = VectorLength(size);
+
+    // hardcoded, not going to parse json shit for this
+    if (len <= 200) {
+        preset = REVERB_PRESET_SEWERPIPE;
+    } else if (len <= 500) {
+        trap_GetSurfaceInfo(cg.size_probe_ground_surf, &info);
+        if (!strcmp(info.material, "boot") ||
+            !strcmp(info.material, "mech") ||
+            !strcmp(info.material, "clank"))
+            preset = REVERB_PRESET_STONEROOM;
+        else if (!strcmp(info.material, "grass") ||
+                 !strcmp(info.material, "flesh") ||
+                 !strcmp(info.material, "water") ||
+                 !strcmp(info.material, "snow"))
+            preset = REVERB_PRESET_ROOM;
+        else
+            preset = REVERB_PRESET_LIVINGROOM;
+    } else if (len <= 900) {
+        trap_GetSurfaceInfo(cg.size_probe_ground_surf, &info);
+        if (!strcmp(info.material, "grass") ||
+            !strcmp(info.material, "flesh") ||
+            !strcmp(info.material, "water") ||
+            !strcmp(info.material, "snow"))
+            preset = REVERB_PRESET_ARENA;
+        else
+            preset = REVERB_PRESET_HANGAR;
+    } else if (len <= 1200) {
+        preset = REVERB_PRESET_AUDITORIUM;
+    } else if (len <= 1600) {
+        preset = REVERB_PRESET_CONCERTHALL;
+    } else if (len <= 2000) {
+        preset = REVERB_PRESET_CITY;
+    } else {
+        preset = REVERB_PRESET_PLAIN;
+    }
+
+    cg.reverb_lerp = false;
+    cg.listener.reverb[cg.reverb_index    ].gain   = 1.0f;
+    cg.listener.reverb[cg.reverb_index ^ 1].preset = REVERB_PRESET_NONE;
+
+    if (preset != cg.listener.reverb[cg.reverb_index].preset) {
+        cg.reverb_lerp = true;
+        cg.reverb_index ^= 1;
+        cg.listener.reverb[cg.reverb_index].gain   = 0.0f;
+        cg.listener.reverb[cg.reverb_index].preset = preset;
+    }
+
+    cg.reverb_time = cg.time + REVERB_TIME;
+}
+
 /*
 ===============
 CG_CalcViewValues
 
 Sets cg.refdef view values and sound spatialization params.
-Usually called from CG_AddEntities, but may be directly called from the main
-loop if rendering is disabled but sound is running.
 ===============
 */
 static void CG_CalcViewValues(void)
@@ -580,15 +687,15 @@ static void CG_CalcViewValues(void)
     CG_ScreenEffects();
 
     // update listener
-    listener_t listener = {
-        .entnum     = ps->clientnum,
-        .origin     = VectorInit(cg.refdef.vieworg),
-        .velocity   = VectorInit(cg.predicted_ps.velocity),
-        .v_forward  = VectorInit(cg.v_forward),
-        .v_up       = VectorInit(cg.v_up),
-        .underwater = cg.refdef.rdflags & RDF_UNDERWATER,
-    };
-    trap_S_UpdateListener(&listener);
+    cg.listener.entnum = ps->clientnum;
+    VectorCopy(cg.refdef.vieworg, cg.listener.origin);
+    VectorCopy(cg.predicted_ps.velocity, cg.listener.velocity);
+    VectorCopy(cg.v_forward, cg.listener.v_forward);
+    VectorCopy(cg.v_up, cg.listener.v_up);
+    cg.listener.underwater = cg.refdef.rdflags & RDF_UNDERWATER;
+    CG_UpdateReverb();
+
+    trap_S_UpdateListener(&cg.listener);
 }
 
 /*

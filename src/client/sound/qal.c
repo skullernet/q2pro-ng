@@ -86,6 +86,7 @@ static const alsection_t sections[] = {
             QAL_FN(Listenerf),
             QAL_FN(Listenerfv),
             QAL_FN(Source3f),
+            QAL_FN(Source3i),
             QAL_FN(SourcePause),
             QAL_FN(SourcePlay),
             QAL_FN(SourceQueueBuffers),
@@ -100,9 +101,19 @@ static const alsection_t sections[] = {
     {
         .extension = "ALC_EXT_EFX",
         .functions = (const alfunction_t []) {
+            QAL_FN(AuxiliaryEffectSlotf),
+            QAL_FN(AuxiliaryEffectSloti),
+            QAL_FN(DeleteAuxiliaryEffectSlots),
+            QAL_FN(DeleteEffects),
             QAL_FN(DeleteFilters),
+            QAL_FN(Effectf),
+            QAL_FN(Effectfv),
+            QAL_FN(Effecti),
+            QAL_FN(Effectiv),
             QAL_FN(Filterf),
             QAL_FN(Filteri),
+            QAL_FN(GenAuxiliaryEffectSlots),
+            QAL_FN(GenEffects),
             QAL_FN(GenFilters),
             { NULL }
         }

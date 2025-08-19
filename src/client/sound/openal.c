@@ -37,6 +37,68 @@ static ALint        s_merge_looping_minval;
 static ALuint       s_underwater_filter;
 static bool         s_underwater_flag;
 
+static bool             s_reverb_supported;
+static ALuint           s_reverb_effects[2];
+static ALuint           s_reverb_slots[2];
+static reverb_preset_t  s_reverb_presets[2];
+
+static const EFXEAXREVERBPROPERTIES s_reverb_params[REVERB_PRESET_MAX - 1] = {
+    EFX_REVERB_PRESET_GENERIC,
+    EFX_REVERB_PRESET_PADDEDCELL,
+    EFX_REVERB_PRESET_ROOM,
+    EFX_REVERB_PRESET_BATHROOM,
+    EFX_REVERB_PRESET_LIVINGROOM,
+    EFX_REVERB_PRESET_STONEROOM,
+    EFX_REVERB_PRESET_AUDITORIUM,
+    EFX_REVERB_PRESET_CONCERTHALL,
+    EFX_REVERB_PRESET_CAVE,
+    EFX_REVERB_PRESET_ARENA,
+    EFX_REVERB_PRESET_HANGAR,
+    EFX_REVERB_PRESET_CARPETEDHALLWAY,
+    EFX_REVERB_PRESET_HALLWAY,
+    EFX_REVERB_PRESET_STONECORRIDOR,
+    EFX_REVERB_PRESET_ALLEY,
+    EFX_REVERB_PRESET_FOREST,
+    EFX_REVERB_PRESET_CITY,
+    EFX_REVERB_PRESET_MOUNTAINS,
+    EFX_REVERB_PRESET_QUARRY,
+    EFX_REVERB_PRESET_PLAIN,
+    EFX_REVERB_PRESET_PARKINGLOT,
+    EFX_REVERB_PRESET_SEWERPIPE,
+    EFX_REVERB_PRESET_UNDERWATER,
+    EFX_REVERB_PRESET_DRUGGED,
+    EFX_REVERB_PRESET_DIZZY,
+    EFX_REVERB_PRESET_PSYCHOTIC
+};
+
+static void AL_LoadEffect(ALuint effect, const EFXEAXREVERBPROPERTIES *reverb)
+{
+    qalEffecti(effect, AL_EFFECT_TYPE, AL_EFFECT_EAXREVERB);
+    qalEffectf(effect, AL_EAXREVERB_DENSITY, reverb->flDensity);
+    qalEffectf(effect, AL_EAXREVERB_DIFFUSION, reverb->flDiffusion);
+    qalEffectf(effect, AL_EAXREVERB_GAIN, reverb->flGain);
+    qalEffectf(effect, AL_EAXREVERB_GAINHF, reverb->flGainHF);
+    qalEffectf(effect, AL_EAXREVERB_GAINLF, reverb->flGainLF);
+    qalEffectf(effect, AL_EAXREVERB_DECAY_TIME, reverb->flDecayTime);
+    qalEffectf(effect, AL_EAXREVERB_DECAY_HFRATIO, reverb->flDecayHFRatio);
+    qalEffectf(effect, AL_EAXREVERB_DECAY_LFRATIO, reverb->flDecayLFRatio);
+    qalEffectf(effect, AL_EAXREVERB_REFLECTIONS_GAIN, reverb->flReflectionsGain);
+    qalEffectf(effect, AL_EAXREVERB_REFLECTIONS_DELAY, reverb->flReflectionsDelay);
+    qalEffectfv(effect, AL_EAXREVERB_REFLECTIONS_PAN, reverb->flReflectionsPan);
+    qalEffectf(effect, AL_EAXREVERB_LATE_REVERB_GAIN, reverb->flLateReverbGain);
+    qalEffectf(effect, AL_EAXREVERB_LATE_REVERB_DELAY, reverb->flLateReverbDelay);
+    qalEffectfv(effect, AL_EAXREVERB_LATE_REVERB_PAN, reverb->flLateReverbPan);
+    qalEffectf(effect, AL_EAXREVERB_ECHO_TIME, reverb->flEchoTime);
+    qalEffectf(effect, AL_EAXREVERB_ECHO_DEPTH, reverb->flEchoDepth);
+    qalEffectf(effect, AL_EAXREVERB_MODULATION_TIME, reverb->flModulationTime);
+    qalEffectf(effect, AL_EAXREVERB_MODULATION_DEPTH, reverb->flModulationDepth);
+    qalEffectf(effect, AL_EAXREVERB_AIR_ABSORPTION_GAINHF, reverb->flAirAbsorptionGainHF);
+    qalEffectf(effect, AL_EAXREVERB_HFREFERENCE, reverb->flHFReference);
+    qalEffectf(effect, AL_EAXREVERB_LFREFERENCE, reverb->flLFReference);
+    qalEffectf(effect, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, reverb->flRoomRolloffFactor);
+    qalEffecti(effect, AL_EAXREVERB_DECAY_HFLIMIT, reverb->iDecayHFLimit);
+}
+
 static void AL_StreamStop(void);
 static void AL_StopChannel(channel_t *ch);
 
@@ -143,6 +205,13 @@ static bool AL_Init(void)
         s_underwater_gain_hf_changed(s_underwater_gain_hf);
     }
 
+    // init reverb effect
+    if (qalGenEffects && qalGetEnumValue("AL_EFFECT_EAXREVERB")) {
+        qalGenEffects(2, s_reverb_effects);
+        qalGenAuxiliaryEffectSlots(2, s_reverb_slots);
+        s_reverb_supported = true;
+    }
+
     Com_Printf("OpenAL initialized.\n");
     return true;
 
@@ -173,6 +242,15 @@ static void AL_Shutdown(void)
     if (s_underwater_filter) {
         qalDeleteFilters(1, &s_underwater_filter);
         s_underwater_filter = 0;
+    }
+
+    if (s_reverb_supported) {
+        qalDeleteEffects(2, s_reverb_effects);
+        qalDeleteAuxiliaryEffectSlots(2, s_reverb_slots);
+        memset(s_reverb_effects, 0, sizeof(s_reverb_effects));
+        memset(s_reverb_slots, 0, sizeof(s_reverb_slots));
+        memset(s_reverb_presets, 0, sizeof(s_reverb_presets));
+        s_reverb_supported = false;
     }
 
     s_volume->changed = NULL;
@@ -307,6 +385,20 @@ static void AL_StopChannel(channel_t *ch)
     memset(ch, 0, sizeof(*ch));
 }
 
+static void AL_EnableReverb(channel_t *ch)
+{
+    if (!s_reverb_supported)
+        return;
+
+    if (s_reverb->integer) {
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, s_reverb_slots[0], 0, AL_FILTER_NULL);
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, s_reverb_slots[1], 1, AL_FILTER_NULL);
+    } else {
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, AL_EFFECT_NULL, 0, AL_FILTER_NULL);
+        qalSource3i(ch->srcnum, AL_AUXILIARY_SEND_FILTER, AL_EFFECT_NULL, 1, AL_FILTER_NULL);
+    }
+}
+
 static void AL_PlayChannel(channel_t *ch)
 {
     sfxcache_t *sc = ch->sfx->cache;
@@ -324,6 +416,8 @@ static void AL_PlayChannel(channel_t *ch)
     qalSourcef(ch->srcnum, AL_REFERENCE_DISTANCE, SOUND_FULLVOLUME);
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
     qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
+
+    AL_EnableReverb(ch);
 
     // force update
     ch->fullvolume = -1;
@@ -417,6 +511,8 @@ static void AL_MergeLoopSounds(void)
         qalSourcef(ch->srcnum, AL_GAIN, gain);
         qalSource3f(ch->srcnum, AL_POSITION, pan, 0.0f, pan2);
         qalSource3f(ch->srcnum, AL_VELOCITY, 0, 0, 0);
+
+        AL_EnableReverb(ch);
 
         ch->autosound = AUTOSOUND_MERGED;   // remove next frame
         ch->autoframe = s_framecount;
@@ -597,6 +693,32 @@ static void AL_UpdateUnderWater(void)
     s_underwater_flag = underwater;
 }
 
+static void AL_UpdateReverb(void)
+{
+    if (!s_reverb_supported || !s_reverb->integer)
+        return;
+
+    // blend two environments
+    for (int i = 0; i < 2; i++) {
+        reverb_preset_t preset = s_listener.reverb[i].preset;
+
+        if (preset)
+            qalAuxiliaryEffectSlotf(s_reverb_slots[i], AL_EFFECTSLOT_GAIN, s_listener.reverb[i].gain);
+
+        if (s_reverb_presets[i] == preset)
+            continue;
+
+        if (preset > REVERB_PRESET_NONE && preset < REVERB_PRESET_MAX) {
+            AL_LoadEffect(s_reverb_effects[i], &s_reverb_params[preset - 1]);
+            qalAuxiliaryEffectSloti(s_reverb_slots[i], AL_EFFECTSLOT_EFFECT, s_reverb_effects[i]);
+        } else {
+            qalAuxiliaryEffectSloti(s_reverb_slots[i], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+        }
+
+        s_reverb_presets[i] = preset;
+    }
+}
+
 static void AL_Activate(void)
 {
     S_StopAllSounds();
@@ -617,6 +739,8 @@ static void AL_Update(void)
     qalListenerfv(AL_ORIENTATION, orientation);
 
     AL_UpdateUnderWater();
+
+    AL_UpdateReverb();
 
     // update spatialization for dynamic sounds
     for (i = 0, ch = s_channels; i < s_numchannels; i++, ch++) {
