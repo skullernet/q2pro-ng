@@ -292,7 +292,8 @@ static vm_cmd_reg_t cg_consolecmds[] = {
     // forward to server commands
     { "players" }, { "score" }, { "help" },
     { "say", NULL, CG_Say_c }, { "say_team", NULL, CG_Say_c },
-    { "showsecrets" }, { "target" }, { "spawn" }, { "teleport" },
+    { "showsecrets" }, { "showmonsters" }, { "listmonsters" },
+    { "target" }, { "spawn" }, { "teleport" },
     { "wave" }, { "kill" }, { "use", NULL, CG_Item_c },
     { "drop", NULL, CG_Item_c }, { "give", NULL, CG_Item_c },
     { "god" }, { "notarget" }, { "noclip" }, { "immortal" },

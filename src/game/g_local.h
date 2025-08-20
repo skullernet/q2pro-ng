@@ -672,7 +672,6 @@ typedef struct {
     int found_goals;
 
     int total_monsters;
-    uint16_t monsters_registered[MAX_EDICTS]; // only for debug
     int killed_monsters;
 
     int num_edicts;
@@ -1168,7 +1167,6 @@ extern vm_cvar_t sv_rollangle;
 
 extern vm_cvar_t sv_cheats;
 extern vm_cvar_t g_debug_monster_paths;
-extern vm_cvar_t g_debug_monster_kills;
 extern vm_cvar_t maxspectators;
 
 extern vm_cvar_t flood_msgs;

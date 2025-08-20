@@ -559,25 +559,6 @@ void G_MonsterKilled(edict_t *self)
 
     if (coop.integer && self->enemy && self->enemy->client)
         self->enemy->client->resp.score++;
-
-    if (g_debug_monster_kills.integer) {
-        bool found = false;
-
-        for (int i = 0; i < level.total_monsters; i++) {
-            edict_t *ent = &g_edicts[level.monsters_registered[i]];
-            if (ent == self) {
-                level.monsters_registered[i] = ENTITYNUM_NONE;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found)
-            G_ClientPrintf(&g_edicts[0], PRINT_CENTER, "found missing monster?");
-
-        if (level.killed_monsters == level.total_monsters)
-            G_ClientPrintf(&g_edicts[0], PRINT_CENTER, "all monsters dead");
-    }
 }
 
 void M_ProcessPain(edict_t *e)
@@ -1018,12 +999,9 @@ bool monster_start(edict_t *self)
         self->monsterinfo.aiflags |= AI_DO_NOT_COUNT;
 
     // ROGUE
-    if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(self->spawnflags & SPAWNFLAG_MONSTER_DEAD)) {
+    if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(self->spawnflags & SPAWNFLAG_MONSTER_DEAD))
     // ROGUE
-        if (g_debug_monster_kills.integer)
-            level.monsters_registered[level.total_monsters] = self->s.number;
         level.total_monsters++;
-    }
 
     self->nextthink = level.time + FRAME_TIME;
     self->r.svflags |= SVF_MONSTER;

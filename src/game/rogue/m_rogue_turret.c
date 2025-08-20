@@ -926,11 +926,8 @@ void SP_monster_turret(edict_t *self)
         self->takedamage = false;
         self->use = turret_activate;
         turret_wall_spawn(self);
-        if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT)) {
-            if (g_debug_monster_kills.integer)
-                level.monsters_registered[level.total_monsters] = self->s.number;
+        if (!(self->monsterinfo.aiflags & AI_DO_NOT_COUNT))
             level.total_monsters++;
-        }
     } else {
         stationarymonster_start(self);
     }

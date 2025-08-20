@@ -1427,23 +1427,59 @@ static void Cmd_Switchteam_f(edict_t *ent)
 
 static void Cmd_ListMonsters_f(edict_t *ent)
 {
+    int monsters = 0;
+
     if (!G_CheatCheck(ent))
         return;
-    if (!g_debug_monster_kills.integer)
-        return;
 
-    for (int i = 0; i < level.total_monsters; i++) {
-        edict_t *e = &g_edicts[level.monsters_registered[i]];
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
+        edict_t *e = &g_edicts[i];
 
-        if (!e || !e->r.inuse)
+        if (!e->r.inuse)
             continue;
         if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
             continue;
         if (e->deadflag)
             continue;
 
-        G_Printf("%s\n", etos(e));
+        G_ClientPrintf(ent, PRINT_HIGH, "%s\n", etos(e));
+        monsters++;
     }
+
+    G_ClientPrintf(ent, PRINT_HIGH, "%d monsters listed\n", monsters);
+}
+
+static void Cmd_ShowMonsters_f(edict_t *ent)
+{
+    int monsters = 0;
+
+    if (game.maxclients > 1) {
+        G_ClientPrintf(ent, PRINT_HIGH, "Only possible in single player\n");
+        return;
+    }
+
+    trap_R_ClearDebugLines();
+
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
+        edict_t *e = &g_edicts[i];
+        uint32_t color;
+
+        if (!e->r.inuse)
+            continue;
+        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
+            continue;
+        if (e->deadflag)
+            continue;
+
+        if (e->r.svflags & SVF_NOCLIENT)
+            color = U32_BLUE;
+        else
+            color = U32_RED;
+        trap_R_AddDebugBounds(e->r.absmin, e->r.absmax, color, 10000, false);
+        monsters++;
+    }
+
+    G_ClientPrintf(ent, PRINT_HIGH, "%d monsters shown\n", monsters);
 }
 
 static void Cmd_ShowSecrets_f(edict_t *self)
@@ -1516,6 +1552,10 @@ q_exported void G_ClientCommand(int clientnum)
     }
     if (Q_strcasecmp(cmd, "listmonsters") == 0) {
         Cmd_ListMonsters_f(ent);
+        return;
+    }
+    if (Q_strcasecmp(cmd, "showmonsters") == 0) {
+        Cmd_ShowMonsters_f(ent);
         return;
     }
     if (Q_strcasecmp(cmd, "showsecrets") == 0) {
