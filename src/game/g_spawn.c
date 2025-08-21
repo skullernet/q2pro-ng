@@ -1143,7 +1143,7 @@ static void G_PrecacheStartItems(void)
         if (*token) {
             const gitem_t *item = FindItemByClassname(token);
 
-            if (!item || !item->pickup)
+            if (!item || (item->flags & IF_NOT_GIVEABLE))
                 G_Error("Invalid g_start_items entry: %s", token);
 
             PrecacheItem(item);

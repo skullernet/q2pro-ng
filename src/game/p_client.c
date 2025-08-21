@@ -729,7 +729,7 @@ static void Player_GiveStartItems(edict_t *ent, char *copy)
         if (*token) {
             const gitem_t *item = FindItemByClassname(token);
 
-            if (!item || !item->pickup)
+            if (!item || (item->flags & IF_NOT_GIVEABLE))
                 G_Error("Invalid g_start_item entry: %s", token);
 
             int count = 1;
@@ -740,13 +740,15 @@ static void Player_GiveStartItems(edict_t *ent, char *copy)
 
             if (count == 0) {
                 ent->client->pers.inventory[item->id] = 0;
-            } else {
+            } else if (item->pickup) {
                 edict_t *dummy = G_Spawn();
                 dummy->item = item;
                 dummy->count = count;
                 dummy->spawnflags |= SPAWNFLAG_ITEM_DROPPED;
                 item->pickup(dummy, ent);
                 G_FreeEdict(dummy);
+            } else {
+                ent->client->pers.inventory[item->id] = count;
             }
         }
 
@@ -889,6 +891,9 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
             if (!deathmatch.integer || !g_instagib.integer)
                 client->pers.inventory[IT_WEAPON_BLASTER] = 1;
 
+            if (!deathmatch.integer)
+                client->pers.inventory[IT_ITEM_COMPASS] = 1;
+
             // [Kex]
             // start items!
             char buffer[MAX_STRING_CHARS];
@@ -905,9 +910,6 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
                 Q_strlcpy(buffer, level.start_items, sizeof(buffer));
                 Player_GiveStartItems(ent, buffer);
             }
-
-            if (!deathmatch.integer)
-                client->pers.inventory[IT_ITEM_COMPASS] = 1;
 
             // power armor from start items
             G_CheckPowerArmor(ent);
