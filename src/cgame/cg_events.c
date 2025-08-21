@@ -200,6 +200,9 @@ void CG_RegisterTEntSounds(void)
     cgs.sounds.disrexp = trap_S_RegisterSound("weapons/disrupthit.wav");
     cgs.sounds.hit_marker = trap_S_RegisterSound("weapons/marker.wav");
     cgs.sounds.lowammo = trap_S_RegisterSound("weapons/lowammo.wav");
+    cgs.sounds.help_marker = trap_S_RegisterSound("misc/help_marker.wav");
+    cgs.sounds.talk[0] = trap_S_RegisterSound("misc/talk.wav");
+    cgs.sounds.talk[1] = trap_S_RegisterSound("misc/talk1.wav");
 
     CG_RegisterFootsteps();
 }
@@ -237,6 +240,7 @@ void CG_RegisterTEntModels(void)
     cgs.models.lightning = trap_R_RegisterModel("models/proj/lightning/tris.md2");
     cgs.models.heatbeam = trap_R_RegisterModel("models/proj/beam/tris.md2");
     cgs.models.shell = trap_R_RegisterModel("models/items/shell/tris.md2");
+    cgs.models.help_marker = trap_R_RegisterModel("models/objects/pointer/tris.md2");
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cgs.models.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
@@ -262,7 +266,8 @@ typedef struct {
         ex_flash,
         ex_mflash,
         ex_poly,
-        ex_light
+        ex_light,
+        ex_marker
     } type;
 
     entity_t    ent;
@@ -388,6 +393,32 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
         ex->ent.angles[2] = Q_rand() % 360;
 }
 
+void CG_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
+{
+    if (first) {
+        int i;
+        explosion_t *ex;
+
+        for (i = 0, ex = cg_explosions; i < MAX_EXPLOSIONS; i++, ex++) {
+            if (ex->type == ex_marker) {
+                ex->type = ex_free;
+                continue;
+            }
+        }
+    }
+
+    explosion_t *ex = CG_AllocExplosion();
+    VectorCopy(origin, ex->ent.origin);
+    ex->lightcolor[0] = origin[2] + 16.0f;
+    vectoangles(dir, ex->ent.angles);
+    ex->type = ex_marker;
+    ex->ent.flags = RF_NOSHADOW | RF_MINLIGHT | RF_TRANSLUCENT;
+    ex->ent.alpha = 1.0f;
+    ex->start = cg.time;
+    ex->ent.model = cgs.models.help_marker;
+    ex->ent.scale = 2.5f;
+}
+
 /*
 =================
 CG_SmokeAndFlash
@@ -426,14 +457,6 @@ static void CG_AddExplosions(void)
         if (ex->type == ex_free)
             continue;
 
-        if (ex->type == ex_mflash) {
-            if (cg.time - ex->start > 50)
-                ex->type = ex_free;
-            else
-                trap_R_AddEntity(&ex->ent);
-            continue;
-        }
-
         frac = (cg.time - ex->start) * BASE_1_FRAMETIME;
         f = floorf(frac);
 
@@ -444,21 +467,30 @@ static void CG_AddExplosions(void)
         case ex_light:
             if (f >= ex->frames - 1) {
                 ex->type = ex_free;
-                break;
+                continue;
             }
             ent->alpha = 1.0f - frac / (ex->frames - 1);
             break;
+
         case ex_flash:
             if (f >= 1) {
                 ex->type = ex_free;
-                break;
+                continue;
             }
             ent->alpha = 1.0f;
             break;
+
+        case ex_mflash:
+            if (cg.time - ex->start > 50)
+                ex->type = ex_free;
+            else
+                trap_R_AddEntity(ent);
+            continue;
+
         case ex_poly:
             if (f >= ex->frames - 1) {
                 ex->type = ex_free;
-                break;
+                continue;
             }
 
             if (cg_smooth_explosions.integer) {
@@ -481,20 +513,38 @@ static void CG_AddExplosions(void)
                     ent->skinnum = 6;
             }
             break;
+
+        case ex_marker:
+            frac = (cg.time - ex->start) / (cg_compass_time.value * 1000.0f);
+
+            if (frac > 1.0f) {
+                ex->type = ex_free;
+                continue;
+            }
+
+            ent->alpha = (1.0f - frac) * 0.5f;
+
+            frac = 1.0f - (cg.time - ex->start) / 1000.0f;
+
+            if (frac > 0) {
+                frac = frac * frac * frac * frac * frac;
+                ent->origin[2] = ex->lightcolor[0] + frac * 512.0f;
+            } else {
+                ent->origin[2] = ex->lightcolor[0];
+            }
+
+            trap_R_AddEntity(ent);
+            continue;
+
         default:
             Q_assert(!"bad type");
         }
-
-        if (ex->type == ex_free)
-            continue;
 
         if (ex->light)
             trap_R_AddSphereLight(ent->origin, ex->light * ent->alpha,
                                   ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
 
         if (ex->type != ex_light) {
-            VectorCopy(ent->origin, ent->oldorigin);
-
             if (f < 0)
                 f = 0;
             ent->frame = ex->baseframe + f + 1;

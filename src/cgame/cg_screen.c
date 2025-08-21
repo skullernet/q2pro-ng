@@ -63,6 +63,7 @@ static vm_cvar_t scr_centertime;
 static vm_cvar_t scr_printspeed;
 static vm_cvar_t scr_showpause;
 static vm_cvar_t scr_showfps;
+static vm_cvar_t scr_showpoi;
 
 static vm_cvar_t scr_draw2d;
 static vm_cvar_t scr_lag_x;
@@ -741,6 +742,7 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_viewsize, "viewsize", "100", CVAR_ARCHIVE },
     { &scr_showpause, "scr_showpause", "1", 0 },
     { &scr_showfps, "scr_showfps", "0", 0 },
+    { &scr_showpoi, "scr_showpoi", "1", 0 },
     { &scr_centertime, "scr_centertime", "2.5", 0 },
     { &scr_printspeed, "scr_printspeed", "16", 0 },
     { &scr_demobar, "scr_demobar", "1", 0 },
@@ -1683,6 +1685,133 @@ void CG_HidePowerupWheel_f(void)
     }
 }
 
+/*
+===============================================================================
+
+POI
+
+===============================================================================
+*/
+
+#define MAX_POIS    32
+
+typedef struct {
+    int         id, time;
+    vec3_t      pos;
+    qhandle_t   image;
+    int         width, height;
+    uint32_t    color;
+} scr_poi_t;
+
+static scr_poi_t scr_pois[MAX_POIS];
+
+void SCR_RemovePOI(int id)
+{
+    scr_poi_t *poi;
+    int i;
+
+    if (id == 0) {
+        memset(scr_pois, 0, sizeof(scr_pois));
+        return;
+    }
+
+    for (i = 0, poi = scr_pois; i < MAX_POIS; i++, poi++) {
+        if (poi->id == id) {
+            memset(poi, 0, sizeof(*poi));
+            break;
+        }
+    }
+}
+
+static scr_poi_t *SCR_AllocPOI(int id)
+{
+    scr_poi_t *poi, *oldest = NULL;
+    int i, oldest_time = INT_MAX;
+
+    for (i = 0, poi = scr_pois; i < MAX_POIS; i++, poi++) {
+        if (poi->id) {
+            if (poi->id == id)
+                return poi;
+            if (poi->time > cg.time)
+                continue;
+        }
+        if (poi->time < oldest_time) {
+            oldest_time = poi->time;
+            oldest = poi;
+        }
+    }
+
+    return oldest;
+}
+
+void SCR_AddPOI(int id, const vec3_t point, qhandle_t image, uint32_t color, int time)
+{
+    scr_poi_t *poi = SCR_AllocPOI(id);
+    if (!poi)
+        return;
+
+    poi->id = id;
+    poi->time = cg.time + time;
+    VectorCopy(point, poi->pos);
+    poi->image = image;
+    trap_R_GetPicSize(&poi->width, &poi->height, poi->image);
+    poi->color = color;
+}
+
+static void SCR_DrawPOIs(void)
+{
+    scr_poi_t *poi;
+    int i;
+
+    if (!scr_showpoi.integer)
+        return;
+    if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
+        return;
+
+    vec3_t viewaxis[3];
+    AnglesToAxis(cg.refdef.viewangles, viewaxis);
+
+    mat4_t projection, view, vp;
+    Matrix_Frustum(cg.refdef.fov_x, cg.refdef.fov_y, 2.0f, 8192.0f, projection);
+    Matrix_RotateForViewer(cg.refdef.vieworg, viewaxis, view);
+    Matrix_Multiply(projection, view, vp);
+
+    float scale = 0.5f / scr.hud_scale;
+    trap_R_SetAlpha(scr_alpha.value);
+
+    for (i = 0, poi = scr_pois; i < MAX_POIS; i++, poi++) {
+        if (poi->time <= cg.time)
+            continue;
+
+        vec4_t sp;
+        Matrix_TransformVector3(vp, poi->pos, sp);
+
+        float w = sp[3];
+        if (w)
+            VectorScale(sp, 1.0f / fabsf(w), sp);
+
+        float s =  sp[0] * 0.5f + 0.5f;
+        float t = -sp[1] * 0.5f + 0.5f;
+        if (w < 0)
+            s = s > 0.5f;
+
+        int x = s * scr_vrect.width;
+        int y = t * scr_vrect.height;
+
+        int pic_w = poi->width  * scale;
+        int pic_h = poi->height * scale;
+
+        x -= pic_w / 2;
+        y -= pic_h / 2;
+
+        x = scr_vrect.x + Q_clip(x, 0, scr_vrect.width  - pic_w);
+        y = scr_vrect.y + Q_clip(y, 0, scr_vrect.height - pic_h);
+
+        trap_R_SetColor24(poi->color);
+        trap_R_DrawStretchPic(x, y, pic_w, pic_h, poi->image);
+    }
+}
+
 //=============================================================================
 
 static void SCR_DrawFps(void)
@@ -1818,6 +1947,8 @@ static void SCR_Draw2D(void)
 
     if (trap_Key_GetDest() & KEY_MENU)
         return;
+
+    SCR_DrawPOIs();
 
     trap_R_SetScale(scr.hud_scale);
 

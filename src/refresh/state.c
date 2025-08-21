@@ -235,33 +235,7 @@ void GL_ArrayBits(glArrayBits_t bits)
 
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar)
 {
-    GLfloat width, height, depth;
-    GLfloat *matrix = gls.proj_matrix;
-
-    width  = xmax - xmin;
-    height = ymax - ymin;
-    depth  = zfar - znear;
-
-    matrix[ 0] = 2 / width;
-    matrix[ 4] = 0;
-    matrix[ 8] = 0;
-    matrix[12] = -(xmax + xmin) / width;
-
-    matrix[ 1] = 0;
-    matrix[ 5] = 2 / height;
-    matrix[ 9] = 0;
-    matrix[13] = -(ymax + ymin) / height;
-
-    matrix[ 2] = 0;
-    matrix[ 6] = 0;
-    matrix[10] = -2 / depth;
-    matrix[14] = -(zfar + znear) / depth;
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
-
+    Matrix_Ortho(xmin, xmax, ymin, ymax, znear, zfar, gls.proj_matrix);
     gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
@@ -294,77 +268,24 @@ void GL_Setup2D(void)
 
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 {
-    GLfloat xmin, xmax, ymin, ymax, zfar, znear;
-    GLfloat width, height, depth;
-    GLfloat *matrix = gls.proj_matrix;
-
-    znear = gl_znear->value;
+    GLfloat zfar;
 
     if (glr.fd.rdflags & RDF_NOWORLDMODEL)
         zfar = 2048;
     else
         zfar = gl_static.world.size * 2;
 
-    xmax = znear * tanf(fov_x * (M_PIf / 360));
-    xmin = -xmax;
-
-    ymax = znear * tanf(fov_y * (M_PIf / 360));
-    ymin = -ymax;
-
-    width  = xmax - xmin;
-    height = ymax - ymin;
-    depth  = zfar - znear;
-
-    matrix[ 0] = reflect_x * 2 * znear / width;
-    matrix[ 4] = 0;
-    matrix[ 8] = (xmax + xmin) / width;
-    matrix[12] = 0;
-
-    matrix[ 1] = 0;
-    matrix[ 5] = 2 * znear / height;
-    matrix[ 9] = (ymax + ymin) / height;
-    matrix[13] = 0;
-
-    matrix[ 2] = 0;
-    matrix[ 6] = 0;
-    matrix[10] = -(zfar + znear) / depth;
-    matrix[14] = -2 * zfar * znear / depth;
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = -1;
-    matrix[15] = 0;
+    Matrix_Frustum(fov_x, fov_y, gl_znear->value, zfar, gls.proj_matrix);
+    gls.proj_matrix[0] *= reflect_x;
 
     gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
 static void GL_RotateForViewer(void)
 {
-    GLfloat *matrix = glr.viewmatrix;
-
     AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
-
-    matrix[ 0] = -glr.viewaxis[1][0];
-    matrix[ 4] = -glr.viewaxis[1][1];
-    matrix[ 8] = -glr.viewaxis[1][2];
-    matrix[12] = DotProduct(glr.viewaxis[1], glr.fd.vieworg);
-
-    matrix[ 1] = glr.viewaxis[2][0];
-    matrix[ 5] = glr.viewaxis[2][1];
-    matrix[ 9] = glr.viewaxis[2][2];
-    matrix[13] = -DotProduct(glr.viewaxis[2], glr.fd.vieworg);
-
-    matrix[ 2] = -glr.viewaxis[0][0];
-    matrix[ 6] = -glr.viewaxis[0][1];
-    matrix[10] = -glr.viewaxis[0][2];
-    matrix[14] = DotProduct(glr.viewaxis[0], glr.fd.vieworg);
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
-
-    GL_ForceMatrix(matrix);
+    Matrix_RotateForViewer(glr.fd.vieworg, glr.viewaxis, glr.viewmatrix);
+    GL_ForceMatrix(glr.viewmatrix);
 }
 
 void GL_Setup3D(void)

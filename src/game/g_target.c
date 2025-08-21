@@ -1526,12 +1526,215 @@ it is killed.
 #define SPAWNFLAG_POI_DYNAMIC   4
 #define SPAWNFLAG_POI_DISABLED  8
 
+static float distance_to_poi(const vec3_t start, const vec3_t end)
+{
+    PathRequest request = {
+        .start = VectorInit(start),
+        .goal = VectorInit(end),
+        .moveDist = 64.0f,
+        .pathFlags = PathFlags_All,
+        .nodeSearch = {
+            .ignoreNodeFlags = true,
+            .minHeight = 128.0f,
+            .maxHeight = 128.0f,
+            .radius = 1024.0f
+        }
+    };
+
+    PathInfo info;
+    if (trap_GetPathToGoal(&request, &info, NULL, 0))
+        return info.pathDistSqr;
+
+    if (info.returnCode == PathReturnCode_NoNavAvailable)
+        return DistanceSquared(end, start);
+
+    return INFINITY;
+}
+
+#define DEBUG(...) \
+    do { if (g_debug_poi.integer) \
+        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
+
 void USE(target_poi_use)(edict_t *ent, edict_t *other, edict_t *activator)
 {
+    DEBUG("POI %s used by %s\n", etos(ent), etos(other));
+
+    // we were disabled, so remove the disable check
+    if (ent->spawnflags & SPAWNFLAG_POI_DISABLED) {
+        ent->spawnflags &= ~SPAWNFLAG_POI_DISABLED;
+        DEBUG(" - POI was disabled, made re-enabled\n");
+    }
+
+    // early stage check
+    if (ent->count && level.current_poi_stage > ent->count) {
+        DEBUG(" - POI count is %d, current stage %d, early exit\n", ent->count, level.current_poi_stage);
+        return;
+    }
+
+    // teamed POIs work a bit differently
+    if (ent->team) {
+        edict_t *poi_master = ent->teammaster;
+
+        DEBUG(" - teamed POI \"%s\"; master is %s\n", ent->team, etos(poi_master));
+
+        // unset ent, since we need to find one that matches
+        ent = NULL;
+
+        float best_distance = INFINITY;
+        int best_style = INT_MAX;
+
+        edict_t *dummy_fallback = NULL;
+        bool nearest = poi_master->spawnflags & SPAWNFLAG_POI_NEAREST;
+
+        for (edict_t *poi = poi_master; poi; poi = poi->teamchain) {
+            DEBUG("  - checking team member %s\n", etos(poi));
+
+            // currently disabled
+            if (poi->spawnflags & SPAWNFLAG_POI_DISABLED) {
+                DEBUG("  - disabled, skipping\n");
+                continue;
+            }
+
+            // ignore dummy POI
+            if (poi->spawnflags & SPAWNFLAG_POI_DUMMY) {
+                DEBUG("  - dummy, skipping (but storing as fallback)\n");
+                dummy_fallback = poi;
+                continue;
+            }
+
+            // POI is not part of current stage
+            if (poi->count && level.current_poi_stage > poi->count) {
+                DEBUG("  - staged POI; level stage %d = POI count %d, skipping\n", level.current_poi_stage, poi->count);
+                continue;
+            }
+
+            // POI isn't the right style
+            if (poi->style > best_style) {
+                DEBUG("  - style %d > current best style %d, skipping\n", poi->style, best_style);
+                continue;
+            }
+
+            float dist = distance_to_poi(activator->s.origin, poi->s.origin);
+            DEBUG("  - resolved distance as %f (used for nearest)\n", dist);
+
+            // we have one already and it's farther away, don't bother
+            if (nearest && ent && dist > best_distance) {
+                DEBUG("  - nearest used; distance > best distance of %f, skipping\n", best_distance);
+                continue;
+            }
+
+            // found a better style; overwrite dist
+            if (poi->style < best_style) {
+                DEBUG("  - style %d < current best style %d - potentially better pick\n", poi->style, best_style);
+
+                // unless we weren't reachable...
+                if (nearest && isinf(dist)) {
+                    DEBUG("  - not reachable; skipped\n");
+                    continue;
+                }
+
+                DEBUG("  - marked as current best due to style\n");
+
+                best_style = poi->style;
+                if (nearest)
+                    best_distance = dist;
+
+                ent = poi;
+                continue;
+            }
+
+            if (!nearest) {
+                // not picking by distance, so it's order of appearance
+                DEBUG("  - marked as current best due to order of appearance\n");
+                ent = poi;
+                continue;
+            }
+
+            // if we're picking by nearest, check distance
+            if (dist < best_distance) {
+                DEBUG("  - marked as current best due to distance\n");
+                best_distance = dist;
+                ent = poi;
+                continue;
+            }
+        }
+
+        // no valid POI found; this isn't always an error,
+        // some valid techniques may require this to happen.
+        if (!ent) {
+            if (dummy_fallback && dummy_fallback->spawnflags & SPAWNFLAG_POI_DYNAMIC) {
+                DEBUG(" - no valid POI found, but we had a dummy fallback\n");
+                ent = dummy_fallback;
+            } else {
+                DEBUG(" - no valid POI found, skipping\n");
+                return;
+            }
+        }
+
+        // copy over POI stage value
+        if (ent->count) {
+            if (level.current_poi_stage <= ent->count) {
+                level.current_poi_stage = ent->count;
+                DEBUG(" - current POI stage set to %d\n", ent->count);
+            }
+        }
+    } else {
+        DEBUG(" - non-teamed POI\n");
+
+        if (ent->count) {
+            if (level.current_poi_stage <= ent->count) {
+                level.current_poi_stage = ent->count;
+                DEBUG(" - level stage %d <= POI count %d, using new stage value\n", level.current_poi_stage, ent->count);
+            } else {
+                DEBUG(" - level stage %d > POI count %d, not part of current stage, skipping\n", level.current_poi_stage, ent->count);
+                return; // this POI is not part of our current stage
+            }
+        }
+    }
+
+    // dummy POI; not valid
+    if (!strcmp(ent->classname, "target_poi") && ent->spawnflags & SPAWNFLAG_POI_DUMMY && !(ent->spawnflags & SPAWNFLAG_POI_DYNAMIC)) {
+        DEBUG(" - POI is target_poi, dummy & not dynamic; not a valid POI\n");
+        return;
+    }
+
+    level.valid_poi = true;
+    VectorCopy(ent->s.origin, level.current_poi);
+    level.current_poi_image = ent->noise_index;
+    level.current_dynamic_poi = NULL;
+
+    DEBUG(" - got valid POI!\n");
+
+    if (!strcmp(ent->classname, "target_poi") && ent->spawnflags & SPAWNFLAG_POI_DYNAMIC) {
+        // pick the dummy POI, since it isn't supposed to get freed
+        // FIXME maybe store the team string instead?
+
+        for (edict_t *m = ent->teammaster; m; m = m->teamchain) {
+            if (m->spawnflags & SPAWNFLAG_POI_DUMMY) {
+                level.current_dynamic_poi = m;
+                DEBUG(" - setting dynamic POI\n");
+                break;
+            }
+        }
+
+        if (!level.current_dynamic_poi)
+            DEBUG("can't activate dynamic poi for %s; need DUMMY in chain\n", etos(ent));
+    }
 }
+
+#undef DEBUG
 
 void THINK(target_poi_setup)(edict_t *self)
 {
+    // copy dynamic/nearest over to all teammates
+    if (self->spawnflags & (SPAWNFLAG_POI_NEAREST | SPAWNFLAG_POI_DYNAMIC))
+        for (edict_t *m = self->teammaster; m; m = m->teamchain)
+            m->spawnflags |= self->spawnflags & (SPAWNFLAG_POI_NEAREST | SPAWNFLAG_POI_DYNAMIC);
+
+    for (edict_t *m = self->teammaster; m; m = m->teamchain) {
+        if (strcmp(m->classname, "target_poi"))
+            G_Printf("WARNING: %s is teamed with target_poi's; unintentional\n", etos(m));
+    }
 }
 
 void SP_target_poi(edict_t *self)
@@ -1549,10 +1752,11 @@ void SP_target_poi(edict_t *self)
 
     self->use = target_poi_use;
     self->r.svflags |= SVF_NOCLIENT;
-    self->think = target_poi_setup;
-    self->nextthink = level.time + FRAME_TIME;
 
-    if (!self->team) {
+    if (self->team) {
+        self->think = target_poi_setup;
+        self->nextthink = level.time + FRAME_TIME;
+    } else {
         if (self->spawnflags & SPAWNFLAG_POI_NEAREST)
             G_Printf("%s has useless spawnflag 'NEAREST'\n", etos(self));
         if (self->spawnflags & SPAWNFLAG_POI_DYNAMIC)

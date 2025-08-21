@@ -510,6 +510,7 @@ static const save_field_t level_locals_t_fields[] = {
     V(intermission_angle),
 
     I(pic_health),
+    I(pic_ping),
     I(snd_fry),
 
     I(total_secrets),
@@ -532,6 +533,12 @@ static const save_field_t level_locals_t_fields[] = {
 
     L(goals),
     I(goal_num),
+
+    O(valid_poi),
+    V(current_poi),
+    I(current_poi_image),
+    I(current_poi_stage),
+    E(current_dynamic_poi),
 
     L(start_items),
     O(no_grapple),

@@ -906,6 +906,9 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
                 Player_GiveStartItems(ent, buffer);
             }
 
+            if (!deathmatch.integer)
+                client->pers.inventory[IT_ITEM_COMPASS] = 1;
+
             // power armor from start items
             G_CheckPowerArmor(ent);
 

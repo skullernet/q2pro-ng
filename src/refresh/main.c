@@ -257,17 +257,7 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
 // P = A * B
 void GL_MultMatrix(GLfloat *restrict p, const GLfloat *restrict a, const GLfloat *restrict b)
 {
-    int i, j;
-
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
-            p[i * 4 + j] =
-                a[0 * 4 + j] * b[i * 4 + 0] +
-                a[1 * 4 + j] * b[i * 4 + 1] +
-                a[2 * 4 + j] * b[i * 4 + 2] +
-                a[3 * 4 + j] * b[i * 4 + 3];
-        }
-    }
+    Matrix_Multiply(a, b, p);
 }
 
 void GL_SetEntityAxis(void)

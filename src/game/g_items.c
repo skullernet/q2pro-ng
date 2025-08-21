@@ -1385,6 +1385,123 @@ static void Use_Flashlight(edict_t *ent, const gitem_t *inv)
     P_ToggleFlashlight(ent, !(ent->flags & FL_FLASHLIGHT));
 }
 
+#define MAX_TEMP_POI_POINTS 128
+
+static void Compass_Close(edict_t *ent)
+{
+    ent->client->help_draw_index = ent->client->help_draw_count = 0;
+}
+
+void Compass_Update(edict_t *ent, bool first)
+{
+    if (ent->client->help_draw_index >= ent->client->help_draw_count)
+        return;
+    if (ent->client->help_draw_time > level.time)
+        return;
+
+    const vec3_t *points = level.poi_points[ent->s.number];
+
+    // deleted for some reason
+    if (!points) {
+        Compass_Close(ent);
+        return;
+    }
+
+    const vec_t *point = points[ent->client->help_draw_index];
+
+    // don't draw too many points
+    if (DistanceSquared(ent->s.origin, point) > 4096 * 4096) {
+        Compass_Close(ent);
+        return;
+    }
+
+    // raise from ground for PHS
+    vec3_t pos = { point[0], point[1], point[2] + 24 };
+    if (!trap_InVis(ent->s.origin, pos, VIS_PHS | VIS_NOAREAS)) {
+        Compass_Close(ent);
+        return;
+    }
+
+    vec3_t dir;
+    VectorSubtract(points[ent->client->help_draw_index + 1], point, dir);
+    VectorNormalize(dir);
+
+    trap_ClientCommand(ent, va("path %d %s %d", first, vtoa(point), DirToByte(dir)), false);
+
+    ent->client->help_draw_index++;
+    ent->client->help_draw_time = level.time + SEC(0.2f);
+}
+
+static void Use_Compass(edict_t *ent, const gitem_t *inv)
+{
+    if (!level.valid_poi) {
+        G_ClientPrintf(ent, PRINT_HIGH, "Compass data not available for objective.\n");
+        return;
+    }
+
+    if (level.current_dynamic_poi)
+        level.current_dynamic_poi->use(level.current_dynamic_poi, ent, ent);
+
+    trap_ClientCommand(ent, va("poi %s %d", vtoa(level.current_poi), level.current_poi_image), true);
+
+    vec3_t *points = level.poi_points[ent->s.number];
+    if (!points)
+        level.poi_points[ent->s.number] = points = G_Malloc(sizeof(vec3_t) * MAX_TEMP_POI_POINTS);
+
+    PathRequest request = {
+        .start = VectorInit(ent->s.origin),
+        .goal = VectorInit(level.current_poi),
+        .moveDist = 64.0f,
+        .pathFlags = PathFlags_All,
+        .nodeSearch = {
+            .ignoreNodeFlags = true,
+            .minHeight = 128.0f,
+            .maxHeight = 128.0f,
+            .radius = 1024.0f
+        }
+    };
+
+    PathInfo info;
+    if (!trap_GetPathToGoal(&request, &info, points, MAX_TEMP_POI_POINTS))
+        return;
+    if (info.numPathPoints <= 2)
+        return;
+
+    // skip first and last points
+    ent->client->help_draw_count = min(info.numPathPoints, MAX_TEMP_POI_POINTS) - 1;
+    ent->client->help_draw_index = 1;
+
+    bool infront = false;
+
+    // check if first nearby points are in front of us
+    for (int i = 1; i < ent->client->help_draw_count; i++) {
+        vec3_t dir;
+        VectorSubtract(points[i], ent->s.origin, dir);
+        if (VectorNormalize(dir) > 192)
+            break;
+        if (DotProduct(dir, ent->client->v_forward) > 0.3f)
+            infront = true;
+    }
+
+    // create an extra point if we're facing away
+    if (!infront) {
+        vec3_t start = VectorInit(ent->s.origin);
+        start[2] += ent->viewheight;
+
+        vec3_t end;
+        VectorMA(ent->s.origin, 64, ent->client->v_forward, end);
+
+        trace_t tr;
+        trap_Trace(&tr, start, NULL, NULL, end, ENTITYNUM_NONE, MASK_SOLID);
+
+        ent->client->help_draw_index--;
+        VectorMA(tr.endpos, 8, tr.plane.normal, points[ent->client->help_draw_index]);
+    }
+
+    ent->client->help_draw_time = 0;
+    Compass_Update(ent, true);
+}
+
 //======================================================================
 
 // clang-format off
@@ -3139,6 +3256,19 @@ const gitem_t itemlist[] = {
         .tag = POWERUP_FLASHLIGHT,
         .precaches = "items/flashlight_on.wav items/flashlight_off.wav",
     },
+
+    {
+        .id = IT_ITEM_COMPASS,
+        .classname = "item_compass",
+        .use = Use_Compass,
+        .icon = "p_compass",
+        .use_name = "Compass",
+        .pickup_name = "Compass",
+        .pickup_name_definite = "the Compass",
+        .flags = IF_STAY_COOP | IF_POWERUP_WHEEL | IF_POWERUP_ONOFF,
+        .tag = POWERUP_COMPASS,
+        .precaches = "misc/help_marker.wav",
+    }
 };
 // clang-format on
 

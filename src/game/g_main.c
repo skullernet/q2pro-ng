@@ -51,6 +51,7 @@ vm_cvar_t sv_cheats;
 vm_cvar_t sv_maxclients;
 
 vm_cvar_t g_debug_monster_paths;
+vm_cvar_t g_debug_poi;
 
 vm_cvar_t flood_msgs;
 vm_cvar_t flood_persecond;
@@ -154,6 +155,7 @@ static const vm_cvar_reg_t g_cvars[] = {
     { &g_grapple_damage, "g_grapple_damage", "10", 0 },
 
     { &g_debug_monster_paths, "g_debug_monster_paths", "0", 0 },
+    { &g_debug_poi, "g_debug_poi", "0", 0 },
 
     // noset vars
     { &sv_dedicated, "dedicated", "0", CVAR_NOSET },

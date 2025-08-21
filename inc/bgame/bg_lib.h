@@ -40,6 +40,7 @@ void *memcpy(void *dst, const void *src, size_t n);
 void *memset(void *dst, int src, size_t n);
 int memcmp(const void *s1, const void *s2, size_t n);
 
+#define isinf(f)    __builtin_isinf(f)
 #define isnan(f)    __builtin_isnan(f)
 #define isfinite(f) __builtin_isfinite(f)
 #define signbit(f)  __builtin_signbit(f)

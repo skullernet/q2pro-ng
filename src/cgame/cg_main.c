@@ -71,6 +71,7 @@ vm_cvar_t   cg_lerp_lightstyles;
 vm_cvar_t   cg_muzzlelight_time;
 vm_cvar_t   cg_muzzleflashes;
 vm_cvar_t   cg_hit_markers;
+vm_cvar_t   cg_compass_time;
 vm_cvar_t   cg_weapon_select_msec;
 vm_cvar_t   cg_railtrail_type;
 vm_cvar_t   cg_railtrail_time;
@@ -129,6 +130,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_muzzlelight_time, "100", 0),
     VM_CVAR(cg_muzzleflashes, "1", 0),
     VM_CVAR(cg_hit_markers, "2", 0),
+    VM_CVAR(cg_compass_time, "10", 0),
     VM_CVAR(cg_weapon_select_msec, "500", 0),
     VM_CVAR(cg_railtrail_type, "0", 0),
     VM_CVAR(cg_railtrail_time, "1.0", 0),
@@ -182,6 +184,7 @@ qvm_exported void CG_ClearState(void)
     CG_ClearEffects();
     CG_ClearTEnts();
     SCR_ClearCenterPrints();
+    SCR_RemovePOI(0);
 
     // refresh current frame
     cg.serverframe = trap_GetServerFrameNumber() - 1;

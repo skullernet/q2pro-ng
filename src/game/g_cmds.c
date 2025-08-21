@@ -1232,7 +1232,7 @@ static void Cmd_Wave_f(edict_t *ent)
                 if (player != ent && !OnSameTeam(ent, player))
                     continue;
 
-                G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/help_marker.wav"), 1.0f, ATTN_NONE);
+                trap_ClientCommand(player, va("ping %d %s %d", ent->s.number, vtoa(tr.endpos), level.pic_ping), false);
                 G_ClientPrintf(player, PRINT_HIGH, other_notify_msg, ent->client->pers.netname);
             }
         }

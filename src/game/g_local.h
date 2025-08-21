@@ -379,6 +379,7 @@ typedef enum {
     IT_TECH_REGENERATION,
 
     IT_ITEM_FLASHLIGHT,
+    IT_ITEM_COMPASS,
 
     IT_TOTAL
 } item_id_t;
@@ -488,7 +489,7 @@ typedef enum {
     POWERUP_DOPPELGANGER,
 
     POWERUP_FLASHLIGHT,
-    // POWERUP_COMPASS,
+    POWERUP_COMPASS,
     POWERUP_TECH1,
     POWERUP_TECH2,
     POWERUP_TECH3,
@@ -663,6 +664,7 @@ typedef struct {
     bool        respawn_intermission; // only set once for respawning players
 
     int pic_health;
+    int pic_ping;
     int snd_fry;
 
     int total_secrets;
@@ -706,6 +708,14 @@ typedef struct {
 
     // [Paril-KEX] current level entry
     level_entry_t *entry;
+
+    // [Paril-KEX] current poi
+    bool valid_poi;
+    vec3_t current_poi;
+    int current_poi_image;
+    int current_poi_stage;
+    edict_t *current_dynamic_poi;
+    vec3_t *poi_points[MAX_CLIENTS]; // temporary storage for POIs in coop
 
     // start items
     const char *start_items;
@@ -1167,6 +1177,7 @@ extern vm_cvar_t sv_rollangle;
 
 extern vm_cvar_t sv_cheats;
 extern vm_cvar_t g_debug_monster_paths;
+extern vm_cvar_t g_debug_poi;
 extern vm_cvar_t maxspectators;
 
 extern vm_cvar_t flood_msgs;
@@ -1290,6 +1301,7 @@ bool      G_CanDropItem(const gitem_t *item);
 void      Touch_Item(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self);
 void      droptofloor(edict_t *ent);
 void      P_ToggleFlashlight(edict_t *ent, bool state);
+void      Compass_Update(edict_t *ent, bool first);
 
 //
 // g_utils.c
@@ -2227,6 +2239,10 @@ struct gclient_s {
     edict_t *sound2_entity;
     gtime_t  sound2_entity_time;
 
+    // not saved
+    int help_draw_index, help_draw_count;
+    gtime_t help_draw_time;
+
     // only set temporarily
     bool awaiting_respawn;
     gtime_t respawn_timeout; // after this time, force a respawn
@@ -2521,4 +2537,9 @@ static inline bool M_CheckGib(edict_t *self, mod_t mod)
 static inline bool M_ClientInvisible(edict_t *ent)
 {
     return ent->client && ent->client->invisible_time > level.time && ent->client->invisibility_fade_time <= level.time;
+}
+
+static inline const char *vtoa(const vec3_t p)
+{
+    return va("%.f %.f %.f", p[0], p[1], p[2]);
 }

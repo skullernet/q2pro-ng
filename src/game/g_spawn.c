@@ -1717,6 +1717,7 @@ void SP_worldspawn(edict_t *ent)
 
     level.snd_fry = G_SoundIndex("player/fry.wav"); // standing in lava / slime
 
+    PrecacheItem(GetItemByIndex(IT_ITEM_COMPASS));
     PrecacheItem(GetItemByIndex(IT_WEAPON_BLASTER));
 
     if (g_dm_random_items.integer)
@@ -1788,7 +1789,7 @@ void SP_worldspawn(edict_t *ent)
     G_ModelIndex("models/objects/gibs/head2/tris.md2");
     G_ModelIndex("models/objects/gibs/sm_metal/tris.md2");
 
-    //G_ImageIndex("loc_ping");
+    level.pic_ping = G_ImageIndex("loc_ping");
 
     //
     // Setup light animation tables. 'a' is total darkness, 'z' is doublebright.

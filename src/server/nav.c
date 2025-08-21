@@ -590,7 +590,7 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
         }
 
         // add the end point if we have room
-        dist = DistanceSquared(request->goal, nav_data.nodes[ctx->went_to[current]].origin);
+        dist = DistanceSquared(request->goal, nav_data.nodes[ctx->went_to[num_points - 1]].origin);
 
         if (dist > PATH_POINT_TOO_CLOSE) {
             if (info->numPathPoints < path->maxPoints)
@@ -598,6 +598,9 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
             info->numPathPoints++;
         }
     }
+
+    // store distance
+    info->pathDistSqr = ctx->g_score[current];
 
     if (request->nodeSearch.ignoreNodeFlags) {
         info->returnCode = PathReturnCode_RawPathFound;

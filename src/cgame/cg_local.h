@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "shared/cgame.h"
+#include "shared/matrix.h"
 #include "shared/refresh.h"
 #include "bgame/bg_local.h"
 #include "bgame/m_flash.h"
@@ -244,6 +245,8 @@ typedef struct {
     qhandle_t   disrexp;
     qhandle_t   hit_marker;
     qhandle_t   lowammo;
+    qhandle_t   help_marker;
+    qhandle_t   talk[2];
     qhandle_t   precache[MAX_SOUNDS];
 } cg_sounds_t;
 
@@ -276,6 +279,7 @@ typedef struct {
     qhandle_t   lightning;
     qhandle_t   heatbeam;
     qhandle_t   shell;
+    qhandle_t   help_marker;
     qhandle_t   muzzles[MFLASH_TOTAL];
     qhandle_t   precache[MAX_MODELS];
 } cg_models_t;
@@ -436,6 +440,7 @@ extern vm_cvar_t    cg_lerp_lightstyles;
 extern vm_cvar_t    cg_muzzlelight_time;
 extern vm_cvar_t    cg_muzzleflashes;
 extern vm_cvar_t    cg_hit_markers;
+extern vm_cvar_t    cg_compass_time;
 extern vm_cvar_t    cg_weapon_select_msec;
 extern vm_cvar_t    cg_railtrail_type;
 extern vm_cvar_t    cg_railtrail_time;
@@ -535,6 +540,7 @@ typedef struct cg_sustain_s {
 
 void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale);
 void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, int skin, float scale);
+void CG_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first);
 
 void CG_SmokeAndFlash(const vec3_t origin);
 
@@ -690,6 +696,9 @@ void    CG_ShowWeaponWheel_f(void);
 void    CG_HideWeaponWheel_f(void);
 void    CG_ShowPowerupWheel_f(void);
 void    CG_HidePowerupWheel_f(void);
+
+void    SCR_RemovePOI(int id);
+void    SCR_AddPOI(int id, const vec3_t point, qhandle_t image, uint32_t color, int time);
 
 //
 // cg_servercmds.c
