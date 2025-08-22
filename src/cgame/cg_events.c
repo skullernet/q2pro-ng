@@ -318,7 +318,7 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     ex = CG_AllocExplosion();
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
-    ex->ent.flags = RF_FULLBRIGHT;
+    ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->start = cg.oldframe->servertime;
     ex->light = 350;
     VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
@@ -337,12 +337,11 @@ static void CG_BFGExplosion(const vec3_t pos)
     ex = CG_AllocExplosion();
     VectorCopy(pos, ex->ent.origin);
     ex->type = ex_poly;
-    ex->ent.flags = RF_FULLBRIGHT;
+    ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->start = cg.oldframe->servertime;
     ex->light = 350;
     VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
     ex->ent.model = cgs.models.bfg_explo;
-    ex->ent.flags |= RF_TRANSLUCENT;
     ex->ent.alpha = 0.30f;
     ex->frames = 4;
 }
@@ -493,20 +492,13 @@ static void CG_AddExplosions(void)
                 continue;
             }
 
-            if (cg_smooth_explosions.integer) {
-                ent->alpha = 1.0f - frac / (ex->frames - 1);
-                ent->flags |= RF_TRANSLUCENT;
-            } else {
-                ent->alpha = (16.0f - (float)f) / 16.0f;
-                ent->alpha = max(ent->alpha, 0.0f);
-            }
+            ent->alpha = 1.0f - frac / (ex->frames - 1);
 
             if (f < 10) {
                 ent->skinnum = (f >> 1);
                 if (ent->skinnum < 0)
                     ent->skinnum = 0;
             } else {
-                ent->flags |= RF_TRANSLUCENT;
                 if (f < 13)
                     ent->skinnum = 5;
                 else

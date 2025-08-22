@@ -421,7 +421,6 @@ extern vm_cvar_t    cg_vwep;
 extern vm_cvar_t    cg_disable_particles;
 extern vm_cvar_t    cg_disable_explosions;
 extern vm_cvar_t    cg_dlight_hacks;
-extern vm_cvar_t    cg_smooth_explosions;
 
 extern vm_cvar_t    cg_chat_notify;
 extern vm_cvar_t    cg_chat_sound;

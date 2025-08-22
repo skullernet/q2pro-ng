@@ -63,7 +63,6 @@ vm_cvar_t   cg_vwep;
 vm_cvar_t   cg_disable_particles;
 vm_cvar_t   cg_disable_explosions;
 vm_cvar_t   cg_dlight_hacks;
-vm_cvar_t   cg_smooth_explosions;
 vm_cvar_t   cg_chat_notify;
 vm_cvar_t   cg_chat_sound;
 vm_cvar_t   cg_adjustfov;
@@ -117,7 +116,6 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_disable_particles, "0", 0),
     VM_CVAR(cg_disable_explosions, "0", 0),
     VM_CVAR(cg_dlight_hacks, "0", 0),
-    VM_CVAR(cg_smooth_explosions, "1", 0),
     VM_CVAR(cg_gibs, "1", 0),
     VM_CVAR(cg_flares, "1", 0),
     VM_CVAR(cg_shadowlights, "1", 0),

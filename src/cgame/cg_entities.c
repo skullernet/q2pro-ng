@@ -1082,11 +1082,9 @@ static void CG_AddPacketEntities(void)
             if (effects & EF_ANIM_ALLFAST) {
                 CG_BfgParticles(&ent);
                 i = 200;
-            } else if (cg_smooth_explosions.integer) {
+            } else {
                 i = bfg_lightramp[ent.oldframe % 6] * ent.backlerp +
                     bfg_lightramp[ent.frame    % 6] * (1.0f - ent.backlerp);
-            } else {
-                i = bfg_lightramp[ent.frame % 6];
             }
             trap_R_AddSphereLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
