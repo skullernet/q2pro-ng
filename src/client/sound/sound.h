@@ -219,7 +219,6 @@ extern cvar_t       *s_reverb;
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
-sfx_t *S_SfxForHandle(qhandle_t hSfx);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx);

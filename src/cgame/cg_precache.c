@@ -46,14 +46,16 @@ static const char *const sexed_sounds[SS_MAX] = {
 static qhandle_t CG_RegisterSexedSound(const char *model, const char *base)
 {
     char buffer[MAX_QPATH];
+    qhandle_t sfx;
 
     // see if we already know of the model specific sound
     if (Q_concat(buffer, MAX_QPATH, "#players/", model, "/", base, ".wav") >= MAX_QPATH)
         Q_concat(buffer, MAX_QPATH, "#players/male/", base, ".wav");
 
     // see if it exists
-    if (trap_FS_OpenFile(buffer + 1, NULL, 0) >= 0)
-        return trap_S_RegisterSound(buffer);
+    sfx = trap_S_RegisterSound(buffer);
+    if (sfx)
+        return sfx;
 
     // no, revert to the male sound in the pak0.pak
     Q_concat(buffer, MAX_QPATH, "player/male/", base, ".wav");

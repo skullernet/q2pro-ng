@@ -308,34 +308,45 @@ void S_Activate(void)
 S_SfxForHandle
 ==================
 */
-sfx_t *S_SfxForHandle(qhandle_t hSfx)
+static sfx_t *S_SfxForHandle(qhandle_t h)
 {
-    if (!hSfx) {
+    Q_assert_soft(h <= num_sfx);
+    if (!h)
         return NULL;
-    }
 
-    Q_assert_soft(hSfx <= num_sfx);
-    return &known_sfx[hSfx - 1];
+    sfx_t *sfx = &known_sfx[h - 1];
+    if (!sfx->cache)
+        return NULL;
+
+    return sfx;
 }
 
 static sfx_t *S_AllocSfx(void)
 {
-    sfx_t   *sfx;
+    sfx_t   *sfx, *placeholder = NULL;
     int     i;
 
-    // find a free sfx
+    // find a free sfx_t slot
     for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++) {
         if (!sfx->name[0])
-            break;
+            return sfx;
+        if (!sfx->cache && !placeholder)
+            placeholder = sfx;
     }
 
-    if (i == num_sfx) {
-        if (num_sfx == MAX_SFX)
-            return NULL;
+    // allocate new slot if possible
+    if (num_sfx < MAX_SFX) {
         num_sfx++;
+        return sfx;
     }
 
-    return sfx;
+    // reuse placeholder slot if available
+    if (placeholder) {
+        memset(placeholder, 0, sizeof(*placeholder));
+        return placeholder;
+    }
+
+    return NULL;
 }
 
 /*
@@ -425,9 +436,8 @@ qhandle_t S_RegisterSound(const char *name)
         return 0;
     }
 
-    if (!s_registering) {
-        S_LoadSound(sfx);
-    }
+    if (!S_LoadSound(sfx))
+        return 0;
 
     return (sfx - known_sfx) + 1;
 }
@@ -458,13 +468,6 @@ void S_EndRegistration(void)
         // make sure it is paged in
         if (s_api->page_in_sfx)
             s_api->page_in_sfx(sfx);
-    }
-
-    // load everything in
-    for (i = 0, sfx = known_sfx; i < num_sfx; i++, sfx++) {
-        if (!sfx->name[0])
-            continue;
-        S_LoadSound(sfx);
     }
 
     s_registering = false;
@@ -586,7 +589,7 @@ static void S_IssuePlaysound(playsound_t *ps)
         return;
     }
 
-    sc = S_LoadSound(ps->sfx);
+    sc = ps->sfx->cache;
     if (!sc) {
         // should never happen
         S_FreePlaysound(ps);
@@ -640,19 +643,15 @@ Entchannel 0 will never override a playing sound
 */
 void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
 {
-    sfxcache_t  *sc;
     playsound_t *ps, *sort;
     sfx_t       *sfx;
 
     if (!s_started || !s_active)
         return;
-    if (!(sfx = S_SfxForHandle(hSfx)))
-        return;
 
-    // make sure the sound is loaded
-    sc = S_LoadSound(sfx);
-    if (!sc)
-        return;     // couldn't load the sound's data
+    sfx = S_SfxForHandle(hSfx);
+    if (!sfx)
+        return;
 
     // make the playsound_t
     ps = S_AllocPlaysound();
