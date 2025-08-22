@@ -275,7 +275,7 @@ static qhandle_t CG_RegisterImage(const char *s)
     return trap_R_RegisterPic(s);
 }
 
-static void CG_ParseAmmo(const char *s, cg_wheel_ammo_t *item)
+static void CG_RegisterAmmo(const char *s, cg_wheel_ammo_t *item)
 {
     char name[MAX_QPATH];
     unsigned icon;
@@ -288,9 +288,11 @@ static void CG_ParseAmmo(const char *s, cg_wheel_ammo_t *item)
 
     trap_GetConfigstring(CS_IMAGES + icon, name, sizeof(name));
     item->icon = trap_R_RegisterPic(va("wheel/%s", name));
+    if (!item->icon)
+        item->icon = trap_R_RegisterPic(name);
 }
 
-static void CG_ParseItem(const char *s, cg_wheel_item_t *item)
+static void CG_RegisterItem(const char *s, cg_wheel_item_t *item)
 {
     char name[MAX_QPATH];
     unsigned icon;
@@ -309,6 +311,10 @@ static void CG_ParseItem(const char *s, cg_wheel_item_t *item)
     trap_GetConfigstring(CS_IMAGES + icon, name, sizeof(name));
     item->icon[0] = trap_R_RegisterPic(va("wheel/%s", name));
     item->icon[1] = trap_R_RegisterPic(va("wheel/%s_selected", name));
+    if (!item->icon[0])
+        item->icon[0] = trap_R_RegisterPic(name);
+    if (!item->icon[1])
+        item->icon[1] = item->icon[0];
 }
 
 static void CG_RegisterWheelItems(void)
@@ -319,21 +325,21 @@ static void CG_RegisterWheelItems(void)
     for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
         if (!trap_GetConfigstring(CS_WHEEL_AMMO + i, name, sizeof(name)))
             break;
-        CG_ParseAmmo(name, &cgs.wheel.ammo[i]);
+        CG_RegisterAmmo(name, &cgs.wheel.ammo[i]);
     }
     cgs.wheel.num_ammo = i;
 
     for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
         if (!trap_GetConfigstring(CS_WHEEL_WEAPONS + i, name, sizeof(name)))
             break;
-        CG_ParseItem(name, &cgs.wheel.weapons[i]);
+        CG_RegisterItem(name, &cgs.wheel.weapons[i]);
     }
     cgs.wheel.num_weapons = i;
 
     for (i = 0; i < MAX_WHEEL_ITEMS; i++) {
         if (!trap_GetConfigstring(CS_WHEEL_POWERUPS + i, name, sizeof(name)))
             break;
-        CG_ParseItem(name, &cgs.wheel.powerups[i]);
+        CG_RegisterItem(name, &cgs.wheel.powerups[i]);
     }
     cgs.wheel.num_powerups = i;
 }
