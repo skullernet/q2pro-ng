@@ -1406,9 +1406,10 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
     vec3_t point;
     VectorCopy(ent->client->landmark_rel_pos, point);
 
-    // rotate our relative landmark into our new landmark's frame of reference
+    // rotate our relative landmark into worlds frame of reference
     vec3_t axis[3];
     AnglesToAxis(landmark->s.angles, axis);
+    TransposeAxis(axis);
     RotatePoint(point, axis);
 
     VectorAdd(point, landmark->s.origin, point);

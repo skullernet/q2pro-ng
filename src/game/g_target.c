@@ -482,7 +482,6 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
             vec3_t axis[3];
             AnglesToAxis(self->target_ent->s.angles, axis);
-            TransposeAxis(axis);
             RotatePoint(client->landmark_rel_pos, axis);
             RotatePoint(client->oldvelocity, axis);
 
