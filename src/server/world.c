@@ -251,9 +251,8 @@ static uint32_t SV_PackSolid(const edict_t *ent)
 
 void PF_LinkEdict(edict_t *ent)
 {
-    server_entity_t *sent, *sort;
+    server_entity_t *sent;
     areanode_t *node;
-    list_t *list;
     int entnum;
 
     if (!ent)
@@ -319,15 +318,9 @@ void PF_LinkEdict(edict_t *ent)
 
     // link it in
     if (ent->r.solid == SOLID_TRIGGER)
-        list = &node->trigger_edicts;
+        List_Append(&node->trigger_edicts, &sent->area);
     else
-        list = &node->solid_edicts;
-
-    LIST_FOR_EACH(sort, list, area)
-        if (sort > sent)
-            break;
-
-    List_Append(&sort->area, &sent->area);
+        List_Append(&node->solid_edicts, &sent->area);
 }
 
 static void SV_TouchAreaEdicts(const list_t *list)
