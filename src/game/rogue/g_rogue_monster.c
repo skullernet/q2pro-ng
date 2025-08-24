@@ -35,7 +35,7 @@ void THINK(stationarymonster_triggered_spawn)(edict_t *self)
     self->air_finished = level.time + SEC(12);
     trap_LinkEntity(self);
 
-    KillBox(self, false);
+    G_KillBox(self, KILLBOX_NONE, MOD_TELEFRAG);
 
     // FIXME - why doesn't this happen with real monsters?
     self->spawnflags &= ~SPAWNFLAG_MONSTER_TRIGGER_SPAWN;

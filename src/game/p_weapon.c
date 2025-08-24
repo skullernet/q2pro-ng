@@ -73,11 +73,7 @@ void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance,
     vec3_t end;
     VectorMA(eye_position, 8192, forward, end);
 
-    contents_t mask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
-
-    // [Paril-KEX]
-    if (!G_ShouldPlayersCollide(true))
-        mask &= ~CONTENTS_PLAYER;
+    contents_t mask = G_ProjectileClipmask(ent) & ~CONTENTS_DEADMONSTER;
 
     trace_t tr;
     trap_Trace(&tr, eye_position, NULL, NULL, end, ent->s.number, mask);

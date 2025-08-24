@@ -2022,9 +2022,7 @@ void PutClientInServer(edict_t *ent)
 
     trap_LinkEntity(ent);
 
-    if (!KillBoxEx(ent, true, MOD_TELEFRAG_SPAWN, false, false)) {
-        // could't spawn in?
-    }
+    G_KillBox(ent, KILLBOX_PLAYERCLIP, MOD_TELEFRAG_SPAWN);
 
     // my tribute to cash's level-specific hacks. I hope I live
     // up to his trailblazing cheese.
@@ -2621,21 +2619,17 @@ qvm_exported void G_ClientThink(int clientnum)
             client->ps.pm_type = PM_NORMAL;
 
         // [Paril-KEX]
-        if (!G_ShouldPlayersCollide(false) ||
-            (coop.integer && !(ent->clipmask & CONTENTS_PLAYER)) // if player collision is on and we're temporarily ghostly...
-           )
-        {
+        if (!(ent->clipmask & CONTENTS_PLAYER))
             client->ps.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
-        } else {
+        else
             client->ps.pm_flags &= ~PMF_IGNORE_PLAYER_COLLISION;
-        }
 
         // PGM  trigger_gravity support
         if (ent->no_gravity_time > level.time) {
             client->ps.gravity = 0;
             client->ps.pm_flags |= PMF_NO_GROUND_SEEK;
         } else {
-            client->ps.gravity = (int)(level.gravity * ent->gravity);
+            client->ps.gravity = Q_clip_int16(level.gravity * ent->gravity);
             client->ps.pm_flags &= ~PMF_NO_GROUND_SEEK;
         }
 

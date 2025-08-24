@@ -493,16 +493,10 @@ void fire_trap(edict_t *self, const vec3_t start, const vec3_t aimdir, int speed
     // RAFAEL 16-APR-98
     trap->s.sound = G_SoundIndex("weapons/traploop.wav");
     // END 16-APR-98
-
     trap->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
-    trap->clipmask = MASK_PROJECTILE & ~CONTENTS_DEADMONSTER;
+    trap->clipmask = G_ProjectileClipmask(self) & ~CONTENTS_DEADMONSTER;
     trap->r.svflags |= SVF_TRAP;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        trap->clipmask &= ~CONTENTS_PLAYER;
+    trap->timestamp = level.time + SEC(30);
 
     trap_LinkEntity(trap);
-
-    trap->timestamp = level.time + SEC(30);
 }

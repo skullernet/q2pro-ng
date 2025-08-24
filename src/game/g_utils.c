@@ -566,7 +566,7 @@ Kill box
 ==============================================================================
 */
 
-bool G_BrushModelClip(edict_t *self, edict_t *other)
+bool G_ClipBrushModel(edict_t *self, edict_t *other)
 {
     if (self->r.solid == SOLID_BSP || (self->r.svflags & SVF_HULL)) {
         trace_t clip;
@@ -587,52 +587,44 @@ Kills all entities that would touch the proposed new positioning
 of ent.
 =================
 */
-bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping, bool allow_safety)
+void G_KillBox(edict_t *ent, killbox_t flags, mod_id_t mod)
 {
     // don't telefrag as spectator...
     if (ent->movetype == MOVETYPE_NOCLIP)
-        return true;
+        return;
 
-    contents_t mask = CONTENTS_MONSTER | CONTENTS_PLAYER;
+    // ignore if not linked anywhere
+    if (!ent->r.linked)
+        return;
 
-    // [Paril-KEX] don't gib other players in coop if we're not colliding
-    if (from_spawning && ent->client && coop.integer && !G_ShouldPlayersCollide(false))
-        mask &= ~CONTENTS_PLAYER;
+    int touch[MAX_EDICTS_OLD];
+    int num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
 
-    int      i, num;
-    int      touch[MAX_EDICTS_OLD];
-    edict_t *hit;
-
-    num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
-
-    for (i = 0; i < num; i++) {
-        hit = g_edicts + touch[i];
+    for (int i = 0; i < num; i++) {
+        edict_t *hit = g_edicts + touch[i];
 
         if (hit == ent)
             continue;
         if (!hit->r.inuse || !hit->takedamage || hit->r.solid != SOLID_BBOX)
             continue;
-        if (hit->client && !(mask & CONTENTS_PLAYER))
-            continue;
-        if (bsp_clipping && !G_BrushModelClip(ent, hit))
-            continue;
 
         // [Paril-KEX] don't allow telefragging of friends in coop.
         // the player that is about to be telefragged will have collision
         // disabled until another time.
-        if (ent->client && hit->client && coop.integer) {
+        if (flags & KILLBOX_PLAYERCLIP && ent->client && hit->client && coop.integer) {
             hit->clipmask &= ~CONTENTS_PLAYER;
             ent->clipmask &= ~CONTENTS_PLAYER;
             continue;
         }
 
-        if (allow_safety && G_FixStuckObject(hit, hit->s.origin) != NO_GOOD_POSITION)
+        if (flags & KILLBOX_BSPCLIP && !G_ClipBrushModel(ent, hit))
+            continue;
+
+        if (flags & KILLBOX_SAFETY && G_FixStuckObject(hit, hit->s.origin) != NO_GOOD_POSITION)
             continue;
 
         T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, (mod_t) { mod });
     }
-
-    return true; // all clear
 }
 
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)

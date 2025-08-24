@@ -815,7 +815,7 @@ void THINK(monster_triggered_spawn)(edict_t *self)
     self->air_finished = level.time + SEC(12);
     trap_LinkEntity(self);
 
-    KillBox(self, false);
+    G_KillBox(self, KILLBOX_NONE, MOD_TELEFRAG);
 
     monster_start_go(self);
 

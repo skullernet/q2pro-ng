@@ -80,7 +80,7 @@ void TOUCH(Touch_Multi)(edict_t *self, edict_t *other, const trace_t *tr, bool o
     } else
         return;
 
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return;
 
     if (!VectorEmpty(self->movedir)) {
@@ -452,7 +452,7 @@ trigger_push
 
 void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return;
 
     if (strcmp(other->classname, "grenade") == 0 || other->health > 0) {
@@ -654,7 +654,7 @@ static bool can_hurt(edict_t *self, edict_t *other)
         return false;
     if ((self->spawnflags & SPAWNFLAG_HURT_NO_PLAYERS) && (other->client))
         return false;
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return false;
 
     return true;
@@ -792,7 +792,7 @@ void USE(trigger_gravity_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void TOUCH(trigger_gravity_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return;
 
     other->gravity = self->gravity;
@@ -866,7 +866,7 @@ void TOUCH(trigger_monsterjump_touch)(edict_t *self, edict_t *other, const trace
         return;
     if (!(other->r.svflags & SVF_MONSTER))
         return;
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return;
 
     // set XY even if not on ground, so the jump will clear lips
@@ -926,7 +926,7 @@ void TOUCH(trigger_flashlight_touch)(edict_t *self, edict_t *other, const trace_
 {
     if (!other->client)
         return;
-    if (!G_BrushModelClip(self, other))
+    if (!G_ClipBrushModel(self, other))
         return;
 
     if (self->style == 1)

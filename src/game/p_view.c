@@ -775,6 +775,26 @@ static void P_RunMegaHealth(edict_t *ent)
     }
 }
 
+static void P_CheckEnableCollide(edict_t *ent)
+{
+    if ((ent->clipmask & CONTENTS_PLAYER) || !ent->takedamage || !G_ShouldPlayersCollide(false))
+        return;
+
+    for (int i = 0; i < game.maxclients; i++) {
+        const edict_t *player = &g_edicts[i];
+
+        if (!player->r.inuse)
+            continue;
+        if (player == ent)
+            continue;
+        if (G_EntitiesContact(ent, player))
+            return;
+    }
+
+    // safe!
+    ent->clipmask |= CONTENTS_PLAYER;
+}
+
 /*
 =================
 ClientEndServerFrame
@@ -919,28 +939,5 @@ void ClientEndServerFrame(edict_t *ent)
     // [Paril-KEX] in coop, if player collision is enabled and
     // we are currently in no-player-collision mode, check if
     // it's safe.
-    if (coop.integer && G_ShouldPlayersCollide(false) && !(ent->clipmask & CONTENTS_PLAYER) && ent->takedamage) {
-        bool clipped_player = false;
-
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
-
-            if (!player->r.inuse)
-                continue;
-            if (player == ent)
-                continue;
-
-            trace_t clip;
-            trap_Clip(&clip, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, player->s.number, CONTENTS_MONSTER | CONTENTS_PLAYER);
-
-            if (clip.startsolid || clip.allsolid) {
-                clipped_player = true;
-                break;
-            }
-        }
-
-        // safe!
-        if (!clipped_player)
-            ent->clipmask |= CONTENTS_PLAYER;
-    }
+    P_CheckEnableCollide(ent);
 }

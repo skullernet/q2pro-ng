@@ -603,7 +603,7 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
     trap_LinkEntity(ent);
 
     if (ent->r.solid == SOLID_BBOX || (G_GetClipMask(ent) & (CONTENTS_PLAYER)))
-        KillBox(ent, false);
+        G_KillBox(ent, KILLBOX_NONE, MOD_TELEFRAG);
 
     if (self->speed)
         VectorCopy(self->movedir, ent->velocity);

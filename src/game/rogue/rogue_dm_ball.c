@@ -425,7 +425,7 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     trap_LinkEntity(self);
 
     // kill anything at the destination
-    KillBox(self, false);
+    G_KillBox(self, KILLBOX_NONE, MOD_TELEFRAG);
 }
 
 // ************************

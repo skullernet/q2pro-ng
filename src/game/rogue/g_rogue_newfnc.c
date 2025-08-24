@@ -248,7 +248,7 @@ void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->nextthink = level.time + HZ(10);
         self->r.solid = SOLID_BSP;
         trap_LinkEntity(self);
-        KillBox(self, false); // Is this appropriate?
+        G_KillBox(self, KILLBOX_BSPCLIP, MOD_TELEFRAG); // Is this appropriate?
     }
 }
 

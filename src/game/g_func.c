@@ -2481,7 +2481,11 @@ void USE(use_killbox)(edict_t *self, edict_t *other, edict_t *activator)
     self->r.solid = SOLID_TRIGGER;
     trap_LinkEntity(self);
 
-    KillBoxEx(self, false, MOD_TELEFRAG, self->spawnflags & SPAWNFLAG_KILLBOX_EXACT_COLLISION, false);
+    killbox_t flags = KILLBOX_NONE;
+    if (self->spawnflags & SPAWNFLAG_KILLBOX_EXACT_COLLISION)
+        flags |= KILLBOX_BSPCLIP;
+
+    G_KillBox(self, flags, MOD_TELEFRAG);
 
     self->r.solid = SOLID_NOT;
     trap_LinkEntity(self);
@@ -2494,6 +2498,9 @@ void SP_func_killbox(edict_t *ent)
     trap_SetBrushModel(ent, ent->model);
     ent->use = use_killbox;
     ent->r.svflags = SVF_NOCLIENT;
+
+    if (ent->spawnflags & SPAWNFLAG_KILLBOX_EXACT_COLLISION)
+        ent->r.svflags |= SVF_HULL;
 }
 
 /*QUAKED func_eye (0 1 0) ?

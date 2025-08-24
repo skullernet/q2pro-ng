@@ -585,7 +585,10 @@ void USE(func_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
         self->r.solid = SOLID_BSP;
         self->r.svflags &= ~SVF_NOCLIENT;
         trap_LinkEntity(self);
-        KillBoxEx(self, false, MOD_TELEFRAG, true, self->spawnflags & SPAWNFLAG_SAFE_APPEAR);
+        killbox_t flags = KILLBOX_BSPCLIP;
+        if (self->spawnflags & SPAWNFLAG_SAFE_APPEAR)
+            flags |= KILLBOX_SAFETY;
+        G_KillBox(self, flags, MOD_TELEFRAG);
     } else {
         self->r.solid = SOLID_NOT;
         self->r.svflags |= SVF_NOCLIENT;
@@ -706,7 +709,7 @@ void USE(func_object_use)(edict_t *self, edict_t *other, edict_t *activator)
     self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     func_object_release(self);
-    KillBox(self, false);
+    G_KillBox(self, KILLBOX_BSPCLIP, MOD_TELEFRAG);
 }
 
 void SP_func_object(edict_t *self)
@@ -869,7 +872,7 @@ void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator
     self->r.svflags &= ~SVF_NOCLIENT;
     self->use = NULL;
     trap_LinkEntity(self);
-    KillBox(self, false);
+    G_KillBox(self, KILLBOX_BSPCLIP, MOD_TELEFRAG);
 }
 
 void SP_func_explosive(edict_t *self)
@@ -1844,7 +1847,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     trap_LinkEntity(other);
 
     // kill anything at the destination
-    KillBox(other, !!other->client);
+    G_KillBox(other, KILLBOX_PLAYERCLIP, MOD_TELEFRAG);
 
     // [Paril-KEX] move sphere, if we own it
     if (other->client->owned_sphere) {

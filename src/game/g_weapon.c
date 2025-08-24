@@ -182,13 +182,9 @@ This is an internal support routine used for bullet/pellet based weapons.
 */
 static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread, mod_t mod)
 {
-    contents_t   mask = MASK_PROJECTILE | MASK_WATER;
+    contents_t   mask = G_ProjectileClipmask(self) | MASK_WATER;
     bool         water = false;
     vec3_t       water_start = { 0 };
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        mask &= ~CONTENTS_PLAYER;
 
     // special case: we started in water.
     if (trap_PointContents(start) & MASK_WATER) {
@@ -299,10 +295,7 @@ edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int
     vectoangles(dir, bolt->s.angles);
     VectorScale(dir, speed, bolt->velocity);
     bolt->movetype = MOVETYPE_FLYMISSILE;
-    bolt->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        bolt->clipmask &= ~CONTENTS_PLAYER;
+    bolt->clipmask = G_ProjectileClipmask(self);
     return bolt;
 }
 
@@ -455,10 +448,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
         VectorMA(grenade->velocity, right_adjust, right, grenade->velocity);
 
     grenade->movetype = MOVETYPE_BOUNCE;
-    grenade->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        grenade->clipmask &= ~CONTENTS_PLAYER;
+    grenade->clipmask = G_ProjectileClipmask(self);
     grenade->r.solid = SOLID_BBOX;
     grenade->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
     grenade->flags |= FL_DODGE;
@@ -509,10 +499,7 @@ void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int d
     crandom_vec(grenade->avelocity, 360);
 
     grenade->movetype = MOVETYPE_BOUNCE;
-    grenade->clipmask = MASK_PROJECTILE;
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        grenade->clipmask &= ~CONTENTS_PLAYER;
+    grenade->clipmask = G_ProjectileClipmask(self);
     grenade->r.solid = SOLID_BBOX;
     grenade->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
     grenade->flags |= FL_DODGE;
@@ -603,11 +590,7 @@ fire_rail
 */
 bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick)
 {
-    contents_t mask = MASK_PROJECTILE;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        mask &= ~CONTENTS_PLAYER;
+    contents_t mask = G_ProjectileClipmask(self);
 
     vec3_t end;
     VectorMA(start, 8192, aimdir, end);

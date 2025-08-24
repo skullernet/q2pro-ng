@@ -2933,7 +2933,7 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     trap_LinkEntity(other);
 
     // kill anything at the destination
-    KillBox(other, true);
+    G_KillBox(other, KILLBOX_PLAYERCLIP, MOD_TELEFRAG);
 
     // [Paril-KEX] move sphere, if we own it
     if (other->client->owned_sphere) {

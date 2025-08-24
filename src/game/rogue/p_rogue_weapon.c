@@ -176,11 +176,7 @@ static void weapon_tracker_fire(edict_t *self)
     edict_t *enemy = NULL, *hit;
     trace_t  tr;
     int      damage;
-    contents_t mask = MASK_PROJECTILE;
-
-    // [Paril-KEX]
-    if (!G_ShouldPlayersCollide(true))
-        mask &= ~CONTENTS_PLAYER;
+    contents_t mask = G_ProjectileClipmask(self);
 
     // PMM - felt a little high at 25
     if (deathmatch.integer)

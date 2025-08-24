@@ -1325,7 +1325,7 @@ void     G_InitEdict(edict_t *e);
 edict_t *G_Spawn(void);
 void     G_FreeEdict(edict_t *e);
 
-bool G_BrushModelClip(edict_t *self, edict_t *other);
+bool G_ClipBrushModel(edict_t *self, edict_t *other);
 void G_TouchTriggers(edict_t *ent);
 void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin);
 
@@ -1340,12 +1340,14 @@ edict_t *findradius2(edict_t *from, const vec3_t org, float rad);
 
 void G_PlayerNotifyGoal(edict_t *player);
 
-bool KillBoxEx(edict_t *ent, bool from_spawning, mod_id_t mod, bool bsp_clipping, bool allow_safety);
+typedef enum {
+    KILLBOX_NONE        = 0,
+    KILLBOX_PLAYERCLIP  = BIT(0),
+    KILLBOX_BSPCLIP     = BIT(1),
+    KILLBOX_SAFETY      = BIT(2)
+} killbox_t;
 
-static inline bool KillBox(edict_t *ent, bool from_spawning)
-{
-    return KillBoxEx(ent, from_spawning, MOD_TELEFRAG, true, false);
-}
+void G_KillBox(edict_t *ent, killbox_t flags, mod_id_t mod);
 
 void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation);
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
@@ -2542,4 +2544,12 @@ static inline bool M_ClientInvisible(edict_t *ent)
 static inline const char *vtoa(const vec3_t p)
 {
     return va("%.f %.f %.f", p[0], p[1], p[2]);
+}
+
+static inline contents_t G_ProjectileClipmask(const edict_t *self)
+{
+    contents_t clipmask = MASK_PROJECTILE;
+    if (self->client && !G_ShouldPlayersCollide(true))
+        clipmask &= ~CONTENTS_PLAYER;
+    return clipmask;
 }

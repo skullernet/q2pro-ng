@@ -364,12 +364,7 @@ void fire_prox(edict_t *self, const vec3_t start, const vec3_t aimdir, int prox_
     prox->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
     prox->s.effects |= EF_GRENADE;
     prox->flags |= FL_DODGE;
-    prox->clipmask = MASK_PROJECTILE | CONTENTS_LAVA | CONTENTS_SLIME;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        prox->clipmask &= ~CONTENTS_PLAYER;
-
+    prox->clipmask = G_ProjectileClipmask(self) | CONTENTS_LAVA | CONTENTS_SLIME;
     prox->s.renderfx |= RF_IR_VISIBLE;
     // FIXME - this needs to be bigger.  Has other effects, though.  Maybe have to change origin to compensate
     //  so it sinks in correctly.  Also in lavacheck, might have to up the distance
@@ -985,12 +980,8 @@ void fire_tesla(edict_t *self, const vec3_t start, const vec3_t aimdir, int tesl
     tesla->dmg = TESLA_DAMAGE * tesla_damage_multiplier;
     tesla->classname = "tesla_mine";
     tesla->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
-    tesla->clipmask = (MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA) & ~CONTENTS_DEADMONSTER;
+    tesla->clipmask = (G_ProjectileClipmask(self) | CONTENTS_SLIME | CONTENTS_LAVA) & ~CONTENTS_DEADMONSTER;
     tesla->r.svflags |= SVF_TRAP;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        tesla->clipmask &= ~CONTENTS_PLAYER;
 
     trap_LinkEntity(tesla);
 }
@@ -1020,11 +1011,7 @@ void fire_heatbeam(edict_t *self, const vec3_t start, const vec3_t aimdir, const
     vec3_t     end, pos;
     vec3_t     water_start, endpoint;
     bool       water = false, underwater = false;
-    contents_t content_mask = MASK_PROJECTILE | MASK_WATER;
-
-    // [Paril-KEX]
-    if (self->client && !G_ShouldPlayersCollide(true))
-        content_mask &= ~CONTENTS_PLAYER;
+    contents_t content_mask = G_ProjectileClipmask(self) | MASK_WATER;
 
     vectoangles(aimdir, dir);
     AngleVectors(dir, forward, right, up);
