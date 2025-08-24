@@ -16,6 +16,16 @@ Project goals:
 * Remove server access to client console.
 * Remove UDP downloading: server pushes compressed packfiles over HTTP.
 * Run portable game/cgame/ui modules in WASM-based QVM sandbox.
+* Support most Quake II remaster features.
 
-**This project is work in progress and alpha quality.** Expect frequent game API
-breakage, incompatible network protocol changes, savegame format changes, etc.
+Provides the following advantages over Quake II remaster:
+
+* No C++, JSON and other stuff that doesn't belong in Quake II engine.
+* Smoother player movement and entity animation.
+* Vanilla-like server FPS independent view pitching.
+* Full-featured client game module for greater modding possibilities.
+* Server and client game code fully cross-platform and sandboxed.
+* Lower system requirements: OpenGL 3.1 and SSE2 capable CPU.
+
+**This project is work in progress.** Game API, network protocol, savegame
+format are not stable yet and may change anytime. You have been warned.
