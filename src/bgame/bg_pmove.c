@@ -932,7 +932,6 @@ static void PM_SetDimensions(void)
     }
 }
 
-#if 0
 static bool PM_AboveWater(void)
 {
     trace_t tr;
@@ -951,7 +950,6 @@ static bool PM_AboveWater(void)
 
     return false;
 }
-#endif
 
 /*
 ==============
@@ -967,9 +965,11 @@ static bool PM_CheckDuck(void)
     if (pm->s->pm_type >= PM_DEAD)
         return false;
 
-    if ((pm->cmd.buttons & BUTTON_CROUCH) && !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
+    if ((pm->cmd.buttons & BUTTON_CROUCH) &&
+        ((pm->s->pm_flags & PMF_ON_GROUND) || (pm->waterlevel <= WATER_FEET && !PM_AboveWater())) &&
+        !(pm->s->pm_flags & PMF_ON_LADDER) && !PM_CrouchingDisabled()) {
         // duck
-        if (!(pm->s->pm_flags & PMF_DUCKED) && (pm->groundentitynum != ENTITYNUM_NONE)) {
+        if (!(pm->s->pm_flags & PMF_DUCKED)) {
             // check that duck won't be blocked
             vec3_t check_maxs = { pm->maxs[0], pm->maxs[1], 4 };
             PM_Trace(&trace, pml.origin, pm->mins, check_maxs, pml.origin, pml.clipmask);
