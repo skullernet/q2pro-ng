@@ -268,9 +268,7 @@ void GL_SetEntityAxis(void)
     glr.entscale = 1;
 
     if (VectorEmpty(e->angles)) {
-        VectorSet(glr.entaxis[0], 1, 0, 0);
-        VectorSet(glr.entaxis[1], 0, 1, 0);
-        VectorSet(glr.entaxis[2], 0, 0, 1);
+        AxisClear(glr.entaxis);
     } else {
         AnglesToAxis(e->angles, glr.entaxis);
         glr.entrotated = true;

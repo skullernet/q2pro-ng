@@ -755,7 +755,7 @@ void SP_monster_chick(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
 
-    PrecacheGibs(chick_gibs);
+    G_PrecacheGibs(chick_gibs);
 
     VectorSet(self->r.mins, -16, -16, 0);
     VectorSet(self->r.maxs, 16, 16, 56);

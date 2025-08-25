@@ -575,7 +575,7 @@ void SP_trigger_push(edict_t *self)
         if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF)
             self->r.solid = SOLID_NOT;
     } else if (self->spawnflags & SPAWNFLAG_PUSH_START_OFF) {
-        G_Printf("trigger_push is START_OFF but not targeted.\n");
+        G_Printf("%s: START_OFF but not targeted\n", etos(self));
         self->r.svflags = SVF_NONE;
         self->touch = NULL;
         self->r.solid = SOLID_BSP;

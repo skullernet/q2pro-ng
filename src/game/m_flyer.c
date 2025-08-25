@@ -706,7 +706,7 @@ void SP_monster_flyer(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/flyer/tris.md2");
 
-    PrecacheGibs(flyer_gibs);
+    G_PrecacheGibs(flyer_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     // PMM - shortened to 16 from 32

@@ -1451,7 +1451,7 @@ void SP_monster_medic(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/medic/tris.md2");
 
-    PrecacheGibs(medic_gibs);
+    G_PrecacheGibs(medic_gibs);
 
     VectorSet(self->r.mins, -24, -24, -24);
     VectorSet(self->r.maxs, 24, 24, 32);

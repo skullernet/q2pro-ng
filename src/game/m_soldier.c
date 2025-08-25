@@ -1723,7 +1723,7 @@ static void SP_monster_soldier_x(edict_t *self)
 
     G_AddPrecache(soldier_precache_x);
 
-    PrecacheGibs(soldier_gibs);
+    G_PrecacheGibs(soldier_gibs);
 
     self->mass = 100;
 

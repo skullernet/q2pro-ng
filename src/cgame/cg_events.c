@@ -43,14 +43,12 @@ static int CG_FindFootstepSurface(int entnum)
 
     // trace start position is the entity's current origin + { 0 0 1 },
     // so that entities with their mins at 0 won't get caught in the floor
-    vec3_t trace_start;
-    VectorCopy(cent->current.origin, trace_start);
+    vec3_t trace_start = VectorInit(cent->current.origin);
     trace_start[2] += 1;
 
     // the end of the trace starts down by half of STEPSIZE
-    vec3_t trace_end;
-    VectorCopy(trace_start, trace_end);
-    trace_end[2] -= 9;
+    vec3_t trace_end = VectorInit(trace_start);
+    trace_end[2] -= STEPSIZE / 2;
     if (cent->current.solid && cent->current.solid != PACKED_BSP) {
         // if the entity is a bbox'd entity, the mins.z is added to the end point as well
         trace_end[2] += cent->mins[2];
@@ -74,8 +72,7 @@ static int CG_FindFootstepSurface(int entnum)
         trap_GetSurfaceInfo(tr.surface_id, &surf);
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
-        vec3_t new_end;
-        VectorCopy(tr.endpos, new_end);
+        vec3_t new_end = VectorInit(tr.endpos);
         new_end[2] += 1;
 
         CG_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);

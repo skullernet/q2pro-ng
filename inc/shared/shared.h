@@ -295,10 +295,16 @@ static inline void TransposeAxis(vec3_t axis[3])
     SWAP(vec_t, axis[1][2], axis[2][1]);
 }
 
+static inline void AxisClear(vec3_t axis[3])
+{
+    VectorSet(axis[0], 1, 0, 0);
+    VectorSet(axis[1], 0, 1, 0);
+    VectorSet(axis[2], 0, 0, 1);
+}
+
 static inline void RotatePoint(vec3_t point, const vec3_t axis[3])
 {
-    vec3_t temp;
-    VectorCopy(point, temp);
+    vec3_t temp = VectorInit(point);
     VectorRotate(temp, axis, point);
 }
 

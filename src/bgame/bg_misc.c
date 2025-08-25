@@ -114,7 +114,7 @@ const char *BG_EventName(entity_event_t event)
     return "unknown";
 }
 
-bool BG_ParseSkyParams(const char *s, sky_params_t *sky)
+void BG_ParseSkyParams(const char *s, sky_params_t *sky)
 {
     COM_ParseToken(&s, sky->name, sizeof(sky->name));
     sky->rotate     = Q_atof(COM_Parse(&s));
@@ -122,7 +122,6 @@ bool BG_ParseSkyParams(const char *s, sky_params_t *sky)
     sky->axis[0]    = Q_atof(COM_Parse(&s));
     sky->axis[1]    = Q_atof(COM_Parse(&s));
     sky->axis[2]    = Q_atof(COM_Parse(&s));
-    return s;
 }
 
 const char *BG_FormatSkyParams(const sky_params_t *sky)

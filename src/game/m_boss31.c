@@ -588,7 +588,7 @@ void SP_monster_jorg(edict_t *self)
     self->s.modelindex = G_ModelIndex("models/monsters/boss3/jorg/tris.md2");
     self->s.modelindex2 = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
 
-    PrecacheGibs(jorg_gibs);
+    G_PrecacheGibs(jorg_gibs);
 
     VectorSet(self->r.mins, -80, -80, 0);
     VectorSet(self->r.maxs, 80, 80, 140);

@@ -638,7 +638,7 @@ void SP_monster_supertank(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss1/tris.md2");
 
-    PrecacheGibs(supertank_gibs);
+    G_PrecacheGibs(supertank_gibs);
 
     VectorSet(self->r.mins, -64, -64, 0);
     VectorSet(self->r.maxs, 64, 64, 112);

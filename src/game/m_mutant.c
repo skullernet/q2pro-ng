@@ -684,7 +684,7 @@ void SP_monster_mutant(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/mutant/tris.md2");
 
-    PrecacheGibs(mutant_gibs);
+    G_PrecacheGibs(mutant_gibs);
 
     VectorSet(self->r.mins, -18, -18, -24);
     VectorSet(self->r.maxs, 18, 18, 30);

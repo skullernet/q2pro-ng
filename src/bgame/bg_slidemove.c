@@ -43,8 +43,8 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
     for (int sn = 0; sn < NUM_SIDE_CHECKS; sn++) {
         const side_check_t *side = &side_checks[sn];
 
-        vec3_t start, mins = { 0 }, maxs = { 0 };
-        VectorCopy(origin, start);
+        vec3_t start = VectorInit(origin);
+        vec3_t mins = { 0 }, maxs = { 0 };
 
         for (int n = 0; n < 3; n++) {
             if (side->normal[n] < 0)
@@ -73,8 +73,7 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
                 if (side->normal[e] != 0)
                     continue;
 
-                vec3_t ep_start;
-                VectorCopy(start, ep_start);
+                vec3_t ep_start = VectorInit(start);
                 ep_start[e] += 1;
 
                 trace_func(&tr, ep_start, mins, maxs, ep_start, ignore, mask);
@@ -102,10 +101,8 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
         if (tr.startsolid)
             continue;
 
-        vec3_t opposite_start;
-        VectorCopy(origin, opposite_start);
-
         const side_check_t *other_side = &side_checks[sn ^ 1];
+        vec3_t opposite_start = VectorInit(origin);
 
         for (int n = 0; n < 3; n++) {
             if (other_side->normal[n] < 0)
@@ -126,11 +123,9 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
             continue;
 
         // check the delta
-        vec3_t end;
-        VectorCopy(tr.endpos, end);
-
         // push us very slightly away from the wall
-        VectorMA(end, 0.125f, side->normal, end);
+        vec3_t end;
+        VectorMA(tr.endpos, 0.125f, side->normal, end);
 
         // calculate delta
         vec3_t delta, new_origin;

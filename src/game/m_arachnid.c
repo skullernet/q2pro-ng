@@ -639,7 +639,7 @@ void SP_monster_arachnid(edict_t *self)
 
     G_AddPrecache(arachnid_precache);
 
-    PrecacheGibs(use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
+    G_PrecacheGibs(use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
 
     if (skill.integer >= 3) {
         const char *reinforcements = DEFAULT_REINFORCEMENTS;

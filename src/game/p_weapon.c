@@ -53,16 +53,13 @@ int P_DamageModifier(edict_t *ent)
 
 void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance, vec3_t result_start, vec3_t result_dir, bool adjust_for_pierce)
 {
-    vec3_t distance;
-    VectorCopy(g_distance, distance);
-
+    vec3_t distance = VectorInit(g_distance);
     if (ent->client->pers.hand == LEFT_HANDED)
         distance[1] = -distance[1];
     else if (ent->client->pers.hand == CENTER_HANDED)
         distance[1] = 0;
 
-    vec3_t eye_position;
-    VectorCopy(ent->s.origin, eye_position);
+    vec3_t eye_position = VectorInit(ent->s.origin);
     eye_position[2] += ent->viewheight;
 
     vec3_t forward, right, up;

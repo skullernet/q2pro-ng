@@ -931,7 +931,7 @@ void SP_monster_stalker(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/stalker/tris.md2");
 
-    PrecacheGibs(stalker_gibs);
+    G_PrecacheGibs(stalker_gibs);
 
     VectorSet(self->r.mins, -28, -28, -18);
     VectorSet(self->r.maxs, 28, 28, 18);

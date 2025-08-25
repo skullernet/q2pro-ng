@@ -420,7 +420,7 @@ void SP_monster_gladiator(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gladiatr/tris.md2");
 
-    PrecacheGibs(gladiator_gibs);
+    G_PrecacheGibs(gladiator_gibs);
 
     // RAFAEL
     if (strcmp(self->classname, "monster_gladb") == 0) {

@@ -878,7 +878,7 @@ void SP_monster_infantry(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/infantry/tris.md2");
 
-    PrecacheGibs(infantry_gibs);
+    G_PrecacheGibs(infantry_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 32);

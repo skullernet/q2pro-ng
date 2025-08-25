@@ -1225,9 +1225,6 @@ q_exported void G_SpawnEntities(void)
     level.num_edicts = game.maxclients;
     level.is_spawning = true;
 
-    // all other flags are not important atm
-    //globals.server_flags &= SERVER_FLAG_LOADING;
-
     trap_GetLevelName(level.mapname, sizeof(level.mapname));
     trap_GetSpawnPoint(game.spawnpoint, sizeof(game.spawnpoint));
 
@@ -1564,9 +1561,9 @@ static const char *const lightstyles[] = {
     "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba",
 };
 
-const char *G_GetLightStyle(int style)
+const char *G_GetLightStyle(unsigned style)
 {
-    if (style < 0 || style >= q_countof(lightstyles))
+    if (style >= q_countof(lightstyles))
         return "a";
     return lightstyles[style];
 }
@@ -1620,15 +1617,15 @@ void SP_worldspawn(edict_t *ent)
     } else
         Q_strlcpy(level.level_name, level.mapname, sizeof(level.level_name));
 
-    sky_params_t sky;
+    sky_params_t sky = {
+        .name = "unit1_",
+        .rotate = st.skyrotate,
+        .autorotate = st.skyautorotate,
+        .axis = VectorInit(st.skyaxis),
+    };
+
     if (st.sky && st.sky[0])
         Q_strlcpy(sky.name, st.sky, sizeof(sky.name));
-    else
-        strcpy(sky.name, "unit1_");
-
-    sky.rotate = st.skyrotate;
-    sky.autorotate = st.skyautorotate;
-    VectorCopy(st.skyaxis, sky.axis);
 
     trap_SetConfigstring(CS_SKY, BG_FormatSkyParams(&sky));
 
@@ -1689,12 +1686,12 @@ void SP_worldspawn(edict_t *ent)
     pm_config.airaccel = sv_airaccelerate.integer;
     sv_airaccelerate.modified = false;
 
-#define DEF_STR(a, b)   ((a) && *(a) ? (a) : (b))
-    level.primary_objective_string   = DEF_STR(st.primary_objective_string,   "Primary Objective:\n{}");
-    level.secondary_objective_string = DEF_STR(st.secondary_objective_string, "Secondary Objective:\n{}");
-    level.primary_objective_title    = DEF_STR(st.primary_objective_title,    "Primary Objective");
-    level.secondary_objective_title  = DEF_STR(st.secondary_objective_title,  "Secondary Objective");
-#undef DEF_STR
+#define SET_STR(str, def) (level.str = (st.str) && *(st.str) ? (st.str) : (def))
+    SET_STR(primary_objective_string,   "Primary Objective:\n{}");
+    SET_STR(secondary_objective_string, "Secondary Objective:\n{}");
+    SET_STR(primary_objective_title,    "Primary Objective");
+    SET_STR(secondary_objective_title,  "Secondary Objective");
+#undef SET_STR
 
     // statusbar prog
     G_InitStatusbar();

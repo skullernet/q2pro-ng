@@ -669,7 +669,7 @@ typedef struct {
 
 typedef struct {
     vec4_t          styles[MAX_LIGHTSTYLES];
-} glStylesBlock;
+} glStylesBlock_t;
 
 typedef enum {
     DIRTY_NONE   = 0,
@@ -693,7 +693,7 @@ typedef struct {
     glUniformBlock_t    u_block;
     glUniformDirty_t    u_block_dirty;
     glLightsBlock_t     u_lights;
-    glStylesBlock       u_styles;
+    glStylesBlock_t     u_styles;
 } glState_t;
 
 extern glState_t gls;

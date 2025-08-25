@@ -885,7 +885,7 @@ void SP_monster_guardian(edict_t *self)
 
     G_AddPrecache(guadian_precache);
 
-    PrecacheGibs(guardian_gibs);
+    G_PrecacheGibs(guardian_gibs);
 
     self->s.modelindex = G_ModelIndex("models/monsters/guardian/tris.md2");
     VectorSet(self->r.mins, -78, -78, -66);

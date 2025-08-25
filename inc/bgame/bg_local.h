@@ -405,7 +405,7 @@ typedef struct {
     vec3_t      axis;
 } sky_params_t;
 
-bool BG_ParseSkyParams(const char *s, sky_params_t *sky);
+void BG_ParseSkyParams(const char *s, sky_params_t *sky);
 const char *BG_FormatSkyParams(const sky_params_t *sky);
 
 //==============================================

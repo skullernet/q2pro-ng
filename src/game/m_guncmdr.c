@@ -1405,7 +1405,7 @@ void SP_monster_guncmdr(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
 
-    PrecacheGibs(guncmdr_gibs);
+    G_PrecacheGibs(guncmdr_gibs);
 
     self->s.scale = 1.25f;
     VectorSet(self->r.mins, -16, -16, -24);

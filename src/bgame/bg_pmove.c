@@ -155,8 +155,7 @@ static void PM_StepSlideMove(void)
     // [Paril-KEX] jitspoe suggestion for stair clip fix; store
     // the old down position, and pick a better spot for downwards
     // trace if the start origin's Z position is lower than the down end pt.
-    vec3_t original_down;
-    VectorCopy(down, original_down);
+    vec3_t original_down = VectorInit(down);
 
     if (start_o[2] < down[2])
         down[2] = start_o[2] - 1.0f;
@@ -361,12 +360,12 @@ static void PM_AddCurrents(vec3_t wishvel)
 
                 if (trace.fraction != 1.0f && (trace.contents & CONTENTS_LADDER)) {
                     vec3_t right = {
-                        trace.plane.normal[1],
-                        -trace.plane.normal[0],
+                        -trace.plane.normal[1],
+                        trace.plane.normal[0],
                     };
 
                     wishvel[0] = wishvel[1] = 0;
-                    VectorMA(wishvel, -ladder_speed, right, wishvel);
+                    VectorMA(wishvel, ladder_speed, right, wishvel);
                 }
             } else {
                 wishvel[0] = Q_clipf(wishvel[0], -25, 25);
@@ -559,8 +558,7 @@ static void PM_GetWaterLevel(const vec3_t position, water_level_t *level, conten
     int sample2 = pm->s->viewheight - pm->mins[2];
     int sample1 = sample2 / 2;
 
-    vec3_t point;
-    VectorCopy(position, point);
+    vec3_t point = VectorInit(position);
     point[2] += pm->mins[2] + 1;
 
     contents_t cont = pm->pointcontents(point);
@@ -779,8 +777,7 @@ static void PM_CheckSpecialMovement(void)
     bool has_time = true;
     int steps = 10 * (800.0f / pm->s->gravity);
 
-    vec3_t waterjump_origin;
-    VectorCopy(pml.origin, waterjump_origin);
+    vec3_t waterjump_origin = VectorInit(pml.origin);
     for (int i = 0; i < min(50, steps); i++) {
         waterjump_vel[2] -= pm->s->gravity * time;
 
@@ -792,8 +789,7 @@ static void PM_CheckSpecialMovement(void)
     }
 
     // snap down to ground
-    vec3_t down;
-    VectorCopy(waterjump_origin, down);
+    vec3_t down = VectorInit(waterjump_origin);
     down[2] -= 2;
     PM_Trace(&trace, waterjump_origin, pm->mins, pm->maxs, down, MASK_SOLID);
 

@@ -567,7 +567,7 @@ void SP_monster_hover(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/hover/tris.md2");
 
-    PrecacheGibs(hover_gibs);
+    G_PrecacheGibs(hover_gibs);
 
     VectorSet(self->r.mins, -24, -24, -24);
     VectorSet(self->r.maxs, 24, 24, 32);

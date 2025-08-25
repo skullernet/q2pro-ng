@@ -755,7 +755,7 @@ void SP_monster_brain(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/brain/tris.md2");
 
-    PrecacheGibs(brain_gibs);
+    G_PrecacheGibs(brain_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 32);

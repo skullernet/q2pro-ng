@@ -586,7 +586,7 @@ void SP_monster_boss2(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss2/tris.md2");
 
-    PrecacheGibs(boss2_gibs);
+    G_PrecacheGibs(boss2_gibs);
 
     VectorSet(self->r.mins, -56, -56, 0);
     VectorSet(self->r.maxs, 56, 56, 80);

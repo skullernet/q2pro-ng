@@ -90,9 +90,7 @@ static void R_UnsetSky(void)
 {
     skyrotate = 0;
     skyautorotate = false;
-    VectorSet(skymatrix[0], 1, 0, 0);
-    VectorSet(skymatrix[1], 0, 1, 0);
-    VectorSet(skymatrix[2], 0, 0, 1);
+    AxisClear(skymatrix);
     R_SKYTEXTURE->texnum = TEXNUM_CUBEMAP_BLACK;
 }
 

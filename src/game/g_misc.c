@@ -246,7 +246,7 @@ void ThrowGibs(edict_t *self, int damage, const gib_def_t *gibs)
     }
 }
 
-void PrecacheGibs(const gib_def_t *gibs)
+void G_PrecacheGibs(const gib_def_t *gibs)
 {
     for (const gib_def_t *gib = gibs; gib->gibname; gib++)
         G_ModelIndex(gib->gibname);
@@ -622,7 +622,7 @@ void SP_func_wall(edict_t *self)
 
     // yell if the spawnflags are odd
     if ((self->spawnflags & SPAWNFLAG_WALL_START_ON) && !(self->spawnflags & SPAWNFLAG_WALL_TOGGLE)) {
-        G_Printf("func_wall START_ON without TOGGLE\n");
+        G_Printf("%s: START_ON without TOGGLE\n", etos(self));
         self->spawnflags |= SPAWNFLAG_WALL_TOGGLE;
     }
 
@@ -1031,7 +1031,7 @@ void SP_misc_explobox(edict_t *self)
         return;
     }
 
-    PrecacheGibs(barrel_gibs);
+    G_PrecacheGibs(barrel_gibs);
     G_SoundIndex("weapons/bfg__l1a.wav");
 
     self->r.solid = SOLID_BBOX;

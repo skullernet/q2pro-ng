@@ -788,7 +788,7 @@ void SP_monster_berserk(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/berserk/tris.md2");
 
-    PrecacheGibs(berserk_gibs);
+    G_PrecacheGibs(berserk_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 32);

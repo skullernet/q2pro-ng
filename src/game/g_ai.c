@@ -634,8 +634,8 @@ bool FindTarget(edict_t *self)
     bool     ignore_sight_sound = false;
 
     // [Paril-KEX] if we're in a level transition, don't worry about enemies
-    //if (globals.server_flags & SERVER_FLAG_LOADING)
-    //    return false;
+    if (sv_running.integer < 2)
+        return false;
 
     // N64 cutscene behavior
     if (self->hackflags & HACKFLAG_END_CUTSCENE)

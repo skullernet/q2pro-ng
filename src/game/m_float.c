@@ -641,7 +641,7 @@ void SP_monster_floater(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/float/tris.md2");
 
-    PrecacheGibs(floater_gibs);
+    G_PrecacheGibs(floater_gibs);
 
     VectorSet(self->r.mins, -24, -24, -24);
     VectorSet(self->r.maxs, 24, 24, 48);

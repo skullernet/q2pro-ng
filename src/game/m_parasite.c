@@ -927,7 +927,7 @@ void SP_monster_parasite(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/parasite/tris.md2");
 
-    PrecacheGibs(parasite_gibs);
+    G_PrecacheGibs(parasite_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 24);

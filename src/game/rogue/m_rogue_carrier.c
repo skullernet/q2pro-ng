@@ -921,7 +921,7 @@ void SP_monster_carrier(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/carrier/tris.md2");
 
-    PrecacheGibs(carrier_gibs);
+    G_PrecacheGibs(carrier_gibs);
 
     VectorSet(self->r.mins, -56, -56, -44);
     VectorSet(self->r.maxs, 56, 56, 44);

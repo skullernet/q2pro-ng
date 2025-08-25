@@ -763,7 +763,7 @@ void THINK(monster_think)(edict_t *self)
         }
     }
 
-    if (self->health > 0 && self->monsterinfo.dodge /*&& !(globals.server_flags & SERVER_FLAG_LOADING)*/)
+    if (self->health > 0 && self->monsterinfo.dodge && sv_running.integer >= 2)
         M_CheckDodge(self);
 
     M_MoveFrame(self);
@@ -1091,68 +1091,36 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
     return result;
 }
 
+static void G_FixStuckMonster(edict_t *self)
+{
+    vec3_t check;
+    VectorCopy(self->s.origin, check);
+
+    if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
+        trace_t tr;
+        trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
+                   self->s.origin, self->s.number, MASK_MONSTERSOLID);
+        if (!tr.startsolid)
+            return;
+    } else {
+        if (M_droptofloor(self) && M_walkmove(self, 0, 0))
+            return;
+    }
+
+    if (G_FixStuckObject(self, check) != NO_GOOD_POSITION) {
+        if (!(self->monsterinfo.aiflags & AI_GOOD_GUY) && !(self->flags & (FL_FLY | FL_SWIM)))
+            M_droptofloor(self);
+        return;
+    }
+
+    G_Printf("WARNING: %s stuck in solid\n", etos(self));
+}
+
 void monster_start_go(edict_t *self)
 {
     // Paril: moved here so this applies to swim/fly monsters too
-    if (!(self->flags & FL_STATIONARY)) {
-        vec3_t check;
-        VectorCopy(self->s.origin, check);
-
-        // [Paril-KEX] different nudge method; see if any of the bbox sides are clear,
-        // if so we can see how much headroom we have in that direction and shift us.
-        // most of the monsters stuck in solids will only be stuck on one side, which
-        // conveniently leaves only one side not in a solid; this won't fix monsters
-        // stuck in a corner though.
-        bool is_stuck = false;
-        trace_t tr;
-
-        if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
-            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                     self->s.origin, self->s.number, MASK_MONSTERSOLID);
-            is_stuck = tr.startsolid;
-        } else {
-            is_stuck = !M_droptofloor(self) || !M_walkmove(self, 0, 0);
-        }
-
-        if (is_stuck) {
-            if (G_FixStuckObject(self, check) != NO_GOOD_POSITION) {
-                if (!(self->monsterinfo.aiflags & AI_GOOD_GUY) && !(self->flags & (FL_FLY | FL_SWIM)))
-                    M_droptofloor(self);
-                is_stuck = false;
-            }
-        }
-
-        // last ditch effort: brute force
-        if (is_stuck) {
-            // Paril: try nudging them out. this fixes monsters stuck
-            // in very shallow slopes.
-            static const int8_t adjust[] = { 0, -1, 1, -2, 2, -4, 4, -8, 8 };
-            bool walked = false;
-
-            for (int y = 0; !walked && y < 3; y++)
-                for (int x = 0; !walked && x < 3; x++)
-                    for (int z = 0; !walked && z < 3; z++) {
-                        self->s.origin[0] = check[0] + adjust[x];
-                        self->s.origin[1] = check[1] + adjust[y];
-                        self->s.origin[2] = check[2] + adjust[z];
-
-                        if (self->monsterinfo.aiflags & AI_GOOD_GUY) {
-                            trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                                       self->s.origin, self->s.number, MASK_MONSTERSOLID);
-                            is_stuck = tr.startsolid;
-
-                            if (!is_stuck)
-                                walked = true;
-                        } else if (!(self->flags & (FL_FLY | FL_SWIM))) {
-                            M_droptofloor(self);
-                            walked = M_walkmove(self, 0, 0);
-                        }
-                    }
-        }
-
-        if (is_stuck)
-            G_Printf("WARNING: %s stuck in solid\n", etos(self));
-    }
+    if (!(self->flags & FL_STATIONARY))
+        G_FixStuckMonster(self);
 
     if (self->health <= 0)
         return;

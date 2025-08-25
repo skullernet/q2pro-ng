@@ -1498,7 +1498,7 @@ void SP_monster_gekk(edict_t *self)
     VectorSet(self->r.mins, -18, -18, -24);
     VectorSet(self->r.maxs, 18, 18, 24);
 
-    PrecacheGibs(gekk_gibs);
+    G_PrecacheGibs(gekk_gibs);
 
     self->health = 125 * st.health_multiplier;
     self->gib_health = -30;

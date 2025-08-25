@@ -834,7 +834,7 @@ void SP_monster_gunner(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
 
-    PrecacheGibs(gunner_gibs);
+    G_PrecacheGibs(gunner_gibs);
 
     VectorSet(self->r.mins, -16, -16, -24);
     VectorSet(self->r.maxs, 16, 16, 36);

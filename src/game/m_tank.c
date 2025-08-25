@@ -992,7 +992,7 @@ void SP_monster_tank(edict_t *self)
     G_SoundIndex("tank/tnkatk2e.wav");
     G_SoundIndex("tank/tnkatck3.wav");
 
-    PrecacheGibs(tank_gibs);
+    G_PrecacheGibs(tank_gibs);
 
     if (strcmp(self->classname, "monster_tank_commander") == 0) {
         self->health = 1000 * st.health_multiplier;
