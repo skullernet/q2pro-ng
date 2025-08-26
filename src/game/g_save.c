@@ -27,7 +27,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef enum {
     F_BYTE,
-    F_INT16,
     F_INT,
     F_UINT,         // hexadecimal
     F_INT64,
@@ -83,13 +82,10 @@ typedef struct save_field_s {
 #define FA(name, count) GA_(F_FLOAT,   float,   name, count)
 #define SZ(name, count) GA_(F_ZSTRING, char,    name, count)
 #define BA(name, count) GA_(F_BYTE,    byte,    name, count)
-#define SA(name, count) GA_(F_INT16,   int16_t, name, count)
 #define IA(name, count) GA_(F_INT,     int,     name, count)
 
 // single fields
 #define F(name) FA(name, 1)
-#define B(name) BA(name, 1)
-#define S(name) SA(name, 1)
 #define I(name) IA(name, 1)
 #define R(type, name) RA(type, name, 1)
 
@@ -615,6 +611,7 @@ static const save_field_t gclient_t_fields[] = {
     I(ps.gunindex),
     I(ps.gunskin),
     I(ps.gunframe),
+    I(ps.gunrate),
 
     FA(ps.screen_blend, 4),
     FA(ps.damage_blend, 4),
@@ -823,14 +820,6 @@ static void write_uint64_hex(const char *name, uint64_t v)
     write_str("%*s %#"PRIx64"\n", indent(name), v);
 }
 
-static void write_int16_v(const char *name, const int16_t *v, int n)
-{
-    write_str("%*s ", indent(name));
-    for (int i = 0; i < n; i++)
-        write_str("%d ", v[i]);
-    write_str("\n");
-}
-
 static void write_int_v(const char *name, const int *v, int n)
 {
     write_str("%*s ", indent(name));
@@ -918,7 +907,7 @@ static const struct {
     { "selected_item_name", STAT_SELECTED_ITEM_NAME },
 };
 
-static void write_stats(const int16_t *stats)
+static void write_stats(const int32_t *stats)
 {
     int i;
 
@@ -973,9 +962,6 @@ static void write_field(const save_field_t *field, const void *from, const void 
     switch (field->kind) {
     case F_BYTE:
         write_byte_v(field->name, p, field->count);
-        break;
-    case F_INT16:
-        write_int16_v(field->name, p, field->count);
         break;
     case F_INT:
         write_int_v(field->name, p, field->count);
@@ -1033,7 +1019,7 @@ static void write_field(const save_field_t *field, const void *from, const void 
         break;
 
     case F_STATS:
-        write_stats((const int16_t *)p);
+        write_stats(p);
         break;
 
     case F_REINFORCEMENTS:
@@ -1297,12 +1283,6 @@ static uint64_t parse_uint64(void)
     return v;
 }
 
-static void parse_int16_v(int16_t *v, int n)
-{
-    for (int i = 0; i < n; i++)
-        v[i] = parse_int16();
-}
-
 static void parse_int_v(int *v, int n)
 {
     for (int i = 0; i < n; i++)
@@ -1431,7 +1411,7 @@ static void read_max_ammo(int16_t *max_ammo)
     }
 }
 
-static void read_stats(int16_t *stats)
+static void read_stats(int32_t *stats)
 {
     expect("{");
     while (1) {
@@ -1443,7 +1423,7 @@ static void read_stats(int16_t *stats)
             if (!strcmp(tok, statdefs[i].name))
                 break;
         if (i < q_countof(statdefs))
-            stats[statdefs[i].stat] = parse_int16();
+            stats[statdefs[i].stat] = parse_int32();
         else
             unknown("stat");
     }
@@ -1484,9 +1464,6 @@ static void read_field(const save_field_t *field, void *base)
     switch (field->kind) {
     case F_BYTE:
         parse_byte_v(p, field->count);
-        break;
-    case F_INT16:
-        parse_int16_v(p, field->count);
         break;
     case F_INT:
         parse_int_v(p, field->count);
