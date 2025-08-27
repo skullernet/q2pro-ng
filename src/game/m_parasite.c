@@ -575,6 +575,8 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     tip->clipmask &= ~CONTENTS_DEADMONSTER;
     tip->flags |= FL_NO_DAMAGE_EFFECTS | FL_NO_KNOCKBACK;
     tip->s.modelindex = G_ModelIndex("models/monsters/parasite/tip/tris.md2");
+    tip->s.alpha = self->s.alpha;
+    tip->s.scale = self->s.scale;
     tip->speed = speed;
     tip->takedamage = true;
     tip->die = proboscis_die;
@@ -587,6 +589,8 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     segment->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
     segment->s.othernum = ENTITYNUM_NONE;
     segment->s.renderfx = RF_BEAM;
+    segment->s.alpha = self->s.alpha;
+    segment->s.scale = self->s.scale;
     segment->postthink = proboscis_segment_draw;
 
     tip->proboscus = segment;

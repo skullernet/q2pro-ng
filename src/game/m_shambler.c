@@ -74,6 +74,8 @@ static void shambler_windup(edict_t *self)
     lightning->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
     lightning->s.renderfx |= RF_BEAM;
     lightning->s.othernum = ENTITYNUM_NONE;
+    lightning->s.alpha = self->s.alpha;
+    lightning->s.scale = self->s.scale;
     lightning->r.ownernum = self->s.number;
     shambler_lightning_update(self);
 }
@@ -293,6 +295,8 @@ static void ShamblerCastLightning(edict_t *self)
         te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
         te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
         te->s.othernum = ENTITYNUM_NONE;
+        te->s.alpha = self->s.alpha;
+        te->s.scale = self->s.scale;
         te->r.ownernum = self->s.number;
         te->think = shambler_lightning_think;
     }

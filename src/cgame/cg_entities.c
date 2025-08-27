@@ -313,7 +313,7 @@ static float CG_HandMultiplier(void)
     return hand_multiplier;
 }
 
-static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, int entnum)
+static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *cent)
 {
     int         i, steps;
     vec3_t      dist, org, offset = { 0 };
@@ -324,6 +324,12 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     int         framenum;
     float       model_length;
     float       hand_multiplier = 0;
+    qhandle_t   model = cgs.models.precache[cent->current.modelindex];
+    int         entnum = cent->current.othernum;
+    float       scale = cent->current.scale;
+
+    if (!scale)
+        scale = 1;
 
     if (entnum < cgs.maxclients) {
         if (model == cgs.models.heatbeam)
@@ -414,12 +420,12 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
     // add new entities for the beams
     d = VectorNormalize(dist);
     if (model == cgs.models.heatbeam) {
-        model_length = 32.0f;
+        model_length = 32.0f * scale;
     } else if (model == cgs.models.lightning) {
-        model_length = 35.0f;
-        d -= 20.0f; // correction so it doesn't end in middle of tesla
+        model_length = 35.0f * scale;
+        d -= 20.0f * scale; // correction so it doesn't end in middle of tesla
     } else {
-        model_length = 30.0f;
+        model_length = 30.0f * scale;
     }
 
     // correction for grapple cable model, which has origin in the middle
@@ -432,13 +438,17 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
     memset(&ent, 0, sizeof(ent));
     ent.model = model;
+    ent.scale = scale;
+    ent.alpha = CG_LerpEntityAlpha(cent);
+    if (ent.alpha != 1.0f)
+        ent.flags |= RF_TRANSLUCENT;
 
     // PMM - special case for lightning model .. if the real length is shorter than the model,
     // flip it around & draw it from the end to the start.  This prevents the model from going
     // through the tesla mine (instead it goes through the target)
     if ((model == cgs.models.lightning) && (steps <= 1)) {
         VectorCopy(end, ent.origin);
-        ent.flags = RF_FULLBRIGHT;
+        ent.flags |= RF_FULLBRIGHT;
         ent.angles[0] = angles[0];
         ent.angles[1] = angles[1];
         ent.angles[2] = Com_SlowRand() % 360;
@@ -453,16 +463,16 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, qhandle_t model, i
 
     if (model == cgs.models.heatbeam) {
         ent.frame = framenum;
-        ent.flags = RF_FULLBRIGHT;
+        ent.flags |= RF_FULLBRIGHT;
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
         ent.angles[2] = cg.time % 360;
     } else if (model == cgs.models.lightning) {
-        ent.flags = RF_FULLBRIGHT;
+        ent.flags |= RF_FULLBRIGHT;
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
     } else {
-        ent.flags = RF_NOSHADOW;
+        ent.flags |= RF_NOSHADOW;
         ent.angles[0] = angles[0];
         ent.angles[1] = angles[1];
     }
@@ -790,7 +800,7 @@ static void CG_AddPacketEntities(void)
         }
 
         if (renderfx & RF_BEAM && s1->modelindex > MODELINDEX_DUMMY) {
-            CG_DrawBeam(ent.oldorigin, ent.origin, cgs.models.precache[s1->modelindex], s1->othernum);
+            CG_DrawBeam(ent.oldorigin, ent.origin, cent);
             goto skip;
         }
 

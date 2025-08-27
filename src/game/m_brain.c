@@ -440,6 +440,8 @@ static void brain_tounge_attack(edict_t *self)
     te->s.renderfx = RF_BEAM;
     te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
     te->s.othernum = ENTITYNUM_NONE;
+    te->s.alpha = self->s.alpha;
+    te->s.scale = self->s.scale;
     G_SnapVector(start, te->s.old_origin);
     G_SnapVector(end, te->s.origin);
     te->nextthink = level.time + SEC(0.2f);

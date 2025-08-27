@@ -433,6 +433,8 @@ static void Widow2Tongue(edict_t *self)
         te->s.renderfx = RF_BEAM;
         te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
         te->s.othernum = ENTITYNUM_NONE;
+        te->s.alpha = self->s.alpha;
+        te->s.scale = self->s.scale;
         te->r.ownernum = self->s.number;
         te->think = widow2_tongue_think;
     }
