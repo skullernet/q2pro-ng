@@ -700,45 +700,6 @@ VM_THUNK(R_AddDebugText) {
     R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
 }
 
-VM_THUNK(sinf) {
-    VM_F32(0) = sinf(VM_F32(0));
-}
-
-VM_THUNK(cosf) {
-    VM_F32(0) = cosf(VM_F32(0));
-}
-
-VM_THUNK(tanf) {
-    VM_F32(0) = tanf(VM_F32(0));
-}
-
-VM_THUNK(asinf) {
-    VM_F32(0) = asinf(VM_F32(0));
-}
-
-VM_THUNK(acosf) {
-    VM_F32(0) = acosf(VM_F32(0));
-}
-
-VM_THUNK(atanf) {
-    VM_F32(0) = atanf(VM_F32(0));
-}
-
-VM_THUNK(atan2f) {
-    VM_F32(0) = atan2f(VM_F32(0), VM_F32(1));
-}
-
-VM_THUNK(memcmp) {
-    uint32_t p1   = VM_U32(0);
-    uint32_t p2   = VM_U32(1);
-    uint32_t size = VM_U32(2);
-
-    VM_ASSERT((uint64_t)p1 + size <= m->pages * VM_PAGE_SIZE &&
-              (uint64_t)p2 + size <= m->pages * VM_PAGE_SIZE, "Memory compare out of bounds");
-
-    VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
-}
-
 static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
@@ -846,15 +807,6 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_AddDebugArrow, "iifiiii"),
     VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
     VM_IMPORT(R_AddDebugText, "iiifiii"),
-
-    VM_IMPORT_RAW(sinf, "f f"),
-    VM_IMPORT_RAW(cosf, "f f"),
-    VM_IMPORT_RAW(tanf, "f f"),
-    VM_IMPORT_RAW(asinf, "f f"),
-    VM_IMPORT_RAW(acosf, "f f"),
-    VM_IMPORT_RAW(atanf, "f f"),
-    VM_IMPORT_RAW(atan2f, "f ff"),
-    VM_IMPORT_RAW(memcmp, "i iii"),
 
     { 0 }
 };

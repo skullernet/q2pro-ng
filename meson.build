@@ -31,6 +31,8 @@ common_src = [
   'src/common/vm/interp.c',
   'src/common/vm/load.c',
   'src/common/vm/module.c',
+  'src/common/vm/printf.c',
+  'src/common/vm/stdlib.c',
   'src/common/zone.c',
   'src/shared/shared.c',
 ]

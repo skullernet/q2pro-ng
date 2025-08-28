@@ -226,7 +226,7 @@ static uint64_t rotr64(uint64_t n, int c)
 void VM_Interpret(vm_t *m)
 {
     vm_value_t *const   stack = m->stack;
-    const uint64_t      msize = m->memory.pages * VM_PAGE_SIZE;
+    const uint64_t      msize = m->memory.bytesize;
     const int    enter_csp = m->csp;
     uint32_t     arg, val, fidx, tidx, cond, count, index;
     uint32_t     offset, addr, dst, src, n;

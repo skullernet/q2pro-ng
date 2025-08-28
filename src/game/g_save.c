@@ -762,23 +762,7 @@ static struct {
 } block;
 
 #define indent(s)   (int)(block.indent * 2 + strlen(s)), s
-
-q_printf(1, 2)
-static void write_str(const char *fmt, ...)
-{
-    va_list     argptr;
-    char        text[MAX_STRING_CHARS * 4];
-    size_t      len;
-
-    va_start(argptr, fmt);
-    len = Q_vsnprintf(text, sizeof(text), fmt, argptr);
-    va_end(argptr);
-
-    if (len >= sizeof(text))
-        G_Error("oversize line");
-
-    trap_FS_WriteFile(text, len, g_savefile);
-}
+#define write_str(...)  trap_FS_FilePrintf(g_savefile, __VA_ARGS__)
 
 static void begin_block(const char *name)
 {

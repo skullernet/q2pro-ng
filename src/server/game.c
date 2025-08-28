@@ -329,6 +329,17 @@ static int PF_WriteFile(const void *buffer, size_t len, qhandle_t f)
     return FS_Write(buffer, len, VM_HANDLE(f));
 }
 
+static int PF_FilePrintf(qhandle_t f, const char *fmt, ...)
+{
+    char buffer[MAXPRINTMSG];
+    va_list ap;
+    va_start(ap, fmt);
+    int len = Q_vsnprintf(buffer, sizeof(buffer), fmt, ap);
+    va_end(ap);
+    Q_assert_soft(len < sizeof(buffer));
+    return PF_WriteFile(buffer, len, f);
+}
+
 static int PF_FlushFile(qhandle_t f)
 {
     VM_HANDLE_CHECK(f);
@@ -550,6 +561,14 @@ VM_THUNK(FS_WriteFile) {
     VM_I32(0) = PF_WriteFile(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
 }
 
+VM_THUNK(FS_FilePrintf) {
+    char buffer[MAXPRINTMSG];
+    int len = VM_vsnprintf(m, buffer, sizeof(buffer), VM_STR(1), VM_U32(2));
+    Q_assert_soft(len >= 0);
+    Q_assert_soft(len < sizeof(buffer));
+    VM_I32(0) = PF_WriteFile(buffer, len, VM_U32(0));
+}
+
 VM_THUNK(FS_FlushFile) {
     VM_I32(0) = PF_FlushFile(VM_U32(0));
 }
@@ -618,45 +637,6 @@ VM_THUNK(R_AddDebugText) {
     R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
 }
 
-VM_THUNK(sinf) {
-    VM_F32(0) = sinf(VM_F32(0));
-}
-
-VM_THUNK(cosf) {
-    VM_F32(0) = cosf(VM_F32(0));
-}
-
-VM_THUNK(tanf) {
-    VM_F32(0) = tanf(VM_F32(0));
-}
-
-VM_THUNK(asinf) {
-    VM_F32(0) = asinf(VM_F32(0));
-}
-
-VM_THUNK(acosf) {
-    VM_F32(0) = acosf(VM_F32(0));
-}
-
-VM_THUNK(atanf) {
-    VM_F32(0) = atanf(VM_F32(0));
-}
-
-VM_THUNK(atan2f) {
-    VM_F32(0) = atan2f(VM_F32(0), VM_F32(1));
-}
-
-VM_THUNK(memcmp) {
-    uint32_t p1   = VM_U32(0);
-    uint32_t p2   = VM_U32(1);
-    uint32_t size = VM_U32(2);
-
-    VM_ASSERT((uint64_t)p1 + size <= m->pages * VM_PAGE_SIZE &&
-              (uint64_t)p2 + size <= m->pages * VM_PAGE_SIZE, "Memory compare out of bounds");
-
-    VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
-}
-
 static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
@@ -701,6 +681,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(FS_CloseFile, "i i"),
     VM_IMPORT(FS_ReadFile, "i iii"),
     VM_IMPORT(FS_WriteFile, "i iii"),
+    VM_IMPORT(FS_FilePrintf, "i iii"),
     VM_IMPORT(FS_FlushFile, "i i"),
     VM_IMPORT(FS_TellFile, "I i"),
     VM_IMPORT(FS_SeekFile, "i iIi"),
@@ -718,15 +699,6 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(R_AddDebugArrow, "iifiiii"),
     VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
     VM_IMPORT(R_AddDebugText, "iiifiii"),
-
-    VM_IMPORT_RAW(sinf, "f f"),
-    VM_IMPORT_RAW(cosf, "f f"),
-    VM_IMPORT_RAW(tanf, "f f"),
-    VM_IMPORT_RAW(asinf, "f f"),
-    VM_IMPORT_RAW(acosf, "f f"),
-    VM_IMPORT_RAW(atanf, "f f"),
-    VM_IMPORT_RAW(atan2f, "f ff"),
-    VM_IMPORT_RAW(memcmp, "i iii"),
 
     { 0 }
 };
@@ -934,6 +906,7 @@ static const game_import_t game_dll_imports = {
     .FS_CloseFile = PF_CloseFile,
     .FS_ReadFile = PF_ReadFile,
     .FS_WriteFile = PF_WriteFile,
+    .FS_FilePrintf = PF_FilePrintf,
     .FS_FlushFile = PF_FlushFile,
     .FS_TellFile = PF_TellFile,
     .FS_SeekFile = PF_SeekFile,

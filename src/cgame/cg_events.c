@@ -515,12 +515,10 @@ static void CG_AddExplosions(void)
 
             frac = 1.0f - (cg.time - ex->start) / 1000.0f;
 
-            if (frac > 0) {
-                frac = frac * frac * frac * frac * frac;
-                ent->origin[2] = ex->lightcolor[0] + frac * 512.0f;
-            } else {
+            if (frac > 0)
+                ent->origin[2] = ex->lightcolor[0] + powf(frac, 5.0f) * 512.0f;
+            else
                 ent->origin[2] = ex->lightcolor[0];
-            }
 
             trap_R_AddEntity(ent);
             continue;

@@ -40,8 +40,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define VM_ASSERT(cond, msg) VM_ASSERT_FUNC(cond, msg, __func__)
 #define VM_ASSERT2(cond, msg) VM_ASSERT_FUNC(cond, msg, func)
 
-#define VM_PAGE_SIZE    0x10000
-
 typedef union {
     uint32_t   u32;
     int32_t    i32;
@@ -52,10 +50,11 @@ typedef union {
 } vm_value_t;
 
 typedef struct {
-    uint32_t    initial;     // initial size (64K pages)
-    uint32_t    maximum;     // maximum size (64K pages)
-    uint32_t    pages;       // current size (64K pages)
-    uint8_t    *bytes;       // memory area
+    uint32_t    initial;    // initial size (64K pages)
+    uint32_t    maximum;    // maximum size (64K pages)
+    uint32_t    pages;      // current size (64K pages)
+    uint32_t    bytesize;   // current size (bytes)
+    uint8_t    *bytes;      // memory area
 } vm_memory_t;
 
 typedef void (*vm_thunk_t)(const vm_memory_t *, vm_value_t *);
@@ -76,7 +75,7 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 {
     VM_ASSERT2(ptr, "Null VM pointer");
     VM_ASSERT2(!(ptr & (align - 1)), "Misaligned VM pointer");
-    VM_ASSERT2((uint64_t)ptr + (uint64_t)size * nmemb <= m->pages * VM_PAGE_SIZE, "Out of bounds VM pointer");
+    VM_ASSERT2((uint64_t)ptr + (uint64_t)size * nmemb <= m->bytesize, "Out of bounds VM pointer");
     return m->bytes + ptr;
 }
 
@@ -130,6 +129,7 @@ vm_value_t *VM_Push(vm_t *m, int n);
 vm_value_t *VM_Pop(vm_t *m);
 const vm_memory_t *VM_Memory(const vm_t *m);
 void VM_Reset(vm_t *m);
+int VM_vsnprintf(const vm_memory_t *m, char *str, size_t size, const char *fmt, uint32_t ap);
 
 typedef struct {
     const char *name;

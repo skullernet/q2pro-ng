@@ -108,6 +108,11 @@ static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_
         if (vm_string_eq(name, import->name))
             break;
 
+    if (!import->name)
+        for (import = vm_stdlib; import->name; import++)
+            if (vm_string_eq(name, import->name))
+                break;
+
     ASSERT(import->name, "Import %.*s not found", name->len, name->data);
 
     ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", name->len, name->data);
@@ -275,7 +280,8 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
     ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
-    m->memory.bytes = VM_Malloc(m->memory.pages * VM_PAGE_SIZE + 1024);
+    m->memory.bytesize = m->memory.pages * VM_PAGE_SIZE;
+    m->memory.bytes = VM_Malloc(m->memory.bytesize + 4096);
     return true;
 }
 
@@ -375,7 +381,7 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         // Copy the data to the memory offset
         uint32_t offset = init.u32;
         uint32_t size = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + size <= m->memory.pages * VM_PAGE_SIZE, "Memory init out of bounds");
+        ASSERT((uint64_t)offset + size <= m->memory.bytesize, "Memory init out of bounds");
         void *data = SZ_ReadData(sz, size);
         ASSERT(data, "Read past end of section");
         memcpy(m->memory.bytes + offset, data, size);
@@ -580,7 +586,7 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
         m->llvm_stack_start = *m->llvm_stack_pointer;
 
     Com_DPrintf("Loaded %s: %d KB of code, %d MB of memory\n", name,
-                m->num_bytes / 1000, m->memory.pages * VM_PAGE_SIZE / 1000000);
+                m->num_bytes / 1000, m->memory.bytesize / 1000000);
 
     return m;
 

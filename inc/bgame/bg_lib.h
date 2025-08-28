@@ -1,11 +1,5 @@
 #pragma once
 
-#define EINVAL 1
-#define ERANGE 2
-#define EOVERFLOW 3
-
-extern int errno;
-
 long strtol(const char *nptr, char **endptr, int base);
 long long strtoll(const char *nptr, char **endptr, int base);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
@@ -30,9 +24,6 @@ int sprintf(char *dst, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-
-int sscanf(const char *str, const char *fmt, ...)
-    __attribute__((format(scanf, 2, 3)));
 
 void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 
@@ -65,6 +56,10 @@ float asinf(float f);
 float acosf(float f);
 float atanf(float f);
 float atan2f(float y, float x);
+float powf(float x, float y);
+float logf(float x);
+float log2f(float x);
+float log10f(float x);
 float sqrtf(float f);
 float floorf(float f);
 float ceilf(float f);

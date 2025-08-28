@@ -37,6 +37,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define VM_MAGIC    MakeLittleLong(0, 'a', 's', 'm')
 #define VM_VERSION  0x01
 
+#define VM_PAGE_SIZE    0x10000
 #define STACK_SIZE      0x10000     // 65536
 #define BLOCKSTACK_SIZE 0x1000      // 4096
 #define CALLSTACK_SIZE  0x1000      // 4096
@@ -146,6 +147,8 @@ typedef struct vm_s {
     int         csp;               // callstack pointer
     vm_frame_t  callstack[CALLSTACK_SIZE]; // callstack
 } vm_t;
+
+extern const vm_import_t vm_stdlib[];
 
 void VM_SetupCall(vm_t *m, uint32_t fidx);
 void VM_Interpret(vm_t *m);

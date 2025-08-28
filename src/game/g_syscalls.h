@@ -74,6 +74,7 @@ int64_t trap_FS_OpenFile(const char *path, qhandle_t *f, unsigned mode);
 int trap_FS_CloseFile(qhandle_t f);
 int trap_FS_ReadFile(void *buffer, size_t len, qhandle_t f);
 int trap_FS_WriteFile(const void *buffer, size_t len, qhandle_t f);
+int trap_FS_FilePrintf(qhandle_t f, const char *fmt, ...) q_printf(2, 3);
 int trap_FS_FlushFile(qhandle_t f);
 int64_t trap_FS_TellFile(qhandle_t f);
 int trap_FS_SeekFile(qhandle_t f, int64_t offset, int whence);
@@ -154,6 +155,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_FS_CloseFile gi->FS_CloseFile
 #define trap_FS_ReadFile gi->FS_ReadFile
 #define trap_FS_WriteFile gi->FS_WriteFile
+#define trap_FS_FilePrintf gi->FS_FilePrintf
 #define trap_FS_FlushFile gi->FS_FlushFile
 #define trap_FS_TellFile gi->FS_TellFile
 #define trap_FS_SeekFile gi->FS_SeekFile

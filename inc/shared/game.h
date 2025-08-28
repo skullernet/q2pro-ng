@@ -241,6 +241,7 @@ typedef struct {
     int         (*FS_CloseFile)(qhandle_t f);
     int         (*FS_ReadFile)(void *buffer, size_t len, qhandle_t f);
     int         (*FS_WriteFile)(const void *buffer, size_t len, qhandle_t f);
+    int         (*q_printf(2, 3) FS_FilePrintf)(qhandle_t f, const char *fmt, ...);
     int         (*FS_FlushFile)(qhandle_t f);
     int64_t     (*FS_TellFile)(qhandle_t f);
     int         (*FS_SeekFile)(qhandle_t f, int64_t offset, int whence);
