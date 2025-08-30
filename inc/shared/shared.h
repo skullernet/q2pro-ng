@@ -414,7 +414,7 @@ static inline int32_t Q_clip_int32(int64_t a)
     return ((a + 0x80000000ULL) & ~0xFFFFFFFFULL) ? (a >> 63) ^ 0x7FFFFFFF : a;
 }
 
-#ifdef _LP64
+#if LONG_MAX > INT32_MAX
 #define Q_clipl_int32(a)    Q_clip_int32(a)
 #else
 #define Q_clipl_int32(a)    (a)

@@ -109,7 +109,15 @@ VM_THUNK(strtoul) {
     unsigned long res = strtoul(s, &p, VM_I32(2));
     if (VM_U32(1))
         *VM_PTR(1, uint32_t) = VM_U32(0) + (p - s);
-    VM_U32(0) = min(res, UINT32_MAX);
+#if ULONG_MAX > UINT32_MAX
+    while (Q_isspace(*s))
+        s++;
+    if (*s == '-')
+        res = Q_clip_int32(res);
+    else
+        res = min(res, UINT32_MAX);
+#endif
+    VM_U32(0) = res;
 }
 
 VM_THUNK(strtol) {

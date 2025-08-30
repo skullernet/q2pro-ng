@@ -278,7 +278,7 @@ static char *fmt_u(uint64_t x, char *s)
 
 static int fmt_fp(struct buffer *f, double y, int w, int p, int fl, int t)
 {
-    uint32_t big[128];
+    uint32_t big[(DBL_MANT_DIG + 28) / 29 + 1 + (DBL_MAX_EXP + DBL_MANT_DIG + 28 + 8) / 9];
     uint32_t *a, *d, *r, *z;
     int e2 = 0, e, i, j, l;
     char buf[9 + DBL_MANT_DIG / 4], *s;
@@ -359,7 +359,7 @@ static int fmt_fp(struct buffer *f, double y, int w, int p, int fl, int t)
     if (y) y *= 0x1p28, e2 -= 28;
 
     if (e2 < 0) a = r = z = big;
-    else a = r = z = big + sizeof(big) / sizeof(*big) - DBL_MANT_DIG - 1;
+    else a = r = z = big + q_countof(big) - DBL_MANT_DIG - 1;
 
     do {
         *z = y;
@@ -370,7 +370,7 @@ static int fmt_fp(struct buffer *f, double y, int w, int p, int fl, int t)
         uint32_t carry = 0;
         int sh = MIN(29, e2);
         for (d = z - 1; d >= a; d--) {
-            uint64_t x = ((uint64_t) * d << sh) + carry;
+            uint64_t x = ((uint64_t)*d << sh) + carry;
             *d = x % 1000000000;
             carry = x / 1000000000;
         }

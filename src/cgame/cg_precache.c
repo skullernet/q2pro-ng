@@ -392,7 +392,7 @@ void CG_RegisterMedia(void)
         CG_LoadClientinfo(&cgs.clientinfo[i], name);
     }
 
-    for (int i = 0; i < MAX_LIGHTSTYLES; i++) {
+    for (i = 0; i < MAX_LIGHTSTYLES; i++) {
         if (!trap_GetConfigstring(CS_LIGHTS + i, name, sizeof(name)))
             continue;
         CG_SetLightStyle(i, name);

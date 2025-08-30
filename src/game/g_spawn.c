@@ -726,7 +726,7 @@ char *ED_NewString(const char *string)
     return newb;
 }
 
-static int ED_ParseColor(const char *value)
+static uint32_t ED_ParseColor(const char *value)
 {
     const char *s = value;
     float scale = 255.0f;
@@ -813,8 +813,8 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
         break;
     case F_EFFECTS:
         l = strtoull(value, NULL, 10);
-        *(int *)(b + FOFS(s.effects)) = l;
-        *(int *)(b + FOFS(s.morefx)) = l >> 32;
+        *(uint32_t *)(b + FOFS(s.effects)) = l;
+        *(uint32_t *)(b + FOFS(s.morefx)) = l >> 32;
         break;
     case F_BOOL:
         *(bool *)(b + f->ofs) = Q_atoi(value);
@@ -822,7 +822,7 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
     case F_IGNORE:
         break;
     case F_COLOR:
-        *(int *)(b + f->ofs) = ED_ParseColor(value);
+        *(uint32_t *)(b + f->ofs) = ED_ParseColor(value);
         break;
     case F_L10N_STRING:
         *(char **)(b + f->ofs) = ED_ParseL10nString(value);
