@@ -136,7 +136,6 @@ typedef struct {
     mat4_t          viewmatrix;
     unsigned        visframe;
     unsigned        drawframe;
-    unsigned        dlightframe;
     int             viewcluster1;
     int             viewcluster2;
     int             nodes_visible;

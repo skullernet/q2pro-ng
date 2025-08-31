@@ -743,7 +743,7 @@ static void GL_DrawFace(const mface_t *surf)
             texnum[TMU_TEXTURE] = TEXNUM_WHITE;
             texnum[TMU_GLOWMAP] = 0;
         }
-        if (surf->dlightframe == glr.dlightframe)
+        if (surf->dlightframe == glr.drawframe)
             dlightbits = surf->dlightbits;
     } else if (state & GLS_CLASSIC_SKY) {
         if (q_likely(gl_drawsky->integer)) {

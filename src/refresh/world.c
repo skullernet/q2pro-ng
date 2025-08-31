@@ -231,8 +231,8 @@ static void GL_MarkLights_r(const mnode_t *node, const glDynLight_t *light, cons
         for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
             if (face->drawflags & gl_static.nolm_mask)
                 continue;
-            if (face->dlightframe != glr.dlightframe) {
-                face->dlightframe = glr.dlightframe;
+            if (face->dlightframe != glr.drawframe) {
+                face->dlightframe = glr.drawframe;
                 face->dlightbits = 0;
             }
             face->dlightbits |= lightbit;
@@ -245,8 +245,6 @@ static void GL_MarkLights_r(const mnode_t *node, const glDynLight_t *light, cons
 
 static void GL_MarkLights(void)
 {
-    glr.dlightframe++;
-
     for (int i = 0; i < r_numdlights; i++) {
         const glDynLight_t *light = &r_dlights[i];
         GL_MarkLights_r(gl_static.world.cache->nodes, light, light->origin, BIT_ULL(i));
@@ -255,8 +253,6 @@ static void GL_MarkLights(void)
 
 static void GL_TransformLights(const mmodel_t *model)
 {
-    glr.dlightframe++;
-
     for (int i = 0; i < r_numdlights; i++) {
         const glDynLight_t *light = &r_dlights[i];
         vec3_t temp, transformed;
