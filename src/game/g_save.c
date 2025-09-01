@@ -35,7 +35,6 @@ typedef enum {
     F_FLOAT,
     F_LSTRING,      // string on disk, pointer in memory
     F_ZSTRING,      // string on disk, string in memory
-    F_VECTOR,
     F_EDICT,        // index on disk, pointer in memory
     F_CLIENT,       // index on disk, pointer in memory
     F_ITEM,
@@ -59,56 +58,79 @@ typedef struct save_field_s {
     const struct save_field_s *fields;  // for structs
 } save_field_t;
 
-// generic array
-#define GA_(kind, type, name, count) \
-    { #name, _OFS(name), sizeof(type), count, kind, 0, NULL }
+#define OFFSET(name) offsetof(STRUCT, name)
+#define FIELD(name) ((STRUCT *)0)->name
+
+#define KIND2(name) _Generic(FIELD(name), \
+    int32_t: F_INT, \
+    int32_t *: F_INT, \
+    uint32_t: F_UINT, \
+    float: F_FLOAT, \
+    float *: F_FLOAT, \
+    char *: F_ZSTRING, \
+    const char *: F_ZSTRING, \
+    byte *: F_BYTE, \
+    bool: F_BOOL, \
+    int64_t: F_INT64, \
+    uint64_t: F_UINT64, \
+    const gitem_t *: F_ITEM, \
+    edict_t *: F_EDICT, \
+    mod_t: F_INT)
+
+// hack to distinguish between char * and char []
+#define KIND(name) _Generic(&FIELD(name), \
+    char **: F_LSTRING, \
+    const char **: F_LSTRING, \
+    default: KIND2(name))
+
+#define COUNT2(name) _Generic(FIELD(name), \
+    int32_t *: sizeof(FIELD(name)) / sizeof(int32_t), \
+    float *: sizeof(FIELD(name)) / sizeof(float), \
+    byte *: sizeof(FIELD(name)), \
+    char *: sizeof(FIELD(name)), \
+    default: 1)
+
+// ditto
+#define COUNT(name) _Generic(&FIELD(name), \
+    char **: 1, \
+    const char **: 1, \
+    default: COUNT2(name))
 
 // generic field
-#define GF_(kind, type, name) GA_(kind, type, name, 1)
+#define F(name) \
+    { #name, OFFSET(name), sizeof(FIELD(name)) / COUNT(name), COUNT(name), KIND(name), 0, NULL }
 
 // custom field (size unknown)
-#define CF_(kind, name) \
-    { #name, _OFS(name), 0, 0, kind, 0, NULL }
+#define C(kind, name) \
+    { #name, OFFSET(name), 0, 0, kind, 0, NULL }
+
+// custom array
+#define A(kind, name) \
+    { #name, OFFSET(name), sizeof(FIELD(name)[0]), q_countof(FIELD(name)), kind, 0, NULL }
 
 // function or moveinfo pointer
 #define P(name, ptrtyp) \
-    { #name, _OFS(name), sizeof(void *), 1, F_POINTER, ptrtyp, NULL }
+    { #name, OFFSET(name), sizeof(void *), 1, F_POINTER, ptrtyp, NULL }
+
+// struct
+#define S(type, name) \
+    { #name, OFFSET(name), sizeof(type), 1, F_STRUCT, 0, type##_fields }
 
 // array of structs
-#define RA(type, name, count) \
-    { #name, _OFS(name), sizeof(type), count, F_STRUCT, 0, type##_fields }
+#define SA(type, name) \
+    { #name, OFFSET(name), sizeof(type), q_countof(FIELD(name)), F_STRUCT, 0, type##_fields }
 
-// arrays
-#define FA(name, count) GA_(F_FLOAT,   float,   name, count)
-#define SZ(name, count) GA_(F_ZSTRING, char,    name, count)
-#define BA(name, count) GA_(F_BYTE,    byte,    name, count)
-#define IA(name, count) GA_(F_INT,     int,     name, count)
-
-// single fields
-#define F(name) FA(name, 1)
-#define I(name) IA(name, 1)
-#define R(type, name) RA(type, name, 1)
-
-#define H(name)   GF_(F_UINT,    int,       name)
-#define H64(name) GF_(F_UINT64,  uint64_t,  name)
-#define O(name)   GF_(F_BOOL,    bool,      name)
-#define L(name)   GF_(F_LSTRING, char *,    name)
-#define V(name)   GF_(F_VECTOR,  vec3_t,    name)
-#define M(name)   GF_(F_ITEM,    gitem_t *, name)
-#define E(name)   GF_(F_EDICT,   edict_t *, name)
-#define T(name)   GF_(F_INT64,   gtime_t,   name)
-
+#define STRUCT moveinfo_t
 static const save_field_t moveinfo_t_fields[] = {
-#define _OFS(x) offsetof(moveinfo_t, x)
-    V(start_origin),
-    V(start_angles),
-    V(end_origin),
-    V(end_angles),
-    V(end_angles_reversed),
+    F(start_origin),
+    F(start_angles),
+    F(end_origin),
+    F(end_angles),
+    F(end_angles_reversed),
 
-    H(sound_start),
-    H(sound_middle),
-    H(sound_end),
+    F(sound_start),
+    F(sound_middle),
+    F(sound_end),
 
     F(accel),
     F(speed),
@@ -117,10 +139,10 @@ static const save_field_t moveinfo_t_fields[] = {
 
     F(wait),
 
-    I(state),
-    O(reversing),
-    V(dir),
-    V(dest),
+    F(state),
+    F(reversing),
+    F(dir),
+    F(dest),
     F(current_speed),
     F(move_speed),
     F(next_speed),
@@ -128,27 +150,27 @@ static const save_field_t moveinfo_t_fields[] = {
     F(decel_distance),
     P(endfunc, P_moveinfo_endfunc),
     P(blocked, P_moveinfo_blocked),
-#undef _OFS
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT reinforcement_t
 static const save_field_t reinforcement_t_fields[] = {
-#define _OFS(x) offsetof(reinforcement_t, x)
-    L(classname),
-    I(strength),
+    F(classname),
+    F(strength),
     F(radius),
-    V(mins),
-    V(maxs),
-#undef _OFS
+    F(mins),
+    F(maxs),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT monsterinfo_t
 static const save_field_t monsterinfo_t_fields[] = {
-#define _OFS(x) offsetof(monsterinfo_t, x)
     P(active_move, P_mmove_t),
     P(next_move, P_mmove_t),
-    H64(aiflags),
-    I(nextframe),
+    F(aiflags),
+    F(nextframe),
     F(scale),
 
     P(stand, P_monsterinfo_stand),
@@ -164,223 +186,221 @@ static const save_field_t monsterinfo_t_fields[] = {
     P(setskin, P_monsterinfo_setskin),
     P(physics_change, P_monsterinfo_physchanged),
 
-    T(pausetime),
-    T(attack_finished),
-    T(fire_wait),
+    F(pausetime),
+    F(attack_finished),
+    F(fire_wait),
 
-    V(saved_goal),
-    T(search_time),
-    T(trail_time),
-    V(last_sighting),
-    I(attack_state),
-    O(lefty),
-    T(idle_time),
-    I(linkcount),
+    F(saved_goal),
+    F(search_time),
+    F(trail_time),
+    F(last_sighting),
+    F(attack_state),
+    F(lefty),
+    F(idle_time),
+    F(linkcount),
 
-    I(power_armor_type),
-    I(power_armor_power),
+    F(power_armor_type),
+    F(power_armor_power),
 
-    I(initial_power_armor_type),
-    I(max_power_armor_power),
-    I(weapon_sound),
-    I(engine_sound),
+    F(initial_power_armor_type),
+    F(max_power_armor_power),
+    F(weapon_sound),
+    F(engine_sound),
 
     P(blocked, P_monsterinfo_blocked),
-    T(last_hint_time),
-    E(goal_hint),
-    I(medicTries),
-    E(badMedic1),
-    E(badMedic2),
-    E(healer),
+    F(last_hint_time),
+    F(goal_hint),
+    F(medicTries),
+    F(badMedic1),
+    F(badMedic2),
+    F(healer),
     P(duck, P_monsterinfo_duck),
     P(unduck, P_monsterinfo_unduck),
     P(sidestep, P_monsterinfo_sidestep),
     F(base_height),
-    T(next_duck_time),
-    T(duck_wait_time),
-    E(last_player_enemy),
-    O(blindfire),
-    O(can_jump),
-    O(had_visibility),
+    F(next_duck_time),
+    F(duck_wait_time),
+    F(last_player_enemy),
+    F(blindfire),
+    F(can_jump),
+    F(had_visibility),
     F(drop_height),
     F(jump_height),
-    T(blind_fire_delay),
-    V(blind_fire_target),
-    I(slots_from_commander),
-    I(monster_slots),
-    I(monster_used),
-    E(commander),
-    T(quad_time),
-    T(invincible_time),
-    T(double_time),
+    F(blind_fire_delay),
+    F(blind_fire_target),
+    F(slots_from_commander),
+    F(monster_slots),
+    F(monster_used),
+    F(commander),
+    F(quad_time),
+    F(invincible_time),
+    F(double_time),
 
-    T(surprise_time),
-    I(armor_type),
-    I(armor_power),
-    O(close_sight_tripped),
-    T(melee_debounce_time),
-    T(strafe_check_time),
-    I(base_health),
-    I(health_scaling),
-    T(next_move_time),
-    T(bad_move_time),
-    T(bump_time),
-    T(random_change_time),
-    T(path_blocked_counter),
-    T(path_wait_time),
-    I(combat_style),
+    F(surprise_time),
+    F(armor_type),
+    F(armor_power),
+    F(close_sight_tripped),
+    F(melee_debounce_time),
+    F(strafe_check_time),
+    F(base_health),
+    F(health_scaling),
+    F(next_move_time),
+    F(bad_move_time),
+    F(bump_time),
+    F(random_change_time),
+    F(path_blocked_counter),
+    F(path_wait_time),
+    F(combat_style),
 
-    E(damage_attacker),
-    E(damage_inflictor),
-    I(damage_blood),
-    I(damage_knockback),
-    V(damage_from),
-    I(damage_mod),
+    F(damage_attacker),
+    F(damage_inflictor),
+    F(damage_blood),
+    F(damage_knockback),
+    F(damage_from),
+    F(damage_mod),
 
     F(fly_max_distance),
     F(fly_min_distance),
     F(fly_acceleration),
     F(fly_speed),
-    V(fly_ideal_position),
-    T(fly_position_time),
-    O(fly_buzzard),
-    O(fly_above),
-    O(fly_pinned),
-    O(fly_thrusters),
-    T(fly_recovery_time),
-    V(fly_recovery_dir),
+    F(fly_ideal_position),
+    F(fly_position_time),
+    F(fly_buzzard),
+    F(fly_above),
+    F(fly_pinned),
+    F(fly_thrusters),
+    F(fly_recovery_time),
+    F(fly_recovery_dir),
 
-    T(checkattack_time),
-    I(start_frame),
-    T(dodge_time),
-    I(move_block_counter),
-    T(move_block_change_time),
-    T(react_to_damage_time),
+    F(checkattack_time),
+    F(start_frame),
+    F(dodge_time),
+    F(move_block_counter),
+    F(move_block_change_time),
+    F(react_to_damage_time),
 
-    CF_(F_REINFORCEMENTS, reinforcements),
-    BA(chosen_reinforcements, MAX_REINFORCEMENTS),
+    C(F_REINFORCEMENTS, reinforcements),
+    F(chosen_reinforcements),
 
-    T(jump_time),
-#undef _OFS
+    F(jump_time),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT bmodel_anim_t
 static const save_field_t bmodel_anim_t_fields[] = {
-#define _OFS(x) offsetof(bmodel_anim_t, x)
-    I(params[0].start),
-    I(params[0].end),
-    I(params[0].style),
-    I(params[0].speed),
-    O(params[0].nowrap),
-    I(params[1].start),
-    I(params[1].end),
-    I(params[1].style),
-    I(params[1].speed),
-    O(params[1].nowrap),
-    O(enabled),
-    O(alternate),
-    O(currently_alternate),
-    T(next_tick),
-#undef _OFS
+    F(params[0].start),
+    F(params[0].end),
+    F(params[0].style),
+    F(params[0].speed),
+    F(params[0].nowrap),
+    F(params[1].start),
+    F(params[1].end),
+    F(params[1].style),
+    F(params[1].speed),
+    F(params[1].nowrap),
+    F(enabled),
+    F(alternate),
+    F(currently_alternate),
+    F(next_tick),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT player_fog_t
 static const save_field_t player_fog_t_fields[] = {
-#define _OFS(x) offsetof(player_fog_t, x)
-    V(color),
+    F(color),
     F(density),
     F(sky_factor),
-#undef _OFS
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT player_heightfog_t
 static const save_field_t player_heightfog_t_fields[] = {
-#define _OFS(x) offsetof(player_heightfog_t, x)
-    V(start.color),
+    F(start.color),
     F(start.dist),
-    V(end.color),
+    F(end.color),
     F(end.dist),
     F(density),
     F(falloff),
-#undef _OFS
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT edict_t
 static const save_field_t edict_t_fields[] = {
-#define _OFS FOFS
-    V(s.origin),
-    V(s.angles),
-    V(s.old_origin),
-    I(s.modelindex),
-    I(s.modelindex2),
-    I(s.modelindex3),
-    I(s.modelindex4),
-    I(s.frame),
-    H(s.skinnum),
-    H(s.effects),
-    H(s.renderfx),
-    H(s.sound),
-    H(s.morefx),
+    F(s.origin),
+    F(s.angles),
+    F(s.old_origin),
+    F(s.modelindex),
+    F(s.modelindex2),
+    F(s.modelindex3),
+    F(s.modelindex4),
+    F(s.frame),
+    F(s.skinnum),
+    F(s.effects),
+    F(s.renderfx),
+    F(s.sound),
+    F(s.morefx),
     F(s.alpha),
     F(s.scale),
-    I(s.othernum),
+    F(s.othernum),
 
-    // [...]
+    F(r.linkcount),
+    F(r.svflags),
+    F(r.mins),
+    F(r.maxs),
+    F(r.solid),
+    F(r.ownernum),
+    F(r.clientmask),
 
-    I(r.linkcount),
-    H(r.svflags),
-    V(r.mins),
-    V(r.maxs),
-    I(r.solid),
-    I(r.ownernum),
-    BA(r.clientmask, MAX_CLIENTS / CHAR_BIT),
+    F(spawn_count),
+    F(movetype),
+    F(clipmask),
+    F(flags),
 
-    I(spawn_count),
-    I(movetype),
-    H(clipmask),
-    H64(flags),
+    F(model),
+    F(freetime),
 
-    L(model),
-    T(freetime),
+    F(message),
+    F(classname),
+    F(spawnflags),
 
-    L(message),
-    L(classname),
-    H(spawnflags),
-
-    T(timestamp),
+    F(timestamp),
 
     F(angle),
-    L(target),
-    L(targetname),
-    L(killtarget),
-    L(team),
-    L(pathtarget),
-    L(deathtarget),
-    L(healthtarget),
-    L(itemtarget),
-    L(combattarget),
-    E(target_ent),
+    F(target),
+    F(targetname),
+    F(killtarget),
+    F(team),
+    F(pathtarget),
+    F(deathtarget),
+    F(healthtarget),
+    F(itemtarget),
+    F(combattarget),
+    F(target_ent),
 
     F(speed),
     F(accel),
     F(decel),
-    V(movedir),
-    V(pos1),
-    V(pos2),
-    V(pos3),
+    F(movedir),
+    F(pos1),
+    F(pos2),
+    F(pos3),
 
-    V(velocity),
-    V(avelocity),
-    I(mass),
-    T(air_finished),
+    F(velocity),
+    F(avelocity),
+    F(mass),
+    F(air_finished),
     F(gravity),
 
-    E(goalentity),
-    E(movetarget),
+    F(goalentity),
+    F(movetarget),
     F(yaw_speed),
     F(ideal_yaw),
 
-    T(nextthink),
+    F(nextthink),
     P(prethink, P_prethink),
     P(postthink, P_prethink),
     P(think, P_think),
@@ -389,44 +409,44 @@ static const save_field_t edict_t_fields[] = {
     P(pain, P_pain),
     P(die, P_die),
 
-    T(touch_debounce_time),
-    T(pain_debounce_time),
-    T(damage_debounce_time),
-    T(fly_sound_debounce_time),
-    T(last_move_time),
+    F(touch_debounce_time),
+    F(pain_debounce_time),
+    F(damage_debounce_time),
+    F(fly_sound_debounce_time),
+    F(last_move_time),
 
-    I(health),
-    I(max_health),
-    I(gib_health),
-    T(show_hostile),
+    F(health),
+    F(max_health),
+    F(gib_health),
+    F(show_hostile),
 
-    T(powerarmor_time),
+    F(powerarmor_time),
 
-    L(map),
+    F(map),
 
-    I(viewheight),
-    O(deadflag),
-    O(takedamage),
-    I(dmg),
-    I(radius_dmg),
+    F(viewheight),
+    F(deadflag),
+    F(takedamage),
+    F(dmg),
+    F(radius_dmg),
     F(dmg_radius),
-    I(sounds),
-    I(count),
+    F(sounds),
+    F(count),
 
-    E(chain),
-    E(enemy),
-    E(oldenemy),
-    E(activator),
-    E(groundentity),
-    I(groundentity_linkcount),
-    E(teamchain),
-    E(teammaster),
+    F(chain),
+    F(enemy),
+    F(oldenemy),
+    F(activator),
+    F(groundentity),
+    F(groundentity_linkcount),
+    F(teamchain),
+    F(teammaster),
 
-    E(mynoise),
-    E(mynoise2),
+    F(mynoise),
+    F(mynoise2),
 
-    I(noise_index),
-    I(noise_index2),
+    F(noise_index),
+    F(noise_index2),
     F(volume),
     F(attenuation),
 
@@ -434,313 +454,312 @@ static const save_field_t edict_t_fields[] = {
     F(delay),
     F(random),
 
-    T(teleport_time),
+    F(teleport_time),
 
-    H(watertype),
-    I(waterlevel),
+    F(watertype),
+    F(waterlevel),
 
-    V(move_origin),
-    V(move_angles),
+    F(move_origin),
+    F(move_angles),
 
-    I(style),
+    F(style),
 
-    M(item),
+    F(item),
 
-    R(moveinfo_t, moveinfo),
-    R(monsterinfo_t, monsterinfo),
+    S(moveinfo_t, moveinfo),
+    S(monsterinfo_t, monsterinfo),
 
-    H(plat2flags),
-    V(offset),
-    V(gravityVector),
-    E(bad_area),
-    E(hint_chain),
-    E(monster_hint_chain),
-    E(target_hint_chain),
-    I(hint_chain_id),
+    F(plat2flags),
+    F(offset),
+    F(gravityVector),
+    F(bad_area),
+    F(hint_chain),
+    F(monster_hint_chain),
+    F(target_hint_chain),
+    F(hint_chain_id),
 
-    SZ(clock_message, CLOCK_MESSAGE_SIZE),
+    F(clock_message),
 
-    T(dead_time),
-    E(beam),
-    E(beam2),
-    E(proboscus),
-    E(disintegrator),
-    T(disintegrator_time),
-    H(hackflags),
+    F(dead_time),
+    F(beam),
+    F(beam2),
+    F(proboscus),
+    F(disintegrator),
+    F(disintegrator_time),
+    F(hackflags),
 
-    R(player_fog_t, fog_off),
-    R(player_fog_t, fog),
+    S(player_fog_t, fog_off),
+    S(player_fog_t, fog),
 
-    R(player_heightfog_t, heightfog_off),
-    R(player_heightfog_t, heightfog),
+    S(player_heightfog_t, heightfog_off),
+    S(player_heightfog_t, heightfog),
 
-    T(slime_debounce_time),
+    F(slime_debounce_time),
 
-    R(bmodel_anim_t, bmodel_anim),
+    S(bmodel_anim_t, bmodel_anim),
 
-    L(style_on),
-    L(style_off),
+    F(style_on),
+    F(style_off),
 
-    H(crosslevel_flags),
-    T(no_gravity_time),
+    F(crosslevel_flags),
+    F(no_gravity_time),
     F(vision_cone),
-    O(free_after_event),
-#undef _OFS
+    F(free_after_event),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT level_locals_t
 static const save_field_t level_locals_t_fields[] = {
-#define _OFS(x) offsetof(level_locals_t, x)
-    T(time),
+    F(time),
 
-    SZ(level_name, MAX_QPATH),
-    SZ(mapname, MAX_QPATH),
-    SZ(nextmap, MAX_QPATH),
+    F(level_name),
+    F(mapname),
+    F(nextmap),
 
-    T(intermissiontime),
-    L(changemap),
-    L(achievement),
-    O(exitintermission),
-    O(intermission_clear),
-    V(intermission_origin),
-    V(intermission_angle),
+    F(intermissiontime),
+    F(changemap),
+    F(achievement),
+    F(exitintermission),
+    F(intermission_clear),
+    F(intermission_origin),
+    F(intermission_angle),
 
-    I(pic_health),
-    I(pic_ping),
-    I(snd_fry),
+    F(pic_health),
+    F(pic_ping),
+    F(snd_fry),
 
-    I(total_secrets),
-    I(found_secrets),
+    F(total_secrets),
+    F(found_secrets),
 
-    I(total_goals),
-    I(found_goals),
+    F(total_goals),
+    F(found_goals),
 
-    I(total_monsters),
-    I(killed_monsters),
+    F(total_monsters),
+    F(killed_monsters),
 
-    I(body_que),
-    I(power_cubes),
+    F(body_que),
+    F(power_cubes),
 
-    E(disguise_violator),
-    T(disguise_violation_time),
-    I(disguise_icon),
+    F(disguise_violator),
+    F(disguise_violation_time),
+    F(disguise_icon),
 
-    T(coop_level_restart_time),
+    F(coop_level_restart_time),
 
-    L(goals),
-    I(goal_num),
+    F(goals),
+    F(goal_num),
 
-    O(valid_poi),
-    V(current_poi),
-    I(current_poi_image),
-    I(current_poi_stage),
-    E(current_dynamic_poi),
+    F(valid_poi),
+    F(current_poi),
+    F(current_poi_image),
+    F(current_poi_stage),
+    F(current_dynamic_poi),
 
-    L(start_items),
-    O(no_grapple),
+    F(start_items),
+    F(no_grapple),
 
     F(gravity),
-    O(hub_map),
-    E(health_bar_entities[0]),
-    E(health_bar_entities[1]),
-    O(story_active),
-    T(next_auto_save),
+    F(hub_map),
+    F(health_bar_entities[0]),
+    F(health_bar_entities[1]),
+    F(story_active),
+    F(next_auto_save),
 
-    L(primary_objective_string),
-    L(secondary_objective_string),
-    L(primary_objective_title),
-    L(secondary_objective_title),
-
-#undef _OFS
+    F(primary_objective_string),
+    F(secondary_objective_string),
+    F(primary_objective_title),
+    F(secondary_objective_title),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT client_persistent_t
 static const save_field_t client_persistent_t_fields[] = {
-#define _OFS(x) offsetof(client_persistent_t, x)
-    SZ(userinfo, MAX_INFO_STRING),
-    SZ(netname, 16),
-    I(hand),
-    I(autoswitch),
-    I(autoshield),
+    F(userinfo),
+    F(netname),
+    F(hand),
+    F(autoswitch),
+    F(autoshield),
 
-    I(health),
-    I(max_health),
-    H64(savedFlags),
+    F(health),
+    F(max_health),
+    F(savedFlags),
 
-    I(selected_item),
-    T(selected_item_time),
-    GA_(F_INVENTORY, int16_t, inventory, IT_TOTAL),
+    F(selected_item),
+    F(selected_item_time),
+    A(F_INVENTORY, inventory),
 
-    GA_(F_MAX_AMMO, int16_t, max_ammo, AMMO_MAX),
+    A(F_MAX_AMMO, max_ammo),
 
-    M(weapon),
-    M(lastweapon),
+    F(weapon),
+    F(lastweapon),
 
-    H(power_cubes),
-    I(score),
+    F(power_cubes),
+    F(score),
 
-    I(game_help1changed),
-    I(game_help2changed),
-    I(helpchanged),
-    T(help_time),
+    F(game_help1changed),
+    F(game_help2changed),
+    F(helpchanged),
+    F(help_time),
 
-    O(spectator),
+    F(spectator),
 
-    T(megahealth_time),
-    I(lives),
-#undef _OFS
+    F(megahealth_time),
+    F(lives),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT gclient_t
 static const save_field_t gclient_t_fields[] = {
-#define _OFS CLOFS
-    I(ps.pm_type),
+    F(ps.pm_type),
 
-    V(ps.origin),
-    V(ps.velocity),
-    I(ps.pm_flags),
-    I(ps.pm_time),
-    I(ps.gravity),
-    IA(ps.delta_angles, 3),
+    F(ps.origin),
+    F(ps.velocity),
+    F(ps.pm_flags),
+    F(ps.pm_time),
+    F(ps.gravity),
+    F(ps.delta_angles),
 
-    V(ps.viewangles),
-    I(ps.viewheight),
+    F(ps.viewangles),
+    F(ps.viewheight),
 
-    I(ps.bobtime),
+    F(ps.bobtime),
 
-    I(ps.gunindex),
-    I(ps.gunskin),
-    I(ps.gunframe),
-    I(ps.gunrate),
+    F(ps.gunindex),
+    F(ps.gunskin),
+    F(ps.gunframe),
+    F(ps.gunrate),
 
-    FA(ps.screen_blend, 4),
-    FA(ps.damage_blend, 4),
+    F(ps.screen_blend),
+    F(ps.damage_blend),
 
-    I(ps.fov),
+    F(ps.fov),
 
-    I(ps.rdflags),
+    F(ps.rdflags),
 
-    CF_(F_STATS, ps.stats),
+    C(F_STATS, ps.stats),
 
-    R(client_persistent_t, pers),
+    S(client_persistent_t, pers),
 
-    R(client_persistent_t, resp.coop_respawn),
+    S(client_persistent_t, resp.coop_respawn),
 
-    T(resp.entertime),
-    I(resp.score),
-    O(resp.spectator),
+    F(resp.entertime),
+    F(resp.score),
+    F(resp.spectator),
 
-    M(newweapon),
+    F(newweapon),
 
     F(killer_yaw),
 
-    I(weaponstate),
+    F(weaponstate),
 
     F(damage_alpha),
     F(bonus_alpha),
-    V(damage_blend),
-    V(v_angle),
-    V(v_forward),
-    V(oldviewangles),
-    V(oldvelocity),
-    E(oldgroundentity),
-    T(flash_time),
+    F(damage_blend),
+    F(v_angle),
+    F(v_forward),
+    F(oldviewangles),
+    F(oldvelocity),
+    F(oldgroundentity),
+    F(flash_time),
 
-    T(next_drown_time),
-    I(old_waterlevel),
-    I(breather_sound),
+    F(next_drown_time),
+    F(old_waterlevel),
+    F(breather_sound),
 
-    I(anim_end),
-    I(anim_priority),
-    O(anim_duck),
-    O(anim_run),
-    T(anim_time),
+    F(anim_end),
+    F(anim_priority),
+    F(anim_duck),
+    F(anim_run),
+    F(anim_time),
 
-    T(quad_time),
-    T(invincible_time),
-    T(breather_time),
-    T(enviro_time),
-    T(invisible_time),
+    F(quad_time),
+    F(invincible_time),
+    F(breather_time),
+    F(enviro_time),
+    F(invisible_time),
 
-    O(grenade_blew_up),
-    T(grenade_time),
-    T(grenade_finished_time),
-    T(quadfire_time),
-    I(silencer_shots),
-    I(weapon_sound),
+    F(grenade_blew_up),
+    F(grenade_time),
+    F(grenade_finished_time),
+    F(quadfire_time),
+    F(silencer_shots),
+    F(weapon_sound),
 
-    T(pickup_msg_time),
+    F(pickup_msg_time),
 
-    T(respawn_time),
+    F(respawn_time),
 
-    T(double_time),
-    T(ir_time),
-    T(nuke_time),
-    T(tracker_pain_time),
+    F(double_time),
+    F(ir_time),
+    F(nuke_time),
+    F(tracker_pain_time),
 
-    T(empty_click_sound),
+    F(empty_click_sound),
 
-    E(trail_head),
-    E(trail_tail),
+    F(trail_head),
+    F(trail_tail),
 
-    O(landmark_free_fall),
-    SZ(landmark_name, MAX_QPATH),
-    V(landmark_rel_pos),
-    T(landmark_noise_time),
+    F(landmark_free_fall),
+    F(landmark_name),
+    F(landmark_rel_pos),
+    F(landmark_noise_time),
 
-    T(invisibility_fade_time),
+    F(invisibility_fade_time),
 
-    I(last_step_time),
-    V(last_ladder_pos),
-    T(last_ladder_sound),
+    F(last_step_time),
+    F(last_ladder_pos),
+    F(last_ladder_sound),
 
-    E(sight_entity),
-    T(sight_entity_time),
-    E(sound_entity),
-    T(sound_entity_time),
-    E(sound2_entity),
-    T(sound2_entity_time),
+    F(sight_entity),
+    F(sight_entity_time),
+    F(sound_entity),
+    F(sound_entity_time),
+    F(sound2_entity),
+    F(sound2_entity_time),
 
-    R(player_fog_t, wanted_fog),
-    R(player_heightfog_t, wanted_heightfog),
+    S(player_fog_t, wanted_fog),
+    S(player_heightfog_t, wanted_heightfog),
 
-    T(last_firing_time),
-#undef _OFS
+    F(last_firing_time),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT level_entry_t
 static const save_field_t level_entry_t_fields[] = {
-#define _OFS(x) offsetof(level_entry_t, x)
-    SZ(map_name, MAX_QPATH),
-    SZ(pretty_name, MAX_QPATH),
-    I(total_secrets),
-    I(found_secrets),
-    I(total_monsters),
-    I(killed_monsters),
-    T(time),
-    I(visit_order),
-#undef _OFS
+    F(map_name),
+    F(pretty_name),
+    F(total_secrets),
+    F(found_secrets),
+    F(total_monsters),
+    F(killed_monsters),
+    F(time),
+    F(visit_order),
     { 0 }
 };
+#undef STRUCT
 
+#define STRUCT game_locals_t
 static const save_field_t game_locals_t_fields[] = {
-#define _OFS(x) offsetof(game_locals_t, x)
-    SZ(helpmessage1, MAX_TOKEN_CHARS),
-    SZ(helpmessage2, MAX_TOKEN_CHARS),
-    I(help1changed),
-    I(help2changed),
+    F(helpmessage1),
+    F(helpmessage2),
+    F(help1changed),
+    F(help2changed),
 
-    I(maxclients),
+    F(maxclients),
 
-    H(cross_level_flags),
-    H(cross_unit_flags),
+    F(cross_level_flags),
+    F(cross_unit_flags),
 
-    O(autosaved),
+    F(autosaved),
 
-    RA(level_entry_t, level_entries, MAX_LEVELS_PER_UNIT),
-#undef _OFS
+    SA(level_entry_t, level_entries),
     { 0 }
 };
+#undef STRUCT
 
 //=========================================================
 
@@ -761,18 +780,18 @@ static struct {
     int indent;
 } block;
 
-#define indent(s)   (int)(block.indent * 2 + strlen(s)), s
+#define indent(s)   (int)(block.indent + strlen(s)), s
 #define write_str(...)  trap_FS_FilePrintf(g_savefile, __VA_ARGS__)
 
 static void begin_block(const char *name)
 {
     write_str("%*s {\n", indent(name));
-    block.indent++;
+    block.indent += 2;
 }
 
 static void end_block(void)
 {
-    block.indent--;
+    block.indent -= 2;
     write_str("%*s}\n", indent(""));
 }
 
@@ -786,9 +805,9 @@ static void write_int(const char *name, int v)
     write_str("%*s %d\n", indent(name), v);
 }
 
-static void write_uint_hex(const char *name, unsigned v)
+static void write_uint(const char *name, unsigned v)
 {
-    if (v < 256)
+    if (v < 1024)
         write_str("%*s %u\n", indent(name), v);
     else
         write_str("%*s %#x\n", indent(name), v);
@@ -799,12 +818,12 @@ static void write_int64(const char *name, int64_t v)
     write_str("%*s %"PRId64"\n", indent(name), v);
 }
 
-static void write_uint64_hex(const char *name, uint64_t v)
+static void write_uint64(const char *name, uint64_t v)
 {
     write_str("%*s %#"PRIx64"\n", indent(name), v);
 }
 
-static void write_int_v(const char *name, const int *v, int n)
+static void write_int_v(const char *name, const int32_t *v, int n)
 {
     write_str("%*s ", indent(name));
     for (int i = 0; i < n; i++)
@@ -836,14 +855,13 @@ static void write_byte_v(const char *name, const byte *p, int n)
     }
 
     write_str("%*s ", indent(name));
+    int cnt = 1;
     for (int i = 0; i < n; i++)
+        if (p[i])
+            cnt = i + 1;
+    for (int i = 0; i < cnt; i++)
         write_str("%02x", p[i]);
     write_str("\n");
-}
-
-static void write_vector(const char *name, const vec_t *v)
-{
-    write_str("%*s %.6g %.6g %.6g\n", indent(name), v[0], v[1], v[2]);
 }
 
 static void write_pointer(const char *name, const void *p, ptr_type_t type)
@@ -951,22 +969,19 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_int_v(field->name, p, field->count);
         break;
     case F_UINT:
-        write_uint_hex(field->name, *(unsigned *)p);
+        write_uint(field->name, *(uint32_t *)p);
         break;
     case F_INT64:
         write_int64(field->name, *(int64_t *)p);
         break;
     case F_UINT64:
-        write_uint64_hex(field->name, *(uint64_t *)p);
+        write_uint64(field->name, *(uint64_t *)p);
         break;
     case F_BOOL:
         write_str("%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
         break;
     case F_FLOAT:
         write_float_v(field->name, p, field->count);
-        break;
-    case F_VECTOR:
-        write_vector(field->name, p);
         break;
 
     case F_ZSTRING:
@@ -1267,7 +1282,7 @@ static uint64_t parse_uint64(void)
     return v;
 }
 
-static void parse_int_v(int *v, int n)
+static void parse_int_v(int32_t *v, int n)
 {
     for (int i = 0; i < n; i++)
         v[i] = parse_int32();
@@ -1287,10 +1302,10 @@ static void parse_byte_v(byte *v, int n)
     }
 
     parse();
-    if (line.len != n * 2)
+    if (line.len & 1 || line.len < 2 || line.len > n * 2)
         parse_error("unexpected number of characters");
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < line.len / 2; i++) {
         int c1 = Q_charhex(line.token[i * 2 + 0]);
         int c2 = Q_charhex(line.token[i * 2 + 1]);
         if (c1 == -1 || c2 == -1)
@@ -1324,13 +1339,6 @@ static void read_zstring(char *s, int size)
 {
     if (Q_strlcpy(s, parse(), size) >= size)
         parse_error("oversize string");
-}
-
-static void read_vector(vec_t *v)
-{
-    v[0] = parse_float();
-    v[1] = parse_float();
-    v[2] = parse_float();
 }
 
 static const gitem_t *read_item(void)
@@ -1453,7 +1461,7 @@ static void read_field(const save_field_t *field, void *base)
         parse_int_v(p, field->count);
         break;
     case F_UINT:
-        *(unsigned *)p = parse_uint(UINT32_MAX);
+        *(uint32_t *)p = parse_uint(UINT32_MAX);
         break;
     case F_INT64:
     case F_UINT64:
@@ -1464,9 +1472,6 @@ static void read_field(const save_field_t *field, void *base)
         break;
     case F_FLOAT:
         parse_float_v(p, field->count);
-        break;
-    case F_VECTOR:
-        read_vector((vec_t *)p);
         break;
 
     case F_LSTRING:
@@ -1510,20 +1515,31 @@ static void read_field(const save_field_t *field, void *base)
     }
 }
 
+static const save_field_t *find_field(const save_field_t *f, const char *tok)
+{
+    while (f->name) {
+        if (!strcmp(f->name, tok))
+            return f;
+        f++;
+    }
+    return NULL;
+}
+
 static void read_fields(const save_field_t *field, void *base)
 {
+    const save_field_t *f = field;
     expect("{");
     while (1) {
         const char *tok = parse();
         if (!strcmp(tok, "}"))
             break;
-        while (field->name) {
-            if (!strcmp(field->name, tok))
-                break;
-            field++;
-        }
-        if (field->name)
-            read_field(field, base);
+        // expect fields in order we wrote them,
+        // but also allow (slow) out of order lookup
+        f = find_field(f, tok);
+        if (!f)
+            f = find_field(field, tok);
+        if (f)
+            read_field(f++, base);
         else
             unknown("field");
     }
