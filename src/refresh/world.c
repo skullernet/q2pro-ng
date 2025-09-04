@@ -44,6 +44,9 @@ static void GL_SampleLightPoint(vec3_t color)
     tmax = surf->lm_height;
     size = smax * tmax * 3;
 
+    Q_assert((unsigned)s < smax);
+    Q_assert((unsigned)t < tmax);
+
     VectorClear(color);
 
     // add all the lightmaps with bilinear filtering

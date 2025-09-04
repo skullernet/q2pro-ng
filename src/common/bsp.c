@@ -1047,9 +1047,9 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, c
 
             s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
             t = DotProduct(surf->lm_axis[1], mid) + surf->lm_offset[1];
-            if (s < 0 || s > surf->lm_width - 1)
+            if (s != s || s < 0 || s > surf->lm_width - 1)
                 continue;
-            if (t < 0 || t > surf->lm_height - 1)
+            if (t != t || t < 0 || t > surf->lm_height - 1)
                 continue;
 
             light_point->surf = surf;

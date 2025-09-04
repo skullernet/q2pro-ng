@@ -393,19 +393,19 @@ static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, co
 static void MSG_WriteFloat(uint32_t to_v)
 {
     float f_val = LongToFloat(to_v);
-    int   i_val = f_val;
 
     if (f_val == 0.0f) {
         MSG_WriteBit(0);
-    } else {
+        return;
+    }
+
+    MSG_WriteBit(1);
+    if (f_val >= -FLOAT_INT_BIAS && f_val < FLOAT_INT_BIAS && (int)f_val == f_val) {
         MSG_WriteBit(1);
-        if (f_val == i_val && i_val >= -FLOAT_INT_BIAS && i_val < FLOAT_INT_BIAS) {
-            MSG_WriteBit(1);
-            MSG_WriteBits(i_val + FLOAT_INT_BIAS, FLOAT_INT_BITS);
-        } else {
-            MSG_WriteBit(0);
-            MSG_WriteBits(to_v, 32);
-        }
+        MSG_WriteBits(f_val, -FLOAT_INT_BITS);
+    } else {
+        MSG_WriteBit(0);
+        MSG_WriteBits(to_v, 32);
     }
 }
 
@@ -829,7 +829,7 @@ static uint32_t MSG_ReadFloat(void)
 {
     if (MSG_ReadBit()) {
         if (MSG_ReadBit())
-            return FloatToLong(MSG_ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS);
+            return FloatToLong(MSG_ReadBits(-FLOAT_INT_BITS));
         else
             return MSG_ReadBits(32);
     } else {
