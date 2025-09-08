@@ -96,7 +96,6 @@ typedef struct {
     struct {
         bsp_t       *cache;
         GLuint      buffer;
-        size_t      buffer_size;
         vec_t       size;
     } world;
     GLuint          renderbuffer;

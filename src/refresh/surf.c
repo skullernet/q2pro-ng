@@ -362,39 +362,27 @@ static void calc_surface_hash(mface_t *surf)
         surf->hash ^= out[i];
 }
 
-static void create_surface_vbo(size_t size)
-{
-    qglGenBuffers(1, &gl_static.world.buffer);
-    GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.buffer);
-    qglBufferData(GL_ARRAY_BUFFER, size, NULL, GL_STATIC_DRAW);
-}
-
-static void upload_surface_vbo(int lastvert)
-{
-    size_t offset = lastvert * VERTEX_SIZE * sizeof(vec_t);
-    size_t size = tess.numverts * VERTEX_SIZE * sizeof(vec_t);
-
-    Com_DDDPrintf("%s: %zu bytes at %zu\n", __func__, size, offset);
-
-    qglBufferSubData(GL_ARRAY_BUFFER, offset, size, tess.vertices);
-    tess.numverts = 0;
-}
-
 static void upload_world_surfaces(void)
 {
     const bsp_t *bsp = gl_static.world.cache;
     const uint32_t *normal_index = bsp->normal_indices;
-    size_t size = gl_static.world.buffer_size;
-    vec_t *vbo;
+    size_t size = 0;
+    vec_t *vbo, *data;
     mface_t *surf;
-    int i, currvert, lastvert;
+    int i, currvert = 0;
+
+    // calculate vertex buffer size in bytes
+    for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++)
+        if (!(surf->drawflags & SURF_NODRAW))
+            size += surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]);
+
+    // allocate temporary vertex buffer
+    Com_DPrintf("%s: %zu bytes of vertex data\n", __func__, size);
+    vbo = data = R_Malloc(size);
 
     // begin building lightmaps
     LM_BeginBuilding();
 
-    GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.buffer);
-
-    currvert = lastvert = 0;
     for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++) {
         if (surf->drawflags & SURF_NODRAW) {
             if (normal_index)
@@ -402,24 +390,12 @@ static void upload_world_surfaces(void)
             continue;
         }
 
-        Q_assert(surf->numsurfedges >= 3 && surf->numsurfedges <= TESS_MAX_VERTICES);
-        Q_assert(size >= surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]));
-        size -= surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]);
-
-        // upload VBO chunk if needed
-        if (tess.numverts + surf->numsurfedges > TESS_MAX_VERTICES) {
-            upload_surface_vbo(lastvert);
-            lastvert = currvert;
-        }
-
-        vbo = tess.vertices + tess.numverts * VERTEX_SIZE;
-        tess.numverts += surf->numsurfedges;
-
         surf->firstvert = currvert;
         build_surface_poly(surf, vbo, normal_index);
 
         surf->lm_texnum = 0;    // start with no lightmap
         LM_BuildSurface(surf, vbo);
+        vbo += surf->numsurfedges * VERTEX_SIZE;
 
         calc_surface_hash(surf);
 
@@ -428,11 +404,14 @@ static void upload_world_surfaces(void)
             normal_index += surf->numsurfedges;
     }
 
-    // upload the last VBO chunk
-    upload_surface_vbo(lastvert);
-
     // end building lightmaps
     LM_EndBuilding();
+
+    // upload the vertex buffer data
+    qglGenBuffers(1, &gl_static.world.buffer);
+    GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.buffer);
+    qglBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    Z_Free(data);
 }
 
 static void set_world_size(const mnode_t *node)
@@ -537,7 +516,6 @@ static void remove_fake_sky_faces(const bsp_t *bsp)
 void GL_LoadWorld(const char *name)
 {
     char buffer[MAX_QPATH];
-    size_t size;
     bsp_t *bsp;
     mtexinfo_t *info;
     mface_t *surf;
@@ -627,16 +605,6 @@ void GL_LoadWorld(const char *name)
     // remove fake sky faces in vanilla maps
     if (!bsp->has_bspx)
         remove_fake_sky_faces(bsp);
-
-    // calculate vertex buffer size in bytes
-    for (i = size = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++)
-        if (!(surf->drawflags & SURF_NODRAW))
-            size += surf->numsurfedges * VERTEX_SIZE * sizeof(vec_t);
-
-    // allocate vertex buffer
-    create_surface_vbo(size);
-    Com_DPrintf("%s: %zu bytes of vertex data as VBO\n", __func__, size);
-    gl_static.world.buffer_size = size;
 
     gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
     gl_static.nodraw_mask = SURF_SKY | SURF_NODRAW;
