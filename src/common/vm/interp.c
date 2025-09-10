@@ -273,16 +273,9 @@ void VM_Interpret(vm_t *m)
         count = get_u16(&cur_pc);
         cur_pc += -(uintptr_t)cur_pc & 3;
         const uint32_t *br_table = (const uint32_t *)cur_pc;
-        cur_pc += (count + 1) * 4;
-
-        addr = br_table[count];
-
         have(1);
         index = stack[cur_sp--].u32;
-        if (index < count)
-            addr = br_table[index];
-
-        cur_pc = m->code + addr;
+        cur_pc = m->code + br_table[min(index, count)];
         dispatch;
 
     do_Return:
