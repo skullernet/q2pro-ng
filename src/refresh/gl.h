@@ -769,6 +769,14 @@ static inline void GL_BindBufferBase(GLenum target, GLuint index, GLuint buffer)
     gls.currentbuffer[i] = buffer;
 }
 
+static inline void GL_StaticBufferData(GLenum target, GLsizeiptr size, const void *data)
+{
+    if (qglBufferStorage)
+        qglBufferStorage(target, size, data, 0);
+    else
+        qglBufferData(target, size, data, GL_STATIC_DRAW);
+}
+
 static inline void GL_ClearDepth(GLfloat d)
 {
     if (qglClearDepthf)

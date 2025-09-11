@@ -168,6 +168,7 @@ QGLAPI void (APIENTRYP qglDebugMessageControl)(GLenum source, GLenum type, GLenu
 
 // GL 4.4
 QGLAPI void (APIENTRYP qglBindTextures)(GLuint first, GLsizei count, const GLuint *textures);
+QGLAPI void (APIENTRYP qglBufferStorage)(GLenum target, GLsizeiptr size, const void *data, GLbitfield flags);
 
 // GL 4.5
 QGLAPI void (APIENTRYP qglBindTextureUnit)(GLuint unit, GLuint texture);

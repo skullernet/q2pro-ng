@@ -1476,7 +1476,7 @@ static void MOD_Reference(model_t *model)
 static void MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
 {
     GL_BindBuffer(GL_ARRAY_BUFFER, model->buffers[0]);
-    qglBufferData(GL_ARRAY_BUFFER, hunk->cursize, hunk->base, GL_STATIC_DRAW);
+    GL_StaticBufferData(GL_ARRAY_BUFFER, hunk->cursize, hunk->base);
 
     const uintptr_t base = (uintptr_t)hunk->base;
 
@@ -1505,7 +1505,7 @@ static void MOD_UploadVertexBuffer(model_t *model, memhunk_t *hunk)
 static void MOD_UploadIndexBuffer(model_t *model, memhunk_t *hunk)
 {
     GL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->buffers[1]);
-    qglBufferData(GL_ELEMENT_ARRAY_BUFFER, hunk->cursize, hunk->base, GL_STATIC_DRAW);
+    GL_StaticBufferData(GL_ELEMENT_ARRAY_BUFFER, hunk->cursize, hunk->base);
 
     const uintptr_t base = (uintptr_t)hunk->base;
 

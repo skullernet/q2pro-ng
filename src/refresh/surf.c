@@ -410,7 +410,7 @@ static void upload_world_surfaces(void)
     // upload the vertex buffer data
     qglGenBuffers(1, &gl_static.world.buffer);
     GL_BindBuffer(GL_ARRAY_BUFFER, gl_static.world.buffer);
-    qglBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    GL_StaticBufferData(GL_ARRAY_BUFFER, size, data);
     Z_Free(data);
 }
 
