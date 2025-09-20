@@ -673,7 +673,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_DYNAMIC_LIGHTS)
             GLSL(lightmap += calc_dynamic_lights();)
 
-        GLSL(diffuse.rgb *= lightmap * u_modulate_world;)
+        GLSL(diffuse.rgb *= clamp(lightmap, 0.0, 1.0) * u_modulate_world;)
     }
 
     if (bits & GLS_DEFAULT_FLARE)
@@ -685,7 +685,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (!(bits & GLS_TEXTURE_REPLACE)) {
         GLSL(vec4 color = v_color;)
         if ((bits & (GLS_LIGHTMAP_ENABLE | GLS_DYNAMIC_LIGHTS)) == GLS_DYNAMIC_LIGHTS)
-            GLSL(color.rgb += calc_dynamic_lights() * u_modulate_entities;)
+            GLSL(color.rgb += clamp(calc_dynamic_lights(), -1.0, 1.0) * u_modulate_entities;)
         GLSL(diffuse *= color;)
     }
 

@@ -500,7 +500,7 @@ static void setup_shadow_light(edict_t *self)
     self->s.modelindex2 = Q_clipf(st.sl.fade_start, 0, MAX_MODELS - 1);
     self->s.modelindex3 = Q_clipf(st.sl.fade_end,   0, MAX_MODELS - 1);
     self->s.modelindex4 = Q_clipf(st.sl.radius,     0, MAX_MODELS - 1);
-    self->s.scale = Q_clipf(st.sl.intensity, -5, 5);
+    self->s.scale = st.sl.intensity;
     self->s.frame = ((st.sl.lightstyle + 1) & 255) << 8;
     self->s.angles[0] = st.sl.coneangle;
 
