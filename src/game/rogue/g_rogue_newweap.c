@@ -84,7 +84,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
                  ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_PROX });
     }
 
-    // play quad sound if appopriate
+    // play quad sound if appropriate
     if (ent->dmg > PROX_DAMAGE * PROX_DAMAGE_OPEN_MULT)
         G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 

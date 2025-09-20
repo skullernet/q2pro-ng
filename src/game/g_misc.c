@@ -19,7 +19,7 @@ void USE(Use_Areaportal)(edict_t *ent, edict_t *other, edict_t *activator)
 /*QUAKED func_areaportal (0 0 0) ?
 
 This is a non-visible object that divides the world into
-areas that are seperated when this portal is not activated.
+areas that are separated when this portal is not activated.
 Usually enclosed in the middle of a door.
 */
 void SP_func_areaportal(edict_t *ent)
@@ -364,7 +364,7 @@ void TOUCH(point_combat_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             G_Printf("%s target %s does not exist\n", etos(self), self->target);
             other->movetarget = self;
         }
-        // [Paril-KEX] allow them to be re-used
+        // [Paril-KEX] allow them to be reused
         //self->target = NULL;
     } else if ((self->spawnflags & SPAWNFLAG_POINT_COMBAT_HOLD) && !(other->flags & (FL_SWIM | FL_FLY))) {
         // already standing
@@ -562,7 +562,7 @@ void SP_light(edict_t *self)
 This is just a solid wall if not inhibited
 
 TRIGGER_SPAWN   the wall will not be present until triggered
-                it will then blink in to existance; it will
+                it will then blink in to existence; it will
                 kill anything that was in it's way
 
 TOGGLE          only valid for TRIGGER_SPAWN walls

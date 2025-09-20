@@ -1339,7 +1339,7 @@ void SP_target_soundfx(edict_t *self)
     if (!self->volume)
         self->volume = 1.0f;
 
-    if (!ED_WasKeySpecified("atteniation"))
+    if (!ED_WasKeySpecified("attenuation"))
         self->attenuation = ATTN_NORM;
     else if (self->attenuation == ATTN_NONE)
         self->r.svflags |= SVF_NOCULL;

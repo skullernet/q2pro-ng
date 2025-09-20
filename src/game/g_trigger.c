@@ -602,7 +602,7 @@ Any entity that touches this will be hurt.
 
 It does dmg points of damage each server frame
 
-SILENT          supresses playing the sound
+SILENT          suppresses playing the sound
 SLOW            changes the damage rate to once per second
 NO_PROTECTION   *nothing* stops the damage
 
@@ -768,7 +768,7 @@ trigger_gravity
 */
 
 /*QUAKED trigger_gravity (.5 .5 .5) ? TOGGLE START_OFF
-Changes the touching entites gravity to the value of "gravity".
+Changes the touching entities gravity to the value of "gravity".
 1.0 is standard gravity for the level.
 
 TOGGLE - trigger_gravity can be turned on and off

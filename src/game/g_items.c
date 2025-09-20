@@ -1165,7 +1165,7 @@ void PrecacheItem(const gitem_t *it)
             PrecacheItem(ammo);
     }
 
-    // parse the space seperated precache string for other items
+    // parse the space separated precache string for other items
     s = it->precaches;
     if (!s || !s[0])
         return;

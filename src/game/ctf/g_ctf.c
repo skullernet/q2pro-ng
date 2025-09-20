@@ -434,7 +434,7 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         // attacker is on the same team as the flag carrier and
         // fragged a guy who hurt our flag carrier
         attacker->client->resp.score += CTF_CARRIER_DANGER_PROTECT_BONUS;
-        G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends %s's flag carrier against an agressive enemy\n",
+        G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends %s's flag carrier against an aggressive enemy\n",
                        attacker->client->pers.netname,
                        CTFTeamName(attacker->client->resp.ctf_team));
         if (attacker->client->resp.ghost)
@@ -844,10 +844,10 @@ void CheckEndTDMLevel(void)
 void CTFID_f(edict_t *ent)
 {
     if (ent->client->resp.id_state) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Disabling player identication display.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Disabling player identification display.\n");
         ent->client->resp.id_state = false;
     } else {
-        G_ClientPrintf(ent, PRINT_HIGH, "Activating player identication display.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Activating player identification display.\n");
         ent->client->resp.id_state = true;
     }
 }
@@ -2235,7 +2235,7 @@ static void CTFWinElection(void)
     case ELECT_ADMIN:
         ctfgame.etarget->client->resp.admin = true;
         G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ctfgame.etarget->client->pers.netname);
-        G_ClientPrintf(ctfgame.etarget, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
+        G_ClientPrintf(ctfgame.etarget, PRINT_HIGH, "Type 'admin' to access the administration menu.\n");
         break;
 
     case ELECT_MAP:
@@ -2318,7 +2318,7 @@ void CTFReady(edict_t *ent)
     }
 
     if (ent->client->resp.ready) {
-        G_ClientPrintf(ent, PRINT_HIGH, "You have already commited.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You have already committed.\n");
         return;
     }
 
@@ -2338,7 +2338,7 @@ void CTFReady(edict_t *ent)
             t2++;
     }
     if (!j && t1 && t2) {
-        // everyone has commited
+        // everyone has committed
         G_ClientPrintf(NULL, PRINT_CHAT, "All players have committed.  Match starting\n");
         ctfgame.match = MATCH_PREGAME;
         ctfgame.matchtime = level.time + SEC(matchstarttime.value);
@@ -2360,7 +2360,7 @@ void CTFNotReady(edict_t *ent)
     }
 
     if (!ent->client->resp.ready) {
-        G_ClientPrintf(ent, PRINT_HIGH, "You haven't commited.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "You haven't committed.\n");
         return;
     }
 
@@ -3233,7 +3233,7 @@ static void CTFAdmin_Reset(edict_t *ent, pmenuhnd_t *p)
     PMenu_Close(ent);
 
     // go back to normal mode
-    G_ClientPrintf(NULL, PRINT_CHAT, "Match mode has been terminated, reseting to normal game.\n");
+    G_ClientPrintf(NULL, PRINT_CHAT, "Match mode has been terminated, resetting to normal game.\n");
     ctfgame.match = MATCH_NONE;
     trap_Cvar_Set("competition", "1");
     CTFResetAllPlayers();
@@ -3293,7 +3293,7 @@ void CTFAdmin(edict_t *ent)
         !ent->client->resp.admin && strcmp(admin_password.string, buf) == 0) {
         ent->client->resp.admin = true;
         G_ClientPrintf(NULL, PRINT_HIGH, "%s has become an admin.\n", ent->client->pers.netname);
-        G_ClientPrintf(ent, PRINT_HIGH, "Type 'admin' to access the adminstration menu.\n");
+        G_ClientPrintf(ent, PRINT_HIGH, "Type 'admin' to access the administration menu.\n");
     }
 
     if (!ent->client->resp.admin) {

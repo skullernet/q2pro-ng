@@ -519,7 +519,7 @@ void FoundTarget(edict_t *self)
     self->monsterinfo.aiflags |= AI_COMBAT_POINT;
 
     // clear the targetname, that point is ours!
-    // [Paril-KEX] not any more, we can re-use them
+    // [Paril-KEX] not any more, we can reuse them
     //self->movetarget->targetname = NULL;
     self->monsterinfo.pausetime = 0;
 
@@ -702,7 +702,7 @@ bool FindTarget(edict_t *self)
         bool skip_found = true;
 
         // [Paril-KEX] slight special behavior if we are currently going to a sound
-        // and we hear a new one; because player noises are re-used, this can leave
+        // and we hear a new one; because player noises are reused, this can leave
         // us with the "same" enemy even though it's a different noise.
         if (heardit && (self->monsterinfo.aiflags & AI_SOUND_TARGET)) {
             vec3_t temp;
@@ -1043,7 +1043,7 @@ static void ai_run_missile(edict_t *self)
 =============
 ai_run_slide
 
-Strafe sideways, but stay at aproximately the same range
+Strafe sideways, but stay at approximately the same range
 =============
 */
 // ROGUE

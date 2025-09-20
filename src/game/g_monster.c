@@ -1187,7 +1187,7 @@ void monster_start_go(edict_t *self)
     }
 
     if (spawn_dead) {
-        // to spawn dead, we'll mimick them dying naturally
+        // to spawn dead, we'll mimic them dying naturally
         self->health = 0;
 
         vec3_t tmp;

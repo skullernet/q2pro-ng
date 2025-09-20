@@ -523,7 +523,7 @@ static void MakronRailgun(edict_t *self)
     AngleVectors(self->s.angles, forward, right, NULL);
     M_ProjectFlashSource(self, monster_flash_offset[MZ2_MAKRON_RAILGUN_1], forward, right, start);
 
-    // calc direction to where we targted
+    // calc direction to where we targeted
     VectorSubtract(self->pos1, start, dir);
     VectorNormalize(dir);
 

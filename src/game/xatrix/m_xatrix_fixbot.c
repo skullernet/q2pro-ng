@@ -290,7 +290,7 @@ static void use_scanner(edict_t *self)
     when the bot has found a landing pad
     it will proceed to its goalentity
     just above the landing pad and
-    decend translated along the z the current
+    descend translated along the z the current
     frames are at 10fps
 */
 static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread)
@@ -662,7 +662,7 @@ static const mframe_t fixbot_frames_takeoff[] = {
 };
 const mmove_t MMOVE_T(fixbot_move_takeoff) = { FRAME_takeoff_01, FRAME_takeoff_16, fixbot_frames_takeoff, NULL };
 
-/* findout what this is */
+/* find out what this is */
 static const mframe_t fixbot_frames_paina[] = {
     { ai_move },
     { ai_move },
@@ -673,7 +673,7 @@ static const mframe_t fixbot_frames_paina[] = {
 };
 const mmove_t MMOVE_T(fixbot_move_paina) = { FRAME_paina_01, FRAME_paina_06, fixbot_frames_paina, fixbot_run };
 
-/* findout what this is */
+/* find out what this is */
 static const mframe_t fixbot_frames_painb[] = {
     { ai_move },
     { ai_move },
@@ -698,7 +698,7 @@ const mmove_t MMOVE_T(fixbot_move_pain3) = { FRAME_freeze_01, FRAME_freeze_01, f
 
 #if 0
 /*
-    bot has compleated landing
+    bot has completed landing
     and is now on the grownd
     ( may need second land if the bot is releasing jib into jib vat )
 */

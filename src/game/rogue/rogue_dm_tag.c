@@ -61,7 +61,7 @@ static void Tag_Score(edict_t *attacker, edict_t *victim, int scoreChange, mod_t
     const gitem_t *quad;
 
     if (tag_token && tag_owner) {
-        // owner killed somone else
+        // owner killed someone else
         if ((scoreChange > 0) && tag_owner == attacker) {
             scoreChange = 3;
             tag_count++;

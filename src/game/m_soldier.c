@@ -599,7 +599,7 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
     switch (soldier_style()) {
     case Ripper:
         // RAFAEL 24-APR-98
-        // droped the damage from 15 to 5
+        // dropped the damage from 15 to 5
         monster_fire_ionripper(self, start, aim, 5, 600, flash_index, EF_IONRIPPER);
         break;
     case BlueHyper:
