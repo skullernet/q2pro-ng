@@ -391,7 +391,9 @@ static void my_panner_node_process_pcm_frames(ma_node *pNode, const float **ppFr
 }
 
 static const ma_node_vtable my_panner_node_vtable = {
-    my_panner_node_process_pcm_frames, NULL, 1, 1, 0
+    .onProcess      = my_panner_node_process_pcm_frames,
+    .inputBusCount  = 1,
+    .outputBusCount = 1,
 };
 
 static ma_result my_panner_node_init(ma_node_graph *pNodeGraph, my_panner_node *pNode)
