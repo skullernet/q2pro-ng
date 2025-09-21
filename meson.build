@@ -235,7 +235,7 @@ zlib = dependency('zlib',
 png = dependency('libpng',
   version:         '>= 1.6.11',
   required:        get_option('libpng'),
-  default_options: fallback_opt,
+  default_options: fallback_opt + [ 'tests=false' ],
 )
 if png.found()
   texture_formats += 'png'
@@ -268,7 +268,7 @@ game_deps = []
 
 jpeg = dependency('libjpeg',
   required:        get_option('libjpeg'),
-  default_options: fallback_opt + [ 'jpeg-turbo=disabled', 'tests=disabled' ]
+  default_options: fallback_opt + [ 'turbojpeg=disabled', 'tests=disabled' ]
 )
 if jpeg.found()
   if jpeg.type_name() == 'internal'
