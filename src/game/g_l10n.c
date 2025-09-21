@@ -81,7 +81,7 @@ void G_FreeL10nFile(void)
 
 void G_LoadL10nFile(void)
 {
-    char buf[MAX_QPATH];
+    char buf[MAX_QPATH], *s, *p;
     qhandle_t f;
     int ret;
 
@@ -94,20 +94,26 @@ void G_LoadL10nFile(void)
         return;
     }
 
-    while (1) {
-        char line[MAX_STRING_CHARS];
-        ret = trap_FS_ReadLine(f, line, sizeof(line));
-        if (ret == 0)
-            break;
-        if (ret < 0) {
-            trap_FS_ErrorString(ret, buf, sizeof(buf));
-            G_Printf("Couldn't read %s: %s\n", L10N_FILE, buf);
-            break;
-        }
-        parse_line(line);
+    ret = trap_FS_ReadFile(message_data, sizeof(message_data) - 1, f);
+    trap_FS_CloseFile(f);
+    if (ret < 0) {
+        trap_FS_ErrorString(ret, buf, sizeof(buf));
+        G_Printf("Couldn't read %s: %s\n", L10N_FILE, buf);
+        return;
     }
 
-    trap_FS_CloseFile(f);
+    message_data[ret] = 0;
+    s = message_data;
+    while (1) {
+        p = strchr(s, '\n');
+        if (p)
+            *p = 0;
+        parse_line(s);
+        if (p)
+            s = p + 1;
+        else
+            break;
+    }
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 
