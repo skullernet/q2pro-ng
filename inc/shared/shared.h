@@ -271,6 +271,7 @@ void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
 void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
 void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up);
 float V_CalcFov(float fov_x, float width, float height);
+void vectoangles(const vec3_t value1, vec3_t angles);
 
 #define NUMVERTEXNORMALS    162
 
