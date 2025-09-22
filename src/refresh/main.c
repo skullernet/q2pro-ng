@@ -100,7 +100,7 @@ cvar_t *gl_showerrors;
 
 // ==============================================================================
 
-static void GL_SetupFrustum(void)
+static void GL_SetupFrustum(float zfar)
 {
     vec_t angle, sf, cf;
     vec3_t forward, left, up;
@@ -115,8 +115,8 @@ static void GL_SetupFrustum(void)
     VectorScale(glr.viewaxis[0], sf, forward);
     VectorScale(glr.viewaxis[1], cf, left);
 
-    VectorAdd(forward, left, glr.frustumPlanes[0].normal);
-    VectorSubtract(forward, left, glr.frustumPlanes[1].normal);
+    VectorAdd(forward, left, glr.frustum[0].normal);
+    VectorSubtract(forward, left, glr.frustum[1].normal);
 
     // top/bottom
     angle = DEG2RAD(glr.fd.fov_y / 2);
@@ -126,14 +126,19 @@ static void GL_SetupFrustum(void)
     VectorScale(glr.viewaxis[0], sf, forward);
     VectorScale(glr.viewaxis[2], cf, up);
 
-    VectorAdd(forward, up, glr.frustumPlanes[2].normal);
-    VectorSubtract(forward, up, glr.frustumPlanes[3].normal);
+    VectorAdd(forward, up, glr.frustum[2].normal);
+    VectorSubtract(forward, up, glr.frustum[3].normal);
 
-    for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
+    // far
+    VectorNegate(glr.viewaxis[0], glr.frustum[4].normal);
+
+    for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
         p->dist = DotProduct(glr.fd.vieworg, p->normal);
         p->type = PLANE_NON_AXIAL;
         SetPlaneSignbits(p);
     }
+
+    glr.frustum[4].dist -= zfar;
 }
 
 glCullResult_t GL_CullBox(const vec3_t bounds[2])
@@ -145,8 +150,8 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2])
         return CULL_IN;
 
     cull = CULL_IN;
-    for (int i = 0; i < 4; i++) {
-        bits = BoxOnPlaneSide(bounds[0], bounds[1], &glr.frustumPlanes[i]);
+    for (int i = 0; i < q_countof(glr.frustum); i++) {
+        bits = BoxOnPlaneSide(bounds[0], bounds[1], &glr.frustum[i]);
         if (bits == BOX_BEHIND)
             return CULL_OUT;
         if (bits != BOX_INFRONT)
@@ -168,7 +173,7 @@ glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
 
     radius *= glr.entscale;
     cull = CULL_IN;
-    for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
+    for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
         dist = PlaneDiff(origin, p);
         if (dist < -radius)
             return CULL_OUT;
@@ -199,7 +204,7 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
     }
 
     cull = CULL_IN;
-    for (i = 0, p = glr.frustumPlanes; i < 4; i++, p++) {
+    for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
         infront = false;
         for (j = 0; j < 8; j++) {
             dot = DotProduct(points[j], p->normal);
@@ -430,10 +435,10 @@ static void GL_OccludeFlares(void)
     for (ent = glr.ents.flares; ent; ent = ent->next) {
         q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
 
-        for (i = 0; i < 4; i++)
-            if (PlaneDiff(ent->origin, &glr.frustumPlanes[i]) < -2.5f)
+        for (i = 0; i < q_countof(glr.frustum); i++)
+            if (PlaneDiff(ent->origin, &glr.frustum[i]) < -2.5f)
                 break;
-        if (i != 4) {
+        if (i != q_countof(glr.frustum)) {
             if (q)
                 q->pending = q->visible = false;
             continue;   // not visible
@@ -861,7 +866,10 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_Setup3D();
 
-    GL_SetupFrustum();
+    if (glr.fd.rdflags & RDF_NOWORLDMODEL)
+        GL_SetupFrustum(2048);
+    else
+        GL_SetupFrustum(gl_static.world.size * 2);
 
     GL_SetupFog();
 

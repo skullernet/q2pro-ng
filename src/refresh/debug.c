@@ -546,8 +546,8 @@ static void GL_DrawDebugTextLine(const vec3_t origin, const vec3_t right, const 
 {
     // frustum cull
     float radius = text->size * 0.5f * len;
-    for (int i = 0; i < 4; i++)
-        if (PlaneDiff(origin, &glr.frustumPlanes[i]) < -radius)
+    for (int i = 0; i < q_countof(glr.frustum); i++)
+        if (PlaneDiff(origin, &glr.frustum[i]) < -radius)
             return;
 
     // draw it

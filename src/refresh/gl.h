@@ -138,7 +138,7 @@ typedef struct {
     int             viewcluster1;
     int             viewcluster2;
     int             nodes_visible;
-    cplane_t        frustumPlanes[4];
+    cplane_t        frustum[5];
     glentity_t      *ent;
     bool            entrotated;
     float           entscale;

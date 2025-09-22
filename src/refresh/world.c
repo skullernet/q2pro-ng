@@ -423,28 +423,25 @@ void GL_DrawBspModel(mmodel_t *model)
 }
 
 #define NODE_CLIPPED    0
-#define NODE_UNCLIPPED  MASK(4)
+#define NODE_UNCLIPPED  MASK(q_countof(glr.frustum))
 
-static inline bool GL_ClipNode(const mnode_t *node, int *clipflags)
+static inline bool GL_ClipNode(const mnode_t *node, int *flags)
 {
-    int flags = *clipflags;
     box_plane_t bits;
 
-    if (flags == NODE_UNCLIPPED)
+    if (*flags == NODE_UNCLIPPED)
         return true;
 
-    for (int i = 0, mask = 1; i < 4; i++, mask <<= 1) {
-        if (flags & mask)
+    for (int i = 0; i < q_countof(glr.frustum); i++) {
+        if (*flags & BIT(i))
             continue;
-        bits = BoxOnPlaneSide(node->mins, node->maxs,
-                              &glr.frustumPlanes[i]);
+        bits = BoxOnPlaneSide(node->mins, node->maxs, &glr.frustum[i]);
         if (bits == BOX_BEHIND)
             return false;
         if (bits == BOX_INFRONT)
-            flags |= mask;
+            *flags |= BIT(i);
     }
 
-    *clipflags = flags;
     return true;
 }
 

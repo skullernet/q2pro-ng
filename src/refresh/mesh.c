@@ -316,8 +316,8 @@ static drawshadow_t cull_shadow(void)
 
     if (gl_cull_models->integer) {
         float min_d = -radius / w;
-        for (int i = 0; i < 4; i++) {
-            if (PlaneDiff(glr.lightpoint.pos, &glr.frustumPlanes[i]) < min_d) {
+        for (int i = 0; i < q_countof(glr.frustum); i++) {
+            if (PlaneDiff(glr.lightpoint.pos, &glr.frustum[i]) < min_d) {
                 c.shadowsCulled++;
                 return SHADOW_NO;   // culled out
             }
