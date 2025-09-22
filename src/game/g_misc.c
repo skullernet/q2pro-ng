@@ -496,7 +496,7 @@ static void setup_shadow_light(edict_t *self)
         self->nextthink = level.time + FRAME_TIME;
     }
 
-    self->s.modelindex = MODELINDEX_DUMMY;
+    self->s.modelindex  = Q_clip (st.sl.resolution, 1, MAX_MODELS - 1);
     self->s.modelindex2 = Q_clipf(st.sl.fade_start, 0, MAX_MODELS - 1);
     self->s.modelindex3 = Q_clipf(st.sl.fade_end,   0, MAX_MODELS - 1);
     self->s.modelindex4 = Q_clipf(st.sl.radius,     0, MAX_MODELS - 1);

@@ -49,6 +49,7 @@ cvar_t *gl_partstyle;
 cvar_t *gl_beamstyle;
 cvar_t *gl_celshading;
 cvar_t *gl_dotshading;
+cvar_t *gl_shadowmap;
 cvar_t *gl_shadows;
 cvar_t *gl_modulate;
 cvar_t *gl_modulate_world;
@@ -332,6 +333,9 @@ static void GL_DrawSpriteModel(const model_t *model)
     glStateBits_t bits = GLS_DEPTHMASK_FALSE | glr.fog_bits;
     vec3_t up, down, left, right;
 
+    if (glr.shadowbuffer_bound)
+        return;
+
     if (alpha == 1.0f) {
         if (image->flags & IF_TRANSPARENT) {
             if (image->flags & IF_PALETTED)
@@ -376,6 +380,8 @@ static void GL_DrawNullModel(void)
     const glentity_t *e = glr.ent;
 
     if (e->flags & RF_WEAPONMODEL)
+        return;
+    if (glr.shadowbuffer_bound)
         return;
 
     VectorCopy(e->origin, tess.vertices +  0);
@@ -596,11 +602,14 @@ static void GL_SortEntities(void)
     }
 }
 
-static void GL_DrawEntities(glentity_t *ent)
+static void GL_DrawEntities(glentity_t *ent, int exclude)
 {
     model_t *model;
 
     for (; ent; ent = ent->next) {
+        if (ent->flags & exclude)
+            continue;
+
         glr.ent = ent;
 
         // convert angles to axis
@@ -821,8 +830,6 @@ static pp_flags_t GL_BindFramebuffer(void)
 
 static void GL_SetupFog(void)
 {
-    glr.fog_bits = glr.fog_bits_sky = 0;
-
     if (!gl_fog->integer)
         return;
 
@@ -852,11 +859,145 @@ static void GL_SetupFog(void)
     gls.u_block_dirty |= DIRTY_BLOCK;
 }
 
+static bool GL_DrawShadowView(const glDynLight_t *light, const vec3_t dir, float fov)
+{
+    if (glr.num_shadow_views == MAX_SHADOW_VIEWS)
+        return false;
+
+    const int size = gl_config.max_texture_size;
+
+    // resolution 0 or 1 (dummy modelindex) means default
+    int res = light->resolution;
+    if (res <= 1)
+        res = size >> 4;
+
+    int s, t;
+    if (!GL_AllocBlock(size, size, glr.shadow_inuse, res, res, &s, &t))
+        return false;
+
+    const float scale = 1.0f / size;
+
+    glShadowView_t *view = &glr.shadow_views[glr.num_shadow_views++];
+    view->offset[0] = res * scale;
+    view->offset[1] = res * scale;
+    view->offset[2] = s * scale;
+    view->offset[3] = t * scale;
+
+    vectoangles(dir, glr.fd.viewangles);
+
+    Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
+    glr.fd.fov_x = glr.fd.fov_y = fov;
+
+    GL_RotateForViewer();
+
+    GL_MultMatrix(view->matrix, gls.proj_matrix, gls.view_matrix);
+
+    qglViewport(s, t, res, res);
+
+    int exclude = RF_WEAPONMODEL | RF_FULLBRIGHT | RF_TRANSLUCENT |
+        RF_NOSHADOW | (light->flags & RF_VIEWERMODEL);
+
+    glr.drawframe++;
+
+    GL_SetupFrustum(light->radius);
+    GL_DrawWorld();
+    GL_DrawEntities(glr.ents.bmodels, exclude);
+    GL_DrawEntities(glr.ents.opaque, exclude);
+
+    return true;
+}
+
+static const vec3_t shadowdirs[6] = {
+    {-1, 0, 0 }, { 0,-1, 0 }, { 0, 0,-1 },
+    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }
+};
+
+static void GL_DrawShadowMap(const refdef_t *fd)
+{
+    if (gl_shadowmap->modified) {
+        glr.shadowbuffer_ok = GL_InitShadowBuffer();
+        gl_shadowmap->modified = false;
+    }
+
+    if (!r_numdlights || (fd->rdflags & RDF_NOWORLDMODEL) || !gl_shadowmap->integer)
+        return;
+
+    if (!glr.shadowbuffer_ok)
+        return;
+
+    glr.fd = *fd;
+
+    cplane_t frustum[4];
+    GL_SetupFrustum(gl_static.world.size * 2);
+    memcpy(frustum, glr.frustum, sizeof(frustum));
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP);
+    glr.shadowbuffer_bound = true;
+
+    GL_StateBits(GLS_SHADOWMAP_GENERATE);
+    qglClear(GL_DEPTH_BUFFER_BIT);
+
+    qglEnable(GL_POLYGON_OFFSET_FILL);
+    qglPolygonOffset(1.5f, 2.0f);
+
+    glr.num_shadow_views = 0;
+    memset(glr.shadow_inuse, 0, sizeof(glr.shadow_inuse));
+
+    for (int i = 0; i < r_numdlights; i++) {
+        glDynLight_t *light = &r_dlights[i];
+        int j;
+
+        if (light->flags & RF_NOSHADOW) {
+            light->firstview = -1;
+            continue;
+        }
+
+        for (j = 0; j < 4; j++)
+            if (PlaneDiff(light->origin, &frustum[j]) < -light->radius)
+                break;
+        if (j < 4) {
+            light->firstview = -1;
+            continue;
+        }
+
+        VectorCopy(light->origin, glr.fd.vieworg);
+        VectorCopy(light->origin, gls.u_block.vieworg);
+
+        light->firstview = glr.num_shadow_views;
+        bool ok = true;
+
+        if (light->sphere) {
+            for (j = 0; j < 6 && ok; j++)
+                ok = GL_DrawShadowView(light, shadowdirs[j], 90.0f);
+        } else {
+            ok = GL_DrawShadowView(light, light->dir, RAD2DEG(acosf(light->cone)) * 2);
+        }
+
+        if (!ok)
+            light->firstview = -1;
+    }
+
+    qglDisable(GL_POLYGON_OFFSET_FILL);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glr.shadowbuffer_bound = false;
+
+    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_SHADOWVIEWS]);
+    qglBufferData(GL_UNIFORM_BUFFER, sizeof(glr.shadow_views), NULL, GL_STREAM_DRAW);
+    qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glr.shadow_views[0]) * glr.num_shadow_views, glr.shadow_views);
+}
+
 void R_RenderFrame(const refdef_t *fd)
 {
     GL_Flush2D();
 
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
+
+    GL_SortEntities();
+
+    glr.fog_bits = glr.fog_bits_sky = 0;
+
+    GL_DrawShadowMap(fd);
 
     glr.drawframe++;
 
@@ -873,16 +1014,13 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_SetupFog();
 
-    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_drawworld->integer)
-        GL_DrawWorld();
+    GL_DrawWorld();
 
-    GL_SortEntities();
+    GL_DrawEntities(glr.ents.bmodels, RF_VIEWERMODEL);
 
-    GL_DrawEntities(glr.ents.bmodels);
+    GL_DrawEntities(glr.ents.opaque, RF_VIEWERMODEL);
 
-    GL_DrawEntities(glr.ents.opaque);
-
-    GL_DrawEntities(glr.ents.alpha_back);
+    GL_DrawEntities(glr.ents.alpha_back, RF_VIEWERMODEL);
 
     GL_DrawAlphaFaces();
 
@@ -896,7 +1034,7 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawFlares();
 
-    GL_DrawEntities(glr.ents.alpha_front);
+    GL_DrawEntities(glr.ents.alpha_front, RF_VIEWERMODEL);
 
     GL_DrawDebugObjects();
 
@@ -1101,6 +1239,7 @@ static void GL_Register(void)
     gl_beamstyle = Cvar_Get("gl_beamstyle", "1", 0);
     gl_celshading = Cvar_Get("gl_celshading", "0", 0);
     gl_dotshading = Cvar_Get("gl_dotshading", "0", 0);
+    gl_shadowmap = Cvar_Get("gl_shadowmap", "1", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
     gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
     gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
@@ -1486,6 +1625,8 @@ void R_BeginRegistration(const char *name)
     memset(&glr, 0, sizeof(glr));
     glr.viewcluster1 = glr.viewcluster2 = -2;
 
+    gl_shadowmap->modified = true;
+
     GL_LoadWorld(name);
 }
 
@@ -1549,10 +1690,10 @@ void R_AddEntity(const entity_t *ent)
 
 /*
 ===============
-R_AddSphereLight
+R_AddLight
 ===============
 */
-void R_AddSphereLight(const vec3_t org, float radius, float r, float g, float b)
+void R_AddLight(const light_t *light)
 {
     glDynLight_t    *dl;
 
@@ -1562,35 +1703,21 @@ void R_AddSphereLight(const vec3_t org, float radius, float r, float g, float b)
         return;
 
     dl = &r_dlights[r_numdlights++];
-    VectorCopy(org, dl->origin);
-    dl->radius = radius;
-    VectorSet(dl->color, r, g, b);
-    dl->sphere = 1.0f;
-    VectorClear(dl->dir);
-    dl->cone = 0.0f;
-}
-
-/*
-===============
-R_AddSpotLight
-===============
-*/
-void R_AddSpotLight(const vec3_t org, const vec3_t dir, float cone, float radius, float r, float g, float b)
-{
-    glDynLight_t    *dl;
-
-    if (r_numdlights >= MAX_DLIGHTS)
-        return;
-    if (gl_dynamic->integer != 1)
-        return;
-
-    dl = &r_dlights[r_numdlights++];
-    VectorCopy(org, dl->origin);
-    dl->radius = radius;
-    VectorSet(dl->color, r, g, b);
-    dl->sphere = 0.0f;
-    VectorCopy(dir, dl->dir);
-    dl->cone = cosf(DEG2RAD(cone));
+    VectorCopy(light->origin, dl->origin);
+    dl->radius = light->radius;
+    VectorCopy(light->color, dl->color);
+    if (VectorEmpty(light->dir) || light->cone_angle == 0.0f) {
+        dl->sphere = 1.0f;
+        VectorClear(dl->dir);
+        dl->cone = 0.0f;
+    } else {
+        dl->sphere = 0.0f;
+        VectorCopy(light->dir, dl->dir);
+        dl->cone = cosf(DEG2RAD(light->cone_angle));
+    }
+    dl->resolution = light->resolution;
+    dl->flags = light->flags;
+    dl->key = light->key;
 }
 
 /*

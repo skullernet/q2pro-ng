@@ -385,7 +385,8 @@ void GL_DrawBspModel(mmodel_t *model)
         VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
     }
 
-    GL_TransformLights(model);
+    if (!glr.shadowbuffer_bound)
+        GL_TransformLights(model);
 
     GL_RotateForEntity();
 
@@ -485,7 +486,8 @@ static void GL_WorldNode_r(const mnode_t *node, int clipflags)
     int side;
     vec_t dot;
 
-    while (node->visframe == glr.visframe) {
+    // ignore vis for shadowmapping
+    while (node->visframe == glr.visframe || glr.shadowbuffer_bound) {
         if (!GL_ClipNode(node, &clipflags)) {
             c.nodesCulled++;
             break;
@@ -509,14 +511,18 @@ static void GL_WorldNode_r(const mnode_t *node, int clipflags)
 
 void GL_DrawWorld(void)
 {
+    if ((glr.fd.rdflags & RDF_NOWORLDMODEL) || !gl_drawworld->integer)
+        return;
+
     // auto cycle the world frame for texture animation
     gl_world.frame = (int)(glr.fd.time * 2);
 
     glr.ent = &gl_world;
 
-    GL_MarkLeaves();
-
-    GL_MarkLights();
+    if (!glr.shadowbuffer_bound) {
+        GL_MarkLeaves();
+        GL_MarkLights();
+    }
 
     GL_LoadMatrix(glr.viewmatrix);
 

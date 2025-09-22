@@ -68,6 +68,7 @@ static const glsection_t sections[] = {
             QGL_FN(LineWidth),
             QGL_FN(PixelStorei),
             QGL_FN(PolygonOffset),
+            QGL_FN(ReadBuffer),
             QGL_FN(ReadPixels),
             QGL_FN(Scissor),
             QGL_FN(StencilFunc),

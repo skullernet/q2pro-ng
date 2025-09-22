@@ -111,49 +111,97 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
     GLSF("};\n");
 }
 
-static void write_lights_block(sizebuf_t *buf)
+static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
 {
-    GLSF("#define MAX_DLIGHTS " STRINGIFY(MAX_DLIGHTS) "\n");
-    GLSF("#define DLIGHT_CUTOFF " STRINGIFY(DLIGHT_CUTOFF) "\n");
+    GLSF("#define MAX_SHADOW_VIEWS " STRINGIFY(MAX_SHADOW_VIEWS) "\n");
+    GLSF("#define MAX_DLIGHTS "      STRINGIFY(MAX_DLIGHTS)      "\n");
+    GLSF("#define DLIGHT_CUTOFF "    STRINGIFY(DLIGHT_CUTOFF)    "\n");
+
+    if (bits & GLS_SHADOWMAP_DRAW) {
+        GLSL(
+            struct ShadowView {
+                mat4    matrix;
+                vec4    offset;
+            };
+
+            layout(std140) uniform ShadowViews {
+                ShadowView  u_shadow_views[MAX_SHADOW_VIEWS];
+            };
+        )
+
+        if (gl_config.ver_es)
+            GLSL(uniform highp)
+        else
+            GLSL(uniform)
+        GLSL(sampler2DShadow u_shadowmap;)
+    }
 
     GLSL(
         struct DynLight {
             vec4    origin;
             vec4    color;
             vec4    cone;
+            int     firstview;
+        };
+
+        layout(std140) uniform Lights {
+            int       u_num_dlights;
+            DynLight  u_dlights[MAX_DLIGHTS];
         };
     )
-
-    GLSF("layout(std140) uniform Lights {\n");
-    GLSF("int       u_num_dlights;\n");
-    GLSF("DynLight  u_dlights[MAX_DLIGHTS];\n");
-    GLSF("};\n");
 }
 
-static void write_dynamic_lights(sizebuf_t *buf)
+static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
 {
+    if (bits & GLS_SHADOWMAP_DRAW) {
+        GLSL(float calc_shadow(DynLight light) {
+            int index = light.firstview;
+            if (index < 0)
+                return 1.0;
+
+            float sphere = light.color.a;
+            if (sphere > 0.0) {
+                vec3 ndir = normalize(v_world_pos - light.origin.xyz);
+                vec3 adir = abs(ndir);
+                vec3 sel1 = step(adir.yxx, adir.xyz) * step(adir.zzy, adir.xyz);
+                vec3 sel2 = vec3(0.0, 1.0, 2.0) + step(vec3(0.0), ndir) * 3.0;
+                index += int(dot(sel1, sel2));
+            }
+
+            ShadowView view = u_shadow_views[index];
+            vec4 frag = view.matrix * vec4(v_world_pos, 1.0);
+            vec3 proj = frag.xyz / frag.w * 0.5 + 0.5;
+            vec2 tc = proj.xy * view.offset.xy + view.offset.zw;
+            return texture(u_shadowmap, vec3(tc, proj.z - 0.00001));
+        })
+    } else {
+        GLSL(float calc_shadow(DynLight light) { return 1.0; })
+    }
+
     GLSL(vec3 calc_dynamic_lights() {
         vec3 result = vec3(0.0);
 
         for (int i = 0; i < u_num_dlights; i++) {
-            float sphere = u_dlights[i].color.a;
+            DynLight light = u_dlights[i];
+            float sphere = light.color.a;
+            float shadow = calc_shadow(light);
+            if (shadow < 0.01)
+                continue;
 
-            vec3 dir = u_dlights[i].origin.xyz - v_world_pos;
+            vec3 dir = light.origin.xyz - v_world_pos;
             dir += v_world_norm * (16.0 * sphere);
             float dist = length(dir);
             dir /= dist;
 
-            float radius = u_dlights[i].origin.w;
+            float radius = light.origin.w;
             float intens = max(radius - dist, 0.0) / (radius + DLIGHT_CUTOFF);
+            intens *= max(dot(dir, v_world_norm), 1.0 - step(0.0, light.color.r));
 
-            float pos = step(0.0, u_dlights[i].color.r);
-            intens *= max(dot(dir, v_world_norm), 1.0 - pos);
-
-            float theta = dot(dir, u_dlights[i].cone.xyz);
-            float cutoff = u_dlights[i].cone.w;
+            float theta = dot(dir, light.cone.xyz);
+            float cutoff = light.cone.w;
             intens *= max(1.0 - (1.0 + theta) / (1.0 - cutoff), sphere);
 
-            result += u_dlights[i].color.rgb * intens;
+            result += light.color.rgb * intens * shadow;
         }
 
         return result;
@@ -556,11 +604,16 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 {
     write_header(buf, bits);
 
+    if (bits & GLS_SHADOWMAP_GENERATE) {
+        GLSL(void main() {})
+        return;
+    }
+
     if (bits & GLS_UNIFORM_MASK)
         write_block(buf, bits);
 
     if (bits & GLS_DYNAMIC_LIGHTS)
-        write_lights_block(buf);
+        write_lights_block(buf, bits);
 
     if (bits & GLS_CLASSIC_SKY) {
         GLSL(
@@ -620,7 +673,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         write_box_blur(buf);
 
     if (bits & GLS_DYNAMIC_LIGHTS)
-        write_dynamic_lights(buf);
+        write_dynamic_lights(buf, bits);
 
     GLSF("void main() {\n");
     if (bits & GLS_CLASSIC_SKY) {
@@ -886,6 +939,10 @@ static GLuint create_and_use_program(glStateBits_t bits)
         if (!bind_uniform_block(program, "Lights", sizeof(gls.u_lights), UBO_LIGHTS))
             goto fail;
 
+    if (bits & GLS_SHADOWMAP_DRAW)
+        if (!bind_uniform_block(program, "ShadowViews", sizeof(glr.shadow_views), UBO_SHADOWVIEWS))
+            goto fail;
+
     if (bits & GLS_LIGHTMAP_ENABLE)
         if (!bind_uniform_block(program, "Styles", sizeof(gls.u_styles), UBO_STYLES))
             goto fail;
@@ -898,27 +955,30 @@ static GLuint create_and_use_program(glStateBits_t bits)
 
     qglUseProgram(program);
 
-#if USE_MD5
-    if (bits & GLS_MESH_MD5 && !(gl_config.caps & QGL_CAP_SHADER_STORAGE)) {
-        bind_texture_unit(program, "u_weights", TMU_SKEL_WEIGHTS);
-        bind_texture_unit(program, "u_jointnums", TMU_SKEL_JOINTNUMS);
-    }
-#endif
-
     if (bits & GLS_CLASSIC_SKY) {
         bind_texture_unit(program, "u_texture1", TMU_TEXTURE);
         bind_texture_unit(program, "u_texture2", TMU_LIGHTMAP);
-    } else {
+    } else if (!(bits & GLS_SHADOWMAP_GENERATE))
         bind_texture_unit(program, "u_texture", TMU_TEXTURE);
-        if (bits & GLS_BLOOM_OUTPUT)
-            bind_texture_unit(program, "u_bloom", TMU_LIGHTMAP);
-    }
+
+    if (bits & GLS_BLOOM_OUTPUT)
+        bind_texture_unit(program, "u_bloom", TMU_LIGHTMAP);
 
     if (bits & GLS_LIGHTMAP_ENABLE)
         bind_texture_unit(program, "u_lightmap", TMU_LIGHTMAP);
 
     if (bits & GLS_GLOWMAP_ENABLE)
         bind_texture_unit(program, "u_glowmap", TMU_GLOWMAP);
+
+    if (bits & GLS_SHADOWMAP_DRAW)
+        bind_texture_unit(program, "u_shadowmap", TMU_SHADOWMAP);
+
+#if USE_MD5
+    if (bits & GLS_MESH_MD5 && !(gl_config.caps & QGL_CAP_SHADER_STORAGE)) {
+        bind_texture_unit(program, "u_weights", TMU_SKEL_WEIGHTS);
+        bind_texture_unit(program, "u_jointnums", TMU_SKEL_JOINTNUMS);
+    }
+#endif
 
     return program;
 
@@ -969,9 +1029,8 @@ void GL_InitShaders(void)
     gl_static.programs = HashMap_TagCreate(glStateBits_t, GLuint, HashInt64, NULL, TAG_RENDERER);
 
     qglGenBuffers(UBO_COUNT, gl_static.uniform_buffers);
-    GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_UNIFORMS, gl_static.uniform_buffers[UBO_UNIFORMS]);
-    GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_LIGHTS, gl_static.uniform_buffers[UBO_LIGHTS]);
-    GL_BindBufferBase(GL_UNIFORM_BUFFER, UBO_STYLES, gl_static.uniform_buffers[UBO_STYLES]);
+    for (int i = UBO_UNIFORMS; i <= UBO_STYLES; i++)
+        GL_BindBufferBase(GL_UNIFORM_BUFFER, i, gl_static.uniform_buffers[i]);
 
 #if USE_MD5
     if (gl_config.caps & QGL_CAP_SKELETON_MASK) {

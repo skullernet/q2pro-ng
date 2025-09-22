@@ -46,11 +46,11 @@ static void setup_dotshading(void)
 
     if (!gl_dotshading->integer)
         return;
-
     if (glr.ent->flags & (RF_SHELL_MASK | RF_TRACKER))
         return;
-
     if (drawshadow == SHADOW_ONLY)
+        return;
+    if (glr.shadowbuffer_bound)
         return;
 
     meshbits |= GLS_MESH_SHADE;
@@ -160,6 +160,8 @@ static void setup_lights(void)
         return;
     if (drawshadow == SHADOW_ONLY)
         return;
+    if (glr.shadowbuffer_bound)
+        return;
 
     for (int i = 0; i < r_numdlights; i++) {
         const glDynLight_t *light = &r_dlights[i];
@@ -250,12 +252,17 @@ static void setup_color(void)
 
 static void setup_celshading(void)
 {
-    float value = Cvar_ClampValue(gl_celshading, 0, 10);
+    celscale = 0;
 
-    if (value == 0 || (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK | RF_TRACKER)) || !qglPolygonMode || !qglLineWidth)
-        celscale = 0;
-    else
-        celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
+    if (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK | RF_TRACKER))
+        return;
+    if (!qglPolygonMode || !qglLineWidth)
+        return;
+    if (glr.shadowbuffer_bound)
+        return;
+    if (gl_celshading->value <= 0)
+        return;
+    celscale = 1.0f - Distance(origin, glr.fd.vieworg) / 700.0f;
 }
 
 static void draw_celshading(const uint16_t *indices, int num_indices)
@@ -285,11 +292,11 @@ static drawshadow_t cull_shadow(void)
 
     if (!gl_shadows->integer)
         return SHADOW_NO;
-
     if (glr.ent->flags & (RF_WEAPONMODEL | RF_NOSHADOW))
         return SHADOW_NO;
-
     if (!gl_config.stencilbits)
+        return SHADOW_NO;
+    if (glr.shadowbuffer_bound)
         return SHADOW_NO;
 
     setup_color();
@@ -486,30 +493,37 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
         qglColorMask(1, 1, 1, 1);
     }
 
-    state = glr.fog_bits | meshbits;
+    if (glr.shadowbuffer_bound) {
+        state = GLS_SHADOWMAP_GENERATE | meshbits;
+    } else {
+        state = glr.fog_bits | meshbits;
 
-    if (dlightbits)
-        state |= GLS_DYNAMIC_LIGHTS;
+        if (dlightbits) {
+            state |= GLS_DYNAMIC_LIGHTS;
+            if (glr.shadowbuffer_ok && gl_shadowmap->integer)
+                state |= GLS_SHADOWMAP_DRAW;
+        }
 
-    if (flags & RF_TRANSLUCENT)
-        state |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+        if (flags & RF_TRANSLUCENT)
+            state |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
 
-    skin = skin_for_mesh(skins, num_skins);
-    if (skin->texnum2)
-        state |= GLS_GLOWMAP_ENABLE;
+        skin = skin_for_mesh(skins, num_skins);
+        if (skin->texnum2)
+            state |= GLS_GLOWMAP_ENABLE;
 
-    if (glr.framebuffer_bound && gl_bloom->integer) {
-        state |= GLS_BLOOM_GENERATE;
-        if (flags & RF_SHELL_MASK)
-            state |= GLS_BLOOM_SHELL;
+        if (glr.framebuffer_bound && gl_bloom->integer) {
+            state |= GLS_BLOOM_GENERATE;
+            if (flags & RF_SHELL_MASK)
+                state |= GLS_BLOOM_SHELL;
+        }
+
+        GL_BindTexture(TMU_TEXTURE, skin->texnum);
+
+        if (skin->texnum2)
+            GL_BindTexture(TMU_GLOWMAP, skin->texnum2);
     }
 
     GL_StateBits(state);
-
-    GL_BindTexture(TMU_TEXTURE, skin->texnum);
-
-    if (skin->texnum2)
-        GL_BindTexture(TMU_GLOWMAP, skin->texnum2);
 
     GL_LockArrays(num_verts);
 

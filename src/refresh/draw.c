@@ -430,7 +430,7 @@ void Draw_Stats(void)
     int x = 10, y = 10;
 
     R_SetScale(1.0f / get_auto_scale());
-    R_DrawFill8(8, 8, 25*8, 24*10+2, 4);
+    R_DrawFill8(8, 8, 25*8, 25*10+2, 4);
 
     Draw_Stringf(x, y, "Nodes visible  : %i", glr.nodes_visible); y += 10;
     Draw_Stringf(x, y, "Nodes culled   : %i", c.nodesCulled); y += 10;
@@ -456,6 +456,7 @@ void Draw_Stats(void)
     Draw_Stringf(x, y, "Uniform uploads: %i", c.uniformUploads); y += 10;
     Draw_Stringf(x, y, "Array binds    : %i", c.vertexArrayBinds); y += 10;
     Draw_Stringf(x, y, "Occl. queries  : %i", c.occlusionQueries); y += 10;
+    Draw_Stringf(x, y, "Shadow views   : %i", glr.num_shadow_views); y += 10;
 
     R_SetScale(1.0f);
 }

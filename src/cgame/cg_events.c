@@ -527,9 +527,15 @@ static void CG_AddExplosions(void)
             Q_assert(!"bad type");
         }
 
-        if (ex->light)
-            trap_R_AddSphereLight(ent->origin, ex->light * ent->alpha,
-                                  ex->lightcolor[0], ex->lightcolor[1], ex->lightcolor[2]);
+        if (ex->light) {
+            light_t light = {
+                .origin = VectorInit(ent->origin),
+                .radius = ex->light * ent->alpha,
+                .color  = VectorInit(ex->lightcolor),
+                .flags  = RF_NOSHADOW,  // TODO: get rid of this
+            };
+            trap_R_AddLight(&light);
+        }
 
         if (ex->type != ex_light) {
             if (f < 0)

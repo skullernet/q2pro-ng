@@ -144,8 +144,7 @@ typedef struct {
 
     void    (*R_ClearScene)(void);
     void    (*R_AddEntity)(const entity_t *ent);
-    void    (*R_AddSphereLight)(const vec3_t org, float intensity, float r, float g, float b);
-    void    (*R_AddSpotLight)(const vec3_t org, const vec3_t dir, float cone, float radius, float r, float g, float b);
+    void    (*R_AddLight)(const light_t *light);
     void    (*R_SetLightStyle)(unsigned style, float value);
     void    (*R_LocateParticles)(const particle_t *p, int count);
     void    (*R_RenderScene)(const refdef_t *fd);

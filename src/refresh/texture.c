@@ -1187,6 +1187,36 @@ bool GL_InitFramebuffers(void)
     return true;
 }
 
+bool GL_InitShadowBuffer(void)
+{
+    int size = gl_shadowmap->integer ? gl_config.max_texture_size : 0;
+
+    GL_ClearErrors();
+
+    GL_ActiveTexture(TMU_SHADOWMAP);
+    qglBindTexture(GL_TEXTURE_2D, TEXNUM_SHADOWMAP);
+    qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+    if (!size)
+        qglBindTexture(GL_TEXTURE_2D, 0);
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP);
+    qglDrawBuffers(0, NULL);
+    qglReadBuffer(GL_NONE);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, size ? TEXNUM_SHADOWMAP : GL_NONE, 0);
+
+    CHECK_FB(size, "FBO_SHADOWMAP");
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return true;
+}
+
 static void gl_partshape_changed(cvar_t *self)
 {
     GL_InitParticleTexture();

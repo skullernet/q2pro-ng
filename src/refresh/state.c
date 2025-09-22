@@ -27,6 +27,7 @@ void GL_ForceTexture(glTmu_t tmu, GLuint texnum)
 {
     GL_ActiveTexture(tmu);
 
+    Q_assert(tmu < MAX_TMUS);
     if (gls.texnums[tmu] == texnum)
         return;
 
@@ -44,6 +45,10 @@ void GL_BindTexture(glTmu_t tmu, GLuint texnum)
         texnum = TEXNUM_DEFAULT;
 #endif
 
+    if (glr.shadowbuffer_bound)
+        return;
+
+    Q_assert(tmu < MAX_TMUS);
     if (gls.texnums[tmu] == texnum)
         return;
 
@@ -281,7 +286,7 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
-static void GL_RotateForViewer(void)
+void GL_RotateForViewer(void)
 {
     AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
     Matrix_RotateForViewer(glr.fd.vieworg, glr.viewaxis, glr.viewmatrix);
@@ -330,6 +335,9 @@ void GL_Setup3D(void)
 
 void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
 {
+    if (glr.shadowbuffer_bound)
+        return;
+
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE | (gls.state_bits & GLS_MESH_MASK));
     if (gls.currentva)

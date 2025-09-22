@@ -75,6 +75,17 @@ typedef struct {
 } particle_t;
 
 typedef struct {
+    vec3_t  origin;
+    float   radius;
+    vec3_t  color;
+    vec3_t  dir;
+    float   cone_angle;
+    int     resolution;
+    int     flags;
+    int     key;
+} light_t;
+
+typedef struct {
     int         x, y, width, height;// in virtual screen coordinates
     float       fov_x, fov_y;
     vec3_t      vieworg;

@@ -751,10 +751,12 @@ static void CG_AddPacketEntities(void)
                 color.u32 = U32_WHITE;
             else
                 color.u32 = BigLong(s1->skinnum);
-            trap_R_AddSphereLight(ent.origin, s1->frame,
-                                  color.u8[0] / 255.0f,
-                                  color.u8[1] / 255.0f,
-                                  color.u8[2] / 255.0f);
+            light_t light = {
+                .origin = VectorInit(ent.origin),
+                .radius = s1->frame,
+            };
+            VectorScale(color.u8, 1.0f / 255.0f, light.color);
+            trap_R_AddLight(&light);
             goto skip;
         }
 
@@ -783,19 +785,18 @@ static void CG_AddPacketEntities(void)
             else
                 color.u32 = BigLong(s1->skinnum);
 
-            scale /= 255.0f;
-            float r = color.u8[0] * scale;
-            float g = color.u8[1] * scale;
-            float b = color.u8[2] * scale;
+            light_t light = {
+                .origin = VectorInit(ent.origin),
+                .radius = s1->modelindex4,
+                .cone_angle = s1->angles[0],
+                .resolution = s1->modelindex,
+                .key = s1->number,
+            };
 
-            int conedir = s1->frame & 255;
-            if (conedir) {
-                vec3_t dir;
-                ByteToDir(conedir, dir);
-                trap_R_AddSpotLight(ent.origin, dir, s1->angles[0], s1->modelindex4, r, g, b);
-            } else {
-                trap_R_AddSphereLight(ent.origin, s1->modelindex4, r, g, b);
-            }
+            VectorScale(color.u8, scale / 255.0f, light.color);
+            ByteToDir(s1->frame & 255, light.dir);
+
+            trap_R_AddLight(&light);
             goto skip;
         }
 
@@ -861,7 +862,7 @@ static void CG_AddPacketEntities(void)
 
             AngleVectors(ent.angles, forward, NULL, NULL);
             VectorMA(ent.origin, 64, forward, start);
-            trap_R_AddSphereLight(start, 100, 1, 0, 0);
+            CG_AddSphereLight(start, 100, 1, 0, 0);
         } else if (s1->number == cg.frame->ps.clientnum) {
             VectorCopy(cg.player_entity_angles, ent.angles);    // use predicted angles
         } else { // interpolate angles
@@ -873,38 +874,35 @@ static void CG_AddPacketEntities(void)
         }
 
         if (s1->morefx & EFX_FLASHLIGHT) {
-            vec3_t start, forward;
+            light_t light = {
+                .radius = 512.0f,
+                .cone_angle = 22.0f,
+                .color = { 2, 2, 2 },
+            };
 
             if (s1->number == cg.frame->ps.clientnum) {
                 float hand = CG_HandMultiplier();
-                VectorMA(cg.refdef.vieworg, 7.0f * hand, cg.v_right, start);
-                VectorCopy(cg.v_forward, forward);
+                VectorMA(cg.refdef.vieworg, 7.0f * hand, cg.v_right, light.origin);
+                VectorCopy(cg.v_forward, light.dir);
+                light.flags = RF_VIEWERMODEL;   // skip player model shadow
             } else {
-                VectorCopy(ent.origin, start);
-                AngleVectors(ent.angles, forward, NULL, NULL);
+                VectorCopy(ent.origin, light.origin);
+                AngleVectors(ent.angles, light.dir, NULL, NULL);
             }
 
-            trap_R_AddSpotLight(start, forward, 22, 512, 2, 2, 2);
+            trap_R_AddLight(&light);
         }
 
         if (s1->morefx & EFX_GRENADE_LIGHT)
-            trap_R_AddSphereLight(ent.origin, 100, 1, 1, 0);
-
-        if (s1->number == cg.frame->ps.clientnum && !cg.third_person_view) {
-            if (effects & EF_FLAG1)
-                trap_R_AddSphereLight(ent.origin, 225, 1.0f, 0.1f, 0.1f);
-            else if (effects & EF_FLAG2)
-                trap_R_AddSphereLight(ent.origin, 225, 0.1f, 0.1f, 1.0f);
-            else if (effects & EF_TAGTRAIL)
-                trap_R_AddSphereLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
-            else if (effects & EF_TRACKERTRAIL)
-                trap_R_AddSphereLight(ent.origin, 225, -1.0f, -1.0f, -1.0f);
-            goto skip;
-        }
+            CG_AddSphereLight(ent.origin, 100, 1, 1, 0);
 
         // if set to invisible, skip
         if (!s1->modelindex)
             goto skip;
+
+        // only draw from mirrors, etc
+        if (s1->number == cg.frame->ps.clientnum && !cg.third_person_view)
+            renderfx |= RF_VIEWERMODEL;
 
         // beams don't have color shells
         if (renderfx & RF_BEAM)
@@ -1057,26 +1055,26 @@ static void CG_AddPacketEntities(void)
                 has_trail = true;
             }
             if (cg_dlight_hacks.integer & DLHACK_ROCKET_COLOR)
-                trap_R_AddSphereLight(ent.origin, 200, 1, 0.23f, 0);
+                CG_AddSphereLight(ent.origin, 200, 1, 0.23f, 0);
             else
-                trap_R_AddSphereLight(ent.origin, 200, 1, 1, 0);
+                CG_AddSphereLight(ent.origin, 200, 1, 1, 0);
         } else if (effects & EF_BLASTER) {
             if (effects & EF_TRACKER) {
                 CG_BlasterTrail2(cent, ent.origin);
-                trap_R_AddSphereLight(ent.origin, 200, 0, 1, 0);
+                CG_AddSphereLight(ent.origin, 200, 0, 1, 0);
                 has_trail = true;
             } else {
                 if (!(cg_disable_particles.integer & NOPART_BLASTER_TRAIL)) {
                     CG_BlasterTrail(cent, ent.origin);
                     has_trail = true;
                 }
-                trap_R_AddSphereLight(ent.origin, 200, 1, 1, 0);
+                CG_AddSphereLight(ent.origin, 200, 1, 1, 0);
             }
         } else if (effects & EF_HYPERBLASTER) {
             if (effects & EF_TRACKER)
-                trap_R_AddSphereLight(ent.origin, 200, 0, 1, 0);
+                CG_AddSphereLight(ent.origin, 200, 0, 1, 0);
             else
-                trap_R_AddSphereLight(ent.origin, 200, 1, 1, 0);
+                CG_AddSphereLight(ent.origin, 200, 1, 1, 0);
         } else if (effects & EF_GIB) {
             CG_DiminishingTrail(cent, ent.origin, DT_GIB);
             has_trail = true;
@@ -1096,51 +1094,51 @@ static void CG_AddPacketEntities(void)
                 i = bfg_lightramp[ent.oldframe % 6] * ent.backlerp +
                     bfg_lightramp[ent.frame    % 6] * (1.0f - ent.backlerp);
             }
-            trap_R_AddSphereLight(ent.origin, i, 0, 1, 0);
+            CG_AddSphereLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
             ent.origin[2] += 32;
             CG_TrapParticles(cent, ent.origin);
             i = (Com_SlowRand() % 100) + 100;
-            trap_R_AddSphereLight(ent.origin, i, 1, 0.8f, 0.1f);
+            CG_AddSphereLight(ent.origin, i, 1, 0.8f, 0.1f);
         } else if (effects & EF_FLAG1) {
             CG_FlagTrail(cent, ent.origin, 242);
-            trap_R_AddSphereLight(ent.origin, 225, 1, 0.1f, 0.1f);
+            CG_AddSphereLight(ent.origin, 225, 1, 0.1f, 0.1f);
             has_trail = true;
         } else if (effects & EF_FLAG2) {
             CG_FlagTrail(cent, ent.origin, 115);
-            trap_R_AddSphereLight(ent.origin, 225, 0.1f, 0.1f, 1);
+            CG_AddSphereLight(ent.origin, 225, 0.1f, 0.1f, 1);
             has_trail = true;
         } else if (effects & EF_TAGTRAIL) {
             CG_TagTrail(cent, ent.origin, 220);
-            trap_R_AddSphereLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
+            CG_AddSphereLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
             has_trail = true;
         } else if (effects & EF_TRACKERTRAIL) {
             if (effects & EF_TRACKER) {
                 float intensity = 50 + (500 * (sinf(cg.time / 500.0f) + 1.0f));
-                trap_R_AddSphereLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
+                CG_AddSphereLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
             } else {
                 CG_Tracker_Shell(cent, ent.origin);
-                trap_R_AddSphereLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
+                CG_AddSphereLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
             }
         } else if (effects & EF_TRACKER) {
             CG_TrackerTrail(cent, ent.origin);
-            trap_R_AddSphereLight(ent.origin, 200, -1, -1, -1);
+            CG_AddSphereLight(ent.origin, 200, -1, -1, -1);
             has_trail = true;
         } else if (effects & EF_GREENGIB) {
             CG_DiminishingTrail(cent, ent.origin, DT_GREENGIB);
             has_trail = true;
         } else if (effects & EF_IONRIPPER) {
             CG_IonripperTrail(cent, ent.origin);
-            trap_R_AddSphereLight(ent.origin, 100, 1, 0.5f, 0.5f);
+            CG_AddSphereLight(ent.origin, 100, 1, 0.5f, 0.5f);
             has_trail = true;
         } else if (effects & EF_BLUEHYPERBLASTER) {
-            trap_R_AddSphereLight(ent.origin, 200, 0, 0, 1);
+            CG_AddSphereLight(ent.origin, 200, 0, 0, 1);
         } else if (effects & EF_PLASMA) {
             if (effects & EF_ANIM_ALLFAST) {
                 CG_BlasterTrail(cent, ent.origin);
                 has_trail = true;
             }
-            trap_R_AddSphereLight(ent.origin, 130, 1, 0.5f, 0.5f);
+            CG_AddSphereLight(ent.origin, 130, 1, 0.5f, 0.5f);
         }
 
 skip:

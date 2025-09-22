@@ -145,13 +145,16 @@ void CG_AddDLights(void)
 {
     int         i;
     cdlight_t   *dl;
+    light_t     light = { 0 };
 
     dl = cg_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cg.time)
             continue;
-        trap_R_AddSphereLight(dl->origin, dl->radius,
-                              dl->color[0], dl->color[1], dl->color[2]);
+        VectorCopy(dl->origin, light.origin);
+        VectorCopy(dl->color, light.color);
+        light.radius = dl->radius;
+        trap_R_AddLight(&light);
     }
 }
 

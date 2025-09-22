@@ -657,6 +657,8 @@ void GL_Flush3D(void)
         if (tess.dlightbits) {
             state |= GLS_DYNAMIC_LIGHTS;
             array |= GLA_NORMAL;
+            if (glr.shadowbuffer_ok && gl_shadowmap->integer)
+                state |= GLS_SHADOWMAP_DRAW;
         }
     }
     if (glr.framebuffer_bound && gl_bloom->integer)
@@ -734,23 +736,27 @@ static void GL_DrawFace(const mface_t *surf)
     glIndex_t *dst_indices;
     int i, j;
 
-    texnum[TMU_TEXTURE] = image->texnum;
-    if (q_likely(surf->lm_texnum && !gl_fullbright->integer)) {
-        texnum[TMU_LIGHTMAP] = surf->lm_texnum;
-        texnum[TMU_GLOWMAP ] = image->texnum2;
+    if (glr.shadowbuffer_bound) {
+        state = GLS_SHADOWMAP_GENERATE;
+    } else {
+        texnum[TMU_TEXTURE] = image->texnum;
+        if (q_likely(surf->lm_texnum && !gl_fullbright->integer)) {
+            texnum[TMU_LIGHTMAP] = surf->lm_texnum;
+            texnum[TMU_GLOWMAP ] = image->texnum2;
 
-        if (q_unlikely(gl_lightmap->integer)) {
-            texnum[TMU_TEXTURE] = TEXNUM_WHITE;
-            texnum[TMU_GLOWMAP] = 0;
-        }
-        if (surf->dlightframe == glr.drawframe)
-            dlightbits = surf->dlightbits;
-    } else if (state & GLS_CLASSIC_SKY) {
-        if (q_likely(gl_drawsky->integer)) {
-            texnum[TMU_LIGHTMAP] = image->texnum2;
-        } else {
-            texnum[TMU_TEXTURE ] = TEXNUM_BLACK;
-            state &= ~GLS_CLASSIC_SKY;
+            if (q_unlikely(gl_lightmap->integer)) {
+                texnum[TMU_TEXTURE] = TEXNUM_WHITE;
+                texnum[TMU_GLOWMAP] = 0;
+            }
+            if (surf->dlightframe == glr.drawframe)
+                dlightbits = surf->dlightbits;
+        } else if (state & GLS_CLASSIC_SKY) {
+            if (q_likely(gl_drawsky->integer)) {
+                texnum[TMU_LIGHTMAP] = image->texnum2;
+            } else {
+                texnum[TMU_TEXTURE ] = TEXNUM_BLACK;
+                state &= ~GLS_CLASSIC_SKY;
+            }
         }
     }
 
@@ -819,14 +825,25 @@ void GL_DrawAlphaFaces(void)
 
 void GL_AddSolidFace(mface_t *face)
 {
+    int hash = face->hash;
+
+    if (glr.shadowbuffer_bound) {
+        if (face->statebits & (GLS_SKY_MASK | GLS_BLEND_MASK))
+            return;
+        hash = 0;
+    }
+
     // preserve front-to-back ordering
     face->next = NULL;
-    *faces_next[face->hash] = face;
-    faces_next[face->hash] = &face->next;
+    *faces_next[hash] = face;
+    faces_next[hash] = &face->next;
 }
 
 void GL_AddAlphaFace(mface_t *face)
 {
+    if (glr.shadowbuffer_bound)
+        return;
+
     // draw back-to-front
     face->entity = glr.ent;
     face->next = faces_alpha;
