@@ -396,18 +396,33 @@ void GL_PushLights(uint64_t bits)
         return;
 
     gls.light_bits = bits;
-    gls.u_lights.num_dlights = 0;
 
     if (!bits)
         return;
 
-    for (int i = 0; i < r_numdlights; i++)
-        if (bits & BIT_ULL(i))
-            gls.u_lights.dlights[gls.u_lights.num_dlights++] = r_dlights[i];
+    int c1 = 0;
+    int c2 = 0;
+
+    for (int i = 0; i < r_numdlights; i++) {
+        if (!(bits & BIT_ULL(i)))
+            continue;
+        if (r_dlights[i].sphere)
+            gls.u_lights.dlights[c1++] = r_dlights[i].light_;
+    }
+
+    for (int i = 0; i < r_numdlights; i++) {
+        if (!(bits & BIT_ULL(i)))
+            continue;
+        if (!r_dlights[i].sphere)
+            gls.u_lights.dlights[c1 + c2++] = r_dlights[i].light_;
+    }
+
+    gls.u_lights.num_dlights[0] = c1;
+    gls.u_lights.num_dlights[1] = c2;
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_LIGHTS]);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_lights), NULL, GL_STREAM_DRAW);
-    qglBufferSubData(GL_UNIFORM_BUFFER, 0, 16 + sizeof(glDynLight_t) * gls.u_lights.num_dlights, &gls.u_lights);
+    qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(gls.u_lights.num_dlights) + sizeof(glDynLight_t) * (c1 + c2), &gls.u_lights);
     c.uniformUploads++;
 }
 

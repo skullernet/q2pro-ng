@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gl.h"
 #include "common/sizebuf.h"
 
-#define MAX_SHADER_CHARS    4096
+#define MAX_SHADER_CHARS    8192
 
 #define GLSL(x)     SZ_Write(buf, CONST_STR_LEN(#x "\n"));
 #define GLSF(x)     SZ_Write(buf, CONST_STR_LEN(x))
@@ -138,14 +138,17 @@ static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
 
     GLSL(
         struct DynLight {
-            vec4    origin;
-            vec4    color;
-            vec4    cone;
+            vec3    origin;
+            float   radius;
+            vec3    color;
             int     firstview;
+            vec3    dir;
+            float   cone;
         };
 
         layout(std140) uniform Lights {
-            int       u_num_dlights;
+            int       u_num_spherelights;
+            int       u_num_spotlights;
             DynLight  u_dlights[MAX_DLIGHTS];
         };
     )
@@ -154,54 +157,66 @@ static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
 static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
 {
     if (bits & GLS_SHADOWMAP_DRAW) {
-        GLSL(float calc_shadow(DynLight light) {
-            int index = light.firstview;
-            if (index < 0)
-                return 1.0;
-
-            float sphere = light.color.a;
-            if (sphere > 0.0) {
-                vec3 ndir = normalize(v_world_pos - light.origin.xyz);
+        GLSL(
+            int select_face(DynLight light) {
+                vec3 ndir = normalize(v_world_pos - light.origin);
                 vec3 adir = abs(ndir);
                 vec3 sel1 = step(adir.yxx, adir.xyz) * step(adir.zzy, adir.xyz);
                 vec3 sel2 = vec3(0.0, 1.0, 2.0) + step(vec3(0.0), ndir) * 3.0;
-                index += int(dot(sel1, sel2));
+                return int(dot(sel1, sel2));
             }
 
-            ShadowView view = u_shadow_views[index];
-            vec4 frag = view.matrix * vec4(v_world_pos, 1.0);
-            vec3 proj = frag.xyz / frag.w * 0.5 + 0.5;
-            vec2 tc = proj.xy * view.offset.xy + view.offset.zw;
-            return texture(u_shadowmap, vec3(tc, proj.z - 0.00001));
-        })
+            float calc_shadow(DynLight light, int face) {
+                ShadowView view = u_shadow_views[light.firstview + face];
+                vec4 frag = view.matrix * vec4(v_world_pos, 1.0);
+                vec3 proj = frag.xyz / frag.w * 0.5 + 0.5;
+                vec2 tc = proj.xy * view.offset.xy + view.offset.zw;
+                return texture(u_shadowmap, vec3(tc, proj.z - 0.00001));
+            }
+        )
     } else {
-        GLSL(float calc_shadow(DynLight light) { return 1.0; })
+        GLSF("#define calc_shadow(l, f) 1.0\n");
     }
 
     GLSL(vec3 calc_dynamic_lights() {
         vec3 result = vec3(0.0);
 
-        for (int i = 0; i < u_num_dlights; i++) {
+        for (int i = 0; i < u_num_spherelights; i++) {
             DynLight light = u_dlights[i];
-            float sphere = light.color.a;
-            float shadow = calc_shadow(light);
-            if (shadow < 0.01)
-                continue;
 
-            vec3 dir = light.origin.xyz - v_world_pos;
-            dir += v_world_norm * (16.0 * sphere);
+            vec3 dir = light.origin - v_world_pos + v_world_norm * 16.0;
             float dist = length(dir);
             dir /= dist;
 
-            float radius = light.origin.w;
-            float intens = max(radius - dist, 0.0) / (radius + DLIGHT_CUTOFF);
+            float intens = max(light.radius - dist, 0.0) / (light.radius + DLIGHT_CUTOFF);
+            intens *= max(dot(dir, v_world_norm), 1.0 - step(0.0, light.color.r));
+            if (intens < 0.01)
+                continue;
+
+            if (light.firstview != -1)
+                intens *= calc_shadow(light, select_face(light));
+
+            result += light.color * intens;
+        }
+
+        for (int i = 0; i < u_num_spotlights; i++) {
+            DynLight light = u_dlights[u_num_spherelights + i];
+
+            vec3 dir = light.origin - v_world_pos;
+            float dist = length(dir);
+            dir /= dist;
+
+            float intens = max(light.radius - dist, 0.0) / (light.radius + DLIGHT_CUTOFF);
             intens *= max(dot(dir, v_world_norm), 1.0 - step(0.0, light.color.r));
 
-            float theta = dot(dir, light.cone.xyz);
-            float cutoff = light.cone.w;
-            intens *= max(1.0 - (1.0 + theta) / (1.0 - cutoff), sphere);
+            intens *= 1.0 - (1.0 + dot(dir, light.dir)) / (1.0 - light.cone);
+            if (intens < 0.01)
+                continue;
 
-            result += light.color.rgb * intens * shadow;
+            if (light.firstview != -1)
+                intens *= calc_shadow(light, 0);
+
+            result += light.color * intens;
         }
 
         return result;

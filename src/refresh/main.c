@@ -32,8 +32,8 @@ glentity_t gl_world;
 
 refcfg_t r_config;
 
-int             r_numdlights;
-glDynLight_t    r_dlights[MAX_DLIGHTS];
+int         r_numdlights;
+dlight_t    r_dlights[MAX_DLIGHTS];
 
 int         r_numentities;
 glentity_t  r_entities[MAX_ENTITIES];
@@ -101,7 +101,7 @@ cvar_t *gl_showerrors;
 
 // ==============================================================================
 
-static void GL_SetupFrustum(float zfar)
+void GL_SetupFrustum(float zfar)
 {
     vec_t angle, sf, cf;
     vec3_t forward, left, up;
@@ -602,7 +602,7 @@ static void GL_SortEntities(void)
     }
 }
 
-static void GL_DrawEntities(glentity_t *ent, int exclude)
+void GL_DrawEntities(glentity_t *ent, int exclude)
 {
     model_t *model;
 
@@ -857,134 +857,6 @@ static void GL_SetupFog(void)
     gls.u_block.heightfog_falloff = glr.fd.heightfog.falloff;
 
     gls.u_block_dirty |= DIRTY_BLOCK;
-}
-
-static bool GL_DrawShadowView(const glDynLight_t *light, const vec3_t dir, float fov)
-{
-    if (glr.num_shadow_views == MAX_SHADOW_VIEWS)
-        return false;
-
-    const int size = gl_config.max_texture_size;
-
-    // resolution 0 or 1 (dummy modelindex) means default
-    int res = light->resolution;
-    if (res <= 1)
-        res = size >> 4;
-
-    int s, t;
-    if (!GL_AllocBlock(size, size, glr.shadow_inuse, res, res, &s, &t))
-        return false;
-
-    const float scale = 1.0f / size;
-
-    glShadowView_t *view = &glr.shadow_views[glr.num_shadow_views++];
-    view->offset[0] = res * scale;
-    view->offset[1] = res * scale;
-    view->offset[2] = s * scale;
-    view->offset[3] = t * scale;
-
-    vectoangles(dir, glr.fd.viewangles);
-
-    Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
-    glr.fd.fov_x = glr.fd.fov_y = fov;
-
-    GL_RotateForViewer();
-
-    GL_MultMatrix(view->matrix, gls.proj_matrix, gls.view_matrix);
-
-    qglViewport(s, t, res, res);
-
-    int exclude = RF_WEAPONMODEL | RF_FULLBRIGHT | RF_TRANSLUCENT |
-        RF_NOSHADOW | (light->flags & RF_VIEWERMODEL);
-
-    glr.drawframe++;
-
-    GL_SetupFrustum(light->radius);
-    GL_DrawWorld();
-    GL_DrawEntities(glr.ents.bmodels, exclude);
-    GL_DrawEntities(glr.ents.opaque, exclude);
-
-    return true;
-}
-
-static const vec3_t shadowdirs[6] = {
-    {-1, 0, 0 }, { 0,-1, 0 }, { 0, 0,-1 },
-    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }
-};
-
-static void GL_DrawShadowMap(const refdef_t *fd)
-{
-    if (gl_shadowmap->modified) {
-        glr.shadowbuffer_ok = GL_InitShadowBuffer();
-        gl_shadowmap->modified = false;
-    }
-
-    if (!r_numdlights || (fd->rdflags & RDF_NOWORLDMODEL) || !gl_shadowmap->integer)
-        return;
-
-    if (!glr.shadowbuffer_ok)
-        return;
-
-    glr.fd = *fd;
-
-    cplane_t frustum[4];
-    GL_SetupFrustum(gl_static.world.size * 2);
-    memcpy(frustum, glr.frustum, sizeof(frustum));
-
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP);
-    glr.shadowbuffer_bound = true;
-
-    GL_StateBits(GLS_SHADOWMAP_GENERATE);
-    qglClear(GL_DEPTH_BUFFER_BIT);
-
-    qglEnable(GL_POLYGON_OFFSET_FILL);
-    qglPolygonOffset(1.5f, 2.0f);
-
-    glr.num_shadow_views = 0;
-    memset(glr.shadow_inuse, 0, sizeof(glr.shadow_inuse));
-
-    for (int i = 0; i < r_numdlights; i++) {
-        glDynLight_t *light = &r_dlights[i];
-        int j;
-
-        if (light->flags & RF_NOSHADOW) {
-            light->firstview = -1;
-            continue;
-        }
-
-        for (j = 0; j < 4; j++)
-            if (PlaneDiff(light->origin, &frustum[j]) < -light->radius)
-                break;
-        if (j < 4) {
-            light->firstview = -1;
-            continue;
-        }
-
-        VectorCopy(light->origin, glr.fd.vieworg);
-        VectorCopy(light->origin, gls.u_block.vieworg);
-
-        light->firstview = glr.num_shadow_views;
-        bool ok = true;
-
-        if (light->sphere) {
-            for (j = 0; j < 6 && ok; j++)
-                ok = GL_DrawShadowView(light, shadowdirs[j], 90.0f);
-        } else {
-            ok = GL_DrawShadowView(light, light->dir, RAD2DEG(acosf(light->cone)) * 2);
-        }
-
-        if (!ok)
-            light->firstview = -1;
-    }
-
-    qglDisable(GL_POLYGON_OFFSET_FILL);
-
-    qglBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glr.shadowbuffer_bound = false;
-
-    GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_SHADOWVIEWS]);
-    qglBufferData(GL_UNIFORM_BUFFER, sizeof(glr.shadow_views), NULL, GL_STREAM_DRAW);
-    qglBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glr.shadow_views[0]) * glr.num_shadow_views, glr.shadow_views);
 }
 
 void R_RenderFrame(const refdef_t *fd)
@@ -1695,11 +1567,15 @@ R_AddLight
 */
 void R_AddLight(const light_t *light)
 {
-    glDynLight_t    *dl;
+    dlight_t    *dl;
 
     if (r_numdlights >= MAX_DLIGHTS)
         return;
     if (gl_dynamic->integer != 1)
+        return;
+    if (VectorLengthSquared(light->color) < 0.001f)
+        return;
+    if (light->radius < 1.0f)
         return;
 
     dl = &r_dlights[r_numdlights++];
@@ -1707,17 +1583,22 @@ void R_AddLight(const light_t *light)
     dl->radius = light->radius;
     VectorCopy(light->color, dl->color);
     if (VectorEmpty(light->dir) || light->cone_angle == 0.0f) {
-        dl->sphere = 1.0f;
+        dl->sphere = true;
         VectorClear(dl->dir);
         dl->cone = 0.0f;
     } else {
-        dl->sphere = 0.0f;
+        dl->sphere = false;
         VectorCopy(light->dir, dl->dir);
         dl->cone = cosf(DEG2RAD(light->cone_angle));
     }
-    dl->resolution = light->resolution;
+    if (light->resolution > 1)
+        dl->resolution = light->resolution;
+    else
+        dl->resolution = 512;
     dl->flags = light->flags;
     dl->key = light->key;
+    if (light->color[0] < 0 || light->color[1] < 0 || light->color[2] < 0)
+        dl->flags |= RF_NOSHADOW;
 }
 
 /*

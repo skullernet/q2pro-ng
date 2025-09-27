@@ -1194,7 +1194,15 @@ bool GL_InitShadowBuffer(void)
     GL_ClearErrors();
 
     GL_ActiveTexture(TMU_SHADOWMAP);
-    qglBindTexture(GL_TEXTURE_2D, TEXNUM_SHADOWMAP);
+
+    qglBindTexture(GL_TEXTURE_2D, TEXNUM_SHADOWMAP_STATIC);
+    qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    qglBindTexture(GL_TEXTURE_2D, TEXNUM_SHADOWMAP_DYNAMIC);
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1202,15 +1210,23 @@ bool GL_InitShadowBuffer(void)
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
     if (!size)
         qglBindTexture(GL_TEXTURE_2D, 0);
 
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP);
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP_STATIC);
     qglDrawBuffers(0, NULL);
     qglReadBuffer(GL_NONE);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, size ? TEXNUM_SHADOWMAP : GL_NONE, 0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, size ? TEXNUM_SHADOWMAP_STATIC : GL_NONE, 0);
 
-    CHECK_FB(size, "FBO_SHADOWMAP");
+    CHECK_FB(size, "FBO_SHADOWMAP_STATIC");
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP_DYNAMIC);
+    qglDrawBuffers(0, NULL);
+    qglReadBuffer(GL_NONE);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, size ? TEXNUM_SHADOWMAP_DYNAMIC : GL_NONE, 0);
+
+    CHECK_FB(size, "FBO_SHADOWMAP_DYNAMIC");
 
     qglBindFramebuffer(GL_FRAMEBUFFER, 0);
 

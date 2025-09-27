@@ -57,30 +57,34 @@ typedef uint64_t glStateBits_t;
 #define TAB_COS(x)  gl_static.sintab[((x) + 64) & 255]
 
 // auto textures
-#define NUM_AUTO_TEXTURES       14
+#define NUM_AUTO_TEXTURES       15
 #define AUTO_TEX(n)             gl_static.texnums[n]
 
-#define TEXNUM_DEFAULT          AUTO_TEX(0)
-#define TEXNUM_SCRAP            AUTO_TEX(1)
-#define TEXNUM_PARTICLE         AUTO_TEX(2)
-#define TEXNUM_BEAM             AUTO_TEX(3)
-#define TEXNUM_WHITE            AUTO_TEX(4)
-#define TEXNUM_BLACK            AUTO_TEX(5)
-#define TEXNUM_RAW              AUTO_TEX(6)
-#define TEXNUM_CUBEMAP_DEFAULT  AUTO_TEX(7)
-#define TEXNUM_CUBEMAP_BLACK    AUTO_TEX(8)
-#define TEXNUM_PP_SCENE         AUTO_TEX(9)
-#define TEXNUM_PP_BLOOM         AUTO_TEX(10)
-#define TEXNUM_PP_BLUR_0        AUTO_TEX(11)
-#define TEXNUM_PP_BLUR_1        AUTO_TEX(12)
-#define TEXNUM_SHADOWMAP        AUTO_TEX(13)
+#define TEXNUM_DEFAULT              AUTO_TEX(0)
+#define TEXNUM_SCRAP                AUTO_TEX(1)
+#define TEXNUM_PARTICLE             AUTO_TEX(2)
+#define TEXNUM_BEAM                 AUTO_TEX(3)
+#define TEXNUM_WHITE                AUTO_TEX(4)
+#define TEXNUM_BLACK                AUTO_TEX(5)
+#define TEXNUM_RAW                  AUTO_TEX(6)
+#define TEXNUM_CUBEMAP_DEFAULT      AUTO_TEX(7)
+#define TEXNUM_CUBEMAP_BLACK        AUTO_TEX(8)
+#define TEXNUM_PP_SCENE             AUTO_TEX(9)
+#define TEXNUM_PP_BLOOM             AUTO_TEX(10)
+#define TEXNUM_PP_BLUR_0            AUTO_TEX(11)
+#define TEXNUM_PP_BLUR_1            AUTO_TEX(12)
+#define TEXNUM_SHADOWMAP_STATIC     AUTO_TEX(13)
+#define TEXNUM_SHADOWMAP_DYNAMIC    AUTO_TEX(14)
 
 // framebuffers
-#define FBO_COUNT       4
-#define FBO_SCENE       gl_static.framebuffers[0]
-#define FBO_BLUR_0      gl_static.framebuffers[1]
-#define FBO_BLUR_1      gl_static.framebuffers[2]
-#define FBO_SHADOWMAP   gl_static.framebuffers[3]
+#define FBO_COUNT               5
+#define FBO_NAME(n)             gl_static.framebuffers[n]
+
+#define FBO_SCENE               FBO_NAME(0)
+#define FBO_BLUR_0              FBO_NAME(1)
+#define FBO_BLUR_1              FBO_NAME(2)
+#define FBO_SHADOWMAP_STATIC    FBO_NAME(3)
+#define FBO_SHADOWMAP_DYNAMIC   FBO_NAME(4)
 
 enum { UBO_UNIFORMS, UBO_LIGHTS, UBO_SHADOWVIEWS, UBO_STYLES, UBO_SKELETON, UBO_COUNT };
 enum { SSBO_WEIGHTS, SSBO_JOINTNUMS, SSBO_COUNT };
@@ -131,12 +135,38 @@ typedef struct glentity_s {
     struct glentity_s *next;
 } glentity_t;
 
-#define MAX_SHADOW_VIEWS    128
+#define MAX_SHADOW_VIEWS    256
+#define MAX_STATIC_LIGHTS   128
+
+typedef struct {
+    vec3_t  origin;
+    float   radius;
+    vec3_t  color;
+    int     firstview;  // -1 if not shadow mapped
+    vec3_t  dir;
+    float   cone;
+} glDynLight_t;
 
 typedef struct {
     mat4_t  matrix;
     vec4_t  offset;
 } glShadowView_t;
+
+typedef struct {
+    union {
+        glDynLight_t;
+        glDynLight_t light_;
+    };
+    bool    sphere;
+    int     resolution;
+    int     flags;
+    int     key;
+} dlight_t;
+
+typedef struct {
+    int s;
+    int t;
+} shadow_view_t;
 
 typedef struct {
     refdef_t        fd;
@@ -155,6 +185,7 @@ typedef struct {
     mat4_t          entmatrix;
     mat4_t          skymatrix[2];
     lightpoint_t    lightpoint;
+
     struct {
         glentity_t  *opaque;
         glentity_t  *beams;
@@ -163,6 +194,7 @@ typedef struct {
         glentity_t  *alpha_back;
         glentity_t  *alpha_front;
     } ents;
+
     glStateBits_t   fog_bits, fog_bits_sky;
     int             framebuffer_width;
     int             framebuffer_height;
@@ -170,9 +202,16 @@ typedef struct {
     bool            framebuffer_bound;
     bool            shadowbuffer_ok;
     bool            shadowbuffer_bound;
+
     int             num_shadow_views;
     uint16_t        shadow_inuse[MAX_TEXTURE_SIZE];
     glShadowView_t  shadow_views[MAX_SHADOW_VIEWS];
+
+    int             num_static_shadow_views;
+    int             num_static_lights;
+    uint16_t        static_shadow_inuse[MAX_TEXTURE_SIZE];
+    shadow_view_t   static_shadow_views[MAX_SHADOW_VIEWS];
+    dlight_t        static_lights[MAX_STATIC_LIGHTS];
 } glRefdef_t;
 
 typedef enum {
@@ -212,23 +251,8 @@ extern glRefdef_t glr;
 
 extern glentity_t gl_world;
 
-typedef struct {
-    vec3_t  origin;
-    float   radius;
-    vec3_t  color;
-    float   sphere;
-    vec3_t  dir;
-    float   cone;
-    int     firstview;  // -1 if not shadowmapped
-
-    // not used by shader (padding)
-    int     resolution;
-    int     flags;
-    int     key;
-} glDynLight_t;
-
 extern int          r_numdlights;
-extern glDynLight_t r_dlights[MAX_DLIGHTS];
+extern dlight_t     r_dlights[MAX_DLIGHTS];
 
 extern int          r_numentities;
 extern glentity_t   r_entities[MAX_ENTITIES];
@@ -318,6 +342,8 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2]);
 glCullResult_t GL_CullSphere(const vec3_t origin, float radius);
 glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2]);
 
+void GL_SetupFrustum(float zfar);
+
 bool GL_AllocBlock(int width, int height, uint16_t *inuse,
                    int w, int h, int *s, int *t);
 
@@ -325,6 +351,7 @@ void GL_MultMatrix(GLfloat *restrict out, const GLfloat *restrict a, const GLflo
 void GL_SetEntityAxis(void);
 void GL_RotationMatrix(GLfloat *matrix);
 void GL_RotateForEntity(void);
+void GL_DrawEntities(glentity_t *ent, int exclude);
 
 void GL_ClearErrors(void);
 bool GL_ShowErrors(const char *func);
@@ -688,8 +715,7 @@ typedef struct {
 } glUniformBlock_t;
 
 typedef struct {
-    int             num_dlights;
-    int             pad[3];
+    int             num_dlights[4];
     glDynLight_t    dlights[MAX_DLIGHTS];
 } glLightsBlock_t;
 
@@ -955,6 +981,12 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
  *
  */
 void GL_DrawAliasModel(const model_t *model);
+
+/*
+ * gl_shadow.c
+ *
+ */
+void GL_DrawShadowMap(const refdef_t *fd);
 
 /*
  * hq2x.c

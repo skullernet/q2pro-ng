@@ -80,6 +80,7 @@ refresh_src = [
   'src/refresh/models.c',
   'src/refresh/qgl.c',
   'src/refresh/shader.c',
+  'src/refresh/shadow.c',
   'src/refresh/sky.c',
   'src/refresh/state.c',
   'src/refresh/surf.c',

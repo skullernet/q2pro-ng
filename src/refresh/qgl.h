@@ -129,6 +129,7 @@ QGLAPI void (APIENTRYP qglBindBufferRange)(GLenum target, GLuint index, GLuint b
 QGLAPI void (APIENTRYP qglBindFramebuffer)(GLenum target, GLuint framebuffer);
 QGLAPI void (APIENTRYP qglBindRenderbuffer)(GLenum target, GLuint renderbuffer);
 QGLAPI void (APIENTRYP qglBindVertexArray)(GLuint array);
+QGLAPI void (APIENTRYP qglBlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 QGLAPI GLenum (APIENTRYP qglCheckFramebufferStatus)(GLenum target);
 QGLAPI void (APIENTRYP qglClearBufferfv)(GLenum buffer, GLint drawbuffer, const GLfloat *value);
 QGLAPI void (APIENTRYP qglDeleteFramebuffers)(GLsizei n, const GLuint *framebuffers);

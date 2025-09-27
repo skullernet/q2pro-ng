@@ -645,32 +645,36 @@ void GL_Flush3D(void)
     if (!tess.numindices)
         return;
 
-    if (q_unlikely(state & GLS_SKY_MASK)) {
+    if (glr.shadowbuffer_bound) {
         array = GLA_VERTEX;
-    } else if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
-        state |= GLS_LIGHTMAP_ENABLE;
-        array |= GLA_LMTC | GLA_LIGHTSTYLE;
+    } else {
+        if (q_unlikely(state & GLS_SKY_MASK)) {
+            array = GLA_VERTEX;
+        } else if (q_likely(tess.texnum[TMU_LIGHTMAP])) {
+            state |= GLS_LIGHTMAP_ENABLE;
+            array |= GLA_LMTC | GLA_LIGHTSTYLE;
 
-        if (tess.texnum[TMU_GLOWMAP])
-            state |= GLS_GLOWMAP_ENABLE;
+            if (tess.texnum[TMU_GLOWMAP])
+                state |= GLS_GLOWMAP_ENABLE;
 
-        if (tess.dlightbits) {
-            state |= GLS_DYNAMIC_LIGHTS;
-            array |= GLA_NORMAL;
-            if (glr.shadowbuffer_ok && gl_shadowmap->integer)
-                state |= GLS_SHADOWMAP_DRAW;
+            if (tess.dlightbits) {
+                state |= GLS_DYNAMIC_LIGHTS;
+                array |= GLA_NORMAL;
+                if (glr.shadowbuffer_ok && gl_shadowmap->integer)
+                    state |= GLS_SHADOWMAP_DRAW;
+            }
         }
+        if (glr.framebuffer_bound && gl_bloom->integer)
+            state |= GLS_BLOOM_GENERATE;
+
+        if (!(state & GLS_TEXTURE_REPLACE))
+            array |= GLA_COLOR;
+
+        if (state & GLS_SKY_MASK)
+            state |= glr.fog_bits_sky;
+        else
+            state |= glr.fog_bits;
     }
-    if (glr.framebuffer_bound && gl_bloom->integer)
-        state |= GLS_BLOOM_GENERATE;
-
-    if (!(state & GLS_TEXTURE_REPLACE))
-        array |= GLA_COLOR;
-
-    if (state & GLS_SKY_MASK)
-        state |= glr.fog_bits_sky;
-    else
-        state |= glr.fog_bits;
 
     GL_StateBits(state);
     GL_ArrayBits(array);
