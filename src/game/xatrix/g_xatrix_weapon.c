@@ -10,7 +10,6 @@ void fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->flags |= FL_DODGE;
     bolt->s.effects |= effect;
-    bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 1;
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");

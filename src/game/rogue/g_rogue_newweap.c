@@ -1149,7 +1149,6 @@ void fire_blaster2(edict_t *self, const vec3_t start, const vec3_t dir, int dama
     bolt->s.effects |= effect;
     if (effect)
         bolt->s.effects |= EF_TRACKER;
-    bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;

@@ -290,6 +290,7 @@ edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int
     bolt->r.svflags = SVF_PROJECTILE;
     bolt->r.solid = SOLID_BBOX;
     bolt->r.ownernum = self->s.number;
+    bolt->s.renderfx = RF_NOSHADOW;
     VectorCopy(start, bolt->s.origin);
     VectorCopy(start, bolt->s.old_origin);
     vectoangles(dir, bolt->s.angles);
@@ -316,7 +317,6 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt = G_SpawnMissile(self, start, dir, speed);
     bolt->flags |= FL_DODGE;
     bolt->s.effects |= effect;
-    bolt->s.renderfx |= RF_NOSHADOW;
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
     bolt->touch = blaster_touch;
@@ -453,6 +453,7 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     grenade->r.svflags |= SVF_PROJECTILE | SVF_TRAP;
     grenade->flags |= FL_DODGE;
     grenade->s.effects |= EF_GRENADE;
+    grenade->s.renderfx |= RF_NOSHADOW;
     grenade->speed = speed;
     if (monster) {
         crandom_vec(grenade->avelocity, 360);
