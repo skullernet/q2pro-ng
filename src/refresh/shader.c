@@ -157,6 +157,7 @@ static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
 static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
 {
     if (bits & GLS_SHADOWMAP_DRAW) {
+        GLSP("const float P = 1.0 / %d.0;\n", gl_config.max_texture_size);
         GLSL(
             int select_face(DynLight light) {
                 vec3 ndir = normalize(v_world_pos - light.origin);
@@ -166,12 +167,20 @@ static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
                 return int(dot(sel1, sel2));
             }
 
+            float sample_pcf(vec2 tc, float z) {
+                float shadow = texture(u_shadowmap, vec3(tc, z));
+                shadow += texture(u_shadowmap, vec3(tc + vec2(P, 0), z));
+                shadow += texture(u_shadowmap, vec3(tc + vec2(0, P), z));
+                shadow += texture(u_shadowmap, vec3(tc + vec2(P, P), z));
+                return smoothstep(0.0, 1.0, shadow * 0.25);
+            }
+
             float calc_shadow(DynLight light, int face) {
                 ShadowView view = u_shadow_views[light.firstview + face];
                 vec4 frag = view.matrix * vec4(v_world_pos, 1.0);
                 vec3 proj = frag.xyz / frag.w * 0.5 + 0.5;
                 vec2 tc = proj.xy * view.offset.xy + view.offset.zw;
-                return texture(u_shadowmap, vec3(tc, proj.z - 0.00001));
+                return sample_pcf(tc, proj.z - 0.00001);
             }
         )
     } else {
@@ -190,7 +199,7 @@ static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
 
             float intens = max(light.radius - dist, 0.0) / (light.radius + DLIGHT_CUTOFF);
             intens *= max(dot(dir, v_world_norm), 1.0 - step(0.0, light.color.r));
-            if (intens < 0.01)
+            if (intens < 0.0001)
                 continue;
 
             if (light.firstview != -1)
@@ -210,7 +219,7 @@ static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
             intens *= max(dot(dir, v_world_norm), 1.0 - step(0.0, light.color.r));
 
             intens *= 1.0 - (1.0 + dot(dir, light.dir)) / (1.0 - light.cone);
-            if (intens < 0.01)
+            if (intens < 0.0001)
                 continue;
 
             if (light.firstview != -1)

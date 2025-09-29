@@ -153,8 +153,8 @@ static bool GL_DrawShadowView(const dlight_t *light, const vec3_t dir, float fov
         return false;
 
     glShadowView_t *view = &glr.shadow_views[glr.num_shadow_views++];
-    view->offset[0] = (res - 1) * scale;
-    view->offset[1] = (res - 1) * scale;
+    view->offset[0] = (res - 2) * scale;
+    view->offset[1] = (res - 2) * scale;
     view->offset[2] = (s + 0.5f) * scale;
     view->offset[3] = (t + 0.5f) * scale;
 
