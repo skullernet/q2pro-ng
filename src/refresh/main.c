@@ -232,6 +232,9 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
 {
     int i, j, k, x, y, max_inuse, min_inuse;
 
+    if (w > width || h > height)
+        return false;
+
     x = 0; y = height;
     min_inuse = height;
     for (i = 0; i < width - w; i++) {
