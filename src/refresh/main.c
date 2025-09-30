@@ -1591,7 +1591,7 @@ void R_AddLight(const light_t *light)
         VectorCopy(light->dir, dl->dir);
         dl->cone = cosf(DEG2RAD(light->cone_angle));
     }
-    if (light->resolution > 1)
+    if (light->resolution > 0)
         dl->resolution = light->resolution;
     else
         dl->resolution = 512;

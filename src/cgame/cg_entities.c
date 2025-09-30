@@ -775,7 +775,7 @@ static void CG_AddPacketEntities(void)
                     scale *= 1.0f - (d - fade_start) / (fade_end - fade_start);
             }
 
-            int style = (s1->frame >> 8) & 255;
+            int style = s1->frame & 255;
             if (style)
                 scale *= cg.lightstyles[style - 1];
 
@@ -787,14 +787,14 @@ static void CG_AddPacketEntities(void)
 
             light_t light = {
                 .origin = VectorInit(ent.origin),
-                .radius = s1->modelindex4,
-                .cone_angle = s1->angles[0],
-                .resolution = s1->modelindex,
+                .radius = s1->modelindex,
+                .cone_angle = s1->angles[ROLL],
+                .resolution = s1->modelindex4,
                 .key = s1->number,
             };
 
             VectorScale(color.u8, scale / 255.0f, light.color);
-            ByteToDir(s1->frame & 255, light.dir);
+            AngleVectors(s1->angles, light.dir, NULL, NULL);
 
             trap_R_AddLight(&light);
             goto skip;

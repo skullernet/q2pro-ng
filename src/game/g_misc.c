@@ -466,25 +466,21 @@ void THINK(find_shadow_light_targets)(edict_t *self)
 {
     edict_t *target;
     vec3_t dir;
-    int conedir = 0;
-    int lightstyle = (self->s.frame >> 8) & 255;
 
     if (self->target) {
         target = G_Find(NULL, FOFS(targetname), self->target);
         if (target) {
             VectorSubtract(target->s.origin, self->s.origin, dir);
-            VectorNormalize(dir);
-            conedir = DirToByte(dir);
+            vectoangles(dir, self->s.angles);
+            self->s.angles[ROLL] = self->vision_cone;
         }
     }
 
     if (self->itemtarget) {
         target = G_Find(NULL, FOFS(targetname), self->itemtarget);
         if (target)
-            lightstyle = (target->style + 1) & 255;
+            self->s.frame = (target->style + 1) & 255;
     }
-
-    self->s.frame = lightstyle << 8 | conedir;
 }
 
 static void setup_shadow_light(edict_t *self)
@@ -496,13 +492,13 @@ static void setup_shadow_light(edict_t *self)
         self->nextthink = level.time + FRAME_TIME;
     }
 
-    self->s.modelindex  = Q_clip (st.sl.resolution, 1, MAX_MODELS - 1);
+    self->s.modelindex  = Q_clipf(st.sl.radius,     1, MAX_MODELS - 1);
     self->s.modelindex2 = Q_clipf(st.sl.fade_start, 0, MAX_MODELS - 1);
     self->s.modelindex3 = Q_clipf(st.sl.fade_end,   0, MAX_MODELS - 1);
-    self->s.modelindex4 = Q_clipf(st.sl.radius,     0, MAX_MODELS - 1);
+    self->s.modelindex4 = Q_clip (st.sl.resolution, 0, MAX_MODELS - 1);
     self->s.scale = st.sl.intensity;
-    self->s.frame = ((st.sl.lightstyle + 1) & 255) << 8;
-    self->s.angles[0] = st.sl.coneangle;
+    self->s.frame = (st.sl.lightstyle + 1) & 255;
+    self->vision_cone = st.sl.coneangle;
 
     self->s.renderfx = RF_CASTSHADOW;
     self->r.svflags |= SVF_PHS;
@@ -530,7 +526,7 @@ void SP_dynamic_light(edict_t *self)
 void SP_light(edict_t *self)
 {
     // no targeted lights in deathmatch, because they cause global messages
-    if ((!self->targetname || (deathmatch.integer && !(self->spawnflags & SPAWNFLAG_LIGHT_ALLOW_IN_DM)))) { // [Sam-KEX]
+    if ((!self->targetname || (deathmatch.integer && !(self->spawnflags & SPAWNFLAG_LIGHT_ALLOW_IN_DM))) && st.sl.radius == 0) { // [Sam-KEX]
         G_FreeEdict(self);
         return;
     }
