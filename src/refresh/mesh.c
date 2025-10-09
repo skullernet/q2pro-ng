@@ -726,7 +726,7 @@ void GL_DrawAliasModel(const model_t *model)
 #if USE_MD5
     if (model->skeleton && gl_md5_use->integer &&
         (ent->flags & RF_NO_LOD || gl_md5_distance->value <= 0 ||
-         Distance(origin, glr.fd.vieworg) <= gl_md5_distance->value))
+         Distance(origin, glr.fd.vieworg) <= gl_md5_distance->value * glr.entscale))
         draw_alias_skeleton(model->skeleton);
     else
 #endif
