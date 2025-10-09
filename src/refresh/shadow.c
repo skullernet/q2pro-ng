@@ -217,12 +217,12 @@ void GL_DrawShadowMap(const refdef_t *fd)
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SHADOWMAP_STATIC);
     glr.shadowbuffer_bound = true;
 
-    GL_StateBits(GLS_SHADOWMAP_GENERATE);
+    GL_StateBits(GLS_DEFAULT);
     GL_DrawStaticShadows();
 
     qglBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO_SHADOWMAP_DYNAMIC);
 
-    GL_StateBits(GLS_SHADOWMAP_GENERATE);
+    GL_StateBits(GLS_DEFAULT);
     qglClear(GL_DEPTH_BUFFER_BIT);
 
     glr.num_shadow_views = 0;

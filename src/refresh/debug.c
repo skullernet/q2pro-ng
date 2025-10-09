@@ -95,7 +95,7 @@ void R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32
     l->time = com_localTime2 + time;
     if (l->time < com_localTime2)
         l->time = UINT32_MAX;
-    l->bits = GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
+    l->bits = GLS_COLOR_ENABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
     if (!depth_test)
         l->bits |= GLS_DEPTHTEST_DISABLE;
 }
@@ -366,7 +366,7 @@ static void R_AddDebugTextInternal(const vec3_t origin, const vec3_t angles, con
     t->time = com_localTime2 + time;
     if (t->time < com_localTime2)
         t->time = UINT32_MAX;
-    t->bits = GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
+    t->bits = GLS_COLOR_ENABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_BLEND;
     if (!depth_test)
         t->bits |= GLS_DEPTHTEST_DISABLE;
     if (angles)

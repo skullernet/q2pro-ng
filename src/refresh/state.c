@@ -45,9 +45,6 @@ void GL_BindTexture(glTmu_t tmu, GLuint texnum)
         texnum = TEXNUM_DEFAULT;
 #endif
 
-    if (glr.shadowbuffer_bound)
-        return;
-
     Q_assert(tmu < MAX_TMUS);
     if (gls.texnums[tmu] == texnum)
         return;
@@ -339,7 +336,7 @@ void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
         return;
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_StateBits(GLS_DEPTHMASK_FALSE | GLS_TEXTURE_REPLACE | (gls.state_bits & GLS_MESH_MASK));
+    GL_StateBits(GLS_DEPTHMASK_FALSE | (gls.state_bits & GLS_MESH_MASK));
     if (gls.currentva)
         GL_ArrayBits(GLA_VERTEX);
     GL_DepthRange(0, 0);

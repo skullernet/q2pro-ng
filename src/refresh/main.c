@@ -347,7 +347,7 @@ static void GL_DrawSpriteModel(const model_t *model)
                 bits |= GLS_BLEND_BLEND;
         }
     } else {
-        bits |= GLS_BLEND_BLEND;
+        bits |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND;
     }
 
     GL_LoadMatrix(glr.viewmatrix);
@@ -408,7 +408,7 @@ static void GL_DrawNullModel(void)
     GL_LoadUniforms();
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_BindArrays(VA_NULLMODEL);
-    GL_StateBits(GLS_DEFAULT);
+    GL_StateBits(GLS_COLOR_ENABLE);
     GL_ArrayBits(GLA_VERTEX | GLA_COLOR);
 
     GL_LockArrays(6);
@@ -717,8 +717,7 @@ bool GL_ShowErrors(const char *func)
 static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
 {
     GL_BindArrays(VA_POSTPROCESS);
-    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE |
-                 GLS_CULL_DISABLE | GLS_TEXTURE_REPLACE | bits);
+    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE | bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_ForceUniforms();
 

@@ -117,7 +117,7 @@ static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
     GLSF("#define MAX_DLIGHTS "      STRINGIFY(MAX_DLIGHTS)      "\n");
     GLSF("#define DLIGHT_CUTOFF "    STRINGIFY(DLIGHT_CUTOFF)    "\n");
 
-    if (bits & GLS_SHADOWMAP_DRAW) {
+    if (bits & GLS_SHADOWMAP_ENABLE) {
         GLSL(
             struct ShadowView {
                 mat4    matrix;
@@ -156,7 +156,7 @@ static void write_lights_block(sizebuf_t *buf, glStateBits_t bits)
 
 static void write_dynamic_lights(sizebuf_t *buf, glStateBits_t bits)
 {
-    if (bits & GLS_SHADOWMAP_DRAW) {
+    if (bits & GLS_SHADOWMAP_ENABLE) {
         GLSP("const float P = 1.0 / %d.0;\n", gl_config.max_texture_size);
         GLSL(
             int select_face(DynLight light) {
@@ -472,7 +472,7 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
         )
     }
 
-    if (!(bits & GLS_TEXTURE_REPLACE)) {
+    if (bits & GLS_COLOR_ENABLE) {
         GLSL(in vec4 a_color;)
         GLSL(out vec4 v_color;)
     }
@@ -507,7 +507,7 @@ static void write_vertex_shader(sizebuf_t *buf, glStateBits_t bits)
         )
     }
 
-    if (!(bits & GLS_TEXTURE_REPLACE))
+    if (bits & GLS_COLOR_ENABLE)
         GLSL(v_color = a_color;)
 
     if (bits & (GLS_FOG_HEIGHT | GLS_DYNAMIC_LIGHTS))
@@ -628,11 +628,6 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 {
     write_header(buf, bits);
 
-    if (bits & GLS_SHADOWMAP_GENERATE) {
-        GLSL(void main() {})
-        return;
-    }
-
     if (bits & GLS_UNIFORM_MASK)
         write_block(buf, bits);
 
@@ -672,7 +667,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_GLOWMAP_ENABLE)
         GLSL(uniform sampler2D u_glowmap;)
 
-    if (!(bits & GLS_TEXTURE_REPLACE))
+    if (bits & GLS_COLOR_ENABLE)
         GLSL(in vec4 v_color;)
 
     if (gl_config.ver_es)
@@ -759,7 +754,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
              diffuse.rgb *= v_color.a;
         )
 
-    if (!(bits & GLS_TEXTURE_REPLACE)) {
+    if (bits & GLS_COLOR_ENABLE) {
         GLSL(vec4 color = v_color;)
         if ((bits & (GLS_LIGHTMAP_ENABLE | GLS_DYNAMIC_LIGHTS)) == GLS_DYNAMIC_LIGHTS)
             GLSL(color.rgb += clamp(calc_dynamic_lights(), -1.0, 1.0) * u_modulate_entities;)
@@ -927,7 +922,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
             qglBindAttribLocation(program, VERT_ATTR_NORMAL, "a_norm");
             qglBindAttribLocation(program, VERT_ATTR_LIGHTSTYLE, "a_lightstyle");
         }
-        if (!(bits & GLS_TEXTURE_REPLACE))
+        if (bits & GLS_COLOR_ENABLE)
             qglBindAttribLocation(program, VERT_ATTR_COLOR, "a_color");
     }
 
@@ -963,7 +958,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
         if (!bind_uniform_block(program, "Lights", sizeof(gls.u_lights), UBO_LIGHTS))
             goto fail;
 
-    if (bits & GLS_SHADOWMAP_DRAW)
+    if (bits & GLS_SHADOWMAP_ENABLE)
         if (!bind_uniform_block(program, "ShadowViews", sizeof(glr.shadow_views), UBO_SHADOWVIEWS))
             goto fail;
 
@@ -982,7 +977,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
     if (bits & GLS_CLASSIC_SKY) {
         bind_texture_unit(program, "u_texture1", TMU_TEXTURE);
         bind_texture_unit(program, "u_texture2", TMU_LIGHTMAP);
-    } else if (!(bits & GLS_SHADOWMAP_GENERATE))
+    } else
         bind_texture_unit(program, "u_texture", TMU_TEXTURE);
 
     if (bits & GLS_BLOOM_OUTPUT)
@@ -994,7 +989,7 @@ static GLuint create_and_use_program(glStateBits_t bits)
     if (bits & GLS_GLOWMAP_ENABLE)
         bind_texture_unit(program, "u_glowmap", TMU_GLOWMAP);
 
-    if (bits & GLS_SHADOWMAP_DRAW)
+    if (bits & GLS_SHADOWMAP_ENABLE)
         bind_texture_unit(program, "u_shadowmap", TMU_SHADOWMAP);
 
 #if USE_MD5

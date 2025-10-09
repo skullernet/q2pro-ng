@@ -271,7 +271,7 @@ static void draw_celshading(const uint16_t *indices, int num_indices)
         return;
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
+    GL_StateBits(GLS_COLOR_ENABLE | GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
 
     Vector4Set(gls.u_block.mesh.color, 0, 0, 0, color[3] * celscale);
     GL_ForceUniforms();
@@ -399,7 +399,7 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
     qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_StateBits(GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
+    GL_StateBits(GLS_COLOR_ENABLE | GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
 
     Vector4Set(gls.u_block.mesh.color, 0, 0, 0, color[3] * shadowalpha);
     GL_ForceUniforms();
@@ -494,14 +494,15 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     }
 
     if (glr.shadowbuffer_bound) {
-        state = GLS_SHADOWMAP_GENERATE | meshbits;
+        state = meshbits;
+        GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
     } else {
-        state = glr.fog_bits | meshbits;
+        state = GLS_COLOR_ENABLE | glr.fog_bits | meshbits;
 
         if (dlightbits) {
             state |= GLS_DYNAMIC_LIGHTS;
             if (glr.shadowbuffer_ok && gl_shadowmap->integer)
-                state |= GLS_SHADOWMAP_DRAW;
+                state |= GLS_SHADOWMAP_ENABLE;
         }
 
         if (flags & RF_TRANSLUCENT)

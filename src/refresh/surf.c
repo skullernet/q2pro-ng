@@ -208,19 +208,16 @@ static glStateBits_t statebits_for_surface(const mface_t *surf)
 
     if (surf->drawflags & SURF_SKY) {
         if (surf->texinfo->image->flags & IF_CLASSIC_SKY)
-            return GLS_TEXTURE_REPLACE | GLS_CLASSIC_SKY;
+            return GLS_CLASSIC_SKY;
         else
-            return GLS_TEXTURE_REPLACE | GLS_DEFAULT_SKY;
+            return GLS_DEFAULT_SKY;
     }
-
-    if (!(surf->drawflags & SURF_TRANS_MASK))
-        statebits |= GLS_TEXTURE_REPLACE;
 
     if (surf->drawflags & SURF_WARP)
         statebits |= GLS_WARP_ENABLE;
 
     if (surf->drawflags & SURF_TRANS_MASK)
-        statebits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+        statebits |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
     else if (surf->drawflags & SURF_ALPHATEST)
         statebits |= GLS_ALPHATEST_ENABLE;
 

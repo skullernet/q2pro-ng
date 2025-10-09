@@ -33,7 +33,7 @@ void GL_Flush2D(void)
     if (!tess.numverts)
         return;
 
-    bits = GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE | tess.flags;
+    bits = GLS_COLOR_ENABLE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE | tess.flags;
     if (bits & GLS_BLEND_BLEND)
         bits &= ~GLS_ALPHATEST_ENABLE;
 
@@ -74,7 +74,11 @@ void GL_DrawParticles(void)
     GL_LoadUniforms();
     GL_BindArrays(VA_EFFECT);
 
-    bits = (gl_partstyle->integer ? GLS_BLEND_ADD : GLS_BLEND_BLEND) | GLS_DEPTHMASK_FALSE | glr.fog_bits;
+    bits = GLS_COLOR_ENABLE | GLS_DEPTHMASK_FALSE | glr.fog_bits;
+    if (gl_partstyle->integer)
+        bits |= GLS_BLEND_ADD;
+    else
+        bits |= GLS_BLEND_BLEND;
 
     p = r_particles;
     total = r_numparticles;
@@ -136,7 +140,7 @@ static void GL_FlushBeamSegments(void)
     if (!tess.numindices)
         return;
 
-    glStateBits_t state = GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE | glr.fog_bits;
+    glStateBits_t state = GLS_COLOR_ENABLE | GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE | glr.fog_bits;
     glArrayBits_t array = GLA_VERTEX | GLA_COLOR;
     GLuint texnum = TEXNUM_BEAM;
 
@@ -354,7 +358,7 @@ static void GL_FlushFlares(void)
         return;
 
     GL_BindTexture(TMU_TEXTURE, tess.texnum[TMU_TEXTURE]);
-    GL_StateBits(GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD | tess.flags);
+    GL_StateBits(GLS_COLOR_ENABLE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_BLEND_ADD | tess.flags);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
     GL_DrawIndexed(SHOWTRIS_FX);
 
@@ -646,7 +650,8 @@ void GL_Flush3D(void)
         return;
 
     if (glr.shadowbuffer_bound) {
-        array = GLA_VERTEX;
+        if (!(state & GLS_ALPHATEST_ENABLE))
+            array = GLA_VERTEX;
     } else {
         if (q_unlikely(state & GLS_SKY_MASK)) {
             array = GLA_VERTEX;
@@ -661,13 +666,13 @@ void GL_Flush3D(void)
                 state |= GLS_DYNAMIC_LIGHTS;
                 array |= GLA_NORMAL;
                 if (glr.shadowbuffer_ok && gl_shadowmap->integer)
-                    state |= GLS_SHADOWMAP_DRAW;
+                    state |= GLS_SHADOWMAP_ENABLE;
             }
         }
         if (glr.framebuffer_bound && gl_bloom->integer)
             state |= GLS_BLOOM_GENERATE;
 
-        if (!(state & GLS_TEXTURE_REPLACE))
+        if (state & GLS_COLOR_ENABLE)
             array |= GLA_COLOR;
 
         if (state & GLS_SKY_MASK)
@@ -741,7 +746,8 @@ static void GL_DrawFace(const mface_t *surf)
     int i, j;
 
     if (glr.shadowbuffer_bound) {
-        state = GLS_SHADOWMAP_GENERATE;
+        state &= GLS_ALPHATEST_ENABLE;
+        texnum[TMU_TEXTURE] = state ? image->texnum : TEXNUM_BLACK;
     } else {
         texnum[TMU_TEXTURE] = image->texnum;
         if (q_likely(surf->lm_texnum && !gl_fullbright->integer)) {
