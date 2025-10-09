@@ -149,7 +149,6 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 static bool GL_LightPoint(const vec3_t start, vec3_t color)
 {
     const bsp_t     *bsp = gl_static.world.cache;
-    int             index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
     const glentity_t *ent;
@@ -171,11 +170,7 @@ static bool GL_LightPoint(const vec3_t start, vec3_t color)
 
     // trace to other BSP models
     for (ent = glr.ents.bmodels; ent; ent = ent->next) {
-        index = ~ent->model;
-        if (index < 1 || index >= bsp->nummodels)
-            continue;
-
-        model = &bsp->models[index];
+        model = ent->bmodel;
         if (!model->numfaces)
             continue;
 

@@ -269,6 +269,13 @@ BSP_LOAD(SubModels)
         out->firstface = bsp->faces + firstface;
         out->numfaces = numfaces;
 
+        for (int j = 0; j < out->numfaces; j++) {
+            if (out->firstface[j].texinfo->flags & SURF_TRANS_MASK) {
+                out->transparent = true;
+                break;
+            }
+        }
+
         out->radius = RadiusFromBounds(out->mins, out->maxs);
 #else
         in += 8;

@@ -184,6 +184,7 @@ typedef struct {
     mface_t         *firstface;
 
     unsigned        drawframe;
+    bool            transparent;
 #endif
 } mmodel_t;
 

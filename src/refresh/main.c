@@ -520,13 +520,14 @@ static int entitycmpfnc(const void *_a, const void *_b)
     const glentity_t *a = (const glentity_t *)_a;
     const glentity_t *b = (const glentity_t *)_b;
 
+    // this will handle transparent bmodels too
     bool a_trans = a->flags & RF_TRANSLUCENT;
     bool b_trans = b->flags & RF_TRANSLUCENT;
     if (a_trans != b_trans)
         return b_trans - a_trans;
     if (a_trans) {
-        float dist_a = DistanceSquared(a->origin, glr.fd.vieworg);
-        float dist_b = DistanceSquared(b->origin, glr.fd.vieworg);
+        float dist_a = DistanceSquared(a->mid, glr.fd.vieworg);
+        float dist_b = DistanceSquared(b->mid, glr.fd.vieworg);
         if (dist_a > dist_b)
             return 1;
         if (dist_a < dist_b)
@@ -554,7 +555,7 @@ static int entitycmpfnc(const void *_a, const void *_b)
 
 static void GL_SortEntities(void)
 {
-    glentity_t *ent;
+    glentity_t *ent, **next;
     int i;
 
     memset(&glr.ents, 0, sizeof(glr.ents));
@@ -565,6 +566,7 @@ static void GL_SortEntities(void)
     // sort entities for better cache locality
     qsort(r_entities, r_numentities, sizeof(r_entities[0]), entitycmpfnc);
 
+    next = &glr.ents.bmodels;
     for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
             if (ent->frame) {
@@ -582,9 +584,10 @@ static void GL_SortEntities(void)
             continue;
         }
 
-        if (ent->model & BIT(31)) {
-            ent->next = glr.ents.bmodels;
-            glr.ents.bmodels = ent;
+        // bmodels order must be reversed (sigh)
+        if (ent->bmodel) {
+            *next = ent;
+            next = &ent->next;
             continue;
         }
 
@@ -619,19 +622,8 @@ void GL_DrawEntities(glentity_t *ent, int exclude)
         GL_SetEntityAxis();
 
         // inline BSP model
-        if (ent->model & BIT(31)) {
-            const bsp_t *bsp = gl_static.world.cache;
-            int index = ~ent->model;
-
-            if (!bsp)
-                Com_Error(ERR_DROP, "%s: inline model without world",
-                          __func__);
-
-            if (index < 1 || index >= bsp->nummodels)
-                Com_Error(ERR_DROP, "%s: inline model %d out of range",
-                          __func__, index);
-
-            GL_DrawBspModel(&bsp->models[index]);
+        if (ent->bmodel) {
+            GL_DrawBspModel(ent->bmodel);
             continue;
         }
 
@@ -1397,6 +1389,7 @@ void R_Shutdown(bool total)
 {
     Com_DPrintf("GL_Shutdown( %i )\n", total);
 
+    R_ClearScene();
     GL_FreeWorld();
     GL_DeleteQueries();
     GL_ShutdownImages();
@@ -1501,6 +1494,8 @@ void R_BeginRegistration(const char *name)
 
     gl_shadowmap->modified = true;
 
+    R_ClearScene();
+
     GL_LoadWorld(name);
 }
 
@@ -1557,9 +1552,36 @@ void R_AddEntity(const entity_t *ent)
 
     if (r_numentities >= MAX_ENTITIES)
         return;
+
     glent = &r_entities[r_numentities++];
     glent->ent_ = *ent;
     glent->next = NULL;
+    glent->bmodel = NULL;
+
+    if (ent->flags & RF_BEAM) {
+        VectorAvg(ent->oldorigin, ent->origin, glent->mid);
+        return;
+    }
+
+    if (ent->model & BIT(31)) {
+        const bsp_t *bsp = gl_static.world.cache;
+        unsigned index = ~ent->model;
+        mmodel_t *mod;
+        vec3_t mid;
+
+        Q_assert_soft(bsp);
+        Q_assert_soft(index >= 1 && index < bsp->nummodels);
+
+        glent->bmodel = mod = &bsp->models[index];
+        VectorAvg(mod->mins, mod->maxs, mid);
+        VectorAdd(ent->origin, mid, glent->mid);
+
+        if (mod->transparent)
+            glent->flags |= RF_TRANSLUCENT;
+        return;
+    }
+
+    VectorCopy(ent->origin, glent->mid);
 }
 
 /*

@@ -182,7 +182,7 @@ static bool GL_DrawShadowView(const dlight_t *light, const vec3_t dir, float fov
         GL_DrawWorld();
     }
 
-    const int exclude = RF_WEAPONMODEL | RF_FULLBRIGHT | RF_TRANSLUCENT |
+    const int exclude = RF_WEAPONMODEL | RF_FULLBRIGHT |
         RF_NOSHADOW | (light->flags & RF_VIEWERMODEL);
 
     GL_DrawEntities(glr.ents.bmodels, exclude);

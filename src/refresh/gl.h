@@ -132,6 +132,8 @@ typedef struct glentity_s {
         entity_t;
         entity_t ent_;
     };
+    vec3_t mid;
+    mmodel_t *bmodel;
     struct glentity_s *next;
 } glentity_t;
 
