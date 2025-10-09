@@ -33,7 +33,7 @@ glentity_t gl_world;
 refcfg_t r_config;
 
 int         r_numdlights;
-dlight_t    r_dlights[MAX_DLIGHTS];
+gldlight_t  r_dlights[MAX_DLIGHTS];
 
 int         r_numentities;
 glentity_t  r_entities[MAX_ENTITIES];
@@ -1589,9 +1589,9 @@ void R_AddEntity(const entity_t *ent)
 R_AddLight
 ===============
 */
-void R_AddLight(const light_t *light)
+void R_AddLight(const dlight_t *light)
 {
-    dlight_t    *dl;
+    gldlight_t  *dl;
 
     if (r_numdlights >= MAX_DLIGHTS)
         return;

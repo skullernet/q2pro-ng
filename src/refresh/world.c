@@ -209,7 +209,7 @@ static bool GL_LightPoint(const vec3_t start, vec3_t color)
     return true;
 }
 
-static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, const vec3_t transformed, uint64_t lightbit)
+static void GL_MarkLights_r(const mnode_t *node, const gldlight_t *light, const vec3_t transformed, uint64_t lightbit)
 {
     mface_t *face;
     vec_t dot;
@@ -244,7 +244,7 @@ static void GL_MarkLights_r(const mnode_t *node, const dlight_t *light, const ve
 static void GL_MarkLights(void)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        const dlight_t *light = &r_dlights[i];
+        const gldlight_t *light = &r_dlights[i];
         GL_MarkLights_r(gl_static.world.cache->nodes, light, light->origin, BIT_ULL(i));
     }
 }
@@ -252,7 +252,7 @@ static void GL_MarkLights(void)
 static void GL_TransformLights(const mmodel_t *model)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        const dlight_t *light = &r_dlights[i];
+        const gldlight_t *light = &r_dlights[i];
         vec3_t temp, transformed;
 
         VectorSubtract(light->origin, glr.ent->origin, temp);

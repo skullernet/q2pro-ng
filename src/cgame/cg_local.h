@@ -608,7 +608,7 @@ typedef enum {
 } diminishing_trail_t;
 
 #define CG_AddSphereLight(org, rad, r, g, b) \
-    trap_R_AddLight(&(light_t){ .origin = VectorInit(org), .radius = (rad), .color = { (r), (g), (b) }})
+    trap_R_AddLight(&(dlight_t){ .origin = VectorInit(org), .radius = (rad), .color = { (r), (g), (b) }})
 
 void CG_BigTeleportParticles(const vec3_t org);
 void CG_DiminishingTrail(centity_t *ent, const vec3_t end, diminishing_trail_t type);

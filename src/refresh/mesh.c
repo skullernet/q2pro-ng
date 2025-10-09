@@ -164,7 +164,7 @@ static void setup_lights(void)
         return;
 
     for (int i = 0; i < r_numdlights; i++) {
-        const dlight_t *light = &r_dlights[i];
+        const gldlight_t *light = &r_dlights[i];
         vec3_t dir;
 
         VectorSubtract(origin, light->origin, dir);

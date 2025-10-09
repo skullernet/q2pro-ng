@@ -163,7 +163,7 @@ typedef struct {
     int     resolution;
     int     flags;
     int     key;
-} dlight_t;
+} gldlight_t;
 
 typedef struct {
     int s;
@@ -213,7 +213,7 @@ typedef struct {
     int             num_static_lights;
     uint16_t        static_shadow_inuse[MAX_TEXTURE_SIZE];
     shadow_view_t   static_shadow_views[MAX_SHADOW_VIEWS];
-    dlight_t        static_lights[MAX_STATIC_LIGHTS];
+    gldlight_t      static_lights[MAX_STATIC_LIGHTS];
 } glRefdef_t;
 
 typedef enum {
@@ -254,7 +254,7 @@ extern glRefdef_t glr;
 extern glentity_t gl_world;
 
 extern int          r_numdlights;
-extern dlight_t     r_dlights[MAX_DLIGHTS];
+extern gldlight_t   r_dlights[MAX_DLIGHTS];
 
 extern int          r_numentities;
 extern glentity_t   r_entities[MAX_ENTITIES];

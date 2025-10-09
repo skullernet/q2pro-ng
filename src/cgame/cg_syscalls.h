@@ -101,7 +101,7 @@ void    trap_R_SetSky(const char *name, float rotate, bool autorotate, const vec
 
 void    trap_R_ClearScene(void);
 void    trap_R_AddEntity(const entity_t *ent);
-void    trap_R_AddLight(const light_t *light);
+void    trap_R_AddLight(const dlight_t *light);
 void    trap_R_SetLightStyle(unsigned style, float value);
 void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);

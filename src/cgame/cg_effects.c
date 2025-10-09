@@ -145,7 +145,7 @@ void CG_AddDLights(void)
 {
     int         i;
     cdlight_t   *dl;
-    light_t     light = { 0 };
+    dlight_t    light = { 0 };
 
     dl = cg_dlights;
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {

@@ -751,7 +751,7 @@ static void CG_AddPacketEntities(void)
                 color.u32 = U32_WHITE;
             else
                 color.u32 = BigLong(s1->skinnum);
-            light_t light = {
+            dlight_t light = {
                 .origin = VectorInit(ent.origin),
                 .radius = s1->frame,
             };
@@ -785,7 +785,7 @@ static void CG_AddPacketEntities(void)
             else
                 color.u32 = BigLong(s1->skinnum);
 
-            light_t light = {
+            dlight_t light = {
                 .origin = VectorInit(ent.origin),
                 .radius = s1->modelindex,
                 .cone_angle = s1->angles[ROLL],
@@ -874,7 +874,7 @@ static void CG_AddPacketEntities(void)
         }
 
         if (s1->morefx & EFX_FLASHLIGHT) {
-            light_t light = {
+            dlight_t light = {
                 .radius = 512.0f,
                 .cone_angle = 22.0f,
                 .color = { 2, 2, 2 },

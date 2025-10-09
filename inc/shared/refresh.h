@@ -83,7 +83,7 @@ typedef struct {
     int     resolution;
     int     flags;
     int     key;
-} light_t;
+} dlight_t;
 
 typedef struct {
     int         x, y, width, height;// in virtual screen coordinates

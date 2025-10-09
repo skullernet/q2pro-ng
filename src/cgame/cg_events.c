@@ -528,7 +528,7 @@ static void CG_AddExplosions(void)
         }
 
         if (ex->light) {
-            light_t light = {
+            dlight_t light = {
                 .origin = VectorInit(ent->origin),
                 .radius = ex->light * ent->alpha,
                 .color  = VectorInit(ex->lightcolor),

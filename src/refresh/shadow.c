@@ -23,7 +23,7 @@ static const vec3_t shadowdirs[6] = {
     { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }
 };
 
-static dlight_t *GL_FindStaticLight(int key)
+static gldlight_t *GL_FindStaticLight(int key)
 {
     if (!key)
         return NULL;
@@ -35,7 +35,7 @@ static dlight_t *GL_FindStaticLight(int key)
     return NULL;
 }
 
-static dlight_t *GL_AllocStaticLight(void)
+static gldlight_t *GL_AllocStaticLight(void)
 {
     for (int i = 0; i < glr.num_static_lights; i++)
         if (!glr.static_lights[i].key)
@@ -47,13 +47,13 @@ static dlight_t *GL_AllocStaticLight(void)
     return &glr.static_lights[glr.num_static_lights++];
 }
 
-static bool GL_CompareLights(const dlight_t *a, const dlight_t *b)
+static bool GL_CompareLights(const gldlight_t *a, const gldlight_t *b)
 {
     return VectorCompare(a->origin, b->origin) && a->radius == b->radius
         && VectorCompare(a->dir, b->dir) && a->cone == b->cone && a->resolution == b->resolution;
 }
 
-static bool GL_DrawStaticShadowView(const dlight_t *light, const vec3_t dir, float fov)
+static bool GL_DrawStaticShadowView(const gldlight_t *light, const vec3_t dir, float fov)
 {
     const int size = gl_config.max_texture_size;
     const int res = light->resolution;
@@ -97,7 +97,7 @@ static void GL_ClearStaticShadows(void)
 static void GL_DrawStaticShadows(void)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        const dlight_t *light = &r_dlights[i];
+        const gldlight_t *light = &r_dlights[i];
 
         if (!light->key || (light->flags & RF_NOSHADOW))
             continue;
@@ -105,7 +105,7 @@ static void GL_DrawStaticShadows(void)
         if (!glr.num_static_lights)
             qglClear(GL_DEPTH_BUFFER_BIT);
 
-        dlight_t *cache = GL_FindStaticLight(light->key);
+        gldlight_t *cache = GL_FindStaticLight(light->key);
         if (cache) {
             if (GL_CompareLights(cache, light))
                 continue;
@@ -139,7 +139,7 @@ static void GL_DrawStaticShadows(void)
     }
 }
 
-static bool GL_DrawShadowView(const dlight_t *light, const vec3_t dir, float fov, int face)
+static bool GL_DrawShadowView(const gldlight_t *light, const vec3_t dir, float fov, int face)
 {
     const int size = gl_config.max_texture_size;
     const int res = light->resolution;
@@ -173,7 +173,7 @@ static bool GL_DrawShadowView(const dlight_t *light, const vec3_t dir, float fov
 
     GL_SetupFrustum(light->radius);
 
-    const dlight_t *cache = GL_FindStaticLight(light->key);
+    const gldlight_t *cache = GL_FindStaticLight(light->key);
     if (cache) {
         const shadow_view_t *cv = &glr.static_shadow_views[cache->firstview + face];
         qglBlitFramebuffer(cv->s, cv->t, cv->s + res, cv->t + res,
@@ -229,7 +229,7 @@ void GL_DrawShadowMap(const refdef_t *fd)
     memset(glr.shadow_inuse, 0, sizeof(glr.shadow_inuse));
 
     for (int i = 0; i < r_numdlights; i++) {
-        dlight_t *light = &r_dlights[i];
+        gldlight_t *light = &r_dlights[i];
         int j;
 
         if (light->flags & RF_NOSHADOW) {

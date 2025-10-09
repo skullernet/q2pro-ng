@@ -493,7 +493,7 @@ VM_THUNK(R_AddEntity) {
 }
 
 VM_THUNK(R_AddLight) {
-    R_AddLight(VM_PTR(0, light_t));
+    R_AddLight(VM_PTR(0, dlight_t));
 }
 
 VM_THUNK(R_SetLightStyle) {
