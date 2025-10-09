@@ -499,7 +499,7 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     VectorMA(origin, 4.0f * scale, forward, flash_origin);
 
     dl = CG_AllocDlight(entnum);
-    VectorCopy(origin, dl->origin);
+    VectorCopy(flash_origin, dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
     dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
