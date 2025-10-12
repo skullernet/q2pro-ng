@@ -20,16 +20,17 @@ Project goals:
 
 Provides the following advantages over Quake II re-release:
 
-* No C++, JSON and other stuff that doesn't belong in Quake II engine.
+* No C++, JSON and other cruft that doesn't belong in Quake II engine.
 * Smoother player movement and entity animation.
 * Vanilla-like server FPS independent view pitching.
 * Full-featured client game module for greater modding possibilities.
 * Server and client game code fully cross-platform and sandboxed.
-* Lower system requirements: OpenGL 3.1 and SSE2 capable CPU.
+* Lower system requirements: OpenGL 3.1 / OpenGL ES 3.0 capable GPU.
+* Renderer several times faster than Kex engine Vulkan renderer.
 * Runs natively on Linux, BSD and similar OSes.
 * More stable and more secure.
 
-Non-exhaustive list of technical changes from Quake II re-release:
+Non-exhaustive list of technical changes/fixes from Quake II re-release:
 
 * Gibs and beam entities with a model inherit alpha/scale from parent entity.
 * Alias models with `EF_ANIM*` flags interpolate their frames correctly.
@@ -41,6 +42,7 @@ re-release high tick rate animation bugs.
 * Sky surfaces on moving brush models are supported in BSPX maps for some unusual effects.
 * Multiple skyboxes are supported per map: if sky texture is named `sky/<something>` it will be
 loaded as skybox texture (most common cubemap face layouts are supported and autodetected).
+* Shadow lights properly interact with alpha tested surfaces.
 * Smoother client predicted view bobbing, no bobbing in midair/noclip/spectator.
 * Horizontal movement speed on ladders increased by 50%.
 * Maximum configstring length increased to 8192 characters.
