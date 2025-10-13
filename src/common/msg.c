@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/sizebuf.h"
 #include "common/math.h"
 #include "common/intreadwrite.h"
+#include <assert.h>
 
 /*
 ==============================================================================
@@ -335,6 +336,8 @@ static const netfield_t entity_state_fields2[] = {
     NETF(old_origin[2], NETF_FLOAT),
 };
 
+static_assert(sizeof(entity_state_t) / sizeof(uint32_t) == q_countof(entity_state_fields) + 4, "Bad entity_state_fields size");
+
 static unsigned entity_state_counts[q_countof(entity_state_fields)];
 
 static const int entity_state_nc_bits = 32 - __builtin_clz(q_countof(entity_state_fields));
@@ -553,6 +556,8 @@ static const netfield_t player_state_fields[] = {
     NETF(heightfog.density, NETF_FLOAT),
     NETF(heightfog.falloff, NETF_FLOAT),
 };
+
+static_assert(sizeof(player_state_t) / sizeof(uint32_t) == q_countof(player_state_fields) + MAX_AMMO + MAX_STATS, "Bad player_state_fields size");
 
 static unsigned player_state_counts[q_countof(player_state_fields)];
 
@@ -977,7 +982,7 @@ const char *MSG_ServerCommandString(int cmd)
 {
     if (cmd < 0)
         return "END OF MESSAGE";
-    if (cmd < q_countof(svc_names))
+    if (cmd < q_countof(svc_names) && svc_names[cmd])
         return svc_names[cmd];
     return "UNKNOWN COMMAND";
 }
