@@ -936,9 +936,6 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     Hunk_Begin(&bsp->hunk, memsize);
 
-    // calculate the checksum
-    bsp->checksum = Com_BlockChecksum(buf, filelen);
-
     // load all lumps
     for (i = 0; i < q_countof(bsp_lumps); i++) {
         ret = bsp_lumps[i].load[extended](bsp, buf + lump_ofs[i], lump_count[i]);
@@ -966,11 +963,14 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     }
 #endif
 
+    Hunk_End(&bsp->hunk);
+
+    // calculate the checksum
+    bsp->checksum = Com_BlockChecksum(buf, filelen);
+
     BSP_MergeLeafContents(bsp);
 
     BSP_LoadMaterials(bsp);
-
-    Hunk_End(&bsp->hunk);
 
     List_Append(&bsp_cache, &bsp->entry);
 
