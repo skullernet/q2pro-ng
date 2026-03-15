@@ -73,10 +73,12 @@ static void mdfour64(struct mdfour *md, const uint32_t *M)
 
 static void copy64(uint32_t *M, const uint8_t *in)
 {
-    int i;
-
-    for (i = 0; i < 16; i++, in += 4)
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    memcpy(M, in, 64);
+#else
+    for (int i = 0; i < 16; i++, in += 4)
         M[i] = RL32(in);
+#endif
 }
 
 void mdfour_begin(struct mdfour *md)
