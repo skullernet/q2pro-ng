@@ -1363,6 +1363,12 @@ int Q_atoi(const char *s)
 }
 #endif
 
+float Q_atof(const char *s)
+{
+    float f = strtof(s, NULL);
+    return isfinite(f) ? f : 0.0f;
+}
+
 /*
 =====================================================================
 

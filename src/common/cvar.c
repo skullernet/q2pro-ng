@@ -159,7 +159,7 @@ void Cvar_Argument_g(cvar_t *c)
 // parse integer and float values
 static void parse_string_value(cvar_t *var)
 {
-    char *s = var->string;
+    const char *s = var->string;
 
     if (s[0] == '0' && s[1] == 'x') {
         long v = strtol(s, NULL, 16);
@@ -169,8 +169,6 @@ static void parse_string_value(cvar_t *var)
     } else {
         var->integer = Q_atoi(s);
         var->value = Q_atof(s);
-        if (var->value != 0.0f && !isnormal(var->value))
-            var->value = 0.0f;
     }
 }
 
