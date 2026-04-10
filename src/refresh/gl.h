@@ -340,9 +340,9 @@ typedef enum {
     CULL_CLIP
 } glCullResult_t;
 
-glCullResult_t GL_CullBox(const vec3_t bounds[2]);
-glCullResult_t GL_CullSphere(const vec3_t origin, float radius);
-glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2]);
+glCullResult_t GL_CullBox(box3_t box);
+glCullResult_t GL_CullSphere(vec3_t origin, float radius);
+glCullResult_t GL_CullLocalBox(vec3_t origin, box3_t box);
 
 void GL_SetupFrustum(float zfar);
 
@@ -395,7 +395,7 @@ typedef struct {
 typedef struct {
     vec3_t  scale;
     vec3_t  translate;
-    vec3_t  bounds[2];
+    box3_t  box;
     vec_t   radius;
 } maliasframe_t;
 
@@ -975,7 +975,7 @@ void GL_DrawWorld(void);
  *
  */
 void R_RotateForSky(void);
-void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
+void R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis);
 
 /*
  * gl_mesh.c

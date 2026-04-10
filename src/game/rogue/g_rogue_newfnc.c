@@ -39,7 +39,7 @@ void USE(fd_secret_use)(edict_t *self, edict_t *other, edict_t *activator)
         Move_Calc(ent, ent->moveinfo.start_origin, fd_secret_move1);
 }
 
-void DIE(fd_secret_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(fd_secret_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->health = self->max_health;
     self->takedamage = false;
@@ -102,7 +102,7 @@ void MOVEINFO_ENDFUNC(fd_secret_done)(edict_t *self)
 void MOVEINFO_BLOCKED(secret_blocked)(edict_t *self, edict_t *other)
 {
     if (!(self->flags & FL_TEAMSLAVE))
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 0, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 0, DAMAGE_NONE, MOD_CRUSH);
 }
 
 /*
@@ -157,21 +157,21 @@ void SP_func_door_secret2(edict_t *ent)
     if (!ent->dmg)
         ent->dmg = 2;
 
-    AngleVectors(ent->s.angles, forward, right, up);
-    VectorCopy(ent->s.origin, ent->move_origin);
-    VectorCopy(ent->s.angles, ent->move_angles);
+    AngleVectors(ent->s.angles, &forward, &right, &up);
+    ent->move_origin = ent->s.origin;
+    ent->move_angles = ent->s.angles;
 
-    G_SetMovedir(ent->s.angles, ent->movedir);
+    G_SetMovedir(ent);
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     trap_SetBrushModel(ent, ent->model);
 
-    if (ent->move_angles[1] == 0 || ent->move_angles[1] == 180) {
-        lrSize = ent->r.size[1];
-        fbSize = ent->r.size[0];
-    } else if (ent->move_angles[1] == 90 || ent->move_angles[1] == 270) {
-        lrSize = ent->r.size[0];
-        fbSize = ent->r.size[1];
+    if (ent->move_angles.yaw == 0 || ent->move_angles.yaw == 180) {
+        lrSize = ent->r.size.y;
+        fbSize = ent->r.size.x;
+    } else if (ent->move_angles.yaw == 90 || ent->move_angles.yaw == 270) {
+        lrSize = ent->r.size.x;
+        fbSize = ent->r.size.y;
     } else {
         G_Printf("%s not at 0,90,180,270!\n", etos(ent));
         G_FreeEdict(ent);
@@ -184,15 +184,15 @@ void SP_func_door_secret2(edict_t *ent)
     if (!(ent->spawnflags & SPAWNFLAG_SEC_MOVE_RIGHT))
         lrSize = -lrSize;
 
-    VectorScale(forward, fbSize, forward);
-    VectorScale(right, lrSize, right);
+    forward = Vec3_Scale(forward, fbSize);
+    right = Vec3_Scale(right, lrSize);
 
     if (ent->spawnflags & SPAWNFLAG_SEC_1ST_DOWN) {
-        VectorAdd(ent->s.origin, forward, ent->moveinfo.start_origin);
-        VectorAdd(ent->moveinfo.start_origin, right, ent->moveinfo.end_origin);
+        ent->moveinfo.start_origin = Vec3_Add(ent->s.origin, forward);
+        ent->moveinfo.end_origin = Vec3_Add(ent->moveinfo.start_origin, right);
     } else {
-        VectorAdd(ent->s.origin, right, ent->moveinfo.start_origin);
-        VectorAdd(ent->moveinfo.start_origin, forward, ent->moveinfo.end_origin);
+        ent->moveinfo.start_origin = Vec3_Add(ent->s.origin, right);
+        ent->moveinfo.end_origin = Vec3_Add(ent->moveinfo.start_origin, forward);
     }
 
     ent->touch = secret_touch;
@@ -264,20 +264,20 @@ void SP_func_force_wall(edict_t *ent)
 {
     trap_SetBrushModel(ent, ent->model);
 
-    VectorAvg(ent->r.absmin, ent->r.absmax, ent->offset);
+    ent->offset = Box3_Center(ent->r.absbox);
 
-    ent->pos1[2] = ent->r.absmax[2];
-    ent->pos2[2] = ent->r.absmax[2];
-    if (ent->r.size[0] > ent->r.size[1]) {
-        ent->pos1[0] = ent->r.absmin[0];
-        ent->pos2[0] = ent->r.absmax[0];
-        ent->pos1[1] = ent->offset[1];
-        ent->pos2[1] = ent->offset[1];
+    ent->pos1.z = ent->r.absbox.maxs.z;
+    ent->pos2.z = ent->r.absbox.maxs.z;
+    if (ent->r.size.x > ent->r.size.y) {
+        ent->pos1.x = ent->r.absbox.mins.x;
+        ent->pos2.x = ent->r.absbox.maxs.x;
+        ent->pos1.y = ent->offset.y;
+        ent->pos2.y = ent->offset.y;
     } else {
-        ent->pos1[0] = ent->offset[0];
-        ent->pos2[0] = ent->offset[0];
-        ent->pos1[1] = ent->r.absmin[1];
-        ent->pos2[1] = ent->r.absmax[1];
+        ent->pos1.x = ent->offset.x;
+        ent->pos2.x = ent->offset.x;
+        ent->pos1.y = ent->r.absbox.mins.y;
+        ent->pos2.y = ent->r.absbox.maxs.y;
     }
 
     if (!ent->style)

@@ -7,59 +7,20 @@
 static byte g_mem_pool[0x100000];
 static int  g_mem_used;
 
-void G_ProjectSource(const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, vec3_t result)
+vec3_t G_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right)
 {
-    result[0] = point[0] + forward[0] * distance[0] + right[0] * distance[1];
-    result[1] = point[1] + forward[1] * distance[0] + right[1] * distance[1];
-    result[2] = point[2] + forward[2] * distance[0] + right[2] * distance[1] + distance[2];
+    point = Vec3_MA(point, distance.x, forward);
+    point = Vec3_MA(point, distance.y, right);
+    point.z += distance.z;
+    return point;
 }
 
-void G_ProjectSource2(const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, const vec3_t up, vec3_t result)
+vec3_t G_ProjectSource2(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t up)
 {
-    result[0] = point[0] + forward[0] * distance[0] + right[0] * distance[1] + up[0] * distance[2];
-    result[1] = point[1] + forward[1] * distance[0] + right[1] * distance[1] + up[1] * distance[2];
-    result[2] = point[2] + forward[2] * distance[0] + right[2] * distance[1] + up[2] * distance[2];
-}
-
-void closest_point_to_box(const vec3_t from, const vec3_t mins, const vec3_t maxs, vec3_t point)
-{
-    point[0] = Q_clipf(from[0], mins[0], maxs[0]);
-    point[1] = Q_clipf(from[1], mins[1], maxs[1]);
-    point[2] = Q_clipf(from[2], mins[2], maxs[2]);
-}
-
-float distance_between_boxes(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2)
-{
-    float len = 0;
-
-    for (int i = 0; i < 3; i++) {
-        if (maxs1[i] < mins2[i]) {
-            float d = maxs1[i] - mins2[i];
-            len += d * d;
-        } else if (mins1[i] > maxs2[i]) {
-            float d = mins1[i] - maxs2[i];
-            len += d * d;
-        }
-    }
-
-    return sqrtf(len);
-}
-
-bool boxes_intersect(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2)
-{
-    for (int i = 0; i < 3; i++) {
-        if (mins1[i] > maxs2[i])
-            return false;
-        if (maxs1[i] < mins2[i])
-            return false;
-    }
-
-    return true;
-}
-
-bool G_EntitiesContact(const edict_t *a, const edict_t *b)
-{
-    return boxes_intersect(a->r.absmin, a->r.absmax, b->r.absmin, b->r.absmax);
+    point = Vec3_MA(point, distance.x, forward);
+    point = Vec3_MA(point, distance.y, right);
+    point = Vec3_MA(point, distance.z, up);
+    return point;
 }
 
 /*
@@ -103,7 +64,7 @@ Returns entities that have origins within a spherical area
 findradius (origin, radius)
 =================
 */
-edict_t *findradius(edict_t *from, const vec3_t org, float rad)
+edict_t *findradius(edict_t *from, vec3_t org, float rad)
 {
     vec3_t eorg;
     vec3_t mid;
@@ -117,9 +78,9 @@ edict_t *findradius(edict_t *from, const vec3_t org, float rad)
             continue;
         if (from->r.solid == SOLID_NOT)
             continue;
-        VectorAvg(from->r.mins, from->r.maxs, mid);
-        VectorAdd(from->s.origin, mid, eorg);
-        if (Distance(eorg, org) > rad)
+        mid = Box3_Center(from->r.box);
+        eorg = Vec3_Add(from->s.origin, mid);
+        if (Vec3_Distance(eorg, org) > rad)
             continue;
         return from;
     }
@@ -292,9 +253,9 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), ent->target))) {
             // doors fire area portals in a specific way
-            if (!Q_strcasecmp(t->classname, "func_areaportal") &&
-                (!Q_strcasecmp(ent->classname, "func_door") || !Q_strcasecmp(ent->classname, "func_door_rotating") ||
-                 !Q_strcasecmp(ent->classname, "func_door_secret") || !Q_strcasecmp(ent->classname, "func_water")))
+            if (!strcmp(t->classname, "func_areaportal") &&
+                (!strcmp(ent->classname, "func_door") || !strcmp(ent->classname, "func_door_rotating") ||
+                 !strcmp(ent->classname, "func_door_secret") || !strcmp(ent->classname, "func_water")))
                 continue;
 
             if (t == ent)
@@ -312,12 +273,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 
 char *etos(edict_t *ent)
 {
-    if (ent->r.linked) {
-        vec3_t mid;
-        VectorAvg(ent->r.absmin, ent->r.absmax, mid);
-        return va("%s @ %s", ent->classname, vtos(mid));
-    }
-    return va("%s @ %s", ent->classname, vtos(ent->s.origin));
+    return va("%s @ %s", ent->classname, vtos(G_EntityCenter(ent)));
 }
 
 static const vec3_t VEC_UP = { 0, -1, 0 };
@@ -325,31 +281,31 @@ static const vec3_t MOVEDIR_UP = { 0, 0, 1 };
 static const vec3_t VEC_DOWN = { 0, -2, 0 };
 static const vec3_t MOVEDIR_DOWN = { 0, 0, -1 };
 
-void G_SetMovedir(vec3_t angles, vec3_t movedir)
+void G_SetMovedir(edict_t *ent)
 {
-    if (VectorCompare(angles, VEC_UP))
-        VectorCopy(MOVEDIR_UP, movedir);
-    else if (VectorCompare(angles, VEC_DOWN))
-        VectorCopy(MOVEDIR_DOWN, movedir);
+    if (Vec3_IsEqual(ent->s.angles, VEC_UP))
+        ent->movedir = MOVEDIR_UP;
+    else if (Vec3_IsEqual(ent->s.angles, VEC_DOWN))
+        ent->movedir = MOVEDIR_DOWN;
     else
-        AngleVectors(angles, movedir, NULL, NULL);
+        AngleVectors(ent->s.angles, &ent->movedir, NULL, NULL);
 
-    VectorClear(angles);
+    ent->s.angles = vec3_origin;
 }
 
-float vectoyaw(const vec3_t vec)
+float vectoyaw(vec3_t vec)
 {
     // PMM - fixed to correct for pitch of 0
-    if (vec[PITCH] == 0) {
-        if (vec[YAW] == 0)
+    if (vec.x == 0) {
+        if (vec.y == 0)
             return 0;
-        else if (vec[YAW] > 0)
+        else if (vec.y > 0)
             return 90;
         else
             return 270;
     }
 
-    float yaw = RAD2DEG(atan2f(vec[YAW], vec[PITCH]));
+    float yaw = RAD2DEG(atan2f(vec.y, vec.x));
 
     if (yaw < 0)
         yaw += 360;
@@ -409,7 +365,7 @@ void G_InitEdict(edict_t *e)
     e->s.number = e - g_edicts;
 
     // PGM - do this before calling the spawn function so it can be overridden.
-    VectorSet(e->gravityVector, 0, 0, -1);
+    e->gravityVector = Vec3(0, 0, -1);
     // PGM
 }
 
@@ -438,7 +394,7 @@ edict_t *G_Spawn(void)
         }
     }
 
-    if (i == ENTITYNUM_WORLD)
+    if (level.num_edicts >= ENTITYNUM_WORLD)
         G_Error("ED_Alloc: no free edicts");
 
     // allocate new edict
@@ -495,7 +451,7 @@ void G_TouchTriggers(edict_t *ent)
     if ((ent->client || (ent->r.svflags & SVF_MONSTER)) && (ent->health <= 0))
         return;
 
-    num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_TRIGGERS);
+    num = trap_BoxEdicts(ent->r.absbox, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
@@ -516,17 +472,23 @@ typedef struct {
 
 // [Paril-KEX] scan for projectiles between our movement positions
 // to see if we need to collide against them
-void G_TouchProjectiles(edict_t *ent, const vec3_t previous_origin)
+void G_TouchProjectiles(edict_t *ent, vec3_t previous_origin)
 {
     // a bit ugly, but we'll store projectiles we are ignoring here.
     skipped_projectile_t skipped[MAX_EDICTS_OLD], *skip;
     int num_skipped = 0;
 
+    trace_args_t args = {
+        .start = previous_origin,
+        .end = ent->s.origin,
+        .box = ent->r.box,
+        .entnum = ent->s.number,
+        .mask = ent->clipmask | CONTENTS_PROJECTILE
+    };
+
     while (num_skipped < q_countof(skipped)) {
         trace_t tr;
-        trap_Trace(&tr, previous_origin, ent->r.mins, ent->r.maxs,
-                   ent->s.origin, ent->s.number, ent->clipmask | CONTENTS_PROJECTILE);
-
+        trap_Trace(&tr, &args);
         if (tr.fraction == 1.0f)
             break;
 
@@ -569,9 +531,8 @@ Kill box
 bool G_ClipBrushModel(edict_t *self, edict_t *other)
 {
     if (self->r.solid == SOLID_BSP || (self->r.svflags & SVF_HULL)) {
-        trace_t clip;
-        trap_Clip(&clip, other->s.origin, other->r.mins, other->r.maxs, other->s.origin, self->s.number, G_GetClipMask(other));
-
+        trace_t clip = G_Clip(other->s.origin, other->s.origin, other->r.box,
+                              self->s.number, G_GetClipMask(other));
         if (clip.fraction == 1.0f)
             return false;
     }
@@ -587,7 +548,7 @@ Kills all entities that would touch the proposed new positioning
 of ent.
 =================
 */
-void G_KillBox(edict_t *ent, killbox_t flags, mod_id_t mod)
+void G_KillBox(edict_t *ent, killbox_t flags, mod_t mod)
 {
     // don't telefrag as spectator...
     if (ent->movetype == MOVETYPE_NOCLIP)
@@ -598,7 +559,7 @@ void G_KillBox(edict_t *ent, killbox_t flags, mod_id_t mod)
         return;
 
     int touch[MAX_EDICTS_OLD];
-    int num = trap_BoxEdicts(ent->r.absmin, ent->r.absmax, touch, q_countof(touch), AREA_SOLID);
+    int num = trap_BoxEdicts(ent->r.absbox, touch, q_countof(touch), AREA_SOLID);
 
     for (int i = 0; i < num; i++) {
         edict_t *hit = g_edicts + touch[i];
@@ -623,11 +584,11 @@ void G_KillBox(edict_t *ent, killbox_t flags, mod_id_t mod)
         if (flags & KILLBOX_SAFETY && G_FixStuckObject(hit, hit->s.origin) != NO_GOOD_POSITION)
             continue;
 
-        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, (mod_t) { mod });
+        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, mod);
     }
 }
 
-void G_PositionedSound(const vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
+void G_PositionedSound(vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
 {
     G_TempEntity(origin, EV_SOUND, G_EncodeSound(channel, index, volume, attenuation));
 }
@@ -725,14 +686,14 @@ void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
     }
 }
 
-edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param)
+edict_t *G_TempEntity(vec3_t origin, entity_event_t event, uint32_t param)
 {
     edict_t *ent;
 
     ent = G_Spawn();
     if (G_IsHearableEvent(event))
         ent->r.svflags |= SVF_PHS;
-    G_SnapVector(origin, ent->s.origin);
+    ent->s.origin = G_SnapVector(origin);
     ent->s.event[0] = event;
     ent->s.event_param[0] = param;
     ent->free_after_event = true;
@@ -741,14 +702,14 @@ edict_t *G_TempEntity(const vec3_t origin, entity_event_t event, uint32_t param)
     return ent;
 }
 
-edict_t *G_SpawnTrail(const vec3_t start, const vec3_t end, entity_event_t event)
+edict_t *G_SpawnTrail(vec3_t start, vec3_t end, entity_event_t event)
 {
     edict_t *ent;
 
     ent = G_Spawn();
     ent->s.renderfx = RF_BEAM;
-    G_SnapVector(start, ent->s.old_origin);
-    G_SnapVector(end, ent->s.origin);
+    ent->s.old_origin = G_SnapVector(start);
+    ent->s.origin = G_SnapVector(end);
     ent->s.event[0] = event;
     ent->free_after_event = true;
     trap_LinkEntity(ent);
@@ -760,8 +721,7 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     ent->r.solid = SOLID_NOT;
     ent->r.svflags = SVF_NONE;
-    VectorClear(ent->r.mins);
-    VectorClear(ent->r.maxs);
+    ent->r.box = box3_origin;
 
     ent->s.modelindex = 0;
     ent->s.modelindex2 = 0;
@@ -780,30 +740,32 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
     trap_LinkEntity(ent);
 }
 
-void G_SnapVectorTowards(const vec3_t v, const vec3_t to, vec3_t out)
+vec3_t G_SnapVectorTowards(vec3_t v, vec3_t to)
 {
-    for (int i = 0; i < 3; i++) {
-        float t = truncf(v[i]);
+    vec3_t out;
 
-        if (v[i] >= to[i]) {
-            if (v[i] < 0)
-               out[i] = t - 1;
+    for (int i = 0; i < 3; i++) {
+        float t = truncf(v.xyz[i]);
+
+        if (v.xyz[i] >= to.xyz[i]) {
+            if (v.xyz[i] < 0)
+               out.xyz[i] = t - 1;
             else
-               out[i] = t;
+               out.xyz[i] = t;
         } else {
-            if (v[i] < 0)
-                out[i] = t;
+            if (v.xyz[i] < 0)
+                out.xyz[i] = t;
             else
-                out[i] = t + 1;
+                out.xyz[i] = t + 1;
         }
     }
+
+    return out;
 }
 
-void G_SnapVector(const vec3_t v, vec3_t out)
+vec3_t G_SnapVector(vec3_t v)
 {
-    out[0] = rintf(v[0]);
-    out[1] = rintf(v[1]);
-    out[2] = rintf(v[2]);
+    return Vec3(rintf(v.x), rintf(v.y), rintf(v.z));
 }
 
 int G_ModelIndex(const char *name)

@@ -16,7 +16,7 @@ only returns entities that are FL_DAMAGEABLE
 findradius2 (origin, radius)
 =================
 */
-edict_t *findradius2(edict_t *from, const vec3_t org, float rad)
+edict_t *findradius2(edict_t *from, vec3_t org, float rad)
 {
     // rad must be positive
     vec3_t eorg;
@@ -35,9 +35,9 @@ edict_t *findradius2(edict_t *from, const vec3_t org, float rad)
             continue;
         if (!(from->flags & FL_DAMAGEABLE))
             continue;
-        VectorAvg(from->r.mins, from->r.maxs, mid);
-        VectorAdd(from->s.origin, mid, eorg);
-        if (Distance(eorg, org) > rad)
+        mid = Box3_Center(from->r.box);
+        eorg = Vec3_Add(from->s.origin, mid);
+        if (Vec3_Distance(eorg, org) > rad)
             continue;
         return from;
     }

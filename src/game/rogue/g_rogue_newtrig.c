@@ -49,12 +49,12 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
 
     G_TempEntity(other->s.origin, EV_TELEPORT_EFFECT, 0);
 
-    VectorCopy(dest->s.origin, other->s.origin);
-    VectorCopy(dest->s.origin, other->s.old_origin);
-    other->s.origin[2] += 10;
+    other->s.origin = dest->s.origin;
+    other->s.origin.z += 10;
+    other->s.old_origin = other->s.origin;
 
     // clear the velocity and hold them in place briefly
-    VectorClear(other->velocity);
+    other->velocity = vec3_origin;
 
     if (other->client) {
         other->client->ps.pm_time = 160; // hold time
@@ -65,14 +65,10 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
         G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
 
         // set angles
-        for (int i = 0; i < 3; i++)
-            other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
-
-        VectorCopy(dest->s.angles, other->client->ps.viewangles);
-        VectorCopy(dest->s.angles, other->client->v_angle);
+        P_SetClientAngles(other->client, dest->s.angles);
     }
 
-    VectorCopy(dest->s.angles, other->s.angles);
+    other->s.angles = dest->s.angles;
 
     trap_LinkEntity(other);
 
@@ -82,9 +78,9 @@ void TOUCH(trigger_teleport_touch)(edict_t *self, edict_t *other, const trace_t 
     // [Paril-KEX] move sphere, if we own it
     if (other->client && other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
-        VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->r.absmax[2];
-        sphere->s.angles[YAW] = other->s.angles[YAW];
+        sphere->s.origin = other->s.origin;
+        sphere->s.origin.z = other->r.absbox.maxs.z;
+        sphere->s.angles.yaw = other->s.angles.yaw;
         trap_LinkEntity(sphere);
     }
 }
@@ -116,8 +112,8 @@ void SP_trigger_teleport(edict_t *self)
     self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
 
-    if (!VectorEmpty(self->s.angles))
-        G_SetMovedir(self->s.angles, self->movedir);
+    if (!Vec3_IsEmpty(self->s.angles))
+        G_SetMovedir(self);
 
     trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);

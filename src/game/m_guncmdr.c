@@ -344,18 +344,14 @@ const mmove_t MMOVE_T(guncmdr_move_pain5) = { FRAME_c_pain501, FRAME_c_pain524, 
 
 static void guncmdr_dead(edict_t *self)
 {
-    static const vec3_t mins = { -16, -16, -24 };
-    static const vec3_t maxs = { 16, 16, -8 };
-
-    VectorScale(mins, self->s.scale, self->r.mins);
-    VectorScale(maxs, self->s.scale, self->r.maxs);
-
+    self->r.box = Box3_FromSize(16, -24, -8);
+    self->r.box = Box3_Scale(self->r.box, self->s.scale);
     monster_dead(self);
 }
 
 static void guncmdr_shrink(edict_t *self)
 {
-    self->r.maxs[2] = -4 * self->s.scale;
+    self->r.box.maxs.z = -4 * self->s.scale;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -476,12 +472,11 @@ void PAIN(guncmdr_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     }
 
     vec3_t forward;
-    AngleVectors(self->s.angles, forward, NULL, NULL);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
 
-    vec3_t dif;
-    VectorSubtract(other->s.origin, self->s.origin, dif);
-    dif[2] = 0;
-    VectorNormalize(dif);
+    vec3_t dif = Vec3_Sub(other->s.origin, self->s.origin);
+    dif.z = 0;
+    dif = Vec3_Normalize(dif);
 
     // small pain
     if (damage < 35) {
@@ -496,7 +491,7 @@ void PAIN(guncmdr_pain)(edict_t *self, edict_t *other, float kick, int damage, m
         else
             M_SetAnimation(self, &guncmdr_move_pain7);
     // large pain from behind (aka Paril)
-    } else if (DotProduct(dif, forward) < -0.40f) {
+    } else if (Vec3_Dot(dif, forward) < -0.40f) {
         M_SetAnimation(self, &guncmdr_move_pain6);
 
         self->pain_debounce_time += SEC(1.5f);
@@ -682,7 +677,7 @@ static const gib_def_t guncmdr_gibs[] = {
     { 0 }
 };
 
-void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -716,32 +711,29 @@ void DIE(guncmdr_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
         return;
 
     vec3_t forward;
-    AngleVectors(self->s.angles, forward, NULL, NULL);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
 
-    vec3_t dif;
-    VectorSubtract(inflictor->s.origin, self->s.origin, dif);
-    dif[2] = 0;
-    VectorNormalize(dif);
+    vec3_t dif = Vec3_Sub(inflictor->s.origin, self->s.origin);
+    dif.z = 0;
+    dif = Vec3_Normalize(dif);
 
     // off with da head
-    if (fabsf((self->s.origin[2] + self->viewheight) - point[2]) <= 4 && self->velocity[2] < 65) {
+    if (fabsf((self->s.origin.z + self->viewheight) - point.z) <= 4 && self->velocity.z < 65) {
         M_SetAnimation(self, &guncmdr_move_death5);
 
         edict_t *head = ThrowGib(self, "models/monsters/gunner/gibs/head.md2", damage, GIB_NONE);
         if (head) {
-            VectorCopy(self->s.angles, head->s.angles);
-            VectorCopy(self->s.origin, head->s.origin);
-            head->s.origin[2] += 24;
-            vec3_t dir;
-            VectorSubtract(self->s.origin, inflictor->s.origin, dir);
-            VectorNormalize(dir);
-            VectorScale(dir, 100, head->velocity);
-            head->velocity[2] = 200;
-            VectorScale(head->avelocity, 0.15f, head->avelocity);
+            head->s.angles = self->s.angles;
+            head->s.origin = self->s.origin;
+            head->s.origin.z += 24;
+            vec3_t dir = Vec3_Direction(self->s.origin, inflictor->s.origin);
+            head->velocity = Vec3_Scale(dir, 100);
+            head->velocity.z = 200;
+            head->avelocity = Vec3_Scale(head->avelocity, 0.15f);
             trap_LinkEntity(head);
         }
     // damage came from behind; use backwards death
-    } else if (DotProduct(dif, forward) < -0.4f) {
+    } else if (Vec3_Dot(dif, forward) < -0.4f) {
         int r = irandom1(self->monsterinfo.active_move == &guncmdr_move_pain6 ? 2 : 3);
 
         if (r == 0)
@@ -780,11 +772,10 @@ static void GunnerCmdrFire(edict_t *self)
     else
         flash_number = MZ2_GUNCMDR_CHAINGUN_1;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
-    PredictAim(self, self->enemy, start, 800, false, frandom() * 0.3f, aim, NULL);
-    for (int i = 0; i < 3; i++)
-        aim[i] += crandom_open() * 0.025f;
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+    M_PredictAim(self, self->enemy, start, 800, false, frandom() * 0.3f, &aim, NULL);
+    aim = Vec3_Add(aim, Vec3_Scale(Vec3_CenterRandom(), 0.025f));
     monster_fire_flechette(self, start, aim, 4, 800, flash_number);
 }
 
@@ -913,36 +904,36 @@ static void GunnerCmdrGrenade(edict_t *self)
     // if we're shooting blind and we still can't see our enemy
     if ((blindfire) && (!visible(self, self->enemy))) {
         // and we have a valid blind_fire_target
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
-        VectorCopy(self->monsterinfo.blind_fire_target, target);
+        target = self->monsterinfo.blind_fire_target;
     } else
-        VectorCopy(self->enemy->s.origin, target);
+        target = self->enemy->s.origin;
     // pmm
 
-    AngleVectors(self->s.angles, forward, right, up); // PGM
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, &up); // PGM
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     // PGM
     if (self->enemy && !(flash_number >= MZ2_GUNCMDR_GRENADE_CROUCH_1 && flash_number <= MZ2_GUNCMDR_GRENADE_CROUCH_3)) {
         float dist;
 
-        VectorSubtract(target, self->s.origin, aim);
-        dist = VectorLength(aim);
+        aim = Vec3_Sub(target, self->s.origin);
+        dist = Vec3_Length(aim);
 
         // aim up if they're on the same level as me and far away.
-        if ((dist > 512) && (aim[2] < 64) && (aim[2] > -64))
-            aim[2] += (dist - 512);
+        if ((dist > 512) && (aim.z < 64) && (aim.z > -64))
+            aim.z += (dist - 512);
 
-        VectorNormalize(aim);
-        pitch = aim[2];
+        aim = Vec3_Normalize(aim);
+        pitch = aim.z;
         if (pitch > 0.4f)
             pitch = 0.4f;
         else if (pitch < -0.5f)
             pitch = -0.5f;
 
-        if ((self->enemy->r.absmin[2] - self->r.absmax[2]) > 16 && flash_number >= MZ2_GUNCMDR_GRENADE_MORTAR_1 && flash_number <= MZ2_GUNCMDR_GRENADE_MORTAR_3)
+        if ((self->enemy->r.absbox.mins.z - self->r.absbox.maxs.z) > 16 && flash_number >= MZ2_GUNCMDR_GRENADE_MORTAR_1 && flash_number <= MZ2_GUNCMDR_GRENADE_MORTAR_3)
             pitch += 0.5f;
     }
     // PGM
@@ -951,21 +942,20 @@ static void GunnerCmdrGrenade(edict_t *self)
         pitch -= 0.05f;
 
     if (!(flash_number >= MZ2_GUNCMDR_GRENADE_CROUCH_1 && flash_number <= MZ2_GUNCMDR_GRENADE_CROUCH_3)) {
-        VectorMA(forward, spread, right, aim);
-        VectorMA(aim, pitch, up, aim);
+        aim = Vec3_MA(forward, spread, right);
+        aim = Vec3_MA(aim, pitch, up);
     } else {
-        PredictAim(self, self->enemy, start, 800, false, 0, aim, NULL);
-        VectorMA(aim, spread, right, aim);
+        M_PredictAim(self, self->enemy, start, 800, false, 0, &aim, NULL);
+        aim = Vec3_MA(aim, spread, right);
     }
-    VectorNormalize(aim);
+    aim = Vec3_Normalize(aim);
 
     if (flash_number >= MZ2_GUNCMDR_GRENADE_CROUCH_1 && flash_number <= MZ2_GUNCMDR_GRENADE_CROUCH_3) {
         const float inner_spread = 0.125f;
 
         for (int i = 0; i < 3; i++) {
             float spread = -(inner_spread * 2) + (inner_spread * (i + 1));
-            vec3_t tmp;
-            VectorMA(aim, spread, right, tmp);
+            vec3_t tmp = Vec3_MA(aim, spread, right);
             fire_ionripper(self, start, tmp, 15, 800, EF_IONRIPPER);
         }
 
@@ -981,7 +971,7 @@ static void GunnerCmdrGrenade(edict_t *self)
         }
 
         // try search for best pitch
-        if (M_CalculatePitchToFire(self, target, start, aim, speed, 2.5f, mortar, false))
+        if (M_CalculatePitchToFire(self, target, start, &aim, speed, 2.5f, mortar, false))
             monster_fire_grenade(self, start, aim, 50, speed, flash_number, (crandom_open() * 10.0f), frandom() * 10);
         else // normal shot
             monster_fire_grenade(self, start, aim, 50, speed, flash_number, (crandom_open() * 10.0f), 200.0f + (crandom_open() * 10.0f));
@@ -1092,8 +1082,8 @@ static void guncmdr_kick(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, 0, -32 };
 
-    if (fire_hit(self, aim, 15, 400) && self->enemy && self->enemy->client && self->enemy->velocity[2] < 270)
-        self->enemy->velocity[2] = 270;
+    if (fire_hit(self, aim, 15, 400) && self->enemy && self->enemy->client && self->enemy->velocity.z < 270)
+        self->enemy->velocity.z = 270;
 }
 
 static const mframe_t guncmdr_frames_attack_kick[] = {
@@ -1125,7 +1115,7 @@ void MONSTERINFO_ATTACK(guncmdr_attack)(edict_t *self)
     float d = range_to(self, self->enemy);
 
     vec3_t forward, right, start, aim;
-    AngleVectors(self->s.angles, forward, right, NULL); // PGM
+    AngleVectors(self->s.angles, &forward, &right, NULL); // PGM
 
     // always use chaingun on tesla
     // kick close enemies
@@ -1139,13 +1129,12 @@ void MONSTERINFO_ATTACK(guncmdr_attack)(edict_t *self)
         return;
     }
 
-    VectorSubtract(self->enemy->s.origin, self->s.origin, aim);
-    VectorNormalize(aim);
+    aim = Vec3_Direction(self->enemy->s.origin, self->s.origin);
 
-    if ((d >= RANGE_GRENADE_MORTAR || fabsf(self->r.absmin[2] - self->enemy->r.absmax[2]) > 64) // enemy is far below or above us, always try mortar
+    if ((d >= RANGE_GRENADE_MORTAR || fabsf(self->r.absbox.mins.z - self->enemy->r.absbox.maxs.z) > 64) // enemy is far below or above us, always try mortar
         && M_CheckClearShot(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_MORTAR_1])) {
-        M_ProjectFlashSource(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_MORTAR_1], forward, right, start);
-        if (M_CalculatePitchToFire(self, self->enemy->s.origin, start, aim, MORTAR_SPEED, 2.5f, true, false)) {
+        start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_MORTAR_1], forward, right);
+        if (M_CalculatePitchToFire(self, self->enemy->s.origin, start, &aim, MORTAR_SPEED, 2.5f, true, false)) {
             M_SetAnimation(self, &guncmdr_move_attack_mortar);
             monster_duck_down(self);
             return;
@@ -1158,8 +1147,8 @@ void MONSTERINFO_ATTACK(guncmdr_attack)(edict_t *self)
     }
 
     if (M_CheckClearShot(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_FRONT_1])) {
-        M_ProjectFlashSource(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_FRONT_1], forward, right, start);
-        if (M_CalculatePitchToFire(self, self->enemy->s.origin, start, aim, GRENADE_SPEED, 2.5f, false, false)) {
+        start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_GUNCMDR_GRENADE_FRONT_1], forward, right);
+        if (M_CalculatePitchToFire(self, self->enemy->s.origin, start, &aim, GRENADE_SPEED, 2.5f, false, false)) {
             M_SetAnimation(self, &guncmdr_move_attack_grenade_back);
             return;
         }
@@ -1194,18 +1183,18 @@ static void guncmdr_jump_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void guncmdr_jump2_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 150, forward, self->velocity);
-    VectorMA(self->velocity, 400, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 150, forward);
+    self->velocity = Vec3_MA(self->velocity, 400, up);
 }
 
 static void guncmdr_jump_wait_land(edict_t *self)
@@ -1254,7 +1243,7 @@ static void guncmdr_jump(edict_t *self, blocked_jump_result_t result)
 
     monster_done_dodge(self);
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &guncmdr_move_jump2);
     else
         M_SetAnimation(self, &guncmdr_move_jump);
@@ -1265,14 +1254,13 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
 static void GunnerCmdrCounter(edict_t *self)
 {
     vec3_t f, r, start;
-    AngleVectors(self->s.angles, f, r, NULL);
-    M_ProjectFlashSource(self, (const vec3_t) { 20, 0, 14 }, f, r, start);
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, Vec3(20, 0, 14), f, r);
+    trace_t tr = G_TraceLine(self->s.origin, start, self->s.number, MASK_SOLID);
 
     G_AddEvent(self, EV_GUNCMDR_SLAM, 0);
 
-    T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, 200, (mod_t) { MOD_UNKNOWN });
+    T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, 200, MOD_UNKNOWN);
 }
 
 //===========
@@ -1364,7 +1352,7 @@ bool MONSTERINFO_BLOCKED(guncmdr_blocked)(edict_t *self, float dist)
         return true;
 
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             guncmdr_jump(self, result);
         return true;
@@ -1408,8 +1396,7 @@ void SP_monster_guncmdr(edict_t *self)
     G_PrecacheGibs(guncmdr_gibs);
 
     self->s.scale = 1.25f;
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 36);
+    self->r.box = Box3_FromSize(16, -24, 36);
     self->s.skinnum = 2;
 
     self->health = 325 * st.health_multiplier;

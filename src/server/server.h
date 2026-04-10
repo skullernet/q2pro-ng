@@ -535,11 +535,12 @@ bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *point
 // ugly gclient_(old|new)_t accessors
 //
 
-static inline void SV_GetClient_ViewOrg(const client_t *client, vec3_t org)
+static inline vec3_t SV_GetClient_ViewOrg(const client_t *client)
 {
     const gclient_t *cl = client->client;
-    VectorCopy(cl->ps.origin, org);
-    org[2] += cl->ps.viewheight;
+    vec3_t org = cl->ps.origin;
+    org.z += cl->ps.viewheight;
+    return org;
 }
 
 static inline int SV_GetClient_Stat(const client_t *client, int stat)
@@ -572,7 +573,7 @@ void PF_LinkEdict(edict_t *ent);
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+int SV_AreaEdicts(box3_t box, int *list, int maxcount, int areatype);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact
@@ -585,12 +586,11 @@ int SV_AreaEdicts(const vec3_t mins, const vec3_t maxs, int *list, int maxcount,
 //
 // functions that interact with everything appropriate
 //
-contents_t SV_PointContents(const vec3_t p);
+contents_t SV_PointContents(vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.
 // Quake 2 extends this to also check entities, to allow moving liquids
 
-void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
-              const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
+void SV_Trace(trace_t *trace, const trace_args_t *args);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -601,5 +601,4 @@ void SV_Trace(trace_t *trace, const vec3_t start, const vec3_t mins,
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
 
-void SV_Clip(trace_t *trace, const vec3_t start, const vec3_t mins,
-             const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);
+void SV_Clip(trace_t *trace, const trace_args_t *args);

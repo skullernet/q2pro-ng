@@ -49,11 +49,11 @@ static gldlight_t *GL_AllocStaticLight(void)
 
 static bool GL_CompareLights(const gldlight_t *a, const gldlight_t *b)
 {
-    return VectorCompare(a->origin, b->origin) && a->radius == b->radius
-        && VectorCompare(a->dir, b->dir) && a->cone == b->cone && a->resolution == b->resolution;
+    return Vec3_IsEqual(a->origin, b->origin) && a->radius == b->radius
+        && Vec3_IsEqual(a->dir, b->dir) && a->cone == b->cone && a->resolution == b->resolution;
 }
 
-static bool GL_DrawStaticShadowView(const gldlight_t *light, const vec3_t dir, float fov)
+static bool GL_DrawStaticShadowView(const gldlight_t *light, vec3_t dir, float fov)
 {
     const int size = gl_config.max_texture_size;
     const int res = light->resolution;
@@ -69,7 +69,7 @@ static bool GL_DrawStaticShadowView(const gldlight_t *light, const vec3_t dir, f
     view->s = s;
     view->t = t;
 
-    vectoangles(dir, glr.fd.viewangles);
+    glr.fd.viewangles = vectoangles(dir);
 
     Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
     glr.fd.fov_x = glr.fd.fov_y = fov;
@@ -118,8 +118,8 @@ static void GL_DrawStaticShadows(void)
 
         *cache = *light;
 
-        VectorCopy(cache->origin, glr.fd.vieworg);
-        VectorCopy(cache->origin, gls.u_block.vieworg);
+        glr.fd.vieworg = cache->origin;
+        gls.u_block.vieworg = Vec4_FromVec3(cache->origin, 0);
 
         cache->firstview = glr.num_static_shadow_views;
         bool ok = true;
@@ -139,7 +139,7 @@ static void GL_DrawStaticShadows(void)
     }
 }
 
-static bool GL_DrawShadowView(const gldlight_t *light, const vec3_t dir, float fov, int face)
+static bool GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, int face)
 {
     const int size = gl_config.max_texture_size;
     const int res = light->resolution;
@@ -153,12 +153,12 @@ static bool GL_DrawShadowView(const gldlight_t *light, const vec3_t dir, float f
         return false;
 
     glShadowView_t *view = &glr.shadow_views[glr.num_shadow_views++];
-    view->offset[0] = (res - 2) * scale;
-    view->offset[1] = (res - 2) * scale;
-    view->offset[2] = (s + 0.5f) * scale;
-    view->offset[3] = (t + 0.5f) * scale;
+    view->offset.x = (res - 2) * scale;
+    view->offset.y = (res - 2) * scale;
+    view->offset.z = (s + 0.5f) * scale;
+    view->offset.w = (t + 0.5f) * scale;
 
-    vectoangles(dir, glr.fd.viewangles);
+    glr.fd.viewangles = vectoangles(dir);
 
     Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
     glr.fd.fov_x = glr.fd.fov_y = fov;
@@ -245,8 +245,8 @@ void GL_DrawShadowMap(const refdef_t *fd)
             continue;
         }
 
-        VectorCopy(light->origin, glr.fd.vieworg);
-        VectorCopy(light->origin, gls.u_block.vieworg);
+        glr.fd.vieworg = light->origin;
+        gls.u_block.vieworg = Vec4_FromVec3(light->origin, 0);
 
         light->firstview = glr.num_shadow_views;
         bool ok = true;

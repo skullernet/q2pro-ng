@@ -60,9 +60,9 @@ static void shambler_lightning_update(edict_t *self)
     }
 
     vec3_t f, r;
-    AngleVectors(self->s.angles, f, r, NULL);
-    M_ProjectFlashSource(self, lightning_left_hand[self->s.frame - FRAME_magic01], f, r, lightning->s.origin);
-    M_ProjectFlashSource(self, lightning_right_hand[self->s.frame - FRAME_magic01], f, r, lightning->s.old_origin);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    lightning->s.origin = M_ProjectFlashSource(self, lightning_left_hand[self->s.frame - FRAME_magic01], f, r);
+    lightning->s.old_origin = M_ProjectFlashSource(self, lightning_right_hand[self->s.frame - FRAME_magic01], f, r);
     trap_LinkEntity(lightning);
 }
 
@@ -199,7 +199,7 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     self->timestamp = level.time + FRAME_TIME;
     G_StartSound(self, CHAN_AUTO, sound_pain, 1, ATTN_NORM);
 
-    if (mod.id != MOD_CHAINFIST && damage <= 30 && frandom() > 0.2f)
+    if (mod != MOD_CHAINFIST && damage <= 30 && frandom() > 0.2f)
         return;
 
     // If hard or nightmare, don't go into pain while attacking
@@ -237,8 +237,8 @@ void MONSTERINFO_SETSKIN(shambler_setskin)(edict_t *self)
 
 static void ShamblerSaveLoc(edict_t *self)
 {
-    VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin; // save for aiming the shot
+    self->pos1.z += self->enemy->viewheight;
     self->monsterinfo.nextframe = FRAME_magic09;
 
     G_StartSound(self, CHAN_WEAPON, sound_boom, 1, ATTN_NORM);
@@ -247,17 +247,17 @@ static void ShamblerSaveLoc(edict_t *self)
 
 #define SPAWNFLAG_SHAMBLER_PRECISE  1
 
-static void FindShamblerOffset(edict_t *self, vec3_t offset)
+static vec3_t FindShamblerOffset(edict_t *self)
 {
-    VectorSet(offset, 0, 0, 48);
+    vec3_t offset = { 0, 0, 48 };
 
     for (int i = 0; i < 8; i++) {
         if (M_CheckClearShot(self, offset))
-            return;
-        offset[2] -= 4;
+            return offset;
+        offset.z -= 4;
     }
 
-    VectorSet(offset, 0, 0, 48);
+    return Vec3(0, 0, 48);
 }
 
 void THINK(shambler_lightning_think)(edict_t *self)
@@ -276,17 +276,16 @@ static void ShamblerCastLightning(edict_t *self)
     vec3_t forward, right;
     vec3_t offset;
 
-    FindShamblerOffset(self, offset);
+    offset = FindShamblerOffset(self);
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, offset, forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, offset, forward, right);
 
     // calc direction to where we targeted
-    PredictAim(self, self->enemy, start, 0, false, (self->spawnflags & SPAWNFLAG_SHAMBLER_PRECISE) ? 0.0f : 0.1f, dir, NULL);
+    M_PredictAim(self, self->enemy, start, 0, false, (self->spawnflags & SPAWNFLAG_SHAMBLER_PRECISE) ? 0.0f : 0.1f, &dir, NULL);
 
-    VectorMA(start, 8192, dir, end);
-    trace_t tr;
-    trap_Trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
+    end = Vec3_MA(start, 8192, dir);
+    trace_t tr = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
 
     edict_t *te = self->beam2;
     if (!te) {
@@ -301,12 +300,12 @@ static void ShamblerCastLightning(edict_t *self)
         te->think = shambler_lightning_think;
     }
 
-    G_SnapVector(start, te->s.old_origin);
-    G_SnapVectorTowards(tr.endpos, start, te->s.origin);
+    te->s.old_origin = G_SnapVector(start);
+    te->s.origin = G_SnapVectorTowards(tr.endpos, start);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 
-    fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, (mod_t) { MOD_TESLA });
+    fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, MOD_TESLA);
 }
 
 static const mframe_t shambler_frames_magic[] = {
@@ -358,7 +357,7 @@ static void sham_smash10(edict_t *self)
     if (!CanDamage(self->enemy, self))
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, -4 };
     bool hit = fire_hit(self, aim, irandom2(110, 120), 120); // Slower attack
 
     if (hit)
@@ -375,7 +374,7 @@ static void ShamClaw(edict_t *self)
     if (!CanDamage(self->enemy, self))
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, -4 };
     bool hit = fire_hit(self, aim, irandom2(70, 80), 80); // Slower attack
 
     if (hit)
@@ -462,14 +461,13 @@ void MONSTERINFO_MELEE(shambler_melee)(edict_t *self)
 
 static void shambler_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -0);
+    self->r.box = Box3_FromSize(16, -24, 0);
     monster_dead(self);
 }
 
 static void shambler_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -497,7 +495,7 @@ static const gib_def_t shambler_gibs[] = {
     { 0 }
 };
 
-void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->beam) {
         G_FreeEdict(self->beam);
@@ -549,8 +547,7 @@ void SP_monster_shambler(edict_t *self)
     }
 
     self->s.modelindex = G_ModelIndex("models/monsters/shambler/tris.md2");
-    VectorSet(self->r.mins, -32, -32, -24);
-    VectorSet(self->r.maxs, 32, 32, 64);
+    self->r.box = Box3_FromSize(32, -24, 64);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

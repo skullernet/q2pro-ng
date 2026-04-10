@@ -606,11 +606,11 @@ static void ch_color_changed(void)
     if (ch_health.integer) {
         SCR_SetCrosshairColor();
     } else {
-        scr.crosshair_color.u8[0] = Q_clip_uint8(ch_red.value * 255);
-        scr.crosshair_color.u8[1] = Q_clip_uint8(ch_green.value * 255);
-        scr.crosshair_color.u8[2] = Q_clip_uint8(ch_blue.value * 255);
+        scr.crosshair_color.r = Q_clip_uint8(ch_red.value * 255);
+        scr.crosshair_color.g = Q_clip_uint8(ch_green.value * 255);
+        scr.crosshair_color.b = Q_clip_uint8(ch_blue.value * 255);
     }
-    scr.crosshair_color.u8[3] = Q_clip_uint8(ch_alpha.value * 255);
+    scr.crosshair_color.a = Q_clip_uint8(ch_alpha.value * 255);
 }
 
 static void scr_crosshair_changed(void)
@@ -633,29 +633,29 @@ void SCR_SetCrosshairColor(void)
 
     health = cg.frame->ps.stats[STAT_HEALTH];
     if (health <= 0) {
-        VectorSet(scr.crosshair_color.u8, 0, 0, 0);
+        Vec3_Set(scr.crosshair_color.u8, 0, 0, 0);
         return;
     }
 
     // red
-    scr.crosshair_color.u8[0] = 255;
+    scr.crosshair_color.r = 255;
 
     // green
     if (health >= 66) {
-        scr.crosshair_color.u8[1] = 255;
+        scr.crosshair_color.g = 255;
     } else if (health < 33) {
-        scr.crosshair_color.u8[1] = 0;
+        scr.crosshair_color.g = 0;
     } else {
-        scr.crosshair_color.u8[1] = (255 * (health - 33)) / 33;
+        scr.crosshair_color.g = (255 * (health - 33)) / 33;
     }
 
     // blue
     if (health >= 99) {
-        scr.crosshair_color.u8[2] = 255;
+        scr.crosshair_color.b = 255;
     } else if (health < 66) {
-        scr.crosshair_color.u8[2] = 0;
+        scr.crosshair_color.b = 0;
     } else {
-        scr.crosshair_color.u8[2] = (255 * (health - 66)) / 33;
+        scr.crosshair_color.b = (255 * (health - 66)) / 33;
     }
 }
 
@@ -1364,7 +1364,7 @@ static void SCR_ExecuteLayoutString(const char *s)
 
             token = COM_Parse(&s);
             if (COM_ParseColor(token, &color)) {
-                color.u8[3] *= scr_alpha.value;
+                color.a *= scr_alpha.value;
                 trap_R_SetColor32(color.u32);
             }
             continue;
@@ -1744,7 +1744,7 @@ static scr_poi_t *SCR_AllocPOI(int id)
     return oldest;
 }
 
-void SCR_AddPOI(int id, const vec3_t point, qhandle_t image, uint32_t color, int time)
+void SCR_AddPOI(int id, vec3_t point, qhandle_t image, uint32_t color, int time)
 {
     scr_poi_t *poi = SCR_AllocPOI(id);
     if (!poi)
@@ -1752,7 +1752,7 @@ void SCR_AddPOI(int id, const vec3_t point, qhandle_t image, uint32_t color, int
 
     poi->id = id;
     poi->time = cg.time + time;
-    VectorCopy(point, poi->pos);
+    poi->pos = point;
     poi->image = image;
     trap_R_GetPicSize(&poi->width, &poi->height, poi->image);
     poi->color = color;
@@ -1783,15 +1783,14 @@ static void SCR_DrawPOIs(void)
         if (poi->time <= cg.time)
             continue;
 
-        vec4_t sp;
-        Matrix_TransformVector3(vp, poi->pos, sp);
+        vec4_t sp = Matrix_TransformVector3(vp, poi->pos);
 
-        float w = sp[3];
+        float w = sp.w;
         if (w)
-            VectorScale(sp, 1.0f / fabsf(w), sp);
+            sp = Vec4_Scale(sp, 1.0f / fabsf(w));
 
-        float s =  sp[0] * 0.5f + 0.5f;
-        float t = -sp[1] * 0.5f + 0.5f;
+        float s =  sp.x * 0.5f + 0.5f;
+        float t = -sp.y * 0.5f + 0.5f;
         if (w < 0)
             s = s > 0.5f;
 

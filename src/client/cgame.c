@@ -56,38 +56,31 @@ static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
     return Q_strlcpy_null(buf, cl.configstrings[index], size);
 }
 
-static void PF_BoxTrace(trace_t *trace,
-                        const vec3_t start, const vec3_t end,
-                        const vec3_t mins, const vec3_t maxs,
-                        qhandle_t hmodel, contents_t contentmask)
+static void PF_BoxTrace(trace_t *trace, const trace_args_t *args, qhandle_t hmodel)
 {
-    CM_BoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, false), contentmask);
+    CM_BoxTrace(trace, args, CL_ClipHandleToNode(hmodel, false));
 }
 
-static void PF_TransformedBoxTrace(trace_t *trace,
-                                   const vec3_t start, const vec3_t end,
-                                   const vec3_t mins, const vec3_t maxs,
-                                   qhandle_t hmodel, contents_t contentmask,
-                                   const vec3_t origin, const vec3_t angles)
+static void PF_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
+                                   qhandle_t hmodel, vec3_t origin, vec3_t angles)
 {
-    CM_TransformedBoxTrace(trace, start, end, mins, maxs, CL_ClipHandleToNode(hmodel, true),
-                           contentmask, origin, angles);
+    CM_TransformedBoxTrace(trace, args, CL_ClipHandleToNode(hmodel, true), origin, angles);
 }
 
-static contents_t PF_PointContents(const vec3_t point, qhandle_t hmodel)
+static contents_t PF_PointContents(vec3_t point, qhandle_t hmodel)
 {
     return BSP_PointLeaf(CL_ClipHandleToNode(hmodel, false), point)->contents;
 }
 
-static contents_t PF_TransformedPointContents(const vec3_t point, qhandle_t hmodel,
-                                              const vec3_t origin, const vec3_t angles)
+static contents_t PF_TransformedPointContents(vec3_t point, qhandle_t hmodel,
+                                              vec3_t origin, vec3_t angles)
 {
     return CM_TransformedPointContents(point, CL_ClipHandleToNode(hmodel, true), origin, angles);
 }
 
-static qhandle_t PF_TempBoxModel(const vec3_t mins, const vec3_t maxs)
+static qhandle_t PF_TempBoxModel(box3_t box)
 {
-    CM_HeadnodeForBox(mins, maxs);
+    CM_HeadnodeForBox(box);
     return MODELINDEX_TEMPBOX;
 }
 
@@ -131,13 +124,11 @@ static bool PF_GetMaterialInfo(unsigned material_id, material_info_t *info)
     return BSP_GetMaterialInfo(cl.bsp, material_id, info);
 }
 
-static void PF_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs)
+static box3_t PF_GetBrushModelBounds(unsigned index)
 {
     Q_assert_soft(cl.bsp);
     Q_assert_soft(index < cl.bsp->nummodels);
-    const mmodel_t *mod = &cl.bsp->models[index];
-    VectorCopy(mod->mins, mins);
-    VectorCopy(mod->maxs, maxs);
+    return cl.bsp->models[index].box;
 }
 
 static int64_t PF_OpenFile(const char *path, qhandle_t *f, unsigned mode)
@@ -209,9 +200,9 @@ static bool PF_GetUsercmd(unsigned number, usercmd_t *ucmd)
     // return pending cmd
     if (number == cl.cmdNumber + 1 && cl.cmd.msec) {
         *ucmd = cl.cmd;
-        ucmd->forwardmove = cl.localmove[0];
-        ucmd->sidemove = cl.localmove[1];
-        ucmd->upmove = cl.localmove[2];
+        ucmd->forwardmove = cl.localmove.x;
+        ucmd->sidemove = cl.localmove.y;
+        ucmd->upmove = cl.localmove.z;
         return true;
     }
 
@@ -289,11 +280,11 @@ VM_THUNK(GetConfigstring) {
 }
 
 VM_THUNK(BoxTrace) {
-    PF_BoxTrace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3(2), VM_VEC3(3), VM_VEC3(4), VM_U32(5), VM_U32(6));
+    PF_BoxTrace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t), VM_U32(2));
 }
 
 VM_THUNK(TransformedBoxTrace) {
-    PF_TransformedBoxTrace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3(2), VM_VEC3(3), VM_VEC3(4), VM_U32(5), VM_U32(6), VM_VEC3(7), VM_VEC3(8));
+    PF_TransformedBoxTrace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t), VM_U32(2), VM_VEC3(3), VM_VEC3(4));
 }
 
 VM_THUNK(PointContents) {
@@ -305,7 +296,7 @@ VM_THUNK(TransformedPointContents) {
 }
 
 VM_THUNK(TempBoxModel) {
-    VM_U32(0) = PF_TempBoxModel(VM_VEC3(0), VM_VEC3(1));
+    VM_U32(0) = PF_TempBoxModel(VM_BOX3(0));
 }
 
 VM_THUNK(GetSurfaceInfo) {
@@ -317,7 +308,7 @@ VM_THUNK(GetMaterialInfo) {
 }
 
 VM_THUNK(GetBrushModelBounds) {
-    PF_GetBrushModelBounds(VM_U32(0), VM_VEC3(1), VM_VEC3(2));
+    VM_BOX3(0) = PF_GetBrushModelBounds(VM_U32(1));
 }
 
 VM_THUNK(GetUsercmdNumber) {
@@ -509,7 +500,7 @@ VM_THUNK(R_RenderScene) {
 }
 
 VM_THUNK(R_LightPoint) {
-    R_LightPoint(VM_VEC3(0), VM_VEC3(1));
+    R_LightPoint(VM_VEC3(0), VM_VEC3_PTR(1));
 }
 
 VM_THUNK(R_GetConfig) {
@@ -585,7 +576,11 @@ VM_THUNK(S_RegisterSound) {
 }
 
 VM_THUNK(S_StartSound) {
-    S_StartSound(VM_VEC3_NULL(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_F32(4), VM_F32(5), VM_F32(6));
+    S_StartSound(VM_U32(0), VM_U32(1), VM_U32(2), VM_F32(3), VM_F32(4), VM_F32(5));
+}
+
+VM_THUNK(S_PositionedSound) {
+    S_PositionedSound(VM_VEC3(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_F32(4), VM_F32(5), VM_F32(6));
 }
 
 VM_THUNK(S_ClearLoopingSounds) {
@@ -665,11 +660,11 @@ VM_THUNK(R_AddDebugPoint) {
 }
 
 VM_THUNK(R_AddDebugAxis) {
-    R_AddDebugAxis(VM_VEC3(0), VM_VEC3_NULL(1), VM_F32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugAxis(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugBounds) {
-    R_AddDebugBounds(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugBounds(VM_BOX3(0), VM_U32(1), VM_U32(2), VM_U32(3));
 }
 
 VM_THUNK(R_AddDebugSphere) {
@@ -693,21 +688,25 @@ VM_THUNK(R_AddDebugCurveArrow) {
 }
 
 VM_THUNK(R_AddDebugText) {
-    R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+    R_AddDebugText(VM_VEC3(0), VM_STR(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+}
+
+VM_THUNK(R_AddDebugAngledText) {
+    R_AddDebugAngledText(VM_VEC3(0), VM_VEC3(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
 }
 
 static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(Print, "ii"),
     VM_IMPORT(Error, "i"),
     VM_IMPORT(GetConfigstring, "i iii"),
-    VM_IMPORT(BoxTrace, "iiiiiii"),
-    VM_IMPORT(TransformedBoxTrace, "iiiiiiiii"),
+    VM_IMPORT(BoxTrace, "iii"),
+    VM_IMPORT(TransformedBoxTrace, "iiiii"),
     VM_IMPORT(PointContents, "i ii"),
     VM_IMPORT(TransformedPointContents, "i iiii"),
-    VM_IMPORT(TempBoxModel, "i ii"),
+    VM_IMPORT(TempBoxModel, "i i"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(GetMaterialInfo, "i ii"),
-    VM_IMPORT(GetBrushModelBounds, "iii"),
+    VM_IMPORT(GetBrushModelBounds, "ii"),
     VM_IMPORT(GetUsercmdNumber, "i "),
     VM_IMPORT(GetUsercmd, "i ii"),
     VM_IMPORT(GetServerFrameNumber, "i "),
@@ -774,7 +773,8 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_DrawFill8, "iiiii"),
     VM_IMPORT(R_DrawFill32, "iiiii"),
     VM_IMPORT(S_RegisterSound, "i i"),
-    VM_IMPORT(S_StartSound, "iiiifff"),
+    VM_IMPORT(S_StartSound, "iiifff"),
+    VM_IMPORT(S_PositionedSound, "iiiifff"),
     VM_IMPORT(S_ClearLoopingSounds, ""),
     VM_IMPORT(S_AddLoopingSound, "iiffi"),
     VM_IMPORT(S_StartBackgroundTrack, "i"),
@@ -795,13 +795,14 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_AddDebugLine, "iiiii"),
     VM_IMPORT(R_AddDebugPoint, "ifiii"),
     VM_IMPORT(R_AddDebugAxis, "iifii"),
-    VM_IMPORT(R_AddDebugBounds, "iiiii"),
+    VM_IMPORT(R_AddDebugBounds, "iiii"),
     VM_IMPORT(R_AddDebugSphere, "ifiii"),
     VM_IMPORT(R_AddDebugCircle, "ifiii"),
     VM_IMPORT(R_AddDebugCylinder, "iffiii"),
     VM_IMPORT(R_AddDebugArrow, "iifiiii"),
     VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
-    VM_IMPORT(R_AddDebugText, "iiifiii"),
+    VM_IMPORT(R_AddDebugText, "iifiii"),
+    VM_IMPORT(R_AddDebugAngledText, "iiifiii"),
 
     { 0 }
 };
@@ -989,6 +990,7 @@ static const cgame_import_t cgame_dll_imports = {
 
     .S_RegisterSound = S_RegisterSound,
     .S_StartSound = S_StartSound,
+    .S_PositionedSound = S_PositionedSound,
     .S_ClearLoopingSounds = S_ClearLoopingSounds,
     .S_AddLoopingSound = S_AddLoopingSound,
     .S_StartBackgroundTrack = S_StartBackgroundTrack,
@@ -1051,6 +1053,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_AddDebugArrow = R_AddDebugArrow,
     .R_AddDebugCurveArrow = R_AddDebugCurveArrow,
     .R_AddDebugText = R_AddDebugText,
+    .R_AddDebugAngledText = R_AddDebugAngledText,
 };
 
 // "fake" exports for calling into VM
@@ -1149,7 +1152,7 @@ static void CL_LoadMap(void)
         }
     }
 
-    box_headnode = CM_HeadnodeForBox(vec3_origin, vec3_origin);
+    box_headnode = CM_HeadnodeForBox(box3_origin);
 }
 
 /*

@@ -506,8 +506,8 @@ static const spawn_field_t entity_fields[] = {
     { "mangle", 0, F_IGNORE }, // editor field
     { "dead_frame", FOFS(monsterinfo.start_frame), F_INT }, // [Paril-KEX]
     { "frame", FOFS(s.frame), F_INT },
-    { "effects", FOFS(s.effects), F_EFFECTS },
-    { "renderfx", FOFS(s.renderfx), F_INT },
+    { "effects", FOFS(s.effects), F_EFFECTS },  // protocol specific crap
+    { "renderfx", FOFS(s.renderfx), F_INT },    // protocol specific crap
 
     // [Paril-KEX] fog keys
     { "fog_color", FOFS(fog.color), F_VECTOR },
@@ -537,8 +537,8 @@ static const spawn_field_t entity_fields[] = {
 
     // [Paril-KEX] for trigger_coop_relay
     { "message2", FOFS(map), F_LSTRING },
-    { "mins", FOFS(r.mins), F_VECTOR },
-    { "maxs", FOFS(r.maxs), F_VECTOR },
+    { "mins", FOFS(r.box.mins), F_VECTOR },
+    { "maxs", FOFS(r.box.maxs), F_VECTOR },
 
     // [Paril-KEX] customizable bmodel animations
     { "bmodel_anim_start", FOFS(bmodel_anim.params[0].start), F_INT },
@@ -641,7 +641,7 @@ void ED_CallSpawn(edict_t *ent)
         G_Error("ED_CallSpawn: first entity must be worldspawn");
 
     // PGM - do this before calling the spawn function so it can be overridden.
-    VectorSet(ent->gravityVector, 0, 0, -1);
+    ent->gravityVector = Vec3(0, 0, -1);
     // PGM
 
     // FIXME - PMM classnames hack
@@ -671,7 +671,7 @@ void ED_CallSpawn(edict_t *ent)
             }
 
             if (level.is_psx)
-                ent->s.origin[2] += 15 * (1 - PSX_PHYSICS_SCALAR);
+                ent->s.origin.z += 15 * (1 - PSX_PHYSICS_SCALAR);
 
             SpawnItem(ent, item);
             return;
@@ -735,10 +735,10 @@ static uint32_t ED_ParseColor(const char *value)
 
     // parse rgba as values
     for (n = 0; n < 4; n++) {
-        v[n] = Q_atof(COM_Parse(&s));
+        v.rgba[n] = Q_atof(COM_Parse(&s));
         if (!s)
             break;
-        if (v[n] > 1.0f)
+        if (v.rgba[n] > 1.0f)
             scale = 1.0f;
     }
 
@@ -747,7 +747,7 @@ static uint32_t ED_ParseColor(const char *value)
 
     int c[4] = { 0, 0, 0, 255 };
     for (i = 0; i < n; i++)
-        c[i] = Q_clip_uint8(v[i] * scale);
+        c[i] = Q_clip_uint8(v.rgba[i] * scale);
 
     // 0xRRGGBBAA encoding
     return MakeBigLong(c[0], c[1], c[2], c[3]);
@@ -789,6 +789,7 @@ static float ED_ParseAttenuation(const char *value)
 static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
 {
     uint64_t l;
+    vec3_t *v;
 
     // found it
     switch (f->type) {
@@ -796,9 +797,10 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
         *(char **)(b + f->ofs) = ED_NewString(value);
         break;
     case F_VECTOR:
-        ((float *)(b + f->ofs))[0] = Q_atof(COM_Parse(&value));
-        ((float *)(b + f->ofs))[1] = Q_atof(COM_Parse(&value));
-        ((float *)(b + f->ofs))[2] = Q_atof(COM_Parse(&value));
+        v = (vec3_t *)(b + f->ofs);
+        v->x = Q_atof(COM_Parse(&value));
+        v->y = Q_atof(COM_Parse(&value));
+        v->z = Q_atof(COM_Parse(&value));
         break;
     case F_INT:
         *(int *)(b + f->ofs) = Q_atoi(value);
@@ -807,9 +809,10 @@ static void ED_LoadField(const spawn_field_t *f, const char *value, byte *b)
         *(float *)(b + f->ofs) = Q_atof(value);
         break;
     case F_ANGLEHACK:
-        ((float *)(b + f->ofs))[0] = 0;
-        ((float *)(b + f->ofs))[1] = Q_atof(value);
-        ((float *)(b + f->ofs))[2] = 0;
+        v = (vec3_t *)(b + f->ofs);
+        v->pitch = 0;
+        v->yaw = Q_atof(value);
+        v->roll = 0;
         break;
     case F_EFFECTS:
         l = strtoull(value, NULL, 10);
@@ -1621,7 +1624,7 @@ void SP_worldspawn(edict_t *ent)
         .name = "unit1_",
         .rotate = st.skyrotate,
         .autorotate = st.skyautorotate,
-        .axis = VectorInit(st.skyaxis),
+        .axis = st.skyaxis,
     };
 
     if (st.sky && st.sky[0])

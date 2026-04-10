@@ -50,28 +50,28 @@ static void TurretAim(edict_t *self)
 
     // PMM - blindfire aiming here
     if (self->monsterinfo.active_move == &turret_move_fire_blind) {
-        VectorCopy(self->monsterinfo.blind_fire_target, end);
-        if (self->enemy->s.origin[2] < self->monsterinfo.blind_fire_target[2])
-            end[2] += self->enemy->viewheight + 10;
+        end = self->monsterinfo.blind_fire_target;
+        if (self->enemy->s.origin.z < self->monsterinfo.blind_fire_target.z)
+            end.z += self->enemy->viewheight + 10;
         else
-            end[2] += self->enemy->r.mins[2] - 10;
+            end.z += self->enemy->r.box.mins.z - 10;
     } else {
-        VectorCopy(self->enemy->s.origin, end);
+        end = self->enemy->s.origin;
         if (self->enemy->client)
-            end[2] += self->enemy->viewheight;
+            end.z += self->enemy->viewheight;
     }
 
-    VectorSubtract(end, self->s.origin, dir);
-    vectoangles(dir, ang);
+    dir = Vec3_Sub(end, self->s.origin);
+    ang = vectoangles(dir);
 
     //
     // Clamp first
     //
 
-    idealPitch = ang[PITCH];
-    idealYaw = ang[YAW];
+    idealPitch = ang.pitch;
+    idealYaw = ang.yaw;
 
-    orientation = (int)self->offset[1];
+    orientation = (int)self->offset.y;
     switch (orientation) {
     case -1: // up      pitch: 0 to 90
         if (idealPitch < -90)
@@ -161,7 +161,7 @@ static void TurretAim(edict_t *self)
     //
     // adjust pitch
     //
-    current = self->s.angles[PITCH];
+    current = self->s.angles.pitch;
     speed = self->yaw_speed / (TICK_RATE / 10);
 
     if (idealPitch != current) {
@@ -185,13 +185,13 @@ static void TurretAim(edict_t *self)
                 move = -speed;
         }
 
-        self->s.angles[PITCH] = anglemod(current + move);
+        self->s.angles.pitch = anglemod(current + move);
     }
 
     //
     // adjust yaw
     //
-    current = self->s.angles[YAW];
+    current = self->s.angles.yaw;
 
     if (idealYaw != current) {
         move = idealYaw - current;
@@ -214,7 +214,7 @@ static void TurretAim(edict_t *self)
                 move = -speed;
         }
 
-        self->s.angles[YAW] = anglemod(current + move);
+        self->s.angles.yaw = anglemod(current + move);
     }
 
     if (self->spawnflags & SPAWNFLAG_TURRET_NO_LASERSIGHT)
@@ -229,14 +229,13 @@ static void TurretAim(edict_t *self)
         te->s.frame = 1;
         te->s.skinnum = 0xf0f0f0f0;
         te->classname = "turret_lasersight";
-        G_SnapVector(self->s.origin, te->s.origin);
+        te->s.origin = G_SnapVector(self->s.origin);
     }
 
     vec3_t forward;
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorMA(self->s.origin, 8192, forward, end);
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_SOLID);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    end = Vec3_MA(self->s.origin, 8192, forward);
+    trace_t tr = G_TraceLine(self->s.origin, end, self->s.number, MASK_SOLID);
 
     float scan_range = 64;
 
@@ -244,17 +243,15 @@ static void TurretAim(edict_t *self)
         scan_range = 12;
 
     float sec = TO_SEC(level.time);
-    tr.endpos[0] += sinf(sec + self->s.number) * scan_range;
-    tr.endpos[1] += cosf((sec - self->s.number) * 3.0f) * scan_range;
-    tr.endpos[2] += sinf((sec - self->s.number) * 2.5f) * scan_range;
+    tr.endpos.x += sinf(sec + self->s.number) * scan_range;
+    tr.endpos.y += cosf((sec - self->s.number) * 3.0f) * scan_range;
+    tr.endpos.z += sinf((sec - self->s.number) * 2.5f) * scan_range;
 
-    VectorSubtract(tr.endpos, self->s.origin, forward);
-    VectorNormalize(forward);
+    forward = Vec3_Direction(tr.endpos, self->s.origin);
+    end = Vec3_MA(self->s.origin, 8192, forward);
+    tr = G_TraceLine(self->s.origin, end, self->s.number, MASK_SOLID);
 
-    VectorMA(self->s.origin, 8192, forward, end);
-    trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_SOLID);
-
-    VectorCopy(tr.endpos, te->s.old_origin);
+    te->s.old_origin = tr.endpos;
     trap_LinkEntity(te);
 }
 
@@ -360,13 +357,12 @@ static void TurretFire(edict_t *self)
         return;
 
     if (self->monsterinfo.aiflags & AI_LOST_SIGHT)
-        VectorCopy(self->monsterinfo.blind_fire_target, end);
+        end = self->monsterinfo.blind_fire_target;
     else
-        VectorCopy(self->enemy->s.origin, end);
-    VectorSubtract(end, self->s.origin, dir);
-    VectorNormalize(dir);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    if (DotProduct(dir, forward) < 0.98f)
+        end = self->enemy->s.origin;
+    dir = Vec3_Direction(end, self->s.origin);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    if (Vec3_Dot(dir, forward) < 0.98f)
         return;
 
     if (self->spawnflags & SPAWNFLAG_TURRET_ROCKET)
@@ -377,18 +373,18 @@ static void TurretFire(edict_t *self)
         rocketSpeed = 0;
 
     if ((self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) || visible(self, self->enemy)) {
-        VectorCopy(self->s.origin, start);
+        start = self->s.origin;
 
         // aim for the head.
         if (!(self->monsterinfo.aiflags & AI_LOST_SIGHT)) {
             if ((self->enemy) && (self->enemy->client))
-                end[2] += self->enemy->viewheight;
+                end.z += self->enemy->viewheight;
             else
-                end[2] += 22;
+                end.z += 22;
         }
 
-        VectorSubtract(end, start, dir);
-        dist = VectorNormalize(dir);
+        dir = Vec3_Sub(end, start);
+        dist = Vec3_Normalize(&dir);
 
         // check for predictive fire
         // Paril: adjusted to be a bit more fair
@@ -396,12 +392,14 @@ static void TurretFire(edict_t *self)
             // on harder difficulties, randomly fire directly at enemy
             // more often; makes them more unpredictable
             if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN)
-                PredictAim(self, self->enemy, start, 0, true, 0.3f, dir, NULL);
-            else if (frandom() < skill.integer / 5.0f)
-                PredictAim(self, self->enemy, start, rocketSpeed, true, (frandom1(3.0f - skill.integer) / 3.0f) - frandom1(0.05f * (3.0f - skill.integer)), dir, NULL);
+                M_PredictAim(self, self->enemy, start, 0, true, 0.3f, &dir, NULL);
+            else if (frandom() < skill.integer / 5.0f) {
+                float offset = frandom1(3.0f - skill.integer) / 3.0f - frandom1(0.05f * (3.0f - skill.integer));
+                M_PredictAim(self, self->enemy, start, rocketSpeed, true, offset, &dir, NULL);
+            }
         }
 
-        trap_Trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+        trace = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE);
         if (trace.entnum == self->enemy->s.number || trace.entnum == ENTITYNUM_WORLD) {
             if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER)
                 monster_fire_blaster(self, start, dir, TURRET_BLASTER_DAMAGE, rocketSpeed, MZ2_TURRET_BLASTER, EF_BLASTER);
@@ -441,10 +439,9 @@ static void TurretFireBlind(edict_t *self)
     if (!self->enemy || !self->enemy->r.inuse)
         return;
 
-    VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, dir);
-    VectorNormalize(dir);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    if (DotProduct(dir, forward) < 0.98f)
+    dir = Vec3_Direction(self->monsterinfo.blind_fire_target, self->s.origin);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    if (Vec3_Dot(dir, forward) < 0.98f)
         return;
 
     if (self->spawnflags & SPAWNFLAG_TURRET_ROCKET)
@@ -454,16 +451,15 @@ static void TurretFireBlind(edict_t *self)
     else
         rocketSpeed = 0;
 
-    VectorCopy(self->s.origin, start);
-    VectorCopy(self->monsterinfo.blind_fire_target, end);
+    start = self->s.origin;
+    end = self->monsterinfo.blind_fire_target;
 
-    if (self->enemy->s.origin[2] < self->monsterinfo.blind_fire_target[2])
-        end[2] += self->enemy->viewheight + 10;
+    if (self->enemy->s.origin.z < self->monsterinfo.blind_fire_target.z)
+        end.z += self->enemy->viewheight + 10;
     else
-        end[2] += self->enemy->r.mins[2] - 10;
+        end.z += self->enemy->r.box.mins.z - 10;
 
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(end, start);
 
     if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER)
         monster_fire_blaster(self, start, dir, TURRET_BLASTER_DAMAGE, rocketSpeed, MZ2_TURRET_BLASTER, EF_BLASTER);
@@ -514,7 +510,7 @@ void MONSTERINFO_ATTACK(turret_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(3.4f, 7.4f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // don't shoot if the dice say not to
@@ -538,13 +534,13 @@ void PAIN(turret_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 //  DEATH
 // **********************
 
-void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(turret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     vec3_t   forward;
     edict_t *base;
 
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorAdd(self->s.origin, forward, self->s.origin);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->s.origin = Vec3_Add(self->s.origin, forward);
 
     for (int i = 0; i < 2; i++) {
         ThrowGib(self, "models/objects/debris1/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
@@ -594,38 +590,38 @@ static void turret_wall_spawn(edict_t *turret)
     int      angle;
 
     ent = G_Spawn();
-    VectorCopy(turret->s.origin, ent->s.origin);
-    VectorCopy(turret->s.angles, ent->s.angles);
+    ent->s.origin = turret->s.origin;
+    ent->s.angles = turret->s.angles;
 
-    angle = (int)ent->s.angles[1];
-    if (ent->s.angles[0] == 90)
+    angle = (int)ent->s.angles.yaw;
+    if (ent->s.angles.pitch == 90)
         angle = -1;
-    else if (ent->s.angles[0] == 270)
+    else if (ent->s.angles.pitch == 270)
         angle = -2;
     switch (angle) {
     case -1:
-        VectorSet(ent->r.mins, -16, -16, -8);
-        VectorSet(ent->r.maxs, 16, 16, 0);
+        ent->r.box.mins = Vec3(-16, -16, -8);
+        ent->r.box.maxs = Vec3(16, 16, 0);
         break;
     case -2:
-        VectorSet(ent->r.mins, -16, -16, 0);
-        VectorSet(ent->r.maxs, 16, 16, 8);
+        ent->r.box.mins = Vec3(-16, -16, 0);
+        ent->r.box.maxs = Vec3(16, 16, 8);
         break;
     case 0:
-        VectorSet(ent->r.mins, -8, -16, -16);
-        VectorSet(ent->r.maxs, 0, 16, 16);
+        ent->r.box.mins = Vec3(-8, -16, -16);
+        ent->r.box.maxs = Vec3(0, 16, 16);
         break;
     case 90:
-        VectorSet(ent->r.mins, -16, -8, -16);
-        VectorSet(ent->r.maxs, 16, 0, 16);
+        ent->r.box.mins = Vec3(-16, -8, -16);
+        ent->r.box.maxs = Vec3(16, 0, 16);
         break;
     case 180:
-        VectorSet(ent->r.mins, 0, -16, -16);
-        VectorSet(ent->r.maxs, 8, 16, 16);
+        ent->r.box.mins = Vec3(0, -16, -16);
+        ent->r.box.maxs = Vec3(8, 16, 16);
         break;
     case 270:
-        VectorSet(ent->r.mins, -16, 0, -16);
-        VectorSet(ent->r.maxs, 16, 8, 16);
+        ent->r.box.mins = Vec3(-16, 0, -16);
+        ent->r.box.maxs = Vec3(16, 8, 16);
         break;
     }
 
@@ -694,23 +690,23 @@ void USE(turret_activate)(edict_t *self, edict_t *other, edict_t *activator)
     self->moveinfo.accel = self->speed;
     self->moveinfo.decel = self->speed;
 
-    if (self->s.angles[0] == 270)
-        VectorSet(forward, 0, 0, 1);
-    else if (self->s.angles[0] == 90)
-        VectorSet(forward, 0, 0, -1);
-    else if (self->s.angles[1] == 0)
-        VectorSet(forward, 1, 0, 0);
-    else if (self->s.angles[1] == 90)
-        VectorSet(forward, 0, 1, 0);
-    else if (self->s.angles[1] == 180)
-        VectorSet(forward, -1, 0, 0);
-    else if (self->s.angles[1] == 270)
-        VectorSet(forward, 0, -1, 0);
+    if (self->s.angles.pitch == 270)
+        forward = Vec3(0, 0, 1);
+    else if (self->s.angles.pitch == 90)
+        forward = Vec3(0, 0, -1);
+    else if (self->s.angles.yaw == 0)
+        forward = Vec3(1, 0, 0);
+    else if (self->s.angles.yaw == 90)
+        forward = Vec3(0, 1, 0);
+    else if (self->s.angles.yaw == 180)
+        forward = Vec3(-1, 0, 0);
+    else if (self->s.angles.yaw == 270)
+        forward = Vec3(0, -1, 0);
     else
         return;
 
     // start up the turret
-    VectorMA(self->s.origin, 32, forward, endpos);
+    endpos = Vec3_MA(self->s.origin, 32, forward);
     Move_Calc(self, endpos, turret_wake);
 
     base = self->teamchain;
@@ -722,7 +718,7 @@ void USE(turret_activate)(edict_t *self, edict_t *other, edict_t *activator)
         base->moveinfo.decel = base->speed;
 
         // start up the wall section
-        VectorMA(self->teamchain->s.origin, 32, forward, endpos);
+        endpos = Vec3_MA(self->teamchain->s.origin, 32, forward);
         Move_Calc(self->teamchain, endpos, turret_wake);
 
         base->s.sound = G_EncodeSound(CHAN_AUTO, sound_moving, 1, ATTN_NORM);
@@ -742,12 +738,12 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 
     if (self->enemy->health > 0) {
         // see if any entities are in the way of the shot
-        VectorCopy(self->s.origin, spot1);
-        spot1[2] += self->viewheight;
-        VectorCopy(self->enemy->s.origin, spot2);
-        spot2[2] += self->enemy->viewheight;
+        spot1 = self->s.origin;
+        spot1.z += self->viewheight;
+        spot2 = self->enemy->s.origin;
+        spot2.z += self->enemy->viewheight;
 
-        trap_Trace(&tr, spot1, NULL, NULL, spot2, self->s.number, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
+        tr = G_TraceLine(spot1, spot2, self->s.number, CONTENTS_SOLID | CONTENTS_PLAYER | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
         edict_t *hit = &g_edicts[tr.entnum];
 
         // do we have a clear shot?
@@ -761,7 +757,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
                             // wait for our time
                             return false;
                         // make sure we're not going to shoot something we don't want to shoot
-                        trap_Trace(&tr, spot1, NULL, NULL, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER | CONTENTS_PLAYER);
+                        tr = G_TraceLine(spot1, self->monsterinfo.blind_fire_target, self->s.number, CONTENTS_MONSTER | CONTENTS_PLAYER);
                         hit = &g_edicts[tr.entnum];
                         if (tr.allsolid || tr.startsolid || ((tr.fraction < 1.0f) && (hit != self->enemy && !(hit->r.svflags & SVF_PLAYER))))
                             return false;
@@ -840,8 +836,7 @@ void SP_monster_turret(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/turret/tris.md2");
 
-    VectorSet(self->r.mins, -12, -12, -12);
-    VectorSet(self->r.maxs, 12, 12, 12);
+    self->r.box = Box3_FromRadius(12);
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_BBOX;
 
@@ -886,30 +881,30 @@ void SP_monster_turret(edict_t *self)
     self->monsterinfo.scale = MODEL_SCALE;
     self->gravity = 0;
 
-    VectorCopy(self->s.angles, self->offset);
-    angle = (int)self->s.angles[1];
+    self->offset = self->s.angles;
+    angle = (int)self->s.angles.yaw;
     switch (angle) {
     case -1: // up
-        self->s.angles[0] = 270;
-        self->s.angles[1] = 0;
-        self->s.origin[2] += 2;
+        self->s.angles.pitch = 270;
+        self->s.angles.yaw = 0;
+        self->s.origin.z += 2;
         break;
     case -2: // down
-        self->s.angles[0] = 90;
-        self->s.angles[1] = 0;
-        self->s.origin[2] -= 2;
+        self->s.angles.pitch = 90;
+        self->s.angles.yaw = 0;
+        self->s.origin.z -= 2;
         break;
     case 0:
-        self->s.origin[0] += 2;
+        self->s.origin.x += 2;
         break;
     case 90:
-        self->s.origin[1] += 2;
+        self->s.origin.y += 2;
         break;
     case 180:
-        self->s.origin[0] -= 2;
+        self->s.origin.x -= 2;
         break;
     case 270:
-        self->s.origin[1] -= 2;
+        self->s.origin.y -= 2;
         break;
     default:
         break;

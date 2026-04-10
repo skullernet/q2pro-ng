@@ -68,7 +68,7 @@ qhandle_t R_RegisterTempPic(const char *name);
 qhandle_t R_RegisterTempFont(const char *name);
 qhandle_t R_RegisterSkin(const char *name);
 qhandle_t R_RegisterSprite(const char *name);
-void    R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
+void    R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis);
 void    R_EndRegistration(void);
 
 void    R_ClearScene(void);
@@ -77,7 +77,7 @@ void    R_AddLight(const dlight_t *light);
 void    R_SetLightStyle(unsigned style, float value);
 void    R_LocateParticles(const particle_t *p, int count);
 void    R_RenderFrame(const refdef_t *fd);
-void    R_LightPoint(const vec3_t origin, vec3_t light);
+void    R_LightPoint(vec3_t origin, vec3_t *light);
 
 void    R_GetPalette(uint32_t palette[256]);
 void    R_ClearColor(void);

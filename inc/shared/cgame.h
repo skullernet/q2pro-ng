@@ -65,26 +65,19 @@ typedef struct {
 
     size_t (*GetConfigstring)(unsigned index, char *buf, size_t size);
 
-    void (*BoxTrace)(trace_t *trace,
-                     const vec3_t start, const vec3_t end,
-                     const vec3_t mins, const vec3_t maxs,
-                     qhandle_t hmodel, contents_t contentmask);
+    void (*BoxTrace)(trace_t *trace, const trace_args_t *args, qhandle_t hmodel);
+    void (*TransformedBoxTrace)(trace_t *trace, const trace_args_t *args,
+                                qhandle_t hmodel, vec3_t origin, vec3_t angles);
 
-    void (*TransformedBoxTrace)(trace_t *trace,
-                                const vec3_t start, const vec3_t end,
-                                const vec3_t mins, const vec3_t maxs,
-                                qhandle_t hmodel, contents_t contentmask,
-                                const vec3_t origin, const vec3_t angles);
+    contents_t (*PointContents)(vec3_t point, qhandle_t hmodel);
+    contents_t (*TransformedPointContents)(vec3_t point, qhandle_t hmodel,
+                                           vec3_t origin, vec3_t angles);
 
-    contents_t (*PointContents)(const vec3_t point, qhandle_t hmodel);
-    contents_t (*TransformedPointContents)(const vec3_t point, qhandle_t hmodel,
-                                           const vec3_t origin, const vec3_t angles);
-
-    qhandle_t (*TempBoxModel)(const vec3_t mins, const vec3_t maxs);
+    qhandle_t (*TempBoxModel)(box3_t box);
 
     bool (*GetSurfaceInfo)(unsigned surf_id, surface_info_t *info);
     bool (*GetMaterialInfo)(unsigned material_id, material_info_t *info);
-    void (*GetBrushModelBounds)(unsigned index, vec3_t mins, vec3_t maxs);
+    box3_t (*GetBrushModelBounds)(unsigned index);
 
     unsigned (*GetUsercmdNumber)(void);
     bool (*GetUsercmd)(unsigned number, usercmd_t *ucmd);
@@ -140,7 +133,7 @@ typedef struct {
     qhandle_t (*R_RegisterFont)(const char *name);
     qhandle_t (*R_RegisterSkin)(const char *name);
     qhandle_t (*R_RegisterSprite)(const char *name);
-    void    (*R_SetSky)(const char *name, float rotate, bool autorotate, const vec3_t axis);
+    void    (*R_SetSky)(const char *name, float rotate, bool autorotate, vec3_t axis);
 
     void    (*R_ClearScene)(void);
     void    (*R_AddEntity)(const entity_t *ent);
@@ -148,7 +141,7 @@ typedef struct {
     void    (*R_SetLightStyle)(unsigned style, float value);
     void    (*R_LocateParticles)(const particle_t *p, int count);
     void    (*R_RenderScene)(const refdef_t *fd);
-    void    (*R_LightPoint)(const vec3_t origin, vec3_t light);
+    void    (*R_LightPoint)(vec3_t origin, vec3_t *light);
 
     void    (*R_GetConfig)(refcfg_t *cfg);
     void    (*R_GetPalette)(uint32_t palette[256]);
@@ -170,13 +163,15 @@ typedef struct {
     void    (*R_DrawFill32)(int x, int y, int w, int h, uint32_t color);
 
     qhandle_t (*S_RegisterSound)(const char *sample);
-    void (*S_StartSound)(const vec3_t origin, int entnum, int entchannel,
-                         qhandle_t sfx, float volume, float attenuation, float timeofs);
+    void (*S_StartSound)(int entnum, int entchannel, qhandle_t sfx,
+                         float volume, float attenuation, float timeofs);
+    void (*S_PositionedSound)(vec3_t origin, int entnum, int entchannel, qhandle_t sfx,
+                              float volume, float attenuation, float timeofs);
     void (*S_ClearLoopingSounds)(void);
     void (*S_AddLoopingSound)(unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
     void (*S_StartBackgroundTrack)(const char *track);
     void (*S_StopBackgroundTrack)(void);
-    void (*S_UpdateEntity)(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+    void (*S_UpdateEntity)(unsigned entnum, vec3_t origin, vec3_t velocity);
     void (*S_UpdateListener)(const listener_t *listener);
 
     int64_t (*FS_OpenFile)(const char *path, qhandle_t *f, unsigned mode);
@@ -191,20 +186,22 @@ typedef struct {
     size_t (*FS_ErrorString)(int error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
-    void (*R_AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugPoint)(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugAxis)(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test);
-    void (*R_AddDebugBounds)(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugSphere)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCircle)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCylinder)(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
+    void (*R_AddDebugBounds)(box3_t box, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
                                bool depth_test);
-    void (*R_AddDebugArrow)(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+    void (*R_AddDebugArrow)(vec3_t start, vec3_t end, float size, uint32_t line_color,
                             uint32_t arrow_color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCurveArrow)(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+    void (*R_AddDebugCurveArrow)(vec3_t start, vec3_t ctrl, vec3_t end, float size,
                                  uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
-    void (*R_AddDebugText)(const vec3_t origin, const vec3_t angles, const char *text,
+    void (*R_AddDebugText)(vec3_t origin, const char *text,
                            float size, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugAngledText)(vec3_t origin, vec3_t angles, const char *text,
+                                 float size, uint32_t color, uint32_t time, bool depth_test);
 } cgame_import_t;
 
 //

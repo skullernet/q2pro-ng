@@ -367,13 +367,12 @@ static void hover_fire_blaster(edict_t *self)
     if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[(self->s.frame & 1) ? MZ2_HOVER_BLASTER_2 : MZ2_HOVER_BLASTER_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[(self->s.frame & 1) ? MZ2_HOVER_BLASTER_2 : MZ2_HOVER_BLASTER_1], forward, right);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     // PGM  - daedalus fires blaster2
     if (self->mass < 200)
@@ -478,8 +477,7 @@ void MONSTERINFO_SETSKIN(hover_setskin)(edict_t *self)
 
 static void hover_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     self->movetype = MOVETYPE_TOSS;
     self->think = hover_deadthink;
     self->nextthink = level.time + FRAME_TIME;
@@ -487,7 +485,7 @@ static void hover_dead(edict_t *self)
     trap_LinkEntity(self);
 }
 
-void DIE(hover_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(hover_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->s.effects = EF_NONE;
     self->monsterinfo.power_armor_type = IT_NULL;
@@ -569,8 +567,7 @@ void SP_monster_hover(edict_t *self)
 
     G_PrecacheGibs(hover_gibs);
 
-    VectorSet(self->r.mins, -24, -24, -24);
-    VectorSet(self->r.maxs, 24, 24, 32);
+    self->r.box = Box3_FromSize(24, -24, 32);
 
     self->health = 240 * st.health_multiplier;
     self->gib_health = -100;

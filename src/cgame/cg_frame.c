@@ -32,8 +32,8 @@ static void CG_SetActiveState(void)
         // enhanced servers don't send viewangles
         CG_PredictAngles();
     }
-    VectorCopy(cg.predicted_ps.viewangles, cg.oldviewangles);
-    VectorCopy(cg.predicted_ps.velocity, cg.slowvelocity);
+    cg.oldviewangles = cg.predicted_ps.viewangles;
+    cg.slowvelocity = cg.predicted_ps.velocity;
 
     SCR_LagClear();
 }

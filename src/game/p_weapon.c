@@ -51,38 +51,36 @@ int P_DamageModifier(edict_t *ent)
 // ROGUE
 //========
 
-void P_ProjectSource(edict_t *ent, const vec3_t angles, const vec3_t g_distance, vec3_t result_start, vec3_t result_dir, bool adjust_for_pierce)
+ray3_t P_ProjectSource(edict_t *ent, vec3_t angles, vec3_t distance, bool adjust_for_pierce)
 {
-    vec3_t distance = VectorInit(g_distance);
     if (ent->client->pers.hand == LEFT_HANDED)
-        distance[1] = -distance[1];
+        distance.y = -distance.y;
     else if (ent->client->pers.hand == CENTER_HANDED)
-        distance[1] = 0;
+        distance.y = 0;
 
-    vec3_t eye_position = VectorInit(ent->s.origin);
-    eye_position[2] += ent->viewheight;
+    vec3_t eye_position = ent->s.origin;
+    eye_position.z += ent->viewheight;
 
     vec3_t forward, right, up;
-    AngleVectors(angles, forward, right, up);
+    AngleVectors(angles, &forward, &right, &up);
 
-    G_ProjectSource2(eye_position, distance, forward, right, up, result_start);
+    ray3_t result;
+    result.start = G_ProjectSource2(eye_position, distance, forward, right, up);
 
-    vec3_t end;
-    VectorMA(eye_position, 8192, forward, end);
+    vec3_t end = Vec3_MA(eye_position, 8192, forward);
 
     contents_t mask = G_ProjectileClipmask(ent) & ~CONTENTS_DEADMONSTER;
 
-    trace_t tr;
-    trap_Trace(&tr, eye_position, NULL, NULL, end, ent->s.number, mask);
+    trace_t tr = G_TraceLine(eye_position, end, ent->s.number, mask);
 
     // if the point was damageable, use raw forward
     // so railgun pierces properly
     if ((tr.startsolid || adjust_for_pierce) && g_edicts[tr.entnum].takedamage)
-        VectorCopy(forward, result_dir);
-    else {
-        VectorSubtract(tr.endpos, result_start, result_dir);
-        VectorNormalize(result_dir);
-    }
+        result.dir = forward;
+    else
+        result.dir = Vec3_Direction(tr.endpos, result.start);
+
+    return result;
 }
 
 /*
@@ -97,7 +95,7 @@ Monsters that don't directly see the player can move
 to a noise in hopes of seeing the player from there.
 ===============
 */
-void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
+void PlayerNoise(edict_t *who, vec3_t where, player_noise_t type)
 {
     edict_t *noise;
 
@@ -135,16 +133,14 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
     if (!who->mynoise) {
         noise = G_Spawn();
         noise->classname = "player_noise";
-        VectorSet(noise->r.mins, -8, -8, -8);
-        VectorSet(noise->r.maxs, 8, 8, 8);
+        noise->r.box = Box3_FromRadius(8);
         noise->r.ownernum = who->s.number;
         noise->r.svflags = SVF_NOCLIENT;
         who->mynoise = noise;
 
         noise = G_Spawn();
         noise->classname = "player_noise";
-        VectorSet(noise->r.mins, -8, -8, -8);
-        VectorSet(noise->r.maxs, 8, 8, 8);
+        noise->r.box = Box3_FromRadius(8);
         noise->r.ownernum = who->s.number;
         noise->r.svflags = SVF_NOCLIENT;
         who->mynoise2 = noise;
@@ -160,7 +156,7 @@ void PlayerNoise(edict_t *who, const vec3_t where, player_noise_t type)
         who->client->sound2_entity_time = level.time;
     }
 
-    VectorCopy(where, noise->s.origin);
+    noise->s.origin = where;
     noise->teleport_time = level.time;
     trap_LinkEntity(noise);
 }
@@ -857,25 +853,19 @@ static void weapon_grenade_fire(edict_t *ent, bool held)
     if (is_quad)
         damage *= damage_multiplier;
 
-    // Paril: kill sideways angle on grenades
-    // limit upwards angle so you don't throw behind you
-    vec3_t angles;
-    P_GetThrowAngles(ent, angles);
-
-    vec3_t start, dir;
-    P_ProjectSource(ent, angles, (const vec3_t) { 2, 0, -14 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(2, 0, -14), false);
 
     gtime_t timer = ent->client->grenade_time - level.time;
 
     if (ent->health > 0) {
         float frac = 1.0f - TO_SEC(timer) / GRENADE_TIMER_SEC;
-        speed = lerp(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
+        speed = Q_lerpf(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
     } else
         speed = GRENADE_MINSPEED;
 
     ent->client->grenade_time = 0;
 
-    fire_grenade2(ent, start, dir, damage, speed, timer, radius, held);
+    fire_grenade2(ent, aim.start, aim.dir, damage, speed, timer, radius, held);
 
     G_RemoveAmmoEx(ent, 1);
 }
@@ -1067,10 +1057,13 @@ GRENADE LAUNCHER
 ======================================================================
 */
 
-void P_GetThrowAngles(edict_t *ent, vec3_t angles)
+// Paril: kill sideways angle on grenades
+// limit upwards angle so you don't throw behind you
+vec3_t P_GetThrowAngles(edict_t *ent)
 {
-    VectorCopy(ent->client->v_angle, angles);
-    angles[0] = max(angles[0], -62.5f);
+    vec3_t angles = ent->client->v_angle;
+    angles.pitch = max(angles.pitch, -62.5f);
+    return angles;
 }
 
 static void weapon_grenadelauncher_fire(edict_t *ent)
@@ -1082,19 +1075,13 @@ static void weapon_grenadelauncher_fire(edict_t *ent)
     if (is_quad)
         damage *= damage_multiplier;
 
-    // Paril: kill sideways angle on grenades
-    // limit upwards angle so you don't fire it behind you
-    vec3_t angles;
-    P_GetThrowAngles(ent, angles);
+    ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(8, 0, -8), false);
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, angles, (const vec3_t) { 8, 0, -8 }, start, dir, false);
-
-    fire_grenade(ent, start, dir, damage, 600, SEC(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f), false);
+    fire_grenade(ent, aim.start, aim.dir, damage, 600, SEC(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f));
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_GRENADE | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1129,14 +1116,14 @@ static void Weapon_RocketLauncher_Fire(edict_t *ent)
         radius_damage *= damage_multiplier;
     }
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -8 }, start, dir, false);
-    fire_rocket(ent, start, dir, damage, 650, damage_radius, radius_damage);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(8, 8, -8), false);
+
+    fire_rocket(ent, aim.start, aim.dir, damage, 650, damage_radius, radius_damage);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_ROCKET | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1157,33 +1144,28 @@ BLASTER / HYPERBLASTER
 ======================================================================
 */
 
-static void Blaster_Fire(edict_t *ent, const vec3_t g_offset, int damage, bool hyper, effects_t effect)
+static void Blaster_Fire(edict_t *ent, vec3_t offset, int damage, bool hyper, effects_t effect)
 {
     if (is_quad)
         damage *= damage_multiplier;
 
-    vec3_t offset = { 24, 8, -8 };
-    VectorAdd(offset, g_offset, offset);
+    offset = Vec3_Add(offset, Vec3(24, 8, -8));
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, offset, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, offset, false);
 
     // let the regular blaster projectiles travel a bit faster because it is a completely useless gun
-    int speed = hyper ? 1000 : 1500;
-
-    fire_blaster(ent, start, dir, damage, speed, effect, (mod_t) { hyper ? MOD_HYPERBLASTER : MOD_BLASTER });
+    fire_blaster(ent, aim.start, aim.dir, damage, hyper ? 1000 : 1500, effect, hyper ? MOD_HYPERBLASTER : MOD_BLASTER);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, (hyper ? MZ_HYPERBLASTER : MZ_BLASTER) | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 }
 
 static void Weapon_Blaster_Fire(edict_t *ent)
 {
     // give the blaster 15 across the board instead of just in dm
-    int damage = 15;
-    Blaster_Fire(ent, vec3_origin, damage, false, EF_BLASTER);
+    Blaster_Fire(ent, vec3_origin, 15, false, EF_BLASTER);
 }
 
 void Weapon_Blaster(edict_t *ent)
@@ -1234,9 +1216,9 @@ static void Weapon_HyperBlaster_Fire(edict_t *ent)
             }
 
             rotation = (ent->client->ps.gunframe - 5) * 2 * M_PIf / 6;
-            offset[0] = -4 * sinf(rotation);
-            offset[2] = 0;
-            offset[1] = 4 * cosf(rotation);
+            offset.x = -4 * sinf(rotation);
+            offset.y = 4 * cosf(rotation);
+            offset.z = 0;
 
             if (deathmatch.integer)
                 damage = 15;
@@ -1302,15 +1284,14 @@ static void Machinegun_Fire(edict_t *ent)
     }
 
     // get start / end positions
-    vec3_t start, dir;
     // Paril: kill sideways angle on hitscan
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -8 }, start, dir, true);
-    fire_bullet(ent, start, dir, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, (mod_t) { MOD_MACHINEGUN });
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(0, 0, -8), true);
+    fire_bullet(ent, aim.start, aim.dir, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_MACHINEGUN);
     Weapon_PowerupSound(ent);
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_MACHINEGUN | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 
@@ -1401,17 +1382,16 @@ static void Chaingun_Fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -8 }, start, dir, true);
+    ray3_t aim = { 0 };
 
     for (i = 0; i < shots; i++) {
         // get start / end positions
         // Paril: kill sideways angle on hitscan
         r = crandom() * 4;
         u = crandom() * 4;
-        P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, r, u - 8 }, start, dir, true);
+        aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(0, r, u - 8), true);
 
-        fire_bullet(ent, start, dir, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, (mod_t) { MOD_CHAINGUN });
+        fire_bullet(ent, aim.start, aim.dir, damage, kick, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MOD_CHAINGUN);
     }
 
     Weapon_PowerupSound(ent);
@@ -1419,7 +1399,7 @@ static void Chaingun_Fire(edict_t *ent)
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, (MZ_CHAINGUN1 + shots - 1) | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmoEx(ent, shots);
 }
@@ -1444,9 +1424,8 @@ static void weapon_shotgun_fire(edict_t *ent)
     int damage = 4;
     int kick = 8;
 
-    vec3_t start, dir;
     // Paril: kill sideways angle on hitscan
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -8 }, start, dir, true);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(0, 0, -8), true);
 
     if (is_quad) {
         damage *= damage_multiplier;
@@ -1454,14 +1433,14 @@ static void weapon_shotgun_fire(edict_t *ent)
     }
 
     if (deathmatch.integer)
-        fire_shotgun(ent, start, dir, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, (mod_t) { MOD_SHOTGUN });
+        fire_shotgun(ent, aim.start, aim.dir, damage, kick, 500, 500, DEFAULT_DEATHMATCH_SHOTGUN_COUNT, MOD_SHOTGUN);
     else
-        fire_shotgun(ent, start, dir, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, (mod_t) { MOD_SHOTGUN });
+        fire_shotgun(ent, aim.start, aim.dir, damage, kick, 500, 500, DEFAULT_SHOTGUN_COUNT, MOD_SHOTGUN);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_SHOTGUN | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1484,21 +1463,19 @@ static void weapon_supershotgun_fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    vec3_t start, dir, v;
-    v[PITCH] = ent->client->v_angle[PITCH];
-    v[YAW] = ent->client->v_angle[YAW] - 5;
-    v[ROLL] = ent->client->v_angle[ROLL];
+    vec3_t v = ent->client->v_angle;
+    v.yaw = ent->client->v_angle.yaw - 5;
     // Paril: kill sideways angle on hitscan
-    P_ProjectSource(ent, v, (const vec3_t) { 0, 0, -8 }, start, dir, true);
-    fire_shotgun(ent, start, dir, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT / 2, (mod_t) { MOD_SSHOTGUN });
-    v[YAW] = ent->client->v_angle[YAW] + 5;
-    P_ProjectSource(ent, v, (const vec3_t) { 0, 0, -8 }, start, dir, true);
-    fire_shotgun(ent, start, dir, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT / 2, (mod_t) { MOD_SSHOTGUN });
+    ray3_t aim = P_ProjectSource(ent, v, Vec3(0, 0, -8), true);
+    fire_shotgun(ent, aim.start, aim.dir, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT / 2, MOD_SSHOTGUN);
+    v.yaw = ent->client->v_angle.yaw + 5;
+    aim = P_ProjectSource(ent, v, Vec3(0, 0, -8), true);
+    fire_shotgun(ent, aim.start, aim.dir, damage, kick, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SSHOTGUN_COUNT / 2, MOD_SSHOTGUN);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_SSHOTGUN | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1537,14 +1514,13 @@ static void weapon_railgun_fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 7, -8 }, start, dir, true);
-    fire_rail(ent, start, dir, damage, kick);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(0, 7, -8), true);
+    fire_rail(ent, aim.start, aim.dir, damage, kick);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_RAILGUN | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1591,14 +1567,13 @@ static void weapon_bfg_fire(edict_t *ent)
     if (is_quad)
         damage *= damage_multiplier;
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -8 }, start, dir, false);
-    fire_bfg(ent, start, dir, damage, 400, damage_radius);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(8, 8, -8), false);
+    fire_bfg(ent, aim.start, aim.dir, damage, 400, damage_radius);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_BFG2 | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -1615,15 +1590,13 @@ void Weapon_BFG(edict_t *ent)
 
 static void weapon_disint_fire(edict_t *self)
 {
-    vec3_t start, dir;
-    P_ProjectSource(self, self->client->v_angle, (const vec3_t) { 24, 8, -8 }, start, dir, false);
-
-    fire_disintegrator(self, start, dir, 800);
+    ray3_t aim = P_ProjectSource(self, self->client->v_angle, Vec3(24, 8, -8), false);
+    fire_disintegrator(self, aim.start, aim.dir, 800);
 
     // send muzzle flash
     G_AddEvent(self, EV_MUZZLEFLASH, MZ_BLASTER2);
 
-    PlayerNoise(self, start, PNOISE_WEAPON);
+    PlayerNoise(self, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(self);
 }

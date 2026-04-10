@@ -105,7 +105,7 @@ void MONSTERINFO_RUN(gladiator_run)(edict_t *self)
 
 static void GladiatorMelee(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, -4 };
     if (fire_hit(self, aim, irandom2(20, 25), 300))
         G_StartSound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM);
     else {
@@ -143,12 +143,11 @@ static void GladiatorGun(edict_t *self)
     vec3_t dir;
     vec3_t forward, right;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right);
 
     // calc direction to where we targeted
-    VectorSubtract(self->pos1, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(self->pos1, start);
 
     monster_fire_railgun(self, start, dir, 50, 100, MZ2_GLADIATOR_RAILGUN_1);
 }
@@ -173,12 +172,11 @@ static void gladbGun(edict_t *self)
     vec3_t dir;
     vec3_t forward, right;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right);
 
     // calc direction to where we targeted
-    VectorSubtract(self->pos1, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(self->pos1, start);
 
     int damage = 35;
     int radius_damage = 45;
@@ -191,8 +189,8 @@ static void gladbGun(edict_t *self)
     fire_plasma(self, start, dir, damage, 725, radius_damage, radius_damage);
 
     // save for aiming the shot
-    VectorCopy(self->enemy->s.origin, self->pos1);
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin;
+    self->pos1.z += self->enemy->viewheight;
 }
 
 static void gladbGun_check(edict_t *self)
@@ -220,15 +218,15 @@ void MONSTERINFO_ATTACK(gladiator_attack)(edict_t *self)
     float  range;
 
     // a small safe zone
-    range = Distance(self->s.origin, self->enemy->s.origin);
+    range = Vec3_Distance(self->s.origin, self->enemy->s.origin);
     if (range <= (MELEE_DISTANCE + 32) && self->monsterinfo.melee_debounce_time <= level.time)
         return;
     if (!M_CheckClearShot(self, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1]))
         return;
 
     // charge up the railgun
-    VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin; // save for aiming the shot
+    self->pos1.z += self->enemy->viewheight;
     // RAFAEL
     if (self->style == 1) {
         G_StartSound(self, CHAN_WEAPON, sound_gunb, 1, ATTN_NORM);
@@ -262,7 +260,7 @@ const mmove_t MMOVE_T(gladiator_move_pain_air) = { FRAME_painup2, FRAME_painup6,
 void PAIN(gladiator_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
     if (level.time < self->pain_debounce_time) {
-        if ((self->velocity[2] > 100) && (self->monsterinfo.active_move == &gladiator_move_pain))
+        if ((self->velocity.z > 100) && (self->monsterinfo.active_move == &gladiator_move_pain))
             M_SetAnimation(self, &gladiator_move_pain_air);
         return;
     }
@@ -277,7 +275,7 @@ void PAIN(gladiator_pain)(edict_t *self, edict_t *other, float kick, int damage,
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
 
-    if (self->velocity[2] > 100)
+    if (self->velocity.z > 100)
         M_SetAnimation(self, &gladiator_move_pain_air);
     else
         M_SetAnimation(self, &gladiator_move_pain);
@@ -293,14 +291,13 @@ void MONSTERINFO_SETSKIN(gladiator_setskin)(edict_t *self)
 
 static void gladiator_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void gladiator_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -341,7 +338,7 @@ static const gib_def_t gladiator_gibs[] = {
     { 0 }
 };
 
-void DIE(gladiator_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(gladiator_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -453,8 +450,7 @@ void SP_monster_gladiator(edict_t *self)
 
     self->gib_health = -175;
 
-    VectorSet(self->r.mins, -32, -32, -24);
-    VectorSet(self->r.maxs, 32, 32, 42);
+    self->r.box = Box3_FromSize(32, -24, 42);
 
     self->pain = gladiator_pain;
     self->die = gladiator_die;

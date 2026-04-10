@@ -60,7 +60,7 @@ void GL_DrawParticles(void)
 {
     const particle_t *p;
     int total, count;
-    vec3_t transformed;
+    vec3_t transformed, p1, p2, p3;
     vec_t scale, scale2, dist;
     color_t color;
     int numverts;
@@ -93,8 +93,8 @@ void GL_DrawParticles(void)
         dst_vert = tess.vertices;
         numverts = count * 3;
         do {
-            VectorSubtract(p->origin, glr.fd.vieworg, transformed);
-            dist = DotProduct(transformed, glr.viewaxis[0]);
+            transformed = Vec3_Sub(p->origin, glr.fd.vieworg);
+            dist = Vec3_Dot(transformed, glr.viewaxis[0]);
 
             scale = 1.0f;
             if (dist > 20)
@@ -102,10 +102,15 @@ void GL_DrawParticles(void)
             scale *= gl_partscale->value * p->scale;
             scale2 = scale * PARTICLE_SCALE;
 
-            VectorMA(p->origin, scale2, glr.viewaxis[1], dst_vert);
-            VectorMA(dst_vert, -scale2, glr.viewaxis[2], dst_vert);
-            VectorMA(dst_vert,  scale,  glr.viewaxis[2], dst_vert +  6);
-            VectorMA(dst_vert, -scale,  glr.viewaxis[1], dst_vert + 12);
+            p1 = p->origin;
+            p1 = Vec3_MA(p1,  scale2, glr.viewaxis[1]);
+            p1 = Vec3_MA(p1, -scale2, glr.viewaxis[2]);
+            p2 = Vec3_MA(p1,  scale,  glr.viewaxis[2]);
+            p3 = Vec3_MA(p1, -scale,  glr.viewaxis[1]);
+
+            Vec3_Store(dst_vert,      p1);
+            Vec3_Store(dst_vert +  6, p2);
+            Vec3_Store(dst_vert + 12, p3);
 
             dst_vert[ 3] = 0;               dst_vert[ 4] = 0;
             dst_vert[ 9] = 0;               dst_vert[10] = PARTICLE_SIZE;
@@ -115,7 +120,7 @@ void GL_DrawParticles(void)
                 color.u32 = p->rgba.u32;
             else
                 color.u32 = d_8to24table[p->color & 0xff];
-            color.u8[3] *= p->alpha;
+            color.a *= p->alpha;
 
             WN32(dst_vert +  5, color.u32);
             WN32(dst_vert + 11, color.u32);
@@ -170,12 +175,12 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
     vec_t *dst_vert;
     glIndex_t *dst_indices;
 
-    VectorSubtract(segments[num_segments], segments[0], dir);
-    if (VectorNormalize(dir) < 0.1f)
+    dir = Vec3_Sub(segments[num_segments], segments[0]);
+    if (Vec3_Normalize(&dir) < 0.1f)
         return;
 
-    MakeNormalVectors(dir, right, up);
-    VectorScale(right, width, right);
+    MakeNormalVectors(dir, &right, &up);
+    right = Vec3_Scale(right, width);
 
     if (q_unlikely(tess.numverts + BEAM_POINTS * (num_segments + 1) > TESS_MAX_VERTICES ||
                    tess.numindices + BEAM_POINTS * 6 * num_segments > TESS_MAX_INDICES))
@@ -184,8 +189,8 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
     dst_vert = tess.vertices + tess.numverts * 4;
 
     for (i = 0; i < BEAM_POINTS; i++) {
-        RotatePointAroundVector(points[i], dir, right, (360.0f / BEAM_POINTS) * i);
-        VectorAdd(points[i], segments[0], dst_vert);
+        points[i] = Vec3_RotateDir(right, dir, (360.0f / BEAM_POINTS) * i);
+        Vec3_Store(dst_vert, Vec3_Add(points[i], segments[0]));
         WN32(dst_vert + 3, color.u32);
         dst_vert += 4;
     }
@@ -195,7 +200,7 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
 
     for (i = 1; i <= num_segments; i++) {
         for (j = 0; j < BEAM_POINTS; j++) {
-            VectorAdd(points[j], segments[i], dst_vert);
+            Vec3_Store(dst_vert, Vec3_Add(points[j], segments[i]));
             WN32(dst_vert + 3, color.u32);
             dst_vert += 4;
 
@@ -215,28 +220,28 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
     tess.numindices += BEAM_POINTS * 6 * num_segments;
 }
 
-static void GL_DrawSimpleBeam(const vec3_t start, const vec3_t end, color_t color, float width)
+static void GL_DrawSimpleBeam(vec3_t start, vec3_t end, color_t color, float width)
 {
     vec3_t d1, d2, d3;
     vec_t *dst_vert;
     glIndex_t *dst_indices;
 
-    VectorSubtract(end, start, d1);
-    VectorSubtract(glr.fd.vieworg, start, d2);
-    CrossProduct(d1, d2, d3);
-    if (VectorNormalize(d3) < 0.1f)
+    d1 = Vec3_Sub(end, start);
+    d2 = Vec3_Sub(glr.fd.vieworg, start);
+    d3 = Vec3_Cross(d1, d2);
+    if (Vec3_Normalize(&d3) < 0.1f)
         return;
-    VectorScale(d3, width, d3);
+    d3 = Vec3_Scale(d3, width);
 
     if (q_unlikely(tess.numverts + 4 > TESS_MAX_VERTICES ||
                    tess.numindices + 6 > TESS_MAX_INDICES))
         GL_FlushBeamSegments();
 
     dst_vert = tess.vertices + tess.numverts * 6;
-    VectorAdd(start, d3, dst_vert);
-    VectorSubtract(start, d3, dst_vert + 6);
-    VectorSubtract(end, d3, dst_vert + 12);
-    VectorAdd(end, d3, dst_vert + 18);
+    Vec3_Store(dst_vert,      Vec3_Add(start, d3));
+    Vec3_Store(dst_vert +  6, Vec3_Sub(start, d3));
+    Vec3_Store(dst_vert + 12, Vec3_Sub(end, d3));
+    Vec3_Store(dst_vert + 18, Vec3_Add(end, d3));
 
     dst_vert[ 3] = 0; dst_vert[ 4] = 0;
     dst_vert[ 9] = 1; dst_vert[10] = 0;
@@ -264,15 +269,15 @@ static void GL_DrawSimpleBeam(const vec3_t start, const vec3_t end, color_t colo
 #define MAX_LIGHTNING_SEGMENTS      7
 #define MIN_SEGMENT_LENGTH          16
 
-static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t color, float width)
+static void GL_DrawLightningBeam(vec3_t start, vec3_t end, color_t color, float width)
 {
     vec3_t dir, segments[MAX_LIGHTNING_SEGMENTS + 1];
     vec3_t right, up;
     vec_t length, segment_length;
     int i, num_segments, max_segments;
 
-    VectorSubtract(end, start, dir);
-    length = VectorNormalize(dir);
+    dir = Vec3_Sub(end, start);
+    length = Vec3_Normalize(&dir);
 
     max_segments = Q_clip(length / MIN_SEGMENT_LENGTH, 1, MAX_LIGHTNING_SEGMENTS);
 
@@ -282,24 +287,24 @@ static void GL_DrawLightningBeam(const vec3_t start, const vec3_t end, color_t c
         num_segments = MIN_LIGHTNING_SEGMENTS + Com_SlowRand() % (max_segments - MIN_LIGHTNING_SEGMENTS + 1);
 
     if (num_segments > 1)
-        MakeNormalVectors(dir, right, up);
+        MakeNormalVectors(dir, &right, &up);
 
     segment_length = length / num_segments;
     for (i = 1; i < num_segments; i++) {
         vec3_t point;
         float offs;
 
-        VectorMA(start, i * segment_length, dir, point);
+        point = Vec3_MA(start, i * segment_length, dir);
 
         offs = Com_SlowCrand() * (segment_length * 0.35f);
-        VectorMA(point, offs, right, point);
+        point = Vec3_MA(point, offs, right);
 
         offs = Com_SlowCrand() * (segment_length * 0.35f);
-        VectorMA(point, offs, up, segments[i]);
+        segments[i] = Vec3_MA(point, offs, up);
     }
 
-    VectorCopy(start, segments[0]);
-    VectorCopy(end, segments[i]);
+    segments[0] = start;
+    segments[i] = end;
 
     if (gl_beamstyle->integer) {
         GL_DrawPolyBeam(segments, num_segments, color, width);
@@ -330,14 +335,14 @@ void GL_DrawBeams(void)
     }
 
     for (ent = glr.ents.beams; ent; ent = ent->next) {
-        VectorCopy(ent->origin, segs[0]);
-        VectorCopy(ent->oldorigin, segs[1]);
+        segs[0] = ent->origin;
+        segs[1] = ent->oldorigin;
 
         if (ent->skinnum == -1)
             color.u32 = ent->rgba.u32;
         else
             color.u32 = d_8to24table[ent->skinnum & 0xff];
-        color.u8[3] *= ent->alpha;
+        color.a *= ent->alpha;
 
         width = abs((int16_t)ent->frame) * scale;
 
@@ -432,46 +437,48 @@ void GL_DrawFlares(void)
         scale = (25 << def) * (ent->scale * q->frac);
 
         if (ent->flags & RF_FLARE_LOCK_ANGLE) {
-            VectorScale(glr.viewaxis[1],  scale, left);
-            VectorScale(glr.viewaxis[1], -scale, right);
-            VectorScale(glr.viewaxis[2], -scale, down);
-            VectorScale(glr.viewaxis[2],  scale, up);
+            left  = Vec3_Scale(glr.viewaxis[1],  scale);
+            right = Vec3_Scale(glr.viewaxis[1], -scale);
+            down  = Vec3_Scale(glr.viewaxis[2], -scale);
+            up    = Vec3_Scale(glr.viewaxis[2],  scale);
         } else {
             vec3_t dir, r, u;
-            VectorSubtract(ent->origin, glr.fd.vieworg, dir);
-            VectorNormalize(dir);
-            MakeNormalVectors(dir, r, u);
-            VectorScale(r, -scale, left);
-            VectorScale(r,  scale, right);
-            VectorScale(u, -scale, down);
-            VectorScale(u,  scale, up);
+            dir = Vec3_Direction(ent->origin, glr.fd.vieworg);
+            MakeNormalVectors(dir, &r, &u);
+            left  = Vec3_Scale(r, -scale);
+            right = Vec3_Scale(r,  scale);
+            down  = Vec3_Scale(u, -scale);
+            up    = Vec3_Scale(u,  scale);
         }
+
+        down = Vec3_Add(ent->origin, down);
+        up   = Vec3_Add(ent->origin, up);
 
         dst_vert = tess.vertices + tess.numverts * 6;
 
-        VectorCopy(ent->origin, dst_vert);
-        VectorAdd3(ent->origin, down, left,  dst_vert +  6);
-        VectorAdd3(ent->origin, up,   left,  dst_vert + 12);
-        VectorAdd3(ent->origin, up,   right, dst_vert + 18);
-        VectorAdd3(ent->origin, down, right, dst_vert + 24);
+        Vec3_Store(dst_vert, ent->origin);
+        Vec3_Store(dst_vert +  6, Vec3_Add(down, left));
+        Vec3_Store(dst_vert + 12, Vec3_Add(up,   left));
+        Vec3_Store(dst_vert + 18, Vec3_Add(up,   right));
+        Vec3_Store(dst_vert + 24, Vec3_Add(down, right));
 
         for (i = 0; i < 5; i++) {
             dst_vert[i * 6 + 3] = tcoords[i * 2 + 0];
             dst_vert[i * 6 + 4] = tcoords[i * 2 + 1];
         }
 
-        inner.u32 = ent->rgba.u32;
-        inner.u8[3] = (128 + def * 32) * (ent->alpha * q->frac);
-        outer.u32 = inner.u32;
+        inner = ent->rgba;
+        inner.a = (128 + def * 32) * (ent->alpha * q->frac);
+        outer = inner;
 
         if (ent->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE)) {
-            VectorClear(outer.u8);
+            Vec3_Set(outer.u8, 0, 0, 0);
             if (ent->flags & RF_SHELL_RED)
-                outer.u8[0] = 255;
+                outer.r = 255;
             if (ent->flags & RF_SHELL_GREEN)
-                outer.u8[1] = 255;
+                outer.g = 255;
             if (ent->flags & RF_SHELL_BLUE)
-                outer.u8[2] = 255;
+                outer.b = 255;
         }
 
         WN32(dst_vert +  5, inner.u32);

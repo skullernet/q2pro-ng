@@ -38,28 +38,27 @@ static int CG_FindFootstepSurface(int entnum)
 
     // use an X/Y only mins/maxs copy of the entity,
     // since we don't want it to get caught inside of any geometry above or below
-    const vec3_t trace_mins = { cent->mins[0], cent->mins[1] };
-    const vec3_t trace_maxs = { cent->maxs[0], cent->maxs[1] };
+    box3_t trace_box = cent->box;
+    trace_box.mins.z = trace_box.maxs.z = 0;
 
     // trace start position is the entity's current origin + { 0 0 1 },
     // so that entities with their mins at 0 won't get caught in the floor
-    vec3_t trace_start = VectorInit(cent->current.origin);
-    trace_start[2] += 1;
+    vec3_t trace_start = cent->current.origin;
+    trace_start.z += 1;
 
     // the end of the trace starts down by half of STEPSIZE
-    vec3_t trace_end = VectorInit(trace_start);
-    trace_end[2] -= STEPSIZE / 2;
+    vec3_t trace_end = trace_start;
+    trace_end.z -= STEPSIZE / 2;
     if (cent->current.solid && cent->current.solid != PACKED_BSP) {
         // if the entity is a bbox'd entity, the mins.z is added to the end point as well
-        trace_end[2] += cent->mins[2];
+        trace_end.z += cent->box.mins.z;
     } else {
         // otherwise use a value that should cover every monster in the game
-        trace_end[2] -= 66; // should you wonder: monster_guardian is the biggest boi
+        trace_end.z -= 66; // should you wonder: monster_guardian is the biggest boi
     }
 
     // first, a trace done solely against MASK_SOLID
-    trace_t tr;
-    CG_Trace(&tr, trace_start, trace_mins, trace_maxs, trace_end, ENTITYNUM_NONE, MASK_SOLID);
+    trace_t tr = CG_Trace(trace_start, trace_end, trace_box, ENTITYNUM_NONE, MASK_SOLID);
 
     if (tr.fraction == 1.0f) {
         // if we didn't hit anything, use default step ID
@@ -72,10 +71,10 @@ static int CG_FindFootstepSurface(int entnum)
         trap_GetSurfaceInfo(tr.surface_id, &surf);
 
         // do another trace that ends instead at endpos + { 0 0 1 }, and is against MASK_SOLID | MASK_WATER
-        vec3_t new_end = VectorInit(tr.endpos);
-        new_end[2] += 1;
+        vec3_t new_end = tr.endpos;
+        new_end.z += 1;
 
-        CG_Trace(&tr, trace_start, trace_mins, trace_maxs, new_end, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);
+        tr = CG_Trace(trace_start, new_end, trace_box, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);
         // if we hit something else, use that new footstep id instead of the first traces' value
         if (tr.surface_id)
             trap_GetSurfaceInfo(tr.surface_id, &surf);
@@ -119,7 +118,7 @@ static void CG_PlayFootstepSfx(unsigned step_id, int entnum, float volume, float
     if (footstep_sfx == cg.last_footstep)
         footstep_sfx = sfx->sfx[(sfx_num + 1) % sfx->num_sfx];
 
-    trap_S_StartSound(NULL, entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
+    trap_S_StartSound(entnum, CHAN_FOOTSTEP, footstep_sfx, volume, attenuation, 0);
     cg.last_footstep = footstep_sfx;
 }
 
@@ -308,18 +307,18 @@ static explosion_t *CG_AllocExplosion(void)
     return oldest;
 }
 
-static explosion_t *CG_PlainExplosion(const vec3_t pos)
+static explosion_t *CG_PlainExplosion(vec3_t pos)
 {
     explosion_t *ex;
 
     ex = CG_AllocExplosion();
-    VectorCopy(pos, ex->ent.origin);
+    ex->ent.origin = pos;
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->start = cg.oldframe->servertime;
     ex->light = 350;
-    VectorSet(ex->lightcolor, 1.0f, 0.5f, 0.5f);
-    ex->ent.angles[1] = Q_rand() % 360;
+    ex->lightcolor = Vec3(1.0f, 0.5f, 0.5f);
+    ex->ent.angles.yaw = Q_rand() % 360;
     ex->ent.model = cgs.models.explo4;
     ex->baseframe = 15 * (Q_rand() & 1);
     ex->frames = 15;
@@ -327,23 +326,23 @@ static explosion_t *CG_PlainExplosion(const vec3_t pos)
     return ex;
 }
 
-static void CG_BFGExplosion(const vec3_t pos)
+static void CG_BFGExplosion(vec3_t pos)
 {
     explosion_t *ex;
 
     ex = CG_AllocExplosion();
-    VectorCopy(pos, ex->ent.origin);
+    ex->ent.origin = pos;
     ex->type = ex_poly;
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
     ex->start = cg.oldframe->servertime;
     ex->light = 350;
-    VectorSet(ex->lightcolor, 0.0f, 1.0f, 0.0f);
+    ex->lightcolor = Vec3(0.0f, 1.0f, 0.0f);
     ex->ent.model = cgs.models.bfg_explo;
     ex->ent.alpha = 0.30f;
     ex->frames = 4;
 }
 
-void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale)
+void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, vec3_t offset, float scale)
 {
     if (!cg_muzzleflashes.integer)
         return;
@@ -359,11 +358,11 @@ void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, const vec3_t offset, float scale)
         cg.weapon.muzzle.roll = Q_rand() % 360;
     else
         cg.weapon.muzzle.roll = 0;
-    VectorCopy(offset, cg.weapon.muzzle.offset);
+    cg.weapon.muzzle.offset = offset;
     cg.weapon.muzzle.time = cg.oldframe->servertime;
 }
 
-void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, int skin, float scale)
+void CG_AddMuzzleFX(vec3_t origin, vec3_t angles, cg_muzzlefx_t fx, int skin, float scale)
 {
     explosion_t *ex;
 
@@ -376,8 +375,8 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
         return;
 
     ex = CG_AllocExplosion();
-    VectorCopy(origin, ex->ent.origin);
-    VectorCopy(angles, ex->ent.angles);
+    ex->ent.origin = origin;
+    ex->ent.angles = angles;
     ex->type = ex_mflash;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
     ex->ent.alpha = 1.0f;
@@ -386,10 +385,10 @@ void CG_AddMuzzleFX(const vec3_t origin, const vec3_t angles, cg_muzzlefx_t fx, 
     ex->ent.skinnum = skin;
     ex->ent.scale = scale;
     if (fx != MFLASH_BOOMER)
-        ex->ent.angles[2] = Q_rand() % 360;
+        ex->ent.angles.roll = Q_rand() % 360;
 }
 
-void CG_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
+void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first)
 {
     if (first) {
         int i;
@@ -404,9 +403,9 @@ void CG_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
     }
 
     explosion_t *ex = CG_AllocExplosion();
-    VectorCopy(origin, ex->ent.origin);
-    ex->lightcolor[0] = origin[2] + 16.0f;
-    vectoangles(dir, ex->ent.angles);
+    ex->ent.origin = origin;
+    ex->lightcolor.z = origin.z + 16.0f;
+    ex->ent.angles = vectoangles(dir);
     ex->type = ex_marker;
     ex->ent.flags = RF_NOSHADOW | RF_MINLIGHT | RF_TRANSLUCENT;
     ex->ent.alpha = 1.0f;
@@ -420,12 +419,12 @@ void CG_AddHelpPath(const vec3_t origin, const vec3_t dir, bool first)
 CG_SmokeAndFlash
 =================
 */
-void CG_SmokeAndFlash(const vec3_t origin)
+void CG_SmokeAndFlash(vec3_t origin)
 {
     explosion_t *ex;
 
     ex = CG_AllocExplosion();
-    VectorCopy(origin, ex->ent.origin);
+    ex->ent.origin = origin;
     ex->type = ex_misc;
     ex->frames = 4;
     ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW;
@@ -433,7 +432,7 @@ void CG_SmokeAndFlash(const vec3_t origin)
     ex->ent.model = cgs.models.smoke;
 
     ex = CG_AllocExplosion();
-    VectorCopy(origin, ex->ent.origin);
+    ex->ent.origin = origin;
     ex->type = ex_flash;
     ex->ent.flags = RF_FULLBRIGHT;
     ex->frames = 2;
@@ -516,9 +515,9 @@ static void CG_AddExplosions(void)
             frac = 1.0f - (cg.time - ex->start) / 1000.0f;
 
             if (frac > 0)
-                ent->origin[2] = ex->lightcolor[0] + powf(frac, 5.0f) * 512.0f;
+                ent->origin.z = ex->lightcolor.z + powf(frac, 5.0f) * 512.0f;
             else
-                ent->origin[2] = ex->lightcolor[0];
+                ent->origin.z = ex->lightcolor.z;
 
             trap_R_AddEntity(ent);
             continue;
@@ -529,9 +528,9 @@ static void CG_AddExplosions(void)
 
         if (ex->light) {
             dlight_t light = {
-                .origin = VectorInit(ent->origin),
+                .origin = ent->origin,
                 .radius = ex->light * ent->alpha,
-                .color  = VectorInit(ex->lightcolor),
+                .color  = ex->lightcolor,
                 .flags  = RF_NOSHADOW,  // TODO: get rid of this
             };
             trap_R_AddLight(&light);
@@ -615,15 +614,15 @@ static void CG_AddLasers(void)
 
         ent.skinnum = l->color;
         ent.flags = RF_TRANSLUCENT | RF_BEAM;
-        VectorCopy(l->start, ent.origin);
-        VectorCopy(l->end, ent.oldorigin);
+        ent.origin = l->start;
+        ent.oldorigin = l->end;
         ent.frame = l->width;
 
         trap_R_AddEntity(&ent);
     }
 }
 
-static void CG_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
+static void CG_ParseLaser(vec3_t start, vec3_t end, uint32_t colors)
 {
     laser_t *l;
 
@@ -631,8 +630,8 @@ static void CG_ParseLaser(const vec3_t start, const vec3_t end, uint32_t colors)
     if (!l)
         return;
 
-    VectorCopy(start, l->start);
-    VectorCopy(end, l->end);
+    l->start = start;
+    l->end = end;
     l->lifetime = 100;
     l->color = (colors >> ((Q_rand() % 4) * 8)) & 0xff;
     l->width = 4;
@@ -683,7 +682,7 @@ static void CG_ProcessSustain(void)
     }
 }
 
-static void CG_ParseWidow(const vec3_t pos)
+static void CG_ParseWidow(vec3_t pos)
 {
     cg_sustain_t    *s;
 
@@ -691,18 +690,18 @@ static void CG_ParseWidow(const vec3_t pos)
     if (!s)
         return;
 
-    VectorCopy(pos, s->org);
+    s->org = pos;
     s->endtime = cg.time + 2100;
     s->think = CG_Widowbeamout;
 }
 
-static void CG_ParseNuke(const vec3_t pos)
+static void CG_ParseNuke(vec3_t pos)
 {
     explosion_t     *ex;
     cg_sustain_t    *s;
 
-    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cgs.sounds.grenexp, 1, ATTN_NONE, 0);
-    trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+    trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cgs.sounds.grenexp, 1, ATTN_NONE, 0);
+    trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
 
     ex = CG_PlainExplosion(pos);
     ex->ent.model = cgs.models.explo4;
@@ -712,7 +711,7 @@ static void CG_ParseNuke(const vec3_t pos)
     if (!s)
         return;
 
-    VectorCopy(pos, s->org);
+    s->org = pos;
     s->endtime = cg.time + 1000;
     s->think = CG_Nukeblast;
 }
@@ -722,7 +721,7 @@ static void CG_ParseNuke(const vec3_t pos)
 static color_t  railcore_color = { U32_RED };
 static color_t  railspiral_color = { U32_BLUE };
 
-static void CG_RailCore(const vec3_t start, const vec3_t end)
+static void CG_RailCore(vec3_t start, vec3_t end)
 {
     laser_t *l;
 
@@ -735,31 +734,30 @@ static void CG_RailCore(const vec3_t start, const vec3_t end)
         cg_railcore_color.modified = false;
     }
 
-    VectorCopy(start, l->start);
-    VectorCopy(end, l->end);
+    l->start = start;
+    l->end = end;
     l->color = -1;
     l->lifetime = cg_railtrail_time.integer;
     l->width = cg_railcore_width.integer;
     l->rgba = railcore_color;
 }
 
-static void CG_RailSpiral(const vec3_t start, const vec3_t end)
+static void CG_RailSpiral(vec3_t start, vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    int         j;
     cparticle_t *p;
     vec3_t      right, up;
     int         i;
-    float       d, c, s;
+    float       d;
     vec3_t      dir;
 
-    VectorCopy(start, move);
-    VectorSubtract(end, start, vec);
-    len = VectorNormalize(vec);
+    move = start;
+    vec = Vec3_Sub(end, start);
+    len = Vec3_Normalize(&vec);
 
-    MakeNormalVectors(vec, right, up);
+    MakeNormalVectors(vec, &right, &up);
 
     if (cg_railspiral_color.modified) {
         COM_ParseColor(cg_railspiral_color.string, &railspiral_color);
@@ -772,29 +770,23 @@ static void CG_RailSpiral(const vec3_t start, const vec3_t end)
             return;
 
         p->time = cg.time;
-        VectorClear(p->accel);
+        p->accel = vec3_origin;
 
         d = i * 0.1f;
-        c = cosf(d);
-        s = sinf(d);
-
-        VectorScale(right, c, dir);
-        VectorMA(dir, s, up, dir);
+        dir = Vec3_Mix(right, up, cosf(d), sinf(d));
 
         p->alpha = 1.0f;
         p->alphavel = -1.0f / (cg_railtrail_time.value + frand() * 0.2f);
         p->color = -1;
         p->rgba = railspiral_color;
-        for (j = 0; j < 3; j++) {
-            p->org[j] = move[j] + dir[j] * cg_railspiral_radius.value;
-            p->vel[j] = dir[j] * 6;
-        }
+        p->org = Vec3_MA(move, cg_railspiral_radius.value, dir);
+        p->vel = Vec3_Scale(dir, 6);
 
-        VectorAdd(move, vec, move);
+        move = Vec3_Add(move, vec);
     }
 }
 
-static void CG_RailTrail(const vec3_t start, const vec3_t end, entity_event_t event)
+static void CG_RailTrail(vec3_t start, vec3_t end, entity_event_t event)
 {
     if (!cg_railtrail_type.integer && event != EV_RAILTRAIL2) {
         CG_OldRailTrail(start, end);
@@ -808,17 +800,22 @@ static void CG_RailTrail(const vec3_t start, const vec3_t end, entity_event_t ev
     }
 }
 
-static void dirtoangles(const vec3_t dir, vec3_t angles)
+static vec3_t dirtoangles(vec3_t dir)
 {
-    angles[0] = RAD2DEG(acosf(dir[2]));
-    if (dir[0])
-        angles[1] = RAD2DEG(atan2f(dir[1], dir[0]));
-    else if (dir[1] > 0)
-        angles[1] = 90;
-    else if (dir[1] < 0)
-        angles[1] = 270;
+    vec3_t angles;
+
+    angles.pitch = RAD2DEG(acosf(dir.z));
+    if (dir.x)
+        angles.yaw = RAD2DEG(atan2f(dir.y, dir.x));
+    else if (dir.y > 0)
+        angles.yaw = 90;
+    else if (dir.y < 0)
+        angles.yaw = 270;
     else
-        angles[1] = 0;
+        angles.yaw = 0;
+    angles.roll = 0;
+
+    return angles;
 }
 
 static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
@@ -826,35 +823,36 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     vec3_t  forward, right, ofs, dir, origin;
     float   scale;
 
-    AngleVectors(cent->current.angles, forward, right, NULL);
+    AngleVectors(cent->current.angles, &forward, &right, NULL);
 
     if (event == EV_BERSERK_SLAM) {
-        trap_S_StartSound(NULL, cent->current.number, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
-        trap_S_StartSound(NULL, cent->current.number, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
-        VectorSet(ofs, 20.0f, -14.3f, -21.0f);
-        VectorSet(dir, 0, 0, 1);
+        trap_S_StartSound(cent->current.number, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(cent->current.number, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
+        ofs = Vec3(20.0f, -14.3f, -21.0f);
+        dir = Vec3(0, 0, 1);
     } else {
-        VectorSet(ofs, 20, 0, 14);
-        VectorCopy(forward, dir);
+        ofs = Vec3(20, 0, 14);
+        dir = forward;
     }
 
     scale = cent->current.scale;
     if (!scale)
         scale = 1.0f;
 
-    VectorScale(ofs, scale, ofs);
-    origin[0] = cent->current.origin[0] + forward[0] * ofs[0] + right[0] * ofs[1];
-    origin[1] = cent->current.origin[1] + forward[1] * ofs[0] + right[1] * ofs[1];
-    origin[2] = cent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
+    ofs = Vec3_Scale(ofs, scale);
 
-    trace_t tr;
-    CG_Trace(&tr, cent->current.origin, NULL, NULL, origin, cent->current.number, MASK_SOLID);
+    origin = cent->current.origin;
+    origin = Vec3_MA(origin, ofs.forward, forward);
+    origin = Vec3_MA(origin, ofs.right, right);
+    origin.z += ofs.up;
+
+    trace_t tr = CG_TraceLine(cent->current.origin, origin, cent->current.number, MASK_SOLID);
 
     CG_BerserkSlamParticles(tr.endpos, dir);
 
     explosion_t *ex = CG_AllocExplosion();
-    VectorCopy(tr.endpos, ex->ent.origin);
-    dirtoangles(dir, ex->ent.angles);
+    ex->ent.origin = tr.endpos;
+    ex->ent.angles = dirtoangles(dir);
     ex->type = ex_misc;
     ex->ent.model = cgs.models.explode;
     ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
@@ -862,7 +860,7 @@ static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
     ex->ent.skinnum = 2;
     ex->start = cg.oldframe->servertime;
     ex->light = 550;
-    VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
+    ex->lightcolor = Vec3(0.19f, 0.41f, 0.75f);
     ex->frames = 4;
 }
 
@@ -878,17 +876,15 @@ static void CG_SoundEvent(centity_t *cent, uint32_t param)
         att = 0;
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
-    trap_S_StartSound(NULL, cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
+    trap_S_StartSound(cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
 static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
 {
     int count = (param >> 8) & 255;
-    const vec_t *pos = cent->current.origin;
-    vec3_t dir;
+    vec3_t pos = cent->current.origin;
+    vec3_t dir = ByteToDir(param & 255);
     int r;
-
-    ByteToDir(param & 255, dir);
 
     if (color == EV_SPLASH_ELECTRIC_N64) {
         CG_ParticleEffect(pos, dir, 0x6c, count / 2);
@@ -906,11 +902,11 @@ static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     if (color == EV_SPLASH_SPARKS) {
         r = Q_rand() & 3;
         if (r == 0)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark5, 1, ATTN_STATIC, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark5, 1, ATTN_STATIC, 0);
         else if (r == 1)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark6, 1, ATTN_STATIC, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark6, 1, ATTN_STATIC, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark7, 1, ATTN_STATIC, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark7, 1, ATTN_STATIC, 0);
     }
 }
 
@@ -918,13 +914,11 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
 {
     int color = (param >>  8) & 255;
     int count = (param >> 16) & 255;
-    const vec_t *pos = cent->current.origin;
-    vec3_t dir;
+    vec3_t pos = cent->current.origin;
+    vec3_t dir = ByteToDir(param & 255);
 
     if (cg_disable_particles.integer & NOPART_BLOOD && type < EV_GUNSHOT)
         return;
-
-    ByteToDir(param & 255, dir);
 
     switch (type) {
     case EV_BLOOD:
@@ -980,12 +974,12 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         break;
     case EV_HEATBEAM_SPARKS:
     case EV_HEATBEAM_STEAM:
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
         break;
     case EV_SCREEN_SPARKS:
     case EV_SHIELD_SPARKS:
     case EV_ELECTRIC_SPARKS:
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, 257, cgs.sounds.lashit, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, 257, cgs.sounds.lashit, 1, ATTN_NORM, 0);
         break;
     default:
         break;
@@ -994,29 +988,27 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     if (type == EV_GUNSHOT || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
         if (r == 1)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric1, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric1, 1, ATTN_NORM, 0);
         else if (r == 2)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric2, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric2, 1, ATTN_NORM, 0);
         else if (r == 3)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric3, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric3, 1, ATTN_NORM, 0);
     }
 
     if (type == EV_WELDING_SPARKS) {
         explosion_t *ex = CG_PlainExplosion(pos);
         ex->type = ex_light;
         ex->light = 100 + (Q_rand() % 75);
-        VectorSet(ex->lightcolor, 1.0f, 1.0f, 0.3f);
+        ex->lightcolor = Vec3(1.0f, 1.0f, 0.3f);
         ex->frames = 2;
     }
 }
 
 static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
 {
-    const vec_t *pos = cent->current.origin;
+    vec3_t pos = cent->current.origin;
+    vec3_t dir = ByteToDir(param & 255);
     explosion_t *ex;
-    vec3_t dir;
-
-    ByteToDir(param & 255, dir);
 
     switch (type) {
     case EV_EXPLOSION_PLAIN:
@@ -1028,19 +1020,19 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION1_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_NP:
         CG_PlainExplosion(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION1_BIG:
         ex = CG_PlainExplosion(pos);
         ex->ent.model = cgs.models.explo4;
         ex->ent.scale = 2.0f;
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_EXPLOSION2:
@@ -1051,39 +1043,39 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         if (type == EV_EXPLOSION2_NL)
             ex->light = 0;
         CG_ExplosionParticles(pos);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.grenexp, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLASTER:            // blaster hitting wall
     case EV_BLASTER2:           // green blaster hitting wall
     case EV_FLECHETTE:          // flechette
         ex = CG_AllocExplosion();
-        VectorCopy(pos, ex->ent.origin);
-        dirtoangles(dir, ex->ent.angles);
+        ex->ent.origin = pos;
+        ex->ent.angles = dirtoangles(dir);
         ex->type = ex_misc;
         ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
         switch (type) {
         case EV_BLASTER:
             CG_BlasterParticles(pos, dir);
-            ex->lightcolor[0] = 1;
-            ex->lightcolor[1] = 1;
+            ex->lightcolor.r = 1;
+            ex->lightcolor.g = 1;
             break;
         case EV_BLASTER2:
             CG_BlasterParticles2(pos, dir, 0xd0);
             ex->ent.skinnum = 1;
-            ex->lightcolor[1] = 1;
+            ex->lightcolor.g = 1;
             break;
         default:
             CG_BlasterParticles2(pos, dir, 0x6f);
             ex->ent.skinnum = 2;
-            VectorSet(ex->lightcolor, 0.19f, 0.41f, 0.75f);
+            ex->lightcolor = Vec3(0.19f, 0.41f, 0.75f);
             break;
         }
         ex->start = cg.oldframe->servertime;
         ex->light = 150;
         ex->ent.model = cgs.models.explode;
         ex->frames = 4;
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BLUEHYPERBLASTER:
@@ -1105,9 +1097,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_GRENADE_EXPLOSION_WATER)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.watrexp, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.watrexp, 1, ATTN_NORM, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.grenexp, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.grenexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_ROCKET_EXPLOSION:
@@ -1123,9 +1115,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
             ex->light = 200;
 
         if (type == EV_ROCKET_EXPLOSION_WATER)
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.watrexp, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.watrexp, 1, ATTN_NORM, 0);
         else
-            trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_EXPLOSION:
@@ -1139,7 +1131,7 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     case EV_TRACKER_EXPLOSION:
         CG_ColorFlash(pos, 0, 150, -1, -1, -1);
         CG_ColorExplosionParticles(pos, 0, 1);
-        trap_S_StartSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.disrexp, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.disrexp, 1, ATTN_NORM, 0);
         break;
 
     default:
@@ -1156,7 +1148,7 @@ static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, 
     else
         ci = &cgs.baseclientinfo;
 
-    trap_S_StartSound(NULL, number, channel, ci->sounds[index], volume, attenuation, 0);
+    trap_S_StartSound(number, channel, ci->sounds[index], volume, attenuation, 0);
 }
 
 static void CG_PainEvent(int number, int health)
@@ -1177,7 +1169,7 @@ static void CG_PainEvent(int number, int health)
 
 static void CG_StairStep(centity_t *cent)
 {
-    float step_height = cent->current.origin[2] - cent->prev.origin[2];
+    float step_height = cent->current.origin.z - cent->prev.origin.z;
     float prev_step   = 0;
 
     // check for stepping up before a previous step is completed
@@ -1190,7 +1182,7 @@ static void CG_StairStep(centity_t *cent)
 
     // step local view too for demos if this is player entity
     if (cent->current.number == cg.frame->ps.clientnum && !CG_PredictionEnabled()) {
-        step_height = cg.frame->ps.origin[2] - cg.oldframe->ps.origin[2];
+        step_height = cg.frame->ps.origin.z - cg.oldframe->ps.origin.z;
         prev_step   = 0;
 
         // check for stepping up before a previous step is completed
@@ -1207,17 +1199,16 @@ static void CG_StairStep(centity_t *cent)
 static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
 {
     entity_state_t *s = &cent->current;
-    const vec_t *start = s->old_origin;
+    vec3_t start = s->old_origin;
     int number = s->number;
-    vec3_t dir;
 
     switch (event) {
     case EV_ITEM_RESPAWN:
-        trap_S_StartSound(NULL, number, CHAN_WEAPON, trap_S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
+        trap_S_StartSound(number, CHAN_WEAPON, trap_S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);
         CG_ItemRespawnParticles(s->origin);
         break;
     case EV_PLAYER_TELEPORT:
-        trap_S_StartSound(NULL, number, CHAN_WEAPON, trap_S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
+        trap_S_StartSound(number, CHAN_WEAPON, trap_S_RegisterSound("misc/tele1.wav"), 1, ATTN_IDLE, 0);
         CG_TeleportParticles(s->origin);
         break;
     case EV_FOOTSTEP:
@@ -1238,7 +1229,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         else if (param > 30)
             CG_SexedSound(number, CHAN_AUTO, SS_FALL2, 1, ATTN_NORM);
         else
-            trap_S_StartSound(NULL, number, CHAN_AUTO, cgs.sounds.land1, 1, ATTN_NORM, 0);
+            trap_S_StartSound(number, CHAN_AUTO, cgs.sounds.land1, 1, ATTN_NORM, 0);
         if (number == cg.frame->ps.clientnum) {
             cg.fall_time = cg.oldframe->servertime + FALL_TIME;
             cg.fall_value = min(param / 2, 40);
@@ -1274,8 +1265,8 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
     case EV_EARTHQUAKE:
         if (cg.quake_time < cg.time) {
-            VectorSet(cg.quake_angles[0], crand(), crand(), crand());
-            VectorSet(cg.quake_angles[1], crand(), crand(), crand());
+            cg.quake_angles[0] = Vec3_CenterRandom();
+            cg.quake_angles[1] = Vec3_CenterRandom();
             cg.quake_time = cg.oldframe->servertime + QUAKE_TIME;
         }
         break;
@@ -1287,7 +1278,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     case EV_RAILTRAIL:
     case EV_RAILTRAIL2:
         CG_RailTrail(start, s->origin, event);
-        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.railg, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.railg, 1, ATTN_NORM, 0);
         break;
 
     case EV_BUBBLETRAIL:
@@ -1296,7 +1287,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
 
     case EV_BUBBLETRAIL2:
         CG_BubbleTrail2(start, s->origin, 8);
-        trap_S_StartSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(start, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
         break;
 
     case EV_BFG_LASER:
@@ -1321,13 +1312,13 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
 
     case EV_POWER_SPLASH:
-        trap_S_StartSound(NULL, number, CHAN_AUTO, trap_S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(number, CHAN_AUTO, trap_S_RegisterSound("misc/mon_power2.wav"), 1, ATTN_NORM, 0);
         CG_PowerSplash(cent);
         break;
 
     case EV_BOSSTPORT:          // boss teleporting to station
         CG_BigTeleportParticles(s->origin);
-        trap_S_StartSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
+        trap_S_PositionedSound(s->origin, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("misc/bigtele.wav"), 1, ATTN_NONE, 0);
         break;
 
     case EV_NUKEBLAST:
@@ -1335,8 +1326,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
 
     case EV_CHAINFIST_SMOKE:
-        VectorSet(dir, 0, 0, 1);
-        CG_ParticleSmokeEffect(s->origin, dir, 0, 20, 20);
+        CG_ParticleSmokeEffect(s->origin, Vec3(0, 0, 1), 0, 20, 20);
         break;
 
     case EV_TELEPORT_EFFECT:
@@ -1374,8 +1364,7 @@ void CG_EntityEffects(centity_t *cent)
         int color = (param >> 8) & 0xff;
         int count = (param >> 16) & 0xff;
         int magnitude = (param >> 24) & 0xff;
-        vec3_t dir;
-        ByteToDir(param & 0xff, dir);
+        vec3_t dir = ByteToDir(param & 0xff);
         CG_ParticleSteamEffect(s->origin, dir, color, count, magnitude);
     }
 }

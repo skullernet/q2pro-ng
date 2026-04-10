@@ -70,7 +70,7 @@ void SP_target_mal_laser(edict_t *self)
     else if (self->spawnflags & SPAWNFLAG_LASER_ORANGE)
         self->s.skinnum = 0xe0e1e2e3;
 
-    G_SetMovedir(self->s.angles, self->movedir);
+    G_SetMovedir(self);
 
     if (!self->delay)
         self->delay = 0.1f;
@@ -81,8 +81,7 @@ void SP_target_mal_laser(edict_t *self)
     if (!self->dmg)
         self->dmg = 5;
 
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
 
     self->nextthink = level.time + SEC(self->delay);
     self->think = mal_laser_think;

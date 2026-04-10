@@ -6,50 +6,50 @@
 // monster weapons
 //
 
-void monster_fire_bullet(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int kick, int hspread,
+void monster_fire_bullet(edict_t *self, vec3_t start, vec3_t dir, int damage, int kick, int hspread,
                          int vspread, monster_muzzleflash_id_t flashtype)
 {
-    fire_bullet(self, start, dir, damage, kick, hspread, vspread, (mod_t) { MOD_UNKNOWN });
+    fire_bullet(self, start, dir, damage, kick, hspread, vspread, MOD_UNKNOWN);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread,
+void monster_fire_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread,
                           int vspread, int count, monster_muzzleflash_id_t flashtype)
 {
-    fire_shotgun(self, start, aimdir, damage, kick, hspread, vspread, count, (mod_t) { MOD_UNKNOWN });
+    fire_shotgun(self, start, aimdir, damage, kick, hspread, vspread, count, MOD_UNKNOWN);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-edict_t *monster_fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed,
+edict_t *monster_fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                               monster_muzzleflash_id_t flashtype, effects_t effect)
 {
-    edict_t *e = fire_blaster(self, start, dir, damage, speed, effect, (mod_t) { MOD_UNKNOWN });
+    edict_t *e = fire_blaster(self, start, dir, damage, speed, effect, MOD_UNKNOWN);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
     return e;
 }
 
-void monster_fire_flechette(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed,
+void monster_fire_flechette(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                             monster_muzzleflash_id_t flashtype)
 {
     fire_flechette(self, start, dir, damage, speed, damage / 2);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed,
+void monster_fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed,
                           monster_muzzleflash_id_t flashtype, float right_adjust, float up_adjust)
 {
-    fire_grenade(self, start, aimdir, damage, speed, SEC(2.5f), damage + 40, right_adjust, up_adjust, true);
+    fire_grenade(self, start, aimdir, damage, speed, SEC(2.5f), damage + 40, right_adjust, up_adjust);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed,
+void monster_fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                          monster_muzzleflash_id_t flashtype)
 {
     fire_rocket(self, start, dir, damage, speed, damage + 20, damage);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-bool monster_fire_railgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick,
+bool monster_fire_railgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick,
                           monster_muzzleflash_id_t flashtype)
 {
     if (trap_PointContents(start) & MASK_SOLID)
@@ -60,7 +60,7 @@ bool monster_fire_railgun(edict_t *self, const vec3_t start, const vec3_t aimdir
     return hit;
 }
 
-void monster_fire_bfg(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed, int kick,
+void monster_fire_bfg(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, int kick,
                       float damage_radius, monster_muzzleflash_id_t flashtype)
 {
     fire_bfg(self, start, aimdir, damage, speed, damage_radius);
@@ -72,11 +72,11 @@ void M_BossPredictiveRocket(edict_t *self, const float *offset, float speed, mon
     vec3_t forward, right;
     vec3_t start, dir;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
     for (int i = 0; i < 4; i++, mz++) {
-        M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right, start);
-        PredictAim(self, self->enemy, start, speed, false, offset[i], dir, NULL);
+        start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
+        M_PredictAim(self, self->enemy, start, speed, false, offset[i], &dir, NULL);
         monster_fire_rocket(self, start, dir, 50, speed, mz);
     }
 }
@@ -86,65 +86,61 @@ void M_BossRocket(edict_t *self, monster_muzzleflash_id_t mz)
     vec3_t forward, right;
     vec3_t start, dir, vec;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
     static const float offset[4] = { -15, 0, 0, -15 };
     static const float spread[4] = { 0.4f, 0.025f, -0.025f, -0.4f };
 
     for (int i = 0; i < 4; i++, mz++) {
-        M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right, start);
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] += offset[i];
-        VectorSubtract(vec, start, dir);
-        VectorNormalize(dir);
-        VectorMA(dir, spread[i], right, dir);
-        VectorNormalize(dir);
+        start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
+        vec = self->enemy->s.origin;
+        vec.z += offset[i];
+        dir = Vec3_Direction(vec, start);
+        dir = Vec3_MA(dir, spread[i], right);
+        dir = Vec3_Normalize(dir);
         monster_fire_rocket(self, start, dir, 50, 500, mz);
     }
 }
 
 // [Paril-KEX]
-void M_ProjectFlashSource(edict_t *self, const vec3_t g_offset, const vec3_t forward, const vec3_t right, vec3_t start)
+vec3_t M_ProjectFlashSource(edict_t *self, vec3_t offset, vec3_t forward, vec3_t right)
 {
-    float scale = self->s.scale ? self->s.scale : 1.0f;
-    vec3_t offset;
-    VectorScale(g_offset, scale, offset);
-    G_ProjectSource(self->s.origin, offset, forward, right, start);
+    if (self->s.scale)
+        offset = Vec3_Scale(offset, self->s.scale);
+    return G_ProjectSource(self->s.origin, offset, forward, right);
 }
 
 // [Paril-KEX] check if shots fired from the given offset
 // might be blocked by something
-bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
+bool M_CheckClearShotEx(edict_t *self, vec3_t offset, vec3_t *start)
 {
     // no enemy, just do whatever
     if (!self->enemy)
         return false;
 
     vec3_t f, r;
-    vec3_t real_angles = { self->s.angles[0], self->ideal_yaw, 0 };
-    AngleVectors(real_angles, f, r, NULL);
-    M_ProjectFlashSource(self, offset, f, r, start);
+    vec3_t real_angles = { self->s.angles.pitch, self->ideal_yaw, 0 };
+    AngleVectors(real_angles, &f, &r, NULL);
+    *start = M_ProjectFlashSource(self, offset, f, r);
 
     vec3_t target;
     bool is_blind = self->monsterinfo.attack_state == AS_BLIND || (self->monsterinfo.aiflags & (AI_MANUAL_STEERING | AI_LOST_SIGHT));
 
     if (is_blind)
-        VectorCopy(self->monsterinfo.blind_fire_target, target);
+        target = self->monsterinfo.blind_fire_target;
     else {
-        VectorCopy(self->enemy->s.origin, target);
-        target[2] += self->enemy->viewheight;
+        target = self->enemy->s.origin;
+        target.z += self->enemy->viewheight;
     }
 
-    trace_t tr;
-    trap_Trace(&tr, start, NULL, NULL, target, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+    trace_t tr = G_TraceLine(*start, target, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
     edict_t *hit = &g_edicts[tr.entnum];
 
     if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
         return true;
 
     if (!is_blind) {
-        trap_Trace(&tr, start, NULL, NULL, self->enemy->s.origin,
-                   self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
+        tr = G_TraceLine(*start, self->enemy->s.origin, self->s.number, MASK_PROJECTILE & ~CONTENTS_DEADMONSTER);
         hit = &g_edicts[tr.entnum];
 
         if (hit == self->enemy || hit->client || (tr.fraction > 0.8f && !tr.startsolid))
@@ -154,10 +150,10 @@ bool M_CheckClearShotEx(edict_t *self, const vec3_t offset, vec3_t start)
     return false;
 }
 
-bool M_CheckClearShot(edict_t *self, const vec3_t offset)
+bool M_CheckClearShot(edict_t *self, vec3_t offset)
 {
     vec3_t start;
-    return M_CheckClearShotEx(self, offset, start);
+    return M_CheckClearShotEx(self, offset, &start);
 }
 
 void M_CheckGround(edict_t *ent, contents_t mask)
@@ -172,27 +168,26 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     if (ent->flags & (FL_SWIM | FL_FLY))
         return;
 
-    if ((ent->velocity[2] * ent->gravityVector[2]) < -100) { // PGM
+    if ((ent->velocity.z * ent->gravityVector.z) < -100) { // PGM
         ent->groundentity = NULL;
         return;
     }
 
     // if the hull point one-quarter unit down is solid the entity is on ground
-    point[0] = ent->s.origin[0];
-    point[1] = ent->s.origin[1];
-    point[2] = ent->s.origin[2] + (0.25f * ent->gravityVector[2]); // PGM
+    point = ent->s.origin;
+    point.z += (0.25f * ent->gravityVector.z); // PGM
 
-    trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, point, ent->s.number, mask);
+    trace = G_Trace(ent->s.origin, point, ent->r.box, ent->s.number, mask);
 
     // check steepness
     // PGM
-    if (ent->gravityVector[2] < 0) { // normal gravity
-        if (trace.plane.normal[2] < 0.7f && !trace.startsolid) {
+    if (ent->gravityVector.z < 0) { // normal gravity
+        if (trace.plane.normal.z < 0.7f && !trace.startsolid) {
             ent->groundentity = NULL;
             return;
         }
     } else { // inverted gravity
-        if (trace.plane.normal[2] > -0.7f && !trace.startsolid) {
+        if (trace.plane.normal.z > -0.7f && !trace.startsolid) {
             ent->groundentity = NULL;
             return;
         }
@@ -200,27 +195,24 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     // PGM
 
     if (!trace.startsolid && !trace.allsolid) {
-        VectorCopy(trace.endpos, ent->s.origin);
+        ent->s.origin = trace.endpos;
         ent->groundentity = &g_edicts[trace.entnum];
         ent->groundentity_linkcount = ent->groundentity->r.linkcount;
-        ent->velocity[2] = 0;
+        ent->velocity.z = 0;
     }
 }
 
-void M_CategorizePosition(edict_t *self, const vec3_t in_point, water_level_t *waterlevel, contents_t *watertype)
+void M_CategorizePosition(edict_t *self, vec3_t point, water_level_t *waterlevel, contents_t *watertype)
 {
-    vec3_t     point;
     contents_t cont;
 
     //
     // get waterlevel
     //
-    point[0] = in_point[0];
-    point[1] = in_point[1];
-    if (self->gravityVector[2] > 0)
-        point[2] = in_point[2] + self->r.maxs[2] - 1;
+    if (self->gravityVector.z > 0)
+        point.z += self->r.box.maxs.z - 1;
     else
-        point[2] = in_point[2] + self->r.mins[2] + 1;
+        point.z += self->r.box.mins.z + 1;
     cont = trap_PointContents(point);
 
     if (!(cont & MASK_WATER)) {
@@ -231,13 +223,13 @@ void M_CategorizePosition(edict_t *self, const vec3_t in_point, water_level_t *w
 
     *watertype = cont;
     *waterlevel = WATER_FEET;
-    point[2] += 26;
+    point.z += 26;
     cont = trap_PointContents(point);
     if (!(cont & MASK_WATER))
         return;
 
     *waterlevel = WATER_WAIST;
-    point[2] += 22;
+    point.z += 22;
     cont = trap_PointContents(point);
     if (cont & MASK_WATER)
         *waterlevel = WATER_UNDER;
@@ -248,7 +240,7 @@ bool M_ShouldReactToPain(edict_t *self, mod_t mod)
     if (self->monsterinfo.aiflags & (AI_DUCKED | AI_COMBAT_POINT))
         return false;
 
-    return mod.id == MOD_CHAINFIST || skill.integer < 3;
+    return mod == MOD_CHAINFIST || skill.integer < 3;
 }
 
 void M_WorldEffects(edict_t *ent)
@@ -272,7 +264,7 @@ void M_WorldEffects(edict_t *ent)
 
         if (take_drown_damage && ent->pain_debounce_time < level.time) {
             dmg = 2 + (int)(2 * floorf(TO_SEC(level.time - ent->air_finished)));
-            T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, min(dmg, 15), 0, DAMAGE_NO_ARMOR, (mod_t) { MOD_WATER });
+            T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, min(dmg, 15), 0, DAMAGE_NO_ARMOR, MOD_WATER);
             ent->pain_debounce_time = level.time + SEC(1);
         }
     }
@@ -286,13 +278,13 @@ void M_WorldEffects(edict_t *ent)
         if ((ent->watertype & CONTENTS_LAVA) && !(ent->flags & FL_IMMUNE_LAVA)) {
             if (ent->damage_debounce_time < level.time) {
                 ent->damage_debounce_time = level.time + SEC(0.1f);
-                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 10 * ent->waterlevel, 0, DAMAGE_NONE, (mod_t) { MOD_LAVA });
+                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 10 * ent->waterlevel, 0, DAMAGE_NONE, MOD_LAVA);
             }
         }
         if ((ent->watertype & CONTENTS_SLIME) && !(ent->flags & FL_IMMUNE_SLIME)) {
             if (ent->damage_debounce_time < level.time) {
                 ent->damage_debounce_time = level.time + SEC(0.1f);
-                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 4 * ent->waterlevel, 0, DAMAGE_NONE, (mod_t) { MOD_SLIME });
+                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 4 * ent->waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
             }
         }
 
@@ -316,33 +308,34 @@ void M_WorldEffects(edict_t *ent)
     }
 }
 
-bool M_droptofloor_generic(vec3_t origin, const vec3_t mins, const vec3_t maxs, bool ceiling, int ignore, contents_t mask, bool allow_partial)
+bool M_droptofloor_generic(vec3_t *origin, box3_t box, bool ceiling, int ignore, contents_t mask, bool allow_partial)
 {
+    vec3_t  start = *origin;
     vec3_t  end;
     trace_t trace;
 
     // PGM
-    trap_Trace(&trace, origin, mins, maxs, origin, ignore, mask);
+    trace = G_Trace(start, start, box, ignore, mask);
     if (trace.startsolid) {
         if (!ceiling)
-            origin[2] += 1;
+            start.z += 1;
         else
-            origin[2] -= 1;
+            start.z -= 1;
     }
 
-    VectorCopy(origin, end);
+    end = start;
     if (!ceiling)
-        end[2] -= 256;
+        end.z -= 256;
     else
-        end[2] += 256;
+        end.z += 256;
     // PGM
 
-    trap_Trace(&trace, origin, mins, maxs, end, ignore, mask);
+    trace = G_Trace(start, end, box, ignore, mask);
 
     if (trace.fraction == 1 || trace.allsolid || (!allow_partial && trace.startsolid))
         return false;
 
-    VectorCopy(trace.endpos, origin);
+    *origin = trace.endpos;
     return true;
 }
 
@@ -351,12 +344,10 @@ bool M_droptofloor(edict_t *ent)
     contents_t mask = G_GetClipMask(ent);
 
     if (!(ent->spawnflags & SPAWNFLAG_MONSTER_NO_DROP)) {
-        if (!M_droptofloor_generic(ent->s.origin, ent->r.mins, ent->r.maxs, ent->gravityVector[2] > 0, ent->s.number, mask, true))
+        if (!M_droptofloor_generic(&ent->s.origin, ent->r.box, ent->gravityVector.z > 0, ent->s.number, mask, true))
             return false;
     } else {
-        trace_t tr;
-        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, ent->s.origin, ent->s.number, mask);
-        if (tr.startsolid)
+        if (G_Trace(ent->s.origin, ent->s.origin, ent->r.box, ent->s.number, mask).startsolid)
             return false;
     }
 
@@ -613,7 +604,7 @@ void M_ProcessPain(edict_t *e)
             e->s.frame -= irandom2(1, 3);
 
             if (e->groundentity && e->movetype == MOVETYPE_TOSS && !(e->flags & FL_STATIONARY))
-                e->s.angles[1] += brandom() ? 4.5f : -4.5f;
+                e->s.angles.yaw += brandom() ? 4.5f : -4.5f;
         }
     } else
         e->pain(e, e->monsterinfo.damage_attacker, e->monsterinfo.damage_knockback, e->monsterinfo.damage_blood, e->monsterinfo.damage_mod);
@@ -697,10 +688,9 @@ static bool projectile_infront(edict_t *self, edict_t *other)
     vec3_t vec;
     vec3_t forward;
 
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorSubtract(other->s.origin, self->s.origin, vec);
-    VectorNormalize(vec);
-    return DotProduct(vec, forward) > 0.35f;
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    vec = Vec3_Direction(other->s.origin, self->s.origin);
+    return Vec3_Dot(vec, forward) > 0.35f;
 }
 
 // [Paril-KEX] active checking for projectiles to dodge
@@ -710,14 +700,9 @@ static void M_CheckDodge(edict_t *self)
     if (self->monsterinfo.dodge_time > level.time)
         return;
 
-    vec3_t mins, maxs;
-    for (int i = 0; i < 3; i++) {
-        mins[i] = self->r.absmin[i] - 512;
-        maxs[i] = self->r.absmax[i] + 512;
-    }
-
     int list[MAX_EDICTS_OLD];
-    int count = trap_BoxEdicts(mins, maxs, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(Box3_Expand(self->r.absbox, 512), list, q_countof(list), AREA_SOLID);
+
     for (int i = 0; i < count; i++) {
         edict_t *ent = g_edicts + list[i];
 
@@ -726,7 +711,7 @@ static void M_CheckDodge(edict_t *self)
             continue;
 
         // not moving
-        if (VectorLengthSquared(ent->velocity) < 16)
+        if (Vec3_LengthSquared(ent->velocity) < 16)
             continue;
 
         // projectile is behind us, we can't see it
@@ -734,13 +719,11 @@ static void M_CheckDodge(edict_t *self)
             continue;
 
         // will it hit us within 1 second? gives us enough time to dodge
-        vec3_t pos;
-        VectorAdd(ent->s.origin, ent->velocity, pos);
-        trace_t tr;
-        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, pos, ent->s.number, ent->clipmask);
+        vec3_t pos = Vec3_Add(ent->s.origin, ent->velocity);
+        trace_t tr = G_Trace(ent->s.origin, pos, ent->r.box, ent->s.number, ent->clipmask);
 
         if (tr.entnum == self->s.number) {
-            gtime_t eta = SEC(Distance(tr.endpos, ent->s.origin) / VectorLength(ent->velocity));
+            gtime_t eta = SEC(Vec3_Distance(tr.endpos, ent->s.origin) / Vec3_Length(ent->velocity));
             self->monsterinfo.dodge(self, &g_edicts[ent->r.ownernum], eta, &tr,
                                     (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));
             break;
@@ -807,7 +790,7 @@ void monster_start_go(edict_t *self);
 
 void THINK(monster_triggered_spawn)(edict_t *self)
 {
-    self->s.origin[2] += 1;
+    self->s.origin.z += 1;
 
     self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_STEP;
@@ -1014,7 +997,7 @@ bool monster_start(edict_t *self)
     self->r.svflags &= ~SVF_DEADMONSTER;
     self->flags &= ~FL_ALIVE_KNOCKBACK_ONLY;
     self->flags |= FL_COOP_HEALTH_SCALE;
-    VectorCopy(self->s.origin, self->s.old_origin);
+    self->s.old_origin = self->s.origin;
     self->monsterinfo.initial_power_armor_type = self->monsterinfo.power_armor_type;
     self->monsterinfo.max_power_armor_power = self->monsterinfo.power_armor_power;
 
@@ -1026,13 +1009,12 @@ bool monster_start(edict_t *self)
 
     if (self->s.scale) {
         self->monsterinfo.scale *= self->s.scale;
-        VectorScale(self->r.mins, self->s.scale, self->r.mins);
-        VectorScale(self->r.maxs, self->s.scale, self->r.maxs);
+        self->r.box = Box3_Scale(self->r.box, self->s.scale);
         self->mass *= self->s.scale;
     }
 
     if (level.is_psx)
-        self->s.origin[2] -= self->r.mins[2] * (1 - PSX_PHYSICS_SCALAR);
+        self->s.origin.z -= self->r.box.mins.z * (1 - PSX_PHYSICS_SCALAR);
 
     // set combat style if unset
     if (self->monsterinfo.combat_style == COMBAT_UNKNOWN) {
@@ -1053,13 +1035,13 @@ bool monster_start(edict_t *self)
         self->s.frame = irandom2(self->monsterinfo.active_move->firstframe, self->monsterinfo.active_move->lastframe + 1);
 
     // PMM - get this so I don't have to do it in all of the monsters
-    self->monsterinfo.base_height = self->r.maxs[2];
+    self->monsterinfo.base_height = self->r.box.maxs.z;
 
     // Paril: monsters' old default viewheight (25)
     // is all messed up for certain monsters. Calculate
     // from maxs to make a bit more sense.
     if (!self->viewheight)
-        self->viewheight = self->r.maxs[2] - 8;
+        self->viewheight = self->r.box.maxs.z - 8;
 
     // PMM - clear these
     self->monsterinfo.quad_time = 0;
@@ -1078,12 +1060,12 @@ bool monster_start(edict_t *self)
 
 stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 {
-    stuck_result_t result = G_FixStuckObject_Generic(check, self->r.mins, self->r.maxs, self->s.number, G_GetClipMask(self), trap_Trace);
+    stuck_result_t result = PM_FixStuckObject_Generic(&check, self->r.box, self->s.number, G_GetClipMask(self), trap_Trace);
 
     if (result == NO_GOOD_POSITION)
         return result;
 
-    VectorCopy(check, self->s.origin);
+    self->s.origin = check;
 
     if (result == STUCK_FIXED)
         G_DPrintf("fixed stuck %s\n", etos(self));
@@ -1093,14 +1075,10 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check)
 
 static void G_FixStuckMonster(edict_t *self)
 {
-    vec3_t check;
-    VectorCopy(self->s.origin, check);
+    vec3_t check = self->s.origin;
 
     if ((self->monsterinfo.aiflags & AI_GOOD_GUY) || (self->flags & (FL_FLY | FL_SWIM))) {
-        trace_t tr;
-        trap_Trace(&tr, self->s.origin, self->r.mins, self->r.maxs,
-                   self->s.origin, self->s.number, MASK_MONSTERSOLID);
-        if (!tr.startsolid)
+        if (!G_Trace(self->s.origin, self->s.origin, self->r.box, self->s.number, MASK_MONSTERSOLID).startsolid)
             return;
     } else {
         if (M_droptofloor(self) && M_walkmove(self, 0, 0))
@@ -1125,7 +1103,7 @@ void monster_start_go(edict_t *self)
     if (self->health <= 0)
         return;
 
-    VectorCopy(self->s.origin, self->s.old_origin);
+    self->s.old_origin = self->s.origin;
 
     // check for target to combat_point and change to combattarget
     if (self->target) {
@@ -1168,9 +1146,8 @@ void monster_start_go(edict_t *self)
             if (!spawn_dead)
                 self->monsterinfo.stand(self);
         } else if (strcmp(self->movetarget->classname, "path_corner") == 0) {
-            vec3_t v;
-            VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
-            self->ideal_yaw = self->s.angles[YAW] = vectoyaw(v);
+            vec3_t v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
+            self->ideal_yaw = self->s.angles.yaw = vectoyaw(v);
             if (!spawn_dead)
                 self->monsterinfo.walk(self);
             self->target = NULL;
@@ -1190,11 +1167,10 @@ void monster_start_go(edict_t *self)
         // to spawn dead, we'll mimic them dying naturally
         self->health = 0;
 
-        vec3_t tmp;
-        VectorCopy(self->s.origin, tmp);
+        vec3_t tmp = self->s.origin;
 
         if (self->die)
-            self->die(self, self, self, 0, vec3_origin, (mod_t) { MOD_SUICIDE });
+            self->die(self, self, self, 0, vec3_origin, MOD_SUICIDE);
 
         if (!self->r.inuse)
             return;
@@ -1227,7 +1203,7 @@ void monster_start_go(edict_t *self)
         else
             self->s.frame = move->lastframe;
 
-        VectorCopy(tmp, self->s.origin);
+        self->s.origin = tmp;
         trap_LinkEntity(self);
 
         self->monsterinfo.aiflags &= ~AI_SPAWNED_DEAD;

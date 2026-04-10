@@ -119,28 +119,28 @@ void BG_ParseSkyParams(const char *s, sky_params_t *sky)
     COM_ParseToken(&s, sky->name, sizeof(sky->name));
     sky->rotate     = Q_atof(COM_Parse(&s));
     sky->autorotate = Q_atoi(COM_Parse(&s));
-    sky->axis[0]    = Q_atof(COM_Parse(&s));
-    sky->axis[1]    = Q_atof(COM_Parse(&s));
-    sky->axis[2]    = Q_atof(COM_Parse(&s));
+    sky->axis.x     = Q_atof(COM_Parse(&s));
+    sky->axis.y     = Q_atof(COM_Parse(&s));
+    sky->axis.z     = Q_atof(COM_Parse(&s));
 }
 
 const char *BG_FormatSkyParams(const sky_params_t *sky)
 {
     return va("\"%s\" %f %d %f %f %f",
               sky->name, sky->rotate, sky->autorotate,
-              sky->axis[0], sky->axis[1], sky->axis[2]);
+              sky->axis.x, sky->axis.y, sky->axis.z);
 }
 
-void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend)
+void BG_AddBlend(float r, float g, float b, float a, vec4_t *v_blend)
 {
     if (a <= 0)
         return;
 
-    float a2 = v_blend[3] + (1 - v_blend[3]) * a; // new total alpha
-    float a3 = v_blend[3] / a2; // fraction of color from old
+    float a2 = v_blend->a + (1 - v_blend->a) * a; // new total alpha
+    float a3 = v_blend->a / a2; // fraction of color from old
 
-    v_blend[0] = v_blend[0] * a3 + r * (1 - a3);
-    v_blend[1] = v_blend[1] * a3 + g * (1 - a3);
-    v_blend[2] = v_blend[2] * a3 + b * (1 - a3);
-    v_blend[3] = a2;
+    v_blend->r = v_blend->r * a3 + r * (1 - a3);
+    v_blend->g = v_blend->g * a3 + g * (1 - a3);
+    v_blend->b = v_blend->b * a3 + b * (1 - a3);
+    v_blend->a = a2;
 }

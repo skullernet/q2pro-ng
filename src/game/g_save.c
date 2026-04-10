@@ -67,6 +67,8 @@ typedef struct save_field_s {
     uint32_t: F_UINT, \
     float: F_FLOAT, \
     float *: F_FLOAT, \
+    vec3_t: F_FLOAT, \
+    vec4_t: F_FLOAT, \
     char *: F_ZSTRING, \
     const char *: F_ZSTRING, \
     byte *: F_BYTE, \
@@ -74,8 +76,7 @@ typedef struct save_field_s {
     int64_t: F_INT64, \
     uint64_t: F_UINT64, \
     const gitem_t *: F_ITEM, \
-    edict_t *: F_EDICT, \
-    mod_t: F_INT)
+    edict_t *: F_EDICT)
 
 // hack to distinguish between char * and char []
 #define KIND(name) _Generic(&FIELD(name), \
@@ -88,6 +89,8 @@ typedef struct save_field_s {
     float *: sizeof(FIELD(name)) / sizeof(float), \
     byte *: sizeof(FIELD(name)), \
     char *: sizeof(FIELD(name)), \
+    vec3_t: 3, \
+    vec4_t: 4, \
     default: 1)
 
 // ditto
@@ -159,8 +162,8 @@ static const save_field_t reinforcement_t_fields[] = {
     F(classname),
     F(strength),
     F(radius),
-    F(mins),
-    F(maxs),
+    F(box.mins),
+    F(box.maxs),
     { 0 }
 };
 #undef STRUCT
@@ -349,8 +352,8 @@ static const save_field_t edict_t_fields[] = {
 
     F(r.linkcount),
     F(r.svflags),
-    F(r.mins),
-    F(r.maxs),
+    F(r.box.mins),
+    F(r.box.maxs),
     F(r.solid),
     F(r.ownernum),
     F(r.clientmask),
@@ -361,7 +364,6 @@ static const save_field_t edict_t_fields[] = {
     F(flags),
 
     F(model),
-    F(freetime),
 
     F(message),
     F(classname),
@@ -504,7 +506,6 @@ static const save_field_t edict_t_fields[] = {
     F(crosslevel_flags),
     F(no_gravity_time),
     F(vision_cone),
-    F(free_after_event),
     { 0 }
 };
 #undef STRUCT
@@ -1641,7 +1642,7 @@ qvm_exported void G_WriteLevel(qhandle_t handle)
     begin_block("entities");
     for (i = 0; i < level.num_edicts; i++) {
         ent = &g_edicts[i];
-        if (!ent->r.inuse)
+        if (!ent->r.inuse || ent->free_after_event)
             continue;
         write_fields(va("%d", i), edict_t_fields, nullent, ent);
     }

@@ -33,7 +33,7 @@ void CG_CheckPredictionError(void)
         return;
 
     if (sv_paused.integer) {
-        VectorClear(cg.prediction_error);
+        cg.prediction_error = vec3_origin;
         return;
     }
 
@@ -44,23 +44,23 @@ void CG_CheckPredictionError(void)
     cmd = cg.frame->cmdnum;
 
     // compare what the server returned with what we had predicted it to be
-    VectorSubtract(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK], delta);
+    delta = Vec3_Sub(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK]);
 
     // save the prediction error for interpolation
-    len = fabsf(delta[0]) + fabsf(delta[1]) + fabsf(delta[2]);
+    len = fabsf(delta.x) + fabsf(delta.y) + fabsf(delta.z);
     if (len < 0x1p-5f || len > 80.0f) {
         // > 80 world units is a teleport or something
-        VectorClear(cg.prediction_error);
+        cg.prediction_error = vec3_origin;
         return;
     }
 
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
-             cg.frame->number, len, delta[0], delta[1], delta[2]);
+             cg.frame->number, len, delta.x, delta.y, delta.z);
 
-    VectorCopy(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK]);
+    cg.predicted_origins[cmd & CMD_MASK] = cg.frame->ps.origin;
 
     // save for error interpolation
-    VectorCopy(delta, cg.prediction_error);
+    cg.prediction_error = delta;
 }
 
 /*
@@ -68,8 +68,7 @@ void CG_CheckPredictionError(void)
 CG_ClipMoveToEntities
 ====================
 */
-static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t end,
-                                  const vec3_t mins, const vec3_t maxs, contents_t contentmask)
+static void CG_ClipMoveToEntities(trace_t *tr, const trace_args_t *args)
 {
     trace_t     trace;
     qhandle_t   hmodel;
@@ -77,21 +76,22 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
     for (int i = 0; i < cg.num_solid_entities; i++) {
         const centity_t *ent = cg.solid_entities[i];
 
-        if (ent->current.number <= cgs.maxclients && !(contentmask & CONTENTS_PLAYER))
+        if (ent->current.number < cgs.maxclients && !(args->mask & CONTENTS_PLAYER))
+            continue;
+        if (ent->current.number == args->entnum)
             continue;
 
         if (ent->current.solid == PACKED_BSP) {
             // special value for bmodel
             hmodel = ent->current.modelindex;
         } else {
-            hmodel = trap_TempBoxModel(ent->mins, ent->maxs);
+            hmodel = trap_TempBoxModel(ent->box);
         }
 
         if (tr->allsolid)
             return;
 
-        trap_TransformedBoxTrace(&trace, start, end,
-                                 mins, maxs, hmodel, contentmask,
+        trap_TransformedBoxTrace(&trace, args, hmodel,
                                  ent->current.origin, ent->current.angles);
 
         CM_ClipEntity(tr, &trace, ent->current.number);
@@ -103,33 +103,26 @@ static void CG_ClipMoveToEntities(trace_t *tr, const vec3_t start, const vec3_t 
 CG_Trace
 ================
 */
-void CG_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
-              const vec3_t end, unsigned passent, contents_t contentmask)
+void CG_TraceArgs(trace_t *tr, const trace_args_t *args)
 {
-    if (!mins)
-        mins = vec3_origin;
-    if (!maxs)
-        maxs = vec3_origin;
-
     // check against world
-    trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
+    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
     tr->entnum = ENTITYNUM_WORLD;
     if (tr->fraction == 0)
         return;     // blocked by the world
 
     // check all other solid models
-    CG_ClipMoveToEntities(tr, start, end, mins, maxs, contentmask);
+    CG_ClipMoveToEntities(tr, args);
 }
 
-static void CG_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs,
-                    const vec3_t end, unsigned clipent, contents_t contentmask)
+static void CG_ClipArgs(trace_t *tr, const trace_args_t *args)
 {
     // only clip to world for now
-    trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
+    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
     tr->entnum = ENTITYNUM_WORLD;
 }
 
-contents_t CG_PointContents(const vec3_t point)
+contents_t CG_PointContents(vec3_t point)
 {
     contents_t contents = trap_PointContents(point, MODELINDEX_WORLD);
 
@@ -146,26 +139,17 @@ contents_t CG_PointContents(const vec3_t point)
     return contents;
 }
 
-/*
-=================
-CG_PredictMovement
-
-Sets cg.predicted_origin and cg.predicted_angles
-=================
-*/
 void CG_PredictAngles(void)
 {
     usercmd_t cmd;
-    trap_GetUsercmd(trap_GetUsercmdNumber(), &cmd);
-
-    for (int i = 0; i < 3; i++)
-        cg.predicted_ps.viewangles[i] = SHORT2ANGLE((short)(cmd.angles[i] + cg.frame->ps.delta_angles[i]));
+    if (trap_GetUsercmd(trap_GetUsercmdNumber(), &cmd))
+        PM_ClampAngles(&cg.predicted_ps, &cmd);
 }
 
 static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
 {
-    trap_GetUsercmd(frame, &pm->cmd);
-    BG_Pmove(pm);
+    if (trap_GetUsercmd(frame, &pm->cmd))
+        BG_Pmove(pm);
 
     if (cg.predicted_step_frame < frame && fabsf(pm->step_height) >= 2.0f) {
         // check for stepping up before a previous step is completed
@@ -181,9 +165,14 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
     }
 
     // save for debug checking
-    VectorCopy(pm->s->origin, cg.predicted_origins[frame & CMD_MASK]);
+    cg.predicted_origins[frame & CMD_MASK] = pm->s->origin;
 }
 
+/*
+=================
+CG_PredictMovement
+=================
+*/
 void CG_PredictMovement(void)
 {
     unsigned    ack, current;
@@ -195,6 +184,7 @@ void CG_PredictMovement(void)
 
     if (!CG_PredictionEnabled()) {
         // just set angles
+        cg.predicted_ps = cg.frame->ps;
         CG_PredictAngles();
         return;
     }
@@ -218,8 +208,8 @@ void CG_PredictMovement(void)
 
     // copy current state to pmove
     memset(&pm, 0, sizeof(pm));
-    pm.trace = CG_Trace;
-    pm.clip = CG_Clip;
+    pm.trace = CG_TraceArgs;
+    pm.clip = CG_ClipArgs;
     pm.pointcontents = CG_PointContents;
     pm.s = &cg.predicted_ps;
 

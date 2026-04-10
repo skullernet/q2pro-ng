@@ -28,14 +28,14 @@
 //
 // CreateMonster
 //
-edict_t *CreateMonster(const vec3_t origin, const vec3_t angles, const char *classname)
+edict_t *CreateMonster(vec3_t origin, vec3_t angles, const char *classname)
 {
     edict_t *newEnt;
 
     newEnt = G_Spawn();
 
-    VectorCopy(origin, newEnt->s.origin);
-    VectorCopy(angles, newEnt->s.angles);
+    newEnt->s.origin = origin;
+    newEnt->s.angles = angles;
     newEnt->classname = classname;
     newEnt->monsterinfo.aiflags |= AI_DO_NOT_COUNT;
 
@@ -46,9 +46,9 @@ edict_t *CreateMonster(const vec3_t origin, const vec3_t angles, const char *cla
     return newEnt;
 }
 
-edict_t *CreateFlyMonster(const vec3_t origin, const vec3_t angles, const vec3_t mins, const vec3_t maxs, const char *classname)
+edict_t *CreateFlyMonster(vec3_t origin, vec3_t angles, box3_t box, const char *classname)
 {
-    if (!CheckSpawnPoint(origin, mins, maxs))
+    if (!CheckSpawnPoint(origin, box))
         return NULL;
 
     return CreateMonster(origin, angles, classname);
@@ -57,10 +57,10 @@ edict_t *CreateFlyMonster(const vec3_t origin, const vec3_t angles, const vec3_t
 // This is just a wrapper for CreateMonster that looks down height # of CMUs and sees if there
 // are bad things down there or not
 
-edict_t *CreateGroundMonster(const vec3_t origin, const vec3_t angles, const vec3_t entMins, const vec3_t entMaxs, const char *classname, float height)
+edict_t *CreateGroundMonster(vec3_t origin, vec3_t angles, box3_t box, const char *classname, float height)
 {
     // check the ground to make sure it's there, it's relatively flat, and it's not toxic
-    if (!CheckGroundSpawnPoint(origin, entMins, entMaxs, height, -1))
+    if (!CheckGroundSpawnPoint(origin, box, height, -1))
         return NULL;
 
     return CreateMonster(origin, angles, classname);
@@ -70,22 +70,22 @@ edict_t *CreateGroundMonster(const vec3_t origin, const vec3_t angles, const vec
 // PMM - this is used by the medic commander (possibly by the carrier) to find a good spawn point
 // if the startpoint is bad, try above the startpoint for a bit
 
-bool FindSpawnPoint(const vec3_t startpoint, const vec3_t mins, const vec3_t maxs, vec3_t spawnpoint, float maxMoveUp, bool drop)
+bool FindSpawnPoint(vec3_t startpoint, box3_t box, vec3_t *spawnpoint, float maxMoveUp, bool drop)
 {
-    VectorCopy(startpoint, spawnpoint);
+    *spawnpoint = startpoint;
 
     // drop first
-    if (drop && M_droptofloor_generic(spawnpoint, mins, maxs, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
+    if (drop && M_droptofloor_generic(spawnpoint, box, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
         return true;
 
-    VectorCopy(startpoint, spawnpoint);
+    *spawnpoint = startpoint;
 
     // fix stuck if we couldn't drop initially
-    if (G_FixStuckObject_Generic(spawnpoint, mins, maxs, ENTITYNUM_NONE, MASK_MONSTERSOLID, trap_Trace) == NO_GOOD_POSITION)
+    if (PM_FixStuckObject_Generic(spawnpoint, box, ENTITYNUM_NONE, MASK_MONSTERSOLID, trap_Trace) == NO_GOOD_POSITION)
         return false;
 
     // fixed, so drop again
-    if (drop && !M_droptofloor_generic(spawnpoint, mins, maxs, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
+    if (drop && !M_droptofloor_generic(spawnpoint, box, false, ENTITYNUM_NONE, MASK_MONSTERSOLID, false))
         return false; // ???
 
     return true;
@@ -101,14 +101,12 @@ bool FindSpawnPoint(const vec3_t startpoint, const vec3_t mins, const vec3_t max
 //
 // This is all fliers should need
 
-bool CheckSpawnPoint(const vec3_t origin, const vec3_t mins, const vec3_t maxs)
+bool CheckSpawnPoint(vec3_t origin, box3_t box)
 {
-    trace_t tr;
-
-    if (VectorEmpty(mins) || VectorEmpty(maxs))
+    if (Box3_IsEmpty(box))
         return false;
 
-    trap_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_MONSTERSOLID);
+    trace_t tr = G_Trace(origin, origin, box, ENTITYNUM_NONE, MASK_MONSTERSOLID);
     if (tr.startsolid || tr.allsolid)
         return false;
 
@@ -128,20 +126,15 @@ bool CheckSpawnPoint(const vec3_t origin, const vec3_t mins, const vec3_t maxs)
 //      3)  is the ground flat enough to walk on?
 //
 
-bool CheckGroundSpawnPoint(const vec3_t origin, const vec3_t entMins, const vec3_t entMaxs, float height, float gravity)
+bool CheckGroundSpawnPoint(vec3_t origin, box3_t box, float height, float gravity)
 {
-    vec3_t absmin, absmax;
-
-    if (!CheckSpawnPoint(origin, entMins, entMaxs))
+    if (!CheckSpawnPoint(origin, box))
         return false;
 
-    VectorAdd(origin, entMins, absmin);
-    VectorAdd(origin, entMaxs, absmax);
-
-    if (M_CheckBottom_Fast_Generic(absmin, absmax, false))
+    if (M_CheckBottom_Fast_Generic(Box3_Translate(box, origin), false))
         return true;
 
-    if (M_CheckBottom_Slow_Generic(origin, entMins, entMaxs, ENTITYNUM_NONE, MASK_MONSTERSOLID, false, false))
+    if (M_CheckBottom_Slow_Generic(origin, box, ENTITYNUM_NONE, MASK_MONSTERSOLID, false, false))
         return true;
 
     return false;
@@ -162,10 +155,10 @@ void THINK(spawngrow_think)(edict_t *self)
         return;
     }
 
-    VectorMA(self->s.angles, FRAME_TIME_SEC, self->avelocity, self->s.angles);
+    self->s.angles = Vec3_MA(self->s.angles, FRAME_TIME_SEC, self->avelocity);
 
     float t = 1.0f - TO_SEC(level.time - self->teleport_time) / self->wait;
-    float s = lerp(self->decel, self->accel, t) / 16;
+    float s = Q_lerpf(self->decel, self->accel, t) / 16;
 
     self->s.scale = Q_clipf(s, 1.0f / 16, 16);
     self->s.alpha = t * t;
@@ -173,42 +166,33 @@ void THINK(spawngrow_think)(edict_t *self)
     self->nextthink += FRAME_TIME;
 }
 
-static void SpawnGro_laser_pos(edict_t *ent, vec3_t pos)
+static vec3_t SpawnGro_laser_pos(edict_t *ent)
 {
-    // pick random direction
-    float theta = frandom1(2 * M_PIf);
-    float phi = acosf(crandom());
-
-    vec3_t d = {
-        sinf(phi) * cosf(theta),
-        sinf(phi) * sinf(theta),
-        cosf(phi)
-    };
-
-    VectorMA(ent->s.origin, g_edicts[ent->r.ownernum].s.scale * 9, d, pos);
+    float dist = g_edicts[ent->r.ownernum].s.scale * 9;
+    return Vec3_MA(ent->s.origin, dist, Vec3_RandomDir());
 }
 
 void THINK(SpawnGro_laser_think)(edict_t *self)
 {
-    SpawnGro_laser_pos(self, self->s.old_origin);
+    self->s.old_origin = SpawnGro_laser_pos(self);
     trap_LinkEntity(self);
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
+void SpawnGrow_Spawn(vec3_t startpos, float start_size, float end_size)
 {
     edict_t *ent;
 
     ent = G_Spawn();
-    VectorCopy(startpos, ent->s.origin);
+    ent->s.origin = startpos;
 
-    ent->s.angles[0] = irandom1(360);
-    ent->s.angles[1] = irandom1(360);
-    ent->s.angles[2] = irandom1(360);
+    ent->s.angles.pitch = irandom1(360);
+    ent->s.angles.yaw = irandom1(360);
+    ent->s.angles.roll = irandom1(360);
 
-    ent->avelocity[0] = frandom2(280, 360) * 2;
-    ent->avelocity[1] = frandom2(280, 360) * 2;
-    ent->avelocity[2] = frandom2(280, 360) * 2;
+    ent->avelocity.pitch = frandom2(280, 360) * 2;
+    ent->avelocity.yaw = frandom2(280, 360) * 2;
+    ent->avelocity.roll = frandom2(280, 360) * 2;
 
     ent->r.solid = SOLID_NOT;
     ent->s.renderfx |= RF_IR_VISIBLE;
@@ -241,10 +225,10 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
     beam->classname = "spawngro_beam";
     beam->angle = end_size;
     beam->r.ownernum = ent->s.number;
-    VectorCopy(ent->s.origin, beam->s.origin);
+    beam->s.origin = ent->s.origin;
+    beam->s.old_origin = SpawnGro_laser_pos(beam);
     beam->think = SpawnGro_laser_think;
     beam->nextthink = level.time + FRAME_TIME;
-    SpawnGro_laser_pos(beam, beam->s.old_origin);
     trap_LinkEntity(beam);
 }
 
@@ -255,10 +239,10 @@ void SpawnGrow_Spawn(const vec3_t startpos, float start_size, float end_size)
 #define MAX_LEGSFRAME   23
 #define LEG_WAIT_TIME   SEC(1)
 
-void ThrowMoreStuff(edict_t *self, const vec3_t point);
-void ThrowSmallStuff(edict_t *self, const vec3_t point);
-void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, bool fade);
-void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, int hitsound, bool fade);
+void ThrowMoreStuff(edict_t *self, vec3_t point);
+void ThrowSmallStuff(edict_t *self, vec3_t point);
+void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool fade);
+void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, int hitsound, bool fade);
 
 void THINK(widowlegs_think)(edict_t *self)
 {
@@ -267,9 +251,9 @@ void THINK(widowlegs_think)(edict_t *self)
     vec3_t f, r, u;
 
     if (self->s.frame == 17) {
-        VectorSet(offset, 11.77f, -7.24f, 23.31f);
-        AngleVectors(self->s.angles, f, r, u);
-        G_ProjectSource2(self->s.origin, offset, f, r, u, point);
+        offset = Vec3(11.77f, -7.24f, 23.31f);
+        AngleVectors(self->s.angles, &f, &r, &u);
+        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
     }
@@ -284,18 +268,18 @@ void THINK(widowlegs_think)(edict_t *self)
         self->timestamp = level.time + LEG_WAIT_TIME;
 
     if (level.time > self->timestamp) {
-        AngleVectors(self->s.angles, f, r, u);
+        AngleVectors(self->s.angles, &f, &r, &u);
 
-        VectorSet(offset, -65.6f, -8.44f, 28.59f);
-        G_ProjectSource2(self->s.origin, offset, f, r, u, point);
+        offset = Vec3(-65.6f, -8.44f, 28.59f);
+        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
 
         ThrowWidowGibSized(self, "models/monsters/blackwidow/gib1/tris.md2", 80 + frandom1(20.0f), GIB_METALLIC, point, 0, true);
         ThrowWidowGibSized(self, "models/monsters/blackwidow/gib2/tris.md2", 80 + frandom1(20.0f), GIB_METALLIC, point, 0, true);
 
-        VectorSet(offset, -1.04f, -51.18f, 7.04f);
-        G_ProjectSource2(self->s.origin, offset, f, r, u, point);
+        offset = Vec3(-1.04f, -51.18f, 7.04f);
+        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
 
@@ -309,27 +293,27 @@ void THINK(widowlegs_think)(edict_t *self)
 
     if ((level.time > self->timestamp - SEC(0.5f)) && (self->count == 0)) {
         self->count = 1;
-        AngleVectors(self->s.angles, f, r, u);
+        AngleVectors(self->s.angles, &f, &r, &u);
 
-        VectorSet(offset, 31, -88.7f, 10.96f);
-        G_ProjectSource2(self->s.origin, offset, f, r, u, point);
+        offset = Vec3(31, -88.7f, 10.96f);
+        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
         G_TempEntity(point, EV_EXPLOSION1, 0);
 
-        VectorSet(offset, -12.67f, -4.39f, 15.68f);
-        G_ProjectSource2(self->s.origin, offset, f, r, u, point);
+        offset = Vec3(-12.67f, -4.39f, 15.68f);
+        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
         G_TempEntity(point, EV_EXPLOSION1, 0);
     }
 
     self->nextthink = level.time + HZ(10);
 }
 
-void Widowlegs_Spawn(const vec3_t startpos, const vec3_t angles)
+void Widowlegs_Spawn(vec3_t startpos, vec3_t angles)
 {
     edict_t *ent;
 
     ent = G_Spawn();
-    VectorCopy(startpos, ent->s.origin);
-    VectorCopy(angles, ent->s.angles);
+    ent->s.origin = startpos;
+    ent->s.angles = angles;
     ent->r.solid = SOLID_NOT;
     ent->s.renderfx = RF_IR_VISIBLE;
     ent->movetype = MOVETYPE_NONE;

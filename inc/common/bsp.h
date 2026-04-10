@@ -112,8 +112,7 @@ typedef struct mnode_s {
     struct mnode_s      *parent;
 
 #if USE_REF
-    vec3_t              mins;
-    vec3_t              maxs;
+    box3_t              box;
     unsigned            visframe;
 #endif
     /* <====== */
@@ -144,8 +143,7 @@ typedef struct {
     struct mnode_s      *parent;
 
 #if USE_REF
-    vec3_t              mins;
-    vec3_t              maxs;
+    box3_t              box;
     unsigned            visframe;
 #endif
     /* <====== */
@@ -173,7 +171,7 @@ typedef struct {
 } marea_t;
 
 typedef struct {
-    vec3_t          mins, maxs;
+    box3_t          box;
     vec3_t          origin;        // for sounds or lights
     mnode_t         *headnode;
 
@@ -320,9 +318,9 @@ typedef struct {
     vec3_t      pos;
 } lightpoint_t;
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, const mnode_t *headnode, int nolm_mask);
-void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               const mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles);
+void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, const mnode_t *headnode, int nolm_mask);
+void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
+                               const mnode_t *headnode, int nolm_mask, vec3_t origin, vec3_t angles);
 
 const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uint32_t point[3]);
 #endif
@@ -331,6 +329,6 @@ bool BSP_GetSurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info
 bool BSP_GetMaterialInfo(const bsp_t *bsp, unsigned material_id, material_info_t *info);
 
 void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
-const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p);
+const mleaf_t *BSP_PointLeaf(const mnode_t *node, vec3_t p);
 
 void BSP_Init(void);

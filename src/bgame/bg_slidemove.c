@@ -3,7 +3,6 @@
 
 #include "shared/shared.h"
 #include "bgame/bg_local.h"
-#include <float.h>
 
 #define NUM_SIDE_CHECKS 6
 
@@ -28,12 +27,12 @@ static const side_check_t side_checks[NUM_SIDE_CHECKS] = {
 };
 
 // [Paril-KEX] generic code to detect & fix a stuck object
-stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
-                                        int ignore, contents_t mask, trace_func_t trace_func)
+stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
+                                         contents_t mask, trace_func_t trace_func)
 {
     trace_t tr;
 
-    trace_func(&tr, origin, own_mins, own_maxs, origin, ignore, mask);
+    trace_func(&tr, &(trace_args_t){ *origin, *origin, own, ignore, mask });
     if (!tr.startsolid)
         return GOOD_POSITION;
 
@@ -43,53 +42,53 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
     for (int sn = 0; sn < NUM_SIDE_CHECKS; sn++) {
         const side_check_t *side = &side_checks[sn];
 
-        vec3_t start = VectorInit(origin);
-        vec3_t mins = { 0 }, maxs = { 0 };
+        vec3_t start = *origin;
+        box3_t box = box3_origin;
 
         for (int n = 0; n < 3; n++) {
             if (side->normal[n] < 0)
-                start[n] += own_mins[n];
+                start.xyz[n] += own.mins.xyz[n];
             else if (side->normal[n] > 0)
-                start[n] += own_maxs[n];
+                start.xyz[n] += own.maxs.xyz[n];
 
             if (side->mins[n] == -1)
-                mins[n] = own_mins[n];
+                box.mins.xyz[n] = own.mins.xyz[n];
             else if (side->mins[n] == 1)
-                mins[n] = own_maxs[n];
+                box.mins.xyz[n] = own.maxs.xyz[n];
 
             if (side->maxs[n] == -1)
-                maxs[n] = own_mins[n];
+                box.maxs.xyz[n] = own.mins.xyz[n];
             else if (side->maxs[n] == 1)
-                maxs[n] = own_maxs[n];
+                box.maxs.xyz[n] = own.maxs.xyz[n];
         }
 
         int needed_epsilon_fix = -1;
         int needed_epsilon_dir = 0;
 
-        trace_func(&tr, start, mins, maxs, start, ignore, mask);
+        trace_func(&tr, &(trace_args_t){ start, start, box, ignore, mask });
 
         if (tr.startsolid) {
             for (int e = 0; e < 3; e++) {
                 if (side->normal[e] != 0)
                     continue;
 
-                vec3_t ep_start = VectorInit(start);
-                ep_start[e] += 1;
+                vec3_t ep_start = start;
+                ep_start.xyz[e] += 1;
 
-                trace_func(&tr, ep_start, mins, maxs, ep_start, ignore, mask);
+                trace_func(&tr, &(trace_args_t){ ep_start, ep_start, box, ignore, mask });
 
                 if (!tr.startsolid) {
-                    VectorCopy(ep_start, start);
+                    start = ep_start;
                     needed_epsilon_fix = e;
                     needed_epsilon_dir = 1;
                     break;
                 }
 
-                ep_start[e] -= 2;
-                trace_func(&tr, ep_start, mins, maxs, ep_start, ignore, mask);
+                ep_start.xyz[e] -= 2;
+                trace_func(&tr, &(trace_args_t){ ep_start, ep_start, box, ignore, mask });
 
                 if (!tr.startsolid) {
-                    VectorCopy(ep_start, start);
+                    start = ep_start;
                     needed_epsilon_fix = e;
                     needed_epsilon_dir = -1;
                     break;
@@ -102,21 +101,21 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
             continue;
 
         const side_check_t *other_side = &side_checks[sn ^ 1];
-        vec3_t opposite_start = VectorInit(origin);
+        vec3_t opposite_start = *origin;
 
         for (int n = 0; n < 3; n++) {
             if (other_side->normal[n] < 0)
-                opposite_start[n] += own_mins[n];
+                opposite_start.xyz[n] += own.mins.xyz[n];
             else if (other_side->normal[n] > 0)
-                opposite_start[n] += own_maxs[n];
+                opposite_start.xyz[n] += own.maxs.xyz[n];
         }
 
         if (needed_epsilon_fix >= 0)
-            opposite_start[needed_epsilon_fix] += needed_epsilon_dir;
+            opposite_start.xyz[needed_epsilon_fix] += needed_epsilon_dir;
 
         // potentially a good side; start from our center, push back to the opposite side
         // to find how much clearance we have
-        trace_func(&tr, start, mins, maxs, opposite_start, ignore, mask);
+        trace_func(&tr, &(trace_args_t){ start, opposite_start, box, ignore, mask });
 
         // ???
         if (tr.startsolid)
@@ -124,26 +123,24 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
 
         // check the delta
         // push us very slightly away from the wall
-        vec3_t end;
-        VectorMA(tr.endpos, 0.125f, side->normal, end);
+        vec3_t end = Vec3_MA(tr.endpos, 0.125f, Vec3_Load(side->normal));
 
         // calculate delta
-        vec3_t delta, new_origin;
-        VectorSubtract(end, opposite_start, delta);
-        VectorAdd(origin, delta, new_origin);
+        vec3_t delta = Vec3_Sub(end, opposite_start);
+        vec3_t new_origin = Vec3_Add(*origin, delta);
 
         if (needed_epsilon_fix >= 0)
-            new_origin[needed_epsilon_fix] += needed_epsilon_dir;
+            new_origin.xyz[needed_epsilon_fix] += needed_epsilon_dir;
 
-        trace_func(&tr, new_origin, own_mins, own_maxs, new_origin, ignore, mask);
+        trace_func(&tr, &(trace_args_t){ new_origin, new_origin, own, ignore, mask });
 
         // bad
         if (tr.startsolid)
             continue;
 
         good_position_t *good = &good_positions[num_good_positions++];
-        VectorCopy(new_origin, good->origin);
-        good->dist = VectorLengthSquared(delta);
+        good->origin = new_origin;
+        good->dist = Vec3_LengthSquared(delta);
     }
 
     if (num_good_positions) {
@@ -158,7 +155,7 @@ stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, co
             }
         }
 
-        VectorCopy(good_positions[best].origin, origin);
+        *origin = good_positions[best].origin;
         return STUCK_FIXED;
     }
 
@@ -173,20 +170,23 @@ Slide off of the impacting object
 returns the blocked flags (1 = floor, 2 = step / wall)
 ==================
 */
-void PM_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce)
+vec3_t PM_ClipVelocity(vec3_t in, vec3_t normal, float overbounce)
 {
-    float backoff;
-    float change;
-    int   i;
+    float  backoff;
+    float  change;
+    int    i;
+    vec3_t out;
 
-    backoff = DotProduct(in, normal) * overbounce;
+    backoff = Vec3_Dot(in, normal) * overbounce;
 
     for (i = 0; i < 3; i++) {
-        change = normal[i] * backoff;
-        out[i] = in[i] - change;
-        if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
-            out[i] = 0;
+        change = normal.xyz[i] * backoff;
+        out.xyz[i] = in.xyz[i] - change;
+        if (out.xyz[i] > -STOP_EPSILON && out.xyz[i] < STOP_EPSILON)
+            out.xyz[i] = 0;
     }
+
+    return out;
 }
 
 void PM_RecordTrace(touch_list_t *touch, const trace_t *tr)
@@ -216,8 +216,8 @@ Does not modify any world state?
 #define MAX_CLIP_PLANES     5
 
 // [Paril-KEX] made generic so you can run this without needing a pml/pm
-void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
-                              int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func)
+void PM_StepSlideMove_Generic(vec3_t *origin, vec3_t *velocity, float frametime, box3_t box, int passent,
+                              contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func)
 {
     vec3_t  dir;
     float   d;
@@ -229,18 +229,18 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
     vec3_t  end;
     float   time_left;
 
-    VectorCopy(velocity, primal_velocity);
+    primal_velocity = *velocity;
     numplanes = 0;
 
     time_left = frametime;
 
     for (int bumpcount = 0; bumpcount < 4; bumpcount++) {
-        VectorMA(origin, time_left, velocity, end);
+        end = Vec3_MA(*origin, time_left, *velocity);
 
-        trace_func(&trace, origin, mins, maxs, end, passent, mask);
+        trace_func(&trace, &(trace_args_t){ *origin, end, box, passent, mask });
         if (trace.allsolid) {
             // entity is trapped in another solid
-            velocity[2] = 0; // don't build up falling damage
+            velocity->z = 0; // don't build up falling damage
 
             // save entity for contact
             PM_RecordTrace(touch, &trace);
@@ -249,7 +249,7 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
 
         if (trace.fraction > 0) {
             // actually covered some distance
-            VectorCopy(trace.endpos, origin);
+            *origin = trace.endpos;
             numplanes = 0;
         }
 
@@ -264,7 +264,7 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
         // slide along this plane
         if (numplanes >= MAX_CLIP_PLANES) {
             // this shouldn't really happen
-            VectorClear(velocity);
+            *velocity = vec3_origin;
             break;
         }
 
@@ -274,10 +274,10 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
         // non-axial planes (xswamp, q2dm1 sometimes...)
         //
         for (i = 0; i < numplanes; i++) {
-            if (DotProduct(trace.plane.normal, planes[i]) > 0.99f) {
-                origin[0] += trace.plane.normal[0] * 0.01f;
-                origin[1] += trace.plane.normal[1] * 0.01f;
-                G_FixStuckObject_Generic(origin, mins, maxs, passent, mask, trace_func);
+            if (Vec3_Dot(trace.plane.normal, planes[i]) > 0.99f) {
+                origin->x += trace.plane.normal.x * 0.01f;
+                origin->y += trace.plane.normal.y * 0.01f;
+                PM_FixStuckObject_Generic(origin, box, passent, mask, trace_func);
                 break;
             }
         }
@@ -285,16 +285,15 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
         if (i < numplanes)
             continue;
 
-        VectorCopy(trace.plane.normal, planes[numplanes]);
-        numplanes++;
+        planes[numplanes++] = trace.plane.normal;
 
         //
         // modify original_velocity so it parallels all of the clip planes
         //
         for (i = 0; i < numplanes; i++) {
-            PM_ClipVelocity(velocity, planes[i], velocity, 1.01f);
+            *velocity = PM_ClipVelocity(*velocity, planes[i], 1.01f);
             for (j = 0; j < numplanes; j++)
-                if ((j != i) && DotProduct(velocity, planes[j]) < 0)
+                if ((j != i) && Vec3_Dot(*velocity, planes[j]) < 0)
                     break; // not ok
             if (j == numplanes)
                 break;
@@ -305,24 +304,24 @@ void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, c
         } else {
             // go along the crease
             if (numplanes != 2) {
-                VectorClear(velocity);
+                *velocity = vec3_origin;
                 break;
             }
-            CrossProduct(planes[0], planes[1], dir);
-            d = DotProduct(dir, velocity);
-            VectorScale(dir, d, velocity);
+            dir = Vec3_Cross(planes[0], planes[1]);
+            d = Vec3_Dot(dir, *velocity);
+            *velocity = Vec3_Scale(dir, d);
         }
 
         //
         // if velocity is against the original velocity, stop dead
         // to avoid tiny oscillations in sloping corners
         //
-        if (DotProduct(velocity, primal_velocity) <= 0) {
-            VectorClear(velocity);
+        if (Vec3_Dot(*velocity, primal_velocity) <= 0) {
+            *velocity = vec3_origin;
             break;
         }
     }
 
     if (has_time)
-        VectorCopy(primal_velocity, velocity);
+        *velocity = primal_velocity;
 }

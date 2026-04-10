@@ -32,7 +32,7 @@ static void CG_Chat(const char *text)
     // play sound
     if (cg_chat_sound.integer > 0) {
         qhandle_t sfx = cgs.sounds.talk[cg_chat_sound.integer > 1];
-        trap_S_StartSound(NULL, cg.listener.entnum, CHAN_TALK, sfx, 1, ATTN_NONE, 0);
+        trap_S_StartSound(cg.listener.entnum, CHAN_TALK, sfx, 1, ATTN_NONE, 0);
     }
 }
 
@@ -50,11 +50,15 @@ static float CG_ParseFloat(int arg)
     return Q_atof(buf);
 }
 
-static void CG_ParseVector(int arg, vec3_t v)
+static vec3_t CG_ParseVector(int arg)
 {
-    v[0] = CG_ParseFloat(arg + 0);
-    v[1] = CG_ParseFloat(arg + 1);
-    v[2] = CG_ParseFloat(arg + 2);
+    vec3_t v;
+
+    v.x = CG_ParseFloat(arg + 0);
+    v.y = CG_ParseFloat(arg + 1);
+    v.z = CG_ParseFloat(arg + 2);
+
+    return v;
 }
 
 static void CG_Inventory(void)
@@ -81,7 +85,7 @@ static void CG_Sound(void)
     Q_assert_soft(entnum < MAX_EDICTS);
     Q_assert_soft(index < MAX_SOUNDS);
 
-    trap_S_StartSound(NULL, entnum, channel, cgs.sounds.precache[index], volume, attenuation, 0);
+    trap_S_StartSound(entnum, channel, cgs.sounds.precache[index], volume, attenuation, 0);
 }
 
 typedef enum {
@@ -92,15 +96,14 @@ typedef enum {
 
 static void CG_Poi(void)
 {
-    vec3_t point;
-    CG_ParseVector(1, point);
+    vec3_t point = CG_ParseVector(1);
 
     unsigned index = CG_ParseInt(4);
     Q_assert_soft(index < MAX_IMAGES);
 
     SCR_AddPOI(POI_OBJECTIVE, point, cgs.images.precache[index], U32_GREEN, cg_compass_time.value * 1000);
 
-    trap_S_StartSound(NULL, cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
+    trap_S_StartSound(cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
 }
 
 static void CG_Ping(void)
@@ -108,28 +111,24 @@ static void CG_Ping(void)
     unsigned entnum = CG_ParseInt(1);
     Q_assert_soft(entnum < MAX_CLIENTS);
 
-    vec3_t point;
-    CG_ParseVector(2, point);
+    vec3_t point = CG_ParseVector(2);
 
     unsigned index = CG_ParseInt(5);
     Q_assert_soft(index < MAX_IMAGES);
 
     SCR_AddPOI(POI_PING + entnum, point, cgs.images.precache[index], U32_GREEN, 5000);
 
-    trap_S_StartSound(NULL, cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
+    trap_S_StartSound(cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
 }
 
 static void CG_Path(void)
 {
-    vec3_t point;
-    CG_ParseVector(2, point);
-
-    vec3_t dir;
-    ByteToDir(CG_ParseInt(5), dir);
+    vec3_t point = CG_ParseVector(2);
+    vec3_t dir = ByteToDir(CG_ParseInt(5));
 
     CG_AddHelpPath(point, dir, CG_ParseInt(1));
 
-    trap_S_StartSound(point, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NORM, 0);
+    trap_S_PositionedSound(point, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NORM, 0);
 }
 
 // server commands allow transmitting arbitrary data from game to cgame

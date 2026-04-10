@@ -63,20 +63,20 @@ static void CG_AddViewWeapon(void)
         return;
 
     // set up gun position
-    VectorCopy(cg.refdef.vieworg, gun.origin);
-    VectorCopy(cg.refdef.viewangles, gun.angles);
+    gun.origin = cg.refdef.vieworg;
+    gun.angles = cg.refdef.viewangles;
 
     if (!(ps->rdflags & RDF_NO_WEAPON_BOB) && !cg_skip_view_modifiers.integer) {
         // gun angles from bobbing
-        gun.angles[ROLL] += cg.xyspeed * cg.bobfracsin * 0.005f;
-        gun.angles[YAW] += cg.xyspeed * cg.bobfracsin * 0.01f;
-        gun.angles[PITCH] += cg.xyspeed * fabsf(cg.bobfracsin) * 0.005f;
+        gun.angles.roll += cg.xyspeed * cg.bobfracsin * 0.005f;
+        gun.angles.yaw += cg.xyspeed * cg.bobfracsin * 0.01f;
+        gun.angles.pitch += cg.xyspeed * fabsf(cg.bobfracsin) * 0.005f;
 
-        VectorAdd(cg.slow_view_angles, cg.viewangles_delta, cg.slow_view_angles);
+        cg.slow_view_angles = Vec3_Add(cg.slow_view_angles, cg.viewangles_delta);
 
         // gun angles from delta movement
         for (i = 0; i < 3; i++) {
-            float d = cg.slow_view_angles[i];
+            float d = cg.slow_view_angles.xyz[i];
 
             if (!d)
                 continue;
@@ -90,24 +90,24 @@ static void CG_AddViewWeapon(void)
 
             // [Sam-KEX] Apply only half-delta. Makes the weapons look less detached from the player.
             if (i == ROLL)
-                gun.angles[i] += (0.1f * d) * 0.5f;
+                gun.angles.xyz[i] += (0.1f * d) * 0.5f;
             else
-                gun.angles[i] += (0.2f * d) * 0.5f;
+                gun.angles.xyz[i] += (0.2f * d) * 0.5f;
 
-            float reduction_factor = cg.viewangles_delta[i] ? 50 : 150;
+            float reduction_factor = cg.viewangles_delta.xyz[i] ? 50 : 150;
 
             if (d > 0)
                 d = max(0, d - cgs.frametime * reduction_factor);
             else if (d < 0)
                 d = min(0, d + cgs.frametime * reduction_factor);
 
-            cg.slow_view_angles[i] = d;
+            cg.slow_view_angles.xyz[i] = d;
         }
     }
 
-    VectorMA(gun.origin, cg_gun_y.value, cg.v_forward, gun.origin);
-    VectorMA(gun.origin, cg_gun_x.value, cg.v_right, gun.origin);
-    VectorMA(gun.origin, cg_gun_z.value, cg.v_up, gun.origin);
+    gun.origin = Vec3_MA(gun.origin, cg_gun_y.value, cg.v_forward);
+    gun.origin = Vec3_MA(gun.origin, cg_gun_x.value, cg.v_right);
+    gun.origin = Vec3_MA(gun.origin, cg_gun_z.value, cg.v_up);
 
     gun.frame = ps->gunframe;
     if (gun.frame == 0) {
@@ -158,8 +158,8 @@ static void CG_AddViewWeapon(void)
             fov_y = V_CalcFov(fov_x, scr_vrect.width, scr_vrect.height);
         }
 
-        gun.oldorigin[0] = fov_x;
-        gun.oldorigin[1] = fov_y;
+        gun.oldorigin.x = fov_x;
+        gun.oldorigin.y = fov_y;
         gun.flags |= RF_FOVHACK;
     }
 
@@ -194,14 +194,14 @@ static void CG_AddViewWeapon(void)
     gun.frame = gun.oldframe = 0;
 
     vec3_t forward, right, up;
-    AngleVectors(gun.angles, forward, right, up);
+    AngleVectors(gun.angles, &forward, &right, &up);
 
-    VectorMA(gun.origin, cg.weapon.muzzle.offset[0], forward, gun.origin);
-    VectorMA(gun.origin, cg.weapon.muzzle.offset[1], right, gun.origin);
-    VectorMA(gun.origin, cg.weapon.muzzle.offset[2], up, gun.origin);
+    gun.origin = Vec3_MA(gun.origin, cg.weapon.muzzle.offset.forward, forward);
+    gun.origin = Vec3_MA(gun.origin, cg.weapon.muzzle.offset.right, right);
+    gun.origin = Vec3_MA(gun.origin, cg.weapon.muzzle.offset.up, up);
 
-    VectorCopy(cg.refdef.viewangles, gun.angles);
-    gun.angles[2] += cg.weapon.muzzle.roll;
+    gun.angles = cg.refdef.viewangles;
+    gun.angles.roll += cg.weapon.muzzle.roll;
 
     trap_R_AddEntity(&gun);
 }
@@ -212,31 +212,31 @@ static void CG_RunViewKicks(int frame)
     float ratio;
 
     // add angles based on weapon kick
-    VectorCopy(cg.weapon.kick.angles, angles);
-    VectorClear(cg.weapon.kick.angles);
+    angles = cg.weapon.kick.angles;
+    cg.weapon.kick.angles = vec3_origin;
 
     // add offset based on weapon kick
-    VectorCopy(cg.weapon.kick.origin, origin);
-    VectorClear(cg.weapon.kick.origin);
+    origin = cg.weapon.kick.origin;
+    cg.weapon.kick.origin = vec3_origin;
 
     // add angles based on damage kick
     if (cg.v_dmg_time > cg.time) {
         ratio = (float)(cg.v_dmg_time - cg.time) / DAMAGE_TIME;
-        angles[PITCH] += ratio * cg.v_dmg_pitch;
-        angles[ROLL] += ratio * cg.v_dmg_roll;
+        angles.pitch += ratio * cg.v_dmg_pitch;
+        angles.roll += ratio * cg.v_dmg_roll;
     }
 
     // add pitch based on fall kick
     if (cg.fall_time > cg.time) {
         ratio = (float)(cg.fall_time - cg.time) / FALL_TIME;
-        angles[PITCH] += ratio * cg.fall_value;
+        angles.pitch += ratio * cg.fall_value;
 
         // add fall height
-        origin[2] -= ratio * cg.fall_value * 0.4f;
+        origin.z -= ratio * cg.fall_value * 0.4f;
     }
 
-    VectorCopy(angles, cg.kick_angles[frame]);
-    VectorCopy(origin, cg.kick_origin[frame]);
+    cg.kick_angles[frame] = angles;
+    cg.kick_origin[frame] = origin;
 }
 
 static void CG_CalcViewOffset(void)
@@ -256,12 +256,11 @@ static void CG_CalcViewOffset(void)
             cg.kick_frame = ofs;
         }
 
-        vec3_t kick;
-        LerpVector(cg.kick_angles[ofs], cg.kick_angles[ofs ^ 1], f, kick);
-        VectorAdd(cg.refdef.viewangles, kick, cg.refdef.viewangles);
+        vec3_t kick = Vec3_Lerp(cg.kick_angles[ofs], cg.kick_angles[ofs ^ 1], f);
+        cg.refdef.viewangles = Vec3_Add(cg.refdef.viewangles, kick);
 
-        LerpVector(cg.kick_origin[ofs], cg.kick_origin[ofs ^ 1], f, kick);
-        VectorAdd(cg.refdef.vieworg, kick, cg.refdef.vieworg);
+        kick = Vec3_Lerp(cg.kick_origin[ofs], cg.kick_origin[ofs ^ 1], f);
+        cg.refdef.vieworg = Vec3_Add(cg.refdef.vieworg, kick);
     }
 
     // run earthquake angles at 40 Hz
@@ -270,26 +269,22 @@ static void CG_CalcViewOffset(void)
         float f = (cg.time % 25) * 0.04f;
 
         if (cg.quake_frame != ofs) {
-            VectorSet(cg.quake_angles[ofs ^ 1], crand(), crand(), crand());
+            cg.quake_angles[ofs ^ 1] = Vec3_CenterRandom();
             cg.quake_frame = ofs;
         }
 
-        vec3_t kick;
-        LerpVector(cg.quake_angles[ofs], cg.quake_angles[ofs ^ 1], f, kick);
+        vec3_t kick = Vec3_Lerp(cg.quake_angles[ofs], cg.quake_angles[ofs ^ 1], f);
 
         f = cg.quake_time * 0.25f / cg.time;
-        VectorMA(cg.refdef.viewangles, f, kick, cg.refdef.viewangles);
+        cg.refdef.viewangles = Vec3_MA(cg.refdef.viewangles, f, kick);
     }
 
-    float *angles = cg.refdef.viewangles;
-    float delta;
-
     // add angles based on velocity
-    delta = DotProduct(cg.slowvelocity, cg.v_forward);
-    angles[PITCH] += delta * cg_run_pitch.value;
+    float delta = Vec3_Dot(cg.slowvelocity, cg.v_forward);
+    cg.refdef.viewangles.pitch += delta * cg_run_pitch.value;
 
-    delta = DotProduct(cg.slowvelocity, cg.v_right);
-    angles[ROLL] += delta * cg_run_roll.value;
+    delta = Vec3_Dot(cg.slowvelocity, cg.v_right);
+    cg.refdef.viewangles.roll += delta * cg_run_roll.value;
 
     float factor = 1;
     if ((cg.predicted_ps.pm_flags & (PMF_DUCKED | PMF_ON_GROUND)) == (PMF_DUCKED | PMF_ON_GROUND))
@@ -298,26 +293,26 @@ static void CG_CalcViewOffset(void)
 
     // add angles based on bob
     delta = fabsf(cg.bobfracsin) * cg_bob_pitch.value * cg.xyspeed * cg.bob_factor;
-    angles[PITCH] += delta;
+    cg.refdef.viewangles.pitch += delta;
 
     delta = cg.bobfracsin * cg_bob_roll.value * cg.xyspeed * cg.bob_factor;
-    angles[ROLL] += delta;
+    cg.refdef.viewangles.roll += delta;
 
     // add bob height
     float bob = fabsf(cg.bobfracsin) * cg.xyspeed * cg_bob_up.value;
     if (bob > 6)
         bob = 6;
-    cg.refdef.vieworg[2] += bob;
+    cg.refdef.vieworg.z += bob;
 }
 
 static void CG_SetupFirstPersonView(void)
 {
     // smooth abrupt stops
     for (int i = 0; i < 3; i++)
-        CG_AdvanceValue(&cg.slowvelocity[i], cg.predicted_ps.velocity[i], 1000);
+        CG_AdvanceValue(&cg.slowvelocity.xyz[i], cg.predicted_ps.velocity.xyz[i], 1000);
 
     cg.bobfracsin = sinf(cg.predicted_ps.bobtime * (M_PIf / 128));
-    cg.xyspeed = Vector2Length(cg.slowvelocity);
+    cg.xyspeed = Vec2_Length(Vec2_FromVec3(cg.slowvelocity));
 
     CG_CalcViewOffset();
 
@@ -328,15 +323,14 @@ static void CG_SetupFirstPersonView(void)
 }
 
 // need to interpolate bmodel positions, or third person view would be very jerky
-static void CG_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
-                           const vec3_t mins, const vec3_t maxs, int contentmask)
+static void CG_LerpedTrace(trace_t *tr, const trace_args_t *args)
 {
     trace_t trace;
     const centity_t *ent;
     vec3_t org, ang;
 
     // check against world
-    trap_BoxTrace(tr, start, end, mins, maxs, MODELINDEX_WORLD, contentmask);
+    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
     tr->entnum = ENTITYNUM_WORLD;
     if (tr->fraction == 0)
         return;     // blocked by the world
@@ -349,11 +343,10 @@ static void CG_LerpedTrace(trace_t *tr, const vec3_t start, const vec3_t end,
         if (ent->current.solid != PACKED_BSP)
             continue;
 
-        LerpVector(ent->prev.origin, ent->current.origin, cg.lerpfrac, org);
-        LerpAngles(ent->prev.angles, ent->current.angles, cg.lerpfrac, ang);
+        org = Vec3_Lerp(ent->prev.origin, ent->current.origin, cg.lerpfrac);
+        ang = Vec3_LerpAngles(ent->prev.angles, ent->current.angles, cg.lerpfrac);
 
-        trap_TransformedBoxTrace(&trace, start, end, mins, maxs,
-                                 ent->current.modelindex, contentmask, org, ang);
+        trap_TransformedBoxTrace(&trace, args, ent->current.modelindex, org, ang);
 
         CM_ClipEntity(tr, &trace, ent->current.number);
     }
@@ -366,8 +359,6 @@ CG_SetupThirdPersionView
 */
 static void CG_SetupThirdPersionView(void)
 {
-    static const vec3_t mins = { -4, -4, -4 };
-    static const vec3_t maxs = {  4,  4,  4 };
     vec3_t focus;
     float fscale, rscale;
     float dist, angle, range;
@@ -375,32 +366,40 @@ static void CG_SetupThirdPersionView(void)
 
     // if dead, set a nice view angle
     if (cg.frame->ps.stats[STAT_HEALTH] <= 0) {
-        cg.refdef.viewangles[ROLL] = 0;
-        cg.refdef.viewangles[PITCH] = 10;
+        cg.refdef.viewangles.roll = 0;
+        cg.refdef.viewangles.pitch = 10;
     }
 
-    VectorMA(cg.refdef.vieworg, 512, cg.v_forward, focus);
-    cg.refdef.vieworg[2] += 8;
+    focus = Vec3_MA(cg.refdef.vieworg, 512, cg.v_forward);
+    cg.refdef.vieworg.z += 8;
 
-    cg.refdef.viewangles[PITCH] *= 0.5f;
-    AngleVectors(cg.refdef.viewangles, cg.v_forward, cg.v_right, cg.v_up);
+    cg.refdef.viewangles.pitch *= 0.5f;
+    AngleVectors(cg.refdef.viewangles, &cg.v_forward, &cg.v_right, &cg.v_up);
 
     angle = DEG2RAD(cg_thirdperson_angle.value);
     range = cg_thirdperson_range.value;
     fscale = cosf(angle);
     rscale = sinf(angle);
-    VectorMA(cg.refdef.vieworg, -range * fscale, cg.v_forward, cg.refdef.vieworg);
-    VectorMA(cg.refdef.vieworg, -range * rscale, cg.v_right, cg.refdef.vieworg);
+    cg.refdef.vieworg = Vec3_MA(cg.refdef.vieworg, -range * fscale, cg.v_forward);
+    cg.refdef.vieworg = Vec3_MA(cg.refdef.vieworg, -range * rscale, cg.v_right);
 
-    CG_LerpedTrace(&trace, cg.player_entity_origin, cg.refdef.vieworg, mins, maxs, CONTENTS_SOLID);
-    VectorCopy(trace.endpos, cg.refdef.vieworg);
+    trace_args_t args = {
+        .start = cg.player_entity_origin,
+        .end = cg.refdef.vieworg,
+        .box = Box3_FromRadius(4),
+        .entnum = ENTITYNUM_NONE,
+        .mask = CONTENTS_SOLID
+    };
+
+    CG_LerpedTrace(&trace, &args);
+    cg.refdef.vieworg = trace.endpos;
     cg.third_person_alpha = trace.fraction;
 
-    VectorSubtract(focus, cg.refdef.vieworg, focus);
-    dist = sqrtf(focus[0] * focus[0] + focus[1] * focus[1]);
+    focus = Vec3_Sub(focus, cg.refdef.vieworg);
+    dist = Vec2_Length(Vec2_FromVec3(focus));
 
-    cg.refdef.viewangles[PITCH] = -RAD2DEG(atan2f(focus[2], dist));
-    cg.refdef.viewangles[YAW] -= cg_thirdperson_angle.value;
+    cg.refdef.viewangles.pitch = -RAD2DEG(atan2f(focus.z, dist));
+    cg.refdef.viewangles.yaw -= cg_thirdperson_angle.value;
 
     cg.third_person_view = true;
 }
@@ -413,7 +412,7 @@ static void CG_FinishViewValues(void)
         CG_SetupFirstPersonView();
 }
 
-static inline float lerp_client_fov(float ofov, float nfov, float lerp)
+static float CG_LerpFov(float ofov, float nfov, float lerp)
 {
     if (cgs.demoplayback) {
         int fov = info_fov.integer;
@@ -437,14 +436,6 @@ static inline float lerp_client_fov(float ofov, float nfov, float lerp)
     return ofov + lerp * (nfov - ofov);
 }
 
-static inline void lerp_values(const void *from, const void *to, float lerp, void *out, int count)
-{
-    float backlerp = 1.0f - lerp;
-
-    for (int i = 0; i < count; i++)
-        ((float *)out)[i] = ((const float *)from)[i] * backlerp + ((const float *)to)[i] * lerp;
-}
-
 static void CG_ScreenEffects(void)
 {
     // add for contents
@@ -456,11 +447,11 @@ static void CG_ScreenEffects(void)
         cg.refdef.rdflags &= ~RDF_UNDERWATER;
 
     if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
-        G_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, cg.refdef.screen_blend);
+        BG_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, &cg.refdef.screen_blend);
     else if (contents & CONTENTS_SLIME)
-        G_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, cg.refdef.screen_blend);
+        BG_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, &cg.refdef.screen_blend);
     else if (contents & CONTENTS_WATER)
-        G_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, cg.refdef.screen_blend);
+        BG_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, &cg.refdef.screen_blend);
 }
 
 #define S 0.57735f
@@ -476,18 +467,15 @@ static const vec3_t size_probe_dirs[SIZE_PROBES] = {
 
 static void CG_RunSizeProbes(void)
 {
-    vec3_t end;
-    trace_t tr;
-
     if (cg.time < cg.size_probe_time)
         return;
 
-    VectorMA(cg.refdef.vieworg, 8192, size_probe_dirs[cg.size_probe_index], end);
-    CG_Trace(&tr, cg.refdef.vieworg, NULL, NULL, end, ENTITYNUM_NONE, MASK_SOLID);
-    VectorSubtract(tr.endpos, cg.refdef.vieworg, cg.size_probes[cg.size_probe_index]);
+    vec3_t end = Vec3_MA(cg.refdef.vieworg, 8192, size_probe_dirs[cg.size_probe_index]);
+    trace_t tr = CG_TraceLine(cg.refdef.vieworg, end, ENTITYNUM_NONE, MASK_SOLID);
+    cg.size_probes[cg.size_probe_index] = Vec3_Sub(tr.endpos, cg.refdef.vieworg);
 
     if (cg.size_probe_index == 2 && (tr.surface_flags & SURF_SKY))
-        cg.size_probes[cg.size_probe_index][2] += 4096;
+        cg.size_probes[cg.size_probe_index].z += 4096;
     if (cg.size_probe_index == 5)
         cg.size_probe_ground_surf = tr.surface_id;
 
@@ -497,9 +485,9 @@ static void CG_RunSizeProbes(void)
 
 static void CG_UpdateReverb(void)
 {
-    vec3_t mins, maxs, size;
     reverb_preset_t preset;
     surface_info_t info;
+    box3_t box;
     float len;
 
     if (!s_reverb.integer)
@@ -516,12 +504,8 @@ static void CG_UpdateReverb(void)
         return;
     }
 
-    ClearBounds(mins, maxs);
-    for (int i = 0; i < SIZE_PROBES; i++)
-        AddPointToBounds(cg.size_probes[i], mins, maxs);
-
-    VectorSubtract(maxs, mins, size);
-    len = VectorLength(size);
+    box = Box3_FromPoints(cg.size_probes, SIZE_PROBES);
+    len = Box3_Diameter(box);
 
     // hardcoded, not going to parse json shit for this
     if (len <= 200) {
@@ -596,15 +580,15 @@ static void CG_CalcViewValues(void)
     if (CG_PredictionEnabled()) {
         // use predicted values
         float backlerp = lerp - 1.0f;
-        VectorMA(cg.predicted_ps.origin, backlerp, cg.prediction_error, cg.refdef.vieworg);
+        cg.refdef.vieworg = Vec3_MA(cg.predicted_ps.origin, backlerp, cg.prediction_error);
 
         // smooth out stair climbing
         if (steptime < STEP_TIME)
-            cg.refdef.vieworg[2] -= cg.predicted_step * (STEP_TIME - steptime);
+            cg.refdef.vieworg.z -= cg.predicted_step * (STEP_TIME - steptime);
     } else {
         // just use interpolated values
-        LerpVector(ops->origin, ps->origin, lerp, cg.refdef.vieworg);
-        LerpVector(ops->velocity, ps->velocity, lerp, cg.predicted_ps.velocity);
+        cg.refdef.vieworg = Vec3_Lerp(ops->origin, ps->origin, lerp);
+        cg.predicted_ps.velocity = Vec3_Lerp(ops->velocity, ps->velocity, lerp);
         cg.predicted_ps.viewheight = ps->viewheight;
 
         int delta = ps->bobtime - ops->bobtime;
@@ -615,72 +599,71 @@ static void CG_CalcViewValues(void)
 
         // smooth out stair climbing
         if (steptime < STEP_TIME)
-            cg.refdef.vieworg[2] = ps->origin[2] - cg.predicted_step * (STEP_TIME - steptime);
+            cg.refdef.vieworg.z = ps->origin.z - cg.predicted_step * (STEP_TIME - steptime);
     }
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
         if (trap_Key_GetDest() == KEY_NONE && trap_Key_IsDown(K_SHIFT)) {
-            VectorCopy(cg.predicted_ps.viewangles, cg.refdef.viewangles);
+            cg.refdef.viewangles = cg.predicted_ps.viewangles;
         } else {
-            LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
+            cg.refdef.viewangles = Vec3_LerpAngles(ops->viewangles, ps->viewangles, lerp);
         }
     } else if (ps->pm_type < PM_DEAD) {
         // use predicted values
-        VectorCopy(cg.predicted_ps.viewangles, cg.refdef.viewangles);
+        cg.refdef.viewangles = cg.predicted_ps.viewangles;
     } else if (ops->pm_type < PM_DEAD) {
         // lerp from predicted angles, since enhanced servers
         // do not send viewangles each frame
-        LerpAngles(cg.predicted_ps.viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
+        cg.refdef.viewangles = Vec3_LerpAngles(cg.predicted_ps.viewangles, ps->viewangles, lerp);
     } else {
         // just use interpolated values
-        LerpAngles(ops->viewangles, ps->viewangles, lerp, cg.refdef.viewangles);
+        cg.refdef.viewangles = Vec3_LerpAngles(ops->viewangles, ps->viewangles, lerp);
     }
 
-    VectorSubtract(cg.oldviewangles, cg.refdef.viewangles, cg.viewangles_delta);
-    VectorCopy(cg.refdef.viewangles, cg.oldviewangles);
+    cg.viewangles_delta = Vec3_Sub(cg.oldviewangles, cg.refdef.viewangles);
+    cg.oldviewangles = cg.refdef.viewangles;
 
     // interpolate blend
-    if (ops->screen_blend[3])
-        lerp_values(ops->screen_blend, ps->screen_blend, lerp, cg.refdef.screen_blend, 4);
+    if (ops->screen_blend.a)
+        cg.refdef.screen_blend = Vec4_Lerp(ops->screen_blend, ps->screen_blend, lerp);
     else
-        Vector4Copy(ps->screen_blend, cg.refdef.screen_blend);
+        cg.refdef.screen_blend = ps->screen_blend;
 
-    if (ops->damage_blend[3])
-        lerp_values(ops->damage_blend, ps->damage_blend, lerp, cg.refdef.damage_blend, 4);
+    if (ops->damage_blend.a)
+        cg.refdef.damage_blend = Vec4_Lerp(ops->damage_blend, ps->damage_blend, lerp);
     else
-        Vector4Copy(ps->damage_blend, cg.refdef.damage_blend);
+        cg.refdef.damage_blend = ps->damage_blend;
 
     // interpolate fog
-    lerp_values(&ops->fog, &ps->fog, lerp,
-                &cg.refdef.fog, sizeof(cg.refdef.fog) / sizeof(float));
+    cg.refdef.fog = BG_LerpFog(ops->fog, ps->fog, lerp);
+
     // no lerping if moved too far
     if (fabsf(ps->heightfog.start.dist - ops->heightfog.start.dist) > 512 ||
         fabsf(ps->heightfog.end  .dist - ops->heightfog.end  .dist) > 512)
         cg.refdef.heightfog = ps->heightfog;
     else
-        lerp_values(&ops->heightfog, &ps->heightfog, lerp,
-                    &cg.refdef.heightfog, sizeof(cg.refdef.heightfog) / sizeof(float));
+        cg.refdef.heightfog = BG_LerpHeightFog(ops->heightfog, ps->heightfog, lerp);
 
     // interpolate field of view
-    cg.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
+    cg.fov_x = CG_LerpFov(ops->fov, ps->fov, lerp);
     cg.fov_y = V_CalcFov(cg.fov_x, 4, 3);
 
-    AngleVectors(cg.refdef.viewangles, cg.v_forward, cg.v_right, cg.v_up);
+    AngleVectors(cg.refdef.viewangles, &cg.v_forward, &cg.v_right, &cg.v_up);
 
-    VectorCopy(cg.refdef.vieworg, cg.player_entity_origin);
-    VectorCopy(cg.refdef.viewangles, cg.player_entity_angles);
+    cg.player_entity_origin = cg.refdef.vieworg;
+    cg.player_entity_angles = cg.refdef.viewangles;
 
-    if (cg.player_entity_angles[PITCH] > 180) {
-        cg.player_entity_angles[PITCH] -= 360;
+    if (cg.player_entity_angles.pitch > 180) {
+        cg.player_entity_angles.pitch -= 360;
     }
 
-    cg.player_entity_angles[PITCH] = cg.player_entity_angles[PITCH] / 3;
+    cg.player_entity_angles.pitch = cg.player_entity_angles.pitch / 3;
 
     // add view height
-    cg.refdef.vieworg[2] += cg.predicted_ps.viewheight;
+    cg.refdef.vieworg.z += cg.predicted_ps.viewheight;
     if (cg.duck_time > cg.time)
-        cg.refdef.vieworg[2] -= (cg.duck_time - cg.time) * cg.duck_factor;
+        cg.refdef.vieworg.z -= (cg.duck_time - cg.time) * cg.duck_factor;
 
     cg.refdef.rdflags = ps->rdflags;
 
@@ -688,10 +671,10 @@ static void CG_CalcViewValues(void)
 
     // update listener
     cg.listener.entnum = ps->clientnum;
-    VectorCopy(cg.refdef.vieworg, cg.listener.origin);
-    VectorCopy(cg.predicted_ps.velocity, cg.listener.velocity);
-    VectorCopy(cg.v_forward, cg.listener.v_forward);
-    VectorCopy(cg.v_up, cg.listener.v_up);
+    cg.listener.origin = cg.refdef.vieworg;
+    cg.listener.velocity = cg.predicted_ps.velocity;
+    cg.listener.v_forward = cg.v_forward;
+    cg.listener.v_up = cg.v_up;
     cg.listener.underwater = cg.refdef.rdflags & RDF_UNDERWATER;
     CG_UpdateReverb();
 
@@ -718,9 +701,9 @@ void CG_RenderView(void)
     // never let it sit exactly on a node line, because a water plane can
     // disappear when viewed with the eye exactly on it.
     // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-    cg.refdef.vieworg[0] += 1.0f / 16;
-    cg.refdef.vieworg[1] += 1.0f / 16;
-    cg.refdef.vieworg[2] += 1.0f / 16;
+    cg.refdef.vieworg.x += 1.0f / 16;
+    cg.refdef.vieworg.y += 1.0f / 16;
+    cg.refdef.vieworg.z += 1.0f / 16;
 
     cg.refdef.x = scr_vrect.x;
     cg.refdef.y = scr_vrect.y;

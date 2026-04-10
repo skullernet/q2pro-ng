@@ -282,21 +282,21 @@ static void InfantryMachineGun(edict_t *self)
             flash_number = MZ2_INFANTRY_MACHINEGUN_22;
         else
             flash_number = MZ2_INFANTRY_MACHINEGUN_1;
-        AngleVectors(self->s.angles, forward, right, NULL);
-        M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+        AngleVectors(self->s.angles, &forward, &right, NULL);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
         if (self->enemy)
-            PredictAim(self, self->enemy, start, 0, true, -0.2f, forward, NULL);
+            M_PredictAim(self, self->enemy, start, 0, true, -0.2f, &forward, NULL);
         else
-            AngleVectors(self->s.angles, forward, right, NULL);
+            AngleVectors(self->s.angles, &forward, NULL, NULL);
     } else {
         flash_number = MZ2_INFANTRY_MACHINEGUN_2 + (self->s.frame - FRAME_death211);
 
-        AngleVectors(self->s.angles, forward, right, NULL);
-        M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+        AngleVectors(self->s.angles, &forward, &right, NULL);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
-        VectorSubtract(self->s.angles, aimangles[flash_number - MZ2_INFANTRY_MACHINEGUN_2], vec);
-        AngleVectors(vec, forward, NULL, NULL);
+        vec = Vec3_Sub(self->s.angles, aimangles[flash_number - MZ2_INFANTRY_MACHINEGUN_2]);
+        AngleVectors(vec, &forward, NULL, NULL);
     }
 
     monster_fire_bullet(self, start, forward, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
@@ -312,14 +312,13 @@ void MONSTERINFO_SIGHT(infantry_sight)(edict_t *self, edict_t *other)
 
 static void infantry_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void infantry_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -413,7 +412,7 @@ static const gib_def_t infantry_gibs[] = {
     { 0 }
 };
 
-void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     int n;
 
@@ -459,15 +458,13 @@ void DIE(infantry_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         edict_t *head = ThrowGib(self, "models/monsters/infantry/gibs/head.md2", damage, GIB_NONE);
 
         if (head) {
-            VectorCopy(self->s.angles, head->s.angles);
-            VectorCopy(self->s.origin, head->s.origin);
-            head->s.origin[2] += 32;
-            vec3_t dir;
-            VectorSubtract(self->s.origin, inflictor->s.origin, dir);
-            VectorNormalize(dir);
-            VectorScale(dir, 100, head->velocity);
-            head->velocity[2] = 200;
-            VectorScale(head->avelocity, 0.15f, head->avelocity);
+            head->s.angles = self->s.angles;
+            head->s.origin = self->s.origin;
+            head->s.origin.z += 32;
+            vec3_t dir = Vec3_Direction(self->s.origin, inflictor->s.origin);
+            head->velocity = Vec3_Scale(dir, 100);
+            head->velocity.z = 200;
+            head->avelocity = Vec3_Scale(head->avelocity, 0.15f);
             head->s.skinnum = 0;
             trap_LinkEntity(head);
         }
@@ -714,18 +711,18 @@ static void infantry_jump_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void infantry_jump2_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 150, forward, self->velocity);
-    VectorMA(self->velocity, 400, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 150, forward);
+    self->velocity = Vec3_MA(self->velocity, 400, up);
 }
 
 static void infantry_jump_wait_land(edict_t *self)
@@ -774,7 +771,7 @@ static void infantry_jump(edict_t *self, blocked_jump_result_t result)
 
     monster_done_dodge(self);
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &infantry_move_jump2);
     else
         M_SetAnimation(self, &infantry_move_jump);
@@ -783,7 +780,7 @@ static void infantry_jump(edict_t *self, blocked_jump_result_t result)
 bool MONSTERINFO_BLOCKED(infantry_blocked)(edict_t *self, float dist)
 {
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             infantry_jump(self, result);
         return true;
@@ -880,8 +877,7 @@ void SP_monster_infantry(edict_t *self)
 
     G_PrecacheGibs(infantry_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
 
     self->health = 100 * st.health_multiplier;
     self->gib_health = -65;

@@ -87,13 +87,16 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 
 #define VM_PTR_NULL(arg, type) VM_PTR_NULL_CNT(arg, type, 1)
 
-#define VM_VEC3(arg) VM_PTR_CNT(arg, vec_t, 3)
-#define VM_VEC3_NULL(arg) VM_PTR_NULL_CNT(arg, vec_t, 3)
-
 #define VM_PTR(arg, type) VM_PTR_CNT(arg, type, 1)
 
 #define VM_STR_BUF(arg, siz) \
     ((VM_U32(arg) || VM_U32(siz)) ? VM_PTR_CNT(arg, char, VM_U32(siz)) : NULL)
+
+#define VM_VEC3(arg)    *VM_PTR(arg, vec3_t)
+#define VM_VEC3_PTR(arg) VM_PTR(arg, vec3_t)
+
+#define VM_BOX3(arg)    *VM_PTR(arg, box3_t)
+#define VM_BOX3_PTR(arg) VM_PTR(arg, box3_t)
 
 #define VM_VEC3_BUF(arg, siz) \
     ((VM_U32(arg) || VM_U32(siz)) ? VM_PTR_CNT(arg, vec3_t, VM_U32(siz)) : NULL)

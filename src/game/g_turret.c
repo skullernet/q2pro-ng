@@ -6,28 +6,6 @@
 
 #define SPAWNFLAG_TURRET_BREACH_FIRE    65536
 
-static void AnglesNormalize(vec3_t vec)
-{
-    while (vec[0] > 360)
-        vec[0] -= 360;
-    while (vec[0] < 0)
-        vec[0] += 360;
-    while (vec[1] > 360)
-        vec[1] -= 360;
-    while (vec[1] < 0)
-        vec[1] += 360;
-}
-
-float SnapToEights(float x)
-{
-    x *= 8.0f;
-    if (x > 0.0f)
-        x += 0.5f;
-    else
-        x -= 0.5f;
-    return 0.125f * (int)x;
-}
-
 void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
 {
     edict_t *attacker;
@@ -37,7 +15,7 @@ void MOVEINFO_BLOCKED(turret_blocked)(edict_t *self, edict_t *other)
             attacker = &g_edicts[self->teammaster->r.ownernum];
         else
             attacker = self->teammaster;
-        T_Damage(other, self, attacker, vec3_origin, other->s.origin, 0, self->teammaster->dmg, 10, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, attacker, vec3_origin, other->s.origin, 0, self->teammaster->dmg, 10, DAMAGE_NONE, MOD_CRUSH);
     }
 }
 
@@ -64,10 +42,10 @@ static void turret_breach_fire(edict_t *self)
     int    damage;
     int    speed;
 
-    AngleVectors(self->s.angles, f, r, u);
-    VectorMA(self->s.origin, self->move_origin[0], f, start);
-    VectorMA(start, self->move_origin[1], r, start);
-    VectorMA(start, self->move_origin[2], u, start);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    start = Vec3_MA(self->s.origin, self->move_origin.x, f);
+    start = Vec3_MA(start, self->move_origin.y, r);
+    start = Vec3_MA(start, self->move_origin.z, u);
 
     if (self->count)
         damage = self->count;
@@ -84,76 +62,46 @@ static void turret_breach_fire(edict_t *self)
 void THINK(turret_breach_think)(edict_t *self)
 {
     edict_t *ent;
-    vec3_t   current_angles;
-    vec3_t   delta;
-
-    VectorCopy(self->s.angles, current_angles);
-    AnglesNormalize(current_angles);
-
-    AnglesNormalize(self->move_angles);
-    if (self->move_angles[PITCH] > 180)
-        self->move_angles[PITCH] -= 360;
+    vec3_t   dest, delta;
 
     // clamp angles to mins & maxs
-    if (self->move_angles[PITCH] > self->pos1[PITCH])
-        self->move_angles[PITCH] = self->pos1[PITCH];
-    else if (self->move_angles[PITCH] < self->pos2[PITCH])
-        self->move_angles[PITCH] = self->pos2[PITCH];
+    dest = self->move_angles;
 
-    if ((self->move_angles[YAW] < self->pos1[YAW]) || (self->move_angles[YAW] > self->pos2[YAW])) {
+    dest.pitch = Q_clipf(AngleMod(dest.pitch), self->pos1.pitch, self->pos2.pitch);
+
+    if ((dest.yaw < self->pos1.yaw) || (dest.yaw > self->pos2.yaw)) {
         float dmin, dmax;
 
-        dmin = fabsf(self->pos1[YAW] - self->move_angles[YAW]);
-        if (dmin < -180)
-            dmin += 360;
-        else if (dmin > 180)
-            dmin -= 360;
-        dmax = fabsf(self->pos2[YAW] - self->move_angles[YAW]);
-        if (dmax < -180)
-            dmax += 360;
-        else if (dmax > 180)
-            dmax -= 360;
+        dmin = AngleMod(self->pos1.yaw - dest.yaw);
+        dmax = AngleMod(self->pos2.yaw - dest.yaw);
         if (fabsf(dmin) < fabsf(dmax))
-            self->move_angles[YAW] = self->pos1[YAW];
+            dest.yaw = self->pos1.yaw;
         else
-            self->move_angles[YAW] = self->pos2[YAW];
+            dest.yaw = self->pos2.yaw;
     }
 
-    VectorSubtract(self->move_angles, current_angles, delta);
-    if (delta[0] < -180)
-        delta[0] += 360;
-    else if (delta[0] > 180)
-        delta[0] -= 360;
-    if (delta[1] < -180)
-        delta[1] += 360;
-    else if (delta[1] > 180)
-        delta[1] -= 360;
-    delta[2] = 0;
+    delta = Vec3_AngleMod(Vec3_Sub(dest, self->s.angles));
+    delta = Vec3_Scale(delta, 1.0f / FRAME_TIME_SEC);
 
-    if (delta[0] > self->speed * FRAME_TIME_SEC)
-        delta[0] = self->speed * FRAME_TIME_SEC;
-    if (delta[0] < -1 * self->speed * FRAME_TIME_SEC)
-        delta[0] = -1 * self->speed * FRAME_TIME_SEC;
-    if (delta[1] > self->speed * FRAME_TIME_SEC)
-        delta[1] = self->speed * FRAME_TIME_SEC;
-    if (delta[1] < -1 * self->speed * FRAME_TIME_SEC)
-        delta[1] = -1 * self->speed * FRAME_TIME_SEC;
+    delta.pitch = Q_clipf(delta.pitch, -self->speed, self->speed);
+    delta.yaw   = Q_clipf(delta.yaw,   -self->speed, self->speed);
+    delta.roll  = 0;
 
     for (ent = self->teammaster; ent; ent = ent->teamchain) {
         if (ent->noise_index) {
-            if (delta[0] || delta[1])
+            if (delta.pitch || delta.yaw)
                 ent->s.sound = G_EncodeSound(CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
             else
                 ent->s.sound = 0;
         }
     }
 
-    VectorScale(delta, 1.0f / FRAME_TIME_SEC, self->avelocity);
+    self->avelocity = delta;
 
     self->nextthink = level.time + FRAME_TIME;
 
     for (ent = self->teammaster; ent; ent = ent->teamchain)
-        ent->avelocity[1] = self->avelocity[1];
+        ent->avelocity.yaw = self->avelocity.yaw;
 
     // if we have a driver, adjust his velocities
     if (self->r.ownernum != ENTITYNUM_NONE) {
@@ -165,25 +113,25 @@ void THINK(turret_breach_think)(edict_t *self)
         vec3_t   dir;
 
         // angular is easy, just copy ours
-        owner->avelocity[0] = self->avelocity[0];
-        owner->avelocity[1] = self->avelocity[1];
+        owner->avelocity.pitch = self->avelocity.pitch;
+        owner->avelocity.yaw = self->avelocity.yaw;
 
         // x & y
-        angle = DEG2RAD(self->s.angles[1] + owner->move_origin[1]);
-        target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * owner->move_origin[0]);
-        target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * owner->move_origin[0]);
-        target[2] = owner->s.origin[2];
+        angle = DEG2RAD(self->s.angles.yaw + owner->move_origin.y);
+        target.x = self->s.origin.x + cosf(angle) * owner->move_origin.x;
+        target.y = self->s.origin.y + sinf(angle) * owner->move_origin.x;
+        target.z = owner->s.origin.z;
 
-        VectorSubtract(target, owner->s.origin, dir);
-        owner->velocity[0] = dir[0] * 1.0f / FRAME_TIME_SEC;
-        owner->velocity[1] = dir[1] * 1.0f / FRAME_TIME_SEC;
+        dir = Vec3_Sub(target, owner->s.origin);
+        owner->velocity.x = dir.x * 1.0f / FRAME_TIME_SEC;
+        owner->velocity.y = dir.y * 1.0f / FRAME_TIME_SEC;
 
         // z
-        angle = DEG2RAD(self->s.angles[PITCH]);
-        target_z = SnapToEights(self->s.origin[2] + owner->move_origin[0] * tanf(angle) + owner->move_origin[2]);
+        angle = DEG2RAD(self->s.angles.pitch);
+        target_z = self->s.origin.z + owner->move_origin.x * tanf(angle) + owner->move_origin.z;
 
-        diff = target_z - owner->s.origin[2];
-        owner->velocity[2] = diff * 1.0f / FRAME_TIME_SEC;
+        diff = target_z - owner->s.origin.z;
+        owner->velocity.z = diff * 1.0f / FRAME_TIME_SEC;
 
         if (self->spawnflags & SPAWNFLAG_TURRET_BREACH_FIRE) {
             turret_breach_fire(self);
@@ -200,7 +148,7 @@ void THINK(turret_breach_finish_init)(edict_t *self)
     } else {
         self->target_ent = G_PickTarget(self->target);
         if (self->target_ent) {
-            VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
+            self->move_origin = Vec3_Sub(self->target_ent->s.origin, self->s.origin);
             G_FreeEdict(self->target_ent);
         } else
             G_Printf("%s: could not find target entity \"%s\"\n", etos(self), self->target);
@@ -234,17 +182,17 @@ void SP_turret_breach(edict_t *self)
     if (!st.maxyaw)
         st.maxyaw = 360;
 
-    self->pos1[PITCH] = -1 * st.minpitch;
-    self->pos1[YAW] = st.minyaw;
-    self->pos2[PITCH] = -1 * st.maxpitch;
-    self->pos2[YAW] = st.maxyaw;
+    self->pos1.pitch = st.minpitch;
+    self->pos1.yaw = st.minyaw;
+    self->pos2.pitch = st.maxpitch;
+    self->pos2.yaw = st.maxyaw;
 
     // scale used for rocket scale
     self->dmg_radius = self->s.scale;
     self->s.scale = 0;
 
-    self->ideal_yaw = self->s.angles[YAW];
-    self->move_angles[YAW] = self->ideal_yaw;
+    self->ideal_yaw = self->s.angles.yaw;
+    self->move_angles.yaw = self->ideal_yaw;
 
     self->moveinfo.blocked = turret_blocked;
 
@@ -276,18 +224,18 @@ Must NOT be on the team with the rest of the turret parts.
 Instead it must target the turret_breach.
 */
 
-void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod);
+void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod);
 void infantry_stand(edict_t *self);
 void infantry_pain(edict_t *self, edict_t *other, float kick, int damage, mod_t mod);
 void infantry_setskin(edict_t *self);
 
-void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (!self->deadflag) {
         edict_t *ent;
 
         // level the gun
-        self->target_ent->move_angles[0] = 0;
+        self->target_ent->move_angles.pitch = 0;
 
         // remove the driver from the end of them team chain
         for (ent = self->target_ent->teammaster; ent->teamchain != self; ent = ent->teamchain)
@@ -302,7 +250,7 @@ void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker
         self->target_ent->moveinfo.blocked = NULL;
 
         // clear pitch
-        self->s.angles[0] = 0;
+        self->s.angles.pitch = 0;
         self->movetype = MOVETYPE_STEP;
 
         self->think = monster_think;
@@ -312,9 +260,9 @@ void DIE(turret_driver_die)(edict_t *self, edict_t *inflictor, edict_t *attacker
     infantry_die(self, inflictor, attacker, damage, point, mod);
 
     G_FixStuckObject(self, self->s.origin);
-    AngleVectors(self->s.angles, self->velocity, NULL, NULL);
-    VectorScale(self->velocity, -50, self->velocity);
-    self->velocity[2] += 110;
+    AngleVectors(self->s.angles, &self->velocity, NULL, NULL);
+    self->velocity = Vec3_Scale(self->velocity, -50);
+    self->velocity.z += 110;
 }
 
 void THINK(turret_driver_think)(edict_t *self)
@@ -343,10 +291,10 @@ void THINK(turret_driver_think)(edict_t *self)
     }
 
     // let the turret know where we want it to aim
-    VectorCopy(self->enemy->s.origin, target);
-    target[2] += self->enemy->viewheight;
-    VectorSubtract(target, self->target_ent->s.origin, dir);
-    vectoangles(dir, self->target_ent->move_angles);
+    target = self->enemy->s.origin;
+    target.z += self->enemy->viewheight;
+    dir = Vec3_Sub(target, self->target_ent->s.origin);
+    self->target_ent->move_angles = vectoangles(dir);
 
     // decide if we should shoot
     if (level.time < self->monsterinfo.attack_finished)
@@ -376,19 +324,16 @@ void THINK(turret_driver_link)(edict_t *self)
     }
     self->target_ent->r.ownernum = self->s.number;
     self->target_ent->teammaster->r.ownernum = self->s.number;
-    VectorCopy(self->target_ent->s.angles, self->s.angles);
+    self->s.angles = self->target_ent->s.angles;
 
-    vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
-    vec[1] = self->target_ent->s.origin[1] - self->s.origin[1];
-    vec[2] = 0;
-    self->move_origin[0] = VectorLength(vec);
+    vec = Vec3_Sub(self->target_ent->s.origin, self->s.origin);
+    self->move_origin.x = Vec2_Length(Vec2_FromVec3(vec));
 
-    VectorSubtract(self->s.origin, self->target_ent->s.origin, vec);
-    vectoangles(vec, vec);
-    AnglesNormalize(vec);
-    self->move_origin[1] = vec[1];
+    vec = Vec3_Negate(vec);
+    vec = vectoangles(vec);
+    self->move_origin.y = vec.yaw;
 
-    self->move_origin[2] = self->s.origin[2] - self->target_ent->s.origin[2];
+    self->move_origin.z = self->s.origin.z - self->target_ent->s.origin.z;
 
     // add the driver to the end of them team chain
     for (ent = self->target_ent->teammaster; ent->teamchain; ent = ent->teamchain)
@@ -412,8 +357,7 @@ void SP_turret_driver(edict_t *self)
     self->movetype = MOVETYPE_PUSH;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/infantry/tris.md2");
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
 
     self->health = self->max_health = 100;
     self->gib_health = -40;
@@ -432,7 +376,7 @@ void SP_turret_driver(edict_t *self)
     self->takedamage = true;
     self->use = monster_use;
     self->clipmask = MASK_MONSTERSOLID;
-    VectorCopy(self->s.origin, self->s.old_origin);
+    self->s.old_origin = self->s.origin;
     self->monsterinfo.aiflags |= AI_STAND_GROUND;
     self->monsterinfo.setskin = infantry_setskin;
 
@@ -480,10 +424,10 @@ void THINK(turret_brain_think)(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
     }
 
-    VectorAvg(self->enemy->r.absmax, self->enemy->r.absmin, target);
+    target = Box3_Center(self->enemy->r.absbox);
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
-        trap_Trace(&trace, self->target_ent->s.origin, NULL, NULL, target, self->target_ent->s.number, MASK_SHOT);
+        trace = G_TraceLine(self->target_ent->s.origin, target, self->target_ent->s.number, MASK_SHOT);
         if (trace.fraction == 1 || trace.entnum == self->enemy->s.number) {
             if (self->monsterinfo.aiflags & AI_LOST_SIGHT) {
                 self->monsterinfo.trail_time = level.time;
@@ -496,8 +440,8 @@ void THINK(turret_brain_think)(edict_t *self)
     }
 
     // let the turret know where we want it to aim
-    VectorSubtract(target, self->target_ent->s.origin, dir);
-    vectoangles(dir, self->target_ent->move_angles);
+    dir = Vec3_Sub(target, self->target_ent->s.origin);
+    self->target_ent->move_angles = vectoangles(dir);
 
     // decide if we should shoot
     if (level.time < self->monsterinfo.attack_finished)
@@ -530,19 +474,16 @@ void THINK(turret_brain_link)(edict_t *self)
     }
     self->target_ent->r.ownernum = self->s.number;
     self->target_ent->teammaster->r.ownernum = self->s.number;
-    VectorCopy(self->target_ent->s.angles, self->s.angles);
+    self->s.angles = self->target_ent->s.angles;
 
-    vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
-    vec[1] = self->target_ent->s.origin[1] - self->s.origin[1];
-    vec[2] = 0;
-    self->move_origin[0] = VectorLength(vec);
+    vec = Vec3_Sub(self->target_ent->s.origin, self->s.origin);
+    self->move_origin.x = Vec2_Length(Vec2_FromVec3(vec));
 
-    VectorSubtract(self->s.origin, self->target_ent->s.origin, vec);
-    vectoangles(vec, vec);
-    AnglesNormalize(vec);
-    self->move_origin[1] = vec[1];
+    vec = Vec3_Negate(vec);
+    vec = vectoangles(vec);
+    self->move_origin.y = vec.yaw;
 
-    self->move_origin[2] = self->s.origin[2] - self->target_ent->s.origin[2];
+    self->move_origin.z = self->s.origin.z - self->target_ent->s.origin.z;
 
     // add the driver to the end of them team chain
     for (ent = self->target_ent->teammaster; ent->teamchain; ent = ent->teamchain)

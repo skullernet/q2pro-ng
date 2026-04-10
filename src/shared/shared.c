@@ -18,108 +18,36 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 
-const vec3_t vec3_origin = { 0, 0, 0 };
-
-void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
+void AngleVectors(vec3_t angles, vec3_t *forward, vec3_t *right, vec3_t *up)
 {
     float        angle;
     float        sr, sp, sy, cr, cp, cy;
 
-    angle = DEG2RAD(angles[YAW]);
+    angle = DEG2RAD(angles.yaw);
     sy = sinf(angle);
     cy = cosf(angle);
-    angle = DEG2RAD(angles[PITCH]);
+    angle = DEG2RAD(angles.pitch);
     sp = sinf(angle);
     cp = cosf(angle);
-    angle = DEG2RAD(angles[ROLL]);
+    angle = DEG2RAD(angles.roll);
     sr = sinf(angle);
     cr = cosf(angle);
 
     if (forward) {
-        forward[0] = cp * cy;
-        forward[1] = cp * sy;
-        forward[2] = -sp;
+        forward->x = cp * cy;
+        forward->y = cp * sy;
+        forward->z = -sp;
     }
     if (right) {
-        right[0] = (-1 * sr * sp * cy + -1 * cr * -sy);
-        right[1] = (-1 * sr * sp * sy + -1 * cr * cy);
-        right[2] = -1 * sr * cp;
+        right->x = (-1 * sr * sp * cy + -1 * cr * -sy);
+        right->y = (-1 * sr * sp * sy + -1 * cr * cy);
+        right->z = -1 * sr * cp;
     }
     if (up) {
-        up[0] = (cr * sp * cy + -sr * -sy);
-        up[1] = (cr * sp * sy + -sr * cy);
-        up[2] = cr * cp;
+        up->x = (cr * sp * cy + -sr * -sy);
+        up->y = (cr * sp * sy + -sr * cy);
+        up->z = cr * cp;
     }
-}
-
-vec_t VectorNormalize(vec3_t v)
-{
-    float    length, ilength;
-
-    length = VectorLength(v);
-
-    if (length) {
-        ilength = 1 / length;
-        v[0] *= ilength;
-        v[1] *= ilength;
-        v[2] *= ilength;
-    }
-
-    return length;
-}
-
-vec_t VectorNormalize2(const vec3_t v, vec3_t out)
-{
-    VectorCopy(v, out);
-    return VectorNormalize(out);
-}
-
-void ClearBounds(vec3_t mins, vec3_t maxs)
-{
-    mins[0] = mins[1] = mins[2] = 99999;
-    maxs[0] = maxs[1] = maxs[2] = -99999;
-}
-
-void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs)
-{
-    int        i;
-    vec_t    val;
-
-    for (i = 0; i < 3; i++) {
-        val = v[i];
-        mins[i] = min(mins[i], val);
-        maxs[i] = max(maxs[i], val);
-    }
-}
-
-void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2])
-{
-    int        i;
-
-    for (i = 0; i < 3; i++) {
-        c[0][i] = min(a[0][i], b[0][i]);
-        c[1][i] = max(a[1][i], b[1][i]);
-    }
-}
-
-/*
-=================
-RadiusFromBounds
-=================
-*/
-vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs)
-{
-    int     i;
-    vec3_t  corner;
-    vec_t   a, b;
-
-    for (i = 0; i < 3; i++) {
-        a = fabsf(mins[i]);
-        b = fabsf(maxs[i]);
-        corner[i] = max(a, b);
-    }
-
-    return VectorLength(corner);
 }
 
 /*
@@ -130,7 +58,7 @@ Setup rotation matrix given the normalized direction vector and angle to rotate
 around this vector. Adapted from Mesa 3D implementation of _math_matrix_rotate.
 ==================
 */
-void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
+void SetupRotationMatrix(vec3_t matrix[3], vec3_t dir, float degrees)
 {
     vec_t   angle, s, c, one_c, xx, yy, zz, xy, yz, zx, xs, ys, zs;
 
@@ -139,54 +67,42 @@ void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees)
     c = cosf(angle);
     one_c = 1.0F - c;
 
-    xx = dir[0] * dir[0];
-    yy = dir[1] * dir[1];
-    zz = dir[2] * dir[2];
-    xy = dir[0] * dir[1];
-    yz = dir[1] * dir[2];
-    zx = dir[2] * dir[0];
-    xs = dir[0] * s;
-    ys = dir[1] * s;
-    zs = dir[2] * s;
+    xx = dir.x * dir.x;
+    yy = dir.y * dir.y;
+    zz = dir.z * dir.z;
+    xy = dir.x * dir.y;
+    yz = dir.y * dir.z;
+    zx = dir.z * dir.x;
+    xs = dir.x * s;
+    ys = dir.y * s;
+    zs = dir.z * s;
 
-    matrix[0][0] = (one_c * xx) + c;
-    matrix[0][1] = (one_c * xy) - zs;
-    matrix[0][2] = (one_c * zx) + ys;
+    matrix[0].x = (one_c * xx) + c;
+    matrix[0].y = (one_c * xy) - zs;
+    matrix[0].z = (one_c * zx) + ys;
 
-    matrix[1][0] = (one_c * xy) + zs;
-    matrix[1][1] = (one_c * yy) + c;
-    matrix[1][2] = (one_c * yz) - xs;
+    matrix[1].x = (one_c * xy) + zs;
+    matrix[1].y = (one_c * yy) + c;
+    matrix[1].z = (one_c * yz) - xs;
 
-    matrix[2][0] = (one_c * zx) - ys;
-    matrix[2][1] = (one_c * yz) + xs;
-    matrix[2][2] = (one_c * zz) + c;
+    matrix[2].x = (one_c * zx) - ys;
+    matrix[2].y = (one_c * yz) + xs;
+    matrix[2].z = (one_c * zz) + c;
 }
 
-void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees)
+void MakeNormalVectors(vec3_t forward, vec3_t *right, vec3_t *up)
 {
-    vec3_t matrix[3];
-    vec3_t temp;
-
-    SetupRotationMatrix(matrix, dir, degrees);
-
-    VectorCopy(in, temp);
-    VectorRotate(temp, matrix, out);
-}
-
-void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up)
-{
-    float       d;
-
     // this rotate and negate guarantees a vector
     // not colinear with the original
-    right[1] = -forward[0];
-    right[2] = forward[1];
-    right[0] = forward[2];
+    vec3_t r = { forward.z, -forward.x, forward.y };
+    float d;
 
-    d = DotProduct(right, forward);
-    VectorMA(right, -d, forward, right);
-    VectorNormalize(right);
-    CrossProduct(right, forward, up);
+    d = Vec3_Dot(r, forward);
+    r = Vec3_MA(r, -d, forward);
+    r = Vec3_Normalize(r);
+
+    *right = r;
+    *up = Vec3_Cross(r, forward);
 }
 
 /*
@@ -367,7 +283,7 @@ const vec3_t bytedirs[NUMVERTEXNORMALS] = {
     { -0.688191, -0.587785, -0.425325 },
 };
 
-int DirToByte(const vec3_t dir)
+int DirToByte(vec3_t dir)
 {
     int     i, best;
     float   d, bestd;
@@ -375,7 +291,7 @@ int DirToByte(const vec3_t dir)
     bestd = 0;
     best = 0;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
-        d = DotProduct(dir, bytedirs[i]);
+        d = Vec3_Dot(dir, bytedirs[i]);
         if (d > bestd) {
             bestd = d;
             best = i + 1;
@@ -385,46 +301,43 @@ int DirToByte(const vec3_t dir)
     return best;
 }
 
-void ByteToDir(unsigned index, vec3_t dir)
+vec3_t ByteToDir(unsigned index)
 {
-    if (index) {
-        Q_assert_soft(index <= NUMVERTEXNORMALS);
-        VectorCopy(bytedirs[index - 1], dir);
-    } else {
-        VectorClear(dir);
-    }
+    if (!index)
+        return vec3_origin;
+
+    Q_assert_soft(index <= NUMVERTEXNORMALS);
+    return bytedirs[index - 1];
 }
 
-void vectoangles(const vec3_t value1, vec3_t angles)
+vec3_t vectoangles(vec3_t value)
 {
     float   forward;
     float   yaw, pitch;
 
-    if (value1[1] == 0 && value1[0] == 0) {
+    if (value.y == 0 && value.x == 0) {
         yaw = 0;
-        if (value1[2] > 0)
+        if (value.z > 0)
             pitch = 90;
         else
             pitch = 270;
     } else {
-        if (value1[0])
-            yaw = RAD2DEG(atan2f(value1[1], value1[0]));
-        else if (value1[1] > 0)
+        if (value.x)
+            yaw = RAD2DEG(atan2f(value.y, value.x));
+        else if (value.y > 0)
             yaw = 90;
         else
             yaw = 270;
         if (yaw < 0)
             yaw += 360;
 
-        forward = sqrtf(value1[0] * value1[0] + value1[1] * value1[1]);
-        pitch = RAD2DEG(atan2f(value1[2], forward));
+        forward = Vec2_Length(Vec2_FromVec3(value));
+        pitch = RAD2DEG(atan2f(value.z, forward));
         if (pitch < 0)
             pitch += 360;
     }
 
-    angles[PITCH] = -pitch;
-    angles[YAW] = yaw;
-    angles[ROLL] = 0;
+    return Vec3(-pitch, yaw, 0);
 }
 
 //====================================================================================
@@ -706,14 +619,14 @@ vtos
 This is just a convenience function for printing vectors.
 =============
 */
-char *vtos(const vec3_t v)
+char *vtos(vec3_t v)
 {
     static char str[8][32];
     static int  index;
 
     index = (index + 1) & 7;
 
-    Q_snprintf(str[index], sizeof(str[0]), "(%.f %.f %.f)", v[0], v[1], v[2]);
+    Q_snprintf(str[index], sizeof(str[0]), "(%.f %.f %.f)", v.x, v.y, v.z);
 
     return str[index];
 }
@@ -1058,22 +971,22 @@ bool COM_ParseColor(const char *s, color_t *color)
 
         switch (i) {
         case 3:
-            color->u8[0] = c[0] | (c[0] << 4);
-            color->u8[1] = c[1] | (c[1] << 4);
-            color->u8[2] = c[2] | (c[2] << 4);
-            color->u8[3] = 255;
+            color->r = c[0] | (c[0] << 4);
+            color->g = c[1] | (c[1] << 4);
+            color->b = c[2] | (c[2] << 4);
+            color->a = 255;
             break;
         case 6:
-            color->u8[0] = c[1] | (c[0] << 4);
-            color->u8[1] = c[3] | (c[2] << 4);
-            color->u8[2] = c[5] | (c[4] << 4);
-            color->u8[3] = 255;
+            color->r = c[1] | (c[0] << 4);
+            color->g = c[3] | (c[2] << 4);
+            color->b = c[5] | (c[4] << 4);
+            color->a = 255;
             break;
         case 8:
-            color->u8[0] = c[1] | (c[0] << 4);
-            color->u8[1] = c[3] | (c[2] << 4);
-            color->u8[2] = c[5] | (c[4] << 4);
-            color->u8[3] = c[7] | (c[6] << 4);
+            color->r = c[1] | (c[0] << 4);
+            color->g = c[3] | (c[2] << 4);
+            color->b = c[5] | (c[4] << 4);
+            color->a = c[7] | (c[6] << 4);
             break;
         default:
             return false;

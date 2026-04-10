@@ -151,9 +151,8 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
 
             ED_CallSpawn(newEnt);
             if (newEnt->r.inuse) {
-                VectorCopy(newEnt->r.mins, r->mins);
-                VectorCopy(newEnt->r.maxs, r->maxs);
-                r->radius = Distance(r->maxs, r->mins) * 0.5f;
+                r->box = newEnt->r.box;
+                r->radius = Box3_Radius(r->box);
                 G_FreeEdict(newEnt);
                 list->num_reinforcements++;
             }
@@ -216,7 +215,7 @@ void abortHeal(edict_t *self, bool gib, bool mark)
                 hurt = 500;
 
             T_Damage(self->enemy, self, self, vec3_origin, self->enemy->s.origin,
-                     DIRTOBYTE_UP, hurt, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+                     DIRTOBYTE_UP, hurt, 0, DAMAGE_NONE, MOD_UNKNOWN);
         }
 
         cleanupHeal(self);
@@ -240,14 +239,11 @@ bool finishHeal(edict_t *self)
     healee->itemtarget = NULL;
     healee->monsterinfo.healer = self;
 
-    vec3_t maxs;
+    vec3_t maxs = healee->r.box.maxs;
+    maxs.z += 48; // compensate for change when they die
 
-    VectorCopy(healee->r.maxs, maxs);
-    maxs[2] += 48; // compensate for change when they die
-
-    trace_t tr;
-    trap_Trace(&tr, healee->s.origin, healee->r.mins, maxs, healee->s.origin,
-               healee->s.number, MASK_MONSTERSOLID);
+    trace_t tr = G_Trace(healee->s.origin, healee->s.origin, healee->r.box,
+                         healee->s.number, MASK_MONSTERSOLID);
 
     if (tr.startsolid || tr.allsolid) {
         abortHeal(self, true, false);
@@ -334,11 +330,11 @@ static bool canReach(edict_t *self, edict_t *other)
     vec3_t  spot2;
     trace_t trace;
 
-    VectorCopy(self->s.origin, spot1);
-    spot1[2] += self->viewheight;
-    VectorCopy(other->s.origin, spot2);
-    spot2[2] += other->viewheight;
-    trap_Trace(&trace, spot1, NULL, NULL, spot2, self, MASK_PROJECTILE | MASK_WATER);
+    spot1 = self->s.origin;
+    spot1.z += self->viewheight;
+    spot2 = other->s.origin;
+    spot2.z += other->viewheight;
+    trace = G_TraceLine(spot1, spot2, self->s.number, MASK_PROJECTILE | MASK_WATER);
     return trace.fraction == 1.0f || trace.ent == other;
 }
 #endif
@@ -656,7 +652,7 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
         if (damage < 35) {
             G_StartSound(self, CHAN_VOICE, commander_sound_pain1, 1, ATTN_NORM);
 
-            if (mod.id != MOD_CHAINFIST)
+            if (mod != MOD_CHAINFIST)
                 return;
         }
 
@@ -670,7 +666,7 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
         return; // no pain anims in nightmare
 
     // if we're healing someone, we ignore pain
-    if (mod.id != MOD_CHAINFIST && (self->monsterinfo.aiflags & AI_MEDIC))
+    if (mod != MOD_CHAINFIST && (self->monsterinfo.aiflags & AI_MEDIC))
         return;
 
     if (self->mass > 400) {
@@ -724,13 +720,12 @@ static void medic_fire_blaster(edict_t *self)
         mz = ((self->mass > 400) ? MZ2_MEDIC_HYPERBLASTER2_1 : MZ2_MEDIC_HYPERBLASTER1_1) + (self->s.frame - FRAME_attack19);
     }
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     if (!strcmp(self->enemy->classname, "tesla_mine"))
         damage = 3;
@@ -744,14 +739,13 @@ static void medic_fire_blaster(edict_t *self)
 
 static void medic_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void medic_shrink(edict_t *self)
 {
-    self->r.maxs[2] = -2;
+    self->r.box.maxs.z = -2;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -801,7 +795,7 @@ static const gib_def_t medic_gibs[] = {
     { 0 }
 };
 
-void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // if we had a pending patient, he was already freed up in Killed
 
@@ -913,7 +907,7 @@ static void medic_hook_launch(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, commander_sound_hook_launch, 1, ATTN_NORM);
 }
 
-static const vec3_t medic_cable_offsets[] = {
+static vec3_t medic_cable_offsets[] = {
     { 45.0f, -9.2f, 15.5f },
     { 48.4f, -9.7f, 15.2f },
     { 47.8f, -9.8f, 15.8f },
@@ -953,19 +947,19 @@ static void medic_cable_attack(edict_t *self)
         return;
     }
 
-    AngleVectors(self->s.angles, f, r, NULL);
-    M_ProjectFlashSource(self, medic_cable_offsets[self->s.frame - FRAME_attack42], f, r, start);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, medic_cable_offsets[self->s.frame - FRAME_attack42], f, r);
 
     // check for max distance
     // not needed, done in checkattack
     // check for min distance
-    if (Distance(start, self->enemy->s.origin) < MEDIC_MIN_DISTANCE) {
+    if (Vec3_Distance(start, self->enemy->s.origin) < MEDIC_MIN_DISTANCE) {
         abortHeal(self, true, false);
         self->monsterinfo.nextframe = FRAME_attack52;
         return;
     }
 
-    trap_Trace(&tr, start, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_SOLID);
+    tr = G_TraceLine(start, self->enemy->s.origin, self->s.number, MASK_SOLID);
     if (tr.fraction != 1.0f && tr.entnum != self->enemy->s.number) {
         if (tr.entnum == ENTITYNUM_WORLD) {
             // give up on second try
@@ -1008,11 +1002,11 @@ static void medic_cable_attack(edict_t *self)
     }
 
     // adjust start for beam origin being in middle of a segment
-    VectorMA(start, 8, f, start);
+    start = Vec3_MA(start, 8, f);
 
     // adjust end z for end spot since the monster is currently dead
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] = (self->enemy->r.absmin[2] + self->enemy->r.absmax[2]) / 2;
+    end = self->enemy->s.origin;
+    end.z = (self->enemy->r.absbox.mins.z + self->enemy->r.absbox.maxs.z) / 2;
 
     edict_t *te = self->beam;
     if (!te) {
@@ -1026,8 +1020,8 @@ static void medic_cable_attack(edict_t *self)
         te->think = medic_cable_think;
     }
 
-    G_SnapVector(start, te->s.old_origin);
-    G_SnapVector(end, te->s.origin);
+    te->s.old_origin = G_SnapVector(start);
+    te->s.origin = G_SnapVector(end);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }
@@ -1081,7 +1075,7 @@ static void medic_determine_spawn(edict_t *self)
 {
     vec3_t f, r, offset, startpoint, spawnpoint;
 
-    AngleVectors(self->s.angles, f, r, NULL);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     int num_summoned = M_PickReinforcements(self, 0);
 
@@ -1091,29 +1085,29 @@ static void medic_determine_spawn(edict_t *self)
 
     for (int spin = 0; spin < 2; spin++)
         for (int count = 0; count < num_summoned; count++) {
-            VectorScale(reinforcement_position[count], scale, offset);
+            offset = Vec3_Scale(reinforcement_position[count], scale);
 
             // see if we have any success by spinning around
             if (spin) {
-                offset[0] = -offset[0];
-                offset[1] = -offset[1];
+                offset.x = -offset.x;
+                offset.y = -offset.y;
             }
 
-            M_ProjectFlashSource(self, offset, f, r, startpoint);
+            startpoint = M_ProjectFlashSource(self, offset, f, r);
 
             // a little off the ground
-            startpoint[2] += 10 * scale;
+            startpoint.z += 10 * scale;
 
             const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
 
-            if (!FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, true))
+            if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
                 continue;
-            if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->mins, reinforcement->maxs, 256, -1))
+            if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->box, 256, -1))
                 continue;
 
             if (spin) {
                 self->monsterinfo.aiflags |= AI_MANUAL_STEERING;
-                self->ideal_yaw = anglemod(self->s.angles[YAW] + 180);
+                self->ideal_yaw = anglemod(self->s.angles.yaw + 180);
             }
 
             // we found a spot, we're done here
@@ -1132,7 +1126,7 @@ static void medic_spawngrows(edict_t *self)
 
     // if we've been directed to turn around
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
-        current_yaw = anglemod(self->s.angles[YAW]);
+        current_yaw = anglemod(self->s.angles.yaw);
         if (fabsf(current_yaw - self->ideal_yaw) > 0.1f) {
             self->monsterinfo.aiflags |= AI_HOLD_FRAME;
             return;
@@ -1143,7 +1137,7 @@ static void medic_spawngrows(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
     }
 
-    AngleVectors(self->s.angles, f, r, NULL);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     float scale = self->s.scale;
     if (!scale)
@@ -1153,23 +1147,21 @@ static void medic_spawngrows(edict_t *self)
         if (self->monsterinfo.chosen_reinforcements[i] == 255)
             break;
 
-        VectorScale(reinforcement_position[i], scale, offset);
+        offset = Vec3_Scale(reinforcement_position[i], scale);
 
-        M_ProjectFlashSource(self, offset, f, r, startpoint);
+        startpoint = M_ProjectFlashSource(self, offset, f, r);
 
         // a little off the ground
-        startpoint[2] += 10 * scale;
+        startpoint.z += 10 * scale;
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 
-        if (!FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, true))
+        if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;
-        if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->mins, reinforcement->maxs, 256, -1))
+        if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->box, 256, -1))
             continue;
 
-        vec3_t mid;
-        VectorAvg(reinforcement->mins, reinforcement->maxs, mid);
-        VectorAdd(spawnpoint, mid, spawnpoint);
+        spawnpoint = Vec3_Add(spawnpoint, Box3_Center(reinforcement->box));
         SpawnGrow_Spawn(spawnpoint, reinforcement->radius, reinforcement->radius * 2);
 
         num_success++;
@@ -1185,7 +1177,7 @@ static void medic_finish_spawn(edict_t *self)
     vec3_t   f, r, offset, startpoint, spawnpoint;
     edict_t *designated_enemy;
 
-    AngleVectors(self->s.angles, f, r, NULL);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     float scale = self->s.scale;
     if (!scale)
@@ -1195,21 +1187,21 @@ static void medic_finish_spawn(edict_t *self)
         if (self->monsterinfo.chosen_reinforcements[i] == 255)
             break;
 
-        VectorScale(reinforcement_position[i], scale, offset);
+        offset = Vec3_Scale(reinforcement_position[i], scale);
 
-        M_ProjectFlashSource(self, offset, f, r, startpoint);
+        startpoint = M_ProjectFlashSource(self, offset, f, r);
 
         // a little off the ground
-        startpoint[2] += 10 * scale;
+        startpoint.z += 10 * scale;
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 
-        if (!FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, true))
+        if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;
-        if (!CheckSpawnPoint(spawnpoint, reinforcement->mins, reinforcement->maxs))
+        if (!CheckSpawnPoint(spawnpoint, reinforcement->box))
             continue;
 
-        ent = CreateGroundMonster(spawnpoint, self->s.angles, reinforcement->mins, reinforcement->maxs, reinforcement->classname, 256);
+        ent = CreateGroundMonster(spawnpoint, self->s.angles, reinforcement->box, reinforcement->classname, 256);
         if (!ent)
             continue;
 
@@ -1455,8 +1447,7 @@ void SP_monster_medic(edict_t *self)
 
     G_PrecacheGibs(medic_gibs);
 
-    VectorSet(self->r.mins, -24, -24, -24);
-    VectorSet(self->r.maxs, 24, 24, 32);
+    self->r.box = Box3_FromSize(24, -24, 32);
 
     // PMM
     if (strcmp(self->classname, "monster_medic_commander") == 0) {

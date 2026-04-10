@@ -394,7 +394,7 @@ void PAIN(jorg_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
         return;
 
     // Lessen the chance of him going into his pain frames if he takes little damage
-    if (mod.id != MOD_CHAINFIST) {
+    if (mod != MOD_CHAINFIST) {
         if (damage <= 40)
             if (frandom() <= 0.6f)
                 return;
@@ -460,13 +460,12 @@ static void jorgBFG(edict_t *self)
     vec3_t dir;
     vec3_t vec;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_BFG_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_BFG_1], forward, right);
 
-    VectorCopy(self->enemy->s.origin, vec);
-    vec[2] += self->enemy->viewheight;
-    VectorSubtract(vec, start, dir);
-    VectorNormalize(dir);
+    vec = self->enemy->s.origin;
+    vec.z += self->enemy->viewheight;
+    dir = Vec3_Direction(vec, start);
     G_StartSound(self, CHAN_WEAPON, sound_bfg_fire, 1, ATTN_NORM);
     monster_fire_bfg(self, start, dir, 50, 300, 100, 200, MZ2_JORG_BFG_1);
 }
@@ -474,18 +473,18 @@ static void jorgBFG(edict_t *self)
 static void jorg_firebullet_right(edict_t *self)
 {
     vec3_t forward, right, start;
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_MACHINEGUN_R1], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, false, -0.2f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_MACHINEGUN_R1], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, false, -0.2f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_JORG_MACHINEGUN_R1);
 }
 
 static void jorg_firebullet_left(edict_t *self)
 {
     vec3_t forward, right, start;
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_MACHINEGUN_L1], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, false, 0.2f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_JORG_MACHINEGUN_L1], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, false, 0.2f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_JORG_MACHINEGUN_L1);
 }
 
@@ -533,7 +532,7 @@ static void jorg_dead(edict_t *self)
     MakronToss(self);
 }
 
-void DIE(jorg_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(jorg_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
     jorg_attack1_end_sound(self);
@@ -590,8 +589,7 @@ void SP_monster_jorg(edict_t *self)
 
     G_PrecacheGibs(jorg_gibs);
 
-    VectorSet(self->r.mins, -80, -80, 0);
-    VectorSet(self->r.maxs, 80, 80, 140);
+    self->r.box = Box3_FromSize(80, 0, 140);
 
     self->health = 8000 * st.health_multiplier;
     self->gib_health = -2000;

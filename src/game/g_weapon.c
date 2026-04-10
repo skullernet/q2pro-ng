@@ -23,23 +23,22 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
         return false;
 
     // see if enemy is in range
-    range = distance_between_boxes(self->enemy->r.absmin, self->enemy->r.absmax,
-                                   self->r.absmin, self->r.absmax);
-    if (range > aim[0])
+    range = Box3_Distance(self->enemy->r.absbox, self->r.absbox);
+    if (range > aim.forward)
         return false;
 
-    if (!(aim[1] > self->r.mins[0] && aim[1] < self->r.maxs[0])) {
+    if (!(aim.right > self->r.box.mins.x && aim.right < self->r.box.maxs.x)) {
         // this is a side hit so adjust the "right" value out to the edge of their bbox
-        if (aim[1] < 0)
-            aim[1] = self->enemy->r.mins[0];
+        if (aim.right < 0)
+            aim.right = self->enemy->r.box.mins.x;
         else
-            aim[1] = self->enemy->r.maxs[0];
+            aim.right = self->enemy->r.box.maxs.x;
     }
 
-    closest_point_to_box(self->s.origin, self->enemy->r.absmin, self->enemy->r.absmax, point);
+    point = Box3_ClampPoint(self->enemy->r.absbox, self->s.origin);
 
     // check that we can hit the point on the bbox
-    trap_Trace(&tr, self->s.origin, NULL, NULL, point, self->s.number, MASK_PROJECTILE);
+    tr = G_TraceLine(self->s.origin, point, self->s.number, MASK_PROJECTILE);
     hit = &g_edicts[tr.entnum];
 
     if (tr.fraction < 1) {
@@ -51,7 +50,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     }
 
     // check that we can hit the player from the point
-    trap_Trace(&tr, point, NULL, NULL, self->enemy->s.origin, self->s.number, MASK_PROJECTILE);
+    tr = G_TraceLine(point, self->enemy->s.origin, self->s.number, MASK_PROJECTILE);
     hit = &g_edicts[tr.entnum];
 
     if (tr.fraction < 1) {
@@ -62,40 +61,37 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
             hit = self->enemy;
     }
 
-    AngleVectors(self->s.angles, forward, right, up);
-    VectorMA(self->s.origin, range, forward, point);
-    VectorMA(point, aim[1], right, point);
-    VectorMA(point, aim[2], up, point);
-    VectorSubtract(point, self->enemy->s.origin, dir);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    point = Vec3_MA(self->s.origin, range, forward);
+    point = Vec3_MA(point, aim.right, right);
+    point = Vec3_MA(point, aim.up, up);
+    dir = Vec3_Sub(point, self->enemy->s.origin);
 
     // do the damage
-    T_Damage(hit, self, self, dir, point, 0, damage, kick / 2, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_HIT });
+    T_Damage(hit, self, self, dir, point, 0, damage, kick / 2, DAMAGE_NO_KNOCKBACK, MOD_HIT);
 
     if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client))
         return false;
 
     // do our special form of knockback here
-    VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, v);
-    VectorSubtract(v, point, v);
-    VectorNormalize(v);
-    VectorMA(self->enemy->velocity, kick, v, self->enemy->velocity);
-    if (self->enemy->velocity[2] > 0)
+    v = Box3_Center(self->enemy->r.absbox);
+    v = Vec3_Direction(v, point);
+    self->enemy->velocity = Vec3_MA(self->enemy->velocity, kick, v);
+    if (self->enemy->velocity.z > 0)
         self->enemy->groundentity = NULL;
     return true;
 }
 
-static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t end_, const vec3_t aimdir,
+static trace_t fire_lead_pierce(edict_t *self, vec3_t start, vec3_t end, vec3_t aimdir,
                                 int damage, int kick, entity_event_t te_impact, int hspread, int vspread,
-                                mod_t mod, contents_t *mask, bool *water, vec3_t water_start)
+                                mod_t mod, contents_t *mask, bool *water, vec3_t *water_start)
 {
     trace_t tr;
     pierce_t pierce;
     pierce_begin(&pierce);
 
-    vec3_t end, pos;
-    VectorCopy(end_, end);
     while (1) {
-        trap_Trace(&tr, start, NULL, NULL, end, self->s.number, *mask);
+        tr = G_TraceLine(start, end, self->s.number, *mask);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -104,10 +100,10 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
         // see if we hit water
         if (tr.contents & MASK_WATER) {
             *water = true;
-            VectorCopy(tr.endpos, water_start);
+            *water_start = tr.endpos;
 
             // CHECK: is this compare ever true?
-            if (te_impact != EV_NONE && !VectorCompare(start, tr.endpos)) {
+            if (te_impact != EV_NONE && !Vec3_IsEqual(start, tr.endpos)) {
                 entity_event_t color;
 
                 if (tr.contents & CONTENTS_WATER)
@@ -120,20 +116,20 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
                     color = EV_SPLASH_UNKNOWN;
 
                 if (color != EV_SPLASH_UNKNOWN) {
-                    G_SnapVectorTowards(tr.endpos, start, pos);
+                    vec3_t pos = G_SnapVectorTowards(tr.endpos, start);
                     G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
                 }
 
                 // change bullet's course when it enters water
                 vec3_t dir, forward, right, up;
-                VectorSubtract(end, start, dir);
-                vectoangles(dir, dir);
-                AngleVectors(dir, forward, right, up);
+                dir = Vec3_Sub(end, start);
+                dir = vectoangles(dir);
+                AngleVectors(dir, &forward, &right, &up);
                 float r = crandom() * hspread * 2;
                 float u = crandom() * vspread * 2;
-                VectorMA(water_start, 8192, forward, end);
-                VectorMA(end, r, right, end);
-                VectorMA(end, u, up, end);
+                end = Vec3_MA(*water_start, 8192, forward);
+                end = Vec3_MA(end, r, right);
+                end = Vec3_MA(end, u, up);
             }
 
             // re-trace ignoring water this time
@@ -145,7 +141,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
 
         // did we hit an hurtable entity?
         if (hit->takedamage) {
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, mod.id == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, mod == MOD_TESLA ? DAMAGE_ENERGY : DAMAGE_BULLET, mod);
 
             // only deadmonster is pierceable, or actual dead monsters
             // that haven't been made non-solid yet
@@ -157,7 +153,7 @@ static trace_t fire_lead_pierce(edict_t *self, const vec3_t start, const vec3_t 
             // send gun puff / flash
             // don't mark the sky
             if (te_impact != EV_NONE && !(tr.surface_flags & SURF_SKY)) {
-                G_SnapVectorTowards(tr.endpos, start, pos);
+                vec3_t pos = G_SnapVectorTowards(tr.endpos, start);
                 G_TempEntity(pos, te_impact, tr.plane.dir);
 
                 if (self->client)
@@ -180,48 +176,47 @@ fire_lead
 This is an internal support routine used for bullet/pellet based weapons.
 =================
 */
-static void fire_lead(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread, mod_t mod)
+static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread, mod_t mod)
 {
     contents_t   mask = G_ProjectileClipmask(self) | MASK_WATER;
     bool         water = false;
-    vec3_t       water_start = { 0 };
+    vec3_t       water_start = vec3_origin;
 
     // special case: we started in water.
     if (trap_PointContents(start) & MASK_WATER) {
         water = true;
-        VectorCopy(start, water_start);
+        water_start = start;
         mask &= ~MASK_WATER;
     }
 
     // check initial firing position
-    trace_t tr = fire_lead_pierce(self, self->s.origin, start, aimdir, damage, kick, te_impact, hspread, vspread, mod, &mask, &water, water_start);
+    trace_t tr = fire_lead_pierce(self, self->s.origin, start, aimdir, damage, kick, te_impact, hspread, vspread, mod, &mask, &water, &water_start);
 
     // we're clear, so do the second pierce
     if (tr.fraction == 1.0f) {
         vec3_t end, dir, forward, right, up;
-        vectoangles(aimdir, dir);
-        AngleVectors(dir, forward, right, up);
+        dir = vectoangles(aimdir);
+        AngleVectors(dir, &forward, &right, &up);
 
         float r = crandom() * hspread;
         float u = crandom() * vspread;
-        VectorMA(start, 8192, forward, end);
-        VectorMA(end, r, right, end);
-        VectorMA(end, u, up, end);
+        end = Vec3_MA(start, 8192, forward);
+        end = Vec3_MA(end, r, right);
+        end = Vec3_MA(end, u, up);
 
-        tr = fire_lead_pierce(self, start, end, aimdir, damage, kick, te_impact, hspread, vspread, mod, &mask, &water, water_start);
+        tr = fire_lead_pierce(self, start, end, aimdir, damage, kick, te_impact, hspread, vspread, mod, &mask, &water, &water_start);
     }
 
     // if went through water, determine where the end is and make a bubble trail
     if (water && te_impact != EV_NONE) {
         vec3_t pos, dir;
 
-        VectorSubtract(tr.endpos, water_start, dir);
-        VectorNormalize(dir);
-        VectorMA(tr.endpos, -2, dir, pos);
+        dir = Vec3_Direction(tr.endpos, water_start);
+        pos = Vec3_MA(tr.endpos, -2, dir);
         if (trap_PointContents(pos) & MASK_WATER)
-            VectorCopy(pos, tr.endpos);
+            tr.endpos = pos;
         else
-            trap_Trace(&tr, pos, NULL, NULL, water_start, tr.entnum, MASK_WATER);
+            tr = G_TraceLine(pos, water_start, tr.entnum, MASK_WATER);
 
         G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL);
     }
@@ -235,9 +230,9 @@ Fires a single round.  Used for machinegun and chaingun.  Would be fine for
 pistols, rifles, etc....
 =================
 */
-void fire_bullet(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, mod_t mod)
+void fire_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, mod_t mod)
 {
-    fire_lead(self, start, aimdir, damage, kick, mod.id == MOD_TESLA ? EV_NONE : EV_GUNSHOT, hspread, vspread, mod);
+    fire_lead(self, start, aimdir, damage, kick, mod == MOD_TESLA ? EV_NONE : EV_GUNSHOT, hspread, vspread, mod);
 }
 
 /*
@@ -247,7 +242,7 @@ fire_shotgun
 Shoots shotgun pellets.  Used by shotgun and super shotgun.
 =================
 */
-void fire_shotgun(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, mod_t mod)
+void fire_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, mod_t mod)
 {
     while (count--)
         fire_lead(self, start, aimdir, damage, kick, EV_SHOTGUN, hspread, vspread, mod);
@@ -276,7 +271,7 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
         PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { self->style });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, self->style);
         G_FreeEdict(self);
     } else {
         entity_event_t event = (self->style != MOD_BLUEBLASTER) ? EV_BLASTER : EV_BLUEHYPERBLASTER;
@@ -284,17 +279,17 @@ void TOUCH(blaster_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool
     }
 }
 
-edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int speed)
+edict_t *G_SpawnMissile(edict_t *self, vec3_t start, vec3_t dir, int speed)
 {
     edict_t *bolt = G_Spawn();
     bolt->r.svflags = SVF_PROJECTILE;
     bolt->r.solid = SOLID_BBOX;
     bolt->r.ownernum = self->s.number;
     bolt->s.renderfx = RF_NOSHADOW;
-    VectorCopy(start, bolt->s.origin);
-    VectorCopy(start, bolt->s.old_origin);
-    vectoangles(dir, bolt->s.angles);
-    VectorScale(dir, speed, bolt->velocity);
+    bolt->s.origin = start;
+    bolt->s.old_origin = start;
+    bolt->s.angles = vectoangles(dir);
+    bolt->velocity = Vec3_Scale(dir, speed);
     bolt->movetype = MOVETYPE_FLYMISSILE;
     bolt->clipmask = G_ProjectileClipmask(self);
     return bolt;
@@ -302,15 +297,14 @@ edict_t *G_SpawnMissile(edict_t *self, const vec3_t start, const vec3_t dir, int
 
 void G_CheckMissileImpact(edict_t *self, edict_t *bolt)
 {
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, bolt->s.origin, bolt->s.number, bolt->clipmask);
+    trace_t tr = G_TraceLine(self->s.origin, bolt->s.origin, bolt->s.number, bolt->clipmask);
     if (tr.fraction < 1.0f) {
-        VectorAdd(tr.endpos, tr.plane.normal, bolt->s.origin);
+        bolt->s.origin = Vec3_Add(tr.endpos, tr.plane.normal);
         bolt->touch(bolt, &g_edicts[tr.entnum], &tr, false);
     }
 }
 
-edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
+edict_t *fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
 {
     edict_t *bolt;
 
@@ -324,7 +318,7 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->classname = "bolt";
-    bolt->style = mod.id;
+    bolt->style = mod;
     trap_LinkEntity(bolt);
 
     G_CheckMissileImpact(self, bolt);
@@ -339,10 +333,10 @@ edict_t *fire_blaster(edict_t *self, const vec3_t start, const vec3_t dir, int d
 fire_grenade
 =================
 */
-static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t normal)
+static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, vec3_t normal)
 {
     edict_t *owner = &g_edicts[ent->r.ownernum];
-    mod_id_t mod;
+    mod_t mod;
     entity_event_t event;
 
     if (owner->client)
@@ -350,15 +344,13 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
 
     // FIXME: if we are onground then raise our Z just a bit since we are a point?
     if (other) {
-        vec3_t dir;
-
-        VectorSubtract(other->s.origin, ent->s.origin, dir);
+        vec3_t dir = Vec3_Sub(other->s.origin, ent->s.origin);
         if (ent->spawnflags & SPAWNFLAG_GRENADE_HAND)
             mod = MOD_HANDGRENADE;
         else
             mod = MOD_GRENADE;
         T_Damage(other, ent, owner, dir, ent->s.origin, DirToByte(normal), ent->dmg, ent->dmg,
-                 mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, (mod_t) { mod });
+                 mod == MOD_HANDGRENADE ? DAMAGE_RADIUS : DAMAGE_NONE, mod);
     }
 
     if (ent->spawnflags & SPAWNFLAG_GRENADE_HELD)
@@ -367,9 +359,9 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
         mod = MOD_HG_SPLASH;
     else
         mod = MOD_G_SPLASH;
-    T_RadiusDamage(ent, owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { mod });
+    T_RadiusDamage(ent, owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, mod);
 
-    VectorAdd(ent->s.origin, normal, ent->s.origin);
+    ent->s.origin = Vec3_Add(ent->s.origin, normal);
     if (ent->waterlevel)
         event = ent->groundentity ? EV_GRENADE_EXPLOSION_WATER : EV_ROCKET_EXPLOSION_WATER;
     else
@@ -379,8 +371,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, const vec3_t norma
 
 void THINK(Grenade_Explode)(edict_t *ent)
 {
-    vec3_t normal;
-    VectorScale(ent->velocity, -0.02f, normal);
+    vec3_t normal = Vec3_Scale(ent->velocity, -0.02f);
     Grenade_ExplodeReal(ent, NULL, normal);
 }
 
@@ -414,39 +405,32 @@ void THINK(Grenade4_Think)(edict_t *self)
         return;
     }
 
-    if (!VectorEmpty(self->velocity)) {
-        float p = self->s.angles[0];
-        float r = self->s.angles[2];
-        float speed_frac = Q_clipf(VectorLengthSquared(self->velocity) / (self->speed * self->speed), 0, 1);
-        vectoangles(self->velocity, self->s.angles);
-        self->s.angles[0] = LerpAngle(p, self->s.angles[0], speed_frac);
-        self->s.angles[2] = r + (FRAME_TIME_SEC * 360 * speed_frac);
+    if (!Vec3_IsEmpty(self->velocity)) {
+        float p = self->s.angles.pitch;
+        float r = self->s.angles.roll;
+        float speed_frac = Q_clipf(Vec3_LengthSquared(self->velocity) / (self->speed * self->speed), 0, 1);
+        self->s.angles = vectoangles(self->velocity);
+        self->s.angles.pitch = LerpAngle(p, self->s.angles.pitch, speed_frac);
+        self->s.angles.roll = r + (FRAME_TIME_SEC * 360 * speed_frac);
     }
 
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed, gtime_t timer, float damage_radius, float right_adjust, float up_adjust, bool monster)
+void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, gtime_t timer, float damage_radius, float right_adjust, float up_adjust)
 {
     edict_t *grenade;
     vec3_t   dir;
-    vec3_t   forward, right, up;
+    vec3_t   right, up;
 
-    vectoangles(aimdir, dir);
-    AngleVectors(dir, forward, right, up);
+    dir = vectoangles(aimdir);
+    AngleVectors(dir, NULL, &right, &up);
 
     grenade = G_Spawn();
-    VectorCopy(start, grenade->s.origin);
-    VectorScale(aimdir, speed, grenade->velocity);
-
-    if (up_adjust) {
-        up_adjust *= level.gravity / 800.0f;
-        VectorMA(grenade->velocity, up_adjust, up, grenade->velocity);
-    }
-
-    if (right_adjust)
-        VectorMA(grenade->velocity, right_adjust, right, grenade->velocity);
-
+    grenade->s.origin = start;
+    grenade->velocity = Vec3_Scale(aimdir, speed);
+    grenade->velocity = Vec3_MA(grenade->velocity, up_adjust * (level.gravity / 800.0f), up);
+    grenade->velocity = Vec3_MA(grenade->velocity, right_adjust, right);
     grenade->movetype = MOVETYPE_BOUNCE;
     grenade->clipmask = G_ProjectileClipmask(self);
     grenade->r.solid = SOLID_BBOX;
@@ -455,15 +439,15 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     grenade->s.effects |= EF_GRENADE;
     grenade->s.renderfx |= RF_NOSHADOW;
     grenade->speed = speed;
-    if (monster) {
-        crandom_vec(grenade->avelocity, 360);
+    if (!self->client) {
+        grenade->avelocity = Vec3_Scale(Vec3_CenterRandom(), 360);
         grenade->s.modelindex = G_ModelIndex("models/objects/grenade/tris.md2");
         grenade->nextthink = level.time + timer;
         grenade->think = Grenade_Explode;
         grenade->s.morefx |= EFX_GRENADE_LIGHT;
     } else {
         grenade->s.modelindex = G_ModelIndex("models/objects/grenade4/tris.md2");
-        vectoangles(grenade->velocity, grenade->s.angles);
+        grenade->s.angles = vectoangles(grenade->velocity);
         grenade->nextthink = level.time + FRAME_TIME;
         grenade->timestamp = level.time + timer;
         grenade->think = Grenade4_Think;
@@ -478,26 +462,24 @@ void fire_grenade(edict_t *self, const vec3_t start, const vec3_t aimdir, int da
     trap_LinkEntity(grenade);
 }
 
-void fire_grenade2(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int speed, gtime_t timer, float damage_radius, bool held)
+void fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, gtime_t timer, float damage_radius, bool held)
 {
     edict_t *grenade;
     vec3_t   dir;
-    vec3_t   forward, right, up;
+    vec3_t   right, up;
 
-    vectoangles(aimdir, dir);
-    AngleVectors(dir, forward, right, up);
+    dir = vectoangles(aimdir);
+    AngleVectors(dir, NULL, &right, &up);
 
     grenade = G_Spawn();
-    VectorCopy(start, grenade->s.origin);
-    VectorScale(aimdir, speed, grenade->velocity);
+    grenade->s.origin = start;
+    grenade->velocity = Vec3_Scale(aimdir, speed);
 
     float scale = (200 + crandom() * 10.0f) * (level.gravity / 800.0f);
-    VectorMA(grenade->velocity, scale, up, grenade->velocity);
+    grenade->velocity = Vec3_MA(grenade->velocity, scale, up);
+    grenade->velocity = Vec3_MA(grenade->velocity, crandom() * 10.0f, right);
 
-    scale = crandom() * 10.0f;
-    VectorMA(grenade->velocity, scale, right, grenade->velocity);
-
-    crandom_vec(grenade->avelocity, 360);
+    grenade->avelocity = Vec3_Scale(Vec3_CenterRandom(), 360);
 
     grenade->movetype = MOVETYPE_BOUNCE;
     grenade->clipmask = G_ProjectileClipmask(self);
@@ -548,7 +530,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
         PlayerNoise(owner, ent->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
-        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.dir, ent->dmg, ent->dmg, DAMAGE_NONE, (mod_t) { MOD_ROCKET });
+        T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.dir, ent->dmg, ent->dmg, DAMAGE_NONE, MOD_ROCKET);
         // don't throw any debris in net games
     } else if (!deathmatch.integer && !coop.integer && !(tr->surface_flags & (SURF_WARP | SURF_TRANS33 | SURF_TRANS66 | SURF_FLOWING))) {
         int n = irandom1(5);
@@ -556,13 +538,13 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
     }
 
-    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, (mod_t) { MOD_R_SPLASH });
+    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, MOD_R_SPLASH);
 
-    VectorAdd(ent->s.origin, tr->plane.normal, ent->s.origin);
+    ent->s.origin = Vec3_Add(ent->s.origin, tr->plane.normal);
     G_BecomeEvent(ent, ent->waterlevel ? EV_ROCKET_EXPLOSION_WATER : EV_ROCKET_EXPLOSION, 0);
 }
 
-edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
+edict_t *fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius, int radius_damage)
 {
     edict_t *rocket;
 
@@ -589,20 +571,22 @@ edict_t *fire_rocket(edict_t *self, const vec3_t start, const vec3_t dir, int da
 fire_rail
 =================
 */
-bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick)
+bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 {
-    contents_t mask = G_ProjectileClipmask(self);
-
-    vec3_t end;
-    VectorMA(start, 8192, aimdir, end);
-
     pierce_t pierce;
     trace_t tr;
+
+    trace_args_t args = {
+        .start = start,
+        .end = Vec3_MA(start, 8192, aimdir),
+        .entnum = self->s.number,
+        .mask = G_ProjectileClipmask(self)
+    };
 
     pierce_begin(&pierce);
 
     while (1) {
-        trap_Trace(&tr, start, NULL, NULL, end, self->s.number, mask);
+        trap_Trace(&tr, &args);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -612,7 +596,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
 
         // try to kill it first
         if ((hit != self) && (hit->takedamage))
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_NONE, (mod_t) { MOD_RAILGUN });
+            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_NONE, MOD_RAILGUN);
 
         // dead, so we don't need to care about checking pierce
         if (!hit->r.inuse || (!hit->r.solid || hit->r.solid == SOLID_TRIGGER))
@@ -635,9 +619,7 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     pierce_end(&pierce);
 
     // send gun puff / flash
-    entity_event_t te = (deathmatch.integer && g_instagib.integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL;
-    G_SnapVectorTowards(tr.endpos, start, end);
-    G_SpawnTrail(start, end, te);
+    G_SpawnTrail(start, tr.endpos, (deathmatch.integer && g_instagib.integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL);
 
     if (self->client)
         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
@@ -645,18 +627,9 @@ bool fire_rail(edict_t *self, const vec3_t start, const vec3_t aimdir, int damag
     return pierce.count;
 }
 
-static void bfg_laser_pos(const vec3_t p, float dist, vec3_t out)
+static vec3_t bfg_laser_pos(vec3_t p, float dist)
 {
-    float theta = frandom1(2 * M_PIf);
-    float phi = acosf(crandom());
-
-    vec3_t d = {
-        sinf(phi) * cosf(theta),
-        sinf(phi) * sinf(theta),
-        cosf(phi)
-    };
-
-    VectorMA(p, dist, d, out);
+    return Vec3_MA(p, dist, Vec3_RandomDir());
 }
 
 void THINK(bfg_laser_update)(edict_t *self)
@@ -668,18 +641,15 @@ void THINK(bfg_laser_update)(edict_t *self)
         return;
     }
 
-    G_SnapVector(owner->s.origin, self->s.origin);
+    self->s.origin = G_SnapVector(owner->s.origin);
     self->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(self);
 }
 
 static void bfg_spawn_laser(edict_t *self)
 {
-    vec3_t end;
-    bfg_laser_pos(self->s.origin, 256, end);
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_OPAQUE | CONTENTS_PROJECTILECLIP);
-
+    vec3_t end = bfg_laser_pos(self->s.origin, 256);
+    trace_t tr = G_TraceLine(self->s.origin, end, self->s.number, MASK_OPAQUE | CONTENTS_PROJECTILECLIP);
     if (tr.fraction == 1.0f)
         return;
 
@@ -689,8 +659,8 @@ static void bfg_spawn_laser(edict_t *self)
     laser->movetype = MOVETYPE_NONE;
     laser->r.solid = SOLID_NOT;
     laser->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
-    G_SnapVector(self->s.origin, laser->s.origin);
-    G_SnapVectorTowards(tr.endpos, self->s.origin, laser->s.old_origin);
+    laser->s.origin = G_SnapVector(self->s.origin);
+    laser->s.old_origin = G_SnapVectorTowards(tr.endpos, self->s.origin);
     laser->s.skinnum = 0xD0D0D0D0;
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
@@ -708,7 +678,7 @@ void THINK(bfg_explode)(edict_t *self)
 {
     edict_t *ent, *owner;
     float    points;
-    vec3_t   v;
+    vec3_t   centroid;
     float    dist;
 
     bfg_spawn_laser(self);
@@ -735,13 +705,11 @@ void THINK(bfg_explode)(edict_t *self)
                 continue;
             // ZOID
 
-            vec3_t centroid;
-            VectorAvg(ent->r.mins, ent->r.maxs, v);
-            VectorAdd(ent->s.origin, v, centroid);
-            dist = Distance(self->s.origin, centroid);
+            centroid = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+            dist = Vec3_Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-            T_Damage(ent, self, owner, self->velocity, centroid, 0, points, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_EFFECT });
+            T_Damage(ent, self, owner, self->velocity, centroid, 0, points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
 
             // Paril: draw BFG lightning laser to enemies
             G_SpawnTrail(self->s.origin, centroid, EV_BFG_ZAP);
@@ -771,14 +739,14 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, 200, 0, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
-    T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, (mod_t) { MOD_BFG_BLAST });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, 200, 0, DAMAGE_ENERGY, MOD_BFG_BLAST);
+    T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, MOD_BFG_BLAST);
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
     self->r.solid = SOLID_NOT;
     self->touch = NULL;
-    VectorMA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity, self->s.origin);
-    VectorClear(self->velocity);
+    self->s.origin = Vec3_MA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity);
+    self->velocity = vec3_origin;
     self->s.modelindex = G_ModelIndex("sprites/s_bfg3.sp2");
     self->s.frame = 0;
     self->s.sound = 0;
@@ -793,7 +761,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
 void THINK(bfg_think)(edict_t *self)
 {
     edict_t *ent, *owner, *hit;
-    vec3_t   point, dir, start, end, pos;
+    vec3_t   point, dir;
     int      dmg;
     trace_t  tr;
 
@@ -825,26 +793,26 @@ void THINK(bfg_think)(edict_t *self)
             continue;
         // ZOID
 
-        VectorAvg(ent->r.absmin, ent->r.absmax, point);
-
-        VectorSubtract(point, self->s.origin, dir);
-        VectorNormalize(dir);
-
-        VectorCopy(self->s.origin, start);
-        VectorMA(start, 2048, dir, end);
+        point = Box3_Center(ent->r.absbox);
 
         // [Paril-KEX] don't fire a laser if we're blocked by the world
-        trap_Trace(&tr, start, NULL, NULL, point, ENTITYNUM_NONE, MASK_SOLID | CONTENTS_PROJECTILECLIP);
-
-        if (tr.fraction < 1.0f)
+        if (G_TraceLine(self->s.origin, point, ENTITYNUM_NONE, MASK_SOLID | CONTENTS_PROJECTILECLIP).fraction < 1.0f)
             continue;
+
+        dir = Vec3_Direction(point, self->s.origin);
+
+        trace_args_t args = {
+            .start = self->s.origin,
+            .end = Vec3_MA(self->s.origin, 2048, dir),
+            .entnum = self->s.number,
+            .mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER | CONTENTS_PROJECTILECLIP
+        };
 
         pierce_t pierce;
         pierce_begin(&pierce);
 
         do {
-            trap_Trace(&tr, start, NULL, NULL, end, self->s.number,
-                       CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER | CONTENTS_PROJECTILECLIP);
+            trap_Trace(&tr, &args);
 
             // didn't hit anything, so we're done
             if (tr.fraction == 1.0f)
@@ -854,11 +822,11 @@ void THINK(bfg_think)(edict_t *self)
 
             // hurt it if we can
             if ((hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
-                T_Damage(hit, self, owner, dir, tr.endpos, 0, dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_BFG_LASER });
+                T_Damage(hit, self, owner, dir, tr.endpos, 0, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
 
             // if we hit something that's not a monster or player we're done
             if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && (!hit->client)) {
-                G_SnapVectorTowards(tr.endpos, start, pos);
+                vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
                 G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, 208, 4, 0));
                 break;
             }
@@ -866,14 +834,13 @@ void THINK(bfg_think)(edict_t *self)
 
         pierce_end(&pierce);
 
-        G_SnapVectorTowards(tr.endpos, start, pos);
-        G_SpawnTrail(self->s.origin, pos, EV_BFG_LASER);
+        G_SpawnTrail(self->s.origin, tr.endpos, EV_BFG_LASER);
     }
 
     self->nextthink = level.time + HZ(10);
 }
 
-void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, float damage_radius)
+void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius)
 {
     edict_t *bfg;
 
@@ -897,8 +864,7 @@ void fire_bfg(edict_t *self, const vec3_t start, const vec3_t dir, int damage, i
 
 void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    vec3_t pos;
-    VectorMA(self->s.origin, -0.01f, self->velocity, pos);
+    vec3_t pos = Vec3_MA(self->s.origin, -0.01f, self->velocity);
 
     G_TempEntity(pos, EV_WIDOWSPLASH, 0);
 
@@ -910,7 +876,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
     }
 }
 
-void fire_disintegrator(edict_t *self, const vec3_t start, const vec3_t dir, int speed)
+void fire_disintegrator(edict_t *self, vec3_t start, vec3_t dir, int speed)
 {
     edict_t *bfg;
 

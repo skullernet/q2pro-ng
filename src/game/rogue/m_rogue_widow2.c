@@ -30,8 +30,10 @@ static const float sweep_angles[] = {
     -40, -32, -24, -16, -8, 0, 8, 16, 24, 32, 40
 };
 
-static const vec3_t stalker_mins = { -28, -28, -18 };
-static const vec3_t stalker_maxs = { 28, 28, 18 };
+static const box3_t stalker_box = {
+    .mins = { -28, -28, -18 },
+    .maxs = { 28, 28, 18 }
+};
 
 void WidowCalcSlots(edict_t *self);
 void WidowPowerups(edict_t *self);
@@ -46,10 +48,10 @@ static void Widow2SaveBeamTarget(edict_t *self);
 
 // death stuff
 void WidowExplode(edict_t *self);
-static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, bool large, int hitsound, bool fade);
-void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, int hitsound, bool fade);
-static void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, bool fade);
-void ThrowSmallStuff(edict_t *self, const vec3_t point);
+static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool large, int hitsound, bool fade);
+void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, int hitsound, bool fade);
+static void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool fade);
+void ThrowSmallStuff(edict_t *self, vec3_t point);
 static void WidowExplosion1(edict_t *self);
 static void WidowExplosion2(edict_t *self);
 static void WidowExplosion3(edict_t *self);
@@ -97,44 +99,40 @@ static void Widow2Beam(edict_t *self)
     if ((!self->enemy) || (!self->enemy->r.inuse))
         return;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
     if ((self->s.frame >= FRAME_fireb05) && (self->s.frame <= FRAME_fireb09)) {
         // regular beam attack
         Widow2SaveBeamTarget(self);
         flashnum = MZ2_WIDOW2_BEAMER_1 + self->s.frame - FRAME_fireb05;
-        G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right, start);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
 
-        VectorCopy(self->pos2, target);
-        target[2] += self->enemy->viewheight - 10;
+        target = self->pos2;
+        target.z += self->enemy->viewheight - 10;
 
-        VectorSubtract(target, start, forward);
-        VectorNormalize(forward);
-
+        forward = Vec3_Direction(target, start);
         monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, flashnum);
     } else if ((self->s.frame >= FRAME_spawn04) && (self->s.frame <= FRAME_spawn14)) {
         // sweep
         flashnum = MZ2_WIDOW2_BEAM_SWEEP_1 + self->s.frame - FRAME_spawn04;
-        G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right, start);
-        VectorSubtract(self->enemy->s.origin, start, target);
-        vectoangles(target, targ_angles);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        target = Vec3_Sub(self->enemy->s.origin, start);
+        targ_angles = vectoangles(target);
 
-        VectorCopy(self->s.angles, vec);
-        vec[PITCH] += targ_angles[PITCH];
-        vec[YAW] -= sweep_angles[flashnum - MZ2_WIDOW2_BEAM_SWEEP_1];
+        vec = self->s.angles;
+        vec.pitch += targ_angles.pitch;
+        vec.yaw -= sweep_angles[flashnum - MZ2_WIDOW2_BEAM_SWEEP_1];
 
-        AngleVectors(vec, forward, NULL, NULL);
+        AngleVectors(vec, &forward, NULL, NULL);
         monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, flashnum);
     } else {
         Widow2SaveBeamTarget(self);
-        G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW2_BEAMER_1], forward, right, start);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW2_BEAMER_1], forward, right);
 
-        VectorCopy(self->pos2, target);
-        target[2] += self->enemy->viewheight - 10;
+        target = self->pos2;
+        target.z += self->enemy->viewheight - 10;
 
-        VectorSubtract(target, start, forward);
-        VectorNormalize(forward);
-
+        forward = Vec3_Direction(target, start);
         monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, MZ2_WIDOW2_BEAM_SWEEP_1);
     }
 }
@@ -145,15 +143,15 @@ static void Widow2Spawn(edict_t *self)
     edict_t *ent, *designated_enemy;
     int      i;
 
-    AngleVectors(self->s.angles, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, &u);
 
     for (i = 0; i < 2; i++) {
-        G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u, startpoint);
+        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
 
-        if (!FindSpawnPoint(startpoint, stalker_mins, stalker_maxs, spawnpoint, 64, true))
+        if (!FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true))
             continue;
 
-        ent = CreateGroundMonster(spawnpoint, self->s.angles, stalker_mins, stalker_maxs, "monster_stalker", 256);
+        ent = CreateGroundMonster(spawnpoint, self->s.angles, stalker_box, "monster_stalker", 256);
         if (!ent)
             continue;
 
@@ -201,15 +199,15 @@ static void widow2_ready_spawn(edict_t *self)
     int    i;
 
     Widow2Beam(self);
-    AngleVectors(self->s.angles, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, &u);
 
-    VectorAvg(stalker_mins, stalker_maxs, mid); // FIXME
-    float radius = Distance(stalker_maxs, stalker_mins) * 0.5f;
+    mid = Box3_Center(stalker_box); // FIXME
+    float radius = Box3_Radius(stalker_box);
 
     for (i = 0; i < 2; i++) {
-        G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u, startpoint);
-        if (FindSpawnPoint(startpoint, stalker_mins, stalker_maxs, spawnpoint, 64, true)) {
-            VectorAdd(spawnpoint, mid, spawnpoint);
+        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        if (FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true)) {
+            spawnpoint = Vec3_Add(spawnpoint, mid);
             SpawnGrow_Spawn(spawnpoint, radius, radius * 2);
         }
     }
@@ -281,17 +279,15 @@ static void WidowDisrupt(edict_t *self)
     vec3_t dir;
     vec3_t forward, right;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW_DISRUPTOR], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW_DISRUPTOR], forward, right);
 
-    if (Distance(self->pos1, self->enemy->s.origin) < 30) {
+    if (Vec3_Distance(self->pos1, self->enemy->s.origin) < 30) {
         // calc direction to where we targeted
-        VectorSubtract(self->pos1, start, dir);
-        VectorNormalize(dir);
-
+        dir = Vec3_Direction(self->pos1, start);
         monster_fire_tracker(self, start, dir, 20, 500, self->enemy, MZ2_WIDOW_DISRUPTOR);
     } else {
-        PredictAim(self, self->enemy, start, 1200, true, 0, dir, NULL);
+        M_PredictAim(self, self->enemy, start, 1200, true, 0, &dir, NULL);
         monster_fire_tracker(self, start, dir, 20, 1200, NULL, MZ2_WIDOW_DISRUPTOR);
     }
 
@@ -301,10 +297,10 @@ static void WidowDisrupt(edict_t *self)
 static void Widow2SaveDisruptLoc(edict_t *self)
 {
     if (self->enemy && self->enemy->r.inuse) {
-        VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-        self->pos1[2] += self->enemy->viewheight;
+        self->pos1 = self->enemy->s.origin; // save for aiming the shot
+        self->pos1.z += self->enemy->viewheight;
     } else
-        VectorClear(self->pos1);
+        self->pos1 = vec3_origin;
 }
 
 static void widow2_disrupt_reattack(edict_t *self)
@@ -327,19 +323,19 @@ const mmove_t MMOVE_T(widow2_move_attack_disrupt) = { FRAME_firea01, FRAME_firea
 static void Widow2SaveBeamTarget(edict_t *self)
 {
     if (self->enemy && self->enemy->r.inuse) {
-        VectorCopy(self->pos1, self->pos2);
-        VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
+        self->pos2 = self->pos1;
+        self->pos1 = self->enemy->s.origin; // save for aiming the shot
     } else {
-        VectorClear(self->pos1);
-        VectorClear(self->pos2);
+        self->pos1 = vec3_origin;
+        self->pos2 = vec3_origin;
     }
 }
 
 #if 0
 static void Widow2BeamTargetRemove(edict_t *self)
 {
-    VectorClear(self->pos1);
-    VectorClear(self->pos2);
+    self->pos1 = vec3_origin;
+    self->pos2 = vec3_origin;
 }
 
 static void Widow2StartSweep(edict_t *self)
@@ -376,20 +372,20 @@ static const mframe_t widow2_frames_spawn[] = {
 };
 const mmove_t MMOVE_T(widow2_move_spawn) = { FRAME_spawn01, FRAME_spawn18, widow2_frames_spawn, NULL };
 
-static bool widow2_tongue_attack_ok(const vec3_t start, const vec3_t end, float range)
+static bool widow2_tongue_attack_ok(vec3_t start, vec3_t end, float range)
 {
     vec3_t dir, angles;
 
     // check for max distance
-    VectorSubtract(start, end, dir);
-    if (VectorLength(dir) > range)
+    dir = Vec3_Sub(start, end);
+    if (Vec3_Length(dir) > range)
         return false;
 
     // check for min/max pitch
-    vectoangles(dir, angles);
-    if (angles[0] < -180)
-        angles[0] += 360;
-    if (fabsf(angles[0]) > 30)
+    angles = vectoangles(dir);
+    if (angles.pitch < -180)
+        angles.pitch += 360;
+    if (fabsf(angles.pitch) > 30)
         return false;
 
     return true;
@@ -407,21 +403,21 @@ static void Widow2Tongue(edict_t *self)
     vec3_t  start, end, dir;
     trace_t tr;
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u, start);
-    VectorCopy(self->enemy->s.origin, end);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    start = G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u);
+    end = self->enemy->s.origin;
     if (!widow2_tongue_attack_ok(start, end, 256)) {
-        end[2] = self->enemy->s.origin[2] + self->enemy->r.maxs[2] - 8;
+        end.z = self->enemy->s.origin.z + self->enemy->r.box.maxs.z - 8;
         if (!widow2_tongue_attack_ok(start, end, 256)) {
-            end[2] = self->enemy->s.origin[2] + self->enemy->r.mins[2] + 8;
+            end.z = self->enemy->s.origin.z + self->enemy->r.box.mins.z + 8;
             if (!widow2_tongue_attack_ok(start, end, 256))
                 return;
         }
     }
 
-    VectorCopy(self->enemy->s.origin, end);
+    end = self->enemy->s.origin;
 
-    trap_Trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+    tr = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE);
     if (tr.entnum != self->enemy->s.number)
         return;
 
@@ -439,13 +435,13 @@ static void Widow2Tongue(edict_t *self)
         te->think = widow2_tongue_think;
     }
 
-    G_SnapVector(start, te->s.old_origin);
-    G_SnapVector(end, te->s.origin);
+    te->s.old_origin = G_SnapVector(start);
+    te->s.origin = G_SnapVector(end);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 
-    VectorSubtract(start, end, dir);
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, 2, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
+    dir = Vec3_Sub(start, end);
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, 2, 0, DAMAGE_NO_KNOCKBACK, MOD_UNKNOWN);
 }
 
 static void Widow2TonguePull(edict_t *self)
@@ -459,28 +455,27 @@ static void Widow2TonguePull(edict_t *self)
         return;
     }
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u, start);
-    VectorCopy(self->enemy->s.origin, end);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    start = G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u);
+    end = self->enemy->s.origin;
 
     if (!widow2_tongue_attack_ok(start, end, 256))
         return;
 
     if (self->enemy->groundentity) {
-        self->enemy->s.origin[2] += 1;
+        self->enemy->s.origin.z += 1;
         self->enemy->groundentity = NULL;
         // interesting, you don't have to relink the player
     }
 
-    VectorSubtract(self->s.origin, self->enemy->s.origin, vec);
+    vec = Vec3_Direction(self->s.origin, self->enemy->s.origin);
 
     if (self->enemy->client) {
-        VectorNormalize(vec);
-        VectorMA(self->enemy->velocity, 1000, vec, self->enemy->velocity);
+        self->enemy->velocity = Vec3_MA(self->enemy->velocity, 1000, vec);
     } else {
         self->enemy->ideal_yaw = vectoyaw(vec);
         M_ChangeYaw(self->enemy);
-        VectorScale(f, 1000, self->enemy->velocity);
+        self->enemy->velocity = Vec3_Scale(f, 1000);
     }
 }
 
@@ -496,7 +491,7 @@ static void Widow2Crunch(edict_t *self)
     Widow2TonguePull(self);
 
     // 70 + 32
-    VectorSet(aim, 150, 0, 4);
+    aim = Vec3(150, 0, 4);
     if (self->s.frame != FRAME_tongs07)
         fire_hit(self, aim, irandom2(20, 26), 0);
     else if (self->enemy->groundentity)
@@ -643,8 +638,7 @@ static void widow2_keep_searching(edict_t *self)
 
 static void widow2_finaldeath(edict_t *self)
 {
-    VectorSet(self->r.mins, -70, -70, 0);
-    VectorSet(self->r.maxs, 70, 70, 80);
+    self->r.box = Box3_FromSize(70, 0, 80);
     self->movetype = MOVETYPE_TOSS;
     self->takedamage = true;
     self->nextthink = 0;
@@ -700,8 +694,8 @@ void MONSTERINFO_ATTACK(widow2_attack)(edict_t *self)
     if (self->timestamp < level.time) {
         if (real_enemy_range < 300) {
             vec3_t f, r, u, spot;
-            AngleVectors(self->s.angles, f, r, u);
-            G_ProjectSource2(self->s.origin, offsets[0], f, r, u, spot);
+            AngleVectors(self->s.angles, &f, &r, &u);
+            spot = G_ProjectSource2(self->s.origin, offsets[0], f, r, u);
             if (widow2_tongue_attack_ok(spot, self->enemy->s.origin, 256)) {
                 // melee attack ok
 
@@ -839,11 +833,11 @@ static void KillChildren(edict_t *self)
     while ((ent = G_Find(ent, FOFS(classname), "monster_stalker")) != NULL) {
         // FIXME - may need to stagger
         if ((ent->r.inuse) && (ent->health > 0))
-            T_Damage(ent, self, self, vec3_origin, self->enemy->s.origin, 0, (ent->health + 1), 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_UNKNOWN });
+            T_Damage(ent, self, self, vec3_origin, self->enemy->s.origin, 0, (ent->health + 1), 0, DAMAGE_NO_KNOCKBACK, MOD_UNKNOWN);
     }
 }
 
-void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     int n;
     int clipped;
@@ -854,16 +848,16 @@ void DIE(widow2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         for (n = 0; n < 2; n++)
-            ThrowWidowGibLoc(self, "models/objects/gibs/bone/tris.md2", clipped, GIB_NONE, NULL, false);
+            ThrowWidowGibLoc(self, "models/objects/gibs/bone/tris.md2", clipped, GIB_NONE, vec3_origin, false);
         for (n = 0; n < 3; n++)
-            ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", clipped, GIB_NONE, NULL, false);
+            ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", clipped, GIB_NONE, vec3_origin, false);
         for (n = 0; n < 3; n++) {
-            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib1/tris.md2", clipped, GIB_METALLIC, NULL, 0, false);
-            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", clipped, GIB_METALLIC, NULL, G_SoundIndex("misc/fhit3.wav"), false);
+            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib1/tris.md2", clipped, GIB_METALLIC, vec3_origin, 0, false);
+            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib2/tris.md2", clipped, GIB_METALLIC, vec3_origin, G_SoundIndex("misc/fhit3.wav"), false);
         }
         for (n = 0; n < 2; n++) {
-            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib3/tris.md2", clipped, GIB_METALLIC, NULL, 0, false);
-            ThrowWidowGibSized(self, "models/monsters/blackwidow/gib3/tris.md2", clipped, GIB_METALLIC, NULL, 0, false);
+            ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib3/tris.md2", clipped, GIB_METALLIC, vec3_origin, 0, false);
+            ThrowWidowGibSized(self, "models/monsters/blackwidow/gib3/tris.md2", clipped, GIB_METALLIC, vec3_origin, 0, false);
         }
         ThrowGib(self, "models/objects/gibs/chest/tris.md2", damage, GIB_NONE);
         ThrowGib(self, "models/objects/gibs/head2/tris.md2", damage, GIB_HEAD);
@@ -957,8 +951,7 @@ void SP_monster_widow2(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/blackwidow2/tris.md2");
-    VectorSet(self->r.mins, -70, -70, 0);
-    VectorSet(self->r.maxs, 70, 70, 144);
+    self->r.box = Box3_FromSize(70, 0, 144);
 
     self->health = (2000 + 800 + 1000 * skill.integer) * st.health_multiplier;
     if (coop.integer)
@@ -1004,20 +997,20 @@ void SP_monster_widow2(edict_t *self)
 // Death sequence stuff
 //
 
-static void WidowVelocityForDamage(int damage, vec3_t v)
+static vec3_t WidowVelocityForDamage(int damage)
 {
-    v[0] = damage * crandom();
-    v[1] = damage * crandom();
-    v[2] = damage * crandom() + 200.0f;
+    vec3_t v = Vec3_Scale(Vec3_CenterRandom(), damage);
+    v.z += 200.0f;
+    return v;
 }
 
 void TOUCH(widow_gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     self->r.solid = SOLID_NOT;
     self->touch = NULL;
-    self->s.angles[PITCH] = 0;
-    self->s.angles[ROLL] = 0;
-    VectorClear(self->avelocity);
+    self->s.angles.pitch = 0;
+    self->s.angles.roll = 0;
+    self->avelocity = vec3_origin;
 
     if (self->style)
         G_StartSound(self, CHAN_VOICE, self->style, 1, ATTN_NORM);
@@ -1025,25 +1018,23 @@ void TOUCH(widow_gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 
 static void ThrowWidowGib(edict_t *self, const char *gibname, int damage, gib_type_t type)
 {
-    ThrowWidowGibReal(self, gibname, damage, type, NULL, false, 0, true);
+    ThrowWidowGibReal(self, gibname, damage, type, vec3_origin, false, 0, true);
 }
 
-static void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, bool fade)
+static void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool fade)
 {
     ThrowWidowGibReal(self, gibname, damage, type, startpos, false, 0, fade);
 }
 
-void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, int hitsound, bool fade)
+void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, int hitsound, bool fade)
 {
     ThrowWidowGibReal(self, gibname, damage, type, startpos, true, hitsound, fade);
 }
 
-static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gib_type_t type, const vec3_t startpos, bool sized, int hitsound, bool fade)
+static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool sized, int hitsound, bool fade)
 {
     edict_t *gib;
     vec3_t   vd;
-    vec3_t   origin;
-    vec3_t   size;
     float    vscale;
 
     if (!gibname)
@@ -1051,13 +1042,10 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
 
     gib = G_Spawn();
 
-    if (startpos)
-        VectorCopy(startpos, gib->s.origin);
-    else {
-        VectorScale(self->r.size, 0.5f, size);
-        VectorAvg(self->r.absmin, self->r.absmax, origin);
-        VectorMA(origin, crandom(), size, gib->s.origin);
-    }
+    if (!Vec3_IsEmpty(startpos))
+        gib->s.origin = startpos;
+    else
+        gib->s.origin = Box3_RandomPoint(self->r.absbox);
 
     gib->r.solid = SOLID_NOT;
     gib->s.effects |= EF_GIB;
@@ -1091,8 +1079,8 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
         vscale = 1.0f;
     }
 
-    WidowVelocityForDamage(damage, vd);
-    VectorMA(self->velocity, vscale, vd, gib->velocity);
+    vd = WidowVelocityForDamage(damage);
+    gib->velocity = Vec3_MA(self->velocity, vscale, vd);
     ClipGibVelocity(gib);
 
     gib->s.modelindex = G_ModelIndex(gibname);
@@ -1100,34 +1088,31 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     if (sized) {
         gib->style = hitsound;
         gib->r.solid = SOLID_BBOX;
-        frandom_vec(gib->avelocity, 400);
-        if (gib->velocity[2] < 0)
-            gib->velocity[2] = -gib->velocity[2];
-        gib->velocity[0] *= 2;
-        gib->velocity[1] *= 2;
+        gib->avelocity = Vec3_Scale(Vec3_Random(), 400);
+        if (gib->velocity.z < 0)
+            gib->velocity.z = -gib->velocity.z;
+        gib->velocity.x *= 2;
+        gib->velocity.y *= 2;
         ClipGibVelocity(gib);
         vscale = frandom2(350, 450);
-        gib->velocity[2] = max(vscale, gib->velocity[2]);
+        gib->velocity.z = max(vscale, gib->velocity.z);
         gib->gravity = 0.25f;
         gib->touch = widow_gib_touch;
         gib->r.ownernum = self->s.number;
-        if (gib->s.modelindex == G_ModelIndex("models/monsters/blackwidow2/gib2/tris.md2")) {
-            VectorSet(gib->r.mins, -10, -10, 0);
-            VectorSet(gib->r.maxs, 10, 10, 10);
-        } else {
-            VectorSet(gib->r.mins, -5, -5, 0);
-            VectorSet(gib->r.maxs, 5, 5, 5);
-        }
+        if (gib->s.modelindex == G_ModelIndex("models/monsters/blackwidow2/gib2/tris.md2"))
+            gib->r.box = Box3_FromSize(10, 0, 10);
+        else
+            gib->r.box = Box3_FromSize(5, 0, 5);
     } else {
-        gib->velocity[0] *= 2;
-        gib->velocity[1] *= 2;
-        frandom_vec(gib->avelocity, 600);
+        gib->velocity.x *= 2;
+        gib->velocity.y *= 2;
+        gib->avelocity = Vec3_Scale(Vec3_Random(), 600);
     }
 
     trap_LinkEntity(gib);
 }
 
-void ThrowSmallStuff(edict_t *self, const vec3_t point)
+void ThrowSmallStuff(edict_t *self, vec3_t point)
 {
     int n;
 
@@ -1137,7 +1122,7 @@ void ThrowSmallStuff(edict_t *self, const vec3_t point)
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, point, false);
 }
 
-static void ThrowMoreStuff(edict_t *self, const vec3_t point)
+static void ThrowMoreStuff(edict_t *self, vec3_t point)
 {
     int n;
 
@@ -1161,68 +1146,68 @@ void THINK(WidowExplode)(edict_t *self)
 
     self->think = WidowExplode;
 
-    VectorCopy(self->s.origin, org);
-    org[2] += irandom2(24, 40);
+    org = self->s.origin;
+    org.z += irandom2(24, 40);
     if (self->count < 8)
-        org[2] += irandom2(24, 56);
+        org.z += irandom2(24, 56);
     switch (self->count) {
     case 0:
-        org[0] -= 24;
-        org[1] -= 24;
+        org.x -= 24;
+        org.y -= 24;
         break;
     case 1:
-        org[0] += 24;
-        org[1] += 24;
+        org.x += 24;
+        org.y += 24;
         ThrowSmallStuff(self, org);
         break;
     case 2:
-        org[0] += 24;
-        org[1] -= 24;
+        org.x += 24;
+        org.y -= 24;
         break;
     case 3:
-        org[0] -= 24;
-        org[1] += 24;
+        org.x -= 24;
+        org.y += 24;
         ThrowMoreStuff(self, org);
         break;
     case 4:
-        org[0] -= 48;
-        org[1] -= 48;
+        org.x -= 48;
+        org.y -= 48;
         break;
     case 5:
-        org[0] += 48;
-        org[1] += 48;
+        org.x += 48;
+        org.y += 48;
         ThrowArm1(self);
         break;
     case 6:
-        org[0] -= 48;
-        org[1] += 48;
+        org.x -= 48;
+        org.y += 48;
         ThrowArm2(self);
         break;
     case 7:
-        org[0] += 48;
-        org[1] -= 48;
+        org.x += 48;
+        org.y -= 48;
         ThrowSmallStuff(self, org);
         break;
     case 8:
-        org[0] += 18;
-        org[1] += 18;
-        org[2] = self->s.origin[2] + 48;
+        org.x += 18;
+        org.y += 18;
+        org.z = self->s.origin.z + 48;
         ThrowMoreStuff(self, org);
         break;
     case 9:
-        org[0] -= 18;
-        org[1] += 18;
-        org[2] = self->s.origin[2] + 48;
+        org.x -= 18;
+        org.y += 18;
+        org.z = self->s.origin.z + 48;
         break;
     case 10:
-        org[0] += 18;
-        org[1] -= 18;
-        org[2] = self->s.origin[2] + 48;
+        org.x += 18;
+        org.y -= 18;
+        org.z = self->s.origin.z + 48;
         break;
     case 11:
-        org[0] -= 18;
-        org[1] -= 18;
-        org[2] = self->s.origin[2] + 48;
+        org.x -= 18;
+        org.y -= 18;
+        org.z = self->s.origin.z + 48;
         break;
     case 12:
         self->s.sound = 0;
@@ -1254,8 +1239,8 @@ static void WidowExplosion1(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { 23.74f, -37.67f, 76.96f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1273,8 +1258,8 @@ static void WidowExplosion2(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { -20.49f, 36.92f, 73.52f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1292,8 +1277,8 @@ static void WidowExplosion3(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { 2.11f, 0.05f, 92.20f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1311,8 +1296,8 @@ static void WidowExplosion4(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { -28.04f, -35.57f, -77.56f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1330,8 +1315,8 @@ static void WidowExplosion5(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { -20.11f, -1.11f, 40.76f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1349,8 +1334,8 @@ static void WidowExplosion6(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { -20.11f, -1.11f, 40.76f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1368,8 +1353,8 @@ static void WidowExplosion7(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset = { -20.11f, -1.11f, 40.76f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1387,8 +1372,8 @@ static void WidowExplosionLeg(edict_t *self)
     vec3_t offset1 = { -31.89f, -47.86f, 67.02f };
     vec3_t offset2 = { -44.9f, -82.14f, 54.72f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
@@ -1397,7 +1382,7 @@ static void WidowExplosionLeg(edict_t *self)
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
 
-    G_ProjectSource2(self->s.origin, offset2, f, r, u, startpoint);
+    startpoint = G_ProjectSource2(self->s.origin, offset2, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1413,8 +1398,8 @@ static void ThrowArm1(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset1 = { 65.76f, 17.52f, 7.56f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
 
     G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
@@ -1427,8 +1412,8 @@ static void ThrowArm2(edict_t *self)
     vec3_t f, r, u, startpoint;
     vec3_t offset1 = { 65.76f, 17.52f, 7.56f };
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, offset1, f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib4/tris.md2", 200, GIB_METALLIC, startpoint,
                        G_SoundIndex("misc/fhit3.wav"), false);

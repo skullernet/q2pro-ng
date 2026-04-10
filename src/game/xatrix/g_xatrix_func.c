@@ -26,7 +26,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
     }
 }
 
-void DIE(rotating_light_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(rotating_light_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_BecomeEvent(self, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 30, 0));
 }
@@ -127,8 +127,7 @@ void SP_object_repair(edict_t *ent)
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
     ent->classname = "object_repair";
-    VectorSet(ent->r.mins, -8, -8, 8);
-    VectorSet(ent->r.maxs, 8, 8, 8);
+    ent->r.box = Box3_FromRadius(8);
     ent->think = object_repair_sparks;
     ent->nextthink = level.time + SEC(1);
     ent->health = 100;

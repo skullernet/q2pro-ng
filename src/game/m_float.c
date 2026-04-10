@@ -44,13 +44,12 @@ static void floater_fire_blaster(edict_t *self)
     if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_FLOAT_BLASTER_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_FLOAT_BLASTER_1], forward, right);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     monster_fire_blaster(self, start, dir, 1, 1000, MZ2_FLOAT_BLASTER_1, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
 }
@@ -491,21 +490,19 @@ static void floater_zap(edict_t *self)
     vec3_t forward, right;
     vec3_t origin;
     vec3_t dir;
-    vec3_t offset;
 
-    VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
+    dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
     // FIXME use a flash and replace these two lines with the commented one
-    VectorSet(offset, 18.5f, -0.9f, 10);
-    M_ProjectFlashSource(self, offset, forward, right, origin);
+    origin = M_ProjectFlashSource(self, Vec3(18.5f, -0.9f, 10), forward, right);
 
     G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM);
 
     // FIXME use the flash, Luke
     G_TempEntity(origin, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
 
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, irandom2(5, 11), -10, DAMAGE_ENERGY, (mod_t) { MOD_UNKNOWN });
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, irandom2(5, 11), -10, DAMAGE_ENERGY, MOD_UNKNOWN);
 }
 
 void MONSTERINFO_ATTACK(floater_attack)(edict_t *self)
@@ -569,8 +566,7 @@ void MONSTERINFO_SETSKIN(floater_setskin)(edict_t *self)
 #if 0
 static void floater_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
@@ -588,7 +584,7 @@ static const gib_def_t floater_gibs[] = {
     { 0 }
 };
 
-void DIE(floater_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(floater_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM);
 
@@ -643,8 +639,7 @@ void SP_monster_floater(edict_t *self)
 
     G_PrecacheGibs(floater_gibs);
 
-    VectorSet(self->r.mins, -24, -24, -24);
-    VectorSet(self->r.maxs, 24, 24, 48);
+    self->r.box = Box3_FromSize(24, -24, 48);
 
     self->health = 200 * st.health_multiplier;
     self->gib_health = -80;

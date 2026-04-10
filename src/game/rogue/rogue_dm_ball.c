@@ -25,7 +25,7 @@ static vm_cvar_t goallimit;
 
 // prototypes
 
-void DBall_BallDie(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod);
+void DBall_BallDie(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod);
 void DBall_BallRespawn(edict_t *self);
 
 // **************************
@@ -98,7 +98,7 @@ static void DBall_ClientBegin(edict_t *ent)
 #endif
 }
 
-static bool DBall_SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spawn)
+static bool DBall_SelectSpawnPoint(edict_t *ent, vec3_t *origin, vec3_t *angles, bool force_spawn)
 {
 #if 0
     edict_t *bestspot;
@@ -128,9 +128,9 @@ static bool DBall_SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, b
     }
 
     if (bestspot) {
-        VectorCopy(bestspot->s.origin, origin);
-        origin[2] += 9;
-        VectorCopy(bestspot->s.angles, angles);
+        origin = bestspot->s.origin;
+        origin.z += 9;
+        angles = bestspot->s.angles;
         return true;
     }
 
@@ -203,15 +203,15 @@ static int DBall_ChangeKnockback(edict_t *targ, edict_t *attacker, int knockback
 
     if (knockback < 1) {
         // FIXME - these don't account for quad/double
-        if (mod.id == MOD_ROCKET) // rocket
+        if (mod == MOD_ROCKET) // rocket
             knockback = 70;
-        else if (mod.id == MOD_BFG_EFFECT) // bfg
+        else if (mod == MOD_BFG_EFFECT) // bfg
             knockback = 90;
         else
-            G_Printf("zero knockback, mod %d\n", mod.id);
+            G_Printf("zero knockback, mod %d\n", mod);
     } else {
         // FIXME - change this to an array?
-        switch (mod.id) {
+        switch (mod) {
         case MOD_BLASTER:
             knockback *= 3;
             break;
@@ -360,14 +360,14 @@ void TOUCH(DBall_BallTouch)(edict_t *ent, edict_t *other, const trace_t *tr, boo
 
     // hit a player
     if (other->client) {
-        speed = VectorLength(ent->velocity);
+        speed = Vec3_Length(ent->velocity);
         if (speed > 0) {
-            VectorSubtract(ent->s.origin, other->s.origin, dir);
-            dot = DotProduct(dir, ent->velocity);
+            dir = Vec3_Sub(ent->s.origin, other->s.origin);
+            dot = Vec3_Dot(dir, ent->velocity);
 
             if (dot > 0.7f) {
                 T_Damage(other, ent, ent, vec3_origin, ent->s.origin, 0,
-                         speed / 10, speed / 10, DAMAGE_NONE, (mod_t) { MOD_DBALL_CRUSH });
+                         speed / 10, speed / 10, DAMAGE_NONE, MOD_DBALL_CRUSH);
             }
         }
     }
@@ -382,14 +382,14 @@ void PAIN(DBall_BallPain)(edict_t *self, edict_t *other, float kick, int damage,
     self->health = self->max_health;
 }
 
-void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // do the splash effect
     G_AddEvent(self, EV_TELEPORT_EFFECT, 0);
 
-    VectorClear(self->s.angles);
-    VectorClear(self->velocity);
-    VectorClear(self->avelocity);
+    self->s.angles = vec3_origin;
+    self->velocity = vec3_origin;
+    self->avelocity = vec3_origin;
 
     // make it invisible and desolid until respawn time
     self->r.solid = SOLID_NOT;
@@ -409,13 +409,13 @@ void THINK(DBall_BallRespawn)(edict_t *self)
     // move the ball and stop it
     start = PickBallStart(self);
     if (start) {
-        VectorCopy(start->s.origin, self->s.origin);
-        VectorCopy(start->s.origin, self->s.old_origin);
+        self->s.origin = start->s.origin;
+        self->s.old_origin = start->s.origin;
     }
 
-    VectorClear(self->s.angles);
-    VectorClear(self->velocity);
-    VectorClear(self->avelocity);
+    self->s.angles = vec3_origin;
+    self->velocity = vec3_origin;
+    self->avelocity = vec3_origin;
 
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/objects/dball/tris.md2");
@@ -445,18 +445,18 @@ void TOUCH(DBall_SpeedTouch)(edict_t *self, edict_t *other, const trace_t *tr, b
     if (self->timestamp >= level.time)
         return;
 
-    if (VectorLength(other->velocity) < 1)
+    if (Vec3_Length(other->velocity) < 1)
         return;
 
     if (self->spawnflags & SPAWNFLAG_DBALL_SPEED_ONEWAY) {
-        VectorNormalize2(other->velocity, vel);
-        dot = DotProduct(vel, self->movedir);
+        vel = Vec3_Normalize(other->velocity);
+        dot = Vec3_Dot(vel, self->movedir);
         if (dot < 0.8f)
             return;
     }
 
     self->timestamp = level.time + SEC(self->delay);
-    VectorScale(other->velocity, self->speed, other->velocity);
+    other->velocity = Vec3_Scale(other->velocity, self->speed);
 }
 
 // ************************
@@ -482,8 +482,7 @@ void SP_dm_dball_ball(edict_t *self)
     //dball_ball_startpt = self->s.origin;
 
     self->s.modelindex = G_ModelIndex("models/objects/dball/tris.md2");
-    VectorSet(self->r.mins, -32, -32, -32);
-    VectorSet(self->r.maxs, 32, 32, 32);
+    self->r.box = Box3_FromRadius(32);
     self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_NEWTOSS;
     self->clipmask = MASK_MONSTERSOLID;
@@ -573,10 +572,10 @@ void SP_dm_dball_speed_change(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.svflags |= SVF_NOCLIENT;
 
-    if (!VectorEmpty(self->s.angles))
-        G_SetMovedir(self->s.angles, self->movedir);
+    if (!Vec3_IsEmpty(self->s.angles))
+        G_SetMovedir(self);
     else
-        VectorSet(self->movedir, 1, 0, 0);
+        self->movedir = Vec3(1, 0, 0);
 
     trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);
@@ -609,8 +608,8 @@ void SP_dm_dball_goal(edict_t *self)
     self->movetype = MOVETYPE_NONE;
     self->r.svflags |= SVF_NOCLIENT;
 
-    if (!VectorEmpty(self->s.angles))
-        G_SetMovedir(self->s.angles, self->movedir);
+    if (!Vec3_IsEmpty(self->s.angles))
+        G_SetMovedir(self);
 
     trap_SetBrushModel(self, self->model);
     trap_LinkEntity(self);

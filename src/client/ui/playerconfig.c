@@ -316,14 +316,14 @@ void M_Menu_PlayerConfig(void)
     m_player.menu.transparent = uis.transparent;
 
     m_player.entities[0].flags = RF_FULLBRIGHT;
-    VectorCopy(angles, m_player.entities[0].angles);
-    VectorCopy(origin, m_player.entities[0].origin);
-    VectorCopy(origin, m_player.entities[0].oldorigin);
+    m_player.entities[0].angles = angles;
+    m_player.entities[0].origin = origin;
+    m_player.entities[0].oldorigin = origin;
 
     m_player.entities[1].flags = RF_FULLBRIGHT;
-    VectorCopy(angles, m_player.entities[1].angles);
-    VectorCopy(origin, m_player.entities[1].origin);
-    VectorCopy(origin, m_player.entities[1].oldorigin);
+    m_player.entities[1].angles = angles;
+    m_player.entities[1].origin = origin;
+    m_player.entities[1].oldorigin = origin;
 
     m_player.refdef.rdflags = RDF_NOWORLDMODEL;
 

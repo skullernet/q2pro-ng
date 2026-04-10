@@ -23,44 +23,42 @@ void UpdateChaseCam(edict_t *ent)
 
     targ = ent->client->chase_target;
 
-    VectorCopy(targ->s.origin, ownerv);
+    ownerv = targ->s.origin;
 
-    ownerv[2] += targ->viewheight;
+    ownerv.z += targ->viewheight;
 
-    VectorCopy(targ->client->v_angle, angles);
-    if (angles[PITCH] > 56)
-        angles[PITCH] = 56;
-    AngleVectors(angles, forward, right, NULL);
-    VectorMA(ownerv, -30, forward, o);
+    angles = targ->client->v_angle;
+    if (angles.pitch > 56)
+        angles.pitch = 56;
+    AngleVectors(angles, &forward, &right, NULL);
+    o = Vec3_MA(ownerv, -30, forward);
 
-    if (o[2] < targ->s.origin[2] + 20)
-        o[2] = targ->s.origin[2] + 20;
+    if (o.z < targ->s.origin.z + 20)
+        o.z = targ->s.origin.z + 20;
 
     // jump animation lifts
     if (!targ->groundentity)
-        o[2] += 16;
+        o.z += 16;
 
-    trap_Trace(&trace, ownerv, NULL, NULL, o, targ->s.number, MASK_SOLID);
+    trace = G_TraceLine(ownerv, o, targ->s.number, MASK_SOLID);
 
-    VectorCopy(trace.endpos, goal);
-
-    VectorMA(goal, 2, forward, goal);
+    goal = Vec3_MA(trace.endpos, 2, forward);
 
     // pad for floors and ceilings
-    VectorCopy(goal, o);
-    o[2] += 6;
-    trap_Trace(&trace, goal, NULL, NULL, o, targ->s.number, MASK_SOLID);
+    o = goal;
+    o.z += 6;
+    trace = G_TraceLine(goal, o, targ->s.number, MASK_SOLID);
     if (trace.fraction < 1) {
-        VectorCopy(trace.endpos, goal);
-        goal[2] -= 6;
+        goal = trace.endpos;
+        goal.z -= 6;
     }
 
-    VectorCopy(goal, o);
-    o[2] -= 6;
-    trap_Trace(&trace, goal, NULL, NULL, o, targ->s.number, MASK_SOLID);
+    o = goal;
+    o.z -= 6;
+    trace = G_TraceLine(goal, o, targ->s.number, MASK_SOLID);
     if (trace.fraction < 1) {
-        VectorCopy(trace.endpos, goal);
-        goal[2] += 6;
+        goal = trace.endpos;
+        goal.z += 6;
     }
 
     if (targ->deadflag)
@@ -68,18 +66,14 @@ void UpdateChaseCam(edict_t *ent)
     else
         ent->client->ps.pm_type = PM_FREEZE;
 
-    VectorCopy(goal, ent->s.origin);
-    for (int i = 0; i < 3; i++)
-        ent->client->ps.delta_angles[i] = ANGLE2SHORT(targ->client->v_angle[i] - ent->client->resp.cmd_angles[i]);
+    ent->s.origin = goal;
 
     if (targ->deadflag) {
-        ent->client->ps.viewangles[ROLL] = 40;
-        ent->client->ps.viewangles[PITCH] = -15;
-        ent->client->ps.viewangles[YAW] = targ->client->killer_yaw;
+        ent->client->ps.viewangles.roll = 40;
+        ent->client->ps.viewangles.pitch = -15;
+        ent->client->ps.viewangles.yaw = targ->client->killer_yaw;
     } else {
-        VectorCopy(targ->client->v_angle, ent->client->ps.viewangles);
-        VectorCopy(targ->client->v_angle, ent->client->v_angle);
-        AngleVectors(ent->client->v_angle, ent->client->v_forward, NULL, NULL);
+        P_SetClientAngles(ent->client, targ->client->v_angle);
     }
 
     ent->viewheight = 0;

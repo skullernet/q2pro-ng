@@ -130,13 +130,13 @@ void PrecacheForRandomRespawn(void)
 
 edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags);
 
-void DIE(doppleganger_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(doppleganger_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     edict_t *sphere;
     float    dist;
 
     if ((self->enemy) && (self->enemy != self->teammaster)) {
-        dist = Distance(self->enemy->s.origin, self->s.origin);
+        dist = Vec3_Distance(self->enemy->s.origin, self->s.origin);
 
         if (dist > 768) {
             sphere = Sphere_Spawn(self, SPHERE_HUNTER | SPHERE_DOPPLEGANGER);
@@ -150,7 +150,7 @@ void DIE(doppleganger_die)(edict_t *self, edict_t *inflictor, edict_t *attacker,
     self->takedamage = DAMAGE_NONE;
 
     // [Paril-KEX]
-    T_RadiusDamage(self, self->teammaster, 160, self, 140, DAMAGE_NONE, (mod_t) { MOD_DOPPLE_EXPLODE });
+    T_RadiusDamage(self, self->teammaster, 160, self, 140, DAMAGE_NONE, MOD_DOPPLE_EXPLODE);
 
     if (self->teamchain)
         BecomeExplosion1(self->teamchain);
@@ -164,14 +164,14 @@ void PAIN(doppleganger_pain)(edict_t *self, edict_t *other, float kick, int dama
 
 void THINK(doppleganger_timeout)(edict_t *self)
 {
-    doppleganger_die(self, self, self, 9999, self->s.origin, (mod_t) { MOD_UNKNOWN });
+    doppleganger_die(self, self, self, 9999, self->s.origin, MOD_UNKNOWN);
 }
 
 void THINK(body_think)(edict_t *self)
 {
     float r;
 
-    if (fabsf(self->ideal_yaw - anglemod(self->s.angles[YAW])) < 2 && self->timestamp < level.time) {
+    if (fabsf(self->ideal_yaw - anglemod(self->s.angles.yaw)) < 2 && self->timestamp < level.time) {
         r = frandom();
         if (r < 0.10f) {
             self->ideal_yaw = frandom1(350.0f);
@@ -191,26 +191,19 @@ void THINK(body_think)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
+void fire_doppleganger(edict_t *ent, vec3_t start, vec3_t aimdir)
 {
     edict_t *base;
     edict_t *body;
-    vec3_t   dir;
-    vec3_t   forward, right, up;
-    int      number;
-
-    vectoangles(aimdir, dir);
-    AngleVectors(dir, forward, right, up);
 
     base = G_Spawn();
-    VectorCopy(start, base->s.origin);
-    VectorCopy(dir, base->s.angles);
+    base->s.origin = start;
+    base->s.angles = vectoangles(aimdir);
     base->movetype = MOVETYPE_TOSS;
     base->r.solid = SOLID_BBOX;
     base->s.renderfx |= RF_IR_VISIBLE;
-    base->s.angles[PITCH] = 0;
-    VectorSet(base->r.mins, -16, -16, -24);
-    VectorSet(base->r.maxs, 16, 16, 32);
+    base->s.angles.pitch = 0;
+    base->r.box = Box3_FromSize(16, -24, 32);
     base->s.modelindex = G_ModelIndex("models/objects/dopplebase/tris.md2");
     base->s.alpha = 0.1f;
     base->teammaster = ent;
@@ -229,15 +222,14 @@ void fire_doppleganger(edict_t *ent, const vec3_t start, const vec3_t aimdir)
     trap_LinkEntity(base);
 
     body = G_Spawn();
-    number = body->s.number;
     body->s = ent->s;
     body->s.sound = 0;
     memset(body->s.event, 0, sizeof(body->s.event));
-    body->s.number = number;
+    body->s.number = body - g_edicts;
     body->yaw_speed = 30;
     body->ideal_yaw = 0;
-    VectorCopy(start, body->s.origin);
-    body->s.origin[2] += 8;
+    body->s.origin = start;
+    body->s.origin.z += 8;
     body->teleport_time = level.time + HZ(10);
     body->think = body_think;
     body->nextthink = level.time + FRAME_TIME;

@@ -258,13 +258,13 @@ const mmove_t MMOVE_T(tank_move_pain3) = { FRAME_pain301, FRAME_pain316, tank_fr
 
 void PAIN(tank_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
-    if (mod.id != MOD_CHAINFIST && damage <= 10)
+    if (mod != MOD_CHAINFIST && damage <= 10)
         return;
 
     if (level.time < self->pain_debounce_time)
         return;
 
-    if (mod.id != MOD_CHAINFIST) {
+    if (mod != MOD_CHAINFIST) {
         if (damage <= 30)
             if (frandom() > 0.2f)
                 return;
@@ -307,24 +307,22 @@ void MONSTERINFO_SETSKIN(tank_setskin)(edict_t *self)
 }
 
 // [Paril-KEX]
-bool M_AdjustBlindfireTarget(edict_t *self, const vec3_t start, const vec3_t target, const vec3_t right, vec3_t out_dir)
+bool M_AdjustBlindfireTarget(edict_t *self, vec3_t start, vec3_t target, vec3_t right, vec3_t *out_dir)
 {
     for (int i = 0; i < 3; i++) {
         vec3_t end;
 
         if (i == 0)
-            VectorCopy(target, end);
+            end = target;
         else if (i == 1) // try shifting the target to the left a little (to help counter large offset)
-            VectorMA(target, -20, right, end);
+            end = Vec3_MA(target, -20, right);
         else // ok, that failed. try to the right
-            VectorMA(target, 20, right, end);
+            end = Vec3_MA(target, 20, right);
 
-        trace_t trace;
-        trap_Trace(&trace, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+        trace_t trace = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE);
         // blindfire has different fail criteria for the trace
         if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
-            VectorSubtract(end, start, out_dir);
-            VectorNormalize(out_dir);
+            *out_dir = Vec3_Direction(end, start);
             return true;
         }
     }
@@ -355,16 +353,16 @@ static void TankBlaster(edict_t *self)
     else // (self->s.frame == FRAME_attak116)
         flash_number = MZ2_TANK_BLASTER_3;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     // pmm - blindfire support
     // PMM
     if (blindfire) {
-        if (!M_AdjustBlindfireTarget(self, start, self->monsterinfo.blind_fire_target, right, dir))
+        if (!M_AdjustBlindfireTarget(self, start, self->monsterinfo.blind_fire_target, right, &dir))
             return;
     } else
-        PredictAim(self, self->enemy, start, 0, false, 0, dir, NULL);
+        M_PredictAim(self, self->enemy, start, 0, false, 0, &dir, NULL);
     // pmm
 
     monster_fire_blaster(self, start, dir, 30, 800, flash_number, EF_BLASTER);
@@ -396,10 +394,10 @@ static void TankRocket(edict_t *self)
     else // (self->s.frame == FRAME_attak330)
         flash_number = MZ2_TANK_ROCKET_3;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
     // [Paril-KEX] scale
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     if (self->speed)
         rocketSpeed = self->speed;
@@ -411,25 +409,24 @@ static void TankRocket(edict_t *self)
     // PGM
     //  PMM - blindfire shooting
     if (blindfire) {
-        VectorCopy(self->monsterinfo.blind_fire_target, vec);
+        vec = self->monsterinfo.blind_fire_target;
     // pmm
     // don't shoot at feet if they're above me.
-    } else if (frandom() < 0.66f || (start[2] < self->enemy->r.absmin[2])) {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] += self->enemy->viewheight;
+    } else if (frandom() < 0.66f || (start.z < self->enemy->r.absbox.mins.z)) {
+        vec = self->enemy->s.origin;
+        vec.z += self->enemy->viewheight;
     } else {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] = self->enemy->r.absmin[2] + 1;
+        vec = self->enemy->s.origin;
+        vec.z = self->enemy->r.absbox.mins.z + 1;
     }
-    VectorSubtract(vec, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(vec, start);
     // PGM
 
     //======
     // PMM - lead target  (not when blindfiring)
     // 20, 35, 50, 65 chance of leading
     if ((!blindfire) && ((frandom() < (0.2f + ((3 - skill.integer) * 0.15f)))))
-        PredictAim(self, self->enemy, start, rocketSpeed, false, 0, dir, vec);
+        M_PredictAim(self, self->enemy, start, rocketSpeed, false, 0, &dir, &vec);
     // PMM - lead target
     //======
 
@@ -437,15 +434,14 @@ static void TankRocket(edict_t *self)
     // paranoia, make sure we're not shooting a target right next to us
     if (blindfire) {
         // blindfire has different fail criteria for the trace
-        if (M_AdjustBlindfireTarget(self, start, vec, right, dir)) {
+        if (M_AdjustBlindfireTarget(self, start, vec, right, &dir)) {
             if (self->spawnflags & SPAWNFLAG_TANK_COMMANDER_HEAT_SEEKING)
                 monster_fire_heat(self, start, dir, 50, rocketSpeed, flash_number, self->accel);
             else
                 monster_fire_rocket(self, start, dir, 50, rocketSpeed, flash_number);
         }
     } else {
-        trace_t trace;
-        trap_Trace(&trace, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+        trace_t trace = G_TraceLine(start, vec, self->s.number, MASK_PROJECTILE);
 
         if (trace.fraction > 0.5f || g_edicts[trace.entnum].r.solid != SOLID_BSP) {
             if (self->spawnflags & SPAWNFLAG_TANK_COMMANDER_HEAT_SEEKING)
@@ -469,26 +465,26 @@ static void TankMachineGun(edict_t *self)
 
     flash_number = MZ2_TANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak406);
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     if (self->enemy) {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] += self->enemy->viewheight;
-        VectorSubtract(vec, start, vec);
-        vectoangles(vec, vec);
-        dir[0] = vec[0];
+        vec = self->enemy->s.origin;
+        vec.z += self->enemy->viewheight;
+        vec = Vec3_Sub(vec, start);
+        vec = vectoangles(vec);
+        dir.pitch = vec.pitch;
     } else {
-        dir[0] = 0;
+        dir.pitch = 0;
     }
     if (self->s.frame <= FRAME_attak415)
-        dir[1] = self->s.angles[1] - 8 * (self->s.frame - FRAME_attak411);
+        dir.yaw = self->s.angles.yaw - 8 * (self->s.frame - FRAME_attak411);
     else
-        dir[1] = self->s.angles[1] + 8 * (self->s.frame - FRAME_attak419);
-    dir[2] = 0;
+        dir.yaw = self->s.angles.yaw + 8 * (self->s.frame - FRAME_attak419);
+    dir.roll = 0;
 
-    AngleVectors(dir, forward, NULL, NULL);
+    AngleVectors(dir, &forward, NULL, NULL);
 
     monster_fire_bullet(self, start, forward, 20, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
 }
@@ -496,8 +492,7 @@ static void TankMachineGun(edict_t *self)
 static void tank_blind_check(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
-        vec3_t aim;
-        VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, aim);
+        vec3_t aim = Vec3_Sub(self->monsterinfo.blind_fire_target, self->s.origin);
         self->ideal_yaw = vectoyaw(aim);
     }
 }
@@ -759,7 +754,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(5.2f, 8.2f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // don't shoot if the dice say not to
@@ -790,7 +785,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
     }
     // pmm
 
-    range = Distance(self->enemy->s.origin, self->s.origin);
+    range = Vec3_Distance(self->enemy->s.origin, self->s.origin);
 
     r = frandom();
 
@@ -828,14 +823,13 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
 
 static void tank_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -16);
-    VectorSet(self->r.maxs, 16, 16, -0);
+    self->r.box = Box3_FromSize(16, -16, 0);
     monster_dead(self);
 }
 
 static void tank_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -887,7 +881,7 @@ static const gib_def_t tank_gibs[] = {
     { 0 }
 };
 
-void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -909,22 +903,22 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 
     // [Paril-KEX] dropped arm
     if (!self->style) {
-        vec3_t f, r, u;
+        vec3_t r, u;
 
         self->style = 1;
-        AngleVectors(self->s.angles, f, r, u);
+        AngleVectors(self->s.angles, NULL, &r, &u);
 
         edict_t *arm = ThrowGib(self, "models/monsters/tank/gibs/barm.md2", damage, GIB_SKINNED | GIB_UPRIGHT);
-        VectorMA(self->s.origin, -16, r, arm->s.origin);
-        VectorMA(arm->s.origin, 23, u, arm->s.origin);
-        VectorCopy(arm->s.origin, arm->s.old_origin);
-        arm->avelocity[0] = crandom() * 15;
-        arm->avelocity[1] = crandom() * 15;
-        arm->avelocity[2] = 180;
-        VectorScale(r, -120, arm->velocity);
-        VectorMA(arm->velocity, 100, u, arm->velocity);
-        VectorCopy(self->s.angles, arm->s.angles);
-        arm->s.angles[2] = -90;
+        arm->s.origin = Vec3_MA(self->s.origin, -16, r);
+        arm->s.origin = Vec3_MA(arm->s.origin, 23, u);
+        arm->s.old_origin = arm->s.origin;
+        arm->avelocity.pitch = crandom() * 15;
+        arm->avelocity.yaw = crandom() * 15;
+        arm->avelocity.roll = 180;
+        arm->velocity = Vec3_Scale(r, -120);
+        arm->velocity = Vec3_MA(arm->velocity, 100, u);
+        arm->s.angles = self->s.angles;
+        arm->s.angles.roll = -90;
         arm->s.skinnum /= 2;
         trap_LinkEntity(arm);
     }
@@ -977,8 +971,7 @@ void SP_monster_tank(edict_t *self)
     }
 
     self->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
-    VectorSet(self->r.mins, -32, -32, -16);
-    VectorSet(self->r.maxs, 32, 32, 64);
+    self->r.box = Box3_FromSize(32, -16, 64);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 
@@ -1079,14 +1072,11 @@ void SP_monster_tank_stand(edict_t *self)
 
     G_SoundIndex("misc/bigtele.wav");
 
-    VectorSet(self->r.mins, -32, -32, -16);
-    VectorSet(self->r.maxs, 32, 32, 64);
-
     if (!self->s.scale)
         self->s.scale = 1.5f;
 
-    VectorScale(self->r.mins, self->s.scale, self->r.mins);
-    VectorScale(self->r.maxs, self->s.scale, self->r.maxs);
+    self->r.box = Box3_FromSize(32, -16, 64);
+    self->r.box = Box3_Scale(self->r.box, self->s.scale);
 
     self->use = Use_Boss3;
     self->think = Think_TankStand;

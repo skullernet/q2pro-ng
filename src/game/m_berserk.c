@@ -181,7 +181,7 @@ const mmove_t MMOVE_T(berserk_move_attack_spike) = { FRAME_att_c1, FRAME_att_c8,
 
 static void berserk_attack_club(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], -4 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, -4 };
 
     if (!fire_hit(self, aim, irandom2(15, 21), 250)) // Slower attack
         self->monsterinfo.melee_debounce_time = level.time + SEC(2.5f);
@@ -227,10 +227,10 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
         if (ent->client && !ent->groundentity)
             continue;
 
-        closest_point_to_box(point, ent->r.absmin, ent->r.absmax, v);
+        v = Box3_ClampPoint(ent->r.absbox, point);
 
         // calculate contribution amount
-        float amount = 1.0f - Distance(v, point) / radius;
+        float amount = 1.0f - Vec3_Distance(v, point) / radius;
 
         // too far away
         if (amount <= 0)
@@ -241,32 +241,30 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
         // damage & kick are exponentially scaled
         points = max(1.0f, damage * amount);
 
-        VectorSubtract(ent->s.origin, point, dir);
-        VectorNormalize(dir);
+        dir = Vec3_Direction(ent->s.origin, point);
 
         // keep the point at their feet so they always get knocked up
-        point[2] = ent->r.absmin[2];
+        point.z = ent->r.absbox.mins.z;
         T_Damage(ent, inflictor, attacker, dir, point, DirToByte(dir), points, kick * amount, DAMAGE_RADIUS, mod);
 
         if (ent->client)
-            ent->velocity[2] = max(270, ent->velocity[2]);
+            ent->velocity.z = max(270, ent->velocity.z);
     }
 }
 
 static void berserk_attack_slam(edict_t *self)
 {
     vec3_t f, r, start;
-    AngleVectors(self->s.angles, f, r, NULL);
-    M_ProjectFlashSource(self, (const vec3_t) { 20.0f, -14.3f, -21.0f }, f, r, start);
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_SOLID);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, Vec3(20.0f, -14.3f, -21.0f), f, r);
+    trace_t tr = G_TraceLine(self->s.origin, start, self->s.number, MASK_SOLID);
 
     G_AddEvent(self, EV_BERSERK_SLAM, 0);
     self->gravity = 1.0f;
-    VectorClear(self->velocity);
+    self->velocity = vec3_origin;
     self->flags |= FL_KILL_VELOCITY;
 
-    T_SlamRadiusDamage(tr.endpos, self, self, 8, 300, self, 165, (mod_t) { MOD_UNKNOWN });
+    T_SlamRadiusDamage(tr.endpos, self, self, 8, 300, self, 165, MOD_UNKNOWN);
 }
 
 void TOUCH(berserk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -288,7 +286,7 @@ void TOUCH(berserk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 
 static void berserk_high_gravity(edict_t *self)
 {
-    if (self->velocity[2] < 0)
+    if (self->velocity.z < 0)
         self->gravity = 2.25f * (800.0f / level.gravity);
     else
         self->gravity = 5.25f * (800.0f / level.gravity);
@@ -296,21 +294,19 @@ static void berserk_high_gravity(edict_t *self)
 
 static void berserk_jump_takeoff(edict_t *self)
 {
-    vec3_t forward;
-
     if (!self->enemy)
         return;
 
     // immediately turn to where we need to go
-    float length = Distance(self->s.origin, self->enemy->s.origin);
+    float length = Vec3_Distance(self->s.origin, self->enemy->s.origin);
     float fwd_speed = length * 1.95f;
-    vec3_t dir;
-    PredictAim(self, self->enemy, self->s.origin, fwd_speed, false, 0, dir, NULL);
-    self->s.angles[1] = vectoyaw(dir);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    self->s.origin[2] += 1;
-    VectorScale(forward, fwd_speed, self->velocity);
-    self->velocity[2] = 400;
+    vec3_t dir, forward;
+    M_PredictAim(self, self->enemy, self->s.origin, fwd_speed, false, 0, &dir, NULL);
+    self->s.angles.yaw = vectoyaw(dir);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->s.origin.z += 1;
+    self->velocity = Vec3_Scale(forward, fwd_speed);
+    self->velocity.z = 400;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
     self->monsterinfo.attack_finished = level.time + SEC(3);
@@ -533,14 +529,13 @@ void MONSTERINFO_SETSKIN(berserk_setskin)(edict_t *self)
 
 static void berserk_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void berserk_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -585,7 +580,7 @@ static const gib_def_t berserk_gibs[] = {
     { 0 }
 };
 
-void DIE(berserk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(berserk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
@@ -614,18 +609,18 @@ static void berserk_jump_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void berserk_jump2_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 150, forward, self->velocity);
-    VectorMA(self->velocity, 400, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 150, forward);
+    self->velocity = Vec3_MA(self->velocity, 400, up);
 }
 
 static void berserk_jump_wait_land(edict_t *self)
@@ -670,7 +665,7 @@ static void berserk_jump(edict_t *self, blocked_jump_result_t result)
     if (!self->enemy)
         return;
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &berserk_move_jump2);
     else
         M_SetAnimation(self, &berserk_move_jump);
@@ -680,7 +675,7 @@ bool MONSTERINFO_BLOCKED(berserk_blocked)(edict_t *self, float dist)
 {
     blocked_jump_result_t result = blocked_checkjump(self, dist);
 
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             berserk_jump(self, result);
         return true;
@@ -790,8 +785,7 @@ void SP_monster_berserk(edict_t *self)
 
     G_PrecacheGibs(berserk_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

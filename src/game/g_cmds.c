@@ -358,10 +358,10 @@ static void Cmd_Spawn_f(edict_t *ent)
     other->classname = G_CopyString(buf);
 
     vec3_t forward;
-    AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+    AngleVectors(ent->client->v_angle, &forward, NULL, NULL);
 
-    VectorMA(ent->s.origin, 24, forward, other->s.origin);
-    other->s.angles[1] = ent->s.angles[1];
+    other->s.origin = Vec3_MA(ent->s.origin, 24, forward);
+    other->s.angles.yaw = ent->s.angles.yaw;
 
     ED_InitSpawnVars();
 
@@ -381,37 +381,33 @@ static void Cmd_Spawn_f(edict_t *ent)
     if (other->r.inuse) {
         vec3_t start, end;
 
-        VectorCopy(ent->s.origin, start);
-        start[2] += ent->viewheight;
+        start = ent->s.origin;
+        start.z += ent->viewheight;
 
-        VectorMA(start, 8192, forward, end);
+        end = Vec3_MA(start, 8192, forward);
 
-        trace_t tr;
-        trap_Trace(&tr, start, NULL, NULL, end, other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
-        VectorCopy(tr.endpos, other->s.origin);
+        trace_t tr = G_TraceLine(start, end, other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
+        other->s.origin = tr.endpos;
 
         for (int i = 0; i < 3; i++) {
-            if (tr.plane.normal[i] > 0)
-                other->s.origin[i] -= other->r.mins[i] * tr.plane.normal[i];
+            if (tr.plane.normal.xyz[i] > 0)
+                other->s.origin.xyz[i] -= other->r.box.mins.xyz[i] * tr.plane.normal.xyz[i];
             else
-                other->s.origin[i] += other->r.maxs[i] * -tr.plane.normal[i];
+                other->s.origin.xyz[i] += other->r.box.maxs.xyz[i] * -tr.plane.normal.xyz[i];
         }
 
         while (1) {
-            trap_Trace(&tr, other->s.origin, other->r.mins, other->r.maxs,
-                       other->s.origin, other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
+            tr = G_Trace(other->s.origin, other->s.origin, other->r.box,
+                         other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
             if (!tr.startsolid)
                 break;
 
-            float dx = other->r.maxs[0] - other->r.mins[0];
-            float dy = other->r.maxs[1] - other->r.mins[1];
-            float f = -sqrtf(dx * dx + dy * dy);
-            vec3_t dir;
+            float f = Vec2_Length(Vec2_FromVec3(Box3_Size(other->r.box)));
 
-            VectorMA(other->s.origin, f, forward, other->s.origin);
-            VectorSubtract(other->s.origin, ent->s.origin, dir);
+            other->s.origin = Vec3_MA(other->s.origin, -f, forward);
+            vec3_t dir = Vec3_Sub(other->s.origin, ent->s.origin);
 
-            if (DotProduct(dir, forward) < 0) {
+            if (Vec3_Dot(dir, forward) < 0) {
                 G_ClientPrintf(ent, PRINT_HIGH, "Couldn't find a suitable spawn location\n");
                 G_FreeEdict(other);
                 break;
@@ -456,7 +452,7 @@ static void Cmd_Teleport_f(edict_t *ent)
 
     for (i = 0; i < 3; i++) {
         trap_Argv(1 + i, buf, sizeof(buf));
-        ent->s.origin[i] = Q_atof(buf);
+        ent->s.origin.xyz[i] = Q_atof(buf);
     }
 
     if (trap_Argc() > 4) {
@@ -464,13 +460,10 @@ static void Cmd_Teleport_f(edict_t *ent)
 
         for (i = 0; i < 3; i++) {
             trap_Argv(4 + i, buf, sizeof(buf));
-            ang[i] = Q_atof(buf);
+            ang.xyz[i] = Q_atof(buf);
         }
 
-        for (i = 0; i < 3; i++)
-            ent->client->ps.delta_angles[i] = ANGLE2SHORT(ang[i] - ent->client->resp.cmd_angles[i]);
-        VectorCopy(ang, ent->client->ps.viewangles);
-        VectorCopy(ang, ent->client->v_angle);
+        P_SetClientAngles(ent->client, ang);
     }
 
     trap_LinkEntity(ent);
@@ -928,7 +921,7 @@ static void Cmd_Kill_f(edict_t *ent)
     // ROGUE
 
     // [Paril-KEX] don't allow kill to take points away in TDM
-    player_die(ent, ent, ent, 100000, vec3_origin, (mod_t) { MOD_SUICIDE, teamplay.integer });
+    player_die(ent, ent, ent, 100000, vec3_origin, teamplay.integer ? MOD_SUICIDE_NP : MOD_SUICIDE);
 }
 
 /*
@@ -946,13 +939,12 @@ static void Cmd_Kill_AI_f(edict_t * ent)
     // except the one we're looking at...
     vec3_t start, end;
 
-    VectorCopy(ent->s.origin, start);
-    start[2] += ent->viewheight;
+    start = ent->s.origin;
+    start.z += ent->viewheight;
 
-    VectorMA(start, 1024, ent->client->v_forward, end);
+    end = Vec3_MA(start, 1024, ent->client->v_forward);
 
-    trace_t tr;
-    trap_Trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
+    trace_t tr = G_TraceLine(start, end, ent->s.number, MASK_SHOT);
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
@@ -1132,8 +1124,7 @@ static void Cmd_Wave_f(edict_t *ent)
 
     const char *other_notify_msg = NULL, *other_notify_none_msg = NULL;
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, vec3_origin, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, vec3_origin, false);
 
     // see who we're aiming at
     edict_t *aiming_at = NULL;
@@ -1144,10 +1135,10 @@ static void Cmd_Wave_f(edict_t *ent)
         if (!player->r.inuse || player == ent)
             continue;
 
-        VectorSubtract(player->s.origin, start, dir);
-        float dist = VectorNormalize(dir);
+        vec3_t dir = Vec3_Sub(player->s.origin, aim.start);
+        float dist = Vec3_Normalize(&dir);
 
-        if (DotProduct(dir, ent->client->v_forward) < 0.97f)
+        if (Vec3_Dot(dir, ent->client->v_forward) < 0.97f)
             continue;
         if (dist < best_dist)
             continue;
@@ -1217,10 +1208,8 @@ static void Cmd_Wave_f(edict_t *ent)
 
     if (cmd == GESTURE_POINT && has_a_target) {
         // don't do this stuff if we're flooding
-        vec3_t end;
-        VectorMA(start, 2048, ent->client->v_forward, end);
-        trace_t tr;
-        trap_Trace(&tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT & ~CONTENTS_WINDOW);
+        vec3_t end = Vec3_MA(aim.start, 2048, ent->client->v_forward);
+        trace_t tr = G_TraceLine(aim.start, end, ent->s.number, MASK_SHOT & ~CONTENTS_WINDOW);
         other_notify_msg = "%s pinged a location.\n";
 
         if (tr.fraction != 1.0f) {
@@ -1403,7 +1392,7 @@ static void Cmd_Switchteam_f(edict_t *ent)
             }
 
             ent->health = 0;
-            player_die(ent, ent, ent, 100000, vec3_origin, (mod_t) { .id = MOD_SUICIDE, .no_point_loss = true });
+            player_die(ent, ent, ent, 100000, vec3_origin, MOD_SUICIDE_NP);
 
             // don't even bother waiting for death frames
             ent->deadflag = true;
@@ -1475,7 +1464,7 @@ static void Cmd_ShowMonsters_f(edict_t *ent)
             color = U32_BLUE;
         else
             color = U32_RED;
-        trap_R_AddDebugBounds(e->r.absmin, e->r.absmax, color, 10000, false);
+        trap_R_AddDebugBounds(e->r.absbox, color, 10000, false);
         monsters++;
     }
 
@@ -1502,7 +1491,7 @@ static void Cmd_ShowSecrets_f(edict_t *self)
         other = NULL;
         found = false;
         while ((other = G_Find(other, FOFS(target), ent->targetname))) {
-            trap_R_AddDebugBounds(other->r.absmin, other->r.absmax, U32_RED, 10000, false);
+            trap_R_AddDebugBounds(other->r.absbox, U32_RED, 10000, false);
             found = true;
         }
 

@@ -223,4 +223,4 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 channel_t *S_FindAutoChannel(int entnum, const sfx_t *sfx);
 sound_entity_t *S_FindEntity(unsigned entnum);
-void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);
+void S_SpatializeOrigin(vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo);

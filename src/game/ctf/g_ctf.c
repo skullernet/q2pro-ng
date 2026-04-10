@@ -96,24 +96,24 @@ static const item_id_t tech_ids[] = { IT_TECH_RESISTANCE, IT_TECH_STRENGTH, IT_T
 
 /*--------------------------------------------------------------------------*/
 
-static void loc_buildboxpoints(vec3_t p[8], const vec3_t org, const vec3_t mins, const vec3_t maxs)
+static void loc_buildboxpoints(vec3_t p[8], vec3_t org, box3_t box)
 {
-    VectorAdd(org, mins, p[0]);
-    VectorCopy(p[0], p[1]);
-    p[1][0] -= mins[0];
-    VectorCopy(p[0], p[2]);
-    p[2][1] -= mins[1];
-    VectorCopy(p[0], p[3]);
-    p[3][0] -= mins[0];
-    p[3][1] -= mins[1];
-    VectorAdd(org, maxs, p[4]);
-    VectorCopy(p[4], p[5]);
-    p[5][0] -= maxs[0];
-    VectorCopy(p[0], p[6]);
-    p[6][1] -= maxs[1];
-    VectorCopy(p[0], p[7]);
-    p[7][0] -= maxs[0];
-    p[7][1] -= maxs[1];
+    p[0] = Vec3_Add(org, box.mins);
+    p[1] = p[0];
+    p[1].x -= box.mins.x;
+    p[2] = p[0];
+    p[2].y -= box.mins.y;
+    p[3] = p[0];
+    p[3].x -= box.mins.x;
+    p[3].y -= box.mins.y;
+    p[4] = Vec3_Add(org, box.maxs);
+    p[5] = p[4];
+    p[5].x -= box.maxs.x;
+    p[6] = p[0];
+    p[6].y -= box.maxs.y;
+    p[7] = p[0];
+    p[7].x -= box.maxs.x;
+    p[7].y -= box.maxs.y;
 }
 
 static bool loc_CanSee(edict_t *targ, edict_t *inflictor)
@@ -127,13 +127,13 @@ static bool loc_CanSee(edict_t *targ, edict_t *inflictor)
     if (targ->movetype == MOVETYPE_PUSH)
         return false; // bmodels not supported
 
-    loc_buildboxpoints(targpoints, targ->s.origin, targ->r.mins, targ->r.maxs);
+    loc_buildboxpoints(targpoints, targ->s.origin, targ->r.box);
 
-    VectorCopy(inflictor->s.origin, viewpoint);
-    viewpoint[2] += inflictor->viewheight;
+    viewpoint = inflictor->s.origin;
+    viewpoint.z += inflictor->viewheight;
 
     for (i = 0; i < 8; i++) {
-        trap_Trace(&trace, viewpoint, NULL, NULL, targpoints[i], inflictor->s.number, MASK_SOLID);
+        trace = G_TraceLine(viewpoint, targpoints[i], inflictor->s.number, MASK_SOLID);
         if (trace.fraction == 1.0f)
             return true;
     }
@@ -478,11 +478,11 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
     // ok we have the attackers flag and a pointer to the carrier
 
     // check to see if we are defending the base's flag
-    VectorSubtract(targ->s.origin, flag->s.origin, v1);
-    VectorSubtract(attacker->s.origin, flag->s.origin, v2);
+    v1 = Vec3_Sub(targ->s.origin, flag->s.origin);
+    v2 = Vec3_Sub(attacker->s.origin, flag->s.origin);
 
-    if ((VectorLength(v1) < CTF_TARGET_PROTECT_RADIUS ||
-         VectorLength(v2) < CTF_TARGET_PROTECT_RADIUS ||
+    if ((Vec3_Length(v1) < CTF_TARGET_PROTECT_RADIUS ||
+         Vec3_Length(v2) < CTF_TARGET_PROTECT_RADIUS ||
          loc_CanSee(flag, targ) || loc_CanSee(flag, attacker)) &&
         attacker->client->resp.ctf_team != targ->client->resp.ctf_team) {
         // we defended the base flag
@@ -501,11 +501,11 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
     }
 
     if (carrier && carrier != attacker) {
-        VectorSubtract(targ->s.origin, carrier->s.origin, v1);
-        VectorSubtract(attacker->s.origin, carrier->s.origin, v2);
+        v1 = Vec3_Sub(targ->s.origin, carrier->s.origin);
+        v2 = Vec3_Sub(attacker->s.origin, carrier->s.origin);
 
-        if (VectorLength(v1) < CTF_ATTACKER_PROTECT_RADIUS ||
-            VectorLength(v2) < CTF_ATTACKER_PROTECT_RADIUS ||
+        if (Vec3_Length(v1) < CTF_ATTACKER_PROTECT_RADIUS ||
+            Vec3_Length(v2) < CTF_ATTACKER_PROTECT_RADIUS ||
             loc_CanSee(carrier, targ) || loc_CanSee(carrier, attacker)) {
             attacker->client->resp.score += CTF_CARRIER_PROTECT_BONUS;
             G_ClientPrintf(NULL, PRINT_MEDIUM, "%s defends the %s's flag carrier.\n",
@@ -751,9 +751,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
     vec3_t      dest;
     const char *model;
 
-    VectorSet(ent->r.mins, -15, -15, -15);
-    VectorSet(ent->r.maxs, 15, 15, 15);
-
+    ent->r.box = Box3_FromRadius(15);
     if (ent->model)
         model = ent->model;
     else
@@ -764,17 +762,17 @@ void THINK(CTFFlagSetup)(edict_t *ent)
     ent->touch = Touch_Item;
     ent->s.frame = 173;
 
-    VectorCopy(ent->s.origin, dest);
-    dest[2] -= 128;
+    dest = ent->s.origin;
+    dest.z -= 128;
 
-    trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
+    tr = G_Trace(ent->s.origin, dest, ent->r.box, ent->s.number, MASK_SOLID);
     if (tr.startsolid) {
         G_Printf("CTFFlagSetup: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
 
-    VectorCopy(tr.endpos, ent->s.origin);
+    ent->s.origin = tr.endpos;
 
     trap_LinkEntity(ent);
 
@@ -867,9 +865,9 @@ static void CTFSetIDView(edict_t *ent)
     ent->client->ps.stats[STAT_CTF_ID_VIEW] = 0;
     ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = 0;
 
-    AngleVectors(ent->client->v_angle, forward, NULL, NULL);
-    VectorMA(ent->s.origin, 1024, forward, forward);
-    trap_Trace(&tr, ent->s.origin, NULL, NULL, forward, ent->s.number, MASK_SOLID);
+    AngleVectors(ent->client->v_angle, &forward, NULL, NULL);
+    forward = Vec3_MA(ent->s.origin, 1024, forward);
+    tr = G_TraceLine(ent->s.origin, forward, ent->s.number, MASK_SOLID);
     hit = &g_edicts[tr.entnum];
     if (tr.fraction < 1 && hit->client) {
         ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + tr.entnum;
@@ -880,19 +878,19 @@ static void CTFSetIDView(edict_t *ent)
         return;
     }
 
-    AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+    AngleVectors(ent->client->v_angle, &forward, NULL, NULL);
     best = NULL;
     for (int i = 0; i < game.maxclients; i++) {
         who = g_edicts + i;
         if (!who->r.inuse || who->r.solid == SOLID_NOT)
             continue;
-        VectorSubtract(who->s.origin, ent->s.origin, dir);
-        VectorNormalize(dir);
-        d = DotProduct(forward, dir);
 
         // we have teammate indicators that are better for this
         if (ent->client->resp.ctf_team == who->client->resp.ctf_team)
             continue;
+
+        dir = Vec3_Direction(who->s.origin, ent->s.origin);
+        d = Vec3_Dot(forward, dir);
 
         if (d > bd && loc_CanSee(ent, who)) {
             bd = d;
@@ -1148,13 +1146,13 @@ void TOUCH(CTFGrappleTouch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    VectorClear(self->velocity);
+    self->velocity = vec3_origin;
 
     PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage) {
         if (self->dmg)
-            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_GRAPPLE });
+            T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, MOD_GRAPPLE);
         CTFResetGrapple(self);
         return;
     }
@@ -1188,8 +1186,7 @@ static void CTFGrappleDrawCable(edict_t *self)
     if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_HANG)
         return;
 
-    vec3_t start, dir;
-    P_ProjectSource(owner, cl->v_angle, (const vec3_t) { 7, 2, -9 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(owner, cl->v_angle, Vec3(7, 2, -9), false);
 
     edict_t *te = self->beam;
     if (!te) {
@@ -1201,8 +1198,8 @@ static void CTFGrappleDrawCable(edict_t *self)
         te->think = CTFGrappleCableThink;
     }
 
-    G_SnapVector(start, te->s.old_origin);
-    G_SnapVectorTowards(self->s.origin, start, te->s.origin);
+    te->s.old_origin = G_SnapVector(aim.start);
+    te->s.origin = G_SnapVectorTowards(self->s.origin, aim.start);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }
@@ -1234,10 +1231,10 @@ void CTFGrapplePull(edict_t *self)
             return;
         }
         if (self->enemy->r.solid == SOLID_BBOX) {
-            VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, self->s.origin);
+            self->s.origin = Box3_Center(self->enemy->r.absbox);
             trap_LinkEntity(self);
         } else
-            VectorCopy(self->enemy->velocity, self->velocity);
+            self->velocity = self->enemy->velocity;
 
         if (self->enemy->deadflag) {
             // he died
@@ -1250,33 +1247,29 @@ void CTFGrapplePull(edict_t *self)
 
     if (cl->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY) {
         // pull player toward grapple
-        vec3_t forward, up;
-
-        AngleVectors(cl->v_angle, forward, NULL, up);
-        VectorCopy(owner->s.origin, v);
-        v[2] += owner->viewheight;
-        VectorSubtract(self->s.origin, v, hookdir);
-
-        vlen = VectorNormalize(hookdir);
+        v = owner->s.origin;
+        v.z += owner->viewheight;
+        hookdir = Vec3_Sub(self->s.origin, v);
+        vlen = Vec3_Normalize(&hookdir);
 
         if (cl->ctf_grapplestate == CTF_GRAPPLE_STATE_PULL && vlen < 64) {
             cl->ctf_grapplestate = CTF_GRAPPLE_STATE_HANG;
             self->s.sound = G_SoundIndex("weapons/grapple/grhang.wav");
         }
 
-        VectorScale(hookdir, g_grapple_pull_speed.value, owner->velocity);
+        owner->velocity = Vec3_Scale(hookdir, g_grapple_pull_speed.value);
         owner->flags |= FL_NO_KNOCKBACK;
         SV_AddGravity(owner);
     }
 }
 
-void DIE(grapple_die)(edict_t *self, edict_t *other, edict_t *inflictor, int damage, const vec3_t point, const mod_t mod)
+void DIE(grapple_die)(edict_t *self, edict_t *other, edict_t *inflictor, int damage, vec3_t point, const mod_t mod)
 {
-    if (mod.id == MOD_CRUSH)
+    if (mod == MOD_CRUSH)
         CTFResetGrapple(self);
 }
 
-static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, effects_t effect)
+static bool CTFFireGrapple(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, effects_t effect)
 {
     edict_t *grapple;
 
@@ -1298,24 +1291,23 @@ static bool CTFFireGrapple(edict_t *self, const vec3_t start, const vec3_t dir, 
     return true;
 }
 
-static void CTFGrappleFire(edict_t *ent, const vec3_t g_offset, int damage, effects_t effect)
+static void CTFGrappleFire(edict_t *ent, vec3_t offset, int damage, effects_t effect)
 {
     float volume = 1.0f;
 
     if (ent->client->ctf_grapplestate > CTF_GRAPPLE_STATE_FLY)
         return; // it's already out
 
-    vec3_t start, dir, offset = { 24, 8, -8 + 2 };
-    VectorAdd(offset, g_offset, offset);
-    P_ProjectSource(ent, ent->client->v_angle, offset, start, dir, false);
+    offset = Vec3_Add(offset, Vec3(24, 8, -8 + 2));
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, offset, false);
 
     if (ent->client->silencer_shots)
         volume = 0.2f;
 
-    if (CTFFireGrapple(ent, start, dir, damage, g_grapple_fly_speed.value, effect))
+    if (CTFFireGrapple(ent, aim.start, aim.dir, damage, g_grapple_fly_speed.value, effect))
         G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grfire.wav"), volume, ATTN_NORM);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 }
 
 static void CTFWeapon_Grapple_Fire(edict_t *ent)
@@ -1452,7 +1444,7 @@ void CTFTeam_f(edict_t *ent)
     }
 
     ent->health = 0;
-    player_die(ent, ent, ent, 100000, vec3_origin, (mod_t) { .id = MOD_SUICIDE, .no_point_loss = true });
+    player_die(ent, ent, ent, 100000, vec3_origin, MOD_SUICIDE_NP);
 
     // don't even bother waiting for death frames
     ent->deadflag = true;
@@ -1720,8 +1712,8 @@ void CTFDeadDropTech(edict_t *ent)
         if (ent->client->pers.inventory[tech_ids[i]]) {
             dropped = Drop_Item(ent, GetItemByIndex(tech_ids[i]));
             // hack the velocity to make it bounce random
-            dropped->velocity[0] = crandom_open() * 300;
-            dropped->velocity[1] = crandom_open() * 300;
+            dropped->velocity.x = crandom_open() * 300;
+            dropped->velocity.y = crandom_open() * 300;
             dropped->nextthink = level.time + CTF_TECH_TIMEOUT;
             dropped->think = TechThink;
             dropped->r.ownernum = ENTITYNUM_NONE;
@@ -1733,7 +1725,7 @@ void CTFDeadDropTech(edict_t *ent)
 static void SpawnTech(const gitem_t *item, edict_t *spot)
 {
     edict_t *ent;
-    vec3_t   forward, right;
+    vec3_t   forward;
     vec3_t   angles;
 
     ent = G_Spawn();
@@ -1743,23 +1735,22 @@ static void SpawnTech(const gitem_t *item, edict_t *spot)
     ent->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     ent->s.effects = item->world_model_flags;
     ent->s.renderfx = RF_GLOW;
-    VectorSet(ent->r.mins, -15, -15, -15);
-    VectorSet(ent->r.maxs, 15, 15, 15);
+    ent->r.box = Box3_FromRadius(15);
     ent->s.modelindex = G_ModelIndex(ent->item->world_model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
     ent->r.ownernum = ent->s.number;
 
-    angles[0] = 0;
-    angles[1] = irandom1(360);
-    angles[2] = 0;
+    angles.pitch = 0;
+    angles.yaw = irandom1(360);
+    angles.roll = 0;
 
-    AngleVectors(angles, forward, right, NULL);
-    VectorCopy(spot->s.origin, ent->s.origin);
-    ent->s.origin[2] += 16;
-    VectorScale(forward, 100, ent->velocity);
-    ent->velocity[2] = 300;
+    AngleVectors(angles, &forward, NULL, NULL);
+    ent->s.origin = spot->s.origin;
+    ent->s.origin.z += 16;
+    ent->velocity = Vec3_Scale(forward, 100);
+    ent->velocity.z = 300;
 
     ent->nextthink = level.time + CTF_TECH_TIMEOUT;
     ent->think = TechThink;
@@ -2885,7 +2876,6 @@ bool CTFCheckRules(void)
 void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     edict_t *dest;
-    vec3_t   forward;
 
     if (!other->client)
         return;
@@ -2902,12 +2892,12 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     // unlink to make sure it can't possibly interfere with KillBox
     trap_UnlinkEntity(other);
 
-    VectorCopy(dest->s.origin, other->s.origin);
-    VectorCopy(dest->s.origin, other->s.old_origin);
-    //  other->s.origin[2] += 10;
+    other->s.origin = dest->s.origin;
+    // other->s.origin.z += 10;
+    other->s.old_origin = other->s.origin;
 
     // clear the velocity and hold them in place briefly
-    VectorClear(other->velocity);
+    other->velocity = vec3_origin;
     other->client->ps.pm_time = 160; // hold time
     other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
     other->client->ps.rdflags ^= RDF_TELEPORT_BIT;
@@ -2917,18 +2907,13 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     G_AddEvent(other, EV_PLAYER_TELEPORT, 0);
 
     // set angles
-    for (int i = 0; i < 3; i++)
-        other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
-
-    other->s.angles[PITCH] = 0;
-    other->s.angles[YAW] = dest->s.angles[YAW];
-    other->s.angles[ROLL] = 0;
-    VectorCopy(dest->s.angles, other->client->ps.viewangles);
-    VectorCopy(dest->s.angles, other->client->v_angle);
+    P_SetClientAngles(other->client, dest->s.angles);
+    other->s.angles.pitch = 0;
+    other->s.angles.yaw = dest->s.angles.yaw;
+    other->s.angles.roll = 0;
 
     // give a little forward velocity
-    AngleVectors(other->client->v_angle, forward, NULL, NULL);
-    VectorScale(forward, 200, other->velocity);
+    other->velocity = Vec3_Scale(other->client->v_forward, 200);
 
     trap_LinkEntity(other);
 
@@ -2938,9 +2923,9 @@ void TOUCH(old_teleporter_touch)(edict_t *self, edict_t *other, const trace_t *t
     // [Paril-KEX] move sphere, if we own it
     if (other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
-        VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->r.absmax[2];
-        sphere->s.angles[YAW] = other->s.angles[YAW];
+        sphere->s.origin = other->s.origin;
+        sphere->s.origin.z = other->r.absbox.maxs.z;
+        sphere->s.angles.yaw = other->s.angles.yaw;
         trap_LinkEntity(sphere);
     }
 }
@@ -2967,7 +2952,7 @@ void SP_trigger_ctf_teleport(edict_t *ent)
     // noise maker and splash effect dude
     s = G_Spawn();
     ent->enemy = s;
-    VectorAvg(ent->r.mins, ent->r.maxs, s->s.origin);
+    s->s.origin = Box3_Center(ent->r.box);
     s->s.sound = G_SoundIndex("world/hum1.wav");
     trap_LinkEntity(s);
 }
@@ -2977,7 +2962,7 @@ Point trigger_teleports at these.
 */
 void SP_info_ctf_teleport_destination(edict_t *ent)
 {
-    ent->s.origin[2] += 16;
+    ent->s.origin.z += 16;
 }
 
 /*----------------------------------------------------------------------------------*/

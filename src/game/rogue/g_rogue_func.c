@@ -17,13 +17,10 @@ void plat2_go_up(edict_t *ent);
 
 void plat2_spawn_danger_area(edict_t *ent)
 {
-    vec3_t mins, maxs;
+    box3_t box = ent->r.box;
+    box.maxs.z = box.mins.z + 64;
 
-    VectorCopy(ent->r.mins, mins);
-    VectorCopy(ent->r.maxs, maxs);
-    maxs[2] = ent->r.mins[2] + 64;
-
-    SpawnBadArea(mins, maxs, 0, ent);
+    SpawnBadArea(box, 0, ent);
 }
 
 void plat2_kill_danger_area(edict_t *ent)
@@ -142,20 +139,20 @@ static void plat2_operate(edict_t *ent, edict_t *other)
     if ((ent->last_move_time + SEC(ent->wait)) > level.time)
         return;
 
-    platCenter = (trigger->r.absmin[2] + trigger->r.absmax[2]) / 2;
+    platCenter = (trigger->r.absbox.mins.z + trigger->r.absbox.maxs.z) / 2;
 
     if (ent->moveinfo.state == STATE_TOP) {
         otherState = STATE_TOP;
         if (ent->spawnflags & SPAWNFLAGS_PLAT2_BOX_LIFT) {
-            if (platCenter > other->s.origin[2])
+            if (platCenter > other->s.origin.z)
                 otherState = STATE_BOTTOM;
         } else {
-            if (trigger->r.absmax[2] > other->s.origin[2])
+            if (trigger->r.absbox.maxs.z > other->s.origin.z)
                 otherState = STATE_BOTTOM;
         }
     } else {
         otherState = STATE_BOTTOM;
-        if (other->s.origin[2] > platCenter)
+        if (other->s.origin.z > platCenter)
             otherState = STATE_TOP;
     }
 
@@ -204,7 +201,7 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
         // if it's still there, nuke it
         if (other && other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
@@ -213,9 +210,9 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 
     // gib dead things
     if (other->health < 1)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100, 1, DAMAGE_NONE, MOD_CRUSH);
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 
     // [Paril-KEX] killed, so don't change direction
     if (!other->r.inuse || !other->r.solid)
@@ -256,10 +253,7 @@ void USE(plat2_activate)(edict_t *ent, edict_t *other, edict_t *activator)
 
     trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
-    trigger->r.maxs[0] += 10;
-    trigger->r.maxs[1] += 10;
-    trigger->r.mins[0] -= 10;
-    trigger->r.mins[1] -= 10;
+    trigger->r.box = Box3_Expand3(trigger->r.box, Vec3(10, 10, 0));
 
     trap_LinkEntity(trigger);
 
@@ -293,7 +287,7 @@ void SP_func_plat2(edict_t *ent)
 {
     edict_t *trigger;
 
-    VectorClear(ent->s.angles);
+    ent->s.angles = vec3_origin;
     ent->r.solid = SOLID_BSP;
     ent->movetype = MOVETYPE_PUSH;
 
@@ -330,13 +324,13 @@ void SP_func_plat2(edict_t *ent)
         ent->dmg = 2;
 
     // pos1 is the top position, pos2 is the bottom
-    VectorCopy(ent->s.origin, ent->pos1);
-    VectorCopy(ent->s.origin, ent->pos2);
+    ent->pos1 = ent->s.origin;
+    ent->pos2 = ent->s.origin;
 
     if (st.height)
-        ent->pos2[2] -= (st.height - st.lip);
+        ent->pos2.z -= (st.height - st.lip);
     else
-        ent->pos2[2] -= (ent->r.maxs[2] - ent->r.mins[2]) - st.lip;
+        ent->pos2.z -= (ent->r.box.maxs.z - ent->r.box.mins.z) - st.lip;
 
     ent->moveinfo.state = STATE_TOP;
 
@@ -348,17 +342,14 @@ void SP_func_plat2(edict_t *ent)
         trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
         // PGM - debugging??
-        trigger->r.maxs[0] += 10;
-        trigger->r.maxs[1] += 10;
-        trigger->r.mins[0] -= 10;
-        trigger->r.mins[1] -= 10;
+        trigger->r.box = Box3_Expand3(trigger->r.box, Vec3(10, 10, 0));
 
         trap_LinkEntity(trigger);
 
         trigger->touch = Touch_Plat_Center2; // Override trigger touch function
 
         if (!(ent->spawnflags & SPAWNFLAGS_PLAT2_TOP)) {
-            VectorCopy(ent->pos2, ent->s.origin);
+            ent->s.origin = ent->pos2;
             ent->moveinfo.state = STATE_BOTTOM;
         }
     }

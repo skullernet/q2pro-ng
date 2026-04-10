@@ -408,6 +408,31 @@ typedef struct {
 void BG_ParseSkyParams(const char *s, sky_params_t *sky);
 const char *BG_FormatSkyParams(const sky_params_t *sky);
 
+static inline player_fog_t BG_LerpFog(player_fog_t a, player_fog_t b, float t)
+{
+    return (player_fog_t) {
+        .color      = Vec3_Lerp(a.color, b.color, t),
+        .density    = Q_lerpf(a.density, b.density, t),
+        .sky_factor = Q_lerpf(a.sky_factor, b.sky_factor, t)
+    };
+}
+
+static inline player_heightfog_t BG_LerpHeightFog(player_heightfog_t a, player_heightfog_t b, float t)
+{
+    return (player_heightfog_t) {
+        .start = {
+            .color = Vec3_Lerp(a.start.color, b.start.color, t),
+            .dist = Q_lerpf(a.start.dist, b.start.dist, t)
+        },
+        .end = {
+            .color = Vec3_Lerp(a.end.color, b.end.color, t),
+            .dist = Q_lerpf(a.end.dist, b.end.dist, t)
+        },
+        .density = Q_lerpf(a.density, b.density, t),
+        .falloff = Q_lerpf(a.falloff, b.falloff, t)
+    };
+}
+
 //==============================================
 
 // pmove_state_t is the information necessary for client side movement
@@ -456,8 +481,7 @@ typedef struct {
     trace_t traces[MAXTOUCH];
 } touch_list_t;
 
-typedef void (*trace_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
-typedef void (*clip_func_t)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);
+typedef void (*trace_func_t)(trace_t *tr, const trace_args_t *args);
 
 typedef struct {
     // state (in / out)
@@ -468,15 +492,15 @@ typedef struct {
 
     // results (out)
     touch_list_t    touch;
-    vec3_t          mins, maxs;         // bounding box size
+    box3_t          box;        // bounding box size
     int             groundentitynum;
     contents_t      watertype;
     water_level_t   waterlevel;
 
     // callbacks to test the world
     trace_func_t    trace;
-    clip_func_t     clip;
-    contents_t      (*pointcontents)(const vec3_t point);
+    trace_func_t    clip;
+    contents_t      (*pointcontents)(vec3_t point);
 
     // [KEX] results (out)
     bool        jump_sound;
@@ -491,8 +515,8 @@ typedef enum {
     NO_GOOD_POSITION
 } stuck_result_t;
 
-stuck_result_t G_FixStuckObject_Generic(vec3_t origin, const vec3_t own_mins, const vec3_t own_maxs,
-                                        int ignore, contents_t mask, trace_func_t trace_func);
+stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
+                                         contents_t mask, trace_func_t trace_func);
 
 typedef enum {
     PHYSICS_PC = 0,
@@ -533,15 +557,17 @@ static inline bool PM_CrouchingDisabled(void)
     return (pm_config.physics_flags & PHYSICS_N64_MOVEMENT) && !(pm_config.physics_flags & PHYSICS_DEATHMATCH);
 }
 
-void PM_ClipVelocity(const vec3_t in, const vec3_t normal, vec3_t out, float overbounce);
+vec3_t PM_ClipVelocity(vec3_t in, vec3_t normal, float overbounce);
 
 void PM_RecordTrace(touch_list_t *touch, const trace_t *tr);
 
-void PM_StepSlideMove_Generic(vec3_t origin, vec3_t velocity, float frametime, const vec3_t mins, const vec3_t maxs,
-                              int passent, contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
+void PM_StepSlideMove_Generic(vec3_t *origin, vec3_t *velocity, float frametime, box3_t box, int passent,
+                              contents_t mask, touch_list_t *touch, bool has_time, trace_func_t trace_func);
+
+void PM_ClampAngles(player_state_t *s, const usercmd_t *cmd);
 
 void BG_Pmove(pmove_t *pmove);
 
-void G_AddBlend(float r, float g, float b, float a, vec4_t v_blend);
+void BG_AddBlend(float r, float g, float b, float a, vec4_t *v_blend);
 
 const char *BG_EventName(entity_event_t event);

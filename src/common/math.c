@@ -21,17 +21,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void SetPlaneType(cplane_t *plane)
 {
-    vec_t *normal = plane->normal;
-
-    if (normal[0] == 1) {
+    if (plane->normal.x == 1) {
         plane->type = PLANE_X;
         return;
     }
-    if (normal[1] == 1) {
+    if (plane->normal.y == 1) {
         plane->type = PLANE_Y;
         return;
     }
-    if (normal[2] == 1) {
+    if (plane->normal.z == 1) {
         plane->type = PLANE_Z;
         return;
     }
@@ -43,13 +41,13 @@ void SetPlaneSignbits(cplane_t *plane)
 {
     int bits = 0;
 
-    if (plane->normal[0] < 0) {
+    if (plane->normal.x < 0) {
         bits |= 1;
     }
-    if (plane->normal[1] < 0) {
+    if (plane->normal.y < 0) {
         bits |= 2;
     }
-    if (plane->normal[2] < 0) {
+    if (plane->normal.z < 0) {
         bits |= 4;
     }
 
@@ -63,17 +61,16 @@ BoxOnPlaneSide
 Returns 1, 2, or 1 + 2
 ==================
 */
-box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
+box_plane_t BoxOnPlaneSide(const box3_t *box, const cplane_t *p)
 {
-    const vec_t *bounds[2] = { emins, emaxs };
     int     i = p->signbits & 1;
     int     j = (p->signbits >> 1) & 1;
     int     k = (p->signbits >> 2) & 1;
 
 #define P(i, j, k) \
-    p->normal[0] * bounds[i][0] + \
-    p->normal[1] * bounds[j][1] + \
-    p->normal[2] * bounds[k][2]
+    p->normal.x * box->bounds[i].x + \
+    p->normal.y * box->bounds[j].y + \
+    p->normal.z * box->bounds[k].z
 
     vec_t       dist1 = P(i ^ 1, j ^ 1, k ^ 1);
     vec_t       dist2 = P(i, j, k);
@@ -91,51 +88,43 @@ box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_
 
 #if USE_MD5
 
-#define X 0
-#define Y 1
-#define Z 2
-#define W 3
-
-void Quat_ComputeW(quat_t q)
+void Quat_ComputeW(quat_t *q)
 {
-    float t = 1.0f - (q[X] * q[X]) - (q[Y] * q[Y]) - (q[Z] * q[Z]);
+    float t = 1.0f - (q->x * q->x) - (q->y * q->y) - (q->z * q->z);
 
     if (t < 0.0f) {
-        q[W] = 0.0f;
+        q->w = 0.0f;
     } else {
-        q[W] = -sqrtf(t);
+        q->w = -sqrtf(t);
     }
+}
+
+static float Quat_DotProduct(quat_t a, quat_t b)
+{
+    return (a.w * b.w) + (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
 #define DOT_THRESHOLD   0.9995f
 
-void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out)
+quat_t Quat_SLerp(quat_t a, quat_t b, float backlerp, float frontlerp)
 {
-    if (backlerp <= 0.0f) {
-        Vector4Copy(qb, out);
-        return;
-    } else if (backlerp >= 1.0f) {
-        Vector4Copy(qa, out);
-        return;
-    }
+    if (backlerp <= 0.0f)
+        return b;
+    if (backlerp >= 1.0f)
+        return a;
 
     // compute "cosine of angle between quaternions" using dot product
-    float cosOmega = Dot4Product(qa, qb);
+    float cosOmega = Quat_DotProduct(a, b);
 
     /* If negative dot, use -q1.  Two quaternions q and -q
        represent the same rotation, but may produce
        different slerp.  We chose q or -q to rotate using
        the acute angle. */
-    float q1w = qb[W];
-    float q1x = qb[X];
-    float q1y = qb[Y];
-    float q1z = qb[Z];
-
     if (cosOmega < 0.0f) {
-        q1w = -q1w;
-        q1x = -q1x;
-        q1y = -q1y;
-        q1z = -q1z;
+        b.w = -b.w;
+        b.x = -b.x;
+        b.y = -b.y;
+        b.z = -b.z;
         cosOmega = -cosOmega;
     }
 
@@ -158,84 +147,78 @@ void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontler
         k1 = sinf(frontlerp * omega) * oneOverSinOmega;
     }
 
-    out[W] = (k0 * qa[W]) + (k1 * q1w);
-    out[X] = (k0 * qa[X]) + (k1 * q1x);
-    out[Y] = (k0 * qa[Y]) + (k1 * q1y);
-    out[Z] = (k0 * qa[Z]) + (k1 * q1z);
+    return (quat_t) {
+        .w = (k0 * a.w) + (k1 * b.w),
+        .x = (k0 * a.x) + (k1 * b.x),
+        .y = (k0 * a.y) + (k1 * b.y),
+        .z = (k0 * a.z) + (k1 * b.z)
+    };
 }
 
-float Quat_Normalize(quat_t q)
+float Quat_Normalize(quat_t *q)
 {
-    float length = sqrtf(Dot4Product(q, q));
+    float length = sqrtf(Quat_DotProduct(*q, *q));
 
     if (length) {
         float ilength = 1 / length;
-        q[X] *= ilength;
-        q[Y] *= ilength;
-        q[Z] *= ilength;
-        q[W] *= ilength;
+        q->x *= ilength;
+        q->y *= ilength;
+        q->z *= ilength;
+        q->w *= ilength;
     }
 
     return length;
 }
 
-void Quat_MultiplyQuat(const float *restrict qa, const float *restrict qb, quat_t out)
+quat_t Quat_MultiplyQuat(quat_t a, quat_t b)
 {
-    out[W] = (qa[W] * qb[W]) - (qa[X] * qb[X]) - (qa[Y] * qb[Y]) - (qa[Z] * qb[Z]);
-    out[X] = (qa[X] * qb[W]) + (qa[W] * qb[X]) + (qa[Y] * qb[Z]) - (qa[Z] * qb[Y]);
-    out[Y] = (qa[Y] * qb[W]) + (qa[W] * qb[Y]) + (qa[Z] * qb[X]) - (qa[X] * qb[Z]);
-    out[Z] = (qa[Z] * qb[W]) + (qa[W] * qb[Z]) + (qa[X] * qb[Y]) - (qa[Y] * qb[X]);
+    return (quat_t) {
+        .w = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z),
+        .x = (a.x * b.w) + (a.w * b.x) + (a.y * b.z) - (a.z * b.y),
+        .y = (a.y * b.w) + (a.w * b.y) + (a.z * b.x) - (a.x * b.z),
+        .z = (a.z * b.w) + (a.w * b.z) + (a.x * b.y) - (a.y * b.x)
+    };
 }
 
-void Quat_MultiplyVector(const float *restrict q, const float *restrict v, quat_t out)
+quat_t Quat_MultiplyVector(quat_t q, vec3_t v)
 {
-    out[W] = -(q[X] * v[X]) - (q[Y] * v[Y]) - (q[Z] * v[Z]);
-    out[X] = (q[W] * v[X]) + (q[Y] * v[Z]) - (q[Z] * v[Y]);
-    out[Y] = (q[W] * v[Y]) + (q[Z] * v[X]) - (q[X] * v[Z]);
-    out[Z] = (q[W] * v[Z]) + (q[X] * v[Y]) - (q[Y] * v[X]);
+    return (quat_t) {
+        .w = -(q.x * v.x) - (q.y * v.y) - (q.z * v.z),
+        .x =  (q.w * v.x) + (q.y * v.z) - (q.z * v.y),
+        .y =  (q.w * v.y) + (q.z * v.x) - (q.x * v.z),
+        .z =  (q.w * v.z) + (q.x * v.y) - (q.y * v.x)
+    };
 }
 
 // Conjugate quaternion. Also, inverse, for unit quaternions (which MD5 quats are)
-void Quat_Conjugate(const quat_t in, quat_t out)
+quat_t Quat_Conjugate(quat_t q)
 {
-    out[W] = in[W];
-    out[X] = -in[X];
-    out[Y] = -in[Y];
-    out[Z] = -in[Z];
+    return (quat_t){ .w = q.w, .x = -q.x, .y = -q.y, .z = -q.z };
 }
 
-void Quat_RotatePoint(const quat_t q, const vec3_t in, vec3_t out)
+vec3_t Quat_RotatePoint(quat_t q, vec3_t in)
 {
-    quat_t tmp, inv, output;
-
     // Assume q is unit quaternion
-    Quat_Conjugate(q, inv);
-    Quat_MultiplyVector(q, in, tmp);
-    Quat_MultiplyQuat(tmp, inv, output);
+    quat_t inv = Quat_Conjugate(q);
+    quat_t tmp = Quat_MultiplyVector(q, in);
+    quat_t out = Quat_MultiplyQuat(tmp, inv);
 
-    out[X] = output[X];
-    out[Y] = output[Y];
-    out[Z] = output[Z];
+    return Vec3(out.x, out.y, out.z);
 }
 
-void Quat_ToAxis(const quat_t q, vec3_t axis[3])
+void Quat_ToAxis(quat_t q, vec3_t axis[3])
 {
-    float q0 = q[W];
-    float q1 = q[X];
-    float q2 = q[Y];
-    float q3 = q[Z];
+    axis[0].x = 2 * (q.w * q.w + q.x * q.x) - 1;
+    axis[0].y = 2 * (q.x * q.y - q.w * q.z);
+    axis[0].z = 2 * (q.x * q.z + q.w * q.y);
 
-    axis[0][0] = 2 * (q0 * q0 + q1 * q1) - 1;
-    axis[0][1] = 2 * (q1 * q2 - q0 * q3);
-    axis[0][2] = 2 * (q1 * q3 + q0 * q2);
+    axis[1].x = 2 * (q.x * q.y + q.w * q.z);
+    axis[1].y = 2 * (q.w * q.w + q.y * q.y) - 1;
+    axis[1].z = 2 * (q.y * q.z - q.w * q.x);
 
-    axis[1][0] = 2 * (q1 * q2 + q0 * q3);
-    axis[1][1] = 2 * (q0 * q0 + q2 * q2) - 1;
-    axis[1][2] = 2 * (q2 * q3 - q0 * q1);
-
-    axis[2][0] = 2 * (q1 * q3 - q0 * q2);
-    axis[2][1] = 2 * (q2 * q3 + q0 * q1);
-    axis[2][2] = 2 * (q0 * q0 + q3 * q3) - 1;
+    axis[2].x = 2 * (q.x * q.z - q.w * q.y);
+    axis[2].y = 2 * (q.y * q.z + q.w * q.x);
+    axis[2].z = 2 * (q.w * q.w + q.z * q.z) - 1;
 }
 
 #endif  // USE_MD5

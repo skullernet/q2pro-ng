@@ -18,14 +18,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-static void GL_SampleLightPoint(vec3_t color)
+static vec3_t GL_SampleLightPoint(void)
 {
     const mface_t       *surf = glr.lightpoint.surf;
     const byte          *lightmap;
     const byte          *b1, *b2, *b3, *b4;
     float               fracu, fracv;
     float               w1, w2, w3, w4;
-    vec3_t              temp;
+    vec3_t              temp, color;
     int                 s, t, smax, tmax, size;
 
     s = glr.lightpoint.s;
@@ -47,7 +47,7 @@ static void GL_SampleLightPoint(vec3_t color)
     Q_assert((unsigned)s < smax);
     Q_assert((unsigned)t < tmax);
 
-    VectorClear(color);
+    color = vec3_origin;
 
     // add all the lightmaps with bilinear filtering
     lightmap = surf->lightmap;
@@ -57,17 +57,18 @@ static void GL_SampleLightPoint(vec3_t color)
         b3 = &lightmap[3 * ((t + 1) * smax + (s + 1))];
         b4 = &lightmap[3 * ((t + 1) * smax + (s + 0))];
 
-        temp[0] = w1 * b1[0] + w2 * b2[0] + w3 * b3[0] + w4 * b4[0];
-        temp[1] = w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1];
-        temp[2] = w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2];
+        temp.r = w1 * b1[0] + w2 * b2[0] + w3 * b3[0] + w4 * b4[0];
+        temp.g = w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1];
+        temp.b = w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2];
 
-        VectorMA(color, gls.u_styles.styles[surf->styles[i]][0], temp, color);
-
+        color = Vec3_MA(color, gls.u_styles.styles[surf->styles[i]].r, temp);
         lightmap += size;
     }
+
+    return color;
 }
 
-static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_t color)
+static bool GL_LightGridPoint(const lightgrid_t *grid, vec3_t start, vec3_t *color)
 {
     vec3_t point, avg;
     uint32_t point_i[3];
@@ -77,12 +78,10 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
     if (!grid->numleafs || !gl_lightgrid->integer)
         return false;
 
-    point[0] = (start[0] - grid->mins[0]) * grid->scale[0];
-    point[1] = (start[1] - grid->mins[1]) * grid->scale[1];
-    point[2] = (start[2] - grid->mins[2]) * grid->scale[2];
+    point = Vec3_Mul(Vec3_Sub(start, grid->mins), grid->scale);
+    Vec3_Store(point_i, point);
 
-    VectorCopy(point, point_i);
-    VectorClear(avg);
+    avg = vec3_origin;
 
     for (i = mask = numsamples = 0; i < 8; i++) {
         uint32_t tmp[3];
@@ -95,15 +94,15 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
         if (!s)
             continue;
 
-        VectorClear(samples[i]);
+        samples[i] = vec3_origin;
 
         for (j = 0; j < grid->numstyles && s->style != 255; j++, s++)
-            VectorMA(samples[i], gls.u_styles.styles[s->style][0], s->rgb, samples[i]);
+            samples[i] = Vec3_MA(samples[i], gls.u_styles.styles[s->style].r, Vec3_Load(s->rgb));
 
         // count non-occluded samples
         if (j) {
             mask |= BIT(i);
-            VectorAdd(avg, samples[i], avg);
+            avg = Vec3_Add(avg, samples[i]);
             numsamples++;
         }
     }
@@ -113,10 +112,10 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
 
     // replace occluded samples with average
     if (mask != 255) {
-        VectorScale(avg, 1.0f / numsamples, avg);
+        avg = Vec3_Scale(avg, 1.0f / numsamples);
         for (i = 0; i < 8; i++)
             if (!(mask & BIT(i)))
-                VectorCopy(avg, samples[i]);
+                samples[i] = avg;
     }
 
     // trilinear interpolation
@@ -125,35 +124,34 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, const vec3_t start, vec3_
     vec3_t lerp_x[4];
     vec3_t lerp_y[2];
 
-    fx = point[0] - point_i[0];
-    fy = point[1] - point_i[1];
-    fz = point[2] - point_i[2];
+    fx = point.x - point_i[0];
+    fy = point.y - point_i[1];
+    fz = point.z - point_i[2];
 
     bx = 1.0f - fx;
     by = 1.0f - fy;
     bz = 1.0f - fz;
 
-    LerpVector2(samples[0], samples[1], bx, fx, lerp_x[0]);
-    LerpVector2(samples[2], samples[3], bx, fx, lerp_x[1]);
-    LerpVector2(samples[4], samples[5], bx, fx, lerp_x[2]);
-    LerpVector2(samples[6], samples[7], bx, fx, lerp_x[3]);
+    lerp_x[0] = Vec3_Mix(samples[0], samples[1], bx, fx);
+    lerp_x[1] = Vec3_Mix(samples[2], samples[3], bx, fx);
+    lerp_x[2] = Vec3_Mix(samples[4], samples[5], bx, fx);
+    lerp_x[3] = Vec3_Mix(samples[6], samples[7], bx, fx);
 
-    LerpVector2(lerp_x[0], lerp_x[1], by, fy, lerp_y[0]);
-    LerpVector2(lerp_x[2], lerp_x[3], by, fy, lerp_y[1]);
+    lerp_y[0] = Vec3_Mix(lerp_x[0], lerp_x[1], by, fy);
+    lerp_y[1] = Vec3_Mix(lerp_x[2], lerp_x[3], by, fy);
 
-    LerpVector2(lerp_y[0], lerp_y[1], bz, fz, color);
+    *color = Vec3_Mix(lerp_y[0], lerp_y[1], bz, fz);
 
     return true;
 }
 
-static bool GL_LightPoint(const vec3_t start, vec3_t color)
+static bool GL_LightPoint(vec3_t start, vec3_t *color)
 {
     const bsp_t     *bsp = gl_static.world.cache;
     lightpoint_t    pt;
-    vec3_t          end, mins, maxs;
+    vec3_t          end;
     const glentity_t *ent;
     const mmodel_t  *model;
-    const vec_t     *angles;
 
     if (gl_fullbright->integer)
         return false;
@@ -161,9 +159,8 @@ static bool GL_LightPoint(const vec3_t start, vec3_t color)
     if (!bsp || !bsp->lightmap)
         return false;
 
-    end[0] = start[0];
-    end[1] = start[1];
-    end[2] = start[2] - 8192;
+    end = start;
+    end.z -= 8192;
 
     // get base lightpoint from world
     BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask | SURF_TRANS_MASK);
@@ -175,24 +172,21 @@ static bool GL_LightPoint(const vec3_t start, vec3_t color)
             continue;
 
         // cull in X/Y plane
-        if (!VectorEmpty(ent->angles)) {
-            if (fabsf(start[0] - ent->origin[0]) > model->radius)
+        if (!Vec3_IsEmpty(ent->angles)) {
+            if (fabsf(start.x - ent->origin.x) > model->radius)
                 continue;
-            if (fabsf(start[1] - ent->origin[1]) > model->radius)
+            if (fabsf(start.y - ent->origin.y) > model->radius)
                 continue;
-            angles = ent->angles;
         } else {
-            VectorAdd(model->mins, ent->origin, mins);
-            VectorAdd(model->maxs, ent->origin, maxs);
-            if (start[0] < mins[0] || start[0] > maxs[0])
+            box3_t box = Box3_Translate(model->box, ent->origin);
+            if (start.x < box.mins.x || start.x > box.maxs.x)
                 continue;
-            if (start[1] < mins[1] || start[1] > maxs[1])
+            if (start.y < box.mins.y || start.y > box.maxs.y)
                 continue;
-            angles = NULL;
         }
 
         BSP_TransformedLightPoint(&pt, start, end, model->headnode,
-                                  gl_static.nolm_mask | SURF_TRANS_MASK, ent->origin, angles);
+                                  gl_static.nolm_mask | SURF_TRANS_MASK, ent->origin, ent->angles);
 
         if (pt.fraction < glr.lightpoint.fraction)
             glr.lightpoint = pt;
@@ -201,27 +195,31 @@ static bool GL_LightPoint(const vec3_t start, vec3_t color)
     if (GL_LightGridPoint(&bsp->lightgrid, start, color))
         return true;
 
-    if (!glr.lightpoint.surf)
-        return false;
+    if (glr.lightpoint.surf) {
+        *color = GL_SampleLightPoint();
+        return true;
+    }
 
-    GL_SampleLightPoint(color);
-
-    return true;
+    return false;
 }
 
-static void GL_MarkLights_r(const mnode_t *node, const gldlight_t *light, const vec3_t transformed, uint64_t lightbit)
+static vec3_t lightorg;
+static float lightradius;
+static uint64_t lightbit;
+
+static void GL_MarkLights_r(const mnode_t *node)
 {
     mface_t *face;
     vec_t dot;
     int i;
 
     while (node->plane) {
-        dot = PlaneDiffFast(transformed, node->plane);
-        if (dot > light->radius) {
+        dot = PlaneDiffFast(lightorg, node->plane);
+        if (dot > lightradius) {
             node = node->children[0];
             continue;
         }
-        if (dot < -light->radius) {
+        if (dot < -lightradius) {
             node = node->children[1];
             continue;
         }
@@ -236,7 +234,7 @@ static void GL_MarkLights_r(const mnode_t *node, const gldlight_t *light, const 
             face->dlightbits |= lightbit;
         }
 
-        GL_MarkLights_r(node->children[0], light, transformed, lightbit);
+        GL_MarkLights_r(node->children[0]);
         node = node->children[1];
     }
 }
@@ -244,33 +242,34 @@ static void GL_MarkLights_r(const mnode_t *node, const gldlight_t *light, const 
 static void GL_MarkLights(void)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        const gldlight_t *light = &r_dlights[i];
-        GL_MarkLights_r(gl_static.world.cache->nodes, light, light->origin, BIT_ULL(i));
+        lightorg = r_dlights[i].origin;
+        lightradius = r_dlights[i].radius;
+        lightbit = BIT_ULL(i);
+        GL_MarkLights_r(gl_static.world.cache->nodes);
     }
 }
 
 static void GL_TransformLights(const mmodel_t *model)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        const gldlight_t *light = &r_dlights[i];
-        vec3_t temp, transformed;
-
-        VectorSubtract(light->origin, glr.ent->origin, temp);
-        VectorRotate(temp, glr.entaxis, transformed);
-        GL_MarkLights_r(model->headnode, light, transformed, BIT_ULL(i));
+        lightorg = Vec3_Sub(r_dlights[i].origin, glr.ent->origin);
+        lightorg = Vec3_Rotate(lightorg, glr.entaxis);
+        lightradius = r_dlights[i].radius;
+        lightbit = BIT_ULL(i);
+        GL_MarkLights_r(model->headnode);
     }
 }
 
-void R_LightPoint(const vec3_t origin, vec3_t color)
+void R_LightPoint(vec3_t origin, vec3_t *color)
 {
     // get lighting from world
     if (!GL_LightPoint(origin, color)) {
-        VectorSet(color, 1, 1, 1);
+        *color = Vec3(1, 1, 1);
         return;
     }
 
     float scale = gl_modulate->value * gl_modulate_entities->value / 255.0f;
-    VectorScale(color, scale, color);
+    *color = Vec3_Scale(*color, scale);
 }
 
 static void GL_MarkLeaves(void)
@@ -286,11 +285,11 @@ static void GL_MarkLeaves(void)
 
     leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
     cluster1 = cluster2 = leaf->cluster;
-    VectorCopy(glr.fd.vieworg, tmp);
+    tmp = glr.fd.vieworg;
     if (!leaf->contents)
-        tmp[2] -= 16;
+        tmp.z -= 16;
     else
-        tmp[2] += 16;
+        tmp.z += 16;
     leaf = BSP_PointLeaf(bsp->nodes, tmp);
     if (!(leaf->contents & CONTENTS_SOLID))
         cluster2 = leaf->cluster;
@@ -342,9 +341,8 @@ static void GL_MarkLeaves(void)
 void GL_DrawBspModel(mmodel_t *model)
 {
     mface_t *face;
-    vec3_t bounds[2];
     vec_t dot;
-    vec3_t transformed, temp;
+    vec3_t transformed;
     glentity_t *ent = glr.ent;
     glCullResult_t cull;
     int i;
@@ -359,25 +357,21 @@ void GL_DrawBspModel(mmodel_t *model)
             return;
         }
         if (cull == CULL_CLIP) {
-            VectorCopy(model->mins, bounds[0]);
-            VectorCopy(model->maxs, bounds[1]);
-            cull = GL_CullLocalBox(ent->origin, bounds);
+            cull = GL_CullLocalBox(ent->origin, model->box);
             if (cull == CULL_OUT) {
                 c.rotatedBoxesCulled++;
                 return;
             }
         }
-        VectorSubtract(glr.fd.vieworg, ent->origin, temp);
-        VectorRotate(temp, glr.entaxis, transformed);
+        transformed = Vec3_Sub(glr.fd.vieworg, ent->origin);
+        transformed = Vec3_Rotate(transformed, glr.entaxis);
     } else {
-        VectorAdd(model->mins, ent->origin, bounds[0]);
-        VectorAdd(model->maxs, ent->origin, bounds[1]);
-        cull = GL_CullBox(bounds);
+        cull = GL_CullBox(Box3_Translate(model->box, ent->origin));
         if (cull == CULL_OUT) {
             c.boxesCulled++;
             return;
         }
-        VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
+        transformed = Vec3_Sub(glr.fd.vieworg, ent->origin);
     }
 
     if (!glr.shadowbuffer_bound)
@@ -431,7 +425,7 @@ static inline bool GL_ClipNode(const mnode_t *node, int *flags)
     for (int i = 0; i < q_countof(glr.frustum); i++) {
         if (*flags & BIT(i))
             continue;
-        bits = BoxOnPlaneSide(node->mins, node->maxs, &glr.frustum[i]);
+        bits = BoxOnPlaneSide(&node->box, &glr.frustum[i]);
         if (bits == BOX_BEHIND)
             return false;
         if (bits == BOX_INFRONT)

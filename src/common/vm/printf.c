@@ -22,7 +22,6 @@
 #include "shared/shared.h"
 #include "common/intreadwrite.h"
 #include "common/vm.h"
-#include <float.h>
 
 /* Some useful macros */
 

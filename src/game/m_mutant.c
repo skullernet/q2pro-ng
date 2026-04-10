@@ -220,7 +220,7 @@ void MONSTERINFO_RUN(mutant_run)(edict_t *self)
 
 static void mutant_hit_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
         G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM);
     else {
@@ -231,7 +231,7 @@ static void mutant_hit_left(edict_t *self)
 
 static void mutant_hit_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
         G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM);
     else {
@@ -273,6 +273,7 @@ void TOUCH(mutant_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 {
     vec3_t point;
     vec3_t normal;
+    float  length;
     int    damage;
 
     if (self->health <= 0) {
@@ -280,12 +281,15 @@ void TOUCH(mutant_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         return;
     }
 
-    // [Paril-KEX] only if we're actually moving fast enough to hurt
-    if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 30) {
-        VectorMA(self->s.origin, self->r.maxs[0], normal, point);
-        damage = irandom2(40, 50);
-        T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
-        self->style = 0;
+    if (self->style == 1 && other->takedamage) {
+        // [Paril-KEX] only if we're actually moving fast enough to hurt
+        normal = Vec3_NormalizeLength(self->velocity, &length);
+        if (length > 30) {
+            point = Vec3_MA(self->s.origin, self->r.box.maxs.x, normal);
+            damage = irandom2(40, 50);
+            T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, MOD_UNKNOWN);
+            self->style = 0;
+        }
     }
 
     if (!M_CheckBottom(self)) {
@@ -304,10 +308,10 @@ static void mutant_jump_takeoff(edict_t *self)
     vec3_t forward;
 
     G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    self->s.origin[2] += 1;
-    VectorScale(forward, 425, self->velocity);
-    self->velocity[2] = 160;
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->s.origin.z += 1;
+    self->velocity = Vec3_Scale(forward, 425);
+    self->velocity.z = 160;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
     self->monsterinfo.attack_finished = level.time + SEC(3);
@@ -370,16 +374,15 @@ static bool mutant_check_jump(edict_t *self)
     float  distance;
 
     // Paril: no harm in letting them jump down if you're below them
-    // if (self->absmin[2] > (self->enemy->absmin[2] + 0.75 * self->enemy->size[2]))
+    // if (self->absbox.mins.z > (self->enemy->absbox.mins.z + 0.75 * self->enemy->size.z))
     //  return false;
 
     // don't jump if there's no way we can reach standing height
-    if (self->r.absmin[2] + 125 < self->enemy->r.absmin[2])
+    if (self->r.absbox.mins.z + 125 < self->enemy->r.absbox.mins.z)
         return false;
 
-    VectorSubtract(self->s.origin, self->enemy->s.origin, v);
-    v[2] = 0;
-    distance = VectorLength(v);
+    v = Vec3_Sub(self->s.origin, self->enemy->s.origin);
+    distance = Vec2_Length(Vec2_FromVec3(v));
 
     // if we're not trying to avoid a melee, then don't jump
     if (distance < 100 && self->monsterinfo.melee_debounce_time <= level.time)
@@ -489,7 +492,7 @@ void MONSTERINFO_SETSKIN(mutant_setskin)(edict_t *self)
 
 static void mutant_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -497,12 +500,12 @@ static void mutant_shrink(edict_t *self)
 // [Paril-KEX]
 static void ai_move_slide_right(edict_t *self, float dist)
 {
-    M_walkmove(self, self->s.angles[YAW] + 90, dist);
+    M_walkmove(self, self->s.angles.yaw + 90, dist);
 }
 
 static void ai_move_slide_left(edict_t *self, float dist)
 {
-    M_walkmove(self, self->s.angles[YAW] - 90, dist);
+    M_walkmove(self, self->s.angles.yaw - 90, dist);
 }
 
 static const mframe_t mutant_frames_death1[] = {
@@ -542,7 +545,7 @@ static const gib_def_t mutant_gibs[] = {
     { 0 }
 };
 
-void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
@@ -571,18 +574,18 @@ static void mutant_jump_down(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void mutant_jump_up(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 200, forward, self->velocity);
-    VectorMA(self->velocity, 450, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 200, forward);
+    self->velocity = Vec3_MA(self->velocity, 450, up);
 }
 
 static void mutant_jump_wait_land(edict_t *self)
@@ -616,7 +619,7 @@ static void mutant_jump_updown(edict_t *self, blocked_jump_result_t result)
     if (!self->enemy)
         return;
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &mutant_move_jump_up);
     else
         M_SetAnimation(self, &mutant_move_jump_down);
@@ -630,7 +633,7 @@ Blocked
 bool MONSTERINFO_BLOCKED(mutant_blocked)(edict_t *self, float dist)
 {
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             mutant_jump_updown(self, result);
         return true;
@@ -686,8 +689,7 @@ void SP_monster_mutant(edict_t *self)
 
     G_PrecacheGibs(mutant_gibs);
 
-    VectorSet(self->r.mins, -18, -18, -24);
-    VectorSet(self->r.maxs, 18, 18, 30);
+    self->r.box = Box3_FromSize(18, -24, 30);
 
     self->health = 300 * st.health_multiplier;
     self->gib_health = -120;

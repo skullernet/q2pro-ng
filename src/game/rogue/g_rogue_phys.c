@@ -33,31 +33,31 @@ void SV_Physics_NewToss(edict_t *ent)
     wasinwater = ent->waterlevel;
 
     // find out what we're sitting on.
-    VectorCopy(ent->s.origin, move);
-    move[2] -= 0.25f;
-    trap_Trace(&trace, ent->s.origin, ent->r.mins, ent->r.maxs, move, ent->s.number, ent->clipmask);
+    move = ent->s.origin;
+    move.z -= 0.25f;
+    trace = G_Trace(ent->s.origin, move, ent->r.box, ent->s.number, ent->clipmask);
     if (ent->groundentity && ent->groundentity->r.inuse)
         ent->groundentity = &g_edicts[trace.entnum];
     else
         ent->groundentity = NULL;
 
     // if we're sitting on something flat and have no velocity of our own, return.
-    if (ent->groundentity && (trace.plane.normal[2] == 1.0f) && VectorEmpty(ent->velocity))
+    if (ent->groundentity && (trace.plane.normal.z == 1.0f) && Vec3_IsEmpty(ent->velocity))
         return;
 
     // store the old origin
-    VectorCopy(ent->s.origin, old_origin);
+    old_origin = ent->s.origin;
 
     SV_CheckVelocity(ent);
 
     // add gravity
     SV_AddGravity(ent);
 
-    if (!VectorEmpty(ent->avelocity))
+    if (!Vec3_IsEmpty(ent->avelocity))
         SV_AddRotationalFriction(ent);
 
     // add friction
-    speed = VectorLength(ent->velocity);
+    speed = Vec3_Length(ent->velocity);
     if (ent->waterlevel) // friction for water movement
         newspeed = speed - (sv_waterfriction * 6 * ent->waterlevel);
     else if (!ent->groundentity) // friction for air movement
@@ -68,7 +68,7 @@ void SV_Physics_NewToss(edict_t *ent)
     if (newspeed < 0)
         newspeed = 0;
     newspeed /= speed;
-    VectorScale(ent->velocity, newspeed, ent->velocity);
+    ent->velocity = Vec3_Scale(ent->velocity, newspeed);
 
     SV_FlyMove(ent, FRAME_TIME_SEC, ent->clipmask);
     trap_LinkEntity(ent);
@@ -92,7 +92,7 @@ void SV_Physics_NewToss(edict_t *ent)
 
     // move teamslaves
     for (slave = ent->teamchain; slave; slave = slave->teamchain) {
-        VectorCopy(ent->s.origin, slave->s.origin);
+        slave->s.origin = ent->s.origin;
         trap_LinkEntity(slave);
     }
 }

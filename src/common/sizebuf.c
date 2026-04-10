@@ -163,6 +163,17 @@ float SZ_ReadFloat(sizebuf_t *sb)
     return buf ? LongToFloat(RL32(buf)) : -1.0f;
 }
 
+vec3_t SZ_ReadVector(sizebuf_t *sb)
+{
+    vec3_t v;
+
+    v.x = SZ_ReadFloat(sb);
+    v.y = SZ_ReadFloat(sb);
+    v.z = SZ_ReadFloat(sb);
+
+    return v;
+}
+
 uint32_t SZ_ReadLeb(sizebuf_t *sb)
 {
     uint32_t v = 0;

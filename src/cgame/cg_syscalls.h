@@ -22,26 +22,19 @@ q_noreturn void trap_Error(const char *msg);
 
 size_t trap_GetConfigstring(unsigned index, char *buf, size_t size);
 
-void trap_BoxTrace(trace_t *trace,
-                   const vec3_t start, const vec3_t end,
-                   const vec3_t mins, const vec3_t maxs,
-                   qhandle_t hmodel, contents_t contentmask);
+void trap_BoxTrace(trace_t *trace, const trace_args_t *args, qhandle_t hmodel);
+void trap_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
+                              qhandle_t hmodel, vec3_t origin, vec3_t angles);
 
-void trap_TransformedBoxTrace(trace_t *trace,
-                              const vec3_t start, const vec3_t end,
-                              const vec3_t mins, const vec3_t maxs,
-                              qhandle_t hmodel, contents_t contentmask,
-                              const vec3_t origin, const vec3_t angles);
+contents_t trap_PointContents(vec3_t point, qhandle_t hmodel);
+contents_t trap_TransformedPointContents(vec3_t point, qhandle_t hmodel,
+                                         vec3_t origin, vec3_t angles);
 
-contents_t trap_PointContents(const vec3_t point, qhandle_t hmodel);
-contents_t trap_TransformedPointContents(const vec3_t point, qhandle_t hmodel,
-                                         const vec3_t origin, const vec3_t angles);
-
-qhandle_t trap_TempBoxModel(const vec3_t mins, const vec3_t maxs);
+qhandle_t trap_TempBoxModel(box3_t box);
 
 bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
 bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
-void trap_GetBrushModelBounds(unsigned index, vec3_t mins, vec3_t maxs);
+box3_t trap_GetBrushModelBounds(unsigned index);
 
 unsigned trap_GetUsercmdNumber(void);
 bool trap_GetUsercmd(unsigned number, usercmd_t *ucmd);
@@ -97,7 +90,7 @@ qhandle_t trap_R_RegisterPic(const char *name);
 qhandle_t trap_R_RegisterFont(const char *name);
 qhandle_t trap_R_RegisterSkin(const char *name);
 qhandle_t trap_R_RegisterSprite(const char *name);
-void    trap_R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis);
+void    trap_R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis);
 
 void    trap_R_ClearScene(void);
 void    trap_R_AddEntity(const entity_t *ent);
@@ -105,7 +98,7 @@ void    trap_R_AddLight(const dlight_t *light);
 void    trap_R_SetLightStyle(unsigned style, float value);
 void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);
-void    trap_R_LightPoint(const vec3_t origin, vec3_t light);
+void    trap_R_LightPoint(vec3_t origin, vec3_t light);
 
 void    trap_R_GetConfig(refcfg_t *cfg);
 void    trap_R_GetPalette(uint32_t palette[256]);
@@ -127,13 +120,15 @@ void    trap_R_DrawFill8(int x, int y, int w, int h, int c);
 void    trap_R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 
 qhandle_t trap_S_RegisterSound(const char *sample);
-void trap_S_StartSound(const vec3_t origin, int entnum, int entchannel,
+void trap_S_StartSound(int entnum, int entchannel,
+                       qhandle_t sfx, float volume, float attenuation, float timeofs);
+void trap_S_PositionedSound(vec3_t origin, int entnum, int entchannel,
                        qhandle_t sfx, float volume, float attenuation, float timeofs);
 void trap_S_ClearLoopingSounds(void);
 void trap_S_AddLoopingSound(unsigned entnum, qhandle_t sfx, float volume, float attenuation, bool stereo_pan);
 void trap_S_StartBackgroundTrack(const char *track);
 void trap_S_StopBackgroundTrack(void);
-void trap_S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+void trap_S_UpdateEntity(unsigned entnum, vec3_t origin, vec3_t velocity);
 void trap_S_UpdateListener(const listener_t *listener);
 
 int64_t trap_FS_OpenFile(const char *path, qhandle_t *f, unsigned mode);
@@ -148,20 +143,22 @@ size_t trap_FS_ListFiles(const char *path, const char *filter, unsigned flags, c
 size_t trap_FS_ErrorString(int error, char *buf, size_t size);
 
 void trap_R_ClearDebugLines(void);
-void trap_R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test);
-void trap_R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+void trap_R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
+void trap_R_AddDebugBounds(box3_t box, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
                              bool depth_test);
-void trap_R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+void trap_R_AddDebugArrow(vec3_t start, vec3_t end, float size, uint32_t line_color,
                           uint32_t arrow_color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+void trap_R_AddDebugCurveArrow(vec3_t start, vec3_t ctrl, vec3_t end, float size,
                                uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
-void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
+void trap_R_AddDebugText(vec3_t origin, const char *text,
                          float size, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
+                               float size, uint32_t color, uint32_t time, bool depth_test);
 #else
 #define trap_Print cgi->Print
 #define trap_Error cgi->Error
@@ -262,6 +259,7 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 
 #define trap_S_RegisterSound cgi->S_RegisterSound
 #define trap_S_StartSound cgi->S_StartSound
+#define trap_S_PositionedSound cgi->S_PositionedSound
 #define trap_S_ClearLoopingSounds cgi->S_ClearLoopingSounds
 #define trap_S_AddLoopingSound cgi->S_AddLoopingSound
 #define trap_S_StartBackgroundTrack cgi->S_StartBackgroundTrack
@@ -291,4 +289,5 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_R_AddDebugArrow cgi->R_AddDebugArrow
 #define trap_R_AddDebugCurveArrow cgi->R_AddDebugCurveArrow
 #define trap_R_AddDebugText cgi->R_AddDebugText
+#define trap_R_AddDebugAngledText cgi->R_AddDebugAngledText
 #endif

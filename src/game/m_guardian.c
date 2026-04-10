@@ -229,13 +229,13 @@ const mmove_t MMOVE_T(guardian_move_pain1) = { FRAME_pain1_1, FRAME_pain1_8, gua
 
 void PAIN(guardian_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_t mod)
 {
-    if (mod.id != MOD_CHAINFIST && damage <= 10)
+    if (mod != MOD_CHAINFIST && damage <= 10)
         return;
 
     if (level.time < self->pain_debounce_time)
         return;
 
-    if (mod.id != MOD_CHAINFIST && damage <= 75 && frandom() > 0.2f)
+    if (mod != MOD_CHAINFIST && damage <= 75 && frandom() > 0.2f)
         return;
 
     // don't go into pain while attacking
@@ -285,21 +285,18 @@ static void guardian_fire_blaster(edict_t *self)
     vec3_t forward, right, up;
     vec3_t start;
     monster_muzzleflash_id_t id = MZ2_GUARDIAN_BLASTER;
-    float offset;
 
     if (!self->enemy || !self->enemy->r.inuse) {
         self->monsterinfo.nextframe = FRAME_atk1_spin13;
         return;
     }
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, monster_flash_offset[id], forward, right, start);
-    PredictAim(self, self->enemy, start, 1000, false, crandom() * 0.1f, forward, NULL);
-    offset = crandom() * 0.02f;
-    VectorMA(forward, offset, right, forward);
-    offset = crandom() * 0.02f;
-    VectorMA(forward, offset, up, forward);
-    VectorNormalize(forward);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    start = M_ProjectFlashSource(self, monster_flash_offset[id], forward, right);
+    M_PredictAim(self, self->enemy, start, 1000, false, crandom() * 0.1f, &forward, NULL);
+    forward = Vec3_MA(forward, crandom() * 0.02f, right);
+    forward = Vec3_MA(forward, crandom() * 0.02f, up);
+    forward = Vec3_Normalize(forward);
 
     edict_t *bolt = monster_fire_blaster(self, start, forward, 3, 1100, id, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
     bolt->s.scale = 2.0f;
@@ -367,17 +364,16 @@ void PRETHINK(guardian_fire_update)(edict_t *laser)
     if (!(laser->spawnflags & SPAWNFLAG_DABEAM_SPAWNED)) {
         edict_t *self = &g_edicts[laser->r.ownernum];
         bool sec = laser->spawnflags & SPAWNFLAG_DABEAM_SECONDARY;
-        vec3_t forward, right, target;
-        vec3_t start;
+        vec3_t forward, right, start;
 
-        AngleVectors(self->s.angles, forward, right, NULL);
-        M_ProjectFlashSource(self, laser_positions[sec], forward, right, start);
-        PredictAim(self, self->enemy, start, 0, false, 0.3f, forward, target);
+        AngleVectors(self->s.angles, &forward, &right, NULL);
+        start = M_ProjectFlashSource(self, laser_positions[sec], forward, right);
+        M_PredictAim(self, self->enemy, start, 0, false, 0.3f, &forward, NULL);
 
-        G_SnapVector(start, laser->s.origin);
-        forward[0] += crandom() * 0.02f;
-        forward[1] += crandom() * 0.02f;
-        VectorNormalize2(forward, laser->movedir);
+        laser->s.origin = G_SnapVector(start);
+        forward.x += crandom() * 0.02f;
+        forward.y += crandom() * 0.02f;
+        laser->movedir = Vec3_Normalize(forward);
         trap_LinkEntity(laser);
     }
 
@@ -421,7 +417,7 @@ const mmove_t MMOVE_T(guardian_move_atk2_in) = { FRAME_atk2_in1, FRAME_atk2_in12
 
 static void guardian_kick(edict_t *self)
 {
-    if (!fire_hit(self, (vec3_t) { 160, 0, -80 }, 85, 700))
+    if (!fire_hit(self, Vec3(160, 0, -80), 85, 700))
         self->monsterinfo.melee_debounce_time = level.time + SEC(3.5f);
 }
 
@@ -448,16 +444,15 @@ const mmove_t MMOVE_T(guardian_move_kick) = { FRAME_kick_in1, FRAME_kick_in13, g
 fire_heat
 */
 
-static void heat_guardian_get_dist_vec(edict_t *heat, edict_t *target, float dist_to_target, vec3_t vec)
+static vec3_t heat_guardian_get_dist_vec(edict_t *heat, edict_t *target, float dist_to_target)
 {
-    VectorCopy(target->s.origin, vec);
-    vec[2] += target->r.mins[2];
+    vec3_t vec = target->s.origin;
+    vec.z += target->r.box.mins.z;
 
     float f = Q_clipf(dist_to_target / 500.0f, 0, 1) * 0.5f;
-    VectorMA(vec, f, target->velocity, vec);
+    vec = Vec3_MA(vec, f, target->velocity);
 
-    VectorSubtract(vec, heat->s.origin, vec);
-    VectorNormalize(vec);
+    return Vec3_Direction(vec, heat->s.origin);
 }
 
 void THINK(heat_guardian_think)(edict_t *self)
@@ -467,7 +462,7 @@ void THINK(heat_guardian_think)(edict_t *self)
 
     if (self->timestamp < level.time) {
         vec3_t fwd;
-        AngleVectors(self->s.angles, fwd, NULL, NULL);
+        AngleVectors(self->s.angles, &fwd, NULL, NULL);
 
         if (self->oldenemy) {
             self->enemy = self->oldenemy;
@@ -480,8 +475,8 @@ void THINK(heat_guardian_think)(edict_t *self)
             if (acquire->health <= 0 || !visible(self, acquire)) {
                 self->enemy = acquire = NULL;
             } else {
-                float dist_to_target = Distance(self->s.origin, acquire->s.origin);
-                heat_guardian_get_dist_vec(self, acquire, dist_to_target, self->pos1);
+                float dist_to_target = Vec3_Distance(self->s.origin, acquire->s.origin);
+                self->pos1 = heat_guardian_get_dist_vec(self, acquire, dist_to_target);
             }
         }
 
@@ -499,11 +494,10 @@ void THINK(heat_guardian_think)(edict_t *self)
                 if (!visible(self, target))
                     continue;
 
-                float dist_to_target = Distance(self->s.origin, target->s.origin);
-                vec3_t vec;
-                heat_guardian_get_dist_vec(self, target, dist_to_target, vec);
+                float dist_to_target = Vec3_Distance(self->s.origin, target->s.origin);
+                vec3_t vec = heat_guardian_get_dist_vec(self, target, dist_to_target);
 
-                float dot = DotProduct(vec, fwd);
+                float dot = Vec3_Dot(vec, fwd);
 
                 // targets that require us to turn less are preferred
                 if (dot >= olddot)
@@ -512,14 +506,13 @@ void THINK(heat_guardian_think)(edict_t *self)
                 if (!acquire || dot < olddot) {
                     acquire = target;
                     olddot = dot;
-                    VectorCopy(vec, self->pos1);
+                    self->pos1 = vec;
                 }
             }
         }
     }
 
-    vec3_t preferred_dir;
-    VectorCopy(self->pos1, preferred_dir);
+    vec3_t preferred_dir = self->pos1;
 
     if (acquire) {
         if (self->enemy != acquire) {
@@ -534,31 +527,30 @@ void THINK(heat_guardian_think)(edict_t *self)
     if (self->enemy)
         t *= 0.85f;
 
-    //float d = DotProduct(self->movedir, preferred_dir);
+    //float d = Vec3_Dot(self->movedir, preferred_dir);
 
-    slerp(self->movedir, preferred_dir, t, self->movedir);
-    VectorNormalize(self->movedir);
-    vectoangles(self->movedir, self->s.angles);
+    self->movedir = Vec3_SLerp(self->movedir, preferred_dir, t);
+    self->s.angles = vectoangles(self->movedir);
 
     if (self->speed < self->yaw_speed)
         self->speed += self->yaw_speed * FRAME_TIME_SEC;
 
-    VectorScale(self->movedir, self->speed, self->velocity);
+    self->velocity = Vec3_Scale(self->movedir, self->speed);
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void DIE(guardian_heat_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(guardian_heat_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     BecomeExplosion1(self);
 }
 
 // RAFAEL
-static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t dir, const vec3_t rest_dir, int damage, int speed, float damage_radius, int radius_damage, float turn_fraction)
+static void fire_guardian_heat(edict_t *self, vec3_t start, vec3_t dir, vec3_t rest_dir, int damage, int speed, float damage_radius, int radius_damage, float turn_fraction)
 {
     edict_t *heat;
 
     heat = G_SpawnMissile(self, start, dir, speed);
-    VectorCopy(dir, heat->movedir);
+    heat->movedir = dir;
     heat->flags |= FL_DAMAGEABLE;
     heat->s.effects |= EF_ROCKET;
     heat->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
@@ -568,9 +560,8 @@ static void fire_guardian_heat(edict_t *self, const vec3_t start, const vec3_t d
     heat->speed = speed / 2;
     heat->yaw_speed = speed * 2;
     heat->accel = turn_fraction;
-    VectorCopy(rest_dir, heat->pos1);
-    VectorSet(heat->r.mins, -5, -5, -5);
-    VectorSet(heat->r.maxs, 5, 5, 5);
+    heat->pos1 = rest_dir;
+    heat->r.box = Box3_FromRadius(5);
     heat->health = 15;
     heat->takedamage = true;
     heat->die = guardian_heat_die;
@@ -597,12 +588,12 @@ static void guardian_fire_rocket(edict_t *self, float offset)
     vec3_t forward, right, up;
     vec3_t start;
 
-    AngleVectors(self->s.angles, forward, right, up);
-    VectorMA(self->s.origin, -8, forward, start);
-    VectorMA(start, offset, right, start);
-    VectorMA(start, 50, up, start);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    start = Vec3_MA(self->s.origin, -8, forward);
+    start = Vec3_MA(start, offset, right);
+    start = Vec3_MA(start, 50, up);
 
-    AngleVectors((vec3_t) { 20.0f, self->s.angles[1] - offset, 0 }, forward, NULL, NULL);
+    AngleVectors(Vec3(20.0f, self->s.angles.yaw - offset, 0), &forward, NULL, NULL);
 
     fire_guardian_heat(self, start, up, forward, 20, 250, 150, 35, 0.085f);
     G_StartSound(self, CHAN_WEAPON, sound_pew, 1.f, 0.5f);
@@ -621,8 +612,7 @@ static void guardian_fire_rocket_r(edict_t *self)
 static void guardian_blind_fire_check(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
-        vec3_t aim;
-        VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, aim);
+        vec3_t aim = Vec3_Sub(self->monsterinfo.blind_fire_target, self->s.origin);
         self->ideal_yaw = vectoyaw(aim);
     }
 }
@@ -674,7 +664,7 @@ void MONSTERINFO_ATTACK(guardian_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(8.5f, 15.5f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // shot the rockets way too soon
@@ -741,11 +731,7 @@ void MONSTERINFO_ATTACK(guardian_attack)(edict_t *self)
 
 static void guardian_explode(edict_t *self)
 {
-    vec3_t pos;
-
-    VectorAdd(self->s.origin, self->r.mins, pos);
-    VectorMA(pos, frandom(), self->r.size, pos);
-
+    vec3_t pos = Vec3_Add(self->s.origin, Box3_RandomPoint(self->r.box));
     G_TempEntity(pos, EV_EXPLOSION1_BIG, 0);
 }
 
@@ -800,7 +786,7 @@ static const mframe_t guardian_frames_death1[] = {
 };
 const mmove_t MMOVE_T(guardian_move_death) = { FRAME_death1, FRAME_death26, guardian_frames_death1, guardian_dead };
 
-void DIE(guardian_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(guardian_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // regular death
     self->monsterinfo.weapon_sound = 0;
@@ -888,8 +874,7 @@ void SP_monster_guardian(edict_t *self)
     G_PrecacheGibs(guardian_gibs);
 
     self->s.modelindex = G_ModelIndex("models/monsters/guardian/tris.md2");
-    VectorSet(self->r.mins, -78, -78, -66);
-    VectorSet(self->r.maxs, 78, 78, 76);
+    self->r.box = Box3_FromSize(78, -66, 76);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

@@ -71,13 +71,12 @@ static bool gekk_check_jump(edict_t *self)
     vec3_t v;
 
     // don't jump if there's no way we can reach standing height
-    if (self->r.absmin[2] + 125 < self->enemy->r.absmin[2])
+    if (self->r.absbox.mins.z + 125 < self->enemy->r.absbox.mins.z)
         return false;
 
-    VectorSubtract(self->s.origin, self->enemy->s.origin, v);
-    v[2] = 0;
+    v = Vec3_Sub(self->s.origin, self->enemy->s.origin);
 
-    if (VectorLength(v) < 100)
+    if (Vec2_Length(Vec2_FromVec3(v)) < 100)
         return false;
 
     if (frandom() < (self->waterlevel >= WATER_WAIST ? 0.2f : 0.9f))
@@ -90,11 +89,10 @@ static bool gekk_check_jump_close(edict_t *self)
 {
     vec3_t v;
 
-    VectorSubtract(self->s.origin, self->enemy->s.origin, v);
-    v[2] = 0;
+    v = Vec3_Sub(self->s.origin, self->enemy->s.origin);
 
     // don't do this if our head is below their feet
-    if (VectorLength(v) < 100 && self->r.absmax[2] <= self->enemy->r.absmin[2])
+    if (Vec2_Length(Vec2_FromVec3(v)) < 100 && self->r.absbox.maxs.z <= self->enemy->r.absbox.mins.z)
         return false;
 
     return true;
@@ -573,7 +571,7 @@ static void gekk_hit_left(edict_t *self)
     if (!self->enemy)
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
         G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM);
     else {
@@ -587,7 +585,7 @@ static void gekk_hit_right(edict_t *self)
     if (!self->enemy)
         return;
 
-    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 10), 100))
         G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM);
     else {
@@ -627,14 +625,14 @@ void TOUCH(loogie_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         PlayerNoise(owner, self->s.origin, PNOISE_IMPACT);
 
     if (other->takedamage)
-        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, (mod_t) { MOD_GEKK });
+        T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, MOD_GEKK);
 
     G_StartSound(self, CHAN_AUTO, loogie_hit, 1.0f, ATTN_NORM);
 
     G_FreeEdict(self);
 };
 
-static void fire_loogie(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed)
+static void fire_loogie(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed)
 {
     edict_t *loogie;
 
@@ -664,14 +662,13 @@ static void loogie(edict_t *self)
     if (!self->enemy || self->enemy->health <= 0)
         return;
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, gekkoffset, forward, right, start);
-    VectorMA(start, 2, up, start);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    start = M_ProjectFlashSource(self, gekkoffset, forward, right);
+    start = Vec3_MA(start, 2, up);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     fire_loogie(self, start, dir, 5, 550);
 
@@ -845,6 +842,7 @@ void TOUCH(gekk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
 {
     vec3_t point;
     vec3_t normal;
+    float  length;
     int    damage;
 
     if (self->health <= 0) {
@@ -852,11 +850,14 @@ void TOUCH(gekk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         return;
     }
 
-    if (self->style == 1 && other->takedamage && VectorNormalize2(self->velocity, normal) > 200) {
-        VectorMA(self->s.origin, self->r.maxs[0], normal, point);
-        damage = irandom2(10, 20);
-        T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, (mod_t) { MOD_GEKK });
-        self->style = 0;
+    if (self->style == 1 && other->takedamage) {
+        normal = Vec3_NormalizeLength(self->velocity, &length);
+        if (length > 200) {
+            point = Vec3_MA(self->s.origin, self->r.box.maxs.x, normal);
+            damage = irandom2(10, 21);
+            T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, MOD_GEKK);
+            self->style = 0;
+        }
     }
 
     if (!M_CheckBottom(self)) {
@@ -875,16 +876,16 @@ static void gekk_jump_takeoff(edict_t *self)
     vec3_t forward;
 
     G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    self->s.origin[2] += 1;
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->s.origin.z += 1;
 
     // high jump
     if (gekk_check_jump(self)) {
-        VectorScale(forward, 700, self->velocity);
-        self->velocity[2] = 250;
+        self->velocity = Vec3_Scale(forward, 700);
+        self->velocity.z = 250;
     } else {
-        VectorScale(forward, 250, self->velocity);
-        self->velocity[2] = 400;
+        self->velocity = Vec3_Scale(forward, 250);
+        self->velocity.z = 400;
     }
 
     self->groundentity = NULL;
@@ -900,15 +901,15 @@ static void gekk_jump_takeoff2(edict_t *self)
     vec3_t forward;
 
     G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    self->s.origin[2] = self->enemy->s.origin[2];
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->s.origin.z = self->enemy->s.origin.z;
 
     if (gekk_check_jump(self)) {
-        VectorScale(forward, 300, self->velocity);
-        self->velocity[2] = 250;
+        self->velocity = Vec3_Scale(forward, 300);
+        self->velocity.z = 250;
     } else {
-        VectorScale(forward, 150, self->velocity);
-        self->velocity[2] = 300;
+        self->velocity = Vec3_Scale(forward, 150);
+        self->velocity.z = 300;
     }
 
     self->groundentity = NULL;
@@ -922,7 +923,7 @@ static void gekk_jump_takeoff2(edict_t *self)
 static void gekk_stop_skid(edict_t *self)
 {
     if (self->groundentity)
-        VectorClear(self->velocity);
+        self->velocity = vec3_origin;
 }
 
 static void gekk_check_landing(edict_t *self)
@@ -934,16 +935,16 @@ static void gekk_check_landing(edict_t *self)
         if (self->monsterinfo.unduck)
             self->monsterinfo.unduck(self);
 
-        VectorClear(self->velocity);
+        self->velocity = vec3_origin;
         return;
     }
 
     // Paril: allow them to "pull" up ledges
     vec3_t fwd;
-    AngleVectors(self->s.angles, fwd, NULL, NULL);
+    AngleVectors(self->s.angles, &fwd, NULL, NULL);
 
-    if (DotProduct(fwd, self->velocity) < 200)
-        VectorMA(self->velocity, 200, fwd, self->velocity);
+    if (Vec3_Dot(fwd, self->velocity) < 200)
+        self->velocity = Vec3_MA(self->velocity, 200, fwd);
 
     // note to self
     // causing skid
@@ -1066,8 +1067,7 @@ void PAIN(gekk_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
 static void gekk_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
@@ -1101,7 +1101,7 @@ static void isgibfest(edict_t *self)
 
 static void gekk_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -1219,7 +1219,7 @@ static const mframe_t gekk_frames_wdeath[] = {
 };
 const mmove_t MMOVE_T(gekk_move_wdeath) = { FRAME_wdeath_01, FRAME_wdeath_45, gekk_frames_wdeath, gekk_dead };
 
-void DIE(gekk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(gekk_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     float r;
 
@@ -1381,18 +1381,18 @@ static void gekk_jump_down(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void gekk_jump_up(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 200, forward, self->velocity);
-    VectorMA(self->velocity, 450, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 200, forward);
+    self->velocity = Vec3_MA(self->velocity, 450, up);
 }
 
 static void gekk_jump_wait_land(edict_t *self)
@@ -1432,7 +1432,7 @@ static void gekk_jump_updown(edict_t *self, blocked_jump_result_t result)
     if (!self->enemy)
         return;
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &gekk_move_jump_up);
     else
         M_SetAnimation(self, &gekk_move_jump_down);
@@ -1446,7 +1446,7 @@ Blocked
 bool MONSTERINFO_BLOCKED(gekk_blocked)(edict_t *self, float dist)
 {
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             gekk_jump_updown(self, result);
         return true;
@@ -1495,8 +1495,7 @@ void SP_monster_gekk(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gekk/tris.md2");
-    VectorSet(self->r.mins, -18, -18, -24);
-    VectorSet(self->r.maxs, 18, 18, 24);
+    self->r.box = Box3_FromSize(18, -24, 24);
 
     G_PrecacheGibs(gekk_gibs);
 
@@ -1549,8 +1548,7 @@ static void water_to_land(edict_t *self)
 
     M_SetAnimation(self, &gekk_move_leapatk2);
 
-    VectorSet(self->r.mins, -18, -18, -24);
-    VectorSet(self->r.maxs, 18, 18, 24);
+    self->r.box = Box3_FromSize(18, -24, 24);
 }
 #endif
 
@@ -1563,6 +1561,5 @@ static void land_to_water(edict_t *self)
 
     M_SetAnimation(self, &gekk_move_swim_start);
 
-    VectorSet(self->r.mins, -18, -18, -24);
-    VectorSet(self->r.maxs, 18, 18, 16);
+    self->r.box = Box3_FromSize(18, -24, 16);
 }

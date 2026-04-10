@@ -40,8 +40,10 @@ static const float sweep_angles[] = {
     32, 26, 20, 10, 0, -6.5f, -13, -27, -41
 };
 
-static const vec3_t stalker_mins = { -28, -28, -18 };
-static const vec3_t stalker_maxs = { 28, 28, 18 };
+static const box3_t stalker_box = {
+    .mins = { -28, -28, -18 },
+    .maxs = { 28, 28, 18 }
+};
 
 static unsigned int widow_damage_multiplier;
 
@@ -80,8 +82,8 @@ static float target_angle(edict_t *self)
     vec3_t target;
     float  enemy_yaw;
 
-    VectorSubtract(self->s.origin, self->enemy->s.origin, target);
-    enemy_yaw = self->s.angles[YAW] - vectoyaw(target);
+    target = Vec3_Sub(self->s.origin, self->enemy->s.origin);
+    enemy_yaw = self->s.angles.yaw - vectoyaw(target);
     if (enemy_yaw < 0)
         enemy_yaw += 360.0f;
 
@@ -133,19 +135,19 @@ static void WidowBlaster(edict_t *self)
     else
         effect = EF_NONE;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
     if ((self->s.frame >= FRAME_spawn05) && (self->s.frame <= FRAME_spawn13)) {
         // sweep
         flashnum = MZ2_WIDOW_BLASTER_SWEEP1 + self->s.frame - FRAME_spawn05;
-        G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right, start);
-        VectorSubtract(self->enemy->s.origin, start, target);
-        vectoangles(target, targ_angles);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        target = Vec3_Sub(self->enemy->s.origin, start);
+        targ_angles = vectoangles(target);
 
-        VectorCopy(self->s.angles, vec);
-        vec[PITCH] += targ_angles[PITCH];
-        vec[YAW] -= sweep_angles[flashnum - MZ2_WIDOW_BLASTER_SWEEP1];
+        vec = self->s.angles;
+        vec.pitch += targ_angles.pitch;
+        vec.yaw -= sweep_angles[flashnum - MZ2_WIDOW_BLASTER_SWEEP1];
 
-        AngleVectors(vec, forward, NULL, NULL);
+        AngleVectors(vec, &forward, NULL, NULL);
         monster_fire_blaster2(self, start, forward, BLASTER2_DAMAGE * widow_damage_multiplier, 1000, flashnum, effect);
     } else if ((self->s.frame >= FRAME_fired02a) && (self->s.frame <= FRAME_fired20)) {
         vec3_t angles;
@@ -164,17 +166,17 @@ static void WidowBlaster(edict_t *self)
         else
             flashnum = MZ2_WIDOW_BLASTER_100 + self->s.frame - FRAME_fired03;
 
-        G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right, start);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
 
-        PredictAim(self, self->enemy, start, 1000, true, crandom() * 0.1f, forward, NULL);
+        M_PredictAim(self, self->enemy, start, 1000, true, crandom() * 0.1f, &forward, NULL);
 
         // clamp it to within 10 degrees of the aiming angle (where she's facing)
-        vectoangles(forward, angles);
+        angles = vectoangles(forward);
         // give me 100 -> -70
         aim_angle = (float)(100 - (10 * (flashnum - MZ2_WIDOW_BLASTER_100)));
         if (aim_angle <= 0)
             aim_angle += 360;
-        target_angle = self->s.angles[YAW] - angles[YAW];
+        target_angle = self->s.angles.yaw - angles.yaw;
         if (target_angle <= 0)
             target_angle += 360;
 
@@ -183,21 +185,21 @@ static void WidowBlaster(edict_t *self)
         // positive error is to entity's left, aka positive direction in engine
         // unfortunately, I decided that for the aim_angle, positive was right.  *sigh*
         if (error > VARIANCE) {
-            angles[YAW] = (self->s.angles[YAW] - aim_angle) + VARIANCE;
-            AngleVectors(angles, forward, NULL, NULL);
+            angles.yaw = (self->s.angles.yaw - aim_angle) + VARIANCE;
+            AngleVectors(angles, &forward, NULL, NULL);
         } else if (error < -VARIANCE) {
-            angles[YAW] = (self->s.angles[YAW] - aim_angle) - VARIANCE;
-            AngleVectors(angles, forward, NULL, NULL);
+            angles.yaw = (self->s.angles.yaw - aim_angle) - VARIANCE;
+            AngleVectors(angles, &forward, NULL, NULL);
         }
 
         monster_fire_blaster2(self, start, forward, BLASTER2_DAMAGE * widow_damage_multiplier, 1000, flashnum, effect);
     } else if ((self->s.frame >= FRAME_run01) && (self->s.frame <= FRAME_run08)) {
         flashnum = MZ2_WIDOW_RUN_1 + self->s.frame - FRAME_run01;
-        G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right, start);
+        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
 
-        VectorSubtract(self->enemy->s.origin, start, target);
-        target[2] += self->enemy->viewheight;
-        VectorNormalize(target);
+        target = Vec3_Sub(self->enemy->s.origin, start);
+        target.z += self->enemy->viewheight;
+        target = Vec3_Normalize(target);
 
         monster_fire_blaster2(self, start, target, BLASTER2_DAMAGE * widow_damage_multiplier, 1000, flashnum, effect);
     }
@@ -209,15 +211,15 @@ static void WidowSpawn(edict_t *self)
     edict_t *ent, *designated_enemy;
     int      i;
 
-    AngleVectors(self->s.angles, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, &u);
 
     for (i = 0; i < 2; i++) {
-        G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u, startpoint);
+        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
 
-        if (!FindSpawnPoint(startpoint, stalker_mins, stalker_maxs, spawnpoint, 64, true))
+        if (!FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true))
             continue;
 
-        ent = CreateGroundMonster(spawnpoint, self->s.angles, stalker_mins, stalker_maxs, "monster_stalker", 256);
+        ent = CreateGroundMonster(spawnpoint, self->s.angles, stalker_box, "monster_stalker", 256);
         if (!ent)
             continue;
 
@@ -265,15 +267,15 @@ static void widow_ready_spawn(edict_t *self)
     int    i;
 
     WidowBlaster(self);
-    AngleVectors(self->s.angles, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, &u);
 
-    VectorAvg(stalker_mins, stalker_maxs, mid); // FIXME
-    float radius = Distance(stalker_maxs, stalker_mins) * 0.5f;
+    mid = Box3_Center(stalker_box); // FIXME
+    float radius = Box3_Radius(stalker_box);
 
     for (i = 0; i < 2; i++) {
-        G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u, startpoint);
-        if (FindSpawnPoint(startpoint, stalker_mins, stalker_maxs, spawnpoint, 64, true)) {
-            VectorAdd(spawnpoint, mid, spawnpoint);
+        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        if (FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true)) {
+            spawnpoint = Vec3_Add(spawnpoint, mid);
             SpawnGrow_Spawn(spawnpoint, radius, radius * 2);
         }
     }
@@ -441,7 +443,7 @@ static void WidowRail(edict_t *self)
     vec3_t                   forward, right;
     monster_muzzleflash_id_t flash;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
     if (self->monsterinfo.active_move == &widow_move_attack_rail_l)
         flash = MZ2_WIDOW_RAIL_LEFT;
@@ -450,11 +452,10 @@ static void WidowRail(edict_t *self)
     else
         flash = MZ2_WIDOW_RAIL;
 
-     G_ProjectSource(self->s.origin, monster_flash_offset[flash], forward, right, start);
+    start = G_ProjectSource(self->s.origin, monster_flash_offset[flash], forward, right);
 
     // calc direction to where we targeted
-    VectorSubtract(self->pos1, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(self->pos1, start);
 
     monster_fire_railgun(self, start, dir, WIDOW_RAIL_DAMAGE * widow_damage_multiplier, 100, flash);
     self->timestamp = level.time + RAIL_TIME;
@@ -462,8 +463,8 @@ static void WidowRail(edict_t *self)
 
 static void WidowSaveLoc(edict_t *self)
 {
-    VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin; // save for aiming the shot
+    self->pos1.z += self->enemy->viewheight;
 }
 
 static void widow_start_rail(edict_t *self)
@@ -597,12 +598,12 @@ static void spawn_out_start(edict_t *self)
 {
     vec3_t startpoint, f, r, u;
 
-    AngleVectors(self->s.angles, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, &u);
 
-    G_ProjectSource2(self->s.origin, beameffects[0], f, r, u, startpoint);
+    startpoint = G_ProjectSource2(self->s.origin, beameffects[0], f, r, u);
     G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
-    G_ProjectSource2(self->s.origin, beameffects[1], f, r, u, startpoint);
+    startpoint = G_ProjectSource2(self->s.origin, beameffects[1], f, r, u);
     G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/bwidowbeamout.wav"), 1, ATTN_NORM);
@@ -612,15 +613,15 @@ static void spawn_out_do(edict_t *self)
 {
     vec3_t startpoint, f, r, u;
 
-    AngleVectors(self->s.angles, f, r, u);
-    G_ProjectSource2(self->s.origin, beameffects[0], f, r, u, startpoint);
+    AngleVectors(self->s.angles, &f, &r, &u);
+    startpoint = G_ProjectSource2(self->s.origin, beameffects[0], f, r, u);
     G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
-    G_ProjectSource2(self->s.origin, beameffects[1], f, r, u, startpoint);
+    startpoint = G_ProjectSource2(self->s.origin, beameffects[1], f, r, u);
     G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
-    VectorCopy(self->s.origin, startpoint);
-    startpoint[2] += 36;
+    startpoint = self->s.origin;
+    startpoint.z += 36;
     G_TempEntity(startpoint, EV_BOSSTPORT, 0);
 
     Widowlegs_Spawn(self->s.origin, self->s.angles);
@@ -875,8 +876,7 @@ void MONSTERINFO_SETSKIN(widow_setskin)(edict_t *self)
 #if 0
 static void widow_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -56, -56, 0);
-    VectorSet(self->r.maxs, 56, 56, 80);
+    self->r.box = Box3_FromSize(56, 0, 80);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
@@ -884,7 +884,7 @@ static void widow_dead(edict_t *self)
 }
 #endif
 
-void DIE(widow_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(widow_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->deadflag = true;
     self->takedamage = false;
@@ -1135,8 +1135,7 @@ void SP_monster_widow(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/blackwidow/tris.md2");
-    VectorSet(self->r.mins, -40, -40, 0);
-    VectorSet(self->r.maxs, 40, 40, 144);
+    self->r.box = Box3_FromSize(40, 0, 144);
 
     self->health = (2000 + 1000 * skill.integer) * st.health_multiplier;
     if (coop.integer)

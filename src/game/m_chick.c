@@ -275,14 +275,13 @@ void MONSTERINFO_SETSKIN(chick_setpain)(edict_t *self)
 
 static void chick_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, 0);
-    VectorSet(self->r.maxs, 16, 16, 8);
+    self->r.box = Box3_FromSize(16, 0, 8);
     monster_dead(self);
 }
 
 static void chick_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 12;
+    self->r.box.maxs.z = 12;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -341,7 +340,7 @@ static const gib_def_t chick_gibs[] = {
     { 0 }
 };
 
-void DIE(chick_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(chick_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -383,7 +382,7 @@ const mmove_t MMOVE_T(chick_move_duck) = { FRAME_duck01, FRAME_duck07, chick_fra
 
 static void ChickSlash(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 10 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 10 };
     G_StartSound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM);
     fire_hit(self, aim, irandom2(10, 16), 100);
 }
@@ -405,8 +404,8 @@ static void ChickRocket(edict_t *self)
 
     blindfire = self->monsterinfo.aiflags & AI_MANUAL_STEERING;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_CHICK_ROCKET_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_CHICK_ROCKET_1], forward, right);
 
     // [Paril-KEX]
     if (self->s.skinnum > 1)
@@ -416,37 +415,37 @@ static void ChickRocket(edict_t *self)
 
     // PMM
     if (blindfire)
-        VectorCopy(self->monsterinfo.blind_fire_target, target);
+        target = self->monsterinfo.blind_fire_target;
     else
-        VectorCopy(self->enemy->s.origin, target);
+        target = self->enemy->s.origin;
     // pmm
     // PGM
-    VectorCopy(target, vec);
+    vec = target;
     //  PMM - blindfire shooting
     if (blindfire) {
     // pmm
     // don't shoot at feet if they're above where i'm shooting from.
-    } else if (frandom() < 0.33f || (start[2] < self->enemy->r.absmin[2])) {
-        vec[2] += self->enemy->viewheight;
+    } else if (frandom() < 0.33f || (start.z < self->enemy->r.absbox.mins.z)) {
+        vec.z += self->enemy->viewheight;
     } else {
-        vec[2] = self->enemy->r.absmin[2] + 1;
+        vec.z = self->enemy->r.absbox.mins.z + 1;
     }
-    VectorSubtract(vec, start, dir);
+    dir = Vec3_Sub(vec, start);
     // PGM
 
     //======
     // PMM - lead target  (not when blindfiring)
     // 20, 35, 50, 65 chance of leading
     if ((!blindfire) && (frandom() < 0.35f))
-        PredictAim(self, self->enemy, start, rocketSpeed, false, 0, dir, vec);
+        M_PredictAim(self, self->enemy, start, rocketSpeed, false, 0, &dir, &vec);
     // PMM - lead target
     //======
 
-    VectorNormalize(dir);
+    dir = Vec3_Normalize(dir);
 
     // pmm blindfire doesn't check target (done in checkattack)
     // paranoia, make sure we're not shooting a target right next to us
-    trap_Trace(&trace, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+    trace = G_TraceLine(start, vec, self->s.number, MASK_PROJECTILE);
     if (blindfire) {
         // blindfire has different fail criteria for the trace
         if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
@@ -460,10 +459,9 @@ static void ChickRocket(edict_t *self)
             // geez, this is bad.  she's avoiding about 80% of her blindfires due to hitting things.
             // hunt around for a good shot
             // try shifting the target to the left a little (to help counter her large offset)
-            VectorMA(target, -10, right, vec);
-            VectorSubtract(vec, start, dir);
-            VectorNormalize(dir);
-            trap_Trace(&trace, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+            vec = Vec3_MA(target, -10, right);
+            dir = Vec3_Direction(vec, start);
+            trace = G_TraceLine(start, vec, self->s.number, MASK_PROJECTILE);
             if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
                 // RAFAEL
                 if (self->s.skinnum > 1)
@@ -473,10 +471,9 @@ static void ChickRocket(edict_t *self)
                     monster_fire_rocket(self, start, dir, 50, rocketSpeed, MZ2_CHICK_ROCKET_1);
             } else {
                 // ok, that failed.  try to the right
-                VectorMA(target, 10, right, vec);
-                VectorSubtract(vec, start, dir);
-                VectorNormalize(dir);
-                trap_Trace(&trace, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+                vec = Vec3_MA(target, 10, right);
+                dir = Vec3_Direction(vec, start);
+                trace = G_TraceLine(start, vec, self->s.number, MASK_PROJECTILE);
                 if (!(trace.startsolid || trace.allsolid || (trace.fraction < 0.5f))) {
                     // RAFAEL
                     if (self->s.skinnum > 1)
@@ -504,8 +501,7 @@ static void Chick_PreAttack1(edict_t *self)
     G_StartSound(self, CHAN_VOICE, sound_missile_prelaunch, 1, ATTN_NORM);
 
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
-        vec3_t aim;
-        VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, aim);
+        vec3_t aim = Vec3_Sub(self->monsterinfo.blind_fire_target, self->s.origin);
         self->ideal_yaw = vectoyaw(aim);
     }
 }
@@ -658,7 +654,7 @@ void MONSTERINFO_ATTACK(chick_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(5.5f, 6.5f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // don't shoot if the dice say not to
@@ -757,8 +753,7 @@ void SP_monster_chick(edict_t *self)
 
     G_PrecacheGibs(chick_gibs);
 
-    VectorSet(self->r.mins, -16, -16, 0);
-    VectorSet(self->r.maxs, 16, 16, 56);
+    self->r.box = Box3_FromSize(16, 0, 56);
 
     self->health = 175 * st.health_multiplier;
     self->gib_health = -70;

@@ -86,7 +86,7 @@ static void CarrierCoopCheck(edict_t *self)
         if (!ent->client)
             continue;
         if (inback(self, ent) || below(self, ent)) {
-            trap_Trace(&tr, self->s.origin, NULL, NULL, ent->s.origin, self->s.number, MASK_SOLID);
+            tr = G_TraceLine(self->s.origin, ent->s.origin, self->s.number, MASK_SOLID);
             if (tr.fraction == 1.0f)
                 targets[num_targets++] = ent;
         }
@@ -153,19 +153,14 @@ static void CarrierGrenade(edict_t *self)
         spreadU = 0;
     }
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_CARRIER_GRENADE], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_CARRIER_GRENADE], forward, right);
 
-    VectorSubtract(self->enemy->s.origin, start, aim);
-    VectorNormalize(aim);
+    aim = Vec3_Direction(self->enemy->s.origin, start);
 
-    VectorMA(aim, spreadR, right, aim);
-    VectorMA(aim, spreadU, up, aim);
-
-    if (aim[2] > 0.15f)
-        aim[2] = 0.15f;
-    else if (aim[2] < -0.5f)
-        aim[2] = -0.5f;
+    aim = Vec3_MA(aim, spreadR, right);
+    aim = Vec3_MA(aim, spreadU, up);
+    aim.z = Q_clipf(aim.z, -0.5f, 0.15f);
 
     flash_number = MZ2_GUNNER_GRENADE_1;
     monster_fire_grenade(self, start, aim, 50, 600, flash_number, (crandom_open() * 10.0f), 200.0f + (crandom_open() * 10.0f));
@@ -196,9 +191,9 @@ static void carrier_firebullet_right(edict_t *self)
     else
         flashnum = MZ2_CARRIER_MACHINEGUN_R1;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.3f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.3f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flashnum);
 }
 
@@ -213,9 +208,9 @@ static void carrier_firebullet_left(edict_t *self)
     else
         flashnum = MZ2_CARRIER_MACHINEGUN_L1;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.3f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.3f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flashnum);
 }
 
@@ -230,23 +225,23 @@ static void CarrierMachineGun(edict_t *self)
 
 static void CarrierSpawn(edict_t *self)
 {
-    vec3_t   f, r, offset, startpoint, spawnpoint;
+    vec3_t   f, r, startpoint, spawnpoint;
     edict_t *ent;
-
-    VectorSet(offset, 105, 0, -58); // real distance needed is (sqrt (56*56*2) + sqrt(16*16*2)) or 101.8
-    AngleVectors(self->s.angles, f, r, NULL);
-
-    M_ProjectFlashSource(self, offset, f, r, startpoint);
 
     if (self->monsterinfo.chosen_reinforcements[0] == 255)
         return;
 
     const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[0]];
 
-    if (!FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, false))
+    AngleVectors(self->s.angles, &f, &r, NULL);
+
+    // real distance needed is (sqrt (56*56*2) + sqrt(16*16*2)) or 101.8
+    startpoint = M_ProjectFlashSource(self, Vec3(105, 0, -58), f, r);
+
+    if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, false))
         return;
 
-    ent = CreateFlyMonster(spawnpoint, self->s.angles, reinforcement->mins, reinforcement->maxs, reinforcement->classname);
+    ent = CreateFlyMonster(spawnpoint, self->s.angles, reinforcement->box, reinforcement->classname);
     if (!ent)
         return;
 
@@ -307,11 +302,11 @@ static void carrier_spawn_check(edict_t *self)
 static void carrier_ready_spawn(edict_t *self)
 {
     float  current_yaw;
-    vec3_t offset, f, r, startpoint, spawnpoint;
+    vec3_t f, r, startpoint, spawnpoint;
 
     CarrierCoopCheck(self);
 
-    current_yaw = anglemod(self->s.angles[YAW]);
+    current_yaw = anglemod(self->s.angles.yaw);
 
     if (fabsf(current_yaw - self->ideal_yaw) > 0.1f) {
         self->monsterinfo.aiflags |= AI_HOLD_FRAME;
@@ -328,13 +323,10 @@ static void carrier_ready_spawn(edict_t *self)
 
     const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[0]];
 
-    VectorSet(offset, 105, 0, -58);
-    AngleVectors(self->s.angles, f, r, NULL);
-    M_ProjectFlashSource(self, offset, f, r, startpoint);
-    if (FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, false)) {
-        vec3_t mid;
-        VectorAvg(reinforcement->mins, reinforcement->maxs, mid);
-        VectorAdd(spawnpoint, mid, spawnpoint);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    startpoint = M_ProjectFlashSource(self, Vec3(105, 0, -58), f, r);
+    if (FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, false)) {
+        spawnpoint = Vec3_Add(spawnpoint, Box3_Center(reinforcement->box));
         SpawnGrow_Spawn(spawnpoint, reinforcement->radius, reinforcement->radius * 2);
     }
 }
@@ -354,7 +346,7 @@ static void carrier_start_spawn(edict_t *self)
 
     mytime = TO_SEC(level.time - self->timestamp) / 0.5f;
 
-    VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
+    temp = Vec3_Sub(self->enemy->s.origin, self->s.origin);
     enemy_yaw = vectoyaw(temp);
 
     // note that the offsets are based on a forward of 105 from the end angle
@@ -493,12 +485,11 @@ static void CarrierRail(edict_t *self)
     vec3_t forward, right;
 
     CarrierCoopCheck(self);
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_CARRIER_RAILGUN], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_CARRIER_RAILGUN], forward, right);
 
     // calc direction to where we targeted
-    VectorSubtract(self->pos1, start, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(self->pos1, start);
 
     monster_fire_railgun(self, start, dir, 50, 100, MZ2_CARRIER_RAILGUN);
     self->monsterinfo.attack_finished = level.time + RAIL_FIRE_TIME;
@@ -507,8 +498,8 @@ static void CarrierRail(edict_t *self)
 static void CarrierSaveLoc(edict_t *self)
 {
     CarrierCoopCheck(self);
-    VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin; // save for aiming the shot
+    self->pos1.z += self->enemy->viewheight;
 };
 
 static const mframe_t carrier_frames_attack_rail[] = {
@@ -650,7 +641,7 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
     }
 
     if (enemy_infront) {
-        range = Distance(self->enemy->s.origin, self->s.origin);
+        range = Vec3_Distance(self->enemy->s.origin, self->s.origin);
         if (range <= 125) {
             if ((frandom() < 0.8f) || (level.time < self->monsterinfo.attack_finished))
                 M_SetAnimation(self, &carrier_move_attack_pre_mg);
@@ -688,8 +679,8 @@ void MONSTERINFO_ATTACK(carrier_attack)(edict_t *self)
                     M_SetAnimation(self, &carrier_move_attack_pre_mg);
                 else if ((luck < 0.65f) && !(level.time < self->monsterinfo.attack_finished)) {
                     G_StartSound(self, CHAN_WEAPON, sound_rail, 1, ATTN_NORM);
-                    VectorCopy(self->enemy->s.origin, self->pos1); // save for aiming the shot
-                    self->pos1[2] += self->enemy->viewheight;
+                    self->pos1 = self->enemy->s.origin; // save for aiming the shot
+                    self->pos1.z += self->enemy->viewheight;
                     M_SetAnimation(self, &carrier_move_attack_rail);
                 } else
                     M_SetAnimation(self, &carrier_move_spawn);
@@ -774,7 +765,7 @@ void PAIN(carrier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
 
     if (damage >= 10) {
         if (damage < 30) {
-            if (mod.id == MOD_CHAINFIST || brandom()) {
+            if (mod == MOD_CHAINFIST || brandom()) {
                 M_SetAnimation(self, &carrier_move_pain_light);
                 changed = true;
             }
@@ -823,20 +814,20 @@ static void carrier_dead(edict_t *self)
     self->s.sound = 0;
     self->s.skinnum /= 2;
 
-    self->gravityVector[2] = -1.0f;
+    self->gravityVector.z = -1.0f;
 
     ThrowGibs(self, 500, carrier_gibs);
 }
 
-void DIE(carrier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(carrier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE);
     self->deadflag = true;
     self->takedamage = false;
     self->count = 0;
     M_SetAnimation(self, &carrier_move_death);
-    VectorClear(self->velocity);
-    self->gravityVector[2] *= 0.01f;
+    self->velocity = vec3_origin;
+    self->gravityVector.z *= 0.01f;
     self->monsterinfo.weapon_sound = 0;
 }
 
@@ -923,8 +914,7 @@ void SP_monster_carrier(edict_t *self)
 
     G_PrecacheGibs(carrier_gibs);
 
-    VectorSet(self->r.mins, -56, -56, -44);
-    VectorSet(self->r.maxs, 56, 56, 44);
+    self->r.box = Box3_FromSize(56, -44, 44);
 
     // 2000 - 4000 health
     self->health = max(2000, 2000 + 1000 * (skill.integer - 1)) * st.health_multiplier;

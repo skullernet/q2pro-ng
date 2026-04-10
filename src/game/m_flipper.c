@@ -223,8 +223,7 @@ void MONSTERINFO_SETSKIN(flipper_setskin)(edict_t *self)
 
 static void flipper_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -8);
-    VectorSet(self->r.maxs, 16, 16, 8);
+    self->r.box = Box3_FromSize(16, -8, 8);
     monster_dead(self);
 }
 
@@ -305,7 +304,7 @@ static const gib_def_t flipper_gibs[] = {
     { 0 }
 };
 
-void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(flipper_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -362,8 +361,7 @@ void SP_monster_flipper(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/flipper/tris.md2");
-    VectorSet(self->r.mins, -16, -16, -8);
-    VectorSet(self->r.maxs, 16, 16, 20);
+    self->r.box = Box3_FromSize(16, -8, 20);
 
     self->health = 50 * st.health_multiplier;
     self->gib_health = -30;

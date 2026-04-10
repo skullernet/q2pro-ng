@@ -261,6 +261,7 @@ void SP_target_secret(edict_t *ent)
 
 //==========================================================
 
+// {} crap has made it into maps, so we have to support it
 static const char *G_ExpandArgument(const char *fmt, const char *arg)
 {
     char *p = strstr(fmt, "{}");
@@ -406,7 +407,7 @@ void THINK(target_explosion_explode)(edict_t *self)
 
     G_AddEvent(self, EV_EXPLOSION1, 0);
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
+    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     save = self->delay;
     self->delay = 0;
@@ -448,7 +449,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
     // if noexit, do a ton of damage to other
     if (deathmatch.integer && !g_dm_allow_exit.integer && other != world) {
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 10 * other->max_health, 1000, DAMAGE_NONE, (mod_t) { MOD_EXIT });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 10 * other->max_health, 1000, DAMAGE_NONE, MOD_EXIT);
         return;
     }
 
@@ -470,7 +471,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
         gclient_t *client = activator->client;
 
         client->landmark_name[0] = 0;
-        VectorClear(client->landmark_rel_pos);
+        client->landmark_rel_pos = vec3_origin;
 
         self->target_ent = G_PickTarget(self->target);
         if (self->target_ent) {
@@ -478,15 +479,15 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
             // get relative vector to landmark pos, and unrotate by the landmark angles in preparation to be
             // rotated by the next map
-            VectorSubtract(activator->s.origin, self->target_ent->s.origin, client->landmark_rel_pos);
+            client->landmark_rel_pos = Vec3_Sub(activator->s.origin, self->target_ent->s.origin);
 
             vec3_t axis[3];
             AnglesToAxis(self->target_ent->s.angles, axis);
-            RotatePoint(client->landmark_rel_pos, axis);
-            RotatePoint(client->oldvelocity, axis);
+            client->landmark_rel_pos = Vec3_Rotate(client->landmark_rel_pos, axis);
+            client->oldvelocity = Vec3_Rotate(client->oldvelocity, axis);
 
             // unrotate our view angles for the next map too
-            VectorSubtract(client->ps.viewangles, self->target_ent->s.angles, client->oldviewangles);
+            client->oldviewangles = Vec3_Sub(client->ps.viewangles, self->target_ent->s.angles);
         }
     }
 
@@ -539,13 +540,13 @@ void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
     G_AddEvent(self, self->sounds, self->count);
 
     if (self->dmg)
-        T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_SPLASH });
+        T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_SPLASH);
 }
 
 void SP_target_splash(edict_t *self)
 {
     self->use = use_target_splash;
-    G_SetMovedir(self->s.angles, self->movedir);
+    G_SetMovedir(self);
 
     if (!self->count)
         self->count = 32;
@@ -590,8 +591,8 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
     // RAFAEL
     ent->flags = self->flags;
     // RAFAEL
-    VectorCopy(self->s.origin, ent->s.origin);
-    VectorCopy(self->s.angles, ent->s.angles);
+    ent->s.origin = self->s.origin;
+    ent->s.angles = self->s.angles;
 
     // [Paril-KEX] although I fixed these in our maps, this is just
     // in case anybody else does this by accident. Don't count these monsters
@@ -606,7 +607,7 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
         G_KillBox(ent, KILLBOX_NONE, MOD_TELEFRAG);
 
     if (self->speed)
-        VectorCopy(self->movedir, ent->velocity);
+        ent->velocity = self->movedir;
 
     ent->s.renderfx |= RF_IR_VISIBLE; // PGM
 }
@@ -616,8 +617,8 @@ void SP_target_spawner(edict_t *self)
     self->use = use_target_spawner;
     self->r.svflags = SVF_NOCLIENT;
     if (self->speed) {
-        G_SetMovedir(self->s.angles, self->movedir);
-        VectorScale(self->movedir, self->speed, self->movedir);
+        G_SetMovedir(self);
+        self->movedir = Vec3_Scale(self->movedir, self->speed);
     }
 }
 
@@ -644,14 +645,14 @@ void USE(use_target_blaster)(edict_t *self, edict_t *other, edict_t *activator)
     else
         effect = EF_BLASTER;
 
-    fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, (mod_t) { MOD_TARGET_BLASTER });
+    fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, MOD_TARGET_BLASTER);
     G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM);
 }
 
 void SP_target_blaster(edict_t *self)
 {
     self->use = use_target_blaster;
-    G_SetMovedir(self->s.angles, self->movedir);
+    G_SetMovedir(self);
     self->noise_index = G_SoundIndex("weapons/laser2.wav");
 
     if (!self->dmg)
@@ -727,28 +728,30 @@ void THINK(target_laser_think)(edict_t *self)
         count = 4;
 
     if (self->enemy) {
-        vec3_t last_movedir, point;
-        VectorCopy(self->movedir, last_movedir);
-        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
-        VectorSubtract(point, self->s.origin, self->movedir);
-        VectorNormalize(self->movedir);
-        if (!VectorCompare(self->movedir, last_movedir))
+        vec3_t last_movedir = self->movedir;
+        vec3_t point = Box3_Center(self->enemy->r.absbox);
+        self->movedir = Vec3_Direction(point, self->s.origin);
+        if (!Vec3_IsEqual(self->movedir, last_movedir))
             self->spawnflags |= SPAWNFLAG_LASER_ZAP;
     }
-
-    vec3_t start, end, pos;
-    VectorCopy(self->s.origin, start);
-    VectorMA(start, 2048, self->movedir, end);
 
     pierce_t pierce;
     trace_t tr;
     edict_t *hit;
     bool damaged_thing = false;
 
-    contents_t mask = (self->spawnflags & SPAWNFLAG_LASER_STOPWINDOW) ? MASK_SHOT : (CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
+    trace_args_t args = {
+        .start = self->s.origin,
+        .end = Vec3_MA(self->s.origin, 2048, self->movedir),
+        .entnum = self->s.number,
+        .mask = MASK_SHOT
+    };
+
+    if (!(self->spawnflags & SPAWNFLAG_LASER_STOPWINDOW))
+        args.mask &= ~CONTENTS_WINDOW;
 
     if (!self->dmg)
-        mask &= ~(CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
+        args.mask &= ~(CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
 
     damageflags_t dmg = DAMAGE_ENERGY;
 
@@ -758,7 +761,7 @@ void THINK(target_laser_think)(edict_t *self)
     pierce_begin(&pierce);
 
     do {
-        trap_Trace(&tr, start, NULL, NULL, end, self->s.number, mask);
+        trap_Trace(&tr, &args);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -769,7 +772,7 @@ void THINK(target_laser_think)(edict_t *self)
         // hurt it if we can
         if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {
             damaged_thing = true;
-            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, 0, self->dmg, 1, dmg, (mod_t) { MOD_TARGET_LASER });
+            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, 0, self->dmg, 1, dmg, MOD_TARGET_LASER);
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
@@ -778,7 +781,7 @@ void THINK(target_laser_think)(edict_t *self)
         // ROGUE
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
-                G_SnapVectorTowards(tr.endpos, start, pos);
+                vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
                 G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, count, 0));
             }
             break;
@@ -787,7 +790,7 @@ void THINK(target_laser_think)(edict_t *self)
 
     pierce_end(&pierce);
 
-    G_SnapVectorTowards(tr.endpos, start, self->s.old_origin);
+    self->s.old_origin = G_SnapVectorTowards(tr.endpos, args.start);
 
     if (damaged_thing)
         self->damage_debounce_time = level.time + HZ(10);
@@ -880,14 +883,13 @@ void THINK(target_laser_start)(edict_t *self)
                     self->enemy->use(self->enemy, self, self);
             }
         } else {
-            G_SetMovedir(self->s.angles, self->movedir);
+            G_SetMovedir(self);
         }
     }
     self->use = target_laser_use;
     self->think = target_laser_think;
 
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
     trap_LinkEntity(self);
 
     if (self->spawnflags & SPAWNFLAG_LASER_ON)
@@ -932,7 +934,7 @@ void THINK(target_lightramp_think)(edict_t *self)
     char    style[2];
     float   diff = TO_SEC(level.time - self->timestamp);
 
-    style[0] = (char)('a' + self->movedir[0] + diff * self->movedir[2]);
+    style[0] = (char)('a' + self->movedir.x + diff * self->movedir.z);
     style[1] = 0;
 
     trap_SetConfigstring(CS_LIGHTS + self->enemy->style, style);
@@ -940,8 +942,8 @@ void THINK(target_lightramp_think)(edict_t *self)
     if (diff < self->speed) {
         self->nextthink = level.time + FRAME_TIME;
     } else if (self->spawnflags & SPAWNFLAG_LIGHTRAMP_TOGGLE) {
-        SWAP(float, self->movedir[0], self->movedir[1]);
-        self->movedir[2] = -self->movedir[2];
+        SWAP(float, self->movedir.x, self->movedir.y);
+        self->movedir.z = -self->movedir.z;
     }
 }
 
@@ -996,9 +998,9 @@ void SP_target_lightramp(edict_t *self)
     self->use = target_lightramp_use;
     self->think = target_lightramp_think;
 
-    self->movedir[0] = (float)(self->message[0] - 'a');
-    self->movedir[1] = (float)(self->message[1] - 'a');
-    self->movedir[2] = (self->movedir[1] - self->movedir[0]) / self->speed;
+    self->movedir.x = (float)(self->message[0] - 'a');
+    self->movedir.y = (float)(self->message[1] - 'a');
+    self->movedir.z = (self->movedir.y - self->movedir.x) / self->speed;
 }
 
 //==========================================================
@@ -1120,14 +1122,14 @@ void THINK(update_target_camera)(edict_t *self)
                 }
             }
 
-            VectorCopy(self->movetarget->s.origin, self->s.origin);
+            self->s.origin = self->movetarget->s.origin;
             self->nextthink = level.time + SEC(self->movetarget->wait);
             if (self->movetarget->target) {
                 self->movetarget = G_PickTarget(self->movetarget->target);
 
                 if (self->movetarget) {
                     self->moveinfo.move_speed = self->movetarget->speed ? self->movetarget->speed : 55;
-                    self->moveinfo.remaining_distance = Distance(self->movetarget->s.origin, self->s.origin);
+                    self->moveinfo.remaining_distance = Vec3_Distance(self->movetarget->s.origin, self->s.origin);
                     self->moveinfo.distance = self->moveinfo.remaining_distance;
                 }
             } else
@@ -1141,19 +1143,18 @@ void THINK(update_target_camera)(edict_t *self)
         if (self->enemy && (self->enemy->hackflags & HACKFLAG_TELEPORT_OUT))
             self->enemy->s.alpha = max(1.0f / 255, frac);
 
-        vec3_t delta, newpos;
-        VectorSubtract(self->movetarget->s.origin, self->s.origin, delta);
-        VectorMA(self->s.origin, frac, delta, newpos);
+        vec3_t delta = Vec3_Sub(self->movetarget->s.origin, self->s.origin);
+        vec3_t newpos = Vec3_MA(self->s.origin, frac, delta);
 
         if (self->pathtarget) {
             edict_t *pt = G_Find(NULL, FOFS(targetname), self->pathtarget);
             if (pt) {
-                VectorSubtract(pt->s.origin, newpos, delta);
-                vectoangles(delta, level.intermission_angle);
+                delta = Vec3_Sub(pt->s.origin, newpos);
+                level.intermission_angle = vectoangles(delta);
             }
         }
 
-        VectorCopy(newpos, level.intermission_origin);
+        level.intermission_origin = newpos;
 
         // move all clients to the intermission point
         for (int i = 0; i < game.maxclients; i++) {
@@ -1230,19 +1231,18 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         edict_t *dummy = self->enemy = G_Spawn();
         dummy->r.ownernum = activator->s.number;
         dummy->clipmask = activator->clipmask;
-        VectorCopy(activator->s.origin, dummy->s.origin);
-        VectorCopy(activator->s.angles, dummy->s.angles);
+        dummy->s.origin = activator->s.origin;
+        dummy->s.angles = activator->s.angles;
         dummy->groundentity = activator->groundentity;
         dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->r.linkcount : 0;
         dummy->think = target_camera_dummy_think;
         dummy->nextthink = level.time + HZ(10);
         dummy->r.solid = SOLID_BBOX;
         dummy->movetype = MOVETYPE_STEP;
-        VectorCopy(activator->r.mins, dummy->r.mins);
-        VectorCopy(activator->r.maxs, dummy->r.maxs);
+        dummy->r.box = activator->r.box;
         dummy->s.modelindex = dummy->s.modelindex2 = MODELINDEX_PLAYER;
         dummy->s.skinnum = activator->s.skinnum;
-        VectorCopy(activator->velocity, dummy->velocity);
+        dummy->velocity = activator->velocity;
         dummy->s.renderfx = RF_MINLIGHT;
         dummy->s.frame = activator->s.frame;
         trap_LinkEntity(dummy);
@@ -1251,13 +1251,12 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->pathtarget) {
         edict_t *pt = G_Find(NULL, FOFS(targetname), self->pathtarget);
         if (pt) {
-            vec3_t delta;
-            VectorSubtract(pt->s.origin, self->s.origin, delta);
-            vectoangles(delta, level.intermission_angle);
+            vec3_t delta = Vec3_Sub(pt->s.origin, self->s.origin);
+            level.intermission_angle = vectoangles(delta);
         }
     }
 
-    VectorCopy(self->s.origin, level.intermission_origin);
+    level.intermission_origin = self->s.origin;
 
     // move all clients to the intermission point
     for (int i = 0; i < game.maxclients; i++) {
@@ -1284,7 +1283,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     self->nextthink = level.time + SEC(self->wait);
     self->moveinfo.move_speed = self->speed;
 
-    self->moveinfo.remaining_distance = Distance(self->movetarget->s.origin, self->s.origin);
+    self->moveinfo.remaining_distance = Vec3_Distance(self->movetarget->s.origin, self->s.origin);
     self->moveinfo.distance = self->moveinfo.remaining_distance;
 
     if (self->hackflags & HACKFLAG_END_OF_UNIT)
@@ -1525,11 +1524,11 @@ it is killed.
 #define SPAWNFLAG_POI_DYNAMIC   4
 #define SPAWNFLAG_POI_DISABLED  8
 
-static float distance_to_poi(const vec3_t start, const vec3_t end)
+static float distance_to_poi(vec3_t start, vec3_t end)
 {
     PathRequest request = {
-        .start = VectorInit(start),
-        .goal = VectorInit(end),
+        .start = start,
+        .goal = end,
         .moveDist = 64.0f,
         .pathFlags = PathFlags_All,
         .nodeSearch = {
@@ -1545,7 +1544,7 @@ static float distance_to_poi(const vec3_t start, const vec3_t end)
         return info.pathDistSqr;
 
     if (info.returnCode == PathReturnCode_NoNavAvailable)
-        return DistanceSquared(end, start);
+        return Vec3_DistanceSquared(end, start);
 
     return INFINITY;
 }
@@ -1698,7 +1697,7 @@ void USE(target_poi_use)(edict_t *ent, edict_t *other, edict_t *activator)
     }
 
     level.valid_poi = true;
-    VectorCopy(ent->s.origin, level.current_poi);
+    level.current_poi = ent->s.origin;
     level.current_poi_image = ent->noise_index;
     level.current_dynamic_poi = NULL;
 
@@ -1904,7 +1903,7 @@ void USE(use_target_sky)(edict_t *self, edict_t *other, edict_t *activator)
         sky.autorotate = self->style;
 
     if (self->count & 4)
-        VectorCopy(self->movedir, sky.axis);
+        sky.axis = self->movedir;
 
     trap_SetConfigstring(CS_SKY, BG_FormatSkyParams(&sky));
 }
@@ -1924,7 +1923,7 @@ void SP_target_sky(edict_t *self)
     }
     if (ED_WasKeySpecified("skyaxis")) {
         self->count |= 4;
-        VectorCopy(st.skyaxis, self->movedir);
+        self->movedir = st.skyaxis;
     }
 }
 

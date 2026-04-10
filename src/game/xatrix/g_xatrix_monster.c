@@ -3,19 +3,19 @@
 
 #include "g_local.h"
 
-void monster_fire_blueblaster(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
+void monster_fire_blueblaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
 {
     fire_blueblaster(self, start, dir, damage, speed, effect);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_ionripper(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
+void monster_fire_ionripper(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, effects_t effect)
 {
     fire_ionripper(self, start, dir, damage, speed, effect);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, float turn_fraction)
+void monster_fire_heat(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, float turn_fraction)
 {
     fire_heat(self, start, dir, damage, speed, (float) damage, damage, turn_fraction);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
@@ -23,21 +23,22 @@ void monster_fire_heat(edict_t *self, const vec3_t start, const vec3_t dir, int 
 
 void dabeam_update(edict_t *self, bool damage)
 {
-    vec3_t start, end;
-
-    VectorCopy(self->s.origin, start);
-    VectorMA(start, 2048, self->movedir, end);
-
     pierce_t pierce;
     trace_t tr;
     edict_t *hit;
     edict_t *owner = &g_edicts[self->r.ownernum];
 
+    trace_args_t args = {
+        .start = self->s.origin,
+        .end = Vec3_MA(self->s.origin, 2048, self->movedir),
+        .entnum = self->s.number,
+        .mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER
+    };
+
     pierce_begin(&pierce);
 
     do {
-        trap_Trace(&tr, start, NULL, NULL, end, self->s.number,
-                   CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER);
+        trap_Trace(&tr, &args);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -49,7 +50,7 @@ void dabeam_update(edict_t *self, bool damage)
             // hurt it if we can
             if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
                 T_Damage(hit, self, owner, self->movedir, tr.endpos, 0,
-                         self->dmg, skill.integer, DAMAGE_ENERGY, (mod_t) { MOD_TARGET_LASER });
+                         self->dmg, skill.integer, DAMAGE_ENERGY, MOD_TARGET_LASER);
 
             if (self->dmg < 0) { // healer ray
                 // when player is at 100 health
@@ -63,8 +64,7 @@ void dabeam_update(edict_t *self, bool damage)
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client)) {
             if (damage) {
-                vec3_t pos;
-                G_SnapVectorTowards(tr.endpos, start, pos);
+                vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
                 G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, 10, 0));
             }
             break;
@@ -73,7 +73,7 @@ void dabeam_update(edict_t *self, bool damage)
 
     pierce_end(&pierce);
 
-    G_SnapVectorTowards(tr.endpos, start, self->s.old_origin);
+    self->s.old_origin = G_SnapVectorTowards(tr.endpos, args.start);
     trap_LinkEntity(self);
 }
 

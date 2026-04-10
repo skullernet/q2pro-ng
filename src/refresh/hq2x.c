@@ -58,24 +58,24 @@ static q_noinline int diff(uint32_t A_u32, uint32_t B_u32)
     A.u32 = A_u32;
     B.u32 = B_u32;
 
-    if (A.u8[3] == 0 && B.u8[3] == 0)
+    if (A.a == 0 && B.a == 0)
         return 0;
 
-    if (A.u8[3] == 0 || B.u8[3] == 0)
+    if (A.a == 0 || B.a == 0)
         return 1;
 
-    a = yccTable[0][A.u8[0]] + yccTable[1][A.u8[1]] + yccTable[2][A.u8[2]];
-    b = yccTable[0][B.u8[0]] + yccTable[1][B.u8[1]] + yccTable[2][B.u8[2]];
+    a = yccTable[0][A.r] + yccTable[1][A.g] + yccTable[2][A.b];
+    b = yccTable[0][B.r] + yccTable[1][B.g] + yccTable[2][B.b];
     if (abs(a - b) > maxY)
         return 1;
 
-    a = yccTable[3][A.u8[0]] + yccTable[4][A.u8[1]] + yccTable[5][A.u8[2]];
-    b = yccTable[3][B.u8[0]] + yccTable[4][B.u8[1]] + yccTable[5][B.u8[2]];
+    a = yccTable[3][A.r] + yccTable[4][A.g] + yccTable[5][A.b];
+    b = yccTable[3][B.r] + yccTable[4][B.g] + yccTable[5][B.b];
     if (abs(a - b) > maxCb)
         return 1;
 
-    a = yccTable[5][A.u8[0]] + yccTable[6][A.u8[1]] + yccTable[7][A.u8[2]];
-    b = yccTable[5][B.u8[0]] + yccTable[6][B.u8[1]] + yccTable[7][B.u8[2]];
+    a = yccTable[5][A.r] + yccTable[6][A.g] + yccTable[7][A.b];
+    b = yccTable[5][B.r] + yccTable[6][B.g] + yccTable[7][B.b];
     if (abs(a - b) > maxCr)
         return 1;
 

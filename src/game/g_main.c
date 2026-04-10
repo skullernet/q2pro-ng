@@ -763,10 +763,11 @@ qvm_exported void G_RunFrame(int64_t time)
     if (level.intermission_fading) {
         if (level.intermission_fade_time > level.time) {
             float alpha = Q_clipf(1.3f - TO_SEC(level.intermission_fade_time - level.time), 0, 1);
+            vec4_t black = { .a = alpha };
 
             for (int i = 0; i < game.maxclients; i++) {
                 if (g_edicts[i].r.inuse)
-                    Vector4Set(g_clients[i].ps.screen_blend, 0, 0, 0, alpha);
+                    g_clients[i].ps.screen_blend = black;
             }
         } else {
             level.intermission_fade = false;
@@ -835,7 +836,7 @@ qvm_exported void G_RunFrame(int64_t time)
 
         // Paril: RF_BEAM entities update their old_origin by hand.
         if (!(ent->s.renderfx & RF_BEAM))
-            VectorCopy(ent->s.origin, ent->s.old_origin);
+            ent->s.old_origin = ent->s.origin;
 
         // if the ground entity moved, make sure we are still on it
         if ((ent->groundentity) && (ent->groundentity->r.linkcount != ent->groundentity_linkcount)) {
@@ -846,10 +847,8 @@ qvm_exported void G_RunFrame(int64_t time)
                 M_CheckGround(ent, mask);
             } else {
                 // if it's still 1 point below us, we're good
-                vec3_t end;
-                VectorAdd(ent->s.origin, ent->gravityVector, end);
-                trace_t tr;
-                trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, end, ent->s.number, mask);
+                vec3_t end = Vec3_Add(ent->s.origin, ent->gravityVector);
+                trace_t tr = G_Trace(ent->s.origin, end, ent->r.box, ent->s.number, mask);
 
                 if (tr.startsolid || tr.allsolid || tr.entnum != ent->groundentity->s.number)
                     ent->groundentity = NULL;

@@ -60,5 +60,6 @@ int SZ_ReadShort(sizebuf_t *sb);
 int SZ_ReadLong(sizebuf_t *sb);
 int64_t SZ_ReadLong64(sizebuf_t *sb);
 float SZ_ReadFloat(sizebuf_t *sb);
+vec3_t SZ_ReadVector(sizebuf_t *sb);
 uint32_t SZ_ReadLeb(sizebuf_t *sb);
 int64_t SZ_ReadSignedLeb(sizebuf_t *sb, int len);

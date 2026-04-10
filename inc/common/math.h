@@ -27,28 +27,28 @@ typedef enum {
     BOX_INTERSECTS  = 3
 } box_plane_t;
 
-box_plane_t BoxOnPlaneSide(const vec3_t emins, const vec3_t emaxs, const cplane_t *p);
+box_plane_t BoxOnPlaneSide(const box3_t *box, const cplane_t *p);
 
-static inline box_plane_t BoxOnPlaneSideFast(const vec3_t emins, const vec3_t emaxs, const cplane_t *p)
+static inline box_plane_t BoxOnPlaneSideFast(const box3_t *box, const cplane_t *p)
 {
     // fast axial cases
     if (p->type < 3) {
-        if (p->dist <= emins[p->type])
+        if (p->dist <= box->mins.xyz[p->type])
             return BOX_INFRONT;
-        if (p->dist >= emaxs[p->type])
+        if (p->dist >= box->maxs.xyz[p->type])
             return BOX_BEHIND;
         return BOX_INTERSECTS;
     }
 
     // slow generic case
-    return BoxOnPlaneSide(emins, emaxs, p);
+    return BoxOnPlaneSide(box, p);
 }
 
-static inline vec_t PlaneDiffFast(const vec3_t v, const cplane_t *p)
+static inline vec_t PlaneDiffFast(vec3_t v, const cplane_t *p)
 {
     // fast axial cases
     if (p->type < 3) {
-        return v[p->type] - p->dist;
+        return v.xyz[p->type] - p->dist;
     }
 
     // slow generic case
@@ -57,13 +57,16 @@ static inline vec_t PlaneDiffFast(const vec3_t v, const cplane_t *p)
 
 #if USE_MD5
 // quaternion routines, for MD5 skeletons
-typedef vec4_t quat_t;
-void Quat_ComputeW(quat_t q);
-void Quat_SLerp(const quat_t qa, const quat_t qb, float backlerp, float frontlerp, quat_t out);
-float Quat_Normalize(quat_t q);
-void Quat_MultiplyQuat(const float *restrict qa, const float *restrict qb, quat_t out);
-void Quat_MultiplyVector(const float *restrict q, const float *restrict v, quat_t out);
-void Quat_Conjugate(const quat_t in, quat_t out);
-void Quat_RotatePoint(const quat_t q, const vec3_t in, vec3_t out);
-void Quat_ToAxis(const quat_t q, vec3_t axis[3]);
+typedef struct {
+    float x, y, z, w;
+} quat_t;
+
+void Quat_ComputeW(quat_t *q);
+quat_t Quat_SLerp(quat_t a, quat_t b, float backlerp, float frontlerp);
+float Quat_Normalize(quat_t *q);
+quat_t Quat_MultiplyQuat(quat_t a, quat_t b);
+quat_t Quat_MultiplyVector(quat_t q, vec3_t v);
+quat_t Quat_Conjugate(quat_t q);
+vec3_t Quat_RotatePoint(quat_t q, vec3_t in);
+void Quat_ToAxis(quat_t q, vec3_t axis[3]);
 #endif  // USE_MD5

@@ -47,32 +47,32 @@ void Use_Double(edict_t *ent, const gitem_t *item)
 
 void Use_Nuke(edict_t *ent, const gitem_t *item)
 {
-    vec3_t forward, right;
+    vec3_t forward;
 
     ent->client->pers.inventory[item->id]--;
 
-    AngleVectors(ent->client->v_angle, forward, right, NULL);
+    AngleVectors(ent->client->v_angle, &forward, NULL, NULL);
 
     fire_nuke(ent, ent->s.origin, forward, 100);
 }
 
 void Use_Doppleganger(edict_t *ent, const gitem_t *item)
 {
-    vec3_t forward, right;
+    vec3_t forward;
     vec3_t createPt, spawnPt;
     vec3_t ang;
 
-    ang[PITCH] = 0;
-    ang[YAW] = ent->client->v_angle[YAW];
-    ang[ROLL] = 0;
-    AngleVectors(ang, forward, right, NULL);
+    ang.pitch = 0;
+    ang.yaw = ent->client->v_angle.yaw;
+    ang.roll = 0;
+    AngleVectors(ang, &forward, NULL, NULL);
 
-    VectorMA(ent->s.origin, 48, forward, createPt);
+    createPt = Vec3_MA(ent->s.origin, 48, forward);
 
-    if (!FindSpawnPoint(createPt, ent->r.mins, ent->r.maxs, spawnPt, 32, true))
+    if (!FindSpawnPoint(createPt, ent->r.box, &spawnPt, 32, true))
         return;
 
-    if (!CheckGroundSpawnPoint(spawnPt, ent->r.mins, ent->r.maxs, 64, -1))
+    if (!CheckGroundSpawnPoint(spawnPt, ent->r.box, 64, -1))
         return;
 
     ent->client->pers.inventory[item->id]--;
@@ -181,12 +181,13 @@ void USE(Item_TriggeredSpawn)(edict_t *self, edict_t *other, edict_t *activator)
 
     if (self->spawnflags & SPAWNFLAG_ITEM_TOSS_SPAWN) {
         self->movetype = MOVETYPE_TOSS;
-        vec3_t forward, right;
 
-        AngleVectors(self->s.angles, forward, right, NULL);
-        self->s.origin[2] += 16;
-        VectorScale(forward, 100, self->velocity);
-        self->velocity[2] = 300;
+        vec3_t forward;
+        AngleVectors(self->s.angles, &forward, NULL, NULL);
+
+        self->s.origin.z += 16;
+        self->velocity = Vec3_Scale(forward, 100);
+        self->velocity.z = 300;
     }
 
     if (self->spawnflags & SPAWNFLAG_ITEM_NO_DROP)

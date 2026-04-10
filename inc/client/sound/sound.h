@@ -23,9 +23,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 void S_Init(void);
 void S_Shutdown(void);
 
-// if origin is NULL, the sound will be dynamically sourced from the entity
-void S_StartSound(const vec3_t origin, int entnum, int entchannel,
-                  qhandle_t sfx, float fvol, float attenuation, float timeofs);
+void S_PositionedSound(vec3_t origin, int entnum, int entchannel, qhandle_t sfx,
+                       float volume, float attenuation, float timeofs);
+void S_StartSound(int entnum, int entchannel, qhandle_t sfx,
+                  float volume, float attenuation, float timeofs);
 void S_StartLocalSound(const char *s);
 void S_StartLocalSoundOnce(const char *s);
 
@@ -40,7 +41,7 @@ static inline void S_StartBackgroundTrack(const char *track) { }
 static inline void S_StopBackgroundTrack(void) { }
 #endif
 
-void S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity);
+void S_UpdateEntity(unsigned entnum, vec3_t origin, vec3_t velocity);
 void S_UpdateListener(const listener_t *listener);
 
 void S_FreeAllSounds(void);

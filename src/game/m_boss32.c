@@ -252,8 +252,8 @@ void THINK(makron_torso_think)(edict_t *self)
 
     self->nextthink = level.time + HZ(10);
 
-    if (self->s.angles[0] > 0)
-        self->s.angles[0] = max(0, self->s.angles[0] - 15);
+    if (self->s.angles.pitch > 0)
+        self->s.angles.pitch = max(0, self->s.angles.pitch - 15);
 }
 
 static void makron_torso(edict_t *ent)
@@ -267,22 +267,22 @@ static void makron_torso(edict_t *ent)
     ent->movetype = MOVETYPE_TOSS;
     ent->s.effects = EF_GIB;
     vec3_t forward, up;
-    AngleVectors(ent->s.angles, forward, NULL, up);
-    VectorMA(ent->velocity, 120, up, ent->velocity);
-    VectorMA(ent->velocity, -120, forward, ent->velocity);
-    VectorMA(ent->s.origin, -10, forward, ent->s.origin);
-    ent->s.angles[0] = 90;
-    VectorClear(ent->avelocity);
+    AngleVectors(ent->s.angles, &forward, NULL, &up);
+    ent->velocity = Vec3_MA(ent->velocity, 120, up);
+    ent->velocity = Vec3_MA(ent->velocity, -120, forward);
+    ent->s.origin = Vec3_MA(ent->s.origin, -10, forward);
+    ent->s.angles.pitch = 90;
+    ent->avelocity = vec3_origin;
     trap_LinkEntity(ent);
 }
 
 static void makron_spawn_torso(edict_t *self)
 {
     edict_t *tempent = ThrowGib(self, "models/monsters/boss3/rider/tris.md2", 0, GIB_NONE);
-    VectorCopy(self->s.origin, tempent->s.origin);
-    VectorCopy(self->s.angles, tempent->s.angles);
-    self->r.maxs[2] -= tempent->r.maxs[2];
-    tempent->s.origin[2] += self->r.maxs[2] - 15;
+    tempent->s.origin = self->s.origin;
+    tempent->s.angles = self->s.angles;
+    self->r.box.maxs.z -= tempent->r.box.maxs.z;
+    tempent->s.origin.z += self->r.box.maxs.z - 15;
     makron_torso(tempent);
 }
 
@@ -435,13 +435,12 @@ static void makronBFG(edict_t *self)
     vec3_t dir;
     vec3_t vec;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_MAKRON_BFG], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_MAKRON_BFG], forward, right);
 
-    VectorCopy(self->enemy->s.origin, vec);
-    vec[2] += self->enemy->viewheight;
-    VectorSubtract(vec, start, dir);
-    VectorNormalize(dir);
+    vec = self->enemy->s.origin;
+    vec.z += self->enemy->viewheight;
+    dir = Vec3_Direction(vec, start);
     G_StartSound(self, CHAN_VOICE, sound_attack_bfg, 1, ATTN_NORM);
     monster_fire_bfg(self, start, dir, 50, 300, 100, 300, MZ2_MAKRON_BFG);
 }
@@ -510,8 +509,8 @@ const mmove_t MMOVE_T(makron_move_attack5) = { FRAME_attak501, FRAME_attak516, m
 
 static void MakronSaveloc(edict_t *self)
 {
-    VectorCopy(self->enemy->s.origin, self->pos1);  // save for aiming the shot
-    self->pos1[2] += self->enemy->viewheight;
+    self->pos1 = self->enemy->s.origin;  // save for aiming the shot
+    self->pos1.z += self->enemy->viewheight;
 };
 
 static void MakronRailgun(edict_t *self)
@@ -520,13 +519,11 @@ static void MakronRailgun(edict_t *self)
     vec3_t dir;
     vec3_t forward, right;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_MAKRON_RAILGUN_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_MAKRON_RAILGUN_1], forward, right);
 
     // calc direction to where we targeted
-    VectorSubtract(self->pos1, start, dir);
-    VectorNormalize(dir);
-
+    dir = Vec3_Direction(self->pos1, start);
     monster_fire_railgun(self, start, dir, 50, 100, MZ2_MAKRON_RAILGUN_1);
 }
 
@@ -539,25 +536,25 @@ static void MakronHyperblaster(edict_t *self)
 
     monster_muzzleflash_id_t flash_number = MZ2_MAKRON_BLASTER_1 + (self->s.frame - FRAME_attak405);
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     if (self->enemy) {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] += self->enemy->viewheight;
-        VectorSubtract(vec, start, vec);
-        vectoangles(vec, vec);
-        dir[0] = vec[0];
+        vec = self->enemy->s.origin;
+        vec.z += self->enemy->viewheight;
+        vec = Vec3_Sub(vec, start);
+        vec = vectoangles(vec);
+        dir.pitch = vec.pitch;
     } else {
-        dir[0] = 0;
+        dir.pitch = 0;
     }
     if (self->s.frame <= FRAME_attak413)
-        dir[1] = self->s.angles[1] - 10 * (self->s.frame - FRAME_attak413);
+        dir.yaw = self->s.angles.yaw - 10 * (self->s.frame - FRAME_attak413);
     else
-        dir[1] = self->s.angles[1] + 10 * (self->s.frame - FRAME_attak421);
-    dir[2] = 0;
+        dir.yaw = self->s.angles.yaw + 10 * (self->s.frame - FRAME_attak421);
+    dir.roll = 0;
 
-    AngleVectors(dir, forward, NULL, NULL);
+    AngleVectors(dir, &forward, NULL, NULL);
 
     monster_fire_blaster(self, start, forward, 15, 1000, flash_number, EF_BLASTER);
 }
@@ -571,7 +568,7 @@ void PAIN(makron_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
         return;
 
     // Lessen the chance of him going into his pain frames
-    if (mod.id != MOD_CHAINFIST && damage <= 25)
+    if (mod != MOD_CHAINFIST && damage <= 25)
         if (frandom() < 0.2f)
             return;
 
@@ -639,8 +636,7 @@ void MONSTERINFO_ATTACK(makron_attack)(edict_t *self)
 
 static void makron_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -60, -60, 0);
-    VectorSet(self->r.maxs, 60, 60, 24);
+    self->r.box = Box3_FromSize(60, 0, 24);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
@@ -654,7 +650,7 @@ static const gib_def_t makron_gibs[] = {
     { 0 }
 };
 
-void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->s.sound = 0;
 
@@ -679,8 +675,7 @@ void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
     makron_spawn_torso(self);
 
-    VectorSet(self->r.mins, -60, -60, 0);
-    VectorSet(self->r.maxs, 60, 60, 48);
+    self->r.box = Box3_FromSize(60, 0, 48);
 }
 
 // [Paril-KEX] use generic function
@@ -727,8 +722,7 @@ void SP_monster_makron(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
-    VectorSet(self->r.mins, -30, -30, 0);
-    VectorSet(self->r.maxs, 30, 30, 90);
+    self->r.box = Box3_FromSize(30, 0, 90);
 
     self->health = 3000 * st.health_multiplier;
     self->gib_health = -2000;
@@ -782,11 +776,10 @@ void THINK(MakronSpawn)(edict_t *self)
     if (!player)
         return;
 
-    VectorSubtract(player->s.origin, self->s.origin, vec);
-    self->s.angles[YAW] = vectoyaw(vec);
-    VectorNormalize(vec);
-    VectorScale(vec, 400, self->velocity);
-    self->velocity[2] = 200;
+    vec = Vec3_Direction(player->s.origin, self->s.origin);
+    self->s.angles.yaw = vectoyaw(vec);
+    self->velocity = Vec3_Scale(vec, 400);
+    self->velocity.z = 200;
     self->groundentity = NULL;
     self->enemy = player;
     FoundTarget(self);
@@ -806,7 +799,7 @@ void MakronToss(edict_t *self)
     edict_t *ent = G_Spawn();
     ent->classname = "monster_makron";
     ent->target = self->target;
-    VectorCopy(self->s.origin, ent->s.origin);
+    ent->s.origin = self->s.origin;
     ent->enemy = self->enemy;
 
     MakronSpawn(ent);

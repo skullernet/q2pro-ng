@@ -82,22 +82,22 @@ static inline void Matrix_Frustum(float fov_x, float fov_y, float znear, float z
     out[15] = 0;
 }
 
-static inline void Matrix_RotateForViewer(const vec3_t origin, const vec3_t axis[3], mat4_t out)
+static inline void Matrix_RotateForViewer(vec3_t origin, vec3_t axis[3], mat4_t out)
 {
-    out[ 0] = -axis[1][0];
-    out[ 4] = -axis[1][1];
-    out[ 8] = -axis[1][2];
-    out[12] = DotProduct(axis[1], origin);
+    out[ 0] = -axis[1].x;
+    out[ 4] = -axis[1].y;
+    out[ 8] = -axis[1].z;
+    out[12] = Vec3_Dot(axis[1], origin);
 
-    out[ 1] = axis[2][0];
-    out[ 5] = axis[2][1];
-    out[ 9] = axis[2][2];
-    out[13] = -DotProduct(axis[2], origin);
+    out[ 1] = axis[2].x;
+    out[ 5] = axis[2].y;
+    out[ 9] = axis[2].z;
+    out[13] = -Vec3_Dot(axis[2], origin);
 
-    out[ 2] = -axis[0][0];
-    out[ 6] = -axis[0][1];
-    out[10] = -axis[0][2];
-    out[14] = DotProduct(axis[0], origin);
+    out[ 2] = -axis[0].x;
+    out[ 6] = -axis[0].y;
+    out[10] = -axis[0].z;
+    out[14] = Vec3_Dot(axis[0], origin);
 
     out[ 3] = 0;
     out[ 7] = 0;
@@ -119,13 +119,13 @@ static inline void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
     }
 }
 
-static inline void Matrix_TransformVector3(const mat4_t a, const vec3_t b, vec4_t out)
+static inline vec4_t Matrix_TransformVector3(const mat4_t a, vec3_t b)
 {
-    const float b0 = b[0];
-    const float b1 = b[1];
-    const float b2 = b[2];
-    out[0] = a[0] * b0 + a[4] * b1 + a[ 8] * b2 + a[12];
-    out[1] = a[1] * b0 + a[5] * b1 + a[ 9] * b2 + a[13];
-    out[2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14];
-    out[3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15];
+    vec4_t out = {
+        .x = a[0] * b.x + a[4] * b.y + a[ 8] * b.z + a[12],
+        .y = a[1] * b.x + a[5] * b.y + a[ 9] * b.z + a[13],
+        .z = a[2] * b.x + a[6] * b.y + a[10] * b.z + a[14],
+        .w = a[3] * b.x + a[7] * b.y + a[11] * b.z + a[15]
+    };
+    return out;
 }

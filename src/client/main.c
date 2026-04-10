@@ -467,7 +467,7 @@ CL_ClearState
 void CL_ClearState(void)
 {
     S_StopAllSounds();
-    S_UpdateListener(&(listener_t){0});
+    S_UpdateListener(&(listener_t){ 0 });
     SCR_StopCinematic();
     R_ClearScene();
     CL_FreeDemoSnapshots();
@@ -1412,12 +1412,12 @@ static size_t CL_Ups_m(char *buffer, size_t size)
 
     if (!cls.demo.playback && cl_predict->integer &&
         !(cl.frame.ps.pmove.pm_flags & PMF_NO_PREDICTION)) {
-        VectorCopy(cl.predicted_velocity, vel);
+        vel = cl.predicted_velocity;
     } else {
-        VectorCopy(cl.frame.ps.pmove.velocity, vel);
+        vel = cl.frame.ps.pmove.velocity;
     }
 
-    return Q_snprintf(buffer, size, "%.f", VectorLength(vel));
+    return Q_snprintf(buffer, size, "%.f", Vec3_Length(vel));
 #endif
     return Q_strlcpy(buffer, "", size);
 }
@@ -1519,7 +1519,7 @@ static size_t CL_Surface_m(char *buffer, size_t size)
     vec3_t end;
 
     if (cls.state == ca_active) {
-        VectorMA(cl.refdef.vieworg, 8192, cl.v_forward, end);
+        end = Vec3_MA(cl.refdef.vieworg, 8192, cl.v_forward);
         CL_Trace(&trace, cl.refdef.vieworg, vec3_origin, vec3_origin, end, ENTITYNUM_NONE, MASK_SOLID | MASK_WATER);
         if (trace.surface_id)
             return Q_snprintf(buffer, size, "%s %#x", cl.bsp->texinfo[trace.surface_id - 1].name, trace.surface_flags);

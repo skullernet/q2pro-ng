@@ -20,8 +20,7 @@ void SP_misc_crashviper(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
     ent->s.modelindex = G_ModelIndex("models/ships/bigviper/tris.md2");
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 32);
+    ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
@@ -48,12 +47,11 @@ void USE(misc_viper_missile_use)(edict_t *self, edict_t *other, edict_t *activat
         return;
     }
 
-    VectorCopy(self->enemy->s.origin, vec);
-    //vec[2] += 16;
+    vec = self->enemy->s.origin;
+    //vec.z += 16;
 
-    VectorCopy(self->s.origin, start);
-    VectorSubtract(vec, start, dir);
-    VectorNormalize(dir);
+    start = self->s.origin;
+    dir = Vec3_Direction(vec, start);
 
     monster_fire_rocket(self, start, dir, self->dmg, 500, MZ2_CHICK_ROCKET_1);
 
@@ -65,8 +63,7 @@ void SP_misc_viper_missile(edict_t *self)
 {
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_NOT;
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
 
     if (!self->dmg)
         self->dmg = 250;
@@ -97,10 +94,7 @@ void SP_misc_transport(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
     ent->s.modelindex = G_ModelIndex("models/objects/ship/tris.md2");
-
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 32);
-
+    ent->r.box = Box3_FromSize(16, 0, 32);
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
     ent->use = misc_strogg_ship_use;

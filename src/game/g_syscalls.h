@@ -24,12 +24,12 @@ void trap_SetConfigstring(unsigned index, const char *str);
 size_t trap_GetConfigstring(unsigned index, char *buf, size_t size);
 int trap_FindConfigstring(const char *name, int start, int max, bool create);
 
-void trap_Trace(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
-void trap_Clip(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);
-contents_t trap_PointContents(const vec3_t point);
-int trap_BoxEdicts(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+void trap_Trace(trace_t *tr, const trace_args_t *args);
+void trap_Clip(trace_t *tr, const trace_args_t *args);
+contents_t trap_PointContents(vec3_t point);
+int trap_BoxEdicts(box3_t box, int *list, int maxcount, int areatype);
 
-bool trap_InVis(const vec3_t p1, const vec3_t p2, vis_t vis);
+bool trap_InVis(vec3_t p1, vec3_t p2, vis_t vis);
 void trap_SetAreaPortalState(unsigned portalnum, bool open);
 bool trap_AreasConnected(int area1, int area2);
 
@@ -83,20 +83,22 @@ size_t trap_FS_ListFiles(const char *path, const char *filter, unsigned flags, c
 size_t trap_FS_ErrorString(int error, char *buf, size_t size);
 
 void trap_R_ClearDebugLines(void);
-void trap_R_AddDebugLine(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugPoint(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugAxis(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test);
-void trap_R_AddDebugBounds(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugSphere(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCircle(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCylinder(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+void trap_R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
+void trap_R_AddDebugBounds(box3_t box, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
                              bool depth_test);
-void trap_R_AddDebugArrow(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+void trap_R_AddDebugArrow(vec3_t start, vec3_t end, float size, uint32_t line_color,
                           uint32_t arrow_color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCurveArrow(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+void trap_R_AddDebugCurveArrow(vec3_t start, vec3_t ctrl, vec3_t end, float size,
                                uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
-void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *text,
+void trap_R_AddDebugText(vec3_t origin, const char *text,
                          float size, uint32_t color, uint32_t time, bool depth_test);
+void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
+                               float size, uint32_t color, uint32_t time, bool depth_test);
 #else
 #define trap_Print gi->Print
 #define trap_Error gi->Error
@@ -174,4 +176,5 @@ void trap_R_AddDebugText(const vec3_t origin, const vec3_t angles, const char *t
 #define trap_R_AddDebugArrow gi->R_AddDebugArrow
 #define trap_R_AddDebugCurveArrow gi->R_AddDebugCurveArrow
 #define trap_R_AddDebugText gi->R_AddDebugText
+#define trap_R_AddDebugAngledText gi->R_AddDebugAngledText
 #endif

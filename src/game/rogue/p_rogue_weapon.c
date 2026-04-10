@@ -6,19 +6,13 @@
 
 static void weapon_prox_fire(edict_t *ent)
 {
-    // Paril: kill sideways angle on grenades
-    // limit upwards angle so you don't fire behind you
-    vec3_t angles;
-    P_GetThrowAngles(ent, angles);
+    ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(8, 0, -8), false);
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, angles, (const vec3_t) { 8, 0, -8 }, start, dir, false);
-
-    fire_prox(ent, start, dir, damage_multiplier, 600);
+    fire_prox(ent, aim.start, aim.dir, damage_multiplier, 600);
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PROX | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -35,23 +29,17 @@ static void weapon_tesla_fire(edict_t *ent, bool held)
 {
     int speed;
 
-    // Paril: kill sideways angle on grenades
-    // limit upwards angle so you don't throw behind you
-    vec3_t angles;
-    P_GetThrowAngles(ent, angles);
-
-    vec3_t start, dir;
-    P_ProjectSource(ent, angles, (const vec3_t) { 0, 0, -22 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(0, 0, -22), false);
 
     if (ent->health > 0) {
         float frac = 1.0f - TO_SEC(ent->client->grenade_time - level.time) / GRENADE_TIMER_SEC;
-        speed = lerp(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
+        speed = Q_lerpf(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
     } else
         speed = GRENADE_MINSPEED;
 
     ent->client->grenade_time = 0;
 
-    fire_tesla(ent, start, dir, damage_multiplier, speed);
+    fire_tesla(ent, aim.start, aim.dir, damage_multiplier, speed);
 
     G_RemoveAmmoEx(ent, 1);
 }
@@ -92,18 +80,16 @@ static void weapon_chainfist_fire(edict_t *ent)
         damage *= damage_multiplier;
 
     // set start point
-    vec3_t start, dir;
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(0, 0, -4), false);
 
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 0, 0, -4 }, start, dir, false);
-
-    if (fire_player_melee(ent, start, dir, CHAINFIST_REACH, damage, 100, (mod_t) { MOD_CHAINFIST })) {
+    if (fire_player_melee(ent, aim.start, aim.dir, CHAINFIST_REACH, damage, 100, MOD_CHAINFIST)) {
         if (ent->client->empty_click_sound < level.time) {
             ent->client->empty_click_sound = level.time + SEC(0.5f);
             G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/sawslice.wav"), 1, ATTN_NORM);
         }
     }
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     ent->client->ps.gunframe++;
 
@@ -133,10 +119,9 @@ static void weapon_chainfist_fire(edict_t *ent)
 // this spits out some smoke from the motor. it's a two-stroke, you know.
 static void chainfist_smoke(edict_t *ent)
 {
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 8, 8, -4 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(8, 8, -4), false);
 
-    edict_t *te = G_TempEntity(start, EV_CHAINFIST_SMOKE, 0);
+    edict_t *te = G_TempEntity(aim.start, EV_CHAINFIST_SMOKE, 0);
     te->r.svflags |= SVF_CLIENTMASK;
     memset(te->r.clientmask, 255, sizeof(te->r.clientmask));
     Q_ClearBit(te->r.clientmask, ent->s.number);
@@ -187,26 +172,24 @@ static void weapon_tracker_fire(edict_t *self)
     if (is_quad)
         damage *= damage_multiplier; // pgm
 
-    vec3_t start, dir;
-    P_ProjectSource(self, self->client->v_angle, (const vec3_t) { 24, 8, -8 }, start, dir, false);
-
-    VectorMA(start, 8192, dir, end);
+    ray3_t aim = P_ProjectSource(self, self->client->v_angle, Vec3(24, 8, -8), false);
+    end = Vec3_MA(aim.start, 8192, aim.dir);
 
     // PMM - doing two traces .. one point and one box.
-    trap_Trace(&tr, start, NULL, NULL, end, self->s.number, mask);
+    tr = G_TraceLine(aim.start, end, self->s.number, mask);
     if (tr.entnum == ENTITYNUM_WORLD)
-        trap_Trace(&tr, start, (const vec3_t) { -16, -16, -16 }, (const vec3_t) { 16, 16, 16 }, end, self->s.number, mask);
+        tr = G_Trace(aim.start, end, Box3_FromRadius(16), self->s.number, mask);
 
     hit = &g_edicts[tr.entnum];
     if (hit != world && ((hit->r.svflags & SVF_MONSTER) || hit->client || (hit->flags & FL_DAMAGEABLE)) && hit->health > 0)
         enemy = hit;
 
-    fire_tracker(self, start, dir, damage, 1000, enemy);
+    fire_tracker(self, aim.start, aim.dir, damage, 1000, enemy);
 
     // send muzzle flash
     G_AddEvent(self, EV_MUZZLEFLASH, MZ_TRACKER | is_silenced);
 
-    PlayerNoise(self, start, PNOISE_WEAPON);
+    PlayerNoise(self, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(self);
 }
@@ -230,7 +213,6 @@ static void weapon_etf_rifle_fire(edict_t *ent)
 {
     int    damage;
     int    kick = 3;
-    int    i;
     vec3_t offset;
 
     if (deathmatch.integer)
@@ -262,21 +244,19 @@ static void weapon_etf_rifle_fire(edict_t *ent)
 
     // get start / end positions
     if (ent->client->ps.gunframe == 6)
-        VectorSet(offset, 15, 8, -8);
+        offset = Vec3(15, 8, -8);
     else
-        VectorSet(offset, 15, 6, -8);
+        offset = Vec3(15, 6, -8);
 
-    vec3_t start, dir, angles;
-    for (i = 0; i < 3; i++)
-        angles[i] = ent->client->v_angle[i] + crandom() * 0.85f;
-    P_ProjectSource(ent, angles, offset, start, dir, false);
-    fire_flechette(ent, start, dir, damage, 1150, kick);
+    vec3_t angles = Vec3_Add(ent->client->v_angle, Vec3_Scale(Vec3_CenterRandom(), 0.85f));
+    ray3_t aim = P_ProjectSource(ent, angles, offset, false);
+    fire_flechette(ent, aim.start, aim.dir, damage, 1150, kick);
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, (ent->client->ps.gunframe == 6 ? MZ_ETF_RIFLE : MZ_ETF_RIFLE_2) | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 
@@ -350,17 +330,16 @@ static void Heatbeam_Fire(edict_t *ent)
     }
 
     // This offset is the "view" offset for the beam start (used by trace)
-    vec3_t start, dir;
-    P_ProjectSource(ent, ent->client->v_angle, (const vec3_t) { 7, 2, -3 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(7, 2, -3), false);
 
     // This offset is the entity offset
-    fire_heatbeam(ent, start, dir, (const vec3_t) { 2, 7, -3 }, damage, kick, false);
+    fire_heatbeam(ent, aim.start, aim.dir, Vec3(2, 7, -3), damage, kick);
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_HEATBEAM | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 

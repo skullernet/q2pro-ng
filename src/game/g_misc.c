@@ -35,23 +35,27 @@ void SP_func_areaportal(edict_t *ent)
 Misc functions
 =================
 */
-void VelocityForDamage(int damage, vec3_t v)
+vec3_t VelocityForDamage(int damage)
 {
-    v[0] = 100.0f * crandom();
-    v[1] = 100.0f * crandom();
-    v[2] = frandom2(200.0f, 300.0f);
+    vec3_t v = {
+        100.0f * crandom(),
+        100.0f * crandom(),
+        frandom2(200.0f, 300.0f)
+    };
 
     if (damage < 50)
-        VectorScale(v, 0.7f, v);
+        v = Vec3_Scale(v, 0.7f);
     else
-        VectorScale(v, 1.2f, v);
+        v = Vec3_Scale(v, 1.2f);
+
+    return v;
 }
 
 void ClipGibVelocity(edict_t *ent)
 {
-    ent->velocity[0] = Q_clipf(ent->velocity[0], -300, 300);
-    ent->velocity[1] = Q_clipf(ent->velocity[1], -300, 300);
-    ent->velocity[2] = Q_clipf(ent->velocity[2],  200, 500); // always some upwards
+    ent->velocity.x = Q_clipf(ent->velocity.x, -300, 300);
+    ent->velocity.y = Q_clipf(ent->velocity.y, -300, 300);
+    ent->velocity.z = Q_clipf(ent->velocity.z,  200, 500); // always some upwards
 }
 
 /*
@@ -59,17 +63,17 @@ void ClipGibVelocity(edict_t *ent)
 gibs
 =================
 */
-void DIE(gib_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(gib_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
-    if (mod.id == MOD_CRUSH)
+    if (mod == MOD_CRUSH)
         G_FreeEdict(self);
 }
 
 void TOUCH(gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (tr->plane.normal[2] > 0.7f) {
-        self->s.angles[0] = Q_clipf(self->s.angles[0], -5.0f, 5.0f);
-        self->s.angles[2] = Q_clipf(self->s.angles[2], -5.0f, 5.0f);
+    if (tr->plane.normal.z > 0.7f) {
+        self->s.angles.pitch = Q_clipf(self->s.angles.pitch, -5.0f, 5.0f);
+        self->s.angles.roll = Q_clipf(self->s.angles.roll, -5.0f, 5.0f);
     }
 }
 
@@ -77,7 +81,6 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
 {
     edict_t *gib;
     vec3_t   vd;
-    vec3_t   origin;
     float    vscale;
     int      i;
 
@@ -89,11 +92,8 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
     } else
         gib = G_Spawn();
 
-    VectorAvg(self->r.absmin, self->r.absmax, origin);
-
     for (i = 0; i < 3; i++) {
-        VectorMA(origin, crandom() * 0.5f, self->r.size, gib->s.origin);
-
+        gib->s.origin = Box3_RandomPoint(self->r.absbox);
         // try 3 times to get a good, non-solid position
         if (!(trap_PointContents(gib->s.origin) & MASK_SOLID))
             break;
@@ -136,8 +136,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
         gib->s.frame = irandom1(frame + 1);
     else
         gib->s.frame = frame;
-    VectorClear(gib->r.mins);
-    VectorClear(gib->r.maxs);
+    gib->r.box = box3_origin;
     gib->s.sound = 0;
     gib->monsterinfo.engine_sound = 0;
 
@@ -150,15 +149,12 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
     }
 
     if (type & GIB_DEBRIS) {
-        vec3_t v = {
-            100 * crandom(),
-            100 * crandom(),
-            100 + 100 * crandom()
-        };
-        VectorMA(self->velocity, damage, v, gib->velocity);
+        vec3_t v = Vec3_Scale(Vec3_CenterRandom(), 100);
+        v.z += 100;
+        gib->velocity = Vec3_MA(self->velocity, damage, v);
     } else {
-        VelocityForDamage(damage, vd);
-        VectorMA(self->velocity, vscale, vd, gib->velocity);
+        vd = VelocityForDamage(damage);
+        gib->velocity = Vec3_MA(self->velocity, vscale, vd);
         ClipGibVelocity(gib);
     }
 
@@ -167,8 +163,8 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
         gib->flags |= FL_ALWAYS_TOUCH;
     }
 
-    frandom_vec(gib->avelocity, 600);
-    frandom_vec(gib->s.angles, 360);
+    gib->avelocity = Vec3_Scale(Vec3_Random(), 600);
+    gib->s.angles = Vec3_Scale(Vec3_Random(), 360);
 
     gib->think = G_FreeEdict;
 
@@ -202,12 +198,10 @@ void ThrowClientHead(edict_t *self, int damage)
         self->s.skinnum = 0;
     }
 
-    self->s.origin[2] += 32;
+    self->s.origin.z += 32;
     self->s.frame = 0;
     self->s.modelindex = G_ModelIndex(gibname);
-    VectorSet(self->r.mins, -16, -16, 0);
-    VectorSet(self->r.maxs, 16, 16, 16);
-
+    self->r.box = Box3_FromSize(16, 0, 16);
     self->takedamage = true; // [Paril-KEX] allow takedamage so we get crushed
     self->r.solid = SOLID_TRIGGER; // [Paril-KEX] make 'trigger' so we still move but don't block shots/explode
     self->r.svflags |= SVF_DEADMONSTER;
@@ -219,8 +213,8 @@ void ThrowClientHead(edict_t *self, int damage)
     self->flags |= FL_NO_KNOCKBACK | FL_NO_DAMAGE_EFFECTS;
 
     self->movetype = MOVETYPE_BOUNCE;
-    VelocityForDamage(damage, vd);
-    VectorAdd(self->velocity, vd, self->velocity);
+    vd = VelocityForDamage(damage);
+    self->velocity = Vec3_Add(self->velocity, vd);
 
     if (self->client) { // bodies in the queue don't have a client anymore
         self->client->anim_priority = ANIM_DEATH;
@@ -298,10 +292,10 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 
     // [Paril-KEX] don't teleport to a point_combat, it means HOLD for them.
     if (next && !strcmp(next->classname, "path_corner") && next->spawnflags & SPAWNFLAG_PATH_CORNER_TELEPORT) {
-        VectorCopy(next->s.origin, v);
-        v[2] += next->r.mins[2];
-        v[2] -= other->r.mins[2];
-        VectorCopy(v, other->s.origin);
+        v = next->s.origin;
+        v.z += next->r.box.mins.z;
+        v.z -= other->r.box.mins.z;
+        other->s.origin = v;
         next = G_PickTarget(next->target);
         G_AddEvent(other, EV_OTHER_TELEPORT, 0);
     }
@@ -324,7 +318,7 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         other->monsterinfo.pausetime = HOLD_FOREVER;
         other->monsterinfo.stand(other);
     } else {
-        VectorSubtract(other->goalentity->s.origin, other->s.origin, v);
+        v = Vec3_Sub(other->goalentity->s.origin, other->s.origin);
         other->ideal_yaw = vectoyaw(v);
     }
 }
@@ -339,8 +333,7 @@ void SP_path_corner(edict_t *self)
 
     self->r.solid = SOLID_TRIGGER;
     self->touch = path_corner_touch;
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
     self->r.svflags |= SVF_NOCLIENT;
     trap_LinkEntity(self);
 }
@@ -415,8 +408,7 @@ void SP_point_combat(edict_t *self)
     }
     self->r.solid = SOLID_TRIGGER;
     self->touch = point_combat_touch;
-    VectorSet(self->r.mins, -8, -8, -16);
-    VectorSet(self->r.maxs, 8, 8, 16);
+    self->r.box = Box3_FromSize(8, -16, 16);
     self->r.svflags = SVF_NOCLIENT;
     trap_LinkEntity(self);
 }
@@ -434,8 +426,7 @@ Used as a positional target for lightning.
 */
 void SP_info_notnull(edict_t *self)
 {
-    VectorCopy(self->s.origin, self->r.absmin);
-    VectorCopy(self->s.origin, self->r.absmax);
+    self->r.absbox = Box3_FromPoint(self->s.origin);
 }
 
 /*QUAKED light (0 1 0) (-8 -8 -8) (8 8 8) START_OFF ALLOW_IN_DM
@@ -470,9 +461,9 @@ void THINK(find_shadow_light_targets)(edict_t *self)
     if (self->target) {
         target = G_Find(NULL, FOFS(targetname), self->target);
         if (target) {
-            VectorSubtract(target->s.origin, self->s.origin, dir);
-            vectoangles(dir, self->s.angles);
-            self->s.angles[ROLL] = self->vision_cone;
+            dir = Vec3_Sub(target->s.origin, self->s.origin);
+            self->s.angles = vectoangles(dir);
+            self->s.angles.roll = self->vision_cone;
         }
     }
 
@@ -679,16 +670,15 @@ void TOUCH(func_object_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     // only squash thing we fall on top of
     if (other_touching_self)
         return;
-    if (tr->plane.normal[2] < 1.0f)
+    if (tr->plane.normal.z < 1.0f)
         return;
     if (other->takedamage == false)
         return;
     if (other->damage_debounce_time > level.time)
         return;
 
-    vec3_t pos;
-    closest_point_to_box(other->s.origin, self->r.absmin, self->r.absmax, pos);
-    T_Damage(other, self, self, vec3_origin, pos, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, (mod_t) { MOD_CRUSH });
+    vec3_t pos = Box3_ClampPoint(self->r.absbox, other->s.origin);
+    T_Damage(other, self, self, vec3_origin, pos, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 
     other->damage_debounce_time = level.time + HZ(10);
 }
@@ -712,12 +702,7 @@ void SP_func_object(edict_t *self)
 {
     trap_SetBrushModel(self, self->model);
 
-    self->r.mins[0] += 1;
-    self->r.mins[1] += 1;
-    self->r.mins[2] += 1;
-    self->r.maxs[0] -= 1;
-    self->r.maxs[1] -= 1;
-    self->r.maxs[2] -= 1;
+    self->r.box = Box3_Expand(self->r.box, -1);
 
     if (!self->dmg)
         self->dmg = 100;
@@ -768,7 +753,7 @@ one small chunk per 25 of mass (up to 16).  So 800 gives the most.
 #define SPAWNFLAGS_EXPLOSIVE_INACTIVE           8
 #define SPAWNFLAGS_EXPLOSIVE_ALWAYS_SHOOTABLE   16
 
-void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     int      count;
     int      mass;
@@ -778,12 +763,10 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     self->takedamage = false;
 
     if (self->dmg)
-        T_RadiusDamage(self, attacker, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
+        T_RadiusDamage(self, attacker, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
-    vec3_t dir;
-    VectorSubtract(inflictor->s.origin, self->s.origin, dir);
-    VectorNormalize(dir);
-    VectorScale(dir, 150, self->velocity);
+    vec3_t dir = Vec3_Direction(inflictor->s.origin, self->s.origin);
+    self->velocity = Vec3_Scale(dir, 150);
 
     mass = self->mass;
     if (!mass)
@@ -821,7 +804,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
 
     G_UseTargets(self, attacker);
 
-    VectorAvg(self->r.absmin, self->r.absmax, self->s.origin);
+    self->s.origin = Box3_Center(self->r.absbox);
 
     if (self->noise_index)
         G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
@@ -837,7 +820,7 @@ void USE(func_explosive_use)(edict_t *self, edict_t *other, edict_t *activator)
     // Paril: pass activator to explode as attacker. this fixes
     // "strike" trying to centerprint to the relay. Should be
     // a safe change.
-    func_explosive_explode(self, self, activator, self->health, vec3_origin, (mod_t) { MOD_EXPLOSIVE });
+    func_explosive_explode(self, self, activator, self->health, vec3_origin, MOD_EXPLOSIVE);
 }
 
 // PGM
@@ -942,7 +925,7 @@ void TOUCH(barrel_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         return;
 
     ratio = (float)other->mass / (float)self->mass;
-    VectorSubtract(self->s.origin, other->s.origin, v);
+    v = Vec3_Sub(self->s.origin, other->s.origin);
     M_walkmove(self, vectoyaw(v), 20 * ratio * FRAME_TIME_SEC);
 }
 
@@ -957,7 +940,7 @@ void THINK(barrel_explode)(edict_t *self)
 {
     self->takedamage = false;
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_BARREL });
+    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BARREL);
 
     ThrowGibs(self, 1.5f * self->dmg / 200, barrel_gibs);
 
@@ -977,7 +960,7 @@ void THINK(barrel_burn)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void DIE(barrel_delay)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(barrel_delay)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // allow "dead" barrels waiting to explode to still receive knockback
     if (self->think == barrel_burn || self->think == barrel_explode)
@@ -1035,8 +1018,7 @@ void SP_misc_explobox(edict_t *self)
 
     self->model = "models/objects/barrels/tris.md2";
     self->s.modelindex = G_ModelIndex(self->model);
-    VectorSet(self->r.mins, -16, -16, 0);
-    VectorSet(self->r.maxs, 16, 16, 40);
+    self->r.box = Box3_FromSize(16, 0, 40);
 
     if (!self->mass)
         self->mass = 50;
@@ -1086,8 +1068,8 @@ void THINK(misc_blackhole_think)(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE) {
-        self->s.angles[0] += 50.0f * FRAME_TIME_SEC;
-        self->s.angles[1] += 50.0f * FRAME_TIME_SEC;
+        self->s.angles.pitch += 50.0f * FRAME_TIME_SEC;
+        self->s.angles.yaw += 50.0f * FRAME_TIME_SEC;
     }
 
     self->nextthink = level.time + FRAME_TIME;
@@ -1097,8 +1079,7 @@ void SP_misc_blackhole(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_NOT;
-    VectorSet(ent->r.mins, -64, -64, 0);
-    VectorSet(ent->r.maxs, 64, 64, 8);
+    ent->r.box = Box3_FromSize(64, 0, 8);
     ent->s.modelindex = G_ModelIndex("models/objects/black/tris.md2");
     ent->s.renderfx = RF_TRANSLUCENT | RF_NOSHADOW;
     ent->use = misc_blackhole_use;
@@ -1128,8 +1109,7 @@ void SP_misc_eastertank(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -32, -32, -16);
-    VectorSet(ent->r.maxs, 32, 32, 32);
+    ent->r.box = Box3_FromSize(32, -16, 32);
     ent->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
     ent->s.frame = 254;
     ent->think = misc_eastertank_think;
@@ -1154,8 +1134,7 @@ void SP_misc_easterchick(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -32, -32, 0);
-    VectorSet(ent->r.maxs, 32, 32, 32);
+    ent->r.box = Box3_FromSize(32, 0, 32);
     ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 208;
     ent->think = misc_easterchick_think;
@@ -1180,8 +1159,7 @@ void SP_misc_easterchick2(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -32, -32, 0);
-    VectorSet(ent->r.maxs, 32, 32, 32);
+    ent->r.box = Box3_FromSize(32, 0, 32);
     ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 248;
     ent->think = misc_easterchick2_think;
@@ -1215,7 +1193,7 @@ void USE(commander_body_use)(edict_t *self, edict_t *other, edict_t *activator)
 void THINK(commander_body_drop)(edict_t *self)
 {
     self->movetype = MOVETYPE_TOSS;
-    self->s.origin[2] += 2;
+    self->s.origin.z += 2;
 }
 
 void SP_monster_commander_body(edict_t *self)
@@ -1224,8 +1202,7 @@ void SP_monster_commander_body(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->model = "models/monsters/commandr/tris.md2";
     self->s.modelindex = G_ModelIndex(self->model);
-    VectorSet(self->r.mins, -32, -32, 0);
-    VectorSet(self->r.maxs, 32, 32, 48);
+    self->r.box = Box3_FromSize(32, 0, 48);
     self->use = commander_body_use;
     self->takedamage = true;
     self->flags = FL_GODMODE;
@@ -1279,7 +1256,7 @@ static const gib_def_t deadsoldier_gibs[] = {
     { 0 }
 };
 
-void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(misc_deadsoldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->health > -30)
         return;
@@ -1316,8 +1293,7 @@ void SP_misc_deadsoldier(edict_t *ent)
     else
         ent->s.frame = 0;
 
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 16);
+    ent->r.box = Box3_FromSize(16, 0, 16);
     ent->deadflag = true;
     ent->takedamage = true;
     // nb: SVF_MONSTER is here so it bleeds
@@ -1357,8 +1333,7 @@ void SP_misc_viper(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
     ent->s.modelindex = G_ModelIndex("models/ships/viper/tris.md2");
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 32);
+    ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
@@ -1376,8 +1351,8 @@ void SP_misc_bigviper(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -176, -120, -24);
-    VectorSet(ent->r.maxs, 176, 120, 72);
+    ent->r.box.mins = Vec3(-176, -120, -24);
+    ent->r.box.maxs = Vec3(176, 120, 72);
     ent->s.modelindex = G_ModelIndex("models/ships/bigviper/tris.md2");
     trap_LinkEntity(ent);
 }
@@ -1389,8 +1364,8 @@ void TOUCH(misc_viper_bomb_touch)(edict_t *self, edict_t *other, const trace_t *
 {
     G_UseTargets(self, self->activator);
 
-    self->s.origin[2] = self->r.absmin[2] + 1;
-    T_RadiusDamage(self, self, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, (mod_t) { MOD_BOMB });
+    self->s.origin.z = self->r.absbox.mins.z + 1;
+    T_RadiusDamage(self, self, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BOMB);
     BecomeExplosion2(self);
 }
 
@@ -1402,13 +1377,12 @@ void PRETHINK(misc_viper_bomb_prethink)(edict_t *self)
     if (diff < -1.0f)
         diff = -1.0f;
 
-    vec3_t v;
-    VectorScale(self->moveinfo.dir, 1.0f + diff, v);
-    v[2] = diff;
+    vec3_t v = Vec3_Scale(self->moveinfo.dir, 1.0f + diff);
+    v.z = diff;
 
-    diff = self->s.angles[2];
-    vectoangles(v, self->s.angles);
-    self->s.angles[2] = diff + 10;
+    diff = self->s.angles.roll;
+    self->s.angles = vectoangles(v);
+    self->s.angles.roll = diff + 10;
 }
 
 void USE(misc_viper_bomb_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1427,8 +1401,8 @@ void USE(misc_viper_bomb_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     viper = G_Find(NULL, FOFS(classname), "misc_viper");
     if (viper) {
-        VectorScale(viper->moveinfo.dir, viper->moveinfo.speed, self->velocity);
-        VectorCopy(viper->moveinfo.dir, self->moveinfo.dir);
+        self->velocity = Vec3_Scale(viper->moveinfo.dir, viper->moveinfo.speed);
+        self->moveinfo.dir = viper->moveinfo.dir;
     }
 }
 
@@ -1436,8 +1410,7 @@ void SP_misc_viper_bomb(edict_t *self)
 {
     self->movetype = MOVETYPE_NONE;
     self->r.solid = SOLID_NOT;
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
 
     self->s.modelindex = G_ModelIndex("models/objects/bomb/tris.md2");
 
@@ -1478,8 +1451,7 @@ void SP_misc_strogg_ship(edict_t *ent)
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_NOT;
     ent->s.modelindex = G_ModelIndex("models/ships/strogg1/tris.md2");
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 32);
+    ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
     ent->nextthink = level.time + HZ(10);
@@ -1511,8 +1483,7 @@ void SP_misc_satellite_dish(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -64, -64, 0);
-    VectorSet(ent->r.maxs, 64, 64, 128);
+    ent->r.box = Box3_FromSize(64, 0, 128);
     ent->s.modelindex = G_ModelIndex("models/objects/satellite/tris.md2");
     ent->use = misc_satellite_dish_use;
     trap_LinkEntity(ent);
@@ -1552,7 +1523,7 @@ void SP_misc_gib_arm(edict_t *ent)
     ent->die = gib_die;
     ent->movetype = MOVETYPE_TOSS;
     ent->deadflag = true;
-    frandom_vec(ent->avelocity, 200);
+    ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
     trap_LinkEntity(ent);
@@ -1570,7 +1541,7 @@ void SP_misc_gib_leg(edict_t *ent)
     ent->die = gib_die;
     ent->movetype = MOVETYPE_TOSS;
     ent->deadflag = true;
-    frandom_vec(ent->avelocity, 200);
+    ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
     trap_LinkEntity(ent);
@@ -1588,7 +1559,7 @@ void SP_misc_gib_head(edict_t *ent)
     ent->die = gib_die;
     ent->movetype = MOVETYPE_TOSS;
     ent->deadflag = true;
-    frandom_vec(ent->avelocity, 200);
+    ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
     ent->nextthink = level.time + SEC(10);
     trap_LinkEntity(ent);
@@ -1810,12 +1781,12 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     // unlink to make sure it can't possibly interfere with KillBox
     trap_UnlinkEntity(other);
 
-    VectorCopy(dest->s.origin, other->s.origin);
-    VectorCopy(dest->s.origin, other->s.old_origin);
-    other->s.origin[2] += 10;
+    other->s.origin = dest->s.origin;
+    other->s.origin.z += 10;
+    other->s.old_origin = other->s.origin;
 
     // clear the velocity and hold them in place briefly
-    VectorClear(other->velocity);
+    other->velocity = vec3_origin;
     other->client->ps.pm_time = 160; // hold time
     other->client->ps.pm_flags |= PMF_TIME_TELEPORT;
     other->client->ps.rdflags ^= RDF_TELEPORT_BIT;
@@ -1832,13 +1803,8 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     }
 
     // set angles
-    for (int i = 0; i < 3; i++)
-        other->client->ps.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
-
-    VectorCopy(dest->s.angles, other->s.angles);
-    VectorCopy(dest->s.angles, other->client->ps.viewangles);
-    VectorCopy(dest->s.angles, other->client->v_angle);
-    AngleVectors(other->client->v_angle, other->client->v_forward, NULL, NULL);
+    P_SetClientAngles(other->client, dest->s.angles);
+    other->s.angles = dest->s.angles;
 
     trap_LinkEntity(other);
 
@@ -1848,9 +1814,9 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
     // [Paril-KEX] move sphere, if we own it
     if (other->client->owned_sphere) {
         edict_t *sphere = other->client->owned_sphere;
-        VectorCopy(other->s.origin, sphere->s.origin);
-        sphere->s.origin[2] = other->r.absmax[2];
-        sphere->s.angles[YAW] = other->s.angles[YAW];
+        sphere->s.origin = other->s.origin;
+        sphere->s.origin.z = other->r.absbox.maxs.z;
+        sphere->s.angles.yaw = other->s.angles.yaw;
         trap_LinkEntity(sphere);
     }
 }
@@ -1858,7 +1824,7 @@ void TOUCH(teleporter_touch)(edict_t *self, edict_t *other, const trace_t *tr, b
 /*QUAKED misc_teleporter (1 0 0) (-32 -32 -24) (32 32 -16) NO_SOUND NO_TELEPORT_EFFECT N64_EFFECT
 Stepping onto this disc will teleport players to the targeted misc_teleporter_dest object.
 */
-#define SPAWNFLAG_TEMEPORTER_N64_EFFECT 4
+#define SPAWNFLAG_TELEPORTER_N64_EFFECT 4
 
 void SP_misc_teleporter(edict_t *ent)
 {
@@ -1866,7 +1832,7 @@ void SP_misc_teleporter(edict_t *ent)
 
     ent->s.modelindex = G_ModelIndex("models/objects/dmspot/tris.md2");
     ent->s.skinnum = 1;
-    if (level.is_n64 || (ent->spawnflags & SPAWNFLAG_TEMEPORTER_N64_EFFECT))
+    if (level.is_n64 || (ent->spawnflags & SPAWNFLAG_TELEPORTER_N64_EFFECT))
         ent->s.morefx = EFX_TELEPORTER2;
     else
         ent->s.effects = EF_TELEPORTER;
@@ -1874,9 +1840,7 @@ void SP_misc_teleporter(edict_t *ent)
     if (!(ent->spawnflags & SPAWNFLAG_TELEPORTER_NO_SOUND))
         ent->s.sound = G_SoundIndex("world/amb10.wav");
     ent->r.solid = SOLID_BBOX;
-
-    VectorSet(ent->r.mins, -32, -32, -24);
-    VectorSet(ent->r.maxs, 32, 32, -16);
+    ent->r.box = Box3_FromSize(32, -24, -16);
     trap_LinkEntity(ent);
 
     // N64 has some of these for visual effects
@@ -1888,9 +1852,8 @@ void SP_misc_teleporter(edict_t *ent)
     trig->r.solid = SOLID_TRIGGER;
     trig->target = ent->target;
     trig->r.ownernum = ent->s.number;
-    VectorCopy(ent->s.origin, trig->s.origin);
-    VectorSet(trig->r.mins, -8, -8, 8);
-    VectorSet(trig->r.maxs, 8, 8, 24);
+    trig->s.origin = ent->s.origin;
+    trig->r.box = Box3_FromSize(8, 8, 24);
     trap_LinkEntity(trig);
 }
 
@@ -1907,8 +1870,7 @@ void SP_misc_teleporter_dest(edict_t *ent)
     ent->s.skinnum = 0;
     ent->s.renderfx |= RF_NOSHADOW;
     ent->r.solid = SOLID_BBOX;
-    VectorSet(ent->r.mins, -32, -32, -24);
-    VectorSet(ent->r.maxs, 32, 32, -16);
+    ent->r.box = Box3_FromSize(32, -24, -16);
     trap_LinkEntity(ent);
 }
 
@@ -1932,6 +1894,7 @@ void SP_misc_flare(edict_t *ent)
     ent->s.renderfx = RF_FLARE;
     ent->r.solid = SOLID_NOT;
     ent->s.scale = st.radius;
+    ent->r.box = Box3_FromRadius(32);
 
     if (ent->spawnflags & SPAWNFLAG_FLARE_RED)
         ent->s.renderfx |= RF_SHELL_RED;
@@ -1950,9 +1913,6 @@ void SP_misc_flare(edict_t *ent)
         ent->s.frame = G_ImageIndex(st.image);
     }
 
-    VectorSet(ent->r.mins, -32, -32, -32);
-    VectorSet(ent->r.maxs, 32, 32, 32);
-
     ent->s.modelindex2 = Q_clip(st.fade_start_dist, 0, MAX_MODELS - 1);
     ent->s.modelindex3 = Q_clip(st.fade_end_dist,   0, MAX_MODELS - 1);
 
@@ -1964,7 +1924,7 @@ void SP_misc_flare(edict_t *ent)
 
 void THINK(misc_hologram_think)(edict_t *ent)
 {
-    ent->s.angles[1] += 100 * FRAME_TIME_SEC;
+    ent->s.angles.yaw += 100 * FRAME_TIME_SEC;
     ent->nextthink = level.time + FRAME_TIME;
     ent->s.alpha = frandom2(0.2f, 0.6f);
 }
@@ -1976,8 +1936,7 @@ void SP_misc_hologram(edict_t *ent)
 {
     ent->r.solid = SOLID_NOT;
     ent->s.modelindex = G_ModelIndex("models/ships/strogg1/tris.md2");
-    VectorSet(ent->r.mins, -16, -16, 0);
-    VectorSet(ent->r.maxs, 16, 16, 32);
+    ent->r.box = Box3_FromSize(16, 0, 32);
     ent->s.morefx = EFX_HOLOGRAM;
     ent->think = misc_hologram_think;
     ent->nextthink = level.time + FRAME_TIME;
@@ -2002,7 +1961,7 @@ void TOUCH(fire_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     }
 
     if (other->takedamage)
-        T_Damage(other, self, self, vec3_origin, self->s.origin, 0, 20, 0, DAMAGE_NONE, (mod_t) { MOD_EXPLOSIVE });
+        T_Damage(other, self, self, vec3_origin, self->s.origin, 0, 20, 0, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     if (trap_PointContents(self->s.origin) & CONTENTS_LAVA)
         G_FreeEdict(self);
@@ -2018,13 +1977,13 @@ void THINK(fire_fly)(edict_t *self)
     fireball->r.solid = SOLID_BBOX;
     fireball->movetype = MOVETYPE_TOSS;
     fireball->clipmask = MASK_SHOT;
-    fireball->velocity[0] = crandom() * 50;
-    fireball->velocity[1] = crandom() * 50;
-    fireball->velocity[2] = (self->speed * 1.75f) + (frandom() * 200);
-    crandom_vec(fireball->avelocity, 360);
+    fireball->velocity.x = crandom() * 50;
+    fireball->velocity.y = crandom() * 50;
+    fireball->velocity.z = (self->speed * 1.75f) + (frandom() * 200);
+    fireball->avelocity = Vec3_Scale(Vec3_CenterRandom(), 360);
     fireball->classname = "fireball";
     fireball->s.modelindex = G_ModelIndex("models/objects/gibs/sm_meat/tris.md2");
-    VectorCopy(self->s.origin, fireball->s.origin);
+    fireball->s.origin = self->s.origin;
     fireball->nextthink = level.time + SEC(5);
     fireball->think = G_FreeEdict;
     fireball->touch = fire_touch;
@@ -2044,8 +2003,7 @@ void SP_misc_lavaball(edict_t *self)
 
 void SP_info_landmark(edict_t *self)
 {
-    VectorCopy(self->s.origin, self->r.absmin);
-    VectorCopy(self->s.origin, self->r.absmax);
+    self->r.absbox = Box3_FromPoint(self->s.origin);
 }
 
 #define SPAWNFLAG_WORLD_TEXT_START_OFF          1
@@ -2088,12 +2046,11 @@ void THINK(info_world_text_think)(edict_t *self)
         self->sounds = 0;
     }
 
-    if (self->s.angles[YAW] == -3.0f) {
-        trap_R_AddDebugText(self->s.origin, NULL, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
+    if (self->s.angles.yaw == -3.0f) {
+        trap_R_AddDebugText(self->s.origin, self->message, self->dmg_radius, colors[self->sounds], FRAME_TIME, true);
     } else {
-        vec3_t textAngle = { 0 };
-        textAngle[YAW] = anglemod(self->s.angles[YAW] + 180);
-        trap_R_AddDebugText(self->s.origin, textAngle, self->message, self->r.size[2], colors[self->sounds], FRAME_TIME, true);
+        vec3_t textAngle = { .yaw = anglemod(self->s.angles.yaw + 180) };
+        trap_R_AddDebugAngledText(self->s.origin, textAngle, self->message, self->dmg_radius, colors[self->sounds], FRAME_TIME, true);
     }
     self->nextthink = level.time + FRAME_TIME;
 }
@@ -2111,8 +2068,8 @@ void SP_info_world_text(edict_t *self)
 
     self->think = info_world_text_think;
     self->use = info_world_text_use;
-    self->r.size[2] = st.radius ? st.radius : 0.2f;
-    self->r.size[2] *= 16;
+    self->dmg_radius = st.radius ? st.radius : 0.2f;
+    self->dmg_radius *= 16;
 
     if (!(self->spawnflags & SPAWNFLAG_WORLD_TEXT_START_OFF)) {
         self->nextthink = level.time + FRAME_TIME;
@@ -2175,8 +2132,7 @@ void THINK(misc_player_mannequin_think)(edict_t *self)
     }
 
     if (self->enemy) {
-        vec3_t vec;
-        VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+        vec3_t vec = Vec3_Sub(self->enemy->s.origin, self->s.origin);
         self->ideal_yaw = vectoyaw(vec);
         M_ChangeYaw(self);
     }
@@ -2240,8 +2196,7 @@ void SP_misc_player_mannequin(edict_t *self)
         self->s.effects = EF_NONE;
     if (!ED_WasKeySpecified("renderfx"))
         self->s.renderfx = RF_MINLIGHT;
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = player_box;
     self->yaw_speed = 30;
     self->ideal_yaw = 0;
     self->teleport_time = level.time + HZ(10);
@@ -2256,8 +2211,7 @@ void SP_misc_player_mannequin(edict_t *self)
     else if (st.radius > 0.0f)
         self->s.scale = st.radius;
 
-    VectorScale(self->r.mins, self->s.scale, self->r.mins);
-    VectorScale(self->r.maxs, self->s.scale, self->r.maxs);
+    self->r.box = Box3_Scale(self->r.box, self->s.scale);
 
     self->think = misc_player_mannequin_think;
     self->nextthink = level.time + FRAME_TIME;

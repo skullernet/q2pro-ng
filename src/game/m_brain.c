@@ -237,7 +237,7 @@ const mmove_t MMOVE_T(brain_move_duck) = { FRAME_duck01, FRAME_duck08, brain_fra
 
 static void brain_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -290,7 +290,7 @@ static void brain_swing_right(edict_t *self)
 
 static void brain_hit_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
@@ -304,7 +304,7 @@ static void brain_swing_left(edict_t *self)
 
 static void brain_hit_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 8 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 8 };
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
@@ -389,20 +389,20 @@ void MONSTERINFO_MELEE(brain_melee)(edict_t *self)
 }
 
 // RAFAEL
-static bool brain_tounge_attack_ok(const vec3_t start, const vec3_t end)
+static bool brain_tounge_attack_ok(vec3_t start, vec3_t end)
 {
     vec3_t dir, angles;
 
     // check for max distance
-    VectorSubtract(start, end, dir);
-    if (VectorLength(dir) > 512)
+    dir = Vec3_Sub(start, end);
+    if (Vec3_Length(dir) > 512)
         return false;
 
     // check for min/max pitch
-    vectoangles(dir, angles);
-    if (angles[0] < -180)
-        angles[0] += 360;
-    if (fabsf(angles[0]) > 30)
+    angles = vectoangles(dir);
+    if (angles.pitch < -180)
+        angles.pitch += 360;
+    if (fabsf(angles.pitch) > 30)
         return false;
 
     return true;
@@ -410,26 +410,25 @@ static bool brain_tounge_attack_ok(const vec3_t start, const vec3_t end)
 
 static void brain_tounge_attack(edict_t *self)
 {
-    vec3_t  offset, start, f, r, end, dir;
+    vec3_t  start, f, r, end, dir;
     trace_t tr;
     int     damage;
 
-    AngleVectors(self->s.angles, f, r, NULL);
-    VectorSet(offset, 24, 0, 16);
-    M_ProjectFlashSource(self, offset, f, r, start);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, Vec3(24, 0, 16), f, r);
 
-    VectorCopy(self->enemy->s.origin, end);
+    end = self->enemy->s.origin;
     if (!brain_tounge_attack_ok(start, end)) {
-        end[2] = self->enemy->s.origin[2] + self->enemy->r.maxs[2] - 8;
+        end.z = self->enemy->s.origin.z + self->enemy->r.box.maxs.z - 8;
         if (!brain_tounge_attack_ok(start, end)) {
-            end[2] = self->enemy->s.origin[2] + self->enemy->r.mins[2] + 8;
+            end.z = self->enemy->s.origin.z + self->enemy->r.box.mins.z + 8;
             if (!brain_tounge_attack_ok(start, end))
                 return;
         }
     }
-    VectorCopy(self->enemy->s.origin, end);
+    end = self->enemy->s.origin;
 
-    trap_Trace(&tr, start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+    tr = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE);
     if (tr.entnum != self->enemy->s.number)
         return;
 
@@ -442,20 +441,20 @@ static void brain_tounge_attack(edict_t *self)
     te->s.othernum = ENTITYNUM_NONE;
     te->s.alpha = self->s.alpha;
     te->s.scale = self->s.scale;
-    G_SnapVector(start, te->s.old_origin);
-    G_SnapVector(end, te->s.origin);
+    te->s.old_origin = G_SnapVector(start);
+    te->s.origin = G_SnapVector(end);
     te->nextthink = level.time + SEC(0.2f);
     te->think = G_FreeEdict;
     trap_LinkEntity(te);
 
-    VectorSubtract(start, end, dir);
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, damage, 0, DAMAGE_NO_KNOCKBACK, (mod_t) { MOD_BRAINTENTACLE });
+    dir = Vec3_Sub(start, end);
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, damage, 0, DAMAGE_NO_KNOCKBACK, MOD_BRAINTENTACLE);
 
     // pull the enemy in
     vec3_t forward;
-    self->s.origin[2] += 1;
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorScale(forward, -1200, self->enemy->velocity);
+    self->s.origin.z += 1;
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    self->enemy->velocity = Vec3_Scale(forward, -1200);
 }
 
 // Brain right eye center
@@ -491,42 +490,38 @@ static const vec3_t brain_leye[] = {
 void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
-    vec3_t start, axis[3], dir;
+    vec3_t start, axis[3];
 
     // rotate into worlds frame of reference
     AnglesToAxis(self->s.angles, axis);
     TransposeAxis(axis);
 
     // dis is my right eye
-    VectorCopy(brain_reye[self->s.frame - FRAME_walk101], start);
-    RotatePoint(start, axis);
-    VectorAdd(start, self->s.origin, start);
+    start = Vec3_Rotate(brain_reye[self->s.frame - FRAME_walk101], axis);
+    start = Vec3_Add(start, self->s.origin);
 
-    PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), dir, NULL);
+    M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
 
-    VectorCopy(start, laser->s.origin);
-    VectorCopy(dir, laser->movedir);
+    laser->s.origin = G_SnapVector(start);
     trap_LinkEntity(laser);
 }
 
 void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
-    vec3_t start, axis[3], dir;
+    vec3_t start, axis[3];
 
     // rotate into worlds frame of reference
     AnglesToAxis(self->s.angles, axis);
     TransposeAxis(axis);
 
     // dis is my left eye
-    VectorCopy(brain_leye[self->s.frame - FRAME_walk101], start);
-    RotatePoint(start, axis);
-    VectorAdd(start, self->s.origin, start);
+    start = Vec3_Rotate(brain_leye[self->s.frame - FRAME_walk101], axis);
+    start = Vec3_Add(start, self->s.origin);
 
-    PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), dir, NULL);
+    M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
 
-    G_SnapVector(start, laser->s.origin);
-    VectorCopy(dir, laser->movedir);
+    laser->s.origin = G_SnapVector(start);
     trap_LinkEntity(laser);
     dabeam_update(laser, false);
 }
@@ -663,8 +658,7 @@ void MONSTERINFO_SETSKIN(brain_setskin)(edict_t *self)
 
 void brain_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
@@ -680,7 +674,7 @@ static const gib_def_t brain_gibs[] = {
     { 0 }
 };
 
-void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->s.effects = EF_NONE;
     self->monsterinfo.power_armor_type = IT_NULL;
@@ -759,8 +753,7 @@ void SP_monster_brain(edict_t *self)
 
     G_PrecacheGibs(brain_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
 
     self->health = 300 * st.health_multiplier;
     self->gib_health = -150;

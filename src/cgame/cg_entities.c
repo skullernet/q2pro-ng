@@ -40,15 +40,15 @@ static void CG_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
 {
     vec_t pitch;
 
-    VectorCopy(ps->origin, es->origin);
+    es->origin = ps->origin;
 
-    pitch = ps->viewangles[PITCH];
+    pitch = ps->viewangles.pitch;
     if (pitch > 180) {
         pitch -= 360;
     }
-    es->angles[PITCH] = pitch / 3;
-    es->angles[YAW] = ps->viewangles[YAW];
-    es->angles[ROLL] = 0;
+    es->angles.pitch = pitch / 3;
+    es->angles.yaw = ps->viewangles.yaw;
+    es->angles.roll = 0;
 }
 
 static bool CG_EntityWasTeleported(const entity_state_t *state)
@@ -76,14 +76,14 @@ static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
 
     if (CG_EntityWasTeleported(state) || (state->renderfx & RF_BEAM) || state->number == cg.frame->ps.clientnum) {
         // no lerping if teleported, or no valid old_origin
-        VectorCopy(state->origin, ent->lerp_origin);
+        ent->lerp_origin = state->origin;
         return;
     }
 
     // old_origin is valid for new entities, use it as starting point for
     // interpolating between
-    VectorCopy(state->old_origin, ent->prev.origin);
-    VectorCopy(state->old_origin, ent->lerp_origin);
+    ent->prev.origin = state->old_origin;
+    ent->lerp_origin = state->old_origin;
 }
 
 static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
@@ -97,7 +97,7 @@ static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
         CG_InitEntity(ent, state);
 
         // no lerping if teleported or morphed
-        VectorCopy(state->origin, ent->lerp_origin);
+        ent->lerp_origin = state->origin;
         return;
     }
 
@@ -132,15 +132,16 @@ static void CG_DeltaEntity(entity_state_t *state)
         cg.solid_entities[cg.num_solid_entities++] = ent;
 
     if (state->solid == PACKED_BSP) {
-        trap_GetBrushModelBounds(state->modelindex, ent->mins, ent->maxs);
+        ent->box = trap_GetBrushModelBounds(state->modelindex);
         ent->radius = 0;
     } else if (state->solid) {
         // encoded bbox
-        MSG_UnpackSolid(state->solid, ent->mins, ent->maxs);
-        ent->radius = Distance(ent->maxs, ent->mins) * 0.5f;
+        ent->box = MSG_UnpackSolid(state->solid);
+        if (state->scale)
+            ent->box = Box3_Scale(ent->box, state->scale);
+        ent->radius = Box3_Radius(ent->box);
     } else {
-        VectorClear(ent->mins);
-        VectorClear(ent->maxs);
+        ent->box = box3_origin;
         ent->radius = 0;
     }
 
@@ -180,7 +181,7 @@ static void CG_DeltaPlayerstate(void)
             cg.hit_marker_count = ps->stats[STAT_HITS] - ops->stats[STAT_HITS];
             cg.hit_marker_time = cgs.realtime;
             if (cg_hit_markers.integer > 1)
-                trap_S_StartSound(NULL, ps->clientnum, CHAN_HIT, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
+                trap_S_StartSound(ps->clientnum, CHAN_HIT, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
         }
     }
 
@@ -189,7 +190,7 @@ static void CG_DeltaPlayerstate(void)
     if (weapon > 0 && weapon <= cgs.wheel.num_weapons && weapon == ops->stats[STAT_ACTIVE_WEAPON]) {
         int warn = cgs.wheel.weapons[weapon - 1].quantity_warn;
         if (ps->stats[STAT_AMMO] <= warn && ops->stats[STAT_AMMO] > warn)
-            trap_S_StartSound(NULL, ps->clientnum, CHAN_AUTO, cgs.sounds.lowammo, 1, ATTN_NONE, 0);
+            trap_S_StartSound(ps->clientnum, CHAN_AUTO, cgs.sounds.lowammo, 1, ATTN_NONE, 0);
     }
 
     // no lerping if teleport bit was flipped
@@ -201,14 +202,9 @@ static void CG_DeltaPlayerstate(void)
         int dir_b = (ps->stats[STAT_DAMAGE] >> 8) & 255;
 
         if (dir_b) {
-            vec3_t dir;
-            ByteToDir(dir_b, dir);
-
-            float side = DotProduct(dir, cg.v_forward);
-            cg.v_dmg_pitch = -kick * side;
-
-            side = DotProduct(dir, cg.v_right);
-            cg.v_dmg_roll = kick * side;
+            vec3_t dir = ByteToDir(dir_b);
+            cg.v_dmg_pitch = -kick * Vec3_Dot(dir, cg.v_forward);
+            cg.v_dmg_roll  =  kick * Vec3_Dot(dir, cg.v_right);
         } else {
             // make non-directional damage always centered
             cg.v_dmg_pitch = -kick;
@@ -265,7 +261,7 @@ void CG_DeltaFrame(void)
     if (cgs.demoplayback) {
         // this delta has nothing to do with local viewangles,
         // clear it to avoid interfering with demo freelook hack
-        VectorClear(cg.frame->ps.delta_angles);
+        cg.frame->ps.delta_angles = vec3_origin;
     }
 
     CG_DeltaPlayerstate();
@@ -297,26 +293,22 @@ float CG_LerpEntityAlpha(const centity_t *ent)
 
 static float CG_HandMultiplier(void)
 {
-    float hand_multiplier;
-
     if (cg_gun.integer == 3)
-        hand_multiplier = -1;
-    else if (cg_gun.integer == 2)
-        hand_multiplier = 1;
-    else if (info_hand.integer == 2)
-        hand_multiplier = 0;
-    else if (info_hand.integer == 1)
-        hand_multiplier = -1;
-    else
-        hand_multiplier = 1;
+        return -1;
+    if (cg_gun.integer == 2)
+        return 1;
+    if (info_hand.integer == 2)
+        return 0;
+    if (info_hand.integer == 1)
+        return -1;
 
-    return hand_multiplier;
+    return 1;
 }
 
-static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *cent)
+static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
 {
     int         i, steps;
-    vec3_t      dist, org, offset = { 0 };
+    vec3_t      dist, org, offset = vec3_origin;
     float       x, y, z, d;
     entity_t    ent;
     vec3_t      angles;
@@ -333,11 +325,11 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
 
     if (entnum < cgs.maxclients) {
         if (model == cgs.models.heatbeam)
-            VectorSet(offset, 2, 7, -3);
+            offset = Vec3(2, 7, -3);
         else if (model == cgs.models.grapple_cable)
-            VectorSet(offset, 9, 12, -3);
+            offset = Vec3(9, 12, -3);
         else if (model == cgs.models.lightning)
-            VectorSet(offset, 0, 12, -12);
+            offset = Vec3(0, 12, -12);
     }
 
     // if coming from the player, update the start position
@@ -345,15 +337,15 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
         hand_multiplier = CG_HandMultiplier();
 
         // set up gun position
-        VectorCopy(cg.refdef.vieworg, org);
+        org = cg.refdef.vieworg;
 
-        VectorMA(org, cg_gun_y.value, cg.v_forward, org);
-        VectorMA(org, cg_gun_x.value, cg.v_right, org);
-        VectorMA(org, cg_gun_z.value, cg.v_up, org);
+        org = Vec3_MA(org, cg_gun_y.value, cg.v_forward);
+        org = Vec3_MA(org, cg_gun_x.value, cg.v_right);
+        org = Vec3_MA(org, cg_gun_z.value, cg.v_up);
 
-        x = offset[0];
-        y = offset[1];
-        z = offset[2];
+        x = offset.x;
+        y = offset.y;
+        z = offset.z;
 
         // adjust offset for gun fov
         if (cg_gunfov.value > 0) {
@@ -364,22 +356,22 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
             z *= tanf(cg.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
         }
 
-        VectorMA(org, hand_multiplier * x, cg.v_right, org);
-        VectorMA(org, y, cg.v_forward, org);
-        VectorMA(org, z, cg.v_up, org);
+        org = Vec3_MA(org, hand_multiplier * x, cg.v_right);
+        org = Vec3_MA(org, y, cg.v_forward);
+        org = Vec3_MA(org, z, cg.v_up);
         if (hand_multiplier == 0)
-            VectorMA(org, -1, cg.v_up, org);
+            org = Vec3_MA(org, -1, cg.v_up);
 
         // calculate pitch and yaw
-        VectorSubtract(end, org, dist);
+        dist = Vec3_Sub(end, org);
 
         if (model != cgs.models.grapple_cable) {
-            d = VectorLength(dist);
-            VectorScale(cg.v_forward, d, dist);
+            d = Vec3_Length(dist);
+            dist = Vec3_Scale(cg.v_forward, d);
         }
 
         // FIXME: use cg.refdef.viewangles?
-        vectoangles(dist, angles);
+        angles = vectoangles(dist);
 
         // if it's the heatbeam, draw the particle effect
         if (model == cgs.models.heatbeam && !sv_paused.integer)
@@ -387,38 +379,38 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
 
         framenum = 1;
     } else {
-        VectorCopy(start, org);
+        org = start;
 
         // if it's a player, use the hardcoded player offset
         if (entnum < cgs.maxclients) {
             vec3_t  tmp, f, r, u;
 
             // calculate pitch and yaw
-            VectorSubtract(end, org, dist);
-            vectoangles(dist, angles);
+            dist = Vec3_Sub(end, org);
+            angles = vectoangles(dist);
 
-            tmp[0] = -angles[0];
-            tmp[1] = angles[1] + 180.0f;
-            tmp[2] = 0;
-            AngleVectors(tmp, f, r, u);
+            tmp.pitch = -angles.pitch;
+            tmp.yaw = angles.yaw + 180.0f;
+            tmp.roll = 0;
+            AngleVectors(tmp, &f, &r, &u);
 
-            VectorMA(org, -offset[0] + 1, r, org);
-            VectorMA(org, -offset[1], f, org);
-            VectorMA(org, -offset[2] - 10, u, org);
+            org = Vec3_MA(org, -offset.x + 1, r);
+            org = Vec3_MA(org, -offset.y, f);
+            org = Vec3_MA(org, -offset.z - 10, u);
         } else if (model == cgs.models.heatbeam) {
             // if it's a monster, do the particle effect
             CG_MonsterPlasma_Shell(start);
         }
 
         // calculate pitch and yaw
-        VectorSubtract(end, org, dist);
-        vectoangles(dist, angles);
+        dist = Vec3_Sub(end, org);
+        angles = vectoangles(dist);
 
         framenum = 2;
     }
 
     // add new entities for the beams
-    d = VectorNormalize(dist);
+    d = Vec3_Normalize(&dist);
     if (model == cgs.models.heatbeam) {
         model_length = 32.0f * scale;
     } else if (model == cgs.models.lightning) {
@@ -430,7 +422,7 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
 
     // correction for grapple cable model, which has origin in the middle
     if (entnum == cg.frame->ps.clientnum && model == cgs.models.grapple_cable && hand_multiplier) {
-        VectorMA(org, model_length * 0.5f, dist, org);
+        org = Vec3_MA(org, model_length * 0.5f, dist);
         d -= model_length * 0.5f;
     }
 
@@ -447,42 +439,42 @@ static void CG_DrawBeam(const vec3_t start, const vec3_t end, const centity_t *c
     // flip it around & draw it from the end to the start.  This prevents the model from going
     // through the tesla mine (instead it goes through the target)
     if ((model == cgs.models.lightning) && (steps <= 1)) {
-        VectorCopy(end, ent.origin);
+        ent.origin = end;
         ent.flags |= RF_FULLBRIGHT;
-        ent.angles[0] = angles[0];
-        ent.angles[1] = angles[1];
-        ent.angles[2] = Com_SlowRand() % 360;
+        ent.angles.pitch = angles.pitch;
+        ent.angles.yaw = angles.yaw;
+        ent.angles.roll = Com_SlowRand() % 360;
         trap_R_AddEntity(&ent);
         return;
     }
 
     if (steps > 1) {
         len = (d - model_length) / (steps - 1);
-        VectorScale(dist, len, dist);
+        dist = Vec3_Scale(dist, len);
     }
 
     if (model == cgs.models.heatbeam) {
         ent.frame = framenum;
         ent.flags |= RF_FULLBRIGHT;
-        ent.angles[0] = -angles[0];
-        ent.angles[1] = angles[1] + 180.0f;
-        ent.angles[2] = cg.time % 360;
+        ent.angles.pitch = -angles.pitch;
+        ent.angles.yaw = angles.yaw + 180.0f;
+        ent.angles.roll = cg.time % 360;
     } else if (model == cgs.models.lightning) {
         ent.flags |= RF_FULLBRIGHT;
-        ent.angles[0] = -angles[0];
-        ent.angles[1] = angles[1] + 180.0f;
+        ent.angles.pitch = -angles.pitch;
+        ent.angles.yaw = angles.yaw + 180.0f;
     } else {
         ent.flags |= RF_NOSHADOW;
-        ent.angles[0] = angles[0];
-        ent.angles[1] = angles[1];
+        ent.angles.pitch = angles.pitch;
+        ent.angles.yaw = angles.yaw;
     }
 
-    VectorCopy(org, ent.origin);
+    ent.origin = org;
     for (i = 0; i < steps; i++) {
         if (model != cgs.models.heatbeam)
-            ent.angles[2] = Com_SlowRand() % 360;
+            ent.angles.roll = Com_SlowRand() % 360;
         trap_R_AddEntity(&ent);
-        VectorAdd(ent.origin, dist, ent.origin);
+        ent.origin = Vec3_Add(ent.origin, dist);
     }
 }
 
@@ -491,22 +483,19 @@ static void CG_SetEntitySoundOrigin(const centity_t *ent)
     vec3_t org, vel;
 
     // interpolate origin
-    LerpVector(ent->prev.origin, ent->current.origin, cg.lerpfrac, org);
+    org = Vec3_Lerp(ent->prev.origin, ent->current.origin, cg.lerpfrac);
 
     // offset the origin for BSP models
-    if (ent->current.solid == PACKED_BSP) {
-        vec3_t mid;
-        VectorAvg(ent->mins, ent->maxs, mid);
-        VectorAdd(org, mid, org);
-    }
+    if (ent->current.solid == PACKED_BSP)
+        org = Vec3_Add(org, Box3_Center(ent->box));
 
     // set velocity for doppler effect
     if (cg.frame->servertime > cg.oldframe->servertime) {
         float time = 1000.0f / (cg.frame->servertime - cg.oldframe->servertime);
-        VectorSubtract(ent->current.origin, ent->prev.origin, vel);
-        VectorScale(vel, time, vel);
+        vel = Vec3_Sub(ent->current.origin, ent->prev.origin);
+        vel = Vec3_Scale(vel, time);
     } else {
-        VectorClear(vel);
+        vel = vec3_origin;
     }
 
     trap_S_UpdateEntity(ent->current.number, org, vel);
@@ -679,24 +668,21 @@ static void CG_AddPacketEntities(void)
 
         if (renderfx & RF_BEAM) {
             // interpolate start and end points for beams
-            LerpVector(cent->prev.origin, cent->current.origin,
-                       cg.lerpfrac, ent.origin);
-            LerpVector(cent->prev.old_origin, cent->current.old_origin,
-                       cg.lerpfrac, ent.oldorigin);
+            ent.origin = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
+            ent.oldorigin = Vec3_Lerp(cent->prev.old_origin, cent->current.old_origin, cg.lerpfrac);
         } else {
             if (s1->number == cg.frame->ps.clientnum) {
                 // use predicted origin
-                VectorCopy(cg.player_entity_origin, ent.origin);
-                VectorCopy(cg.player_entity_origin, ent.oldorigin);
+                ent.origin = cg.player_entity_origin;
+                ent.oldorigin = cg.player_entity_origin;
             } else {
                 // interpolate origin
-                LerpVector(cent->prev.origin, cent->current.origin,
-                           cg.lerpfrac, ent.origin);
+                ent.origin = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
                 // smooth out stair climbing
                 int delta = cg.time - cent->step_time;
                 if (delta < STEP_TIME)
-                    ent.origin[2] = cent->current.origin[2] - cent->step_factor * (STEP_TIME - delta);
-                VectorCopy(ent.origin, ent.oldorigin);
+                    ent.origin.z = cent->current.origin.z - cent->step_factor * (STEP_TIME - delta);
+                ent.oldorigin = ent.origin;
             }
 
             // optionally remove the glowing effect
@@ -705,8 +691,8 @@ static void CG_AddPacketEntities(void)
         }
 
         if (effects & EF_BOB && !cg_nobob.integer) {
-            ent.origin[2] += autobob;
-            ent.oldorigin[2] += autobob;
+            ent.origin.z += autobob;
+            ent.oldorigin.z += autobob;
         }
 
         if (!cg_gibs.integer) {
@@ -722,7 +708,7 @@ static void CG_AddPacketEntities(void)
                 goto skip;
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
-            float d = Distance(cg.refdef.vieworg, ent.origin);
+            float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
             if (d < fade_start)
                 goto skip;
             if (d > fade_end)
@@ -752,10 +738,10 @@ static void CG_AddPacketEntities(void)
             else
                 color.u32 = BigLong(s1->skinnum);
             dlight_t light = {
-                .origin = VectorInit(ent.origin),
+                .origin = ent.origin,
                 .radius = s1->frame,
+                .color = Vec3_Scale(Vec3_Load(color.u8), 1.0f / 255.0f)
             };
-            VectorScale(color.u8, 1.0f / 255.0f, light.color);
             trap_R_AddLight(&light);
             goto skip;
         }
@@ -768,7 +754,7 @@ static void CG_AddPacketEntities(void)
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
             if (fade_end > fade_start) {
-                float d = Distance(cg.refdef.vieworg, ent.origin);
+                float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
                 if (d > fade_end)
                     goto skip;
                 if (d > fade_start)
@@ -786,15 +772,15 @@ static void CG_AddPacketEntities(void)
                 color.u32 = BigLong(s1->skinnum);
 
             dlight_t light = {
-                .origin = VectorInit(ent.origin),
+                .origin = ent.origin,
                 .radius = s1->modelindex,
-                .cone_angle = s1->angles[ROLL],
+                .color = Vec3_Scale(Vec3_Load(color.u8), scale / 255.0f),
+                .cone_angle = s1->angles.roll,
                 .resolution = s1->modelindex4,
                 .key = s1->number,
             };
 
-            VectorScale(color.u8, scale / 255.0f, light.color);
-            AngleVectors(s1->angles, light.dir, NULL, NULL);
+            AngleVectors(s1->angles, &light.dir, NULL, NULL);
 
             trap_R_AddLight(&light);
             goto skip;
@@ -849,28 +835,27 @@ static void CG_AddPacketEntities(void)
 
         // calculate angles
         if (effects & EF_ROTATE) {  // some bonus items auto-rotate
-            ent.angles[0] = 0;
-            ent.angles[1] = autorotate;
-            ent.angles[2] = 0;
+            ent.angles.pitch = 0;
+            ent.angles.yaw = autorotate;
+            ent.angles.roll = 0;
         } else if (effects & EF_SPINNINGLIGHTS) {
             vec3_t forward;
             vec3_t start;
 
-            ent.angles[0] = 0;
-            ent.angles[1] = cg.time / 2 + s1->angles[1];
-            ent.angles[2] = 180;
+            ent.angles.pitch = 0;
+            ent.angles.yaw = cg.time / 2 + s1->angles.yaw;
+            ent.angles.roll = 180;
 
-            AngleVectors(ent.angles, forward, NULL, NULL);
-            VectorMA(ent.origin, 64, forward, start);
+            AngleVectors(ent.angles, &forward, NULL, NULL);
+            start = Vec3_MA(ent.origin, 64, forward);
             CG_AddSphereLight(start, 100, 1, 0, 0);
         } else if (s1->number == cg.frame->ps.clientnum) {
-            VectorCopy(cg.player_entity_angles, ent.angles);    // use predicted angles
+            ent.angles = cg.player_entity_angles;    // use predicted angles
         } else { // interpolate angles
-            LerpAngles(cent->prev.angles, cent->current.angles,
-                       cg.lerpfrac, ent.angles);
+            ent.angles = Vec3_LerpAngles(cent->prev.angles, cent->current.angles, cg.lerpfrac);
             // mimic original ref_gl "leaning" bug (uuugly!)
             if (s1->solid != PACKED_BSP && s1->modelindex == MODELINDEX_PLAYER && cg_rollhack.integer)
-                ent.angles[ROLL] = -ent.angles[ROLL];
+                ent.angles.roll = -ent.angles.roll;
         }
 
         if (s1->morefx & EFX_FLASHLIGHT) {
@@ -882,12 +867,12 @@ static void CG_AddPacketEntities(void)
 
             if (s1->number == cg.frame->ps.clientnum) {
                 float hand = CG_HandMultiplier();
-                VectorMA(cg.refdef.vieworg, 7.0f * hand, cg.v_right, light.origin);
-                VectorCopy(cg.v_forward, light.dir);
+                light.origin = Vec3_MA(cg.refdef.vieworg, 7.0f * hand, cg.v_right);
+                light.dir = cg.v_forward;
                 light.flags = RF_VIEWERMODEL;   // skip player model shadow
             } else {
-                VectorCopy(ent.origin, light.origin);
-                AngleVectors(ent.angles, light.dir, NULL, NULL);
+                light.origin = ent.origin;
+                AngleVectors(ent.angles, &light.dir, NULL, NULL);
             }
 
             trap_R_AddLight(&light);
@@ -1023,16 +1008,14 @@ static void CG_AddPacketEntities(void)
 
             // remaster powerscreen is tiny and needs scaling
             if (cgs.need_powerscreen_scale) {
-                vec3_t forward, mid, tmp;
-                VectorCopy(ent.origin, tmp);
-                VectorAvg(cent->mins, cent->maxs, mid);
-                VectorAdd(ent.origin, mid, ent.origin);
-                AngleVectors(ent.angles, forward, NULL, NULL);
-                VectorMA(ent.origin, cent->maxs[0], forward, ent.origin);
+                vec3_t forward, tmp = ent.origin;
+                ent.origin = Vec3_Add(ent.origin, Box3_Center(cent->box));
+                AngleVectors(ent.angles, &forward, NULL, NULL);
+                ent.origin = Vec3_MA(ent.origin, cent->box.maxs.x, forward);
                 ent.scale = cent->radius * 0.8f;
                 ent.flags |= RF_FULLBRIGHT;
                 trap_R_AddEntity(&ent);
-                VectorCopy(tmp, ent.origin);
+                ent.origin = tmp;
             } else {
                 ent.flags |= RF_SHELL_GREEN;
                 trap_R_AddEntity(&ent);
@@ -1096,7 +1079,7 @@ static void CG_AddPacketEntities(void)
             }
             CG_AddSphereLight(ent.origin, i, 0, 1, 0);
         } else if (effects & EF_TRAP) {
-            ent.origin[2] += 32;
+            ent.origin.z += 32;
             CG_TrapParticles(cent, ent.origin);
             i = (Com_SlowRand() % 100) + 100;
             CG_AddSphereLight(ent.origin, i, 1, 0.8f, 0.1f);
@@ -1143,7 +1126,7 @@ static void CG_AddPacketEntities(void)
 
 skip:
         if (!has_trail)
-            VectorCopy(ent.origin, cent->lerp_origin);
+            cent->lerp_origin = ent.origin;
 
         CG_SetEntitySoundOrigin(cent);
 

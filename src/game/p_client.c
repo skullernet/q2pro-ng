@@ -3,8 +3,10 @@
 #include "g_local.h"
 #include "m_player.h"
 
-const vec3_t player_mins = { -16, -16, -24 };
-const vec3_t player_maxs = { 16, 16, 32 };
+const box3_t player_box = {
+    .mins = { -16, -16, -24 },
+    .maxs = {  16,  16,  32 }
+};
 
 void SP_misc_teleporter_dest(edict_t *ent);
 
@@ -13,8 +15,7 @@ void THINK(info_player_start_drop)(edict_t *self)
     // allow them to drop
     self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_TOSS;
-    VectorCopy(player_mins, self->r.mins);
-    VectorCopy(player_maxs, self->r.maxs);
+    self->r.box = player_box;
     trap_LinkEntity(self);
 }
 
@@ -26,8 +27,7 @@ The normal starting point for a level.
 void SP_info_player_start(edict_t *self)
 {
     // fix stuck spawn points
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
+    trace_t tr = G_Trace(self->s.origin, self->s.origin, player_box, self->s.number, MASK_SOLID);
     if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 
@@ -39,7 +39,7 @@ void SP_info_player_start(edict_t *self)
     }
 
     if (level.is_psx)
-        self->s.origin[2] -= player_mins[2] * (1 - PSX_PHYSICS_SCALAR);
+        self->s.origin.z -= player_box.mins.z * (1 - PSX_PHYSICS_SCALAR);
 }
 
 /*QUAKED info_player_deathmatch (1 0 1) (-16 -16 -24) (16 16 32)
@@ -80,8 +80,7 @@ void SP_info_player_coop_lava(edict_t *self)
     }
 
     // fix stuck spawn points
-    trace_t tr;
-    trap_Trace(&tr, self->s.origin, player_mins, player_maxs, self->s.origin, self->s.number, MASK_SOLID);
+    trace_t tr = G_Trace(self->s.origin, self->s.origin, player_box, self->s.number, MASK_SOLID);
     if (tr.startsolid)
         G_FixStuckObject(self, self->s.origin);
 }
@@ -107,12 +106,15 @@ bool P_UseCoopInstancedItems(void)
 static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker, mod_t mod)
 {
     const char *base = NULL;
+    bool friendly_fire = OnSameTeam(self, attacker);
+    bool no_point_loss = mod == MOD_SUICIDE_NP;
 
     if (coop.integer && attacker->client)
-        mod.friendly_fire = true;
+        friendly_fire = true;
 
-    switch (mod.id) {
+    switch (mod) {
     case MOD_SUICIDE:
+    case MOD_SUICIDE_NP:
         base = "%s suicides.\n";
         break;
     case MOD_FALLING:
@@ -160,7 +162,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
     }
 
     if (attacker == self) {
-        switch (mod.id) {
+        switch (mod) {
         case MOD_HELD_GRENADE:
             base = "%s tried to put the pin back in.\n";
             break;
@@ -193,7 +195,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
     // send generic/self
     if (base) {
         G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname);
-        if (deathmatch.integer && !mod.no_point_loss) {
+        if (deathmatch.integer && !no_point_loss) {
             self->client->resp.score--;
 
             if (teamplay.integer)
@@ -206,7 +208,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
     // has a killer
     self->enemy = attacker;
     if (attacker && attacker->client) {
-        switch (mod.id) {
+        switch (mod) {
         case MOD_BLASTER:
             base = "%s was blasted by %s.\n";
             break;
@@ -335,7 +337,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
             // ZOID
             //  if at start and same team, clear.
             // [Paril-KEX] moved here so it's not an outlier in player_die.
-            if (mod.id == MOD_TELEFRAG_SPAWN &&
+            if (mod == MOD_TELEFRAG_SPAWN &&
                 self->client->resp.ctf_state < 2 &&
                 self->client->resp.ctf_team == attacker->client->resp.ctf_team) {
                 self->client->resp.ctf_state = 0;
@@ -346,8 +348,8 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         // ROGUE
         if (gamerules.integer) {
             if (DMGame.Score) {
-                if (mod.friendly_fire) {
-                    if (!mod.no_point_loss)
+                if (friendly_fire) {
+                    if (!no_point_loss)
                         DMGame.Score(attacker, self, -1, mod);
                 } else
                     DMGame.Score(attacker, self, 1, mod);
@@ -357,8 +359,8 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         // ROGUE
 
         if (deathmatch.integer) {
-            if (mod.friendly_fire) {
-                if (!mod.no_point_loss) {
+            if (friendly_fire) {
+                if (!no_point_loss) {
                     attacker->client->resp.score--;
 
                     if (teamplay.integer)
@@ -378,7 +380,7 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
 
     G_ClientPrintf(NULL, PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
     // ROGUE
-    if (deathmatch.integer && !mod.no_point_loss) {
+    if (deathmatch.integer && !no_point_loss) {
         if (gamerules.integer) {
             if (DMGame.Score) {
                 DMGame.Score(self, self, -1, mod);
@@ -437,18 +439,18 @@ static void TossClientWeapon(edict_t *self)
         spread = 0.0f;
 
     if (item) {
-        self->client->v_angle[YAW] -= spread;
+        self->client->v_angle.yaw -= spread;
         drop = Drop_Item(self, item);
-        self->client->v_angle[YAW] += spread;
+        self->client->v_angle.yaw += spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
         drop->r.svflags &= ~SVF_INSTANCED;
     }
 
     if (quad) {
-        self->client->v_angle[YAW] += spread;
+        self->client->v_angle.yaw += spread;
         drop = Drop_Item(self, GetItemByIndex(IT_ITEM_QUAD));
-        self->client->v_angle[YAW] -= spread;
+        self->client->v_angle.yaw -= spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
         drop->r.svflags &= ~SVF_INSTANCED;
@@ -460,9 +462,9 @@ static void TossClientWeapon(edict_t *self)
 
     // RAFAEL
     if (quadfire) {
-        self->client->v_angle[YAW] += spread;
+        self->client->v_angle.yaw += spread;
         drop = Drop_Item(self, GetItemByIndex(IT_ITEM_QUADFIRE));
-        self->client->v_angle[YAW] -= spread;
+        self->client->v_angle.yaw -= spread;
         drop->spawnflags |= SPAWNFLAG_ITEM_DROPPED_PLAYER;
         drop->spawnflags &= ~SPAWNFLAG_ITEM_DROPPED;
         drop->r.svflags &= ~SVF_INSTANCED;
@@ -484,20 +486,20 @@ void LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
     vec3_t dir;
 
     if (attacker && attacker != world && attacker != self) {
-        VectorSubtract(attacker->s.origin, self->s.origin, dir);
+        dir = Vec3_Sub(attacker->s.origin, self->s.origin);
     } else if (inflictor && inflictor != world && inflictor != self) {
-        VectorSubtract(inflictor->s.origin, self->s.origin, dir);
+        dir = Vec3_Sub(inflictor->s.origin, self->s.origin);
     } else {
-        self->client->killer_yaw = self->s.angles[YAW];
+        self->client->killer_yaw = self->s.angles.yaw;
         return;
     }
 
     // PMM - fixed to correct for pitch of 0
-    if (dir[0])
-        self->client->killer_yaw = RAD2DEG(atan2f(dir[1], dir[0]));
-    else if (dir[1] > 0)
+    if (dir.x)
+        self->client->killer_yaw = RAD2DEG(atan2f(dir.y, dir.x));
+    else if (dir.y > 0)
         self->client->killer_yaw = 90;
-    else if (dir[1] < 0)
+    else if (dir.y < 0)
         self->client->killer_yaw = 270;
     else
         self->client->killer_yaw = 0;
@@ -508,11 +510,11 @@ void LookAtKiller(edict_t *self, edict_t *inflictor, edict_t *attacker)
 player_die
 ==================
 */
-void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     PlayerTrail_Destroy(self);
 
-    VectorClear(self->avelocity);
+    self->avelocity = vec3_origin;
 
     self->takedamage = true;
     self->movetype = MOVETYPE_TOSS;
@@ -522,13 +524,13 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     self->s.modelindex3 = 0; // remove linked ctf flag
     // ZOID
 
-    self->s.angles[0] = 0;
-    self->s.angles[2] = 0;
+    self->s.angles.pitch = 0;
+    self->s.angles.roll = 0;
 
     self->s.sound = 0;
     self->client->weapon_sound = 0;
 
-    self->r.maxs[2] = -8;
+    self->r.box.maxs.z = -8;
 
     //  self->solid = SOLID_NOT;
     self->r.svflags |= SVF_DEADMONSTER;
@@ -599,7 +601,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     }
 
     // if we've been killed by the tracker, GIB!
-    if (mod.id == MOD_TRACKER) {
+    if (mod == MOD_TRACKER) {
         self->health = -100;
         damage = 400;
     }
@@ -609,7 +611,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         RemoveAttackingPainDaemons(self);
 
     // if we got obliterated by the nuke, don't gib
-    if ((self->health < -80) && (mod.id == MOD_NUKE))
+    if ((self->health < -80) && (mod == MOD_NUKE))
         self->flags |= FL_NOGIB;
 
     // ROGUE
@@ -1030,7 +1032,7 @@ float PlayersRangeFromSpot(edict_t *spot)
         if (player->health <= 0)
             continue;
 
-        playerdistance = Distance(spot->s.origin, player->s.origin);
+        playerdistance = Vec3_Distance(spot->s.origin, player->s.origin);
 
         if (playerdistance < bestplayerdistance)
             bestplayerdistance = playerdistance;
@@ -1041,14 +1043,9 @@ float PlayersRangeFromSpot(edict_t *spot)
 
 bool SpawnPointClear(edict_t *spot)
 {
-    vec3_t p;
-    trace_t tr;
-
-    VectorCopy(spot->s.origin, p);
-    p[2] += 9;
-
-    trap_Trace(&tr, p, player_mins, player_maxs, p, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER);
-    return !tr.startsolid;
+    vec3_t p = spot->s.origin;
+    p.z += 9;
+    return !G_Trace(p, p, player_box, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER).startsolid;
 }
 
 typedef struct {
@@ -1060,9 +1057,9 @@ static int add_spawn_points(spawn_point_t *spawn_points, int nb_spots, const cha
 {
     edict_t *spot = NULL;
     while (nb_spots < MAX_EDICTS_OLD && (spot = G_Find(spot, FOFS(classname), classname))) {
-        spawn_point_t *p = &spawn_points[nb_spots++];
-        p->spot = spot;
-        p->dist = PlayersRangeFromSpot(spot);
+        spawn_points[nb_spots].spot = spot;
+        spawn_points[nb_spots].dist = PlayersRangeFromSpot(spot);
+        nb_spots++;
     }
     return nb_spots;
 }
@@ -1123,18 +1120,18 @@ edict_t *SelectDeathmatchSpawnPoint(bool farthest, bool force_spawn, bool fallba
     // order by distances ascending (top of list has closest players to point)
     qsort(spawn_points, nb_spots, sizeof(spawn_points[0]), spawnpointcmp);
 
-    // farthest spawn is simple
     if (!farthest) {
         // for random, select a random point other than the two
         // that are closest to the player if possible.
-        // shuffle the non-distance-related spawn points
+        // shuffle the non-distance-related spawn points.
+        // if none clear, we have to pick one of the other two.
         for (int i = nb_spots - 3; i > 0; i--) {
             int j = irandom1(i + 1);
             SWAP(spawn_point_t, spawn_points[i + 2], spawn_points[j + 2]);
         }
-        // if none clear, we have to pick one of the other two
     }
 
+    // farthest spawn is simple
     // run down the list and pick the first one that we can use
     for (int i = nb_spots - 1; i >= 0; i--) {
         if (SpawnPointClear(spawn_points[i].spot))
@@ -1175,11 +1172,11 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
         if (!lava)
             break;
 
-        VectorAvg(lava->r.absmin, lava->r.absmax, center);
+        center = Box3_Center(lava->r.absbox);
 
         if ((lava->spawnflags & SPAWNFLAG_WATER_SMART) && (trap_PointContents(center) & MASK_WATER)) {
-            if (lava->r.absmax[2] > lavatop) {
-                lavatop = lava->r.absmax[2];
+            if (lava->r.absbox.maxs.z > lavatop) {
+                lavatop = lava->r.absbox.maxs.z;
                 highestlava = lava;
             }
         }
@@ -1190,7 +1187,7 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
         return NULL;
 
     // find the top of the lava and include a small margin of error (plus bbox size)
-    lavatop = highestlava->r.absmax[2] + 64;
+    lavatop = highestlava->r.absbox.maxs.z + 64;
 
     // find all the lava spawn points and store them in spawnPoints[]
     spot = NULL;
@@ -1207,16 +1204,16 @@ static edict_t *SelectLavaCoopSpawnPoint(edict_t *ent)
     lowest = 999999;
     pointWithLeastLava = NULL;
     for (index = 0; index < numPoints; index++) {
-        if (spawnPoints[index]->s.origin[2] < lavatop)
+        if (spawnPoints[index]->s.origin.z < lavatop)
             continue;
 
         if (PlayersRangeFromSpot(spawnPoints[index]) <= 32)
             continue;
 
-        if (spawnPoints[index]->s.origin[2] < lowest) {
+        if (spawnPoints[index]->s.origin.z < lowest) {
             // save the last point
             pointWithLeastLava = spawnPoints[index];
-            lowest = spawnPoints[index]->s.origin[2];
+            lowest = spawnPoints[index]->s.origin.z;
         }
     }
 
@@ -1263,24 +1260,23 @@ static edict_t *G_UnsafeSpawnPosition(vec3_t spot, bool check_players)
     if (!check_players)
         mask &= ~CONTENTS_PLAYER;
 
-    trace_t tr;
-    trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+    trace_t tr = G_Trace(spot, spot, player_box, ENTITYNUM_NONE, mask);
     edict_t *hit = &g_edicts[tr.entnum];
 
     // sometimes the spot is too close to the ground, give it a bit of slack
     if (tr.startsolid && !hit->client) {
-        spot[2] += 1;
-        trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+        spot.z += 1;
+        tr = G_Trace(spot, spot, player_box, ENTITYNUM_NONE, mask);
         hit = &g_edicts[tr.entnum];
     }
 
     // no idea why this happens in some maps..
     if (tr.startsolid && !hit->client) {
         // try a nudge
-        if (G_FixStuckObject_Generic(spot, player_mins, player_maxs, ENTITYNUM_NONE, mask, trap_Trace) == NO_GOOD_POSITION)
+        if (PM_FixStuckObject_Generic(&spot, player_box, ENTITYNUM_NONE, mask, trap_Trace) == NO_GOOD_POSITION)
             return hit; // what do we do here...?
 
-        trap_Trace(&tr, spot, player_mins, player_maxs, spot, ENTITYNUM_NONE, mask);
+        tr = G_Trace(spot, spot, player_box, ENTITYNUM_NONE, mask);
         hit = &g_edicts[tr.entnum];
 
         if (tr.startsolid && !hit->client)
@@ -1392,7 +1388,7 @@ static edict_t *SelectCoopSpawnPoint(edict_t *ent, bool force_spawn, bool check_
     return NULL;
 }
 
-static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
+static bool TryLandmarkSpawn(edict_t *ent, vec3_t *origin, vec3_t *angles)
 {
     // if transitioning from another level with a landmark seamless transition
     // just set the location here
@@ -1403,30 +1399,28 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t origin, vec3_t angles)
     if (!landmark)
         return false;
 
-    vec3_t point;
-    VectorCopy(ent->client->landmark_rel_pos, point);
+    vec3_t point = ent->client->landmark_rel_pos;
 
     // rotate our relative landmark into worlds frame of reference
     vec3_t axis[3];
     AnglesToAxis(landmark->s.angles, axis);
     TransposeAxis(axis);
-    RotatePoint(point, axis);
-
-    VectorAdd(point, landmark->s.origin, point);
+    point = Vec3_Rotate(point, axis);
+    point = Vec3_Add(point, landmark->s.origin);
 
     if (landmark->spawnflags & SPAWNFLAG_LANDMARK_KEEP_Z)
-        point[2] = origin[2];
+        point.z = origin->z;
 
     // sometimes, landmark spawns can cause slight inconsistencies in collision;
     // we'll do a bit of tracing to make sure the bbox is clear
-    if (G_FixStuckObject_Generic(point, player_mins, player_maxs, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, trap_Trace) == NO_GOOD_POSITION)
+    if (PM_FixStuckObject_Generic(&point, player_box, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, trap_Trace) == NO_GOOD_POSITION)
         return false;
 
-    VectorCopy(point, origin);
-    VectorAdd(ent->client->oldviewangles, landmark->s.angles, angles);
+    *origin = point;
+    *angles = Vec3_Add(ent->client->oldviewangles, landmark->s.angles);
 
     // rotate the velocity that we grabbed from the map
-    RotatePoint(ent->velocity, axis);
+    ent->velocity = Vec3_Rotate(ent->velocity, axis);
 
     return true;
 }
@@ -1438,7 +1432,7 @@ SelectSpawnPoint
 Chooses a player start, deathmatch start, coop start, etc
 ============
 */
-bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spawn)
+bool SelectSpawnPoint(edict_t *ent, vec3_t *origin, vec3_t *angles, bool force_spawn)
 {
     edict_t *spot = NULL;
 
@@ -1455,9 +1449,9 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
         }
 
         if (spot) {
-            VectorCopy(spot->s.origin, origin);
-            origin[2] += 9;
-            VectorCopy(spot->s.angles, angles);
+            *origin = spot->s.origin;
+            origin->z += 9;
+            *angles = spot->s.angles;
             return true;
         }
 
@@ -1476,8 +1470,8 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
             // spot. this only happens for a single frame, and won't break
             // anything if they come back.
             if (level.intermissiontime) {
-                VectorCopy(level.intermission_origin, origin);
-                VectorCopy(level.intermission_angle, angles);
+                *origin = level.intermission_origin;
+                *angles = level.intermission_angle;
                 return true;
             }
 
@@ -1489,16 +1483,16 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles, bool force_spa
         // in SP, just put us at the origin if spawn fails
         if (!spot) {
             G_Printf("Couldn't find spawn point %s\n", game.spawnpoint);
-            VectorClear(origin);
-            VectorClear(angles);
+            *origin = vec3_origin;
+            *angles = vec3_origin;
             return true;
         }
     }
 
     // spot should always be non-null here
 
-    VectorCopy(spot->s.origin, origin);
-    VectorCopy(spot->s.angles, angles);
+    *origin = spot->s.origin;
+    *angles = spot->s.angles;
 
     // check landmark
     TryLandmarkSpawn(ent, origin, angles);
@@ -1519,17 +1513,17 @@ void InitBodyQue(void)
     }
 }
 
-void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(body_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->s.modelindex == MODELINDEX_PLAYER && self->health < self->gib_health) {
         G_StartSound(self, CHAN_BODY, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         for (int n = 0; n < 4; n++)
             ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_NONE);
-        self->s.origin[2] -= 48;
+        self->s.origin.z -= 48;
         ThrowClientHead(self, damage);
     }
 
-    if (mod.id == MOD_CRUSH) {
+    if (mod == MOD_CRUSH) {
         // prevent explosion singularities
         self->r.svflags = SVF_NOCLIENT;
         self->takedamage = false;
@@ -1570,20 +1564,17 @@ static void CopyToBodyQue(edict_t *ent)
     body->health = ent->health;
     body->gib_health = ent->gib_health;
     memset(body->s.event, 0, sizeof(body->s.event));
-    VectorCopy(ent->velocity, body->velocity);
-    VectorCopy(ent->avelocity, body->avelocity);
+    body->velocity = ent->velocity;
+    body->avelocity = ent->avelocity;
     body->groundentity = ent->groundentity;
     body->groundentity_linkcount = ent->groundentity_linkcount;
 
     G_AddEvent(body, EV_OTHER_TELEPORT, 0);
 
-    if (ent->takedamage) {
-        VectorCopy(ent->r.mins, body->r.mins);
-        VectorCopy(ent->r.maxs, body->r.maxs);
-    } else {
-        VectorClear(body->r.mins);
-        VectorClear(body->r.maxs);
-    }
+    if (ent->takedamage)
+        body->r.box = ent->r.box;
+    else
+        body->r.box = box3_origin;
 
     body->die = body_die;
     body->takedamage = true;
@@ -1722,32 +1713,38 @@ void P_AssignClientSkinnum(edict_t *ent)
     ent->s.skinnum = client_num | (vwep_index << 8);
 }
 
+// Set client angle after teleport/spawn
+void P_SetClientAngles(gclient_t *client, vec3_t angles)
+{
+    angles.roll = 0;    // spawn points never set roll
+
+    client->ps.delta_angles = Vec3_Sub(angles, client->resp.cmd_angles);
+    client->ps.viewangles = angles;
+    client->v_angle = angles;
+
+    AngleVectors(client->v_angle, &client->v_forward, NULL, NULL);
+}
+
 // [Paril-KEX] ugly global to handle squad respawn origin
 static bool use_squad_respawn;
 static bool spawn_from_begin;
 static vec3_t squad_respawn_position, squad_respawn_angles;
 
-static void PutClientOnSpawnPoint(edict_t *ent, const vec3_t spawn_origin, const vec3_t spawn_angles)
+static void PutClientOnSpawnPoint(edict_t *ent, vec3_t spawn_origin, vec3_t spawn_angles)
 {
     gclient_t *client = ent->client;
 
-    VectorCopy(spawn_origin, ent->s.origin);
+    ent->s.origin = spawn_origin;
     if (!use_squad_respawn)
-        ent->s.origin[2] += 1; // make sure off ground
-    VectorCopy(ent->s.origin, ent->s.old_origin);
-    VectorCopy(ent->s.origin, client->ps.origin);
+        ent->s.origin.z += 1; // make sure off ground
+    ent->s.old_origin = ent->s.origin;
+    client->ps.origin = ent->s.origin;
 
-    // set the delta angle
-    for (int i = 0; i < 3; i++)
-        client->ps.delta_angles[i] = ANGLE2SHORT(spawn_angles[i] - client->resp.cmd_angles[i]);
+    // set angles
+    P_SetClientAngles(client, spawn_angles);
 
-    VectorCopy(spawn_angles, ent->s.angles);
-    ent->s.angles[PITCH] /= 3;
-
-    VectorCopy(spawn_angles, client->ps.viewangles);
-    VectorCopy(spawn_angles, client->v_angle);
-
-    AngleVectors(client->v_angle, client->v_forward, NULL, NULL);
+    ent->s.angles = spawn_angles;
+    ent->s.angles.pitch /= 3;
 }
 
 /*
@@ -1762,7 +1759,7 @@ void PutClientInServer(edict_t *ent)
 {
     int                 index;
     vec3_t              spawn_origin, spawn_angles;
-    gclient_t         *client;
+    gclient_t          *client;
     client_persistent_t saved;
     client_respawn_t    resp;
 
@@ -1771,9 +1768,9 @@ void PutClientInServer(edict_t *ent)
 
     // clear velocity now, since landmark may change it
     if (client->landmark_name[0])
-        VectorCopy(client->oldvelocity, ent->velocity);
+        ent->velocity = client->oldvelocity;
     else
-        VectorClear(ent->velocity);
+        ent->velocity = vec3_origin;
 
     // find a spawn point
     // do it before setting health back up, so farthest
@@ -1782,15 +1779,15 @@ void PutClientInServer(edict_t *ent)
     bool force_spawn = client->awaiting_respawn && level.time > client->respawn_timeout;
 
     if (use_squad_respawn) {
-        VectorCopy(squad_respawn_position, spawn_origin);
-        VectorCopy(squad_respawn_angles, spawn_angles);
+        spawn_origin = squad_respawn_position;
+        spawn_angles = squad_respawn_angles;
         valid_spawn = true;
     // PGM
     } else if (gamerules.integer && DMGame.SelectSpawnPoint)
-        valid_spawn = DMGame.SelectSpawnPoint(ent, spawn_origin, spawn_angles, force_spawn);
+        valid_spawn = DMGame.SelectSpawnPoint(ent, &spawn_origin, &spawn_angles, force_spawn);
     // PGM
     else
-        valid_spawn = SelectSpawnPoint(ent, spawn_origin, spawn_angles, force_spawn);
+        valid_spawn = SelectSpawnPoint(ent, &spawn_origin, &spawn_angles, force_spawn);
 
     // [Paril-KEX] if we didn't get a valid spawn, hold us in
     // limbo for a while until we do get one
@@ -1823,14 +1820,14 @@ void PutClientInServer(edict_t *ent)
                 }
             }
 
-            VectorCopy(pt->s.origin, level.intermission_origin);
-            VectorCopy(pt->s.angles, level.intermission_angle);
+            level.intermission_origin = pt->s.origin;
+            level.intermission_angle = pt->s.angles;
             level.respawn_intermission = true;
         }
 
-        VectorCopy(level.intermission_origin, ent->s.origin);
-        VectorCopy(level.intermission_origin, ent->client->ps.origin);
-        VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
+        ent->s.origin = level.intermission_origin;
+        ent->client->ps.origin = level.intermission_origin;
+        ent->client->ps.viewangles = level.intermission_angle;
 
         client->awaiting_respawn = true;
         client->ps.pm_type = PM_FREEZE;
@@ -1934,11 +1931,9 @@ void PutClientInServer(edict_t *ent)
     ent->flags &= ~(FL_NO_KNOCKBACK | FL_ALIVE_KNOCKBACK_ONLY | FL_NO_DAMAGE_EFFECTS);
     ent->r.svflags &= ~SVF_DEADMONSTER;
     ent->r.svflags |= SVF_PLAYER;
+    ent->r.box = player_box;
 
     ent->flags &= ~FL_SAM_RAIMI; // PGM - turn off sam raimi flag
-
-    VectorCopy(player_mins, ent->r.mins);
-    VectorCopy(player_maxs, ent->r.maxs);
 
     // clear playerstate values
     memset(&ent->client->ps, 0, sizeof(client->ps));
@@ -2008,7 +2003,7 @@ void PutClientInServer(edict_t *ent)
 
                 if (collision->client) {
                     // we spawned in somebody else, so we're going to change their spawn position
-                    SelectSpawnPoint(collision, spawn_origin, spawn_angles, true);
+                    SelectSpawnPoint(collision, &spawn_origin, &spawn_angles, true);
                     PutClientOnSpawnPoint(collision, spawn_origin, spawn_angles);
                 }
                 // else, no choice but to accept where ever we spawned :(
@@ -2212,8 +2207,7 @@ qvm_exported void G_ClientBegin(int clientnum)
         // connecting to the server, which is different than the
         // state when the game is saved, so we need to compensate
         // with deltaangles
-        for (int i = 0; i < 3; i++)
-            ent->client->ps.delta_angles[i] = ANGLE2SHORT(ent->client->ps.viewangles[i]);
+        ent->client->ps.delta_angles = ent->client->ps.viewangles;
     } else {
         // a spawn point will completely reinitialize the entity
         // except for the persistent data that was initialized at
@@ -2499,7 +2493,7 @@ static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
             damage = min(4, damage);
 
         if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
-            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, (mod_t) { MOD_FALLING });
+            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, MOD_FALLING);
     }
 
     // Paril: falling damage noises alert monsters
@@ -2590,8 +2584,7 @@ qvm_exported void G_ClientThink(int clientnum)
     }
 
     if (ent->client->chase_target) {
-        for (i = 0; i < 3; i++)
-            client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd.angles[i]);
+        client->resp.cmd_angles = Vec3_FromAngles16(ucmd.angles);
         ent->movetype = MOVETYPE_NOCLIP;
     } else {
         // set up for pmove
@@ -2636,8 +2629,8 @@ qvm_exported void G_ClientThink(int clientnum)
         pm.s = &client->ps;
         uint32_t old_flags = pm.s->pm_flags;
 
-        VectorCopy(ent->s.origin, pm.s->origin);
-        VectorCopy(ent->velocity, pm.s->velocity);
+        pm.s->origin = ent->s.origin;
+        pm.s->velocity = ent->velocity;
 
         pm.cmd = ucmd;
         pm.trace = trap_Trace;
@@ -2659,11 +2652,10 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         // [Paril-KEX] save old position for G_TouchProjectiles
-        vec3_t old_origin;
-        VectorCopy(ent->s.origin, old_origin);
+        vec3_t old_origin = ent->s.origin;
 
-        VectorCopy(pm.s->origin, ent->s.origin);
-        VectorCopy(pm.s->velocity, ent->velocity);
+        ent->s.origin = pm.s->origin;
+        ent->velocity = pm.s->velocity;
 
         bool bobcycle = (pm.s->bobtime - ent->client->last_step_time) & 128;
 
@@ -2671,9 +2663,9 @@ qvm_exported void G_ClientThink(int clientnum)
         // last ladder pos
         if (pm.s->pm_flags & PMF_ON_LADDER) {
             if (!deathmatch.integer && client->last_ladder_sound < level.time &&
-                (!(old_flags & PMF_ON_LADDER) || DistanceSquared(client->last_ladder_pos, ent->s.origin) > 48 * 48)) {
+                (!(old_flags & PMF_ON_LADDER) || Vec3_DistanceSquared(client->last_ladder_pos, ent->s.origin) > 48 * 48)) {
                 G_AddEvent(ent, EV_LADDER_STEP, 0);
-                VectorCopy(ent->s.origin, client->last_ladder_pos);
+                client->last_ladder_pos = ent->s.origin;
                 client->last_ladder_sound = level.time + LADDER_SOUND_TIME;
             }
         } else if (pm.step_sound && bobcycle) {
@@ -2694,12 +2686,10 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         // save results of pmove
-        VectorCopy(pm.mins, ent->r.mins);
-        VectorCopy(pm.maxs, ent->r.maxs);
+        ent->r.box = pm.box;
 
         if (!ent->client->menu)
-            for (i = 0; i < 3; i++)
-                client->resp.cmd_angles[i] = SHORT2ANGLE(ucmd.angles[i]);
+            client->resp.cmd_angles = Vec3_FromAngles16(ucmd.angles);
 
         // ROGUE sam raimi cam support
         if (ent->flags & FL_SAM_RAIMI)
@@ -2720,12 +2710,12 @@ qvm_exported void G_ClientThink(int clientnum)
         }
 
         if (ent->deadflag) {
-            client->ps.viewangles[ROLL] = 40;
-            client->ps.viewangles[PITCH] = -15;
-            client->ps.viewangles[YAW] = client->killer_yaw;
+            client->ps.viewangles.roll = 40;
+            client->ps.viewangles.pitch = -15;
+            client->ps.viewangles.yaw = client->killer_yaw;
         } else if (!ent->client->menu) {
-            VectorCopy(client->ps.viewangles, client->v_angle);
-            AngleVectors(client->v_angle, client->v_forward, NULL, NULL);
+            client->v_angle = client->ps.viewangles;
+            AngleVectors(client->v_angle, &client->v_forward, NULL, NULL);
         }
 
         // ZOID
@@ -2830,13 +2820,11 @@ static bool G_MonstersSearchingFor(edict_t *player)
 
 // [Paril-KEX] from the given player, find a good spot to
 // spawn a player
-static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
+static bool G_FindRespawnSpot(edict_t *player, vec3_t *spot)
 {
     // sanity check; make sure there's enough room for ourselves.
     // (crouching in a small area, etc)
-    trace_t tr;
-    trap_Trace(&tr, player->s.origin, player_mins, player_maxs,
-               player->s.origin, player->s.number, MASK_PLAYERSOLID);
+    trace_t tr = G_Trace(player->s.origin, player->s.origin, player_box, player->s.number, MASK_PLAYERSOLID);
 
     if (tr.startsolid || tr.allsolid)
         return false;
@@ -2851,61 +2839,60 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
     contents_t mask = MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME;
 
     for (int i = 0; i < q_countof(yaw_spread); i++) {
-        vec3_t angles = { 0, (player->s.angles[YAW] + 180) + yaw_spread[i], 0 };
+        vec3_t angles = { .yaw = (player->s.angles.yaw + 180) + yaw_spread[i] };
 
         // throw the box three times:
         // one up & back
         // one back
         // one up, then back
         // pick the one that went the farthest
-        vec3_t start, end;
-        VectorCopy(player->s.origin, start);
-        VectorCopy(player->s.origin, end);
-        end[2] += up_distance;
+        vec3_t start = player->s.origin;
+        vec3_t end = player->s.origin;
+        end.z += up_distance;
 
-        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        tr = G_Trace(start, end, player_box, player->s.number, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
             continue;
 
         vec3_t fwd;
-        AngleVectors(angles, fwd, NULL, NULL);
+        AngleVectors(angles, &fwd, NULL, NULL);
 
-        VectorCopy(tr.endpos, start);
-        VectorMA(start, back_distance, fwd, end);
+        start = tr.endpos;
+        end = Vec3_MA(start, back_distance, fwd);
 
-        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        tr = G_Trace(start, end, player_box, player->s.number, mask);
 
         // stuck
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)))
             continue;
 
         // plop us down now
-        VectorCopy(tr.endpos, start);
-        VectorCopy(tr.endpos, end);
-        end[2] -= up_distance * 4;
+        start = tr.endpos;
+        end = tr.endpos;
+        end.z -= up_distance * 4;
 
-        trap_Trace(&tr, start, player_mins, player_maxs, end, player->s.number, mask);
+        tr = G_Trace(start, end, player_box, player->s.number, mask);
 
         // stuck, or floating, or touching some other entity
         if (tr.startsolid || tr.allsolid || (tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME)) || tr.fraction == 1.0f || tr.entnum != ENTITYNUM_WORLD)
             continue;
 
         // don't spawn us *inside* liquids
-        VectorCopy(tr.endpos, end);
-        end[2] += player_viewheight;
+        end = tr.endpos;
+        end.z += player_viewheight;
 
         if (trap_PointContents(end) & MASK_WATER)
             continue;
 
         // don't spawn us on steep slopes
-        if (tr.plane.normal[2] < 0.7f)
+        if (tr.plane.normal.z < 0.7f)
             continue;
 
-        VectorCopy(tr.endpos, spot);
+        *spot = tr.endpos;
 
-        float z_diff = fabsf(player->s.origin[2] - tr.endpos[2]);
+        float z_diff = fabsf(player->s.origin.z - tr.endpos.z);
 
         // 5 steps is way too many steps
         if (z_diff > STEPSIZE * 4)
@@ -2913,18 +2900,18 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
 
         // if we went up or down 1 step, make sure we can still see their origin and their head
         if (z_diff > STEPSIZE) {
-            trap_Trace(&tr, player->s.origin, NULL, NULL, tr.endpos, player->s.number, mask);
+            tr = G_TraceLine(player->s.origin, tr.endpos, player->s.number, mask);
 
             if (tr.fraction != 1.0f)
                 continue;
 
-            VectorCopy(player->s.origin, start);
-            start[2] += player_viewheight;
+            start = player->s.origin;
+            start.z += player_viewheight;
 
-            VectorCopy(tr.endpos, end);
-            end[2] += player_viewheight;
+            end = tr.endpos;
+            end.z += player_viewheight;
 
-            trap_Trace(&tr, start, NULL, NULL, end, player->s.number, mask);
+            tr = G_TraceLine(start, end, player->s.number, mask);
 
             if (tr.fraction != 1.0f)
                 continue;
@@ -2939,7 +2926,7 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t spot)
 
 // [Paril-KEX] check each player to find a good
 // respawn target & position
-static edict_t *G_FindSquadRespawnTarget(vec3_t spot)
+static edict_t *G_FindSquadRespawnTarget(vec3_t *spot)
 {
     bool monsters_searching_for_anybody = G_MonstersSearchingFor(NULL);
 
@@ -3044,13 +3031,13 @@ static bool G_CoopRespawn(edict_t *ent)
                 edict_t *good_player;
                 vec3_t good_spot;
 
-                good_player = G_FindSquadRespawnTarget(good_spot);
+                good_player = G_FindSquadRespawnTarget(&good_spot);
                 if (good_player) {
                     state = RESPAWN_SQUAD;
 
-                    VectorCopy(good_spot, squad_respawn_position);
-                    VectorCopy(good_player->s.angles, squad_respawn_angles);
-                    squad_respawn_angles[2] = 0;
+                    squad_respawn_position = good_spot;
+                    squad_respawn_angles = good_player->s.angles;
+                    squad_respawn_angles.roll = 0;
 
                     use_squad_respawn = true;
                 } else {
@@ -3085,8 +3072,8 @@ static bool G_CoopRespawn(edict_t *ent)
             ent->takedamage = false;
             ent->s.modelindex = 0;
             ent->r.svflags |= SVF_NOCLIENT;
-            ent->client->ps.screen_blend[3] = 0;
-            ent->client->ps.damage_blend[3] = 0;
+            ent->client->ps.screen_blend.a = 0;
+            ent->client->ps.damage_blend.a = 0;
             ent->client->ps.rdflags = RDF_NONE;
             ent->movetype = MOVETYPE_NOCLIP;
             // TODO: check if anything else needs to be reset

@@ -162,7 +162,7 @@ static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
         out = lm.buffer + (i << lm.size_shift) + offset;
         for (j = 0; j < tmax; j++, out += stride) {
             for (k = 0, dst = out; k < smax; k++, src += 3, dst += 4)
-                Vector4Set(dst, src[0], src[1], src[2], 255);
+                Vec4_Set(dst, src[0], src[1], src[2], 255);
         }
     }
 
@@ -186,10 +186,9 @@ POLYGONS BUILDING
 =============================================================================
 */
 
-#define DotProductDouble(x,y) \
-    ((double)(x)[0]*(y)[0]+\
-     (double)(x)[1]*(y)[1]+\
-     (double)(x)[2]*(y)[2])
+static inline double Vec3_Dot64(vec3_t a, vec3_t b) {
+    return (double)a.x * b.x + (double)a.y * b.y + (double)a.z * b.z;
+}
 
 static uint32_t color_for_surface(const mface_t *surf)
 {
@@ -247,23 +246,20 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
     const medge_t *src_edge;
     const mtexinfo_t *texinfo = surf->texinfo;
     const uint32_t color = color_for_surface(surf);
-    vec2_t scale, tc, mins, maxs;
-    int i, bmins[2], bmaxs[2];
+    vec2_t scale, tc;
+    box2_t box = Box2_Null();
+    vec2i_t bmins, bmaxs;
+    int i;
 
     // convert surface flags to state bits
     surf->statebits = statebits_for_surface(surf);
 
     // normalize texture coordinates
-    scale[0] = 1.0f / texinfo->image->width;
-    scale[1] = 1.0f / texinfo->image->height;
+    scale.s = 1.0f / texinfo->image->width;
+    scale.t = 1.0f / texinfo->image->height;
 
-    if (surf->drawflags & SURF_N64_UV) {
-        scale[0] *= 0.5f;
-        scale[1] *= 0.5f;
-    }
-
-    mins[0] = mins[1] = 99999;
-    maxs[0] = maxs[1] = -99999;
+    if (surf->drawflags & SURF_N64_UV)
+        scale = Vec2_Scale(scale, 0.5f);
 
     src_surfedge = surf->firstsurfedge;
     for (i = 0; i < surf->numsurfedges; i++) {
@@ -272,42 +268,35 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
         src_surfedge++;
 
         // vertex coordinates
-        VectorCopy(src_vert->point, vbo);
+        Vec3_Store(vbo, src_vert->point);
 
         // vertex color
         WN32(vbo + 3, color);
 
         // texture coordinates
-        tc[0] = DotProductDouble(vbo, texinfo->axis[0]) + texinfo->offset[0];
-        tc[1] = DotProductDouble(vbo, texinfo->axis[1]) + texinfo->offset[1];
+        tc.s = Vec3_Dot64(src_vert->point, texinfo->axis[0]) + texinfo->offset.s;
+        tc.t = Vec3_Dot64(src_vert->point, texinfo->axis[1]) + texinfo->offset.t;
 
-        vbo[4] = tc[0] * scale[0];
-        vbo[5] = tc[1] * scale[1];
+        vbo[4] = tc.s * scale.s;
+        vbo[5] = tc.t * scale.t;
 
         // lightmap coordinates
         if (bsp->lm_decoupled) {
-            vbo[6] = DotProduct(vbo, surf->lm_axis[0]) + surf->lm_offset[0];
-            vbo[7] = DotProduct(vbo, surf->lm_axis[1]) + surf->lm_offset[1];
+            vbo[6] = Vec3_Dot(src_vert->point, surf->lm_axis[0]) + surf->lm_offset.s;
+            vbo[7] = Vec3_Dot(src_vert->point, surf->lm_axis[1]) + surf->lm_offset.t;
         } else {
-            if (mins[0] > tc[0]) mins[0] = tc[0];
-            if (maxs[0] < tc[0]) maxs[0] = tc[0];
-
-            if (mins[1] > tc[1]) mins[1] = tc[1];
-            if (maxs[1] < tc[1]) maxs[1] = tc[1];
-
-            vbo[6] = tc[0] / 16;
-            vbo[7] = tc[1] / 16;
+            box = Box2_AddPoint(box, tc);
+            vbo[6] = tc.s / 16;
+            vbo[7] = tc.t / 16;
         }
 
         // normals
         if (normal_index && *normal_index < bsp->num_normals)
-            VectorCopy(bsp->normals[*normal_index], vbo + 8);
-        else {
-            VectorCopy(surf->plane->normal, vbo + 8);
-
-            if (surf->drawflags & DSURF_PLANEBACK)
-                VectorInverse(vbo + 8);
-        }
+            Vec3_Store(vbo + 8, bsp->normals[*normal_index]);
+        else if (surf->drawflags & DSURF_PLANEBACK)
+            Vec3_Store(vbo + 8, Vec3_Negate(surf->plane->normal));
+        else
+            Vec3_Store(vbo + 8, surf->plane->normal);
 
         if (normal_index)
             normal_index++;
@@ -322,22 +311,22 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
         return;
 
     // calculate surface extents
-    bmins[0] = floor(mins[0] / 16);
-    bmins[1] = floor(mins[1] / 16);
-    bmaxs[0] = ceil(maxs[0] / 16);
-    bmaxs[1] = ceil(maxs[1] / 16);
+    bmins.s = floorf(box.mins.s / 16);
+    bmins.t = floorf(box.mins.t / 16);
+    bmaxs.s = ceilf(box.maxs.s / 16);
+    bmaxs.t = ceilf(box.maxs.t / 16);
 
-    VectorScale(texinfo->axis[0], 1.0f / 16, surf->lm_axis[0]);
-    VectorScale(texinfo->axis[1], 1.0f / 16, surf->lm_axis[1]);
-    surf->lm_offset[0] = texinfo->offset[0] / 16 - bmins[0];
-    surf->lm_offset[1] = texinfo->offset[1] / 16 - bmins[1];
-    surf->lm_width  = bmaxs[0] - bmins[0] + 1;
-    surf->lm_height = bmaxs[1] - bmins[1] + 1;
+    surf->lm_axis[0] = Vec3_Scale(texinfo->axis[0], 1.0f / 16);
+    surf->lm_axis[1] = Vec3_Scale(texinfo->axis[1], 1.0f / 16);
+    surf->lm_offset.s = texinfo->offset.s / 16 - bmins.s;
+    surf->lm_offset.t = texinfo->offset.t / 16 - bmins.t;
+    surf->lm_width  = bmaxs.s - bmins.s + 1;
+    surf->lm_height = bmaxs.t - bmins.t + 1;
 
     for (i = 0; i < surf->numsurfedges; i++) {
         vbo -= VERTEX_SIZE;
-        vbo[6] -= bmins[0];
-        vbo[7] -= bmins[1];
+        vbo[6] -= bmins.s;
+        vbo[7] -= bmins.t;
     }
 }
 
@@ -413,15 +402,12 @@ static void upload_world_surfaces(void)
 
 static void set_world_size(const mnode_t *node)
 {
-    vec_t size;
-    int i;
+    vec3_t size = Box3_Size(node->box);
+    float d = max(max(size.x, size.y), size.z);
 
-    for (i = 0, size = 0; i < 3; i++)
-        size = max(size, node->maxs[i] - node->mins[i]);
-
-    if (size > 4096)
+    if (d > 4096)
         gl_static.world.size = 8192;
-    else if (size > 2048)
+    else if (d > 2048)
         gl_static.world.size = 4096;
     else
         gl_static.world.size = 2048;

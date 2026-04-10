@@ -53,9 +53,8 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
         if (!(ent->client || (ent->r.svflags & SVF_MONSTER) || (ent->flags & FL_DAMAGEABLE)))
             continue;
 
-        VectorAvg(ent->r.mins, ent->r.maxs, v);
-        VectorAdd(ent->s.origin, v, v);
-        len = Distance(inflictor->s.origin, v);
+        v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+        len = Vec3_Distance(inflictor->s.origin, v);
         if (len <= killzone) {
             if (ent->client)
                 ent->flags |= FL_NOGIB;
@@ -68,7 +67,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
         if (points > 0) {
             if (ent->client)
                 ent->client->nuke_time = level.time + SEC(2);
-            VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
+            dir = Vec3_Sub(ent->s.origin, inflictor->s.origin);
             T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
     }
@@ -76,7 +75,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
     // cycle through players
     while (ent) {
         if ((ent->client) && (ent->client->nuke_time != level.time + SEC(2)) && (ent->r.inuse)) {
-            trap_Trace(&tr, inflictor->s.origin, NULL, NULL, ent->s.origin, inflictor->s.number, MASK_SOLID);
+            tr = G_TraceLine(inflictor->s.origin, ent->s.origin, inflictor->s.number, MASK_SOLID);
             if (tr.fraction == 1.0f)
                 ent->client->nuke_time = level.time + SEC(2);
             else {
@@ -99,7 +98,7 @@ T_RadiusClassDamage
 Like T_RadiusDamage, but ignores anything with classname=ignoreClass
 ============
 */
-void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, char *ignoreClass, float radius, mod_t mod)
+void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, const char *ignoreClass, float radius, mod_t mod)
 {
     float    points;
     edict_t *ent = NULL;
@@ -112,13 +111,12 @@ void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, ch
         if (!ent->takedamage)
             continue;
 
-        VectorAvg(ent->r.mins, ent->r.maxs, v);
-        VectorAdd(ent->s.origin, v, v);
-        points = damage - 0.5f * Distance(inflictor->s.origin, v);
+        v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+        points = damage - 0.5f * Vec3_Distance(inflictor->s.origin, v);
         if (ent == attacker)
             points = points * 0.5f;
         if (points > 0 && CanDamage(ent, inflictor)) {
-            VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
+            dir = Vec3_Sub(ent->s.origin, inflictor->s.origin);
             T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
     }

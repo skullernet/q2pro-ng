@@ -330,14 +330,14 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     maliasvert_t    *dst_vert;
     maliastc_t      *dst_tc;
     maliasmesh_t    *mesh;
-    int             i, j, k, val;
+    int             i, j, val;
     uint16_t        remap[TESS_MAX_INDICES];
     uint16_t        vertIndices[TESS_MAX_INDICES];
     uint16_t        tcIndices[TESS_MAX_INDICES];
     uint16_t        finalIndices[TESS_MAX_INDICES];
     int             numverts, numindices;
     vec_t           scale_s, scale_t;
-    vec3_t          mins, maxs;
+    box3_t          box;
     const char      *err;
 
     if (length < sizeof(header))
@@ -479,11 +479,11 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     src_frame = (dmd2frame_t *)((byte *)rawdata + header.ofs_frames);
     dst_frame = model->frames;
     for (j = 0; j < header.num_frames; j++) {
-        LittleVector(src_frame->scale, dst_frame->scale);
-        LittleVector(src_frame->translate, dst_frame->translate);
+        dst_frame->scale = LittleVector(src_frame->scale);
+        dst_frame->translate = LittleVector(src_frame->translate);
 
         // load frame vertices
-        ClearBounds(mins, maxs);
+        box = Box3_Null();
         for (i = 0; i < numindices; i++) {
             if (remap[i] != i)
                 continue;
@@ -504,22 +504,12 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
                 dst_vert->norm[1] = gl_static.latlngtab[val][1];
             }
 
-            for (k = 0; k < 3; k++) {
-                val = dst_vert->pos[k];
-                if (val < mins[k])
-                    mins[k] = val;
-                if (val > maxs[k])
-                    maxs[k] = val;
-            }
+            box = Box3_AddPoint(box, Vec3_Load(dst_vert->pos));
         }
 
-        VectorVectorScale(mins, dst_frame->scale, mins);
-        VectorVectorScale(maxs, dst_frame->scale, maxs);
-
-        dst_frame->radius = RadiusFromBounds(mins, maxs);
-
-        VectorAdd(mins, dst_frame->translate, dst_frame->bounds[0]);
-        VectorAdd(maxs, dst_frame->translate, dst_frame->bounds[1]);
+        box = Box3_Scale3(box, dst_frame->scale);
+        dst_frame->radius = Box3_RadiusFromBounds(box);
+        dst_frame->box = Box3_Translate(box, dst_frame->translate);
 
         src_frame = (dmd2frame_t *)((byte *)src_frame + header.framesize);
         dst_frame++;
@@ -564,7 +554,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     maliastc_t      *dst_tc;
     uint16_t        *dst_idx;
     uint32_t        index;
-    int             i, j, k;
+    int             i, j;
     const char      *err;
 
     if (length < sizeof(header))
@@ -615,10 +605,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
             dst_vert->norm[0] = src_vert->norm[0];
             dst_vert->norm[1] = src_vert->norm[1];
 
-            for (k = 0; k < 3; k++) {
-                f->bounds[0][k] = min(f->bounds[0][k], dst_vert->pos[k]);
-                f->bounds[1][k] = max(f->bounds[1][k], dst_vert->pos[k]);
-            }
+            f->box = Box3_AddPoint(f->box, Vec3_Load(dst_vert->pos));
 
             src_vert++; dst_vert++;
         }
@@ -705,10 +692,9 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     src_frame = (dmd3frame_t *)((byte *)rawdata + header.ofs_frames);
     dst_frame = model->frames;
     for (i = 0; i < header.num_frames; i++) {
-        LittleVector(src_frame->translate, dst_frame->translate);
-        VectorSet(dst_frame->scale, MD3_XYZ_SCALE, MD3_XYZ_SCALE, MD3_XYZ_SCALE);
-
-        ClearBounds(dst_frame->bounds[0], dst_frame->bounds[1]);
+        dst_frame->translate = LittleVector(src_frame->translate);
+        dst_frame->scale = Vec3_Fill(MD3_XYZ_SCALE);
+        dst_frame->box = Box3_Null();
 
         src_frame++; dst_frame++;
     }
@@ -727,13 +713,9 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     // calculate frame bounds
     dst_frame = model->frames;
     for (i = 0; i < header.num_frames; i++) {
-        VectorScale(dst_frame->bounds[0], MD3_XYZ_SCALE, dst_frame->bounds[0]);
-        VectorScale(dst_frame->bounds[1], MD3_XYZ_SCALE, dst_frame->bounds[1]);
-
-        dst_frame->radius = RadiusFromBounds(dst_frame->bounds[0], dst_frame->bounds[1]);
-
-        VectorAdd(dst_frame->bounds[0], dst_frame->translate, dst_frame->bounds[0]);
-        VectorAdd(dst_frame->bounds[1], dst_frame->translate, dst_frame->bounds[1]);
+        dst_frame->box = Box3_Scale(dst_frame->box, MD3_XYZ_SCALE);
+        dst_frame->radius = Box3_RadiusFromBounds(dst_frame->box);
+        dst_frame->box = Box3_Translate(dst_frame->box, dst_frame->translate);
 
         dst_frame++;
     }
@@ -843,13 +825,23 @@ static int32_t MD5_ParseInt(const char **buffer, int32_t min_v, int32_t max_v)
     return v;
 }
 
-static void MD5_ParseVector(const char **buffer, vec3_t output)
+static vec3_t MD5_ParseVector(const char **buffer)
 {
+    vec3_t out;
     MD5_ParseExpect(buffer, "(");
-    output[0] = MD5_ParseFloat(buffer);
-    output[1] = MD5_ParseFloat(buffer);
-    output[2] = MD5_ParseFloat(buffer);
+    out.x = MD5_ParseFloat(buffer);
+    out.y = MD5_ParseFloat(buffer);
+    out.z = MD5_ParseFloat(buffer);
     MD5_ParseExpect(buffer, ")");
+    return out;
+}
+
+static quat_t MD5_ParseOrient(const char **buffer)
+{
+    vec3_t v = MD5_ParseVector(buffer);
+    quat_t q = { .x = v.x, .y = v.y, .z = v.z };
+    Quat_ComputeW(&q);
+    return q;
 }
 
 typedef struct {
@@ -868,19 +860,17 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_s
 
     for (i = 0, vert = mesh->vertices; i < mesh->num_verts; i++, vert++) {
         /* Calculate final vertex to draw with weights */
-        VectorClear(finalVerts[i]);
+        finalVerts[i] = vec3_origin;
 
         for (j = 0; j < vert->count; j++) {
             const md5_weight_t *weight = &mesh->weights[vert->start + j];
             const baseframe_joint_t *joint = &base_skeleton[mesh->jointnums[vert->start + j]];
 
             /* Calculate transformed vertex for this weight */
-            vec3_t wv;
-            Quat_RotatePoint(joint->orient, weight->pos, wv);
+            vec3_t wv = Vec3_Add(joint->pos, Quat_RotatePoint(joint->orient, weight->pos));
 
             /* The sum of all weight->bias should be 1.0 */
-            VectorAdd(joint->pos, wv, wv);
-            VectorMA(finalVerts[i], weight->bias, wv, finalVerts[i]);
+            finalVerts[i] = Vec3_MA(finalVerts[i], weight->bias, wv);
         }
     }
 
@@ -888,25 +878,19 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_s
         vec3_t xyz[3];
 
         for (j = 0; j < 3; j++)
-            VectorCopy(finalVerts[mesh->indices[i + j]], xyz[j]);
+            xyz[j] = finalVerts[mesh->indices[i + j]];
 
-        vec3_t d1, d2;
-        VectorSubtract(xyz[2], xyz[0], d1);
-        VectorSubtract(xyz[1], xyz[0], d2);
-        VectorNormalize(d1);
-        VectorNormalize(d2);
+        vec3_t d1 = Vec3_Direction(xyz[2], xyz[0]);
+        vec3_t d2 = Vec3_Direction(xyz[1], xyz[0]);
+        vec3_t norm = Vec3_Cross(d1, d2);
 
-        vec3_t norm;
-        CrossProduct(d1, d2, norm);
-        VectorNormalize(norm);
-
-        float angle = acosf(DotProduct(d1, d2));
-        VectorScale(norm, angle, norm);
+        float angle = acosf(Vec3_Dot(d1, d2));
+        norm = Vec3_Scale(norm, angle);
 
         for (j = 0; j < 3; j++) {
             vec3_t *found_normal;
             if ((found_normal = HashMap_Lookup(vec3_t, pos_to_normal_map, &xyz[j])))
-                VectorAdd(*found_normal, norm, *found_normal);
+                *found_normal = Vec3_Add(*found_normal, norm);
             else
                 HashMap_Insert(pos_to_normal_map, &xyz[j], &norm);
         }
@@ -915,11 +899,11 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_s
     uint32_t map_size = HashMap_Size(pos_to_normal_map);
     for (i = 0; i < map_size; i++) {
         vec3_t *norm = HashMap_GetValue(vec3_t, pos_to_normal_map, i);
-        VectorNormalize(*norm);
+        *norm = Vec3_Normalize(*norm);
     }
 
     for (i = 0, vert = mesh->vertices; i < mesh->num_verts; i++, vert++) {
-        VectorClear(vert->normal);
+        vert->normal = vec3_origin;
         vec3_t *norm = HashMap_Lookup(vec3_t, pos_to_normal_map, &finalVerts[i]);
         if (norm) {
             // Put the bind-pose normal into joint-local space
@@ -929,11 +913,9 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_s
             for (j = 0; j < vert->count; j++) {
                 const md5_weight_t *weight = &mesh->weights[vert->start + j];
                 const baseframe_joint_t *joint = &base_skeleton[mesh->jointnums[vert->start + j]];
-                vec3_t wv;
-                quat_t orient_inv;
-                Quat_Conjugate(joint->orient, orient_inv);
-                Quat_RotatePoint(orient_inv, *norm, wv);
-                VectorMA(vert->normal, weight->bias, wv, vert->normal);
+                quat_t orient_inv = Quat_Conjugate(joint->orient);
+                vec3_t wv = Quat_RotatePoint(orient_inv, *norm);
+                vert->normal = Vec3_MA(vert->normal, weight->bias, wv);
             }
         }
     }
@@ -979,10 +961,8 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
         // skip parent
         COM_SkipToken(&s);
 
-        MD5_ParseVector(&s, joint->pos);
-        MD5_ParseVector(&s, joint->orient);
-
-        Quat_ComputeW(joint->orient);
+        joint->pos    = MD5_ParseVector(&s);
+        joint->orient = MD5_ParseOrient(&s);
     }
 
     MD5_ParseExpect(&s, "}");
@@ -1043,7 +1023,7 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
 
             md5_weight_t *weight = &mesh->weights[weight_index];
             weight->bias = MD5_ParseFloat(&s);
-            MD5_ParseVector(&s, weight->pos);
+            weight->pos  = MD5_ParseVector(&s);
         }
 
         MD5_ParseExpect(&s, "}");
@@ -1081,29 +1061,32 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
 {
     for (int i = 0; i < num_joints; i++) {
         const baseframe_joint_t *baseJoint = &base_frame[i];
-        float components[7];
+        union {
+            struct {
+                vec3_t pos;
+                quat_t orient;
+            };
+            float components[7];
+        } animated;
 
-        float *animated_position = components + 0;
-        float *animated_quat = components + 3;
-
-        VectorCopy(baseJoint->pos, animated_position);
-        VectorCopy(baseJoint->orient, animated_quat); // W will be re-calculated below
+        animated.pos = baseJoint->pos;
+        animated.orient = baseJoint->orient; // W will be re-calculated below
 
         for (int c = 0, j = 0; c < MD5_NUM_ANIMATED_COMPONENT_BITS; c++)
             if (joint_infos[i].flags & BIT(c))
-                components[c] = anim_frame_data[joint_infos[i].start_index + j++];
+                animated.components[c] = anim_frame_data[joint_infos[i].start_index + j++];
 
-        Quat_ComputeW(animated_quat);
+        Quat_ComputeW(&animated.orient);
 
         md5_joint_t *thisJoint = &skeleton_frame[i];
 
         if (joint_infos[i].scale_pos)
-            VectorScale(animated_position, thisJoint->scale, animated_position);
+            animated.pos = Vec3_Scale(animated.pos, thisJoint->scale);
 
         int parent = joint_infos[i].parent;
         if (parent < 0) {
-            VectorCopy(animated_position, thisJoint->pos);
-            Vector4Copy(animated_quat, thisJoint->orient);
+            thisJoint->pos = animated.pos;
+            thisJoint->orient = animated.orient;
             Quat_ToAxis(thisJoint->orient, thisJoint->axis);
             continue;
         }
@@ -1113,20 +1096,20 @@ static void MD5_BuildFrameSkeleton(const joint_info_t *joint_infos,
         const md5_joint_t *parentJoint = &skeleton_frame[parent];
 
         // add positions
-        vec3_t rotated_pos;
-        Quat_RotatePoint(parentJoint->orient, animated_position, rotated_pos);
-        VectorAdd(rotated_pos, parentJoint->pos, thisJoint->pos);
+        vec3_t rotated_pos = Quat_RotatePoint(parentJoint->orient, animated.pos);
+        thisJoint->pos = Vec3_Add(parentJoint->pos, rotated_pos);
 
         // concat rotations
-        Quat_MultiplyQuat(parentJoint->orient, animated_quat, thisJoint->orient);
-        Quat_Normalize(thisJoint->orient);
+        thisJoint->orient = Quat_MultiplyQuat(parentJoint->orient, animated.orient);
+        Quat_Normalize(&thisJoint->orient);
 
         Quat_ToAxis(thisJoint->orient, thisJoint->axis);
     }
 }
 
 /**
- * Parse some JSON vomit. Don't ask.
+ * Parse some JSON vomit. Why couldn't this be simple COM_Parse-able text format
+ * like the the rest of MD5? Don't ask.
  */
 static void MD5_LoadScales(const md5_model_t *model, const char *path, joint_info_t *joint_infos)
 {
@@ -1305,10 +1288,8 @@ static bool MD5_ParseAnim(model_t *model, const char *s, const char *path)
     for (i = 0; i < mdl->num_joints; i++) {
         baseframe_joint_t *base_joint = &base_frame[i];
 
-        MD5_ParseVector(&s, base_joint->pos);
-        MD5_ParseVector(&s, base_joint->orient);
-
-        Quat_ComputeW(base_joint->orient);
+        base_joint->pos    = MD5_ParseVector(&s);
+        base_joint->orient = MD5_ParseOrient(&s);
     }
 
     MD5_ParseExpect(&s, "}");

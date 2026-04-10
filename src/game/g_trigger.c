@@ -13,8 +13,8 @@
 
 static void InitTrigger(edict_t *self)
 {
-    if (ED_WasKeySpecified("angle") || ED_WasKeySpecified("angles") || !VectorEmpty(self->s.angles))
-        G_SetMovedir(self->s.angles, self->movedir);
+    if (ED_WasKeySpecified("angle") || ED_WasKeySpecified("angles") || !Vec3_IsEmpty(self->s.angles))
+        G_SetMovedir(self);
 
     self->r.solid = SOLID_TRIGGER;
     self->movetype = MOVETYPE_NONE;
@@ -83,11 +83,11 @@ void TOUCH(Touch_Multi)(edict_t *self, edict_t *other, const trace_t *tr, bool o
     if (!G_ClipBrushModel(self, other))
         return;
 
-    if (!VectorEmpty(self->movedir)) {
+    if (!Vec3_IsEmpty(self->movedir)) {
         vec3_t forward;
 
-        AngleVectors(other->s.angles, forward, NULL, NULL);
-        if (DotProduct(forward, self->movedir) < 0)
+        AngleVectors(other->s.angles, &forward, NULL, NULL);
+        if (Vec3_Dot(forward, self->movedir) < 0)
             return;
     }
 
@@ -121,7 +121,7 @@ void THINK(latched_trigger_think)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 
     int list[MAX_EDICTS_OLD];
-    int count = trap_BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
+    int count = trap_BoxEdicts(self->r.absbox, list, q_countof(list), AREA_SOLID);
     bool any_inside = false;
 
     for (int i = 0; i < count; i++) {
@@ -136,11 +136,11 @@ void THINK(latched_trigger_think)(edict_t *self)
         } else
             continue;
 
-        if (!VectorEmpty(self->movedir)) {
+        if (!Vec3_IsEmpty(self->movedir)) {
             vec3_t forward;
 
-            AngleVectors(other->s.angles, forward, NULL, NULL);
-            if (DotProduct(forward, self->movedir) < 0)
+            AngleVectors(other->s.angles, &forward, NULL, NULL);
+            if (Vec3_Dot(forward, self->movedir) < 0)
                 continue;
         }
 
@@ -182,7 +182,7 @@ void SP_trigger_multiple(edict_t *ent)
         return;
     }
 
-    if (ent->model || !VectorEmpty(ent->r.mins) || !VectorEmpty(ent->r.maxs))
+    if (ent->model || !Box3_IsEmpty(ent->r.box))
         ent->touch = Touch_Multi;
 
     // PGM
@@ -458,17 +458,17 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
     if (strcmp(other->classname, "grenade") == 0 || other->health > 0) {
         if (self->spawnflags & SPAWNFLAG_PUSH_ADDITIVE) {
             float max_speed = self->speed * 10;
-            if (DotProduct(other->velocity, self->movedir) < max_speed) {
+            if (Vec3_Dot(other->velocity, self->movedir) < max_speed) {
                 float speed_adjust = max_speed * FRAME_TIME_SEC * 2;
-                VectorMA(other->velocity, speed_adjust, self->movedir, other->velocity);
+                other->velocity = Vec3_MA(other->velocity, speed_adjust, self->movedir);
                 other->no_gravity_time = level.time + SEC(0.1f);
             }
         } else
-            VectorScale(self->movedir, self->speed * 10, other->velocity);
+            other->velocity = Vec3_Scale(self->movedir, self->speed * 10);
 
         if (other->client) {
             // don't take falling damage immediately from this
-            VectorCopy(other->velocity, other->client->oldvelocity);
+            other->client->oldvelocity = other->velocity;
             other->client->oldgroundentity = other->groundentity;
             if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT) && (other->fly_sound_debounce_time < level.time)) {
                 other->fly_sound_debounce_time = level.time + SEC(1.5f);
@@ -504,10 +504,10 @@ static void trigger_effect(edict_t *self)
     vec3_t origin;
     int    i;
 
-    VectorAvg(self->r.absmin, self->r.absmax, origin);
+    origin = Box3_Center(self->r.absbox);
 
     for (i = 0; i < 10; i++) {
-        origin[2] += (self->speed * 0.01f) * (i + frandom());
+        origin.z += (self->speed * 0.01f) * (i + frandom());
         G_TempEntity(origin, EV_TUNNEL_SPARKS, MakeLittleLong(0, irandom2(0x74, 0x7C), 1, 0));
     }
 }
@@ -671,7 +671,7 @@ void THINK(hurt_think)(edict_t *self)
     else
         dflags = DAMAGE_NONE;
 
-    count = trap_BoxEdicts(self->r.absmin, self->r.absmax, list, q_countof(list), AREA_SOLID);
+    count = trap_BoxEdicts(self->r.absbox, list, q_countof(list), AREA_SOLID);
 
     for (int i = 0; i < count; i++) {
         edict_t *other = g_edicts + list[i];
@@ -685,7 +685,7 @@ void THINK(hurt_think)(edict_t *self)
             }
         }
 
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
+        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
     }
 
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
@@ -721,7 +721,7 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     else
         dflags = DAMAGE_NONE;
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, (mod_t) { MOD_TRIGGER_HURT });
+    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
 }
 
 void SP_trigger_hurt(edict_t *self)
@@ -870,14 +870,14 @@ void TOUCH(trigger_monsterjump_touch)(edict_t *self, edict_t *other, const trace
         return;
 
     // set XY even if not on ground, so the jump will clear lips
-    other->velocity[0] = self->movedir[0] * self->speed;
-    other->velocity[1] = self->movedir[1] * self->speed;
+    other->velocity.x = self->movedir.x * self->speed;
+    other->velocity.y = self->movedir.y * self->speed;
 
     if (!other->groundentity)
         return;
 
     other->groundentity = NULL;
-    other->velocity[2] = self->movedir[2];
+    other->velocity.z = self->movedir.z;
 }
 
 void SP_trigger_monsterjump(edict_t *self)
@@ -886,11 +886,11 @@ void SP_trigger_monsterjump(edict_t *self)
         self->speed = 200;
     if (!st.height)
         st.height = 200;
-    if (self->s.angles[YAW] == 0)
-        self->s.angles[YAW] = 360;
+    if (self->s.angles.yaw == 0)
+        self->s.angles.yaw = 360;
     InitTrigger(self);
     self->touch = trigger_monsterjump_touch;
-    self->movedir[2] = st.height;
+    self->movedir.z = st.height;
 
     if (self->spawnflags & SPAWNFLAG_MONSTERJUMP_TOGGLE)
         self->use = trigger_monsterjump_use;
@@ -933,17 +933,17 @@ void TOUCH(trigger_flashlight_touch)(edict_t *self, edict_t *other, const trace_
         P_ToggleFlashlight(other, true);
     else if (self->style == 2)
         P_ToggleFlashlight(other, false);
-    else if (VectorLengthSquared(other->velocity) > 32)
-        P_ToggleFlashlight(other, DotProduct(other->velocity, self->movedir) > 0);
+    else if (Vec3_LengthSquared(other->velocity) > 32)
+        P_ToggleFlashlight(other, Vec3_Dot(other->velocity, self->movedir) > 0);
 }
 
 void SP_trigger_flashlight(edict_t *self)
 {
-    if (self->s.angles[YAW] == 0)
-        self->s.angles[YAW] = 360;
+    if (self->s.angles.yaw == 0)
+        self->s.angles.yaw = 360;
     InitTrigger(self);
     self->touch = trigger_flashlight_touch;
-    self->movedir[2] = st.height;
+    self->movedir.z = st.height;
 
     if (self->spawnflags & SPAWNFLAG_FLASHLIGHT_CLIPPED)
         self->r.svflags |= SVF_HULL;
@@ -1025,24 +1025,22 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     if (self->spawnflags & SPAWNFLAG_FOG_BLEND) {
         vec3_t center, half_size, start, end, player_dist;
 
-        VectorAvg(self->r.absmin, self->r.absmax, center);
-        VectorAvg(self->r.size, other->r.size, half_size);
-        VectorVectorScale(half_size, self->movedir, end);
-        VectorNegate(end, start);
-        VectorSubtract(other->s.origin, center, player_dist);
-        player_dist[0] *= fabsf(self->movedir[0]);
-        player_dist[1] *= fabsf(self->movedir[1]);
-        player_dist[2] *= fabsf(self->movedir[2]);
+        center = Box3_Center(self->r.absbox);
+        half_size = Vec3_Average(self->r.size, other->r.size);
+        end = Vec3_Mul(half_size, self->movedir);
+        start = Vec3_Negate(end);
+        player_dist = Vec3_Sub(other->s.origin, center);
+        player_dist = Vec3_Mul(player_dist, Vec3_Abs(self->movedir));
 
-        float frac = Q_clipf(Distance(player_dist, start) / Distance(end, start), 0, 1);
+        float frac = Q_clipf(Vec3_Distance(player_dist, start) / Vec3_Distance(end, start), 0, 1);
 
         if (self->spawnflags & SPAWNFLAG_FOG_AFFECT_FOG)
-            lerp_values(&fog_value_storage->fog_off, &fog_value_storage->fog, frac,
-                        &other->client->wanted_fog, sizeof(other->client->wanted_fog) / sizeof(float));
+            other->client->wanted_fog = BG_LerpFog(fog_value_storage->fog_off,
+                                                   fog_value_storage->fog, frac);
 
         if (self->spawnflags & SPAWNFLAG_FOG_AFFECT_HEIGHTFOG)
-            lerp_values(&fog_value_storage->heightfog_off, &fog_value_storage->heightfog, frac,
-                        &other->client->wanted_heightfog, sizeof(other->client->wanted_heightfog) / sizeof(float));
+            other->client->wanted_heightfog = BG_LerpHeightFog(fog_value_storage->heightfog_off,
+                                                               fog_value_storage->heightfog, frac);
 
         return;
     }
@@ -1050,14 +1048,12 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     bool use_on = true;
 
     if (!(self->spawnflags & SPAWNFLAG_FOG_FORCE)) {
-        vec3_t forward;
-
         // not moving enough to trip; this is so we don't trip
         // the wrong direction when on an elevator, etc.
-        if (VectorNormalize2(other->velocity, forward) <= 0.0001f)
+        if (Vec3_LengthSquared(other->velocity) <= 0.01f)
             return;
 
-        use_on = DotProduct(forward, self->movedir) > 0;
+        use_on = Vec3_Dot(other->velocity, self->movedir) > 0;
     }
 
     if (self->spawnflags & SPAWNFLAG_FOG_AFFECT_FOG)
@@ -1069,8 +1065,8 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 
 void SP_trigger_fog(edict_t *self)
 {
-    if (self->s.angles[YAW] == 0)
-        self->s.angles[YAW] = 360;
+    if (self->s.angles.yaw == 0)
+        self->s.angles.yaw = 360;
 
     InitTrigger(self);
 
@@ -1128,7 +1124,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
         if (!trigger_coop_relay_ok(player))
             continue;
 
-        if (G_EntitiesContact(player, self))
+        if (Box3_Intersects(player->r.absbox, self->r.absbox))
             continue;
 
         if (self->timestamp < level.time)
@@ -1164,7 +1160,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
         if (!trigger_coop_relay_ok(player))
             continue;
         num_active++;
-        if (G_EntitiesContact(player, self))
+        if (Box3_Intersects(player->r.absbox, self->r.absbox))
             num_present++;
     }
 
@@ -1183,7 +1179,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
             edict_t *player = &g_edicts[i];
             if (!trigger_coop_relay_ok(player))
                 continue;
-            if (G_EntitiesContact(player, self))
+            if (Box3_Intersects(player->r.absbox, self->r.absbox))
                 G_ClientPrintf(player, PRINT_CENTER, "%s", self->message);
             else
                 G_ClientPrintf(player, PRINT_CENTER, "%s", self->map);

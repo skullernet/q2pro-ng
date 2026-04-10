@@ -293,14 +293,13 @@ void MONSTERINFO_SETSKIN(gunner_setskin)(edict_t *self)
 
 static void gunner_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void gunner_shrink(edict_t *self)
 {
-    self->r.maxs[2] = -4;
+    self->r.box.maxs.z = -4;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -331,7 +330,7 @@ static const gib_def_t gunner_gibs[] = {
     { 0 }
 };
 
-void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -385,41 +384,37 @@ static void GunnerFire(edict_t *self)
 
     flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.2f, aim, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.2f, &aim, NULL);
     monster_fire_bullet(self, start, aim, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
 }
 
 static bool gunner_grenade_check(edict_t *self)
 {
+    vec3_t start;
+    vec3_t target;
+
     if (!self->enemy)
         return false;
 
-    vec3_t start;
-
-    if (!M_CheckClearShotEx(self, monster_flash_offset[MZ2_GUNNER_GRENADE_1], start))
+    if (!M_CheckClearShotEx(self, monster_flash_offset[MZ2_GUNNER_GRENADE_1], &start))
         return false;
-
-    vec3_t target;
 
     // check for flag telling us that we're blindfiring
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING)
-        VectorCopy(self->monsterinfo.blind_fire_target, target);
+        target = self->monsterinfo.blind_fire_target;
     else
-        VectorCopy(self->enemy->s.origin, target);
-
-    vec3_t aim;
+        target = self->enemy->s.origin;
 
     // see if we're too close
-    VectorSubtract(target, start, aim);
-
-    if (VectorNormalize(aim) < 100)
+    vec3_t aim = Vec3_Sub(target, start);
+    if (Vec3_Normalize(&aim) < 100)
         return false;
 
     // check to see that we can trace to the player before we start
     // tossing grenades around.
-    return M_CalculatePitchToFire(self, target, start, aim, 600, 2.5f, false, false);
+    return M_CalculatePitchToFire(self, target, start, &aim, 600, 2.5f, false, false);
 }
 
 static void GunnerGrenade(edict_t *self)
@@ -463,42 +458,38 @@ static void GunnerGrenade(edict_t *self)
     // if we're shooting blind and we still can't see our enemy
     if ((blindfire) && (!visible(self, self->enemy))) {
         // and we have a valid blind_fire_target
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
-        VectorCopy(self->monsterinfo.blind_fire_target, target);
+        target = self->monsterinfo.blind_fire_target;
     } else
-        VectorCopy(self->enemy->s.origin, target);
+        target = self->enemy->s.origin;
     // pmm
 
-    AngleVectors(self->s.angles, forward, right, up); // PGM
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, &up); // PGM
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     // PGM
     if (self->enemy) {
         float dist;
 
-        VectorSubtract(target, self->s.origin, aim);
-        dist = VectorLength(aim);
+        aim = Vec3_Sub(target, self->s.origin);
+        dist = Vec3_Length(aim);
 
         // aim up if they're on the same level as me and far away.
-        if ((dist > 512) && (aim[2] < 64) && (aim[2] > -64))
-            aim[2] += (dist - 512);
+        if ((dist > 512) && (aim.z < 64) && (aim.z > -64))
+            aim.z += (dist - 512);
 
-        VectorNormalize(aim);
-        pitch = aim[2];
-        if (pitch > 0.4f)
-            pitch = 0.4f;
-        else if (pitch < -0.5f)
-            pitch = -0.5f;
+        aim = Vec3_Normalize(aim);
+        pitch = Q_clipf(aim.z, -0.5f, 0.4f);
     }
     // PGM
 
-    VectorMA(forward, spread, right, aim);
-    VectorMA(aim, pitch, up, aim);
+    aim = Vec3_MA(forward, spread, right);
+    aim = Vec3_MA(aim, pitch, up);
 
     // try search for best pitch
-    if (M_CalculatePitchToFire(self, target, start, aim, 600, 2.5f, false, false))
+    if (M_CalculatePitchToFire(self, target, start, &aim, 600, 2.5f, false, false))
         monster_fire_grenade(self, start, aim, 50, 600, flash_number, (crandom_open() * 10.0f), frandom() * 10.0f);
     else // normal shot
         monster_fire_grenade(self, start, aim, 50, 600, flash_number, (crandom_open() * 10.0f), 200.0f + (crandom_open() * 10.0f));
@@ -542,7 +533,7 @@ static void gunner_blind_check(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
         vec3_t aim;
-        VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, aim);
+        aim = Vec3_Sub(self->monsterinfo.blind_fire_target, self->s.origin);
         self->ideal_yaw = vectoyaw(aim);
     }
 }
@@ -619,7 +610,7 @@ void MONSTERINFO_ATTACK(gunner_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(4.1f, 7.1f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // don't shoot if the dice say not to
@@ -672,18 +663,18 @@ static void gunner_jump_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void gunner_jump2_now(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 150, forward, self->velocity);
-    VectorMA(self->velocity, 400, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 150, forward);
+    self->velocity = Vec3_MA(self->velocity, 400, up);
 }
 
 static void gunner_jump_wait_land(edict_t *self)
@@ -732,7 +723,7 @@ static void gunner_jump(edict_t *self, blocked_jump_result_t result)
 
     monster_done_dodge(self);
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &gunner_move_jump2);
     else
         M_SetAnimation(self, &gunner_move_jump);
@@ -746,7 +737,7 @@ bool MONSTERINFO_BLOCKED(gunner_blocked)(edict_t *self, float dist)
         return true;
 
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             gunner_jump(self, result);
         return true;
@@ -836,8 +827,7 @@ void SP_monster_gunner(edict_t *self)
 
     G_PrecacheGibs(gunner_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 36);
+    self->r.box = Box3_FromSize(16, -24, 36);
 
     self->health = 175 * st.health_multiplier;
     self->gib_health = -70;

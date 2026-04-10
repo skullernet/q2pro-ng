@@ -987,30 +987,25 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->s.effects = item->world_model_flags;
     dropped->s.modelindex = G_ModelIndex(dropped->item->world_model);
     dropped->s.renderfx = RF_GLOW | RF_IR_VISIBLE; // PGM
-    VectorSet(dropped->r.mins, -15, -15, -15);
-    VectorSet(dropped->r.maxs, 15, 15, 15);
+    dropped->r.box = Box3_FromRadius(15);
     dropped->r.solid = SOLID_TRIGGER;
     dropped->movetype = MOVETYPE_TOSS;
     dropped->touch = drop_temp_touch;
     dropped->r.ownernum = ent->s.number;
 
     if (ent->client) {
-        trace_t trace;
-
-        AngleVectors(ent->client->v_angle, forward, right, NULL);
-        G_ProjectSource(ent->s.origin, (const vec3_t) { 24, 0, -16 }, forward, right, dropped->s.origin);
-        trap_Trace(&trace, ent->s.origin, dropped->r.mins, dropped->r.maxs,
-                   dropped->s.origin, ent->s.number, CONTENTS_SOLID);
-        VectorCopy(trace.endpos, dropped->s.origin);
+        AngleVectors(ent->client->v_angle, &forward, &right, NULL);
+        dropped->s.origin = G_ProjectSource(ent->s.origin, Vec3(24, 0, -16), forward, right);
+        dropped->s.origin = G_Trace(ent->s.origin, dropped->s.origin, dropped->r.box, ent->s.number, CONTENTS_SOLID).endpos;
     } else {
-        AngleVectors(ent->s.angles, forward, right, NULL);
-        VectorAvg(ent->r.absmin, ent->r.absmax, dropped->s.origin);
+        AngleVectors(ent->s.angles, &forward, NULL, NULL);
+        dropped->s.origin = Box3_Center(ent->r.absbox);
     }
 
     G_FixStuckObject(dropped, dropped->s.origin);
 
-    VectorScale(forward, 100, dropped->velocity);
-    dropped->velocity[2] = 300;
+    dropped->velocity = Vec3_Scale(forward, 100);
+    dropped->velocity.z = 300;
 
     dropped->think = drop_make_touchable;
     dropped->nextthink = level.time + SEC(1);
@@ -1040,9 +1035,6 @@ void USE(Use_Item)(edict_t *ent, edict_t *other, edict_t *activator)
 
 //======================================================================
 
-static const vec3_t fc_mins = { -8, -8, -8 };
-static const vec3_t fc_maxs = { 8, 8, 8 };
-
 /*
 ================
 droptofloor
@@ -1055,13 +1047,10 @@ void THINK(droptofloor)(edict_t *ent)
     const char *model;
 
     // [Paril-KEX] scale foodcube based on how much we ingested
-    if (strcmp(ent->classname, "item_foodcube") == 0) {
-        VectorScale(fc_mins, ent->s.scale, ent->r.mins);
-        VectorScale(fc_maxs, ent->s.scale, ent->r.maxs);
-    } else {
-        VectorSet(ent->r.mins, -15, -15, -15);
-        VectorSet(ent->r.maxs, 15, 15, 15);
-    }
+    if (strcmp(ent->classname, "item_foodcube") == 0)
+        ent->r.box = Box3_FromRadius(8 * ent->s.scale);
+    else
+        ent->r.box = Box3_FromRadius(15);
 
     if (ent->model)
         model = ent->model;
@@ -1073,12 +1062,12 @@ void THINK(droptofloor)(edict_t *ent)
     ent->touch = Touch_Item;
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_NO_DROP)) {
-        VectorCopy(ent->s.origin, dest);
-        dest[2] -= 128;
+        dest = ent->s.origin;
+        dest.z -= 128;
 
-        trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID);
+        tr = G_Trace(ent->s.origin, dest, ent->r.box, ent->s.number, MASK_SOLID);
         if (!tr.startsolid) {
-            G_SnapVectorTowards(tr.endpos, ent->s.origin, ent->s.origin);
+            ent->s.origin = G_SnapVectorTowards(tr.endpos, ent->s.origin);
             if (tr.fraction < 1.0f) {
                 ent->groundentity = &g_edicts[tr.entnum];
                 ent->groundentity_linkcount = ent->groundentity->r.linkcount;
@@ -1088,7 +1077,7 @@ void THINK(droptofloor)(edict_t *ent)
         if (G_FixStuckObject(ent, ent->s.origin) == NO_GOOD_POSITION) {
             // RAFAEL
             if (strcmp(ent->classname, "item_foodcube") == 0)
-                ent->velocity[2] = 0;
+                ent->velocity.z = 0;
             else {
             // RAFAEL
                 G_Printf("%s: droptofloor: startsolid\n", etos(ent));
@@ -1407,25 +1396,23 @@ void Compass_Update(edict_t *ent, bool first)
         return;
     }
 
-    const vec_t *point = points[ent->client->help_draw_index];
+    vec3_t point = points[ent->client->help_draw_index];
 
     // don't draw too many points
-    if (DistanceSquared(ent->s.origin, point) > 4096 * 4096) {
+    if (Vec3_DistanceSquared(ent->s.origin, point) > 4096 * 4096) {
         Compass_Close(ent);
         return;
     }
 
     // raise from ground for PHS
-    vec3_t pos = { point[0], point[1], point[2] + 24 };
+    vec3_t pos = point;
+    pos.z += 24;
     if (!trap_InVis(ent->s.origin, pos, VIS_PHS | VIS_NOAREAS)) {
         Compass_Close(ent);
         return;
     }
 
-    vec3_t dir;
-    VectorSubtract(points[ent->client->help_draw_index + 1], point, dir);
-    VectorNormalize(dir);
-
+    vec3_t dir = Vec3_Direction(points[ent->client->help_draw_index + 1], point);
     trap_ClientCommand(ent, va("path %d %s %d", first, vtoa(point), DirToByte(dir)), false);
 
     ent->client->help_draw_index++;
@@ -1449,8 +1436,8 @@ static void Use_Compass(edict_t *ent, const gitem_t *inv)
         level.poi_points[ent->s.number] = points = G_Malloc(sizeof(vec3_t) * MAX_TEMP_POI_POINTS);
 
     PathRequest request = {
-        .start = VectorInit(ent->s.origin),
-        .goal = VectorInit(level.current_poi),
+        .start = ent->s.origin,
+        .goal = level.current_poi,
         .moveDist = 64.0f,
         .pathFlags = PathFlags_All,
         .nodeSearch = {
@@ -1475,27 +1462,23 @@ static void Use_Compass(edict_t *ent, const gitem_t *inv)
 
     // check if first nearby points are in front of us
     for (int i = 1; i < ent->client->help_draw_count; i++) {
-        vec3_t dir;
-        VectorSubtract(points[i], ent->s.origin, dir);
-        if (VectorNormalize(dir) > 192)
+        vec3_t dir = Vec3_Sub(points[i], ent->s.origin);
+        if (Vec3_Normalize(&dir) > 192)
             break;
-        if (DotProduct(dir, ent->client->v_forward) > 0.3f)
+        if (Vec3_Dot(dir, ent->client->v_forward) > 0.3f)
             infront = true;
     }
 
     // create an extra point if we're facing away
     if (!infront) {
-        vec3_t start = VectorInit(ent->s.origin);
-        start[2] += ent->viewheight;
+        vec3_t start = ent->s.origin;
+        start.z += ent->viewheight;
 
-        vec3_t end;
-        VectorMA(ent->s.origin, 64, ent->client->v_forward, end);
-
-        trace_t tr;
-        trap_Trace(&tr, start, NULL, NULL, end, ENTITYNUM_NONE, MASK_SOLID);
+        vec3_t end = Vec3_MA(ent->s.origin, 64, ent->client->v_forward);
+        trace_t tr = G_TraceLine(start, end, ENTITYNUM_NONE, MASK_SOLID);
 
         ent->client->help_draw_index--;
-        VectorMA(tr.endpos, 8, tr.plane.normal, points[ent->client->help_draw_index]);
+        points[ent->client->help_draw_index] = Vec3_MA(tr.endpos, 8, tr.plane.normal);
     }
 
     ent->client->help_draw_time = 0;

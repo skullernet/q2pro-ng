@@ -47,12 +47,9 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     if (self->enemy) {
-        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
-        VectorSubtract(point, self->s.origin, self->movedir);
-        VectorNormalize(self->movedir);
+        point = Box3_Center(self->enemy->r.absbox);
+        self->movedir = Vec3_Direction(point, self->s.origin);
     }
-
-    VectorMA(self->s.origin, self->style * 0.5f, self->movedir, point);
 
     self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, DirToByte(self->movedir));
     self->s.morefx = EFX_STEAM;
@@ -73,7 +70,7 @@ void THINK(target_steam_start)(edict_t *self)
             G_Printf("%s: target %s not found\n", etos(self), self->target);
         self->enemy = ent;
     } else {
-        G_SetMovedir(self->s.angles, self->movedir);
+        G_SetMovedir(self);
     }
 
     if (!self->count)
@@ -191,7 +188,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 
             if (trap_InVis(player->s.origin, ent->s.origin, VIS_PVS)) {
                 T_Damage(ent, self, self, vec3_origin, ent->s.origin, 0,
-                         ent->health, 0, DAMAGE_NO_PROTECTION, (mod_t) { MOD_TELEFRAG });
+                         ent->health, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
                 break;
             }
         }
@@ -204,7 +201,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
             continue;
 
         // nail it
-        T_Damage(player, self, self, vec3_origin, self->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, (mod_t) { MOD_TELEFRAG });
+        T_Damage(player, self, self, vec3_origin, self->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
     }
 
     level.deadly_kill_box = false;
@@ -224,9 +221,9 @@ Pulsing black light with sphere in the center
 */
 void THINK(blacklight_think)(edict_t *self)
 {
-    self->s.angles[0] += frandom1(10);
-    self->s.angles[1] += frandom1(10);
-    self->s.angles[2] += frandom1(10);
+    self->s.angles.pitch += frandom1(10);
+    self->s.angles.yaw += frandom1(10);
+    self->s.angles.roll += frandom1(10);
     self->nextthink = level.time + FRAME_TIME;
 }
 
@@ -237,9 +234,6 @@ void SP_target_blacklight(edict_t *ent)
         G_FreeEdict(ent);
         return;
     }
-
-    VectorClear(ent->r.mins);
-    VectorClear(ent->r.maxs);
 
     ent->s.effects |= (EF_TRACKERTRAIL | EF_TRACKER);
     ent->think = blacklight_think;
@@ -261,10 +255,6 @@ void SP_target_orb(edict_t *ent)
         return;
     }
 
-    VectorClear(ent->r.mins);
-    VectorClear(ent->r.maxs);
-
-    //  ent->s.effects |= EF_TRACKERTRAIL;
     ent->think = blacklight_think;
     ent->nextthink = level.time + HZ(10);
     ent->s.skinnum = 1;

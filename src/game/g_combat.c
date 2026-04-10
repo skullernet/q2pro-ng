@@ -14,45 +14,25 @@ explosions and melee attacks.
 */
 bool CanDamage(edict_t *targ, edict_t *inflictor)
 {
-    vec3_t  dest;
-    trace_t trace;
+    contents_t mask = MASK_SOLID | CONTENTS_PROJECTILECLIP;
+    vec3_t inflictor_center = G_EntityCenter(inflictor);
 
     // bmodels need special checking because their origin is 0,0,0
-    vec3_t inflictor_center;
-
-    if (inflictor->r.linked)
-        VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
-    else
-        VectorCopy(inflictor->s.origin, inflictor_center);
-
     if (targ->r.solid == SOLID_BSP) {
-        closest_point_to_box(inflictor_center, targ->r.absmin, targ->r.absmax, dest);
-
-        trap_Trace(&trace, inflictor_center, NULL, NULL, dest,
-                   inflictor->s.number, MASK_SOLID | CONTENTS_PROJECTILECLIP);
-        if (trace.fraction == 1.0f)
+        vec3_t end = Box3_ClampPoint(targ->r.absbox, inflictor_center);
+        if (G_TraceLine(inflictor_center, end, inflictor->s.number, mask).fraction == 1.0f)
             return true;
     }
 
-    vec3_t targ_center;
-
-    if (targ->r.linked)
-        VectorAvg(targ->r.absmin, targ->r.absmax, targ_center);
-    else
-        VectorCopy(targ->s.origin, targ_center);
-
-    trap_Trace(&trace, inflictor_center, NULL, NULL, targ_center,
-               inflictor->s.number, MASK_SOLID | CONTENTS_PROJECTILECLIP);
-    if (trace.fraction == 1.0f)
+    vec3_t targ_center = G_EntityCenter(targ);
+    if (G_TraceLine(inflictor_center, targ_center, inflictor->s.number, mask).fraction == 1.0f)
         return true;
 
     for (int i = 0; i < 4; i++) {
-        VectorCopy(targ_center, dest);
-        dest[0] += (i & 1) ? -15.0f : 15.0f;
-        dest[1] += (i & 2) ? -15.0f : 15.0f;
-        trap_Trace(&trace, inflictor_center, NULL, NULL, dest,
-                   inflictor->s.number, MASK_SOLID | CONTENTS_PROJECTILECLIP);
-        if (trace.fraction == 1.0f)
+        vec3_t end = targ_center;
+        end.x += (i & 1) ? -15.0f : 15.0f;
+        end.y += (i & 2) ? -15.0f : 15.0f;
+        if (G_TraceLine(inflictor_center, end, inflictor->s.number, mask).fraction == 1.0f)
             return true;
     }
 
@@ -64,7 +44,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 Killed
 ============
 */
-void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (targ->health < -999)
         targ->health = -999;
@@ -95,7 +75,7 @@ void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, co
 SpawnDamage
 ================
 */
-static void SpawnDamage(entity_event_t type, const vec3_t origin, int normal, int damage)
+static void SpawnDamage(entity_event_t type, vec3_t origin, int normal, int damage)
 {
     G_TempEntity(origin, type, normal);
 }
@@ -124,7 +104,7 @@ dflags      these flags are used to control how T_Damage works
     DAMAGE_NO_PROTECTION    kills godmode, armor, everything
 ============
 */
-static int CheckPowerArmor(edict_t *ent, const vec3_t point, int normal, int damage, damageflags_t dflags)
+static int CheckPowerArmor(edict_t *ent, vec3_t point, int normal, int damage, damageflags_t dflags)
 {
     gclient_t *client;
     int        save;
@@ -163,10 +143,9 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, int normal, int dam
         vec3_t vec, forward;
 
         // only works if damage point is in front
-        AngleVectors(ent->s.angles, forward, NULL, NULL);
-        VectorSubtract(point, ent->s.origin, vec);
-        VectorNormalize(vec);
-        if (DotProduct(vec, forward) <= 0.3f)
+        AngleVectors(ent->s.angles, &forward, NULL, NULL);
+        vec = Vec3_Direction(point, ent->s.origin);
+        if (Vec3_Dot(vec, forward) <= 0.3f)
             return 0;
 
         damagePerCell = 1;
@@ -227,7 +206,7 @@ static int CheckPowerArmor(edict_t *ent, const vec3_t point, int normal, int dam
     return save;
 }
 
-static int CheckArmor(edict_t *ent, const vec3_t point, int normal, int damage, entity_event_t te_sparks, damageflags_t dflags)
+static int CheckArmor(edict_t *ent, vec3_t point, int normal, int damage, entity_event_t te_sparks, damageflags_t dflags)
 {
     gclient_t     *client;
     int            save;
@@ -451,7 +430,7 @@ bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
     return !g_friendly_fire.integer && OnSameTeam(targ, attacker);
 }
 
-void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t dir, const vec3_t point,
+void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point,
               int normal, int damage, int knockback, damageflags_t dflags, mod_t mod)
 {
     gclient_t *client;
@@ -477,10 +456,8 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     if ((targ != attacker) && !(dflags & DAMAGE_NO_PROTECTION)) {
         // mark as friendly fire
         if (OnSameTeam(targ, attacker)) {
-            mod.friendly_fire = true;
-
             // if we're not a nuke & friendly fire is disabled, just kill the damage
-            if (!g_friendly_fire.integer && (mod.id != MOD_NUKE))
+            if (!g_friendly_fire.integer && (mod != MOD_NUKE))
                 damage = 0;
         }
     }
@@ -544,22 +521,15 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
     if (!(dflags & DAMAGE_NO_KNOCKBACK)) {
         if ((knockback) && (targ->movetype != MOVETYPE_NONE) && (targ->movetype != MOVETYPE_BOUNCE) &&
             (targ->movetype != MOVETYPE_PUSH) && (targ->movetype != MOVETYPE_STOP)) {
-            vec3_t kvel;
-            float  mass;
-
-            if (targ->mass < 50)
-                mass = 50;
-            else
-                mass = targ->mass;
-
-            VectorNormalize2(dir, kvel);
+            float  mass = max(targ->mass, 50);
+            float  kvel;
 
             if (targ->client && attacker == targ)
-                VectorScale(kvel, 1600.0f * knockback / mass, kvel); // the rocket jump hack...
+                kvel = 1600.0f * knockback / mass; // the rocket jump hack...
             else
-                VectorScale(kvel, 500.0f * knockback / mass, kvel);
+                kvel = 500.0f * knockback / mass;
 
-            VectorAdd(targ->velocity, kvel, targ->velocity);
+            targ->velocity = Vec3_MA(targ->velocity, kvel, Vec3_Normalize(dir));
         }
     }
 
@@ -622,7 +592,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
 
     // [Paril-KEX] player hit markers
     if (targ != attacker && attacker->client && targ->health > 0 &&
-        !(targ->r.svflags & SVF_DEADMONSTER) && !(targ->flags & FL_NO_DAMAGE_EFFECTS) && mod.id != MOD_TARGET_LASER)
+        !(targ->r.svflags & SVF_DEADMONSTER) && !(targ->flags & FL_NO_DAMAGE_EFFECTS) && mod != MOD_TARGET_LASER)
         attacker->client->ps.stats[STAT_HITS] += (take + psave + asave) > 0;
 
     // do the damage
@@ -638,7 +608,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
                     SpawnDamage(EV_GREEN_BLOOD, point, normal, take);
                 // XATRIX
                 // ROGUE
-                else if (mod.id == MOD_CHAINFIST)
+                else if (mod == MOD_CHAINFIST)
                     SpawnDamage(EV_MORE_BLOOD, point, normal, 255);
                 // ROGUE
                 else
@@ -669,7 +639,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
             targ->monsterinfo.damage_blood += take;
             targ->monsterinfo.damage_attacker = attacker;
             targ->monsterinfo.damage_inflictor = inflictor;
-            VectorCopy(point, targ->monsterinfo.damage_from);
+            targ->monsterinfo.damage_from = point;
             targ->monsterinfo.damage_mod = mod;
             targ->monsterinfo.damage_knockback += knockback;
             Killed(targ, inflictor, attacker, take, point, mod);
@@ -695,7 +665,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
             targ->monsterinfo.damage_attacker = attacker;
             targ->monsterinfo.damage_inflictor = inflictor;
             targ->monsterinfo.damage_blood += take;
-            VectorCopy(point, targ->monsterinfo.damage_from);
+            targ->monsterinfo.damage_from = point;
             targ->monsterinfo.damage_mod = mod;
             targ->monsterinfo.damage_knockback += knockback;
         }
@@ -713,7 +683,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, const vec3_t
         client->damage_armor += asave;
         client->damage_blood += take;
         client->damage_knockback += knockback;
-        VectorCopy(point, client->damage_from);
+        client->damage_from = point;
         client->last_damage_time = level.time + COOP_DAMAGE_RESPAWN_TIME;
     }
 }
@@ -731,10 +701,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
     vec3_t   dir;
     vec3_t   inflictor_center;
 
-    if (inflictor->r.linked)
-        VectorAvg(inflictor->r.absmin, inflictor->r.absmax, inflictor_center);
-    else
-        VectorCopy(inflictor->s.origin, inflictor_center);
+    inflictor_center = G_EntityCenter(inflictor);
 
     while ((ent = findradius(ent, inflictor_center, radius)) != NULL) {
         if (ent == ignore)
@@ -743,12 +710,10 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
             continue;
 
         if (ent->r.solid == SOLID_BSP && ent->r.linked)
-            closest_point_to_box(inflictor_center, ent->r.absmin, ent->r.absmax, v);
-        else {
-            VectorAvg(ent->r.mins, ent->r.maxs, v);
-            VectorAdd(v, ent->s.origin, v);
-        }
-        points = damage - 0.5f * Distance(inflictor_center, v);
+            v = Box3_ClampPoint(ent->r.absbox, inflictor_center);
+        else
+            v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+        points = damage - 0.5f * Vec3_Distance(inflictor_center, v);
         if (ent == attacker)
             points = points * 0.5f;
         if (points <= 0)
@@ -756,12 +721,11 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         if (!CanDamage(ent, inflictor))
             continue;
 
-        VectorSubtract(ent->s.origin, inflictor_center, dir);
-        VectorNormalize(dir);
+        dir = Vec3_Direction(ent->s.origin, inflictor_center);
 
         // [Paril-KEX] use closest point on bbox to explosion position
         // to spawn damage effect
-        closest_point_to_box(inflictor_center, ent->r.absmin, ent->r.absmax, v);
+        v = Box3_ClampPoint(ent->r.absbox, inflictor_center);
 
         T_Damage(ent, inflictor, attacker, dir, v, DirToByte(dir), points, points, dflags | DAMAGE_RADIUS, mod);
     }

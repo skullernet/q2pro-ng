@@ -25,7 +25,7 @@ V_Viewpos_f
 */
 static void V_Viewpos_f(void)
 {
-    Com_Printf("%s : %.f\n", vtos(cg.refdef.vieworg), cg.refdef.viewangles[YAW]);
+    Com_Printf("%s : %.f\n", vtos(cg.refdef.vieworg), cg.refdef.viewangles.yaw);
 }
 
 /*
@@ -36,16 +36,16 @@ V_Fog_f
 static void dump_fog(const player_fog_t *fog)
 {
     Com_Printf("(%.3f %.3f %.3f) %f %f\n",
-               fog->color[0], fog->color[1], fog->color[2],
+               fog->color.r, fog->color.g, fog->color.b,
                fog->density, fog->sky_factor);
 }
 
 static void dump_heightfog(const player_heightfog_t *fog)
 {
     Com_Printf("Start  : (%.3f %.3f %.3f) %.f\n",
-               fog->start.color[0], fog->start.color[1], fog->start.color[2], fog->start.dist);
+               fog->start.color.r, fog->start.color.g, fog->start.color.b, fog->start.dist);
     Com_Printf("End    : (%.3f %.3f %.3f) %.f\n",
-               fog->end.color[0], fog->end.color[1], fog->end.color[2], fog->end.dist);
+               fog->end.color.r, fog->end.color.g, fog->end.color.b, fog->end.dist);
     Com_Printf("Density: %f\n", fog->density);
     Com_Printf("Falloff: %f\n", fog->falloff);
 }
@@ -89,9 +89,9 @@ static void V_Fog_f(void)
         args[i] = Q_clipf(Q_atof(buf), 0, 1);
     }
 
-    cg_custom_fog.color[0]   = args[0];
-    cg_custom_fog.color[1]   = args[1];
-    cg_custom_fog.color[2]   = args[2];
+    cg_custom_fog.color.r    = args[0];
+    cg_custom_fog.color.g    = args[1];
+    cg_custom_fog.color.b    = args[2];
     cg_custom_fog.density    = args[3];
     cg_custom_fog.sky_factor = args[4];
 
@@ -158,10 +158,10 @@ static void SCR_Sky_f(void)
     if (argc == 6) {
         for (int i = 0; i < 3; i++) {
             trap_Argv(3 + i, buf, sizeof(buf));
-            axis[i] = Q_atof(buf);
+            axis.xyz[i] = Q_atof(buf);
         }
     } else
-        VectorSet(axis, 0, 0, 1);
+        axis = Vec3(0, 0, 1);
 
     trap_R_SetSky(name, rotate, true, axis);
 }

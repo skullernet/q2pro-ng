@@ -74,7 +74,7 @@ static void insane_onground(edict_t *self);
 // may fix later
 static void insane_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -570,8 +570,7 @@ static void insane_dead(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_INSANE_CRUCIFIED) {
         self->flags |= FL_FLY;
     } else {
-        VectorSet(self->r.mins, -16, -16, -24);
-        VectorSet(self->r.maxs, 16, 16, -8);
+        self->r.box = Box3_FromSize(16, -24, -8);
         self->movetype = MOVETYPE_TOSS;
     }
     monster_dead(self);
@@ -584,7 +583,7 @@ static const gib_def_t insane_gibs[] = {
     { 0 }
 };
 
-void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_IDLE);
@@ -649,8 +648,7 @@ void SP_misc_insane(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/insane/tris.md2");
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
 
     self->health = 100 * st.health_multiplier;
     self->gib_health = -50;

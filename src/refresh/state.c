@@ -132,8 +132,9 @@ void GL_DeleteBuffers(GLsizei n, const GLuint *buffers)
                 gls.currentbuffer[j] = 0;
 }
 
-static void GL_ScrollPos(vec2_t scroll, glStateBits_t bits)
+static vec2_t GL_ScrollPos(glStateBits_t bits)
 {
+    vec2_t scroll;
     float speed = 1.6f;
 
     if (bits & (GLS_SCROLL_X | GLS_SCROLL_Y))
@@ -147,12 +148,14 @@ static void GL_ScrollPos(vec2_t scroll, glStateBits_t bits)
     speed *= glr.fd.time;
 
     if (bits & GLS_SCROLL_Y) {
-        scroll[0] = 0;
-        scroll[1] = speed;
+        scroll.s = 0;
+        scroll.t = speed;
     } else {
-        scroll[0] = -speed;
-        scroll[1] = 0;
+        scroll.s = -speed;
+        scroll.t = 0;
     }
+
+    return scroll;
 }
 
 void GL_StateBits(glStateBits_t bits)
@@ -201,7 +204,7 @@ void GL_StateBits(glStateBits_t bits)
         GL_ShaderStateBits(bits & GLS_SHADER_MASK);
 
     if (diff & GLS_SCROLL_MASK && bits & GLS_SCROLL_ENABLE) {
-        GL_ScrollPos(gls.u_block.scroll, bits);
+        gls.u_block.scroll = GL_ScrollPos(bits);
         gls.u_block_dirty |= DIRTY_BLOCK;
     }
 
@@ -260,10 +263,10 @@ void GL_Setup2D(void)
     gls.u_block.modulate_world = 1.0f;
     gls.u_block.modulate_entities = 1.0f;
 
-    gls.u_block.w_amp[0] = 0.0025f;
-    gls.u_block.w_amp[1] = 0.0025f;
-    gls.u_block.w_phase[0] = M_PIf * 10;
-    gls.u_block.w_phase[1] = M_PIf * 10;
+    gls.u_block.w_amp.s = 0.0025f;
+    gls.u_block.w_amp.t = 0.0025f;
+    gls.u_block.w_phase.s = M_PIf * 10;
+    gls.u_block.w_phase.t = M_PIf * 10;
 
     GL_ForceMatrix(gl_identity);
 }
@@ -302,10 +305,10 @@ void GL_Setup3D(void)
     gls.u_block.modulate_world = gl_modulate->value * gl_modulate_world->value;
     gls.u_block.modulate_entities = gl_modulate->value * gl_modulate_entities->value;
 
-    gls.u_block.w_amp[0] = 0.0625f;
-    gls.u_block.w_amp[1] = 0.0625f;
-    gls.u_block.w_phase[0] = 4;
-    gls.u_block.w_phase[1] = 4;
+    gls.u_block.w_amp.s = 0.0625f;
+    gls.u_block.w_amp.t = 0.0625f;
+    gls.u_block.w_phase.s = 4;
+    gls.u_block.w_phase.t = 4;
 
     R_RotateForSky();
 
@@ -318,7 +321,7 @@ void GL_Setup3D(void)
     memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(gls.u_block.m_sky));
     memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
 
-    VectorCopy(glr.fd.vieworg, gls.u_block.vieworg);
+    gls.u_block.vieworg = Vec4_FromVec3(glr.fd.vieworg, 0);
 
     GL_Frustum(glr.fd.fov_x, glr.fd.fov_y, 1.0f);
 
@@ -425,7 +428,7 @@ void GL_PushLights(uint64_t bits)
 
 void GL_InitState(void)
 {
-    qglClearColor(Vector4Unpack(gl_static.clearcolor));
+    qglClearColor(Vec4_Unpack(gl_static.clearcolor));
     GL_ClearDepth(1);
     qglClearStencil(0);
 

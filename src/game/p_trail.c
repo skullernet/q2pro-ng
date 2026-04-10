@@ -1,7 +1,6 @@
 // Copyright (c) ZeniMax Media Inc.
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
-#include <float.h>
 
 /*
 ==============================================================================
@@ -96,7 +95,7 @@ void PlayerTrail_Add(edict_t *player)
         return;
 
     edict_t *trail = PlayerTrail_Spawn(player);
-    VectorCopy(player->s.old_origin, trail->s.origin);
+    trail->s.origin = player->s.old_origin;
     trail->timestamp = level.time;
     trail->r.ownernum = player->s.number;
 }
@@ -123,7 +122,7 @@ edict_t *PlayerTrail_Pick(edict_t *self, bool next)
         edict_t *closest = NULL;
 
         for (edict_t *m2 = marker; m2; m2 = m2->enemy) {
-            float len = DistanceSquared(m2->s.origin, self->s.origin);
+            float len = Vec3_DistanceSquared(m2->s.origin, self->s.origin);
 
             if (len < closest_dist) {
                 closest_dist = len;

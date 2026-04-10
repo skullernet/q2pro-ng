@@ -32,13 +32,13 @@ void THINK(sphere_think_explode)(edict_t *self)
     BecomeExplosion1(self);
 }
 
-void DIE(sphere_explode)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(sphere_explode)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     sphere_think_explode(self);
 }
 
 // if the sphere is not currently attacking, blow up.
-void DIE(sphere_if_idle_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(sphere_if_idle_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (!self->enemy)
         sphere_think_explode(self);
@@ -59,17 +59,17 @@ static void sphere_fly(edict_t *self)
     }
 
     edict_t *owner = &g_edicts[self->r.ownernum];
-    VectorCopy(owner->s.origin, dest);
-    dest[2] = owner->r.absmax[2] + 4;
+    dest = owner->s.origin;
+    dest.z = owner->r.absbox.maxs.z + 4;
 
     if (!(level.time % HZ(1)) && !visible(self, owner)) {
-        VectorCopy(dest, self->s.origin);
+        self->s.origin = dest;
         trap_LinkEntity(self);
         return;
     }
 
-    VectorSubtract(dest, self->s.origin, dir);
-    VectorScale(dir, 5, self->velocity);
+    dir = Vec3_Sub(dest, self->s.origin);
+    self->velocity = Vec3_Scale(dir, 5);
 }
 
 static void sphere_chase(edict_t *self, int stupidChase)
@@ -83,53 +83,52 @@ static void sphere_chase(edict_t *self, int stupidChase)
         return;
     }
 
-    VectorCopy(self->enemy->s.origin, dest);
+    dest = self->enemy->s.origin;
     if (self->enemy->client)
-        dest[2] += self->enemy->viewheight;
+        dest.z += self->enemy->viewheight;
 
     if (visible(self, self->enemy) || stupidChase) {
         // if moving, hunter sphere uses active sound
         if (!stupidChase)
             self->s.sound = G_SoundIndex("spheres/h_active.wav");
 
-        VectorSubtract(dest, self->s.origin, dir);
-        VectorNormalize(dir);
-        vectoangles(dir, self->s.angles);
-        VectorScale(dir, 500, self->velocity);
-        VectorCopy(dest, self->monsterinfo.saved_goal);
-    } else if (VectorEmpty(self->monsterinfo.saved_goal)) {
-        VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-        vectoangles(dir, self->s.angles);
+        dir = Vec3_Direction(dest, self->s.origin);
+        self->s.angles = vectoangles(dir);
+        self->velocity = Vec3_Scale(dir, 500);
+        self->monsterinfo.saved_goal = dest;
+    } else if (Vec3_IsEmpty(self->monsterinfo.saved_goal)) {
+        dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
+        self->s.angles = vectoangles(dir);
 
         // if lurking, hunter sphere uses lurking sound
         self->s.sound = G_SoundIndex("spheres/h_lurk.wav");
-        VectorClear(self->velocity);
+        self->velocity = vec3_origin;
     } else {
-        VectorSubtract(self->monsterinfo.saved_goal, self->s.origin, dir);
-        dist = VectorNormalize(dir);
+        dir = Vec3_Sub(self->monsterinfo.saved_goal, self->s.origin);
+        dist = Vec3_Normalize(&dir);
 
         if (dist > 1) {
-            vectoangles(dir, self->s.angles);
+            self->s.angles = vectoangles(dir);
 
             if (dist > 500)
-                VectorScale(dir, 500, self->velocity);
+                self->velocity = Vec3_Scale(dir, 500);
             else if (dist < 20)
-                VectorScale(dir, dist / FRAME_TIME_SEC, self->velocity);
+                self->velocity = Vec3_Scale(dir, dist / FRAME_TIME_SEC);
             else
-                VectorScale(dir, dist, self->velocity);
+                self->velocity = Vec3_Scale(dir, dist);
 
             // if moving, hunter sphere uses active sound
             if (!stupidChase)
                 self->s.sound = G_SoundIndex("spheres/h_active.wav");
         } else {
-            VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-            vectoangles(dir, self->s.angles);
+            dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
+            self->s.angles = vectoangles(dir);
 
             // if not moving, hunter sphere uses lurk sound
             if (!stupidChase)
                 self->s.sound = G_SoundIndex("spheres/h_lurk.wav");
 
-            VectorClear(self->velocity);
+            self->velocity = vec3_origin;
         }
     }
 }
@@ -149,13 +148,12 @@ static void sphere_fire(edict_t *self, edict_t *enemy)
         return;
     }
 
-    VectorCopy(enemy->s.origin, dest);
+    dest = enemy->s.origin;
     self->s.effects |= EF_ROCKET;
 
-    VectorSubtract(dest, self->s.origin, dir);
-    VectorNormalize(dir);
-    vectoangles(dir, self->s.angles);
-    VectorScale(dir, 1000, self->velocity);
+    dir = Vec3_Direction(dest, self->s.origin);
+    self->s.angles = vectoangles(dir);
+    self->velocity = Vec3_Scale(dir, 1000);
 
     self->touch = vengeance_touch;
     self->think = sphere_think_explode;
@@ -202,9 +200,9 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
 void TOUCH(vengeance_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     if (self->spawnflags & SPHERE_DOPPLEGANGER)
-        sphere_touch(self, other, tr, (mod_t) { MOD_DOPPLE_VENGEANCE });
+        sphere_touch(self, other, tr, MOD_DOPPLE_VENGEANCE);
     else
-        sphere_touch(self, other, tr, (mod_t) { MOD_VENGEANCE_SPHERE });
+        sphere_touch(self, other, tr, MOD_VENGEANCE_SPHERE);
 }
 
 void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -219,16 +217,16 @@ void TOUCH(hunter_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
         // if owner is flying with us, make sure they stop too.
         owner = &g_edicts[self->r.ownernum];
         if (owner->flags & FL_SAM_RAIMI) {
-            VectorClear(owner->velocity);
+            owner->velocity = vec3_origin;
             owner->movetype = MOVETYPE_NONE;
             trap_LinkEntity(owner);
         }
     }
 
     if (self->spawnflags & SPHERE_DOPPLEGANGER)
-        sphere_touch(self, other, tr, (mod_t) { MOD_DOPPLE_HUNTER });
+        sphere_touch(self, other, tr, MOD_DOPPLE_HUNTER);
     else
-        sphere_touch(self, other, tr, (mod_t) { MOD_HUNTER_SPHERE });
+        sphere_touch(self, other, tr, MOD_HUNTER_SPHERE);
 }
 
 static void defender_shoot(edict_t *self, edict_t *enemy)
@@ -251,11 +249,10 @@ static void defender_shoot(edict_t *self, edict_t *enemy)
     if (!visible(self, self->enemy))
         return;
 
-    VectorSubtract(enemy->s.origin, self->s.origin, dir);
-    VectorNormalize(dir);
+    dir = Vec3_Direction(enemy->s.origin, self->s.origin);
 
-    VectorCopy(self->s.origin, start);
-    start[2] += 2;
+    start = self->s.origin;
+    start.z += 2;
     fire_blaster2(owner, start, dir, 10, 1000, EF_BLASTER, 0);
 
     self->monsterinfo.attack_finished = level.time + SEC(0.4f);
@@ -315,7 +312,7 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (g_dm_force_respawn.integer || !huntercam.integer)
         return;
 
-    dist = Distance(other->s.origin, self->s.origin);
+    dist = Vec3_Distance(other->s.origin, self->s.origin);
     if (dist < 192)
         return;
 
@@ -327,15 +324,14 @@ void PAIN(hunter_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
     // move the sphere to the owner's current viewpoint.
     // we know it's a valid spot (or will be momentarily)
-    VectorCopy(owner->s.origin, self->s.origin);
-    self->s.origin[2] += owner->viewheight;
+    self->s.origin = owner->s.origin;
+    self->s.origin.z += owner->viewheight;
 
     // move the player's origin to the sphere's new origin
-    VectorCopy(self->s.origin, owner->s.origin);
-    VectorCopy(self->s.angles, owner->s.angles);
-    VectorCopy(self->s.angles, owner->client->v_angle);
-    VectorSet(owner->r.mins, -5, -5, -5);
-    VectorSet(owner->r.maxs, 5, 5, 5);
+    owner->s.origin = self->s.origin;
+    owner->s.angles = self->s.angles;
+    owner->client->v_angle = self->s.angles;
+    owner->r.box = Box3_FromRadius(5);
     owner->client->ps.fov = 140;
     owner->s.modelindex = 0;
     owner->s.modelindex2 = 0;
@@ -441,10 +437,9 @@ void THINK(hunter_think)(edict_t *self)
     }
 
     if (owner)
-        self->ideal_yaw = owner->s.angles[YAW];
+        self->ideal_yaw = owner->s.angles.yaw;
     else if (self->enemy) { // fired by doppleganger
-        vec3_t dir;
-        VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
+        vec3_t dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
         self->ideal_yaw = vectoyaw(dir);
     }
 
@@ -460,14 +455,13 @@ void THINK(hunter_think)(edict_t *self)
                 LookAtKiller(owner, self, self->enemy);
                 // owner is flying with us, move him too
                 owner->movetype = MOVETYPE_FLYMISSILE;
-                owner->viewheight = self->s.origin[2] - owner->s.origin[2];
-                VectorCopy(self->s.origin, owner->s.origin);
-                VectorCopy(self->velocity, owner->velocity);
-                VectorClear(owner->r.mins);
-                VectorClear(owner->r.maxs);
+                owner->viewheight = self->s.origin.z - owner->s.origin.z;
+                owner->s.origin = self->s.origin;
+                owner->velocity = self->velocity;
+                owner->r.box = box3_origin;
                 trap_LinkEntity(owner);
             } else { // sphere timed out
-                VectorClear(owner->velocity);
+                owner->velocity = vec3_origin;
                 owner->movetype = MOVETYPE_NONE;
                 trap_LinkEntity(owner);
             }
@@ -510,9 +504,9 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
     edict_t *sphere;
 
     sphere = G_Spawn();
-    VectorCopy(owner->s.origin, sphere->s.origin);
-    sphere->s.origin[2] = owner->r.absmax[2];
-    sphere->s.angles[YAW] = owner->s.angles[YAW];
+    sphere->s.origin = owner->s.origin;
+    sphere->s.origin.z = owner->r.absbox.maxs.z;
+    sphere->s.angles.yaw = owner->s.angles.yaw;
     sphere->r.solid = SOLID_BBOX;
     sphere->clipmask = MASK_PROJECTILE;
     sphere->s.renderfx = RF_FULLBRIGHT | RF_IR_VISIBLE;
@@ -555,7 +549,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
         sphere->pain = vengeance_pain;
         sphere->die = sphere_if_idle_die;
         sphere->think = vengeance_think;
-        VectorSet(sphere->avelocity, 30, 30, 0);
+        sphere->avelocity = Vec3(30, 30, 0);
         break;
     default:
         G_Printf("Tried to create an invalid sphere\n");

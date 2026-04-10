@@ -417,7 +417,7 @@ void PAIN(soldier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
 
     if (level.time < self->pain_debounce_time) {
-        if ((self->velocity[2] > 100) && ((self->monsterinfo.active_move == &soldier_move_pain1) || (self->monsterinfo.active_move == &soldier_move_pain2) || (self->monsterinfo.active_move == &soldier_move_pain3))) {
+        if ((self->velocity.z > 100) && ((self->monsterinfo.active_move == &soldier_move_pain1) || (self->monsterinfo.active_move == &soldier_move_pain2) || (self->monsterinfo.active_move == &soldier_move_pain3))) {
             // PMM - clear duck flag
             if (self->monsterinfo.aiflags & AI_DUCKED)
                 monster_duck_up(self);
@@ -436,7 +436,7 @@ void PAIN(soldier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     else
         G_StartSound(self, CHAN_VOICE, sound_pain_ss, 1, ATTN_NORM);
 
-    if (self->velocity[2] > 100) {
+    if (self->velocity.z > 100) {
         // PMM - clear duck flag
         if (self->monsterinfo.aiflags & AI_DUCKED)
             monster_duck_up(self);
@@ -480,19 +480,18 @@ void PRETHINK(soldierh_laser_update)(edict_t *laser)
     edict_t *self = &g_edicts[laser->r.ownernum];
     vec3_t start, axis[3];
 
-    AngleVectors(self->s.angles, axis[0], axis[1], axis[2]);
+    AngleVectors(self->s.angles, &axis[0], &axis[1], &axis[2]);
     TransposeAxis(axis);
 
-    VectorCopy(monster_flash_offset[self->radius_dmg], start);
-    start[2] += 6;
-    RotatePoint(start, axis);
-    VectorAdd(start, self->s.origin, start);
+    start = monster_flash_offset[self->radius_dmg];
+    start.z += 6;
+    start = Vec3_Rotate(start, axis);
+    start = Vec3_Add(start, self->s.origin);
 
     if (!self->deadflag)
-        PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), axis[0], NULL);
+        M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
 
-    G_SnapVector(start, laser->s.origin);
-    VectorCopy(axis[0], laser->movedir);
+    laser->s.origin = G_SnapVector(start);
     trap_LinkEntity(laser);
     dabeam_update(laser, false);
 }
@@ -504,8 +503,6 @@ static void soldierh_laserbeam(edict_t *self, int flash_index)
     monster_fire_dabeam(self, 1, false, soldierh_laser_update);
 }
 // RAFAEL
-
-bool M_AdjustBlindfireTarget(edict_t *self, const vec3_t start, const vec3_t target, const vec3_t right, vec3_t out_dir);
 
 static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
 {
@@ -536,14 +533,14 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
         break;
     }
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_index], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_index], forward, right);
 
     if (flash_number == 5 || flash_number == 6) { // he's dead
         if (self->spawnflags & SPAWNFLAG_MONSTER_DEAD)
             return;
 
-        VectorCopy(forward, aim);
+        aim = forward;
     } else {
         // [Paril-KEX] no enemy = no fire
         if ((!self->enemy) || (!self->enemy->r.inuse)) {
@@ -553,20 +550,20 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
 
         // PMM
         if (self->monsterinfo.aiflags & AI_MANUAL_STEERING)
-            VectorCopy(self->monsterinfo.blind_fire_target, end);
+            end = self->monsterinfo.blind_fire_target;
         else
-            VectorCopy(self->enemy->s.origin, end);
+            end = self->enemy->s.origin;
         // pmm
-        end[2] += self->enemy->viewheight;
-        VectorSubtract(end, start, aim);
+        end.z += self->enemy->viewheight;
+        aim = Vec3_Sub(end, start);
 
         if (self->monsterinfo.aiflags & AI_MANUAL_STEERING)
-            M_AdjustBlindfireTarget(self, start, end, right, dir);
+            M_AdjustBlindfireTarget(self, start, end, right, &dir);
 
         // PMM
         if (angle_limited) {
-            VectorNormalize2(aim, aim_norm);
-            if (DotProduct(aim_norm, forward) < 0.5f) { // ~25 degree angle
+            aim_norm = Vec3_Normalize(aim);
+            if (Vec3_Dot(aim_norm, forward) < 0.5f) { // ~25 degree angle
                 if (level.time >= self->monsterinfo.fire_wait)
                     self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
                 else
@@ -577,8 +574,8 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
         }
         //-PMM
 
-        vectoangles(aim, dir);
-        AngleVectors(dir, forward, right, up);
+        dir = vectoangles(aim);
+        AngleVectors(dir, &forward, &right, &up);
 
         r = crandom() * 1000;
         u = crandom() * 500;
@@ -588,12 +585,11 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
             u /= 10;
         }
 
-        VectorMA(start, 8192, forward, end);
-        VectorMA(end, r, right, end);
-        VectorMA(end, u, up, end);
+        end = Vec3_MA(start, 8192, forward);
+        end = Vec3_MA(end, r, right);
+        end = Vec3_MA(end, u, up);
 
-        VectorSubtract(end, start, aim);
-        VectorNormalize(aim);
+        aim = Vec3_Direction(end, start);
     }
 
     switch (soldier_style()) {
@@ -698,8 +694,7 @@ static void soldier_attack1_shotgun_check(edict_t *self)
 static void soldier_blind_check(edict_t *self)
 {
     if (self->monsterinfo.aiflags & AI_MANUAL_STEERING) {
-        vec3_t aim;
-        VectorSubtract(self->monsterinfo.blind_fire_target, self->s.origin, aim);
+        vec3_t aim = Vec3_Sub(self->monsterinfo.blind_fire_target, self->s.origin);
         self->ideal_yaw = vectoyaw(aim);
     }
 }
@@ -1043,7 +1038,7 @@ void MONSTERINFO_ATTACK(soldier_attack)(edict_t *self)
         self->monsterinfo.blind_fire_delay += random_time_sec(4.1f, 7.1f);
 
         // don't shoot at the origin
-        if (VectorEmpty(self->monsterinfo.blind_fire_target))
+        if (Vec3_IsEmpty(self->monsterinfo.blind_fire_target))
             return;
 
         // don't shoot if the dice say not to
@@ -1159,14 +1154,13 @@ static bool soldier_prone_shoot_ok(edict_t *self)
         return false;
 
     vec3_t fwd;
-    AngleVectors(self->s.angles, fwd, NULL, NULL);
+    AngleVectors(self->s.angles, &fwd, NULL, NULL);
 
-    vec3_t diff;
-    VectorSubtract(self->enemy->s.origin, self->s.origin, diff);
-    diff[2] = 0;
-    VectorNormalize(diff);
+    vec3_t diff = Vec3_Sub(self->enemy->s.origin, self->s.origin);
+    diff.z = 0;
+    diff = Vec3_Normalize(diff);
 
-    if (DotProduct(fwd, diff) < 0.80f)
+    if (Vec3_Dot(fwd, diff) < 0.80f)
         return false;
 
     return true;
@@ -1271,15 +1265,14 @@ static void soldier_fire7(edict_t *self)
 
 static void soldier_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void soldier_death_shrink(edict_t *self)
 {
     self->r.svflags |= SVF_DEADMONSTER;
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     trap_LinkEntity(self);
 }
 
@@ -1538,7 +1531,7 @@ static const gib_def_t soldier_gibs[] = {
     { 0 }
 };
 
-void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     int n;
 
@@ -1574,7 +1567,7 @@ void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
     else
         G_StartSound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM);
 
-    if (fabsf((self->s.origin[2] + self->viewheight) - point[2]) <= 4 && self->velocity[2] < 65) {
+    if (fabsf((self->s.origin.z + self->viewheight) - point.z) <= 4 && self->velocity.z < 65) {
         // head shot
         M_SetAnimation(self, &soldier_move_death3);
         return;
@@ -1590,7 +1583,7 @@ void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
     }
 
     // only do the spin-death if we have enough velocity to justify it
-    if (self->velocity[2] > 65 || VectorLength(self->velocity) > 150)
+    if (self->velocity.z > 65 || Vec3_Length(self->velocity) > 150)
         n = irandom1(5);
     else
         n = irandom1(4);
@@ -1716,8 +1709,7 @@ static void SP_monster_soldier_x(edict_t *self)
 {
     self->s.modelindex = G_ModelIndex("models/monsters/soldier/tris.md2");
     self->monsterinfo.scale = MODEL_SCALE;
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 32);
+    self->r.box = Box3_FromSize(16, -24, 32);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

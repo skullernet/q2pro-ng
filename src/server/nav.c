@@ -3,7 +3,6 @@
 // nav.c -- Kex navigation node support
 
 #include "server.h"
-#include <float.h>
 
 #define NAV_DEBUG (USE_REF && USE_DEBUG)
 
@@ -202,13 +201,6 @@ static void Nav_AllocContext(nav_ctx_t *ctx)
     ctx->open_set  = Z_TagMalloc(sizeof(ctx->open_set [0]) * nav_data.num_nodes, TAG_NAV);
 }
 
-static void Nav_ReadVector(sizebuf_t *b, vec3_t v)
-{
-    v[0] = SZ_ReadFloat(b);
-    v[1] = SZ_ReadFloat(b);
-    v[2] = SZ_ReadFloat(b);
-}
-
 #define NAV_VERIFY(condition, error) \
     if (!(condition)) { err = error; goto fail; }
 
@@ -280,7 +272,7 @@ bool Nav_Load(void)
     for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
 
-        Nav_ReadVector(&b, node->origin);
+        node->origin = SZ_ReadVector(&b);
 
         if (node->flags & NodeFlag_ConditionalMask)
             nav_data.conditional_nodes[c++] = node;
@@ -313,12 +305,12 @@ bool Nav_Load(void)
     for (int i = 0; i < nav_data.num_traversals; i++) {
         nav_traversal_t *traversal = nav_data.traversals + i;
 
-        Nav_ReadVector(&b, traversal->funnel);
-        Nav_ReadVector(&b, traversal->start);
-        Nav_ReadVector(&b, traversal->end);
+        traversal->funnel = SZ_ReadVector(&b);
+        traversal->start  = SZ_ReadVector(&b);
+        traversal->end    = SZ_ReadVector(&b);
 
         if (v >= NAV_VERSION_4)
-            Nav_ReadVector(&b, traversal->ladder_plane);
+            traversal->ladder_plane = SZ_ReadVector(&b);
     }
 
     nav_data.num_edicts = SZ_ReadLong(&b);
@@ -335,8 +327,8 @@ bool Nav_Load(void)
         edict->link->edict = edict;
         edict->game_edict = NULL;
         edict->model = SZ_ReadLong(&b) - 1; // inline models start at modelindex 1 now
-        Nav_ReadVector(&b, edict->mins);
-        Nav_ReadVector(&b, edict->maxs);
+        edict->mins = SZ_ReadVector(&b);
+        edict->maxs = SZ_ReadVector(&b);
     }
 
     // must not have consumed terminating NUL
@@ -365,7 +357,7 @@ void Nav_Unload(void)
 // built-in path functions
 static float Nav_Heuristic(const nav_path_t *path, const nav_node_t *node)
 {
-    return DistanceSquared(path->goal->origin, node->origin);
+    return Vec3_DistanceSquared(path->goal->origin, node->origin);
 }
 
 static float Nav_Weight(const nav_path_t *path, const nav_node_t *node, const nav_link_t *link)
@@ -373,7 +365,7 @@ static float Nav_Weight(const nav_path_t *path, const nav_node_t *node, const na
     if (link->type == NavLinkType_Teleport)
         return 1.0f;
 
-    return DistanceSquared(node->origin, link->target->origin);
+    return Vec3_DistanceSquared(node->origin, link->target->origin);
 }
 
 static bool Nav_NodeAccessible(const nav_path_t *path, const nav_node_t *node)
@@ -423,14 +415,14 @@ static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, c
     case NavLinkType_WalkOffLedge:
         if (!(req->pathFlags & PathFlags_WalkOffLedge))
             return false;
-        if (trv && trv->start[2] - trv->end[2] > req->traversals.dropHeight)
+        if (trv && trv->start.z - trv->end.z > req->traversals.dropHeight)
             return false;
         return true;
 
     case NavLinkType_BarrierJump:
         if (!(req->pathFlags & PathFlags_BarrierJump))
             return false;
-        if (trv && trv->end[2] - trv->start[2] > req->traversals.jumpHeight)
+        if (trv && trv->end.z - trv->start.z > req->traversals.jumpHeight)
             return false;
         return true;
 
@@ -439,35 +431,40 @@ static bool Nav_LinkAccessible(const nav_path_t *path, const nav_node_t *node, c
     }
 }
 
-static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, const vec3_t p)
+static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, vec3_t p)
 {
     const PathRequest *req = path->request;
     float w = INFINITY;
     const nav_node_t *c = NULL;
 
-    float min_z = p[2] - req->nodeSearch.minHeight;
-    float max_z = p[2] + req->nodeSearch.maxHeight;
+    float min_z = p.z - req->nodeSearch.minHeight;
+    float max_z = p.z + req->nodeSearch.maxHeight;
+
+    trace_args_t args = {
+        .start = p,
+        .entnum = ENTITYNUM_NONE,
+        .mask = MASK_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP
+    };
 
     for (int i = 0; i < nav_data.num_nodes; i++) {
         const nav_node_t *node = &nav_data.nodes[i];
         if (!Nav_NodeAccessible(path, node))
             continue;
 
-        if (node->origin[2] < min_z || node->origin[2] > max_z)
+        if (node->origin.z < min_z || node->origin.z > max_z)
             continue;
 
-        vec2_t d;
-        Vector2Subtract(node->origin, p, d);
+        vec3_t d = Vec3_Sub(node->origin, p);
 
-        float l = Vector2Length(d);
+        float l = Vec2_Length(Vec2_FromVec3(d));
         if (l > req->nodeSearch.radius)
             continue;
 
-        vec3_t end = { 0, 0, 32 };
-        VectorAdd(end, node->origin, end);
+        args.end = node->origin;
+        args.end.z += 32;
+
         trace_t tr;
-        SV_Trace(&tr, p, NULL, NULL, end, ENTITYNUM_NONE,
-                 MASK_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_MONSTERCLIP);
+        SV_Trace(&tr, &args);
         if (tr.fraction < 1.0f)
             continue;
 
@@ -489,17 +486,16 @@ static const nav_link_t *Nav_GetLink(const nav_node_t *a, const nav_node_t *b)
     return NULL;
 }
 
-static bool Nav_TouchingNode(const vec3_t pos, float move_dist, const nav_node_t *node)
+static bool Nav_TouchingNode(vec3_t pos, float move_dist, const nav_node_t *node)
 {
-    return Distance(node->origin, pos) <= move_dist;
+    return Vec3_Distance(node->origin, pos) <= move_dist;
 }
 
-static bool Nav_NodeReached(const vec3_t pos, const nav_node_t *node)
+static bool Nav_NodeReached(vec3_t pos, const nav_node_t *node)
 {
-    vec3_t d;
-    VectorSubtract(node->origin, pos, d);
+    vec3_t d = Vec3_Sub(node->origin, pos);
 
-    return Vector2Length(d) <= node->radius && fabsf(d[2]) <= 64;
+    return Vec2_Length(Vec2_FromVec3(d)) <= node->radius && fabsf(d.z) <= 64;
 }
 
 static void Nav_PushOpenSet(nav_ctx_t *ctx, const nav_node_t *node, float f)
@@ -574,27 +570,27 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
     // store resulting path for compass, etc
     if (path->maxPoints) {
         // if we're too far from the first node, add in our current position.
-        float dist = DistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
+        float dist = Vec3_DistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
 
         if (dist > PATH_POINT_TOO_CLOSE) {
             if (info->numPathPoints < path->maxPoints)
-                VectorCopy(request->start, path->points[info->numPathPoints]);
+                path->points[info->numPathPoints] = request->start;
             info->numPathPoints++;
         }
 
         // crawl forwards and add nodes
         for (p = first_point; p < num_points; p++) {
             if (info->numPathPoints < path->maxPoints)
-                VectorCopy(nav_data.nodes[ctx->went_to[p]].origin, path->points[info->numPathPoints]);
+                path->points[info->numPathPoints] = nav_data.nodes[ctx->went_to[p]].origin;
             info->numPathPoints++;
         }
 
         // add the end point if we have room
-        dist = DistanceSquared(request->goal, nav_data.nodes[ctx->went_to[num_points - 1]].origin);
+        dist = Vec3_DistanceSquared(request->goal, nav_data.nodes[ctx->went_to[num_points - 1]].origin);
 
         if (dist > PATH_POINT_TOO_CLOSE) {
             if (info->numPathPoints < path->maxPoints)
-                VectorCopy(request->goal, path->points[info->numPathPoints]);
+                path->points[info->numPathPoints] = request->goal;
             info->numPathPoints++;
         }
     }
@@ -609,15 +605,15 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
 
     // store move point info
     if (link && link->traversal) {
-        VectorCopy(link->traversal->start, info->firstMovePoint);
-        VectorCopy(link->traversal->end, info->secondMovePoint);
+        info->firstMovePoint = link->traversal->start;
+        info->secondMovePoint = link->traversal->end;
         info->returnCode = PathReturnCode_TraversalPending;
     } else {
-        VectorCopy(nav_data.nodes[ctx->went_to[first_point]].origin, info->firstMovePoint);
+        info->firstMovePoint = nav_data.nodes[ctx->went_to[first_point]].origin;
         if (first_point + 1 < num_points)
-            VectorCopy(nav_data.nodes[ctx->went_to[first_point + 1]].origin, info->secondMovePoint);
+            info->secondMovePoint = nav_data.nodes[ctx->went_to[first_point + 1]].origin;
         else
-            VectorCopy(request->goal, info->secondMovePoint);
+            info->secondMovePoint = request->goal;
         info->returnCode = PathReturnCode_InProgress;
     }
 }
@@ -654,8 +650,8 @@ static void Nav_Path(nav_path_t *path)
 
     if (path->start == path->goal || Nav_TouchingNode(request->start, request->moveDist, path->goal)) {
         info->returnCode = PathReturnCode_ReachedGoal;
-        VectorCopy(request->goal, info->firstMovePoint);
-        VectorCopy(request->goal, info->secondMovePoint);
+        info->firstMovePoint = request->goal;
+        info->secondMovePoint = request->goal;
         return;
     }
 
@@ -779,19 +775,24 @@ bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *point
     return info->returnCode < PathReturnCode_StartPathErrors;
 }
 
-static void Nav_GetNodeBounds(const nav_node_t *node, vec3_t mins, vec3_t maxs)
+static box3_t Nav_GetNodeBounds(const nav_node_t *node)
 {
-    VectorSet(mins, -16, -16, -24);
-    VectorSet(maxs, 16, 16, 32);
+    box3_t box = {
+        .mins = { -16, -16, -24 },
+        .maxs = { 16, 16, 32 }
+    };
 
     if (node->flags & NodeFlag_Crouch)
-        maxs[2] = 4.0f;
+        box.maxs.z = 4.0f;
+
+    return box;
 }
 
-static void Nav_GetNodeTraceOrigin(const nav_node_t *node, vec3_t origin)
+static vec3_t Nav_GetNodeTraceOrigin(const nav_node_t *node)
 {
-    VectorCopy(node->origin, origin);
-    origin[2] += 24.0f;
+    vec3_t origin = node->origin;
+    origin.z += 24.0f;
+    return origin;
 }
 
 #if NAV_DEBUG
@@ -808,9 +809,8 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
     const nav_link_t *other_link = Nav_GetLink(link->target, node);
     const bool link_disabled = (node->flags | link->target->flags) & NodeFlag_Disabled;
 
-    vec3_t s, e;
-    Nav_GetNodeTraceOrigin(node, s);
-    Nav_GetNodeTraceOrigin(link->target, e);
+    vec3_t s = Nav_GetNodeTraceOrigin(node);
+    vec3_t e = Nav_GetNodeTraceOrigin(link->target);
 
     if (other_link) {
         // two-way link
@@ -828,12 +828,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
             } else {
                 vec3_t ctrl;
 
-                if (s[2] > e[2]) {
-                    VectorCopy(e, ctrl);
-                    ctrl[2] = s[2];
+                if (s.z > e.z) {
+                    ctrl = e;
+                    ctrl.z = s.z;
                 } else {
-                    VectorCopy(s, ctrl);
-                    ctrl[2] = e[2];
+                    ctrl = s;
+                    ctrl.z = e.z;
                 }
 
                 R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
@@ -845,23 +845,23 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
             } else {
                 vec3_t ctrl;
 
-                if (s[2] > e[2]) {
-                    VectorCopy(e, ctrl);
-                    ctrl[2] = s[2];
+                if (s.z > e.z) {
+                    ctrl = e;
+                    ctrl.z = s.z;
                 } else {
-                    VectorCopy(s, ctrl);
-                    ctrl[2] = e[2];
+                    ctrl = s;
+                    ctrl.z = e.z;
                 }
 
                 // raise the other side's points slightly
-                s[2] += 32;
-                ctrl[2] += 32;
-                e[2] += 32;
+                s.z += 32;
+                ctrl.z += 32;
+                e.z += 32;
 
                 R_AddDebugCurveArrow(e, ctrl, s, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
 
-                s[2] -= 32;
-                e[2] -= 32;
+                s.z -= 32;
+                e.z -= 32;
             }
         }
     } else {
@@ -869,12 +869,12 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
         if (link->traversal) {
             vec3_t ctrl;
 
-            if (s[2] > e[2]) {
-                VectorCopy(e, ctrl);
-                ctrl[2] = s[2];
+            if (s.z > e.z) {
+                ctrl = e;
+                ctrl.z = s.z;
             } else {
-                VectorCopy(s, ctrl);
-                ctrl[2] = e[2];
+                ctrl = s;
+                ctrl.z = e.z;
             }
 
             R_AddDebugCurveArrow(s, ctrl, e, 8.0f, link_disabled ? A_RED : A_BLUE, A_RED, sv.frametime, true);
@@ -885,11 +885,8 @@ static void Nav_DrawLink(const nav_node_t *node, const nav_link_t *link, int alp
 
     if (link->edict) {
         const edict_t *e = link->edict->game_edict;
-        if (e && e->r.inuse) {
-            vec3_t mid;
-            VectorAvg(e->r.absmin, e->r.absmax, mid);
-            R_AddDebugArrow(s, mid, 8.0f, A_YELLOW, A_CYAN, sv.frametime, true);
-        }
+        if (e && e->r.inuse)
+            R_AddDebugArrow(s, Box3_Center(e->r.absbox), 8.0f, A_YELLOW, A_CYAN, sv.frametime, true);
     }
 }
 
@@ -901,7 +898,7 @@ static const char *const nodeflags[] = {
 
 static void Nav_DrawNode(const nav_node_t *node)
 {
-    float dist = Distance(node->origin, svs.edicts[0].s.origin);
+    float dist = Vec3_Distance(node->origin, svs.edicts[0].s.origin);
 
     if (dist > nav_debug_range->value)
         return;
@@ -910,31 +907,25 @@ static void Nav_DrawNode(const nav_node_t *node)
 
     R_AddDebugCircle(node->origin, node->radius, A_CYAN, sv.frametime, true);
 
-    vec3_t mins, maxs, origin;
-    Nav_GetNodeBounds(node, mins, maxs);
-    Nav_GetNodeTraceOrigin(node, origin);
+    vec3_t origin = Nav_GetNodeTraceOrigin(node);
+    box3_t box = Box3_Translate(Nav_GetNodeBounds(node), origin);
 
-    VectorAdd(mins, origin, mins);
-    VectorAdd(maxs, origin, maxs);
-
-    R_AddDebugBounds(mins, maxs, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, sv.frametime, true);
+    R_AddDebugBounds(box, (node->flags & NodeFlag_Disabled) ? A_RED : A_YELLOW, sv.frametime, true);
 
     if (node->flags & NodeFlag_CheckHasFloor) {
-        vec3_t floormins, floormaxs;
-        VectorCopy(mins, floormins);
-        VectorCopy(maxs, floormaxs);
+        box3_t floor = box;
 
-        float mins_z = floormins[2];
-        floormins[2] = origin[2] - NavFloorDistance;
-        floormaxs[2] = mins_z;
+        float mins_z = floor.mins.z;
+        floor.mins.z = origin.z - NavFloorDistance;
+        floor.maxs.z = mins_z;
 
-        R_AddDebugBounds(floormins, floormaxs, A_RED, sv.frametime, true);
+        R_AddDebugBounds(floor, A_RED, sv.frametime, true);
     }
 
     R_AddDebugLine(node->origin, origin, A_CYAN, sv.frametime, true);
 
-    origin[2] += 40;
-    R_AddDebugText(origin, NULL, va("%d", node->id), 5.0f, A_CYAN, sv.frametime, true);
+    origin.z += 40;
+    R_AddDebugText(origin, va("%d", node->id), 5.0f, A_CYAN, sv.frametime, true);
 
     char node_text_buffer[128];
     *node_text_buffer = 0;
@@ -944,8 +935,8 @@ static void Nav_DrawNode(const nav_node_t *node)
             Q_strlcat(node_text_buffer, va("%s\n", nodeflags[i]), sizeof(node_text_buffer));
 
     if (*node_text_buffer) {
-        origin[2] -= 18;
-        R_AddDebugText(origin, NULL, node_text_buffer, 2.5f, A_GREEN, sv.frametime, true);
+        origin.z -= 18;
+        R_AddDebugText(origin, node_text_buffer, 2.5f, A_GREEN, sv.frametime, true);
     }
 
     for (int i = 0; i < node->num_links; i++)
@@ -965,15 +956,15 @@ static void Nav_Debug(void)
 
 #endif
 
-static bool line_intersects_box(const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs)
+static bool Box3_IntersectsLine(box3_t box, vec3_t start, vec3_t end)
 {
     float enter = 0.0f;
     float leave = 1.0f;
 
     for (int i = 0; i < 3; i++) {
-        float rd = 1.0f / (end[i] - start[i]);
-        float t0 = (mins[i] - start[i]) * rd;
-        float t1 = (maxs[i] - start[i]) * rd;
+        float rd = 1.0f / (end.xyz[i] - start.xyz[i]);
+        float t0 = (box.mins.xyz[i] - start.xyz[i]) * rd;
+        float t1 = (box.maxs.xyz[i] - start.xyz[i]) * rd;
         float tmin = min(t0, t1);
         float tmax = max(t0, t1);
         enter = max(enter, tmin);
@@ -983,30 +974,25 @@ static bool line_intersects_box(const vec3_t start, const vec3_t end, const vec3
     return enter < leave;
 }
 
-static bool boxes_intersect(const vec3_t mins1, const vec3_t maxs1, const vec3_t mins2, const vec3_t maxs2)
-{
-    for (int i = 0; i < 3; i++) {
-        if (mins1[i] > maxs2[i])
-            return false;
-        if (maxs1[i] < mins2[i])
-            return false;
-    }
-
-    return true;
-}
-
 static void Nav_UpdateConditionalNode(nav_node_t *node)
 {
     trace_t tr;
 
     node->flags &= ~NodeFlag_Disabled;
 
-    vec3_t mins, maxs, origin;
-    Nav_GetNodeBounds(node, mins, maxs);
-    Nav_GetNodeTraceOrigin(node, origin);
+    box3_t box = Nav_GetNodeBounds(node);
+    vec3_t origin = Nav_GetNodeTraceOrigin(node);
+
+    trace_args_t args = {
+        .start = origin,
+        .end = origin,
+        .box = box,
+        .entnum = ENTITYNUM_NONE,
+    };
 
     if (node->flags & NodeFlag_CheckInSolid) {
-        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_SOLID);
+        args.mask = MASK_SOLID;
+        SV_Trace(&tr, &args);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1015,7 +1001,8 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckInLiquid) {
-        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, MASK_WATER);
+        args.mask = MASK_WATER;
+        SV_Trace(&tr, &args);
 
         if (!(tr.startsolid || tr.allsolid)) {
             node->flags |= NodeFlag_Disabled;
@@ -1024,16 +1011,15 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckForHazard) {
-        SV_Trace(&tr, origin, mins, maxs, origin, ENTITYNUM_NONE, CONTENTS_SLIME | CONTENTS_LAVA);
+        args.mask = CONTENTS_SLIME | CONTENTS_LAVA;
+        SV_Trace(&tr, &args);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
             return;
         }
 
-        vec3_t absmin, absmax;
-        VectorAdd(origin, mins, absmin);
-        VectorAdd(origin, maxs, absmax);
+        box3_t absbox = Box3_Translate(box, origin);
 
         for (int i = svs.maxclients; i < svs.num_edicts; i++) {
             const edict_t *e = SV_EdictForNum(i);
@@ -1045,12 +1031,12 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
                 if (e->r.svflags & SVF_NOCLIENT)
                     continue;
 
-                if (line_intersects_box(e->s.old_origin, e->s.origin, absmin, absmax)) {
+                if (Box3_IntersectsLine(absbox, e->s.old_origin, e->s.origin)) {
                     node->flags |= NodeFlag_Disabled;
                     return;
                 }
             } else if (e->r.svflags & SVF_TRAP) {
-                if (boxes_intersect(e->r.absmin, e->r.absmax, absmin, absmax)) {
+                if (Box3_Intersects(absbox, e->r.absbox)) {
                     node->flags |= NodeFlag_Disabled;
                     return;
                 }
@@ -1059,14 +1045,11 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
     }
 
     if (node->flags & NodeFlag_CheckHasFloor) {
-        vec3_t flat_mins = { mins[0], mins[1] };
-        vec3_t flat_maxs = { maxs[0], maxs[1] };
+        args.mask = MASK_SOLID;
+        args.box.mins.z = args.box.maxs.z = 0;
+        args.end.z -= NavFloorDistance;
 
-        vec3_t floor_end;
-        VectorCopy(origin, floor_end);
-        floor_end[2] -= NavFloorDistance;
-
-        SV_Trace(&tr, origin, flat_mins, flat_maxs, floor_end, ENTITYNUM_NONE, MASK_SOLID);
+        SV_Trace(&tr, &args);
 
         if (tr.fraction == 1.0f) {
             node->flags |= NodeFlag_Disabled;

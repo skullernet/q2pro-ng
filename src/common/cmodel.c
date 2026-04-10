@@ -287,13 +287,13 @@ static void CM_InitBoxHull(void)
         // planes
         p = &box_planes[i * 2];
         p->type = i >> 1;
-        p->normal[i >> 1] = 1;
+        p->normal.xyz[i >> 1] = 1;
         p->dir = DirToByte(p->normal);
 
         p = &box_planes[i * 2 + 1];
         p->type = 3 + (i >> 1);
         p->signbits = 1 << (i >> 1);
-        p->normal[i >> 1] = -1;
+        p->normal.xyz[i >> 1] = -1;
         p->dir = DirToByte(p->normal);
     }
 }
@@ -306,20 +306,20 @@ To keep everything totally uniform, bounding boxes are turned into small
 BSP trees instead of being compared directly.
 ===================
 */
-const mnode_t *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs)
+const mnode_t *CM_HeadnodeForBox(box3_t box)
 {
-    box_planes[0].dist = maxs[0];
-    box_planes[1].dist = -maxs[0];
-    box_planes[2].dist = mins[0];
-    box_planes[3].dist = -mins[0];
-    box_planes[4].dist = maxs[1];
-    box_planes[5].dist = -maxs[1];
-    box_planes[6].dist = mins[1];
-    box_planes[7].dist = -mins[1];
-    box_planes[8].dist = maxs[2];
-    box_planes[9].dist = -maxs[2];
-    box_planes[10].dist = mins[2];
-    box_planes[11].dist = -mins[2];
+    box_planes[ 0].dist =  box.maxs.x;
+    box_planes[ 1].dist = -box.maxs.x;
+    box_planes[ 2].dist =  box.mins.x;
+    box_planes[ 3].dist = -box.mins.x;
+    box_planes[ 4].dist =  box.maxs.y;
+    box_planes[ 5].dist = -box.maxs.y;
+    box_planes[ 6].dist =  box.mins.y;
+    box_planes[ 7].dist = -box.mins.y;
+    box_planes[ 8].dist =  box.maxs.z;
+    box_planes[ 9].dist = -box.maxs.z;
+    box_planes[10].dist =  box.mins.z;
+    box_planes[11].dist = -box.mins.z;
 
     return box_headnode;
 }
@@ -333,13 +333,13 @@ Fills in a list of all the leafs touched
 */
 static int              leaf_count, leaf_maxcount;
 static const mleaf_t    **leaf_list;
-static const vec_t      *leaf_mins, *leaf_maxs;
+static box3_t           leaf_box;
 static const mnode_t    *leaf_topnode;
 
 static void CM_BoxLeafs_r(const mnode_t *node)
 {
     while (node->plane) {
-        box_plane_t s = BoxOnPlaneSideFast(leaf_mins, leaf_maxs, node->plane);
+        box_plane_t s = BoxOnPlaneSideFast(&leaf_box, node->plane);
         if (s == BOX_INFRONT) {
             node = node->children[0];
         } else if (s == BOX_BEHIND) {
@@ -359,16 +359,13 @@ static void CM_BoxLeafs_r(const mnode_t *node)
     }
 }
 
-int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
-                         const mleaf_t **list, int listsize,
+int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list, int listsize,
                          const mnode_t *headnode, const mnode_t **topnode)
 {
     leaf_list = list;
     leaf_count = 0;
     leaf_maxcount = listsize;
-    leaf_mins = mins;
-    leaf_maxs = maxs;
-
+    leaf_box = box;
     leaf_topnode = NULL;
 
     CM_BoxLeafs_r(headnode);
@@ -387,8 +384,8 @@ Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
-int CM_TransformedPointContents(const vec3_t p, const mnode_t *headnode,
-                                const vec3_t origin, const vec3_t angles)
+int CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
+                                vec3_t origin, vec3_t angles)
 {
     vec3_t      p_l;
     vec3_t      axis[3];
@@ -397,12 +394,12 @@ int CM_TransformedPointContents(const vec3_t p, const mnode_t *headnode,
         return 0;
 
     // subtract origin offset
-    VectorSubtract(p, origin, p_l);
+    p_l = Vec3_Sub(p, origin);
 
     // rotate start and end into the models frame of reference
-    if (headnode != box_headnode && !VectorEmpty(angles)) {
+    if (headnode != box_headnode && !Vec3_IsEmpty(angles)) {
         AnglesToAxis(angles, axis);
-        RotatePoint(p_l, axis);
+        p_l = Vec3_Rotate(p_l, axis);
     }
 
     return BSP_PointLeaf(headnode, p_l)->contents;
@@ -432,7 +429,7 @@ static bool     trace_ispoint;      // optimized case
 CM_ClipBoxToBrush
 ================
 */
-static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, const mbrush_t *brush)
+static void CM_ClipBoxToBrush(vec3_t p1, vec3_t p2, trace_t *trace, const mbrush_t *brush)
 {
     int         i;
     const cplane_t  *plane, *clipplane;
@@ -462,15 +459,15 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
         if (!trace_ispoint) {
             // general box case
             // push the plane out appropriately for mins/maxs
-            dist = DotProduct(trace_offsets[plane->signbits], plane->normal);
+            dist = Vec3_Dot(trace_offsets[plane->signbits], plane->normal);
             dist = plane->dist - dist;
         } else {
             // special point case
             dist = plane->dist;
         }
 
-        d1 = DotProduct(p1, plane->normal) - dist;
-        d2 = DotProduct(p2, plane->normal) - dist;
+        d1 = Vec3_Dot(p1, plane->normal) - dist;
+        d2 = Vec3_Dot(p2, plane->normal) - dist;
 
         if (d2 > 0)
             getout = true; // endpoint is not in solid
@@ -531,7 +528,7 @@ static void CM_ClipBoxToBrush(const vec3_t p1, const vec3_t p2, trace_t *trace, 
 CM_TestBoxInBrush
 ================
 */
-static void CM_TestBoxInBrush(const vec3_t p1, trace_t *trace, const mbrush_t *brush)
+static void CM_TestBoxInBrush(vec3_t p1, trace_t *trace, const mbrush_t *brush)
 {
     int         i;
     const cplane_t  *plane;
@@ -549,10 +546,10 @@ static void CM_TestBoxInBrush(const vec3_t p1, trace_t *trace, const mbrush_t *b
         // FIXME: special case for axial
         // general box case
         // push the plane out appropriately for mins/maxs
-        dist = DotProduct(trace_offsets[plane->signbits], plane->normal);
+        dist = Vec3_Dot(trace_offsets[plane->signbits], plane->normal);
         dist = plane->dist - dist;
 
-        d1 = DotProduct(p1, plane->normal) - dist;
+        d1 = Vec3_Dot(p1, plane->normal) - dist;
 
         // if completely in front of face, no intersection
         if (d1 > 0)
@@ -627,7 +624,7 @@ CM_RecursiveHullCheck
 
 ==================
 */
-static void CM_RecursiveHullCheck(const mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static void CM_RecursiveHullCheck(const mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
     const cplane_t  *plane;
     float       t1, t2, offset;
@@ -653,18 +650,18 @@ recheck:
     // and the offset for the size of the box
     //
     if (plane->type < 3) {
-        t1 = p1[plane->type] - plane->dist;
-        t2 = p2[plane->type] - plane->dist;
-        offset = trace_extents[plane->type];
+        t1 = p1.xyz[plane->type] - plane->dist;
+        t2 = p2.xyz[plane->type] - plane->dist;
+        offset = trace_extents.xyz[plane->type];
     } else {
         t1 = PlaneDiff(p1, plane);
         t2 = PlaneDiff(p2, plane);
         if (trace_ispoint)
             offset = 0;
         else
-            offset = fabsf(trace_extents[0] * plane->normal[0]) +
-                     fabsf(trace_extents[1] * plane->normal[1]) +
-                     fabsf(trace_extents[2] * plane->normal[2]);
+            offset = fabsf(trace_extents.x * plane->normal.x) +
+                     fabsf(trace_extents.y * plane->normal.y) +
+                     fabsf(trace_extents.z * plane->normal.z);
     }
 
     // see which sides we need to consider
@@ -699,13 +696,13 @@ recheck:
 
     // move up to the node
     midf = p1f + (p2f - p1f) * frac;
-    LerpVector(p1, p2, frac, mid);
+    mid = Vec3_Lerp(p1, p2, frac);
 
     CM_RecursiveHullCheck(node->children[side], p1f, midf, p1, mid);
 
     // go past the node
     midf = p1f + (p2f - p1f) * frac2;
-    LerpVector(p1, p2, frac2, mid);
+    mid = Vec3_Lerp(p1, p2, frac2);
 
     CM_RecursiveHullCheck(node->children[side ^ 1], midf, p2f, mid, p2);
 }
@@ -717,76 +714,65 @@ recheck:
 CM_BoxTrace
 ==================
 */
-void CM_BoxTrace(trace_t *trace,
-                 const vec3_t start, const vec3_t end,
-                 const vec3_t mins, const vec3_t maxs,
-                 const mnode_t *headnode, int brushmask)
+void CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headnode)
 {
-    const vec_t *bounds[2] = { mins, maxs };
     int i, j;
 
     checkcount++;       // for multi-check avoidance
 
     // fill in a default trace
     trace_trace = trace;
-    memset(trace_trace, 0, sizeof(*trace_trace));
-    trace_trace->fraction = 1;
+    *trace_trace = (trace_t){ .fraction = 1 };
 
     if (!headnode)
         return;
 
-    trace_contents = brushmask;
-    VectorCopy(start, trace_start);
-    VectorCopy(end, trace_end);
+    trace_contents = args->mask;
+    trace_start = args->start;
+    trace_end = args->end;
     for (i = 0; i < 8; i++)
         for (j = 0; j < 3; j++)
-            trace_offsets[i][j] = bounds[(i >> j) & 1][j];
+            trace_offsets[i].xyz[j] = args->box.bounds[(i >> j) & 1].xyz[j];
 
     //
     // check for position test special case
     //
-    if (VectorCompare(start, end)) {
-        const mleaf_t   *leafs[1024];
-        int             numleafs;
-        vec3_t          c1, c2;
+    if (Vec3_IsEqual(args->start, args->end)) {
+        const mleaf_t  *leafs[4096];
+        int             num_leafs;
+        box3_t          box;
 
-        for (i = 0; i < 3; i++) {
-            c1[i] = start[i] + mins[i] - 1;
-            c2[i] = start[i] + maxs[i] + 1;
-        }
-
-        numleafs = CM_BoxLeafs_headnode(c1, c2, leafs, q_countof(leafs), headnode, NULL);
-        for (i = 0; i < numleafs; i++) {
+        box = Box3_Expand(Box3_Translate(args->box, args->start), 1);
+        num_leafs = CM_BoxLeafs_headnode(box, leafs, q_countof(leafs), headnode);
+        for (i = 0; i < num_leafs; i++) {
             CM_TestInLeaf(leafs[i]);
             if (trace_trace->allsolid)
                 break;
         }
-        VectorCopy(start, trace_trace->endpos);
+        trace_trace->endpos = args->start;
         return;
     }
 
     //
     // check for point special case
     //
-    if (VectorEmpty(mins) && VectorEmpty(maxs)) {
+    if (Box3_IsEmpty(args->box)) {
         trace_ispoint = true;
-        VectorClear(trace_extents);
+        trace_extents = vec3_origin;
     } else {
         trace_ispoint = false;
-        trace_extents[0] = max(-mins[0], maxs[0]);
-        trace_extents[1] = max(-mins[1], maxs[1]);
-        trace_extents[2] = max(-mins[2], maxs[2]);
+        trace_extents = Vec3_Max(Vec3_Negate(args->box.mins), args->box.maxs);
     }
 
     //
     // general sweeping through world
     //
-    CM_RecursiveHullCheck(headnode, 0, 1, start, end);
+    CM_RecursiveHullCheck(headnode, 0, 1, args->start, args->end);
 
     if (trace_trace->fraction == 1)
-        VectorCopy(end, trace_trace->endpos);
+        trace_trace->endpos = args->end;
     else
-        LerpVector(start, end, trace_trace->fraction, trace_trace->endpos);
+        trace_trace->endpos = Vec3_Lerp(args->start, args->end, trace_trace->fraction);
 }
 
 /*
@@ -797,43 +783,40 @@ Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
-void CM_TransformedBoxTrace(trace_t *trace,
-                            const vec3_t start, const vec3_t end,
-                            const vec3_t mins, const vec3_t maxs,
-                            const mnode_t *headnode, int brushmask,
-                            const vec3_t origin, const vec3_t angles)
+void CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
+                            const mnode_t *headnode, vec3_t origin, vec3_t angles)
 {
     vec3_t      start_l, end_l;
     vec3_t      axis[3];
     bool        rotated;
 
     // subtract origin offset
-    VectorSubtract(start, origin, start_l);
-    VectorSubtract(end, origin, end_l);
+    start_l = Vec3_Sub(args->start, origin);
+    end_l = Vec3_Sub(args->end, origin);
 
     // rotate start and end into the models frame of reference
-    rotated = headnode != box_headnode && !VectorEmpty(angles);
+    rotated = headnode != box_headnode && !Vec3_IsEmpty(angles);
     if (rotated) {
         AnglesToAxis(angles, axis);
-        RotatePoint(start_l, axis);
-        RotatePoint(end_l, axis);
+        start_l = Vec3_Rotate(start_l, axis);
+        end_l = Vec3_Rotate(end_l, axis);
     }
 
     // sweep the box through the model
-    CM_BoxTrace(trace, start_l, end_l, mins, maxs, headnode, brushmask);
+    CM_BoxTrace(trace, &(trace_args_t){ start_l, end_l, args->box, 0, args->mask }, headnode);
 
     if (trace->fraction != 1.0f) {
         // rotate plane normal into the worlds frame of reference
         if (rotated) {
             TransposeAxis(axis);
-            RotatePoint(trace->plane.normal, axis);
+            trace->plane.normal = Vec3_Rotate(trace->plane.normal, axis);
         }
 
         // offset plane distance
-        trace->plane.dist += DotProduct(trace->plane.normal, origin);
+        trace->plane.dist += Vec3_Dot(trace->plane.normal, origin);
     }
 
-    LerpVector(start, end, trace->fraction, trace->endpos);
+    trace->endpos = Vec3_Lerp(args->start, args->end, trace->fraction);
 }
 
 /*
@@ -963,7 +946,7 @@ int CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area)
     return bytes;
 }
 
-bool CM_InVis(const cm_t *cm, const vec3_t p1, const vec3_t p2, vis_t vis)
+bool CM_InVis(const cm_t *cm, vec3_t p1, vec3_t p2, vis_t vis)
 {
     const bsp_t *bsp = cm->cache;
     const mleaf_t *leaf1, *leaf2;
@@ -1066,14 +1049,14 @@ The client will interpolate the view position,
 so we can't use a single PVS point
 ===========
 */
-void CM_FatPVS(const cm_t *cm, visrow_t *mask, const vec3_t org)
+void CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org)
 {
     const bsp_t     *bsp = cm->cache;
     const mleaf_t   *leafs[64];
     int             clusters[64];
     visrow_t        temp;
     int             i, j, count, longs;
-    vec3_t          mins, maxs;
+    box3_t          box;
 
     if (!bsp) {   // map not loaded
         memset(mask, 0, sizeof(*mask));
@@ -1084,12 +1067,8 @@ void CM_FatPVS(const cm_t *cm, visrow_t *mask, const vec3_t org)
         return;
     }
 
-    for (i = 0; i < 3; i++) {
-        mins[i] = org[i] - 8;
-        maxs[i] = org[i] + 8;
-    }
-
-    count = CM_BoxLeafs_headnode(mins, maxs, leafs, q_countof(leafs), bsp->nodes, NULL);
+    box = Box3_Expand(Box3_FromPoint(org), 8);
+    count = CM_BoxLeafs_headnode(box, leafs, q_countof(leafs), bsp->nodes, NULL);
     Q_assert(count > 0);
 
     // convert leafs to clusters

@@ -240,9 +240,9 @@ void THINK(proboscis_reset)(edict_t *self)
     G_FreeEdict(self);
 }
 
-void DIE(proboscis_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(proboscis_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
-    if (mod.id == MOD_CRUSH)
+    if (mod == MOD_CRUSH)
         proboscis_reset(self);
 }
 
@@ -360,12 +360,10 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     // hit what we want to succ
     if ((other->r.svflags & SVF_PLAYER) || other == owner->enemy) {
         if (tr->startsolid)
-            VectorCopy(tr->endpos, p);
+            p = tr->endpos;
         else {
-            vec3_t dir;
-            VectorSubtract(self->s.origin, tr->endpos, dir);
-            VectorNormalize(dir);
-            VectorMA(tr->endpos, -12, dir, p);
+            vec3_t dir = Vec3_Direction(self->s.origin, tr->endpos);
+            p = Vec3_MA(tr->endpos, -12, dir);
         }
 
         owner->monsterinfo.nextframe = FRAME_drain06;
@@ -373,12 +371,12 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
         self->r.solid = SOLID_NOT;
         self->style = 1;
         // stick to this guy
-        VectorSubtract(p, other->s.origin, self->move_origin);
+        self->move_origin = Vec3_Sub(p, other->s.origin);
         self->enemy = other;
         self->s.alpha = 0.35f;
         G_StartSound(self, CHAN_WEAPON, sound_suck, 1, ATTN_NORM);
     } else {
-        VectorAdd(tr->endpos, tr->plane.normal, p);
+        p = Vec3_Add(tr->endpos, tr->plane.normal);
         // hit monster, don't suck but do small damage
         // and retract immediately
         if (other->r.svflags & (SVF_MONSTER | SVF_DEADMONSTER))
@@ -389,16 +387,16 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
             self->movetype = MOVETYPE_NONE;
             self->r.solid = SOLID_NOT;
             self->style = 1;
-            owner->s.angles[YAW] = self->s.angles[YAW];
+            owner->s.angles.yaw = self->s.angles.yaw;
         }
     }
 
     if (other->takedamage)
-        T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.dir, 5, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+        T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.dir, 5, 0, DAMAGE_NONE, MOD_UNKNOWN);
 
     G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM);
 
-    VectorCopy(p, self->s.origin);
+    self->s.origin = p;
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame
     trap_LinkEntity(self);
 }
@@ -444,19 +442,20 @@ static const vec3_t parasite_drain_offsets[] = {
     { 2.1f, 0, 7.6f },
 };
 
-static void parasite_get_proboscis_start(edict_t *self, vec3_t start)
+static vec3_t parasite_get_proboscis_start(edict_t *self)
 {
-    const vec_t *offset = (const vec3_t) { 8, 0, 6 };
-    vec3_t f, r;
+    vec3_t f, r, offset;
 
-    AngleVectors(self->s.angles, f, r, NULL);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     if (self->s.frame >= FRAME_break01 && self->s.frame < FRAME_break01 + q_countof(parasite_break_offsets))
         offset = parasite_break_offsets[self->s.frame - FRAME_break01];
     else if (self->s.frame >= FRAME_drain01 && self->s.frame < FRAME_drain01 + q_countof(parasite_drain_offsets))
         offset = parasite_drain_offsets[self->s.frame - FRAME_drain01];
+    else
+        offset = Vec3(8, 0, 6);
 
-    M_ProjectFlashSource(self, offset, f, r, start);
+    return M_ProjectFlashSource(self, offset, f, r);
 }
 
 void THINK(proboscis_think)(edict_t *self)
@@ -467,24 +466,21 @@ void THINK(proboscis_think)(edict_t *self)
 
     // retracting; keep pulling until we hit the parasite
     if (self->style == 2) {
-        vec3_t start, dir;
-        float dist;
+        vec3_t start = parasite_get_proboscis_start(owner);
+        vec3_t dir = Vec3_Sub(self->s.origin, start);
+        float dist = Vec3_Normalize(&dir);
 
-        parasite_get_proboscis_start(owner, start);
-        VectorSubtract(self->s.origin, start, dir);
-
-        dist = VectorNormalize(dir);
         if (dist <= (self->speed * 2) * FRAME_TIME_SEC) {
             // reached target; free self on next frame, let parasite know
             self->style = 3;
             self->think = proboscis_reset;
-            VectorCopy(start, self->s.origin);
+            self->s.origin = start;
             trap_LinkEntity(self);
             return;
         }
 
         // pull us in
-        VectorMA(self->s.origin, -(self->speed * FRAME_TIME_SEC), dir, self->s.origin);
+        self->s.origin = Vec3_MA(self->s.origin, -(self->speed * FRAME_TIME_SEC), dir);
         trap_LinkEntity(self);
     // stuck on target; do damage, suck health
     // and check if target goes away
@@ -495,28 +491,25 @@ void THINK(proboscis_think)(edict_t *self)
             // target gone, retract early
             proboscis_retract(self);
         } else {
-            vec3_t start, dir;
-
             // update our position
-            VectorAdd(self->enemy->s.origin, self->move_origin, self->s.origin);
+            self->s.origin = Vec3_Add(self->enemy->s.origin, self->move_origin);
 
-            parasite_get_proboscis_start(owner, start);
-            VectorSubtract(self->s.origin, start, dir);
+            vec3_t start = parasite_get_proboscis_start(owner);
+            vec3_t dir = Vec3_Sub(self->s.origin, start);
 
-            vectoangles(dir, self->s.angles);
+            self->s.angles = vectoangles(dir);
 
             // see if we got cut by the world
-            trace_t tr;
-            trap_Trace(&tr, start, NULL, NULL, self->s.origin, ENTITYNUM_NONE, MASK_SOLID);
+            trace_t tr = G_TraceLine(start, self->s.origin, ENTITYNUM_NONE, MASK_SOLID);
 
             if (tr.fraction != 1.0f) {
                 // blocked, so retract
                 proboscis_retract(self);
-                VectorCopy(self->s.old_origin, self->s.origin);
+                self->s.origin = self->s.old_origin;
             } else {
                 // succ & drain
                 if (self->timestamp <= level.time) {
-                    T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.dir, 2, 0, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+                    T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.dir, 2, 0, DAMAGE_NONE, MOD_UNKNOWN);
                     owner->health = min(owner->max_health, owner->health + 2);
                     owner->monsterinfo.setskin(owner);
                     self->timestamp = level.time + HZ(10);
@@ -527,9 +520,6 @@ void THINK(proboscis_think)(edict_t *self)
         }
     // flying
     } else if (self->style == 0) {
-        vec3_t to_target;
-        float dist_to_target;
-
         // owner gone away?
         if (!owner->enemy || !owner->enemy->r.inuse || owner->enemy->health <= 0) {
             proboscis_retract(self);
@@ -538,16 +528,12 @@ void THINK(proboscis_think)(edict_t *self)
 
         // if we're well behind our target and missed by 2x velocity,
         // be smart enough to pull in automatically
-        VectorSubtract(self->s.origin, owner->enemy->s.origin, to_target);
-        dist_to_target = VectorNormalize(to_target);
+        vec3_t to_target = Vec3_Sub(self->s.origin, owner->enemy->s.origin);
+        float dist_to_target = Vec3_Length(to_target);
 
         if (dist_to_target > (self->speed * 2) / 15.0f) {
-            vec3_t from_owner;
-
-            VectorSubtract(self->s.origin, owner->s.origin, from_owner);
-            VectorNormalize(from_owner);
-
-            if (DotProduct(to_target, from_owner) > 0) {
+            vec3_t from_owner = Vec3_Sub(self->s.origin, owner->s.origin);
+            if (Vec3_Dot(to_target, from_owner) > 0) {
                 proboscis_retract(self);
                 return;
             }
@@ -558,14 +544,10 @@ void THINK(proboscis_think)(edict_t *self)
 void PRETHINK(proboscis_segment_draw)(edict_t *self)
 {
     edict_t *owner = &g_edicts[self->r.ownernum];
-    vec3_t start, dir;
+    vec3_t start = parasite_get_proboscis_start(&g_edicts[owner->r.ownernum]);
 
-    parasite_get_proboscis_start(&g_edicts[owner->r.ownernum], start);
-
-    VectorCopy(start, self->s.origin);
-    VectorSubtract(owner->s.origin, start, dir);
-    VectorNormalize(dir);
-    VectorMA(owner->s.origin, -8, dir, self->s.old_origin);
+    self->s.origin = start;
+    self->s.old_origin = Vec3_MA(owner->s.origin, -8, Vec3_Direction(owner->s.origin, start));
     trap_LinkEntity(self);
 }
 
@@ -596,22 +578,17 @@ static void fire_proboscis(edict_t *self, vec3_t start, vec3_t dir, float speed)
     tip->proboscus = segment;
     segment->r.ownernum = tip->s.number;
 
-    vec3_t pos;
-    VectorMA(tip->s.origin, FRAME_TIME_SEC, tip->velocity, pos);
-    trace_t tr;
-    trap_Trace(&tr, tip->s.origin, NULL, NULL, pos, self->s.number, tip->clipmask);
+    vec3_t pos = Vec3_MA(tip->s.origin, FRAME_TIME_SEC, tip->velocity);
+    trace_t tr = G_TraceLine(tip->s.origin, pos, self->s.number, tip->clipmask);
     if (tr.startsolid) {
-        VectorNegate(dir, tr.plane.normal);
-        VectorCopy(start, tr.endpos);
+        tr.plane.normal = Vec3_Negate(dir);
+        tr.endpos = start;
         tip->touch(tip, &g_edicts[tr.entnum], &tr, false);
     } else if (tr.fraction < 1.0f)
         tip->touch(tip, &g_edicts[tr.entnum], &tr, false);
 
-    vec3_t dir2;
-    VectorCopy(start, segment->s.origin);
-    VectorSubtract(tip->s.origin, start, dir2);
-    VectorNormalize(dir2);
-    VectorMA(tip->s.origin, 8, dir2, segment->s.old_origin);
+    segment->s.origin = start;
+    segment->s.old_origin = Vec3_MA(tip->s.origin, 8, Vec3_Direction(tip->s.origin, start));
 
     trap_LinkEntity(tip);
     trap_LinkEntity(segment);
@@ -622,11 +599,10 @@ static void parasite_fire_proboscis(edict_t *self)
     if (self->proboscus && self->proboscus->style != 2)
         proboscis_reset(self->proboscus);
 
-    vec3_t start;
-    parasite_get_proboscis_start(self, start);
+    vec3_t start = parasite_get_proboscis_start(self);
 
     vec3_t dir;
-    PredictAim(self, self->enemy, start, PARASITE_PROBOSCIS_SPEED, false, crandom_open() * PARASITE_MISS_CHANCE, dir, NULL);
+    M_PredictAim(self, self->enemy, start, PARASITE_PROBOSCIS_SPEED, false, crandom_open() * PARASITE_MISS_CHANCE, &dir, NULL);
 
     fire_proboscis(self, start, dir, PARASITE_PROBOSCIS_SPEED);
 }
@@ -697,18 +673,18 @@ static void parasite_jump_down(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 100, forward, self->velocity);
-    VectorMA(self->velocity, 300, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 100, forward);
+    self->velocity = Vec3_MA(self->velocity, 300, up);
 }
 
 static void parasite_jump_up(edict_t *self)
 {
     vec3_t forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
-    VectorMA(self->velocity, 200, forward, self->velocity);
-    VectorMA(self->velocity, 450, up, self->velocity);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    self->velocity = Vec3_MA(self->velocity, 200, forward);
+    self->velocity = Vec3_MA(self->velocity, 450, up);
 }
 
 static void parasite_jump_wait_land(edict_t *self)
@@ -751,7 +727,7 @@ static void parasite_jump(edict_t *self, blocked_jump_result_t result)
     if (!self->enemy)
         return;
 
-    if (result == JUMP_JUMP_UP)
+    if (result == JUMP_UP)
         M_SetAnimation(self, &parasite_move_jump_up);
     else
         M_SetAnimation(self, &parasite_move_jump_down);
@@ -765,7 +741,7 @@ Blocked
 bool MONSTERINFO_BLOCKED(parasite_blocked)(edict_t *self, float dist)
 {
     blocked_jump_result_t result = blocked_checkjump(self, dist);
-    if (result != NO_JUMP) {
+    if (result != JUMP_NONE) {
         if (result != JUMP_TURN)
             parasite_jump(self, result);
         return true;
@@ -787,14 +763,13 @@ Death Stuff Starts
 
 static void parasite_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void parasite_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 0;
+    self->r.box.maxs.z = 0;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -820,7 +795,7 @@ static const gib_def_t parasite_gibs[] = {
     { 0 }
 };
 
-void DIE(parasite_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(parasite_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->proboscus && self->proboscus->style != 2)
         proboscis_reset(self->proboscus);
@@ -933,8 +908,7 @@ void SP_monster_parasite(edict_t *self)
 
     G_PrecacheGibs(parasite_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, 24);
+    self->r.box = Box3_FromSize(16, -24, 24);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

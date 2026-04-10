@@ -137,8 +137,8 @@ typedef struct {
     int         linkcount;
     int         areanum, areanum2;
     int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-    vec3_t      mins, maxs;
-    vec3_t      absmin, absmax, size;
+    box3_t      box, absbox;
+    vec3_t      size;
     solid_t     solid;
     int         ownernum;
     byte        clientmask[MAX_CLIENTS / CHAR_BIT];
@@ -182,12 +182,12 @@ typedef struct {
     int (*FindConfigstring)(const char *name, int start, int max, bool create);
 
     // collision detection
-    void (*Trace)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned passent, contents_t contentmask);
-    void (*Clip)(trace_t *tr, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, unsigned clipent, contents_t contentmask);
-    contents_t (*PointContents)(const vec3_t point);
-    int (*BoxEdicts)(const vec3_t mins, const vec3_t maxs, int *list, int maxcount, int areatype);
+    void (*Trace)(trace_t *tr, const trace_args_t *args);
+    void (*Clip)(trace_t *tr, const trace_args_t *args);
+    contents_t (*PointContents)(vec3_t point);
+    int (*BoxEdicts)(box3_t box, int *list, int maxcount, int areatype);
 
-    bool (*InVis)(const vec3_t p1, const vec3_t p2, vis_t vis);
+    bool (*InVis)(vec3_t p1, vec3_t p2, vis_t vis);
     void (*SetAreaPortalState)(unsigned portalnum, bool open);
     bool (*AreasConnected)(int area1, int area2);
 
@@ -250,20 +250,22 @@ typedef struct {
     size_t      (*FS_ErrorString)(int error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
-    void (*R_AddDebugLine)(const vec3_t start, const vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugPoint)(const vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugAxis)(const vec3_t origin, const vec3_t angles, float size, uint32_t time, bool depth_test);
-    void (*R_AddDebugBounds)(const vec3_t mins, const vec3_t maxs, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugSphere)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCircle)(const vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCylinder)(const vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
+    void (*R_AddDebugBounds)(box3_t box, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
                                bool depth_test);
-    void (*R_AddDebugArrow)(const vec3_t start, const vec3_t end, float size, uint32_t line_color,
+    void (*R_AddDebugArrow)(vec3_t start, vec3_t end, float size, uint32_t line_color,
                             uint32_t arrow_color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCurveArrow)(const vec3_t start, const vec3_t ctrl, const vec3_t end, float size,
+    void (*R_AddDebugCurveArrow)(vec3_t start, vec3_t ctrl, vec3_t end, float size,
                                  uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
-    void (*R_AddDebugText)(const vec3_t origin, const vec3_t angles, const char *text,
+    void (*R_AddDebugText)(vec3_t origin, const char *text,
                            float size, uint32_t color, uint32_t time, bool depth_test);
+    void (*R_AddDebugAngledText)(vec3_t origin, vec3_t angles, const char *text,
+                                 float size, uint32_t color, uint32_t time, bool depth_test);
 } game_import_t;
 
 //

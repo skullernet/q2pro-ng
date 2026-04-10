@@ -394,7 +394,7 @@ static void IN_Impulse(void)
 
 static void IN_CenterView(void)
 {
-    cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.ps.delta_angles[PITCH]);
+    cl.viewangles.pitch = -cl.frame.ps.delta_angles.pitch;
 }
 
 static void IN_MLookDown(void)
@@ -494,15 +494,15 @@ static void CL_MouseMove(void)
 
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {
-        cl.mousemove[1] += m_side->value * mx;
+        cl.mousemove.y += m_side->value * mx;
     } else {
-        cl.viewangles[YAW] -= m_yaw->value * mx;
+        cl.viewangles.yaw -= m_yaw->value * mx;
     }
 
     if ((in_mlooking || freelook->integer) && !(in_strafe.state & 1)) {
-        cl.viewangles[PITCH] += m_pitch->value * my;
+        cl.viewangles.pitch += m_pitch->value * my;
     } else {
-        cl.mousemove[0] -= m_forward->value * my;
+        cl.mousemove.x -= m_forward->value * my;
     }
 }
 
@@ -524,16 +524,16 @@ static void CL_AdjustAngles(int msec)
         speed = msec * 0.001f;
 
     if (!(in_strafe.state & 1)) {
-        cl.viewangles[YAW] -= speed * cl_yawspeed->value * CL_KeyState(&in_right);
-        cl.viewangles[YAW] += speed * cl_yawspeed->value * CL_KeyState(&in_left);
+        cl.viewangles.yaw -= speed * cl_yawspeed->value * CL_KeyState(&in_right);
+        cl.viewangles.yaw += speed * cl_yawspeed->value * CL_KeyState(&in_left);
     }
     if (in_klook.state & 1) {
-        cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState(&in_forward);
-        cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState(&in_back);
+        cl.viewangles.pitch -= speed * cl_pitchspeed->value * CL_KeyState(&in_forward);
+        cl.viewangles.pitch += speed * cl_pitchspeed->value * CL_KeyState(&in_back);
     }
 
-    cl.viewangles[PITCH] -= speed * cl_pitchspeed->value * CL_KeyState(&in_lookup);
-    cl.viewangles[PITCH] += speed * cl_pitchspeed->value * CL_KeyState(&in_lookdown);
+    cl.viewangles.pitch -= speed * cl_pitchspeed->value * CL_KeyState(&in_lookup);
+    cl.viewangles.pitch += speed * cl_pitchspeed->value * CL_KeyState(&in_lookdown);
 }
 
 /*
@@ -543,53 +543,47 @@ CL_BaseMove
 Build the intended movement vector
 ================
 */
-static void CL_BaseMove(vec3_t move)
+static void CL_BaseMove(vec3_t *move)
 {
     if (in_strafe.state & 1) {
-        move[1] += cl_sidespeed->value * CL_KeyState(&in_right);
-        move[1] -= cl_sidespeed->value * CL_KeyState(&in_left);
+        move->y += cl_sidespeed->value * CL_KeyState(&in_right);
+        move->y -= cl_sidespeed->value * CL_KeyState(&in_left);
     }
 
-    move[1] += cl_sidespeed->value * CL_KeyState(&in_moveright);
-    move[1] -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
+    move->y += cl_sidespeed->value * CL_KeyState(&in_moveright);
+    move->y -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
 
-    move[2] += cl_upspeed->value * CL_KeyState(&in_up);
-    move[2] -= cl_upspeed->value * CL_KeyState(&in_down);
+    move->z += cl_upspeed->value * CL_KeyState(&in_up);
+    move->z -= cl_upspeed->value * CL_KeyState(&in_down);
 
     if (!(in_klook.state & 1)) {
-        move[0] += cl_forwardspeed->value * CL_KeyState(&in_forward);
-        move[0] -= cl_forwardspeed->value * CL_KeyState(&in_back);
+        move->x += cl_forwardspeed->value * CL_KeyState(&in_forward);
+        move->x -= cl_forwardspeed->value * CL_KeyState(&in_back);
     }
 
 // adjust for speed key / running
-    if ((in_speed.state & 1) ^ cl_run->integer) {
-        VectorScale(move, 2, move);
-    }
+    if ((in_speed.state & 1) ^ cl_run->integer)
+        *move = Vec3_Scale(*move, 2);
 }
 
-static void CL_ClampSpeed(vec3_t move)
+static void CL_ClampSpeed(vec3_t *move)
 {
     const float speed = 400;    // default (maximum) running speed
 
-    move[0] = Q_clipf(move[0], -speed, speed);
-    move[1] = Q_clipf(move[1], -speed, speed);
-    move[2] = Q_clipf(move[2], -speed, speed);
+    move->x = Q_clipf(move->x, -speed, speed);
+    move->y = Q_clipf(move->y, -speed, speed);
+    move->z = Q_clipf(move->z, -speed, speed);
 }
 
 static void CL_ClampPitch(void)
 {
     float pitch, angle;
 
-    pitch = SHORT2ANGLE(cl.frame.ps.delta_angles[PITCH]);
-    angle = cl.viewangles[PITCH] + pitch;
-
-    if (angle < -180)
-        angle += 360; // wrapped
-    if (angle > 180)
-        angle -= 360; // wrapped
+    pitch = cl.frame.ps.delta_angles.pitch;
+    angle = AngleMod(cl.viewangles.pitch + pitch);
 
     angle = Q_clipf(angle, -89, 89);
-    cl.viewangles[PITCH] = angle - pitch;
+    cl.viewangles.pitch = angle - pitch;
 }
 
 /*
@@ -602,7 +596,7 @@ Doesn't touch command forward/side/upmove, these are filled by CL_FinalizeCmd.
 */
 void CL_UpdateCmd(int msec)
 {
-    VectorClear(cl.localmove);
+    cl.localmove = vec3_origin;
 
     if (sv_paused->integer) {
         return;
@@ -615,23 +609,21 @@ void CL_UpdateCmd(int msec)
     CL_AdjustAngles(msec);
 
     // get basic movement from keyboard
-    CL_BaseMove(cl.localmove);
+    CL_BaseMove(&cl.localmove);
 
     // allow mice to add to the move
     CL_MouseMove();
 
     // add accumulated mouse forward/side movement
-    cl.localmove[0] += cl.mousemove[0];
-    cl.localmove[1] += cl.mousemove[1];
+    cl.localmove.x += cl.mousemove.x;
+    cl.localmove.y += cl.mousemove.y;
 
     // clamp to server defined max speed
-    CL_ClampSpeed(cl.localmove);
+    CL_ClampSpeed(&cl.localmove);
 
     CL_ClampPitch();
 
-    cl.cmd.angles[0] = ANGLE2SHORT(cl.viewangles[0]);
-    cl.cmd.angles[1] = ANGLE2SHORT(cl.viewangles[1]);
-    cl.cmd.angles[2] = ANGLE2SHORT(cl.viewangles[2]);
+    Vec3_ToAngles16(cl.cmd.angles, cl.viewangles);
 
     if (in_up.state & 3)
         cl.cmd.buttons |= BUTTON_JUMP;
@@ -781,22 +773,22 @@ void CL_FinalizeCmd(void)
     }
 
     // rebuild the movement vector
-    VectorClear(move);
+    move = vec3_origin;
 
     // get basic movement from keyboard
-    CL_BaseMove(move);
+    CL_BaseMove(&move);
 
     // add mouse forward/side movement
-    move[0] += cl.mousemove[0];
-    move[1] += cl.mousemove[1];
+    move.x += cl.mousemove.x;
+    move.y += cl.mousemove.y;
 
     // clamp to server defined max speed
-    CL_ClampSpeed(move);
+    CL_ClampSpeed(&move);
 
     // store the movement vector
-    cl.cmd.forwardmove = move[0];
-    cl.cmd.sidemove = move[1];
-    cl.cmd.upmove = move[2];
+    cl.cmd.forwardmove = move.x;
+    cl.cmd.sidemove = move.y;
+    cl.cmd.upmove = move.z;
 
     cl.cmd.impulse = in_impulse;
 
@@ -809,8 +801,8 @@ clear:
     memset(&cl.cmd, 0, sizeof(cl.cmd));
 
     // clear all states
-    cl.mousemove[0] = 0;
-    cl.mousemove[1] = 0;
+    cl.mousemove.x = 0;
+    cl.mousemove.y = 0;
 
     in_attack.state &= ~2;
     in_use.state &= ~2;

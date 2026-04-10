@@ -20,14 +20,14 @@ void MoveClientToIntermission(edict_t *ent)
         G_AddEvent(ent, EV_OTHER_TELEPORT, 0);
         ent->client->ps.rdflags ^= RDF_TELEPORT_BIT;
     }
-    VectorCopy(level.intermission_origin, ent->s.origin);
-    VectorCopy(level.intermission_origin, ent->client->ps.origin);
-    VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
+    ent->s.origin = level.intermission_origin;
+    ent->client->ps.origin = level.intermission_origin;
+    ent->client->ps.viewangles = level.intermission_angle;
     ent->client->ps.pm_type = PM_FREEZE;
     ent->client->ps.gunindex = 0;
     ent->client->ps.gunskin = 0;
-    ent->client->ps.screen_blend[3] = 0;
-    ent->client->ps.damage_blend[3] = 0;
+    ent->client->ps.screen_blend.a = 0;
+    ent->client->ps.damage_blend.a = 0;
     ent->client->ps.rdflags &= RDF_TELEPORT_BIT;
     ent->client->ps.clientnum = ent->s.number;
 
@@ -277,8 +277,8 @@ void BeginIntermission(edict_t *targ)
         }
 
         if (ent) {
-            VectorCopy(ent->s.origin, level.intermission_origin);
-            VectorCopy(ent->s.angles, level.intermission_angle);
+            level.intermission_origin = ent->s.origin;
+            level.intermission_angle = ent->s.angles;
         }
     }
 
@@ -740,7 +740,7 @@ void G_SetStats(edict_t *ent)
         ent->client->ps.stats[STAT_TIMER] = ceilf(TO_SEC(ent->client->owned_sphere->timestamp - level.time));
     } else {
         const powerup_info_t *best_powerup = NULL;
-        gtime_t best_time = INT_MAX;
+        gtime_t best_time = INT64_MAX;
 
         for (int i = 0; i < q_countof(powerup_table); i++) {
             const powerup_info_t *powerup = &powerup_table[i];

@@ -115,8 +115,7 @@ static void PF_SetBrushModel(edict_t *ent, const char *name)
     mod = &bsp->models[num];
 
 // if it is an inline model, get the size information for it
-    VectorCopy(mod->mins, ent->r.mins);
-    VectorCopy(mod->maxs, ent->r.maxs);
+    ent->r.box = mod->box;
     PF_LinkEdict(ent);
 }
 
@@ -201,7 +200,7 @@ static int PF_FindConfigstring(const char *name, int start, int max, bool create
     return i;
 }
 
-static bool PF_InVis(const vec3_t p1, const vec3_t p2, vis_t vis)
+static bool PF_InVis(vec3_t p1, vec3_t p2, vis_t vis)
 {
     return CM_InVis(&sv.cm, p1, p2, vis);
 }
@@ -402,11 +401,11 @@ VM_THUNK(FindConfigstring) {
 }
 
 VM_THUNK(Trace) {
-    SV_Trace(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3_NULL(2), VM_VEC3_NULL(3), VM_VEC3(4), VM_U32(5), VM_U32(6));
+    SV_Trace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t));
 }
 
 VM_THUNK(Clip) {
-    SV_Clip(VM_PTR(0, trace_t), VM_VEC3(1), VM_VEC3_NULL(2), VM_VEC3_NULL(3), VM_VEC3(4), VM_U32(5), VM_U32(6));
+    SV_Clip(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t));
 }
 
 VM_THUNK(PointContents) {
@@ -414,7 +413,7 @@ VM_THUNK(PointContents) {
 }
 
 VM_THUNK(BoxEdicts) {
-    VM_U32(0) = SV_AreaEdicts(VM_VEC3(0), VM_VEC3(1), VM_PTR_CNT(2, int, VM_U32(3)), VM_U32(3), VM_U32(4));
+    VM_U32(0) = SV_AreaEdicts(VM_BOX3(0), VM_PTR_CNT(1, int, VM_U32(2)), VM_U32(2), VM_U32(3));
 }
 
 VM_THUNK(InVis) {
@@ -606,11 +605,11 @@ VM_THUNK(R_AddDebugPoint) {
 }
 
 VM_THUNK(R_AddDebugAxis) {
-    R_AddDebugAxis(VM_VEC3(0), VM_VEC3_NULL(1), VM_F32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugAxis(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugBounds) {
-    R_AddDebugBounds(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugBounds(VM_BOX3(0), VM_U32(1), VM_U32(2), VM_U32(3));
 }
 
 VM_THUNK(R_AddDebugSphere) {
@@ -634,7 +633,11 @@ VM_THUNK(R_AddDebugCurveArrow) {
 }
 
 VM_THUNK(R_AddDebugText) {
-    R_AddDebugText(VM_VEC3(0), VM_VEC3_NULL(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+    R_AddDebugText(VM_VEC3(0), VM_STR(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+}
+
+VM_THUNK(R_AddDebugAngledText) {
+    R_AddDebugAngledText(VM_VEC3(0), VM_VEC3(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
 }
 
 static const vm_import_t game_vm_imports[] = {
@@ -643,10 +646,10 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(SetConfigstring, "ii"),
     VM_IMPORT(GetConfigstring, "i iii"),
     VM_IMPORT(FindConfigstring, "i iiii"),
-    VM_IMPORT(Trace, "iiiiiii"),
-    VM_IMPORT(Clip, "iiiiiii"),
+    VM_IMPORT(Trace, "ii"),
+    VM_IMPORT(Clip, "ii"),
     VM_IMPORT(PointContents, "i i"),
-    VM_IMPORT(BoxEdicts, "i iiiii"),
+    VM_IMPORT(BoxEdicts, "i iiii"),
     VM_IMPORT(InVis, "i iii"),
     VM_IMPORT(SetAreaPortalState, "ii"),
     VM_IMPORT(AreasConnected, "i ii"),
@@ -692,13 +695,14 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(R_AddDebugLine, "iiiii"),
     VM_IMPORT(R_AddDebugPoint, "ifiii"),
     VM_IMPORT(R_AddDebugAxis, "iifii"),
-    VM_IMPORT(R_AddDebugBounds, "iiiii"),
+    VM_IMPORT(R_AddDebugBounds, "iiii"),
     VM_IMPORT(R_AddDebugSphere, "ifiii"),
     VM_IMPORT(R_AddDebugCircle, "ifiii"),
     VM_IMPORT(R_AddDebugCylinder, "iffiii"),
     VM_IMPORT(R_AddDebugArrow, "iifiiii"),
     VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
-    VM_IMPORT(R_AddDebugText, "iiifiii"),
+    VM_IMPORT(R_AddDebugText, "iifiii"),
+    VM_IMPORT(R_AddDebugAngledText, "iiifiii"),
 
     { 0 }
 };
@@ -925,6 +929,7 @@ static const game_import_t game_dll_imports = {
     .R_AddDebugArrow = R_AddDebugArrow,
     .R_AddDebugCurveArrow = R_AddDebugCurveArrow,
     .R_AddDebugText = R_AddDebugText,
+    .R_AddDebugAngledText = R_AddDebugAngledText,
 };
 
 // "fake" exports for calling into VM

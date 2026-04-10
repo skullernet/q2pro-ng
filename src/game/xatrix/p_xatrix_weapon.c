@@ -21,18 +21,17 @@ static void weapon_ionripper_fire(edict_t *ent)
     if (is_quad)
         damage *= damage_multiplier;
 
-    VectorCopy(ent->client->v_angle, tempang);
-    tempang[YAW] += crandom();
+    tempang = ent->client->v_angle;
+    tempang.yaw += crandom();
 
-    vec3_t start, dir;
-    P_ProjectSource(ent, tempang, (const vec3_t) { 16, 7, -8 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, tempang, Vec3(16, 7, -8), false);
 
-    fire_ionripper(ent, start, dir, damage, 500, EF_IONRIPPER);
+    fire_ionripper(ent, aim.start, aim.dir, damage, 500, EF_IONRIPPER);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_IONRIPPER | is_silenced);
 
-    PlayerNoise(ent, start, PNOISE_WEAPON);
+    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 }
@@ -51,7 +50,8 @@ void Weapon_Ionripper(edict_t *ent)
 
 static void weapon_phalanx_fire(edict_t *ent)
 {
-    vec3_t v, start, dir;
+    vec3_t v;
+    ray3_t aim;
     int    damage;
     float  damage_radius;
     int    radius_damage;
@@ -65,31 +65,31 @@ static void weapon_phalanx_fire(edict_t *ent)
         radius_damage *= damage_multiplier;
     }
 
-    VectorCopy(ent->client->v_angle, v);
+    v = ent->client->v_angle;
 
     if (ent->client->ps.gunframe == 8) {
-        v[YAW] -= 1.5f;
-        P_ProjectSource(ent, v, (const vec3_t) { 0, 8, -8 }, start, dir, false);
+        v.yaw -= 1.5f;
+        aim = P_ProjectSource(ent, v, Vec3(0, 8, -8), false);
 
         radius_damage = 30;
         damage_radius = 120;
 
-        fire_plasma(ent, start, dir, damage, 725, damage_radius, radius_damage);
+        fire_plasma(ent, aim.start, aim.dir, damage, 725, damage_radius, radius_damage);
 
         // send muzzle flash
         G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PHALANX2 | is_silenced);
 
         G_RemoveAmmo(ent);
     } else {
-        v[YAW] += 1.5f;
-        P_ProjectSource(ent, v, (const vec3_t) { 0, 8, -8 }, start, dir, false);
+        v.yaw += 1.5f;
+        aim = P_ProjectSource(ent, v, Vec3(0, 8, -8), false);
 
-        fire_plasma(ent, start, dir, damage, 725, damage_radius, radius_damage);
+        fire_plasma(ent, aim.start, aim.dir, damage, 725, damage_radius, radius_damage);
 
         // send muzzle flash
         G_AddEvent(ent, EV_MUZZLEFLASH, MZ_PHALANX | is_silenced);
 
-        PlayerNoise(ent, start, PNOISE_WEAPON);
+        PlayerNoise(ent, aim.start, PNOISE_WEAPON);
     }
 }
 
@@ -117,23 +117,17 @@ static void weapon_trap_fire(edict_t *ent, bool held)
 {
     int speed;
 
-    // Paril: kill sideways angle on grenades
-    // limit upwards angle so you don't throw behind you
-    vec3_t angles;
-    P_GetThrowAngles(ent, angles);
-
-    vec3_t start, dir;
-    P_ProjectSource(ent, angles, (const vec3_t) { 8, 0, -8 }, start, dir, false);
+    ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(8, 0, -8), false);
 
     if (ent->health > 0) {
         float frac = 1.0f - TO_SEC(ent->client->grenade_time - level.time) / TRAP_TIMER_SEC;
-        speed = lerp(TRAP_MINSPEED, TRAP_MAXSPEED, min(frac, 1.0f));
+        speed = Q_lerpf(TRAP_MINSPEED, TRAP_MAXSPEED, min(frac, 1.0f));
     } else
         speed = TRAP_MINSPEED;
 
     ent->client->grenade_time = 0;
 
-    fire_trap(ent, start, dir, speed);
+    fire_trap(ent, aim.start, aim.dir, speed);
 
     G_RemoveAmmoEx(ent, 1);
 }

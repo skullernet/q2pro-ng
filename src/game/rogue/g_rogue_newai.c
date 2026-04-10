@@ -2,7 +2,6 @@
 // Licensed under the GNU General Public License 2.0.
 
 #include "g_local.h"
-#include <float.h>
 
 //===============================
 // BLOCKED Logic
@@ -24,9 +23,9 @@ bool blocked_checkplat(edict_t *self, float dist)
         return false;
 
     // check player's relative altitude
-    if (self->enemy->r.absmin[2] >= self->r.absmax[2])
+    if (self->enemy->r.absbox.mins.z >= self->r.absbox.maxs.z)
         playerPosition = 1;
-    else if (self->enemy->r.absmax[2] <= self->r.absmin[2])
+    else if (self->enemy->r.absbox.maxs.z <= self->r.absbox.mins.z)
         playerPosition = -1;
     else
         playerPosition = 0;
@@ -43,12 +42,11 @@ bool blocked_checkplat(edict_t *self, float dist)
 
     // if we're not, check to see if we'll step onto one with this move
     if (!plat) {
-        AngleVectors(self->s.angles, forward, NULL, NULL);
-        VectorMA(self->s.origin, dist, forward, pt1);
-        VectorCopy(pt1, pt2);
-        pt2[2] -= 384;
+        AngleVectors(self->s.angles, &forward, NULL, NULL);
+        pt2 = pt1 = Vec3_MA(self->s.origin, dist, forward);
+        pt2.z -= 384;
 
-        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
+        trace = G_TraceLine(pt1, pt2, self->s.number, MASK_MONSTERSOLID);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid && !strncmp(g_edicts[trace.entnum].classname, "func_plat", 8))
             plat = &g_edicts[trace.entnum];
     }
@@ -87,13 +85,13 @@ static void monster_jump_start(edict_t *self)
 bool monster_jump_finished(edict_t *self)
 {
     vec3_t forward;
-    AngleVectors(self->s.angles, forward, NULL, NULL);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
 
     // if we lost our forward velocity, give us more
-    if (DotProduct(self->velocity, forward) < 150) {
-        float z_velocity = self->velocity[2];
-        VectorScale(forward, 150, self->velocity);
-        self->velocity[2] = z_velocity;
+    if (Vec3_Dot(self->velocity, forward) < 150) {
+        float z_velocity = self->velocity.z;
+        self->velocity = Vec3_Scale(forward, 150);
+        self->velocity.z = z_velocity;
     }
 
     return self->monsterinfo.jump_time < level.time;
@@ -106,22 +104,21 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
 {
     // can't jump even if we physically can
     if (!self->monsterinfo.can_jump)
-        return NO_JUMP;
+        return JUMP_NONE;
     // no enemy to path to
     if (!self->enemy)
-        return NO_JUMP;
+        return JUMP_NONE;
 
     // we just jumped recently, don't try again
     if (self->monsterinfo.jump_time > level.time)
-        return NO_JUMP;
+        return JUMP_NONE;
 
     // if we're pathing, the nodes will ensure we can reach the destination.
     if (self->monsterinfo.aiflags & AI_PATHING) {
         if (self->monsterinfo.nav_path.returnCode != PathReturnCode_TraversalPending)
-            return NO_JUMP;
+            return JUMP_NONE;
 
-        vec3_t dir;
-        VectorSubtract(self->monsterinfo.nav_path.secondMovePoint, self->monsterinfo.nav_path.firstMovePoint, dir);
+        vec3_t dir = Vec3_Sub(self->monsterinfo.nav_path.secondMovePoint, self->monsterinfo.nav_path.firstMovePoint);
         self->ideal_yaw = vectoyaw(dir);
 
         if (!FacingIdeal(self)) {
@@ -131,10 +128,10 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
 
         monster_jump_start(self);
 
-        if (self->monsterinfo.nav_path.secondMovePoint[2] > self->monsterinfo.nav_path.firstMovePoint[2])
-            return JUMP_JUMP_UP;
+        if (self->monsterinfo.nav_path.secondMovePoint.z > self->monsterinfo.nav_path.firstMovePoint.z)
+            return JUMP_UP;
         else
-            return JUMP_JUMP_DOWN;
+            return JUMP_DOWN;
     }
 
     int     playerPosition;
@@ -142,70 +139,68 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
     vec3_t  pt1, pt2;
     vec3_t  forward, up;
 
-    AngleVectors(self->s.angles, forward, NULL, up);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
 
-    if (self->enemy->r.absmin[2] > (self->r.absmin[2] + STEPSIZE))
+    if (self->enemy->r.absbox.mins.z > (self->r.absbox.mins.z + STEPSIZE))
         playerPosition = 1;
-    else if (self->enemy->r.absmin[2] < (self->r.absmin[2] - STEPSIZE))
+    else if (self->enemy->r.absbox.mins.z < (self->r.absbox.mins.z - STEPSIZE))
         playerPosition = -1;
     else
         playerPosition = 0;
 
     if (playerPosition == -1 && self->monsterinfo.drop_height) {
         // check to make sure we can even get to the spot we're going to "fall" from
-        VectorMA(self->s.origin, 48, forward, pt1);
-        trap_Trace(&trace, self->s.origin, self->r.mins, self->r.maxs, pt1, self->s.number, MASK_MONSTERSOLID);
+        pt1 = Vec3_MA(self->s.origin, 48, forward);
+        trace = G_Trace(self->s.origin, pt1, self->r.box, self->s.number, MASK_MONSTERSOLID);
         if (trace.fraction < 1)
-            return NO_JUMP;
+            return JUMP_NONE;
 
-        VectorCopy(pt1, pt2);
-        pt2[2] = self->r.absmin[2] - self->monsterinfo.drop_height - 1;
+        pt2 = pt1;
+        pt2.z = self->r.absbox.mins.z - self->monsterinfo.drop_height - 1;
 
-        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
+        trace = G_TraceLine(pt1, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
             // check how deep the water is
             if (trace.contents & CONTENTS_WATER) {
-                trace_t deep;
-                trap_Trace(&deep, trace.endpos, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID);
+                trace_t deep = G_TraceLine(trace.endpos, pt2, self->s.number, MASK_MONSTERSOLID);
 
                 water_level_t waterlevel;
                 contents_t watertype;
                 M_CategorizePosition(self, deep.endpos, &waterlevel, &watertype);
 
                 if (waterlevel > WATER_WAIST)
-                    return NO_JUMP;
+                    return JUMP_NONE;
             }
 
-            if ((self->r.absmin[2] - trace.endpos[2]) >= 24 && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
-                if ((self->enemy->r.absmin[2] - trace.endpos[2]) > 32)
-                    return NO_JUMP;
+            if ((self->r.absbox.mins.z - trace.endpos.z) >= 24 && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
+                if ((self->enemy->r.absbox.mins.z - trace.endpos.z) > 32)
+                    return JUMP_NONE;
 
-                if (trace.plane.normal[2] < 0.9f)
-                    return NO_JUMP;
+                if (trace.plane.normal.z < 0.9f)
+                    return JUMP_NONE;
 
                 monster_jump_start(self);
 
-                return JUMP_JUMP_DOWN;
+                return JUMP_DOWN;
             }
         }
     } else if (playerPosition == 1 && self->monsterinfo.jump_height) {
-        VectorMA(self->s.origin, 48, forward, pt1);
-        VectorCopy(pt1, pt2);
-        pt1[2] = self->r.absmax[2] + self->monsterinfo.jump_height;
+        pt1 = pt2 = Vec3_MA(self->s.origin, 48, forward);
+        pt1.z = self->r.absbox.maxs.z + self->monsterinfo.jump_height;
 
-        trap_Trace(&trace, pt1, NULL, NULL, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
+        trace = G_TraceLine(pt1, pt2, self->s.number, MASK_MONSTERSOLID | MASK_WATER);
         if (trace.fraction < 1 && !trace.allsolid && !trace.startsolid) {
-            if ((trace.endpos[2] - self->r.absmin[2]) <= self->monsterinfo.jump_height && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
+            if ((trace.endpos.z - self->r.absbox.mins.z) <= self->monsterinfo.jump_height && (trace.contents & (MASK_SOLID | CONTENTS_WATER))) {
                 face_wall(self);
 
                 monster_jump_start(self);
 
-                return JUMP_JUMP_UP;
+                return JUMP_UP;
             }
         }
     }
 
-    return NO_JUMP;
+    return JUMP_NONE;
 }
 
 // *************************
@@ -231,7 +226,7 @@ static void hintpath_go(edict_t *self, edict_t *point)
 {
     vec3_t dir;
 
-    VectorSubtract(point->s.origin, self->s.origin, dir);
+    dir = Vec3_Sub(point->s.origin, self->s.origin);
 
     self->ideal_yaw = vectoyaw(dir);
     self->goalentity = self->movetarget = point;
@@ -589,8 +584,7 @@ void SP_hint_path(edict_t *self)
 
     self->r.solid = SOLID_TRIGGER;
     self->touch = hint_path_touch;
-    VectorSet(self->r.mins, -8, -8, -8);
-    VectorSet(self->r.maxs, 8, 8, 8);
+    self->r.box = Box3_FromRadius(8);
     self->r.svflags |= SVF_NOCLIENT;
     trap_LinkEntity(self);
 }
@@ -677,15 +671,14 @@ bool inback(edict_t *self, edict_t *other)
     vec3_t vec;
     vec3_t forward;
 
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorSubtract(other->s.origin, self->s.origin, vec);
-    VectorNormalize(vec);
-    return DotProduct(vec, forward) < -0.3f;
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    vec = Vec3_Direction(other->s.origin, self->s.origin);
+    return Vec3_Dot(vec, forward) < -0.3f;
 }
 
 float realrange(edict_t *self, edict_t *other)
 {
-    return Distance(self->s.origin, other->s.origin);
+    return Vec3_Distance(self->s.origin, other->s.origin);
 }
 
 bool face_wall(edict_t *self)
@@ -695,12 +688,12 @@ bool face_wall(edict_t *self)
     vec3_t  ang;
     trace_t tr;
 
-    AngleVectors(self->s.angles, forward, NULL, NULL);
-    VectorMA(self->s.origin, 64, forward, pt);
-    trap_Trace(&tr, self->s.origin, NULL, NULL, pt, self->s.number, MASK_MONSTERSOLID);
+    AngleVectors(self->s.angles, &forward, NULL, NULL);
+    pt = Vec3_MA(self->s.origin, 64, forward);
+    tr = G_TraceLine(self->s.origin, pt, self->s.number, MASK_MONSTERSOLID);
     if (tr.fraction < 1 && !tr.allsolid && !tr.startsolid) {
-        vectoangles(tr.plane.normal, ang);
-        self->ideal_yaw = ang[YAW] + 180;
+        ang = vectoangles(tr.plane.normal);
+        self->ideal_yaw = ang.yaw + 180;
         if (self->ideal_yaw > 360)
             self->ideal_yaw -= 360;
 
@@ -719,17 +712,17 @@ void TOUCH(badarea_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool 
 {
 }
 
-edict_t *SpawnBadArea(const vec3_t mins, const vec3_t maxs, gtime_t lifespan, edict_t *owner)
+edict_t *SpawnBadArea(box3_t absbox, gtime_t lifespan, edict_t *owner)
 {
     edict_t *badarea;
     vec3_t   origin;
 
-    VectorAvg(mins, maxs, origin);
+    origin = Box3_Center(absbox);
 
     badarea = G_Spawn();
-    VectorCopy(origin, badarea->s.origin);
-    VectorSubtract(maxs, origin, badarea->r.maxs);
-    VectorSubtract(mins, origin, badarea->r.mins);
+    badarea->s.origin = origin;
+    badarea->r.box.mins = Vec3_Sub(absbox.mins, origin);
+    badarea->r.box.maxs = Vec3_Sub(absbox.maxs, origin);
     badarea->touch = badarea_touch;
     badarea->movetype = MOVETYPE_NONE;
     badarea->r.solid = SOLID_TRIGGER;
@@ -754,12 +747,10 @@ edict_t *CheckForBadArea(edict_t *ent)
     int         i, num;
     int         touch[MAX_EDICTS_OLD];
     edict_t     *hit;
-    vec3_t      mins, maxs;
+    box3_t      box;
 
-    VectorAdd(ent->s.origin, ent->r.mins, mins);
-    VectorAdd(ent->s.origin, ent->r.maxs, maxs);
-
-    num = trap_BoxEdicts(mins, maxs, touch, q_countof(touch), AREA_TRIGGERS);
+    box = Box3_Translate(ent->r.box, ent->s.origin);
+    num = trap_BoxEdicts(box, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)
@@ -803,18 +794,13 @@ bool MarkTeslaArea(edict_t *self, edict_t *tesla)
         edict_t *trigger = tesla->teamchain;
 
         if (tesla->air_finished)
-            area = SpawnBadArea(trigger->r.absmin, trigger->r.absmax, tesla->air_finished, tesla);
+            area = SpawnBadArea(trigger->r.absbox, tesla->air_finished, tesla);
         else
-            area = SpawnBadArea(trigger->r.absmin, trigger->r.absmax, tesla->nextthink, tesla);
-    // otherwise we just guess at how long it'll last.
-    } else {
-        vec3_t mins = { -TESLA_DAMAGE_RADIUS, -TESLA_DAMAGE_RADIUS, tesla->r.mins[2] };
-        vec3_t maxs = { TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS, TESLA_DAMAGE_RADIUS };
-
-        VectorAdd(mins, tesla->s.origin, mins);
-        VectorAdd(maxs, tesla->s.origin, maxs);
-
-        area = SpawnBadArea(mins, maxs, SEC(30), tesla);
+            area = SpawnBadArea(trigger->r.absbox, tesla->nextthink, tesla);
+    } else { // otherwise we just guess at how long it'll last.
+        box3_t box = Box3_FromRadius(TESLA_DAMAGE_RADIUS);
+        box.mins.z = tesla->r.box.mins.z;
+        area = SpawnBadArea(Box3_Translate(box, tesla->s.origin), SEC(30), tesla);
     }
 
     // if we spawned a bad area, then link it to the tesla
@@ -832,70 +818,64 @@ bool MarkTeslaArea(edict_t *self, edict_t *tesla)
 // offset is how much time to miss by
 // aimdir is the resulting aim direction (pass in NULL if you don't want it)
 // aimpoint is the resulting aimpoint (pass in NULL if don't want it)
-void PredictAim(edict_t *self, edict_t *target, const vec3_t start, float bolt_speed, bool eye_height, float offset, vec3_t aimdir, vec3_t aimpoint)
+void M_PredictAim(edict_t *self, edict_t *target, vec3_t start, float bolt_speed, bool eye_height, float offset, vec3_t *aimdir, vec3_t *aimpoint)
 {
     vec3_t dir, vec, aim;
     float  dist, time;
 
     if (!target || !target->r.inuse) {
-        VectorClear(aimdir);
+        if (aimdir)
+            *aimdir = vec3_origin;
+        if (aimpoint)
+            *aimpoint = vec3_origin;
         return;
     }
 
-    VectorSubtract(target->s.origin, start, dir);
+    dir = Vec3_Sub(target->s.origin, start);
     if (eye_height)
-        dir[2] += target->viewheight;
+        dir.z += target->viewheight;
 
-    VectorAdd(start, dir, vec);
+    vec = Vec3_Add(start, dir);
 
     // [Paril-KEX] if our current attempt is blocked, try the opposite one
-    trace_t tr;
-    trap_Trace(&tr, start, NULL, NULL, vec, self->s.number, MASK_PROJECTILE);
+    trace_t tr = G_TraceLine(start, vec, self->s.number, MASK_PROJECTILE);
 
     if (tr.fraction < 1.0f && tr.entnum != target->s.number) {
         eye_height = !eye_height;
-        VectorSubtract(target->s.origin, start, dir);
+        dir = Vec3_Sub(target->s.origin, start);
         if (eye_height)
-            dir[2] += target->viewheight;
+            dir.z += target->viewheight;
     }
 
-    dist = VectorNormalize(dir);
+    dist = Vec3_Normalize(&dir);
+    time = bolt_speed ? dist / bolt_speed : 0;
 
-    if (bolt_speed)
-        time = dist / bolt_speed;
-    else
-        time = 0;
+    vec = Vec3_MA(target->s.origin, time - offset, target->velocity);
+    aim = Vec3_Direction(vec, start);
 
-    VectorMA(target->s.origin, time - offset, target->velocity, vec);
-
-    VectorSubtract(vec, start, aim);
-    VectorNormalize(aim);
-
-    // went backwards...
-    if (DotProduct(dir, aim) < 0)
-        VectorCopy(target->s.origin, vec);
-    // if the shot is going to impact a nearby wall from our prediction, just fire it straight.
-    else {
-        trap_Trace(&tr, start, NULL, NULL, vec, ENTITYNUM_NONE, MASK_SOLID);
+    if (Vec3_Dot(dir, aim) < 0) {
+        // went backwards...
+        vec = target->s.origin;
+    } else {
+        // if the shot is going to impact a nearby wall from our prediction, just fire it straight.
+        tr = G_TraceLine(start, vec, ENTITYNUM_NONE, MASK_SOLID);
         if (tr.fraction < 0.9f)
-            VectorCopy(target->s.origin, vec);
+            vec = target->s.origin;
     }
 
     if (eye_height)
-        vec[2] += target->viewheight;
+        vec.z += target->viewheight;
 
-    if (aimdir) {
-        VectorSubtract(vec, start, aimdir);
-        VectorNormalize(aimdir);
-    }
+    if (aimdir)
+        *aimdir = Vec3_Direction(vec, start);
 
     if (aimpoint)
-        VectorCopy(vec, aimpoint);
+        *aimpoint = vec;
 }
 
 // [Paril-KEX] find a pitch that will at some point land on or near the player.
 // very approximate. aim will be adjusted to the correct aim vector.
-bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t start, vec3_t aim,
+bool M_CalculatePitchToFire(edict_t *self, vec3_t target, vec3_t start, vec3_t *aim,
                             float speed, float time_remaining, bool mortar, bool destroy_on_touch)
 {
     static const float pitches[] = { -80, -70, -60, -50, -40, -30, -20, -10, -5 };
@@ -903,8 +883,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
     float best_dist = FLT_MAX;
     const float sim_time = 0.1f;
 
-    vec3_t pitched_aim;
-    vectoangles(aim, pitched_aim);
+    vec3_t pitched_aim = vectoangles(*aim);
 
     for (int i = 0; i < q_countof(pitches); i++) {
         float pitch = pitches[i];
@@ -912,38 +891,34 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
         if (mortar && pitch >= -30)
             break;
 
-        pitched_aim[PITCH] = pitch;
+        pitched_aim.pitch = pitch;
 
         vec3_t fwd;
-        AngleVectors(pitched_aim, fwd, NULL, NULL);
+        AngleVectors(pitched_aim, &fwd, NULL, NULL);
 
-        vec3_t velocity, origin;
-        VectorScale(fwd, speed, velocity);
-        VectorCopy(start, origin);
+        vec3_t velocity = Vec3_Scale(fwd, speed);
+        vec3_t origin = start;
 
         float t = time_remaining;
 
         while (t > 0) {
-            vec3_t end;
+            velocity.z -= sim_time * level.gravity;
+            vec3_t end = Vec3_MA(origin, sim_time, velocity);
 
-            velocity[2] -= sim_time * level.gravity;
-            VectorMA(origin, sim_time, velocity, end);
-
-            trace_t tr;
-            trap_Trace(&tr, origin, NULL, NULL, end, ENTITYNUM_NONE, MASK_SHOT);
-            VectorCopy(tr.endpos, origin);
+            trace_t tr = G_TraceLine(origin, end, ENTITYNUM_NONE, MASK_SHOT);
+            origin = tr.endpos;
 
             if (tr.fraction < 1.0f) {
                 if (tr.surface_flags & SURF_SKY)
                     break;
 
-                VectorAdd(origin, tr.plane.normal, origin);
-                G_ClipVelocity(velocity, tr.plane.normal, velocity, 1.6f);
+                origin = Vec3_Add(origin, tr.plane.normal);
+                velocity = G_ClipVelocity(velocity, tr.plane.normal, 1.6f);
 
-                float dist = DistanceSquared(origin, target);
+                float dist = Vec3_DistanceSquared(origin, target);
                 edict_t *hit = &g_edicts[tr.entnum];
 
-                if (hit == self->enemy || hit->client || (tr.plane.normal[2] >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
+                if (hit == self->enemy || hit->client || (tr.plane.normal.z >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
                     best_pitch = pitch;
                     best_dist = dist;
                 }
@@ -957,7 +932,7 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
     }
 
     if (best_dist < FLT_MAX) {
-        pitched_aim[PITCH] = best_pitch;
+        pitched_aim.pitch = best_pitch;
         AngleVectors(pitched_aim, aim, NULL, NULL);
         return true;
     }
@@ -967,12 +942,9 @@ bool M_CalculatePitchToFire(edict_t *self, const vec3_t target, const vec3_t sta
 
 bool below(edict_t *self, edict_t *other)
 {
-    vec3_t vec;
-    vec3_t down = { 0, 0, -1 };
-
-    VectorSubtract(other->s.origin, self->s.origin, vec);
-    VectorNormalize(vec);
-    return DotProduct(vec, down) > 0.95f;   // 18 degree arc below
+    vec3_t vec = Vec3_Direction(other->s.origin, self->s.origin);
+    vec3_t dir = Vec3(0, 0, -1);
+    return Vec3_Dot(vec, dir) > 0.95f;  // 18 degree arc below
 }
 
 //
@@ -1007,12 +979,13 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
     float height;
 
     if (ducker && tr) {
-        height = self->r.absmax[2] - 32 * (self->s.scale ? self->s.scale : 1) - 1; // the -1 is because the absmax is s.origin + maxs + 1
+        // the -1 is because the absmax is s.origin + maxs + 1
+        height = self->r.absbox.maxs.z - 32 * (self->s.scale ? self->s.scale : 1) - 1;
 
-        if ((!dodger) && ((tr->endpos[2] <= height) || (self->monsterinfo.aiflags & AI_DUCKED)))
+        if ((!dodger) && ((tr->endpos.z <= height) || (self->monsterinfo.aiflags & AI_DUCKED)))
             return;
     } else
-        height = self->r.absmax[2];
+        height = self->r.absbox.maxs.z;
 
     if (dodger) {
         // if we're already dodging, just finish the sequence, i.e. don't do anything else
@@ -1020,7 +993,7 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
             return;
 
         // if we're ducking already, or the shot is at our knees
-        if ((!ducker || !tr || tr->endpos[2] <= height) || (self->monsterinfo.aiflags & AI_DUCKED)) {
+        if ((!ducker || !tr || tr->endpos.z <= height) || (self->monsterinfo.aiflags & AI_DUCKED)) {
             // on Easy & Normal, don't sidestep as often (25% on Easy, 50% on Normal)
             float chance = 1.0f;
 
@@ -1037,10 +1010,10 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
             if (tr) {
                 vec3_t right, diff;
 
-                AngleVectors(self->s.angles, NULL, right, NULL);
-                VectorSubtract(tr->endpos, self->s.origin, diff);
+                AngleVectors(self->s.angles, NULL, &right, NULL);
+                diff = Vec3_Sub(tr->endpos, self->s.origin);
 
-                if (DotProduct(right, diff) < 0)
+                if (Vec3_Dot(right, diff) < 0)
                     self->monsterinfo.lefty = false;
                 else
                     self->monsterinfo.lefty = true;
@@ -1092,7 +1065,7 @@ void monster_duck_down(edict_t *self)
 {
     self->monsterinfo.aiflags |= AI_DUCKED;
 
-    self->r.maxs[2] = self->monsterinfo.base_height - 32 * (self->s.scale ? self->s.scale : 1);
+    self->r.box.maxs.z = self->monsterinfo.base_height - 32 * (self->s.scale ? self->s.scale : 1);
     self->takedamage = true;
     self->monsterinfo.next_duck_time = level.time + DUCK_INTERVAL;
     trap_LinkEntity(self);
@@ -1112,7 +1085,7 @@ void MONSTERINFO_UNDUCK(monster_duck_up)(edict_t *self)
         return;
 
     self->monsterinfo.aiflags &= ~AI_DUCKED;
-    self->r.maxs[2] = self->monsterinfo.base_height;
+    self->r.box.maxs.z = self->monsterinfo.base_height;
     self->takedamage = true;
     // we finished a duck-up successfully, so cut the time remaining in half
     if (self->monsterinfo.next_duck_time > level.time)
@@ -1224,10 +1197,7 @@ void THINK(BossExplode_think)(edict_t *self)
         return;
     }
 
-    vec3_t org;
-    VectorAdd(owner->s.origin, owner->r.mins, org);
-    VectorMA(org, frandom(), owner->r.size, org);
-
+    vec3_t org = Vec3_Add(owner->s.origin, Box3_RandomPoint(owner->r.box));
     G_TempEntity(org, !(self->viewheight % 3) ? EV_EXPLOSION1 : EV_EXPLOSION1_NL, 0);
 
     self->viewheight++;

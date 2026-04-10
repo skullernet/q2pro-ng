@@ -74,46 +74,44 @@ static void Boss2Rocket64(edict_t *self)
     if (!self->enemy)
         return;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right);
 
     float scale = self->s.scale ? self->s.scale : 1;
     int count = self->count++ % 4;
 
-    start[2] += 10 * scale;
-    VectorMA(start, -2 * scale, right, start);
-    VectorMA(start, -8 * scale * count, right, start);
+    start.z += 10 * scale;
+    start = Vec3_MA(start, -2 * scale, right);
+    start = Vec3_MA(start, -8 * scale * count, right);
 
     if (self->enemy->client && frandom() < 0.9f) {
-        dist = Distance(self->enemy->s.origin, start);
+        dist = Vec3_Distance(self->enemy->s.origin, start);
         time = dist / BOSS2_ROCKET_SPEED;
-        VectorMA(self->enemy->s.origin, time - 0.3f, self->enemy->velocity, vec);
+        vec = Vec3_MA(self->enemy->s.origin, time - 0.3f, self->enemy->velocity);
     } else {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] -= 15;
+        vec = self->enemy->s.origin;
+        vec.z -= 15;
     }
 
-    VectorSubtract(vec, start, dir);
-    VectorNormalize(dir);
-
+    dir = Vec3_Direction(vec, start);
     monster_fire_rocket(self, start, dir, 35, BOSS2_ROCKET_SPEED, MZ2_BOSS2_ROCKET_1);
 }
 
 static void boss2_firebullet_right(edict_t *self)
 {
     vec3_t forward, right, start;
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_R1], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.2f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_R1], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.2f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD * 3, DEFAULT_BULLET_VSPREAD, MZ2_BOSS2_MACHINEGUN_R1);
 }
 
 static void boss2_firebullet_left(edict_t *self)
 {
     vec3_t forward, right, start;
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_L1], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.2f, forward, NULL);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_L1], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.2f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD * 3, DEFAULT_BULLET_VSPREAD, MZ2_BOSS2_MACHINEGUN_L1);
 }
 
@@ -227,12 +225,11 @@ static void Boss2HyperBlaster(edict_t *self)
     vec3_t start;
     monster_muzzleflash_id_t id = (self->s.frame & 1) ? MZ2_BOSS2_HYPERBLASTER_L1 : MZ2_BOSS2_HYPERBLASTER_R1;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[id], forward, right, start);
-    VectorCopy(self->enemy->s.origin, target);
-    target[2] += self->enemy->viewheight;
-    VectorSubtract(target, start, forward);
-    VectorNormalize(forward);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[id], forward, right);
+    target = self->enemy->s.origin;
+    target.z += self->enemy->viewheight;
+    forward = Vec3_Direction(target, start);
 
     monster_fire_blaster(self, start, forward, 2, 1000, id, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
 }
@@ -343,7 +340,7 @@ const mmove_t MMOVE_T(boss2_move_pain_light) = { FRAME_pain20, FRAME_pain23, bos
 
 static void boss2_shrink(edict_t *self)
 {
-    self->r.maxs[2] = 50;
+    self->r.box.maxs.z = 50;
     trap_LinkEntity(self);
 }
 
@@ -422,7 +419,7 @@ void MONSTERINFO_WALK(boss2_walk)(edict_t *self)
 
 void MONSTERINFO_ATTACK(boss2_attack)(edict_t *self)
 {
-    float range = Distance(self->enemy->s.origin, self->s.origin);
+    float range = Vec3_Distance(self->enemy->s.origin, self->s.origin);
 
     if (range <= 125 || frandom() <= 0.6f)
         M_SetAnimation(self, (self->spawnflags & SPAWNFLAG_BOSS2_N64) ? &boss2_move_attack_hb : &boss2_move_attack_pre_mg);
@@ -506,7 +503,7 @@ static void boss2_gib(edict_t *self)
     self->s.sound = 0;
     self->s.skinnum /= 2;
 
-    self->gravityVector[2] = -1.0f;
+    self->gravityVector.z = -1.0f;
 
     ThrowGibs(self, 500, boss2_gibs);
 }
@@ -523,7 +520,7 @@ static void boss2_dead(edict_t *self)
     boss2_gib(self);
 }
 
-void DIE(boss2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(boss2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->spawnflags & SPAWNFLAG_MONSTER_DEAD) {
         // check for gib
@@ -540,8 +537,8 @@ void DIE(boss2_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         self->deadflag = true;
         self->takedamage = false;
         self->count = 0;
-        VectorClear(self->velocity);
-        self->gravityVector[2] *= 0.30f;
+        self->velocity = vec3_origin;
+        self->gravityVector.z *= 0.30f;
     }
 
     M_SetAnimation(self, &boss2_move_death);
@@ -588,8 +585,7 @@ void SP_monster_boss2(edict_t *self)
 
     G_PrecacheGibs(boss2_gibs);
 
-    VectorSet(self->r.mins, -56, -56, 0);
-    VectorSet(self->r.maxs, 56, 56, 80);
+    self->r.box = Box3_FromSize(56, 0, 80);
 
     self->health = 2000 * st.health_multiplier;
     self->gib_health = -200;

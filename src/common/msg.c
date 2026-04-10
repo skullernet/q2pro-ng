@@ -300,12 +300,12 @@ typedef enum {
 #define NETF(f, bits)  { #f, offsetof(entity_state_t, f), bits }
 
 static const netfield_t entity_state_fields[] = {
-    NETF(angles[0], NETF_ANGLE),
-    NETF(angles[1], NETF_ANGLE),
-    NETF(angles[2], NETF_ANGLE),
-    NETF(origin[0], NETF_FLOAT),
-    NETF(origin[1], NETF_FLOAT),
-    NETF(origin[2], NETF_FLOAT),
+    NETF(angles.x, NETF_ANGLE),
+    NETF(angles.y, NETF_ANGLE),
+    NETF(angles.z, NETF_ANGLE),
+    NETF(origin.x, NETF_FLOAT),
+    NETF(origin.y, NETF_FLOAT),
+    NETF(origin.z, NETF_FLOAT),
     NETF(modelindex, MODELINDEX_BITS),
     NETF(modelindex2, MODELINDEX_BITS),
     NETF(modelindex3, MODELINDEX_BITS),
@@ -331,9 +331,9 @@ static const netfield_t entity_state_fields[] = {
 };
 
 static const netfield_t entity_state_fields2[] = {
-    NETF(old_origin[0], NETF_FLOAT),
-    NETF(old_origin[1], NETF_FLOAT),
-    NETF(old_origin[2], NETF_FLOAT),
+    NETF(old_origin.x, NETF_FLOAT),
+    NETF(old_origin.y, NETF_FLOAT),
+    NETF(old_origin.z, NETF_FLOAT),
 };
 
 static_assert(sizeof(entity_state_t) / sizeof(uint32_t) == q_countof(entity_state_fields) + 4, "Bad entity_state_fields size");
@@ -467,11 +467,11 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
         baseline = true;
     }
 
-    if (VectorCompare(to->old_origin, from->old_origin))
+    if (Vec3_IsEqual(to->old_origin, from->old_origin))
         oldorg = 0;
-    else if (VectorCompare(to->old_origin, from->origin))
+    else if (Vec3_IsEqual(to->old_origin, from->origin))
         oldorg = 1;
-    else if (VectorCompare(to->old_origin, to->origin))
+    else if (Vec3_IsEqual(to->old_origin, to->origin))
         oldorg = 2;
     else
         oldorg = 3;
@@ -503,54 +503,54 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
 
 static const netfield_t player_state_fields[] = {
     NETF(pm_type, 8),
-    NETF(origin[0], NETF_FLOAT),
-    NETF(origin[1], NETF_FLOAT),
-    NETF(origin[2], NETF_FLOAT),
-    NETF(velocity[0], NETF_FLOAT),
-    NETF(velocity[1], NETF_FLOAT),
-    NETF(velocity[2], NETF_FLOAT),
+    NETF(origin.x, NETF_FLOAT),
+    NETF(origin.y, NETF_FLOAT),
+    NETF(origin.z, NETF_FLOAT),
+    NETF(velocity.x, NETF_FLOAT),
+    NETF(velocity.y, NETF_FLOAT),
+    NETF(velocity.z, NETF_FLOAT),
     NETF(pm_flags, 16),
     NETF(pm_time, 16),
     NETF(gravity, -16),
-    NETF(delta_angles[0], -16),
-    NETF(delta_angles[1], -16),
-    NETF(delta_angles[2], -16),
+    NETF(delta_angles.x, NETF_ANGLE),
+    NETF(delta_angles.y, NETF_ANGLE),
+    NETF(delta_angles.z, NETF_ANGLE),
 
     NETF(clientnum, ENTITYNUM_BITS),
-    NETF(viewangles[0], NETF_ANGLE),
-    NETF(viewangles[1], NETF_ANGLE),
-    NETF(viewangles[2], NETF_ANGLE),
+    NETF(viewangles.x, NETF_ANGLE),
+    NETF(viewangles.y, NETF_ANGLE),
+    NETF(viewangles.z, NETF_ANGLE),
     NETF(viewheight, -8),
     NETF(bobtime, 8),
     NETF(gunindex, MODELINDEX_BITS),
     NETF(gunskin, 8),
     NETF(gunframe, 8),
     NETF(gunrate, 2),
-    NETF(screen_blend[0], NETF_COLOR),
-    NETF(screen_blend[1], NETF_COLOR),
-    NETF(screen_blend[2], NETF_COLOR),
-    NETF(screen_blend[3], NETF_COLOR),
-    NETF(damage_blend[0], NETF_COLOR),
-    NETF(damage_blend[1], NETF_COLOR),
-    NETF(damage_blend[2], NETF_COLOR),
-    NETF(damage_blend[3], NETF_COLOR),
+    NETF(screen_blend.r, NETF_COLOR),
+    NETF(screen_blend.g, NETF_COLOR),
+    NETF(screen_blend.b, NETF_COLOR),
+    NETF(screen_blend.a, NETF_COLOR),
+    NETF(damage_blend.r, NETF_COLOR),
+    NETF(damage_blend.g, NETF_COLOR),
+    NETF(damage_blend.b, NETF_COLOR),
+    NETF(damage_blend.a, NETF_COLOR),
     NETF(fov, 8),
     NETF(rdflags, NETF_LEB),
 
-    NETF(fog.color[0], NETF_COLOR),
-    NETF(fog.color[1], NETF_COLOR),
-    NETF(fog.color[2], NETF_COLOR),
+    NETF(fog.color.r, NETF_COLOR),
+    NETF(fog.color.g, NETF_COLOR),
+    NETF(fog.color.b, NETF_COLOR),
     NETF(fog.density, NETF_FLOAT),
     NETF(fog.sky_factor, NETF_FLOAT),
 
-    NETF(heightfog.start.color[0], NETF_COLOR),
-    NETF(heightfog.start.color[1], NETF_COLOR),
-    NETF(heightfog.start.color[2], NETF_COLOR),
+    NETF(heightfog.start.color.r, NETF_COLOR),
+    NETF(heightfog.start.color.g, NETF_COLOR),
+    NETF(heightfog.start.color.b, NETF_COLOR),
     NETF(heightfog.start.dist, NETF_FLOAT),
 
-    NETF(heightfog.end.color[0], NETF_COLOR),
-    NETF(heightfog.end.color[1], NETF_COLOR),
-    NETF(heightfog.end.color[2], NETF_COLOR),
+    NETF(heightfog.end.color.r, NETF_COLOR),
+    NETF(heightfog.end.color.g, NETF_COLOR),
+    NETF(heightfog.end.color.b, NETF_COLOR),
     NETF(heightfog.end.dist, NETF_FLOAT),
 
     NETF(heightfog.density, NETF_FLOAT),
@@ -896,10 +896,10 @@ void MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to)
 
     switch (MSG_ReadBits(2)) {
     case 1:
-        VectorCopy(from->origin, to->old_origin);
+        to->old_origin = from->origin;
         break;
     case 2:
-        VectorCopy(to->origin, to->old_origin);
+        to->old_origin = to->origin;
         break;
     case 3:
         MSG_ReadDeltaFields(entity_state_fields2, 3, to);

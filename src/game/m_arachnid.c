@@ -158,10 +158,10 @@ static void arachnid_charge_rail(edict_t *self, monster_muzzleflash_id_t mz)
     G_StartSound(self, CHAN_WEAPON, sound_charge, 1, ATTN_NORM);
 
     vec3_t forward, right, start;
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
 
-    PredictAim(self, self->enemy, start, 0, false, 0.0f, NULL, self->pos1);
+    M_PredictAim(self, self->enemy, start, 0, false, 0.0f, NULL, &self->pos1);
 }
 
 static void arachnid_charge_rail_left(edict_t *self)
@@ -190,8 +190,8 @@ static void arachnid_rail_real(edict_t *self, monster_muzzleflash_id_t id)
     vec3_t dir;
     vec3_t forward, right, up;
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, monster_flash_offset[id], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, &up);
+    start = M_ProjectFlashSource(self, monster_flash_offset[id], forward, right);
     int dmg = 50;
 
     if (self->s.frame >= FRAME_melee_in1 && self->s.frame <= FRAME_melee_in16) {
@@ -214,26 +214,23 @@ static void arachnid_rail_real(edict_t *self, monster_muzzleflash_id_t id)
         if (num_players) {
             edict_t *chosen = players_scanned[irandom1(num_players)];
 
-            PredictAim(self, chosen, start, 0, false, 0.0f, NULL, self->pos1);
+            M_PredictAim(self, chosen, start, 0, false, 0.0f, NULL, &self->pos1);
 
-            VectorSubtract(chosen->s.origin, self->s.origin, dir);
+            dir = Vec3_Sub(chosen->s.origin, self->s.origin);
 
             self->ideal_yaw = vectoyaw(dir);
-            self->s.angles[YAW] = self->ideal_yaw;
+            self->s.angles.yaw = self->ideal_yaw;
 
-            VectorSubtract(self->pos1, start, dir);
-            VectorNormalize(dir);
-
+            dir = Vec3_Direction(self->pos1, start);
             for (int i = 0; i < 3; i++)
-                dir[i] += crandom_open() * 0.018f;
-            VectorNormalize(dir);
+                dir.xyz[i] += crandom_open() * 0.018f;
+            dir = Vec3_Normalize(dir);
         } else {
-            VectorCopy(forward, dir);
+            dir = forward;
         }
     } else {
         // calc direction to where we targeted
-        VectorSubtract(self->pos1, start, dir);
-        VectorNormalize(dir);
+        dir = Vec3_Direction(self->pos1, start);
         dmg = 50;
     }
 
@@ -312,7 +309,8 @@ static void arachnid_melee_charge(edict_t *self)
 
 static void arachnid_melee_hit(edict_t *self)
 {
-    if (!fire_hit(self, (vec3_t) { MELEE_DISTANCE, 0, 0 }, 15, 50)) {
+    vec3_t aim = { MELEE_DISTANCE, 0, 0 };
+    if (!fire_hit(self, aim, 15, 50)) {
         self->monsterinfo.melee_debounce_time = level.time + SEC(1);
         self->count++;
     } else if (self->s.frame == FRAME_melee_atk11 &&
@@ -418,7 +416,7 @@ static void arachnid_spawn(edict_t *self)
     vec3_t f, r, offset, startpoint, spawnpoint;
     int    count;
 
-    AngleVectors(self->s.angles, f, r, NULL);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     int num_summoned = M_PickReinforcements(self, 2);
 
@@ -427,21 +425,21 @@ static void arachnid_spawn(edict_t *self)
         scale = 1;
 
     for (count = 0; count < num_summoned; count++) {
-        VectorScale(reinforcement_position[count], scale, offset);
+        offset = Vec3_Scale(reinforcement_position[count], scale);
 
-        M_ProjectFlashSource(self, offset, f, r, startpoint);
+        startpoint = M_ProjectFlashSource(self, offset, f, r);
 
         // a little off the ground
-        startpoint[2] += 10 * scale;
+        startpoint.z += 10 * scale;
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
 
-        if (!FindSpawnPoint(startpoint, reinforcement->mins, reinforcement->maxs, spawnpoint, 32, true))
+        if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;
-        if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->mins, reinforcement->maxs, 256, -1))
+        if (!CheckGroundSpawnPoint(spawnpoint, reinforcement->box, 256, -1))
             continue;
 
-        edict_t *ent = CreateGroundMonster(spawnpoint, self->s.angles, reinforcement->mins, reinforcement->maxs, reinforcement->classname, 256);
+        edict_t *ent = CreateGroundMonster(spawnpoint, self->s.angles, reinforcement->box, reinforcement->classname, 256);
         if (!ent)
             return;
 
@@ -462,9 +460,7 @@ static void arachnid_spawn(edict_t *self)
             FoundTarget(ent);
         }
 
-        vec3_t mid;
-        VectorAvg(reinforcement->mins, reinforcement->maxs, mid);
-        VectorAdd(spawnpoint, mid, spawnpoint);
+        spawnpoint = Vec3_Add(spawnpoint, Box3_Center(reinforcement->box));
         SpawnGrow_Spawn(spawnpoint, reinforcement->radius, reinforcement->radius * 2);
     }
 }
@@ -509,7 +505,7 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
         self->count = 0;
         self->pain_debounce_time = level.time + SEC(4.5f);
         self->last_move_time = level.time + SEC(10);
-    } else if ((self->enemy->s.origin[2] - self->s.origin[2]) > 150 &&
+    } else if ((self->enemy->s.origin.z - self->s.origin.z) > 150 &&
                (M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL_UP1]) || M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL_UP2])))
         M_SetAnimation(self, &arachnid_attack_up1);
     else if (M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL1]) || M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL2]))
@@ -522,8 +518,7 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
 
 static void arachnid_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
@@ -575,7 +570,7 @@ static const gib_def_t arachnid_gibs[] = {
     { 0 }
 };
 
-void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
@@ -654,8 +649,7 @@ void SP_monster_arachnid(edict_t *self)
     }
 
     self->s.modelindex = G_ModelIndex("models/monsters/arachnid/tris.md2");
-    VectorSet(self->r.mins, -40, -40, -20);
-    VectorSet(self->r.maxs, 40, 40, 48);
+    self->r.box = Box3_FromSize(40, -20, 48);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

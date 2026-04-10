@@ -36,10 +36,10 @@ static inline void GL_StretchPic_(
     tess.texnum[TMU_TEXTURE] = texnum;
 
     dst_vert = tess.vertices + tess.numverts * 5;
-    Vector4Set(dst_vert,      x,     y,     s1, t1);
-    Vector4Set(dst_vert +  5, x + w, y,     s2, t1);
-    Vector4Set(dst_vert + 10, x + w, y + h, s2, t2);
-    Vector4Set(dst_vert + 15, x,     y + h, s1, t2);
+    Vec4_Set(dst_vert,      x,     y,     s1, t1);
+    Vec4_Set(dst_vert +  5, x + w, y,     s2, t1);
+    Vec4_Set(dst_vert + 10, x + w, y + h, s2, t2);
+    Vec4_Set(dst_vert + 15, x,     y + h, s1, t2);
 
     WN32(dst_vert +  4, color);
     WN32(dst_vert +  9, color);
@@ -92,10 +92,10 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 
     // outer vertices
     dst_vert = tess.vertices + tess.numverts * 5;
-    Vector4Set(dst_vert,      x,     y,     0, 0);
-    Vector4Set(dst_vert +  5, x + w, y,     0, 0);
-    Vector4Set(dst_vert + 10, x + w, y + h, 0, 0);
-    Vector4Set(dst_vert + 15, x,     y + h, 0, 0);
+    Vec4_Set(dst_vert,      x,     y,     0, 0);
+    Vec4_Set(dst_vert +  5, x + w, y,     0, 0);
+    Vec4_Set(dst_vert + 10, x + w, y + h, 0, 0);
+    Vec4_Set(dst_vert + 15, x,     y + h, 0, 0);
 
     WN32(dst_vert +  4, outer.u32);
     WN32(dst_vert +  9, outer.u32);
@@ -109,10 +109,10 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
     h -= distance * 2;
 
     dst_vert += 20;
-    Vector4Set(dst_vert,      x,     y,     0, 0);
-    Vector4Set(dst_vert +  5, x + w, y,     0, 0);
-    Vector4Set(dst_vert + 10, x + w, y + h, 0, 0);
-    Vector4Set(dst_vert + 15, x,     y + h, 0, 0);
+    Vec4_Set(dst_vert,      x,     y,     0, 0);
+    Vec4_Set(dst_vert +  5, x + w, y,     0, 0);
+    Vec4_Set(dst_vert + 10, x + w, y + h, 0, 0);
+    Vec4_Set(dst_vert + 15, x,     y + h, 0, 0);
 
     WN32(dst_vert +  4, inner.u32);
     WN32(dst_vert +  9, inner.u32);
@@ -139,26 +139,19 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 
 void GL_Blend(void)
 {
-    if (glr.fd.screen_blend[3]) {
+    if (glr.fd.screen_blend.a) {
         color_t color;
 
-        color.u8[0] = glr.fd.screen_blend[0] * 255;
-        color.u8[1] = glr.fd.screen_blend[1] * 255;
-        color.u8[2] = glr.fd.screen_blend[2] * 255;
-        color.u8[3] = glr.fd.screen_blend[3] * 255;
+        Vec4_Store(color.u8, Vec4_Scale(glr.fd.screen_blend, 255));
 
         GL_StretchPic_(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
                        color.u32, TEXNUM_WHITE, 0);
     }
 
-    if (glr.fd.damage_blend[3]) {
+    if (glr.fd.damage_blend.a) {
         color_t outer, inner;
 
-        outer.u8[0] = glr.fd.damage_blend[0] * 255;
-        outer.u8[1] = glr.fd.damage_blend[1] * 255;
-        outer.u8[2] = glr.fd.damage_blend[2] * 255;
-        outer.u8[3] = glr.fd.damage_blend[3] * 255;
-
+        Vec4_Store(outer.u8, Vec4_Scale(glr.fd.damage_blend, 255));
         inner.u32 = outer.u32 & U32_RGB;
 
         if (gl_damageblend_frac->value > 0)
@@ -182,20 +175,20 @@ void R_ClearColor(void)
 
 void R_SetAlpha(float alpha)
 {
-    draw.colors[0].u8[3] =
-    draw.colors[1].u8[3] = alpha * 255;
+    draw.colors[0].a =
+    draw.colors[1].a = alpha * 255;
 }
 
 void R_SetColor24(uint32_t color)
 {
     draw.colors[0].u32 = color;
-    draw.colors[0].u8[3] = draw.colors[1].u8[3];
+    draw.colors[0].a = draw.colors[1].a;
 }
 
 void R_SetColor(uint32_t color)
 {
     draw.colors[0].u32 = color;
-    draw.colors[1].u8[3] = draw.colors[0].u8[3];
+    draw.colors[1].a = draw.colors[0].a;
 }
 
 void R_SetClipRect(const clipRect_t *clip)

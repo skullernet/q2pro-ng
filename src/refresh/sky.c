@@ -30,20 +30,20 @@ static void DefaultSkyMatrix(GLfloat *matrix)
         TransposeAxis(skymatrix);
     }
 
-    matrix[ 0] = skymatrix[0][0];
-    matrix[ 4] = skymatrix[0][1];
-    matrix[ 8] = skymatrix[0][2];
-    matrix[12] = -DotProduct(skymatrix[0], glr.fd.vieworg);
+    matrix[ 0] = skymatrix[0].x;
+    matrix[ 4] = skymatrix[0].y;
+    matrix[ 8] = skymatrix[0].z;
+    matrix[12] = -Vec3_Dot(skymatrix[0], glr.fd.vieworg);
 
-    matrix[ 1] = skymatrix[2][0];
-    matrix[ 5] = skymatrix[2][1];
-    matrix[ 9] = skymatrix[2][2];
-    matrix[13] = -DotProduct(skymatrix[2], glr.fd.vieworg);
+    matrix[ 1] = skymatrix[2].x;
+    matrix[ 5] = skymatrix[2].y;
+    matrix[ 9] = skymatrix[2].z;
+    matrix[13] = -Vec3_Dot(skymatrix[2], glr.fd.vieworg);
 
-    matrix[ 2] = skymatrix[1][0];
-    matrix[ 6] = skymatrix[1][1];
-    matrix[10] = skymatrix[1][2];
-    matrix[14] = -DotProduct(skymatrix[1], glr.fd.vieworg);
+    matrix[ 2] = skymatrix[1].x;
+    matrix[ 6] = skymatrix[1].y;
+    matrix[10] = skymatrix[1].z;
+    matrix[14] = -Vec3_Dot(skymatrix[1], glr.fd.vieworg);
 
     matrix[ 3] = 0;
     matrix[ 7] = 0;
@@ -57,17 +57,17 @@ static void ClassicSkyMatrix(GLfloat *matrix)
     matrix[ 0] = 1;
     matrix[ 4] = 0;
     matrix[ 8] = 0;
-    matrix[12] = -glr.fd.vieworg[0];
+    matrix[12] = -glr.fd.vieworg.x;
 
     matrix[ 1] = 0;
     matrix[ 5] = 1;
     matrix[ 9] = 0;
-    matrix[13] = -glr.fd.vieworg[1];
+    matrix[13] = -glr.fd.vieworg.y;
 
     matrix[ 2] = 0;
     matrix[ 6] = 0;
     matrix[10] = 3;
-    matrix[14] = -glr.fd.vieworg[2] * 3;
+    matrix[14] = -glr.fd.vieworg.z * 3;
 
     matrix[ 3] = 0;
     matrix[ 7] = 0;
@@ -101,10 +101,11 @@ static const char com_env_suf[6][3] = { "rt", "lf", "bk", "ft", "up", "dn" };
 R_SetSky
 ============
 */
-void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis)
+void R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis)
 {
     char            pathname[MAX_QPATH];
     const image_t   *image;
+    float           length;
 
     if (!gl_drawsky->integer) {
         R_UnsetSky();
@@ -112,10 +113,11 @@ void R_SetSky(const char *name, float rotate, bool autorotate, const vec3_t axis
     }
 
     Com_DDPrintf("%s: %s %.1f %d (%.1f %.1f %.1f)\n", __func__,
-                 name, rotate, autorotate, axis[0], axis[1], axis[2]);
+                 name, rotate, autorotate, axis.x, axis.y, axis.z);
 
     // check for no rotation
-    if (VectorNormalize2(axis, skyaxis) < 0.001f)
+    skyaxis = Vec3_NormalizeLength(axis, &length);
+    if (length < 0.001f)
         rotate = 0;
     if (!rotate)
         autorotate = false;

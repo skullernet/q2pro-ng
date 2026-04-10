@@ -113,28 +113,28 @@ void GL_SetupFrustum(float zfar)
     sf = sinf(angle);
     cf = cosf(angle);
 
-    VectorScale(glr.viewaxis[0], sf, forward);
-    VectorScale(glr.viewaxis[1], cf, left);
+    forward = Vec3_Scale(glr.viewaxis[0], sf);
+    left = Vec3_Scale(glr.viewaxis[1], cf);
 
-    VectorAdd(forward, left, glr.frustum[0].normal);
-    VectorSubtract(forward, left, glr.frustum[1].normal);
+    glr.frustum[0].normal = Vec3_Add(forward, left);
+    glr.frustum[1].normal = Vec3_Sub(forward, left);
 
     // top/bottom
     angle = DEG2RAD(glr.fd.fov_y / 2);
     sf = sinf(angle);
     cf = cosf(angle);
 
-    VectorScale(glr.viewaxis[0], sf, forward);
-    VectorScale(glr.viewaxis[2], cf, up);
+    forward = Vec3_Scale(glr.viewaxis[0], sf);
+    up = Vec3_Scale(glr.viewaxis[2], cf);
 
-    VectorAdd(forward, up, glr.frustum[2].normal);
-    VectorSubtract(forward, up, glr.frustum[3].normal);
+    glr.frustum[2].normal = Vec3_Add(forward, up);
+    glr.frustum[3].normal = Vec3_Sub(forward, up);
 
     // far
-    VectorNegate(glr.viewaxis[0], glr.frustum[4].normal);
+    glr.frustum[4].normal = Vec3_Negate(glr.viewaxis[0]);
 
     for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
-        p->dist = DotProduct(glr.fd.vieworg, p->normal);
+        p->dist = Vec3_Dot(glr.fd.vieworg, p->normal);
         p->type = PLANE_NON_AXIAL;
         SetPlaneSignbits(p);
     }
@@ -142,7 +142,7 @@ void GL_SetupFrustum(float zfar)
     glr.frustum[4].dist -= zfar;
 }
 
-glCullResult_t GL_CullBox(const vec3_t bounds[2])
+glCullResult_t GL_CullBox(box3_t box)
 {
     box_plane_t bits;
     glCullResult_t cull;
@@ -152,7 +152,7 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2])
 
     cull = CULL_IN;
     for (int i = 0; i < q_countof(glr.frustum); i++) {
-        bits = BoxOnPlaneSide(bounds[0], bounds[1], &glr.frustum[i]);
+        bits = BoxOnPlaneSide(&box, &glr.frustum[i]);
         if (bits == BOX_BEHIND)
             return CULL_OUT;
         if (bits != BOX_INFRONT)
@@ -162,7 +162,7 @@ glCullResult_t GL_CullBox(const vec3_t bounds[2])
     return cull;
 }
 
-glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
+glCullResult_t GL_CullSphere(vec3_t origin, float radius)
 {
     float dist;
     const cplane_t *p;
@@ -185,7 +185,7 @@ glCullResult_t GL_CullSphere(const vec3_t origin, float radius)
     return cull;
 }
 
-glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
+glCullResult_t GL_CullLocalBox(vec3_t origin, box3_t box)
 {
     vec3_t points[8];
     const cplane_t *p;
@@ -198,17 +198,17 @@ glCullResult_t GL_CullLocalBox(const vec3_t origin, const vec3_t bounds[2])
         return CULL_IN;
 
     for (i = 0; i < 8; i++) {
-        VectorCopy(origin, points[i]);
-        VectorMA(points[i], bounds[(i >> 0) & 1][0], glr.entaxis[0], points[i]);
-        VectorMA(points[i], bounds[(i >> 1) & 1][1], glr.entaxis[1], points[i]);
-        VectorMA(points[i], bounds[(i >> 2) & 1][2], glr.entaxis[2], points[i]);
+        vec3_t t = origin;
+        for (j = 0; j < 3; j++)
+            t = Vec3_MA(t, box.bounds[(i >> j) & 1].xyz[j], glr.entaxis[j]);
+        points[i] = t;
     }
 
     cull = CULL_IN;
     for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
         infront = false;
         for (j = 0; j < 8; j++) {
-            dot = DotProduct(points[j], p->normal);
+            dot = Vec3_Dot(points[j], p->normal);
             if (dot >= p->dist) {
                 infront = true;
                 if (cull == CULL_CLIP)
@@ -276,7 +276,7 @@ void GL_SetEntityAxis(void)
     glr.entrotated = false;
     glr.entscale = 1;
 
-    if (VectorEmpty(e->angles)) {
+    if (Vec3_IsEmpty(e->angles)) {
         AxisClear(glr.entaxis);
     } else {
         AnglesToAxis(e->angles, glr.entaxis);
@@ -284,9 +284,9 @@ void GL_SetEntityAxis(void)
     }
 
     if (e->scale && e->scale != 1) {
-        VectorScale(glr.entaxis[0], e->scale, glr.entaxis[0]);
-        VectorScale(glr.entaxis[1], e->scale, glr.entaxis[1]);
-        VectorScale(glr.entaxis[2], e->scale, glr.entaxis[2]);
+        glr.entaxis[0] = Vec3_Scale(glr.entaxis[0], e->scale);
+        glr.entaxis[1] = Vec3_Scale(glr.entaxis[1], e->scale);
+        glr.entaxis[2] = Vec3_Scale(glr.entaxis[2], e->scale);
         glr.entrotated = true;
         glr.entscale = e->scale;
     }
@@ -294,20 +294,20 @@ void GL_SetEntityAxis(void)
 
 void GL_RotationMatrix(GLfloat *matrix)
 {
-    matrix[ 0] = glr.entaxis[0][0];
-    matrix[ 4] = glr.entaxis[1][0];
-    matrix[ 8] = glr.entaxis[2][0];
-    matrix[12] = glr.ent->origin[0];
+    matrix[ 0] = glr.entaxis[0].x;
+    matrix[ 4] = glr.entaxis[1].x;
+    matrix[ 8] = glr.entaxis[2].x;
+    matrix[12] = glr.ent->origin.x;
 
-    matrix[ 1] = glr.entaxis[0][1];
-    matrix[ 5] = glr.entaxis[1][1];
-    matrix[ 9] = glr.entaxis[2][1];
-    matrix[13] = glr.ent->origin[1];
+    matrix[ 1] = glr.entaxis[0].y;
+    matrix[ 5] = glr.entaxis[1].y;
+    matrix[ 9] = glr.entaxis[2].y;
+    matrix[13] = glr.ent->origin.y;
 
-    matrix[ 2] = glr.entaxis[0][2];
-    matrix[ 6] = glr.entaxis[1][2];
-    matrix[10] = glr.entaxis[2][2];
-    matrix[14] = glr.ent->origin[2];
+    matrix[ 2] = glr.entaxis[0].z;
+    matrix[ 6] = glr.entaxis[1].z;
+    matrix[10] = glr.entaxis[2].z;
+    matrix[14] = glr.ent->origin.z;
 
     matrix[ 3] = 0;
     matrix[ 7] = 0;
@@ -358,15 +358,18 @@ static void GL_DrawSpriteModel(const model_t *model)
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(1, 1, 1, alpha);
 
-    VectorScale(glr.viewaxis[1], frame->origin_x * scale, left);
-    VectorScale(glr.viewaxis[1], (frame->origin_x - frame->width) * scale, right);
-    VectorScale(glr.viewaxis[2], -frame->origin_y * scale, down);
-    VectorScale(glr.viewaxis[2], (frame->height - frame->origin_y) * scale, up);
+    left  = Vec3_Scale(glr.viewaxis[1], frame->origin_x * scale);
+    right = Vec3_Scale(glr.viewaxis[1], (frame->origin_x - frame->width) * scale);
+    down  = Vec3_Scale(glr.viewaxis[2], -frame->origin_y * scale);
+    up    = Vec3_Scale(glr.viewaxis[2], (frame->height - frame->origin_y) * scale);
 
-    VectorAdd3(e->origin, down, left,  tess.vertices);
-    VectorAdd3(e->origin, up,   left,  tess.vertices +  5);
-    VectorAdd3(e->origin, down, right, tess.vertices + 10);
-    VectorAdd3(e->origin, up,   right, tess.vertices + 15);
+    down = Vec3_Add(e->origin, down);
+    up   = Vec3_Add(e->origin, up);
+
+    Vec3_Store(tess.vertices +  0, Vec3_Add(down, left));
+    Vec3_Store(tess.vertices +  5, Vec3_Add(up,   left));
+    Vec3_Store(tess.vertices + 10, Vec3_Add(down, right));
+    Vec3_Store(tess.vertices + 15, Vec3_Add(up,   right));
 
     tess.vertices[ 3] = 0; tess.vertices[ 4] = 1;
     tess.vertices[ 8] = 0; tess.vertices[ 9] = 0;
@@ -387,13 +390,13 @@ static void GL_DrawNullModel(void)
     if (glr.shadowbuffer_bound)
         return;
 
-    VectorCopy(e->origin, tess.vertices +  0);
-    VectorCopy(e->origin, tess.vertices +  8);
-    VectorCopy(e->origin, tess.vertices + 16);
+    Vec3_Store(tess.vertices +  0, e->origin);
+    Vec3_Store(tess.vertices +  8, e->origin);
+    Vec3_Store(tess.vertices + 16, e->origin);
 
-    VectorMA(e->origin, 16, glr.entaxis[0], tess.vertices +  4);
-    VectorMA(e->origin, 16, glr.entaxis[1], tess.vertices + 12);
-    VectorMA(e->origin, 16, glr.entaxis[2], tess.vertices + 20);
+    Vec3_Store(tess.vertices +  4, Vec3_MA(e->origin, 16, glr.entaxis[0]));
+    Vec3_Store(tess.vertices + 12, Vec3_MA(e->origin, 16, glr.entaxis[1]));
+    Vec3_Store(tess.vertices + 20, Vec3_MA(e->origin, 16, glr.entaxis[2]));
 
     WN32(tess.vertices +  3, U32_RED);
     WN32(tess.vertices +  7, U32_RED);
@@ -416,19 +419,22 @@ static void GL_DrawNullModel(void)
     GL_UnlockArrays();
 }
 
-static void make_flare_quad(const vec3_t origin, float scale)
+static void make_flare_quad(vec3_t origin, float scale)
 {
     vec3_t up, down, left, right;
 
-    VectorScale(glr.viewaxis[1],  scale, left);
-    VectorScale(glr.viewaxis[1], -scale, right);
-    VectorScale(glr.viewaxis[2], -scale, down);
-    VectorScale(glr.viewaxis[2],  scale, up);
+    left  = Vec3_Scale(glr.viewaxis[1],  scale);
+    right = Vec3_Scale(glr.viewaxis[1], -scale);
+    down  = Vec3_Scale(glr.viewaxis[2], -scale);
+    up    = Vec3_Scale(glr.viewaxis[2],  scale);
 
-    VectorAdd3(origin, down, left,  tess.vertices + 0);
-    VectorAdd3(origin, up,   left,  tess.vertices + 3);
-    VectorAdd3(origin, down, right, tess.vertices + 6);
-    VectorAdd3(origin, up,   right, tess.vertices + 9);
+    down = Vec3_Add(origin, down);
+    up   = Vec3_Add(origin, up);
+
+    Vec3_Store(tess.vertices + 0, Vec3_Add(down, left));
+    Vec3_Store(tess.vertices + 3, Vec3_Add(up,   left));
+    Vec3_Store(tess.vertices + 6, Vec3_Add(down, right));
+    Vec3_Store(tess.vertices + 9, Vec3_Add(up,   right));
 }
 
 static void GL_OccludeFlares(void)
@@ -436,7 +442,7 @@ static void GL_OccludeFlares(void)
     const bsp_t *bsp = gl_static.world.cache;
     const glentity_t *ent;
     glquery_t *q;
-    vec3_t dir, org;
+    vec3_t dir;
     float scale, dist;
     bool set = false;
     int i;
@@ -484,18 +490,16 @@ static void GL_OccludeFlares(void)
             set = true;
         }
 
-        VectorSubtract(ent->origin, glr.fd.vieworg, dir);
-        dist = DotProduct(dir, glr.viewaxis[0]);
+        dir = Vec3_Sub(ent->origin, glr.fd.vieworg);
+        dist = Vec3_Dot(dir, glr.viewaxis[0]);
 
         scale = 2.5f;
         if (dist > 20)
             scale += dist * 0.004f;
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents & CONTENTS_SOLID) {
-            VectorNormalize(dir);
-            VectorMA(ent->origin, -5.0f, dir, org);
-            make_flare_quad(org, scale);
-        } else
+        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents & CONTENTS_SOLID)
+            make_flare_quad(Vec3_MA(ent->origin, -5.0f, Vec3_Normalize(dir)), scale);
+        else
             make_flare_quad(ent->origin, scale);
 
         GL_LockArrays(4);
@@ -526,8 +530,8 @@ static int entitycmpfnc(const void *_a, const void *_b)
     if (a_trans != b_trans)
         return b_trans - a_trans;
     if (a_trans) {
-        float dist_a = DistanceSquared(a->mid, glr.fd.vieworg);
-        float dist_b = DistanceSquared(b->mid, glr.fd.vieworg);
+        float dist_a = Vec3_DistanceSquared(a->mid, glr.fd.vieworg);
+        float dist_b = Vec3_DistanceSquared(b->mid, glr.fd.vieworg);
         if (dist_a > dist_b)
             return 1;
         if (dist_a < dist_b)
@@ -663,7 +667,7 @@ static void GL_DrawTearing(void)
         qglClearColor(1, 0, 0, 0);
 
     qglClear(GL_COLOR_BUFFER_BIT);
-    qglClearColor(Vector4Unpack(gl_static.clearcolor));
+    qglClearColor(Vec4_Unpack(gl_static.clearcolor));
 }
 
 static const char *GL_ErrorString(GLenum err)
@@ -713,10 +717,10 @@ static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_ForceUniforms();
 
-    Vector4Set(tess.vertices,      x,     y,     0, 1);
-    Vector4Set(tess.vertices +  4, x,     y + h, 0, 0);
-    Vector4Set(tess.vertices +  8, x + w, y,     1, 1);
-    Vector4Set(tess.vertices + 12, x + w, y + h, 1, 0);
+    Vec4_Set(tess.vertices,      x,     y,     0, 1);
+    Vec4_Set(tess.vertices +  4, x,     y + h, 0, 0);
+    Vec4_Set(tess.vertices +  8, x + w, y,     1, 1);
+    Vec4_Set(tess.vertices + 12, x + w, y + h, 1, 0);
 
     GL_LockArrays(4);
     qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -733,8 +737,8 @@ static void GL_DrawBloom(bool waterwarp)
     GL_Ortho(0, w, h, 0, -1, 1);
 
     // downscale
-    gls.u_block.fog_color[0] = 1.0f / w;
-    gls.u_block.fog_color[1] = 1.0f / h;
+    gls.u_block.fog_color.x = 1.0f / w;
+    gls.u_block.fog_color.y = 1.0f / h;
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
     GL_PostProcess(GLS_BLUR_BOX, 0, 0, w, h);
@@ -743,9 +747,9 @@ static void GL_DrawBloom(bool waterwarp)
     for (int i = 0; i < iterations; i++) {
         int j = i & 1;
 
-        gls.u_block.fog_color[0] = 1.0f / w;
-        gls.u_block.fog_color[1] = 1.0f / h;
-        gls.u_block.fog_color[j] = 0;
+        gls.u_block.fog_color.x = 1.0f / w;
+        gls.u_block.fog_color.y = 1.0f / h;
+        gls.u_block.fog_color.xyzw[j] = 0;
 
         GL_ForceTexture(TMU_TEXTURE, j ? TEXNUM_PP_BLUR_1 : TEXNUM_PP_BLUR_0);
         qglBindFramebuffer(GL_FRAMEBUFFER, j ? FBO_BLUR_0 : FBO_BLUR_1);
@@ -809,10 +813,10 @@ static pp_flags_t GL_BindFramebuffer(void)
     if (gl_clear->integer) {
         if (flags & PP_BLOOM) {
             static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-            static const vec4_t black = { 0, 0, 0, 1 };
+            static const vec4_t black = { .a = 1 };
             qglDrawBuffers(2, buffers);
-            qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor);
-            qglClearBufferfv(GL_COLOR, 1, black);
+            qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor.rgba);
+            qglClearBufferfv(GL_COLOR, 1, black.rgba);
             qglDrawBuffers(1, buffers);
         } else {
             qglClear(GL_COLOR_BUFFER_BIT);
@@ -837,15 +841,11 @@ static void GL_SetupFog(void)
     if (!(glr.fog_bits | glr.fog_bits_sky))
         return;
 
-    VectorCopy(glr.fd.fog.color, gls.u_block.fog_color);
-    gls.u_block.fog_color[3] = glr.fd.fog.density / 64;
+    gls.u_block.fog_color = Vec4_FromVec3(glr.fd.fog.color, glr.fd.fog.density / 64);
     gls.u_block.fog_sky_factor = glr.fd.fog.sky_factor;
 
-    VectorCopy(glr.fd.heightfog.start.color, gls.u_block.heightfog_start);
-    gls.u_block.heightfog_start[3] = glr.fd.heightfog.start.dist;
-
-    VectorCopy(glr.fd.heightfog.end.color, gls.u_block.heightfog_end);
-    gls.u_block.heightfog_end[3] = glr.fd.heightfog.end.dist;
+    gls.u_block.heightfog_start = Vec4_FromVec3(glr.fd.heightfog.start.color, glr.fd.heightfog.start.dist);
+    gls.u_block.heightfog_end = Vec4_FromVec3(glr.fd.heightfog.end.color, glr.fd.heightfog.end.dist);
 
     gls.u_block.heightfog_density = glr.fd.heightfog.density;
     gls.u_block.heightfog_falloff = glr.fd.heightfog.falloff;
@@ -1082,13 +1082,10 @@ static void gl_clearcolor_changed(cvar_t *self)
         color.u32 = U32_BLACK;
     }
 
-    gl_static.clearcolor[0] = color.u8[0] / 255.0f;
-    gl_static.clearcolor[1] = color.u8[1] / 255.0f;
-    gl_static.clearcolor[2] = color.u8[2] / 255.0f;
-    gl_static.clearcolor[3] = color.u8[3] / 255.0f;
+    gl_static.clearcolor = Vec4_Scale(Vec4_Load(color.u8), 1.0f / 255.0f);
 
     if (qglClearColor)
-        qglClearColor(Vector4Unpack(gl_static.clearcolor));
+        qglClearColor(Vec4_Unpack(gl_static.clearcolor));
 }
 
 static void gl_bloom_sigma_changed(cvar_t *self)
@@ -1268,9 +1265,9 @@ static void GL_SetupConfig(void)
 static void GL_InitTables(void)
 {
     for (int i = 0; i < NUMVERTEXNORMALS; i++) {
-        const vec_t *v = bytedirs[i];
-        float lat = acosf(v[2]);
-        float lng = atan2f(v[1], v[0]);
+        vec3_t v = bytedirs[i];
+        float lat = acosf(v.z);
+        float lng = atan2f(v.y, v.x);
 
         gl_static.latlngtab[i][0] = (int)(lat * (255 / (2 * M_PIf))) & 255;
         gl_static.latlngtab[i][1] = (int)(lng * (255 / (2 * M_PIf))) & 255;
@@ -1559,7 +1556,7 @@ void R_AddEntity(const entity_t *ent)
     glent->bmodel = NULL;
 
     if (ent->flags & RF_BEAM) {
-        VectorAvg(ent->oldorigin, ent->origin, glent->mid);
+        glent->mid = Vec3_Average(ent->oldorigin, ent->origin);
         return;
     }
 
@@ -1567,21 +1564,19 @@ void R_AddEntity(const entity_t *ent)
         const bsp_t *bsp = gl_static.world.cache;
         unsigned index = ~ent->model;
         mmodel_t *mod;
-        vec3_t mid;
 
         Q_assert_soft(bsp);
         Q_assert_soft(index >= 1 && index < bsp->nummodels);
 
         glent->bmodel = mod = &bsp->models[index];
-        VectorAvg(mod->mins, mod->maxs, mid);
-        VectorAdd(ent->origin, mid, glent->mid);
+        glent->mid = Vec3_Add(ent->origin, Box3_Center(mod->box));
 
         if (mod->transparent)
             glent->flags |= RF_TRANSLUCENT;
         return;
     }
 
-    VectorCopy(ent->origin, glent->mid);
+    glent->mid = ent->origin;
 }
 
 /*
@@ -1597,22 +1592,22 @@ void R_AddLight(const dlight_t *light)
         return;
     if (gl_dynamic->integer != 1)
         return;
-    if (VectorLengthSquared(light->color) < 0.001f)
+    if (Vec3_LengthSquared(light->color) < 0.001f)
         return;
     if (light->radius < 1.0f)
         return;
 
     dl = &r_dlights[r_numdlights++];
-    VectorCopy(light->origin, dl->origin);
+    dl->origin = light->origin;
     dl->radius = light->radius;
-    VectorCopy(light->color, dl->color);
-    if (VectorEmpty(light->dir) || light->cone_angle == 0.0f) {
+    dl->color = light->color;
+    if (Vec3_IsEmpty(light->dir) || light->cone_angle == 0.0f) {
         dl->sphere = true;
-        VectorClear(dl->dir);
+        dl->dir = vec3_origin;
         dl->cone = 0.0f;
     } else {
         dl->sphere = false;
-        VectorCopy(light->dir, dl->dir);
+        dl->dir = light->dir;
         dl->cone = cosf(DEG2RAD(light->cone_angle));
     }
     if (light->resolution > 0)
@@ -1621,7 +1616,7 @@ void R_AddLight(const dlight_t *light)
         dl->resolution = 512;
     dl->flags = light->flags;
     dl->key = light->key;
-    if (light->color[0] < 0 || light->color[1] < 0 || light->color[2] < 0)
+    if (light->color.r < 0 || light->color.g < 0 || light->color.b < 0)
         dl->flags |= RF_NOSHADOW;
 }
 
@@ -1640,7 +1635,7 @@ void R_SetLightStyle(unsigned style, float value)
     else if (gl_dynamic->integer >= 2 && style < 32)
         value = 1.0f;
 
-    gls.u_styles.styles[style][0] = value;
+    gls.u_styles.styles[style].r = value;
 }
 
 /*

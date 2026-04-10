@@ -605,7 +605,7 @@ static void S_IssuePlaysound(playsound_t *ps)
     ch->entnum = ps->entnum;
     ch->entchannel = ps->entchannel;
     ch->sfx = ps->sfx;
-    VectorCopy(ps->origin, ch->origin);
+    ch->origin = ps->origin;
     ch->fixed_origin = ps->fixed_origin;
     ch->end = cls.realtime + sc->length;
 
@@ -641,7 +641,8 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
+static void S_StartSoundInternal(vec3_t origin, int entnum, int entchannel, qhandle_t hSfx,
+                                 float vol, float attenuation, float timeofs, bool fixed_origin)
 {
     playsound_t *ps, *sort;
     sfx_t       *sfx;
@@ -658,13 +659,8 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     if (!ps)
         return;
 
-    if (origin) {
-        VectorCopy(origin, ps->origin);
-        ps->fixed_origin = true;
-    } else {
-        ps->fixed_origin = false;
-    }
-
+    ps->origin = origin;
+    ps->fixed_origin = fixed_origin;
     ps->entnum = entnum;
     ps->entchannel = entchannel;
     ps->attenuation = attenuation;
@@ -680,6 +676,16 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     List_Append(&sort->entry, &ps->entry);
 }
 
+void S_StartSound(int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
+{
+    S_StartSoundInternal(vec3_origin, entnum, entchannel, hSfx, vol, attenuation, timeofs, false);
+}
+
+void S_PositionedSound(vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
+{
+    S_StartSoundInternal(origin, entnum, entchannel, hSfx, vol, attenuation, timeofs, true);
+}
+
 /*
 ==================
 S_StartLocalSound
@@ -689,7 +695,7 @@ void S_StartLocalSound(const char *sound)
 {
     if (s_started) {
         qhandle_t sfx = S_RegisterSound(sound);
-        S_StartSound(NULL, s_listener.entnum, 0, sfx, 1, ATTN_NONE, 0);
+        S_StartSound(s_listener.entnum, 0, sfx, 1, ATTN_NONE, 0);
     }
 }
 
@@ -697,7 +703,7 @@ void S_StartLocalSoundOnce(const char *sound)
 {
     if (s_started) {
         qhandle_t sfx = S_RegisterSound(sound);
-        S_StartSound(NULL, s_listener.entnum, 256, sfx, 1, ATTN_NONE, 0);
+        S_StartSound(s_listener.entnum, 256, sfx, 1, ATTN_NONE, 0);
     }
 }
 
@@ -731,14 +737,14 @@ void S_AddLoopingSound(unsigned entnum, qhandle_t hSfx, float volume, float atte
     loop->stereo_pan = stereo_pan;
 }
 
-void S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity)
+void S_UpdateEntity(unsigned entnum, vec3_t origin, vec3_t velocity)
 {
     Q_assert_soft(entnum < ENTITYNUM_WORLD);
 
     if (s_entities) {
         sound_entity_t ent = {
-            .origin = VectorInit(origin),
-            .velocity = VectorInit(velocity),
+            .origin = origin,
+            .velocity = velocity,
         };
         HashMap_Insert(s_entities, &entnum, &ent);
     }
@@ -747,9 +753,9 @@ void S_UpdateEntity(unsigned entnum, const vec3_t origin, const vec3_t velocity)
 void S_UpdateListener(const listener_t *params)
 {
     s_listener = *params;
-    CrossProduct(s_listener.v_forward, s_listener.v_up, s_listener_right);
-    VectorCopy(s_listener.origin, s_listener_ent.origin);
-    VectorCopy(s_listener.velocity, s_listener_ent.velocity);
+    s_listener_right = Vec3_Cross(s_listener.v_forward, s_listener.v_up);
+    s_listener_ent.origin = s_listener.origin;
+    s_listener_ent.velocity = s_listener.velocity;
 }
 
 sound_entity_t *S_FindEntity(unsigned entnum)
@@ -843,7 +849,7 @@ S_SpatializeOrigin
 Used for spatializing channels and autosounds
 =================
 */
-void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo)
+void S_SpatializeOrigin(vec3_t origin, float master_vol, float dist_mult, float *left_vol, float *right_vol, bool stereo)
 {
     vec_t       dot;
     vec_t       dist;
@@ -851,9 +857,9 @@ void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, 
     vec3_t      source_vec;
 
 // calculate stereo separation and distance attenuation
-    VectorSubtract(origin, s_listener.origin, source_vec);
+    source_vec = Vec3_Sub(origin, s_listener.origin);
 
-    dist = VectorNormalize(source_vec);
+    dist = Vec3_Normalize(&source_vec);
     dist -= SOUND_FULLVOLUME;
     if (dist < 0)
         dist = 0;           // close enough to be at full volume
@@ -864,7 +870,7 @@ void S_SpatializeOrigin(const vec3_t origin, float master_vol, float dist_mult, 
         rscale = 1.0f;
         lscale = 1.0f;
     } else {
-        dot = DotProduct(s_listener_right, source_vec);
+        dot = Vec3_Dot(s_listener_right, source_vec);
         rscale = 0.5f * (1.0f + dot);
         lscale = 0.5f * (1.0f - dot);
     }

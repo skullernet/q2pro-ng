@@ -212,7 +212,7 @@ static float SV_GetEntityLoopDistMult(const edict_t *ent)
 
 static bool SV_EntityAttenuatedAway(const edict_t *ent)
 {
-    float dist = Distance(clientorg, ent->s.origin) - SOUND_FULLVOLUME;
+    float dist = Vec3_Distance(clientorg, ent->s.origin) - SOUND_FULLVOLUME;
     float mult = SV_GetEntityLoopDistMult(ent);
 
     return dist * mult > 1.0f;
@@ -248,7 +248,7 @@ void SV_BuildClientFrame(client_t *client)
     client->frames_sent++;
 
     // find the client's PVS
-    SV_GetClient_ViewOrg(client, clientorg);
+    clientorg = SV_GetClient_ViewOrg(client);
 
     leaf = CM_PointLeaf(&sv.cm, clientorg);
     clientarea = leaf->area;
@@ -326,9 +326,9 @@ void SV_BuildClientFrame(client_t *client)
 
         if (e == frame->ps.clientnum) {
             // don't waste bandwidth
-            VectorClear(state->origin);
-            VectorClear(state->angles);
-            VectorClear(state->old_origin);
+            state->origin = vec3_origin;
+            state->angles = vec3_origin;
+            state->old_origin = vec3_origin;
         }
         if (ent->r.ownernum == frame->ps.clientnum) {
             // don't mark players missiles as solid

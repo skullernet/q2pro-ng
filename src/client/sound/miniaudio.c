@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "sound.h"
 
-#define MA_UnpackVector(v)  -(v)[1],(v)[2],-(v)[0]
+#define MA_UnpackVector(v)  -(v).y,(v).z,-(v).x
 
 static ma_engine engine;
 static ma_pcm_rb stream_rb;

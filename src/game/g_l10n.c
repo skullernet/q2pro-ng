@@ -4,6 +4,8 @@
 #include "g_local.h"
 #include "shared/files.h"
 
+// we don't support localization, but still have to parse this file to
+// uncripple base maps
 #define L10N_FILE   "localization/loc_english.txt"
 
 typedef struct {

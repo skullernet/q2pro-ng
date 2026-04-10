@@ -63,6 +63,10 @@ VM_THUNK(log10f) {
     VM_F32(0) = log10f(VM_F32(0));
 }
 
+VM_THUNK(fmodf) {
+    VM_F32(0) = fmodf(VM_F32(0), VM_F32(1));
+}
+
 VM_THUNK(memcmp) {
     uint32_t p1   = VM_U32(0);
     uint32_t p2   = VM_U32(1);
@@ -159,6 +163,7 @@ const vm_import_t vm_stdlib[] = {
     VM_IMPORT_RAW(logf, "f f"),
     VM_IMPORT_RAW(log2f, "f f"),
     VM_IMPORT_RAW(log10f, "f f"),
+    VM_IMPORT_RAW(fmodf, "f ff"),
     VM_IMPORT_RAW(memcmp, "i iii"),
     VM_IMPORT_RAW(snprintf, "i iiii"),
     VM_IMPORT_RAW(sprintf, "i iii"),

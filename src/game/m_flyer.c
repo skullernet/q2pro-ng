@@ -25,7 +25,7 @@ static void flyer_loop_melee(edict_t *self);
 // ROGUE - kamikaze stuff
 static void flyer_kamikaze(edict_t *self);
 static void flyer_kamikaze_check(edict_t *self);
-void flyer_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod);
+void flyer_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod);
 
 void MONSTERINFO_SIGHT(flyer_sight)(edict_t *self, edict_t *other)
 {
@@ -228,18 +228,18 @@ void MONSTERINFO_STAND(flyer_stand)(edict_t *self)
 
 static void flyer_kamikaze_explode(edict_t *self)
 {
-    vec3_t dir;
+    vec3_t dir = vec3_origin;
 
     if (self->monsterinfo.commander && self->monsterinfo.commander->r.inuse &&
         !strcmp(self->monsterinfo.commander->classname, "monster_carrier"))
         self->monsterinfo.commander->monsterinfo.monster_slots++;
 
     if (self->enemy) {
-        VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-        T_Damage(self->enemy, self, self, dir, self->s.origin, 0, 50, 50, DAMAGE_RADIUS, (mod_t) { MOD_UNKNOWN });
+        dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
+        T_Damage(self->enemy, self, self, dir, self->s.origin, 0, 50, 50, DAMAGE_RADIUS, MOD_UNKNOWN);
     }
 
-    flyer_die(self, NULL, NULL, 0, dir, (mod_t) { MOD_EXPLOSIVE });
+    flyer_die(self, NULL, NULL, 0, dir, MOD_EXPLOSIVE);
 }
 
 static void flyer_kamikaze(edict_t *self)
@@ -261,9 +261,9 @@ static void flyer_kamikaze_check(edict_t *self)
         return;
     }
 
-    VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-    vectoangles(dir, dir);
-    self->s.angles[0] = dir[0];
+    dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
+    dir = vectoangles(dir);
+    self->s.angles.pitch = dir.pitch;
 
     self->goalentity = self->enemy;
 
@@ -374,13 +374,12 @@ static void flyer_fire(edict_t *self, monster_muzzleflash_id_t flash_number)
     if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     monster_fire_blaster(self, start, dir, 1, 1000, flash_number, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
 }
@@ -443,7 +442,7 @@ const mmove_t MMOVE_T(flyer_move_attack3) = { FRAME_attak201, FRAME_attak217, fl
 
 static void flyer_slash_left(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.mins[0], 0 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
@@ -451,7 +450,7 @@ static void flyer_slash_left(edict_t *self)
 
 static void flyer_slash_right(edict_t *self)
 {
-    vec3_t aim = { MELEE_DISTANCE, self->r.maxs[0], 0 };
+    vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 0 };
     if (!fire_hit(self, aim, 5, 0))
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
@@ -541,12 +540,10 @@ void MONSTERINFO_ATTACK(flyer_attack)(edict_t *self)
         self->monsterinfo.fly_pinned = true;
         self->monsterinfo.fly_position_time = self->monsterinfo.fly_position_time + SEC(1.7f); // make sure there's enough time for attack2/3
 
-        if (brandom()) {
-            float dist = frandom();
-            VectorMA(self->s.origin, dist, self->velocity, self->monsterinfo.fly_ideal_position); // pin to our current position
-        } else {
-            VectorAdd(self->monsterinfo.fly_ideal_position, self->enemy->s.origin, self->monsterinfo.fly_ideal_position); // make un-relative
-        }
+        if (brandom())
+            self->monsterinfo.fly_ideal_position = Vec3_MA(self->s.origin, frandom(), self->velocity); // pin to our current position
+        else
+            self->monsterinfo.fly_ideal_position = Vec3_Add(self->monsterinfo.fly_ideal_position, self->enemy->s.origin); // make un-relative
     }
 
     // if we're currently pinned, fly_position_time will unpin us eventually
@@ -626,7 +623,7 @@ static const gib_def_t flyer_gibs[] = {
     { 0 }
 };
 
-void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
 
@@ -648,7 +645,7 @@ bool MONSTERINFO_BLOCKED(flyer_blocked)(edict_t *self, float dist)
 
         // if the above didn't blow us up (i.e. I got blocked by the player)
         if (self->r.inuse)
-            T_Damage(self, self, self, vec3_origin, self->s.origin, 0, 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+            T_Damage(self, self, self, vec3_origin, self->s.origin, 0, 9999, 100, DAMAGE_NONE, MOD_UNKNOWN);
 
         return true;
     }
@@ -658,9 +655,8 @@ bool MONSTERINFO_BLOCKED(flyer_blocked)(edict_t *self, float dist)
 
 void TOUCH(kamikaze_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    vec3_t dir;
-    VectorNormalize2(ent->velocity, dir);
-    T_Damage(ent, ent, ent, dir, ent->s.origin, DirToByte(dir), 9999, 100, DAMAGE_NONE, (mod_t) { MOD_UNKNOWN });
+    vec3_t dir = Vec3_Normalize(ent->velocity);
+    T_Damage(ent, ent, ent, dir, ent->s.origin, DirToByte(dir), 9999, 100, DAMAGE_NONE, MOD_UNKNOWN);
 }
 
 void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -671,10 +667,8 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
         ent->monsterinfo.duck_wait_time = level.time + SEC(1);
         ent->monsterinfo.fly_thrusters = false;
 
-        vec3_t dir;
-        VectorSubtract(ent->s.origin, other->s.origin, dir);
-        VectorNormalize(dir);
-        VectorScale(dir, 500, ent->velocity);
+        vec3_t dir = Vec3_Direction(ent->s.origin, other->s.origin);
+        ent->velocity = Vec3_Scale(dir, 500);
 
         G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
     }
@@ -708,9 +702,8 @@ void SP_monster_flyer(edict_t *self)
 
     G_PrecacheGibs(flyer_gibs);
 
-    VectorSet(self->r.mins, -16, -16, -24);
     // PMM - shortened to 16 from 32
-    VectorSet(self->r.maxs, 16, 16, 16);
+    self->r.box = Box3_FromSize(16, -24, 16);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

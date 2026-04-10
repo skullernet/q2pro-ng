@@ -107,7 +107,7 @@ static bool fixbot_search(edict_t *self)
 static void landing_goal(edict_t *self)
 {
     trace_t  tr;
-    vec3_t   forward, right, up;
+    vec3_t   forward, up;
     vec3_t   end;
     edict_t *ent;
 
@@ -116,18 +116,16 @@ static void landing_goal(edict_t *self)
     ent->r.solid = SOLID_BBOX;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    trap_LinkEntity(ent);
+    trap_LinkEntity(ent);   // FIXME
 
-    VectorSet(ent->r.mins, -32, -32, -24);
-    VectorSet(ent->r.maxs, 32, 32, 24);
+    ent->r.box = Box3_FromSize(32, -24, 24);
 
-    AngleVectors(self->s.angles, forward, right, up);
-    VectorMA(self->s.origin, 32, forward, end); // FIXME
-    VectorMA(self->s.origin, -8096, up, end);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    end = Vec3_MA(self->s.origin, 32, forward); // FIXME
+    end = Vec3_MA(self->s.origin, -8096, up);
 
-    trap_Trace(&tr, self->s.origin, ent->r.mins, ent->r.maxs, end, self->s.number, MASK_MONSTERSOLID);
-
-    VectorCopy(tr.endpos, ent->s.origin);
+    tr = G_Trace(self->s.origin, end, ent->r.box, self->s.number, MASK_MONSTERSOLID);
+    ent->s.origin = tr.endpos;
 
     self->goalentity = self->enemy = ent;
     M_SetAnimation(self, &fixbot_move_landing);
@@ -136,7 +134,7 @@ static void landing_goal(edict_t *self)
 static void takeoff_goal(edict_t *self)
 {
     trace_t  tr;
-    vec3_t   forward, right, up;
+    vec3_t   forward, up;
     vec3_t   end;
     edict_t *ent;
 
@@ -145,18 +143,16 @@ static void takeoff_goal(edict_t *self)
     ent->r.solid = SOLID_BBOX;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    trap_LinkEntity(ent);
+    trap_LinkEntity(ent);   // FIXME
 
-    VectorSet(ent->r.mins, -32, -32, -24);
-    VectorSet(ent->r.maxs, 32, 32, 24);
+    ent->r.box = Box3_FromSize(32, -24, 24);
 
-    AngleVectors(self->s.angles, forward, right, up);
-    VectorMA(self->s.origin, 32, forward, end); // FIXME
-    VectorMA(self->s.origin, 128, up, end);
+    AngleVectors(self->s.angles, &forward, NULL, &up);
+    end = Vec3_MA(self->s.origin, 32, forward); // FIXME
+    end = Vec3_MA(self->s.origin, 128, up);
 
-    trap_Trace(&tr, self->s.origin, ent->r.mins, ent->r.maxs, end, self->s.number, MASK_MONSTERSOLID);
-
-    VectorCopy(tr.endpos, ent->s.origin);
+    tr = G_Trace(self->s.origin, end, ent->r.box, self->s.number, MASK_MONSTERSOLID);
+    ent->s.origin = tr.endpos;
 
     self->goalentity = self->enemy = ent;
     M_SetAnimation(self, &fixbot_move_takeoff);
@@ -196,13 +192,13 @@ static void change_to_roam(edict_t *self)
 static void roam_goal(edict_t *self)
 {
     trace_t  tr;
-    vec3_t   forward, right, up;
+    vec3_t   forward;
     vec3_t   end;
     edict_t *ent;
     vec3_t   dang;
     float    len, oldlen;
     int      i;
-    vec3_t   whichvec = { 0 };
+    vec3_t   whichvec = vec3_origin;
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
@@ -210,31 +206,31 @@ static void roam_goal(edict_t *self)
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
-    trap_LinkEntity(ent);
+    trap_LinkEntity(ent);   // FIXME
 
     oldlen = 0;
 
     for (i = 0; i < 12; i++) {
-        VectorCopy(self->s.angles, dang);
+        dang = self->s.angles;
 
         if (i < 6)
-            dang[YAW] += 30 * i;
+            dang.yaw += 30 * i;
         else
-            dang[YAW] -= 30 * (i - 6);
+            dang.yaw -= 30 * (i - 6);
 
-        AngleVectors(dang, forward, right, up);
-        VectorMA(self->s.origin, 8192, forward, end);
+        AngleVectors(dang, &forward, NULL, NULL);
+        end = Vec3_MA(self->s.origin, 8192, forward);
 
-        trap_Trace(&tr, self->s.origin, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+        tr = G_TraceLine(self->s.origin, end, self->s.number, MASK_PROJECTILE);
 
-        len = Distance(self->s.origin, tr.endpos);
+        len = Vec3_Distance(self->s.origin, tr.endpos);
         if (len > oldlen) {
             oldlen = len;
-            VectorCopy(tr.endpos, whichvec);
+            whichvec = tr.endpos;
         }
     }
 
-    VectorCopy(whichvec, ent->s.origin);
+    ent->s.origin = whichvec;
     self->goalentity = self->enemy = ent;
 
     M_SetAnimation(self, &fixbot_move_turn);
@@ -263,7 +259,7 @@ static void use_scanner(edict_t *self)
 
         fixbot_set_fly_parameters(self, FB_WELD);
 
-        if (Distance(self->s.origin, self->goalentity->s.origin) < 86)
+        if (Vec3_Distance(self->s.origin, self->goalentity->s.origin) < 86)
             M_SetAnimation(self, &fixbot_move_weld_start);
         return;
     }
@@ -273,7 +269,7 @@ static void use_scanner(edict_t *self)
         return;
     }
 
-    if (Distance(self->s.origin, self->goalentity->s.origin) < 86) {
+    if (Vec3_Distance(self->s.origin, self->goalentity->s.origin) < 86) {
         if (strcmp(self->goalentity->classname, "object_repair") == 0) {
             M_SetAnimation(self, &fixbot_move_weld_start);
         } else {
@@ -293,7 +289,7 @@ static void use_scanner(edict_t *self)
     descend translated along the z the current
     frames are at 10fps
 */
-static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread)
+static void blastoff(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, entity_event_t te_impact, int hspread, int vspread)
 {
     trace_t    tr;
     vec3_t     dir;
@@ -308,33 +304,33 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     hspread += (self->s.frame - FRAME_takeoff_01);
     vspread += (self->s.frame - FRAME_takeoff_01);
 
-    trap_Trace(&tr, self->s.origin, NULL, NULL, start, self->s.number, MASK_PROJECTILE);
+    tr = G_TraceLine(self->s.origin, start, self->s.number, MASK_PROJECTILE);
     if (!(tr.fraction < 1.0f)) {
-        vectoangles(aimdir, dir);
-        AngleVectors(dir, forward, right, up);
+        dir = vectoangles(aimdir);
+        AngleVectors(dir, &forward, &right, &up);
 
         r = crandom() * hspread;
         u = crandom() * vspread;
-        VectorMA(start, 8192, forward, end);
-        VectorMA(end, r, right, end);
-        VectorMA(end, u, up, end);
+        end = Vec3_MA(start, 8192, forward);
+        end = Vec3_MA(end, r, right);
+        end = Vec3_MA(end, u, up);
 
         if (trap_PointContents(start) & MASK_WATER) {
             water = true;
-            VectorCopy(start, water_start);
+            water_start = start;
             content_mask &= ~MASK_WATER;
         }
 
-        trap_Trace(&tr, start, NULL, NULL, end, self->s.number, content_mask);
+        tr = G_TraceLine(start, end, self->s.number, content_mask);
 
         // see if we hit water
         if (tr.contents & MASK_WATER) {
             entity_event_t color;
 
             water = true;
-            VectorCopy(tr.endpos, water_start);
+            water_start = tr.endpos;
 
-            if (!VectorCompare(start, tr.endpos)) {
+            if (!Vec3_IsEqual(start, tr.endpos)) {
                 if (tr.contents & CONTENTS_WATER)
                     color = EV_SPLASH_BLUE_WATER;
                 else if (tr.contents & CONTENTS_SLIME)
@@ -345,23 +341,23 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
                     color = EV_SPLASH_UNKNOWN;
 
                 if (color != EV_SPLASH_UNKNOWN) {
-                    G_SnapVectorTowards(tr.endpos, start, pos);
+                    pos = G_SnapVectorTowards(tr.endpos, start);
                     G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
                 }
 
                 // change bullet's course when it enters water
-                VectorSubtract(end, start, dir);
-                vectoangles(dir, dir);
-                AngleVectors(dir, forward, right, up);
+                dir = Vec3_Sub(end, start);
+                dir = vectoangles(dir);
+                AngleVectors(dir, &forward, &right, &up);
                 r = crandom() * hspread * 2;
                 u = crandom() * vspread * 2;
-                VectorMA(water_start, 8192, forward, end);
-                VectorMA(end, r, right, end);
-                VectorMA(end, u, up, end);
+                end = Vec3_MA(water_start, 8192, forward);
+                end = Vec3_MA(end, r, right);
+                end = Vec3_MA(end, u, up);
             }
 
             // re-trace ignoring water this time
-            trap_Trace(&tr, water_start, NULL, NULL, end, self->s.number, MASK_PROJECTILE);
+            tr = G_TraceLine(water_start, end, self->s.number, MASK_PROJECTILE);
         }
     }
 
@@ -371,9 +367,9 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
     if (!(tr.surface_flags & SURF_SKY)) {
         if (tr.fraction < 1.0f) {
             if (hit->takedamage) {
-                T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_BULLET, (mod_t) { MOD_BLASTOFF });
+                T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_BULLET, MOD_BLASTOFF);
             } else {
-                G_SnapVectorTowards(tr.endpos, start, pos);
+                pos = G_SnapVectorTowards(tr.endpos, start);
                 G_TempEntity(pos, te_impact, tr.plane.dir);
 
                 if (self->client)
@@ -384,13 +380,12 @@ static void blastoff(edict_t *self, const vec3_t start, const vec3_t aimdir, int
 
     // if went through water, determine where the end and make a bubble trail
     if (water) {
-        VectorSubtract(tr.endpos, water_start, dir);
-        VectorNormalize(dir);
-        VectorMA(tr.endpos, -2, dir, pos);
+        dir = Vec3_Direction(tr.endpos, water_start);
+        pos = Vec3_MA(tr.endpos, -2, dir);
         if (trap_PointContents(pos) & MASK_WATER)
-            VectorCopy(pos, tr.endpos);
+            tr.endpos = pos;
         else
-            trap_Trace(&tr, pos, NULL, NULL, water_start, hit->s.number, MASK_WATER);
+            tr = G_TraceLine(pos, water_start, hit->s.number, MASK_WATER);
 
         G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL);
     }
@@ -400,11 +395,11 @@ static void fly_vertical(edict_t *self)
 {
     int    i;
     vec3_t v;
-    vec3_t forward, right, up;
+    vec3_t forward;
     vec3_t start;
     vec3_t tempvec;
 
-    VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
+    v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
     self->ideal_yaw = vectoyaw(v);
     M_ChangeYaw(self);
 
@@ -416,11 +411,11 @@ static void fly_vertical(edict_t *self)
     }
 
     // kick up some particles
-    VectorCopy(self->s.angles, tempvec);
-    tempvec[PITCH] += 90;
+    tempvec = self->s.angles;
+    tempvec.pitch += 90;
 
-    AngleVectors(tempvec, forward, right, up);
-    VectorCopy(self->s.origin, start);
+    AngleVectors(tempvec, &forward, NULL, NULL);
+    start = self->s.origin;
 
     for (i = 0; i < 10; i++)
         blastoff(self, start, forward, 2, 1, EV_SHOTGUN, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD);
@@ -433,8 +428,8 @@ static void fly_vertical2(edict_t *self)
     vec3_t v;
     float  len;
 
-    VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
-    len = VectorLength(v);
+    v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
+    len = Vec3_Length(v);
     self->ideal_yaw = vectoyaw(v);
     M_ChangeYaw(self);
 
@@ -626,8 +621,7 @@ static void ai_facing(edict_t *self, float dist)
     if (infront(self, self->goalentity))
         M_SetAnimation(self, &fixbot_move_forward);
     else {
-        vec3_t v;
-        VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
+        vec3_t v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
         self->ideal_yaw = vectoyaw(v);
         M_ChangeYaw(self);
     }
@@ -788,20 +782,18 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
     edict_t *self = &g_edicts[laser->r.ownernum];
 
     vec3_t start, dir;
-    AngleVectors(self->s.angles, dir, NULL, NULL);
-    VectorMA(self->s.origin, 16, dir, start);
+    AngleVectors(self->s.angles, &dir, NULL, NULL);
+    start = Vec3_MA(self->s.origin, 16, dir);
 
     if (self->enemy && self->health > 0) {
-        vec3_t point;
-        VectorAvg(self->enemy->r.absmin, self->enemy->r.absmax, point);
+        vec3_t point = Box3_Center(self->enemy->r.absbox);
         if (self->monsterinfo.aiflags & AI_MEDIC)
-            point[0] += sinf(TO_SEC(level.time)) * 8;
-        VectorSubtract(point, self->s.origin, dir);
-        VectorNormalize(dir);
+            point.x += sinf(TO_SEC(level.time)) * 8;
+        dir = Vec3_Direction(point, self->s.origin);
     }
 
-    G_SnapVector(start, laser->s.origin);
-    VectorCopy(dir, laser->movedir);
+    laser->s.origin = G_SnapVector(start);
+    laser->movedir = dir;
     trap_LinkEntity(laser);
     dabeam_update(laser, true);
 }
@@ -835,7 +827,7 @@ static void fixbot_fire_laser(edict_t *self)
         self->monsterinfo.fly_min_distance = self->monsterinfo.fly_max_distance = 200;
 
         // don't revive if we are too close
-        if (Distance(self->s.origin, self->enemy->s.origin) > 86) {
+        if (Vec3_Distance(self->s.origin, self->enemy->s.origin) > 86) {
             finishHeal(self);
             M_SetAnimation(self, &fixbot_move_stand);
         }
@@ -918,10 +910,9 @@ static void ai_move2(edict_t *self, float dist)
         return;
     }
 
-    M_walkmove(self, self->s.angles[YAW], dist);
+    M_walkmove(self, self->s.angles.yaw, dist);
 
-    vec3_t v;
-    VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
+    vec3_t v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
     self->ideal_yaw = vectoyaw(v);
     M_ChangeYaw(self);
 };
@@ -965,7 +956,7 @@ const mmove_t MMOVE_T(fixbot_move_weld_end) = { FRAME_weldend_01, FRAME_weldend_
 static void fixbot_fire_welder(edict_t *self)
 {
     vec3_t start;
-    vec3_t forward, right, up;
+    vec3_t forward, right;
     static const vec3_t vec = { 24.0f, -0.8f, -10.0f };
     float  r;
 
@@ -978,8 +969,8 @@ static void fixbot_fire_welder(edict_t *self)
         self->timestamp = level.time + random_time_sec(0.45f, 1.5f);
     }
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, vec, forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, vec, forward, right);
 
     G_AddEvent(self, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
 
@@ -998,20 +989,19 @@ static void fixbot_fire_welder(edict_t *self)
 static void fixbot_fire_blaster(edict_t *self)
 {
     vec3_t start;
-    vec3_t forward, right, up;
+    vec3_t forward, right;
     vec3_t end;
     vec3_t dir;
 
     if (!visible(self, self->enemy))
         M_SetAnimation(self, &fixbot_move_run);
 
-    AngleVectors(self->s.angles, forward, right, up);
-    M_ProjectFlashSource(self, monster_flash_offset[MZ2_HOVER_BLASTER_1], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_HOVER_BLASTER_1], forward, right);
 
-    VectorCopy(self->enemy->s.origin, end);
-    end[2] += self->enemy->viewheight;
-    VectorSubtract(end, start, dir);
-    VectorNormalize(dir);
+    end = self->enemy->s.origin;
+    end.z += self->enemy->viewheight;
+    dir = Vec3_Direction(end, start);
 
     monster_fire_blaster(self, start, dir, 15, 1000, MZ2_HOVER_BLASTER_1, EF_BLASTER);
 }
@@ -1033,7 +1023,7 @@ void MONSTERINFO_WALK(fixbot_walk)(edict_t *self)
 {
     if (self->goalentity
         && strcmp(self->goalentity->classname, "object_repair") == 0
-        && Distance(self->s.origin, self->goalentity->s.origin) < 32)
+        && Vec3_Distance(self->s.origin, self->goalentity->s.origin) < 32)
         M_SetAnimation(self, &fixbot_move_weld_start);
     else
         M_SetAnimation(self, &fixbot_move_walk);
@@ -1044,7 +1034,7 @@ void MONSTERINFO_ATTACK(fixbot_attack)(edict_t *self)
     if (self->monsterinfo.aiflags & AI_MEDIC) {
         if (!visible(self, self->enemy))
             return;
-        if (Distance(self->s.origin, self->enemy->s.origin) > 128)
+        if (Vec3_Distance(self->s.origin, self->enemy->s.origin) > 128)
             return;
         M_SetAnimation(self, &fixbot_move_laserattack);
     } else {
@@ -1075,8 +1065,7 @@ void PAIN(fixbot_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 #if 0
 static void fixbot_dead(edict_t *self)
 {
-    VectorSet(self->r.mins, -16, -16, -24);
-    VectorSet(self->r.maxs, 16, 16, -8);
+    self->r.box = Box3_FromSize(16, -24, -8);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
@@ -1084,7 +1073,7 @@ static void fixbot_dead(edict_t *self)
 }
 #endif
 
-void DIE(fixbot_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(fixbot_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
     BecomeExplosion1(self);
@@ -1115,9 +1104,7 @@ void SP_monster_fixbot(edict_t *self)
 
     self->s.modelindex = G_ModelIndex("models/monsters/fixbot/tris.md2");
 
-    VectorSet(self->r.mins, -32, -32, -24);
-    VectorSet(self->r.maxs, 32, 32, 24);
-
+    self->r.box = Box3_FromSize(32, -24, 24);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 

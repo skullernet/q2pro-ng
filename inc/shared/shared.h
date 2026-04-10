@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // shared.h -- included first by ALL program modules
 //
 
+#include <float.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -134,18 +135,82 @@ MATHLIB
 */
 
 typedef float vec_t;
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
+
+typedef union {
+    struct {
+        float x, y;
+    };
+    struct {
+        float s, t;
+    };
+    float xy[2];
+    float st[2];
+} vec2_t;
+
+typedef union {
+    struct {
+        int x, y;
+    };
+    struct {
+        int s, t;
+    };
+    int xy[2];
+    int st[2];
+} vec2i_t;
+
+typedef union {
+    struct {
+        float x, y, z;
+    };
+    struct {
+        float r, g, b;
+    };
+    struct {
+        float pitch, yaw, roll;
+    };
+    struct {
+        float forward, right, up;
+    };
+    float xyz[3];
+    float rgb[3];
+} vec3_t;
+
+typedef union {
+    struct {
+        float x, y, z, w;
+    };
+    struct {
+        float r, g, b, a;
+    };
+    float xyzw[4];
+    float rgba[4];
+} vec4_t;
+
+typedef union {
+    struct {
+        vec2_t mins;
+        vec2_t maxs;
+    };
+    vec2_t bounds[2];
+} box2_t;
+
+typedef union {
+    struct {
+        vec3_t mins;
+        vec3_t maxs;
+    };
+    vec3_t bounds[2];
+} box3_t;
 
 typedef float mat4_t[16];
 
 typedef union {
     uint32_t u32;
     uint8_t u8[4];
+    struct {
+        uint8_t r, g, b, a;
+    };
 } color_t;
-
-extern const vec3_t vec3_origin;
 
 typedef struct {
     int x, y, width, height;
@@ -171,204 +236,27 @@ typedef struct {
 #define SWAP(type, a, b) \
     do { type SWAP_tmp = a; a = b; b = SWAP_tmp; } while (0)
 
-#define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
-#define CrossProduct(v1,v2,cross) \
-        ((cross)[0]=(v1)[1]*(v2)[2]-(v1)[2]*(v2)[1], \
-         (cross)[1]=(v1)[2]*(v2)[0]-(v1)[0]*(v2)[2], \
-         (cross)[2]=(v1)[0]*(v2)[1]-(v1)[1]*(v2)[0])
-#define VectorSubtract(a,b,c) \
-        ((c)[0]=(a)[0]-(b)[0], \
-         (c)[1]=(a)[1]-(b)[1], \
-         (c)[2]=(a)[2]-(b)[2])
-#define VectorAdd(a,b,c) \
-        ((c)[0]=(a)[0]+(b)[0], \
-         (c)[1]=(a)[1]+(b)[1], \
-         (c)[2]=(a)[2]+(b)[2])
-#define VectorAdd3(a,b,c,d) \
-        ((d)[0]=(a)[0]+(b)[0]+(c)[0], \
-         (d)[1]=(a)[1]+(b)[1]+(c)[1], \
-         (d)[2]=(a)[2]+(b)[2]+(c)[2])
-#define VectorCopy(a,b)     ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
-#define VectorClear(a)      ((a)[0]=(a)[1]=(a)[2]=0)
-#define VectorNegate(a,b)   ((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2])
-#define VectorInverse(a)    ((a)[0]=-(a)[0],(a)[1]=-(a)[1],(a)[2]=-(a)[2])
-#define VectorSet(v, x, y, z)   ((v)[0]=(x),(v)[1]=(y),(v)[2]=(z))
-#define VectorInit(v)       { (v)[0], (v)[1], (v)[2] }
-#define VectorAvg(a,b,c) \
-        ((c)[0]=((a)[0]+(b)[0])*0.5f, \
-         (c)[1]=((a)[1]+(b)[1])*0.5f, \
-         (c)[2]=((a)[2]+(b)[2])*0.5f)
-#define VectorMA(a,b,c,d) \
-        ((d)[0]=(a)[0]+(b)*(c)[0], \
-         (d)[1]=(a)[1]+(b)*(c)[1], \
-         (d)[2]=(a)[2]+(b)*(c)[2])
-#define VectorVectorMA(a,b,c,d) \
-        ((d)[0]=(a)[0]+(b)[0]*(c)[0], \
-         (d)[1]=(a)[1]+(b)[1]*(c)[1], \
-         (d)[2]=(a)[2]+(b)[2]*(c)[2])
-#define VectorRotate(in,axis,out) \
-        ((out)[0]=DotProduct(in,(axis)[0]), \
-         (out)[1]=DotProduct(in,(axis)[1]), \
-         (out)[2]=DotProduct(in,(axis)[2]))
+#ifndef max
+#define max(a,b) ((a)>(b)?(a):(b))
+#endif
 
-#define VectorEmpty(v) ((v)[0]==0&&(v)[1]==0&&(v)[2]==0)
-#define VectorCompare(v1,v2)    ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2])
-#define VectorLength(v)     (sqrtf(DotProduct((v),(v))))
-#define VectorLengthSquared(v)      (DotProduct((v),(v)))
-#define VectorScale(in,scale,out) \
-        ((out)[0]=(in)[0]*(scale), \
-         (out)[1]=(in)[1]*(scale), \
-         (out)[2]=(in)[2]*(scale))
-#define VectorVectorScale(in,scale,out) \
-        ((out)[0]=(in)[0]*(scale)[0], \
-         (out)[1]=(in)[1]*(scale)[1], \
-         (out)[2]=(in)[2]*(scale)[2])
-#define DistanceSquared(v1,v2) \
-        (((v1)[0]-(v2)[0])*((v1)[0]-(v2)[0])+ \
-        ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1])+ \
-        ((v1)[2]-(v2)[2])*((v1)[2]-(v2)[2]))
-#define Distance(v1,v2) (sqrtf(DistanceSquared(v1,v2)))
-#define LerpAngles(a,b,c,d) \
-        ((d)[0]=LerpAngle((a)[0],(b)[0],c), \
-         (d)[1]=LerpAngle((a)[1],(b)[1],c), \
-         (d)[2]=LerpAngle((a)[2],(b)[2],c))
-#define LerpVector(a,b,c,d) \
-    ((d)[0]=(a)[0]+(c)*((b)[0]-(a)[0]), \
-     (d)[1]=(a)[1]+(c)*((b)[1]-(a)[1]), \
-     (d)[2]=(a)[2]+(c)*((b)[2]-(a)[2]))
-#define LerpVector2(a,b,c,d,e) \
-    ((e)[0]=(a)[0]*(c)+(b)[0]*(d), \
-     (e)[1]=(a)[1]*(c)+(b)[1]*(d), \
-     (e)[2]=(a)[2]*(c)+(b)[2]*(d))
-#define PlaneDiff(v,p)   (DotProduct(v,(p)->normal)-(p)->dist)
-
-#define Vector2Subtract(a,b,c)  ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1])
-#define Dot2Product(x,y)        ((x)[0]*(y)[0]+(x)[1]*(y)[1])
-#define Vector2Length(v)        (sqrtf(Dot2Product((v),(v))))
-#define Distance2Squared(v1,v2) \
-    (((v1)[0]-(v2)[0])*((v1)[0]-(v2)[0])+ \
-     ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1]))
-
-#define Vector4Subtract(a,b,c)      ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2],(c)[3]=(a)[3]-(b)[3])
-#define Vector4Add(a,b,c)           ((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2],(c)[3]=(a)[3]+(b)[3])
-#define Vector4Scale(a,s,b)         ((b)[0]=(a)[0]*(s),(b)[1]=(a)[1]*(s),(b)[2]=(a)[2]*(s),(b)[3]=(a)[3]*(s))
-#define Vector4Copy(a,b)            ((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2],(b)[3]=(a)[3])
-#define Vector4Clear(a)             ((a)[0]=(a)[1]=(a)[2]=(a)[3]=0)
-#define Vector4Negate(a,b)          ((b)[0]=-(a)[0],(b)[1]=-(a)[1],(b)[2]=-(a)[2],(b)[3]=-(a)[3])
-#define Vector4Set(v, a, b, c, d)   ((v)[0]=(a),(v)[1]=(b),(v)[2]=(c),(v)[3]=(d))
-#define Vector4Compare(v1,v2)       ((v1)[0]==(v2)[0]&&(v1)[1]==(v2)[1]&&(v1)[2]==(v2)[2]&&(v1)[3]==(v2)[3])
-#define Vector4Unpack(v)            (v)[0],(v)[1],(v)[2],(v)[3]
-#define Dot4Product(x, y)           ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2]+(x)[3]*(y)[3])
-
-void AngleVectors(const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
-vec_t VectorNormalize(vec3_t v);        // returns vector length
-vec_t VectorNormalize2(const vec3_t v, vec3_t out);
-void ClearBounds(vec3_t mins, vec3_t maxs);
-void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs);
-vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs);
-void UnionBounds(const vec3_t a[2], const vec3_t b[2], vec3_t c[2]);
-void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);
-void RotatePointAroundVector(vec3_t out, const vec3_t dir, const vec3_t in, float degrees);
-void MakeNormalVectors(const vec3_t forward, vec3_t right, vec3_t up);
-float V_CalcFov(float fov_x, float width, float height);
-void vectoangles(const vec3_t value1, vec3_t angles);
-
-#define NUMVERTEXNORMALS    162
-
-extern const vec3_t bytedirs[NUMVERTEXNORMALS];
-
-#define DIRTOBYTE_NONE  0
-#define DIRTOBYTE_UP    6   // DirToByte({0, 0, 1})
-
-int DirToByte(const vec3_t dir);
-void ByteToDir(unsigned index, vec3_t dir);
-
-static inline void AnglesToAxis(const vec3_t angles, vec3_t axis[3])
-{
-    AngleVectors(angles, axis[0], axis[1], axis[2]);
-    VectorInverse(axis[1]);
-}
-
-static inline void TransposeAxis(vec3_t axis[3])
-{
-    SWAP(vec_t, axis[0][1], axis[1][0]);
-    SWAP(vec_t, axis[0][2], axis[2][0]);
-    SWAP(vec_t, axis[1][2], axis[2][1]);
-}
-
-static inline void AxisClear(vec3_t axis[3])
-{
-    VectorSet(axis[0], 1, 0, 0);
-    VectorSet(axis[1], 0, 1, 0);
-    VectorSet(axis[2], 0, 0, 1);
-}
-
-static inline void RotatePoint(vec3_t point, const vec3_t axis[3])
-{
-    vec3_t temp = VectorInit(point);
-    VectorRotate(temp, axis, point);
-}
-
-static inline uint32_t Q_npot32(uint32_t k)
-{
-    if (k == 0)
-        return 1;
-
-    k--;
-    k = k | (k >> 1);
-    k = k | (k >> 2);
-    k = k | (k >> 4);
-    k = k | (k >> 8);
-    k = k | (k >> 16);
-
-    return k + 1;
-}
-
-static inline int Q_log2(uint32_t k)
-{
-    return 31 - __builtin_clz(k | 1);
-}
-
-static inline float LerpAngle(float a2, float a1, float frac)
-{
-    if (a1 - a2 > 180)
-        a1 -= 360;
-    if (a1 - a2 < -180)
-        a1 += 360;
-    return a2 + frac * (a1 - a2);
-}
-
-static inline float anglemod(float a)
-{
-    a = (360.0f / 65536) * ((int)(a * (65536 / 360.0f)) & 65535);
-    return a;
-}
-
-static inline int Q_align_down(int value, int align)
-{
-    int mod = value % align;
-    return value - mod;
-}
-
-static inline int Q_align_up(int value, int align)
-{
-    int mod = value % align;
-    return mod ? value + align - mod : value;
-}
-
-static inline int Q_gcd(int a, int b)
-{
-    while (b != 0) {
-        int t = b;
-        b = a % b;
-        a = t;
-    }
-    return a;
-}
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
 
 void Q_srand(uint32_t seed);
 uint32_t Q_rand(void);
 uint32_t Q_rand_uniform(uint32_t n);
+
+#define frand()     ((int32_t)Q_rand() * 0x1p-32f + 0.5f)
+#define crand()     ((int32_t)Q_rand() * 0x1p-31f)
+
+#define Q_rint(x)   ((x) < 0 ? ((int)((x) - 0.5f)) : ((int)((x) + 0.5f)))
+
+static inline float Q_lerpf(float a, float b, float f)
+{
+    return a * (1.0f - f) + b * f;
+}
 
 static inline int Q_clip(int a, int b, int c)
 {
@@ -431,18 +319,547 @@ static inline uint16_t Q_clip_uint16(int a)
     return (a & ~0xFFFF) ? ~a >> 31 : a;
 }
 
-#ifndef max
-#define max(a,b) ((a)>(b)?(a):(b))
-#endif
+void AngleVectors(vec3_t angles, vec3_t *forward, vec3_t *right, vec3_t *up);
+void SetupRotationMatrix(vec3_t matrix[3], vec3_t dir, float degrees);
+void MakeNormalVectors(vec3_t forward, vec3_t *right, vec3_t *up);
+float V_CalcFov(float fov_x, float width, float height);
+vec3_t vectoangles(vec3_t value);
 
-#ifndef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#endif
+static inline float LerpAngle(float a2, float a1, float frac)
+{
+    if (a1 - a2 > 180)
+        a1 -= 360;
+    if (a1 - a2 < -180)
+        a1 += 360;
+    return a2 + frac * (a1 - a2);
+}
 
-#define frand()     ((int32_t)Q_rand() * 0x1p-32f + 0.5f)
-#define crand()     ((int32_t)Q_rand() * 0x1p-31f)
+static inline float AngleMod(float a)
+{
+    a = fmodf(a, 360);
+    if (a < -180)
+        a += 360;
+    if (a > 180)
+        a -= 360;
+    return a;
+}
 
-#define Q_rint(x)   ((x) < 0 ? ((int)((x) - 0.5f)) : ((int)((x) + 0.5f)))
+static inline float anglemod(float a)
+{
+    a = fmodf(a, 360);
+    if (a < 0)
+        a += 360;
+    return a;
+}
+
+#define vec2_origin     (vec2_t){ 0 }
+#define vec3_origin     (vec3_t){ 0 }
+#define vec4_origin     (vec4_t){ 0 }
+
+#define Vec2(a, b)          (vec2_t){ .x = (a), .y = (b) }
+#define Vec3(a, b, c)       (vec3_t){ .x = (a), .y = (b), .z = (c) }
+#define Vec4(a, b, c, d)    (vec4_t){ .x = (a), .y = (b), .z = (c), .w = (d) }
+
+#define Vec3_Load(ptr)  Vec3((ptr)[0], (ptr)[1], (ptr)[2])
+#define Vec4_Load(ptr)  Vec4((ptr)[0], (ptr)[1], (ptr)[2], (ptr)[3])
+
+#define Vec3_Store(ptr, v)  ((ptr)[0] = (v).x, (ptr)[1] = (v).y, (ptr)[2] = (v).z)
+#define Vec4_Store(ptr, v)  ((ptr)[0] = (v).x, (ptr)[1] = (v).y, (ptr)[2] = (v).z, (ptr)[3] = (v).w)
+
+#define Vec3_Set(ptr, x, y, z)      ((ptr)[0] = (x), (ptr)[1] = (y), (ptr)[2] = (z))
+#define Vec4_Set(ptr, x, y, z, w)   ((ptr)[0] = (x), (ptr)[1] = (y), (ptr)[2] = (z), (ptr)[3] = (w))
+
+#define Vec3_Unpack(v) (v).x, (v).y, (v).z
+#define Vec4_Unpack(v) (v).x, (v).y, (v).z, (v).w
+
+static inline vec2_t Vec2_Fill(float v) {
+    return Vec2(v, v);
+}
+
+static inline vec2_t Vec2_FromVec3(vec3_t a) {
+    return Vec2(a.x, a.y);
+}
+
+static inline float Vec2_Dot(vec2_t a, vec2_t b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+static inline vec2_t Vec2_Sub(vec2_t a, vec2_t b) {
+    return Vec2(a.x - b.x, a.y - b.y);
+}
+
+static inline vec2_t Vec2_Add(vec2_t a, vec2_t b) {
+    return Vec2(a.x + b.x, a.y + b.y);
+}
+
+static inline vec2_t Vec2_Scale(vec2_t in, float scale) {
+    return Vec2(in.x * scale, in.y * scale);
+}
+
+static inline vec2_t Vec2_Min(vec2_t a, vec2_t b) {
+    return Vec2(min(a.x, b.x), min(a.y, b.y));
+}
+
+static inline vec2_t Vec2_Max(vec2_t a, vec2_t b) {
+    return Vec2(max(a.x, b.x), max(a.y, b.y));
+}
+
+static inline float Vec2_LengthSquared(vec2_t v) {
+    return Vec2_Dot(v, v);
+}
+
+static inline float Vec2_Length(vec2_t v) {
+    return sqrtf(Vec2_LengthSquared(v));
+}
+
+static inline float Vec2_DistanceSquared(vec2_t a, vec2_t b) {
+    return Vec2_LengthSquared(Vec2_Sub(a, b));
+}
+
+static inline float Vec2_Distance(vec2_t a, vec2_t b) {
+    return sqrtf(Vec2_DistanceSquared(a, b));
+}
+
+static inline vec3_t Vec3_Fill(float v) {
+    return Vec3(v, v, v);
+}
+
+static inline vec3_t Vec3_FromVec2(vec2_t a, float z) {
+    return Vec3(a.x, a.y, z);
+}
+
+static inline float Vec3_Dot(vec3_t a, vec3_t b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+static inline vec3_t Vec3_Cross(vec3_t a, vec3_t b) {
+    return (vec3_t) {
+        .x = a.y * b.z - a.z * b.y,
+        .y = a.z * b.x - a.x * b.z,
+        .z = a.x * b.y - a.y * b.x
+    };
+}
+
+static inline vec3_t Vec3_Sub(vec3_t a, vec3_t b) {
+    return Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+static inline vec3_t Vec3_Add(vec3_t a, vec3_t b) {
+    return Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+static inline vec3_t Vec3_Mul(vec3_t a, vec3_t b) {
+    return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
+static inline vec3_t Vec3_Negate(vec3_t a) {
+    return Vec3(-a.x, -a.y, -a.z);
+}
+
+static inline vec3_t Vec3_Scale(vec3_t in, float scale) {
+    return Vec3(in.x * scale, in.y * scale, in.z * scale);
+}
+
+static inline vec3_t Vec3_Offset(vec3_t in, float offset) {
+    return Vec3(in.x + offset, in.y + offset, in.z + offset);
+}
+
+static inline vec3_t Vec3_Average(vec3_t a, vec3_t b) {
+    return Vec3_Scale(Vec3_Add(a, b), 0.5f);
+}
+
+static inline vec3_t Vec3_MA(vec3_t a, float b, vec3_t c) {
+    return Vec3_Add(a, Vec3_Scale(c, b));
+}
+
+static inline vec3_t Vec3_Rotate(vec3_t in, const vec3_t axis[3]) {
+    return Vec3(Vec3_Dot(in, axis[0]), Vec3_Dot(in, axis[1]), Vec3_Dot(in, axis[2]));
+}
+
+static inline vec3_t Vec3_RotateDir(vec3_t in, vec3_t dir, float degrees) {
+    vec3_t matrix[3];
+    SetupRotationMatrix(matrix, dir, degrees);
+    return Vec3_Rotate(in, matrix);
+}
+
+static inline bool Vec3_IsEmpty(vec3_t v) {
+    return v.x == 0.0f && v.y == 0.0f && v.z == 0.0f;
+}
+
+static inline bool Vec3_IsEqual(vec3_t a, vec3_t b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+static inline vec3_t Vec3_Min(vec3_t a, vec3_t b) {
+    return Vec3(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+}
+
+static inline vec3_t Vec3_Max(vec3_t a, vec3_t b) {
+    return Vec3(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+}
+
+static inline vec3_t Vec3_Abs(vec3_t v) {
+    return Vec3(fabsf(v.x), fabsf(v.y), fabsf(v.z));
+}
+
+static inline float Vec3_LengthSquared(vec3_t v) {
+    return Vec3_Dot(v, v);
+}
+
+static inline float Vec3_Length(vec3_t v) {
+    return sqrtf(Vec3_LengthSquared(v));
+}
+
+static inline float Vec3_DistanceSquared(vec3_t a, vec3_t b) {
+    return Vec3_LengthSquared(Vec3_Sub(a, b));
+}
+
+static inline float Vec3_Distance(vec3_t a, vec3_t b) {
+    return sqrtf(Vec3_DistanceSquared(a, b));
+}
+
+static inline vec3_t Vec3_Lerp(vec3_t a, vec3_t b, float t) {
+    return Vec3_Add(a, Vec3_Scale(Vec3_Sub(b, a), t));
+}
+
+static inline vec3_t Vec3_Lerp3(vec3_t a, vec3_t b, vec3_t t) {
+    return Vec3_Add(a, Vec3_Mul(Vec3_Sub(b, a), t));
+}
+
+static inline vec3_t Vec3_Mix(vec3_t a, vec3_t b, float t1, float t2) {
+    return Vec3_Add(Vec3_Scale(a, t1), Vec3_Scale(b, t2));
+}
+
+static inline vec3_t Vec3_LerpAngles(vec3_t a, vec3_t b, float t) {
+    return (vec3_t) {
+        .pitch = LerpAngle(a.pitch, b.pitch, t),
+        .yaw   = LerpAngle(a.yaw,   b.yaw,   t),
+        .roll  = LerpAngle(a.roll,  b.roll,  t)
+    };
+}
+
+static inline vec3_t Vec3_AngleMod(vec3_t a) {
+    return (vec3_t) {
+        .pitch = AngleMod(a.pitch),
+        .yaw   = AngleMod(a.yaw),
+        .roll  = AngleMod(a.roll)
+    };
+}
+
+static inline vec3_t Vec3_NormalizeByVal(vec3_t v)
+{
+    float length = Vec3_LengthSquared(v);
+
+    if (q_likely(length))
+        v = Vec3_Scale(v, 1.0f / sqrtf(length));
+
+    return v;
+}
+
+static inline float Vec3_NormalizeByRef(vec3_t *v)
+{
+    float length = Vec3_Length(*v);
+
+    if (q_likely(length))
+        *v = Vec3_Scale(*v, 1.0f / length);
+
+    return length;
+}
+
+#define Vec3_Normalize(v) \
+    _Generic((v), vec3_t: Vec3_NormalizeByVal, vec3_t *: Vec3_NormalizeByRef)(v)
+
+static inline vec3_t Vec3_NormalizeLength(vec3_t v, float *length)
+{
+    *length = Vec3_Length(v);
+
+    if (q_likely(*length))
+        v = Vec3_Scale(v, 1.0f / *length);
+
+    return v;
+}
+
+static inline vec3_t Vec3_Direction(vec3_t a, vec3_t b) {
+    return Vec3_Normalize(Vec3_Sub(a, b));
+}
+
+static inline vec3_t Vec3_CenterRandom(void) {
+    return Vec3(crand(), crand(), crand());
+}
+
+static inline vec3_t Vec3_Random(void) {
+    return Vec3(frand(), frand(), frand());
+}
+
+static inline vec3_t Vec3_RandomDir(void)
+{
+    float x, y, s, a;
+
+    do {
+        x = crand();
+        y = crand();
+        s = x * x + y * y;
+    } while (s > 1);
+
+    a = 2 * sqrtf(1 - s);
+    return Vec3(x * a, y * a, -1 + 2 * s);
+}
+
+static inline vec3_t Vec3_SphereDir(float phi, float theta) {
+    return (vec3_t) {
+        .x = sinf(phi) * cosf(theta),
+        .y = sinf(phi) * sinf(theta),
+        .z = cosf(phi)
+    };
+}
+
+static inline float Vec3_RadiusFromBounds(vec3_t mins, vec3_t maxs) {
+    return Vec3_Length(Vec3_Max(Vec3_Abs(mins), Vec3_Abs(maxs)));
+}
+
+static inline vec4_t Vec4_FromVec3(vec3_t a, float w) {
+    return Vec4(a.x, a.y, a.z, w);
+}
+
+static inline vec4_t Vec4_Sub(vec4_t a, vec4_t b) {
+    return Vec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+}
+
+static inline vec4_t Vec4_Add(vec4_t a, vec4_t b) {
+    return Vec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+static inline vec4_t Vec4_Scale(vec4_t in, float scale) {
+    return Vec4(in.x * scale, in.y * scale, in.z * scale, in.w * scale);
+}
+
+static inline vec4_t Vec4_Lerp(vec4_t a, vec4_t b, float t) {
+    return Vec4_Add(a, Vec4_Scale(Vec4_Sub(b, a), t));
+}
+
+#define box2_origin (box2_t){ 0 }
+#define box3_origin (box3_t){ 0 }
+
+#define Box2(a, b) (box2_t){ .mins = (a), .maxs = (b) }
+#define Box3(a, b) (box3_t){ .mins = (a), .maxs = (b) }
+
+static inline box2_t Box2_Null(void) {
+    return Box2(Vec2_Fill(FLT_MAX), Vec2_Fill(-FLT_MAX));
+}
+
+static inline box2_t Box2_AddPoint(box2_t a, vec2_t v) {
+    return Box2(Vec2_Min(a.mins, v), Vec2_Max(a.maxs, v));
+}
+
+static inline box3_t Box3_Null(void) {
+    return Box3(Vec3_Fill(FLT_MAX), Vec3_Fill(-FLT_MAX));
+}
+
+static inline bool Box3_IsNull(box3_t a) {
+    return a.mins.x > a.maxs.x || a.mins.y > a.maxs.y || a.mins.z > a.maxs.z;
+}
+
+static inline bool Box3_IsEmpty(box3_t a) {
+    return Vec3_IsEmpty(a.mins) && Vec3_IsEmpty(a.maxs);
+}
+
+static inline bool Box3_IsPoint(box3_t a) {
+    return Vec3_IsEqual(a.mins, a.maxs);
+}
+
+static inline bool Box3_IsEqual(box3_t a, box3_t b) {
+    return Vec3_IsEqual(a.mins, b.mins) && Vec3_IsEqual(a.maxs, b.maxs);
+}
+
+static inline box3_t Box3_FromSize(float xy, float zd, float zu) {
+    return Box3(Vec3(-xy, -xy, zd), Vec3(xy, xy, zu));
+}
+
+static inline box3_t Box3_FromRadius(float r) {
+    return Box3(Vec3_Fill(-r), Vec3_Fill(r));
+}
+
+static inline box3_t Box3_FromPoint(vec3_t v) {
+    return Box3(v, v);
+}
+
+static inline box3_t Box3_AddPoint(box3_t a, vec3_t v) {
+    return Box3(Vec3_Min(a.mins, v), Vec3_Max(a.maxs, v));
+}
+
+static inline box3_t Box3_FromPoints(vec3_t *v, int count) {
+    if (count < 1)
+        return Box3_Null();
+    box3_t box = Box3_FromPoint(v[0]);
+    for (int i = 1; i < count; i++)
+        box = Box3_AddPoint(box, v[i]);
+    return box;
+}
+
+static inline box3_t Box3_Union(box3_t a, box3_t b) {
+    return Box3(Vec3_Min(a.mins, b.mins), Vec3_Max(a.maxs, b.maxs));
+}
+
+static inline vec3_t Box3_Center(box3_t a) {
+    return Vec3_Average(a.mins, a.maxs);
+}
+
+static inline vec3_t Box3_Size(box3_t a) {
+    return Vec3_Sub(a.maxs, a.mins);
+}
+
+static inline float Box3_Diameter(box3_t a) {
+    return Vec3_Length(Box3_Size(a));
+}
+
+static inline float Box3_Radius(box3_t a) {
+    return Box3_Diameter(a) * 0.5f;
+}
+
+static inline float Box3_RadiusFromBounds(box3_t a) {
+    return Vec3_RadiusFromBounds(a.mins, a.maxs);
+}
+
+static inline box3_t Box3_Scale(box3_t a, float scale) {
+    return Box3(Vec3_Scale(a.mins, scale), Vec3_Scale(a.maxs, scale));
+}
+
+static inline box3_t Box3_Scale3(box3_t a, vec3_t scale) {
+    return Box3(Vec3_Mul(a.mins, scale), Vec3_Mul(a.maxs, scale));
+}
+
+static inline box3_t Box3_Translate(box3_t a, vec3_t v) {
+    return Box3(Vec3_Add(a.mins, v), Vec3_Add(a.maxs, v));
+}
+
+static inline box3_t Box3_Expand(box3_t a, float ofs) {
+    return Box3(Vec3_Offset(a.mins, -ofs), Vec3_Offset(a.maxs, ofs));
+}
+
+static inline box3_t Box3_Expand3(box3_t a, vec3_t ofs) {
+    return Box3(Vec3_Sub(a.mins, ofs), Vec3_Add(a.maxs, ofs));
+}
+
+static inline vec3_t Box3_ClampPoint(box3_t a, vec3_t v) {
+    return (vec3_t) {
+        Q_clipf(v.x, a.mins.x, a.maxs.x),
+        Q_clipf(v.y, a.mins.y, a.maxs.y),
+        Q_clipf(v.z, a.mins.z, a.maxs.z)
+    };
+}
+
+static inline vec3_t Box3_RandomPoint(box3_t a) {
+    return Vec3_Lerp3(a.mins, a.maxs, Vec3_Random());
+}
+
+static inline box3_t Box3_FromRotated(box3_t box) {
+    return Box3_FromRadius(Box3_RadiusFromBounds(box));
+}
+
+static inline bool Box3_Intersects(box3_t a, box3_t b)
+{
+    if (a.mins.x > b.maxs.x || a.mins.y > b.maxs.y || a.mins.z > b.maxs.z)
+        return false;
+    if (a.maxs.x < b.mins.x || a.maxs.y < b.mins.y || a.maxs.z < b.mins.z)
+        return false;
+    return true;
+}
+
+static inline bool Box3_ContainsPoint(box3_t a, vec3_t v)
+{
+    if (v.x < a.mins.x || v.y < a.mins.y || v.z < a.mins.z)
+        return false;
+    if (v.x > a.maxs.x || v.y > a.maxs.y || v.z > a.maxs.z)
+        return false;
+    return true;
+}
+
+static inline float Box3_Distance(box3_t a, box3_t b)
+{
+    float len = 0;
+
+    for (int i = 0; i < 3; i++) {
+        float d = b.mins.xyz[i] - a.maxs.xyz[i];
+        if (d < 0)
+            d = a.mins.xyz[i] - b.maxs.xyz[i];
+        if (d > 0)
+            len += d * d;
+    }
+
+    return sqrtf(len);
+}
+
+#define NUMVERTEXNORMALS    162
+
+extern const vec3_t bytedirs[NUMVERTEXNORMALS];
+
+#define DIRTOBYTE_NONE  0
+#define DIRTOBYTE_UP    6   // DirToByte({0, 0, 1})
+
+int DirToByte(vec3_t dir);
+vec3_t ByteToDir(unsigned index);
+
+static inline void AnglesToAxis(vec3_t angles, vec3_t axis[3])
+{
+    AngleVectors(angles, &axis[0], &axis[1], &axis[2]);
+    axis[1] = Vec3_Negate(axis[1]);
+}
+
+static inline void TransposeAxis(vec3_t axis[3])
+{
+    SWAP(vec_t, axis[0].y, axis[1].x);
+    SWAP(vec_t, axis[0].z, axis[2].x);
+    SWAP(vec_t, axis[1].z, axis[2].y);
+}
+
+static inline void AxisClear(vec3_t axis[3])
+{
+    axis[0] = Vec3(1, 0, 0);
+    axis[1] = Vec3(0, 1, 0);
+    axis[2] = Vec3(0, 0, 1);
+}
+
+static inline uint32_t Q_npot32(uint32_t k)
+{
+    if (k == 0)
+        return 1;
+
+    k--;
+    k = k | (k >> 1);
+    k = k | (k >> 2);
+    k = k | (k >> 4);
+    k = k | (k >> 8);
+    k = k | (k >> 16);
+
+    return k + 1;
+}
+
+static inline int Q_log2(uint32_t k)
+{
+    return 31 - __builtin_clz(k | 1);
+}
+
+static inline int Q_align_down(int value, int align)
+{
+    int mod = value % align;
+    return value - mod;
+}
+
+static inline int Q_align_up(int value, int align)
+{
+    int mod = value % align;
+    return mod ? value + align - mod : value;
+}
+
+static inline int Q_gcd(int a, int b)
+{
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
 
 #define Q_IsBitSet(data, bit)   ((((const byte *)(data))[(bit) >> 3] >> ((bit) & 7)) & 1)
 #define Q_SetBit(data, bit)     (((byte *)(data))[(bit) >> 3] |= (1 << ((bit) & 7)))
@@ -662,7 +1079,7 @@ size_t Q_snprintf(char *dest, size_t size, const char *fmt, ...) q_printf(3, 4);
 size_t Q_scnprintf(char *dest, size_t size, const char *fmt, ...) q_printf(3, 4);
 
 char    *va(const char *format, ...) q_printf(1, 2);
-char    *vtos(const vec3_t v);
+char    *vtos(vec3_t v);
 
 //=============================================
 
@@ -762,10 +1179,7 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
 #define MakeBigLong(b1,b2,b3,b4) \
     (((uint32_t)(b1)<<24)|((uint32_t)(b2)<<16)|((uint32_t)(b3)<<8)|(uint32_t)(b4))
 
-#define LittleVector(a,b) \
-    ((b)[0]=LittleFloat((a)[0]),\
-     (b)[1]=LittleFloat((a)[1]),\
-     (b)[2]=LittleFloat((a)[2]))
+#define LittleVector(p) Vec3(LittleFloat((p)[0]),LittleFloat((p)[1]),LittleFloat((p)[2]))
 
 #if USE_BGRA
 #define MakeColor(r, g, b, a)   MakeRawLong(b, g, r, a)
@@ -966,13 +1380,18 @@ typedef struct {
     byte    pad;
 } cplane_t;
 
+static inline float PlaneDiff(vec3_t v, const cplane_t *p)
+{
+    return Vec3_Dot(v, p->normal) - p->dist;
+}
+
 // 0-2 are axial planes
 #define PLANE_X         0
 #define PLANE_Y         1
 #define PLANE_Z         2
 #define PLANE_NON_AXIAL 6
 
-typedef int contents_t;
+typedef unsigned int contents_t;
 
 enum {
     MATERIAL_ID_DEFAULT,
@@ -1006,13 +1425,21 @@ typedef struct {
     int             entnum;         // not set by CM_*() functions
 } trace_t;
 
+// arguments passed to trace functions
+typedef struct {
+    vec3_t start, end;
+    box3_t box;
+    unsigned entnum;
+    contents_t mask;
+} trace_args_t;
+
 static inline void CM_ClipEntity(trace_t *dst, const trace_t *src, int entnum)
 {
     dst->allsolid |= src->allsolid;
     dst->startsolid |= src->startsolid;
     if (src->fraction < dst->fraction) {
         dst->fraction = src->fraction;
-        VectorCopy(src->endpos, dst->endpos);
+        dst->endpos = src->endpos;
         dst->plane = src->plane;
         dst->surface_flags = src->surface_flags;
         dst->surface_id = src->surface_id;
@@ -1195,8 +1622,8 @@ typedef struct {
     uint32_t    pm_flags;       // ducked, jump_held, etc
     uint32_t    pm_time;        // in msec
     int32_t     gravity;
-    int32_t     delta_angles[3];    // add to command angles to get view direction
-                                    // changed by spawns, rotating objects, and teleporters
+    vec3_t      delta_angles;   // add to command angles to get view direction
+                                // changed by spawns, rotating objects, and teleporters
 
     // these fields do not need to be communicated bit-precise
     uint32_t    clientnum;      // current POV number
@@ -1230,12 +1657,12 @@ typedef struct {
 // a SOLID_BBOX will never create this value
 #define PACKED_BSP      255
 
-static inline uint32_t MSG_PackSolid(const vec3_t mins, const vec3_t maxs)
+static inline uint32_t MSG_PackSolid(box3_t box)
 {
-    int x = maxs[0];
-    int y = maxs[1];
-    int zd = -mins[2];
-    int zu = maxs[2] + 32;
+    int x = box.maxs.x;
+    int y = box.maxs.y;
+    int zd = -box.mins.z;
+    int zu = box.maxs.z + 32;
 
     x = Q_clip(x, 1, 255);
     y = Q_clip(y, 1, 255);
@@ -1245,13 +1672,31 @@ static inline uint32_t MSG_PackSolid(const vec3_t mins, const vec3_t maxs)
     return MakeLittleLong(x, y, zd, zu);
 }
 
-static inline void MSG_UnpackSolid(uint32_t solid, vec3_t mins, vec3_t maxs)
+static inline box3_t MSG_UnpackSolid(uint32_t solid)
 {
     int x = solid & 255;
     int y = (solid >> 8) & 255;
     int zd = (solid >> 16) & 255;
     int zu = ((solid >> 24) & 255) - 32;
 
-    VectorSet(mins, -x, -y, -zd);
-    VectorSet(maxs,  x,  y,  zu);
+    return (box3_t) {
+        .mins = { -x, -y, -zd },
+        .maxs = {  x,  y,  zu }
+    };
+}
+
+static inline void Vec3_ToAngles16(short *angles, vec3_t a)
+{
+    angles[PITCH] = ANGLE2SHORT(a.pitch);
+    angles[YAW]   = ANGLE2SHORT(a.yaw);
+    angles[ROLL]  = ANGLE2SHORT(a.roll);
+}
+
+static inline vec3_t Vec3_FromAngles16(const short *angles)
+{
+    return (vec3_t) {
+        .pitch = SHORT2ANGLE(angles[PITCH]),
+        .yaw   = SHORT2ANGLE(angles[YAW]),
+        .roll  = SHORT2ANGLE(angles[ROLL])
+    };
 }

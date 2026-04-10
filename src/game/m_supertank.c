@@ -271,16 +271,16 @@ static void supertankGrenade(edict_t *self)
     else
         flash_number = MZ2_SUPERTANK_GRENADE_2;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     vec3_t aim_point;
-    PredictAim(self, self->enemy, start, 0, false, crandom_open() * 0.1f, forward, aim_point);
+    M_PredictAim(self, self->enemy, start, 0, false, crandom_open() * 0.1f, &forward, &aim_point);
 
     for (int i = 0; i < 5; i++) {
         float speed = 500 + i * 100;
 
-        if (!M_CalculatePitchToFire(self, aim_point, start, forward, speed, 2.5f, true, false))
+        if (!M_CalculatePitchToFire(self, aim_point, start, &forward, speed, 2.5f, true, false))
             continue;
 
         monster_fire_grenade(self, start, forward, 50, speed, flash_number, 0, 0);
@@ -402,7 +402,7 @@ void PAIN(supertank_pain)(edict_t *self, edict_t *other, float kick, int damage,
         return;
 
     // Lessen the chance of him going into his pain frames
-    if (mod.id != MOD_CHAINFIST) {
+    if (mod != MOD_CHAINFIST) {
         if (damage <= 25)
             if (frandom() < 0.2f)
                 return;
@@ -458,24 +458,22 @@ static void supertankRocket(edict_t *self)
     else // (self->s.frame == FRAME_attak2_14)
         flash_number = MZ2_SUPERTANK_ROCKET_3;
 
-    AngleVectors(self->s.angles, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     if (self->spawnflags & SPAWNFLAG_SUPERTANK_POWERSHIELD) {
-        VectorCopy(self->enemy->s.origin, vec);
-        vec[2] += self->enemy->viewheight;
-        VectorSubtract(vec, start, dir);
-        VectorNormalize(dir);
+        vec = self->enemy->s.origin;
+        vec.z += self->enemy->viewheight;
+        dir = Vec3_Direction(vec, start);
         monster_fire_heat(self, start, dir, 40, 500, flash_number, 0.075f);
     } else {
-        PredictAim(self, self->enemy, start, 750, false, 0, forward, NULL);
+        M_PredictAim(self, self->enemy, start, 750, false, 0, &forward, NULL);
         monster_fire_rocket(self, start, forward, 50, 750, flash_number);
     }
 }
 
 static void supertankMachineGun(edict_t *self)
 {
-    vec3_t                   dir;
     vec3_t                   start;
     vec3_t                   forward, right;
     monster_muzzleflash_id_t flash_number;
@@ -485,13 +483,9 @@ static void supertankMachineGun(edict_t *self)
 
     flash_number = MZ2_SUPERTANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak1_1);
 
-    dir[0] = 0;
-    dir[1] = self->s.angles[1];
-    dir[2] = 0;
-
-    AngleVectors(dir, forward, right, NULL);
-    M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right, start);
-    PredictAim(self, self->enemy, start, 0, true, -0.1f, forward, NULL);
+    AngleVectors(Vec3(0, self->s.angles.yaw, 0), &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, true, -0.1f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD * 3, DEFAULT_BULLET_VSPREAD * 3, flash_number);
 }
 
@@ -500,7 +494,7 @@ void MONSTERINFO_ATTACK(supertank_attack)(edict_t *self)
     vec3_t vec;
     float  range;
 
-    VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+    vec = Vec3_Sub(self->enemy->s.origin, self->s.origin);
     range = range_to(self, self->enemy);
 
     // Attack 1 == Chaingun
@@ -513,7 +507,7 @@ void MONSTERINFO_ATTACK(supertank_attack)(edict_t *self)
     // fire rockets more often at distance
     if (chaingun_good && (!rocket_good || range <= 540 || frandom() < 0.3f)) {
         // prefer grenade if the enemy is above us
-        if (grenade_good && (range >= 350 || vec[2] > 120 || frandom() < 0.2f))
+        if (grenade_good && (range >= 350 || vec.z > 120 || frandom() < 0.2f))
             M_SetAnimation(self, &supertank_move_attack4);
         else {
             M_SetAnimation(self, &supertank_move_attack1);
@@ -521,7 +515,7 @@ void MONSTERINFO_ATTACK(supertank_attack)(edict_t *self)
         }
     } else if (rocket_good) {
         // prefer grenade if the enemy is above us
-        if (grenade_good && (vec[2] > 120 || frandom() < 0.2f))
+        if (grenade_good && (vec.z > 120 || frandom() < 0.2f))
             M_SetAnimation(self, &supertank_move_attack4);
         else
             M_SetAnimation(self, &supertank_move_attack2);
@@ -569,7 +563,7 @@ static void supertank_dead(edict_t *self)
     supertank_gib(self);
 }
 
-void DIE(supertank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, const vec3_t point, mod_t mod)
+void DIE(supertank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (self->spawnflags & SPAWNFLAG_MONSTER_DEAD){
         // check for gib
@@ -640,8 +634,7 @@ void SP_monster_supertank(edict_t *self)
 
     G_PrecacheGibs(supertank_gibs);
 
-    VectorSet(self->r.mins, -64, -64, 0);
-    VectorSet(self->r.maxs, 64, 64, 112);
+    self->r.box = Box3_FromSize(64, 0, 112);
 
     self->health = 1500 * st.health_multiplier;
     self->gib_health = -500;

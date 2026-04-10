@@ -82,9 +82,9 @@ static void SV_CreateBaselines(void)
 
         // no need to transmit data that will change anyway
         if (i < svs.maxclients) {
-            VectorClear(base->origin);
-            VectorClear(base->angles);
-            VectorClear(base->old_origin);
+            base->origin = vec3_origin;
+            base->angles = vec3_origin;
+            base->old_origin = vec3_origin;
             base->frame = 0;
         }
 

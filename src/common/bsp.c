@@ -365,7 +365,7 @@ static void BSP_LoadMaterials(bsp_t *bsp)
 
     for (i = 0, out = bsp->texinfo; i < bsp->numtexinfo; i++, out++) {
         // see if already loaded material for this texinfo
-        int *v = HashMap_Lookup(int, map, &(const char *){out->name});
+        int *v = HashMap_Lookup(int, map, &(const char *){ out->name });
         if (v) {
             out->material_id = *v;
             continue;
@@ -404,7 +404,7 @@ static void BSP_LoadMaterials(bsp_t *bsp)
         bsp->materials = Z_Realloc(bsp->materials, bsp->nummaterials * sizeof(bsp->materials[0]));
         strncpy(bsp->materials[out->material_id], material, sizeof(bsp->materials[0]));
 done:
-        HashMap_Insert(map, &(const char *){out->name}, &out->material_id);
+        HashMap_Insert(map, &(const char *){ out->name }, &out->material_id);
     }
 
     HashMap_Destroy(map);
@@ -449,7 +449,7 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
 
         for (int j = 0; j < 2; j++) {
             BSP_Vector(out->lm_axis[j]);
-            out->lm_offset[j] = BSP_Float();
+            out->lm_offset.st[j] = BSP_Float();
         }
     }
 
@@ -473,8 +473,11 @@ const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uin
         if (nodenum & FLAG_LEAF) {
             const lightgrid_leaf_t *leaf = &grid->leafs[nodenum & ~FLAG_LEAF];
 
-            uint32_t pos[3];
-            VectorSubtract(point, leaf->mins, pos);
+            uint32_t pos[3] = {
+                point[0] - leaf->mins[0],
+                point[1] - leaf->mins[1],
+                point[2] - leaf->mins[2]
+            };
 
             uint32_t w = leaf->size[0];
             uint32_t h = leaf->size[1];
@@ -500,12 +503,13 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
     int i;
 
     for (i = 0; i < 3; i++)
-        grid->scale[i] = 1.0f / SZ_ReadFloat(s);
+        grid->scale.xyz[i] = 1.0f / SZ_ReadFloat(s);
     for (i = 0; i < 3; i++)
         grid->size[i] = SZ_ReadLong(s);
     for (i = 0; i < 3; i++)
-        grid->mins[i] = SZ_ReadFloat(s);
+        grid->mins.xyz[i] = SZ_ReadFloat(s);
 
+    // misaligns everything. what were they thinking?!
     grid->numstyles = SZ_ReadByte(s);
     if (grid->numstyles - 1 >= MAX_LIGHTMAPS)
         return false;
@@ -616,7 +620,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     grid->nodes = BSP_ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
 
     // load children first
-    s.readcount = 45;
+    s.readcount = 45;   // misaligned shit
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         s.readcount += 12;
         for (j = 0; j < 8; j++)
@@ -631,7 +635,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     }
 
     // now load points
-    s.readcount = 45;
+    s.readcount = 45;   // misaligned shit
     for (i = 0, node = grid->nodes; i < grid->numnodes; i++, node++) {
         for (j = 0; j < 3; j++)
             node->point[j] = SZ_ReadLong(&s);
@@ -1011,7 +1015,7 @@ HELPER FUNCTIONS
 static lightpoint_t *light_point;
 static int          light_mask;
 
-static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, const vec3_t p1, const vec3_t p2)
+static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, vec3_t p1, vec3_t p2)
 {
     vec_t d1, d2, frac, midf, s, t;
     vec3_t mid;
@@ -1033,7 +1037,7 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, c
         // find crossing point
         frac = d1 / (d1 - d2);
         midf = p1f + (p2f - p1f) * frac;
-        LerpVector(p1, p2, frac, mid);
+        mid = Vec3_Lerp(p1, p2, frac);
 
         // check near side
         if (BSP_RecursiveLightPoint(node->children[side], p1f, midf, p1, mid))
@@ -1045,8 +1049,8 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, c
             if (surf->drawflags & light_mask)
                 continue;
 
-            s = DotProduct(surf->lm_axis[0], mid) + surf->lm_offset[0];
-            t = DotProduct(surf->lm_axis[1], mid) + surf->lm_offset[1];
+            s = Vec3_Dot(surf->lm_axis[0], mid) + surf->lm_offset.s;
+            t = Vec3_Dot(surf->lm_axis[1], mid) + surf->lm_offset.t;
             if (s != s || s < 0 || s > surf->lm_width - 1)
                 continue;
             if (t != t || t < 0 || t > surf->lm_height - 1)
@@ -1067,7 +1071,7 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, c
     return false;
 }
 
-void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, const mnode_t *headnode, int nolm_mask)
+void BSP_LightPoint(lightpoint_t *point, vec3_t start, vec3_t end, const mnode_t *headnode, int nolm_mask)
 {
     light_point = point;
     light_point->surf = NULL;
@@ -1076,14 +1080,15 @@ void BSP_LightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end, c
 
     BSP_RecursiveLightPoint(headnode, 0, 1, start, end);
 
-    LerpVector(start, end, light_point->fraction, light_point->pos);
+    point->pos = Vec3_Lerp(start, end, point->fraction);
 }
 
-void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const vec3_t end,
-                               const mnode_t *headnode, int nolm_mask, const vec3_t origin, const vec3_t angles)
+void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
+                               const mnode_t *headnode, int nolm_mask, vec3_t origin, vec3_t angles)
 {
     vec3_t start_l, end_l;
     vec3_t axis[3];
+    bool rotated;
 
     light_point = point;
     light_point->surf = NULL;
@@ -1091,14 +1096,15 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
     light_mask = nolm_mask;
 
     // subtract origin offset
-    VectorSubtract(start, origin, start_l);
-    VectorSubtract(end, origin, end_l);
+    start_l = Vec3_Sub(start, origin);
+    end_l = Vec3_Sub(end, origin);
 
     // rotate start and end into the models frame of reference
-    if (angles) {
+    rotated = !Vec3_IsEmpty(angles);
+    if (rotated) {
         AnglesToAxis(angles, axis);
-        RotatePoint(start_l, axis);
-        RotatePoint(end_l, axis);
+        start_l = Vec3_Rotate(start_l, axis);
+        end_l = Vec3_Rotate(end_l, axis);
     }
 
     // sweep the line through the model
@@ -1106,15 +1112,15 @@ void BSP_TransformedLightPoint(lightpoint_t *point, const vec3_t start, const ve
         return;
 
     // rotate plane normal into the worlds frame of reference
-    if (angles) {
+    if (rotated) {
         TransposeAxis(axis);
-        RotatePoint(point->plane.normal, axis);
+        point->plane.normal = Vec3_Rotate(point->plane.normal, axis);
     }
 
     // offset plane distance
-    point->plane.dist += DotProduct(point->plane.normal, origin);
+    point->plane.dist += Vec3_Dot(point->plane.normal, origin);
 
-    LerpVector(start, end, light_point->fraction, light_point->pos);
+    point->pos = Vec3_Lerp(start, end, point->fraction);
 }
 
 #endif
@@ -1236,7 +1242,7 @@ overrun:
     }
 }
 
-const mleaf_t *BSP_PointLeaf(const mnode_t *node, const vec3_t p)
+const mleaf_t *BSP_PointLeaf(const mnode_t *node, vec3_t p)
 {
     float d;
 

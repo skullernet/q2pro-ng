@@ -51,10 +51,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define BSP_ExtNull     (uint16_t)-1
 
 #define BSP_Vector(v) \
-    ((v)[0] = BSP_Float(), (v)[1] = BSP_Float(), (v)[2] = BSP_Float())
+    ((v).x = BSP_Float(), (v).y = BSP_Float(), (v).z = BSP_Float())
 
 #define BSP_ExtVector(v) \
-    ((v)[0] = BSP_ExtFloat(), (v)[1] = BSP_ExtFloat(), (v)[2] = BSP_ExtFloat())
+    ((v).x = BSP_ExtFloat(), (v).y = BSP_ExtFloat(), (v).z = BSP_ExtFloat())
 
 BSP_LOAD(Visibility)
 {
@@ -100,7 +100,7 @@ BSP_LOAD(Texinfo)
 #if USE_REF
         for (int j = 0; j < 2; j++) {
             BSP_Vector(out->axis[j]);
-            out->offset[j] = BSP_Float();
+            out->offset.st[j] = BSP_Float();
         }
 #else
         in += 32;
@@ -238,15 +238,12 @@ BSP_LOAD(SubModels)
     bsp->models = out = BSP_ALLOC(sizeof(*out) * count);
 
     for (int i = 0; i < count; i++, out++) {
-        BSP_Vector(out->mins);
-        BSP_Vector(out->maxs);
+        BSP_Vector(out->box.mins);
+        BSP_Vector(out->box.maxs);
         BSP_Vector(out->origin);
 
         // spread the mins / maxs by a pixel
-        for (int j = 0; j < 3; j++) {
-            out->mins[j] -= 1;
-            out->maxs[j] += 1;
-        }
+        out->box = Box3_Expand(out->box, 1);
 
         uint32_t headnode = BSP_Long();
         if (headnode & BIT(31)) {
@@ -276,7 +273,7 @@ BSP_LOAD(SubModels)
             }
         }
 
-        out->radius = RadiusFromBounds(out->mins, out->maxs);
+        out->radius = Box3_RadiusFromBounds(out->box);
 #else
         in += 8;
 #endif
@@ -486,8 +483,8 @@ BSP_LOAD(Leafs)
         out->area = area;
 
 #if USE_REF
-        BSP_ExtVector(out->mins);
-        BSP_ExtVector(out->maxs);
+        BSP_ExtVector(out->box.mins);
+        BSP_ExtVector(out->box.maxs);
         uint32_t firstleafface = BSP_ExtLong();
         uint32_t numleaffaces = BSP_ExtLong();
         BSP_ENSURE((uint64_t)firstleafface + numleaffaces <= bsp->numleaffaces, "Bad leaffaces");
@@ -539,8 +536,8 @@ BSP_LOAD(Nodes)
         }
 
 #if USE_REF
-        BSP_ExtVector(out->mins);
-        BSP_ExtVector(out->maxs);
+        BSP_ExtVector(out->box.mins);
+        BSP_ExtVector(out->box.maxs);
         uint32_t firstface = BSP_ExtLong();
         uint32_t numfaces = BSP_ExtLong();
         BSP_ENSURE((uint64_t)firstface + numfaces <= bsp->numfaces, "Bad faces");

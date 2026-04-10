@@ -39,52 +39,45 @@ int         CM_LoadMap(cm_t *cm, const char *name);
 void        CM_LoadOverride(cm_t *cm, char *server, size_t server_size);
 
 // creates a clipping hull for an arbitrary box
-const mnode_t   *CM_HeadnodeForBox(const vec3_t mins, const vec3_t maxs);
+const mnode_t   *CM_HeadnodeForBox(box3_t box);
 
 // returns an ORed contents mask
-static inline int CM_PointContents(const vec3_t p, const mnode_t *headnode)
+static inline int CM_PointContents(vec3_t p, const mnode_t *headnode)
 {
     if (!headnode)
         return 0;   // map not loaded
     return BSP_PointLeaf(headnode, p)->contents;
 }
 
-int         CM_TransformedPointContents(const vec3_t p, const mnode_t *headnode,
-                                        const vec3_t origin, const vec3_t angles);
+int         CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
+                                        vec3_t origin, vec3_t angles);
 
-void        CM_BoxTrace(trace_t *trace,
-                        const vec3_t start, const vec3_t end,
-                        const vec3_t mins, const vec3_t maxs,
-                        const mnode_t *headnode, int brushmask);
-void        CM_TransformedBoxTrace(trace_t *trace,
-                                   const vec3_t start, const vec3_t end,
-                                   const vec3_t mins, const vec3_t maxs,
-                                   const mnode_t *headnode, int brushmask,
-                                   const vec3_t origin, const vec3_t angles);
+void        CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headnode);
+void        CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
+                                   const mnode_t *headnode, vec3_t origin, vec3_t angles);
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int CM_BoxLeafs_headnode(const vec3_t mins, const vec3_t maxs,
-                         const mleaf_t **list, int listsize,
+int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list, int listsize,
                          const mnode_t *headnode, const mnode_t **topnode);
 
-static inline int CM_BoxLeafs(const cm_t *cm, const vec3_t mins, const vec3_t maxs,
-                              const mleaf_t **list, int listsize, const mnode_t **topnode)
+static inline int CM_BoxLeafs(const cm_t *cm, box3_t box, const mleaf_t **list,
+                              int listsize, const mnode_t **topnode)
 {
     if (!cm->cache)
         return 0;   // map not loaded
-    return CM_BoxLeafs_headnode(mins, maxs, list, listsize, cm->cache->nodes, topnode);
+    return CM_BoxLeafs_headnode(box, list, listsize, cm->cache->nodes, topnode);
 }
 
-static inline const mleaf_t *CM_PointLeaf(const cm_t *cm, const vec3_t p)
+static inline const mleaf_t *CM_PointLeaf(const cm_t *cm, vec3_t p)
 {
     if (!cm->cache)
         return &nullleaf;   // map not loaded
     return BSP_PointLeaf(cm->cache->nodes, p);
 }
 
-void        CM_FatPVS(const cm_t *cm, visrow_t *mask, const vec3_t org);
-bool        CM_InVis(const cm_t *cm, const vec3_t p1, const vec3_t p2, vis_t vis);
+void        CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org);
+bool        CM_InVis(const cm_t *cm, vec3_t p1, vec3_t p2, vis_t vis);
 
 void        CM_SetAreaPortalState(const cm_t *cm, int portalnum, bool open);
 bool        CM_AreasConnected(const cm_t *cm, int area1, int area2);

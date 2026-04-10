@@ -15,13 +15,13 @@ SV_CalcRoll
 
 ===============
 */
-static float SV_CalcRoll(const vec3_t angles, const vec3_t velocity)
+static float SV_CalcRoll(vec3_t angles, vec3_t velocity)
 {
     float sign;
     float side;
     float value;
 
-    side = DotProduct(velocity, right);
+    side = Vec3_Dot(velocity, right);
     sign = side < 0 ? -1 : 1;
     side = fabsf(side);
 
@@ -135,17 +135,15 @@ static void P_DamageFeedback(edict_t *player)
     }
 
     // mix in colors
-    VectorClear(v);
+    v = vec3_origin;
 
     if (client->damage_parmor)
-        VectorMA(v, client->damage_parmor / realcount, power_color, v);
+        v = Vec3_MA(v, client->damage_parmor / realcount, power_color);
     if (client->damage_armor)
-        VectorMA(v, client->damage_armor / realcount, armor_color, v);
-    if (client->damage_blood) {
-        float f = max(15.0f, client->damage_blood / realcount);
-        VectorMA(v, f, bcolor, v);
-    }
-    VectorNormalize2(v, client->damage_blend);
+        v = Vec3_MA(v, client->damage_armor / realcount, armor_color);
+    if (client->damage_blood)
+        v = Vec3_MA(v, max(15.0f, client->damage_blood / realcount), bcolor);
+    client->damage_blend = Vec3_Normalize(v);
 
     //
     // calculate view angle kicks
@@ -159,9 +157,7 @@ static void P_DamageFeedback(edict_t *player)
         if (kick > 50)
             kick = 50;
 
-        VectorSubtract(client->damage_from, player->s.origin, v);
-        VectorNormalize(v);
-
+        v = Vec3_Direction(client->damage_from, player->s.origin);
         client->ps.stats[STAT_DAMAGE] = DirToByte(v) << 8 | kick;
     }
 
@@ -184,13 +180,13 @@ static void SV_CalcViewOffset(edict_t *ent)
     // if dead, fix the angle and don't add any kick
     if (ent->deadflag && !ent->client->resp.spectator) {
         if (ent->flags & FL_SAM_RAIMI) {
-            ent->client->ps.viewangles[ROLL] = 0;
-            ent->client->ps.viewangles[PITCH] = 0;
+            ent->client->ps.viewangles.roll = 0;
+            ent->client->ps.viewangles.pitch = 0;
         } else {
-            ent->client->ps.viewangles[ROLL] = 40;
-            ent->client->ps.viewangles[PITCH] = -15;
+            ent->client->ps.viewangles.roll = 40;
+            ent->client->ps.viewangles.pitch = -15;
         }
-        ent->client->ps.viewangles[YAW] = ent->client->killer_yaw;
+        ent->client->ps.viewangles.yaw = ent->client->killer_yaw;
     }
 }
 
@@ -221,8 +217,8 @@ static void SV_CalcBlend(edict_t *ent)
 {
     gtime_t remaining;
 
-    Vector4Clear(ent->client->ps.screen_blend);
-    Vector4Clear(ent->client->ps.damage_blend);
+    ent->client->ps.screen_blend = vec4_origin;
+    ent->client->ps.damage_blend = vec4_origin;
 
     // add for powerups
     if (ent->client->quad_time > level.time) {
@@ -230,14 +226,14 @@ static void SV_CalcBlend(edict_t *ent)
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0, 0, 1, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(0, 0, 1, 0.08f, &ent->client->ps.screen_blend);
     // RAFAEL
     } else if (ent->client->quadfire_time > level.time) {
         remaining = ent->client->quadfire_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/quadfire2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(1, 0.2f, 0.5f, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(1, 0.2f, 0.5f, 0.08f, &ent->client->ps.screen_blend);
     // RAFAEL
     // PMM - double damage
     } else if (ent->client->double_time > level.time) {
@@ -245,44 +241,44 @@ static void SV_CalcBlend(edict_t *ent)
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ddamage2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.9f, 0.7f, 0, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(0.9f, 0.7f, 0, 0.08f, &ent->client->ps.screen_blend);
     // PMM
     } else if (ent->client->invincible_time > level.time) {
         remaining = ent->client->invincible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(1, 1, 0, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(1, 1, 0, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->invisible_time > level.time) {
         remaining = ent->client->invisible_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->enviro_time > level.time) {
         remaining = ent->client->enviro_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/airout.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0, 1, 0, 0.08f, ent->client->ps.screen_blend);
+            BG_AddBlend(0, 1, 0, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->breather_time > level.time) {
         remaining = ent->client->breather_time - level.time;
         if (remaining == SEC(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/airout.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
-            G_AddBlend(0.4f, 1, 0.4f, 0.04f, ent->client->ps.screen_blend);
+            BG_AddBlend(0.4f, 1, 0.4f, 0.04f, &ent->client->ps.screen_blend);
     }
 
     // PGM
     if (ent->client->nuke_time > level.time) {
         float brightness = TO_SEC(ent->client->nuke_time - level.time) / 2.0f;
-        G_AddBlend(1, 1, 1, brightness, ent->client->ps.screen_blend);
+        BG_AddBlend(1, 1, 1, brightness, &ent->client->ps.screen_blend);
     }
     if (ent->client->ir_time > level.time) {
         remaining = ent->client->ir_time - level.time;
         if (G_PowerUpExpiringRelative(remaining)) {
             ent->client->ps.rdflags |= RDF_IRGOGGLES;
-            G_AddBlend(1, 0, 0, 0.2f, ent->client->ps.screen_blend);
+            BG_AddBlend(1, 0, 0, 0.2f, &ent->client->ps.screen_blend);
         } else
             ent->client->ps.rdflags &= ~RDF_IRGOGGLES;
     } else {
@@ -292,18 +288,18 @@ static void SV_CalcBlend(edict_t *ent)
 
     // add for damage
     if (ent->client->damage_alpha > 0)
-        G_AddBlend(ent->client->damage_blend[0], ent->client->damage_blend[1], ent->client->damage_blend[2], ent->client->damage_alpha, ent->client->ps.damage_blend);
+        BG_AddBlend(ent->client->damage_blend.x, ent->client->damage_blend.y, ent->client->damage_blend.z, ent->client->damage_alpha, &ent->client->ps.damage_blend);
 
     // [Paril-KEX] drowning visual indicator
     if (ent->air_finished < level.time + SEC(9)) {
         float alpha = 1.0f;
         if (ent->air_finished > level.time)
             alpha = 1.0f - TO_SEC(ent->air_finished - level.time) / 9.0f;
-        G_AddBlend(0.1f, 0.1f, 0.2f, alpha * 0.75f, ent->client->ps.damage_blend);
+        BG_AddBlend(0.1f, 0.1f, 0.2f, alpha * 0.75f, &ent->client->ps.damage_blend);
     }
 
     if (ent->client->bonus_alpha > 0)
-        G_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, ent->client->ps.screen_blend);
+        BG_AddBlend(0.85f, 0.7f, 0.3f, ent->client->bonus_alpha, &ent->client->ps.screen_blend);
 
     // drop the damage value
     ent->client->damage_alpha -= FRAME_TIME_SEC * 0.6f;
@@ -424,7 +420,7 @@ static void P_WorldEffects(void)
 
                 current_player->pain_debounce_time = level.time;
 
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, current_player->dmg, 0, DAMAGE_NO_ARMOR, (mod_t) { MOD_WATER });
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, current_player->dmg, 0, DAMAGE_NO_ARMOR, MOD_WATER);
             }
         // Paril: almost-drowning sounds
         } else if (current_player->air_finished <= level.time + SEC(3)) {
@@ -454,14 +450,14 @@ static void P_WorldEffects(void)
 
             int dmg = (envirosuit ? 1 : 3) * waterlevel; // take 1/3 damage with envirosuit
 
-            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, dmg, 0, DAMAGE_NONE, (mod_t) { MOD_LAVA });
+            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, dmg, 0, DAMAGE_NONE, MOD_LAVA);
             current_player->slime_debounce_time = level.time + HZ(10);
         }
 
         if (current_player->watertype & CONTENTS_SLIME) {
             if (!envirosuit) {
                 // no damage from slime with envirosuit
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, 1 * waterlevel, 0, DAMAGE_NONE, (mod_t) { MOD_SLIME });
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, 1 * waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
                 current_player->slime_debounce_time = level.time + HZ(10);
             }
         }
@@ -632,7 +628,7 @@ void G_SetClientFrame(edict_t *ent)
         duck = true;
     else
         duck = false;
-    if (ent->velocity[0] || ent->velocity[1])
+    if (ent->velocity.x || ent->velocity.y)
         run = true;
     else
         run = false;
@@ -746,11 +742,8 @@ static void P_SetClientFog(edict_t *ent)
     float frac = (float)(level.time - ent->client->fog_transition_start) /
         (ent->client->fog_transition_end - ent->client->fog_transition_start);
 
-    lerp_values(&ent->client->start_fog, &ent->client->wanted_fog, frac,
-                &ent->client->ps.fog, sizeof(ent->client->ps.fog) / sizeof(float));
-
-    lerp_values(&ent->client->start_heightfog, &ent->client->wanted_heightfog, frac,
-                &ent->client->ps.heightfog, sizeof(ent->client->ps.heightfog) / sizeof(float));
+    ent->client->ps.fog = BG_LerpFog(ent->client->start_fog, ent->client->wanted_fog, frac);
+    ent->client->ps.heightfog = BG_LerpHeightFog(ent->client->start_heightfog, ent->client->wanted_heightfog, frac);
 }
 
 // [Paril-KEX]
@@ -787,7 +780,7 @@ static void P_CheckEnableCollide(edict_t *ent)
             continue;
         if (player == ent)
             continue;
-        if (G_EntitiesContact(ent, player))
+        if (Box3_Intersects(ent->r.absbox, player->r.absbox))
             return;
     }
 
@@ -826,8 +819,8 @@ void ClientEndServerFrame(edict_t *ent)
     // If it wasn't updated here, the view position would lag a frame
     // behind the body position when pushed -- "sinking into plats"
     //
-    VectorCopy(ent->s.origin, current_client->ps.origin);
-    VectorCopy(ent->velocity, current_client->ps.velocity);
+    current_client->ps.origin = ent->s.origin;
+    current_client->ps.velocity = ent->velocity;
 
     //
     // If the end of unit layout is displayed, don't give
@@ -835,8 +828,8 @@ void ClientEndServerFrame(edict_t *ent)
     //
     if (level.intermissiontime || ent->client->awaiting_respawn) {
         if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime))) {
-            current_client->ps.screen_blend[3] = 0;
-            current_client->ps.damage_blend[3] = 0;
+            current_client->ps.screen_blend.a = 0;
+            current_client->ps.damage_blend.a = 0;
             current_client->ps.fov = 90;
             current_client->ps.gunindex = 0;
             current_client->ps.gunskin = 0;
@@ -858,7 +851,7 @@ void ClientEndServerFrame(edict_t *ent)
     CTFApplyRegeneration(ent);
     // ZOID
 
-    AngleVectors(ent->client->v_angle, forward, right, up);
+    AngleVectors(ent->client->v_angle, &forward, &right, &up);
 
     // burn from lava, etc
     P_WorldEffects();
@@ -867,13 +860,13 @@ void ClientEndServerFrame(edict_t *ent)
     // set model angles from view angles so other things in
     // the world can tell which direction you are looking
     //
-    if (ent->client->v_angle[PITCH] > 180)
-        ent->s.angles[PITCH] = (-360 + ent->client->v_angle[PITCH]) / 3;
+    if (ent->client->v_angle.pitch > 180)
+        ent->s.angles.pitch = (-360 + ent->client->v_angle.pitch) / 3;
     else
-        ent->s.angles[PITCH] = ent->client->v_angle[PITCH] / 3;
+        ent->s.angles.pitch = ent->client->v_angle.pitch / 3;
 
-    ent->s.angles[YAW] = ent->client->v_angle[YAW];
-    ent->s.angles[ROLL] = SV_CalcRoll(ent->s.angles, ent->velocity) * 4;
+    ent->s.angles.yaw = ent->client->v_angle.yaw;
+    ent->s.angles.roll = SV_CalcRoll(ent->s.angles, ent->velocity) * 4;
 
     // apply all the damage taken this frame
     P_DamageFeedback(ent);
@@ -907,8 +900,8 @@ void ClientEndServerFrame(edict_t *ent)
 
     P_SetClientFog(ent);
 
-    VectorCopy(ent->velocity, ent->client->oldvelocity);
-    VectorCopy(ent->client->ps.viewangles, ent->client->oldviewangles);
+    ent->client->oldvelocity = ent->velocity;
+    ent->client->oldviewangles = ent->client->ps.viewangles;
     ent->client->oldgroundentity = ent->groundentity;
 
     // ZOID

@@ -74,8 +74,8 @@ static void Tag_Score(edict_t *attacker, edict_t *victim, int scoreChange, mod_t
         // owner got killed. 5 points and switch owners
         } else if (tag_owner == victim && tag_owner != attacker) {
             scoreChange = 5;
-            if ((mod.id == MOD_HUNTER_SPHERE) || (mod.id == MOD_DOPPLE_EXPLODE) ||
-                (mod.id == MOD_DOPPLE_VENGEANCE) || (mod.id == MOD_DOPPLE_HUNTER) ||
+            if ((mod == MOD_HUNTER_SPHERE) || (mod == MOD_DOPPLE_EXPLODE) ||
+                (mod == MOD_DOPPLE_VENGEANCE) || (mod == MOD_DOPPLE_HUNTER) ||
                 (attacker->health <= 0)) {
                 Tag_DropToken(tag_owner, GetItemByIndex(IT_ITEM_TAG_TOKEN));
                 tag_owner = NULL;
@@ -120,7 +120,7 @@ void THINK(Tag_Respawn)(edict_t *ent)
         return;
     }
 
-    VectorCopy(spot->s.origin, ent->s.origin);
+    ent->s.origin = spot->s.origin;
     trap_LinkEntity(ent);
 }
 
@@ -154,22 +154,20 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->spawnflags = SPAWNFLAG_ITEM_DROPPED;
     tag_token->s.effects = EF_ROTATE | EF_TAGTRAIL;
     tag_token->s.renderfx = RF_GLOW;
-    VectorSet(tag_token->r.mins, -15, -15, -15);
-    VectorSet(tag_token->r.maxs, 15, 15, 15);
+    tag_token->r.box = Box3_FromRadius(15);
     tag_token->s.modelindex = G_ModelIndex(tag_token->item->world_model);
     tag_token->r.solid = SOLID_TRIGGER;
     tag_token->movetype = MOVETYPE_TOSS;
     tag_token->touch = NULL;
     tag_token->r.ownernum = ent->s.number;
 
-    AngleVectors(ent->client->v_angle, forward, right, NULL);
-    G_ProjectSource(ent->s.origin, offset, forward, right, tag_token->s.origin);
-    trap_Trace(&trace, ent->s.origin, tag_token->r.mins, tag_token->r.maxs,
-               tag_token->s.origin, ent->s.number, CONTENTS_SOLID);
-    VectorCopy(trace.endpos, tag_token->s.origin);
+    AngleVectors(ent->client->v_angle, &forward, &right, NULL);
+    tag_token->s.origin = G_ProjectSource(ent->s.origin, offset, forward, right);
+    trace = G_Trace(ent->s.origin, tag_token->s.origin, tag_token->r.box, ent->s.number, CONTENTS_SOLID);
+    tag_token->s.origin = trace.endpos;
 
-    VectorScale(forward, 100, tag_token->velocity);
-    tag_token->velocity[2] = 300;
+    tag_token->velocity = Vec3_Scale(forward, 100);
+    tag_token->velocity.z = 300;
 
     tag_token->think = Tag_MakeTouchable;
     tag_token->nextthink = level.time + SEC(1);
@@ -221,7 +219,7 @@ static void Tag_PostInitSetup(void)
         e = G_Spawn();
         e->classname = "dm_tag_token";
 
-        SelectSpawnPoint(e, e->s.origin, e->s.angles, true);
+        SelectSpawnPoint(e, &e->s.origin, &e->s.angles, true);
         SP_dm_tag_token(e);
     }
 }
