@@ -188,11 +188,6 @@ static bool SV_EntityVisible(int e, const visrow_t *mask)
 {
     const server_entity_t *ent = &sv.entities[e];
 
-    if (ent->num_clusters == -1)
-        // too many leafs for individual check, go by headnode
-        return CM_HeadnodeVisible(ent->headnode, mask->b);
-
-    // check individual leafs
     for (int i = 0; i < ent->num_clusters; i++)
         if (Q_IsBitSet(mask->b, ent->clusternums[i]))
             return true;

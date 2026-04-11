@@ -85,18 +85,11 @@ typedef struct {
     int         latency;
 } client_frame_t;
 
-#define MAX_TOTAL_ENT_LEAFS        128
-
-#define MAX_ENT_CLUSTERS    16
-
 typedef struct {
     list_t          area;               // linked to a division node or leaf
     int             number;
-    int             num_clusters;       // if -1, use headnode instead
-    union {
-        int             clusternums[MAX_ENT_CLUSTERS];
-        const mnode_t  *headnode;       // unused if num_clusters != -1
-    };
+    int             num_clusters;
+    uint16_t       *clusternums;
 } server_entity_t;
 
 typedef struct {

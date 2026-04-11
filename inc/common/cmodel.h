@@ -58,15 +58,15 @@ void        CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
 
 // call with topnode set to the headnode, returns with topnode
 // set to the first node that splits the box
-int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list, int listsize,
-                         const mnode_t *headnode, const mnode_t **topnode);
+int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list,
+                         int listsize, const mnode_t *headnode);
 
-static inline int CM_BoxLeafs(const cm_t *cm, box3_t box, const mleaf_t **list,
-                              int listsize, const mnode_t **topnode)
+static inline int CM_BoxLeafs(const cm_t *cm, box3_t box,
+                              const mleaf_t **list, int listsize)
 {
     if (!cm->cache)
         return 0;   // map not loaded
-    return CM_BoxLeafs_headnode(box, list, listsize, cm->cache->nodes, topnode);
+    return CM_BoxLeafs_headnode(box, list, listsize, cm->cache->nodes);
 }
 
 static inline const mleaf_t *CM_PointLeaf(const cm_t *cm, vec3_t p)
@@ -85,4 +85,3 @@ bool        CM_AreasConnected(const cm_t *cm, int area1, int area2);
 int         CM_WriteAreaBits(const cm_t *cm, byte *buffer, int area);
 int         CM_WritePortalBits(const cm_t *cm, byte *buffer, int bytes);
 void        CM_SetPortalStates(const cm_t *cm, const byte *buffer, int bytes);
-bool        CM_HeadnodeVisible(const mnode_t *headnode, const byte *visbits);

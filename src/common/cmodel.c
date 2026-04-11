@@ -334,7 +334,6 @@ Fills in a list of all the leafs touched
 static int              leaf_count, leaf_maxcount;
 static const mleaf_t    **leaf_list;
 static box3_t           leaf_box;
-static const mnode_t    *leaf_topnode;
 
 static void CM_BoxLeafs_r(const mnode_t *node)
 {
@@ -346,32 +345,24 @@ static void CM_BoxLeafs_r(const mnode_t *node)
             node = node->children[1];
         } else {
             // go down both
-            if (!leaf_topnode) {
-                leaf_topnode = node;
-            }
             CM_BoxLeafs_r(node->children[0]);
             node = node->children[1];
         }
     }
 
-    if (leaf_count < leaf_maxcount) {
+    if (leaf_count < leaf_maxcount)
         leaf_list[leaf_count++] = (const mleaf_t *)node;
-    }
 }
 
-int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list, int listsize,
-                         const mnode_t *headnode, const mnode_t **topnode)
+int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list,
+                         int listsize, const mnode_t *headnode)
 {
     leaf_list = list;
     leaf_count = 0;
     leaf_maxcount = listsize;
     leaf_box = box;
-    leaf_topnode = NULL;
 
     CM_BoxLeafs_r(headnode);
-
-    if (topnode)
-        *topnode = leaf_topnode;
 
     return leaf_count;
 }
@@ -1014,34 +1005,6 @@ void CM_SetPortalStates(const cm_t *cm, const byte *buffer, int bytes)
 }
 
 /*
-=============
-CM_HeadnodeVisible
-
-Returns true if any leaf under headnode has a cluster that
-is potentially visible
-=============
-*/
-bool CM_HeadnodeVisible(const mnode_t *node, const byte *visbits)
-{
-    const mleaf_t *leaf;
-    int cluster;
-
-    while (node->plane) {
-        if (CM_HeadnodeVisible(node->children[0], visbits))
-            return true;
-        node = node->children[1];
-    }
-
-    leaf = (const mleaf_t *)node;
-    cluster = leaf->cluster;
-    if (cluster == -1)
-        return false;
-    if (Q_IsBitSet(visbits, cluster))
-        return true;
-    return false;
-}
-
-/*
 ============
 CM_FatPVS
 
@@ -1068,7 +1031,7 @@ void CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org)
     }
 
     box = Box3_Expand(Box3_FromPoint(org), 8);
-    count = CM_BoxLeafs_headnode(box, leafs, q_countof(leafs), bsp->nodes, NULL);
+    count = CM_BoxLeafs_headnode(box, leafs, q_countof(leafs), bsp->nodes);
     Q_assert(count > 0);
 
     // convert leafs to clusters

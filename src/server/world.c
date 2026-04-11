@@ -122,12 +122,14 @@ SV_LinkEdict
 Links entity to PVS leafs.
 ===============
 */
+
+#define MAX_TOTAL_ENT_LEAFS     4096
+
 static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
 {
-    const mleaf_t   *leafs[MAX_TOTAL_ENT_LEAFS];
+    const mleaf_t  *leafs[MAX_TOTAL_ENT_LEAFS];
     int             clusters[MAX_TOTAL_ENT_LEAFS];
-    int             i, j, area, num_leafs;
-    const mnode_t   *topnode;
+    int             i, j, num_leafs, num_clusters;
 
     // set the size
     ent->r.size = Box3_Size(ent->r.box);
@@ -147,16 +149,20 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
     ent->r.absbox = Box3_Expand(ent->r.absbox, 1);
 
 // link to PVS leafs
-    sent->num_clusters = 0;
     ent->r.areanum = 0;
     ent->r.areanum2 = 0;
 
     // get all leafs, including solids
-    num_leafs = CM_BoxLeafs(cm, ent->r.absbox, leafs, q_countof(leafs), &topnode);
+    num_leafs = CM_BoxLeafs(cm, ent->r.absbox, leafs, q_countof(leafs));
+    num_clusters = 0;
+
+    if (num_leafs == q_countof(leafs) && sv.state == ss_loading)
+        Com_DPrintf("Object touching too many leafs at %s\n", vtos(Box3_Center(ent->r.absbox)));
 
     // set areas
     for (i = 0; i < num_leafs; i++) {
-        clusters[i] = leafs[i]->cluster;
+        int area, cluster;
+
         area = leafs[i]->area;
         if (area) {
             // doors may legally straggle two areas,
@@ -168,32 +174,23 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
             } else
                 ent->r.areanum = area;
         }
-    }
 
-    if (num_leafs == q_countof(leafs)) {
-        // assume we missed some leafs, and mark by headnode
-        sent->num_clusters = -1;
-        sent->headnode = topnode;
-    } else {
-        sent->num_clusters = 0;
-        for (i = 0; i < num_leafs; i++) {
-            if (clusters[i] == -1)
-                continue;        // not a visible leaf
-            for (j = 0; j < i; j++)
-                if (clusters[j] == clusters[i])
+        // find unique clusters
+        cluster = leafs[i]->cluster;
+        if (cluster != -1) {
+            for (j = 0; j < num_clusters; j++)
+                if (clusters[j] == cluster)
                     break;
-            if (j == i) {
-                if (sent->num_clusters == MAX_ENT_CLUSTERS) {
-                    // assume we missed some leafs, and mark by headnode
-                    sent->num_clusters = -1;
-                    sent->headnode = topnode;
-                    break;
-                }
-
-                sent->clusternums[sent->num_clusters++] = clusters[i];
-            }
+            if (j == num_clusters)
+                clusters[num_clusters++] = cluster;
         }
     }
+
+    if (num_clusters > sent->num_clusters)
+        sent->clusternums = Z_TagRealloc(sent->clusternums, sizeof(sent->clusternums[0]) * Q_ALIGN(num_clusters, 64), TAG_SERVER);
+    sent->num_clusters = num_clusters;
+    for (i = 0; i < num_clusters; i++)
+        sent->clusternums[i] = clusters[i];
 }
 
 void PF_UnlinkEdict(edict_t *ent)

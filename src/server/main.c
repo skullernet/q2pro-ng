@@ -1982,6 +1982,8 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     // free current level
     for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
         Z_Free(sv.configstrings[i]);
+    for (int i = 0; i < MAX_EDICTS; i++)
+        Z_Free(sv.entities[i].clusternums);
     CM_FreeMap(&sv.cm);
     Nav_Unload();
     memset(&sv, 0, sizeof(sv));

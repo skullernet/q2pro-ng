@@ -113,6 +113,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     // free current level
     for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
         Z_Free(sv.configstrings[i]);
+    for (int i = 0; i < MAX_EDICTS; i++)
+        Z_Free(sv.entities[i].clusternums);
     CM_FreeMap(&sv.cm);
     Nav_Unload();
 
