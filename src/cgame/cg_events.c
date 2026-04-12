@@ -440,6 +440,53 @@ void CG_SmokeAndFlash(vec3_t origin)
     ex->ent.model = cgs.models.flash;
 }
 
+static vec3_t dirtoangles(vec3_t dir)
+{
+    vec3_t angles;
+
+    angles.pitch = RAD2DEG(acosf(dir.z));
+    if (dir.x)
+        angles.yaw = RAD2DEG(atan2f(dir.y, dir.x));
+    else if (dir.y > 0)
+        angles.yaw = 90;
+    else if (dir.y < 0)
+        angles.yaw = 270;
+    else
+        angles.yaw = 0;
+    angles.roll = 0;
+
+    return angles;
+}
+
+void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir)
+{
+    trace_t tr = CG_TraceLine(start, end, ENTITYNUM_NONE, MASK_SOLID);
+
+    CG_SlamParticles(tr.endpos, dir);
+
+    explosion_t *ex = CG_AllocExplosion();
+    ex->ent.origin = tr.endpos;
+    ex->ent.angles = dirtoangles(dir);
+    ex->type = ex_misc;
+    ex->ent.model = cgs.models.explode;
+    ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
+    ex->ent.scale = 3;
+    ex->ent.skinnum = 2;
+    ex->start = cg.oldframe->servertime;
+    ex->light = 550;
+    ex->lightcolor = Vec3(0.19f, 0.41f, 0.75f);
+    ex->frames = 4;
+}
+
+void CG_WeldingLight(vec3_t pos)
+{
+    explosion_t *ex = CG_PlainExplosion(pos);
+    ex->type = ex_light;
+    ex->light = 100 + (Q_rand() % 75);
+    ex->lightcolor = Vec3(1.0f, 1.0f, 0.3f);
+    ex->frames = 2;
+}
+
 static void CG_AddExplosions(void)
 {
     entity_t    *ent;
@@ -800,71 +847,7 @@ static void CG_RailTrail(vec3_t start, vec3_t end, entity_event_t event)
     }
 }
 
-static vec3_t dirtoangles(vec3_t dir)
-{
-    vec3_t angles;
-
-    angles.pitch = RAD2DEG(acosf(dir.z));
-    if (dir.x)
-        angles.yaw = RAD2DEG(atan2f(dir.y, dir.x));
-    else if (dir.y > 0)
-        angles.yaw = 90;
-    else if (dir.y < 0)
-        angles.yaw = 270;
-    else
-        angles.yaw = 0;
-    angles.roll = 0;
-
-    return angles;
-}
-
-static void CG_BerserkSlam(centity_t *cent, entity_event_t event)
-{
-    vec3_t  forward, right, ofs, dir, origin;
-    float   scale;
-
-    AngleVectors(cent->current.angles, &forward, &right, NULL);
-
-    if (event == EV_BERSERK_SLAM) {
-        trap_S_StartSound(cent->current.number, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
-        trap_S_StartSound(cent->current.number, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
-        ofs = Vec3(20.0f, -14.3f, -21.0f);
-        dir = Vec3(0, 0, 1);
-    } else {
-        ofs = Vec3(20, 0, 14);
-        dir = forward;
-    }
-
-    scale = cent->current.scale;
-    if (!scale)
-        scale = 1.0f;
-
-    ofs = Vec3_Scale(ofs, scale);
-
-    origin = cent->current.origin;
-    origin = Vec3_MA(origin, ofs.forward, forward);
-    origin = Vec3_MA(origin, ofs.right, right);
-    origin.z += ofs.up;
-
-    trace_t tr = CG_TraceLine(cent->current.origin, origin, cent->current.number, MASK_SOLID);
-
-    CG_BerserkSlamParticles(tr.endpos, dir);
-
-    explosion_t *ex = CG_AllocExplosion();
-    ex->ent.origin = tr.endpos;
-    ex->ent.angles = dirtoangles(dir);
-    ex->type = ex_misc;
-    ex->ent.model = cgs.models.explode;
-    ex->ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
-    ex->ent.scale = 3;
-    ex->ent.skinnum = 2;
-    ex->start = cg.oldframe->servertime;
-    ex->light = 550;
-    ex->lightcolor = Vec3(0.19f, 0.41f, 0.75f);
-    ex->frames = 4;
-}
-
-static void CG_SoundEvent(centity_t *cent, uint32_t param)
+static void CG_SoundEvent(const centity_t *cent, uint32_t param)
 {
     int index = param & (MAX_SOUNDS - 1);
     int vol = (param >> 24) & 255;
@@ -889,7 +872,6 @@ static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
     if (color == EV_SPLASH_ELECTRIC_N64) {
         CG_ParticleEffect(pos, dir, 0x6c, count / 2);
         CG_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
-        color = EV_SPLASH_SPARKS;
     } else {
         static const byte splash_color[] = { 0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8 };
         if (color - EV_SPLASH_UNKNOWN >= q_countof(splash_color))
@@ -899,7 +881,7 @@ static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param
         CG_ParticleEffect(pos, dir, r, count);
     }
 
-    if (color == EV_SPLASH_SPARKS) {
+    if (color == EV_SPLASH_SPARKS || color == EV_SPLASH_ELECTRIC_N64) {
         r = Q_rand() & 3;
         if (r == 0)
             trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark5, 1, ATTN_STATIC, 0);
@@ -995,13 +977,8 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
             trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric3, 1, ATTN_NORM, 0);
     }
 
-    if (type == EV_WELDING_SPARKS) {
-        explosion_t *ex = CG_PlainExplosion(pos);
-        ex->type = ex_light;
-        ex->light = 100 + (Q_rand() % 75);
-        ex->lightcolor = Vec3(1.0f, 1.0f, 0.3f);
-        ex->frames = 2;
-    }
+    if (type == EV_WELDING_SPARKS)
+        CG_WeldingLight(pos);
 }
 
 static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
@@ -1258,10 +1235,6 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
     case EV_SOUND:
         CG_SoundEvent(cent, param);
-        break;
-    case EV_BERSERK_SLAM:
-    case EV_GUNCMDR_SLAM:
-        CG_BerserkSlam(cent, event);
         break;
     case EV_EARTHQUAKE:
         if (cg.quake_time < cg.time) {

@@ -256,10 +256,10 @@ static void berserk_attack_slam(edict_t *self)
 {
     vec3_t f, r, start;
     AngleVectors(self->s.angles, &f, &r, NULL);
-    start = M_ProjectFlashSource(self, Vec3(20.0f, -14.3f, -21.0f), f, r);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BERSERK_SLAM], f, r);
     trace_t tr = G_TraceLine(self->s.origin, start, self->s.number, MASK_SOLID);
 
-    G_AddEvent(self, EV_BERSERK_SLAM, 0);
+    G_AddEvent(self, EV_MUZZLEFLASH2, MZ2_BERSERK_SLAM);
     self->gravity = 1.0f;
     self->velocity = vec3_origin;
     self->flags |= FL_KILL_VELOCITY;

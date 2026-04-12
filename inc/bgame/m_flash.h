@@ -340,6 +340,10 @@ typedef enum {
     MZ2_MEDIC_HYPERBLASTER2_12,
 // [Paril-KEX]
 
+    MZ2_BERSERK_SLAM,
+    MZ2_GUNCMDR_SLAM,
+    MZ2_FIXBOT_WELDER,
+
     MZ2_LAST
 } monster_muzzleflash_id_t;
 

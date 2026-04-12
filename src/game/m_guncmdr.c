@@ -1255,10 +1255,10 @@ static void GunnerCmdrCounter(edict_t *self)
 {
     vec3_t f, r, start;
     AngleVectors(self->s.angles, &f, &r, NULL);
-    start = M_ProjectFlashSource(self, Vec3(20, 0, 14), f, r);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_GUNCMDR_SLAM], f, r);
     trace_t tr = G_TraceLine(self->s.origin, start, self->s.number, MASK_SOLID);
 
-    G_AddEvent(self, EV_GUNCMDR_SLAM, 0);
+    G_AddEvent(self, EV_MUZZLEFLASH2, MZ2_GUNCMDR_SLAM);
 
     T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, 200, MOD_UNKNOWN);
 }

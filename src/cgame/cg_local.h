@@ -542,6 +542,8 @@ void CG_AddMuzzleFX(vec3_t origin, vec3_t angles, cg_muzzlefx_t fx, int skin, fl
 void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first);
 
 void CG_SmokeAndFlash(vec3_t origin);
+void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir);
+void CG_WeldingLight(vec3_t pos);
 
 void CG_EntityEffects(centity_t *cent);
 void CG_EntityEvents(centity_t *cent);
@@ -671,7 +673,7 @@ void CG_WidowSplash(vec3_t pos);
 void CG_IonripperTrail(centity_t *ent, vec3_t end);
 void CG_TrapParticles(centity_t *ent, vec3_t origin);
 void CG_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count);
-void CG_BerserkSlamParticles(vec3_t org, vec3_t dir);
+void CG_SlamParticles(vec3_t org, vec3_t dir);
 void CG_PowerSplash(const centity_t *cent);
 void CG_TeleporterParticles2(vec3_t org);
 void CG_HologramParticles(vec3_t org);

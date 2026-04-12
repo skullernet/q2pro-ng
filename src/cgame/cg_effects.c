@@ -736,6 +736,28 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("guncmdr/gcdratck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
+
+    case MZ2_BERSERK_SLAM:
+        memset(dl, 0, sizeof(*dl));
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
+        trap_S_StartSound(entnum, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
+        CG_SlamEffect(ent->current.origin, origin, Vec3(0, 0, 1));
+        break;
+
+    case MZ2_GUNCMDR_SLAM:
+        memset(dl, 0, sizeof(*dl));
+        CG_SlamEffect(ent->current.origin, origin, forward);
+        break;
+
+    case MZ2_FIXBOT_WELDER:
+        memset(dl, 0, sizeof(*dl));
+        CG_ParticleEffect2(origin, vec3_origin, 0xe0 + (Q_rand() & 7), 10);
+        if (frand() > 0.8f) {
+            qhandle_t sfx = trap_S_RegisterSound(va("misc/welder%d.wav", (Q_rand() & 3) + 1));
+            trap_S_StartSound(entnum, CHAN_VOICE, sfx, 1, ATTN_IDLE, 0);
+        }
+        CG_WeldingLight(origin);
+        break;
     }
 }
 
@@ -2290,10 +2312,10 @@ void CG_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count)
 
 /*
 ===============
-CG_BerserkSlamParticles
+CG_SlamParticles
 ===============
 */
-void CG_BerserkSlamParticles(vec3_t org, vec3_t dir)
+void CG_SlamParticles(vec3_t org, vec3_t dir)
 {
     static const byte   colortable[4] = {110, 112, 114, 116};
     int         i;

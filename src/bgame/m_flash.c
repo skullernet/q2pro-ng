@@ -338,4 +338,8 @@ const vec3_t monster_flash_offset[MZ2_LAST] = {
     [MZ2_MEDIC_HYPERBLASTER2_10] = { 33.5f + 1.f, 6.9f, 15.0f },
     [MZ2_MEDIC_HYPERBLASTER2_11] = { 32.7f + 1.f, 9.9f, 15.0f },
     [MZ2_MEDIC_HYPERBLASTER2_12] = { 34.5f + 1.f, 11.0f, 15.0f },
+
+    [MZ2_BERSERK_SLAM] = { 20.0f, -14.3f, -21.0f },
+    [MZ2_GUNCMDR_SLAM] = { 20, 0, 14 },
+    [MZ2_FIXBOT_WELDER] = { 24.0f, -0.8f, -10.0f },
 };

@@ -955,11 +955,6 @@ const mmove_t MMOVE_T(fixbot_move_weld_end) = { FRAME_weldend_01, FRAME_weldend_
 
 static void fixbot_fire_welder(edict_t *self)
 {
-    vec3_t start;
-    vec3_t forward, right;
-    static const vec3_t vec = { 24.0f, -0.8f, -10.0f };
-    float  r;
-
     if (!self->enemy)
         return;
 
@@ -969,21 +964,7 @@ static void fixbot_fire_welder(edict_t *self)
         self->timestamp = level.time + random_time_sec(0.45f, 1.5f);
     }
 
-    AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = M_ProjectFlashSource(self, vec, forward, right);
-
-    G_AddEvent(self, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
-
-    if (frandom() > 0.8f) {
-        r = frandom();
-
-        if (r < 0.33f)
-            G_StartSound(self, CHAN_VOICE, sound_weld1, 1, ATTN_IDLE);
-        else if (r < 0.66f)
-            G_StartSound(self, CHAN_VOICE, sound_weld2, 1, ATTN_IDLE);
-        else
-            G_StartSound(self, CHAN_VOICE, sound_weld3, 1, ATTN_IDLE);
-    }
+    G_AddEvent(self, EV_MUZZLEFLASH2, MZ2_FIXBOT_WELDER);
 }
 
 static void fixbot_fire_blaster(edict_t *self)
