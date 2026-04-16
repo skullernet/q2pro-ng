@@ -429,7 +429,9 @@ typedef struct {
 #define MD5_MAX_JOINTS      256
 #define MD5_MAX_JOINTNAME   48
 #define MD5_MAX_MESHES      32
-#define MD5_MAX_WEIGHTS     8192
+#define MD5_MAX_VERTICES    65536
+#define MD5_MAX_WEIGHTS     65536
+#define MD5_MAX_INDICES     65536
 #define MD5_MAX_FRAMES      1024
 
 /* Joint */

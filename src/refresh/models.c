@@ -851,10 +851,11 @@ typedef struct {
 
 static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_skeleton)
 {
-    vec3_t finalVerts[TESS_MAX_VERTICES];
+    vec3_t *finalVerts;
     md5_vertex_t *vert;
     int i, j;
 
+    finalVerts = R_Malloc(mesh->num_verts * sizeof(finalVerts[0]));
     hash_map_t *pos_to_normal_map = HashMap_Create(vec3_t, vec3_t, &HashVec3, NULL);
     HashMap_Reserve(pos_to_normal_map, mesh->num_verts);
 
@@ -921,6 +922,7 @@ static void MD5_ComputeNormals(md5_mesh_t *mesh, const baseframe_joint_t *base_s
     }
 
     HashMap_Destroy(pos_to_normal_map);
+    Z_Free(finalVerts);
 }
 
 static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
@@ -978,7 +980,7 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
         COM_SkipToken(&s);
 
         MD5_ParseExpect(&s, "numverts");
-        mesh->num_verts = MD5_ParseUint(&s, 0, TESS_MAX_VERTICES);
+        mesh->num_verts = MD5_ParseUint(&s, 0, MD5_MAX_VERTICES);
         mesh->vertices  = MD5_GpuMalloc(mesh->num_verts * sizeof(mesh->vertices[0]));
         mesh->tcoords   = MD5_GpuMalloc(mesh->num_verts * sizeof(mesh->tcoords [0]));
 
@@ -999,7 +1001,7 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
         }
 
         MD5_ParseExpect(&s, "numtris");
-        uint32_t num_tris = MD5_ParseUint(&s, 0, TESS_MAX_INDICES / 3);
+        uint32_t num_tris = MD5_ParseUint(&s, 0, MD5_MAX_INDICES / 3);
         mesh->indices = MD5_GpuMallocIndices(num_tris * 3 * sizeof(mesh->indices[0]));
         mesh->num_indices = num_tris * 3;
 
