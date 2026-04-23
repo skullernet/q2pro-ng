@@ -203,7 +203,7 @@ static void CG_AddBFGKick(void)
 CG_MuzzleFlash
 ==============
 */
-void CG_MuzzleFlash(centity_t *pl, int weapon)
+void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
 {
     vec3_t      fv, rv;
     cdlight_t   *dl;
@@ -443,6 +443,9 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         dl->color = Vec3(0, 1, 1);
         dl->die = cg.time + 100;
         break;
+    default:
+        memset(dl, 0, sizeof(*dl));
+        break;
     }
 
     if (cg_dlight_hacks.integer & DLHACK_NO_MUZZLEFLASH) {
@@ -452,6 +455,8 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
         case MZ_CHAINGUN2:
         case MZ_CHAINGUN3:
             memset(dl, 0, sizeof(*dl));
+            break;
+        default:
             break;
         }
     }
@@ -463,7 +468,7 @@ void CG_MuzzleFlash(centity_t *pl, int weapon)
 CG_MuzzleFlash2
 ==============
 */
-void CG_MuzzleFlash2(centity_t *ent, int weapon)
+void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 {
     vec3_t      ofs, origin, flash_origin;
     cdlight_t   *dl;
@@ -472,15 +477,16 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
     float       scale;
     int         entnum;
 
+    // unknown muzzleflashes are ignored
+    if (weapon >= q_countof(monster_flash_offset))
+        return;
+
     // locate the origin
     AngleVectors(ent->current.angles, &forward, &right, NULL);
 
     scale = ent->current.scale;
     if (!scale)
         scale = 1.0f;
-
-    if (weapon >= q_countof(monster_flash_offset))
-        Com_Error(ERR_DROP, "%s: bad weapon", __func__);
 
     entnum = ent->current.number;
 
@@ -757,6 +763,10 @@ void CG_MuzzleFlash2(centity_t *ent, int weapon)
             trap_S_StartSound(entnum, CHAN_VOICE, sfx, 1, ATTN_IDLE, 0);
         }
         CG_WeldingLight(origin);
+        break;
+
+    default:
+        memset(dl, 0, sizeof(*dl));
         break;
     }
 }
