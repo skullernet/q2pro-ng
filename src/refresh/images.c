@@ -750,7 +750,7 @@ static void my_output_message_2(j_common_ptr cinfo, bool err_exit)
     if (err_exit)
         Com_SetLastError(buffer);
     else
-        Com_WPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
+        Com_DWPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
 }
 
 static void my_output_message(j_common_ptr cinfo)
@@ -953,7 +953,7 @@ static void my_png_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
     my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (err->filename)
-        Com_WPrintf("libpng: %s: %s\n", err->filename, warning_msg);
+        Com_DWPrintf("libpng: %s: %s\n", err->filename, warning_msg);
 }
 
 static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,

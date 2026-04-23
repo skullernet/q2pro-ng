@@ -1158,7 +1158,7 @@ static void MD5_LoadScales(const md5_model_t *model, const char *path, joint_inf
         }
 
         if (joint_id == -1)
-            Com_WPrintf("No such joint \"%s\" in %s\n", COM_MakePrintable(joint_name), path);
+            Com_DWPrintf("No such joint \"%s\" in %s\n", COM_MakePrintable(joint_name), path);
 
         if (++tok == end || tok->type != JSMN_OBJECT)
             goto fail;
@@ -1184,7 +1184,7 @@ static void MD5_LoadScales(const md5_model_t *model, const char *path, joint_inf
                 if (frame_id < model->num_frames)
                     model->skeleton_frames[frame_id * model->num_joints + joint_id].scale = Q_atof(data + val->start);
                 else
-                    Com_WPrintf("No such frame %d in %s\n", frame_id, path);
+                    Com_DWPrintf("No such frame %d in %s\n", frame_id, path);
             }
         }
     }
