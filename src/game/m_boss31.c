@@ -466,7 +466,6 @@ static void jorgBFG(edict_t *self)
     vec = self->enemy->s.origin;
     vec.z += self->enemy->viewheight;
     dir = Vec3_Direction(vec, start);
-    G_StartSound(self, CHAN_WEAPON, sound_bfg_fire, 1, ATTN_NORM);
     monster_fire_bfg(self, start, dir, 50, 300, 100, 200, MZ2_JORG_BFG_1);
 }
 

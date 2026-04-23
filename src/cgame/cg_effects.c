@@ -638,6 +638,7 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_GUNNER_GRENADE_1 ... MZ2_GUNNER_GRENADE2_4:
     case MZ2_SUPERTANK_GRENADE_1:
     case MZ2_SUPERTANK_GRENADE_2:
+    case MZ2_CARRIER_GRENADE:
         dl->color = Vec3(1, 0.5f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("gunner/gunatck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
@@ -646,6 +647,8 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_GLADIATOR_RAILGUN_1:
     case MZ2_CARRIER_RAILGUN:
     case MZ2_WIDOW_RAIL:
+    case MZ2_WIDOW_RAIL_LEFT:
+    case MZ2_WIDOW_RAIL_RIGHT:
     case MZ2_MAKRON_RAILGUN_1:
     case MZ2_ARACHNID_RAIL1:
     case MZ2_ARACHNID_RAIL2:
@@ -656,7 +659,9 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_MAKRON_BFG:
+    case MZ2_JORG_BFG_1:
         dl->color = Vec3(0.5f, 1, 0.5f);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
@@ -679,11 +684,6 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
-        break;
-
-    case MZ2_JORG_BFG_1:
-        dl->color = Vec3(0.5f, 1, 0.5f);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
         break;
 
     case MZ2_STALKER_BLASTER:

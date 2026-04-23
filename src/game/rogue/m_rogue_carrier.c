@@ -162,7 +162,7 @@ static void CarrierGrenade(edict_t *self)
     aim = Vec3_MA(aim, spreadU, up);
     aim.z = Q_clipf(aim.z, -0.5f, 0.15f);
 
-    flash_number = MZ2_GUNNER_GRENADE_1;
+    flash_number = MZ2_CARRIER_GRENADE;
     monster_fire_grenade(self, start, aim, 50, 600, flash_number, (crandom_open() * 10.0f), 200.0f + (crandom_open() * 10.0f));
 }
 

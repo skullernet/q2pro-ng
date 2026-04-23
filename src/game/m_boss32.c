@@ -441,7 +441,6 @@ static void makronBFG(edict_t *self)
     vec = self->enemy->s.origin;
     vec.z += self->enemy->viewheight;
     dir = Vec3_Direction(vec, start);
-    G_StartSound(self, CHAN_VOICE, sound_attack_bfg, 1, ATTN_NORM);
     monster_fire_bfg(self, start, dir, 50, 300, 100, 300, MZ2_MAKRON_BFG);
 }
 
