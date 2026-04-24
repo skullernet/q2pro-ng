@@ -544,6 +544,7 @@ void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first);
 void CG_SmokeAndFlash(vec3_t origin);
 void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir);
 void CG_WeldingLight(vec3_t pos);
+void CG_GenericExplosion(vec3_t pos);
 
 void CG_EntityEffects(centity_t *cent);
 void CG_EntityEvents(centity_t *cent);

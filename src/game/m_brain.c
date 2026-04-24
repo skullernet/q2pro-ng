@@ -685,14 +685,7 @@ void DIE(brain_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
         self->s.skinnum /= 2;
 
-        if (self->beam) {
-            G_FreeEdict(self->beam);
-            self->beam = NULL;
-        }
-        if (self->beam2) {
-            G_FreeEdict(self->beam2);
-            self->beam2 = NULL;
-        }
+        M_FreeBeams(self);
 
         ThrowGibs(self, damage, brain_gibs);
         self->deadflag = true;
@@ -718,7 +711,7 @@ bool MONSTERINFO_DUCK(brain_duck)(edict_t *self, gtime_t eta)
     return true;
 }
 
-static void brain_precache(void)
+void PR_monster_brain(void)
 {
     sound_chest_open = G_SoundIndex("brain/brnatck1.wav");
     sound_tentacles_extend = G_SoundIndex("brain/brnatck2.wav");
@@ -740,13 +733,6 @@ static void brain_precache(void)
  */
 void SP_monster_brain(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(brain_precache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/brain/tris.md2");

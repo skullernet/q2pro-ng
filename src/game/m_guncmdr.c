@@ -1249,8 +1249,6 @@ static void guncmdr_jump(edict_t *self, blocked_jump_result_t result)
         M_SetAnimation(self, &guncmdr_move_jump);
 }
 
-void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, float damage, float kick, edict_t *ignore, float radius, mod_t mod);
-
 static void GunnerCmdrCounter(edict_t *self)
 {
     vec3_t f, r, start;
@@ -1260,7 +1258,7 @@ static void GunnerCmdrCounter(edict_t *self)
 
     G_AddEvent(self, EV_MUZZLEFLASH2, MZ2_GUNCMDR_SLAM);
 
-    T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, 200, MOD_UNKNOWN);
+    T_SlamRadiusDamage(tr.endpos, self, self, 15, 250, self, NULL, 200, MOD_UNKNOWN);
 }
 
 //===========
@@ -1363,7 +1361,7 @@ bool MONSTERINFO_BLOCKED(guncmdr_blocked)(edict_t *self, float dist)
 // PGM
 //===========
 
-static void guncmdr_precache(void)
+void PR_monster_guncmdr(void)
 {
     sound_death = G_SoundIndex("guncmdr/gcdrdeath1.wav");
     sound_pain = G_SoundIndex("guncmdr/gcdrpain2.wav");
@@ -1379,13 +1377,6 @@ model="models/monsters/guncmdr/tris.md2"
 */
 void SP_monster_guncmdr(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(guncmdr_precache);
-
     G_SoundIndex("guncmdr/gcdratck2.wav");
     G_SoundIndex("guncmdr/gcdratck3.wav");
 

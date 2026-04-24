@@ -206,10 +206,11 @@ const mmove_t MMOVE_T(berserk_move_attack_club) = { FRAME_att_c9, FRAME_att_c20,
 
 /*
 ============
-T_RadiusDamage
+T_SlamRadiusDamage
 ============
 */
-void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, float damage, float kick, edict_t *ignore, float radius, mod_t mod)
+void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, float damage, float kick,
+                        edict_t *ignore, const char *ignoreclass, float radius, mod_t mod)
 {
     float    points;
     edict_t *ent = NULL;
@@ -221,10 +222,10 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
             continue;
         if (!ent->takedamage)
             continue;
-        if (!CanDamage(ent, inflictor))
-            continue;
         // don't hit players in mid air
         if (ent->client && !ent->groundentity)
+            continue;
+        if (ignoreclass && !strcmp(ent->classname, ignoreclass))
             continue;
 
         v = Box3_ClampPoint(ent->r.absbox, point);
@@ -234,6 +235,8 @@ void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, flo
 
         // too far away
         if (amount <= 0)
+            continue;
+        if (!CanDamage(ent, inflictor))
             continue;
 
         amount *= amount;
@@ -264,7 +267,7 @@ static void berserk_attack_slam(edict_t *self)
     self->velocity = vec3_origin;
     self->flags |= FL_KILL_VELOCITY;
 
-    T_SlamRadiusDamage(tr.endpos, self, self, 8, 300, self, 165, MOD_UNKNOWN);
+    T_SlamRadiusDamage(tr.endpos, self, self, 8, 300, self, NULL, 165, MOD_UNKNOWN);
 }
 
 void TOUCH(berserk_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -755,7 +758,7 @@ bool MONSTERINFO_DUCK(berserk_duck)(edict_t *self, gtime_t eta)
     return true;
 }
 
-static void berserk_precache(void)
+void PR_monster_berserk(void)
 {
     sound_pain   = G_SoundIndex("berserk/berpain2.wav");
     sound_die    = G_SoundIndex("berserk/berdeth2.wav");
@@ -773,14 +776,6 @@ static void berserk_precache(void)
  */
 void SP_monster_berserk(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    // pre-caches
-    G_AddPrecache(berserk_precache);
-
     self->s.modelindex = G_ModelIndex("models/monsters/berserk/tris.md2");
 
     G_PrecacheGibs(berserk_gibs);

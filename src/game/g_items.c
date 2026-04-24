@@ -112,6 +112,12 @@ const gitem_t *FindItem(const char *pickup_name)
     int            i;
     const gitem_t *it;
 
+    // CotV hack
+    if (game.dirtype == GAMEDIR_COTV) {
+        if (!Q_strcasecmp(pickup_name, "Diskette"))
+            return &itemlist[IT_KEY_DATA_CD];
+    }
+
     it = itemlist;
     for (i = 0; i < IT_TOTAL; i++, it++) {
         if (!it->use_name)
@@ -3251,7 +3257,157 @@ const gitem_t itemlist[] = {
         .flags = IF_STAY_COOP | IF_POWERUP_WHEEL | IF_POWERUP_ONOFF,
         .tag = POWERUP_COMPASS,
         .precaches = "misc/help_marker.wav",
-    }
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNE_END1,
+        .classname = "key_q1_rune_end1",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "misc/runekey.wav",
+        .world_model = "models/items/keys/end1/end1.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_end1",
+        .use_name = "q1_rune_end1",
+        .pickup_name = "Rune",
+        .pickup_name_definite = "the Rune",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNE_END2,
+        .classname = "key_q1_rune_end2",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "misc/runekey.wav",
+        .world_model = "models/items/keys/end2/end2.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_end2",
+        .use_name = "q1_rune_end2",
+        .pickup_name = "Rune",
+        .pickup_name_definite = "the Rune",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNE_END3,
+        .classname = "key_q1_rune_end3",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "misc/runekey.wav",
+        .world_model = "models/items/keys/end3/end3.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_end3",
+        .use_name = "q1_rune_end3",
+        .pickup_name = "Rune",
+        .pickup_name_definite = "the Rune",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNE_END4,
+        .classname = "key_q1_rune_end4",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "misc/runekey.wav",
+        .world_model = "models/items/keys/end4/end4.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_end4",
+        .use_name = "q1_rune_end4",
+        .pickup_name = "Rune",
+        .pickup_name_definite = "the Rune",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_BASE_GOLD_KEY,
+        .classname = "key_q1_base_gold_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/basekey.wav",
+        .world_model = "models/items/keys/base/b_g_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_bgold",
+        .use_name = "q1_base_gold_key",
+        .pickup_name = "Base Gold Key",
+        .pickup_name_definite = "the Base Gold Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_BASE_SILVER_KEY,
+        .classname = "key_q1_base_silver_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/basekey.wav",
+        .world_model = "models/items/keys/base/b_s_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_bsilver",
+        .use_name = "q1_base_silver_key",
+        .pickup_name = "Base Silver Key",
+        .pickup_name_definite = "the Base Silver Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_MEDIEVAL_GOLD_KEY,
+        .classname = "key_q1_medieval_gold_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/medkey.wav",
+        .world_model = "models/items/keys/medieval/m_g_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_mgold",
+        .use_name = "q1_medieval_gold_key",
+        .pickup_name = "Runic Gold Key",
+        .pickup_name_definite = "the Runic Gold Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_MEDIEVAL_SILVER_KEY,
+        .classname = "key_q1_medieval_silver_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/medkey.wav",
+        .world_model = "models/items/keys/medieval/m_s_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_msilver",
+        .use_name = "q1_medieval_silver_key",
+        .pickup_name = "Runic Silver Key",
+        .pickup_name_definite = "the Runic Silver Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNIC_GOLD_KEY,
+        .classname = "key_q1_runic_gold_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/runekey.wav",
+        .world_model = "models/items/keys/wizard/w_g_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_wgold",
+        .use_name = "q1_runic_gold_key",
+        .pickup_name = "Medieval Gold Key",
+        .pickup_name_definite = "the Medieval Gold Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
+
+    {
+        .id = IT_KEY_Q1_RUNIC_SILVER_KEY,
+        .classname = "key_q1_runic_silver_key",
+        .pickup = Pickup_Key,
+        .drop = Drop_General,
+        .pickup_sound = "items/runekey.wav",
+        .world_model = "models/items/keys/wizard/w_s_key.md2",
+        .world_model_flags = EF_ROTATE | EF_BOB,
+        .icon = "k_wsilver",
+        .use_name = "q1_runic_silver_key",
+        .pickup_name = "Medieval Silver Key",
+        .pickup_name_definite = "the Medieval Silver Key",
+        .flags = IF_STAY_COOP | IF_KEY
+    },
 };
 // clang-format on
 
@@ -3299,6 +3455,10 @@ void SetItemNames(void)
 
     for (i = 0; i < IT_TOTAL; i++)
         trap_SetConfigstring(CS_ITEMS + i, itemlist[i].pickup_name);
+
+    // CotV hack
+    if (game.dirtype == GAMEDIR_COTV)
+        trap_SetConfigstring(CS_ITEMS + IT_KEY_DATA_CD, "Diskette");
 
     for (i = 0; i < AMMO_MAX; i++) {
         it = ammolist[i];

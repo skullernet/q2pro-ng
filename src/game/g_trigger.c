@@ -261,6 +261,11 @@ trigger_key
 
 #define SPAWNFLAGS_TRIGGER_KEY_BECOME_RELAY 1
 
+// CotV flags are pre-shifted 1 bit left
+#define SPAWNFLAG_KEY_NOMESSAGE 2
+#define SPAWNFLAG_KEY_NOACTIVATIONSOUND 4
+#define SPAWNFLAG_KEY_NOITEMREMOVE  8
+
 /*QUAKED trigger_key (.5 .5 .5) (-8 -8 -8) (8 8 8)
 A relay trigger that only fires it's targets if player has the proper key.
 Use "item" to specify the required key, for example "key_data_cd"
@@ -276,6 +281,8 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     index = self->item->id;
     if (!activator->client->pers.inventory[index]) {
+        if (self->spawnflags & SPAWNFLAG_KEY_NOMESSAGE)
+            return;
         if (level.time < self->touch_debounce_time)
             return;
         self->touch_debounce_time = level.time + SEC(5);
@@ -284,8 +291,11 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
         return;
     }
 
-    G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keyuse.wav"), 1, ATTN_NORM);
-    if (coop.integer) {
+    if (!(self->spawnflags & SPAWNFLAG_KEY_NOACTIVATIONSOUND))
+        G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keyuse.wav"), 1, ATTN_NORM);
+
+    if (self->spawnflags & SPAWNFLAG_KEY_NOITEMREMOVE) {
+    } else if (coop.integer) {
         edict_t *ent;
 
         if (index == IT_KEY_POWER_CUBE || index == IT_KEY_EXPLOSIVE_CHARGES) {
@@ -361,7 +371,16 @@ void SP_trigger_key(edict_t *self)
     G_SoundIndex("misc/keytry.wav");
     G_SoundIndex("misc/keyuse.wav");
 
+    self->spawnflags &= SPAWNFLAGS_TRIGGER_KEY_BECOME_RELAY;
     self->use = trigger_key_use;
+}
+
+// CotV hack
+void SP_trigger_key2(edict_t *self)
+{
+    spawnflags_t spawnflags = self->spawnflags;
+    SP_trigger_key(self);
+    self->spawnflags = spawnflags << 1;
 }
 
 /*
@@ -455,16 +474,20 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
     if (!G_ClipBrushModel(self, other))
         return;
 
+    vec3_t dir = self->movedir;
+    if (self->movetarget)
+        dir = Vec3_Direction(self->movetarget->s.origin, other->s.origin);
+
     if (strcmp(other->classname, "grenade") == 0 || other->health > 0) {
         if (self->spawnflags & SPAWNFLAG_PUSH_ADDITIVE) {
             float max_speed = self->speed * 10;
-            if (Vec3_Dot(other->velocity, self->movedir) < max_speed) {
+            if (Vec3_Dot(other->velocity, dir) < max_speed) {
                 float speed_adjust = max_speed * FRAME_TIME_SEC * 2;
-                other->velocity = Vec3_MA(other->velocity, speed_adjust, self->movedir);
+                other->velocity = Vec3_MA(other->velocity, speed_adjust, dir);
                 other->no_gravity_time = level.time + SEC(0.1f);
             }
         } else
-            other->velocity = Vec3_Scale(self->movedir, self->speed * 10);
+            other->velocity = Vec3_Scale(dir, self->speed * 10);
 
         if (other->client) {
             // don't take falling damage immediately from this
@@ -474,6 +497,8 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
                 other->fly_sound_debounce_time = level.time + SEC(1.5f);
                 G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/windfly.wav"), 1, ATTN_NORM);
             }
+            if (self->movetarget)
+                other->client->landmark_free_fall = true;
         }
     }
 
@@ -538,6 +563,11 @@ void THINK(trigger_push_active)(edict_t *self)
 }
 // RAFAEL
 
+void THINK(trigger_push_find_target)(edict_t *self)
+{
+    self->movetarget = G_PickTarget(self->target);
+}
+
 /*QUAKED trigger_push (.5 .5 .5) ? PUSH_ONCE PUSH_PLUS PUSH_SILENT START_OFF CLIP
 Pushes the player
 "speed" defaults to 1000
@@ -582,6 +612,15 @@ void SP_trigger_push(edict_t *self)
         self->movetype = MOVETYPE_PUSH;
     }
     // PGM
+
+    // CotV targeted triggers
+    if (self->target && self->target[0] && !self->think) {
+        self->think = trigger_push_find_target;
+        self->nextthink = level.time + FRAME_TIME;
+        self->speed /= 5;
+    } else if (Vec3_IsEmpty(self->movedir)) {
+        G_Printf("%s: no movedir set\n", etos(self));
+    }
 
     trap_LinkEntity(self);
 

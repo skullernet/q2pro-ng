@@ -839,7 +839,7 @@ bool MONSTERINFO_SIDESTEP(infantry_sidestep)(edict_t *self)
     return true;
 }
 
-void InfantryPrecache(void)
+void PR_monster_infantry(void)
 {
     sound_pain1 = G_SoundIndex("infantry/infpain1.wav");
     sound_pain2 = G_SoundIndex("infantry/infpain2.wav");
@@ -862,22 +862,13 @@ void InfantryPrecache(void)
  */
 void SP_monster_infantry(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(InfantryPrecache);
-
-    self->monsterinfo.aiflags |= AI_STINKY;
-
-    self->movetype = MOVETYPE_STEP;
-    self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/infantry/tris.md2");
 
-    G_PrecacheGibs(infantry_gibs);
-
     self->r.box = Box3_FromSize(16, -24, 32);
+    self->r.solid = SOLID_BBOX;
+    self->movetype = MOVETYPE_STEP;
+
+    G_PrecacheGibs(infantry_gibs);
 
     self->health = 100 * st.health_multiplier;
     self->gib_health = -65;
@@ -887,6 +878,7 @@ void SP_monster_infantry(edict_t *self)
     self->die = infantry_die;
 
     self->monsterinfo.combat_style = COMBAT_MIXED;
+    self->monsterinfo.aiflags |= AI_STINKY;
 
     self->monsterinfo.stand = infantry_stand;
     self->monsterinfo.walk = infantry_walk;

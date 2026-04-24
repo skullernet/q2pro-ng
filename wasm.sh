@@ -20,6 +20,7 @@ GAME_SRC="
     src/game/xatrix/*.c
     src/game/rogue/*.c
     src/game/ctf/*.c
+    src/game/q1q2/*.c
     src/game/*.c"
 
 GAME_PTR=`mktemp /tmp/XXXXXXXXXX.c`

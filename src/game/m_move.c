@@ -672,7 +672,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
         // don't go into deep liquids or
         // slime/lava voluntarily
-        if (end_watertype & (CONTENTS_SLIME | CONTENTS_LAVA) || end_waterlevel > WATER_WAIST)
+        if ((end_watertype & (CONTENTS_SLIME | CONTENTS_LAVA)) || (end_waterlevel > WATER_WAIST && !(ent->flags & FL_DEEPONE)))
             return false;
     }
 

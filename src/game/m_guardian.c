@@ -847,7 +847,7 @@ void MONSTERINFO_SETSKIN(guardian_setskin)(edict_t *self)
         self->s.skinnum = 0;
 }
 
-static void guadian_precache(void)
+void PR_monster_guardian(void)
 {
     sound_step = G_SoundIndex("zortemp/step.wav");
     sound_charge = G_SoundIndex("weapons/hyprbu1a.wav");
@@ -855,7 +855,7 @@ static void guadian_precache(void)
     sound_laser = G_SoundIndex("weapons/laser2.wav");
     sound_pew = G_SoundIndex("makron/blaster.wav");
     sound_sight = G_SoundIndex("guardian/sight.wav");
-    sound_pain1 = G_SoundIndex ("guardian/pain1.wav");
+    sound_pain1 = G_SoundIndex("guardian/pain1.wav");
     sound_pain2 = G_SoundIndex("guardian/pain2.wav");
     sound_death = G_SoundIndex("guardian/death.wav");
 }
@@ -864,19 +864,12 @@ static void guadian_precache(void)
  */
 void SP_monster_guardian(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(guadian_precache);
-
-    G_PrecacheGibs(guardian_gibs);
-
     self->s.modelindex = G_ModelIndex("models/monsters/guardian/tris.md2");
     self->r.box = Box3_FromSize(78, -66, 76);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
+
+    G_PrecacheGibs(guardian_gibs);
 
     self->health = 2500 * st.health_multiplier;
     self->gib_health = -200;

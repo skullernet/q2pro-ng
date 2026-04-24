@@ -880,7 +880,7 @@ static void CarrierPrecache(void)
     G_ModelIndex("models/objects/gibs/gear/tris.md2");
 }
 
-static void carrier_precache_global(void)
+void PR_monster_carrier(void)
 {
     sound_pain1 = G_SoundIndex("carrier/pain_md.wav");
     sound_pain2 = G_SoundIndex("carrier/pain_lg.wav");
@@ -899,13 +899,6 @@ static void carrier_precache_global(void)
  */
 void SP_monster_carrier(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(carrier_precache_global);
-
     self->monsterinfo.engine_sound = G_SoundIndex("bosshovr/bhvengn1.wav");
 
     self->movetype = MOVETYPE_STEP;

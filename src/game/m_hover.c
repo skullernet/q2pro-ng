@@ -11,48 +11,23 @@ hover
 #include "g_local.h"
 #include "m_hover.h"
 
-static int sound_pain1;
-static int sound_pain2;
-static int sound_death1;
-static int sound_death2;
-static int sound_sight;
-static int sound_search1;
-static int sound_search2;
+#define SOUND   sound[!!self->style]
 
-// ROGUE
-// daedalus sounds
-static int daed_sound_pain1;
-static int daed_sound_pain2;
-static int daed_sound_death1;
-static int daed_sound_death2;
-static int daed_sound_sight;
-static int daed_sound_search1;
-static int daed_sound_search2;
-// ROGUE
+static struct {
+    int pain[2];
+    int death[2];
+    int sight;
+    int search[2];
+} sound[2];
 
 void MONSTERINFO_SIGHT(hover_sight)(edict_t *self, edict_t *other)
 {
-    // PMM - daedalus sounds
-    if (self->mass < 225)
-        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_VOICE, daed_sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(hover_search)(edict_t *self)
 {
-    // PMM - daedalus sounds
-    if (self->mass < 225) {
-        if (brandom())
-            G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, sound_search2, 1, ATTN_NORM);
-    } else {
-        if (brandom())
-            G_StartSound(self, CHAN_VOICE, daed_sound_search1, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, daed_sound_search2, 1, ATTN_NORM);
-    }
+    G_StartSound(self, CHAN_VOICE, random_element(SOUND.search), 1, ATTN_NORM);
 }
 
 void hover_run(edict_t *self);
@@ -363,22 +338,28 @@ static void hover_fire_blaster(edict_t *self)
     vec3_t    forward, right;
     vec3_t    end;
     vec3_t    dir;
+    monster_muzzleflash_id_t flash_number;
 
     if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
 
+    if (self->style)
+        flash_number = MZ2_DAEDALUS_BLASTER_1 + (self->s.frame & 1);
+    else
+        flash_number = MZ2_HOVER_BLASTER_1 + (self->s.frame & 1);
+
     AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = M_ProjectFlashSource(self, monster_flash_offset[(self->s.frame & 1) ? MZ2_HOVER_BLASTER_2 : MZ2_HOVER_BLASTER_1], forward, right);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
 
     end = self->enemy->s.origin;
     end.z += self->enemy->viewheight;
     dir = Vec3_Direction(end, start);
 
     // PGM  - daedalus fires blaster2
-    if (self->mass < 200)
-        monster_fire_blaster(self, start, dir, 1, 1000, (self->s.frame & 1) ? MZ2_HOVER_BLASTER_2 : MZ2_HOVER_BLASTER_1, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
+    if (self->style)
+        monster_fire_blaster2(self, start, dir, 1, 1000, flash_number, (self->s.frame & 3) ? EF_NONE : EF_BLASTER);
     else
-        monster_fire_blaster2(self, start, dir, 1, 1000, (self->s.frame & 1) ? MZ2_DAEDALUS_BLASTER_2 : MZ2_DAEDALUS_BLASTER_1, (self->s.frame % 4) ? EF_NONE : EF_BLASTER);
+        monster_fire_blaster(self, start, dir, 1, 1000, flash_number, (self->s.frame & 3) ? EF_NONE : EF_HYPERBLASTER);
     // PGM
 }
 
@@ -409,7 +390,7 @@ static void hover_attack(edict_t *self)
 {
     float chance = 0.5f;
 
-    if (self->mass > 150) // the daedalus strafes more
+    if (self->style) // the daedalus strafes more
         chance += 0.1f;
 
     if (frandom() > chance) {
@@ -430,22 +411,7 @@ void PAIN(hover_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     self->pain_debounce_time = level.time + SEC(3);
 
-    //====
-    if (brandom()) {
-        // PMM - daedalus sounds
-        if (self->mass < 225)
-            G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, daed_sound_pain1, 1, ATTN_NORM);
-    } else {
-        // PMM - daedalus sounds
-        if (self->mass < 225)
-            G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, daed_sound_pain2, 1, ATTN_NORM);
-    }
-    // PGM
-    //====
+    G_StartSound(self, CHAN_VOICE, random_element(SOUND.pain), 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -499,18 +465,8 @@ void DIE(hover_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         return;
 
     // regular death
-    // PMM - daedalus sounds
-    if (self->mass < 225) {
-        if (brandom())
-            G_StartSound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM);
-    } else {
-        if (brandom())
-            G_StartSound(self, CHAN_VOICE, daed_sound_death1, 1, ATTN_NORM);
-        else
-            G_StartSound(self, CHAN_VOICE, daed_sound_death2, 1, ATTN_NORM);
-    }
+    G_StartSound(self, CHAN_VOICE, random_element(SOUND.death), 1, ATTN_NORM);
+
     self->deadflag = true;
     self->takedamage = true;
     M_SetAnimation(self, &hover_move_death1);
@@ -527,40 +483,30 @@ static void hover_set_fly_parameters(edict_t *self)
     self->monsterinfo.fly_max_distance = 450;
 }
 
-static void daed_precache(void)
+void PR_monster_hover(void)
 {
-    daed_sound_pain1 = G_SoundIndex("daedalus/daedpain1.wav");
-    daed_sound_pain2 = G_SoundIndex("daedalus/daedpain2.wav");
-    daed_sound_death1 = G_SoundIndex("daedalus/daeddeth1.wav");
-    daed_sound_death2 = G_SoundIndex("daedalus/daeddeth2.wav");
-    daed_sound_sight = G_SoundIndex("daedalus/daedsght1.wav");
-    daed_sound_search1 = G_SoundIndex("daedalus/daedsrch1.wav");
-    daed_sound_search2 = G_SoundIndex("daedalus/daedsrch2.wav");
+    sound[0].pain[0]   = G_SoundIndex("hover/hovpain1.wav");
+    sound[0].pain[1]   = G_SoundIndex("hover/hovpain2.wav");
+    sound[0].death[0]  = G_SoundIndex("hover/hovdeth1.wav");
+    sound[0].death[1]  = G_SoundIndex("hover/hovdeth2.wav");
+    sound[0].sight     = G_SoundIndex("hover/hovsght1.wav");
+    sound[0].search[0] = G_SoundIndex("hover/hovsrch1.wav");
+    sound[0].search[1] = G_SoundIndex("hover/hovsrch2.wav");
 }
 
-static void hover_precache(void)
+void PR_monster_daedalus(void)
 {
-    sound_pain1 = G_SoundIndex("hover/hovpain1.wav");
-    sound_pain2 = G_SoundIndex("hover/hovpain2.wav");
-    sound_death1 = G_SoundIndex("hover/hovdeth1.wav");
-    sound_death2 = G_SoundIndex("hover/hovdeth2.wav");
-    sound_sight = G_SoundIndex("hover/hovsght1.wav");
-    sound_search1 = G_SoundIndex("hover/hovsrch1.wav");
-    sound_search2 = G_SoundIndex("hover/hovsrch2.wav");
+    sound[1].pain[0]   = G_SoundIndex("daedalus/daedpain1.wav");
+    sound[1].pain[1]   = G_SoundIndex("daedalus/daedpain2.wav");
+    sound[1].death[0]  = G_SoundIndex("daedalus/daeddeth1.wav");
+    sound[1].death[1]  = G_SoundIndex("daedalus/daeddeth2.wav");
+    sound[1].sight     = G_SoundIndex("daedalus/daedsght1.wav");
+    sound[1].search[0] = G_SoundIndex("daedalus/daedsrch1.wav");
+    sound[1].search[1] = G_SoundIndex("daedalus/daedsrch2.wav");
 }
 
-/*QUAKED monster_hover (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
- */
-/*QUAKED monster_daedalus (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
-This is the improved icarus monster.
-*/
-void SP_monster_hover(edict_t *self)
+static void SP_monster_hover_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/hover/tris.md2");
@@ -569,9 +515,7 @@ void SP_monster_hover(edict_t *self)
 
     self->r.box = Box3_FromSize(24, -24, 32);
 
-    self->health = 240 * st.health_multiplier;
     self->gib_health = -100;
-    self->mass = 150;
 
     self->pain = hover_pain;
     self->die = hover_die;
@@ -584,29 +528,6 @@ void SP_monster_hover(edict_t *self)
     self->monsterinfo.search = hover_search;
     self->monsterinfo.setskin = hover_setskin;
 
-    // PGM
-    if (strcmp(self->classname, "monster_daedalus") == 0) {
-        self->health = 450 * st.health_multiplier;
-        self->mass = 225;
-        self->yaw_speed = 23;
-        if (!ED_WasKeySpecified("power_armor_type"))
-            self->monsterinfo.power_armor_type = IT_ITEM_POWER_SCREEN;
-        if (!ED_WasKeySpecified("power_armor_power"))
-            self->monsterinfo.power_armor_power = 100;
-        // PMM - daedalus sounds
-        self->monsterinfo.engine_sound = G_SoundIndex("daedalus/daedidle1.wav");
-        G_AddPrecache(daed_precache);
-        G_SoundIndex("tank/tnkatck3.wav");
-        // pmm
-    } else {
-        self->yaw_speed = 18;
-        G_AddPrecache(hover_precache);
-        G_SoundIndex("hover/hovatck1.wav");
-
-        self->monsterinfo.engine_sound = G_SoundIndex("hover/hovidle1.wav");
-    }
-    // PGM
-
     trap_LinkEntity(self);
 
     M_SetAnimation(self, &hover_move_stand);
@@ -614,11 +535,43 @@ void SP_monster_hover(edict_t *self)
 
     flymonster_start(self);
 
-    // PGM
-    if (strcmp(self->classname, "monster_daedalus") == 0)
-        self->s.skinnum = 2;
-    // PGM
-
     self->monsterinfo.aiflags |= AI_ALTERNATE_FLY;
     hover_set_fly_parameters(self);
+}
+
+/*QUAKED monster_hover (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+ */
+void SP_monster_hover(edict_t *self)
+{
+    self->style = 0;
+    self->health = 240 * st.health_multiplier;
+    self->mass = 150;
+    self->yaw_speed = 18;
+
+    self->monsterinfo.engine_sound = G_SoundIndex("hover/hovidle1.wav");
+    G_SoundIndex("hover/hovatck1.wav");
+
+    SP_monster_hover_x(self);
+}
+
+/*QUAKED monster_daedalus (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+This is the improved icarus monster.
+*/
+void SP_monster_daedalus(edict_t *self)
+{
+    self->style = 1;
+    self->health = 450 * st.health_multiplier;
+    self->mass = 225;
+    self->yaw_speed = 23;
+    self->s.skinnum = 2;
+
+    if (!ED_WasKeySpecified("power_armor_type"))
+        self->monsterinfo.power_armor_type = IT_ITEM_POWER_SCREEN;
+    if (!ED_WasKeySpecified("power_armor_power"))
+        self->monsterinfo.power_armor_power = 100;
+
+    self->monsterinfo.engine_sound = G_SoundIndex("daedalus/daedidle1.wav");
+    G_SoundIndex("tank/tnkatck3.wav");
+
+    SP_monster_hover_x(self);
 }

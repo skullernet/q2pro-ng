@@ -744,18 +744,22 @@ void THINK(tesla_think_active)(edict_t *self)
             continue;
 
         // don't hit teammates
-        if (hit->client) {
+        if (hit->client && self->teammaster->client) {
             if (!deathmatch.integer)
                 continue;
-            if (CheckTeamDamage(hit, &g_edicts[self->teamchain->r.ownernum]))
+            if (CheckTeamDamage(hit, self->teammaster))
                 continue;
         }
+
+        // monster teslas only hit players
+        if (!hit->client && !self->teammaster->client)
+            continue;
 
         if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && !hit->client)
             continue;
 
         // don't hit other teslas in SP/coop
-        if (!deathmatch.integer && hit->classname && (hit->r.svflags & SVF_TRAP))
+        if (!deathmatch.integer && (hit->r.svflags & SVF_TRAP))
             continue;
 
         tr = G_TraceLine(start, hit->s.origin, self->s.number, MASK_PROJECTILE);
@@ -776,12 +780,7 @@ void THINK(tesla_think_active)(edict_t *self)
 
             edict_t *te = tesla_find_beam(self, hit);
             if (!te) {
-                te = G_Spawn();
-                te->s.renderfx = RF_BEAM;
-                te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
-                te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
-                te->s.othernum = ENTITYNUM_NONE;
-                te->r.ownernum = self->s.number;
+                te = G_SpawnLightning(self);
                 te->enemy = hit;
                 te->think = G_FreeEdict;
             }
@@ -946,7 +945,8 @@ void fire_tesla(edict_t *self, vec3_t start, vec3_t aimdir, int tesla_damage_mul
     tesla->classname = "tesla_mine";
     tesla->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
     tesla->clipmask = (G_ProjectileClipmask(self) | CONTENTS_SLIME | CONTENTS_LAVA) & ~CONTENTS_DEADMONSTER;
-    tesla->r.svflags |= SVF_TRAP;
+    if (self->client)
+        tesla->r.svflags |= SVF_TRAP;
 
     trap_LinkEntity(tesla);
 }

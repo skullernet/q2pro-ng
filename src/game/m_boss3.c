@@ -37,11 +37,6 @@ Just stands and cycles in one place until targeted, then teleports away.
 */
 void SP_monster_boss3_stand(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");

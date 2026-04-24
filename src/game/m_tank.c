@@ -278,7 +278,7 @@ void PAIN(tank_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
     self->pain_debounce_time = level.time + SEC(3);
 
-    if (self->count)
+    if (self->style)
         G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
     else
         G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
@@ -889,7 +889,7 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 
         self->s.skinnum /= 2;
 
-        if (!self->style)
+        if (!self->count)
             ThrowGib(self, "models/monsters/tank/gibs/barm.md2", damage, GIB_SKINNED | GIB_UPRIGHT);
 
         ThrowGibs(self, damage, tank_gibs);
@@ -902,10 +902,10 @@ void DIE(tank_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
         return;
 
     // [Paril-KEX] dropped arm
-    if (!self->style) {
+    if (!self->count) {
         vec3_t r, u;
 
-        self->style = 1;
+        self->count = 1;
         AngleVectors(self->s.angles, NULL, &r, &u);
 
         edict_t *arm = ThrowGib(self, "models/monsters/tank/gibs/barm.md2", damage, GIB_SKINNED | GIB_UPRIGHT);
@@ -947,7 +947,7 @@ bool MONSTERINFO_BLOCKED(tank_blocked)(edict_t *self, float dist)
 // monster_tank
 //
 
-static void tank_precache(void)
+void PR_monster_tank(void)
 {
     sound_thud = G_SoundIndex("tank/tnkdeth2.wav");
     sound_idle = G_SoundIndex("tank/tnkidle1.wav");
@@ -956,26 +956,16 @@ static void tank_precache(void)
     sound_windup = G_SoundIndex("tank/tnkatck4.wav");
     sound_strike = G_SoundIndex("tank/tnkatck5.wav");
     sound_sight = G_SoundIndex("tank/sight1.wav");
+    sound_pain = G_SoundIndex("tank/tnkpain2.wav");
+    sound_pain2 = G_SoundIndex("tank/pain.wav");
 }
 
-/*QUAKED monster_tank (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight
-model="models/monsters/tank/tris.md2"
-*/
-/*QUAKED monster_tank_commander (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight Guardian HeatSeeking
- */
-void SP_monster_tank(edict_t *self)
+static void SP_monster_tank_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
     self->r.box = Box3_FromSize(32, -16, 64);
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-
-    G_AddPrecache(tank_precache);
 
     G_SoundIndex("tank/tnkatck1.wav");
     G_SoundIndex("tank/tnkatk2a.wav");
@@ -986,17 +976,6 @@ void SP_monster_tank(edict_t *self)
     G_SoundIndex("tank/tnkatck3.wav");
 
     G_PrecacheGibs(tank_gibs);
-
-    if (strcmp(self->classname, "monster_tank_commander") == 0) {
-        self->health = 1000 * st.health_multiplier;
-        self->gib_health = -225;
-        self->count = 1;
-        sound_pain2 = G_SoundIndex("tank/pain.wav");
-    } else {
-        self->health = 750 * st.health_multiplier;
-        self->gib_health = -200;
-        sound_pain = G_SoundIndex("tank/tnkpain2.wav");
-    }
 
     self->monsterinfo.scale = MODEL_SCALE;
 
@@ -1036,8 +1015,28 @@ void SP_monster_tank(edict_t *self)
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     self->monsterinfo.blindfire = true;
     // pmm
-    if (strcmp(self->classname, "monster_tank_commander") == 0)
-        self->s.skinnum = 2;
+}
+
+/*QUAKED monster_tank (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight
+model="models/monsters/tank/tris.md2"
+*/
+void SP_monster_tank(edict_t *self)
+{
+    self->health = 750 * st.health_multiplier;
+    self->gib_health = -200;
+    self->style = 0;
+    SP_monster_tank_x(self);
+}
+
+/*QUAKED monster_tank_commander (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight Guardian HeatSeeking
+ */
+void SP_monster_tank_commander(edict_t *self)
+{
+    self->health = 1000 * st.health_multiplier;
+    self->gib_health = -225;
+    self->style = 1;
+    self->s.skinnum = 2;
+    SP_monster_tank_x(self);
 }
 
 void Use_Boss3(edict_t *ent, edict_t *other, edict_t *activator);
@@ -1058,11 +1057,6 @@ N64 edition!
 */
 void SP_monster_tank_stand(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->model = "models/monsters/tank/tris.md2";

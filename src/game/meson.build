@@ -42,7 +42,6 @@ game_src += files(
   'm_move.c',
   'm_mutant.c',
   'm_parasite.c',
-  'm_shambler.c',
   'm_soldier.c',
   'm_supertank.c',
   'm_tank.c',
@@ -56,6 +55,7 @@ game_src += files(
 subdir('ctf')
 subdir('rogue')
 subdir('xatrix')
+subdir('q1q2')
 
 python = find_program('python3')
 

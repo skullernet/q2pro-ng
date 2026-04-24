@@ -752,6 +752,7 @@ one small chunk per 25 of mass (up to 16).  So 800 gives the most.
 #define SPAWNFLAGS_EXPLOSIVE_ANIMATED_FAST      4
 #define SPAWNFLAGS_EXPLOSIVE_INACTIVE           8
 #define SPAWNFLAGS_EXPLOSIVE_ALWAYS_SHOOTABLE   16
+#define SPAWNFLAGS_KEEP_IN_DM                   32  // CotV
 
 void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
@@ -856,7 +857,7 @@ void USE(func_explosive_spawn)(edict_t *self, edict_t *other, edict_t *activator
 
 void SP_func_explosive(edict_t *self)
 {
-    if (deathmatch.integer) {
+    if (deathmatch.integer && !(self->spawnflags & SPAWNFLAGS_KEEP_IN_DM)) {
         // auto-remove for deathmatch
         G_FreeEdict(self);
         return;
@@ -2236,6 +2237,10 @@ void SP_misc_model(edict_t *ent)
 {
     if (ent->model && ent->model[0])
         ent->s.modelindex = G_ModelIndex(ent->model);
+
+    // FIXME CotV hack
+    if (game.dirtype == GAMEDIR_COTV)
+        ent->spawnflags = SPAWNFLAG_NONE;
 
     if (ent->spawnflags & SPAWNFLAG_MODEL_TOGGLE) {
         ent->use = misc_model_use;

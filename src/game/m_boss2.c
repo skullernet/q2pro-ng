@@ -550,7 +550,7 @@ bool MONSTERINFO_CHECKATTACK(Boss2_CheckAttack)(edict_t *self)
     return M_CheckAttack_Base(self, 0.4f, 0.8f, 0.8f, 0.8f, 0, 0);
 }
 
-static void boss2_precache(void)
+void PR_monster_boss2(void)
 {
     sound_pain1 = G_SoundIndex("bosshovr/bhvpain1.wav");
     sound_pain2 = G_SoundIndex("bosshovr/bhvpain2.wav");
@@ -563,13 +563,6 @@ static void boss2_precache(void)
  */
 void SP_monster_boss2(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(boss2_precache);
-
     G_SoundIndex("tank/rocket.wav");
 
     if (self->spawnflags & SPAWNFLAG_BOSS2_N64)

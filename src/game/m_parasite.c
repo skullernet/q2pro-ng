@@ -873,7 +873,7 @@ void MONSTERINFO_SETSKIN(parasite_setskin)(edict_t *self)
         self->s.skinnum = 0;
 }
 
-static void parasite_precache(void)
+void PR_monster_parasite(void)
 {
     sound_pain1 = G_SoundIndex("parasite/parpain1.wav");
     sound_pain2 = G_SoundIndex("parasite/parpain2.wav");
@@ -894,13 +894,6 @@ static void parasite_precache(void)
  */
 void SP_monster_parasite(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(parasite_precache);
-
     G_ModelIndex("models/monsters/parasite/tip/tris.md2");
     G_ModelIndex("models/monsters/parasite/segment/tris.md2");
 

@@ -11,27 +11,30 @@ GUNNER
 #include "g_local.h"
 #include "m_gunner.h"
 
-static int sound_pain;
-static int sound_pain2;
-static int sound_death;
-static int sound_idle;
-static int sound_open;
-static int sound_search;
-static int sound_sight;
+#define SOUND   sound[!!self->style]
+
+static struct {
+    int pain[2];
+    int death;
+    int idle;
+    int open;
+    int search;
+    int sight;
+} sound[2];
 
 static void gunner_idlesound(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.idle, 1, ATTN_IDLE);
 }
 
 void MONSTERINFO_SIGHT(gunner_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(gunner_search)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.search, 1, ATTN_NORM);
 }
 
 static void GunnerGrenade(edict_t *self);
@@ -261,10 +264,7 @@ void PAIN(gunner_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
     self->pain_debounce_time = level.time + SEC(3);
 
-    if (brandom())
-        G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, random_element(SOUND.pain), 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -281,6 +281,17 @@ void PAIN(gunner_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     // PMM - clear duck flag
     if (self->monsterinfo.aiflags & AI_DUCKED)
         monster_duck_up(self);
+}
+
+void MONSTERINFO_SETSKIN(fishgunner_setskin)(edict_t *self)
+{
+    if (self->health < (self->max_health / 2)) {
+        if (self->s.skinnum < 2)
+            self->s.skinnum += 2;
+    } else {
+        if (self->s.skinnum >= 2)
+            self->s.skinnum -= 2;
+    }
 }
 
 void MONSTERINFO_SETSKIN(gunner_setskin)(edict_t *self)
@@ -330,13 +341,27 @@ static const gib_def_t gunner_gibs[] = {
     { 0 }
 };
 
+static const gib_def_t fishgunner_gibs[] = {
+    { "models/objects/gibs/bone/tris.md2", 2 },
+    { "models/objects/gibs/sm_meat/tris.md2", 2 },
+    { "models/monsters/fishgunner/gibs/chest.md2", 1, GIB_SKINNED },
+    { "models/monsters/fishgunner/gibs/garm.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/fishgunner/gibs/gun.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/fishgunner/gibs/foot.md2", 1, GIB_SKINNED },
+    { "models/monsters/fishgunner/gibs/head.md2", 1, GIB_SKINNED | GIB_HEAD },
+    { 0 }
+};
+
 void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // check for gib
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
-        ThrowGibs(self, damage, gunner_gibs);
+        if (self->style)
+            ThrowGibs(self, damage, fishgunner_gibs);
+        else
+            ThrowGibs(self, damage, gunner_gibs);
         self->deadflag = true;
         return;
     }
@@ -345,7 +370,7 @@ void DIE(gunner_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
     M_SetAnimation(self, &gunner_move_death);
@@ -369,18 +394,15 @@ const mmove_t MMOVE_T(gunner_move_duck) = { FRAME_duck01, FRAME_duck08, gunner_f
 
 static void gunner_opengun(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.open, 1, ATTN_IDLE);
 }
 
-static void GunnerFire(edict_t *self)
+static void gunner_fire_machinegun(edict_t *self)
 {
     vec3_t                   start;
     vec3_t                   forward, right;
     vec3_t                   aim;
     monster_muzzleflash_id_t flash_number;
-
-    if (!self->enemy || !self->enemy->r.inuse) // PGM
-        return;                              // PGM
 
     flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
 
@@ -388,6 +410,37 @@ static void GunnerFire(edict_t *self)
     start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
     M_PredictAim(self, self->enemy, start, 0, true, -0.2f, &aim, NULL);
     monster_fire_bullet(self, start, aim, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
+}
+
+static void gunner_fire_flechette(edict_t *self)
+{
+    vec3_t                   start;
+    vec3_t                   forward, right;
+    vec3_t                   aim;
+    monster_muzzleflash_id_t flash_number;
+
+    flash_number = MZ2_GUNNER_FLECHETTE_1 + (self->s.frame - FRAME_attak216);
+
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+    M_PredictAim(self, self->enemy, start, 800, false, frandom() * 0.3f, &aim, NULL);
+    for (int i = 0; i < 3; i++)
+        aim.xyz[i] += crandom_open() * 0.025f;
+
+    monster_fire_flechette(self, start, aim, 4, 800, flash_number);
+}
+
+static void GunnerFire(edict_t *self)
+{
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+    if (self->s.frame - FRAME_attak216 >= 8)
+        return;
+
+    if (self->style)
+        gunner_fire_flechette(self);
+    else
+        gunner_fire_machinegun(self);
 }
 
 static bool gunner_grenade_check(edict_t *self)
@@ -622,7 +675,10 @@ void MONSTERINFO_ATTACK(gunner_attack)(edict_t *self)
 
         if (gunner_grenade_check(self)) {
             // if the check passes, go for the attack
-            M_SetAnimation(self, brandom() ? &gunner_move_attack_grenade2 : &gunner_move_attack_grenade);
+            if (!self->style && brandom())
+                M_SetAnimation(self, &gunner_move_attack_grenade2);
+            else
+                M_SetAnimation(self, &gunner_move_attack_grenade);
             self->monsterinfo.attack_finished = level.time + random_time_sec(0, 2);
         } else
             // turn off blindfire flag
@@ -638,7 +694,10 @@ void MONSTERINFO_ATTACK(gunner_attack)(edict_t *self)
         (range_to(self, self->enemy) <= RANGE_NEAR * 0.35f && M_CheckClearShot(self, monster_flash_offset[MZ2_GUNNER_MACHINEGUN_1]))) {
         M_SetAnimation(self, &gunner_move_attack_chain);
     } else if (self->timestamp <= level.time && brandom() && gunner_grenade_check(self)) {
-        M_SetAnimation(self, brandom() ? &gunner_move_attack_grenade2 : &gunner_move_attack_grenade);
+        if (!self->style && brandom())
+            M_SetAnimation(self, &gunner_move_attack_grenade2);
+        else
+            M_SetAnimation(self, &gunner_move_attack_grenade);
         self->timestamp = level.time + random_time_sec(2, 3);
     } else if (M_CheckClearShot(self, monster_flash_offset[MZ2_GUNNER_MACHINEGUN_1]))
         M_SetAnimation(self, &gunner_move_attack_chain);
@@ -751,6 +810,10 @@ bool MONSTERINFO_BLOCKED(gunner_blocked)(edict_t *self, float dist)
 // PMM - new duck code
 bool MONSTERINFO_DUCK(gunner_duck)(edict_t *self, gtime_t eta)
 {
+    // fishgunner is a fish, not duck
+    if (self->style)
+        return false;
+
     if ((self->monsterinfo.active_move == &gunner_move_jump2) ||
         (self->monsterinfo.active_move == &gunner_move_jump))
         return false;
@@ -795,41 +858,39 @@ bool MONSTERINFO_SIDESTEP(gunner_sidestep)(edict_t *self)
 
 #define SPAWNFLAG_GUNNER_NOJUMPING  8
 
-static void gunner_precache(void)
+void PR_monster_gunner(void)
 {
-    sound_death = G_SoundIndex("gunner/death1.wav");
-    sound_pain = G_SoundIndex("gunner/gunpain2.wav");
-    sound_pain2 = G_SoundIndex("gunner/gunpain1.wav");
-    sound_idle = G_SoundIndex("gunner/gunidle1.wav");
-    sound_open = G_SoundIndex("gunner/gunatck1.wav");
-    sound_search = G_SoundIndex("gunner/gunsrch1.wav");
-    sound_sight = G_SoundIndex("gunner/sight1.wav");
+    sound[0].death = G_SoundIndex("gunner/death1.wav");
+    sound[0].pain[0] = G_SoundIndex("gunner/gunpain2.wav");
+    sound[0].pain[1] = G_SoundIndex("gunner/gunpain1.wav");
+    sound[0].idle = G_SoundIndex("gunner/gunidle1.wav");
+    sound[0].open = G_SoundIndex("gunner/gunatck1.wav");
+    sound[0].search = G_SoundIndex("gunner/gunsrch1.wav");
+    sound[0].sight = G_SoundIndex("gunner/sight1.wav");
+}
+
+void PR_monster_fishgunner(void)
+{
+    sound[1].death = G_SoundIndex("deepones/deepone11.wav");
+    sound[1].pain[0] = G_SoundIndex("deepones/deepone10.wav");
+    sound[1].pain[1] = G_SoundIndex("deepones/deepone9.wav");
+    sound[1].idle = G_SoundIndex("deepones/deepone8.wav");
+    sound[1].open = G_SoundIndex("deepones/deepone7.wav");
+    sound[1].search = G_SoundIndex("deepones/deepone6.wav");
+    sound[1].sight = G_SoundIndex("deepones/deepone2.wav");
 }
 
 /*QUAKED monster_gunner (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight NoJumping
 model="models/monsters/gunner/tris.md2"
 */
-void SP_monster_gunner(edict_t *self)
+static void SP_monster_gunner_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(gunner_precache);
-
-    G_SoundIndex("gunner/gunatck2.wav");
     G_SoundIndex("gunner/gunatck3.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
-
-    G_PrecacheGibs(gunner_gibs);
-
     self->r.box = Box3_FromSize(16, -24, 36);
 
-    self->health = 175 * st.health_multiplier;
     self->gib_health = -70;
     self->mass = 200;
 
@@ -850,7 +911,6 @@ void SP_monster_gunner(edict_t *self)
     self->monsterinfo.melee = NULL;
     self->monsterinfo.sight = gunner_sight;
     self->monsterinfo.search = gunner_search;
-    self->monsterinfo.setskin = gunner_setskin;
 
     trap_LinkEntity(self);
 
@@ -864,4 +924,34 @@ void SP_monster_gunner(edict_t *self)
     self->monsterinfo.jump_height = 40;
 
     walkmonster_start(self);
+}
+
+void SP_monster_gunner(edict_t *self)
+{
+    self->s.modelindex = G_ModelIndex("models/monsters/gunner/tris.md2");
+
+    self->style = 0;
+    self->health = 175 * st.health_multiplier;
+    self->monsterinfo.setskin = gunner_setskin;
+
+    SP_monster_gunner_x(self);
+
+    G_PrecacheGibs(gunner_gibs);
+    G_SoundIndex("gunner/gunatck2.wav");
+}
+
+void SP_monster_fishgunner(edict_t *self)
+{
+    self->s.modelindex = G_ModelIndex("models/monsters/fishgunner/tris.md2");
+
+    self->style = 1;
+    self->health = 225 * st.health_multiplier;
+    self->flags |= FL_DEEPONE;
+    self->s.skinnum = brandom();
+    self->monsterinfo.setskin = fishgunner_setskin;
+
+    SP_monster_gunner_x(self);
+
+    G_PrecacheGibs(fishgunner_gibs);
+    G_SoundIndex("weapons/nail1b.wav");
 }

@@ -66,6 +66,7 @@ static const char *const event_names[] = {
     EV(GREEN_BLOOD),
     EV(GUNSHOT),
     EV(SHOTGUN),
+    EV(NAILS),
     EV(SPARKS),
     EV(BULLET_SPARKS),
     EV(HEATBEAM_SPARKS),
@@ -95,6 +96,9 @@ static const char *const event_names[] = {
     EV(BFG_EXPLOSION),
     EV(BFG_EXPLOSION_BIG),
     EV(TRACKER_EXPLOSION),
+    EV(ENFORCER_BOLT),
+    EV(HELLKNIGHT_MAGIC),
+    EV(WIZARD_SPIT),
 
     EV(POWER_SPLASH),
     EV(BOSSTPORT),

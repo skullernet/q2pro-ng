@@ -925,7 +925,7 @@ static void Widow2Precache(void)
     G_ModelIndex("models/monsters/blackwidow2/gib4/tris.md2");
 }
 
-static void window2_precache_global(void)
+void PR_monster_widow2(void)
 {
     sound_pain1 = G_SoundIndex("widow/bw2pain1.wav");
     sound_pain2 = G_SoundIndex("widow/bw2pain2.wav");
@@ -939,15 +939,6 @@ static void window2_precache_global(void)
  */
 void SP_monster_widow2(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(window2_precache_global);
-
-    //  self->s.sound = G_SoundIndex ("bosshovr/bhvengn1.wav");
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/blackwidow2/tris.md2");
@@ -956,7 +947,6 @@ void SP_monster_widow2(edict_t *self)
     self->health = (2000 + 800 + 1000 * skill.integer) * st.health_multiplier;
     if (coop.integer)
         self->health += 500 * skill.integer;
-    //  self->health = 1;
     self->gib_health = -900;
     self->mass = 2500;
 

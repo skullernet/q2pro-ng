@@ -1062,7 +1062,7 @@ void DIE(fixbot_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     // shards
 }
 
-static void fixbot_precache(void)
+void PR_monster_fixbot(void)
 {
     sound_pain1 = G_SoundIndex("flyer/flypain1.wav");
     sound_die = G_SoundIndex("flyer/flydeth1.wav");
@@ -1076,13 +1076,6 @@ static void fixbot_precache(void)
  */
 void SP_monster_fixbot(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(fixbot_precache);
-
     self->s.modelindex = G_ModelIndex("models/monsters/fixbot/tris.md2");
 
     self->r.box = Box3_FromSize(32, -24, 24);

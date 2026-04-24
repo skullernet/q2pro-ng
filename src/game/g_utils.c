@@ -733,6 +733,7 @@ void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
     ent->nextthink = 0;
     ent->use = NULL;
     ent->targetname = NULL;
+    ent->takedamage = false;
 
     G_AddEvent(ent, event, param);
 

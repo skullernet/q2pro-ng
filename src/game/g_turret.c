@@ -343,16 +343,12 @@ void THINK(turret_driver_link)(edict_t *self)
     self->flags |= FL_TEAMSLAVE;
 }
 
-void InfantryPrecache(void);
-
 void SP_turret_driver(edict_t *self)
 {
-    if (deathmatch.integer) {
+    if (!M_AllowSpawn(self)) {
         G_FreeEdict(self);
         return;
     }
-
-    InfantryPrecache();
 
     self->movetype = MOVETYPE_PUSH;
     self->r.solid = SOLID_BBOX;

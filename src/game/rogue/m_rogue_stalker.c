@@ -850,7 +850,7 @@ void DIE(stalker_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 // SPAWN
 // ******************
 
-static void stalker_precache(void)
+void PR_monster_stalker(void)
 {
     sound_pain = G_SoundIndex("stalker/pain.wav");
     sound_die = G_SoundIndex("stalker/death.wav");
@@ -871,13 +871,6 @@ Spider Monster
 
 void SP_monster_stalker(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(stalker_precache);
-
     // PMM - precache bolt2
     G_ModelIndex("models/objects/laser/tris.md2");
 

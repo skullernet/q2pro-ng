@@ -11,6 +11,8 @@ MEDIC
 #include "g_local.h"
 #include "m_medic.h"
 
+enum { Medic, Commander, Shamedic };
+
 #define MEDIC_MIN_DISTANCE          32
 #define MEDIC_MAX_HEAL_DISTANCE     400
 #define MEDIC_TRY_TIME              SEC(10)
@@ -23,29 +25,21 @@ MEDIC
 //
 // 5/15/1998 I think I fixed these, keep an eye on them
 
-static int sound_idle1;
-static int sound_pain1;
-static int sound_pain2;
-static int sound_die;
-static int sound_sight;
-static int sound_search;
-static int sound_hook_launch;
-static int sound_hook_hit;
-static int sound_hook_heal;
-static int sound_hook_retract;
+#define SOUND   sound[self->style & 1]
 
-// PMM - commander sounds
-static int commander_sound_idle1;
-static int commander_sound_pain1;
-static int commander_sound_pain2;
-static int commander_sound_die;
-static int commander_sound_sight;
-static int commander_sound_search;
-static int commander_sound_hook_launch;
-static int commander_sound_hook_hit;
-static int commander_sound_hook_heal;
-static int commander_sound_hook_retract;
-static int commander_sound_spawn;
+static struct {
+    int idle1;
+    int pain1;
+    int pain2;
+    int die;
+    int sight;
+    int search;
+    int hook_launch;
+    int hook_hit;
+    int hook_heal;
+    int hook_retract;
+    int spawn;
+} sound[2];
 
 #define DEFAULT_REINFORCEMENTS      "monster_soldier_light 1;monster_soldier 2;monster_soldier_ss 2;monster_infantry 3;monster_gunner 4;monster_medic 5;monster_gladiator 6"
 #define DEFAULT_MONSTER_SLOTS_BASE  3
@@ -189,6 +183,17 @@ void cleanupHeal(edict_t *self)
     fixHealerEnemy(self);
 }
 
+static bool isMedic(edict_t *ent)
+{
+    if (!ent || !ent->r.inuse)
+        return false;
+    if (!strncmp(ent->classname, "monster_medic", 13))
+        return true;
+    if (!strcmp(ent->classname, "monster_shamedic"))
+        return true;
+    return false;
+}
+
 void abortHeal(edict_t *self, bool gib, bool mark)
 {
     int              hurt;
@@ -199,11 +204,10 @@ void abortHeal(edict_t *self, bool gib, bool mark)
         // gib em!
         if (mark) {
             // if the first badMedic slot is filled by a medic, skip it and use the second one
-            if ((self->enemy->monsterinfo.badMedic1) && (self->enemy->monsterinfo.badMedic1->r.inuse) && (!strncmp(self->enemy->monsterinfo.badMedic1->classname, "monster_medic", 13))) {
+            if (isMedic(self->enemy->monsterinfo.badMedic1))
                 self->enemy->monsterinfo.badMedic2 = self;
-            } else {
+            else
                 self->enemy->monsterinfo.badMedic1 = self;
-            }
         }
 
         if (gib) {
@@ -409,11 +413,7 @@ void MONSTERINFO_IDLE(medic_idle)(edict_t *self)
 {
     edict_t *ent;
 
-    // PMM - commander sounds
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE);
-    else
-        G_StartSound(self, CHAN_VOICE, commander_sound_idle1, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.idle1, 1, ATTN_IDLE);
 
     if (!self->oldenemy) {
         ent = medic_FindDeadMonster(self);
@@ -431,11 +431,7 @@ void MONSTERINFO_SEARCH(medic_search)(edict_t *self)
 {
     edict_t *ent;
 
-    // PMM - commander sounds
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_IDLE);
-    else
-        G_StartSound(self, CHAN_VOICE, commander_sound_search, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.search, 1, ATTN_IDLE);
 
     if (!self->oldenemy) {
         ent = medic_FindDeadMonster(self);
@@ -451,11 +447,7 @@ void MONSTERINFO_SEARCH(medic_search)(edict_t *self)
 
 void MONSTERINFO_SIGHT(medic_sight)(edict_t *self, edict_t *other)
 {
-    // PMM - commander sounds
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_VOICE, commander_sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
 static const mframe_t medic_frames_stand[] = {
@@ -648,19 +640,17 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     float r = frandom();
 
-    if (self->mass > 400) {
+    if (self->style == Commander) {
         if (damage < 35) {
-            G_StartSound(self, CHAN_VOICE, commander_sound_pain1, 1, ATTN_NORM);
-
+            G_StartSound(self, CHAN_VOICE, SOUND.pain1, 1, ATTN_NORM);
             if (mod != MOD_CHAINFIST)
                 return;
         }
-
-        G_StartSound(self, CHAN_VOICE, commander_sound_pain2, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain2, 1, ATTN_NORM);
     } else if (r < 0.5f)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain1, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain2, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -669,7 +659,7 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (mod != MOD_CHAINFIST && (self->monsterinfo.aiflags & AI_MEDIC))
         return;
 
-    if (self->mass > 400) {
+    if (self->style == Commander) {
         self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
         self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
 
@@ -714,10 +704,10 @@ static void medic_fire_blaster(edict_t *self)
     if ((self->s.frame == FRAME_attack9) || (self->s.frame == FRAME_attack12)) {
         effect = EF_BLASTER;
         damage = 6;
-        mz = (self->mass > 400) ? MZ2_MEDIC_BLASTER_2 : MZ2_MEDIC_BLASTER_1;
+        mz = (self->style == Commander) ? MZ2_MEDIC_BLASTER_2 : MZ2_MEDIC_BLASTER_1;
     } else {
         effect = (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER;
-        mz = ((self->mass > 400) ? MZ2_MEDIC_HYPERBLASTER2_1 : MZ2_MEDIC_HYPERBLASTER1_1) + (self->s.frame - FRAME_attack19);
+        mz = ((self->style == Commander) ? MZ2_MEDIC_HYPERBLASTER2_1 : MZ2_MEDIC_HYPERBLASTER1_1) + (self->s.frame - FRAME_attack19);
     }
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
@@ -731,21 +721,61 @@ static void medic_fire_blaster(edict_t *self)
         damage = 3;
 
     // medic commander shoots blaster2
-    if (self->mass > 400)
+    if (self->style == Commander)
         monster_fire_blaster2(self, start, dir, damage, 1000, mz, effect);
     else
         monster_fire_blaster(self, start, dir, damage, 1000, mz, effect);
 }
 
+static void ShamedicCastLightningWithOffset(edict_t *self, vec3_t offset, edict_t **beam)
+{
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+
+    vec3_t forward, right, start, end, dir;
+
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, offset, forward, right);
+
+    M_PredictAim(self, self->enemy, start, 0, false, 0.1f, &dir, NULL);
+
+    end = Vec3_MA(start, 8192, dir);
+    trace_t tr = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
+
+    if (!*beam)
+        *beam = G_SpawnLightning(self);
+
+    (*beam)->s.old_origin = G_SnapVector(start);
+    (*beam)->s.origin = G_SnapVectorTowards(tr.endpos, start);
+    trap_LinkEntity(*beam);
+
+    fire_bullet(self, start, dir, irandom2(1, 4), 15, 0, 0, MOD_TESLA);
+}
+
+static void ShamedicDoubleLightningAttack(edict_t *self)
+{
+    ShamedicCastLightningWithOffset(self, Vec3(64.0f, 22.5f, 74.0f), &self->beam);
+    ShamedicCastLightningWithOffset(self, Vec3(64.0f, -26.5f, 70.0f), &self->beam2);
+}
+
+static void ShamedicCastLeftLightning(edict_t *self)
+{
+    ShamedicCastLightningWithOffset(self, Vec3(64.0f, 9.5f, 84.0f), &self->beam);
+}
+
 static void medic_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, -24, -8);
+    if (self->style == Shamedic)
+        self->r.box = Box3_FromSize(32, 0, 24);
+    else
+        self->r.box = Box3_FromSize(16, -24, -8);
     monster_dead(self);
 }
 
 static void medic_shrink(edict_t *self)
 {
-    self->r.box.maxs.z = -2;
+    if (self->style != Shamedic)
+        self->r.box.maxs.z = -2;
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }
@@ -795,15 +825,31 @@ static const gib_def_t medic_gibs[] = {
     { 0 }
 };
 
+static const gib_def_t shamedic_gibs[] = {
+    { "models/objects/gibs/bone/tris.md2", 2 },
+    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/sm_metal/tris.md2", 1, GIB_METALLIC },
+    { "models/monsters/medic/gibs/chest.md2", 1, GIB_SKINNED },
+    { "models/monsters/shamblerthunder/gibs/g_leg.md2", 2, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/medic/gibs/hook.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/shamblerthunder/gibs/g_arm.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/shamblerthunder/gibs/g_head.md2", 1, GIB_SKINNED | GIB_HEAD },
+    { 0 }
+};
+
 void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     // if we had a pending patient, he was already freed up in Killed
+    M_FreeBeams(self);
 
     // check for gib
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
-        ThrowGibs(self, damage, medic_gibs);
+        if (self->style == Shamedic)
+            ThrowGibs(self, damage, shamedic_gibs);
+        else
+            ThrowGibs(self, damage, medic_gibs);
         self->deadflag = true;
         return;
     }
@@ -812,12 +858,8 @@ void DIE(medic_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
         return;
 
     // regular death
-    //  PMM
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_VOICE, commander_sound_die, 1, ATTN_NORM);
-    //
+    G_StartSound(self, CHAN_VOICE, SOUND.die, 1, ATTN_NORM);
+
     self->deadflag = true;
     self->takedamage = true;
 
@@ -868,18 +910,52 @@ static const mframe_t medic_frames_attackHyperBlaster[] = {
 };
 const mmove_t MMOVE_T(medic_move_attackHyperBlaster) = { FRAME_attack15, FRAME_attack34, medic_frames_attackHyperBlaster, medic_run };
 
+static const mframe_t medic_frames_attackDoubleLightning[] = {
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge, 0, ShamedicDoubleLightningAttack },
+    { ai_charge },
+    { ai_charge },
+    // [Paril-KEX] end on 36 as intended
+    { ai_charge, 2, M_FreeBeams }, // 33
+    { ai_charge, 3, monster_footstep },
+};
+const mmove_t MMOVE_T(medic_move_attackDoubleLightning) = { FRAME_attack15, FRAME_attack34, medic_frames_attackDoubleLightning, medic_run };
+
 static void medic_quick_attack(edict_t *self)
 {
     if (brandom()) {
-        M_SetAnimationEx(self, &medic_move_attackHyperBlaster, false);
+        if (self->style == Shamedic)
+            M_SetAnimationEx(self, &medic_move_attackDoubleLightning, false);
+        else
+            M_SetAnimationEx(self, &medic_move_attackHyperBlaster, false);
         self->monsterinfo.nextframe = FRAME_attack16;
     }
 }
 
 static void medic_continue(edict_t *self)
 {
-    if (visible(self, self->enemy) && frandom() <= 0.95f)
-        M_SetAnimationEx(self, &medic_move_attackHyperBlaster, false);
+    M_FreeBeams(self);
+
+    if (visible(self, self->enemy) && frandom() <= 0.95f) {
+        if (self->style == Shamedic)
+            M_SetAnimationEx(self, &medic_move_attackDoubleLightning, false);
+        else
+            M_SetAnimationEx(self, &medic_move_attackHyperBlaster, false);
+    }
 }
 
 static const mframe_t medic_frames_attackBlaster[] = {
@@ -898,13 +974,25 @@ static const mframe_t medic_frames_attackBlaster[] = {
 };
 const mmove_t MMOVE_T(medic_move_attackBlaster) = { FRAME_attack3, FRAME_attack14, medic_frames_attackBlaster, medic_run };
 
+static const mframe_t medic_frames_attackLightning[] = {
+    { ai_charge, 5 },
+    { ai_charge, 3 },
+    { ai_charge, 2 },
+    { ai_charge, 0, medic_quick_attack },
+    { ai_charge, 0, monster_footstep },
+    { ai_charge },
+    { ai_charge, 0, ShamedicCastLeftLightning },
+    { ai_charge, 0, ShamedicCastLeftLightning },
+    { ai_charge, 0, ShamedicCastLeftLightning },
+    { ai_charge, 0, ShamedicCastLeftLightning },
+    { ai_charge },
+    { ai_charge, 0, medic_continue } // Change to medic_continue... Else, go to frame 32
+};
+const mmove_t MMOVE_T(medic_move_attackLightning) = { FRAME_attack3, FRAME_attack14, medic_frames_attackLightning, medic_run };
+
 static void medic_hook_launch(edict_t *self)
 {
-    // PMM - commander sounds
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_WEAPON, sound_hook_launch, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_WEAPON, commander_sound_hook_launch, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.hook_launch, 1, ATTN_NORM);
 }
 
 static vec3_t medic_cable_offsets[] = {
@@ -920,15 +1008,9 @@ static vec3_t medic_cable_offsets[] = {
     { 32.7f, -19.7f, 10.4f }
 };
 
-void THINK(medic_cable_think)(edict_t *self)
-{
-    g_edicts[self->r.ownernum].beam = NULL;
-    G_FreeEdict(self);
-}
-
 static void medic_cable_attack(edict_t *self)
 {
-    vec3_t  start, end, f, r;
+    vec3_t  start, end, offset, f, r;
     trace_t tr;
 
     if ((!self->enemy) || (!self->enemy->r.inuse) || (self->enemy->s.effects & EF_GIB)) {
@@ -947,8 +1029,13 @@ static void medic_cable_attack(edict_t *self)
         return;
     }
 
+    if (self->style == Shamedic)
+        offset = Vec3(80.0f, -10.0f, 60.0f); // FIXME
+    else
+        offset = medic_cable_offsets[self->s.frame - FRAME_attack42];
+
     AngleVectors(self->s.angles, &f, &r, NULL);
-    start = M_ProjectFlashSource(self, medic_cable_offsets[self->s.frame - FRAME_attack42], f, r);
+    start = M_ProjectFlashSource(self, offset, f, r);
 
     // check for max distance
     // not needed, done in checkattack
@@ -978,11 +1065,7 @@ static void medic_cable_attack(edict_t *self)
     }
 
     if (self->s.frame == FRAME_attack43) {
-        // PMM - commander sounds
-        if (self->mass == 400)
-            G_StartSound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM);
-        else
-            G_StartSound(self->enemy, CHAN_AUTO, commander_sound_hook_hit, 1, ATTN_NORM);
+        G_StartSound(self->enemy, CHAN_AUTO, SOUND.hook_hit, 1, ATTN_NORM);
 
         self->enemy->monsterinfo.aiflags |= AI_RESURRECTING;
         self->enemy->takedamage = false;
@@ -992,13 +1075,8 @@ static void medic_cable_attack(edict_t *self)
             self->monsterinfo.nextframe = FRAME_attack52;
         return;
     } else {
-        if (self->s.frame == FRAME_attack44) {
-            // PMM - medic commander sounds
-            if (self->mass == 400)
-                G_StartSound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM);
-            else
-                G_StartSound(self, CHAN_WEAPON, commander_sound_hook_heal, 1, ATTN_NORM);
-        }
+        if (self->s.frame == FRAME_attack44)
+            G_StartSound(self, CHAN_WEAPON, SOUND.hook_heal, 1, ATTN_NORM);
     }
 
     // adjust start for beam origin being in middle of a segment
@@ -1017,21 +1095,18 @@ static void medic_cable_attack(edict_t *self)
         te->s.alpha = self->s.alpha;
         te->s.scale = self->s.scale;
         te->r.ownernum = self->s.number;
-        te->think = medic_cable_think;
     }
 
     te->s.old_origin = G_SnapVector(start);
     te->s.origin = G_SnapVector(end);
-    te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }
 
 static void medic_hook_retract(edict_t *self)
 {
-    if (self->mass == 400)
-        G_StartSound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_WEAPON, sound_hook_retract, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.hook_retract, 1, ATTN_NORM);
+
+    M_FreeBeams(self);
 
     self->monsterinfo.aiflags &= ~AI_MEDIC;
 
@@ -1067,7 +1142,7 @@ const mmove_t MMOVE_T(medic_move_attackCable) = { FRAME_attack37, FRAME_attack55
 
 static void medic_start_spawn(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, commander_sound_spawn, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.spawn, 1, ATTN_NORM);
     self->monsterinfo.nextframe = FRAME_attack48;
 }
 
@@ -1285,7 +1360,7 @@ void MONSTERINFO_ATTACK(medic_attack)(edict_t *self)
 
     float r = frandom();
     if (self->monsterinfo.aiflags & AI_MEDIC) {
-        if ((self->mass > 400) && (r > 0.8f) && M_SlotsLeft(self))
+        if ((self->style == Commander) && (r > 0.8f) && M_SlotsLeft(self))
             M_SetAnimation(self, &medic_move_callReinforcements);
         else
             M_SetAnimation(self, &medic_move_attackCable);
@@ -1294,8 +1369,10 @@ void MONSTERINFO_ATTACK(medic_attack)(edict_t *self)
             M_SetAnimation(self, &medic_move_callReinforcements);
             return;
         }
-        if ((self->mass > 400) && (r > 0.2f) && (enemy_range > RANGE_MELEE) && M_SlotsLeft(self))
+        if ((self->style == Commander) && (r > 0.2f) && (enemy_range > RANGE_MELEE) && M_SlotsLeft(self))
             M_SetAnimation(self, &medic_move_callReinforcements);
+        else if (self->style == Shamedic)
+            M_SetAnimation(self, &medic_move_attackLightning);
         else
             M_SetAnimation(self, &medic_move_attackBlaster);
     }
@@ -1352,16 +1429,23 @@ bool MONSTERINFO_CHECKATTACK(medic_checkattack)(edict_t *self)
     return M_CheckAttack(self);
 }
 
+static bool medic_is_shooting(edict_t *self)
+{
+    return ((self->monsterinfo.active_move == &medic_move_attackHyperBlaster) ||
+            (self->monsterinfo.active_move == &medic_move_attackDoubleLightning) ||
+            (self->monsterinfo.active_move == &medic_move_attackCable) ||
+            (self->monsterinfo.active_move == &medic_move_attackBlaster) ||
+            (self->monsterinfo.active_move == &medic_move_attackLightning) ||
+            (self->monsterinfo.active_move == &medic_move_callReinforcements));
+}
+
 bool MONSTERINFO_DUCK(medic_duck)(edict_t *self, gtime_t eta)
 {
     //  don't dodge if you're healing
     if (self->monsterinfo.aiflags & AI_MEDIC)
         return false;
 
-    if ((self->monsterinfo.active_move == &medic_move_attackHyperBlaster) ||
-        (self->monsterinfo.active_move == &medic_move_attackCable) ||
-        (self->monsterinfo.active_move == &medic_move_attackBlaster) ||
-        (self->monsterinfo.active_move == &medic_move_callReinforcements)) {
+    if (medic_is_shooting(self)) {
         // he ignores skill
         self->monsterinfo.unduck(self);
         return false;
@@ -1374,10 +1458,7 @@ bool MONSTERINFO_DUCK(medic_duck)(edict_t *self, gtime_t eta)
 
 bool MONSTERINFO_SIDESTEP(medic_sidestep)(edict_t *self)
 {
-    if ((self->monsterinfo.active_move == &medic_move_attackHyperBlaster) ||
-        (self->monsterinfo.active_move == &medic_move_attackCable) ||
-        (self->monsterinfo.active_move == &medic_move_attackBlaster) ||
-        (self->monsterinfo.active_move == &medic_move_callReinforcements)) {
+    if (medic_is_shooting(self)) {
         // if we're shooting, don't dodge
         return false;
     }
@@ -1400,68 +1481,39 @@ bool MONSTERINFO_BLOCKED(medic_blocked)(edict_t *self, float dist)
 // PGM
 //===========
 
-static void medic_precache_cmdr(void)
+void PR_monster_medic(void)
 {
-    commander_sound_idle1 = G_SoundIndex("medic_commander/medidle.wav");
-    commander_sound_pain1 = G_SoundIndex("medic_commander/medpain1.wav");
-    commander_sound_pain2 = G_SoundIndex("medic_commander/medpain2.wav");
-    commander_sound_die = G_SoundIndex("medic_commander/meddeth.wav");
-    commander_sound_sight = G_SoundIndex("medic_commander/medsght.wav");
-    commander_sound_search = G_SoundIndex("medic_commander/medsrch.wav");
-    commander_sound_hook_launch = G_SoundIndex("medic_commander/medatck2c.wav");
-    commander_sound_hook_hit = G_SoundIndex("medic_commander/medatck3a.wav");
-    commander_sound_hook_heal = G_SoundIndex("medic_commander/medatck4a.wav");
-    commander_sound_hook_retract = G_SoundIndex("medic_commander/medatck5a.wav");
-    commander_sound_spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
+    sound[0].idle1 = G_SoundIndex("medic/idle.wav");
+    sound[0].pain1 = G_SoundIndex("medic/medpain1.wav");
+    sound[0].pain2 = G_SoundIndex("medic/medpain2.wav");
+    sound[0].die = G_SoundIndex("medic/meddeth1.wav");
+    sound[0].sight = G_SoundIndex("medic/medsght1.wav");
+    sound[0].search = G_SoundIndex("medic/medsrch1.wav");
+    sound[0].hook_launch = G_SoundIndex("medic/medatck2.wav");
+    sound[0].hook_hit = G_SoundIndex("medic/medatck3.wav");
+    sound[0].hook_heal = G_SoundIndex("medic/medatck4.wav");
+    sound[0].hook_retract = G_SoundIndex("medic/medatck5.wav");
 }
 
-static void medic_precache(void)
+void PR_monster_medic_commander(void)
 {
-    sound_idle1 = G_SoundIndex("medic/idle.wav");
-    sound_pain1 = G_SoundIndex("medic/medpain1.wav");
-    sound_pain2 = G_SoundIndex("medic/medpain2.wav");
-    sound_die = G_SoundIndex("medic/meddeth1.wav");
-    sound_sight = G_SoundIndex("medic/medsght1.wav");
-    sound_search = G_SoundIndex("medic/medsrch1.wav");
-    sound_hook_launch = G_SoundIndex("medic/medatck2.wav");
-    sound_hook_hit = G_SoundIndex("medic/medatck3.wav");
-    sound_hook_heal = G_SoundIndex("medic/medatck4.wav");
-    sound_hook_retract = G_SoundIndex("medic/medatck5.wav");
+    sound[1].idle1 = G_SoundIndex("medic_commander/medidle.wav");
+    sound[1].pain1 = G_SoundIndex("medic_commander/medpain1.wav");
+    sound[1].pain2 = G_SoundIndex("medic_commander/medpain2.wav");
+    sound[1].die = G_SoundIndex("medic_commander/meddeth.wav");
+    sound[1].sight = G_SoundIndex("medic_commander/medsght.wav");
+    sound[1].search = G_SoundIndex("medic_commander/medsrch.wav");
+    sound[1].hook_launch = G_SoundIndex("medic_commander/medatck2c.wav");
+    sound[1].hook_hit = G_SoundIndex("medic_commander/medatck3a.wav");
+    sound[1].hook_heal = G_SoundIndex("medic_commander/medatck4a.wav");
+    sound[1].hook_retract = G_SoundIndex("medic_commander/medatck5a.wav");
+    sound[1].spawn = G_SoundIndex("medic_commander/monsterspawn1.wav");
 }
 
-/*QUAKED monster_medic_commander (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
- */
-/*QUAKED monster_medic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
-model="models/monsters/medic/tris.md2"
-*/
-void SP_monster_medic(edict_t *self)
+static void SP_monster_medic_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = G_ModelIndex("models/monsters/medic/tris.md2");
-
-    G_PrecacheGibs(medic_gibs);
-
-    self->r.box = Box3_FromSize(24, -24, 32);
-
-    // PMM
-    if (strcmp(self->classname, "monster_medic_commander") == 0) {
-        self->health = 600 * st.health_multiplier;
-        self->gib_health = -130;
-        self->mass = 600;
-        self->yaw_speed = 40; // default is 20
-        G_ModelIndex("models/items/spawngro3/tris.md2");
-    } else {
-        // PMM
-        self->health = 300 * st.health_multiplier;
-        self->gib_health = -130;
-        self->mass = 400;
-    }
 
     self->pain = medic_pain;
     self->die = medic_die;
@@ -1493,32 +1545,79 @@ void SP_monster_medic(edict_t *self)
 
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
-
-    if (self->mass > 400) {
-        self->s.skinnum = 2;
-
-        // commander sounds
-        G_AddPrecache(medic_precache_cmdr);
-        G_SoundIndex("tank/tnkatck3.wav");
-
-        const char *reinforcements = DEFAULT_REINFORCEMENTS;
-
-        if (!ED_WasKeySpecified("monster_slots"))
-            self->monsterinfo.monster_slots = DEFAULT_MONSTER_SLOTS_BASE;
-        if (ED_WasKeySpecified("reinforcements"))
-            reinforcements = st.reinforcements;
-
-        if (self->monsterinfo.monster_slots && reinforcements && *reinforcements) {
-            if (skill.integer)
-                self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill.value / 2));
-
-            M_SetupReinforcements(reinforcements, &self->monsterinfo.reinforcements);
-        }
-    } else {
-        G_AddPrecache(medic_precache);
-        G_SoundIndex("medic/medatck1.wav");
-
-        self->s.skinnum = 0;
-    }
     // pmm
+}
+
+/*QUAKED monster_medic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+model="models/monsters/medic/tris.md2"
+*/
+void SP_monster_medic(edict_t *self)
+{
+    self->style = Medic;
+    self->health = 300 * st.health_multiplier;
+    self->gib_health = -130;
+    self->mass = 400;
+    self->s.skinnum = 0;
+    self->s.modelindex = G_ModelIndex("models/monsters/medic/tris.md2");
+    self->r.box = Box3_FromSize(24, -24, 32);
+
+    G_SoundIndex("medic/medatck1.wav");
+    G_PrecacheGibs(medic_gibs);
+
+    SP_monster_medic_x(self);
+}
+
+/*QUAKED monster_medic_commander (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+ */
+void SP_monster_medic_commander(edict_t *self)
+{
+    self->style = Commander;
+    self->health = 600 * st.health_multiplier;
+    self->gib_health = -130;
+    self->mass = 600;
+    self->s.skinnum = 2;
+    self->yaw_speed = 40; // default is 20
+    self->s.modelindex = G_ModelIndex("models/monsters/medic/tris.md2");
+    self->r.box = Box3_FromSize(24, -24, 32);
+
+    // commander sounds
+    G_SoundIndex("tank/tnkatck3.wav");
+    G_ModelIndex("models/items/spawngro3/tris.md2");
+    G_PrecacheGibs(medic_gibs);
+
+    const char *reinforcements = DEFAULT_REINFORCEMENTS;
+
+    if (!ED_WasKeySpecified("monster_slots"))
+        self->monsterinfo.monster_slots = DEFAULT_MONSTER_SLOTS_BASE;
+    if (ED_WasKeySpecified("reinforcements"))
+        reinforcements = st.reinforcements;
+
+    if (self->monsterinfo.monster_slots && reinforcements && *reinforcements) {
+        if (skill.integer)
+            self->monsterinfo.monster_slots += floorf(self->monsterinfo.monster_slots * (skill.value / 2));
+
+        M_SetupReinforcements(reinforcements, &self->monsterinfo.reinforcements);
+    }
+
+    SP_monster_medic_x(self);
+}
+
+/*QUAKED monster_shamedic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
+model="models/monsters/shamblerthunder/tris.md2"
+*/
+void SP_monster_shamedic(edict_t *self)
+{
+    self->style = Shamedic;
+    self->health = 550 * st.health_multiplier;
+    self->gib_health = -130;
+    self->mass = 400;
+    self->s.skinnum = 0;
+    self->s.modelindex = G_ModelIndex("models/monsters/shamblerthunder/tris.md2");
+    self->r.box = Box3_FromSize(32, 0, 96);
+
+    G_SoundIndex("medic/medatck1.wav");
+    G_ModelIndex("models/proj/lightning/tris.md2");
+    G_PrecacheGibs(shamedic_gibs);
+
+    SP_monster_medic_x(self);
 }

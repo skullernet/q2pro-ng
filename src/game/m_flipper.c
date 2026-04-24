@@ -335,7 +335,7 @@ static void flipper_set_fly_parameters(edict_t *self)
     self->monsterinfo.fly_max_distance = 10;
 }
 
-static void flipper_precache(void)
+void PR_monster_flipper(void)
 {
     sound_pain1 = G_SoundIndex("flipper/flppain1.wav");
     sound_pain2 = G_SoundIndex("flipper/flppain2.wav");
@@ -351,13 +351,6 @@ static void flipper_precache(void)
  */
 void SP_monster_flipper(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(flipper_precache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/flipper/tris.md2");

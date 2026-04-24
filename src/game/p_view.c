@@ -425,7 +425,7 @@ static void P_WorldEffects(void)
         // Paril: almost-drowning sounds
         } else if (current_player->air_finished <= level.time + SEC(3)) {
             if (current_player->client->next_drown_time < level.time) {
-                const char *fmt = use_psx_assets ? "player/breathout%d.wav" : "player/wade%d.wav";
+                const char *fmt = (game.dirtype == GAMEDIR_PSX) ? "player/breathout%d.wav" : "player/wade%d.wav";
                 G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va(fmt, 1 + ((int)TO_SEC(level.time) % 3))), 1, ATTN_NORM);
                 current_player->client->next_drown_time = level.time + SEC(1);
             }

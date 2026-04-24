@@ -11,8 +11,6 @@ jorg
 #include "g_local.h"
 #include "m_boss31.h"
 
-void SP_monster_makron(edict_t *self);
-
 static int sound_pain1;
 static int sound_pain2;
 static int sound_pain3;
@@ -22,14 +20,14 @@ static int sound_search1;
 static int sound_search2;
 static int sound_search3;
 static int sound_attack1, sound_attack1_loop, sound_attack1_end;
-static int sound_attack2, sound_bfg_fire;
+static int sound_attack2;
 static int sound_firegun;
 static int sound_step_left;
 static int sound_step_right;
 static int sound_death_hit;
 
 void MakronToss(edict_t *self);
-void MakronPrecache(void);
+void PR_monster_makron(void);
 
 static void jorg_attack1_end_sound(edict_t *self)
 {
@@ -547,7 +545,7 @@ bool MONSTERINFO_CHECKATTACK(Jorg_CheckAttack)(edict_t *self)
     return M_CheckAttack_Base(self, 0.4f, 0.8f, 0.4f, 0.2f, 0, 0);
 }
 
-static void jorg_precache(void)
+void PR_monster_jorg(void)
 {
     sound_pain1 = G_SoundIndex("boss3/bs3pain1.wav");
     sound_pain2 = G_SoundIndex("boss3/bs3pain2.wav");
@@ -565,28 +563,21 @@ static void jorg_precache(void)
     sound_step_right = G_SoundIndex("boss3/step2.wav");
     sound_firegun = G_SoundIndex("boss3/xfire.wav");
     sound_death_hit = G_SoundIndex("boss3/d_hit.wav");
-    sound_bfg_fire = G_SoundIndex("makron/bfg_fire.wav");
 
-    MakronPrecache();
+    PR_monster_makron();
 }
 
 /*QUAKED monster_jorg (1 .5 0) (-80 -80 0) (90 90 140) Ambush Trigger_Spawn Sight
  */
 void SP_monster_jorg(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(jorg_precache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss3/jorg/tris.md2");
     self->s.modelindex2 = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
 
     G_PrecacheGibs(jorg_gibs);
+    G_SoundIndex("makron/bfg_fire.wav");
 
     self->r.box = Box3_FromSize(80, 0, 140);
 

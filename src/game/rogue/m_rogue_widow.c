@@ -1113,7 +1113,7 @@ static void WidowPrecache(void)
     G_SoundIndex("widow/bwstep1.wav");
 }
 
-static void widow_precache_global(void)
+void PR_monster_widow(void)
 {
     sound_pain1 = G_SoundIndex("widow/bw1pain1.wav");
     sound_pain2 = G_SoundIndex("widow/bw1pain2.wav");
@@ -1125,13 +1125,6 @@ static void widow_precache_global(void)
  */
 void SP_monster_widow(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(widow_precache_global);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/blackwidow/tris.md2");

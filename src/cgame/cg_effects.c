@@ -572,6 +572,13 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
+    case MZ2_ROTFLYER_BLASTER_1:
+    case MZ2_ROTFLYER_BLASTER_2:
+        dl->color = Vec3(0, 0, 1);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        break;
+
     case MZ2_MEDIC_BLASTER_1:
     case MZ2_MEDIC_HYPERBLASTER1_1 ... MZ2_MEDIC_HYPERBLASTER1_12:
         dl->color = Vec3(1, 1, 0);
@@ -593,9 +600,14 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_SOLDIER_SHOTGUN_1 ... MZ2_SOLDIER_SHOTGUN_9:
+    case MZ2_GRUNT_SHOTGUN:
+    case MZ2_OGRE_SHOTGUN:
         dl->color = Vec3(1, 1, 0);
         CG_SmokeAndFlash(origin);
-        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
+        if (weapon == MZ2_GRUNT_SHOTGUN)
+            trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("army/sattck1.wav"), 1, ATTN_NORM, 0);
+        else
+            trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_SHOTG, 0, 17.0f * scale);
         break;
 
@@ -630,6 +642,7 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_SUPERTANK_ROCKET_1 ... MZ2_SUPERTANK_ROCKET_3:
     case MZ2_BOSS2_ROCKET_1 ... MZ2_BOSS2_ROCKET_4:
     case MZ2_CARRIER_ROCKET_1:
+    case MZ2_SHAMBLER_ROCKET:
         dl->color = Vec3(1, 0.5f, 0.2f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
@@ -639,6 +652,8 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_SUPERTANK_GRENADE_1:
     case MZ2_SUPERTANK_GRENADE_2:
     case MZ2_CARRIER_GRENADE:
+    case MZ2_OGRE_GRENADE:
+    case MZ2_OGRE_GRENADE_S:
         dl->color = Vec3(1, 0.5f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("gunner/gunatck3.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
@@ -660,9 +675,11 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 
     case MZ2_MAKRON_BFG:
     case MZ2_JORG_BFG_1:
+    case MZ2_SHAMBLER_BFG:
+    case MZ2_CHTJOR_BFG:
         dl->color = Vec3(0.5f, 1, 0.5f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, 64.0f * scale);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, (weapon == MZ2_SHAMBLER_BFG ? 32.0f : 64.0f) * scale);
         break;
 
     case MZ2_MAKRON_BLASTER_1 ... MZ2_MAKRON_BLASTER_17:
@@ -706,6 +723,8 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 
     case MZ2_WIDOW_PLASMABEAM:
     case MZ2_WIDOW2_BEAMER_1 ... MZ2_WIDOW2_BEAM_SWEEP_11:
+    case MZ2_GRUNT_BEAM:
+    case MZ2_WIZARD_BEAM:
         dl->radius = 300 + (Q_rand() & 100);
         dl->color = Vec3(1, 1, 0);
         dl->die = cg.time + 200;
@@ -719,6 +738,8 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_SOLDIER_HYPERGUN_1 ... MZ2_SOLDIER_HYPERGUN_9:
+    case MZ2_GRUNT_HYPERGUN_L:
+    case MZ2_GRUNT_HYPERGUN_R:
         dl->color = Vec3(0, 0, 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 1, 8.0f * scale);
@@ -744,6 +765,7 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_BERSERK_SLAM:
+    case MZ2_GENERIC_SLAM:
         memset(dl, 0, sizeof(*dl));
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
@@ -763,6 +785,49 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
             trap_S_StartSound(entnum, CHAN_VOICE, sfx, 1, ATTN_IDLE, 0);
         }
         CG_WeldingLight(origin);
+        break;
+
+    case MZ2_ENFORCER_BOLT:
+        dl->color = Vec3(1, 1, 0);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("enforcer/enfire.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        break;
+
+    case MZ2_ENFORCER_FLECHETTE1_L:
+    case MZ2_ENFORCER_FLECHETTE1_R:
+        dl->color = Vec3(0, 0, 1);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/spike2.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 8.0f * scale);
+        break;
+
+    case MZ2_ENFORCER_FLECHETTE2_L:
+    case MZ2_ENFORCER_FLECHETTE2_R:
+    case MZ2_GUNNER_FLECHETTE_1 ... MZ2_GUNNER_FLECHETTE_8:
+        dl->color = Vec3(0, 0, 1);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1b.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 8.0f * scale);
+        break;
+
+    case MZ2_HELLKNIGHT_MAGIC:
+    case MZ2_HELLKNIGHT_HYPER:
+        dl->color = Vec3(1, 1, 0);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("hknight/attack1.wav"), 1, ATTN_NORM, 0);
+        if (weapon == MZ2_HELLKNIGHT_HYPER)
+            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        break;
+
+    case MZ2_CHTJOR_ROCKET_L:
+    case MZ2_CHTJOR_ROCKET_R:
+        memset(dl, 0, sizeof(*dl));
+        CG_GenericExplosion(origin);
+        trap_S_StartSound(entnum, CHAN_WEAPON, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
+        break;
+
+    case MZ2_SUPERSHAMBLERTANK_PLASMA_1 ... MZ2_SUPERSHAMBLERTANK_PLASMA_6:
+    case MZ2_IRONVORE_PLASMA:
+        dl->color = Vec3(1, 0.5f, 0.2f);
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/plasshot.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, (weapon == MZ2_IRONVORE_PLASMA ? 16.0f : 28.0f) * scale);
         break;
 
     default:

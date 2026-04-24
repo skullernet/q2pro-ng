@@ -807,7 +807,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 //  SPAWN
 // **********************
 
-static void turret_precache(void)
+void PR_monster_turret(void)
 {
     sound_moved = G_SoundIndex("turret/moved.wav");
     sound_moving = G_SoundIndex("turret/moving.wav");
@@ -823,14 +823,6 @@ When activated, wall units move 32 units in the direction they're facing.
 void SP_monster_turret(edict_t *self)
 {
     int angle;
-
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    // pre-caches
-    G_AddPrecache(turret_precache);
 
     G_ModelIndex("models/objects/debris1/tris.md2");
 

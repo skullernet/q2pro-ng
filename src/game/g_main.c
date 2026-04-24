@@ -10,8 +10,6 @@ level_locals_t level;
 const game_import_t *gi;
 #endif
 
-bool use_psx_assets;
-
 spawn_temp_t   st;
 
 const trace_t null_trace;
@@ -349,9 +347,15 @@ qvm_exported void G_Init(void)
 
     G_LoadL10nFile();
 
+    // gamedir hacks
     char buf[MAX_QPATH];
     trap_Cvar_VariableString("game", buf, sizeof(buf));
-    use_psx_assets = !strncmp(buf, "psx", 3);
+    if (!Q_stricmpn(buf, "psx", 3))
+        game.dirtype = GAMEDIR_PSX;
+    else if (!Q_stricmp(buf, "q1q2"))
+        game.dirtype = GAMEDIR_COTV;
+    else
+        game.dirtype = GAMEDIR_BASE;
 }
 
 //===================================================================

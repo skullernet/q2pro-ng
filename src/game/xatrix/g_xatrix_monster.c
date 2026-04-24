@@ -21,6 +21,12 @@ void monster_fire_heat(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
+void monster_fire_plasma(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, monster_muzzleflash_id_t flashtype, float damage_radius, int radius_damage)
+{
+    fire_plasma(self, start, dir, damage, speed, damage_radius, radius_damage);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
+}
+
 void dabeam_update(edict_t *self, bool damage)
 {
     pierce_t pierce;

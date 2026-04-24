@@ -594,6 +594,12 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
     ent->s.origin = self->s.origin;
     ent->s.angles = self->s.angles;
 
+    // FIXME CotV hacks
+    if (game.dirtype == GAMEDIR_COTV) {
+        ent->spawnflags = self->spawnflags;
+        ent->target = self->killtarget;
+    }
+
     // [Paril-KEX] although I fixed these in our maps, this is just
     // in case anybody else does this by accident. Don't count these monsters
     // so they don't inflate the monster count.
@@ -631,8 +637,11 @@ dmg     default is 15
 speed   default is 1000
 */
 
-#define SPAWNFLAG_BLASTER_NOTRAIL   1
-#define SPAWNFLAG_BLASTER_NOEFFECTS 2
+#define SPAWNFLAG_BLASTER_NOTRAIL       1
+#define SPAWNFLAG_BLASTER_NOEFFECTS     2
+#define SPAWNFLAG_BLASTER_QUAKE1NAILS   16  // CotV
+
+void fire_nails(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, int kick);
 
 void USE(use_target_blaster)(edict_t *self, edict_t *other, edict_t *activator)
 {
@@ -645,7 +654,11 @@ void USE(use_target_blaster)(edict_t *self, edict_t *other, edict_t *activator)
     else
         effect = EF_BLASTER;
 
-    fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, MOD_TARGET_BLASTER);
+    if (self->spawnflags & SPAWNFLAG_BLASTER_QUAKE1NAILS)
+        fire_nails(self, self->s.origin, self->movedir, self->dmg, self->speed, self->dmg);
+    else
+        fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, effect, MOD_TARGET_BLASTER);
+
     G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM);
 }
 
@@ -653,7 +666,11 @@ void SP_target_blaster(edict_t *self)
 {
     self->use = use_target_blaster;
     G_SetMovedir(self);
-    self->noise_index = G_SoundIndex("weapons/laser2.wav");
+
+    if (self->spawnflags & SPAWNFLAG_BLASTER_QUAKE1NAILS)
+        self->noise_index = G_SoundIndex("weapons/spike2.wav");
+    else
+        self->noise_index = G_SoundIndex("weapons/laser2.wav");
 
     if (!self->dmg)
         self->dmg = 15;
@@ -927,7 +944,8 @@ speed       How many seconds the ramping will take
 message     two letters; starting lightlevel and ending lightlevel
 */
 
-#define SPAWNFLAG_LIGHTRAMP_TOGGLE  1
+#define SPAWNFLAG_LIGHTRAMP_TOGGLE      1
+#define SPAWNFLAG_LIGHTRAMP_KEEP_IN_DM  32  // CotV
 
 void THINK(target_lightramp_think)(edict_t *self)
 {
@@ -983,7 +1001,7 @@ void SP_target_lightramp(edict_t *self)
         return;
     }
 
-    if (deathmatch.integer) {
+    if (deathmatch.integer && !(self->spawnflags & SPAWNFLAG_LIGHTRAMP_KEEP_IN_DM)) {
         G_FreeEdict(self);
         return;
     }

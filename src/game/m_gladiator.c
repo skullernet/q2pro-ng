@@ -392,65 +392,31 @@ static void gladiator_precache(void)
     sound_sight = G_SoundIndex("gladiator/sight.wav");
 }
 
-static void gladiator_precache_a(void)
+void PR_monster_gladiator(void)
 {
+    gladiator_precache();
     sound_gun = G_SoundIndex("gladiator/railgun.wav");
 }
 
-static void gladiator_precache_b(void)
+void PR_monster_gladb(void)
 {
+    gladiator_precache();
     sound_gunb = G_SoundIndex("weapons/plasshot.wav");
 }
 
 /*QUAKED monster_gladiator (1 .5 0) (-32 -32 -24) (32 32 64) Ambush Trigger_Spawn Sight
  */
-void SP_monster_gladiator(edict_t *self)
+static void SP_monster_gladiator_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(gladiator_precache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gladiatr/tris.md2");
 
+    self->r.box = Box3_FromSize(32, -24, 42);
+
     G_PrecacheGibs(gladiator_gibs);
 
-    // RAFAEL
-    if (strcmp(self->classname, "monster_gladb") == 0) {
-        G_AddPrecache(gladiator_precache_b);
-
-        self->health = 250 * st.health_multiplier;
-        self->mass = 350;
-
-        if (!ED_WasKeySpecified("power_armor_type"))
-            self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
-        if (!ED_WasKeySpecified("power_armor_power"))
-            self->monsterinfo.power_armor_power = 250;
-
-        self->s.skinnum = 2;
-
-        self->style = 1;
-
-        self->monsterinfo.weapon_sound = G_SoundIndex("weapons/phaloop.wav");
-    } else {
-        // RAFAEL
-        G_AddPrecache(gladiator_precache_a);
-
-        self->health = 400 * st.health_multiplier;
-        self->mass = 400;
-        // RAFAEL
-
-        self->monsterinfo.weapon_sound = G_SoundIndex("weapons/rg_hum.wav");
-    }
-    // RAFAEL
-
     self->gib_health = -175;
-
-    self->r.box = Box3_FromSize(32, -24, 42);
 
     self->pain = gladiator_pain;
     self->die = gladiator_die;
@@ -474,6 +440,14 @@ void SP_monster_gladiator(edict_t *self)
     walkmonster_start(self);
 }
 
+void SP_monster_gladiator(edict_t *self)
+{
+    self->health = 400 * st.health_multiplier;
+    self->mass = 400;
+    self->monsterinfo.weapon_sound = G_SoundIndex("weapons/rg_hum.wav");
+    SP_monster_gladiator_x(self);
+}
+
 //
 // monster_gladb
 // RAFAEL
@@ -482,5 +456,17 @@ void SP_monster_gladiator(edict_t *self)
  */
 void SP_monster_gladb(edict_t *self)
 {
-    SP_monster_gladiator(self);
+    self->health = 250 * st.health_multiplier;
+    self->mass = 350;
+
+    if (!ED_WasKeySpecified("power_armor_type"))
+        self->monsterinfo.power_armor_type = IT_ITEM_POWER_SHIELD;
+    if (!ED_WasKeySpecified("power_armor_power"))
+        self->monsterinfo.power_armor_power = 250;
+
+    self->s.skinnum = 2;
+    self->style = 1;
+
+    self->monsterinfo.weapon_sound = G_SoundIndex("weapons/phaloop.wav");
+    SP_monster_gladiator_x(self);
 }

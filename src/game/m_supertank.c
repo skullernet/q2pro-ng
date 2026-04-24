@@ -21,6 +21,7 @@ static int sound_death;
 static int sound_search1;
 static int sound_search2;
 static int sound_tread;
+static int sound_melee;
 
 static void TreadSound(edict_t *self)
 {
@@ -283,7 +284,10 @@ static void supertankGrenade(edict_t *self)
         if (!M_CalculatePitchToFire(self, aim_point, start, &forward, speed, 2.5f, true, false))
             continue;
 
-        monster_fire_grenade(self, start, forward, 50, speed, flash_number, 0, 0);
+        if (self->style)
+            monster_fire_tesla(self, start, forward, 1, speed, flash_number);
+        else
+            monster_fire_grenade(self, start, forward, 50, speed, flash_number, 0, 0);
         break;
     }
 }
@@ -472,21 +476,93 @@ static void supertankRocket(edict_t *self)
     }
 }
 
-static void supertankMachineGun(edict_t *self)
+static void supertank_fire_plasma(edict_t *self)
+{
+    vec3_t                   start, aim;
+    vec3_t                   forward, right;
+    monster_muzzleflash_id_t flash_number;
+
+    flash_number = MZ2_SUPERSHAMBLERTANK_PLASMA_1 + (self->s.frame - FRAME_attak1_1);
+
+    int damage = 35;
+    int radius_damage = 45;
+
+    if (self->s.frame > FRAME_attak1_3) {
+        damage /= 2;
+        radius_damage /= 2;
+    }
+
+    AngleVectors(Vec3(0, self->s.angles.yaw, 0), &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+
+    M_PredictAim(self, self->enemy, start, 725, false, frandom() * 0.3f, &aim, NULL);
+    for (int i = 0; i < 3; i++)
+        aim.xyz[i] += crandom_open() * 0.025f;
+    monster_fire_plasma(self, start, aim, damage, 725, flash_number, radius_damage, radius_damage);
+}
+
+static void supertank_fire_bullet(edict_t *self)
 {
     vec3_t                   start;
     vec3_t                   forward, right;
     monster_muzzleflash_id_t flash_number;
 
-    if (!self->enemy || !self->enemy->r.inuse) // PGM
-        return;                              // PGM
-
     flash_number = MZ2_SUPERTANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak1_1);
 
     AngleVectors(Vec3(0, self->s.angles.yaw, 0), &forward, &right, NULL);
     start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
+
     M_PredictAim(self, self->enemy, start, 0, true, -0.1f, &forward, NULL);
     monster_fire_bullet(self, start, forward, 6, 4, DEFAULT_BULLET_HSPREAD * 3, DEFAULT_BULLET_VSPREAD * 3, flash_number);
+}
+
+static void supertankMachineGun(edict_t *self)
+{
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+
+    if (self->s.frame - FRAME_attak1_1 >= 6)
+        return;
+
+    if (self->style)
+        supertank_fire_plasma(self);
+    else
+        supertank_fire_bullet(self);
+}
+
+static void StroggTankChainsaw(edict_t *self)
+{
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+    vec3_t aim = { 100, 0, -24 };
+    int damage = (frandom() + frandom() + frandom()) * 4;
+    fire_hit(self, aim, damage, damage);
+}
+
+// Swing
+static const mframe_t supershamblertank_frames_melee[] = {
+    { ai_charge, 11 },
+    { ai_charge, 1 },
+    { ai_charge, 4 },
+    { ai_charge, 19, StroggTankChainsaw },
+    { ai_charge, 13, StroggTankChainsaw },
+    { ai_charge, 10, StroggTankChainsaw },
+    { ai_charge, 10, StroggTankChainsaw },
+    { ai_charge, 10, StroggTankChainsaw },
+    { ai_charge, 10, StroggTankChainsaw },
+    { ai_charge, 10, StroggTankChainsaw },
+    { ai_charge, 3 },
+    { ai_charge, 8 },
+    { ai_charge, 9 },
+    { ai_charge, 0 }
+};
+const mmove_t MMOVE_T(supershamblertank_move_melee) = { FRAME_forwrd_1, FRAME_forwrd_14, supershamblertank_frames_melee, supertank_run };
+
+// Melee
+void MONSTERINFO_MELEE(supershamblertank_melee)(edict_t *self)
+{
+    M_SetAnimation(self, &supershamblertank_move_melee);
+    G_StartSound(self, CHAN_WEAPON, sound_melee, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_ATTACK(supertank_attack)(edict_t *self)
@@ -541,6 +617,21 @@ static const gib_def_t supertank_gibs[] = {
     { 0 }
 };
 
+static const gib_def_t supershamblertank_gibs[] = {
+    { "models/objects/gibs/sm_meat/tris.md2", 2 },
+    { "models/objects/gibs/sm_metal/tris.md2", 2, GIB_METALLIC },
+    { "models/monsters/boss1/gibs/cgun.md2", 1, GIB_SKINNED | GIB_METALLIC },
+    { "models/monsters/boss1/gibs/chest.md2", 1, GIB_SKINNED },
+    { "models/monsters/boss1/gibs/core.md2", 1, GIB_SKINNED },
+    { "models/monsters/boss1/gibs/ltread.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/boss1/gibs/rgun.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/boss1/gibs/tube.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/shamblertank/gibs/g_arm.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/shamblertank/gibs/g_leg.md2", 1, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/shamblertank/gibs/g_head.md2", 1, GIB_SKINNED | GIB_METALLIC | GIB_HEAD },
+    { 0 }
+};
+
 static void supertank_gib(edict_t *self)
 {
     G_AddEvent(self, EV_EXPLOSION1_BIG, 0);
@@ -548,7 +639,10 @@ static void supertank_gib(edict_t *self)
     self->s.sound = 0;
     self->s.skinnum /= 2;
 
-    ThrowGibs(self, 500, supertank_gibs);
+    if (self->style)
+        ThrowGibs(self, 500, supershamblertank_gibs);
+    else
+        ThrowGibs(self, 500, supertank_gibs);
 }
 
 static void supertank_dead(edict_t *self)
@@ -600,7 +694,7 @@ bool MONSTERINFO_BLOCKED(supertank_blocked)(edict_t *self, float dist)
 // monster_supertank
 //
 
-static void supertank_precache(void)
+void PR_monster_supertank(void)
 {
     sound_pain1 = G_SoundIndex("bosstank/btkpain1.wav");
     sound_pain2 = G_SoundIndex("bosstank/btkpain2.wav");
@@ -611,32 +705,26 @@ static void supertank_precache(void)
     sound_tread = G_SoundIndex("bosstank/btkengn1.wav");
 }
 
+void PR_monster_supershamblertank(void)
+{
+    PR_monster_supertank();
+    sound_melee = G_SoundIndex("ogre/ogsawatk.wav");
+}
+
 // RAFAEL (Powershield)
 
-/*QUAKED monster_supertank (1 .5 0) (-64 -64 0) (64 64 72) Ambush Trigger_Spawn Sight Powershield LongDeath
- */
-void SP_monster_supertank(edict_t *self)
+static void SP_monster_supertank_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(supertank_precache);
-
     G_SoundIndex("gunner/gunatck3.wav");
     G_SoundIndex("infantry/infatck1.wav");
     G_SoundIndex("tank/rocket.wav");
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = G_ModelIndex("models/monsters/boss1/tris.md2");
-
-    G_PrecacheGibs(supertank_gibs);
 
     self->r.box = Box3_FromSize(64, 0, 112);
 
-    self->health = 1500 * st.health_multiplier;
+    self->health *= st.health_multiplier;
     self->gib_health = -500;
     self->mass = 800;
 
@@ -645,11 +733,8 @@ void SP_monster_supertank(edict_t *self)
     self->monsterinfo.stand = supertank_stand;
     self->monsterinfo.walk = supertank_walk;
     self->monsterinfo.run = supertank_run;
-    self->monsterinfo.dodge = NULL;
     self->monsterinfo.attack = supertank_attack;
     self->monsterinfo.search = supertank_search;
-    self->monsterinfo.melee = NULL;
-    self->monsterinfo.sight = NULL;
     self->monsterinfo.blocked = supertank_blocked; // PGM
     self->monsterinfo.setskin = supertank_setskin;
 
@@ -685,12 +770,45 @@ void SP_monster_supertank(edict_t *self)
 // RAFAEL
 //
 
+/*QUAKED monster_supertank (1 .5 0) (-64 -64 0) (64 64 72) Ambush Trigger_Spawn Sight Powershield LongDeath
+ */
+void SP_monster_supertank(edict_t *self)
+{
+    self->style = 0;
+    self->health = 1500;
+    self->s.modelindex = G_ModelIndex("models/monsters/boss1/tris.md2");
+
+    SP_monster_supertank_x(self);
+    G_PrecacheGibs(supertank_gibs);
+}
+
 /*QUAKED monster_boss5 (1 .5 0) (-64 -64 0) (64 64 72) Ambush Trigger_Spawn Sight
  */
 void SP_monster_boss5(edict_t *self)
 {
+    self->style = 0;
+    self->health = 1500;
     self->spawnflags |= SPAWNFLAG_SUPERTANK_POWERSHIELD;
-    SP_monster_supertank(self);
-    G_SoundIndex("weapons/railgr1a.wav");
     self->s.skinnum = 2;
+    self->s.modelindex = G_ModelIndex("models/monsters/boss1/tris.md2");
+
+    SP_monster_supertank_x(self);
+
+    G_PrecacheGibs(supertank_gibs);
+    G_SoundIndex("weapons/railgr1a.wav");
+}
+
+/*QUAKED monster_supershamblertank (1 .5 0) (-64 -64 0) (64 64 72) Ambush Trigger_Spawn Sight Powershield LongDeath
+ */
+void SP_monster_supershamblertank(edict_t *self)
+{
+    self->style = 1;
+    self->health = 3000;
+    self->s.modelindex = G_ModelIndex("models/monsters/shamblertank/tris.md2");
+    self->monsterinfo.melee = supershamblertank_melee;
+
+    SP_monster_supertank_x(self);
+
+    G_PrecacheGibs(supershamblertank_gibs);
+    G_SoundIndex("weapons/plasshot.wav");
 }

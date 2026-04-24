@@ -604,7 +604,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
             // ROGUE
             else if ((targ->r.svflags & SVF_MONSTER) || (client)) {
                 // XATRIX
-                if (strcmp(targ->classname, "monster_gekk") == 0)
+                if (targ->flags & FL_ACIDIC)
                     SpawnDamage(EV_GREEN_BLOOD, point, normal, take);
                 // XATRIX
                 // ROGUE

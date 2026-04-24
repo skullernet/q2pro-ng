@@ -11,15 +11,21 @@ SHAMBLER
 #include "g_local.h"
 #include "m_shambler.h"
 
-static int sound_pain;
-static int sound_idle;
-static int sound_die;
-static int sound_sight;
-static int sound_windup;
-static int sound_melee1;
-static int sound_melee2;
-static int sound_smack;
-static int sound_boom;
+#define SOUND   sound[!!self->style]
+
+enum { Plain, Proto, Strogg, Shamacudda };
+
+static struct {
+    int pain;
+    int idle;
+    int die;
+    int sight;
+    int windup;
+    int melee1;
+    int melee2;
+    int smack;
+    int boom;
+} sound[2];
 
 //
 // misc
@@ -27,7 +33,7 @@ static int sound_boom;
 
 void MONSTERINFO_SIGHT(shambler_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
 static const vec3_t lightning_left_hand[] = {
@@ -50,14 +56,8 @@ static void shambler_lightning_update(edict_t *self)
 {
     edict_t *lightning = self->beam;
 
-    if (!lightning)
+    if (!lightning || self->s.frame - FRAME_magic01 >= q_countof(lightning_left_hand))
         return;
-
-    if (self->s.frame >= FRAME_magic01 + q_countof(lightning_left_hand)) {
-        G_FreeEdict(lightning);
-        self->beam = NULL;
-        return;
-    }
 
     vec3_t f, r;
     AngleVectors(self->s.angles, &f, &r, NULL);
@@ -68,27 +68,64 @@ static void shambler_lightning_update(edict_t *self)
 
 static void shambler_windup(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_windup, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.windup, 1, ATTN_NORM);
 
-    edict_t *lightning = self->beam = G_Spawn();
-    lightning->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
-    lightning->s.renderfx |= RF_BEAM;
-    lightning->s.othernum = ENTITYNUM_NONE;
-    lightning->s.alpha = self->s.alpha;
-    lightning->s.scale = self->s.scale;
-    lightning->r.ownernum = self->s.number;
+    self->beam = G_SpawnLightning(self);
     shambler_lightning_update(self);
+}
+
+static void shamacudda_lightning_update(edict_t *self)
+{
+    edict_t *left = self->beam;
+    edict_t *right = self->beam2;
+
+    if (self->s.frame - FRAME_magic01 >= q_countof(lightning_left_hand))
+        return;
+
+    vec3_t f, r;
+    AngleVectors(self->s.angles, &f, &r, NULL);
+
+    if (left) {
+        left->s.origin = M_ProjectFlashSource(self, lightning_left_hand[self->s.frame - FRAME_magic01], f, r);
+        trap_LinkEntity(left);
+    }
+
+    if (right) {
+        right->s.origin = M_ProjectFlashSource(self, lightning_right_hand[self->s.frame - FRAME_magic01], f, r);
+        trap_LinkEntity(right);
+    }
+}
+
+static void shamacudda_windup(edict_t *self)
+{
+    float scale = self->s.scale ? self->s.scale : 1.0f;
+
+    G_StartSound(self, CHAN_WEAPON, SOUND.windup, 1, ATTN_NORM);
+
+    edict_t *left = self->beam = G_Spawn();
+    left->s.scale = scale * 0.5f;
+    left->s.alpha = self->s.alpha;
+    left->s.modelindex = G_ModelIndex("sprites/s_bfx1.sp2");
+    left->r.ownernum = self->s.number;
+
+    edict_t *right = self->beam2 = G_Spawn();
+    right->s.scale = scale * 0.5f;
+    right->s.alpha = self->s.alpha;
+    right->s.modelindex = G_ModelIndex("sprites/s_bfx1.sp2");
+    right->r.ownernum = self->s.number;
+
+    shamacudda_lightning_update(self);
 }
 
 void MONSTERINFO_IDLE(shambler_idle)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.idle, 1, ATTN_IDLE);
 }
 
 static void shambler_maybe_idle(edict_t *self)
 {
     if (frandom() > 0.8f)
-        G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
+        G_StartSound(self, CHAN_VOICE, SOUND.idle, 1, ATTN_IDLE);
 }
 
 //
@@ -197,7 +234,7 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
         return;
 
     self->timestamp = level.time + FRAME_TIME;
-    G_StartSound(self, CHAN_AUTO, sound_pain, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_AUTO, SOUND.pain, 1, ATTN_NORM);
 
     if (mod != MOD_CHAINFIST && damage <= 30 && frandom() > 0.2f)
         return;
@@ -224,25 +261,24 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
 
 void MONSTERINFO_SETSKIN(shambler_setskin)(edict_t *self)
 {
-    // FIXME: create pain skin?
-    //if (self->health < (self->max_health / 2))
-    //  self->s.skinnum |= 1;
-    //else
-    //  self->s.skinnum &= ~1;
+    if (self->health < (self->max_health / 2))
+        self->s.skinnum = 1;
+    else
+        self->s.skinnum = 0;
 }
 
 //
 // attacks
 //
 
-static void ShamblerSaveLoc(edict_t *self)
+static void shambler_windup_done(edict_t *self)
 {
-    self->pos1 = self->enemy->s.origin; // save for aiming the shot
-    self->pos1.z += self->enemy->viewheight;
     self->monsterinfo.nextframe = FRAME_magic09;
 
-    G_StartSound(self, CHAN_WEAPON, sound_boom, 1, ATTN_NORM);
-    shambler_lightning_update(self);
+    if (self->style == Plain)
+        G_StartSound(self, CHAN_WEAPON, SOUND.boom, 1, ATTN_NORM);
+
+    M_FreeBeams(self);
 }
 
 #define SPAWNFLAG_SHAMBLER_PRECISE  1
@@ -260,15 +296,9 @@ static vec3_t FindShamblerOffset(edict_t *self)
     return Vec3(0, 0, 48);
 }
 
-void THINK(shambler_lightning_think)(edict_t *self)
-{
-    g_edicts[self->r.ownernum].beam2 = NULL;
-    G_FreeEdict(self);
-}
-
 static void ShamblerCastLightning(edict_t *self)
 {
-    if (!self->enemy)
+    if (!self->enemy || !self->enemy->r.inuse)
         return;
 
     vec3_t start, end;
@@ -287,23 +317,12 @@ static void ShamblerCastLightning(edict_t *self)
     end = Vec3_MA(start, 8192, dir);
     trace_t tr = G_TraceLine(start, end, self->s.number, MASK_PROJECTILE | CONTENTS_SLIME | CONTENTS_LAVA);
 
-    edict_t *te = self->beam2;
-    if (!te) {
-        self->beam2 = te = G_Spawn();
-        te->s.renderfx = RF_BEAM;
-        te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
-        te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
-        te->s.othernum = ENTITYNUM_NONE;
-        te->s.alpha = self->s.alpha;
-        te->s.scale = self->s.scale;
-        te->r.ownernum = self->s.number;
-        te->think = shambler_lightning_think;
-    }
+    if (!self->beam)
+        self->beam = G_SpawnLightning(self);
 
-    te->s.old_origin = G_SnapVector(start);
-    te->s.origin = G_SnapVectorTowards(tr.endpos, start);
-    te->nextthink = level.time + SEC(0.2f);
-    trap_LinkEntity(te);
+    self->beam->s.old_origin = G_SnapVector(start);
+    self->beam->s.origin = G_SnapVectorTowards(tr.endpos, start);
+    trap_LinkEntity(self->beam);
 
     fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, MOD_TESLA);
 }
@@ -314,7 +333,7 @@ static const mframe_t shambler_frames_magic[] = {
     { ai_charge, 0, shambler_lightning_update },
     { ai_move, 0, shambler_lightning_update },
     { ai_move, 0, shambler_lightning_update },
-    { ai_move, 0, ShamblerSaveLoc},
+    { ai_move, 0, shambler_windup_done },
     { ai_move },
     { ai_charge },
     { ai_move, 0, ShamblerCastLightning },
@@ -322,12 +341,114 @@ static const mframe_t shambler_frames_magic[] = {
     { ai_move, 0, ShamblerCastLightning },
     { ai_move },
 };
-
 const mmove_t MMOVE_T(shambler_attack_magic) = { FRAME_magic01, FRAME_magic12, shambler_frames_magic, shambler_run };
+
+static void ShamblerBFG(edict_t *self)
+{
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+
+    vec3_t start;
+    vec3_t dir;
+    vec3_t forward, right;
+    vec3_t offset;
+
+    offset = FindShamblerOffset(self);
+
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, offset, forward, right);
+    dir = Vec3_Direction(self->enemy->s.origin, start);
+
+    monster_fire_bfg(self, start, dir, 50, 300, 100, 200, MZ2_SHAMBLER_BFG);
+}
+
+static const mframe_t shambler_frames_bfg[] = {
+    { ai_charge, 0, shamacudda_windup },
+    { ai_charge, 0, shamacudda_lightning_update },
+    { ai_charge, 0, shamacudda_lightning_update },
+    { ai_move, 0, shamacudda_lightning_update },
+    { ai_move, 0, shamacudda_lightning_update },
+    { ai_move, 0, shambler_windup_done },
+    { ai_move },
+    { ai_charge },
+    { ai_move, 0, ShamblerBFG },
+    { ai_move },
+    { ai_move },
+    { ai_move },
+};
+const mmove_t MMOVE_T(shambler_attack_bfg) = { FRAME_magic01, FRAME_magic12, shambler_frames_bfg, shambler_run };
+
+static void ShamblerChecker(edict_t *self)
+{
+    self->fly_sound_debounce_time = level.time + SEC(1.5f);
+}
+
+static void ShamblerRocket(edict_t *self)
+{
+    vec3_t  start, forward, right, dir;
+
+    if (!self->enemy || !self->enemy->r.inuse)
+        return;
+
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_SHAMBLER_ROCKET], forward, right);
+
+    M_PredictAim(self, self->enemy, start, 650, false, (self->spawnflags & SPAWNFLAG_SHAMBLER_PRECISE) ? 0.0f : 0.1f, &dir, NULL);
+    monster_fire_rocket(self, start, dir, 100, 650, MZ2_SHAMBLER_ROCKET);
+
+    if (self->fly_sound_debounce_time > level.time)
+        self->monsterinfo.nextframe = FRAME_magic08;
+}
+
+static const mframe_t shambler_frames_rocket2[] = {
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge, 0, ShamblerChecker },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge, 0, ShamblerRocket },
+    { ai_charge },
+    { ai_charge }
+};
+const mmove_t MMOVE_T(shambler_attack_rocket2) = { FRAME_magic01, FRAME_magic12, shambler_frames_rocket2, shambler_run };
+
+static const mframe_t shambler_frames_rocket[] = {
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge },
+    { ai_charge, 0, ShamblerRocket },
+    { ai_charge },
+    { ai_charge }
+};
+const mmove_t MMOVE_T(shambler_attack_rocket) = { FRAME_magic01, FRAME_magic12, shambler_frames_rocket, shambler_run };
 
 void MONSTERINFO_ATTACK(shambler_attack)(edict_t *self)
 {
-    M_SetAnimation(self, &shambler_attack_magic);
+    switch (self->style) {
+    case Shamacudda:
+        M_SetAnimation(self, &shambler_attack_bfg);
+        break;
+    case Proto:
+    case Strogg:
+        if (self->health < (self->max_health / 2))
+            M_SetAnimation(self, &shambler_attack_rocket2);
+        else
+            M_SetAnimation(self, &shambler_attack_rocket);
+        break;
+    default:
+        M_SetAnimation(self, &shambler_attack_magic);
+        break;
+    }
 }
 
 //
@@ -336,12 +457,12 @@ void MONSTERINFO_ATTACK(shambler_attack)(edict_t *self)
 
 static void shambler_melee1(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_melee1, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.melee1, 1, ATTN_NORM);
 }
 
 static void shambler_melee2(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, sound_melee2, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_WEAPON, SOUND.melee2, 1, ATTN_NORM);
 }
 
 static void sham_swingl9(edict_t *self);
@@ -361,7 +482,7 @@ static void sham_smash10(edict_t *self)
     bool hit = fire_hit(self, aim, irandom2(110, 120), 120); // Slower attack
 
     if (hit)
-        G_StartSound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.smack, 1, ATTN_NORM);
 }
 
 static void ShamClaw(edict_t *self)
@@ -378,7 +499,7 @@ static void ShamClaw(edict_t *self)
     bool hit = fire_hit(self, aim, irandom2(70, 80), 80); // Slower attack
 
     if (hit)
-        G_StartSound(self, CHAN_WEAPON, sound_smack, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.smack, 1, ATTN_NORM);
 }
 
 static const mframe_t shambler_frames_smash[] = {
@@ -488,29 +609,60 @@ static const mframe_t shambler_frames_death[] = {
 const mmove_t MMOVE_T(shambler_move_death) = { FRAME_death01, FRAME_death11, shambler_frames_death, shambler_dead };
 
 // FIXME: better gibs for shambler, shambler head
-static const gib_def_t shambler_gibs[] = {
+static const gib_def_t shambler_gibs_plain[] = {
     { "models/objects/gibs/sm_meat/tris.md2", 1 },
     { "models/objects/gibs/chest/tris.md2", 1 },
     { "models/objects/gibs/head2/tris.md2", 1, GIB_HEAD },
     { 0 }
 };
 
+static const gib_def_t shambler_gibs_proto[] = {
+    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/chest/tris.md2", 1 },
+    { "models/monsters/shambler_prototype/gibs/g_arm.md2", 1 },
+    { "models/monsters/shambler_prototype/gibs/g_leg.md2", 1 },
+    { "models/monsters/shambler_prototype/gibs/g_head.md2", 1, GIB_HEAD },
+    { 0 }
+};
+
+static const gib_def_t shambler_gibs_strogg[] = {
+    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/chest/tris.md2", 1 },
+    { "models/monsters/shamblerstrogg/gibs/g_arm.md2", 1 },
+    { "models/monsters/shamblerstrogg/gibs/g_leg.md2", 1 },
+    { "models/monsters/shamblerstrogg/gibs/g_head.md2", 1, GIB_HEAD },
+    { 0 }
+};
+
+static const gib_def_t shambler_gibs_cuda[] = {
+    { "models/monsters/shamacudda/gibs/arm/tris.md2", 1, GIB_ACID },
+    { "models/monsters/shamacudda/gibs/torso/tris.md2", 1, GIB_ACID },
+    { "models/monsters/shamacudda/gibs/leg/tris.md2", 1, GIB_ACID },
+    { "models/monsters/shamacudda/gibs/head/tris.md2", 1, GIB_ACID | GIB_HEAD },
+    { 0 }
+};
+
 void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
-    if (self->beam) {
-        G_FreeEdict(self->beam);
-        self->beam = NULL;
-    }
-
-    if (self->beam2) {
-        G_FreeEdict(self->beam2);
-        self->beam2 = NULL;
-    }
+    M_FreeBeams(self);
 
     // check for gib
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
-        ThrowGibs(self, damage, shambler_gibs);
+        switch (self->style) {
+        case Shamacudda:
+            ThrowGibs(self, damage, shambler_gibs_cuda);
+            break;
+        case Strogg:
+            ThrowGibs(self, damage, shambler_gibs_strogg);
+            break;
+        case Proto:
+            ThrowGibs(self, damage, shambler_gibs_proto);
+            break;
+        default:
+            ThrowGibs(self, damage, shambler_gibs_plain);
+            break;
+        }
         self->deadflag = true;
         return;
     }
@@ -519,45 +671,51 @@ void DIE(shambler_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         return;
 
     // regular death
-    G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.die, 1, ATTN_NORM);
+
     self->deadflag = true;
     self->takedamage = true;
+
+    if ((self->style == Proto || self->style == Strogg) && brandom())
+        Drop_Item(self, GetItemByIndex(IT_AMMO_ROCKETS))->count = 2;
 
     M_SetAnimation(self, &shambler_move_death);
 }
 
-static void shambler_precache(void)
+void PR_monster_shambler(void)
 {
-    sound_pain = G_SoundIndex("shambler/shurt2.wav");
-    sound_idle = G_SoundIndex("shambler/sidle.wav");
-    sound_die = G_SoundIndex("shambler/sdeath.wav");
-    sound_windup = G_SoundIndex("shambler/sattck1.wav");
-    sound_melee1 = G_SoundIndex("shambler/melee1.wav");
-    sound_melee2 = G_SoundIndex("shambler/melee2.wav");
-    sound_sight = G_SoundIndex("shambler/ssight.wav");
-    sound_smack = G_SoundIndex("shambler/smack.wav");
-    sound_boom = G_SoundIndex("shambler/sboom.wav");
+    sound[0].pain = G_SoundIndex("shambler/shurt2.wav");
+    sound[0].idle = G_SoundIndex("shambler/sidle.wav");
+    sound[0].die = G_SoundIndex("shambler/sdeath.wav");
+    sound[0].windup = G_SoundIndex("shambler/sattck1.wav");
+    sound[0].melee1 = G_SoundIndex("shambler/melee1.wav");
+    sound[0].melee2 = G_SoundIndex("shambler/melee2.wav");
+    sound[0].sight = G_SoundIndex("shambler/ssight.wav");
+    sound[0].smack = G_SoundIndex("shambler/smack.wav");
+    sound[0].boom = G_SoundIndex("shambler/sboom.wav");
 }
 
-void SP_monster_shambler(edict_t *self)
+void PR_monster_shambler_strogg(void)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
+    sound[1].pain = G_SoundIndex("shambler/shurt2_s.wav");
+    sound[1].idle = G_SoundIndex("shambler/sidle_s.wav");
+    sound[1].die = G_SoundIndex("shambler/sdeath_s.wav");
+    sound[1].windup = G_SoundIndex("shambler/sattck1.wav");
+    sound[1].melee1 = G_SoundIndex("shambler/melee1_s.wav");
+    sound[1].melee2 = G_SoundIndex("shambler/melee2_s.wav");
+    sound[1].sight = G_SoundIndex("shambler/ssight_s.wav");
+    sound[1].smack = G_SoundIndex("shambler/smack.wav");
+    sound[1].boom = G_SoundIndex("shambler/sboom.wav");
+}
 
-    self->s.modelindex = G_ModelIndex("models/monsters/shambler/tris.md2");
-    self->r.box = Box3_FromSize(32, -24, 64);
+static void SP_monster_shambler_x(edict_t *self)
+{
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-
-    G_ModelIndex("models/proj/lightning/tris.md2");
-
-    G_AddPrecache(shambler_precache);
+    self->r.box = Box3_FromSize(32, -24, 64);
 
     self->health = 600 * st.health_multiplier;
     self->gib_health = -60;
-
     self->mass = 500;
 
     self->pain = shambler_pain;
@@ -571,7 +729,8 @@ void SP_monster_shambler(edict_t *self)
     self->monsterinfo.sight = shambler_sight;
     self->monsterinfo.idle = shambler_idle;
     self->monsterinfo.blocked = NULL;
-    self->monsterinfo.setskin = shambler_setskin;
+    if (self->style)
+        self->monsterinfo.setskin = shambler_setskin;
 
     trap_LinkEntity(self);
 
@@ -582,4 +741,43 @@ void SP_monster_shambler(edict_t *self)
     self->monsterinfo.scale = MODEL_SCALE;
 
     walkmonster_start(self);
+}
+
+void SP_monster_shambler(edict_t *self)
+{
+    self->style = Plain;
+    self->s.modelindex = G_ModelIndex("models/monsters/shambler/tris.md2");
+    SP_monster_shambler_x(self);
+    G_ModelIndex("models/proj/lightning/tris.md2");
+}
+
+void SP_monster_shambler_prototype(edict_t *self)
+{
+    self->style = Proto;
+    self->s.modelindex = G_ModelIndex("models/monsters/shambler_prototype/tris.md2");
+    SP_monster_shambler_x(self);
+    G_PrecacheGibs(shambler_gibs_proto);
+}
+
+void SP_monster_shambler_strogg(edict_t *self)
+{
+    self->style = Strogg;
+    self->s.modelindex = G_ModelIndex("models/monsters/shamblerstrogg/tris.md2");
+    SP_monster_shambler_x(self);
+    G_PrecacheGibs(shambler_gibs_strogg);
+}
+
+void SP_monster_shamacudda(edict_t *self)
+{
+    self->style = Shamacudda;
+    self->flags |= FL_ACIDIC;
+    self->s.modelindex = G_ModelIndex("models/monsters/shamacudda/tris.md2");
+
+    SP_monster_shambler_x(self);
+
+    G_PrecacheGibs(shambler_gibs_cuda);
+    G_ModelIndex("sprites/s_bfx1.sp2");
+    G_ModelIndex("sprites/s_bfx2.sp2");
+    G_ModelIndex("sprites/s_bfx3.sp2");
+    G_SoundIndex("makron/bfg_fire.wav");
 }

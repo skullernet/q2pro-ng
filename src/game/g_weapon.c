@@ -304,6 +304,19 @@ void G_CheckMissileImpact(edict_t *self, edict_t *bolt)
     }
 }
 
+edict_t *G_SpawnLightning(edict_t *self)
+{
+    edict_t *te = G_Spawn();
+    te->s.renderfx = RF_BEAM;
+    te->s.modelindex = G_ModelIndex("models/proj/lightning/tris.md2");
+    te->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("weapons/tesla.wav"), 1, ATTN_NORM);
+    te->s.othernum = ENTITYNUM_NONE;
+    te->s.alpha = self->s.alpha;
+    te->s.scale = self->s.scale;
+    te->r.ownernum = self->s.number;
+    return te;
+}
+
 edict_t *fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, effects_t effect, mod_t mod)
 {
     edict_t *bolt;
@@ -441,7 +454,10 @@ void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int sp
     grenade->speed = speed;
     if (!self->client) {
         grenade->avelocity = Vec3_Scale(Vec3_CenterRandom(), 360);
-        grenade->s.modelindex = G_ModelIndex("models/objects/grenade/tris.md2");
+        if (!strcmp(self->classname, "monster_zombie_strogg"))
+            grenade->s.modelindex = G_ModelIndex("models/objects/grenade_zombie/tris.md2");
+        else
+            grenade->s.modelindex = G_ModelIndex("models/objects/grenade/tris.md2");
         grenade->nextthink = level.time + timer;
         grenade->think = Grenade_Explode;
         grenade->s.morefx |= EFX_GRENADE_LIGHT;
@@ -747,7 +763,10 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     self->touch = NULL;
     self->s.origin = Vec3_MA(self->s.origin, -1 * FRAME_TIME_SEC, self->velocity);
     self->velocity = vec3_origin;
-    self->s.modelindex = G_ModelIndex("sprites/s_bfg3.sp2");
+    if (!strcmp(owner->classname, "monster_shamacudda"))
+        self->s.modelindex = G_ModelIndex("sprites/s_bfx3.sp2");
+    else
+        self->s.modelindex = G_ModelIndex("sprites/s_bfg3.sp2");
     self->s.frame = 0;
     self->s.sound = 0;
     self->s.effects &= ~EF_ANIM_ALLFAST;
@@ -846,7 +865,10 @@ void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, fl
 
     bfg = G_SpawnMissile(self, start, dir, speed);
     bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
-    bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
+    if (!strcmp(self->classname, "monster_shamacudda"))
+        bfg->s.modelindex = G_ModelIndex("sprites/s_bfx1.sp2");
+    else
+        bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
     bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     bfg->touch = bfg_touch;
     bfg->nextthink = level.time + SEC(8000.0f / speed);

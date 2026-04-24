@@ -364,15 +364,21 @@ static const mframe_t flyer_frames_bankleft[] = {
 const mmove_t MMOVE_T(flyer_move_bankleft) = { FRAME_bankl01, FRAME_bankl07, flyer_frames_bankleft, NULL };
 #endif
 
-static void flyer_fire(edict_t *self, monster_muzzleflash_id_t flash_number)
+static void flyer_fire(edict_t *self, int type)
 {
     vec3_t    start;
     vec3_t    forward, right;
     vec3_t    end;
     vec3_t    dir;
+    monster_muzzleflash_id_t flash_number;
 
     if (!self->enemy || !self->enemy->r.inuse) // PGM
         return;                              // PGM
+
+    if (self->style)
+        flash_number = MZ2_ROTFLYER_BLASTER_1 + type;
+    else
+        flash_number = MZ2_FLYER_BLASTER_1 + type;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
     start = M_ProjectFlashSource(self, monster_flash_offset[flash_number], forward, right);
@@ -381,17 +387,20 @@ static void flyer_fire(edict_t *self, monster_muzzleflash_id_t flash_number)
     end.z += self->enemy->viewheight;
     dir = Vec3_Direction(end, start);
 
-    monster_fire_blaster(self, start, dir, 1, 1000, flash_number, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
+    if (self->style)
+        monster_fire_blueblaster(self, start, dir, 1, 600, flash_number, EF_BLUEHYPERBLASTER);
+    else
+        monster_fire_blaster(self, start, dir, 1, 1000, flash_number, (self->s.frame % 4) ? EF_NONE : EF_HYPERBLASTER);
 }
 
 static void flyer_fireleft(edict_t *self)
 {
-    flyer_fire(self, MZ2_FLYER_BLASTER_1);
+    flyer_fire(self, 0);
 }
 
 static void flyer_fireright(edict_t *self)
 {
-    flyer_fire(self, MZ2_FLYER_BLASTER_2);
+    flyer_fire(self, 1);
 }
 
 static const mframe_t flyer_frames_attack2[] = {
@@ -623,6 +632,16 @@ static const gib_def_t flyer_gibs[] = {
     { 0 }
 };
 
+static const gib_def_t rotflyer_gibs[] = {
+    { "models/objects/gibs/sm_metal/tris.md2", 2 },
+    { "models/objects/gibs/sm_meat/tris.md2", 2 },
+    { "models/monsters/rotflyer/gibs/base.md2", 1, GIB_SKINNED },
+    { "models/monsters/rotflyer/gibs/gun.md2", 2, GIB_SKINNED },
+    { "models/monsters/rotflyer/gibs/wing.md2", 2, GIB_SKINNED },
+    { "models/monsters/rotflyer/gibs/head.md2", 1, GIB_SKINNED | GIB_HEAD },
+    { 0 }
+};
+
 void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     G_StartSound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM);
@@ -631,7 +650,10 @@ void DIE(flyer_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 
     self->s.skinnum /= 2;
 
-    ThrowGibs(self, 55, flyer_gibs);
+    if (self->style)
+        ThrowGibs(self, 55, rotflyer_gibs);
+    else
+        ThrowGibs(self, 55, flyer_gibs);
 
     self->touch = NULL;
 }
@@ -674,7 +696,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
     }
 }
 
-static void flyer_precache(void)
+void PR_monster_flyer(void)
 {
     sound_sight = G_SoundIndex("flyer/flysght1.wav");
     sound_idle = G_SoundIndex("flyer/flysrch1.wav");
@@ -687,21 +709,8 @@ static void flyer_precache(void)
 
 /*QUAKED monster_flyer (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
-void SP_monster_flyer(edict_t *self)
+static void SP_monster_flyer_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(flyer_precache);
-
-    G_SoundIndex("flyer/flyatck3.wav");
-
-    self->s.modelindex = G_ModelIndex("models/monsters/flyer/tris.md2");
-
-    G_PrecacheGibs(flyer_gibs);
-
     // PMM - shortened to 16 from 32
     self->r.box = Box3_FromSize(16, -24, 16);
     self->movetype = MOVETYPE_STEP;
@@ -710,6 +719,8 @@ void SP_monster_flyer(edict_t *self)
     self->viewheight = 12;
 
     self->monsterinfo.engine_sound = G_SoundIndex("flyer/flyidle1.wav");
+
+    G_SoundIndex("flyer/flyatck3.wav");
 
     self->health = 50 * st.health_multiplier;
     self->mass = 50;
@@ -747,15 +758,25 @@ void SP_monster_flyer(edict_t *self)
     flymonster_start(self);
 }
 
+void SP_monster_flyer(edict_t *self)
+{
+    self->style = 0;
+    self->s.modelindex = G_ModelIndex("models/monsters/flyer/tris.md2");
+    SP_monster_flyer_x(self);
+    G_PrecacheGibs(flyer_gibs);
+}
+
 // PMM - suicide fliers
 void SP_monster_kamikaze(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
     self->s.effects |= EF_ROCKET;
-
     SP_monster_flyer(self);
+}
+
+void SP_monster_rotflyer(edict_t *self)
+{
+    self->style = 1;
+    self->s.modelindex = G_ModelIndex("models/monsters/rotflyer/tris.md2");
+    SP_monster_flyer_x(self);
+    G_PrecacheGibs(rotflyer_gibs);
 }

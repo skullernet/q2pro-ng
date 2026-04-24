@@ -575,7 +575,10 @@ void DIE(arachnid_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
     // check for gib
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
-        ThrowGibs(self, damage, use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
+        if (game.dirtype == GAMEDIR_PSX)
+            ThrowGibs(self, damage, arachnid_gibs_psx);
+        else
+            ThrowGibs(self, damage, arachnid_gibs);
         self->deadflag = true;
         return;
     }
@@ -608,7 +611,7 @@ void MONSTERINFO_SETSKIN(arachnid_setskin)(edict_t *self)
 #define DEFAULT_REINFORCEMENTS      "monster_stalker 1"
 #define DEFAULT_MONSTER_SLOTS_BASE  2
 
-static void arachnid_precache(void)
+void PR_monster_arachnid(void)
 {
     sound_step      = G_SoundIndex("insane/insane11.wav");
     sound_charge    = G_SoundIndex("gladiator/railgun.wav");
@@ -627,14 +630,8 @@ static void arachnid_precache(void)
  */
 void SP_monster_arachnid(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(arachnid_precache);
-
-    G_PrecacheGibs(use_psx_assets ? arachnid_gibs_psx : arachnid_gibs);
+    if (game.dirtype == GAMEDIR_PSX)
+        G_PrecacheGibs(arachnid_gibs_psx);
 
     if (skill.integer >= 3) {
         const char *reinforcements = DEFAULT_REINFORCEMENTS;

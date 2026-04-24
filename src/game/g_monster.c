@@ -42,6 +42,13 @@ void monster_fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
+void monster_fire_tesla(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed,
+                        monster_muzzleflash_id_t flashtype)
+{
+    fire_tesla(self, start, aimdir, damage, speed);
+    G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
+}
+
 void monster_fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                          monster_muzzleflash_id_t flashtype)
 {
@@ -251,7 +258,7 @@ void M_WorldEffects(edict_t *ent)
         bool take_drown_damage = false;
 
         if (!(ent->flags & FL_SWIM)) {
-            if (ent->waterlevel < WATER_UNDER)
+            if (ent->waterlevel < WATER_UNDER || (ent->flags & FL_DEEPONE))
                 ent->air_finished = level.time + SEC(12);
             else if (ent->air_finished < level.time)
                 take_drown_damage = true; // drown!
@@ -416,9 +423,8 @@ bool M_AllowSpawn(edict_t *self)
     return !deathmatch.integer || ai_allow_dm_spawn.integer;
 }
 
-void M_SetAnimationEx(edict_t *self, const mmove_t *move, bool instant)
+void M_FreeBeams(edict_t *self)
 {
-    // [Paril-KEX] free the beams if we switch animations.
     if (self->beam) {
         G_FreeEdict(self->beam);
         self->beam = NULL;
@@ -428,6 +434,12 @@ void M_SetAnimationEx(edict_t *self, const mmove_t *move, bool instant)
         G_FreeEdict(self->beam2);
         self->beam2 = NULL;
     }
+}
+
+void M_SetAnimationEx(edict_t *self, const mmove_t *move, bool instant)
+{
+    // [Paril-KEX] free the beams if we switch animations.
+    M_FreeBeams(self);
 
     // instant switches will cause active_move to change on the next frame
     if (instant) {
@@ -606,7 +618,7 @@ void M_ProcessPain(edict_t *e)
             if (e->groundentity && e->movetype == MOVETYPE_TOSS && !(e->flags & FL_STATIONARY))
                 e->s.angles.yaw += brandom() ? 4.5f : -4.5f;
         }
-    } else
+    } else if (e->pain)
         e->pain(e, e->monsterinfo.damage_attacker, e->monsterinfo.damage_knockback, e->monsterinfo.damage_blood, e->monsterinfo.damage_mod);
 
     if (!e->r.inuse)

@@ -24,12 +24,10 @@ static int sound_cock;
 
 enum { Blaster, Shotgun, Machinegun, Ripper, BlueHyper, Laser };
 
-#define soldier_style() ((self->count / 2) + (self->style * 3))
-
-#define is_xatrix()     (soldier_style() >= Ripper)
-#define is_light()      (soldier_style() == Blaster    || soldier_style() == Ripper)
-#define is_blitz()      (soldier_style() == Shotgun    || soldier_style() == BlueHyper)
-#define is_sustain()    (soldier_style() == Machinegun || soldier_style() == Laser)
+#define is_xatrix()     (self->style >= Ripper)
+#define is_light()      (self->style == Blaster    || self->style == Ripper)
+#define is_blitz()      (self->style == Shotgun    || self->style == BlueHyper)
+#define is_sustain()    (self->style == Machinegun || self->style == Laser)
 
 static void soldier_start_charge(edict_t *self)
 {
@@ -61,14 +59,14 @@ static void soldier_cock(edict_t *self)
 // RAFAEL
 static void soldierh_hyper_sound_start(edict_t *self)
 {
-    if (soldier_style() == BlueHyper)
+    if (self->style == BlueHyper)
         self->monsterinfo.weapon_sound = G_SoundIndex("weapons/hyprbl1a.wav");
 }
 
 static void soldierh_hyper_sound_end(edict_t *self)
 {
     if (self->monsterinfo.weapon_sound) {
-        if (soldier_style() == BlueHyper)
+        if (self->style == BlueHyper)
             G_StartSound(self, CHAN_AUTO, G_SoundIndex("weapons/hyprbd1a.wav"), 1, ATTN_NORM);
 
         self->monsterinfo.weapon_sound = 0;
@@ -515,7 +513,7 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
     monster_muzzleflash_id_t flash_index;
     vec3_t                   aim_norm;
 
-    switch (soldier_style()) {
+    switch (self->style) {
     case Blaster:
         flash_index = MZ2_SOLDIER_BLASTER_1 + flash_number;
         break;
@@ -592,7 +590,7 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
         aim = Vec3_Direction(end, start);
     }
 
-    switch (soldier_style()) {
+    switch (self->style) {
     case Ripper:
         // RAFAEL 24-APR-98
         // dropped the damage from 15 to 5
@@ -614,7 +612,7 @@ static void soldier_fire(edict_t *self, int flash_number, bool angle_limited)
         if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
             self->monsterinfo.fire_wait = level.time + random_time_sec(0.3f, 1.1f);
 
-        if (soldier_style() == Laser)
+        if (self->style == Laser)
             soldierh_laserbeam(self, flash_index);
         else
             monster_fire_bullet(self, start, aim, 2, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_index);
@@ -721,7 +719,7 @@ static void soldierh_hyper_refire1(edict_t *self)
     if (!self->enemy)
         return;
 
-    if (soldier_style() == BlueHyper && frandom() < 0.7f && visible(self, self->enemy))
+    if (self->style == BlueHyper && frandom() < 0.7f && visible(self, self->enemy))
         self->s.frame = FRAME_attak103;
 }
 
@@ -869,7 +867,7 @@ static void soldier_fire3(edict_t *self)
 
 static void soldierh_hyperripper3(edict_t *self)
 {
-    if (soldier_style() == Ripper || soldier_style() == BlueHyper)
+    if (self->style == Ripper || self->style == BlueHyper)
         soldier_fire(self, 2, false);
 }
 
@@ -975,7 +973,7 @@ static void soldier_attack6_shotgun_check(edict_t *self)
     }
 
     // [Paril-KEX] don't let the shotgun guard fire immediately.
-    if (soldier_style() == Shotgun && !self->sounds) {
+    if (self->style == Shotgun && !self->sounds) {
         self->sounds = 1;
         self->radius_dmg = 1;
         self->monsterinfo.nextframe = FRAME_runs09;
@@ -984,7 +982,7 @@ static void soldier_attack6_shotgun_check(edict_t *self)
 
 static void soldierh_hyperripper8(edict_t *self)
 {
-    if (soldier_style() == Ripper || soldier_style() == BlueHyper)
+    if (self->style == Ripper || self->style == BlueHyper)
         soldier_fire(self, 7, true);
 }
 
@@ -1081,7 +1079,7 @@ void MONSTERINFO_ATTACK(soldier_attack)(edict_t *self)
     bool attack1_possible = false;
 
     // [Paril-KEX] shotgun guard only uses attack2 at close range
-    if (soldier_style() != Shotgun || range_to(self, self->enemy) > (RANGE_NEAR * 0.65f))
+    if (self->style != Shotgun || range_to(self, self->enemy) > (RANGE_NEAR * 0.65f))
         attack1_possible = M_CheckClearShot(self, monster_flash_offset[MZ2_SOLDIER_BLASTER_1]);
 
     bool attack2_possible = M_CheckClearShot(self, monster_flash_offset[MZ2_SOLDIER_BLASTER_2]);
@@ -1183,7 +1181,7 @@ static void soldier_fire5(edict_t *self)
 
 static void soldierh_hyperripper5(edict_t *self)
 {
-    if (soldier_style() == Ripper || soldier_style() == BlueHyper)
+    if (self->style == Ripper || self->style == BlueHyper)
         soldier_fire(self, 8, true);
 }
 
@@ -1202,7 +1200,7 @@ const mmove_t MMOVE_T(soldier_move_attack5) = { FRAME_attak501, FRAME_attak508, 
 static void monster_check_prone(edict_t *self)
 {
     // we're a shotgun guard waiting to cock
-    if (soldier_style() == Shotgun && self->dmg)
+    if (self->style == Shotgun && self->dmg)
         return;
 
     // not going to shoot at this angle
@@ -1543,10 +1541,7 @@ void DIE(soldier_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
         self->s.skinnum /= 2;
 
-        if (self->beam) {
-            G_FreeEdict(self->beam);
-            self->beam = NULL;
-        }
+        M_FreeBeams(self);
 
         ThrowGibs(self, damage, soldier_gibs);
         self->deadflag = true;
@@ -1697,12 +1692,22 @@ void MONSTERINFO_STAND(soldier_blind)(edict_t *self)
 
 #define SPAWNFLAG_SOLDIER_BLIND 8
 
-static void soldier_precache_x(void)
+// not going to differentiate this shit, precache everything
+void PR_monster_soldier(void)
 {
     sound_idle = G_SoundIndex("soldier/solidle1.wav");
     sound_sight1 = G_SoundIndex("soldier/solsght1.wav");
     sound_sight2 = G_SoundIndex("soldier/solsrch1.wav");
     sound_cock = G_SoundIndex("infantry/infatck3.wav");
+
+    sound_pain_light = G_SoundIndex("soldier/solpain2.wav");
+    sound_death_light = G_SoundIndex("soldier/soldeth2.wav");
+
+    sound_pain = G_SoundIndex("soldier/solpain1.wav");
+    sound_death = G_SoundIndex("soldier/soldeth1.wav");
+
+    sound_pain_ss = G_SoundIndex("soldier/solpain3.wav");
+    sound_death_ss = G_SoundIndex("soldier/soldeth3.wav");
 }
 
 static void SP_monster_soldier_x(edict_t *self)
@@ -1713,10 +1718,9 @@ static void SP_monster_soldier_x(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
 
-    G_AddPrecache(soldier_precache_x);
-
     G_PrecacheGibs(soldier_gibs);
 
+    self->gib_health = -30;
     self->mass = 100;
 
     self->pain = soldier_pain;
@@ -1750,174 +1754,89 @@ static void SP_monster_soldier_x(edict_t *self)
     walkmonster_start(self);
 }
 
-static void soldier_precache_light(void)
-{
-    sound_pain_light = G_SoundIndex("soldier/solpain2.wav");
-    sound_death_light = G_SoundIndex("soldier/soldeth2.wav");
-}
-
 /*QUAKED monster_soldier_light (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier_light(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
+    self->style = Blaster;
+    self->s.skinnum = 0;
+    self->health = 20 * st.health_multiplier;
+    self->monsterinfo.blindfire = true;
 
     SP_monster_soldier_x(self);
-
-    G_AddPrecache(soldier_precache_light);
 
     G_ModelIndex("models/objects/laser/tris.md2");
     G_SoundIndex("misc/lasfly.wav");
     G_SoundIndex("soldier/solatck2.wav");
-
-    self->s.skinnum = 0;
-    self->count = self->s.skinnum;
-    self->health = self->max_health = 20 * st.health_multiplier;
-    self->gib_health = -30;
-
-    // PMM - blindfire
-    self->monsterinfo.blindfire = true;
-}
-
-static void soldier_precache(void)
-{
-    sound_pain = G_SoundIndex("soldier/solpain1.wav");
-    sound_death = G_SoundIndex("soldier/soldeth1.wav");
 }
 
 /*QUAKED monster_soldier (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
+    self->style = Shotgun;
+    self->s.skinnum = 2;
+    self->health = 30 * st.health_multiplier;
 
     SP_monster_soldier_x(self);
-
-    G_AddPrecache(soldier_precache);
-
     G_SoundIndex("soldier/solatck1.wav");
-
-    self->s.skinnum = 2;
-    self->count = self->s.skinnum;
-    self->health = self->max_health = 30 * st.health_multiplier;
-    self->gib_health = -30;
-}
-
-static void soldier_precache_ss(void)
-{
-    sound_pain_ss = G_SoundIndex("soldier/solpain3.wav");
-    sound_death_ss = G_SoundIndex("soldier/soldeth3.wav");
 }
 
 /*QUAKED monster_soldier_ss (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier_ss(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    SP_monster_soldier_x(self);
-
-    G_AddPrecache(soldier_precache_ss);
-
-    G_SoundIndex("soldier/solatck3.wav");
-
+    self->style = Machinegun;
     self->s.skinnum = 4;
-    self->count = self->s.skinnum;
-    self->health = self->max_health = 40 * st.health_multiplier;
-    self->gib_health = -30;
-}
+    self->health = 40 * st.health_multiplier;
 
-//
-// SPAWN
-//
-
-static void SP_monster_soldier_h(edict_t *self)
-{
     SP_monster_soldier_x(self);
-    self->style = 1;
+    G_SoundIndex("soldier/solatck3.wav");
 }
 
 /*QUAKED monster_soldier_ripper (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier_ripper(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
+    self->style = Ripper;
+    self->s.skinnum = 6;
+    self->health = 50 * st.health_multiplier;
+    self->monsterinfo.blindfire = true;
 
-    SP_monster_soldier_h(self);
-
-    G_AddPrecache(soldier_precache_light);
+    SP_monster_soldier_x(self);
 
     G_ModelIndex("models/objects/boomrang/tris.md2");
     G_SoundIndex("misc/lasfly.wav");
     G_SoundIndex("soldier/solatck2.wav");
-
-    self->s.skinnum = 6;
-    self->count = self->s.skinnum - 6;
-    self->health = self->max_health = 50 * st.health_multiplier;
-    self->gib_health = -30;
-
-    // PMM - blindfire
-    self->monsterinfo.blindfire = true;
 }
 
 /*QUAKED monster_soldier_hypergun (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier_hypergun(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
+    self->style = BlueHyper;
+    self->s.skinnum = 8;
+    self->health = 60 * st.health_multiplier;
+    self->monsterinfo.blindfire = true;
 
-    SP_monster_soldier_h(self);
-
-    G_AddPrecache(soldier_precache);
+    SP_monster_soldier_x(self);
 
     G_ModelIndex("models/objects/laser/tris.md2");
     G_SoundIndex("soldier/solatck1.wav");
     G_SoundIndex("weapons/hyprbd1a.wav");
     G_SoundIndex("weapons/hyprbl1a.wav");
-
-    self->s.skinnum = 8;
-    self->count = self->s.skinnum - 6;
-    self->health = self->max_health = 60 * st.health_multiplier;
-    self->gib_health = -30;
-
-    // PMM - blindfire
-    self->monsterinfo.blindfire = true;
 }
 
 /*QUAKED monster_soldier_lasergun (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
  */
 void SP_monster_soldier_lasergun(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    SP_monster_soldier_h(self);
-
-    G_AddPrecache(soldier_precache_ss);
-
-    G_SoundIndex("soldier/solatck3.wav");
-
+    self->style = Laser;
     self->s.skinnum = 10;
-    self->count = self->s.skinnum - 6;
-    self->health = self->max_health = 70 * st.health_multiplier;
-    self->gib_health = -30;
+    self->health = 70 * st.health_multiplier;
+
+    SP_monster_soldier_x(self);
+    G_SoundIndex("soldier/solatck3.wav");
 }
 
 // END 13-APR-98

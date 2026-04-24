@@ -25,7 +25,6 @@ static int sound_pain6;
 static int sound_death;
 static int sound_step_left;
 static int sound_step_right;
-static int sound_attack_bfg;
 static int sound_brainsplorch;
 static int sound_prerailgun;
 static int sound_popup;
@@ -687,7 +686,7 @@ bool MONSTERINFO_CHECKATTACK(Makron_CheckAttack)(edict_t *self)
 // monster_makron
 //
 
-void MakronPrecache(void)
+void PR_monster_makron(void)
 {
     sound_pain4 = G_SoundIndex("makron/pain3.wav");
     sound_pain5 = G_SoundIndex("makron/pain2.wav");
@@ -695,7 +694,6 @@ void MakronPrecache(void)
     sound_death = G_SoundIndex("makron/death.wav");
     sound_step_left = G_SoundIndex("makron/step1.wav");
     sound_step_right = G_SoundIndex("makron/step2.wav");
-    sound_attack_bfg = G_SoundIndex("makron/bfg_fire.wav");
     sound_brainsplorch = G_SoundIndex("makron/brain1.wav");
     sound_prerailgun = G_SoundIndex("makron/rail_up.wav");
     sound_popup = G_SoundIndex("makron/popup.wav");
@@ -703,25 +701,19 @@ void MakronPrecache(void)
     sound_taunt2 = G_SoundIndex("makron/voice3.wav");
     sound_taunt3 = G_SoundIndex("makron/voice.wav");
     sound_hit = G_SoundIndex("makron/bhit.wav");
-
-    G_ModelIndex("models/monsters/boss3/rider/tris.md2");
 }
 
 /*QUAKED monster_makron (1 .5 0) (-30 -30 0) (30 30 90) Ambush Trigger_Spawn Sight
  */
 void SP_monster_makron(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(MakronPrecache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
     self->r.box = Box3_FromSize(30, 0, 90);
+
+    G_PrecacheGibs(makron_gibs);
+    G_SoundIndex("makron/bfg_fire.wav");
 
     self->health = 3000 * st.health_multiplier;
     self->gib_health = -2000;

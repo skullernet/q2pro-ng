@@ -1460,7 +1460,7 @@ bool MONSTERINFO_BLOCKED(gekk_blocked)(edict_t *self, float dist)
 // ROGUE
 //================
 
-static void gekk_precache(void)
+void PR_monster_gekk(void)
 {
     sound_swing = G_SoundIndex("gek/gk_atck1.wav");
     sound_hit = G_SoundIndex("gek/gk_atck2.wav");
@@ -1485,13 +1485,6 @@ static void gekk_precache(void)
  */
 void SP_monster_gekk(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(gekk_precache);
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("models/monsters/gekk/tris.md2");
@@ -1506,8 +1499,9 @@ void SP_monster_gekk(edict_t *self)
     self->pain = gekk_pain;
     self->die = gekk_die;
 
-    self->monsterinfo.stand = gekk_stand;
+    self->flags |= FL_ACIDIC;
 
+    self->monsterinfo.stand = gekk_stand;
     self->monsterinfo.walk = gekk_walk;
     self->monsterinfo.run = gekk_run_start;
     self->monsterinfo.dodge = gekk_dodge;

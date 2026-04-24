@@ -487,6 +487,12 @@ void CG_WeldingLight(vec3_t pos)
     ex->frames = 2;
 }
 
+void CG_GenericExplosion(vec3_t pos)
+{
+    CG_PlainExplosion(pos);
+    CG_ExplosionParticles(pos);
+}
+
 static void CG_AddExplosions(void)
 {
     entity_t    *ent;
@@ -913,6 +919,7 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         CG_ParticleEffect2(pos, dir, 0xdf, 30);
         break;
     case EV_GUNSHOT:
+    case EV_NAILS:
         CG_ParticleEffect(pos, dir, 0, 40);
         break;
     case EV_SHOTGUN:
@@ -954,6 +961,10 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     case EV_BULLET_SPARKS:
         CG_SmokeAndFlash(pos);
         break;
+    case EV_NAILS:
+        CG_SmokeAndFlash(pos);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("weapons/tink1.wav"), 1, ATTN_NORM, 0);
+        break;
     case EV_HEATBEAM_SPARKS:
     case EV_HEATBEAM_STEAM:
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.lashit, 1, ATTN_NORM, 0);
@@ -967,7 +978,7 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         break;
     }
 
-    if (type == EV_GUNSHOT || type == EV_BULLET_SPARKS) {
+    if (type == EV_GUNSHOT || type == EV_NAILS || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
         if (r == 1)
             trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric1, 1, ATTN_NORM, 0);
@@ -1109,6 +1120,24 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         CG_ColorFlash(pos, 0, 150, -1, -1, -1);
         CG_ColorExplosionParticles(pos, 0, 1);
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.disrexp, 1, ATTN_NORM, 0);
+        break;
+
+    case EV_ENFORCER_BOLT:
+        CG_ColorFlash(pos, 0, 150, 1.0f, 1.0f, 0.3f);
+        CG_ParticleEffect2(pos, dir, 226, 15);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("enforcer/enfstop.wav"), 1, ATTN_NORM, 0);
+        break;
+
+    case EV_HELLKNIGHT_MAGIC:
+        CG_ColorFlash(pos, 0, 150, 1.0f, 1.0f, 0.3f);
+        CG_ParticleEffect2(pos, dir, 226, 15);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("hknight/hit.wav"), 1, ATTN_NORM, 0);
+        break;
+
+    case EV_WIZARD_SPIT:
+        CG_ColorFlash(pos, 0, 150, 0.0f, 1.0f, 0.0f);
+        CG_ParticleEffect2(pos, dir, 209, 15);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("wizard/hit.wav"), 1, ATTN_NORM, 0);
         break;
 
     default:
@@ -1280,7 +1309,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         CG_DamageEvent(cent, event, param);
         break;
 
-    case EV_EXPLOSION_PLAIN ... EV_TRACKER_EXPLOSION:
+    case EV_EXPLOSION_PLAIN ... EV_WIZARD_SPIT:
         CG_ExplosionEvent(cent, event, param);
         break;
 

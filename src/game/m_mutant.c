@@ -13,19 +13,21 @@ mutant
 
 #define SPAWNFLAG_MUTANT_NOJUMPING  8
 
-static int sound_swing;
-static int sound_hit;
-static int sound_hit2;
-static int sound_death;
-static int sound_idle;
-static int sound_pain1;
-static int sound_pain2;
-static int sound_sight;
-static int sound_search;
-static int sound_step1;
-static int sound_step2;
-static int sound_step3;
-static int sound_thud;
+#define SOUND    sound[!!self->style]
+
+static struct {
+    int swing;
+    int hit;
+    int hit2;
+    int death;
+    int idle;
+    int pain1;
+    int pain2;
+    int sight;
+    int search;
+    int step[3];
+    int thud;
+} sound[2];
 
 //
 // SOUNDS
@@ -33,23 +35,17 @@ static int sound_thud;
 
 static void mutant_step(edict_t *self)
 {
-    int n = irandom1(3);
-    if (n == 0)
-        G_StartSound(self, CHAN_BODY, sound_step1, 1, ATTN_NORM);
-    else if (n == 1)
-        G_StartSound(self, CHAN_BODY, sound_step2, 1, ATTN_NORM);
-    else
-        G_StartSound(self, CHAN_BODY, sound_step3, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_BODY, random_element(SOUND.step), 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SIGHT(mutant_sight)(edict_t *self, edict_t *other)
 {
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
 void MONSTERINFO_SEARCH(mutant_search)(edict_t *self)
 {
-    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.search, 1, ATTN_NORM);
 }
 
 //
@@ -151,7 +147,7 @@ const mmove_t MMOVE_T(mutant_move_idle) = { FRAME_stand152, FRAME_stand164, muta
 void MONSTERINFO_IDLE(mutant_idle)(edict_t *self)
 {
     M_SetAnimation(self, &mutant_move_idle);
-    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
+    G_StartSound(self, CHAN_VOICE, SOUND.idle, 1, ATTN_IDLE);
 }
 
 //
@@ -222,9 +218,9 @@ static void mutant_hit_left(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
-        G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.hit, 1, ATTN_NORM);
     else {
-        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     }
 }
@@ -233,9 +229,9 @@ static void mutant_hit_right(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 8 };
     if (fire_hit(self, aim, irandom2(5, 15), 100))
-        G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.hit2, 1, ATTN_NORM);
     else {
-        G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
         self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
     }
 }
@@ -281,14 +277,14 @@ void TOUCH(mutant_jump_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         return;
     }
 
-    if (self->style == 1 && other->takedamage) {
+    if (self->dmg == 1 && other->takedamage) {
         // [Paril-KEX] only if we're actually moving fast enough to hurt
         normal = Vec3_NormalizeLength(self->velocity, &length);
         if (length > 30) {
             point = Vec3_MA(self->s.origin, self->r.box.maxs.x, normal);
             damage = irandom2(40, 50);
             T_Damage(other, self, self, self->velocity, point, DirToByte(normal), damage, damage, DAMAGE_NONE, MOD_UNKNOWN);
-            self->style = 0;
+            self->dmg = 0;
         }
     }
 
@@ -307,7 +303,7 @@ static void mutant_jump_takeoff(edict_t *self)
 {
     vec3_t forward;
 
-    G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
     AngleVectors(self->s.angles, &forward, NULL, NULL);
     self->s.origin.z += 1;
     self->velocity = Vec3_Scale(forward, 425);
@@ -315,7 +311,7 @@ static void mutant_jump_takeoff(edict_t *self)
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
     self->monsterinfo.attack_finished = level.time + SEC(3);
-    self->style = 1;
+    self->dmg = 1;
     self->touch = mutant_jump_touch;
 }
 
@@ -324,7 +320,7 @@ static void mutant_check_landing(edict_t *self)
     monster_jump_finished(self);
 
     if (self->groundentity) {
-        G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_WEAPON, SOUND.thud, 1, ATTN_NORM);
         self->monsterinfo.attack_finished = level.time + random_time_sec(0.5f, 1.5f);
 
         if (self->monsterinfo.unduck)
@@ -461,11 +457,11 @@ void PAIN(mutant_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
     r = frandom();
     if (r < 0.33f)
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain1, 1, ATTN_NORM);
     else if (r < 0.66f)
-        G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain2, 1, ATTN_NORM);
     else
-        G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
+        G_StartSound(self, CHAN_VOICE, SOUND.pain1, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare
@@ -535,7 +531,7 @@ static const mframe_t mutant_frames_death2[] = {
 };
 const mmove_t MMOVE_T(mutant_move_death2) = { FRAME_death201, FRAME_death210, mutant_frames_death2, monster_dead };
 
-static const gib_def_t mutant_gibs[] = {
+static const gib_def_t mutant_gibs_plain[] = {
     { "models/objects/gibs/bone/tris.md2", 2 },
     { "models/objects/gibs/sm_meat/tris.md2", 4 },
     { "models/monsters/mutant/gibs/hand.md2", 2, GIB_SKINNED | GIB_UPRIGHT },
@@ -545,12 +541,30 @@ static const gib_def_t mutant_gibs[] = {
     { 0 }
 };
 
+static const gib_def_t mutant_gibs_spawn[] = {
+    { "models/objects/gibs/bone/tris.md2", 2 },
+    { "models/objects/gibs/sm_meat/tris.md2", 4 },
+    { "models/monsters/mutantspawn/gibs/hand.md2", 2, GIB_SKINNED | GIB_UPRIGHT },
+    { "models/monsters/mutantspawn/gibs/foot.md2", 2, GIB_SKINNED },
+    { "models/monsters/mutantspawn/gibs/chest.md2", 1, GIB_SKINNED },
+    { "models/monsters/mutantspawn/gibs/head.md2", 1, GIB_SKINNED | GIB_HEAD },
+    { 0 }
+};
+
 void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
+    if (self->style) {
+        G_AddEvent(self, EV_ROCKET_EXPLOSION, 0);
+        T_RadiusClassDamage(self, attacker, 500, self->classname, 100, MOD_EXPLOSIVE);
+        ThrowGibs(self, damage, mutant_gibs_spawn);
+        self->deadflag = true;
+        return;
+    }
+
     if (M_CheckGib(self, mod)) {
         G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_NORM);
         self->s.skinnum /= 2;
-        ThrowGibs(self, damage, mutant_gibs);
+        ThrowGibs(self, damage, mutant_gibs_plain);
         self->deadflag = true;
         return;
     }
@@ -558,7 +572,7 @@ void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     if (self->deadflag)
         return;
 
-    G_StartSound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.death, 1, ATTN_NORM);
     self->deadflag = true;
     self->takedamage = true;
 
@@ -651,44 +665,47 @@ bool MONSTERINFO_BLOCKED(mutant_blocked)(edict_t *self, float dist)
 // SPAWN
 //
 
-static void mutant_precache(void)
+void PR_monster_mutant(void)
 {
-    sound_swing = G_SoundIndex("mutant/mutatck1.wav");
-    sound_hit = G_SoundIndex("mutant/mutatck2.wav");
-    sound_hit2 = G_SoundIndex("mutant/mutatck3.wav");
-    sound_death = G_SoundIndex("mutant/mutdeth1.wav");
-    sound_idle = G_SoundIndex("mutant/mutidle1.wav");
-    sound_pain1 = G_SoundIndex("mutant/mutpain1.wav");
-    sound_pain2 = G_SoundIndex("mutant/mutpain2.wav");
-    sound_sight = G_SoundIndex("mutant/mutsght1.wav");
-    sound_search = G_SoundIndex("mutant/mutsrch1.wav");
-    sound_step1 = G_SoundIndex("mutant/step1.wav");
-    sound_step2 = G_SoundIndex("mutant/step2.wav");
-    sound_step3 = G_SoundIndex("mutant/step3.wav");
-    sound_thud = G_SoundIndex("mutant/thud1.wav");
+    sound[0].swing = G_SoundIndex("mutant/mutatck1.wav");
+    sound[0].hit = G_SoundIndex("mutant/mutatck2.wav");
+    sound[0].hit2 = G_SoundIndex("mutant/mutatck3.wav");
+    sound[0].death = G_SoundIndex("mutant/mutdeth1.wav");
+    sound[0].idle = G_SoundIndex("mutant/mutidle1.wav");
+    sound[0].pain1 = G_SoundIndex("mutant/mutpain1.wav");
+    sound[0].pain2 = G_SoundIndex("mutant/mutpain2.wav");
+    sound[0].sight = G_SoundIndex("mutant/mutsght1.wav");
+    sound[0].search = G_SoundIndex("mutant/mutsrch1.wav");
+    sound[0].step[0] = G_SoundIndex("mutant/step1.wav");
+    sound[0].step[1] = G_SoundIndex("mutant/step2.wav");
+    sound[0].step[2] = G_SoundIndex("mutant/step3.wav");
+    sound[0].thud = G_SoundIndex("mutant/thud1.wav");
+}
 
+void PR_monster_mutantspawn(void)
+{
+    sound[1].swing = G_SoundIndex("mutantspawn/mutatck1.wav");
+    sound[1].hit = G_SoundIndex("mutantspawn/mutatck2.wav");
+    sound[1].hit2 = G_SoundIndex("mutantspawn/mutatck3.wav");
+    sound[1].death = G_SoundIndex("mutantspawn/mutdeth1_r.wav");
+    sound[1].idle = G_SoundIndex("mutantspawn/mutidle1_r.wav");
+    sound[1].pain1 = G_SoundIndex("mutantspawn/mutpain1_r.wav");
+    sound[1].pain2 = G_SoundIndex("mutantspawn/mutpain2_r.wav");
+    sound[1].sight = G_SoundIndex("mutantspawn/mutsght1_r.wav");
+    sound[1].search = G_SoundIndex("mutantspawn/mutsrch1_r.wav");
+    sound[1].step[0] = G_SoundIndex("mutantspawn/step1.wav");
+    sound[1].step[1] = G_SoundIndex("mutantspawn/step2.wav");
+    sound[1].step[2] = G_SoundIndex("mutantspawn/step3.wav");
+    sound[1].thud = G_SoundIndex("mutantspawn/thud1.wav");
 }
 
 /*QUAKED monster_mutant (1 .5 0) (-32 -32 -24) (32 32 32) Ambush Trigger_Spawn Sight NoJumping
 model="models/monsters/mutant/tris.md2"
 */
-void SP_monster_mutant(edict_t *self)
+static void SP_monster_mutant_x(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(mutant_precache);
-
-    self->monsterinfo.aiflags |= AI_STINKY;
-
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
-    self->s.modelindex = G_ModelIndex("models/monsters/mutant/tris.md2");
-
-    G_PrecacheGibs(mutant_gibs);
-
     self->r.box = Box3_FromSize(18, -24, 30);
 
     self->health = 300 * st.health_multiplier;
@@ -716,6 +733,7 @@ void SP_monster_mutant(edict_t *self)
     M_SetAnimation(self, &mutant_move_stand);
 
     self->monsterinfo.combat_style = COMBAT_MELEE;
+    self->monsterinfo.aiflags |= AI_STINKY;
 
     self->monsterinfo.scale = MODEL_SCALE;
     self->monsterinfo.can_jump = !(self->spawnflags & SPAWNFLAG_MUTANT_NOJUMPING);
@@ -723,4 +741,20 @@ void SP_monster_mutant(edict_t *self)
     self->monsterinfo.jump_height = 68;
 
     walkmonster_start(self);
+}
+
+void SP_monster_mutant(edict_t *self)
+{
+    self->style = 0;
+    self->s.modelindex = G_ModelIndex("models/monsters/mutant/tris.md2");
+    SP_monster_mutant_x(self);
+    G_PrecacheGibs(mutant_gibs_plain);
+}
+
+void SP_monster_mutantspawn(edict_t *self)
+{
+    self->style = 1;
+    self->s.modelindex = G_ModelIndex("models/monsters/mutantspawn/tris.md2");
+    SP_monster_mutant_x(self);
+    G_PrecacheGibs(mutant_gibs_spawn);
 }

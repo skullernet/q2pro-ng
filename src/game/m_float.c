@@ -605,7 +605,7 @@ static void float_set_fly_parameters(edict_t *self)
     self->monsterinfo.fly_max_distance = 200;
 }
 
-static void floater_precache(void)
+void PR_monster_floater(void)
 {
     sound_attack2 = G_SoundIndex("floater/fltatck2.wav");
     sound_attack3 = G_SoundIndex("floater/fltatck3.wav");
@@ -622,13 +622,6 @@ static void floater_precache(void)
  */
 void SP_monster_floater(edict_t *self)
 {
-    if (!M_AllowSpawn(self)) {
-        G_FreeEdict(self);
-        return;
-    }
-
-    G_AddPrecache(floater_precache);
-
     G_SoundIndex("floater/fltatck1.wav");
 
     self->monsterinfo.engine_sound = G_SoundIndex("floater/fltsrch1.wav");

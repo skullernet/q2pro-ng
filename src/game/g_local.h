@@ -27,7 +27,11 @@ extern const box3_t player_box;
 extern const game_import_t  *gi;
 #endif
 
-extern bool use_psx_assets;
+typedef enum {
+    GAMEDIR_BASE,
+    GAMEDIR_PSX,
+    GAMEDIR_COTV
+} gamedir_type_t;
 
 // edict->spawnflags
 // these are set with checkboxes on each entity in the map editor.
@@ -250,6 +254,9 @@ typedef enum {
 #define FL_RESPAWN              BIT_ULL(30) // used for item respawning
 #define FL_IMMORTAL             BIT_ULL(31) // never go below 1hp
 
+#define FL_DEEPONE              BIT_ULL(32) // never drown
+#define FL_ACIDIC               BIT_ULL(33) // green blood
+
 // gitem_t->flags
 typedef enum {
     IF_ANY          = -1,
@@ -377,6 +384,17 @@ typedef enum {
 
     IT_ITEM_FLASHLIGHT,
     IT_ITEM_COMPASS,
+
+    IT_KEY_Q1_RUNE_END1,
+    IT_KEY_Q1_RUNE_END2,
+    IT_KEY_Q1_RUNE_END3,
+    IT_KEY_Q1_RUNE_END4,
+    IT_KEY_Q1_BASE_GOLD_KEY,
+    IT_KEY_Q1_BASE_SILVER_KEY,
+    IT_KEY_Q1_MEDIEVAL_GOLD_KEY,
+    IT_KEY_Q1_MEDIEVAL_SILVER_KEY,
+    IT_KEY_Q1_RUNIC_GOLD_KEY,
+    IT_KEY_Q1_RUNIC_SILVER_KEY,
 
     IT_TOTAL
 } item_id_t;
@@ -588,10 +606,6 @@ typedef struct {
     int visit_order;
 } level_entry_t;
 
-#define MAX_PRECACHES   64
-
-typedef void (*precache_t)(void);
-
 //
 // this structure is left intact through an entire game
 // it should be initialized at dll load time, and read/written to
@@ -617,12 +631,11 @@ typedef struct {
     // [Paril-KEX]
     level_entry_t level_entries[MAX_LEVELS_PER_UNIT];
 
-    precache_t precaches[MAX_PRECACHES];
-    int num_precaches;
-
     int tick_rate;
     gtime_t frame_time;
     float frame_time_sec;
+
+    gamedir_type_t dirtype;
 } game_locals_t;
 
 #define MAX_HEALTH_BARS 2
@@ -1347,7 +1360,6 @@ bool ED_WasKeySpecified(const char *key);
 void ED_SetKeySpecified(const char *key);
 void ED_InitSpawnVars(void);
 const char *G_GetLightStyle(unsigned style);
-void G_AddPrecache(precache_t func);
 void G_RefreshPrecaches(void);
 void G_PrecacheInventoryItems(void);
 void G_SpawnEntities(void);
@@ -1453,6 +1465,8 @@ void monster_fire_flechette(edict_t *self, vec3_t start, vec3_t dir, int damage,
                             monster_muzzleflash_id_t flashtype);
 void monster_fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed,
                           monster_muzzleflash_id_t flashtype, float right_adjust, float up_adjust);
+void monster_fire_tesla(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed,
+                        monster_muzzleflash_id_t flashtype);
 void monster_fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                          monster_muzzleflash_id_t flashtype);
 bool monster_fire_railgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick,
@@ -1482,12 +1496,15 @@ void M_CheckGround(edict_t *ent, contents_t mask);
 void monster_use(edict_t *self, edict_t *other, edict_t *activator);
 void M_ProcessPain(edict_t *e);
 bool M_ShouldReactToPain(edict_t *self, mod_t mod);
+void M_FreeBeams(edict_t *self);
 void M_SetAnimation(edict_t *self, const mmove_t *move);
 void M_SetAnimationEx(edict_t *self, const mmove_t *move, bool instant);
 bool M_AllowSpawn(edict_t * self);
 void M_SetEffects(edict_t *ent);
 void G_MonsterKilled(edict_t *self);
 bool M_AdjustBlindfireTarget(edict_t *self, vec3_t start, vec3_t target, vec3_t right, vec3_t *out_dir);
+void T_SlamRadiusDamage(vec3_t point, edict_t *inflictor, edict_t *attacker, float damage, float kick,
+                        edict_t *ignore, const char *ignoreclass, float radius, mod_t mod);
 
 // Paril: used in N64. causes them to be mad at the player
 // regardless of circumstance.
@@ -1502,6 +1519,8 @@ void monster_fire_ionripper(edict_t *self, vec3_t start, vec3_t dir, int damage,
                             monster_muzzleflash_id_t flashtype, effects_t effect);
 void monster_fire_heat(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                        monster_muzzleflash_id_t flashtype, float lerp_factor);
+void monster_fire_plasma(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
+                         monster_muzzleflash_id_t flashtype, float damage_radius, int radius_damage);
 #define SPAWNFLAG_DABEAM_SECONDARY  1
 #define SPAWNFLAG_DABEAM_SPAWNED    2
 void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*update_func)(edict_t *self));
@@ -1615,6 +1634,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
 // g_weapon.c
 //
 edict_t *G_SpawnMissile(edict_t *self, vec3_t start, vec3_t dir, int speed);
+edict_t *G_SpawnLightning(edict_t *self);
 void G_CheckMissileImpact(edict_t *self, edict_t *bolt);
 bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick);
 void fire_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick,

@@ -112,6 +112,15 @@ const vec3_t monster_flash_offset[MZ2_LAST] = {
     [MZ2_GUNNER_MACHINEGUN_7] = { 26.9f * 1.15f, 0.5f * 1.15f, 21.5f * 1.15f },
     [MZ2_GUNNER_MACHINEGUN_8] = { 29.0f * 1.15f, 2.4f * 1.15f, 19.5f * 1.15f },
 
+    [MZ2_GUNNER_FLECHETTE_1] = { 30.1f * 1.15f, 3.9f * 1.15f, 19.6f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_2] = { 29.1f * 1.15f, 2.5f * 1.15f, 20.7f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_3] = { 28.2f * 1.15f, 2.5f * 1.15f, 22.2f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_4] = { 28.2f * 1.15f, 3.6f * 1.15f, 22.0f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_5] = { 26.9f * 1.15f, 2.0f * 1.15f, 23.4f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_6] = { 26.5f * 1.15f, 0.6f * 1.15f, 20.8f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_7] = { 26.9f * 1.15f, 0.5f * 1.15f, 21.5f * 1.15f },
+    [MZ2_GUNNER_FLECHETTE_8] = { 29.0f * 1.15f, 2.4f * 1.15f, 19.5f * 1.15f },
+
     [MZ2_GUNNER_GRENADE_1] = { 4.6f * 1.15f, -16.8f * 1.15f, 7.3f * 1.15f },
     [MZ2_GUNNER_GRENADE_2] = { 4.6f * 1.15f, -16.8f * 1.15f, 7.3f * 1.15f },
     [MZ2_GUNNER_GRENADE_3] = { 4.6f * 1.15f, -16.8f * 1.15f, 7.3f * 1.15f },
@@ -341,5 +350,48 @@ const vec3_t monster_flash_offset[MZ2_LAST] = {
 
     [MZ2_BERSERK_SLAM] = { 20.0f, -14.3f, -21.0f },
     [MZ2_GUNCMDR_SLAM] = { 20, 0, 14 },
+    [MZ2_GENERIC_SLAM] = { 0, 0, -24 },
+
     [MZ2_FIXBOT_WELDER] = { 24.0f, -0.8f, -10.0f },
+
+    [MZ2_ENFORCER_BOLT] = { 25.0f, 10.0f, 9.0f },
+    [MZ2_ENFORCER_FLECHETTE1_L] = { 25.0f, 7.5f, 9.0f },
+    [MZ2_ENFORCER_FLECHETTE1_R] = { 25.0f, 12.5f, 9.0f },
+    [MZ2_ENFORCER_FLECHETTE2_L] = { 25.0f, 7.5f, 9.0f },
+    [MZ2_ENFORCER_FLECHETTE2_R] = { 25.0f, 12.5f, 9.0f },
+
+    [MZ2_GRUNT_SHOTGUN] = { 10.6f * 1.2f, 7.7f * 1.2f, 7.8f * 1.2f },
+    [MZ2_GRUNT_HYPERGUN_L] = { 25.72f, 1.24f, 9.36f },
+    [MZ2_GRUNT_HYPERGUN_R] = { 12.72f, 9.24f, 9.36f},
+    [MZ2_GRUNT_BEAM] = { 16.0f, 6.0f, 12.0f },
+
+    [MZ2_HELLKNIGHT_MAGIC] = { 10, 0, 10 },
+    [MZ2_HELLKNIGHT_HYPER] = { 35, -12.5f, 15 },
+
+    [MZ2_OGRE_GRENADE] = { 35, -8, 18 },
+    [MZ2_OGRE_SHOTGUN] = { 35, -8, 18 },
+    [MZ2_OGRE_GRENADE_S] = { 4.6f * 1.15f, 16.8f * 1.15f, 19.3f * 1.15f },
+
+    [MZ2_IRONVORE_PLASMA] = { 24.8f, -9.0f, 39.0f },
+
+    [MZ2_ROTFLYER_BLASTER_1] = { 14.1f, 13.4f, -7.0f },
+    [MZ2_ROTFLYER_BLASTER_2] = { 14.1f, -13.4f, -7.0f },
+
+    [MZ2_SHAMBLER_ROCKET] = { 60, 15, 45 },
+    [MZ2_SHAMBLER_BFG] = { 48, 0, 48 },
+
+    [MZ2_WIZARD_SPIT_L] = { 14, -14, 25 },
+    [MZ2_WIZARD_SPIT_R] = { 14, 14, 35 },
+    [MZ2_WIZARD_BEAM] = { 20, 0, 40 },
+
+    [MZ2_CHTJOR_ROCKET_L] = { 158.5f, -86.7f, 150.0f },
+    [MZ2_CHTJOR_ROCKET_R] = { 158.5f, 86.7f, 150.0f },
+    [MZ2_CHTJOR_BFG] = { -40.3f, 230.0f, 300.2f },
+
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_1] = { 50, 39, 80 },
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_2] = { 50, 39, 80 },
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_3] = { 50, 39, 80 },
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_4] = { 50, 39, 80 },
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_5] = { 50, 39, 80 },
+    [MZ2_SUPERSHAMBLERTANK_PLASMA_6] = { 50, 39, 80 },
 };

@@ -21,6 +21,7 @@ typedef enum {
 typedef struct {
     const char *name;
     void (*spawn)(edict_t *ent);
+    void (*precache)(void);
 } spawn_func_t;
 
 typedef struct {
@@ -151,7 +152,9 @@ void SP_monster_soldier_light(edict_t *self);
 void SP_monster_soldier(edict_t *self);
 void SP_monster_soldier_ss(edict_t *self);
 void SP_monster_tank(edict_t *self);
+void SP_monster_tank_commander(edict_t *self);
 void SP_monster_medic(edict_t *self);
+void SP_monster_medic_commander(edict_t *self);
 void SP_monster_flipper(edict_t *self);
 void SP_monster_chick(edict_t *self);
 void SP_monster_parasite(edict_t *self);
@@ -159,6 +162,7 @@ void SP_monster_flyer(edict_t *self);
 void SP_monster_brain(edict_t *self);
 void SP_monster_floater(edict_t *self);
 void SP_monster_hover(edict_t *self);
+void SP_monster_daedalus(edict_t *self);
 void SP_monster_mutant(edict_t *self);
 void SP_monster_supertank(edict_t *self);
 void SP_monster_boss2(edict_t *self);
@@ -236,6 +240,134 @@ void SP_misc_nuke_core(edict_t *self);
 void SP_trigger_ctf_teleport(edict_t *self);
 void SP_info_ctf_teleport_destination(edict_t *self);
 // ZOID
+
+// CotV
+void SP_monster_chthon(edict_t *self);
+void SP_monster_chtjor(edict_t *self);
+void SP_monster_dog(edict_t *self);
+void SP_monster_dog_prototype(edict_t *self);
+void SP_monster_dog_strogg(edict_t *self);
+void SP_monster_enforcer(edict_t *self);
+void SP_monster_enforcer_prototype(edict_t *self);
+void SP_monster_enforcer_strogg(edict_t *self);
+void SP_monster_fiend(edict_t *self);
+void SP_monster_fiend_prototype(edict_t *self);
+void SP_monster_fiend_strogg(edict_t *self);
+void SP_monster_fish(edict_t *self);
+void SP_monster_fishgunner(edict_t *self);
+void SP_monster_hellknight(edict_t *self);
+void SP_monster_hknight_bsk_strogg(edict_t *self);
+void SP_monster_hknight_hyper(edict_t *self);
+void SP_monster_hknight_prototype(edict_t *self);
+void SP_monster_insane_spawn(edict_t *self);
+void SP_monster_ironvore(edict_t *self);
+void SP_monster_knight(edict_t *self);
+void SP_monster_knight_prototype(edict_t *self);
+void SP_monster_knight_strogg(edict_t *self);
+void SP_monster_mutantspawn(edict_t *self);
+void SP_monster_ogre(edict_t *self);
+void SP_monster_ogre2_strogg(edict_t *self);
+void SP_monster_ogre_prototype(edict_t *self);
+void SP_monster_ogre_strogg(edict_t *self);
+void SP_monster_rotflyer(edict_t *self);
+void SP_monster_shalrath(edict_t *self);
+void SP_monster_shalrath_prototype(edict_t *self);
+void SP_monster_shalrath_strogg(edict_t *self);
+void SP_monster_shamacudda(edict_t *self);
+void SP_monster_shambler(edict_t *self);
+void SP_monster_shambler_prototype(edict_t *self);
+void SP_monster_shambler_strogg(edict_t *self);
+void SP_monster_shamedic(edict_t *self);
+void SP_monster_shamjorg(edict_t *self);
+void SP_monster_soldier_grunt(edict_t *self);
+void SP_monster_soldier_grunt_double(edict_t *self);
+void SP_monster_soldier_grunt_prototype(edict_t *self);
+void SP_monster_soldier_strogg(edict_t *self);
+void SP_monster_spawn(edict_t *self);
+void SP_monster_supershamblertank(edict_t *self);
+void SP_monster_wizarcuda_strogg(edict_t *self);
+void SP_monster_wizard(edict_t *self);
+void SP_monster_wizard_prototype(edict_t *self);
+void SP_monster_wizard_strogg(edict_t *self);
+void SP_monster_zombie(edict_t *self);
+void SP_monster_zombie_prototype(edict_t *self);
+void SP_monster_zombie_strogg(edict_t *self);
+
+void SP_event_lighting(edict_t *self);
+void SP_light_flame_small(edict_t *self);
+void SP_light_torch_small(edict_t *self);
+void SP_misc_chtondead(edict_t *self);
+void SP_misc_fiend_craft(edict_t *self);
+void SP_trigger_key2(edict_t *self);
+// CotV
+
+void PR_misc_insane(void);
+void PR_monster_arachnid(void);
+void PR_monster_berserk(void);
+void PR_monster_boss2(void);
+void PR_monster_brain(void);
+void PR_monster_carrier(void);
+void PR_monster_chick(void);
+void PR_monster_chthon(void);
+void PR_monster_chtjor(void);
+void PR_monster_daedalus(void);
+void PR_monster_dog(void);
+void PR_monster_dog_prototype(void);
+void PR_monster_dog_strogg(void);
+void PR_monster_enforcer(void);
+void PR_monster_enforcer_strogg(void);
+void PR_monster_fiend(void);
+void PR_monster_fiend_strogg(void);
+void PR_monster_fish(void);
+void PR_monster_fishgunner(void);
+void PR_monster_fixbot(void);
+void PR_monster_flipper(void);
+void PR_monster_floater(void);
+void PR_monster_flyer(void);
+void PR_monster_gekk(void);
+void PR_monster_gladb(void);
+void PR_monster_gladiator(void);
+void PR_monster_guardian(void);
+void PR_monster_guncmdr(void);
+void PR_monster_gunner(void);
+void PR_monster_hellknight(void);
+void PR_monster_hellknight_strogg(void);
+void PR_monster_hover(void);
+void PR_monster_infantry(void);
+void PR_monster_insane_spawn(void);
+void PR_monster_ironvore(void);
+void PR_monster_jorg(void);
+void PR_monster_knight(void);
+void PR_monster_knight_strogg(void);
+void PR_monster_makron(void);
+void PR_monster_medic(void);
+void PR_monster_medic_commander(void);
+void PR_monster_mutant(void);
+void PR_monster_mutantspawn(void);
+void PR_monster_ogre(void);
+void PR_monster_ogre2_strogg(void);
+void PR_monster_ogre_strogg(void);
+void PR_monster_parasite(void);
+void PR_monster_shalrath(void);
+void PR_monster_shalrath_prototype(void);
+void PR_monster_shalrath_strogg(void);
+void PR_monster_shambler(void);
+void PR_monster_shambler_strogg(void);
+void PR_monster_soldier(void);
+void PR_monster_soldier_grunt(void);
+void PR_monster_soldier_strogg(void);
+void PR_monster_spawn(void);
+void PR_monster_stalker(void);
+void PR_monster_supershamblertank(void);
+void PR_monster_supertank(void);
+void PR_monster_tank(void);
+void PR_monster_turret(void);
+void PR_monster_widow(void);
+void PR_monster_widow2(void);
+void PR_monster_wizard(void);
+void PR_monster_wizard_strogg(void);
+void PR_monster_zombie(void);
+void PR_monster_zombie_strogg(void);
 
 // clang-format off
 static const spawn_func_t spawn_funcs[] = {
@@ -337,7 +469,7 @@ static const spawn_func_t spawn_funcs[] = {
     { "misc_gib_arm", SP_misc_gib_arm },
     { "misc_gib_leg", SP_misc_gib_leg },
     { "misc_gib_head", SP_misc_gib_head },
-    { "misc_insane", SP_misc_insane },
+    { "misc_insane", SP_misc_insane, PR_misc_insane },
     { "misc_deadsoldier", SP_misc_deadsoldier },
     { "misc_viper", SP_misc_viper },
     { "misc_viper_bomb", SP_misc_viper_bomb },
@@ -353,43 +485,43 @@ static const spawn_func_t spawn_funcs[] = {
     { "misc_hologram", SP_misc_hologram }, // Paril
     { "misc_lavaball", SP_misc_lavaball }, // Paril
 
-    { "monster_berserk", SP_monster_berserk },
-    { "monster_gladiator", SP_monster_gladiator },
-    { "monster_gunner", SP_monster_gunner },
-    { "monster_infantry", SP_monster_infantry },
-    { "monster_soldier_light", SP_monster_soldier_light },
-    { "monster_soldier", SP_monster_soldier },
-    { "monster_soldier_ss", SP_monster_soldier_ss },
-    { "monster_tank", SP_monster_tank },
-    { "monster_tank_commander", SP_monster_tank },
-    { "monster_medic", SP_monster_medic },
-    { "monster_flipper", SP_monster_flipper },
-    { "monster_chick", SP_monster_chick },
-    { "monster_parasite", SP_monster_parasite },
-    { "monster_flyer", SP_monster_flyer },
-    { "monster_brain", SP_monster_brain },
-    { "monster_floater", SP_monster_floater },
-    { "monster_hover", SP_monster_hover },
-    { "monster_mutant", SP_monster_mutant },
-    { "monster_supertank", SP_monster_supertank },
-    { "monster_boss2", SP_monster_boss2 },
+    { "monster_berserk", SP_monster_berserk, PR_monster_berserk },
+    { "monster_gladiator", SP_monster_gladiator, PR_monster_gladiator },
+    { "monster_gunner", SP_monster_gunner, PR_monster_gunner },
+    { "monster_infantry", SP_monster_infantry, PR_monster_infantry },
+    { "monster_soldier_light", SP_monster_soldier_light, PR_monster_soldier },
+    { "monster_soldier", SP_monster_soldier, PR_monster_soldier },
+    { "monster_soldier_ss", SP_monster_soldier_ss, PR_monster_soldier },
+    { "monster_tank", SP_monster_tank, PR_monster_tank },
+    { "monster_tank_commander", SP_monster_tank_commander, PR_monster_tank },
+    { "monster_medic", SP_monster_medic, PR_monster_medic },
+    { "monster_flipper", SP_monster_flipper, PR_monster_flipper },
+    { "monster_chick", SP_monster_chick, PR_monster_chick },
+    { "monster_parasite", SP_monster_parasite, PR_monster_parasite },
+    { "monster_flyer", SP_monster_flyer, PR_monster_flyer },
+    { "monster_brain", SP_monster_brain, PR_monster_brain },
+    { "monster_floater", SP_monster_floater, PR_monster_floater },
+    { "monster_hover", SP_monster_hover, PR_monster_hover },
+    { "monster_mutant", SP_monster_mutant, PR_monster_mutant },
+    { "monster_supertank", SP_monster_supertank, PR_monster_supertank },
+    { "monster_boss2", SP_monster_boss2, PR_monster_boss2 },
     { "monster_boss3_stand", SP_monster_boss3_stand },
-    { "monster_jorg", SP_monster_jorg },
+    { "monster_jorg", SP_monster_jorg, PR_monster_jorg },
     // Paril: allow spawning makron
-    { "monster_makron", SP_monster_makron },
+    { "monster_makron", SP_monster_makron, PR_monster_makron },
     // Paril: N64
     { "monster_tank_stand", SP_monster_tank_stand },
     // Paril: PSX
-    { "monster_guardian", SP_monster_guardian },
-    { "monster_arachnid", SP_monster_arachnid },
-    { "monster_guncmdr", SP_monster_guncmdr },
-    { "monster_shambler", SP_monster_shambler },
+    { "monster_guardian", SP_monster_guardian, PR_monster_guardian },
+    { "monster_arachnid", SP_monster_arachnid, PR_monster_arachnid },
+    { "monster_guncmdr", SP_monster_guncmdr, PR_monster_guncmdr },
+    { "monster_shambler", SP_monster_shambler, PR_monster_shambler },
 
     { "monster_commander_body", SP_monster_commander_body },
 
     { "turret_breach", SP_turret_breach },
     { "turret_base", SP_turret_base },
-    { "turret_driver", SP_turret_driver },
+    { "turret_driver", SP_turret_driver, PR_monster_infantry },
 
     // RAFAEL
     { "func_object_repair", SP_object_repair },
@@ -400,14 +532,14 @@ static const spawn_func_t spawn_funcs[] = {
     { "misc_amb4", SP_misc_amb4 },
     { "misc_transport", SP_misc_transport },
     { "misc_nuke", SP_misc_nuke },
-    { "monster_soldier_hypergun", SP_monster_soldier_hypergun },
-    { "monster_soldier_lasergun", SP_monster_soldier_lasergun },
-    { "monster_soldier_ripper", SP_monster_soldier_ripper },
-    { "monster_fixbot", SP_monster_fixbot },
-    { "monster_gekk", SP_monster_gekk },
-    { "monster_chick_heat", SP_monster_chick_heat },
-    { "monster_gladb", SP_monster_gladb },
-    { "monster_boss5", SP_monster_boss5 },
+    { "monster_soldier_hypergun", SP_monster_soldier_hypergun, PR_monster_soldier },
+    { "monster_soldier_lasergun", SP_monster_soldier_lasergun, PR_monster_soldier },
+    { "monster_soldier_ripper", SP_monster_soldier_ripper, PR_monster_soldier },
+    { "monster_fixbot", SP_monster_fixbot, PR_monster_fixbot },
+    { "monster_gekk", SP_monster_gekk, PR_monster_gekk },
+    { "monster_chick_heat", SP_monster_chick_heat, PR_monster_chick },
+    { "monster_gladb", SP_monster_gladb, PR_monster_gladb },
+    { "monster_boss5", SP_monster_boss5, PR_monster_supertank },
     // RAFAEL
 
     //==============
@@ -419,8 +551,8 @@ static const spawn_func_t spawn_funcs[] = {
     { "trigger_disguise", SP_trigger_disguise },
     { "info_teleport_destination", SP_info_teleport_destination },
     { "info_player_coop_lava", SP_info_player_coop_lava },
-    { "monster_stalker", SP_monster_stalker },
-    { "monster_turret", SP_monster_turret },
+    { "monster_stalker", SP_monster_stalker, PR_monster_stalker },
+    { "monster_turret", SP_monster_turret, PR_monster_turret },
     { "target_steam", SP_target_steam },
     { "target_anger", SP_target_anger },
     { "target_killplayers", SP_target_killplayers },
@@ -428,12 +560,12 @@ static const spawn_func_t spawn_funcs[] = {
     { "target_blacklight", SP_target_blacklight },
     { "target_orb", SP_target_orb },
     // pmm
-    { "monster_daedalus", SP_monster_hover },
+    { "monster_daedalus", SP_monster_daedalus, PR_monster_daedalus },
     { "hint_path", SP_hint_path },
-    { "monster_carrier", SP_monster_carrier },
-    { "monster_widow", SP_monster_widow },
-    { "monster_widow2", SP_monster_widow2 },
-    { "monster_medic_commander", SP_monster_medic },
+    { "monster_carrier", SP_monster_carrier, PR_monster_carrier },
+    { "monster_widow", SP_monster_widow, PR_monster_widow },
+    { "monster_widow2", SP_monster_widow2, PR_monster_widow2 },
+    { "monster_medic_commander", SP_monster_medic_commander, PR_monster_medic_commander },
     { "dm_tag_token", SP_dm_tag_token },
     { "dm_dball_goal", SP_dm_dball_goal },
     { "dm_dball_ball", SP_dm_dball_ball },
@@ -441,7 +573,7 @@ static const spawn_func_t spawn_funcs[] = {
     { "dm_dball_team2_start", SP_dm_dball_team2_start },
     { "dm_dball_ball_start", SP_dm_dball_ball_start },
     { "dm_dball_speed_change", SP_dm_dball_speed_change },
-    { "monster_kamikaze", SP_monster_kamikaze },
+    { "monster_kamikaze", SP_monster_kamikaze, PR_monster_flyer },
     { "turret_invisible_brain", SP_turret_invisible_brain },
     { "misc_nuke_core", SP_misc_nuke_core },
     // ROGUE
@@ -455,6 +587,65 @@ static const spawn_func_t spawn_funcs[] = {
     { "info_player_team1", SP_info_player_team1 },
     { "info_player_team2", SP_info_player_team2 },
     // ZOID
+
+    // CotV
+    { "monster_chthon", SP_monster_chthon, PR_monster_chthon },
+    { "monster_chtjor", SP_monster_chtjor, PR_monster_chtjor },
+    { "monster_dog", SP_monster_dog, PR_monster_dog },
+    { "monster_dog_prototype", SP_monster_dog_prototype, PR_monster_dog_prototype },
+    { "monster_dog_strogg", SP_monster_dog_strogg, PR_monster_dog_strogg },
+    { "monster_enforcer", SP_monster_enforcer, PR_monster_enforcer },
+    { "monster_enforcer_prototype", SP_monster_enforcer_prototype, PR_monster_enforcer_strogg },
+    { "monster_enforcer_strogg", SP_monster_enforcer_strogg, PR_monster_enforcer_strogg },
+    { "monster_fiend", SP_monster_fiend, PR_monster_fiend },
+    { "monster_fiend_prototype", SP_monster_fiend_prototype, PR_monster_fiend_strogg },
+    { "monster_fiend_strogg", SP_monster_fiend_strogg, PR_monster_fiend_strogg },
+    { "monster_fish", SP_monster_fish, PR_monster_fish },
+    { "monster_fishgunner", SP_monster_fishgunner, PR_monster_fishgunner },
+    { "monster_hellknight", SP_monster_hellknight, PR_monster_hellknight },
+    { "monster_hknight_bsk_strogg", SP_monster_hknight_bsk_strogg, PR_monster_hellknight_strogg },
+    { "monster_hknight_hyper", SP_monster_hknight_hyper, PR_monster_hellknight_strogg },
+    { "monster_hknight_prototype", SP_monster_hknight_prototype, PR_monster_hellknight_strogg },
+    { "monster_insane_spawn", SP_monster_insane_spawn, PR_monster_insane_spawn },
+    { "monster_ironvore", SP_monster_ironvore, PR_monster_ironvore },
+    { "monster_knight", SP_monster_knight, PR_monster_knight },
+    { "monster_knight_prototype", SP_monster_knight_prototype, PR_monster_knight_strogg },
+    { "monster_knight_strogg", SP_monster_knight_strogg, PR_monster_knight_strogg },
+    { "monster_mutantspawn", SP_monster_mutantspawn, PR_monster_mutantspawn },
+    { "monster_ogre", SP_monster_ogre, PR_monster_ogre },
+    { "monster_ogre2_strogg", SP_monster_ogre2_strogg, PR_monster_ogre2_strogg },
+    { "monster_ogre_prototype", SP_monster_ogre_prototype, PR_monster_ogre2_strogg },
+    { "monster_ogre_strogg", SP_monster_ogre_strogg, PR_monster_ogre_strogg },
+    { "monster_rotflyer", SP_monster_rotflyer, PR_monster_flyer },
+    { "monster_shalrath", SP_monster_shalrath, PR_monster_shalrath },
+    { "monster_shalrath_prototype", SP_monster_shalrath_prototype, PR_monster_shalrath_strogg },
+    { "monster_shalrath_strogg", SP_monster_shalrath_strogg, PR_monster_shalrath_strogg },
+    { "monster_shamacudda", SP_monster_shamacudda, PR_monster_shambler_strogg },
+    { "monster_shambler_prototype", SP_monster_shambler_prototype, PR_monster_shambler_strogg },
+    { "monster_shambler_strogg", SP_monster_shambler_strogg, PR_monster_shambler_strogg },
+    { "monster_shamedic", SP_monster_shamedic, PR_monster_medic },
+    { "monster_shamjorg", SP_monster_shamjorg, PR_monster_chtjor },
+    { "monster_soldier_grunt", SP_monster_soldier_grunt, PR_monster_soldier_grunt },
+    { "monster_soldier_grunt_double", SP_monster_soldier_grunt_double, PR_monster_soldier_strogg },
+    { "monster_soldier_grunt_prototype", SP_monster_soldier_grunt_prototype, PR_monster_soldier_strogg },
+    { "monster_soldier_strogg", SP_monster_soldier_strogg, PR_monster_soldier_strogg },
+    { "monster_spawn", SP_monster_spawn, PR_monster_spawn },
+    { "monster_supershamblertank", SP_monster_supershamblertank, PR_monster_supershamblertank },
+    { "monster_wizarcuda_strogg", SP_monster_wizarcuda_strogg, PR_monster_wizard_strogg },
+    { "monster_wizard", SP_monster_wizard, PR_monster_wizard },
+    { "monster_wizard_prototype", SP_monster_wizard_prototype, PR_monster_wizard_strogg },
+    { "monster_wizard_strogg", SP_monster_wizard_strogg, PR_monster_wizard_strogg },
+    { "monster_zombie", SP_monster_zombie, PR_monster_zombie },
+    { "monster_zombie_prototype", SP_monster_zombie_prototype, PR_monster_zombie_strogg },
+    { "monster_zombie_strogg", SP_monster_zombie_strogg, PR_monster_zombie_strogg },
+
+    { "event_lighting", SP_event_lighting },
+    { "light_flame_small", SP_light_flame_small },
+    { "light_torch_small", SP_light_torch_small },
+    { "misc_chtondead", SP_misc_chtondead },
+    { "misc_fiend_craft", SP_misc_fiend_craft },
+    { "trigger_key2", SP_trigger_key2 },
+    // CotV
 
     { NULL }
 };
@@ -617,6 +808,17 @@ static const spawn_field_t temp_fields[] = {
 
 static byte entity_bitmap[(q_countof(entity_fields) + 7) / 8];
 static byte temp_bitmap[(q_countof(temp_fields) + 7) / 8];
+static byte precache_bitmap[(q_countof(spawn_funcs) + 7) / 8];
+
+static void ED_PrecacheSpawn(const spawn_func_t *s)
+{
+    ptrdiff_t bit = s - spawn_funcs;
+    if (Q_IsBitSet(precache_bitmap, bit))
+        return;
+    if (s->precache)
+        s->precache();
+    Q_SetBit(precache_bitmap, bit);
+}
 
 /*
 ===============
@@ -681,6 +883,15 @@ void ED_CallSpawn(edict_t *ent)
     // check normal spawn functions
     for (s = spawn_funcs; s->name; s++) {
         if (!strcmp(s->name, ent->classname)) {
+            // auto-remove monsters for deathmatch
+            if (!strncmp(s->name, CONST_STR_LEN("monster_")) && !M_AllowSpawn(ent)) {
+                G_FreeEdict(ent);
+                return;
+            }
+
+            // precache configstring indices
+            ED_PrecacheSpawn(s);
+
             // found it
             s->spawn(ent);
 
@@ -1160,48 +1371,28 @@ static void G_PrecacheStartItems(void)
 
 /*
 ==============
-G_AddPrecache
-
-Register new global precache function and call it (once).
-==============
-*/
-void G_AddPrecache(precache_t func)
-{
-    for (int i = 0; i < game.num_precaches; i++)
-        if (game.precaches[i] == func)
-            return;
-
-    if (game.num_precaches == q_countof(game.precaches))
-        G_Error("Too many precaches");
-
-    game.precaches[game.num_precaches++] = func;
-    func();
-}
-
-/*
-==============
 G_RefreshPrecaches
 
-Called from ReadLevel() to refresh all global precache indices registered by
-spawn functions.
+Called from ReadLevel() to refresh cached configstring indices.
 ==============
 */
 void G_RefreshPrecaches(void)
 {
-    for (int i = 0; i < game.num_precaches; i++)
-        game.precaches[i]();
-}
+    memset(precache_bitmap, 0, sizeof(precache_bitmap));
 
-/*
-==============
-G_FreePrecaches
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
+        const edict_t *ent = &g_edicts[i];
 
-Free precache functions from previous level.
-==============
-*/
-static void G_FreePrecaches(void)
-{
-    game.num_precaches = 0;
+        if (!ent->r.inuse)
+            continue;
+
+        for (const spawn_func_t *s = spawn_funcs; s->name; s++) {
+            if (!strcmp(s->name, ent->classname)) {
+                ED_PrecacheSpawn(s);
+                break;
+            }
+        }
+    }
 }
 
 /*
@@ -1221,10 +1412,10 @@ q_exported void G_SpawnEntities(void)
     SaveClientData();
 
     G_FreeMemory();
-    G_FreePrecaches();
 
     memset(&level, 0, sizeof(level));
     memset(g_edicts, 0, sizeof(g_edicts));
+    memset(precache_bitmap, 0, sizeof(precache_bitmap));
     level.num_edicts = game.maxclients;
     level.is_spawning = true;
 
@@ -1761,7 +1952,7 @@ void SP_worldspawn(edict_t *ent)
     G_SoundIndex("player/wade2.wav");
     G_SoundIndex("player/wade3.wav");
 
-    if (use_psx_assets) {
+    if (game.dirtype == GAMEDIR_PSX) {
         G_SoundIndex("player/breathout1.wav");
         G_SoundIndex("player/breathout2.wav");
         G_SoundIndex("player/breathout3.wav");

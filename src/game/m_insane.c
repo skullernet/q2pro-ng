@@ -611,13 +611,9 @@ void DIE(insane_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     }
 }
 
-static void insane_precache1(void)
+void PR_misc_insane(void)
 {
     sound_fist = G_SoundIndex("insane/insane11.wav");
-}
-
-static void insane_precache2(void)
-{
     sound_shake = G_SoundIndex("insane/insane5.wav");
     sound_moan = G_SoundIndex("insane/insane7.wav");
     sound_scream[0] = G_SoundIndex("insane/insane1.wav");
@@ -638,11 +634,6 @@ void SP_misc_insane(edict_t *self)
         G_FreeEdict(self);
         return;
     }
-
-    G_AddPrecache(insane_precache1);
-
-    if (!(self->spawnflags & SPAWNFLAG_INSANE_QUIET))
-        G_AddPrecache(insane_precache2);
 
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
