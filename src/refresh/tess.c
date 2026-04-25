@@ -681,6 +681,13 @@ void GL_Flush3D(void)
 
         if (state & GLS_COLOR_ENABLE)
             array |= GLA_COLOR;
+        else if ((glr.ent->flags & RF_TRANSLUCENT) && glr.ent->alpha != 1.0f) {
+            state |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+            if (state & GLS_WARP_ENABLE)
+                GL_Color(1, 1, 1, glr.ent->alpha * 0.3f); // what the fuck???
+            else
+                GL_Color(1, 1, 1, glr.ent->alpha);
+        }
 
         if (state & GLS_SKY_MASK)
             state |= glr.fog_bits_sky;
@@ -741,7 +748,7 @@ static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
     return tex->image;
 }
 
-static void GL_DrawFace(const mface_t *surf)
+void GL_DrawFace(const mface_t *surf)
 {
     const image_t *image = GL_TextureAnimation(surf->texinfo);
     const int numtris = surf->numsurfedges - 2;
@@ -821,19 +828,14 @@ void GL_DrawAlphaFaces(void)
     if (!faces_alpha)
         return;
 
-    glr.ent = NULL;
+    glr.ent = &gl_world;
 
     GL_BindArrays(VA_3D);
+    GL_SetEntityAxis();
+    GL_RotateForEntity();
 
-    for (const mface_t *face = faces_alpha; face; face = face->next) {
-        if (glr.ent != face->entity) {
-            glr.ent = face->entity;
-            GL_Flush3D();
-            GL_SetEntityAxis();
-            GL_RotateForEntity();
-        }
+    for (const mface_t *face = faces_alpha; face; face = face->next)
         GL_DrawFace(face);
-    }
 
     faces_alpha = NULL;
 
@@ -862,7 +864,6 @@ void GL_AddAlphaFace(mface_t *face)
         return;
 
     // draw back-to-front
-    face->entity = glr.ent;
     face->next = faces_alpha;
     faces_alpha = face;
 }

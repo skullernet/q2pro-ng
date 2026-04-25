@@ -524,17 +524,15 @@ static int entitycmpfnc(const void *_a, const void *_b)
     const glentity_t *a = (const glentity_t *)_a;
     const glentity_t *b = (const glentity_t *)_b;
 
-    // this will handle transparent bmodels too
+    // sort transparent entities by distance
     bool a_trans = a->flags & RF_TRANSLUCENT;
     bool b_trans = b->flags & RF_TRANSLUCENT;
     if (a_trans != b_trans)
         return b_trans - a_trans;
     if (a_trans) {
-        float dist_a = Vec3_DistanceSquared(a->mid, glr.fd.vieworg);
-        float dist_b = Vec3_DistanceSquared(b->mid, glr.fd.vieworg);
-        if (dist_a > dist_b)
+        if (a->dist > b->dist)
             return 1;
-        if (dist_a < dist_b)
+        if (a->dist < b->dist)
             return -1;
     }
 
@@ -557,9 +555,31 @@ static int entitycmpfnc(const void *_a, const void *_b)
     return 0;
 }
 
-static void GL_SortEntities(void)
+static bool GL_EntityInFront(const glentity_t *ent)
 {
-    glentity_t *ent, **next;
+    if (ent->bmodel && ent->bmodel->faceflags & BMODEL_OPAQUE)
+        return false;
+    if (ent->flags & RF_WEAPONMODEL)
+        return true;
+    if (ent->alpha <= gl_draworder->value)
+        return true;
+    return false;
+}
+
+static bool GL_EntityHasShadow(const glentity_t *ent)
+{
+    if (ent->flags & (RF_WEAPONMODEL | RF_FULLBRIGHT | RF_NOSHADOW))
+        return false;
+    if (ent->bmodel && !(ent->bmodel->faceflags & BMODEL_OPAQUE))
+        return false;
+    if (ent->flags & RF_TRANSLUCENT && ent->alpha != 1.0f)
+        return false;
+    return true;
+}
+
+static void GL_SortEntities(const refdef_t *fd)
+{
+    glentity_t *ent;
     int i;
 
     memset(&glr.ents, 0, sizeof(glr.ents));
@@ -567,10 +587,30 @@ static void GL_SortEntities(void)
     if (!gl_drawentities->integer)
         return;
 
+    // set distance for alpha sorting
+    for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
+        if (!(ent->flags & RF_TRANSLUCENT))
+            continue;
+
+        if (ent->flags & RF_BEAM) {
+            float len1 = Vec3_DistanceSquared(fd->vieworg, ent->oldorigin);
+            float len2 = Vec3_DistanceSquared(fd->vieworg, ent->origin);
+            ent->dist = min(len1, len2);
+            continue;
+        }
+
+        if (ent->bmodel) {
+            box3_t box = Box3_Translate(ent->bmodel->box, ent->origin);
+            ent->dist = Vec3_DistanceSquared(fd->vieworg, Box3_ClampPoint(box, fd->vieworg));
+            continue;
+        }
+
+        ent->dist = Vec3_DistanceSquared(fd->vieworg, ent->origin);
+    }
+
     // sort entities for better cache locality
     qsort(r_entities, r_numentities, sizeof(r_entities[0]), entitycmpfnc);
 
-    next = &glr.ents.bmodels;
     for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
         if (ent->flags & RF_BEAM) {
             if (ent->frame) {
@@ -588,11 +628,9 @@ static void GL_SortEntities(void)
             continue;
         }
 
-        // bmodels order must be reversed (sigh)
-        if (ent->bmodel) {
-            *next = ent;
-            next = &ent->next;
-            continue;
+        if (GL_EntityHasShadow(ent)) {
+            ent->shadow_next = glr.ents.shadow;
+            glr.ents.shadow = ent;
         }
 
         if (!(ent->flags & RF_TRANSLUCENT)) {
@@ -601,7 +639,7 @@ static void GL_SortEntities(void)
             continue;
         }
 
-        if ((ent->flags & RF_WEAPONMODEL) || ent->alpha <= gl_draworder->value) {
+        if (GL_EntityInFront(ent)) {
             ent->next = glr.ents.alpha_front;
             glr.ents.alpha_front = ent;
             continue;
@@ -612,46 +650,48 @@ static void GL_SortEntities(void)
     }
 }
 
-void GL_DrawEntities(glentity_t *ent, int exclude)
+void GL_DrawEntity(const glentity_t *ent)
 {
-    model_t *model;
+    glr.ent = ent;
 
+    // convert angles to axis
+    GL_SetEntityAxis();
+
+    // inline BSP model
+    if (ent->bmodel) {
+        GL_DrawBspModel(ent->bmodel);
+        return;
+    }
+
+    const model_t *model = MOD_ForHandle(ent->model);
+    if (!model) {
+        GL_DrawNullModel();
+        return;
+    }
+
+    switch (model->type) {
+    case MOD_ALIAS:
+        GL_DrawAliasModel(model);
+        break;
+    case MOD_SPRITE:
+        GL_DrawSpriteModel(model);
+        break;
+    case MOD_EMPTY:
+        break;
+    default:
+        Q_assert(!"bad model type");
+    }
+
+    if (gl_showorigins->integer)
+        GL_DrawNullModel();
+}
+
+static void GL_DrawEntities(const glentity_t *ent)
+{
     for (; ent; ent = ent->next) {
-        if (ent->flags & exclude)
+        if (ent->flags & RF_VIEWERMODEL)
             continue;
-
-        glr.ent = ent;
-
-        // convert angles to axis
-        GL_SetEntityAxis();
-
-        // inline BSP model
-        if (ent->bmodel) {
-            GL_DrawBspModel(ent->bmodel);
-            continue;
-        }
-
-        model = MOD_ForHandle(ent->model);
-        if (!model) {
-            GL_DrawNullModel();
-            continue;
-        }
-
-        switch (model->type) {
-        case MOD_ALIAS:
-            GL_DrawAliasModel(model);
-            break;
-        case MOD_SPRITE:
-            GL_DrawSpriteModel(model);
-            break;
-        case MOD_EMPTY:
-            break;
-        default:
-            Q_assert(!"bad model type");
-        }
-
-        if (gl_showorigins->integer)
-            GL_DrawNullModel();
+        GL_DrawEntity(ent);
     }
 }
 
@@ -859,7 +899,7 @@ void R_RenderFrame(const refdef_t *fd)
 
     Q_assert(gl_static.world.cache || (fd->rdflags & RDF_NOWORLDMODEL));
 
-    GL_SortEntities();
+    GL_SortEntities(fd);
 
     glr.fog_bits = glr.fog_bits_sky = 0;
 
@@ -882,11 +922,9 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawWorld();
 
-    GL_DrawEntities(glr.ents.bmodels, RF_VIEWERMODEL);
+    GL_DrawEntities(glr.ents.opaque);
 
-    GL_DrawEntities(glr.ents.opaque, RF_VIEWERMODEL);
-
-    GL_DrawEntities(glr.ents.alpha_back, RF_VIEWERMODEL);
+    GL_DrawEntities(glr.ents.alpha_back);
 
     GL_DrawAlphaFaces();
 
@@ -896,11 +934,11 @@ void R_RenderFrame(const refdef_t *fd)
 
     GL_DrawParticles();
 
+    GL_DrawEntities(glr.ents.alpha_front);
+
     GL_OccludeFlares();
 
     GL_DrawFlares();
-
-    GL_DrawEntities(glr.ents.alpha_front, RF_VIEWERMODEL);
 
     GL_DrawDebugObjects();
 
@@ -1552,31 +1590,32 @@ void R_AddEntity(const entity_t *ent)
 
     glent = &r_entities[r_numentities++];
     glent->ent_ = *ent;
-    glent->next = NULL;
     glent->bmodel = NULL;
+    glent->next = glent->shadow_next = NULL;
 
-    if (ent->flags & RF_BEAM) {
-        glent->mid = Vec3_Average(ent->oldorigin, ent->origin);
+    if (ent->flags & (RF_BEAM | RF_FLARE))
         return;
-    }
 
+    // get bmodel ptr
     if (ent->model & BIT(31)) {
         const bsp_t *bsp = gl_static.world.cache;
         unsigned index = ~ent->model;
-        mmodel_t *mod;
 
         Q_assert_soft(bsp);
         Q_assert_soft(index >= 1 && index < bsp->nummodels);
 
-        glent->bmodel = mod = &bsp->models[index];
-        glent->mid = Vec3_Add(ent->origin, Box3_Center(mod->box));
+        glent->bmodel = &bsp->models[index];
 
-        if (mod->transparent)
+        // don't override alpha if specified
+        if (ent->flags & RF_TRANSLUCENT)
+            return;
+
+        // enable alpha sorting if this bmodel has alpha faces
+        if (glent->bmodel->faceflags & BMODEL_ALPHA) {
             glent->flags |= RF_TRANSLUCENT;
-        return;
+            glent->alpha = 1.0f;
+        }
     }
-
-    glent->mid = ent->origin;
 }
 
 /*

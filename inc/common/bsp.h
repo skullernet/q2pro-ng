@@ -101,7 +101,6 @@ typedef struct mface_s {
     uint32_t        dlightframe;
     uint64_t        dlightbits;
 
-    struct glentity_s   *entity;
     struct mface_s      *next;
 } mface_t;
 #endif
@@ -170,6 +169,9 @@ typedef struct {
     unsigned        floodvalid;
 } marea_t;
 
+#define BMODEL_OPAQUE   BIT(0)
+#define BMODEL_ALPHA    BIT(1)
+
 typedef struct {
     box3_t          box;
     vec3_t          origin;        // for sounds or lights
@@ -181,8 +183,7 @@ typedef struct {
     int             numfaces;
     mface_t         *firstface;
 
-    unsigned        drawframe;
-    bool            transparent;
+    int             faceflags;  // alpha, opaque, or mixed
 #endif
 } mmodel_t;
 

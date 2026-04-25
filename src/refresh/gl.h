@@ -132,9 +132,9 @@ typedef struct glentity_s {
         entity_t;
         entity_t ent_;
     };
-    vec3_t mid;
-    mmodel_t *bmodel;
-    struct glentity_s *next;
+    float dist;
+    const mmodel_t *bmodel;
+    struct glentity_s *next, *shadow_next;
 } glentity_t;
 
 #define MAX_SHADOW_VIEWS    256
@@ -180,7 +180,7 @@ typedef struct {
     int             viewcluster2;
     int             nodes_visible;
     cplane_t        frustum[5];
-    glentity_t      *ent;
+    const glentity_t *ent;
     bool            entrotated;
     float           entscale;
     vec3_t          entaxis[3];
@@ -192,7 +192,7 @@ typedef struct {
         glentity_t  *opaque;
         glentity_t  *beams;
         glentity_t  *flares;
-        glentity_t  *bmodels;
+        glentity_t  *shadow;
         glentity_t  *alpha_back;
         glentity_t  *alpha_front;
     } ents;
@@ -353,7 +353,7 @@ void GL_MultMatrix(GLfloat *restrict out, const GLfloat *restrict a, const GLflo
 void GL_SetEntityAxis(void);
 void GL_RotationMatrix(GLfloat *matrix);
 void GL_RotateForEntity(void);
-void GL_DrawEntities(glentity_t *ent, int exclude);
+void GL_DrawEntity(const glentity_t *ent);
 
 void GL_ClearErrors(void);
 bool GL_ShowErrors(const char *func);
@@ -958,6 +958,7 @@ void GL_InitArrays(void);
 void GL_ShutdownArrays(void);
 
 void GL_Flush3D(void);
+void GL_DrawFace(const mface_t *surf);
 
 void GL_AddAlphaFace(mface_t *face);
 void GL_AddSolidFace(mface_t *face);
@@ -969,7 +970,7 @@ void GL_ClearSolidFaces(void);
  * gl_world.c
  *
  */
-void GL_DrawBspModel(mmodel_t *model);
+void GL_DrawBspModel(const mmodel_t *model);
 void GL_DrawWorld(void);
 
 /*

@@ -152,6 +152,7 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
     vec3_t          end;
     const glentity_t *ent;
     const mmodel_t  *model;
+    int             i;
 
     if (gl_fullbright->integer)
         return false;
@@ -166,9 +167,9 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
     BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes, gl_static.nolm_mask | SURF_TRANS_MASK);
 
     // trace to other BSP models
-    for (ent = glr.ents.bmodels; ent; ent = ent->next) {
+    for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
         model = ent->bmodel;
-        if (!model->numfaces)
+        if (!model || !model->numfaces)
             continue;
 
         // cull in X/Y plane
@@ -336,16 +337,68 @@ static void GL_MarkLeaves(void)
     }
 }
 
-#define BACKFACE_EPSILON    0.01f
+static vec3_t transformed; // vieworg
+static mface_t *faces_alpha; // for this submodel only
 
-void GL_DrawBspModel(mmodel_t *model)
+static inline void GL_DrawSubLeaf(const mleaf_t *leaf)
+{
+    if (leaf->contents & CONTENTS_SOLID)
+        return; // solid leaf
+
+    for (int i = 0; i < leaf->numleaffaces; i++)
+        leaf->firstleafface[i]->drawframe = glr.drawframe;
+
+    c.leavesDrawn++;
+}
+
+static inline void GL_DrawSubNode(const mnode_t *node)
 {
     mface_t *face;
-    vec_t dot;
-    vec3_t transformed;
-    glentity_t *ent = glr.ent;
-    glCullResult_t cull;
     int i;
+
+    for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
+        if (face->drawframe != glr.drawframe)
+            continue;
+
+        if (face->drawflags & gl_static.nodraw_mask)
+            continue;
+
+        if (face->drawflags & SURF_TRANS_MASK) {
+            face->next = faces_alpha;
+            faces_alpha = face;
+        } else
+            GL_AddSolidFace(face);
+    }
+
+    c.nodesDrawn++;
+}
+
+static void GL_SubModelNode_r(const mnode_t *node)
+{
+    int side;
+    vec_t dot;
+
+    while (1) {
+        if (!node->plane) {
+            GL_DrawSubLeaf((const mleaf_t *)node);
+            break;
+        }
+
+        dot = PlaneDiffFast(transformed, node->plane);
+        side = dot < 0;
+
+        GL_SubModelNode_r(node->children[side]);
+
+        GL_DrawSubNode(node);
+
+        node = node->children[side ^ 1];
+    }
+}
+
+void GL_DrawBspModel(const mmodel_t *model)
+{
+    const glentity_t *ent = glr.ent;
+    glCullResult_t cull;
 
     if (!model->numfaces)
         return;
@@ -383,33 +436,17 @@ void GL_DrawBspModel(mmodel_t *model)
 
     GL_ClearSolidFaces();
 
-    // draw visible faces
-    for (i = 0, face = model->firstface; i < model->numfaces; i++, face++) {
-        if (face->drawflags & gl_static.nodraw_mask)
-            continue;
+    faces_alpha = NULL;
 
-        dot = PlaneDiffFast(transformed, face->plane);
-        if ((face->drawflags & DSURF_PLANEBACK) ? (dot > BACKFACE_EPSILON) : (dot < -BACKFACE_EPSILON)) {
-            c.facesCulled++;
-            continue;
-        }
-
-        if (face->drawflags & SURF_TRANS_MASK) {
-            if (model->drawframe != glr.drawframe)
-                GL_AddAlphaFace(face);
-            continue;
-        }
-
-        GL_AddSolidFace(face);
-    }
+    GL_SubModelNode_r(model->headnode);
 
     GL_DrawSolidFaces();
 
-    GL_Flush3D();
+    if (!glr.shadowbuffer_bound)
+        for (const mface_t *face = faces_alpha; face; face = face->next)
+            GL_DrawFace(face);
 
-    // protect against infinite loop if the same inline model
-    // with alpha faces is referenced by multiple entities
-    model->drawframe = glr.drawframe;
+    GL_Flush3D();
 }
 
 #define NODE_CLIPPED    0
