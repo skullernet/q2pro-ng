@@ -808,7 +808,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     self->s.origin = Box3_Center(self->r.absbox);
 
     if (self->noise_index)
-        G_PositionedSound(self->s.origin, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
+        G_PositionedSound(self->s.origin, NULL, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
 
     if (self->dmg)
         BecomeExplosion1(self);

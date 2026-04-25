@@ -588,9 +588,14 @@ void G_KillBox(edict_t *ent, killbox_t flags, mod_t mod)
     }
 }
 
-void G_PositionedSound(vec3_t origin, soundchan_t channel, int index, float volume, float attenuation)
+void G_PositionedSound(vec3_t origin, edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)
 {
-    G_TempEntity(origin, EV_SOUND, G_EncodeSound(channel, index, volume, attenuation));
+    uint32_t sound = G_EncodeSound(channel, index, volume, attenuation);
+
+    if (ent)
+        G_TempEntity(origin, EV_POSITIONED_SOUND, sound)->s.othernum = ent->s.number;
+    else
+        G_TempEntity(origin, EV_SOUND, sound);
 }
 
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation)

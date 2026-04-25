@@ -853,19 +853,24 @@ static void CG_RailTrail(vec3_t start, vec3_t end, entity_event_t event)
     }
 }
 
-static void CG_SoundEvent(const centity_t *cent, uint32_t param)
+static void CG_SoundEvent(const centity_t *cent, entity_event_t event, uint32_t param)
 {
     int index = param & (MAX_SOUNDS - 1);
     int vol = (param >> 24) & 255;
     int att = (param >> 16) & 255;
     int channel = (param >> 11) & 31;
+
     if (vol == 0)
         vol = 255;
     if (att == ATTN_ESCAPE_CODE)
         att = 0;
     else if (att == 0)
         att = ATTN_ESCAPE_CODE;
-    trap_S_StartSound(cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
+
+    if (event == EV_POSITIONED_SOUND)
+        trap_S_PositionedSound(cent->current.origin, cent->current.othernum, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
+    else
+        trap_S_StartSound(cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
 static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
@@ -1263,7 +1268,8 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         CG_MuzzleFlash2(cent, param);
         break;
     case EV_SOUND:
-        CG_SoundEvent(cent, param);
+    case EV_POSITIONED_SOUND:
+        CG_SoundEvent(cent, event, param);
         break;
     case EV_EARTHQUAKE:
         if (cg.quake_time < cg.time) {

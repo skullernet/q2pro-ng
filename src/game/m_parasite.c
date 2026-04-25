@@ -394,7 +394,7 @@ void TOUCH(proboscis_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     if (other->takedamage)
         T_Damage(other, self, owner, tr->plane.normal, tr->endpos, tr->plane.dir, 5, 0, DAMAGE_NONE, MOD_UNKNOWN);
 
-    G_PositionedSound(tr->endpos, CHAN_AUTO, sound_impact, 1, ATTN_NORM);
+    G_PositionedSound(tr->endpos, NULL, CHAN_AUTO, sound_impact, 1, ATTN_NORM);
 
     self->s.origin = p;
     self->nextthink = level.time + FRAME_TIME; // start doing stuff on next frame

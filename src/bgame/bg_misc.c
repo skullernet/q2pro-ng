@@ -43,6 +43,7 @@ static const char *const event_names[] = {
     EV(MUZZLEFLASH),
     EV(MUZZLEFLASH2),
     EV(SOUND),
+    EV(POSITIONED_SOUND),
     EV(RAILTRAIL),
     EV(RAILTRAIL2),
     EV(BUBBLETRAIL),

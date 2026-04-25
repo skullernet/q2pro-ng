@@ -56,7 +56,7 @@ static void turret_breach_fire(edict_t *self)
     edict_t *rocket = fire_rocket(owner->activator ? owner->activator : owner, start, f, damage, speed, 150, damage);
     rocket->s.scale = self->teammaster->dmg_radius;
 
-    G_PositionedSound(start, CHAN_WEAPON, G_SoundIndex("weapons/rocklf1a.wav"), 1, ATTN_NORM);
+    G_PositionedSound(start, self, CHAN_WEAPON, G_SoundIndex("weapons/rocklf1a.wav"), 1, ATTN_NORM);
 }
 
 void THINK(turret_breach_think)(edict_t *self)

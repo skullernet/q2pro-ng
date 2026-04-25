@@ -1078,7 +1078,7 @@ static void door_play_sound(edict_t *self, int sound)
         return;
     }
 
-    G_TempEntity(p, EV_SOUND, sound);
+    G_TempEntity(p, EV_POSITIONED_SOUND, sound)->s.othernum = self->s.number;
 }
 
 void MOVEINFO_ENDFUNC(door_hit_top)(edict_t *self)

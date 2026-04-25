@@ -1325,7 +1325,7 @@ typedef enum {
 
 void G_KillBox(edict_t *ent, killbox_t flags, mod_t mod);
 
-void G_PositionedSound(vec3_t origin, soundchan_t channel, int index, float volume, float attenuation);
+void G_PositionedSound(vec3_t origin, edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_ReliableSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
