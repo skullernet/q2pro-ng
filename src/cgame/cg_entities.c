@@ -411,14 +411,12 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
 
     // add new entities for the beams
     d = Vec3_Normalize(&dist);
-    if (model == cgs.models.heatbeam) {
+    if (model == cgs.models.heatbeam)
         model_length = 32.0f * scale;
-    } else if (model == cgs.models.lightning) {
+    else if (model == cgs.models.lightning)
         model_length = 35.0f * scale;
-        d -= 20.0f * scale; // correction so it doesn't end in middle of tesla
-    } else {
+    else
         model_length = 30.0f * scale;
-    }
 
     // correction for grapple cable model, which has origin in the middle
     if (entnum == cg.frame->ps.clientnum && model == cgs.models.grapple_cable && hand_multiplier) {
@@ -434,19 +432,6 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
     ent.alpha = CG_LerpEntityAlpha(cent);
     if (ent.alpha != 1.0f)
         ent.flags |= RF_TRANSLUCENT;
-
-    // PMM - special case for lightning model .. if the real length is shorter than the model,
-    // flip it around & draw it from the end to the start.  This prevents the model from going
-    // through the tesla mine (instead it goes through the target)
-    if ((model == cgs.models.lightning) && (steps <= 1)) {
-        ent.origin = end;
-        ent.flags |= RF_FULLBRIGHT;
-        ent.angles.pitch = angles.pitch;
-        ent.angles.yaw = angles.yaw;
-        ent.angles.roll = Com_SlowRand() % 360;
-        trap_R_AddEntity(&ent);
-        return;
-    }
 
     if (steps > 1) {
         len = (d - model_length) / (steps - 1);
