@@ -425,7 +425,7 @@ void THINK(G_FreeEdict)(edict_t *ed)
     if ((ed - g_edicts) < (game.maxclients + BODY_QUEUE_SIZE))
         return;
 
-    int id = ed->spawn_count + 1;
+    uint32_t id = ed->spawn_count + 1;
     memset(ed, 0, sizeof(*ed));
     ed->s.number = ed - g_edicts;
     ed->classname = "freed";
@@ -467,7 +467,7 @@ void G_TouchTriggers(edict_t *ent)
 
 typedef struct {
     edict_t     *projectile;
-    int          spawn_count;
+    uint32_t     spawn_count;
 } skipped_projectile_t;
 
 // [Paril-KEX] scan for projectiles between our movement positions
@@ -475,7 +475,7 @@ typedef struct {
 void G_TouchProjectiles(edict_t *ent, vec3_t previous_origin)
 {
     // a bit ugly, but we'll store projectiles we are ignoring here.
-    skipped_projectile_t skipped[MAX_EDICTS_OLD], *skip;
+    skipped_projectile_t skipped[MAX_EDICTS_OLD];
     int num_skipped = 0;
 
     trace_args_t args = {
@@ -493,28 +493,23 @@ void G_TouchProjectiles(edict_t *ent, vec3_t previous_origin)
             break;
 
         edict_t *hit = &g_edicts[tr.entnum];
-
         if (!(hit->r.svflags & SVF_PROJECTILE))
             break;
 
         // always skip this projectile since certain conditions may cause the projectile
         // to not disappear immediately
         hit->r.svflags &= ~SVF_PROJECTILE;
-
-        skip = &skipped[num_skipped++];
-        skip->projectile = hit;
-        skip->spawn_count = hit->spawn_count;
+        skipped[num_skipped++] = (skipped_projectile_t){ hit, hit->spawn_count };
 
         // if we're both players and it's coop, allow the projectile to "pass" through
-        if (ent->client && hit->r.ownernum != ENTITYNUM_NONE &&
-            g_edicts[hit->r.ownernum].client && !G_ShouldPlayersCollide(true))
+        if (ent->client && hit->r.ownernum < game.maxclients && !G_ShouldPlayersCollide(true))
             continue;
 
         G_Impact(ent, &tr);
     }
 
     for (int i = 0; i < num_skipped; i++) {
-        skip = &skipped[i];
+        skipped_projectile_t *skip = &skipped[i];
         if (skip->projectile->r.inuse && skip->projectile->spawn_count == skip->spawn_count)
             skip->projectile->r.svflags |= SVF_PROJECTILE;
     }

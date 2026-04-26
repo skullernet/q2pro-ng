@@ -2270,7 +2270,7 @@ struct edict_s {
 
     // private to game
     gclient_t   *client; // NULL if not a player
-    int         spawn_count; // [Paril-KEX] used to differentiate different entities that may be in the same slot
+    uint32_t    spawn_count; // [Paril-KEX] used to differentiate different entities that may be in the same slot
     movetype_t  movetype;
     contents_t  clipmask;
     uint64_t    flags;
@@ -2476,8 +2476,13 @@ extern dm_game_rt DMGame;
 // base class for pierce args; this stores
 // the stuff we are piercing.
 typedef struct {
-    edict_t *ents[MAX_PIERCE];
-    solid_t solids[MAX_PIERCE];
+    edict_t *ent;
+    solid_t solid;
+    uint32_t spawn_count;
+} pierce_entry_t;
+
+typedef struct {
+    pierce_entry_t entries[MAX_PIERCE];
     int count;
 } pierce_t;
 
@@ -2488,16 +2493,18 @@ static inline void pierce_begin(pierce_t *p)
 
 static inline bool pierce_mark(pierce_t *p, edict_t *ent)
 {
+    // already deactivated
+    if (ent->r.solid == SOLID_NOT)
+        return true;
+
     // ran out of pierces
     if (p->count == MAX_PIERCE)
         return false;
 
-    p->ents[p->count] = ent;
-    p->solids[p->count] = ent->r.solid;
-    p->count++;
+    p->entries[p->count++] = (pierce_entry_t){ ent, ent->r.solid, ent->spawn_count };
 
+    // deactivate this entity
     ent->r.solid = SOLID_NOT;
-    trap_LinkEntity(ent);
 
     return true;
 }
@@ -2505,9 +2512,9 @@ static inline bool pierce_mark(pierce_t *p, edict_t *ent)
 static inline void pierce_end(pierce_t *p)
 {
     for (int i = 0; i < p->count; i++) {
-        edict_t *ent = p->ents[i];
-        ent->r.solid = p->solids[i];
-        trap_LinkEntity(ent);
+        pierce_entry_t *e = &p->entries[i];
+        if (e->ent->r.inuse && e->ent->spawn_count == e->spawn_count)
+            e->ent->r.solid = e->solid;
     }
 }
 
