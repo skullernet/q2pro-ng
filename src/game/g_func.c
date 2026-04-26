@@ -378,8 +378,16 @@ static void plat_Accelerate(moveinfo_t *moveinfo)
 
 void THINK(Think_AccelMove)(edict_t *ent)
 {
+    int state;
+
+    // hack for accelerating doors
+    if (!strncmp(ent->classname, CONST_STR_LEN("func_plat")))
+        state = STATE_UP;
+    else
+        state = STATE_DOWN;
+
     // [Paril-KEX] calculate distance dynamically
-    if (ent->moveinfo.state == STATE_UP)
+    if (ent->moveinfo.state == state)
         ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.start_origin, ent->s.origin);
     else
         ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.end_origin, ent->s.origin);
