@@ -25,6 +25,7 @@ typedef struct {
 } memhunk_t;
 
 void    Hunk_Init(void);
+size_t  Hunk_PageSize(void);
 void    Hunk_Begin(memhunk_t *hunk, size_t maxsize);
 void    *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align);
 void    *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align);

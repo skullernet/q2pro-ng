@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/hunk.h"
 #include <windows.h>
 
-static DWORD pagesize;
+static size_t pagesize;
 
 void Hunk_Init(void)
 {
@@ -29,6 +29,11 @@ void Hunk_Init(void)
     GetSystemInfo(&si);
     pagesize = si.dwPageSize;
     Q_assert(pagesize && !(pagesize & (pagesize - 1)));
+}
+
+size_t Hunk_PageSize(void)
+{
+    return pagesize;
 }
 
 void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
@@ -53,18 +58,19 @@ void Hunk_Begin(memhunk_t *hunk, size_t maxsize)
 
 void *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align)
 {
+    size_t cursize;
     void *buf;
 
-    Q_assert(size <= SIZE_MAX - (align - 1));
-    Q_assert(hunk->cursize <= hunk->maxsize);
-
     // round to cacheline
-    size = Q_ALIGN(size, align);
-    if (size > hunk->maxsize - hunk->cursize)
+    Q_assert(align <= pagesize);
+    cursize = Q_ALIGN(hunk->cursize, align);
+    Q_assert(cursize <= hunk->maxsize);
+
+    if (size > hunk->maxsize - cursize)
         return NULL;
 
-    buf = (byte *)hunk->base + hunk->cursize;
-    hunk->cursize += size;
+    buf = (byte *)hunk->base + cursize;
+    hunk->cursize = cursize + size;
     return buf;
 }
 
