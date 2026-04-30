@@ -1244,7 +1244,7 @@ void THINK(tracker_fly)(edict_t *self)
     vec3_t dest;
     vec3_t dir;
 
-    if ((!self->enemy) || (!self->enemy->r.inuse) || (self->enemy->health < 1)) {
+    if (!has_valid_enemy(self)) {
         tracker_explode(self);
         return;
     }

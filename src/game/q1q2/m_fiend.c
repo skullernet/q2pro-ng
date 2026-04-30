@@ -121,7 +121,7 @@ static void fiend_hit_right(edict_t *self)
 
 static void fiend_check_refire(edict_t *self)
 {
-    if (!self->enemy || !self->enemy->r.inuse || self->enemy->health <= 0)
+    if (!has_valid_enemy(self))
         return;
 
     if ((self->monsterinfo.melee_debounce_time <= level.time) && ((brandom()) || (range_to(self, self->enemy) <= RANGE_MELEE)))

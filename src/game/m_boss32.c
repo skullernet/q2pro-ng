@@ -759,7 +759,7 @@ void THINK(MakronSpawn)(edict_t *self)
     self->think(self);
 
     // jump at player
-    if (self->enemy && self->enemy->r.inuse && self->enemy->health > 0)
+    if (has_valid_enemy(self))
         player = self->enemy;
     else
         player = AI_GetSightClient(self);

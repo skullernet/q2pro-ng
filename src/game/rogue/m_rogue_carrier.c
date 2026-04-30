@@ -255,7 +255,7 @@ static void CarrierSpawn(edict_t *self)
     ent->monsterinfo.slots_from_commander = reinforcement->strength;
     self->monsterinfo.monster_used += reinforcement->strength;
 
-    if ((self->enemy->r.inuse) && (self->enemy->health > 0)) {
+    if (has_valid_enemy(self)) {
         ent->enemy = self->enemy;
         FoundTarget(ent);
 

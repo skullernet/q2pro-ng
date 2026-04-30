@@ -247,7 +247,7 @@ static void WidowSpawn(edict_t *self)
                 designated_enemy = self->enemy;
         }
 
-        if ((designated_enemy->r.inuse) && (designated_enemy->health > 0)) {
+        if ((designated_enemy) && (designated_enemy->r.inuse) && (designated_enemy->health > 0)) {
             ent->enemy = designated_enemy;
             FoundTarget(ent);
             ent->monsterinfo.attack(ent);

@@ -455,7 +455,7 @@ static void arachnid_spawn(edict_t *self)
 
         G_StartSound(ent, CHAN_BODY, sound_spawn, 1, ATTN_NONE);
 
-        if ((self->enemy->r.inuse) && (self->enemy->health > 0)) {
+        if (has_valid_enemy(self)) {
             ent->enemy = self->enemy;
             FoundTarget(ent);
         }

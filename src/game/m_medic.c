@@ -158,7 +158,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
     }
 }
 
-void fixHealerEnemy(edict_t *self)
+static void fixHealerEnemy(edict_t *self)
 {
     if (self->oldenemy && self->oldenemy->r.inuse && self->oldenemy->health > 0) {
         self->enemy = self->oldenemy;
@@ -174,10 +174,10 @@ void fixHealerEnemy(edict_t *self)
     }
 }
 
-void cleanupHeal(edict_t *self)
+static void cleanupHeal(edict_t *self)
 {
     // clean up target, if we have one and it's legit
-    if (self->enemy && self->enemy->r.inuse)
+    if (has_valid_healee(self))
         cleanupHealTarget(self->enemy);
 
     fixHealerEnemy(self);
@@ -198,7 +198,10 @@ void abortHeal(edict_t *self, bool gib, bool mark)
 {
     int              hurt;
 
-    if (self->enemy && self->enemy->r.inuse && !self->enemy->client && (self->monsterinfo.aiflags & AI_MEDIC)) {
+    if (!(self->monsterinfo.aiflags & AI_MEDIC))
+        return;
+
+    if (has_valid_healee(self)) {
         cleanupHealTarget(self->enemy);
 
         // gib em!
@@ -222,7 +225,7 @@ void abortHeal(edict_t *self, bool gib, bool mark)
                      DIRTOBYTE_UP, hurt, 0, DAMAGE_NONE, MOD_UNKNOWN);
         }
 
-        cleanupHeal(self);
+        fixHealerEnemy(self);
     }
 
     self->monsterinfo.aiflags &= ~AI_MEDIC;

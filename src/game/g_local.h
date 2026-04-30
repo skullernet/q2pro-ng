@@ -1420,7 +1420,6 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
               int normal, int damage, int knockback, damageflags_t dflags, mod_t mod);
 void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius,
                     damageflags_t dflags, mod_t mod);
-void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod);
 
 // ROGUE
 void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, mod_t mod);
@@ -1857,6 +1856,7 @@ void monster_duck_down(edict_t *self);
 void monster_duck_hold(edict_t *self);
 void monster_duck_up(edict_t *self);
 bool has_valid_enemy(edict_t *self);
+bool has_valid_healee(edict_t *self);
 void TargetTesla(edict_t *self, edict_t *tesla);
 void hintpath_stop(edict_t *self);
 edict_t *PickCoopTarget(edict_t *self);

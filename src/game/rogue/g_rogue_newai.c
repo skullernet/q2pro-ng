@@ -1095,16 +1095,12 @@ void MONSTERINFO_UNDUCK(monster_duck_up)(edict_t *self)
 
 bool has_valid_enemy(edict_t *self)
 {
-    if (!self->enemy)
-        return false;
+    return self->enemy && self->enemy->r.inuse && self->enemy->health > 0;
+}
 
-    if (!self->enemy->r.inuse)
-        return false;
-
-    if (self->enemy->health < 1)
-        return false;
-
-    return true;
+bool has_valid_healee(edict_t *self)
+{
+    return self->enemy && self->enemy->r.inuse && (self->enemy->r.svflags & SVF_MONSTER);
 }
 
 void TargetTesla(edict_t *self, edict_t *tesla)
@@ -1114,7 +1110,7 @@ void TargetTesla(edict_t *self, edict_t *tesla)
 
     // PMM - medic bails on healing things
     if (self->monsterinfo.aiflags & AI_MEDIC) {
-        if (self->enemy)
+        if (has_valid_healee(self))
             cleanupHealTarget(self->enemy);
         self->monsterinfo.aiflags &= ~AI_MEDIC;
     }

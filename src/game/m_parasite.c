@@ -521,7 +521,7 @@ void THINK(proboscis_think)(edict_t *self)
     // flying
     } else if (self->style == 0) {
         // owner gone away?
-        if (!owner->enemy || !owner->enemy->r.inuse || owner->enemy->health <= 0) {
+        if (!has_valid_enemy(owner)) {
             proboscis_retract(self);
             return;
         }

@@ -572,9 +572,8 @@ void M_ProcessPain(edict_t *e)
     if (e->health <= 0) {
         // ROGUE
         if (e->monsterinfo.aiflags & AI_MEDIC) {
-            if (e->enemy && e->enemy->r.inuse && (e->enemy->r.svflags & SVF_MONSTER)) { // god, I hope so
+            if (has_valid_healee(e))
                 cleanupHealTarget(e->enemy);
-            }
 
             // clean up self
             e->monsterinfo.aiflags &= ~AI_MEDIC;
@@ -762,6 +761,8 @@ void THINK(monster_think)(edict_t *self)
         M_CheckDodge(self);
 
     M_MoveFrame(self);
+    if (!self->r.inuse)
+        return;
     if (self->r.linkcount != self->monsterinfo.linkcount) {
         self->monsterinfo.linkcount = self->r.linkcount;
         M_CheckGround(self, G_GetClipMask(self));

@@ -44,14 +44,14 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 Killed
 ============
 */
-void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
+static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     if (targ->health < -999)
         targ->health = -999;
 
     // [Paril-KEX]
     if ((targ->r.svflags & SVF_MONSTER) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
-        if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
+        if (has_valid_healee(targ))
             cleanupHealTarget(targ->enemy);
 
         // clean up self
@@ -259,11 +259,19 @@ static int CheckArmor(edict_t *ent, vec3_t point, int normal, int damage, entity
     return save;
 }
 
+static bool M_CanInfight(edict_t *targ, edict_t *attacker)
+{
+    if ((targ->flags ^ attacker->flags) & (FL_FLY | FL_SWIM))
+        return false;
+    if ((targ->monsterinfo.aiflags | attacker->monsterinfo.aiflags) & AI_IGNORE_SHOTS)
+        return false;
+    if (strcmp(targ->classname, attacker->classname) == 0)
+        return false;
+    return true;
+}
+
 static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor)
 {
-    // pmm
-    bool new_tesla;
-
     if (!(attacker->client) && !(attacker->r.svflags & SVF_MONSTER))
         return;
 
@@ -273,7 +281,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     // attack the tesla
     // also, target the tesla if it's a "new" tesla
     if ((inflictor) && (!strcmp(inflictor->classname, "tesla_mine"))) {
-        new_tesla = MarkTeslaArea(targ, inflictor);
+        bool new_tesla = MarkTeslaArea(targ, inflictor);
         if ((new_tesla || brandom()) && (!targ->enemy || !targ->enemy->classname || strcmp(targ->enemy->classname, "tesla_mine")))
             TargetTesla(targ, inflictor);
         return;
@@ -289,14 +297,18 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     if ((targ->monsterinfo.aiflags & AI_GOOD_GUY) && (attacker->client || (attacker->monsterinfo.aiflags & AI_GOOD_GUY)))
         return;
 
+    // we recently switched from reacting to damage, don't do it
+    if (targ->monsterinfo.react_to_damage_time > level.time)
+        return;
+
     // PGM
     //  if we're currently mad at something a target_anger made us mad at, ignore
     //  damage
-    if (targ->enemy && targ->monsterinfo.aiflags & AI_TARGET_ANGER) {
+    if (targ->monsterinfo.aiflags & AI_TARGET_ANGER) {
         // make sure whatever we were pissed at is still around.
-        if (targ->enemy->r.inuse) {
+        if (has_valid_enemy(targ)) {
             float percentHealth = (float)(targ->health) / (float)(targ->max_health);
-            if (targ->enemy->r.inuse && percentHealth > 0.33f)
+            if (percentHealth > 0.33f)
                 return;
         }
 
@@ -305,21 +317,19 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     }
     // PGM
 
-    // we recently switched from reacting to damage, don't do it
-    if (targ->monsterinfo.react_to_damage_time > level.time)
-        return;
-
     // PMM
     // if we're healing someone, do like above and try to stay with them
-    if ((targ->enemy) && (targ->monsterinfo.aiflags & AI_MEDIC)) {
-        float percentHealth = (float)(targ->health) / (float)(targ->max_health);
-        // ignore it some of the time
-        if (targ->enemy->r.inuse && percentHealth > 0.25f)
-            return;
+    if (targ->monsterinfo.aiflags & AI_MEDIC) {
+        if (has_valid_healee(targ)) {
+            float percentHealth = (float)(targ->health) / (float)(targ->max_health);
+            if (percentHealth > 0.25f)
+                return;
+            cleanupHealTarget(targ->enemy);
+        }
 
         // remove the medic flag
-        cleanupHealTarget(targ->enemy);
         targ->monsterinfo.aiflags &= ~AI_MEDIC;
+        targ->monsterinfo.medicTries = 0;
     }
     // PMM
 
@@ -340,16 +350,6 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
                 }
                 targ->oldenemy = targ->enemy;
             }
-
-            // [Paril-KEX]
-            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
-                    cleanupHealTarget(targ->enemy);
-
-                // clean up self
-                targ->monsterinfo.aiflags &= ~AI_MEDIC;
-            }
-
             targ->enemy = attacker;
             if (!(targ->monsterinfo.aiflags & AI_DUCKED))
                 FoundTarget(targ);
@@ -360,44 +360,24 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     // if they *meant* to shoot us, then shoot back
     // it's the same base (walk/swim/fly) type and both don't ignore shots,
     // get mad at them
-    if (attacker->enemy == targ || (((targ->flags & (FL_FLY | FL_SWIM)) == (attacker->flags & (FL_FLY | FL_SWIM)))
-                                    && (strcmp(targ->classname, attacker->classname) != 0)
-                                    && !(attacker->monsterinfo.aiflags & AI_IGNORE_SHOTS)
-                                    && !(targ->monsterinfo.aiflags & AI_IGNORE_SHOTS))) {
+    if (attacker->enemy == targ || M_CanInfight(targ, attacker)) {
         if (targ->enemy != attacker) {
-            // [Paril-KEX]
-            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
-                    cleanupHealTarget(targ->enemy);
-
-                // clean up self
-                targ->monsterinfo.aiflags &= ~AI_MEDIC;
-            }
-
             if (targ->enemy && targ->enemy->client)
                 targ->oldenemy = targ->enemy;
             targ->enemy = attacker;
             if (!(targ->monsterinfo.aiflags & AI_DUCKED))
                 FoundTarget(targ);
         }
-    // otherwise get mad at whoever they are mad at (help our buddy) unless it is us!
-    } else if (attacker->enemy && attacker->enemy != targ && targ->enemy != attacker->enemy) {
-        if (targ->enemy != attacker->enemy) {
-            // [Paril-KEX]
-            if ((targ->r.svflags & SVF_MONSTER) && targ->monsterinfo.aiflags & AI_MEDIC) {
-                if (targ->enemy && targ->enemy->r.inuse && (targ->enemy->r.svflags & SVF_MONSTER)) // god, I hope so
-                    cleanupHealTarget(targ->enemy);
+        return;
+    }
 
-                // clean up self
-                targ->monsterinfo.aiflags &= ~AI_MEDIC;
-            }
-
-            if (targ->enemy && targ->enemy->client)
-                targ->oldenemy = targ->enemy;
-            targ->enemy = attacker->enemy;
-            if (!(targ->monsterinfo.aiflags & AI_DUCKED))
-                FoundTarget(targ);
-        }
+    // otherwise get mad at whoever they are mad at (help our buddy)!
+    if (attacker->enemy && targ->enemy != attacker->enemy) {
+        if (targ->enemy && targ->enemy->client)
+            targ->oldenemy = targ->enemy;
+        targ->enemy = attacker->enemy;
+        if (!(targ->monsterinfo.aiflags & AI_DUCKED))
+            FoundTarget(targ);
     }
 }
 
@@ -636,12 +616,14 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
                 targ->flags |= FL_ALIVE_KNOCKBACK_ONLY;
                 targ->dead_time = level.time;
             }
-            targ->monsterinfo.damage_blood += take;
-            targ->monsterinfo.damage_attacker = attacker;
-            targ->monsterinfo.damage_inflictor = inflictor;
-            targ->monsterinfo.damage_from = point;
-            targ->monsterinfo.damage_mod = mod;
-            targ->monsterinfo.damage_knockback += knockback;
+            if (targ->r.svflags & SVF_MONSTER) {
+                targ->monsterinfo.damage_attacker = attacker;
+                targ->monsterinfo.damage_inflictor = inflictor;
+                targ->monsterinfo.damage_blood += take;
+                targ->monsterinfo.damage_from = point;
+                targ->monsterinfo.damage_mod = mod;
+                targ->monsterinfo.damage_knockback += knockback;
+            }
             Killed(targ, inflictor, attacker, take, point, mod);
             return;
         }
