@@ -1640,17 +1640,16 @@ void R_AddLight(const dlight_t *light)
     dl->origin = light->origin;
     dl->radius = light->radius;
     dl->color = light->color;
-    if (Vec3_IsEmpty(light->dir) || light->cone_angle == 0.0f) {
-        dl->sphere = true;
+    dl->sphere = Vec3_IsEmpty(light->dir) || light->cone_angle == 0.0f;
+    if (dl->sphere) {
         dl->dir = vec3_origin;
         dl->cone = 0.0f;
     } else {
-        dl->sphere = false;
         dl->dir = light->dir;
         dl->cone = cosf(DEG2RAD(light->cone_angle));
     }
     if (light->resolution > 0)
-        dl->resolution = light->resolution;
+        dl->resolution = BIT(Q_clip(Q_log2(light->resolution), 8, gl_config.max_texture_size_log2));
     else
         dl->resolution = 512;
     dl->flags = light->flags;

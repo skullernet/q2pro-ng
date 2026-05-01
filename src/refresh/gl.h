@@ -140,6 +140,8 @@ typedef struct glentity_s {
 #define MAX_SHADOW_VIEWS    256
 #define MAX_STATIC_LIGHTS   128
 
+#define SHADOWTREE_DEPTH    5
+
 typedef struct {
     vec3_t  origin;
     float   radius;
@@ -165,10 +167,23 @@ typedef struct {
     int     key;
 } gldlight_t;
 
+#define SHADOWMAP_STATIC    BIT(0)
+#define SHADOWMAP_DYNAMIC   BIT(1)
+
+typedef struct quadnode_s {
+    int     s, t, size, inuse;
+    struct quadnode_s     *children[4];
+} quadnode_t;
+
 typedef struct {
-    int s;
-    int t;
-} shadow_view_t;
+    quadnode_t nodes[1400];
+    int numnodes;
+} quadtree_t;
+
+typedef struct {
+    gldlight_t light;
+    quadnode_t *nodes[6];
+} glslight_t;
 
 typedef struct {
     refdef_t        fd;
@@ -206,14 +221,12 @@ typedef struct {
     bool            shadowbuffer_bound;
 
     int             num_shadow_views;
-    uint16_t        shadow_inuse[MAX_TEXTURE_SIZE];
     glShadowView_t  shadow_views[MAX_SHADOW_VIEWS];
+    quadnode_t     *shadow_nodes[MAX_SHADOW_VIEWS];
+    quadtree_t      shadow_tree;
 
-    int             num_static_shadow_views;
     int             num_static_lights;
-    uint16_t        static_shadow_inuse[MAX_TEXTURE_SIZE];
-    shadow_view_t   static_shadow_views[MAX_SHADOW_VIEWS];
-    gldlight_t      static_lights[MAX_STATIC_LIGHTS];
+    glslight_t      static_lights[MAX_STATIC_LIGHTS];
 } glRefdef_t;
 
 typedef enum {
@@ -285,6 +298,9 @@ typedef struct {
     int uniformUploads;
     int vertexArrayBinds;
     int occlusionQueries;
+    int staticShadowsCached;
+    int staticShadowsDrawn;
+    int staticShadowsOverrun;
 } statCounters_t;
 
 extern statCounters_t c;
