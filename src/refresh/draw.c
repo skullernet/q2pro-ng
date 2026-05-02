@@ -421,8 +421,11 @@ static void Draw_Stringf(int x, int y, const char *fmt, ...)
 void Draw_Stats(void)
 {
     int x = 10, y = 10;
+    float scale = get_auto_scale();
+    if (scale >= 2.0f)
+        scale *= 0.5f;
 
-    R_SetScale(1.0f / get_auto_scale());
+    R_SetScale(1.0f / scale);
     R_DrawFill8(8, 8, 25*8, 26*10+2, 4);
 
     Draw_Stringf(x, y, "Nodes visible  : %i", glr.nodes_visible); y += 10;
