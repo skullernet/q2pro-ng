@@ -407,14 +407,14 @@ void GL_PushLights(uint64_t bits)
         if (!(bits & BIT_ULL(i)))
             continue;
         if (r_dlights[i].sphere)
-            gls.u_lights.dlights[c1++] = r_dlights[i].light_;
+            gls.u_lights.dlights[c1++] = r_dlights[i].d;
     }
 
     for (int i = 0; i < r_numdlights; i++) {
         if (!(bits & BIT_ULL(i)))
             continue;
         if (!r_dlights[i].sphere)
-            gls.u_lights.dlights[c1 + c2++] = r_dlights[i].light_;
+            gls.u_lights.dlights[c1 + c2++] = r_dlights[i].d;
     }
 
     gls.u_lights.num_dlights[0] = c1;

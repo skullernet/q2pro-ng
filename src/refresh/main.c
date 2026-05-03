@@ -272,7 +272,7 @@ void GL_MultMatrix(GLfloat *restrict p, const GLfloat *restrict a, const GLfloat
 
 void GL_SetEntityAxis(void)
 {
-    const glentity_t *e = glr.ent;
+    const entity_t *e = &glr.ent->e;
 
     glr.entrotated = false;
     glr.entscale = 1;
@@ -298,17 +298,17 @@ void GL_RotationMatrix(GLfloat *matrix)
     matrix[ 0] = glr.entaxis[0].x;
     matrix[ 4] = glr.entaxis[1].x;
     matrix[ 8] = glr.entaxis[2].x;
-    matrix[12] = glr.ent->origin.x;
+    matrix[12] = glr.ent->e.origin.x;
 
     matrix[ 1] = glr.entaxis[0].y;
     matrix[ 5] = glr.entaxis[1].y;
     matrix[ 9] = glr.entaxis[2].y;
-    matrix[13] = glr.ent->origin.y;
+    matrix[13] = glr.ent->e.origin.y;
 
     matrix[ 2] = glr.entaxis[0].z;
     matrix[ 6] = glr.entaxis[1].z;
     matrix[10] = glr.entaxis[2].z;
-    matrix[14] = glr.ent->origin.z;
+    matrix[14] = glr.ent->e.origin.z;
 
     matrix[ 3] = 0;
     matrix[ 7] = 0;
@@ -319,7 +319,7 @@ void GL_RotationMatrix(GLfloat *matrix)
 void GL_RotateForEntity(void)
 {
     GL_RotationMatrix(gls.u_block.m_model);
-    if (glr.ent == &gl_world || (glr.ent->model & BIT(31) && !(gl_static.nodraw_mask & SURF_SKY))) {
+    if (glr.ent == &gl_world || (glr.ent->e.model & BIT(31) && !(gl_static.nodraw_mask & SURF_SKY))) {
         GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], gls.u_block.m_model);
         GL_MultMatrix(gls.u_block.m_sky[1], glr.skymatrix[1], gls.u_block.m_model);
     }
@@ -329,7 +329,7 @@ void GL_RotateForEntity(void)
 
 static void GL_DrawSpriteModel(const model_t *model)
 {
-    const glentity_t *e = glr.ent;
+    const entity_t *e = &glr.ent->e;
     const mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     const image_t *image = frame->image;
     const float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1.0f;
@@ -384,7 +384,7 @@ static void GL_DrawSpriteModel(const model_t *model)
 
 static void GL_DrawNullModel(void)
 {
-    const glentity_t *e = glr.ent;
+    const entity_t *e = &glr.ent->e;
 
     if (e->flags & RF_WEAPONMODEL)
         return;
@@ -448,10 +448,10 @@ static void GL_OccludeFlares(void)
     int i;
 
     for (ent = glr.ents.flares; ent; ent = ent->next) {
-        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
+        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->e.skinnum);
 
         for (i = 0; i < q_countof(glr.frustum); i++)
-            if (PlaneDiff(ent->origin, &glr.frustum[i]) < -2.5f)
+            if (PlaneDiff(ent->e.origin, &glr.frustum[i]) < -2.5f)
                 break;
         if (i != q_countof(glr.frustum)) {
             if (q)
@@ -475,7 +475,7 @@ static void GL_OccludeFlares(void)
             uint32_t map_size = HashMap_Size(gl_static.queries);
             Q_assert(map_size < MAX_EDICTS);
             qglGenQueries(1, &new.query);
-            HashMap_Insert(gl_static.queries, &ent->skinnum, &new);
+            HashMap_Insert(gl_static.queries, &ent->e.skinnum, &new);
             q = HashMap_GetValue(glquery_t, gl_static.queries, map_size);
         }
 
@@ -491,14 +491,14 @@ static void GL_OccludeFlares(void)
             set = true;
         }
 
-        dir = Vec3_Sub(ent->origin, glr.fd.vieworg);
+        dir = Vec3_Sub(ent->e.origin, glr.fd.vieworg);
         dist = Vec3_Dot(dir, glr.viewaxis[0]);
 
-        scale = 2.5f * ent->scale;
+        scale = 2.5f * ent->e.scale;
         if (dist > 20)
             scale += dist * 0.004f;
 
-        make_flare_quad(Vec3_MA(ent->origin, -5.0f, Vec3_Normalize(dir)), scale);
+        make_flare_quad(Vec3_MA(ent->e.origin, -5.0f, Vec3_Normalize(dir)), scale);
 
         GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);
@@ -523,8 +523,8 @@ static int entitycmpfnc(const void *_a, const void *_b)
     const glentity_t *b = (const glentity_t *)_b;
 
     // sort transparent entities by distance
-    bool a_trans = a->flags & RF_TRANSLUCENT;
-    bool b_trans = b->flags & RF_TRANSLUCENT;
+    bool a_trans = a->e.flags & RF_TRANSLUCENT;
+    bool b_trans = b->e.flags & RF_TRANSLUCENT;
     if (a_trans != b_trans)
         return b_trans - a_trans;
     if (a_trans) {
@@ -534,20 +534,20 @@ static int entitycmpfnc(const void *_a, const void *_b)
             return -1;
     }
 
-    bool a_shell = a->flags & RF_SHELL_MASK;
-    bool b_shell = b->flags & RF_SHELL_MASK;
+    bool a_shell = a->e.flags & RF_SHELL_MASK;
+    bool b_shell = b->e.flags & RF_SHELL_MASK;
     if (a_shell != b_shell)
         return b_shell - a_shell;
 
     // all other models are sorted by model then skin
-    if (a->model > b->model)
+    if (a->e.model > b->e.model)
         return -1;
-    if (a->model < b->model)
+    if (a->e.model < b->e.model)
         return 1;
 
-    if (a->skin > b->skin)
+    if (a->e.skin > b->e.skin)
         return -1;
-    if (a->skin < b->skin)
+    if (a->e.skin < b->e.skin)
         return 1;
 
     return 0;
@@ -557,20 +557,20 @@ static bool GL_EntityInFront(const glentity_t *ent)
 {
     if (ent->bmodel && ent->bmodel->faceflags & BMODEL_OPAQUE)
         return false;
-    if (ent->flags & RF_WEAPONMODEL)
+    if (ent->e.flags & RF_WEAPONMODEL)
         return true;
-    if (ent->alpha <= gl_draworder->value)
+    if (ent->e.alpha <= gl_draworder->value)
         return true;
     return false;
 }
 
 static bool GL_EntityHasShadow(const glentity_t *ent)
 {
-    if (ent->flags & (RF_WEAPONMODEL | RF_FULLBRIGHT | RF_NOSHADOW))
+    if (ent->e.flags & (RF_WEAPONMODEL | RF_FULLBRIGHT | RF_NOSHADOW))
         return false;
     if (ent->bmodel && !(ent->bmodel->faceflags & BMODEL_OPAQUE))
         return false;
-    if (ent->flags & RF_TRANSLUCENT && ent->alpha != 1.0f)
+    if (ent->e.flags & RF_TRANSLUCENT && ent->e.alpha != 1.0f)
         return false;
     return true;
 }
@@ -587,38 +587,38 @@ static void GL_SortEntities(const refdef_t *fd)
 
     // set distance for alpha sorting
     for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
-        if (!(ent->flags & RF_TRANSLUCENT))
+        if (!(ent->e.flags & RF_TRANSLUCENT))
             continue;
 
-        if (ent->flags & RF_BEAM) {
-            float len1 = Vec3_DistanceSquared(fd->vieworg, ent->oldorigin);
-            float len2 = Vec3_DistanceSquared(fd->vieworg, ent->origin);
+        if (ent->e.flags & RF_BEAM) {
+            float len1 = Vec3_DistanceSquared(fd->vieworg, ent->e.oldorigin);
+            float len2 = Vec3_DistanceSquared(fd->vieworg, ent->e.origin);
             ent->dist = min(len1, len2);
             continue;
         }
 
         if (ent->bmodel) {
-            box3_t box = Box3_Translate(ent->bmodel->box, ent->origin);
+            box3_t box = Box3_Translate(ent->bmodel->box, ent->e.origin);
             ent->dist = Vec3_DistanceSquared(fd->vieworg, Box3_ClampPoint(box, fd->vieworg));
             continue;
         }
 
-        ent->dist = Vec3_DistanceSquared(fd->vieworg, ent->origin);
+        ent->dist = Vec3_DistanceSquared(fd->vieworg, ent->e.origin);
     }
 
     // sort entities for better cache locality
     qsort(r_entities, r_numentities, sizeof(r_entities[0]), entitycmpfnc);
 
     for (i = 0, ent = r_entities; i < r_numentities; i++, ent++) {
-        if (ent->flags & RF_BEAM) {
-            if (ent->frame) {
+        if (ent->e.flags & RF_BEAM) {
+            if (ent->e.frame) {
                 ent->next = glr.ents.beams;
                 glr.ents.beams = ent;
             }
             continue;
         }
 
-        if (ent->flags & RF_FLARE) {
+        if (ent->e.flags & RF_FLARE) {
             if (gl_static.queries) {
                 ent->next = glr.ents.flares;
                 glr.ents.flares = ent;
@@ -631,7 +631,7 @@ static void GL_SortEntities(const refdef_t *fd)
             glr.ents.shadow = ent;
         }
 
-        if (!(ent->flags & RF_TRANSLUCENT)) {
+        if (!(ent->e.flags & RF_TRANSLUCENT)) {
             ent->next = glr.ents.opaque;
             glr.ents.opaque = ent;
             continue;
@@ -661,7 +661,7 @@ void GL_DrawEntity(const glentity_t *ent)
         return;
     }
 
-    const model_t *model = MOD_ForHandle(ent->model);
+    const model_t *model = MOD_ForHandle(ent->e.model);
     if (!model) {
         GL_DrawNullModel();
         return;
@@ -687,7 +687,7 @@ void GL_DrawEntity(const glentity_t *ent)
 static void GL_DrawEntities(const glentity_t *ent)
 {
     for (; ent; ent = ent->next) {
-        if (ent->flags & RF_VIEWERMODEL)
+        if (ent->e.flags & RF_VIEWERMODEL)
             continue;
         GL_DrawEntity(ent);
     }
@@ -1588,7 +1588,7 @@ void R_AddEntity(const entity_t *ent)
         return;
 
     glent = &r_entities[r_numentities++];
-    glent->ent_ = *ent;
+    glent->e = *ent;
     glent->bmodel = NULL;
     glent->next = glent->shadow_next = NULL;
 
@@ -1611,8 +1611,8 @@ void R_AddEntity(const entity_t *ent)
 
         // enable alpha sorting if this bmodel has alpha faces
         if (glent->bmodel->faceflags & BMODEL_ALPHA) {
-            glent->flags |= RF_TRANSLUCENT;
-            glent->alpha = 1.0f;
+            glent->e.flags |= RF_TRANSLUCENT;
+            glent->e.alpha = 1.0f;
         }
     }
 }
@@ -1636,16 +1636,16 @@ void R_AddLight(const dlight_t *light)
         return;
 
     dl = &r_dlights[r_numdlights++];
-    dl->origin = light->origin;
-    dl->radius = light->radius;
-    dl->color = light->color;
+    dl->d.origin = light->origin;
+    dl->d.radius = light->radius;
+    dl->d.color = light->color;
     dl->sphere = Vec3_IsEmpty(light->dir) || light->cone_angle == 0.0f;
     if (dl->sphere) {
-        dl->dir = vec3_origin;
-        dl->cone = 0.0f;
+        dl->d.dir = vec3_origin;
+        dl->d.cone = 0.0f;
     } else {
-        dl->dir = light->dir;
-        dl->cone = cosf(DEG2RAD(light->cone_angle));
+        dl->d.dir = light->dir;
+        dl->d.cone = cosf(DEG2RAD(light->cone_angle));
     }
     if (light->resolution > 0)
         dl->resolution = BIT(Q_clip(Q_log2(light->resolution), 8, gl_config.max_texture_size_log2));

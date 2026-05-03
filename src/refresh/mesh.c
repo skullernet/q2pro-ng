@@ -46,7 +46,7 @@ static void setup_dotshading(void)
 
     if (!gl_dotshading->integer)
         return;
-    if (glr.ent->flags & (RF_SHELL_MASK | RF_TRACKER))
+    if (glr.ent->e.flags & (RF_SHELL_MASK | RF_TRACKER))
         return;
     if (drawshadow == SHADOW_ONLY)
         return;
@@ -56,7 +56,7 @@ static void setup_dotshading(void)
     meshbits |= GLS_MESH_SHADE;
 
     // matches the anormtab.h precalculations
-    yaw = -DEG2RAD(glr.ent->angles.yaw);
+    yaw = -DEG2RAD(glr.ent->e.angles.yaw);
     cy = cosf(yaw);
     sy = sinf(yaw);
     cp = cosf(-M_PIf / 4);
@@ -69,7 +69,7 @@ static glCullResult_t cull_static_model(const model_t *model)
     const maliasframe_t *newframe = &model->frames[newframenum];
     glCullResult_t cull;
 
-    if (glr.ent->flags & RF_WEAPONMODEL) {
+    if (glr.ent->e.flags & RF_WEAPONMODEL) {
         cull = CULL_IN;
     } else if (glr.entrotated) {
         cull = GL_CullSphere(origin, newframe->radius);
@@ -102,7 +102,7 @@ static glCullResult_t cull_lerped_model(const model_t *model)
     glCullResult_t cull;
     box3_t box;
 
-    if (glr.ent->flags & RF_WEAPONMODEL) {
+    if (glr.ent->e.flags & RF_WEAPONMODEL) {
         cull = CULL_IN;
     } else if (glr.entrotated) {
         cull = GL_CullSphere(origin, max(newframe->radius, oldframe->radius));
@@ -150,7 +150,7 @@ static void setup_lights(void)
 {
     dlightbits = 0;
 
-    if (glr.ent->flags & (RF_SHELL_MASK | RF_FULLBRIGHT | RF_TRACKER))
+    if (glr.ent->e.flags & (RF_SHELL_MASK | RF_FULLBRIGHT | RF_TRACKER))
         return;
     if (drawshadow == SHADOW_ONLY)
         return;
@@ -161,18 +161,18 @@ static void setup_lights(void)
         const gldlight_t *light = &r_dlights[i];
         vec3_t dir;
 
-        dir = Vec3_Sub(origin, light->origin);
-        if (Vec3_Length(dir) > light->radius + radius) {
+        dir = Vec3_Sub(origin, light->d.origin);
+        if (Vec3_Length(dir) > light->d.radius + radius) {
             c.lightsCulled++;
             continue;
         }
 
         // https://geometrictools.com/Documentation/IntersectionSphereCone.pdf
-        if (light->cone > 0.0f) {
-            float c2 = light->cone * light->cone;
+        if (light->d.cone > 0.0f) {
+            float c2 = light->d.cone * light->d.cone;
             float sr = radius / sqrtf(1.0f - c2);
-            dir = Vec3_MA(dir, sr, light->dir);
-            float d1 = Vec3_Dot(light->dir, dir);
+            dir = Vec3_MA(dir, sr, light->d.dir);
+            float d1 = Vec3_Dot(light->d.dir, dir);
             float d2 = Vec3_Dot(dir, dir);
             if (d1 < 0 || d1 * d1 < d2 * c2) {
                 c.lightsCulled++;
@@ -188,7 +188,7 @@ static void setup_lights(void)
 
 static void setup_color(void)
 {
-    uint64_t flags = glr.ent->flags;
+    uint64_t flags = glr.ent->e.flags;
     vec3_t color;
 
     memset(&glr.lightpoint, 0, sizeof(glr.lightpoint));
@@ -237,7 +237,7 @@ static void setup_color(void)
         }
     }
 
-    float alpha = (flags & RF_TRANSLUCENT) ? glr.ent->alpha : 1.0f;
+    float alpha = (flags & RF_TRANSLUCENT) ? glr.ent->e.alpha : 1.0f;
     meshcolor = Vec4_FromVec3(color, alpha);
 }
 
@@ -245,7 +245,7 @@ static void setup_celshading(void)
 {
     celscale = 0;
 
-    if (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK | RF_TRACKER))
+    if (glr.ent->e.flags & (RF_TRANSLUCENT | RF_SHELL_MASK | RF_TRACKER))
         return;
     if (!qglPolygonMode || !qglLineWidth)
         return;
@@ -283,7 +283,7 @@ static drawshadow_t cull_shadow(void)
 
     if (!gl_shadows->integer)
         return SHADOW_NO;
-    if (glr.ent->flags & (RF_WEAPONMODEL | RF_NOSHADOW))
+    if (glr.ent->e.flags & (RF_WEAPONMODEL | RF_NOSHADOW))
         return SHADOW_NO;
     if (!gl_config.stencilbits)
         return SHADOW_NO;
@@ -409,7 +409,7 @@ static void draw_shadow(const uint16_t *indices, int num_indices)
 
 static const image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
-    const glentity_t *ent = glr.ent;
+    const entity_t *ent = &glr.ent->e;
 
     if (ent->flags & RF_SHELL_MASK)
         return R_SHELLTEXTURE;
@@ -452,7 +452,7 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
 {
     glStateBits_t state;
     const image_t *skin;
-    const uint64_t flags = glr.ent->flags;
+    const uint64_t flags = glr.ent->e.flags;
 
     c.trisDrawn += num_indices / 3;
 
@@ -623,7 +623,7 @@ static void draw_alias_skeleton(const md5_model_t *model)
 // extra ugly. this needs to be done on the client, but to avoid complexity of
 // rendering gun model in its own refdef, and to preserve compatibility with
 // existing RF_WEAPONMODEL flag, we do it here.
-static void setup_weaponmodel(const glentity_t *ent)
+static void setup_weaponmodel(const entity_t *ent)
 {
     float fov_x = glr.fd.fov_x;
     float fov_y = glr.fd.fov_y;
@@ -644,7 +644,7 @@ static void setup_weaponmodel(const glentity_t *ent)
 
 void GL_DrawAliasModel(const model_t *model)
 {
-    const glentity_t *ent = glr.ent;
+    const entity_t *ent = &glr.ent->e;
     glCullResult_t cull;
 
     newframenum = ent->frame % model->numframes;

@@ -128,10 +128,7 @@ typedef struct {
 } glStatic_t;
 
 typedef struct glentity_s {
-    union {
-        entity_t;
-        entity_t ent_;
-    };
+    entity_t e;
     float dist;
     const mmodel_t *bmodel;
     struct glentity_s *next, *shadow_next;
@@ -157,10 +154,7 @@ typedef struct {
 } glShadowView_t;
 
 typedef struct {
-    union {
-        glDynLight_t;
-        glDynLight_t light_;
-    };
+    glDynLight_t d;
     bool    sphere;
     int     resolution;
     int     flags;

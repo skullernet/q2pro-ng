@@ -173,13 +173,13 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
             continue;
 
         // cull in X/Y plane
-        if (!Vec3_IsEmpty(ent->angles)) {
-            if (fabsf(start.x - ent->origin.x) > model->radius)
+        if (!Vec3_IsEmpty(ent->e.angles)) {
+            if (fabsf(start.x - ent->e.origin.x) > model->radius)
                 continue;
-            if (fabsf(start.y - ent->origin.y) > model->radius)
+            if (fabsf(start.y - ent->e.origin.y) > model->radius)
                 continue;
         } else {
-            box3_t box = Box3_Translate(model->box, ent->origin);
+            box3_t box = Box3_Translate(model->box, ent->e.origin);
             if (start.x < box.mins.x || start.x > box.maxs.x)
                 continue;
             if (start.y < box.mins.y || start.y > box.maxs.y)
@@ -187,7 +187,8 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
         }
 
         BSP_TransformedLightPoint(&pt, start, end, model->headnode,
-                                  gl_static.nolm_mask | SURF_TRANS_MASK, ent->origin, ent->angles);
+                                  gl_static.nolm_mask | SURF_TRANS_MASK,
+                                  ent->e.origin, ent->e.angles);
 
         if (pt.fraction < glr.lightpoint.fraction)
             glr.lightpoint = pt;
@@ -243,8 +244,8 @@ static void GL_MarkLights_r(const mnode_t *node)
 static void GL_MarkLights(void)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        lightorg = r_dlights[i].origin;
-        lightradius = r_dlights[i].radius;
+        lightorg = r_dlights[i].d.origin;
+        lightradius = r_dlights[i].d.radius;
         lightbit = BIT_ULL(i);
         GL_MarkLights_r(gl_static.world.cache->nodes);
     }
@@ -253,9 +254,9 @@ static void GL_MarkLights(void)
 static void GL_TransformLights(const mmodel_t *model)
 {
     for (int i = 0; i < r_numdlights; i++) {
-        lightorg = Vec3_Sub(r_dlights[i].origin, glr.ent->origin);
+        lightorg = Vec3_Sub(r_dlights[i].d.origin, glr.ent->e.origin);
         lightorg = Vec3_Rotate(lightorg, glr.entaxis);
-        lightradius = r_dlights[i].radius;
+        lightradius = r_dlights[i].d.radius;
         lightbit = BIT_ULL(i);
         GL_MarkLights_r(model->headnode);
     }
@@ -397,7 +398,7 @@ static void GL_SubModelNode_r(const mnode_t *node)
 
 void GL_DrawBspModel(const mmodel_t *model)
 {
-    const glentity_t *ent = glr.ent;
+    const entity_t *ent = &glr.ent->e;
     glCullResult_t cull;
 
     if (!model->numfaces)
@@ -541,7 +542,7 @@ void GL_DrawWorld(void)
         return;
 
     // auto cycle the world frame for texture animation
-    gl_world.frame = (int)(glr.fd.time * 2);
+    gl_world.e.frame = (int)(glr.fd.time * 2);
 
     glr.ent = &gl_world;
 

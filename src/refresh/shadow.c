@@ -55,8 +55,8 @@ static glslight_t *GL_AllocStaticLight(void)
 static int GL_CompareLights(const gldlight_t *a, const gldlight_t *b)
 {
     if (a->sphere == b->sphere && a->resolution == b->resolution) {
-        return Vec3_IsEqual(a->origin, b->origin) && a->radius == b->radius
-            && Vec3_IsEqual(a->dir, b->dir) && a->cone == b->cone;
+        return Vec3_IsEqual(a->d.origin, b->d.origin) && a->d.radius == b->d.radius
+            && Vec3_IsEqual(a->d.dir, b->d.dir) && a->d.cone == b->d.cone;
     }
     return -1;
 }
@@ -164,7 +164,7 @@ static void GL_DrawStaticShadowView(const gldlight_t *light, vec3_t dir, float f
 {
     glr.fd.viewangles = vectoangles(dir);
 
-    Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
+    Matrix_Frustum(fov, fov, 1.0f, light->d.radius, gls.proj_matrix);
     glr.fd.fov_x = glr.fd.fov_y = fov;
 
     GL_RotateForViewer();
@@ -176,7 +176,7 @@ static void GL_DrawStaticShadowView(const gldlight_t *light, vec3_t dir, float f
 
     glr.drawframe++;
 
-    GL_SetupFrustum(light->radius);
+    GL_SetupFrustum(light->d.radius);
 
     GL_DrawWorld();
 }
@@ -257,14 +257,14 @@ static void GL_DrawStaticShadows(void)
             }
         }
 
-        glr.fd.vieworg = light->origin;
-        gls.u_block.vieworg = Vec4_FromVec3(light->origin, 0);
+        glr.fd.vieworg = light->d.origin;
+        gls.u_block.vieworg = Vec4_FromVec3(light->d.origin, 0);
 
         if (light->sphere) {
             for (int j = 0; j < 6; j++)
                 GL_DrawStaticShadowView(light, shadowdirs[j], 90.0f, cache->nodes[j]);
         } else {
-            GL_DrawStaticShadowView(light, light->dir, RAD2DEG(acosf(light->cone)) * 2, cache->nodes[0]);
+            GL_DrawStaticShadowView(light, light->d.dir, RAD2DEG(acosf(light->d.cone)) * 2, cache->nodes[0]);
         }
 
         c.staticShadowsDrawn++;
@@ -275,12 +275,12 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
 {
     const int res = light->resolution;
     const float scale = 1.0f / gl_config.max_texture_size;
-    const quadnode_t *node = glr.shadow_nodes[light->firstview + face];
+    const quadnode_t *node = glr.shadow_nodes[light->d.firstview + face];
     const int s = node->s;
     const int t = node->t;
     Q_assert(node->size == res);
 
-    glShadowView_t *view = &glr.shadow_views[light->firstview + face];
+    glShadowView_t *view = &glr.shadow_views[light->d.firstview + face];
     view->offset.x = (res - 2) * scale;
     view->offset.y = (res - 2) * scale;
     view->offset.z = (s + 0.5f) * scale;
@@ -288,7 +288,7 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
 
     glr.fd.viewangles = vectoangles(dir);
 
-    Matrix_Frustum(fov, fov, 1.0f, light->radius, gls.proj_matrix);
+    Matrix_Frustum(fov, fov, 1.0f, light->d.radius, gls.proj_matrix);
     glr.fd.fov_x = glr.fd.fov_y = fov;
 
     GL_RotateForViewer();
@@ -299,7 +299,7 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
 
     glr.drawframe++;
 
-    GL_SetupFrustum(light->radius);
+    GL_SetupFrustum(light->d.radius);
 
     const glslight_t *cache = GL_FindStaticLight(light->key);
     if (cache) {
@@ -312,7 +312,7 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
     }
 
     for (const glentity_t *ent = glr.ents.shadow; ent; ent = ent->shadow_next) {
-        if (ent->flags & light->flags & RF_VIEWERMODEL)
+        if (ent->e.flags & light->flags & RF_VIEWERMODEL)
             continue;
         GL_DrawEntity(ent);
     }
@@ -326,13 +326,13 @@ static void GL_DrawDynamicShadows(const cplane_t *frustum)
         gldlight_t *light = &r_dlights[i];
         int j, num_views;
 
-        light->firstview = -1; // not shadow mapped yet
+        light->d.firstview = -1; // not shadow mapped yet
 
         if (light->flags & RF_NOSHADOW)
             continue;
 
         for (j = 0; j < 4; j++)
-            if (PlaneDiff(light->origin, &frustum[j]) < -light->radius)
+            if (PlaneDiff(light->d.origin, &frustum[j]) < -light->d.radius)
                 break;
         if (j < 4)
             continue;
@@ -345,17 +345,17 @@ static void GL_DrawDynamicShadows(const cplane_t *frustum)
                                &glr.shadow_nodes[glr.num_shadow_views], num_views))
             continue;
 
-        glr.fd.vieworg = light->origin;
-        gls.u_block.vieworg = Vec4_FromVec3(light->origin, 0);
+        glr.fd.vieworg = light->d.origin;
+        gls.u_block.vieworg = Vec4_FromVec3(light->d.origin, 0);
 
-        light->firstview = glr.num_shadow_views;
+        light->d.firstview = glr.num_shadow_views;
         glr.num_shadow_views += num_views;
 
         if (light->sphere) {
             for (j = 0; j < 6; j++)
                 GL_DrawShadowView(light, shadowdirs[j], 90.0f, j);
         } else {
-            GL_DrawShadowView(light, light->dir, RAD2DEG(acosf(light->cone)) * 2, 0);
+            GL_DrawShadowView(light, light->d.dir, RAD2DEG(acosf(light->d.cone)) * 2, 0);
         }
     }
 

@@ -335,18 +335,18 @@ void GL_DrawBeams(void)
     }
 
     for (ent = glr.ents.beams; ent; ent = ent->next) {
-        segs[0] = ent->origin;
-        segs[1] = ent->oldorigin;
+        segs[0] = ent->e.origin;
+        segs[1] = ent->e.oldorigin;
 
-        if (ent->skinnum == -1)
-            color.u32 = ent->rgba.u32;
+        if (ent->e.skinnum == -1)
+            color.u32 = ent->e.rgba.u32;
         else
-            color.u32 = d_8to24table[ent->skinnum & 0xff];
-        color.a *= ent->alpha;
+            color.u32 = d_8to24table[ent->e.skinnum & 0xff];
+        color.a *= ent->e.alpha;
 
-        width = abs((int16_t)ent->frame) * scale;
+        width = abs((int16_t)ent->e.frame) * scale;
 
-        if (ent->flags & RF_GLOW)
+        if (ent->e.flags & RF_GLOW)
             GL_DrawLightningBeam(segs[0], segs[1], color, width);
         else if (gl_beamstyle->integer)
             GL_DrawPolyBeam(segs, 1, color, width);
@@ -395,7 +395,7 @@ void GL_DrawFlares(void)
     GL_BindArrays(VA_EFFECT);
 
     for (ent = glr.ents.flares; ent; ent = ent->next) {
-        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->skinnum);
+        q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->e.skinnum);
         if (!q)
             continue;
 
@@ -421,7 +421,7 @@ void GL_DrawFlares(void)
         if (!q->frac)
             continue;
 
-        image = IMG_ForHandle(ent->skin);
+        image = IMG_ForHandle(ent->e.skin);
 
         if (q_unlikely(tess.numverts + 5 > TESS_MAX_VERTICES ||
                        tess.numindices + 12 > TESS_MAX_INDICES) ||
@@ -434,16 +434,16 @@ void GL_DrawFlares(void)
         if (def)
             tess.flags |= GLS_DEFAULT_FLARE;
 
-        scale = (25 << def) * (ent->scale * q->frac);
+        scale = (25 << def) * (ent->e.scale * q->frac);
 
-        if (ent->flags & RF_FLARE_LOCK_ANGLE) {
+        if (ent->e.flags & RF_FLARE_LOCK_ANGLE) {
             left  = Vec3_Scale(glr.viewaxis[1],  scale);
             right = Vec3_Scale(glr.viewaxis[1], -scale);
             down  = Vec3_Scale(glr.viewaxis[2], -scale);
             up    = Vec3_Scale(glr.viewaxis[2],  scale);
         } else {
             vec3_t dir, r, u;
-            dir = Vec3_Direction(ent->origin, glr.fd.vieworg);
+            dir = Vec3_Direction(ent->e.origin, glr.fd.vieworg);
             MakeNormalVectors(dir, &r, &u);
             left  = Vec3_Scale(r, -scale);
             right = Vec3_Scale(r,  scale);
@@ -451,12 +451,12 @@ void GL_DrawFlares(void)
             up    = Vec3_Scale(u,  scale);
         }
 
-        down = Vec3_Add(ent->origin, down);
-        up   = Vec3_Add(ent->origin, up);
+        down = Vec3_Add(ent->e.origin, down);
+        up   = Vec3_Add(ent->e.origin, up);
 
         dst_vert = tess.vertices + tess.numverts * 6;
 
-        Vec3_Store(dst_vert, ent->origin);
+        Vec3_Store(dst_vert, ent->e.origin);
         Vec3_Store(dst_vert +  6, Vec3_Add(down, left));
         Vec3_Store(dst_vert + 12, Vec3_Add(up,   left));
         Vec3_Store(dst_vert + 18, Vec3_Add(up,   right));
@@ -467,17 +467,17 @@ void GL_DrawFlares(void)
             dst_vert[i * 6 + 4] = tcoords[i * 2 + 1];
         }
 
-        inner = ent->rgba;
-        inner.a = (128 + def * 32) * (ent->alpha * q->frac);
+        inner = ent->e.rgba;
+        inner.a = (128 + def * 32) * (ent->e.alpha * q->frac);
         outer = inner;
 
-        if (ent->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE)) {
+        if (ent->e.flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE)) {
             Vec3_Set(outer.u8, 0, 0, 0);
-            if (ent->flags & RF_SHELL_RED)
+            if (ent->e.flags & RF_SHELL_RED)
                 outer.r = 255;
-            if (ent->flags & RF_SHELL_GREEN)
+            if (ent->e.flags & RF_SHELL_GREEN)
                 outer.g = 255;
-            if (ent->flags & RF_SHELL_BLUE)
+            if (ent->e.flags & RF_SHELL_BLUE)
                 outer.b = 255;
         }
 
@@ -679,14 +679,18 @@ void GL_Flush3D(void)
         if (glr.framebuffer_bound && gl_bloom->integer)
             state |= GLS_BLOOM_GENERATE;
 
-        if (state & GLS_COLOR_ENABLE)
+        if (state & GLS_COLOR_ENABLE) {
             array |= GLA_COLOR;
-        else if ((glr.ent->flags & RF_TRANSLUCENT) && glr.ent->alpha != 1.0f) {
-            state |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
-            if (state & GLS_WARP_ENABLE)
-                GL_Color(1, 1, 1, glr.ent->alpha * 0.3f); // what the fuck???
-            else
-                GL_Color(1, 1, 1, glr.ent->alpha);
+        } else {
+            const entity_t *ent = &glr.ent->e;
+
+            if ((ent->flags & RF_TRANSLUCENT) && ent->alpha != 1.0f) {
+                state |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+                if (state & GLS_WARP_ENABLE)
+                    GL_Color(1, 1, 1, ent->alpha * 0.3f); // what the fuck???
+                else
+                    GL_Color(1, 1, 1, ent->alpha);
+            }
         }
 
         if (state & GLS_SKY_MASK)
@@ -740,7 +744,7 @@ void GL_Flush3D(void)
 static const image_t *GL_TextureAnimation(const mtexinfo_t *tex)
 {
     if (q_unlikely(tex->next)) {
-        int c = glr.ent->frame % tex->numframes;
+        int c = glr.ent->e.frame % tex->numframes;
         while (c--)
             tex = tex->next;
     }
