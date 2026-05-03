@@ -1,4 +1,4 @@
-project('miniaudio', 'c', version: '0.11.22', license: 'mit')
+project('miniaudio', 'c', version: '0.11.23', license: 'mit')
 
 args = [
   '-DMA_USE_STDINT',
