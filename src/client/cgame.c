@@ -40,9 +40,7 @@ static const mnode_t *CL_ClipHandleToNode(unsigned index, bool transformed)
 
 static void PF_Print(print_type_t type, const char *msg)
 {
-    Con_SkipNotify(type & PRINT_SKIPNOTIFY);
-    Com_LPrintf(type & ~PRINT_SKIPNOTIFY, "%s", msg);
-    Con_SkipNotify(false);
+    Com_LPrintf(type, "%s", msg);
 }
 
 static q_noreturn void PF_Error(const char *msg)

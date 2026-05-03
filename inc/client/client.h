@@ -83,8 +83,7 @@ bool CL_ForwardToServer(void);
 
 void Con_Init(void);
 void Con_SetColor(color_index_t color);
-void Con_SkipNotify(bool skip);
-void Con_Print(const char *text);
+void Con_Print(print_type_t type, const char *text);
 void Con_Printf(const char *fmt, ...) q_printf(1, 2);
 void Con_Close(bool force);
 
@@ -107,8 +106,7 @@ void SCR_UpdateScreen(void);
 
 #define Con_Init()                      (void)0
 #define Con_SetColor(color)             (void)0
-#define Con_SkipNotify(skip)            (void)0
-#define Con_Print(text)                 (void)0
+#define Con_Print(type, text)           (void)0
 
 #define SCR_BeginLoadingPlaque()        (void)0
 #define SCR_EndLoadingPlaque()          (void)0

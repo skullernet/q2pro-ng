@@ -117,7 +117,7 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
 
     av_log_format_line2(avcl, level, fmt, vl, line, sizeof(line), &print_prefix);
     UTF8_TranslitBuffer(temp, line, sizeof(temp));
-    Com_LPrintf(type, "%s", temp);
+    Com_LPrintf(type | PRINT_SKIPNOTIFY, "%s", temp);
 }
 
 /*

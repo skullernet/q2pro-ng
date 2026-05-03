@@ -68,9 +68,7 @@ Debug print to server console.
 */
 static void PF_Print(print_type_t type, const char *msg)
 {
-    Con_SkipNotify(true);
-    Com_LPrintf(type, "%s", msg);
-    Con_SkipNotify(false);
+    Com_LPrintf(type | PRINT_SKIPNOTIFY, "%s", msg);
 }
 
 /*

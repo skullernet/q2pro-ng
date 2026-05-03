@@ -406,11 +406,12 @@ Both client and server can use this, and it will output
 to the appropriate place.
 =============
 */
-void Com_LPrintf(print_type_t type, const char *fmt, ...)
+void Com_LPrintf(print_type_t rawtype, const char *fmt, ...)
 {
     va_list     argptr;
     char        msg[MAXPRINTMSG];
     size_t      len;
+    print_type_t type = rawtype & ~PRINT_SKIPNOTIFY;
 
     // may be entered recursively only once
     if (com_printEntered >= 2) {
@@ -462,7 +463,7 @@ void Com_LPrintf(print_type_t type, const char *fmt, ...)
         }
 
         // graphical console
-        Con_Print(msg);
+        Con_Print(rawtype, msg);
 
 #if USE_SYSCON
         // debugging console

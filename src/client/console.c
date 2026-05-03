@@ -103,16 +103,6 @@ static cvar_t   *con_auto_chat;
 
 /*
 ================
-Con_SkipNotify
-================
-*/
-void Con_SkipNotify(bool skip)
-{
-    con.skipNotify = skip;
-}
-
-/*
-================
 Con_ClearTyping
 ================
 */
@@ -586,13 +576,15 @@ All console printing must go through this in order to be displayed on screen
 If no console is visible, the text will appear at the top of the game window
 ================
 */
-void Con_Print(const char *txt)
+void Con_Print(print_type_t type, const char *txt)
 {
     char *p;
     int l;
 
     if (!con.initialized)
         return;
+
+    con.skipNotify = type & PRINT_SKIPNOTIFY;
 
     while (*txt) {
         if (con.newline) {
@@ -653,7 +645,7 @@ void Con_Printf(const char *fmt, ...)
     Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
     va_end(argptr);
 
-    Con_Print(msg);
+    Con_Print(PRINT_ALL, msg);
 }
 
 /*
