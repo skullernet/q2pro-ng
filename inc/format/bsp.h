@@ -50,7 +50,29 @@ typedef struct {
     uint32_t        fileofs, filelen;
 } lump_t;
 
-#define    HEADER_LUMPS         19
+enum {
+    LUMP_ENTITIES,
+    LUMP_PLANES,
+    LUMP_VERTEXES,
+    LUMP_VISIBILITY,
+    LUMP_NODES,
+    LUMP_TEXINFO,
+    LUMP_FACES,
+    LUMP_LIGHTING,
+    LUMP_LEAFS,
+    LUMP_LEAFFACES,
+    LUMP_LEAFBRUSHES,
+    LUMP_EDGES,
+    LUMP_SURFEDGES,
+    LUMP_MODELS,
+    LUMP_BRUSHES,
+    LUMP_BRUSHSIDES,
+    LUMP_POP,
+    LUMP_AREAS,
+    LUMP_AREAPORTALS,
+
+    HEADER_LUMPS
+};
 
 typedef struct {
     uint32_t    ident;

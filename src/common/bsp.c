@@ -98,26 +98,26 @@ typedef struct {
     { { BSP_Load##name, BSP_Load##name##Ext }, #name, lump, { disksize1, disksize2 }, sizeof(mem_t) }
 
 static const lump_info_t bsp_lumps[] = {
-    L(Visibility,    3, byte,            1,  1),
-    L(Texinfo,       5, mtexinfo_t,     76, 76),
-    L(Planes,        1, cplane_t,       20, 20),
-    E(BrushSides,   15, mbrushside_t,    4,  8),
-    L(Brushes,      14, mbrush_t,       12, 12),
-    E(LeafBrushes,  10, mbrush_t *,      2,  4),
-    L(AreaPortals,  18, mareaportal_t,   8,  8),
-    L(Areas,        17, marea_t,         8,  8),
+    L(Visibility,  LUMP_VISIBILITY,  byte,           1,  1),
+    L(Texinfo,     LUMP_TEXINFO,     mtexinfo_t,    76, 76),
+    L(Planes,      LUMP_PLANES,      cplane_t,      20, 20),
+    E(BrushSides,  LUMP_BRUSHSIDES,  mbrushside_t,   4,  8),
+    L(Brushes,     LUMP_BRUSHES,     mbrush_t,      12, 12),
+    E(LeafBrushes, LUMP_LEAFBRUSHES, mbrush_t *,     2,  4),
+    L(AreaPortals, LUMP_AREAPORTALS, mareaportal_t,  8,  8),
+    L(Areas,       LUMP_AREAS,       marea_t,        8,  8),
 #if USE_REF
-    L(Lightmap,      7, byte,            1,  1),
-    L(Vertices,      2, mvertex_t,      12, 12),
-    E(Edges,        11, medge_t,         4,  8),
-    L(SurfEdges,    12, msurfedge_t,     4,  4),
-    E(Faces,         6, mface_t,        20, 28),
-    E(LeafFaces,     9, mface_t *,       2,  4),
+    L(Lightmap,  LUMP_LIGHTING,  byte,         1,  1),
+    L(Vertices,  LUMP_VERTEXES,  mvertex_t,   12, 12),
+    E(Edges,     LUMP_EDGES,     medge_t,      4,  8),
+    L(SurfEdges, LUMP_SURFEDGES, msurfedge_t,  4,  4),
+    E(Faces,     LUMP_FACES,     mface_t,     20, 28),
+    E(LeafFaces, LUMP_LEAFFACES, mface_t *,    2,  4),
 #endif
-    E(Leafs,         8, mleaf_t,        28, 52),
-    E(Nodes,         4, mnode_t,        28, 44),
-    L(SubModels,    13, mmodel_t,       48, 48),
-    L(EntString,     0, char,            1,  1),
+    E(Leafs,     LUMP_LEAFS,    mleaf_t,  28, 52),
+    E(Nodes,     LUMP_NODES,    mnode_t,  28, 44),
+    L(SubModels, LUMP_MODELS,   mmodel_t, 48, 48),
+    L(EntString, LUMP_ENTITIES, char,      1,  1),
 };
 
 #undef L
@@ -896,7 +896,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         ofs = LittleLong(header->lumps[info->lump].fileofs);
         len = LittleLong(header->lumps[info->lump].filelen);
         if ((uint64_t)ofs + len > filelen) {
-            if (!info->lump && ofs < filelen) {
+            if (info->lump == LUMP_ENTITIES && ofs < filelen) {
                 // EntString workaround for eg ztnmap1
                 Com_WPrintf("%s lump out of bounds, fixing\n", info->name);
                 len = filelen - ofs;
@@ -918,7 +918,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         lump_count[i] = count;
 
         // account for terminating NUL for EntString lump
-        if (!info->lump)
+        if (info->lump == LUMP_ENTITIES)
             count++;
 
         // round to cacheline
