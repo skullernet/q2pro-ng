@@ -79,6 +79,7 @@ cvar_t *gl_showtris;
 cvar_t *gl_showorigins;
 cvar_t *gl_showtearing;
 cvar_t *gl_showbloom;
+cvar_t *gl_showflares;
 #if USE_DEBUG
 cvar_t *gl_showstats;
 cvar_t *gl_showscrap;
@@ -439,7 +440,6 @@ static void make_flare_quad(vec3_t origin, float scale)
 
 static void GL_OccludeFlares(void)
 {
-    const bsp_t *bsp = gl_static.world.cache;
     const glentity_t *ent;
     glquery_t *q;
     vec3_t dir;
@@ -486,21 +486,19 @@ static void GL_OccludeFlares(void)
             GL_BindArrays(VA_OCCLUDE);
             GL_StateBits(GLS_DEPTHMASK_FALSE);
             GL_ArrayBits(GLA_VERTEX);
-            qglColorMask(0, 0, 0, 0);
+            if (!gl_showflares->integer)
+                qglColorMask(0, 0, 0, 0);
             set = true;
         }
 
         dir = Vec3_Sub(ent->origin, glr.fd.vieworg);
         dist = Vec3_Dot(dir, glr.viewaxis[0]);
 
-        scale = 2.5f;
+        scale = 2.5f * ent->scale;
         if (dist > 20)
             scale += dist * 0.004f;
 
-        if (bsp && BSP_PointLeaf(bsp->nodes, ent->origin)->contents & CONTENTS_SOLID)
-            make_flare_quad(Vec3_MA(ent->origin, -5.0f, Vec3_Normalize(dir)), scale);
-        else
-            make_flare_quad(ent->origin, scale);
+        make_flare_quad(Vec3_MA(ent->origin, -5.0f, Vec3_Normalize(dir)), scale);
 
         GL_LockArrays(4);
         qglBeginQuery(gl_static.samples_passed, q->query);
@@ -1173,6 +1171,7 @@ static void GL_Register(void)
     gl_showorigins = Cvar_Get("gl_showorigins", "0", CVAR_CHEAT);
     gl_showtearing = Cvar_Get("gl_showtearing", "0", CVAR_CHEAT);
     gl_showbloom = Cvar_Get("gl_showbloom", "0", CVAR_CHEAT);
+    gl_showflares = Cvar_Get("gl_showflares", "0", CVAR_CHEAT);
 #if USE_DEBUG
     gl_showstats = Cvar_Get("gl_showstats", "0", 0);
     gl_showscrap = Cvar_Get("gl_showscrap", "0", 0);
