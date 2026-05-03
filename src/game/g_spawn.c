@@ -1112,6 +1112,7 @@ bool ED_WasKeySpecified(const char *key)
         if (!strcmp(f->name, key))
             return Q_IsBitSet(entity_bitmap, i);
 
+    G_Printf("%s: %s is not a valid field\n", __func__, key);
     return false;
 }
 
@@ -1135,6 +1136,8 @@ void ED_SetKeySpecified(const char *key)
             return;
         }
     }
+
+    G_Printf("%s: %s is not a valid field\n", __func__, key);
 }
 
 void ED_InitSpawnVars(void)

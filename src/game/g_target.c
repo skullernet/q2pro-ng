@@ -626,6 +626,15 @@ void SP_target_spawner(edict_t *self)
         G_SetMovedir(self);
         self->movedir = Vec3_Scale(self->movedir, self->speed);
     }
+
+    // precache spawned entity
+    edict_t *ent = G_Spawn();
+    ent->classname = self->target;
+    ent->monsterinfo.aiflags |= AI_DO_NOT_COUNT;
+
+    ED_InitSpawnVars();
+    ED_CallSpawn(ent);
+    G_FreeEdict(ent);
 }
 
 //==========================================================
