@@ -114,7 +114,6 @@ typedef struct {
     GLuint          index_buffer;
     GLuint          vertex_buffer;
     GLuint          texnums[NUM_AUTO_TEXTURES];
-    GLenum          samples_passed;
     GLsync          sync;
     float           bloom_sigma;
     int             nolm_mask;

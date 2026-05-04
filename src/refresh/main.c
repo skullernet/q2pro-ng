@@ -501,9 +501,9 @@ static void GL_OccludeFlares(void)
         make_flare_quad(Vec3_MA(ent->e.origin, -5.0f, Vec3_Normalize(dir)), scale);
 
         GL_LockArrays(4);
-        qglBeginQuery(gl_static.samples_passed, q->query);
+        qglBeginQuery(GL_SAMPLES_PASSED, q->query);
         qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        qglEndQuery(gl_static.samples_passed);
+        qglEndQuery(GL_SAMPLES_PASSED);
         GL_UnlockArrays();
 
         q->timestamp = com_eventTime;
@@ -1327,10 +1327,6 @@ void GL_InitQueries(void)
 {
     if (!qglBeginQuery)
         return;
-
-    gl_static.samples_passed = GL_SAMPLES_PASSED;
-    if (gl_config.ver_gl >= QGL_VER(3, 3) || gl_config.ver_es >= QGL_VER(3, 0))
-        gl_static.samples_passed = GL_ANY_SAMPLES_PASSED;
 
     Q_assert(!gl_static.queries);
     gl_static.queries = HashMap_TagCreate(int, glquery_t, HashInt32, NULL, TAG_RENDERER);

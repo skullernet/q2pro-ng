@@ -372,6 +372,33 @@ static void GL_FlushFlares(void)
     tess.flags = 0;
 }
 
+static void GL_PollQuery(glquery_t *q, int samples)
+{
+    GLuint result;
+
+    if (!q->pending || q->timestamp == com_eventTime)
+        return;
+
+    if (gl_config.caps & QGL_CAP_QUERY_RESULT_NO_WAIT) {
+        result = -1;
+        qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_NO_WAIT, &result);
+        if (result == -1)
+            return;
+    } else {
+        result = 0;
+        qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
+        if (!result)
+            return;
+        qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
+    }
+
+    if (result > samples)
+        q->visible = true;
+    else if (result < samples / 2)
+        q->visible = false;
+    q->pending = false;
+}
+
 void GL_DrawFlares(void)
 {
     static const byte indices[12] = { 0, 2, 3, 0, 3, 4, 0, 4, 1, 0, 1, 2 };
@@ -380,13 +407,12 @@ void GL_DrawFlares(void)
     color_t inner, outer;
     vec_t *dst_vert;
     glIndex_t *dst_indices;
-    GLuint result;
     const glentity_t *ent;
     const image_t *image;
     glquery_t *q;
     float scale;
     bool def;
-    int i;
+    int i, samples;
 
     if (!glr.ents.flares)
         return;
@@ -394,28 +420,14 @@ void GL_DrawFlares(void)
     GL_LoadMatrix(glr.viewmatrix);
     GL_BindArrays(VA_EFFECT);
 
+    samples = glr.fd.width * glr.fd.height / 82944; // 25 samples @ 1080p
+
     for (ent = glr.ents.flares; ent; ent = ent->next) {
         q = HashMap_Lookup(glquery_t, gl_static.queries, &ent->e.skinnum);
         if (!q)
             continue;
 
-        if (q->pending && q->timestamp != com_eventTime) {
-            if (gl_config.caps & QGL_CAP_QUERY_RESULT_NO_WAIT) {
-                result = -1;
-                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_NO_WAIT, &result);
-                if (result != -1) {
-                    q->visible = result;
-                    q->pending = false;
-                }
-            } else {
-                qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT_AVAILABLE, &result);
-                if (result) {
-                    qglGetQueryObjectuiv(q->query, GL_QUERY_RESULT, &result);
-                    q->visible = result;
-                    q->pending = false;
-                }
-            }
-        }
+        GL_PollQuery(q, samples);
 
         GL_AdvanceValue(&q->frac, q->visible, gl_flarespeed->value);
         if (!q->frac)
