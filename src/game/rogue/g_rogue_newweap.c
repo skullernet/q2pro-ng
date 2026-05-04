@@ -973,19 +973,27 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
     trace_t    tr;
     vec3_t     dir;
     vec3_t     end, pos;
-    vec3_t     water_start, endpoint;
+    vec3_t     water_start;
     bool       water = false, underwater = false;
     contents_t content_mask = G_ProjectileClipmask(self) | MASK_WATER;
 
     end = Vec3_MA(start, 8192, aimdir);
 
+    // special case: we started in water
     if (trap_PointContents(start) & MASK_WATER) {
         underwater = true;
         water_start = start;
         content_mask &= ~MASK_WATER;
     }
 
-    tr = G_TraceLine(start, end, self->s.number, content_mask);
+    // check initial firing position
+    tr = G_TraceLine(self->s.origin, start, self->s.number, content_mask & ~MASK_WATER);
+    if (tr.fraction < 1.0f)
+        // a bit ugly, but skip drawing the beam, keeping the flash
+        start = tr.endpos;
+    else
+        // we're clear, so do the second pierce
+        tr = G_TraceLine(start, end, self->s.number, content_mask);
 
     // see if we hit water
     if (tr.contents & MASK_WATER) {
@@ -1000,7 +1008,6 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
         // re-trace ignoring water this time
         tr = G_TraceLine(water_start, end, self->s.number, content_mask & ~MASK_WATER);
     }
-    endpoint = G_SnapVectorTowards(tr.endpos, start);
 
     // halve the damage if target underwater
     if (water)
@@ -1021,18 +1028,7 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
         }
     }
 
-    // if went through water, determine where the end and make a bubble trail
-    if ((water) || (underwater)) {
-        dir = Vec3_Direction(tr.endpos, water_start);
-        pos = Vec3_MA(tr.endpos, -2, dir);
-        if (trap_PointContents(pos) & MASK_WATER)
-            tr.endpos = pos;
-        else
-            tr = G_TraceLine(pos, water_start, hit->s.number, MASK_WATER);
-
-        G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL2);
-    }
-
+    // spawn the beam entity
     edict_t *te = self->beam;
     if (!te) {
         self->beam = te = G_Spawn();
@@ -1044,9 +1040,21 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
     }
 
     te->s.old_origin = G_SnapVector(start);
-    te->s.origin = endpoint;
+    te->s.origin = G_SnapVectorTowards(tr.endpos, start);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
+
+    // if went through water, determine where the end is and make a bubble trail
+    if ((water) || (underwater)) {
+        dir = Vec3_Direction(tr.endpos, water_start);
+        pos = Vec3_MA(tr.endpos, -2, dir);
+        if (trap_PointContents(pos) & MASK_WATER)
+            tr.endpos = pos;
+        else
+            tr = G_TraceLine(pos, water_start, hit->s.number, MASK_WATER);
+
+        G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL2);
+    }
 }
 
 // *************************
