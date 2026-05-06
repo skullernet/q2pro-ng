@@ -786,7 +786,7 @@ void THINK(tesla_think_active)(edict_t *self)
             }
 
             te->s.old_origin = G_SnapVector(start);
-            te->s.origin = G_SnapVectorTowards(tr.endpos, start);
+            te->s.origin = G_SnapVector(tr.endpos);
             te->nextthink = level.time + SEC(0.2f);
             trap_LinkEntity(te);
         }
@@ -1040,7 +1040,7 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
     }
 
     te->s.old_origin = G_SnapVector(start);
-    te->s.origin = G_SnapVectorTowards(tr.endpos, start);
+    te->s.origin = G_SnapVector(tr.endpos);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 

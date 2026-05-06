@@ -79,7 +79,7 @@ void dabeam_update(edict_t *self, bool damage)
 
     pierce_end(&pierce);
 
-    self->s.old_origin = G_SnapVectorTowards(tr.endpos, args.start);
+    self->s.old_origin = G_SnapVector(tr.endpos);
     trap_LinkEntity(self);
 }
 

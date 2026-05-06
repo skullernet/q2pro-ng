@@ -321,7 +321,7 @@ static void ShamblerCastLightning(edict_t *self)
         self->beam = G_SpawnLightning(self);
 
     self->beam->s.old_origin = G_SnapVector(start);
-    self->beam->s.origin = G_SnapVectorTowards(tr.endpos, start);
+    self->beam->s.origin = G_SnapVector(tr.endpos);
     trap_LinkEntity(self->beam);
 
     fire_bullet(self, start, dir, irandom2(8, 12), 15, 0, 0, MOD_TESLA);

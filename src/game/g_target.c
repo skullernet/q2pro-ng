@@ -816,7 +816,7 @@ void THINK(target_laser_think)(edict_t *self)
 
     pierce_end(&pierce);
 
-    self->s.old_origin = G_SnapVectorTowards(tr.endpos, args.start);
+    self->s.old_origin = G_SnapVector(tr.endpos);
 
     if (damaged_thing)
         self->damage_debounce_time = level.time + HZ(10);

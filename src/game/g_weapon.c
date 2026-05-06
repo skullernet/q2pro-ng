@@ -676,7 +676,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->r.solid = SOLID_NOT;
     laser->s.modelindex = MODELINDEX_DUMMY; // must be non-zero
     laser->s.origin = G_SnapVector(self->s.origin);
-    laser->s.old_origin = G_SnapVectorTowards(tr.endpos, self->s.origin);
+    laser->s.old_origin = G_SnapVector(tr.endpos);
     laser->s.skinnum = 0xD0D0D0D0;
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;

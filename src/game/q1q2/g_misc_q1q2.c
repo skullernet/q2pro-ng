@@ -121,7 +121,7 @@ void THINK(event_lighting_think)(edict_t *self)
         self->beam = G_SpawnLightning(self);
 
     self->beam->s.old_origin = G_SnapVector(self->pos1);
-    self->beam->s.origin = G_SnapVectorTowards(end, self->pos1);
+    self->beam->s.origin = G_SnapVector(end);
     trap_LinkEntity(self->beam);
 
     self->nextthink = level.time + HZ(10);
@@ -155,7 +155,7 @@ void USE(use_event_lighting)(edict_t *self, edict_t *other, edict_t *activator)
     vec3_t end = event_lighting_pierce(self);
     edict_t *te = G_SpawnLightning(self);
     te->s.old_origin = G_SnapVector(self->pos1);
-    te->s.origin = G_SnapVectorTowards(end, self->pos1);
+    te->s.origin = G_SnapVector(end);
     te->think = G_FreeEdict;
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);

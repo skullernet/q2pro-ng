@@ -749,7 +749,7 @@ static void ShamedicCastLightningWithOffset(edict_t *self, vec3_t offset, edict_
         *beam = G_SpawnLightning(self);
 
     (*beam)->s.old_origin = G_SnapVector(start);
-    (*beam)->s.origin = G_SnapVectorTowards(tr.endpos, start);
+    (*beam)->s.origin = G_SnapVector(tr.endpos);
     trap_LinkEntity(*beam);
 
     fire_bullet(self, start, dir, irandom2(1, 4), 15, 0, 0, MOD_TESLA);

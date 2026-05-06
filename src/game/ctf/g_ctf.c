@@ -1199,7 +1199,7 @@ static void CTFGrappleDrawCable(edict_t *self)
     }
 
     te->s.old_origin = G_SnapVector(aim.start);
-    te->s.origin = G_SnapVectorTowards(self->s.origin, aim.start);
+    te->s.origin = G_SnapVector(self->s.origin);
     te->nextthink = level.time + SEC(0.2f);
     trap_LinkEntity(te);
 }
