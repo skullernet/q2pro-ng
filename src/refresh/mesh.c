@@ -18,12 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-typedef enum {
-    SHADOW_NO,
-    SHADOW_YES,
-    SHADOW_ONLY
-} drawshadow_t;
-
 static unsigned         oldframenum;
 static unsigned         newframenum;
 static float            frontlerp;
@@ -35,10 +29,6 @@ static uint64_t         dlightbits;
 static glStateBits_t    meshbits;
 static GLuint           buffer;
 static float            celscale;
-static float            shadowalpha;
-static drawshadow_t     drawshadow;
-static mat4_t           m_shadow_view;
-static mat4_t           m_shadow_model;     // fog hack
 
 static void setup_dotshading(void)
 {
@@ -47,8 +37,6 @@ static void setup_dotshading(void)
     if (!gl_dotshading->integer)
         return;
     if (glr.ent->e.flags & (RF_SHELL_MASK | RF_TRACKER))
-        return;
-    if (drawshadow == SHADOW_ONLY)
         return;
     if (glr.shadowbuffer_bound)
         return;
@@ -151,8 +139,6 @@ static void setup_lights(void)
     dlightbits = 0;
 
     if (glr.ent->e.flags & (RF_SHELL_MASK | RF_FULLBRIGHT | RF_TRACKER))
-        return;
-    if (drawshadow == SHADOW_ONLY)
         return;
     if (glr.shadowbuffer_bound)
         return;
@@ -276,137 +262,6 @@ static void draw_celshading(const uint16_t *indices, int num_indices)
     qglLineWidth(1);
 }
 
-static drawshadow_t cull_shadow(void)
-{
-    const cplane_t *plane;
-    float w, dist;
-
-    if (!gl_shadows->integer)
-        return SHADOW_NO;
-    if (glr.ent->e.flags & (RF_WEAPONMODEL | RF_NOSHADOW))
-        return SHADOW_NO;
-    if (!gl_config.stencilbits)
-        return SHADOW_NO;
-    if (glr.shadowbuffer_bound)
-        return SHADOW_NO;
-
-    setup_color();
-
-    if (!glr.lightpoint.surf)
-        return SHADOW_NO;
-
-    // check steepness
-    plane = &glr.lightpoint.plane;
-    w = plane->normal.z;
-    if (glr.lightpoint.surf->drawflags & DSURF_PLANEBACK)
-       w = -w;
-    if (w < 0.5f)
-        return SHADOW_NO;   // too steep
-
-    shadowalpha = 0.5f;
-
-    // check if faded out
-    dist = origin.z - glr.lightpoint.pos.z - radius;
-    if (dist > radius * 4.0f)
-        return SHADOW_NO;
-    if (dist > 0)
-        shadowalpha = 0.5f - dist / (radius * 8.0f);
-
-    if (gl_cull_models->integer) {
-        float min_d = -radius / w;
-        for (int i = 0; i < q_countof(glr.frustum); i++) {
-            if (PlaneDiff(glr.lightpoint.pos, &glr.frustum[i]) < min_d) {
-                c.shadowsCulled++;
-                return SHADOW_NO;   // culled out
-            }
-        }
-    }
-
-    return SHADOW_YES;
-}
-
-static void shadow_matrix(mat4_t matrix, const cplane_t *plane, vec3_t dir)
-{
-    matrix[ 0] =  plane->normal.y * dir.y + plane->normal.z * dir.z;
-    matrix[ 4] = -plane->normal.y * dir.x;
-    matrix[ 8] = -plane->normal.z * dir.x;
-    matrix[12] =  plane->dist * dir.x;
-
-    matrix[ 1] = -plane->normal.x * dir.y;
-    matrix[ 5] =  plane->normal.x * dir.x + plane->normal.z * dir.z;
-    matrix[ 9] = -plane->normal.z * dir.y;
-    matrix[13] =  plane->dist * dir.y;
-
-    matrix[ 2] = -plane->normal.x * dir.z;
-    matrix[ 6] = -plane->normal.y * dir.z;
-    matrix[10] =  plane->normal.x * dir.x + plane->normal.y * dir.y;
-    matrix[14] =  plane->dist * dir.z;
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = Vec3_Dot(plane->normal, dir);
-}
-
-static void setup_shadow(void)
-{
-    mat4_t m_proj, m_rot;
-    vec3_t dir;
-
-    if (!drawshadow)
-        return;
-
-    // position fake light source straight over the model
-    if (glr.lightpoint.surf->drawflags & DSURF_PLANEBACK)
-        dir = Vec3(0, 0, -1);
-    else
-        dir = Vec3(0, 0, 1);
-
-    // project shadow on ground plane
-    shadow_matrix(m_proj, &glr.lightpoint.plane, dir);
-
-    // rotate for entity
-    GL_RotationMatrix(m_rot);
-
-    GL_MultMatrix(m_shadow_model, m_proj, m_rot);
-    GL_MultMatrix(m_shadow_view, glr.viewmatrix, m_shadow_model);
-}
-
-static void draw_shadow(const uint16_t *indices, int num_indices)
-{
-    if (!drawshadow)
-        return;
-
-    // fog hack
-    if (glr.fog_bits)
-        memcpy(gls.u_block.m_model, m_shadow_model, sizeof(gls.u_block.m_model));
-
-    // load shadow projection matrix
-    GL_LoadMatrix(m_shadow_view);
-
-    // eliminate z-fighting by utilizing stencil buffer, if available
-    qglEnable(GL_STENCIL_TEST);
-    qglStencilFunc(GL_EQUAL, 0, 0xff);
-    qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-
-    GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
-    GL_StateBits(GLS_COLOR_ENABLE | GLS_BLEND_BLEND | (meshbits & ~GLS_MESH_SHADE) | glr.fog_bits);
-
-    gls.u_block.mesh.color = Vec4(0, 0, 0, meshcolor.a * shadowalpha);
-    GL_ForceUniforms();
-
-    qglEnable(GL_POLYGON_OFFSET_FILL);
-    qglPolygonOffset(-1.0f, -2.0f);
-    qglDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, indices);
-    qglDisable(GL_POLYGON_OFFSET_FILL);
-
-    qglDisable(GL_STENCIL_TEST);
-
-    // fog hack
-    if (glr.fog_bits)
-        GL_RotationMatrix(gls.u_block.m_model);
-}
-
 static const image_t *skin_for_mesh(image_t **skins, int num_skins)
 {
     const entity_t *ent = &glr.ent->e;
@@ -455,14 +310,6 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     const uint64_t flags = glr.ent->e.flags;
 
     c.trisDrawn += num_indices / 3;
-
-    // if the model was culled, just draw the shadow
-    if (drawshadow == SHADOW_ONLY) {
-        GL_LockArrays(num_verts);
-        draw_shadow(indices, num_indices);
-        GL_UnlockArrays();
-        return;
-    }
 
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
@@ -525,9 +372,6 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
 
     if (gl_showtris->integer & SHOWTRIS_MESH)
         GL_DrawOutlines(num_indices, GL_UNSIGNED_SHORT, indices);
-
-    // FIXME: unlock arrays before changing matrix?
-    draw_shadow(indices, num_indices);
 
     GL_UnlockArrays();
 }
@@ -661,30 +505,22 @@ void GL_DrawAliasModel(const model_t *model)
 
     origin = ent->origin;
 
-    // cull the shadow
-    drawshadow = cull_shadow();
-
     // cull the model
     if (newframenum == oldframenum)
         cull = cull_static_model(model);
     else
         cull = cull_lerped_model(model);
-    if (cull == CULL_OUT) {
-        if (!drawshadow)
-            return;
-        drawshadow = SHADOW_ONLY;   // still need to draw the shadow
-    }
+    if (cull == CULL_OUT)
+        return;
 
     meshbits = GLS_MESH_MD2;
     if (oldframenum != newframenum)
         meshbits |= GLS_MESH_LERP;
 
     // setup parameters common for all meshes
-    if (!drawshadow)
-        setup_color();
+    setup_color();
     setup_celshading();
     setup_dotshading();
-    setup_shadow();
     setup_lights();
 
     // setup scale and translate vectors

@@ -160,6 +160,9 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
     if (!bsp || !bsp->lightmap)
         return false;
 
+    if (GL_LightGridPoint(&bsp->lightgrid, start, color))
+        return true;
+
     end = start;
     end.z -= 8192;
 
@@ -193,9 +196,6 @@ static bool GL_LightPoint(vec3_t start, vec3_t *color)
         if (pt.fraction < glr.lightpoint.fraction)
             glr.lightpoint = pt;
     }
-
-    if (GL_LightGridPoint(&bsp->lightgrid, start, color))
-        return true;
 
     if (glr.lightpoint.surf) {
         *color = GL_SampleLightPoint();
