@@ -112,9 +112,9 @@ static const char *const event_names[] = {
 
 const char *BG_EventName(entity_event_t event)
 {
-    if (event < q_countof(event_names))
+    if (event < q_countof(event_names) && event_names[event])
         return event_names[event];
-    return "unknown";
+    return va("UNKNOWN_%d", event);
 }
 
 void BG_ParseSkyParams(const char *s, sky_params_t *sky)

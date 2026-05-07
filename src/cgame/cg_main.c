@@ -51,6 +51,7 @@ vm_cvar_t   cg_nobob;
 vm_cvar_t   cg_showmiss;
 vm_cvar_t   cg_showclamp;
 vm_cvar_t   cg_showstep;
+vm_cvar_t   cg_showevents;
 #endif
 vm_cvar_t   cg_thirdperson;
 vm_cvar_t   cg_thirdperson_angle;
@@ -109,6 +110,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_showmiss, "0", 0),
     VM_CVAR(cg_showclamp, "0", 0),
     VM_CVAR(cg_showstep, "0", 0),
+    VM_CVAR(cg_showevents, "0", 0),
 #endif
     VM_CVAR(cg_thirdperson, "0", CVAR_CHEAT),
     VM_CVAR(cg_thirdperson_angle, "0", 0),

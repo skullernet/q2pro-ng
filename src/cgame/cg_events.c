@@ -1215,6 +1215,22 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     vec3_t start = s->old_origin;
     int number = s->number;
 
+#if USE_DEBUG
+    if (cg_showevents.integer) {
+        Com_Printf("time %u ent %d event %s ", cg.oldframe->servertime, number, BG_EventName(event));
+        if (param)
+            Com_Printf("param %#x ", param);
+        if (event == EV_SOUND || event == EV_POSITIONED_SOUND) {
+            char buf[MAX_QPATH];
+            trap_GetConfigstring(CS_SOUNDS + (param & (MAX_SOUNDS - 1)), buf, sizeof(buf));
+            Com_Printf("sound %s ", buf);
+            if (event == EV_POSITIONED_SOUND)
+                Com_Printf("othernum %d ", s->othernum);
+        }
+        Com_Printf("\n");
+    }
+#endif
+
     switch (event) {
     case EV_ITEM_RESPAWN:
         trap_S_StartSound(number, CHAN_WEAPON, trap_S_RegisterSound("items/respawn1.wav"), 1, ATTN_IDLE, 0);

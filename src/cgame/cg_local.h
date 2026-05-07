@@ -410,6 +410,7 @@ extern vm_cvar_t    cg_nobob;
 extern vm_cvar_t    cg_showmiss;
 extern vm_cvar_t    cg_showclamp;
 extern vm_cvar_t    cg_showstep;
+extern vm_cvar_t    cg_showevents;
 #else
 #define SHOWMISS(...)
 #define SHOWCLAMP(...)
