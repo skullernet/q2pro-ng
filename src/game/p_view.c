@@ -385,7 +385,7 @@ static void P_WorldEffects(void)
     //
     // check for drowning
     //
-    if (waterlevel == WATER_UNDER) {
+    if (waterlevel == WATER_UNDER && !(current_player->flags & FL_DEEPONE)) {
         // breather or envirosuit give air
         if (breather || envirosuit) {
             current_player->air_finished = level.time + SEC(10);

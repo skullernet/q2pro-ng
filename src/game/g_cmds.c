@@ -511,6 +511,18 @@ static void Cmd_Novisible_f(edict_t *ent)
         G_ClientPrintf(ent, PRINT_HIGH, "novisible ON\n");
 }
 
+static void Cmd_Nodrown_f(edict_t *ent)
+{
+    if (!G_CheatCheck(ent))
+        return;
+
+    ent->flags ^= FL_DEEPONE;
+    if (!(ent->flags & FL_DEEPONE))
+        G_ClientPrintf(ent, PRINT_HIGH, "nodrown OFF\n");
+    else
+        G_ClientPrintf(ent, PRINT_HIGH, "nodrown ON\n");
+}
+
 static void Cmd_AlertAll_f(edict_t *ent)
 {
     if (!G_CheatCheck(ent))
@@ -1584,6 +1596,8 @@ q_exported void G_ClientCommand(int clientnum)
         Cmd_Notarget_f(ent);
     else if (Q_strcasecmp(cmd, "novisible") == 0)
         Cmd_Novisible_f(ent);
+    else if (Q_strcasecmp(cmd, "nodrown") == 0)
+        Cmd_Nodrown_f(ent);
     else if (Q_strcasecmp(cmd, "alertall") == 0)
         Cmd_AlertAll_f(ent);
     else if (Q_strcasecmp(cmd, "noclip") == 0)
