@@ -56,7 +56,7 @@ static const vec3_t reinforcement_position[MAX_REINFORCEMENTS] = {
 int M_PickReinforcements(edict_t *self, int max_slots)
 {
     for (int i = 0; i < MAX_REINFORCEMENTS; i++)
-        self->monsterinfo.chosen_reinforcements[i] = 255;
+        self->monsterinfo.chosen_reinforcements[i] = MAX_REINFORCEMENTS_TOTAL;
 
     if (!max_slots)
         max_slots = MAX_REINFORCEMENTS;
@@ -156,6 +156,14 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
             break;
         s = p + 1;
     }
+}
+
+const reinforcement_t *M_GetReinforcement(edict_t *self, int slot)
+{
+    int chosen = self->monsterinfo.chosen_reinforcements[slot];
+    if (chosen >= self->monsterinfo.reinforcements.num_reinforcements)
+        return NULL;
+    return &self->monsterinfo.reinforcements.reinforcements[chosen];
 }
 
 static void fixHealerEnemy(edict_t *self)
@@ -1170,7 +1178,7 @@ static void medic_determine_spawn(edict_t *self)
 
             startpoint = M_ProjectFlashSource(self, offset, f, r);
 
-            const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
+            const reinforcement_t *reinforcement = M_GetReinforcement(self, count);
 
             if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
                 continue;
@@ -1212,12 +1220,11 @@ static void medic_spawngrows(edict_t *self)
     AngleVectors(self->s.angles, &f, &r, NULL);
 
     for (int i = 0; i < MAX_REINFORCEMENTS; i++) {
-        if (self->monsterinfo.chosen_reinforcements[i] == 255)
+        const reinforcement_t *reinforcement = M_GetReinforcement(self, i);
+        if (!reinforcement)
             break;
 
         startpoint = M_ProjectFlashSource(self, reinforcement_position[i], f, r);
-
-        const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 
         if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;
@@ -1243,12 +1250,11 @@ static void medic_finish_spawn(edict_t *self)
     AngleVectors(self->s.angles, &f, &r, NULL);
 
     for (int i = 0; i < MAX_REINFORCEMENTS; i++) {
-        if (self->monsterinfo.chosen_reinforcements[i] == 255)
+        const reinforcement_t *reinforcement = M_GetReinforcement(self, i);
+        if (!reinforcement)
             break;
 
         startpoint = M_ProjectFlashSource(self, reinforcement_position[i], f, r);
-
-        const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 
         if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;

@@ -423,7 +423,7 @@ static void arachnid_spawn(edict_t *self)
     for (count = 0; count < num_summoned; count++) {
         startpoint = M_ProjectFlashSource(self, reinforcement_position[count], f, r);
 
-        const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
+        const reinforcement_t *reinforcement = M_GetReinforcement(self, count);
 
         if (!FindSpawnPoint(startpoint, reinforcement->box, &spawnpoint, 32, true))
             continue;

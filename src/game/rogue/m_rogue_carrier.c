@@ -228,10 +228,9 @@ static void CarrierSpawn(edict_t *self)
     vec3_t   f, r, startpoint, spawnpoint;
     edict_t *ent;
 
-    if (self->monsterinfo.chosen_reinforcements[0] == 255)
+    const reinforcement_t *reinforcement = M_GetReinforcement(self, 0);
+    if (!reinforcement)
         return;
-
-    const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[0]];
 
     AngleVectors(self->s.angles, &f, &r, NULL);
 
@@ -321,7 +320,7 @@ static void carrier_ready_spawn(edict_t *self)
     if (!num_summoned)
         return;
 
-    const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[0]];
+    const reinforcement_t *reinforcement = M_GetReinforcement(self, 0);
 
     AngleVectors(self->s.angles, &f, &r, NULL);
     startpoint = M_ProjectFlashSource(self, Vec3(105, 0, -58), f, r);

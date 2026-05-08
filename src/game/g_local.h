@@ -1545,6 +1545,7 @@ stuck_result_t G_FixStuckObject(edict_t *self, vec3_t check);
 int M_SlotsLeft(edict_t *self);
 void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *list);
 int M_PickReinforcements(edict_t *self, int max_slots);
+const reinforcement_t *M_GetReinforcement(edict_t *self, int slot);
 
 // shared with monsters
 #define SPAWNFLAG_MONSTER_AMBUSH        1
