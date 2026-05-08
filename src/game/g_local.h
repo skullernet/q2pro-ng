@@ -1880,7 +1880,7 @@ bool     CheckSpawnPoint(vec3_t origin, box3_t box);
 bool     CheckGroundSpawnPoint(vec3_t origin, box3_t box,
                                float height, float gravity);
 void     SpawnGrow_Spawn(vec3_t startpos, float start_size, float end_size);
-void     Widowlegs_Spawn(vec3_t startpos, vec3_t angles);
+void     Widowlegs_Spawn(edict_t *self);
 
 // g_rogue_items
 bool Pickup_Nuke(edict_t *ent, edict_t *other);
@@ -2536,6 +2536,12 @@ static inline bool M_ClientInvisible(edict_t *ent)
     return ent->client && ent->client->invisible_time > level.time && ent->client->invisibility_fade_time <= level.time;
 }
 
+static inline void M_ScaleBox(edict_t *self)
+{
+    if (self->s.scale)
+        self->r.box = Box3_Scale(self->r.box, self->s.scale);
+}
+
 static inline const char *vtoa(vec3_t p)
 {
     return va("%.f %.f %.f", p.x, p.y, p.z);
@@ -2544,6 +2550,11 @@ static inline const char *vtoa(vec3_t p)
 static inline vec3_t G_EntityCenter(edict_t *ent)
 {
     return ent->r.linked ? Box3_Center(ent->r.absbox) : ent->s.origin;
+}
+
+static inline float G_EntityScale(edict_t *ent)
+{
+    return ent->s.scale ? ent->s.scale : 1.0f;
 }
 
 static inline contents_t G_ProjectileClipmask(const edict_t *self)

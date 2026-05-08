@@ -232,7 +232,7 @@ static void actorMachineGun(edict_t *self)
     vec3_t forward, right;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_ACTOR_MACHINEGUN_1], forward, right);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_ACTOR_MACHINEGUN_1], forward, right);
     if (self->enemy) {
         if (self->enemy->health > 0) {
             target = Vec3_MA(self->enemy->s.origin, -0.2f, self->enemy->velocity);
@@ -250,7 +250,7 @@ static void actorMachineGun(edict_t *self)
 
 static void actor_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, -24, -8);
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;
@@ -384,7 +384,7 @@ void SP_misc_actor(edict_t *self)
     self->movetype = MOVETYPE_STEP;
     self->r.solid = SOLID_BBOX;
     self->s.modelindex = G_ModelIndex("players/male/tris.md2");
-    self->r.box = Box3_FromSize(16, -24, 32);
+    self->r.box = player_box;
 
     if (!self->health)
         self->health = 100;

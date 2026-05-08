@@ -218,9 +218,9 @@ void MONSTERINFO_SETSKIN(shalrath_setskin)(edict_t *self)
         self->s.skinnum = 0;
 }
 
-void shalrath_dead(edict_t *self)
+static void shalrath_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

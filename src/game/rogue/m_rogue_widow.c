@@ -139,7 +139,7 @@ static void WidowBlaster(edict_t *self)
     if ((self->s.frame >= FRAME_spawn05) && (self->s.frame <= FRAME_spawn13)) {
         // sweep
         flashnum = MZ2_WIDOW_BLASTER_SWEEP1 + self->s.frame - FRAME_spawn05;
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
         target = Vec3_Sub(self->enemy->s.origin, start);
         targ_angles = vectoangles(target);
 
@@ -166,7 +166,7 @@ static void WidowBlaster(edict_t *self)
         else
             flashnum = MZ2_WIDOW_BLASTER_100 + self->s.frame - FRAME_fired03;
 
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
 
         M_PredictAim(self, self->enemy, start, 1000, true, crandom() * 0.1f, &forward, NULL);
 
@@ -195,7 +195,7 @@ static void WidowBlaster(edict_t *self)
         monster_fire_blaster2(self, start, forward, BLASTER2_DAMAGE * widow_damage_multiplier, 1000, flashnum, effect);
     } else if ((self->s.frame >= FRAME_run01) && (self->s.frame <= FRAME_run08)) {
         flashnum = MZ2_WIDOW_RUN_1 + self->s.frame - FRAME_run01;
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
 
         target = Vec3_Sub(self->enemy->s.origin, start);
         target.z += self->enemy->viewheight;
@@ -207,14 +207,14 @@ static void WidowBlaster(edict_t *self)
 
 static void WidowSpawn(edict_t *self)
 {
-    vec3_t   f, r, u, startpoint, spawnpoint;
+    vec3_t   f, r, startpoint, spawnpoint;
     edict_t *ent, *designated_enemy;
     int      i;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     for (i = 0; i < 2; i++) {
-        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        startpoint = M_ProjectFlashSource(self, spawnpoints[i], f, r);
 
         if (!FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true))
             continue;
@@ -263,17 +263,17 @@ static void widow_spawn_check(edict_t *self)
 
 static void widow_ready_spawn(edict_t *self)
 {
-    vec3_t f, r, u, mid, startpoint, spawnpoint;
+    vec3_t f, r, mid, startpoint, spawnpoint;
     int    i;
 
     WidowBlaster(self);
-    AngleVectors(self->s.angles, &f, &r, &u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     mid = Box3_Center(stalker_box); // FIXME
     float radius = Box3_Radius(stalker_box);
 
     for (i = 0; i < 2; i++) {
-        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        startpoint = M_ProjectFlashSource(self, spawnpoints[i], f, r);
         if (FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true)) {
             spawnpoint = Vec3_Add(spawnpoint, mid);
             SpawnGrow_Spawn(spawnpoint, radius, radius * 2);
@@ -452,7 +452,7 @@ static void WidowRail(edict_t *self)
     else
         flash = MZ2_WIDOW_RAIL;
 
-    start = G_ProjectSource(self->s.origin, monster_flash_offset[flash], forward, right);
+    start = M_ProjectFlashSource(self, monster_flash_offset[flash], forward, right);
 
     // calc direction to where we targeted
     dir = Vec3_Direction(self->pos1, start);
@@ -596,14 +596,14 @@ const mmove_t MMOVE_T(widow_move_pain_light) = { FRAME_pain201, FRAME_pain203, w
 
 static void spawn_out_start(edict_t *self)
 {
-    vec3_t startpoint, f, r, u;
+    vec3_t startpoint, f, r;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
-    startpoint = G_ProjectSource2(self->s.origin, beameffects[0], f, r, u);
+    startpoint = M_ProjectFlashSource(self, beameffects[0], f, r);
     G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
-    startpoint = G_ProjectSource2(self->s.origin, beameffects[1], f, r, u);
+    startpoint = M_ProjectFlashSource(self, beameffects[1], f, r);
     G_TempEntity(startpoint, EV_WIDOWBEAMOUT, 0);
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/bwidowbeamout.wav"), 1, ATTN_NORM);
@@ -611,20 +611,21 @@ static void spawn_out_start(edict_t *self)
 
 static void spawn_out_do(edict_t *self)
 {
-    vec3_t startpoint, f, r, u;
+    vec3_t startpoint, f, r;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, beameffects[0], f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+
+    startpoint = M_ProjectFlashSource(self, beameffects[0], f, r);
     G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
-    startpoint = G_ProjectSource2(self->s.origin, beameffects[1], f, r, u);
+    startpoint = M_ProjectFlashSource(self, beameffects[1], f, r);
     G_TempEntity(startpoint, EV_WIDOWSPLASH, 0);
 
     startpoint = self->s.origin;
-    startpoint.z += 36;
+    startpoint.z += 36 * G_EntityScale(self);
     G_TempEntity(startpoint, EV_BOSSTPORT, 0);
 
-    Widowlegs_Spawn(self->s.origin, self->s.angles);
+    Widowlegs_Spawn(self);
 
     G_FreeEdict(self);
 }

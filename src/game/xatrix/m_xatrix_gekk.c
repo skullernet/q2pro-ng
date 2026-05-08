@@ -1068,6 +1068,7 @@ void PAIN(gekk_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 static void gekk_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -24, -8);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 
@@ -1538,11 +1539,12 @@ static void water_to_land(edict_t *self)
     self->monsterinfo.aiflags &= ~AI_ALTERNATE_FLY;
     self->flags &= ~FL_SWIM;
     self->yaw_speed = 20;
-    self->viewheight = 25;
+    self->viewheight = 25 * G_EntityScale(self);
 
     M_SetAnimation(self, &gekk_move_leapatk2);
 
     self->r.box = Box3_FromSize(18, -24, 24);
+    M_ScaleBox(self);
 }
 #endif
 
@@ -1551,9 +1553,10 @@ static void land_to_water(edict_t *self)
     self->monsterinfo.aiflags |= AI_ALTERNATE_FLY;
     self->flags |= FL_SWIM;
     self->yaw_speed = 10;
-    self->viewheight = 10;
+    self->viewheight = 10 * G_EntityScale(self);
 
     M_SetAnimation(self, &gekk_move_swim_start);
 
     self->r.box = Box3_FromSize(18, -24, 16);
+    M_ScaleBox(self);
 }

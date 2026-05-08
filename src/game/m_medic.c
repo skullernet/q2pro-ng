@@ -45,11 +45,11 @@ static struct {
 #define DEFAULT_MONSTER_SLOTS_BASE  3
 
 static const vec3_t reinforcement_position[MAX_REINFORCEMENTS] = {
-   { 80, 0, 0 },
-   { 40, 60, 0 },
-   { 40, -60, 0 },
-   { 0, 80, 0 },
-   { 0, -80, 0 }
+   { 80, 0, 10 },
+   { 40, 60, 10 },
+   { 40, -60, 10 },
+   { 0, 80, 10 },
+   { 0, -80, 10 }
 };
 
 // pick an array of reinforcements to use
@@ -772,6 +772,7 @@ static void medic_dead(edict_t *self)
         self->r.box = Box3_FromSize(32, 0, 24);
     else
         self->r.box = Box3_FromSize(16, -24, -8);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 
@@ -1157,13 +1158,9 @@ static void medic_determine_spawn(edict_t *self)
 
     int num_summoned = M_PickReinforcements(self, 0);
 
-    float scale = self->s.scale;
-    if (!scale)
-        scale = 1;
-
     for (int spin = 0; spin < 2; spin++)
         for (int count = 0; count < num_summoned; count++) {
-            offset = Vec3_Scale(reinforcement_position[count], scale);
+            offset = reinforcement_position[count];
 
             // see if we have any success by spinning around
             if (spin) {
@@ -1172,9 +1169,6 @@ static void medic_determine_spawn(edict_t *self)
             }
 
             startpoint = M_ProjectFlashSource(self, offset, f, r);
-
-            // a little off the ground
-            startpoint.z += 10 * scale;
 
             const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
 
@@ -1198,7 +1192,7 @@ static void medic_determine_spawn(edict_t *self)
 
 static void medic_spawngrows(edict_t *self)
 {
-    vec3_t f, r, offset, startpoint, spawnpoint;
+    vec3_t f, r, startpoint, spawnpoint;
     int    num_success = 0;
     float  current_yaw;
 
@@ -1217,20 +1211,11 @@ static void medic_spawngrows(edict_t *self)
 
     AngleVectors(self->s.angles, &f, &r, NULL);
 
-    float scale = self->s.scale;
-    if (!scale)
-        scale = 1;
-
     for (int i = 0; i < MAX_REINFORCEMENTS; i++) {
         if (self->monsterinfo.chosen_reinforcements[i] == 255)
             break;
 
-        offset = Vec3_Scale(reinforcement_position[i], scale);
-
-        startpoint = M_ProjectFlashSource(self, offset, f, r);
-
-        // a little off the ground
-        startpoint.z += 10 * scale;
+        startpoint = M_ProjectFlashSource(self, reinforcement_position[i], f, r);
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 
@@ -1252,25 +1237,16 @@ static void medic_spawngrows(edict_t *self)
 static void medic_finish_spawn(edict_t *self)
 {
     edict_t *ent;
-    vec3_t   f, r, offset, startpoint, spawnpoint;
+    vec3_t   f, r, startpoint, spawnpoint;
     edict_t *designated_enemy;
 
     AngleVectors(self->s.angles, &f, &r, NULL);
-
-    float scale = self->s.scale;
-    if (!scale)
-        scale = 1;
 
     for (int i = 0; i < MAX_REINFORCEMENTS; i++) {
         if (self->monsterinfo.chosen_reinforcements[i] == 255)
             break;
 
-        offset = Vec3_Scale(reinforcement_position[i], scale);
-
-        startpoint = M_ProjectFlashSource(self, offset, f, r);
-
-        // a little off the ground
-        startpoint.z += 10 * scale;
+        startpoint = M_ProjectFlashSource(self, reinforcement_position[i], f, r);
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[i]];
 

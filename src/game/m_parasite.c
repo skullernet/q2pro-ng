@@ -763,7 +763,7 @@ Death Stuff Starts
 
 static void parasite_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, -24, -8);
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

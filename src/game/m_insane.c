@@ -570,7 +570,7 @@ static void insane_dead(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_INSANE_CRUCIFIED) {
         self->flags |= FL_FLY;
     } else {
-        self->r.box = Box3_FromSize(16, -24, -8);
+        self->r.box.maxs.z = -8 * G_EntityScale(self);
         self->movetype = MOVETYPE_TOSS;
     }
     monster_dead(self);

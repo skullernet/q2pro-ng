@@ -439,7 +439,7 @@ void MONSTERINFO_SETSKIN(fiend_setskin)(edict_t *self)
 
 static void fiend_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

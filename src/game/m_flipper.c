@@ -223,7 +223,7 @@ void MONSTERINFO_SETSKIN(flipper_setskin)(edict_t *self)
 
 static void flipper_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, -8, 8);
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
     monster_dead(self);
 }
 

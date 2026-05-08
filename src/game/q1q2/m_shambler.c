@@ -98,21 +98,19 @@ static void shamacudda_lightning_update(edict_t *self)
 
 static void shamacudda_windup(edict_t *self)
 {
-    float scale = self->s.scale ? self->s.scale : 1.0f;
-
     G_StartSound(self, CHAN_WEAPON, SOUND.windup, 1, ATTN_NORM);
 
     edict_t *left = self->beam = G_Spawn();
-    left->s.scale = scale * 0.5f;
+    left->s.scale = G_EntityScale(self) * 0.5f;
     left->s.alpha = self->s.alpha;
     left->s.modelindex = G_ModelIndex("sprites/s_bfx1.sp2");
     left->r.ownernum = self->s.number;
 
     edict_t *right = self->beam2 = G_Spawn();
-    right->s.scale = scale * 0.5f;
-    right->s.alpha = self->s.alpha;
-    right->s.modelindex = G_ModelIndex("sprites/s_bfx1.sp2");
-    right->r.ownernum = self->s.number;
+    right->s.scale = left->s.scale;
+    right->s.alpha = left->s.alpha;
+    right->s.modelindex = left->s.modelindex;
+    right->r.ownernum = left->r.ownernum;
 
     shamacudda_lightning_update(self);
 }
@@ -583,6 +581,7 @@ void MONSTERINFO_MELEE(shambler_melee)(edict_t *self)
 static void shambler_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -24, 0);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 

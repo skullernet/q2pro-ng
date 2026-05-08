@@ -205,7 +205,7 @@ void PAIN(knight_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
 
 static void knight_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

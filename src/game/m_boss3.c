@@ -45,6 +45,7 @@ void SP_monster_boss3_stand(edict_t *self)
     G_SoundIndex("misc/bigtele.wav");
 
     self->r.box = Box3_FromSize(32, 0, 90);
+    M_ScaleBox(self);
 
     self->use = Use_Boss3;
     self->think = Think_Boss3Stand;

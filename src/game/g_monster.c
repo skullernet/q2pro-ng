@@ -1004,7 +1004,7 @@ bool monster_start(edict_t *self)
     self->takedamage = true;
     self->air_finished = level.time + SEC(12);
     self->use = monster_use;
-    self->max_health = self->health;
+    self->max_health = self->health = max(self->health, 1);
     self->clipmask = MASK_MONSTERSOLID;
     self->deadflag = false;
     self->r.svflags &= ~SVF_DEADMONSTER;
@@ -1054,7 +1054,7 @@ bool monster_start(edict_t *self)
     // is all messed up for certain monsters. Calculate
     // from maxs to make a bit more sense.
     if (!self->viewheight)
-        self->viewheight = self->r.box.maxs.z - 8;
+        self->viewheight = self->r.box.maxs.z - 8 * G_EntityScale(self);
 
     // PMM - clear these
     self->monsterinfo.quad_time = 0;

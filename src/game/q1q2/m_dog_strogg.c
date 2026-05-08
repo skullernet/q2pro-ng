@@ -375,7 +375,7 @@ Death Stuff Starts
 
 static void dog_str_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

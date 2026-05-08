@@ -304,13 +304,13 @@ void MONSTERINFO_SETSKIN(gunner_setskin)(edict_t *self)
 
 static void gunner_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, -24, -8);
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 
 static void gunner_shrink(edict_t *self)
 {
-    self->r.box.maxs.z = -4;
+    self->r.box.maxs.z = -4 * G_EntityScale(self);
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }

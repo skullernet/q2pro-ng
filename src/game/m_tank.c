@@ -824,6 +824,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
 static void tank_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -16, 0);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 

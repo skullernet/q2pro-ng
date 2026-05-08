@@ -225,6 +225,7 @@ void MONSTERINFO_SETSKIN(ogrestrogg_setskin)(edict_t *self)
 static void ogrestrogg_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -24, -8);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 

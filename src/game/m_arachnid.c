@@ -412,25 +412,16 @@ static void arachnid_spawn(edict_t *self)
     if (skill.integer < 3)
         return;
 
-    static const vec3_t reinforcement_position[] = { { -24, 124, 0 }, { -24, -124, 0 } };
-    vec3_t f, r, offset, startpoint, spawnpoint;
+    static const vec3_t reinforcement_position[] = { { -24, 124, 10 }, { -24, -124, 10 } };
+    vec3_t f, r, startpoint, spawnpoint;
     int    count;
 
     AngleVectors(self->s.angles, &f, &r, NULL);
 
     int num_summoned = M_PickReinforcements(self, 2);
 
-    float scale = self->s.scale;
-    if (!scale)
-        scale = 1;
-
     for (count = 0; count < num_summoned; count++) {
-        offset = Vec3_Scale(reinforcement_position[count], scale);
-
-        startpoint = M_ProjectFlashSource(self, offset, f, r);
-
-        // a little off the ground
-        startpoint.z += 10 * scale;
+        startpoint = M_ProjectFlashSource(self, reinforcement_position[count], f, r);
 
         const reinforcement_t *reinforcement = &self->monsterinfo.reinforcements.reinforcements[self->monsterinfo.chosen_reinforcements[count]];
 
@@ -519,6 +510,7 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
 static void arachnid_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -24, -8);
+    M_ScaleBox(self);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->nextthink = 0;

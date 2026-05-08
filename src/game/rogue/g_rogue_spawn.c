@@ -248,12 +248,12 @@ void THINK(widowlegs_think)(edict_t *self)
 {
     vec3_t offset;
     vec3_t point;
-    vec3_t f, r, u;
+    vec3_t f, r;
 
     if (self->s.frame == 17) {
         offset = Vec3(11.77f, -7.24f, 23.31f);
-        AngleVectors(self->s.angles, &f, &r, &u);
-        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
+        AngleVectors(self->s.angles, &f, &r, NULL);
+        point = M_ProjectFlashSource(self, offset, f, r);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
     }
@@ -268,10 +268,10 @@ void THINK(widowlegs_think)(edict_t *self)
         self->timestamp = level.time + LEG_WAIT_TIME;
 
     if (level.time > self->timestamp) {
-        AngleVectors(self->s.angles, &f, &r, &u);
+        AngleVectors(self->s.angles, &f, &r, NULL);
 
         offset = Vec3(-65.6f, -8.44f, 28.59f);
-        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
+        point = M_ProjectFlashSource(self, offset, f, r);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
 
@@ -279,7 +279,7 @@ void THINK(widowlegs_think)(edict_t *self)
         ThrowWidowGibSized(self, "models/monsters/blackwidow/gib2/tris.md2", 80 + frandom1(20.0f), GIB_METALLIC, point, 0, true);
 
         offset = Vec3(-1.04f, -51.18f, 7.04f);
-        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
+        point = M_ProjectFlashSource(self, offset, f, r);
         G_TempEntity(point, EV_EXPLOSION1, 0);
         ThrowSmallStuff(self, point);
 
@@ -293,27 +293,29 @@ void THINK(widowlegs_think)(edict_t *self)
 
     if ((level.time > self->timestamp - SEC(0.5f)) && (self->count == 0)) {
         self->count = 1;
-        AngleVectors(self->s.angles, &f, &r, &u);
+        AngleVectors(self->s.angles, &f, &r, NULL);
 
         offset = Vec3(31, -88.7f, 10.96f);
-        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
+        point = M_ProjectFlashSource(self, offset, f, r);
         G_TempEntity(point, EV_EXPLOSION1, 0);
 
         offset = Vec3(-12.67f, -4.39f, 15.68f);
-        point = G_ProjectSource2(self->s.origin, offset, f, r, u);
+        point = M_ProjectFlashSource(self, offset, f, r);
         G_TempEntity(point, EV_EXPLOSION1, 0);
     }
 
     self->nextthink = level.time + HZ(10);
 }
 
-void Widowlegs_Spawn(vec3_t startpos, vec3_t angles)
+void Widowlegs_Spawn(edict_t *self)
 {
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->s.origin = startpos;
-    ent->s.angles = angles;
+    ent->s.origin = self->s.origin;
+    ent->s.angles = self->s.angles;
+    ent->s.scale = self->s.scale;
+    ent->s.alpha = self->s.alpha;
     ent->r.solid = SOLID_NOT;
     ent->s.renderfx = RF_IR_VISIBLE;
     ent->movetype = MOVETYPE_NONE;

@@ -205,7 +205,7 @@ void MONSTERINFO_SETSKIN(shalrath_strogg_setskin)(edict_t *self)
 
 static void shalrath_strogg_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

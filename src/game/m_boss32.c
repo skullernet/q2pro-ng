@@ -246,8 +246,8 @@ Makron Torso. This needs to be spawned in
 
 void THINK(makron_torso_think)(edict_t *self)
 {
-    if (++self->s.frame >= 365)
-        self->s.frame = 346;
+    if (++self->s.frame > FRAME_death320)
+        self->s.frame = FRAME_death301;
 
     self->nextthink = level.time + HZ(10);
 
@@ -255,34 +255,30 @@ void THINK(makron_torso_think)(edict_t *self)
         self->s.angles.pitch = max(0, self->s.angles.pitch - 15);
 }
 
-static void makron_torso(edict_t *ent)
+static void makron_spawn_torso(edict_t *self)
 {
-    ent->s.frame = 346;
-    ent->s.modelindex = G_ModelIndex("models/monsters/boss3/rider/tris.md2");
+    edict_t *ent = ThrowGib(self, "models/monsters/boss3/rider/tris.md2", 0, GIB_NONE);
+    ent->s.origin = self->s.origin;
+    ent->s.angles = self->s.angles;
+    self->r.box.maxs.z -= ent->r.box.maxs.z;
+    float scale = G_EntityScale(self);
+    ent->s.origin.z += self->r.box.maxs.z - 15 * scale;
+    ent->s.frame = FRAME_death301;
     ent->s.skinnum = 1;
     ent->think = makron_torso_think;
     ent->nextthink = level.time + HZ(10);
     ent->s.sound = G_SoundIndex("makron/spine.wav");
     ent->movetype = MOVETYPE_TOSS;
     ent->s.effects = EF_GIB;
+    ent->s.renderfx = RF_IR_VISIBLE;
     vec3_t forward, up;
     AngleVectors(ent->s.angles, &forward, NULL, &up);
     ent->velocity = Vec3_MA(ent->velocity, 120, up);
     ent->velocity = Vec3_MA(ent->velocity, -120, forward);
-    ent->s.origin = Vec3_MA(ent->s.origin, -10, forward);
+    ent->s.origin = Vec3_MA(ent->s.origin, -10 * scale, forward);
     ent->s.angles.pitch = 90;
     ent->avelocity = vec3_origin;
     trap_LinkEntity(ent);
-}
-
-static void makron_spawn_torso(edict_t *self)
-{
-    edict_t *tempent = ThrowGib(self, "models/monsters/boss3/rider/tris.md2", 0, GIB_NONE);
-    tempent->s.origin = self->s.origin;
-    tempent->s.angles = self->s.angles;
-    self->r.box.maxs.z -= tempent->r.box.maxs.z;
-    tempent->s.origin.z += self->r.box.maxs.z - 15;
-    makron_torso(tempent);
 }
 
 static const mframe_t makron_frames_death2[] = {
@@ -635,9 +631,7 @@ void MONSTERINFO_ATTACK(makron_attack)(edict_t *self)
 static void makron_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(60, 0, 24);
-    self->movetype = MOVETYPE_TOSS;
-    self->r.svflags |= SVF_DEADMONSTER;
-    trap_LinkEntity(self);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 
@@ -674,6 +668,7 @@ void DIE(makron_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
     makron_spawn_torso(self);
 
     self->r.box = Box3_FromSize(60, 0, 48);
+    M_ScaleBox(self);
 }
 
 // [Paril-KEX] use generic function
@@ -791,6 +786,8 @@ void MakronToss(edict_t *self)
     ent->classname = "monster_makron";
     ent->target = self->target;
     ent->s.origin = self->s.origin;
+    ent->s.scale = self->s.scale;
+    ent->s.alpha = self->s.alpha;
     ent->enemy = self->enemy;
 
     MakronSpawn(ent);

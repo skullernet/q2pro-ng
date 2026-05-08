@@ -444,6 +444,7 @@ void MONSTERINFO_SETSKIN(hover_setskin)(edict_t *self)
 static void hover_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(16, -24, -8);
+    M_ScaleBox(self);
     self->movetype = MOVETYPE_TOSS;
     self->think = hover_deadthink;
     self->nextthink = level.time + FRAME_TIME;

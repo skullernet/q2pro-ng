@@ -509,7 +509,7 @@ void PAIN(hellknight_pain)(edict_t *self, edict_t *other, float kick, int damage
 
 static void hellknight_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

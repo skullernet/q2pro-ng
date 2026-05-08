@@ -37,10 +37,10 @@ static void chthon_fire_missile_offset(edict_t *self, vec3_t offset)
     if (!self->enemy || !self->enemy->r.inuse)
         return;
 
-    vec3_t forward, right, up;
-    AngleVectors(self->s.angles, &forward, &right, &up);
+    vec3_t forward, right;
+    AngleVectors(self->s.angles, &forward, &right, NULL);
 
-    vec3_t start = G_ProjectSource2(self->s.origin, offset, forward, right, up);
+    vec3_t start = M_ProjectFlashSource(self, offset, forward, right);
 
     vec3_t target = self->enemy->s.origin;
     target.z += self->enemy->viewheight;

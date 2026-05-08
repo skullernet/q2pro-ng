@@ -154,7 +154,7 @@ void MONSTERINFO_SEARCH(fish_search)(edict_t *self)
 
 static void fish_dead(edict_t *self)
 {
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     monster_dead(self);
 }
 

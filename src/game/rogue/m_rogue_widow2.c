@@ -52,13 +52,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
 void ThrowWidowGibSized(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, int hitsound, bool fade);
 static void ThrowWidowGibLoc(edict_t *self, const char *gibname, int damage, gib_type_t type, vec3_t startpos, bool fade);
 void ThrowSmallStuff(edict_t *self, vec3_t point);
-static void WidowExplosion1(edict_t *self);
-static void WidowExplosion2(edict_t *self);
-static void WidowExplosion3(edict_t *self);
-static void WidowExplosion4(edict_t *self);
-static void WidowExplosion5(edict_t *self);
-static void WidowExplosion6(edict_t *self);
-static void WidowExplosion7(edict_t *self);
+static void WidowExplosion(edict_t *self);
 static void WidowExplosionLeg(edict_t *self);
 static void ThrowArm1(edict_t *self);
 static void ThrowArm2(edict_t *self);
@@ -105,7 +99,7 @@ static void Widow2Beam(edict_t *self)
         // regular beam attack
         Widow2SaveBeamTarget(self);
         flashnum = MZ2_WIDOW2_BEAMER_1 + self->s.frame - FRAME_fireb05;
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
 
         target = self->pos2;
         target.z += self->enemy->viewheight - 10;
@@ -115,7 +109,7 @@ static void Widow2Beam(edict_t *self)
     } else if ((self->s.frame >= FRAME_spawn04) && (self->s.frame <= FRAME_spawn14)) {
         // sweep
         flashnum = MZ2_WIDOW2_BEAM_SWEEP_1 + self->s.frame - FRAME_spawn04;
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[flashnum], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
         target = Vec3_Sub(self->enemy->s.origin, start);
         targ_angles = vectoangles(target);
 
@@ -127,7 +121,7 @@ static void Widow2Beam(edict_t *self)
         monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, flashnum);
     } else {
         Widow2SaveBeamTarget(self);
-        start = G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW2_BEAMER_1], forward, right);
+        start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_WIDOW2_BEAMER_1], forward, right);
 
         target = self->pos2;
         target.z += self->enemy->viewheight - 10;
@@ -139,14 +133,14 @@ static void Widow2Beam(edict_t *self)
 
 static void Widow2Spawn(edict_t *self)
 {
-    vec3_t   f, r, u, startpoint, spawnpoint;
+    vec3_t   f, r, startpoint, spawnpoint;
     edict_t *ent, *designated_enemy;
     int      i;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     for (i = 0; i < 2; i++) {
-        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        startpoint = M_ProjectFlashSource(self, spawnpoints[i], f, r);
 
         if (!FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true))
             continue;
@@ -195,17 +189,17 @@ static void widow2_spawn_check(edict_t *self)
 
 static void widow2_ready_spawn(edict_t *self)
 {
-    vec3_t f, r, u, mid, startpoint, spawnpoint;
+    vec3_t f, r, mid, startpoint, spawnpoint;
     int    i;
 
     Widow2Beam(self);
-    AngleVectors(self->s.angles, &f, &r, &u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
 
     mid = Box3_Center(stalker_box); // FIXME
     float radius = Box3_Radius(stalker_box);
 
     for (i = 0; i < 2; i++) {
-        startpoint = G_ProjectSource2(self->s.origin, spawnpoints[i], f, r, u);
+        startpoint = M_ProjectFlashSource(self, spawnpoints[i], f, r);
         if (FindSpawnPoint(startpoint, stalker_box, &spawnpoint, 64, true)) {
             spawnpoint = Vec3_Add(spawnpoint, mid);
             SpawnGrow_Spawn(spawnpoint, radius, radius * 2);
@@ -280,7 +274,7 @@ static void WidowDisrupt(edict_t *self)
     vec3_t forward, right;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_WIDOW_DISRUPTOR], forward, right);
+    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_WIDOW_DISRUPTOR], forward, right);
 
     if (Vec3_Distance(self->pos1, self->enemy->s.origin) < 30) {
         // calc direction to where we targeted
@@ -399,12 +393,12 @@ void THINK(widow2_tongue_think)(edict_t *self)
 
 static void Widow2Tongue(edict_t *self)
 {
-    vec3_t  f, r, u;
+    vec3_t  f, r;
     vec3_t  start, end, dir;
     trace_t tr;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    start = G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, offsets[self->s.frame - FRAME_tongs01], f, r);
     end = self->enemy->s.origin;
     if (!widow2_tongue_attack_ok(start, end, 256)) {
         end.z = self->enemy->s.origin.z + self->enemy->r.box.maxs.z - 8;
@@ -447,7 +441,7 @@ static void Widow2Tongue(edict_t *self)
 static void Widow2TonguePull(edict_t *self)
 {
     vec3_t vec;
-    vec3_t f, r, u;
+    vec3_t f, r;
     vec3_t start, end;
 
     if ((!self->enemy) || (!self->enemy->r.inuse)) {
@@ -455,8 +449,8 @@ static void Widow2TonguePull(edict_t *self)
         return;
     }
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    start = G_ProjectSource2(self->s.origin, offsets[self->s.frame - FRAME_tongs01], f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    start = M_ProjectFlashSource(self, offsets[self->s.frame - FRAME_tongs01], f, r);
     end = self->enemy->s.origin;
 
     if (!widow2_tongue_attack_ok(start, end, 256))
@@ -529,11 +523,11 @@ const mmove_t MMOVE_T(widow2_move_pain) = { FRAME_pain01, FRAME_pain05, widow2_f
 static const mframe_t widow2_frames_death[] = {
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion1 }, // 3 boom
+    { ai_move, 0, WidowExplosion }, // 3 boom
     { ai_move },
     { ai_move }, // 5
 
-    { ai_move, 0, WidowExplosion2 }, // 6 boom
+    { ai_move, 0, WidowExplosion }, // 6 boom
     { ai_move },
     { ai_move },
     { ai_move },
@@ -547,7 +541,7 @@ static const mframe_t widow2_frames_death[] = {
 
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion3 }, // 18
+    { ai_move, 0, WidowExplosion }, // 18
     { ai_move },                     // 19
     { ai_move },                     // 20
 
@@ -555,23 +549,23 @@ static const mframe_t widow2_frames_death[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion4 }, // 25
+    { ai_move, 0, WidowExplosion }, // 25
 
     { ai_move }, // 26
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion5 },
+    { ai_move, 0, WidowExplosion },
     { ai_move, 0, WidowExplosionLeg }, // 30
 
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion6 },
+    { ai_move, 0, WidowExplosion },
     { ai_move }, // 35
 
     { ai_move },
     { ai_move },
-    { ai_move, 0, WidowExplosion7 },
+    { ai_move, 0, WidowExplosion },
     { ai_move },
     { ai_move }, // 40
 
@@ -639,6 +633,7 @@ static void widow2_keep_searching(edict_t *self)
 static void widow2_finaldeath(edict_t *self)
 {
     self->r.box = Box3_FromSize(70, 0, 80);
+    M_ScaleBox(self);
     self->movetype = MOVETYPE_TOSS;
     self->takedamage = true;
     self->nextthink = 0;
@@ -693,9 +688,9 @@ void MONSTERINFO_ATTACK(widow2_attack)(edict_t *self)
     // melee attack
     if (self->timestamp < level.time) {
         if (real_enemy_range < 300) {
-            vec3_t f, r, u, spot;
-            AngleVectors(self->s.angles, &f, &r, &u);
-            spot = G_ProjectSource2(self->s.origin, offsets[0], f, r, u);
+            vec3_t f, r, spot;
+            AngleVectors(self->s.angles, &f, &r, NULL);
+            spot = M_ProjectFlashSource(self, offsets[0], f, r);
             if (widow2_tongue_attack_ok(spot, self->enemy->s.origin, 256)) {
                 // melee attack ok
 
@@ -1044,6 +1039,8 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     gib->die = gib_die;
     gib->s.renderfx |= RF_IR_VISIBLE;
     gib->s.renderfx &= ~RF_DOT_SHADOW;
+    gib->s.scale = self->s.scale;
+    gib->s.alpha = self->s.alpha;
 
     if (fade) {
         gib->think = G_FreeEdict;
@@ -1093,6 +1090,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
             gib->r.box = Box3_FromSize(10, 0, 10);
         else
             gib->r.box = Box3_FromSize(5, 0, 5);
+        M_ScaleBox(gib);
     } else {
         gib->velocity.x *= 2;
         gib->velocity.y *= 2;
@@ -1129,77 +1127,28 @@ static void ThrowMoreStuff(edict_t *self, vec3_t point)
         ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, point, false);
 }
 
+static const vec3_t explosion2_offsets[] = {
+    { -24, -24, 0 },
+    { 24, 24, 0 },
+    { 24, -24, 0 },
+    { -24, 24, 0 },
+    { -48, -48, 0 },
+    { 48, 48, 0 },
+    { -48, 48, 0 },
+    { 48, -48, 0 },
+    { 18, 18, 48 },
+    { -18, 18, 48 },
+    { 18, -18, 48 },
+    { -18, -18, 48 },
+};
+
 void THINK(WidowExplode)(edict_t *self)
 {
     vec3_t org;
+    float  scale;
     int    n;
 
-    self->think = WidowExplode;
-
-    org = self->s.origin;
-    org.z += irandom2(24, 40);
-    if (self->count < 8)
-        org.z += irandom2(24, 56);
-    switch (self->count) {
-    case 0:
-        org.x -= 24;
-        org.y -= 24;
-        break;
-    case 1:
-        org.x += 24;
-        org.y += 24;
-        ThrowSmallStuff(self, org);
-        break;
-    case 2:
-        org.x += 24;
-        org.y -= 24;
-        break;
-    case 3:
-        org.x -= 24;
-        org.y += 24;
-        ThrowMoreStuff(self, org);
-        break;
-    case 4:
-        org.x -= 48;
-        org.y -= 48;
-        break;
-    case 5:
-        org.x += 48;
-        org.y += 48;
-        ThrowArm1(self);
-        break;
-    case 6:
-        org.x -= 48;
-        org.y += 48;
-        ThrowArm2(self);
-        break;
-    case 7:
-        org.x += 48;
-        org.y -= 48;
-        ThrowSmallStuff(self, org);
-        break;
-    case 8:
-        org.x += 18;
-        org.y += 18;
-        org.z = self->s.origin.z + 48;
-        ThrowMoreStuff(self, org);
-        break;
-    case 9:
-        org.x -= 18;
-        org.y += 18;
-        org.z = self->s.origin.z + 48;
-        break;
-    case 10:
-        org.x += 18;
-        org.y -= 18;
-        org.z = self->s.origin.z + 48;
-        break;
-    case 11:
-        org.x -= 18;
-        org.y -= 18;
-        org.z = self->s.origin.z + 48;
-        break;
-    case 12:
+    if (self->count >= q_countof(explosion2_offsets)) {
         self->s.sound = 0;
         for (n = 0; n < 1; n++)
             ThrowWidowGib(self, "models/objects/gibs/sm_meat/tris.md2", 400, GIB_NONE);
@@ -1214,137 +1163,67 @@ void THINK(WidowExplode)(edict_t *self)
         return;
     }
 
+    scale = G_EntityScale(self);
+    org = self->s.origin;
+    org.z += irandom2(24, 40) * scale;
+    if (self->count < 8)
+        org.z += irandom2(24, 56) * scale;
+
+    org = Vec3_MA(org, scale, explosion2_offsets[self->count]);
+
+    switch (self->count) {
+    case 1:
+    case 7:
+        ThrowSmallStuff(self, org);
+        break;
+    case 3:
+    case 8:
+        ThrowMoreStuff(self, org);
+        break;
+    case 5:
+        ThrowArm1(self);
+        break;
+    case 6:
+        ThrowArm2(self);
+        break;
+    }
+
     self->count++;
     if (self->count >= 9 && self->count <= 12)
         G_TempEntity(org, EV_EXPLOSION1_BIG, 0);
     else
         G_TempEntity(org, (self->count & 1) ? EV_EXPLOSION1 : EV_EXPLOSION1_NP, 0);
 
+    self->think = WidowExplode;
     self->nextthink = level.time + HZ(10);
 }
 
-static void WidowExplosion1(edict_t *self)
+static const vec3_t explosion1_offsets[] = {
+    { 23.74f, -37.67f, 76.96f },
+    { -20.49f, 36.92f, 73.52f },
+    { 2.11f, 0.05f, 92.20f },
+    { -28.04f, -35.57f, -77.56f },
+    { -20.11f, -1.11f, 40.76f }
+};
+
+static void WidowExplosion(edict_t *self)
 {
     int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { 23.74f, -37.67f, 76.96f };
+    vec3_t f, r, startpoint;
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
+    if (self->s.frame == FRAME_death03)
+        n = 0;
+    else if (self->s.frame == FRAME_death06)
+        n = 1;
+    else if (self->s.frame == FRAME_death18)
+        n = 2;
+    else if (self->s.frame == FRAME_death25)
+        n = 3;
+    else
+        n = 4;
 
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion2(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { -20.49f, 36.92f, 73.52f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
-
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion3(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { 2.11f, 0.05f, 92.20f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
-
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion4(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { -28.04f, -35.57f, -77.56f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
-
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion5(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { -20.11f, -1.11f, 40.76f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
-
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion6(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { -20.11f, -1.11f, 40.76f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
-
-    G_TempEntity(startpoint, EV_EXPLOSION1, 0);
-
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
-    for (n = 0; n < 1; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
-    for (n = 0; n < 2; n++)
-        ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 300, GIB_METALLIC, startpoint, false);
-}
-
-static void WidowExplosion7(edict_t *self)
-{
-    int    n;
-    vec3_t f, r, u, startpoint;
-    vec3_t offset = { -20.11f, -1.11f, 40.76f };
-
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    startpoint = M_ProjectFlashSource(self, explosion1_offsets[n], f, r);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1358,12 +1237,12 @@ static void WidowExplosion7(edict_t *self)
 
 static void WidowExplosionLeg(edict_t *self)
 {
-    vec3_t f, r, u, startpoint;
+    vec3_t f, r, startpoint;
     vec3_t offset1 = { -31.89f, -47.86f, 67.02f };
     vec3_t offset2 = { -44.9f, -82.14f, 54.72f };
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    startpoint = M_ProjectFlashSource(self, offset1, f, r);
 
     G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
@@ -1372,7 +1251,7 @@ static void WidowExplosionLeg(edict_t *self)
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_meat/tris.md2", 300, GIB_NONE, startpoint, false);
     ThrowWidowGibLoc(self, "models/objects/gibs/sm_metal/tris.md2", 100, GIB_METALLIC, startpoint, false);
 
-    startpoint = G_ProjectSource2(self->s.origin, offset2, f, r, u);
+    startpoint = M_ProjectFlashSource(self, offset2, f, r);
 
     G_TempEntity(startpoint, EV_EXPLOSION1, 0);
 
@@ -1385,11 +1264,11 @@ static void WidowExplosionLeg(edict_t *self)
 static void ThrowArm1(edict_t *self)
 {
     int    n;
-    vec3_t f, r, u, startpoint;
+    vec3_t f, r, startpoint;
     vec3_t offset1 = { 65.76f, 17.52f, 7.56f };
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    startpoint = M_ProjectFlashSource(self, offset1, f, r);
 
     G_TempEntity(startpoint, EV_EXPLOSION1_BIG, 0);
 
@@ -1399,11 +1278,11 @@ static void ThrowArm1(edict_t *self)
 
 static void ThrowArm2(edict_t *self)
 {
-    vec3_t f, r, u, startpoint;
+    vec3_t f, r, startpoint;
     vec3_t offset1 = { 65.76f, 17.52f, 7.56f };
 
-    AngleVectors(self->s.angles, &f, &r, &u);
-    startpoint = G_ProjectSource2(self->s.origin, offset1, f, r, u);
+    AngleVectors(self->s.angles, &f, &r, NULL);
+    startpoint = M_ProjectFlashSource(self, offset1, f, r);
 
     ThrowWidowGibSized(self, "models/monsters/blackwidow2/gib4/tris.md2", 200, GIB_METALLIC, startpoint,
                        G_SoundIndex("misc/fhit3.wav"), false);

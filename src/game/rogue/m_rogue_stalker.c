@@ -790,6 +790,7 @@ void MONSTERINFO_PHYSCHANGED(stalker_physics_change)(edict_t *self)
 static void stalker_dead(edict_t *self)
 {
     self->r.box = Box3_FromSize(28, -18, -4);
+    M_ScaleBox(self);
     monster_dead(self);
 }
 

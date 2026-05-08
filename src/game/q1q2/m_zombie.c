@@ -201,7 +201,7 @@ static void FireZombieGib(edict_t *self)
         return;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = G_ProjectSource(self->s.origin, offset, forward, right);
+    start = M_ProjectFlashSource(self, offset, forward, right);
 
     vec = self->enemy->s.origin;
     vec.z += self->enemy->viewheight;
@@ -347,7 +347,7 @@ static void zombie_down(edict_t *self)
 
     self->takedamage = true;
     self->health = 60;
-    self->r.box.maxs.z = 40;
+    self->r.box.maxs.z = 40 * G_EntityScale(self);
     self->flags |= FL_PARTIALGROUND;
     trap_LinkEntity(self);
 

@@ -77,7 +77,7 @@ static void Boss2Rocket64(edict_t *self)
     AngleVectors(self->s.angles, &forward, &right, NULL);
     start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right);
 
-    float scale = self->s.scale ? self->s.scale : 1;
+    float scale = G_EntityScale(self);
     int count = self->count++ % 4;
 
     start.z += 10 * scale;
@@ -340,7 +340,7 @@ const mmove_t MMOVE_T(boss2_move_pain_light) = { FRAME_pain20, FRAME_pain23, bos
 
 static void boss2_shrink(edict_t *self)
 {
-    self->r.box.maxs.z = 50;
+    self->r.box.maxs.z = 50 * G_EntityScale(self);
     trap_LinkEntity(self);
 }
 

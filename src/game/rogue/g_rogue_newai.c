@@ -980,7 +980,7 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
 
     if (ducker && tr) {
         // the -1 is because the absmax is s.origin + maxs + 1
-        height = self->r.absbox.maxs.z - 32 * (self->s.scale ? self->s.scale : 1) - 1;
+        height = self->r.absbox.maxs.z - 32 * G_EntityScale(self) - 1;
 
         if ((!dodger) && ((tr->endpos.z <= height) || (self->monsterinfo.aiflags & AI_DUCKED)))
             return;
@@ -1065,7 +1065,7 @@ void monster_duck_down(edict_t *self)
 {
     self->monsterinfo.aiflags |= AI_DUCKED;
 
-    self->r.box.maxs.z = self->monsterinfo.base_height - 32 * (self->s.scale ? self->s.scale : 1);
+    self->r.box.maxs.z = self->monsterinfo.base_height - 32 * G_EntityScale(self);
     self->takedamage = true;
     self->monsterinfo.next_duck_time = level.time + DUCK_INTERVAL;
     trap_LinkEntity(self);

@@ -264,13 +264,13 @@ void MONSTERINFO_SETSKIN(chick_setpain)(edict_t *self)
 
 static void chick_dead(edict_t *self)
 {
-    self->r.box = Box3_FromSize(16, 0, 8);
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
     monster_dead(self);
 }
 
 static void chick_shrink(edict_t *self)
 {
-    self->r.box.maxs.z = 12;
+    self->r.box.maxs.z = 12 * G_EntityScale(self);
     self->r.svflags |= SVF_DEADMONSTER;
     trap_LinkEntity(self);
 }

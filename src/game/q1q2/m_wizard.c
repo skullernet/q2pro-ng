@@ -317,7 +317,7 @@ static void wizard_fling(edict_t *self)
     self->velocity.y = -200 + 400 * crandom();
     self->velocity.z = 100 + 100 * crandom();
 
-    self->r.box.maxs.z = -8;
+    self->r.box.maxs.z = -8 * G_EntityScale(self);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
 }
