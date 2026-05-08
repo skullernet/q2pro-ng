@@ -698,6 +698,9 @@ void CG_RenderView(void)
     // build a refresh entity list
     CG_AddEntities();
 
+    if (cg.test_model.model)
+        trap_R_AddEntity(&cg.test_model);
+
     // never let it sit exactly on a node line, because a water plane can
     // disappear when viewed with the eye exactly on it.
     // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis

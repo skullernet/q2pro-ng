@@ -134,6 +134,8 @@ typedef struct {
         int     anim_start;
     } weapon;
 
+    entity_t    test_model;
+
     float       xyspeed;
     float       bobfracsin;
     vec3_t      slow_view_angles;

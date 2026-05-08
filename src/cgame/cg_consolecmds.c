@@ -263,6 +263,62 @@ static void CG_WeapNext_f(void)
     cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
 }
 
+static void CG_TestModel_f(void)
+{
+    cg.test_model = (entity_t){ 0 };
+
+    if (trap_Argc() < 2)
+        return;
+
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
+    cg.test_model.model = trap_R_RegisterModel(buf);
+    if (!cg.test_model.model) {
+        Com_Printf("Can't register model %s\n", buf);
+        return;
+    }
+
+    if (trap_Argc() > 2) {
+        trap_Argv(2, buf, sizeof(buf));
+        cg.test_model.frame = Q_atoi(buf);
+    }
+
+    if (trap_Argc() > 3) {
+        trap_Argv(3, buf, sizeof(buf));
+        cg.test_model.scale = Q_atof(buf);
+    }
+
+    cg.test_model.origin = Vec3_MA(cg.refdef.vieworg, 100, cg.v_forward);
+    cg.test_model.angles = Vec3(0, cg.refdef.viewangles.yaw + 180.0f, 0);
+}
+
+static void CG_TestModelNextFrame_f(void)
+{
+    cg.test_model.frame++;
+    Com_Printf("frame %u\n", cg.test_model.frame);
+}
+
+static void CG_TestModelPrevFrame_f(void)
+{
+    if (cg.test_model.frame > 0)
+        cg.test_model.frame--;
+    Com_Printf("frame %u\n", cg.test_model.frame);
+}
+
+static void CG_TestModelNextSkin_f(void)
+{
+    cg.test_model.skinnum++;
+    Com_Printf("skin %u\n", cg.test_model.skinnum);
+}
+
+static void CG_TestModelPrevSkin_f(void)
+{
+    if (cg.test_model.skinnum > 0)
+        cg.test_model.skinnum--;
+    Com_Printf("skin %u\n", cg.test_model.skinnum);
+}
+
 typedef struct {
     const char *name;
     void (*func)(void);
@@ -277,6 +333,12 @@ static vm_cmd_reg_t cg_consolecmds[] = {
     { "sizedown", SCR_SizeDown_f },
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
+
+    { "testmodel", CG_TestModel_f },
+    { "nextframe", CG_TestModelNextFrame_f },
+    { "prevframe", CG_TestModelPrevFrame_f },
+    { "nextskin", CG_TestModelNextSkin_f },
+    { "prevskin", CG_TestModelPrevSkin_f },
 
     // commands below this separator are never executed during demos or if
     // there is no valid server frame
