@@ -1097,7 +1097,7 @@ static void medic_cable_attack(edict_t *self)
         te->s.modelindex = G_ModelIndex("models/monsters/parasite/segment/tris.md2");
         te->s.othernum = ENTITYNUM_NONE;
         te->s.alpha = self->s.alpha;
-        te->s.scale = self->s.scale;
+        te->s.scale = self->style == Shamedic ? G_EntityScale(self) * 1.5f : self->s.scale;
         te->r.ownernum = self->s.number;
     }
 
