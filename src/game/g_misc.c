@@ -472,16 +472,21 @@ void THINK(find_shadow_light_targets)(edict_t *self)
         if (target)
             self->s.frame = (target->style + 1) & 255;
     }
+
+    // hack to fix disappearing func_rotating shadows
+    float radius = self->s.modelindex * 0.5f;
+    target = NULL;
+    while ((target = G_Find(target, FOFS(classname), "func_rotating")))
+        if (Vec3_DistanceSquared(self->s.origin, Box3_Center(target->r.absbox)) < radius * radius)
+            target->r.svflags |= SVF_PHS;
 }
 
 static void setup_shadow_light(edict_t *self)
 {
     self->itemtarget = st.sl.lightstyletarget;
 
-    if (self->target || self->itemtarget) {
-        self->think = find_shadow_light_targets;
-        self->nextthink = level.time + FRAME_TIME;
-    }
+    self->think = find_shadow_light_targets;
+    self->nextthink = level.time + FRAME_TIME;
 
     self->s.modelindex  = Q_clipf(st.sl.radius,     1, MAX_MODELS - 1);
     self->s.modelindex2 = Q_clipf(st.sl.fade_start, 0, MAX_MODELS - 1);

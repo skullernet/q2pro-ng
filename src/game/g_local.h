@@ -2427,6 +2427,7 @@ struct edict_s {
     gtime_t no_gravity_time;
     float vision_cone;
     bool free_after_event;
+    bool remove_phs_after_event;
     // NOTE: if adding new elements, make sure to add them
     // in g_save.cpp too!
 };

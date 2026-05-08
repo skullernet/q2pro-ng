@@ -657,8 +657,10 @@ void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
     if (!event)
         return;
 
-    if (G_IsHearableEvent(event))
+    if (G_IsHearableEvent(event) && !(ent->r.svflags & SVF_PHS)) {
         ent->r.svflags |= SVF_PHS;
+        ent->remove_phs_after_event = true;
+    }
 
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (ent->s.event[i] == event && ent->s.event_param[i] == param)
