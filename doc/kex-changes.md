@@ -26,6 +26,7 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * `RF_*` flags are propagated to linked models.
 * `g_start_items` cvar and `start_items` worldspawn key can remove compass and
   add grapple.
+* QuakeWorld-like physics preset via `physics_flags 16`.
 * Sky surfaces on moving brush models are supported in BSPX maps for some
   unusual effects.
 * Multiple skyboxes are supported per map: if sky texture is named

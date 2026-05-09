@@ -34,6 +34,7 @@ typedef struct {
     float flyfriction;
     float waterfriction;
     float waterspeed;
+    float watermult;
     float laddermod;
     float jumpvel;
 } pmp_t;
@@ -49,6 +50,7 @@ static const pmp_t pmp_default = {
     .flyfriction = 9,
     .waterfriction = 1,
     .waterspeed = 400,
+    .watermult = 0.5f,
     .laddermod = 0.75f,
     .jumpvel = 270.0f,
 };
@@ -64,8 +66,25 @@ static const pmp_t pmp_psxscale = {
     .flyfriction = 9,
     .waterfriction = 1 * PSX_PHYSICS_SCALAR,
     .waterspeed = 400,
+    .watermult = 0.5f,
     .laddermod = 0.5f,
     .jumpvel = 270.0f * PSX_PHYSICS_SCALAR * 1.15f,
+};
+
+static const pmp_t pmp_qwmove = {
+    .stopspeed = 100,
+    .flystopspeed = 100,
+    .maxspeed = 320,
+    .duckspeed = 100,
+    .accelerate = 10,
+    .wateraccelerate = 10,
+    .friction = 4,
+    .flyfriction = 9,
+    .waterfriction = 4,
+    .waterspeed = 400,
+    .watermult = 0.7f,
+    .laddermod = 0.75f,
+    .jumpvel = 270.0f,
 };
 
 pm_config_t pm_config;
@@ -445,7 +464,7 @@ static void PM_WaterMove(void)
 
     if (wishspeed > pmp->maxspeed)
         wishspeed = pmp->maxspeed;
-    wishspeed *= 0.5f;
+    wishspeed *= pmp->watermult;
 
     if ((pm->s->pm_flags & PMF_DUCKED) && wishspeed > pmp->duckspeed)
         wishspeed = pmp->duckspeed;
@@ -513,7 +532,9 @@ static void PM_AirMove(void)
         PM_StepSlideMove();
     } else {
         // not on ground, so little effect on velocity
-        if (pm_config.airaccel)
+        if (pm_config.physics_flags & PHYSICS_QW_MOVEMENT)
+            PM_AirAccelerate(wishdir, wishspeed, pmp->accelerate);
+        else if (pm_config.airaccel)
             PM_AirAccelerate(wishdir, wishspeed, pm_config.airaccel);
         else
             PM_Accelerate(wishdir, wishspeed, 1);
@@ -1066,7 +1087,9 @@ void BG_Pmove(pmove_t *pmove)
 {
     pm = pmove;
 
-    if (pm_config.physics_flags & PHYSICS_PSX_SCALE)
+    if (pm_config.physics_flags & PHYSICS_QW_MOVEMENT)
+        pmp = &pmp_qwmove;
+    else if (pm_config.physics_flags & PHYSICS_PSX_SCALE)
         pmp = &pmp_psxscale;
     else
         pmp = &pmp_default;

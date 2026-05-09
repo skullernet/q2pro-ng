@@ -527,6 +527,7 @@ typedef enum {
     PHYSICS_PSX_MOVEMENT = BIT(1),
     PHYSICS_PSX_SCALE    = BIT(2),
     PHYSICS_DEATHMATCH   = BIT(3),
+    PHYSICS_QW_MOVEMENT  = BIT(4),
 } physics_flags_t;
 
 typedef struct {
