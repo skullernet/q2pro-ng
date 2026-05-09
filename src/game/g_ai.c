@@ -1304,8 +1304,11 @@ void ai_run(edict_t *self, float dist)
     }
 
     // PMM
-    if ((self->monsterinfo.aiflags & AI_DUCKED) && self->monsterinfo.unduck)
-        self->monsterinfo.unduck(self);
+    if (self->monsterinfo.aiflags & AI_DUCKED) {
+        if (self->monsterinfo.unduck)
+            self->monsterinfo.unduck(self);
+        self->monsterinfo.aiflags &= ~AI_DUCKED;
+    }
 
     //==========
     // PGM

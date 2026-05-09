@@ -322,11 +322,9 @@ static void mutant_check_landing(edict_t *self)
     if (self->groundentity) {
         G_StartSound(self, CHAN_WEAPON, SOUND.thud, 1, ATTN_NORM);
         self->monsterinfo.attack_finished = level.time + random_time_sec(0.5f, 1.5f);
+        self->monsterinfo.aiflags &= ~AI_DUCKED;
 
-        if (self->monsterinfo.unduck)
-            self->monsterinfo.unduck(self);
-
-        if (range_to(self, self->enemy) <= RANGE_MELEE * 2)
+        if (self->enemy && range_to(self, self->enemy) <= RANGE_MELEE * 2)
             self->monsterinfo.melee(self);
 
         return;

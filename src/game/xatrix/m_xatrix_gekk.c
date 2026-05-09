@@ -931,10 +931,7 @@ static void gekk_check_landing(edict_t *self)
     if (self->groundentity) {
         G_StartSound(self, CHAN_WEAPON, sound_thud, 1, ATTN_NORM);
         self->monsterinfo.attack_finished = 0;
-
-        if (self->monsterinfo.unduck)
-            self->monsterinfo.unduck(self);
-
+        self->monsterinfo.aiflags &= ~AI_DUCKED;
         self->velocity = vec3_origin;
         return;
     }
@@ -948,7 +945,7 @@ static void gekk_check_landing(edict_t *self)
 
     // note to self
     // causing skid
-    if (level.time > self->monsterinfo.attack_finished)
+    if (level.time < self->monsterinfo.attack_finished)
         self->monsterinfo.nextframe = FRAME_leapatk_11;
     else
         self->monsterinfo.nextframe = FRAME_leapatk_12;
