@@ -485,8 +485,8 @@ VM_THUNK(R_AddLight) {
     R_AddLight(VM_PTR(0, dlight_t));
 }
 
-VM_THUNK(R_SetLightStyle) {
-    R_SetLightStyle(VM_U32(0), VM_F32(1));
+VM_THUNK(R_SetLightStyles) {
+    R_SetLightStyles(VM_PTR_NULL_CNT(0, float, MAX_LIGHTSTYLES));
 }
 
 VM_THUNK(R_LocateParticles) {
@@ -749,7 +749,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_ClearScene, ""),
     VM_IMPORT(R_AddEntity, "i"),
     VM_IMPORT(R_AddLight, "i"),
-    VM_IMPORT(R_SetLightStyle, "if"),
+    VM_IMPORT(R_SetLightStyles, "i"),
     VM_IMPORT(R_LocateParticles, "ii"),
     VM_IMPORT(R_RenderScene, "i"),
     VM_IMPORT(R_LightPoint, "ii"),
@@ -1017,7 +1017,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_ClearScene = R_ClearScene,
     .R_AddEntity = R_AddEntity,
     .R_AddLight = R_AddLight,
-    .R_SetLightStyle = R_SetLightStyle,
+    .R_SetLightStyles = R_SetLightStyles,
     .R_LocateParticles = R_LocateParticles,
     .R_RenderScene = R_RenderFrame,
     .R_LightPoint = R_LightPoint,

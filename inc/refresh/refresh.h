@@ -74,7 +74,7 @@ void    R_EndRegistration(void);
 void    R_ClearScene(void);
 void    R_AddEntity(const entity_t *ent);
 void    R_AddLight(const dlight_t *light);
-void    R_SetLightStyle(unsigned style, float value);
+void    R_SetLightStyles(const float *value);
 void    R_LocateParticles(const particle_t *p, int count);
 void    R_RenderFrame(const refdef_t *fd);
 void    R_LightPoint(vec3_t origin, vec3_t *light);

@@ -1653,20 +1653,24 @@ void R_AddLight(const dlight_t *light)
 
 /*
 ===============
-R_SetLightStyle
+R_SetLightStyles
 ===============
 */
-void R_SetLightStyle(unsigned style, float value)
+void R_SetLightStyles(const float *value)
 {
-    if (style >= 255)
-        return;
+    int num_styles = MAX_LIGHTSTYLES - 1; // ignore 255
+    int num_bright = 0;
 
-    if (gl_dynamic->integer <= 0)
-        value = 1.0f;
-    else if (gl_dynamic->integer >= 2 && style < 32)
-        value = 1.0f;
+    // make first 32 or all styles fullbright
+    if (gl_dynamic->integer <= 0 || !value)
+        num_bright = num_styles;
+    else if (gl_dynamic->integer >= 2)
+        num_bright = 32;
 
-    gls.u_styles.styles[style].r = value;
+    for (int i = 0; i < num_bright; i++)
+        gls.u_styles.styles[i].r = 1.0f;
+    for (int i = num_bright; i < num_styles; i++)
+        gls.u_styles.styles[i].r = value[i];
 }
 
 /*

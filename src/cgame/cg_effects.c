@@ -72,15 +72,13 @@ void CG_AddLightStyles(void)
                 value = ls->map[0];
 
             cg.lightstyles[i] = value;
-            trap_R_SetLightStyle(i, value);
         }
     } else {
-        for (i = 0, ls = cgs.lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
-            float value = ls->length ? ls->map[ofs % ls->length] : 1.0f;
-            cg.lightstyles[i] = value;
-            trap_R_SetLightStyle(i, value);
-        }
+        for (i = 0, ls = cgs.lightstyles; i < MAX_LIGHTSTYLES; i++, ls++)
+            cg.lightstyles[i] = ls->length ? ls->map[ofs % ls->length] : 1.0f;
     }
+
+    trap_R_SetLightStyles(cg.lightstyles);
 }
 
 /*
