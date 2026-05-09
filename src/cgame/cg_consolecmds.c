@@ -181,7 +181,7 @@ static void CG_Item_c(int firstarg, int argnum)
     if (argnum != 1)
         return;
 
-    trap_SetCompletionOptions(CMPL_CASELESS | CMPL_STRIPQUOTES);
+    trap_SetCompletionOptions(CMPL_CASELESS | CMPL_CHECKDUPS | CMPL_STRIPQUOTES);
     for (int i = 0; i < MAX_ITEMS; i++) {
         char buffer[MAX_QPATH];
         if (trap_GetConfigstring(CS_ITEMS + i, buffer, sizeof(buffer)))

@@ -286,7 +286,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
         if (level.time < self->touch_debounce_time)
             return;
         self->touch_debounce_time = level.time + SEC(5);
-        G_ClientPrintf(activator, PRINT_CENTER, "You need %s", self->item->pickup_name_definite);
+        G_ClientPrintf(activator, PRINT_CENTER, "You need the %s", self->item->pickup_name);
         G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keytry.wav"), 1, ATTN_NORM);
         return;
     }

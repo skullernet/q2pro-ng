@@ -454,12 +454,12 @@ static weap_switch_t Weapon_AttemptSwitch(edict_t *ent, const gitem_t *item, boo
 
         if (!ent->client->pers.inventory[item->ammo]) {
             if (!silent)
-                G_ClientPrintf(ent, PRINT_HIGH, "No %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
+                G_ClientPrintf(ent, PRINT_HIGH, "No %s for the %s.\n", ammo_item->pickup_name, item->pickup_name);
             return WEAP_SWITCH_NO_AMMO;
         }
         if (ent->client->pers.inventory[item->ammo] < item->quantity) {
             if (!silent)
-                G_ClientPrintf(ent, PRINT_HIGH, "Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name_definite);
+                G_ClientPrintf(ent, PRINT_HIGH, "Not enough %s for the %s.\n", ammo_item->pickup_name, item->pickup_name);
             return WEAP_SWITCH_NOT_ENOUGH_AMMO;
         }
     }

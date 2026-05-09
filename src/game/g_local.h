@@ -413,9 +413,7 @@ typedef struct gitem_s {
 
     // client side info
     const char *icon;
-    const char *use_name; // for use command, english only
     const char *pickup_name; // for printing on pickup
-    const char *pickup_name_definite; // definite article version for languages that need it
 
     int          quantity;  // for ammo how much, for weapons how much is used per shot
     item_id_t    ammo;      // for weapons
