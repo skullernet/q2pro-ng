@@ -189,7 +189,7 @@ static bool SV_EntityVisible(int e, const visrow_t *mask)
     const server_entity_t *ent = &sv.entities[e];
 
     for (int i = 0; i < ent->num_clusters; i++)
-        if (Q_IsBitSet(mask->b, ent->clusternums[i]))
+        if (Q_IsBitSet(mask, ent->clusternums[i]))
             return true;
 
     return false;
@@ -228,9 +228,9 @@ void SV_BuildClientFrame(client_t *client)
     client_frame_t  *frame;
     entity_state_t  *state;
     const mleaf_t   *leaf;
-    int         clientarea, clientcluster;
-    visrow_t    clientphs;
-    visrow_t    clientpvs;
+    int             clientarea, clientcluster;
+    const visrow_t  *clientphs;
+    const visrow_t  *clientpvs;
 
     Q_assert(client->entities);
 
@@ -255,8 +255,8 @@ void SV_BuildClientFrame(client_t *client)
     // grab the current player_state_t
     frame->ps = client->client->ps;
 
-    CM_FatPVS(&sv.cm, &clientpvs, clientorg);
-    BSP_ClusterVis(sv.cm.cache, &clientphs, clientcluster, DVIS_PHS);
+    clientpvs = CM_FatPVS(&sv.cm, clientorg);
+    clientphs = BSP_ClusterVis(sv.cm.cache, clientcluster, DVIS_PHS);
 
     // build up the list of visible entities
     frame->num_entities = 0;
@@ -300,17 +300,17 @@ void SV_BuildClientFrame(client_t *client)
             }
 
             if (ent->s.sound) {
-                if (!SV_EntityVisible(e, &clientphs))
+                if (!SV_EntityVisible(e, clientphs))
                     continue;
                 // don't send sounds if they will be attenuated away
                 if (SV_EntityAttenuatedAway(ent)) {
                     if (!ent->s.modelindex)
                         continue;
-                    if (!(ent->r.svflags & SVF_PHS) && !SV_EntityVisible(e, &clientpvs))
+                    if (!(ent->r.svflags & SVF_PHS) && !SV_EntityVisible(e, clientpvs))
                         continue;
                 }
             } else {
-                if (!SV_EntityVisible(e, (ent->r.svflags & SVF_PHS) ? &clientphs : &clientpvs))
+                if (!SV_EntityVisible(e, (ent->r.svflags & SVF_PHS) ? clientphs : clientpvs))
                     continue;
             }
         }

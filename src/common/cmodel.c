@@ -941,7 +941,7 @@ bool CM_InVis(const cm_t *cm, vec3_t p1, vec3_t p2, vis_t vis)
 {
     const bsp_t *bsp = cm->cache;
     const mleaf_t *leaf1, *leaf2;
-    visrow_t mask;
+    const visrow_t *mask;
 
     if (!bsp)
         return false;
@@ -954,8 +954,8 @@ bool CM_InVis(const cm_t *cm, vec3_t p1, vec3_t p2, vis_t vis)
     if (leaf2->cluster == -1)
         return false;
 
-    BSP_ClusterVis(bsp, &mask, leaf1->cluster, vis & VIS_PHS);
-    if (!Q_IsBitSet(mask.b, leaf2->cluster))
+    mask = BSP_ClusterVis(bsp, leaf1->cluster, vis & VIS_PHS);
+    if (!Q_IsBitSet(mask, leaf2->cluster))
         return false;
     if (vis & VIS_NOAREAS)
         return true;
@@ -1012,22 +1012,21 @@ The client will interpolate the view position,
 so we can't use a single PVS point
 ===========
 */
-void CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org)
+const visrow_t *CM_FatPVS(const cm_t *cm, vec3_t org)
 {
     const bsp_t     *bsp = cm->cache;
     const mleaf_t   *leafs[64];
     int             clusters[64];
-    visrow_t        temp;
-    int             i, j, count, longs;
+    const visrow_t  *mask;
+    visrow_t        *temp;
+    int             i, j, count;
     box3_t          box;
 
     if (!bsp) {   // map not loaded
-        memset(mask, 0, sizeof(*mask));
-        return;
+        return NULL;
     }
     if (!bsp->vis) {
-        memset(mask, 0xff, sizeof(*mask));
-        return;
+        return bsp->novis;
     }
 
     box = Box3_Expand(Box3_FromPoint(org), 8);
@@ -1039,8 +1038,8 @@ void CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org)
         clusters[i] = leafs[i]->cluster;
     }
 
-    BSP_ClusterVis(bsp, mask, clusters[0], DVIS_PVS);
-    longs = VIS_FAST_LONGS(bsp->visrowsize);
+    mask = BSP_ClusterVis(bsp, clusters[0], DVIS_PVS);
+    temp = memcpy(bsp->tempvis, mask, bsp->visrowsize * sizeof(*mask));
 
     // or in all the other leaf bits
     for (i = 1; i < count; i++) {
@@ -1050,12 +1049,14 @@ void CM_FatPVS(const cm_t *cm, visrow_t *mask, vec3_t org)
             }
         }
         if (j == i) {
-            BSP_ClusterVis(bsp, &temp, clusters[i], DVIS_PVS);
-            for (j = 0; j < longs; j++) {
-                mask->l[j] |= temp.l[j];
+            mask = BSP_ClusterVis(bsp, clusters[i], DVIS_PVS);
+            for (j = 0; j < bsp->visrowsize; j++) {
+                temp[j] |= mask[j];
             }
         }
     }
+
+    return temp;
 }
 
 /*

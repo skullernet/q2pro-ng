@@ -135,6 +135,7 @@ static const bsp_stat_t bsp_stats[] = {
     F(models),
     F(brushes),
     F(visibility),
+    F(clusters),
     F(entitychars),
     F(areas),
     F(areaportals),
@@ -156,9 +157,6 @@ static void BSP_PrintStats(const bsp_t *bsp)
 {
     for (int i = 0; i < q_countof(bsp_stats); i++)
         Com_Printf("%8d : %s\n", *(int *)((byte *)bsp + bsp_stats[i].ofs), bsp_stats[i].name);
-
-    if (bsp->vis)
-        Com_Printf("%8u : clusters\n", bsp->vis->numclusters);
 
 #if USE_REF
     const lightgrid_t *grid = &bsp->lightgrid;
@@ -410,6 +408,135 @@ done:
     HashMap_Destroy(map);
 
     Com_DPrintf("%s: %d materials loaded\n", __func__, bsp->nummaterials);
+}
+
+typedef struct {
+    uint16_t start, end;
+} cluster_range_t;
+
+static bool BSP_ParseClusterRange(const char *tok, cluster_range_t *r, int numclusters)
+{
+    unsigned long v;
+    char *end;
+
+    v = strtoul(tok, &end, 0);
+    if (end == tok || (*end && *end != '-') || v >= numclusters)
+        return false;
+
+    r->start = v;
+    if (*end == '-') {
+        tok = end + 1;
+        v = strtoul(tok, &end, 0);
+        if (end == tok || *end || v < r->start || v >= numclusters)
+            return false;
+        r->end = v;
+    } else {
+        r->end = r->start;
+    }
+
+    return true;
+}
+
+static void BSP_ApplyVisPatch(const bsp_t *bsp, dvis_t vis,
+                              const cluster_range_t *src, int numsrc,
+                              const cluster_range_t *dst, int numdst)
+{
+    for (int i = 0; i < numsrc; i++) {
+        for (int j = src[i].start; j <= src[i].end; j++) {
+            visrow_t *mask = BSP_CLUSTER_VIS(bsp, j, vis);
+            for (int k = 0; k < numdst; k++)
+                for (int l = dst[k].start; l <= dst[k].end; l++)
+                    Q_SetBit(mask, l);
+        }
+    }
+}
+
+static void BSP_LoadVisPatches(const bsp_t *bsp)
+{
+    char path[MAX_QPATH], name[MAX_QPATH], *data;
+    const char *s, *tok;
+    cluster_range_t range;
+    cluster_range_t src[1024];
+    cluster_range_t dst[1024];
+    int numsrc, numdst, numpatches q_unused;
+
+    if (!bsp->vis)
+        return;
+    if (!map_visibility_patch->integer)
+        return;
+    if (!Com_ParseMapName(name, bsp->name, sizeof(name)))
+        return;
+
+    if (Q_snprintf(path, sizeof(path), "vispatches/%s.%08x", name, bsp->checksum) >= sizeof(path))
+        return;
+    FS_LoadFile(path, (void **)&data);
+    if (!data)
+        return;
+
+    numpatches = 0;
+
+    s = data;
+    while (1) {
+        numsrc = 0;
+        while (1) {
+            tok = COM_Parse(&s);
+            if (!s) {
+                if (numsrc)
+                    Com_WPrintf("Unexpected end of file in %s\n", path);
+                break;
+            }
+            if (!strcmp(tok, "{"))
+                break;
+            if (!BSP_ParseClusterRange(tok, &range, bsp->numclusters)) {
+                Com_WPrintf("Bad source cluster range %s in %s\n", tok, path);
+                continue;
+            }
+            if (numsrc == q_countof(src)) {
+                Com_WPrintf("Too many source cluster ranges in %s\n", path);
+                continue;
+            }
+            src[numsrc++] = range;
+        }
+        if (!s)
+            break;
+
+        numdst = 0;
+        while (1) {
+            tok = COM_Parse(&s);
+            if (!s) {
+                Com_WPrintf("Unexpected end of file in %s\n", path);
+                break;
+            }
+            if (!strcmp(tok, "}"))
+                break;
+            if (!BSP_ParseClusterRange(tok, &range, bsp->numclusters)) {
+                Com_WPrintf("Bad destination cluster range %s in %s\n", tok, path);
+                continue;
+            }
+            if (numdst == q_countof(dst)) {
+                Com_WPrintf("Too many destination cluster ranges in %s\n", path);
+                continue;
+            }
+            dst[numdst++] = range;
+        }
+
+        if (!numsrc || !numdst) {
+            Com_WPrintf("Empty source or destination clusters in %s\n", path);
+            continue;
+        }
+
+        // apply patches to both PVS and PHS, just in case
+        for (int i = 0; i < DVIS_COUNT; i++) {
+            BSP_ApplyVisPatch(bsp, i, src, numsrc, dst, numdst);
+            BSP_ApplyVisPatch(bsp, i, dst, numdst, src, numsrc);
+        }
+
+        numpatches++;
+    }
+
+    FS_FreeFile(data);
+
+    Com_DPrintf("%s: %d patches loaded\n", __func__, numpatches);
 }
 
 #if USE_REF
@@ -921,6 +1048,12 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         if (info->lump == LUMP_ENTITIES)
             count++;
 
+        // estimate decompressed visibility size
+        if (info->lump == LUMP_VISIBILITY && len >= 4) {
+            uint32_t numclusters = RL32(buf + ofs);
+            count = BSP_VisibilitySize(numclusters);
+        }
+
         // round to cacheline
         memsize += BSP_ALIGN(count * info->memsize);
         maxpos = max(maxpos, ofs + len);
@@ -975,6 +1108,8 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     BSP_MergeLeafContents(bsp);
 
     BSP_LoadMaterials(bsp);
+
+    BSP_LoadVisPatches(bsp);
 
     List_Append(&bsp_cache, &bsp->entry);
 
@@ -1154,92 +1289,14 @@ bool BSP_GetMaterialInfo(const bsp_t *bsp, unsigned material_id, material_info_t
     return true;
 }
 
-void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis)
+const visrow_t *BSP_ClusterVis(const bsp_t *bsp, unsigned cluster, dvis_t vis)
 {
-    const byte  *in, *in_end;
-    byte        *out, *out_end;
-    int         c;
-
     Q_assert(vis == DVIS_PVS || vis == DVIS_PHS);
-
-    if (!bsp || !bsp->vis) {
-        memset(mask, 0xff, sizeof(*mask));
-        return;
-    }
-    if (cluster == -1) {
-        memset(mask, 0, bsp->visrowsize);
-        return;
-    }
-    if (cluster < 0 || cluster >= bsp->vis->numclusters) {
-        Com_Error(ERR_DROP, "%s: bad cluster", __func__);
-    }
-
-    // decompress vis
-    in_end = (const byte *)bsp->vis + bsp->numvisibility;
-    in = (const byte *)bsp->vis + bsp->vis->bitofs[cluster][vis];
-    out_end = mask->b + bsp->visrowsize;
-    out = mask->b;
-    do {
-        if (in >= in_end) {
-            goto overrun;
-        }
-        if (*in) {
-            *out++ = *in++;
-            continue;
-        }
-
-        if (in + 1 >= in_end) {
-            goto overrun;
-        }
-        c = in[1];
-        in += 2;
-        if (c > out_end - out) {
-overrun:
-            c = out_end - out;
-        }
-        while (c--) {
-            *out++ = 0;
-        }
-    } while (out < out_end);
-
-    // apply our ugly PVS patches
-    if (map_visibility_patch->integer) {
-        if (bsp->checksum == 0x1e5b50c5) {
-            // q2dm3, pent bridge
-            if (cluster == 345 || cluster == 384) {
-                Q_SetBit(mask, 466);
-                Q_SetBit(mask, 484);
-                Q_SetBit(mask, 692);
-            }
-        } else if (bsp->checksum == 0x04cfa792) {
-            // q2dm1, above lower RL
-            if (cluster == 395) {
-                Q_SetBit(mask, 176);
-                Q_SetBit(mask, 183);
-            }
-        } else if (bsp->checksum == 0x2c3ab9b0) {
-            // q2dm8, CG/RG area
-            if (cluster == 629 || cluster == 631 ||
-                cluster == 633 || cluster == 639) {
-                Q_SetBit(mask, 908);
-                Q_SetBit(mask, 909);
-                Q_SetBit(mask, 910);
-                Q_SetBit(mask, 915);
-                Q_SetBit(mask, 923);
-                Q_SetBit(mask, 924);
-                Q_SetBit(mask, 927);
-                Q_SetBit(mask, 930);
-                Q_SetBit(mask, 938);
-                Q_SetBit(mask, 939);
-                Q_SetBit(mask, 947);
-            }
-        } else if (bsp->checksum == 0x1ebe8001) {
-            // mgu6m2, waterfall
-            Q_SetBit(mask, 213);
-            Q_SetBit(mask, 214);
-            Q_SetBit(mask, 217);
-        }
-    }
+    if (!bsp)
+        return NULL;
+    if (cluster >= bsp->numclusters)
+        return bsp->novis;
+    return BSP_CLUSTER_VIS(bsp, cluster, vis);
 }
 
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, vec3_t p)

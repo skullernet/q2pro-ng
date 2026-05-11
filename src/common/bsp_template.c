@@ -56,13 +56,44 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define BSP_ExtVector(v) \
     ((v).x = BSP_ExtFloat(), (v).y = BSP_ExtFloat(), (v).z = BSP_ExtFloat())
 
+#define BSP_CLUSTER_VIS(bsp, cluster, type) \
+    ((bsp)->vis + ((cluster) * DVIS_COUNT + (type)) * (bsp)->visrowsize)
+
+static void BSP_DecompressVis(const bsp_t *bsp, const byte *in, const byte *in_end, visrow_t *row)
+{
+    byte *out     = (byte *)(row);
+    byte *out_end = (byte *)(row + bsp->visrowsize);
+
+    while (in < in_end && out < out_end) {
+        if (*in) {
+            *out++ = *in++;
+            continue;
+        }
+        out += in[1];
+        in  += 2;
+    }
+}
+
+static size_t BSP_VisibilitySize(uint32_t numclusters)
+{
+    if (numclusters > MAX_MAP_CLUSTERS)
+        return 0;
+    size_t align    = sizeof(visrow_t) * 8;
+    size_t rowsize  = (numclusters + align - 1) / align;
+    size_t numbytes = (numclusters + 1) * rowsize * DVIS_COUNT * sizeof(visrow_t);
+    return numbytes;
+}
+
 BSP_LOAD(Visibility)
 {
     if (!count) {
         Com_WPrintf("Map has no Visibility, expect bugs and bad performance!\n");
+        bsp->novis = BSP_ALLOC(sizeof(visrow_t));
+        memset(bsp->novis, 0xff, sizeof(visrow_t));
         return Q_ERR_SUCCESS;
     }
 
+    const byte *data = in;
     BSP_ENSURE(count >= 4, "Too small header");
 
     uint32_t numclusters = BSP_Long();
@@ -71,20 +102,26 @@ BSP_LOAD(Visibility)
     uint32_t hdrsize = 4 + numclusters * 8;
     BSP_ENSURE(count >= hdrsize, "Too small header");
 
-    bsp->numvisibility = count;
-    bsp->vis = BSP_ALLOC(count);
-    bsp->vis->numclusters = numclusters;
-    bsp->visrowsize = (numclusters + 7) >> 3;
+    size_t align    = sizeof(visrow_t) * 8;
+    size_t rowsize  = (numclusters + align - 1) / align;
+    size_t numbytes = (numclusters + 1) * rowsize * DVIS_COUNT * sizeof(visrow_t);
+
+    bsp->vis = BSP_ALLOC(numbytes);
+    bsp->numclusters = numclusters;
+    bsp->visrowsize = rowsize;
+    bsp->numvisibility = numbytes;
+    bsp->novis = bsp->vis + numclusters * rowsize * DVIS_COUNT;
+    bsp->tempvis = bsp->novis + rowsize;
+
+    memset(bsp->novis, 0xff, rowsize * sizeof(visrow_t));
 
     for (int i = 0; i < numclusters; i++) {
-        for (int j = 0; j < 2; j++) {
+        for (int j = 0; j < DVIS_COUNT; j++) {
             uint32_t bitofs = BSP_Long();
             BSP_ENSURE(bitofs >= hdrsize && bitofs < count, "Bad bitofs");
-            bsp->vis->bitofs[i][j] = bitofs;
+            BSP_DecompressVis(bsp, data + bitofs, data + count, BSP_CLUSTER_VIS(bsp, i, j));
         }
     }
-
-    memcpy(bsp->vis->bitofs + numclusters, in, count - hdrsize);
 
     return Q_ERR_SUCCESS;
 }
@@ -474,7 +511,7 @@ BSP_LOAD(Leafs)
             out->cluster = 0;
         } else {
             // validate cluster
-            BSP_ENSURE(cluster < bsp->vis->numclusters, "Bad cluster");
+            BSP_ENSURE(cluster < bsp->numclusters, "Bad cluster");
             out->cluster = cluster;
         }
 

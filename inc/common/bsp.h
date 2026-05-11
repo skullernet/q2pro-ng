@@ -24,17 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/hunk.h"
 #include "format/bsp.h"
 
-// maximum size of a PVS row, in bytes
-#define VIS_MAX_BYTES   (MAX_MAP_CLUSTERS >> 3)
-
 // take advantage of 64-bit systems
-#define VIS_FAST_LONGS(visrowsize) \
-    (((visrowsize) + sizeof(size_t) - 1) / sizeof(size_t))
-
-typedef union {
-    byte    b[VIS_MAX_BYTES];
-    size_t  l[VIS_FAST_LONGS(VIS_MAX_BYTES)];
-} visrow_t;
+typedef size_t visrow_t;
 
 typedef char material_t[16];
 
@@ -257,9 +248,10 @@ typedef struct {
     int             numbrushes;
     mbrush_t        *brushes;
 
-    int             numvisibility;
-    int             visrowsize;
-    dvis_t          *vis;
+    int             numvisibility;  // in bytes
+    int             visrowsize;     // in visrow_t
+    int             numclusters;
+    visrow_t        *vis, *novis, *tempvis;
 
     int             numentitychars;
     char            *entitystring;
@@ -329,7 +321,7 @@ const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uin
 bool BSP_GetSurfaceInfo(const bsp_t *bsp, unsigned surf_id, surface_info_t *info);
 bool BSP_GetMaterialInfo(const bsp_t *bsp, unsigned material_id, material_info_t *info);
 
-void BSP_ClusterVis(const bsp_t *bsp, visrow_t *mask, int cluster, int vis);
+const visrow_t *BSP_ClusterVis(const bsp_t *bsp, unsigned cluster, dvis_t vis);
 const mleaf_t *BSP_PointLeaf(const mnode_t *node, vec3_t p);
 
 void BSP_Init(void);
