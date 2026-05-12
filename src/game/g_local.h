@@ -2549,7 +2549,7 @@ static inline const char *vtoa(vec3_t p)
 
 static inline vec3_t G_EntityCenter(edict_t *ent)
 {
-    return ent->r.linked ? Box3_Center(ent->r.absbox) : ent->s.origin;
+    return Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
 }
 
 static inline float G_EntityScale(edict_t *ent)

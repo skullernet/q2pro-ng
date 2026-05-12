@@ -18,7 +18,7 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
     vec3_t inflictor_center = G_EntityCenter(inflictor);
 
     // bmodels need special checking because their origin is 0,0,0
-    if (targ->r.solid == SOLID_BSP) {
+    if (targ->r.solid == SOLID_BSP && targ->r.linked) {
         vec3_t end = Box3_ClampPoint(targ->r.absbox, inflictor_center);
         if (G_TraceLine(inflictor_center, end, inflictor->s.number, mask).fraction == 1.0f)
             return true;
@@ -694,7 +694,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         if (ent->r.solid == SOLID_BSP && ent->r.linked)
             v = Box3_ClampPoint(ent->r.absbox, inflictor_center);
         else
-            v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+            v = G_EntityCenter(ent);
         points = damage - 0.5f * Vec3_Distance(inflictor_center, v);
         if (ent == attacker)
             points = points * 0.5f;
@@ -707,7 +707,10 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 
         // [Paril-KEX] use closest point on bbox to explosion position
         // to spawn damage effect
-        v = Box3_ClampPoint(ent->r.absbox, inflictor_center);
+        if (ent->r.linked)
+            v = Box3_ClampPoint(ent->r.absbox, inflictor_center);
+        else
+            v = inflictor_center;
 
         T_Damage(ent, inflictor, attacker, dir, v, DirToByte(dir), points, points, dflags | DAMAGE_RADIUS, mod);
     }

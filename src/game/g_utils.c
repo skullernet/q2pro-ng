@@ -66,9 +66,6 @@ findradius (origin, radius)
 */
 edict_t *findradius(edict_t *from, vec3_t org, float rad)
 {
-    vec3_t eorg;
-    vec3_t mid;
-
     if (!from)
         from = g_edicts;
     else
@@ -78,9 +75,7 @@ edict_t *findradius(edict_t *from, vec3_t org, float rad)
             continue;
         if (from->r.solid == SOLID_NOT)
             continue;
-        mid = Box3_Center(from->r.box);
-        eorg = Vec3_Add(from->s.origin, mid);
-        if (Vec3_Distance(eorg, org) > rad)
+        if (Vec3_DistanceSquared(G_EntityCenter(from), org) > rad * rad)
             continue;
         return from;
     }

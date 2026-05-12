@@ -476,7 +476,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
 
     vec3_t dir = self->movedir;
     if (self->movetarget)
-        dir = Vec3_Direction(self->movetarget->s.origin, other->s.origin);
+        dir = Vec3_Direction(G_EntityCenter(self->movetarget), other->s.origin);
 
     if (strcmp(other->classname, "grenade") == 0 || other->health > 0) {
         if (self->spawnflags & SPAWNFLAG_PUSH_ADDITIVE) {
@@ -524,7 +524,7 @@ void USE(trigger_push_use)(edict_t *self, edict_t *other, edict_t *activator)
 // RAFAEL
 void trigger_push_active(edict_t *self);
 
-static void trigger_effect(edict_t *self)
+static void trigger_push_effect(edict_t *self)
 {
     vec3_t origin;
     int    i;
@@ -553,7 +553,7 @@ void THINK(trigger_push_active)(edict_t *self)
 {
     if (self->timestamp > level.time) {
         self->nextthink = level.time + HZ(10);
-        trigger_effect(self);
+        trigger_push_effect(self);
     } else {
         self->touch = NULL;
         self->think = trigger_push_inactive;

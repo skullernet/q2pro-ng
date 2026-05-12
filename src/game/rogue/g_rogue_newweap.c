@@ -1152,7 +1152,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
         return;
     }
 
-    vec3_t center = Box3_Center(self->enemy->r.absbox);
+    vec3_t center = G_EntityCenter(self->enemy);
 
     edict_t *owner = &g_edicts[self->r.ownernum];
     T_Damage(self->enemy, self, owner, vec3_origin, center, DIRTOBYTE_UP,
@@ -1261,10 +1261,8 @@ void THINK(tracker_fly)(edict_t *self)
     if (self->enemy->client) {
         dest = self->enemy->s.origin;
         dest.z += self->enemy->viewheight;
-    } else if (!self->r.linked) { // paranoia
-        dest = self->enemy->s.origin;
     } else {
-        dest = Box3_Center(self->enemy->r.absbox);
+        dest = G_EntityCenter(self->enemy);
     }
 
     dir = Vec3_Direction(dest, self->s.origin);

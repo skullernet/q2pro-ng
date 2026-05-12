@@ -721,7 +721,7 @@ void THINK(bfg_explode)(edict_t *self)
                 continue;
             // ZOID
 
-            centroid = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
+            centroid = G_EntityCenter(ent);
             dist = Vec3_Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
@@ -812,7 +812,7 @@ void THINK(bfg_think)(edict_t *self)
             continue;
         // ZOID
 
-        point = Box3_Center(ent->r.absbox);
+        point = G_EntityCenter(ent);
 
         // [Paril-KEX] don't fire a laser if we're blocked by the world
         if (G_TraceLine(self->s.origin, point, ENTITYNUM_NONE, MASK_SOLID | CONTENTS_PROJECTILECLIP).fraction < 1.0f)

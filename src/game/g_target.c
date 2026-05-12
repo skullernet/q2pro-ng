@@ -755,7 +755,7 @@ void THINK(target_laser_think)(edict_t *self)
 
     if (self->enemy) {
         vec3_t last_movedir = self->movedir;
-        vec3_t point = Box3_Center(self->enemy->r.absbox);
+        vec3_t point = G_EntityCenter(self->enemy);
         self->movedir = Vec3_Direction(point, self->s.origin);
         if (!Vec3_IsEqual(self->movedir, last_movedir))
             self->spawnflags |= SPAWNFLAG_LASER_ZAP;

@@ -32,7 +32,6 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
 {
     float    points;
     edict_t *ent = NULL;
-    vec3_t   v;
     vec3_t   dir;
     float    len;
     float    killzone, killzone2;
@@ -53,8 +52,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
         if (!(ent->client || (ent->r.svflags & SVF_MONSTER) || (ent->flags & FL_DAMAGEABLE)))
             continue;
 
-        v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
-        len = Vec3_Distance(inflictor->s.origin, v);
+        len = Vec3_Distance(inflictor->s.origin, G_EntityCenter(ent));
         if (len <= killzone) {
             if (ent->client)
                 ent->flags |= FL_NOGIB;

@@ -420,7 +420,7 @@ void THINK(turret_brain_think)(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
     }
 
-    target = Box3_Center(self->enemy->r.absbox);
+    target = G_EntityCenter(self->enemy);
 
     if (!(self->spawnflags & SPAWNFLAG_TURRET_BRAIN_IGNORE_SIGHT)) {
         trace = G_TraceLine(self->target_ent->s.origin, target, self->target_ent->s.number, MASK_SHOT);

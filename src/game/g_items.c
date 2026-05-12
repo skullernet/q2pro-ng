@@ -1005,7 +1005,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
         dropped->s.origin = G_Trace(ent->s.origin, dropped->s.origin, dropped->r.box, ent->s.number, CONTENTS_SOLID).endpos;
     } else {
         AngleVectors(ent->s.angles, &forward, NULL, NULL);
-        dropped->s.origin = Box3_Center(ent->r.absbox);
+        dropped->s.origin = G_EntityCenter(ent);
     }
 
     G_FixStuckObject(dropped, dropped->s.origin);

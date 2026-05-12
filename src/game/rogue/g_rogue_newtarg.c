@@ -47,7 +47,7 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     if (self->enemy) {
-        point = Box3_Center(self->enemy->r.absbox);
+        point = G_EntityCenter(self->enemy);
         self->movedir = Vec3_Direction(point, self->s.origin);
     }
 
