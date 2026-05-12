@@ -792,6 +792,9 @@ void CL_Changing_f(void)
         Cmd_ExecTrigger("#cl_changelevel");
     }
 
+    if (cge)
+        cge->ClearState();
+
     SCR_BeginLoadingPlaque();
 
     cls.state = ca_connected;   // not active anymore, but not disconnected
