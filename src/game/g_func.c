@@ -633,9 +633,10 @@ void SP_func_plat(edict_t *ent)
         ent->moveinfo.state = STATE_UP;
     } else {
         ent->s.origin = ent->pos2;
-        trap_LinkEntity(ent);
         ent->moveinfo.state = STATE_BOTTOM;
     }
+
+    trap_LinkEntity(ent);
 
     G_SetMoveinfoParams(ent);
 
@@ -2395,6 +2396,9 @@ void SP_func_door_secret(edict_t *ent)
 
     G_SetMoveinfoSounds(ent, "doors/dr1_strt.wav", "doors/dr1_mid.wav", "doors/dr1_end.wav");
 
+    AngleVectors(ent->s.angles, &forward, &right, &up);
+    ent->s.angles = vec3_origin;
+
     ent->movetype = MOVETYPE_PUSH;
     ent->r.solid = SOLID_BSP;
     ent->r.svflags |= SVF_DOOR;
@@ -2421,8 +2425,6 @@ void SP_func_door_secret(edict_t *ent)
         ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed * 0.1f;
 
     // calculate positions
-    AngleVectors(ent->s.angles, &forward, &right, &up);
-    ent->s.angles = vec3_origin;
     side = 1.0f - ((ent->spawnflags & SPAWNFLAG_SECRET_1ST_LEFT) ? 2 : 0);
     if (ent->spawnflags & SPAWNFLAG_SECRET_1ST_DOWN)
         width = fabsf(Vec3_Dot(up, ent->r.size));

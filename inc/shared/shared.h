@@ -1080,6 +1080,7 @@ size_t Q_scnprintf(char *dest, size_t size, const char *fmt, ...) q_printf(3, 4)
 
 char    *va(const char *format, ...) q_printf(1, 2);
 char    *vtos(vec3_t v);
+char    *btos(box3_t b);
 
 //=============================================
 

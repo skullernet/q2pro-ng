@@ -1123,6 +1123,7 @@ void SP_trigger_fog(edict_t *self)
         self->delay = 0.5f;
 
     self->touch = trigger_fog_touch;
+    trap_LinkEntity(self);
 }
 
 /*QUAKED trigger_coop_relay (.5 .5 .5) ? AUTO_FIRE

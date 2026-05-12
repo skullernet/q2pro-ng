@@ -157,7 +157,7 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
     num_clusters = 0;
 
     if (num_leafs == q_countof(leafs) && sv.state == ss_loading)
-        Com_DPrintf("Object touching too many leafs at %s\n", vtos(Box3_Center(ent->r.absbox)));
+        Com_DPrintf("Object %d touching %d leafs at %s\n", SV_NumForEdict(ent), num_leafs, btos(ent->r.absbox));
 
     // set areas
     for (i = 0; i < num_leafs; i++) {
@@ -169,7 +169,7 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
             // but nothing should evern need more than that
             if (ent->r.areanum && ent->r.areanum != area) {
                 if (ent->r.areanum2 && ent->r.areanum2 != area && sv.state == ss_loading)
-                    Com_DPrintf("Object touching 3 areas at %s\n", vtos(Box3_Center(ent->r.absbox)));
+                    Com_DPrintf("Object %d touching 3 areas at %s\n", SV_NumForEdict(ent), btos(ent->r.absbox));
                 ent->r.areanum2 = area;
             } else
                 ent->r.areanum = area;
@@ -221,8 +221,7 @@ static uint32_t SV_PackSolid(const edict_t *ent)
         box3_t box2 = MSG_UnpackSolid(solid);
 
         if (!Box3_IsEqual(box, box2))
-            Com_LPrintf(PRINT_DEVELOPER, "Entity %d has bad bbox: %s %s\n",
-                        SV_NumForEdict(ent), vtos(ent->r.box.mins), vtos(ent->r.box.maxs));
+            Com_LPrintf(PRINT_DEVELOPER, "Entity %d has bad bbox: %s\n", SV_NumForEdict(ent), btos(ent->r.box));
     }
 #endif
 

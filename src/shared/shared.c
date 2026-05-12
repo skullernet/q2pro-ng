@@ -631,6 +631,11 @@ char *vtos(vec3_t v)
     return str[index];
 }
 
+char *btos(box3_t b)
+{
+    return va("%s %s", vtos(b.mins), vtos(b.maxs));
+}
+
 unsigned com_linenum;
 
 /*
