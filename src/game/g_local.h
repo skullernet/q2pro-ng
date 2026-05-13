@@ -1308,10 +1308,6 @@ void *G_Malloc(size_t len);
 char *G_CopyString(const char *in);
 void G_MemoryInfo_f(void);
 
-// ROGUE
-edict_t *findradius2(edict_t *from, vec3_t org, float rad);
-// ROGUE
-
 void G_PlayerNotifyGoal(edict_t *player);
 
 typedef enum {

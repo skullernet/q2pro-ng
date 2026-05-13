@@ -13,7 +13,6 @@ game_src += files(
   'g_rogue_phys.c',
   'g_rogue_spawn.c',
   'g_rogue_sphere.c',
-  'g_rogue_utils.c',
   'm_rogue_carrier.c',
   'm_rogue_stalker.c',
   'm_rogue_turret.c',
