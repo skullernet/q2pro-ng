@@ -675,7 +675,8 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 T_RadiusDamage
 ============
 */
-void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, damageflags_t dflags, mod_t mod)
+void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore,
+                    const char *ignoreclass, float radius, damageflags_t dflags, mod_t mod)
 {
     float    points;
     edict_t *ent = NULL;
@@ -689,6 +690,8 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
         if (ent == ignore)
             continue;
         if (!ent->takedamage)
+            continue;
+        if (ignoreclass && !strcmp(ent->classname, ignoreclass))
             continue;
 
         if (ent->r.solid == SOLID_BSP && ent->r.linked)

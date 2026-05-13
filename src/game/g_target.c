@@ -407,7 +407,7 @@ void THINK(target_explosion_explode)(edict_t *self)
 
     G_AddEvent(self, EV_EXPLOSION1, 0);
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
+    T_RadiusDamage(self, self->activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     save = self->delay;
     self->delay = 0;
@@ -540,7 +540,7 @@ void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
     G_AddEvent(self, self->sounds, self->count);
 
     if (self->dmg)
-        T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_SPLASH);
+        T_RadiusDamage(self, activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_SPLASH);
 }
 
 void SP_target_splash(edict_t *self)

@@ -212,7 +212,7 @@ void MONSTERINFO_MELEE(spawn_melee)(edict_t *self)
 void DIE(spawn_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     self->s.frame = FRAME_death1;
-    T_RadiusClassDamage(self, attacker, 500, self->classname, 100, MOD_EXPLOSIVE);
+    T_RadiusDamage(self, attacker, 500, self, self->classname, 100, DAMAGE_NONE, MOD_EXPLOSIVE);
     G_BecomeEvent(self, EV_ROCKET_EXPLOSION, 0);
 }
 

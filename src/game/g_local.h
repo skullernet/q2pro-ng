@@ -1416,12 +1416,11 @@ bool CanDamage(edict_t *targ, edict_t *inflictor);
 bool CheckTeamDamage(edict_t *targ, edict_t *attacker);
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point,
               int normal, int damage, int knockback, damageflags_t dflags, mod_t mod);
-void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius,
-                    damageflags_t dflags, mod_t mod);
+void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore,
+                    const char *ignoreclass, float radius, damageflags_t dflags, mod_t mod);
 
 // ROGUE
 void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore, float radius, mod_t mod);
-void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, const char *ignoreClass, float radius, mod_t mod);
 void cleanupHealTarget(edict_t *ent);
 // ROGUE
 

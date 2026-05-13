@@ -103,7 +103,7 @@ void TOUCH(shalrath_pod_touch)(edict_t *self, edict_t *other, const trace_t *tr,
     if (!strncmp(other->classname, CONST_STR_LEN("monster_zombie"))) // decino: According to shalrath.qc
         T_Damage(other, self, owner, vec3_origin, other->s.origin, 0, 110, 110, DAMAGE_NONE, MOD_UNKNOWN);
 
-    T_RadiusDamage(self, owner, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
+    T_RadiusDamage(self, owner, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     G_BecomeEvent(self, EV_ROCKET_EXPLOSION, 0);
 }

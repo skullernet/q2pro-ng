@@ -553,7 +553,7 @@ void DIE(mutant_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 {
     if (self->style) {
         G_AddEvent(self, EV_ROCKET_EXPLOSION, 0);
-        T_RadiusClassDamage(self, attacker, 500, self->classname, 100, MOD_EXPLOSIVE);
+        T_RadiusDamage(self, attacker, 500, self, self->classname, 100, DAMAGE_NONE, MOD_EXPLOSIVE);
         ThrowGibs(self, damage, mutant_gibs_spawn);
         self->deadflag = true;
         return;

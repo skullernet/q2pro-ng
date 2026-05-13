@@ -372,7 +372,7 @@ static void Grenade_ExplodeReal(edict_t *ent, edict_t *other, vec3_t normal)
         mod = MOD_HG_SPLASH;
     else
         mod = MOD_G_SPLASH;
-    T_RadiusDamage(ent, owner, ent->dmg, other, ent->dmg_radius, DAMAGE_NONE, mod);
+    T_RadiusDamage(ent, owner, ent->dmg, other, NULL, ent->dmg_radius, DAMAGE_NONE, mod);
 
     ent->s.origin = Vec3_Add(ent->s.origin, normal);
     if (ent->waterlevel)
@@ -554,7 +554,7 @@ void TOUCH(rocket_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
             ThrowGib(ent, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
     }
 
-    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_NONE, MOD_R_SPLASH);
+    T_RadiusDamage(ent, owner, ent->radius_dmg, other, NULL, ent->dmg_radius, DAMAGE_NONE, MOD_R_SPLASH);
 
     ent->s.origin = Vec3_Add(ent->s.origin, tr->plane.normal);
     G_BecomeEvent(ent, ent->waterlevel ? EV_ROCKET_EXPLOSION_WATER : EV_ROCKET_EXPLOSION, 0);
@@ -756,7 +756,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     // core explosion - prevents firing it into the wall/floor
     if (other->takedamage)
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, 200, 0, DAMAGE_ENERGY, MOD_BFG_BLAST);
-    T_RadiusDamage(self, owner, 200, other, 100, DAMAGE_ENERGY, MOD_BFG_BLAST);
+    T_RadiusDamage(self, owner, 200, other, NULL, 100, DAMAGE_ENERGY, MOD_BFG_BLAST);
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/bfg__x1b.wav"), 1, ATTN_NORM);
     self->r.solid = SOLID_NOT;

@@ -150,7 +150,7 @@ void DIE(doppleganger_die)(edict_t *self, edict_t *inflictor, edict_t *attacker,
     self->takedamage = DAMAGE_NONE;
 
     // [Paril-KEX]
-    T_RadiusDamage(self, self->teammaster, 160, self, 140, DAMAGE_NONE, MOD_DOPPLE_EXPLODE);
+    T_RadiusDamage(self, self->teammaster, 160, self, NULL, 140, DAMAGE_NONE, MOD_DOPPLE_EXPLODE);
 
     if (self->teamchain)
         BecomeExplosion1(self->teamchain);

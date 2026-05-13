@@ -516,7 +516,7 @@ void DIE(insane_spawn_die)(edict_t *self, edict_t *inflictor, edict_t *attacker,
 {
     G_AddEvent(self, EV_ROCKET_EXPLOSION, 0);
 
-    T_RadiusClassDamage(self, attacker, 500, self->classname, 100, MOD_EXPLOSIVE);
+    T_RadiusDamage(self, attacker, 500, self, self->classname, 100, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     G_StartSound(self, CHAN_VOICE, G_SoundIndex("misc/udeath.wav"), 1, ATTN_IDLE);
 

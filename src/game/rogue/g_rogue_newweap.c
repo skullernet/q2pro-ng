@@ -88,7 +88,7 @@ static void Prox_ExplodeReal(edict_t *ent, edict_t *other, vec3_t normal)
         G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage3.wav"), 1, ATTN_NORM);
 
     ent->takedamage = false;
-    T_RadiusDamage(ent, owner, ent->dmg, other, PROX_DAMAGE_RADIUS, DAMAGE_NONE, MOD_PROX);
+    T_RadiusDamage(ent, owner, ent->dmg, other, NULL, PROX_DAMAGE_RADIUS, DAMAGE_NONE, MOD_PROX);
 
     ent->s.origin = Vec3_Add(ent->s.origin, normal);
     G_BecomeEvent(ent, ent->groundentity ? EV_GRENADE_EXPLOSION : EV_ROCKET_EXPLOSION, 0);
@@ -1096,14 +1096,14 @@ void TOUCH(blaster2_touch)(edict_t *self, edict_t *other, const trace_t *tr, boo
         damagestat = owner->takedamage;
         owner->takedamage = false;
         if (self->dmg >= 5)
-            T_RadiusDamage(self, owner, self->dmg * 2, other, self->dmg_radius, DAMAGE_ENERGY, MOD_UNKNOWN);
+            T_RadiusDamage(self, owner, self->dmg * 2, other, NULL, self->dmg_radius, DAMAGE_ENERGY, MOD_UNKNOWN);
         T_Damage(other, self, owner, self->velocity, self->s.origin, tr->plane.dir, self->dmg, 1, DAMAGE_ENERGY, mod);
         owner->takedamage = damagestat;
         G_FreeEdict(self);
     } else {
         // PMM - yeowch this will get expensive
         if (self->dmg >= 5)
-            T_RadiusDamage(self, owner, self->dmg * 2, owner, self->dmg_radius, DAMAGE_ENERGY, MOD_UNKNOWN);
+            T_RadiusDamage(self, owner, self->dmg * 2, owner, NULL, self->dmg_radius, DAMAGE_ENERGY, MOD_UNKNOWN);
         G_BecomeEvent(self, EV_BLASTER2, tr->plane.dir);
     }
 }

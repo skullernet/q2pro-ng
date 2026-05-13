@@ -200,7 +200,7 @@ void TOUCH(plasma_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool o
     if (other->takedamage)
         T_Damage(other, ent, owner, ent->velocity, ent->s.origin, tr->plane.dir, ent->dmg, ent->dmg, DAMAGE_ENERGY, MOD_PHALANX);
 
-    T_RadiusDamage(ent, owner, ent->radius_dmg, other, ent->dmg_radius, DAMAGE_ENERGY, MOD_PHALANX);
+    T_RadiusDamage(ent, owner, ent->radius_dmg, other, NULL, ent->dmg_radius, DAMAGE_ENERGY, MOD_PHALANX);
 
     ent->s.origin = Vec3_Add(ent->s.origin, tr->plane.normal);
     G_BecomeEvent(ent, EV_EXPLOSION1, 0);

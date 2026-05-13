@@ -769,7 +769,7 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
     self->takedamage = false;
 
     if (self->dmg)
-        T_RadiusDamage(self, attacker, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
+        T_RadiusDamage(self, attacker, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     vec3_t dir = Vec3_Direction(inflictor->s.origin, self->s.origin);
     self->velocity = Vec3_Scale(dir, 150);
@@ -946,7 +946,7 @@ void THINK(barrel_explode)(edict_t *self)
 {
     self->takedamage = false;
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BARREL);
+    T_RadiusDamage(self, self->activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BARREL);
 
     ThrowGibs(self, 1.5f * self->dmg / 200, barrel_gibs);
 
@@ -1371,7 +1371,7 @@ void TOUCH(misc_viper_bomb_touch)(edict_t *self, edict_t *other, const trace_t *
     G_UseTargets(self, self->activator);
 
     self->s.origin.z = self->r.absbox.mins.z + 1;
-    T_RadiusDamage(self, self, self->dmg, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BOMB);
+    T_RadiusDamage(self, self, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_BOMB);
     BecomeExplosion2(self);
 }
 

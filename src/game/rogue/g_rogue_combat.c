@@ -89,36 +89,5 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
     }
 }
 
-/*
-============
-T_RadiusClassDamage
-
-Like T_RadiusDamage, but ignores anything with classname=ignoreClass
-============
-*/
-void T_RadiusClassDamage(edict_t *inflictor, edict_t *attacker, float damage, const char *ignoreClass, float radius, mod_t mod)
-{
-    float    points;
-    edict_t *ent = NULL;
-    vec3_t   v;
-    vec3_t   dir;
-
-    while ((ent = findradius(ent, inflictor->s.origin, radius)) != NULL) {
-        if (ent->classname && !strcmp(ent->classname, ignoreClass))
-            continue;
-        if (!ent->takedamage)
-            continue;
-
-        v = Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
-        points = damage - 0.5f * Vec3_Distance(inflictor->s.origin, v);
-        if (ent == attacker)
-            points = points * 0.5f;
-        if (points > 0 && CanDamage(ent, inflictor)) {
-            dir = Vec3_Sub(ent->s.origin, inflictor->s.origin);
-            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
-        }
-    }
-}
-
 // ROGUE
 // ********************

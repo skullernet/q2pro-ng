@@ -190,7 +190,7 @@ static void sphere_touch(edict_t *self, edict_t *other, const trace_t *tr, mod_t
             T_Damage(other, self, owner, self->velocity, self->s.origin,
                      tr->plane.dir, 10000, 1, DAMAGE_DESTROY_ARMOR, mod);
         } else {
-            T_RadiusDamage(self, owner, 512, owner, 256, DAMAGE_NONE, mod);
+            T_RadiusDamage(self, owner, 512, owner, NULL, 256, DAMAGE_NONE, mod);
         }
     }
 
