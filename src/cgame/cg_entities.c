@@ -68,6 +68,8 @@ static void CG_InitEntity(centity_t *ent, const entity_state_t *state)
     ent->prev = *state;
     ent->prev_frame = ent->curr_frame = state->frame;
     ent->anim_start = cg.oldframe->servertime;
+    if (state->renderfx & RF_OLD_FRAME_LERP)
+        ent->prev_frame = state->old_frame;
 }
 
 static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)

@@ -316,6 +316,7 @@ static const netfield_t entity_state_fields[] = {
     NETF(solid, NETF_LEB),
     NETF(morefx, NETF_LEB),
     NETF(frame, NETF_LEB),
+    NETF(old_frame, NETF_LEB),
     NETF(sound, NETF_LEB),
     NETF(event[0], 8),
     NETF(event[1], 8),

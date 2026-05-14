@@ -1579,7 +1579,7 @@ typedef struct {
     vec3_t      old_origin;     // for lerping
     uint32_t    modelindex;
     uint32_t    modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
-    uint32_t    frame;
+    uint32_t    frame, old_frame;
     uint32_t    skinnum;
     uint32_t    effects;
     uint32_t    renderfx;

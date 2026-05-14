@@ -341,6 +341,7 @@ static const save_field_t edict_t_fields[] = {
     F(s.modelindex3),
     F(s.modelindex4),
     F(s.frame),
+    F(s.old_frame),
     F(s.skinnum),
     F(s.effects),
     F(s.renderfx),

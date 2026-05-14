@@ -180,15 +180,14 @@ void MONSTERINFO_IDLE(chthon_idle)(edict_t *self)
 }
 #endif
 
-static void chthon_rise2_think(edict_t *self)
+static void chthon_rise3_think(edict_t *self)
 {
     G_StartSound(self, CHAN_BODY, sound_out1, 0.5f, ATTN_NONE);
+    self->s.renderfx &= ~RF_OLD_FRAME_LERP;
 }
 
 static const mframe_t chthon_frames_rise[] = {
-    { ai_turn }, // FRAME_rise1
-    { ai_turn }, // FRAME_rise2
-    { ai_turn, 0, chthon_rise2_think }, // FRAME_rise3
+    { ai_turn, 0, chthon_rise3_think }, // FRAME_rise3
     { ai_turn }, // FRAME_rise4
     { ai_turn }, // FRAME_rise5
     { ai_turn }, // FRAME_rise6
@@ -204,7 +203,7 @@ static const mframe_t chthon_frames_rise[] = {
     { ai_turn }, // FRAME_rise16
     { ai_turn }  // FRAME_rise17
 };
-const mmove_t MMOVE_T(chthon_move_rise) = { FRAME_rise1, FRAME_rise17, chthon_frames_rise, chthon_attack };
+const mmove_t MMOVE_T(chthon_move_rise) = { FRAME_rise3, FRAME_rise17, chthon_frames_rise, chthon_attack };
 
 static void chthon_dead(edict_t *self)
 {
@@ -230,6 +229,9 @@ void MONSTERINFO_STAND(chthon_stand)(edict_t *self)
 {
     G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NONE);
     M_SetAnimation(self, &chthon_move_rise);
+    self->s.old_frame = FRAME_rise1;
+    self->s.frame = FRAME_rise2;
+    self->s.renderfx |= RF_OLD_FRAME_LERP;
 }
 
 void MONSTERINFO_WALK(chthon_walk)(edict_t *self)
