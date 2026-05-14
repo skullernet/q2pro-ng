@@ -448,13 +448,20 @@ static void fiend_death_sound(edict_t *self)
     G_StartSound(self, CHAN_VOICE, SOUND.death, 1, ATTN_NORM);
 }
 
+static void fiend_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 static const mframe_t fiend_frames_die[] = {
     { ai_move },
     { ai_move, 0, fiend_death_sound },
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, fiend_shrink },
     { ai_move },
     { ai_move },
     { ai_move }

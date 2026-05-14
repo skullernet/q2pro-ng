@@ -513,6 +513,13 @@ static void hellknight_dead(edict_t *self)
     monster_dead(self);
 }
 
+static void hellknight_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 // Death (1)
 static const mframe_t hellknight_frames_die1[] = {
     { ai_move },
@@ -521,7 +528,7 @@ static const mframe_t hellknight_frames_die1[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, hellknight_shrink },
     { ai_move, 10 },
     { ai_move, 11 },
     { ai_move },
@@ -536,7 +543,7 @@ static const mframe_t hellknight_frames_die2[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, hellknight_shrink },
     { ai_move },
     { ai_move },
     { ai_move },

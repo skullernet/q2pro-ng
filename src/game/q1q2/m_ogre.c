@@ -365,15 +365,22 @@ static void ogre_death_sound(edict_t *self)
     G_StartSound(self, CHAN_VOICE, SOUND.death, 1, ATTN_NORM);
 }
 
+static void ogre_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 static const mframe_t ogre_frames_death1[] = {
     { ai_move },
     { ai_move, 0, ogre_death_sound },
-    { ai_move, 0, ogre_dead },
     { ai_move },
     { ai_move },
     { ai_move },
     { ai_move },
     { ai_move },
+    { ai_move, 0, ogre_shrink },
     { ai_move },
     { ai_move },
     { ai_move },
@@ -386,10 +393,10 @@ const mmove_t MMOVE_T(ogre_move_death1) = { FRAME_death01, FRAME_death14, ogre_f
 static const mframe_t ogre_frames_death2[] = {
     { ai_move },
     { ai_move, 5, ogre_death_sound },
-    { ai_move, 0, ogre_dead },
+    { ai_move, 0 },
     { ai_move, 1 },
     { ai_move, 3 },
-    { ai_move, 7 },
+    { ai_move, 7, ogre_shrink },
     { ai_move, 25 },
     { ai_move },
     { ai_move },

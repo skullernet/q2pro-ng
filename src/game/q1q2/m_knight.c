@@ -209,13 +209,20 @@ static void knight_dead(edict_t *self)
     monster_dead(self);
 }
 
+static void knight_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 // Death (1)
 static const mframe_t knight_frames_die1[] = {
     { ai_move },
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, knight_shrink },
     { ai_move },
     { ai_move },
     { ai_move },
@@ -231,7 +238,7 @@ static const mframe_t knight_frames_die2[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, knight_shrink },
     { ai_move },
     { ai_move },
     { ai_move },

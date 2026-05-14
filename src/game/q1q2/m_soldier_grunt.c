@@ -349,12 +349,19 @@ static void grunt_dead(edict_t *self)
     monster_dead(self);
 }
 
+static void grunt_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 // Death (1)
 static const mframe_t grunt_frames_death1[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, grunt_shrink },
     { ai_move },
     { ai_move },
     { ai_move },
@@ -370,7 +377,7 @@ static const mframe_t grunt_frames_death2[] = {
     { ai_move, -5 },
     { ai_move, -4 },
     { ai_move, -13 },
-    { ai_move, -3 },
+    { ai_move, -3, grunt_shrink },
     { ai_move, -4 },
     { ai_move },
     { ai_move },

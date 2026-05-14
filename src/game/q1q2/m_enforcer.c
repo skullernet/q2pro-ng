@@ -332,12 +332,19 @@ static void enforcer_dead(edict_t *self)
     monster_dead(self);
 }
 
+static void enforcer_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 8 * G_EntityScale(self);
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 // Death (1)
 static const mframe_t enforcer_frames_death1[] = {
     { ai_move, 0 },
     { ai_move, 0 },
     { ai_move, 0 },
-    { ai_move, 14 },
+    { ai_move, 14, enforcer_shrink },
 
     { ai_move, 2 },
     { ai_move, 0 },
@@ -359,7 +366,7 @@ static const mframe_t enforcer_frames_death2[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, enforcer_shrink },
 
     { ai_move },
     { ai_move },

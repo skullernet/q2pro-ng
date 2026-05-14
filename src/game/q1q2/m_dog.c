@@ -245,13 +245,20 @@ static void dog_dead(edict_t *self)
     monster_dead(self);
 }
 
+static void dog_shrink(edict_t *self)
+{
+    self->r.box.maxs.z = 0;
+    self->r.svflags |= SVF_DEADMONSTER;
+    trap_LinkEntity(self);
+}
+
 // Death (1)
 static const mframe_t dog_frames_death1[] = {
     { ai_move },
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, dog_shrink },
     { ai_move },
     { ai_move },
     { ai_move },
@@ -265,7 +272,7 @@ static const mframe_t dog_frames_death2[] = {
     { ai_move },
     { ai_move },
     { ai_move },
-    { ai_move },
+    { ai_move, 0, dog_shrink },
     { ai_move },
     { ai_move },
     { ai_move },
