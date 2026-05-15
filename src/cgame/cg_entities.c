@@ -179,10 +179,10 @@ static void CG_DeltaPlayerstate(void)
 
     // hit markers
     if (ps->stats[STAT_HITS] > ops->stats[STAT_HITS]) {
-        if (cg_hit_markers.integer > 0) {
+        if (cg_hit_markers.integer >= 1) {
             cg.hit_marker_count = ps->stats[STAT_HITS] - ops->stats[STAT_HITS];
             cg.hit_marker_time = cgs.realtime;
-            if (cg_hit_markers.integer > 1)
+            if (cg_hit_markers.integer == 1)
                 trap_S_StartSound(ps->clientnum, CHAN_HIT, cgs.sounds.hit_marker, 1, ATTN_NONE, 0);
         }
     }
