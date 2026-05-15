@@ -68,8 +68,8 @@ begin video
     //title "Video Setup"
     banner m_banner_video
     values "video mode" vid_fullscreen windowed $$vid_modelist
-    values "fov scaling" cl_adjustfov vert- hor+
-    toggle "vertical sync" gl_swapinterval
+    values "fov scaling" cg_adjustfov vert- hor+
+    pairs "vertical sync" gl_swapinterval "allow late swaps" -1 no 0 yes 1
     pairs "anti-aliasing" gl_multisamples no 0 "2x MSAA" 2 "4x MSAA" 4 "8x MSAA" 8
     range "texture gamma" vid_gamma 1.3 0.3
     toggle "hardware gamma" vid_hwgamma
@@ -81,10 +81,6 @@ begin video
         trilinear GL_LINEAR_MIPMAP_LINEAR
     pairs "anisotropic filter" gl_anisotropy no 1 2x 2 4x 4 8x 8 16x 16
     range "texture saturation" gl_saturation 0 1
-    pairs "texture intensity" intensity 1x 1 2x 2 3x 3
-    range "lightmap saturation" gl_coloredlightmaps 0 1
-    range "lightmap brightness" gl_brightness 0 0.3
-    values "rendering backend" gl_shaders legacy shaders
 end
 
 begin options
@@ -98,33 +94,35 @@ begin options
     action "sound setup" pushmenu sound
     action "effects setup" pushmenu effects
     action "screen setup" pushmenu screen
-    action "download options" pushmenu downloads
+    //action "download options" pushmenu downloads
     action "address book" pushmenu addressbook
 end
 
 begin sound
     title "Sound Setup"
-    values "sound engine" s_enable "no sound" "software" "OpenAL"
-    range "sound latency" s_mixahead 0.05 0.2
+    values "sound backend" s_enable "Disabled" "Miniaudio" "OpenAL"
     range "sound volume" s_volume 0 1
     range "music volume" ogg_volume 0 1
     toggle "enable music" ogg_enable
     toggle "shuffle tracks" ogg_shuffle
     toggle "underwater effect" s_underwater
-    values "ambient sounds" s_ambient "no" "yes" "only player's own"
-    values "chat beep" cl_chat_sound "disabled" "default" "alternative"
+    toggle "reverb effect" s_reverb
+    range "doppler factor" s_doppler_factor 0 1
+    values "looped sounds" cg_loopsounds "no" "yes" "only visible ents" "only players own"
+    toggle "sound merging" s_merge_looping
+    values "chat beep" cg_chat_sound "disabled" "default" "alternative"
 end
 
 begin railtrail
     title "Railgun Trail Setup"
-    values "rail trail type" cl_railtrail_type \
+    values "rail trail type" cg_railtrail_type \
         "default" "core only" "core and spiral"
-    range "rail trail duration" cl_railtrail_time 0.1 3.0 0.1
-    range "core width" cl_railcore_width 1 6 1
-    range "spiral radius" cl_railspiral_radius 1 6 1
-    strings "core color" cl_railcore_color \
+    range "rail trail duration" cg_railtrail_time 0.1 3.0 0.1
+    range "core width" cg_railcore_width 1 6 1
+    range "spiral radius" cg_railspiral_radius 1 6 1
+    strings "core color" cg_railcore_color \
         black red green yellow blue cyan magenta white
-    strings "spiral color" cl_railspiral_color \
+    strings "spiral color" cg_railspiral_color \
         black red green yellow blue cyan magenta white
 end
 
@@ -132,14 +130,18 @@ begin effects
     title "Effects Setup"
     values "dynamic lighting" gl_dynamic "no" "yes" "only switchable"
     values "entity cel-shading" gl_celshading no 1x 2x 3x
-    toggle "entity glowing" cl_noglow ~
-    values "ground shadows" gl_shadows no yes fade
+    toggle "entity glowing" cg_noglow ~
+    toggle "entity bobbing" cg_nobob ~
+    toggle "flares" cg_flares
+    toggle "muzzle flashes" cg_muzzleflashes
+    values "hit markers" cg_hit_markers "no" "yes" "silent"
+    toggle "shadow lights" cg_shadowlights
+    toggle "shadow mapping" gl_shadowmap
     toggle "screen blending" gl_polyblend
     toggle "screen warping" gl_waterwarp
     toggle "fog" gl_fog
     toggle "bloom" gl_bloom
-    toggle "grenade explosions" cl_disable_explosions ~0
-    toggle "rocket explosions" cl_disable_explosions ~1
+    toggle "smooth lightstyles" cg_lerp_lightstyles
     blank
     action --align "railgun trail setup..." pushmenu railtrail
 end
@@ -160,28 +162,17 @@ end
 begin screen
     title "Screen Setup"
     range "screen size" viewsize 40 100 10
-    toggle "ping graph" scr_lag_draw
-    values "demo bar" scr_demobar no yes verbose
+    values "draw gun" cg_gun "off" "on" "force right hand" "force left hand"
+    range "gun opacity" cg_gunalpha 0 1
     range "HUD opacity" scr_alpha 0 1
     range "console opacity" con_alpha 0 1
     pairs "HUD scale" scr_scale auto 0 1x 1 2x 2 4x 4
     pairs "console scale" con_scale auto 0 1x 1 2x 2 4x 4
     pairs "menu scale" ui_scale auto 0 1x 1 2x 2 4x 4
+    toggle "ping graph" scr_lag_draw
+    values "demo bar" scr_demobar no yes verbose
     blank
     action --align "crosshair setup..." pushmenu crosshair
-end
-
-begin downloads
-    title "Download Options"
-    toggle "allow downloading" allow_download
-    toggle "maps" allow_download_maps
-    toggle "player models/skins" allow_download_players
-    toggle "models" allow_download_models
-    toggle "sounds" allow_download_sounds
-    toggle "textures" allow_download_textures
-    toggle "pics" allow_download_pics
-    blank
-    toggle "HTTP downloads" cl_http_downloads
 end
 
 begin gameflags
@@ -226,7 +217,7 @@ begin singleplayer
     banner m_banner_game
     values "skill" skill easy medium hard nightmare
     blank
-    //action "Tutorial" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_tutorial"
+    action "Tutorial" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_tutorial"
     action "Quake II" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame"
     action "Call of the Machine" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_mg2"
     action "The Reckoning" "forcemenuoff; deathmatch 0; coop 0; maxclients 1; newgame_rogue"
