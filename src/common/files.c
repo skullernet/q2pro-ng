@@ -3561,12 +3561,6 @@ static void setup_game_paths(void)
             add_game_dir(FS_PATH_GAME | FS_DIR_HOME, home, fs_game->string, false);
         }
     }
-
-    // this var is set for compatibility with server browsers, etc
-    Cvar_FullSet("gamedir", fs_game->string, CVAR_ROM | CVAR_SERVERINFO, FROM_CODE);
-
-    // this var is used by the game library to find it's home directory
-    Cvar_FullSet("fs_gamedir", fs_gamedir, CVAR_ROM, FROM_CODE);
 }
 
 static void setup_base_gamedir(void)
