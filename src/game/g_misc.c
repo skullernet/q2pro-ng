@@ -763,8 +763,6 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
 {
     int      count;
     int      mass;
-    edict_t *master;
-    bool     done = false;
 
     self->takedamage = false;
 
@@ -793,20 +791,6 @@ void DIE(func_explosive_explode)(edict_t *self, edict_t *inflictor, edict_t *att
         count = 16;
     for (int i = 0; i < count; i++)
         ThrowGib(self, "models/objects/debris2/tris.md2", 2, GIB_METALLIC | GIB_DEBRIS);
-
-    // PMM - if we're part of a train, clean ourselves out of it
-    if (self->flags & FL_TEAMSLAVE) {
-        master = self->teammaster;
-        if (master && master->r.inuse) { // because mappers (other than jim (usually)) are stupid....
-            while (!done) {
-                if (master->teamchain == self) {
-                    master->teamchain = self->teamchain;
-                    done = true;
-                }
-                master = master->teamchain;
-            }
-        }
-    }
 
     G_UseTargets(self, attacker);
 

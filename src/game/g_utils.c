@@ -152,6 +152,30 @@ void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global
     }
 }
 
+static void G_RemoveTeamchain(edict_t *ent)
+{
+    // PMM - if this entity is part of a chain, cleanly remove it
+    if (ent->flags & FL_TEAMSLAVE) {
+        for (edict_t *master = ent->teammaster; master; master = master->teamchain) {
+            if (master->teamchain == ent) {
+                master->teamchain = ent->teamchain;
+                break;
+            }
+        }
+    // [Paril-KEX] remove teammaster too
+    } else if (ent->flags & FL_TEAMMASTER) {
+        edict_t *new_master = ent->teamchain;
+
+        if (new_master && new_master->r.inuse) {
+            new_master->flags |= FL_TEAMMASTER;
+            new_master->flags &= ~FL_TEAMSLAVE;
+
+            for (edict_t *m = new_master; m; m = m->teamchain)
+                m->teammaster = new_master;
+        }
+    }
+}
+
 /*
 ==============================
 G_UseTargets
@@ -201,31 +225,6 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
     if (ent->killtarget) {
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), ent->killtarget))) {
-            if (t->teammaster) {
-                // PMM - if this entity is part of a chain, cleanly remove it
-                if (t->flags & FL_TEAMSLAVE) {
-                    for (edict_t *master = t->teammaster; master; master = master->teamchain) {
-                        if (master->teamchain == t) {
-                            master->teamchain = t->teamchain;
-                            break;
-                        }
-                    }
-                // [Paril-KEX] remove teammaster too
-                } else if (t->flags & FL_TEAMMASTER) {
-                    t->teammaster->flags &= ~FL_TEAMMASTER;
-
-                    edict_t *new_master = t->teammaster->teamchain;
-
-                    if (new_master) {
-                        new_master->flags |= FL_TEAMMASTER;
-                        new_master->flags &= ~FL_TEAMSLAVE;
-
-                        for (edict_t *m = new_master; m; m = m->teamchain)
-                            m->teammaster = new_master;
-                    }
-                }
-            }
-
             // [Paril-KEX] if we killtarget a monster, clean up properly
             if ((t->r.svflags & SVF_MONSTER) && !t->deadflag &&
                 !(t->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(t->spawnflags & SPAWNFLAG_MONSTER_DEAD))
@@ -419,6 +418,8 @@ void THINK(G_FreeEdict)(edict_t *ed)
 
     if ((ed - g_edicts) < (game.maxclients + BODY_QUEUE_SIZE))
         return;
+
+    G_RemoveTeamchain(ed);
 
     uint32_t id = ed->spawn_count + 1;
     memset(ed, 0, sizeof(*ed));
