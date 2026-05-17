@@ -838,10 +838,6 @@ qvm_exported void G_RunFrame(int64_t time)
 
         level.current_entity = ent;
 
-        // Paril: RF_BEAM entities update their old_origin by hand.
-        if (!(ent->s.renderfx & RF_BEAM))
-            ent->s.old_origin = ent->s.origin;
-
         // if the ground entity moved, make sure we are still on it
         if ((ent->groundentity) && (ent->groundentity->r.linkcount != ent->groundentity_linkcount)) {
             contents_t mask = G_GetClipMask(ent);
@@ -923,8 +919,7 @@ qvm_exported void G_RunFrame(int64_t time)
 ================
 G_PrepFrame
 
-This has to be done before the world logic, because
-player processing happens outside RunFrame
+Prepares world for next frame after current frame has been sent to clients.
 ================
 */
 qvm_exported void G_PrepFrame(void)
@@ -933,10 +928,16 @@ qvm_exported void G_PrepFrame(void)
         edict_t *ent = &g_edicts[i];
         if (!ent->r.inuse)
             continue;
+
         if (ent->free_after_event) {
             G_FreeEdict(ent);
             continue;
         }
+
+        // Paril: RF_BEAM entities update their old_origin by hand.
+        if (!(ent->s.renderfx & RF_BEAM))
+            ent->s.old_origin = ent->s.origin;
+
         memset(ent->s.event, 0, sizeof(ent->s.event));
         memset(ent->s.event_param, 0, sizeof(ent->s.event_param));
         if (ent->remove_phs_after_event)
