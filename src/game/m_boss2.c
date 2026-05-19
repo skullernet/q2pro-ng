@@ -70,19 +70,15 @@ static void Boss2Rocket64(edict_t *self)
     vec3_t dir;
     vec3_t vec;
     float  time, dist;
+    monster_muzzleflash_id_t mz;
 
     if (!self->enemy)
         return;
 
+    mz = MZ2_BOSS2_ROCKET_N64_1 + (self->count++ & 3);
+
     AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right);
-
-    float scale = G_EntityScale(self);
-    int count = self->count++ % 4;
-
-    start.z += 10 * scale;
-    start = Vec3_MA(start, -2 * scale, right);
-    start = Vec3_MA(start, -8 * scale * count, right);
+    start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
 
     if (self->enemy->client && frandom() < 0.9f) {
         dist = Vec3_Distance(self->enemy->s.origin, start);
@@ -94,7 +90,7 @@ static void Boss2Rocket64(edict_t *self)
     }
 
     dir = Vec3_Direction(vec, start);
-    monster_fire_rocket(self, start, dir, 35, BOSS2_ROCKET_SPEED, MZ2_BOSS2_ROCKET_1);
+    monster_fire_rocket(self, start, dir, 35, BOSS2_ROCKET_SPEED, mz);
 }
 
 static void boss2_firebullet_right(edict_t *self)

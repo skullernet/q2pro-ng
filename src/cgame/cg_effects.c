@@ -638,7 +638,7 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_SUPERTANK_ROCKET_1 ... MZ2_SUPERTANK_ROCKET_3:
-    case MZ2_BOSS2_ROCKET_1 ... MZ2_BOSS2_ROCKET_4:
+    case MZ2_BOSS2_ROCKET_1 ... MZ2_BOSS2_ROCKET_N64_4:
     case MZ2_CARRIER_ROCKET_1:
     case MZ2_SHAMBLER_ROCKET:
         dl->color = Vec3(1, 0.5f, 0.2f);

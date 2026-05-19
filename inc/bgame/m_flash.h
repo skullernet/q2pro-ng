@@ -165,6 +165,11 @@ typedef enum {
     MZ2_BOSS2_ROCKET_3,
     MZ2_BOSS2_ROCKET_4,
 
+    MZ2_BOSS2_ROCKET_N64_1,
+    MZ2_BOSS2_ROCKET_N64_2,
+    MZ2_BOSS2_ROCKET_N64_3,
+    MZ2_BOSS2_ROCKET_N64_4,
+
     MZ2_FLOAT_BLASTER_1,
 
 // --- Xian shit below ---

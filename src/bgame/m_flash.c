@@ -164,6 +164,10 @@ const vec3_t monster_flash_offset[MZ2_LAST] = {
     [MZ2_BOSS2_ROCKET_2] = { 22, 8, 10 },
     [MZ2_BOSS2_ROCKET_3] = { 22, -8, 10 },
     [MZ2_BOSS2_ROCKET_4] = { 22, -16, 10 },
+    [MZ2_BOSS2_ROCKET_N64_1] = { 22, 14, 20 },
+    [MZ2_BOSS2_ROCKET_N64_2] = { 22, 6, 20 },
+    [MZ2_BOSS2_ROCKET_N64_3] = { 22, -2, 20 },
+    [MZ2_BOSS2_ROCKET_N64_4] = { 22, -10, 20 },
 
     [MZ2_FLOAT_BLASTER_1] = { 32.5f, -0.8f, 10 },
 
