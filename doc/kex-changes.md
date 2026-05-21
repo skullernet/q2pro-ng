@@ -47,6 +47,8 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Brush models no longer pollute configstring namespace.
 * Server checks all entity clusters for visibility rather than falling back to
   topnode check (which can be slow).
+* Server properly expands absbox for rotating bmodels, which can affect some
+  maps that rely on old buggy behavior.
 * Player state stats are 32-bit signed integers (LEB-encoded).
 * Player state has additional array for 10-bit unsigned ammo counters.
 * Fog parameters are part of player state.
