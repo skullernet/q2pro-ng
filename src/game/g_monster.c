@@ -556,12 +556,15 @@ static void M_MoveFrame(edict_t *self)
         move->frame[index].thinkfunc(self);
 }
 
-void G_MonsterKilled(edict_t *self)
+void G_MonsterKilled(edict_t *ent)
 {
+    if ((ent->monsterinfo.aiflags & AI_DO_NOT_COUNT) || (ent->spawnflags & SPAWNFLAG_MONSTER_DEAD))
+        return;
+
     level.killed_monsters++;
 
-    if (coop.integer && self->enemy && self->enemy->client)
-        self->enemy->client->resp.score++;
+    if (coop.integer && ent->enemy && ent->enemy->client)
+        ent->enemy->client->resp.score++;
 }
 
 void M_ProcessPain(edict_t *e)
@@ -590,8 +593,7 @@ void M_ProcessPain(edict_t *e)
             if ((e->monsterinfo.aiflags & AI_SPAWNED_COMMANDER) && !(e->monsterinfo.aiflags & AI_SPAWNED_NEEDS_GIB))
                 dead_commander_check = true;
 
-            if (!(e->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(e->spawnflags & SPAWNFLAG_MONSTER_DEAD))
-                G_MonsterKilled(e);
+            G_MonsterKilled(e);
 
             e->touch = NULL;
             monster_death_use(e);

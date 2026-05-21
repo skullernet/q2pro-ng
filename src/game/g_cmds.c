@@ -331,6 +331,46 @@ static void Cmd_Immortal_f(edict_t *ent)
 }
 
 /*
+==================
+Cmd_Resurrect_f
+
+Resurrect dead player
+==================
+*/
+static void Cmd_Resurrect_f(edict_t *ent)
+{
+    if (!G_CheatCheck(ent))
+        return;
+    if (ent->health > 0)
+        return;
+
+    // clear entity values
+    ent->health = ent->max_health;
+    ent->deadflag = false;
+    ent->takedamage = true;
+    ent->clipmask = MASK_PLAYERSOLID;
+    ent->movetype = MOVETYPE_WALK;
+    ent->r.solid = SOLID_BBOX;
+    ent->r.box = player_box;
+    ent->r.svflags |= SVF_PLAYER;
+    ent->r.svflags &= ~SVF_DEADMONSTER;
+    ent->s.modelindex = MODELINDEX_PLAYER;
+    ent->s.modelindex2 = MODELINDEX_PLAYER;
+    ent->s.frame = 0;
+    ent->s.skinnum = 0;
+    ent->client->anim_priority = ANIM_BASIC;
+    ent->client->ps.pm_type = PM_NORMAL;
+    ent->air_finished = level.time + SEC(12);
+
+    trap_LinkEntity(ent);
+    G_FixStuckObject(ent, ent->s.origin);
+
+    // force the current weapon up
+    NoAmmoWeaponChange(ent, false);
+    ChangeWeapon(ent);
+}
+
+/*
 =================
 Cmd_Spawn_f
 
@@ -553,9 +593,11 @@ static void Cmd_Noclip_f(edict_t *ent)
 
     if (ent->movetype == MOVETYPE_NOCLIP) {
         ent->movetype = MOVETYPE_WALK;
+        ent->r.svflags &= ~SVF_DEADMONSTER;
         G_ClientPrintf(ent, PRINT_HIGH, "noclip OFF\n");
     } else {
         ent->movetype = MOVETYPE_NOCLIP;
+        ent->r.svflags |= SVF_DEADMONSTER;
         G_ClientPrintf(ent, PRINT_HIGH, "noclip ON\n");
     }
 }
@@ -939,35 +981,34 @@ static void Cmd_Kill_f(edict_t *ent)
 /*
 =================
 Cmd_Kill_AI_f
+
+Kill spawned monsters, free unspawned ones
 =================
 */
 static void Cmd_Kill_AI_f(edict_t * ent)
 {
-    if (!sv_cheats.integer) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Kill_AI: Cheats Must Be Enabled!\n");
+    if (!G_CheatCheck(ent))
         return;
-    }
-
-    // except the one we're looking at...
-    vec3_t start, end;
-
-    start = ent->s.origin;
-    start.z += ent->viewheight;
-
-    end = Vec3_MA(start, 1024, ent->client->v_forward);
-
-    trace_t tr = G_TraceLine(start, end, ent->s.number, MASK_SHOT);
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
-        if (!edict->r.inuse || i == tr.entnum)
+        if (!edict->r.inuse)
             continue;
         if (!(edict->r.svflags & SVF_MONSTER))
             continue;
-        G_FreeEdict(edict);
-    }
+        if (edict->health < 1)
+            continue;
 
-    G_ClientPrintf(ent, PRINT_HIGH, "Kill_AI: All AI Are Dead...\n");
+        if (edict->r.svflags & SVF_NOCLIENT) {
+            G_MonsterKilled(edict);
+            G_FreeEdict(edict);
+            continue;
+        }
+
+        edict->takedamage = true;
+        T_Damage(edict, world, edict, vec3_origin, edict->s.origin, 0,
+                 edict->health, 0, DAMAGE_RADIUS | DAMAGE_NO_PROTECTION, MOD_UNKNOWN);
+    }
 }
 
 /*
@@ -987,10 +1028,8 @@ Cmd_Clear_AI_Enemy_f
 */
 static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
 {
-    if (!sv_cheats.integer) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Cheats Must Be Enabled!\n");
+    if (!G_CheatCheck(ent))
         return;
-    }
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
@@ -1000,8 +1039,6 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
             continue;
         edict->monsterinfo.aiflags |= AI_FORGET_ENEMY;
     }
-
-    G_ClientPrintf(ent, PRINT_HIGH, "Cmd_Clear_AI_Enemy: Clear All AI Enemies...\n");
 }
 
 /*
@@ -1587,6 +1624,8 @@ q_exported void G_ClientCommand(int clientnum)
         Cmd_God_f(ent);
     else if (Q_strcasecmp(cmd, "immortal") == 0)
         Cmd_Immortal_f(ent);
+    else if (Q_strcasecmp(cmd, "resurrect") == 0)
+        Cmd_Resurrect_f(ent);
     // Paril: cheats to help with dev
     else if (Q_strcasecmp(cmd, "spawn") == 0)
         Cmd_Spawn_f(ent);

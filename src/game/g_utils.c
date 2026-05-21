@@ -226,8 +226,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), ent->killtarget))) {
             // [Paril-KEX] if we killtarget a monster, clean up properly
-            if ((t->r.svflags & SVF_MONSTER) && !t->deadflag &&
-                !(t->monsterinfo.aiflags & AI_DO_NOT_COUNT) && !(t->spawnflags & SPAWNFLAG_MONSTER_DEAD))
+            if ((t->r.svflags & SVF_MONSTER) && !t->deadflag)
                 G_MonsterKilled(t);
 
             // PMM
