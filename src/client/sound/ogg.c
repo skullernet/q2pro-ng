@@ -340,12 +340,16 @@ static int decode_frame(void)
         ret = read_packet(pkt);
         if (ret == AVERROR_EOF) {
             ret = avcodec_send_packet(dec, NULL);
+            if (ret < 0)
+                return ret;
         } else if (ret >= 0) {
             ret = avcodec_send_packet(dec, pkt);
             av_packet_unref(pkt);
-        }
-        if (ret < 0)
+            if (ret == AVERROR(EAGAIN))
+                return AVERROR_BUG;
+        } else {
             return ret;
+        }
     }
 }
 

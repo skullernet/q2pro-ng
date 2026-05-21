@@ -336,6 +336,8 @@ static int decode_frames(DecoderState *s)
                 if (cin.eof) {
                     // enter draining mode
                     ret = avcodec_send_packet(dec, NULL);
+                    if (ret < 0)
+                        return ret;
                 } else {
                     // wait for more packets...
                     return 0;
@@ -344,18 +346,16 @@ static int decode_frames(DecoderState *s)
                 // submit the packet to the decoder
                 ret = avcodec_send_packet(dec, pkt);
                 av_packet_unref(pkt);
-            }
-            if (ret < 0) {
-                Com_EPrintf("Error submitting %s packet for decoding: %s\n",
-                            av_get_media_type_string(dec->codec->type), av_err2str(ret));
-                return ret;
-            }
 
+                // both receive_frame and send_packet can't return EAGAIN
+                if (ret == AVERROR(EAGAIN))
+                    return AVERROR_BUG; // API violation
+            }
             continue;
         }
 
         if (ret < 0) {
-            Com_EPrintf("Error during decoding %s: %s\n",
+            Com_EPrintf("Error decoding %s: %s\n",
                         av_get_media_type_string(dec->codec->type), av_err2str(ret));
             return ret;
         }
