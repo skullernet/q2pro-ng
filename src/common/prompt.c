@@ -26,6 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/field.h"
 #include "common/files.h"
 #include "common/prompt.h"
+#include "client/client.h"
+#include "server/server.h"
 
 #define MIN_MATCHES     64
 #define MAX_MATCHES     250000000
@@ -258,6 +260,8 @@ void Prompt_CompleteCommand(commandPrompt_t *prompt, bool backslash)
     } else {
         // complete a command/cvar/alias name
         Cmd_Command_g();
+        CL_CompleteCommand(0, 0);
+        SV_CompleteCommand(0, 0);
         numCommands = ctx.count;
 
         Cvar_Variable_g();

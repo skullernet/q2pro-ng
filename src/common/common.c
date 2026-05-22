@@ -728,6 +728,8 @@ void Com_Generic_c(int firstarg, int argnum)
         Cmd_Command_g();
         Cvar_Variable_g();
         Cmd_Alias_g();
+        CL_CompleteCommand(firstarg, 0);
+        SV_CompleteCommand(firstarg, 0);
         return;
     }
 
@@ -738,6 +740,9 @@ void Com_Generic_c(int firstarg, int argnum)
         c(firstarg, argnum);
     } else if (argnum == 1 && (var = Cvar_FindVar(s)) != NULL) {
         Cvar_Argument_g(var);
+    } else {
+        CL_CompleteCommand(firstarg, argnum);
+        SV_CompleteCommand(firstarg, argnum);
     }
 }
 

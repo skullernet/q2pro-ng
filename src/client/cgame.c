@@ -251,18 +251,6 @@ static void PF_GetClientInfo(cg_client_info_t *info)
     info->demoprogress = cls.demo.file_progress;
 }
 
-static void CG_CompleteCommand(int firstarg, int argnum)
-{
-    if (cge)
-        cge->CompleteCommand(firstarg, argnum);
-}
-
-static void PF_RegisterCommand(const char *name)
-{
-    cmdreg_t reg[2] = { { .name = name, .completer = CG_CompleteCommand } };
-    Cmd_Register(reg);
-}
-
 //==============================================
 
 VM_THUNK(Print) {
@@ -331,10 +319,6 @@ VM_THUNK(GetClientInfo) {
 
 VM_THUNK(ClientCommand) {
     CL_ClientCommand(VM_STR(0));
-}
-
-VM_THUNK(RegisterCommand) {
-    PF_RegisterCommand(VM_STR(0));
 }
 
 VM_THUNK(SetCompletionOptions) {
@@ -711,7 +695,6 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetServerFrame, "i ii"),
     VM_IMPORT(GetClientInfo, "i"),
     VM_IMPORT(ClientCommand, "i"),
-    VM_IMPORT(RegisterCommand, "i"),
     VM_IMPORT(SetCompletionOptions, "i"),
     VM_IMPORT(AddCommandCompletion, "i"),
     VM_IMPORT(SetLoadText, "i"),
@@ -849,10 +832,21 @@ static void thunk_CG_Shutdown(void) {
     VM_Call(cgame.vm, vm_CG_Shutdown);
 }
 
-static void thunk_CG_PrepRefresh(bool demoplayback) {
+static void call_one(cgame_entry_t entry, uint32_t arg) {
     vm_value_t *stack = VM_Push(cgame.vm, 1);
-    VM_U32(0) = demoplayback;
-    VM_Call(cgame.vm, vm_CG_PrepRefresh);
+    VM_U32(0) = arg;
+    VM_Call(cgame.vm, entry);
+}
+
+static void call_two(cgame_entry_t entry, uint32_t arg1, uint32_t arg2) {
+    vm_value_t *stack = VM_Push(cgame.vm, 2);
+    VM_U32(0) = arg1;
+    VM_U32(1) = arg2;
+    VM_Call(cgame.vm, entry);
+}
+
+static void thunk_CG_PrepRefresh(bool demoplayback) {
+    call_one(vm_CG_PrepRefresh, demoplayback);
 }
 
 static void thunk_CG_ClearState(void) {
@@ -878,10 +872,7 @@ static bool thunk_CG_ConsoleCommand(void) {
 }
 
 static void thunk_CG_CompleteCommand(int firstarg, int argnum) {
-    vm_value_t *stack = VM_Push(cgame.vm, 2);
-    VM_U32(0) = firstarg;
-    VM_U32(1) = argnum;
-    VM_Call(cgame.vm, vm_CG_CompleteCommand);
+    call_two(vm_CG_CompleteCommand, firstarg, argnum);
 }
 
 static void thunk_CG_ServerCommand(void) {
@@ -889,31 +880,21 @@ static void thunk_CG_ServerCommand(void) {
 }
 
 static void thunk_CG_UpdateConfigstring(unsigned index) {
-    vm_value_t *stack = VM_Push(cgame.vm, 1);
-    VM_U32(0) = index;
-    VM_Call(cgame.vm, vm_CG_UpdateConfigstring);
+    call_one(vm_CG_UpdateConfigstring, index);
 }
 
 static bool thunk_CG_KeyEvent(unsigned key, bool down) {
-    vm_value_t *stack = VM_Push(cgame.vm, 2);
-    VM_U32(0) = key;
-    VM_U32(1) = down;
-    VM_Call(cgame.vm, vm_CG_KeyEvent);
-    stack = VM_Pop(cgame.vm);
+    call_two(vm_CG_KeyEvent, key, down);
+    const vm_value_t *stack = VM_Pop(cgame.vm);
     return VM_U32(0);
 }
 
 static void thunk_CG_CharEvent(unsigned key) {
-    vm_value_t *stack = VM_Push(cgame.vm, 1);
-    VM_U32(0) = key;
-    VM_Call(cgame.vm, vm_CG_CharEvent);
+    call_one(vm_CG_CharEvent, key);
 }
 
 static void thunk_CG_MouseEvent(int x, int y) {
-    vm_value_t *stack = VM_Push(cgame.vm, 2);
-    VM_U32(0) = x;
-    VM_U32(1) = y;
-    VM_Call(cgame.vm, vm_CG_MouseEvent);
+    call_two(vm_CG_MouseEvent, x, y);
 }
 
 //==============================================
@@ -946,7 +927,6 @@ static const cgame_import_t cgame_dll_imports = {
     .GetClientInfo = PF_GetClientInfo,
 
     .ClientCommand = CL_ClientCommand,
-    .RegisterCommand = PF_RegisterCommand,
 
     .SetCompletionOptions = Prompt_SetOptions,
     .AddCommandCompletion = Prompt_AddMatch,
@@ -1083,6 +1063,12 @@ static const vm_interface_t cgame_iface = {
     .dll_exports = &cgame_dll_exports,
     .api_version = CGAME_API_VERSION,
 };
+
+void CL_CompleteCommand(int firstarg, int argnum)
+{
+    if (cge)
+        cge->CompleteCommand(firstarg, argnum);
+}
 
 void CL_ShutdownCGame(void)
 {

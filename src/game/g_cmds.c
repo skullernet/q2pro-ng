@@ -3,16 +3,17 @@
 #include "g_local.h"
 #include "m_player.h"
 
-static void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu)
+static void SelectNextItem(edict_t *ent, cmdflags_t flags)
 {
     gclient_t *cl;
     item_id_t  i, index;
     const gitem_t *it;
+    item_flags_t   itflags;
 
     cl = ent->client;
 
     // ZOID
-    if (menu) {
+    if (!(flags & VALIDATE)) {
         if (cl->menu) {
             PMenu_Next(ent);
             return;
@@ -24,7 +25,9 @@ static void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu)
     }
     // ZOID
 
-    // scan  for the next valid one
+    itflags = (flags & WEAPON) ? IF_WEAPON : (flags & POWERUP) ? IF_POWERUP : IF_ANY;
+
+    // scan for the next valid one
     for (i = IT_NULL + 1; i <= IT_TOTAL; i++) {
         index = (cl->pers.selected_item + i) % IT_TOTAL;
         if (!cl->pers.inventory[index])
@@ -44,11 +47,12 @@ static void SelectNextItem(edict_t *ent, item_flags_t itflags, bool menu)
     cl->pers.selected_item = IT_NULL;
 }
 
-static void SelectPrevItem(edict_t *ent, item_flags_t itflags)
+static void SelectPrevItem(edict_t *ent, cmdflags_t flags)
 {
     gclient_t *cl;
     item_id_t  i, index;
     const gitem_t *it;
+    item_flags_t   itflags;
 
     cl = ent->client;
 
@@ -63,7 +67,9 @@ static void SelectPrevItem(edict_t *ent, item_flags_t itflags)
     }
     // ZOID
 
-    // scan  for the next valid one
+    itflags = (flags & WEAPON) ? IF_WEAPON : (flags & POWERUP) ? IF_POWERUP : IF_ANY;
+
+    // scan for the next valid one
     for (i = IT_NULL + 1; i <= IT_TOTAL; i++) {
         index = (cl->pers.selected_item + IT_TOTAL - i) % IT_TOTAL;
         if (!cl->pers.inventory[index])
@@ -92,20 +98,10 @@ void ValidateSelectedItem(edict_t *ent)
     if (cl->pers.inventory[cl->pers.selected_item])
         return; // valid
 
-    SelectNextItem(ent, IF_ANY, false);
+    SelectNextItem(ent, VALIDATE);
 }
 
 //=================================================================================
-
-static bool G_CheatCheck(edict_t *ent)
-{
-    if (game.maxclients > 1 && !sv_cheats.integer) {
-        G_ClientPrintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
-        return false;
-    }
-
-    return true;
-}
 
 static void SpawnAndGiveItem(edict_t *ent, item_id_t id)
 {
@@ -132,7 +128,7 @@ Cmd_Give_f
 Give items to a client
 ==================
 */
-static void Cmd_Give_f(edict_t *ent)
+static void Cmd_Give_f(edict_t *ent, cmdflags_t flags)
 {
     char           name[MAX_QPATH];
     char           count[MAX_QPATH];
@@ -140,10 +136,6 @@ static void Cmd_Give_f(edict_t *ent)
     item_id_t      index;
     int            i;
     bool           give_all;
-    edict_t       *it_ent;
-
-    if (!G_CheatCheck(ent))
-        return;
 
     trap_Argv(1, name, sizeof(name));
     trap_Argv(2, count, sizeof(count));
@@ -203,11 +195,6 @@ static void Cmd_Give_f(edict_t *ent)
     if (give_all) {
         SpawnAndGiveItem(ent, IT_ITEM_POWER_SHIELD);
 
-        if (!give_all)
-            return;
-    }
-
-    if (give_all) {
         for (i = 0; i < IT_TOTAL; i++) {
             it = itemlist + i;
             if (!it->pickup)
@@ -261,31 +248,8 @@ static void Cmd_Give_f(edict_t *ent)
         else
             ent->client->pers.inventory[index] += it->quantity;
     } else {
-        it_ent = G_Spawn();
-        it_ent->classname = it->classname;
-        SpawnItem(it_ent, it);
-        // PMM - since some items don't actually spawn when you say to ..
-        if (!it_ent->r.inuse)
-            return;
-        // pmm
-        Touch_Item(it_ent, ent, &null_trace, true);
-        if (it_ent->r.inuse)
-            G_FreeEdict(it_ent);
+        SpawnAndGiveItem(ent, index);
     }
-}
-
-// [Paril-KEX]
-static void Cmd_Target_f(edict_t *ent)
-{
-    if (!G_CheatCheck(ent))
-        return;
-
-    char buf[MAX_QPATH];
-    trap_Argv(1, buf, sizeof(buf));
-
-    ent->target = buf;
-    G_UseTargets(ent, ent);
-    ent->target = NULL;
 }
 
 /*
@@ -297,11 +261,8 @@ Sets client to godmode
 argv(0) god
 ==================
 */
-static void Cmd_God_f(edict_t *ent)
+static void Cmd_God_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     ent->flags ^= FL_GODMODE;
     if (!(ent->flags & FL_GODMODE))
         G_ClientPrintf(ent, PRINT_HIGH, "godmode OFF\n");
@@ -318,11 +279,8 @@ Sets client to immortal - take damage but never go below 1 hp
 argv(0) immortal
 ==================
 */
-static void Cmd_Immortal_f(edict_t *ent)
+static void Cmd_Immortal_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     ent->flags ^= FL_IMMORTAL;
     if (!(ent->flags & FL_IMMORTAL))
         G_ClientPrintf(ent, PRINT_HIGH, "immortal OFF\n");
@@ -337,10 +295,8 @@ Cmd_Resurrect_f
 Resurrect dead player
 ==================
 */
-static void Cmd_Resurrect_f(edict_t *ent)
+static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
     if (ent->health > 0)
         return;
 
@@ -371,6 +327,39 @@ static void Cmd_Resurrect_f(edict_t *ent)
 }
 
 /*
+==================
+Cmd_Target_f
+
+Fire specific targets
+==================
+*/
+static void Cmd_Target_f(edict_t *ent, cmdflags_t flags)
+{
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+
+    ent->target = buf;
+    G_UseTargets(ent, ent);
+    ent->target = NULL;
+}
+
+static void Cmd_Target_c(int firstarg, int argnum)
+{
+    if (argnum != 1)
+        return;
+
+    trap_SetCompletionOptions(CMPL_CASELESS | CMPL_CHECKDUPS);
+
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
+        const edict_t *ent = &g_edicts[i];
+        if (!ent->r.inuse)
+            continue;
+        if (ent->targetname)
+            trap_AddCommandCompletion(ent->targetname);
+    }
+}
+
+/*
 =================
 Cmd_Spawn_f
 
@@ -382,11 +371,8 @@ argv(2+n) "key"...
 argv(3+n) "value"...
 =================
 */
-static void Cmd_Spawn_f(edict_t *ent)
+static void Cmd_Spawn_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     char buf[MAX_QPATH];
     trap_Argv(1, buf, sizeof(buf));
 
@@ -467,9 +453,9 @@ static void Cmd_Spawn_f(edict_t *ent)
 
 /*
 =================
-Cmd_Spawn_f
+Cmd_Teleport_f
 
-Telepo'
+Teleport
 
 argv(0) teleport
 argv(1) x
@@ -477,13 +463,10 @@ argv(2) y
 argv(3) z
 =================
 */
-static void Cmd_Teleport_f(edict_t *ent)
+static void Cmd_Teleport_f(edict_t *ent, cmdflags_t flags)
 {
     char buf[MAX_QPATH];
     int i;
-
-    if (!G_CheatCheck(ent))
-        return;
 
     if (trap_Argc() < 4) {
         G_ClientPrintf(ent, PRINT_HIGH, "Not enough args; teleport x y z\n");
@@ -518,11 +501,8 @@ Sets client to notarget
 argv(0) notarget
 ==================
 */
-static void Cmd_Notarget_f(edict_t *ent)
+static void Cmd_Notarget_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     ent->flags ^= FL_NOTARGET;
     if (!(ent->flags & FL_NOTARGET))
         G_ClientPrintf(ent, PRINT_HIGH, "notarget OFF\n");
@@ -539,11 +519,8 @@ Sets client to "super notarget"
 argv(0) notarget
 ==================
 */
-static void Cmd_Novisible_f(edict_t *ent)
+static void Cmd_Novisible_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     ent->flags ^= FL_NOVISIBLE;
     if (!(ent->flags & FL_NOVISIBLE))
         G_ClientPrintf(ent, PRINT_HIGH, "novisible OFF\n");
@@ -551,32 +528,13 @@ static void Cmd_Novisible_f(edict_t *ent)
         G_ClientPrintf(ent, PRINT_HIGH, "novisible ON\n");
 }
 
-static void Cmd_Nodrown_f(edict_t *ent)
+static void Cmd_Nodrown_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     ent->flags ^= FL_DEEPONE;
     if (!(ent->flags & FL_DEEPONE))
         G_ClientPrintf(ent, PRINT_HIGH, "nodrown OFF\n");
     else
         G_ClientPrintf(ent, PRINT_HIGH, "nodrown ON\n");
-}
-
-static void Cmd_AlertAll_f(edict_t *ent)
-{
-    if (!G_CheatCheck(ent))
-        return;
-
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *t = &g_edicts[i];
-
-        if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
-            continue;
-
-        t->enemy = ent;
-        FoundTarget(t);
-    }
 }
 
 /*
@@ -586,11 +544,8 @@ Cmd_Noclip_f
 argv(0) noclip
 ==================
 */
-static void Cmd_Noclip_f(edict_t *ent)
+static void Cmd_Noclip_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     if (ent->movetype == MOVETYPE_NOCLIP) {
         ent->movetype = MOVETYPE_WALK;
         ent->r.svflags &= ~SVF_DEADMONSTER;
@@ -609,7 +564,7 @@ Cmd_Use_f
 Use an inventory item
 ==================
 */
-static void Cmd_Use_f(edict_t *ent, bool use_index, bool no_chains)
+static void Cmd_Use_f(edict_t *ent, cmdflags_t flags)
 {
     item_id_t index;
     const gitem_t *it;
@@ -622,7 +577,7 @@ static void Cmd_Use_f(edict_t *ent, bool use_index, bool no_chains)
     trap_Args(buf, sizeof(buf));
     s = COM_StripQuotes(buf);
 
-    if (use_index)
+    if (flags & BY_INDEX)
         it = GetItemByIndex(Q_atoi(s));
     else
         it = FindItem(s);
@@ -644,7 +599,7 @@ static void Cmd_Use_f(edict_t *ent, bool use_index, bool no_chains)
     }
 
     // allow weapon chains for use
-    ent->client->no_weapon_chains = no_chains;
+    ent->client->no_weapon_chains = flags & NO_CHAINS;
 
     it->use(ent, it);
 
@@ -658,7 +613,7 @@ Cmd_Drop_f
 Drop an inventory item
 ==================
 */
-static void Cmd_Drop_f(edict_t *ent, bool drop_index)
+static void Cmd_Drop_f(edict_t *ent, cmdflags_t flags)
 {
     item_id_t index;
     const gitem_t *it;
@@ -684,13 +639,13 @@ static void Cmd_Drop_f(edict_t *ent, bool drop_index)
     }
     // ZOID
 
-    if (drop_index)
+    if (flags & BY_INDEX)
         it = GetItemByIndex(Q_atoi(s));
     else
         it = FindItem(s);
 
     if (!it) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Unknown item : %s\n", s);
+        G_ClientPrintf(ent, PRINT_HIGH, "Unknown item: %s\n", s);
         return;
     }
     if (!G_CanDropItem(it)) {
@@ -708,12 +663,24 @@ static void Cmd_Drop_f(edict_t *ent, bool drop_index)
     ValidateSelectedItem(ent);
 }
 
+static void Cmd_Item_c(int firstarg, int argnum)
+{
+    if (argnum != 1)
+        return;
+
+    trap_SetCompletionOptions(CMPL_CASELESS | CMPL_CHECKDUPS | CMPL_STRIPQUOTES);
+
+    for (int i = IT_NULL + 1; i < IT_TOTAL; i++)
+        if (itemlist[i].pickup_name)
+            trap_AddCommandCompletion(itemlist[i].pickup_name);
+}
+
 /*
 =================
 Cmd_Inven_f
 =================
 */
-static void Cmd_Inven_f(edict_t *ent)
+static void Cmd_Inven_f(edict_t *ent, cmdflags_t flags)
 {
     char       text[MAX_STRING_CHARS];
     int        i, count;
@@ -750,7 +717,7 @@ static void Cmd_Inven_f(edict_t *ent)
         if (cl->pers.inventory[i])
             count = i + 1;
 
-    strcpy(text, "inven");
+    Q_strlcpy(text, "inven", sizeof(text));
     for (i = 0; i < count; i++)
         Q_strlcat(text, va(" %d", cl->pers.inventory[i]), sizeof(text));
 
@@ -762,7 +729,7 @@ static void Cmd_Inven_f(edict_t *ent)
 Cmd_InvUse_f
 =================
 */
-static void Cmd_InvUse_f(edict_t *ent)
+static void Cmd_InvUse_f(edict_t *ent, cmdflags_t flags)
 {
     const gitem_t *it;
 
@@ -801,7 +768,7 @@ static void Cmd_InvUse_f(edict_t *ent)
 Cmd_WeapPrev_f
 =================
 */
-static void Cmd_WeapPrev_f(edict_t *ent)
+static void Cmd_WeapPrev_f(edict_t *ent, cmdflags_t flags)
 {
     gclient_t *cl;
     item_id_t  i, index;
@@ -820,7 +787,7 @@ static void Cmd_WeapPrev_f(edict_t *ent)
 
     selected_weapon = cl->pers.weapon->id;
 
-    // scan  for the next valid one
+    // scan for the next valid one
     for (i = IT_NULL + 1; i <= IT_TOTAL; i++) {
         // PMM - prevent scrolling through ALL weapons
         index = (selected_weapon + IT_TOTAL - i) % IT_TOTAL;
@@ -844,7 +811,7 @@ static void Cmd_WeapPrev_f(edict_t *ent)
 Cmd_WeapNext_f
 =================
 */
-static void Cmd_WeapNext_f(edict_t *ent)
+static void Cmd_WeapNext_f(edict_t *ent, cmdflags_t flags)
 {
     gclient_t *cl;
     item_id_t  i, index;
@@ -863,7 +830,7 @@ static void Cmd_WeapNext_f(edict_t *ent)
 
     selected_weapon = cl->pers.weapon->id;
 
-    // scan  for the next valid one
+    // scan for the next valid one
     for (i = IT_NULL + 1; i <= IT_TOTAL; i++) {
         // PMM - prevent scrolling through ALL weapons
         index = (selected_weapon + i) % IT_TOTAL;
@@ -889,7 +856,7 @@ static void Cmd_WeapNext_f(edict_t *ent)
 Cmd_WeapLast_f
 =================
 */
-static void Cmd_WeapLast_f(edict_t *ent)
+static void Cmd_WeapLast_f(edict_t *ent, cmdflags_t flags)
 {
     gclient_t *cl;
     int        index;
@@ -921,7 +888,7 @@ static void Cmd_WeapLast_f(edict_t *ent)
 Cmd_InvDrop_f
 =================
 */
-static void Cmd_InvDrop_f(edict_t *ent)
+static void Cmd_InvDrop_f(edict_t *ent, cmdflags_t flags)
 {
     const gitem_t *it;
 
@@ -950,7 +917,7 @@ static void Cmd_InvDrop_f(edict_t *ent)
 Cmd_Kill_f
 =================
 */
-static void Cmd_Kill_f(edict_t *ent)
+static void Cmd_Kill_f(edict_t *ent, cmdflags_t flags)
 {
     // ZOID
     if (ent->client->resp.spectator)
@@ -985,11 +952,8 @@ Cmd_Kill_AI_f
 Kill spawned monsters, free unspawned ones
 =================
 */
-static void Cmd_Kill_AI_f(edict_t * ent)
+static void Cmd_Kill_AI_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse)
@@ -1016,7 +980,7 @@ static void Cmd_Kill_AI_f(edict_t * ent)
 Cmd_Where_f
 =================
 */
-static void Cmd_Where_f(edict_t *ent)
+static void Cmd_Where_f(edict_t *ent, cmdflags_t flags)
 {
     G_ClientPrintf(ent, PRINT_HIGH, "Location: %s %s\n", vtos(ent->s.origin), vtos(ent->client->ps.viewangles));
 }
@@ -1026,11 +990,8 @@ static void Cmd_Where_f(edict_t *ent)
 Cmd_Clear_AI_Enemy_f
 =================
 */
-static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
+static void Cmd_Clear_AI_Enemy_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_CheatCheck(ent))
-        return;
-
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *edict = &g_edicts[i];
         if (!edict->r.inuse)
@@ -1043,10 +1004,94 @@ static void Cmd_Clear_AI_Enemy_f(edict_t *ent)
 
 /*
 =================
+Cmd_AlertAll_f
+=================
+*/
+static void Cmd_AlertAll_f(edict_t *ent, cmdflags_t flags)
+{
+    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
+        edict_t *t = &g_edicts[i];
+
+        if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
+            continue;
+
+        t->enemy = ent;
+        FoundTarget(t);
+    }
+}
+
+/*
+==================
+Cmd_Score_f
+
+Display the scoreboard
+==================
+*/
+static void Cmd_Score_f(edict_t *ent, cmdflags_t flags)
+{
+    if (level.intermissiontime)
+        return;
+
+    ent->client->showinventory = false;
+    ent->client->showhelp = false;
+
+    // ZOID
+    if (ent->client->menu)
+        PMenu_Close(ent);
+    // ZOID
+
+    if (!deathmatch.integer && !coop.integer)
+        return;
+
+    if (ent->client->showscores) {
+        ent->client->showscores = false;
+        ent->client->update_chase = true;
+        return;
+    }
+
+    ent->client->showscores = true;
+    DeathmatchScoreboard(ent);
+}
+
+/*
+==================
+Cmd_Help_f
+
+Display the current help message
+==================
+*/
+void Cmd_Help_f(edict_t *ent, cmdflags_t flags)
+{
+    // this is for backwards compatibility
+    if (deathmatch.integer) {
+        Cmd_Score_f(ent, flags);
+        return;
+    }
+
+    if (level.intermissiontime)
+        return;
+
+    ent->client->showinventory = false;
+    ent->client->showscores = false;
+
+    if (ent->client->showhelp &&
+        (ent->client->pers.game_help1changed == game.help1changed ||
+         ent->client->pers.game_help2changed == game.help2changed)) {
+        ent->client->showhelp = false;
+        return;
+    }
+
+    ent->client->showhelp = true;
+    ent->client->pers.helpchanged = 0;
+    HelpComputer(ent);
+}
+
+/*
+=================
 Cmd_PutAway_f
 =================
 */
-static void Cmd_PutAway_f(edict_t *ent)
+static void Cmd_PutAway_f(edict_t *ent, cmdflags_t flags)
 {
     ent->client->showscores = false;
     ent->client->showhelp = false;
@@ -1083,7 +1128,7 @@ static int PlayerSort(const void *a, const void *b)
 Cmd_Players_f
 =================
 */
-static void Cmd_Players_f(edict_t *ent)
+static void Cmd_Players_f(edict_t *ent, cmdflags_t flags)
 {
     int     i;
     int     count;
@@ -1154,13 +1199,8 @@ bool CheckFlood(edict_t *ent)
 Cmd_Wave_f
 =================
 */
-static void Cmd_Wave_f(edict_t *ent)
+static void Cmd_Wave_f(edict_t *ent, cmdflags_t flags)
 {
-    char buf[MAX_QPATH];
-
-    trap_Argv(1, buf, sizeof(buf));
-    int cmd = Q_atoi(buf);
-
     // no dead or noclip waving
     if (ent->deadflag || ent->movetype == MOVETYPE_NOCLIP)
         return;
@@ -1195,6 +1235,10 @@ static void Cmd_Wave_f(edict_t *ent)
         best_dist = dist;
         aiming_at = player;
     }
+
+    char buf[MAX_QPATH];
+    trap_Argv(1, buf, sizeof(buf));
+    int cmd = Q_atoi(buf);
 
     switch (cmd) {
     case GESTURE_FLIP_OFF:
@@ -1304,14 +1348,14 @@ static void Cmd_Wave_f(edict_t *ent)
 Cmd_Say_f
 ==================
 */
-static void Cmd_Say_f(edict_t *ent, bool arg0)
+static void Cmd_Say_f(edict_t *ent, cmdflags_t flags)
 {
     int     j;
     edict_t *other;
     char    text[152];
     char    buf[152];
 
-    if (trap_Argc() < 2 && !arg0)
+    if (trap_Argc() < 2 && !(flags & ZERO_ARG))
         return;
 
     if (CheckFlood(ent))
@@ -1319,7 +1363,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
 
     Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
 
-    if (arg0) {
+    if (flags & ZERO_ARG) {
         trap_Argv(0, buf, sizeof(buf));
         Q_strlcat(text, buf, sizeof(text));
         Q_strlcat(text, " ", sizeof(text));
@@ -1348,7 +1392,7 @@ static void Cmd_Say_f(edict_t *ent, bool arg0)
     }
 }
 
-static void Cmd_PlayerList_f(edict_t *ent)
+static void Cmd_PlayerList_f(edict_t *ent, cmdflags_t flags)
 {
     int i;
     char st[80];
@@ -1381,94 +1425,9 @@ static void Cmd_PlayerList_f(edict_t *ent)
         G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
-static void Cmd_Switchteam_f(edict_t *ent)
-{
-    if (!G_TeamplayEnabled())
-        return;
-
-    // [Paril-KEX] in force-join, just do a regular team join.
-    if (g_teamplay_force_join.integer) {
-        // check if we should even switch teams
-        edict_t *player;
-        int team1count = 0, team2count = 0;
-        ctfteam_t best_team;
-
-        for (int i = 0; i < game.maxclients; i++) {
-            player = &g_edicts[i];
-
-            // NB: we are counting ourselves in this one, unlike
-            // the other assign team func
-            if (!player->r.inuse)
-                continue;
-
-            switch (player->client->resp.ctf_team) {
-            case CTF_TEAM1:
-                team1count++;
-                break;
-            case CTF_TEAM2:
-                team2count++;
-                break;
-            default:
-                break;
-            }
-        }
-
-        if (team1count < team2count)
-            best_team = CTF_TEAM1;
-        else
-            best_team = CTF_TEAM2;
-
-        if (ent->client->resp.ctf_team != best_team) {
-            ////
-            ent->r.svflags = SVF_NONE;
-            ent->flags &= ~FL_GODMODE;
-            ent->client->resp.ctf_team = best_team;
-            ent->client->resp.ctf_state = 0;
-            CTFAssignSkin(ent, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
-
-            // if anybody has a menu open, update it immediately
-            CTFDirtyTeamMenu();
-
-            if (ent->r.solid == SOLID_NOT) {
-                // spectator
-                PutClientInServer(ent);
-
-                G_PostRespawn(ent);
-
-                G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the %s team.\n",
-                               ent->client->pers.netname, CTFTeamName(best_team));
-                return;
-            }
-
-            ent->health = 0;
-            player_die(ent, ent, ent, 100000, vec3_origin, MOD_SUICIDE_NP);
-
-            // don't even bother waiting for death frames
-            ent->deadflag = true;
-            respawn(ent);
-
-            ent->client->resp.score = 0;
-
-            G_ClientPrintf(NULL, PRINT_HIGH, "%s changed to the %s team.\n",
-                           ent->client->pers.netname, CTFTeamName(best_team));
-        }
-
-        return;
-    }
-
-    if (ent->client->resp.ctf_team != CTF_NOTEAM)
-        CTFObserver(ent);
-
-    if (!ent->client->menu)
-        CTFOpenJoinMenu(ent);
-}
-
-static void Cmd_ListMonsters_f(edict_t *ent)
+static void Cmd_ListMonsters_f(edict_t *ent, cmdflags_t flags)
 {
     int monsters = 0;
-
-    if (!G_CheatCheck(ent))
-        return;
 
     for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
         edict_t *e = &g_edicts[i];
@@ -1487,14 +1446,9 @@ static void Cmd_ListMonsters_f(edict_t *ent)
     G_ClientPrintf(ent, PRINT_HIGH, "%d monsters listed\n", monsters);
 }
 
-static void Cmd_ShowMonsters_f(edict_t *ent)
+static void Cmd_ShowMonsters_f(edict_t *ent, cmdflags_t flags)
 {
     int monsters = 0;
-
-    if (game.maxclients > 1) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Only possible in single player\n");
-        return;
-    }
 
     trap_R_ClearDebugLines();
 
@@ -1520,16 +1474,11 @@ static void Cmd_ShowMonsters_f(edict_t *ent)
     G_ClientPrintf(ent, PRINT_HIGH, "%d monsters shown\n", monsters);
 }
 
-static void Cmd_ShowSecrets_f(edict_t *self)
+static void Cmd_ShowSecrets_f(edict_t *self, cmdflags_t flags)
 {
     edict_t *ent, *other;
     int secrets = 0;
     bool found;
-
-    if (game.maxclients > 1) {
-        G_ClientPrintf(self, PRINT_HIGH, "Only possible in single player\n");
-        return;
-    }
 
     trap_R_ClearDebugLines();
     ent = NULL;
@@ -1551,6 +1500,93 @@ static void Cmd_ShowSecrets_f(edict_t *self)
     G_ClientPrintf(self, PRINT_HIGH, "%d secrets revealed\n", secrets);
 }
 
+typedef struct {
+    const char *name;
+    void (*func)(edict_t *ent, cmdflags_t flags);
+    cmdflags_t flags;
+    void (*comp)(int firstarg, int argnum);
+} clientcmd_t;
+
+static const clientcmd_t clientcmds[] = {
+    { "players", Cmd_Players_f, INTERMISS },
+    { "say", Cmd_Say_f, INTERMISS },
+    { "score", Cmd_Score_f, INTERMISS },
+    { "help", Cmd_Help_f, INTERMISS },
+    { "listmonsters", Cmd_ListMonsters_f, SP_ONLY },
+    { "showmonsters", Cmd_ShowMonsters_f, SP_ONLY },
+    { "showsecrets", Cmd_ShowSecrets_f, SP_ONLY },
+    { "use", Cmd_Use_f, 0, Cmd_Item_c },
+    { "use_only", Cmd_Use_f, NO_CHAINS, Cmd_Item_c },
+    { "use_index", Cmd_Use_f, BY_INDEX },
+    { "use_index_only", Cmd_Use_f, NO_CHAINS | BY_INDEX },
+    { "drop", Cmd_Drop_f, 0, Cmd_Item_c },
+    { "drop_index", Cmd_Drop_f, BY_INDEX },
+    { "give", Cmd_Give_f, CHEAT, Cmd_Item_c },
+    { "god", Cmd_God_f, CHEAT },
+    { "immortal", Cmd_Immortal_f, CHEAT },
+    { "resurrect", Cmd_Resurrect_f, CHEAT },
+    { "target", Cmd_Target_f, SP_ONLY, Cmd_Target_c },
+    { "spawn", Cmd_Spawn_f, SP_ONLY, Cmd_Spawn_c },
+    { "teleport", Cmd_Teleport_f, CHEAT },
+    { "notarget", Cmd_Notarget_f, CHEAT },
+    { "novisible", Cmd_Novisible_f, CHEAT },
+    { "nodrown", Cmd_Nodrown_f, CHEAT },
+    { "noclip", Cmd_Noclip_f, CHEAT },
+    { "inven", Cmd_Inven_f },
+    { "invnext", SelectNextItem },
+    { "invprev", SelectPrevItem },
+    { "invnextw", SelectNextItem, WEAPON },
+    { "invprevw", SelectPrevItem, WEAPON },
+    { "invnextp", SelectNextItem, POWERUP },
+    { "invprevp", SelectPrevItem, POWERUP },
+    { "invuse", Cmd_InvUse_f },
+    { "invdrop", Cmd_InvDrop_f },
+    { "weapprev", Cmd_WeapPrev_f },
+    { "weapnext", Cmd_WeapNext_f },
+    { "weaplast", Cmd_WeapLast_f },
+    { "lastweap", Cmd_WeapLast_f },
+    { "kill", Cmd_Kill_f },
+    { "kill_ai", Cmd_Kill_AI_f, CHEAT },
+    { "where", Cmd_Where_f },
+    { "clear_ai_enemy", Cmd_Clear_AI_Enemy_f, CHEAT },
+    { "alertall", Cmd_AlertAll_f, CHEAT },
+    { "putaway", Cmd_PutAway_f },
+    { "wave", Cmd_Wave_f },
+// ZOID
+    { "team", CTFTeam_f, TEAMPL },
+    { "switchteam", CTFSwitchTeam_f, TEAMPL },
+    { "say_team", CTFSayTeam_f, INTERMISS | TEAMPL },
+    { "id", CTFID_f, TEAMPL },
+    { "yes", CTFVoteYes_f, TEAMPL },
+    { "no", CTFVoteNo_f, TEAMPL },
+    { "ready", CTFReady_f, TEAMPL },
+    { "notready", CTFNotReady_f, TEAMPL },
+    { "ghost", CTFGhost_f, TEAMPL },
+    { "admin", CTFAdmin_f, TEAMPL },
+    { "stats", CTFStats_f, TEAMPL },
+    { "warp", CTFWarp_f, TEAMPL },
+    { "boot", CTFBoot_f, TEAMPL },
+    { "playerlist", CTFPlayerList_f, TEAMPL },
+    { "observer", CTFObserver_f, TEAMPL },
+// ZOID
+    { "playerlist", Cmd_PlayerList_f },
+    { "say_team", Cmd_Say_f, INTERMISS },
+};
+
+static const clientcmd_t *FindClientCommand(const char *name)
+{
+    for (int i = 0; i < q_countof(clientcmds); i++) {
+        const clientcmd_t *cmd = &clientcmds[i];
+        if (level.intermissiontime && !(cmd->flags & INTERMISS))
+            continue;
+        if (cmd->flags & TEAMPL && !G_TeamplayEnabled())
+            continue;
+        if (Q_strcasecmp(name, cmd->name) == 0)
+            return cmd;
+    }
+    return NULL;
+}
+
 /*
 =================
 ClientCommand
@@ -1562,153 +1598,56 @@ q_exported void G_ClientCommand(int clientnum)
     if (!ent->client)
         return; // not fully in game yet
 
-    char cmd[MAX_QPATH];
-    trap_Argv(0, cmd, sizeof(cmd));
+    char buf[MAX_QPATH];
+    trap_Argv(0, buf, sizeof(buf));
 
-    if (Q_strcasecmp(cmd, "players") == 0) {
-        Cmd_Players_f(ent);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "say") == 0) {
-        Cmd_Say_f(ent, false);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "say_team") == 0 || Q_strcasecmp(cmd, "steam") == 0) {
-        if (G_TeamplayEnabled())
-            CTFSay_Team(ent);
-        else
-            Cmd_Say_f(ent, false);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "score") == 0) {
-        Cmd_Score_f(ent);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "help") == 0) {
-        Cmd_Help_f(ent);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "listmonsters") == 0) {
-        Cmd_ListMonsters_f(ent);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "showmonsters") == 0) {
-        Cmd_ShowMonsters_f(ent);
-        return;
-    }
-    if (Q_strcasecmp(cmd, "showsecrets") == 0) {
-        Cmd_ShowSecrets_f(ent);
+    const clientcmd_t *cmd = FindClientCommand(buf);
+
+    // anything that doesn't match a command will be a chat
+    if (!cmd) {
+        if (!level.intermissiontime)
+            Cmd_Say_f(ent, ZERO_ARG);
         return;
     }
 
-    if (level.intermissiontime)
+    if (cmd->flags & SP_ONLY && game.maxclients > 1) {
+        G_ClientPrintf(ent, PRINT_HIGH, "Only possible in single player\n");
         return;
+    }
 
-    if (Q_strcasecmp(cmd, "target") == 0)
-        Cmd_Target_f(ent);
-    else if (Q_strcasecmp(cmd, "use") == 0)
-        Cmd_Use_f(ent, false, false);
-    else if (Q_strcasecmp(cmd, "use_only") == 0)
-        Cmd_Use_f(ent, false, true);
-    else if (Q_strcasecmp(cmd, "use_index") == 0)
-        Cmd_Use_f(ent, true, false);
-    else if (Q_strcasecmp(cmd, "use_index_only") == 0)
-        Cmd_Use_f(ent, true, true);
-    else if (Q_strcasecmp(cmd, "drop") == 0)
-        Cmd_Drop_f(ent, false);
-    else if (Q_strcasecmp(cmd, "drop_index") == 0)
-        Cmd_Drop_f(ent, true);
-    else if (Q_strcasecmp(cmd, "give") == 0)
-        Cmd_Give_f(ent);
-    else if (Q_strcasecmp(cmd, "god") == 0)
-        Cmd_God_f(ent);
-    else if (Q_strcasecmp(cmd, "immortal") == 0)
-        Cmd_Immortal_f(ent);
-    else if (Q_strcasecmp(cmd, "resurrect") == 0)
-        Cmd_Resurrect_f(ent);
-    // Paril: cheats to help with dev
-    else if (Q_strcasecmp(cmd, "spawn") == 0)
-        Cmd_Spawn_f(ent);
-    else if (Q_strcasecmp(cmd, "teleport") == 0)
-        Cmd_Teleport_f(ent);
-    else if (Q_strcasecmp(cmd, "notarget") == 0)
-        Cmd_Notarget_f(ent);
-    else if (Q_strcasecmp(cmd, "novisible") == 0)
-        Cmd_Novisible_f(ent);
-    else if (Q_strcasecmp(cmd, "nodrown") == 0)
-        Cmd_Nodrown_f(ent);
-    else if (Q_strcasecmp(cmd, "alertall") == 0)
-        Cmd_AlertAll_f(ent);
-    else if (Q_strcasecmp(cmd, "noclip") == 0)
-        Cmd_Noclip_f(ent);
-    else if (Q_strcasecmp(cmd, "inven") == 0)
-        Cmd_Inven_f(ent);
-    else if (Q_strcasecmp(cmd, "invnext") == 0)
-        SelectNextItem(ent, IF_ANY, true);
-    else if (Q_strcasecmp(cmd, "invprev") == 0)
-        SelectPrevItem(ent, IF_ANY);
-    else if (Q_strcasecmp(cmd, "invnextw") == 0)
-        SelectNextItem(ent, IF_WEAPON, true);
-    else if (Q_strcasecmp(cmd, "invprevw") == 0)
-        SelectPrevItem(ent, IF_WEAPON);
-    else if (Q_strcasecmp(cmd, "invnextp") == 0)
-        SelectNextItem(ent, IF_POWERUP, true);
-    else if (Q_strcasecmp(cmd, "invprevp") == 0)
-        SelectPrevItem(ent, IF_POWERUP);
-    else if (Q_strcasecmp(cmd, "invuse") == 0)
-        Cmd_InvUse_f(ent);
-    else if (Q_strcasecmp(cmd, "invdrop") == 0)
-        Cmd_InvDrop_f(ent);
-    else if (Q_strcasecmp(cmd, "weapprev") == 0)
-        Cmd_WeapPrev_f(ent);
-    else if (Q_strcasecmp(cmd, "weapnext") == 0)
-        Cmd_WeapNext_f(ent);
-    else if (Q_strcasecmp(cmd, "weaplast") == 0 || Q_strcasecmp(cmd, "lastweap") == 0)
-        Cmd_WeapLast_f(ent);
-    else if (Q_strcasecmp(cmd, "kill") == 0)
-        Cmd_Kill_f(ent);
-    else if (Q_strcasecmp(cmd, "kill_ai") == 0)
-        Cmd_Kill_AI_f(ent);
-    else if (Q_strcasecmp(cmd, "where") == 0)
-        Cmd_Where_f(ent);
-    else if (Q_strcasecmp(cmd, "clear_ai_enemy") == 0)
-        Cmd_Clear_AI_Enemy_f(ent);
-    else if (Q_strcasecmp(cmd, "putaway") == 0)
-        Cmd_PutAway_f(ent);
-    else if (Q_strcasecmp(cmd, "wave") == 0)
-        Cmd_Wave_f(ent);
-    else if (Q_strcasecmp(cmd, "playerlist") == 0)
-        Cmd_PlayerList_f(ent);
-    // ZOID
-    else if (Q_strcasecmp(cmd, "team") == 0)
-        CTFTeam_f(ent);
-    else if (Q_strcasecmp(cmd, "id") == 0)
-        CTFID_f(ent);
-    else if (Q_strcasecmp(cmd, "yes") == 0)
-        CTFVoteYes(ent);
-    else if (Q_strcasecmp(cmd, "no") == 0)
-        CTFVoteNo(ent);
-    else if (Q_strcasecmp(cmd, "ready") == 0)
-        CTFReady(ent);
-    else if (Q_strcasecmp(cmd, "notready") == 0)
-        CTFNotReady(ent);
-    else if (Q_strcasecmp(cmd, "ghost") == 0)
-        CTFGhost(ent);
-    else if (Q_strcasecmp(cmd, "admin") == 0)
-        CTFAdmin(ent);
-    else if (Q_strcasecmp(cmd, "stats") == 0)
-        CTFStats(ent);
-    else if (Q_strcasecmp(cmd, "warp") == 0)
-        CTFWarp(ent);
-    else if (Q_strcasecmp(cmd, "boot") == 0)
-        CTFBoot(ent);
-    else if (Q_strcasecmp(cmd, "playerlist") == 0)
-        CTFPlayerList(ent);
-    else if (Q_strcasecmp(cmd, "observer") == 0)
-        CTFObserver(ent);
-    // ZOID
-    else if (Q_strcasecmp(cmd, "switchteam") == 0)
-        Cmd_Switchteam_f(ent);
-    else // anything that doesn't match a command will be a chat
-        Cmd_Say_f(ent, true);
+    if (cmd->flags & CHEAT && game.maxclients > 1 && !sv_cheats.integer) {
+        G_ClientPrintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+        return;
+    }
+
+    cmd->func(ent, cmd->flags);
+}
+
+/*
+=================
+G_CompleteClientCommand
+
+Completes client command name or argument for local system.
+=================
+*/
+void G_CompleteClientCommand(int firstarg, int argnum)
+{
+    if (argnum == 0) {
+        for (int i = 0; i < q_countof(clientcmds); i++) {
+            const clientcmd_t *cmd = &clientcmds[i];
+            if (cmd->flags & TEAMPL && !G_TeamplayEnabled())
+                continue;
+            if (cmd->flags & SP_ONLY && game.maxclients > 1)
+                continue;
+            trap_AddCommandCompletion(cmd->name);
+        }
+        return;
+    }
+
+    char buf[MAX_QPATH];
+    trap_Argv(firstarg, buf, sizeof(buf));
+
+    const clientcmd_t *cmd = FindClientCommand(buf);
+    if (cmd && cmd->comp)
+        cmd->comp(firstarg, argnum);
 }

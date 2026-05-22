@@ -1246,11 +1246,24 @@ extern const gitem_t itemlist[IT_TOTAL];
 //
 // g_cmds.c
 //
+typedef enum {
+    INTERMISS    = BIT(0),
+    CHEAT        = BIT(1),
+    SP_ONLY      = BIT(2),
+    NO_CHAINS    = BIT(3),
+    BY_INDEX     = BIT(4),
+    VALIDATE     = BIT(5),
+    WEAPON       = BIT(6),
+    POWERUP      = BIT(7),
+    ZERO_ARG     = BIT(8),
+    TEAMPL       = BIT(9)
+} cmdflags_t;
+
 bool CheckFlood(edict_t *ent);
-void Cmd_Help_f(edict_t *ent);
-void Cmd_Score_f(edict_t *ent);
+void Cmd_Help_f(edict_t *ent, cmdflags_t flags);
 void ValidateSelectedItem(edict_t *ent);
 void G_ClientCommand(int clientnum);
+void G_CompleteClientCommand(int firstarg, int argnum);
 
 //
 // g_items.c
@@ -1357,6 +1370,7 @@ const char *G_GetLightStyle(unsigned style);
 void G_RefreshPrecaches(void);
 void G_PrecacheInventoryItems(void);
 void G_SpawnEntities(void);
+void Cmd_Spawn_c(int firstarg, int argnum);
 
 //
 // g_save.c
@@ -1704,6 +1718,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 // g_svcmds.c
 //
 void G_ServerCommand(void);
+void G_CompleteCommand(int firstarg, int argnum);
 
 //
 // p_view.c
@@ -1719,6 +1734,8 @@ void G_SetCoopStats(edict_t *ent);
 void G_SetSpectatorStats(edict_t *ent);
 void G_CheckChaseStats(edict_t *ent);
 void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer, bool reliable);
+void DeathmatchScoreboard(edict_t *ent);
+void HelpComputer(edict_t *ent);
 void G_UpdateLevelEntry(void);
 void G_EndOfUnitMessage(void);
 

@@ -235,6 +235,9 @@ typedef struct {
     // for map changing, etc
     void (*AddCommandString)(const char *text);
 
+    void (*SetCompletionOptions)(completion_option_t opt);
+    void (*AddCommandCompletion)(const char *s);
+
     void (*DebugGraph)(float value, int color);
 
     int64_t     (*FS_OpenFile)(const char *path, qhandle_t *f, unsigned mode); // returns file length
@@ -314,7 +317,7 @@ typedef struct {
     // The game can issue gi.argc() / gi.argv() commands to get the rest
     // of the parameters
     void (*ServerCommand)(void);
-
+    void (*CompleteCommand)(int firstarg, int argnum);
     void (*RestartFilesystem)(void); // called when fs_restart is issued
 } game_export_t;
 

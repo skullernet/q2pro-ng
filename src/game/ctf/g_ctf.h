@@ -92,14 +92,20 @@ void        CheckEndTDMLevel(void); // [Paril-KEX]
 void        SetCTFStats(edict_t *ent);
 void        CTFDeadDropFlag(edict_t *self);
 void        CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable);
-void        CTFTeam_f(edict_t *ent);
-void        CTFID_f(edict_t *ent);
-void        CTFSay_Team(edict_t *who);
 void        CTFFlagSetup(edict_t *ent);
 void        CTFResetFlag(ctfteam_t ctf_team);
 void        CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker);
 void        CTFCheckHurtCarrier(edict_t *targ, edict_t *attacker);
 void        CTFDirtyTeamMenu(void);
+void        CTFOpenJoinMenu(edict_t *ent);
+
+bool CTFStartClient(edict_t *ent);
+bool CTFNextMap(void);
+bool CTFMatchSetup(void);
+bool CTFMatchOn(void);
+bool CTFInMatch(void);
+bool CTFCheckRules(void);
+
 
 // GRAPPLE
 void CTFWeapon_Grapple(edict_t *ent);
@@ -123,24 +129,22 @@ bool     CTFHasRegeneration(edict_t *ent);
 void     CTFRespawnTech(edict_t *ent);
 void     CTFResetTech(void);
 
-void CTFOpenJoinMenu(edict_t *ent);
-bool CTFStartClient(edict_t *ent);
-void CTFVoteYes(edict_t *ent);
-void CTFVoteNo(edict_t *ent);
-void CTFReady(edict_t *ent);
-void CTFNotReady(edict_t *ent);
-bool CTFNextMap(void);
-bool CTFMatchSetup(void);
-bool CTFMatchOn(void);
-void CTFGhost(edict_t *ent);
-void CTFAdmin(edict_t *ent);
-bool CTFInMatch(void);
-void CTFStats(edict_t *ent);
-void CTFWarp(edict_t *ent);
-void CTFBoot(edict_t *ent);
-void CTFPlayerList(edict_t *ent);
-
-bool CTFCheckRules(void);
+// COMMANDS
+void CTFAdmin_f(edict_t *ent, cmdflags_t flags);
+void CTFBoot_f(edict_t *ent, cmdflags_t flags);
+void CTFGhost_f(edict_t *ent, cmdflags_t flags);
+void CTFID_f(edict_t *ent, cmdflags_t flags);
+void CTFNotReady_f(edict_t *ent, cmdflags_t flags);
+void CTFObserver_f(edict_t *ent, cmdflags_t flags);
+void CTFPlayerList_f(edict_t *ent, cmdflags_t flags);
+void CTFReady_f(edict_t *ent, cmdflags_t flags);
+void CTFSayTeam_f(edict_t *who, cmdflags_t flags);
+void CTFStats_f(edict_t *ent, cmdflags_t flags);
+void CTFSwitchTeam_f(edict_t *ent, cmdflags_t flags);
+void CTFTeam_f(edict_t *ent, cmdflags_t flags);
+void CTFVoteNo_f(edict_t *ent, cmdflags_t flags);
+void CTFVoteYes_f(edict_t *ent, cmdflags_t flags);
+void CTFWarp_f(edict_t *ent, cmdflags_t flags);
 
 void SP_misc_ctf_banner(edict_t *ent);
 void SP_misc_ctf_small_banner(edict_t *ent);
@@ -148,8 +152,6 @@ void SP_misc_ctf_small_banner(edict_t *ent);
 void UpdateChaseCam(edict_t *ent);
 void ChaseNext(edict_t *ent);
 void ChasePrev(edict_t *ent);
-
-void CTFObserver(edict_t *ent);
 
 void SP_trigger_teleport(edict_t *ent);
 void SP_info_teleport_destination(edict_t *ent);

@@ -295,12 +295,16 @@ static void CG_TestModel_f(void)
 
 static void CG_TestModelNextFrame_f(void)
 {
+    if (!cg.test_model.model)
+        return;
     cg.test_model.frame++;
     Com_Printf("frame %u\n", cg.test_model.frame);
 }
 
 static void CG_TestModelPrevFrame_f(void)
 {
+    if (!cg.test_model.model)
+        return;
     if (cg.test_model.frame > 0)
         cg.test_model.frame--;
     Com_Printf("frame %u\n", cg.test_model.frame);
@@ -308,24 +312,34 @@ static void CG_TestModelPrevFrame_f(void)
 
 static void CG_TestModelNextSkin_f(void)
 {
+    if (!cg.test_model.model)
+        return;
     cg.test_model.skinnum++;
     Com_Printf("skin %u\n", cg.test_model.skinnum);
 }
 
 static void CG_TestModelPrevSkin_f(void)
 {
+    if (!cg.test_model.model)
+        return;
     if (cg.test_model.skinnum > 0)
         cg.test_model.skinnum--;
     Com_Printf("skin %u\n", cg.test_model.skinnum);
 }
 
+typedef enum {
+    NEED_FRAME = BIT(0),
+    NO_DEMO    = BIT(1),
+} cg_cmdflags_t;
+
 typedef struct {
     const char *name;
     void (*func)(void);
+    cg_cmdflags_t flags;
     void (*comp)(int firstarg, int argnum);
-} vm_cmd_reg_t;
+} cg_consolecmd_t;
 
-static vm_cmd_reg_t cg_consolecmds[] = {
+static cg_consolecmd_t cg_consolecmds[] = {
     // use anytime commands
     { "viewpos", V_Viewpos_f },
     { "fog", V_Fog_f },
@@ -340,83 +354,103 @@ static vm_cmd_reg_t cg_consolecmds[] = {
     { "nextskin", CG_TestModelNextSkin_f },
     { "prevskin", CG_TestModelPrevSkin_f },
 
-    // commands below this separator are never executed during demos or if
-    // there is no valid server frame
-    { NULL },
+    { "cl_weapprev", CG_WeapPrev_f, NEED_FRAME | NO_DEMO },
+    { "cl_weapnext", CG_WeapNext_f, NEED_FRAME | NO_DEMO },
+    { "+wheel", CG_ShowWeaponWheel_f, NEED_FRAME | NO_DEMO },
+    { "-wheel", CG_HideWeaponWheel_f, NEED_FRAME | NO_DEMO },
+    { "+wheel2", CG_ShowPowerupWheel_f, NEED_FRAME | NO_DEMO },
+    { "-wheel2", CG_HidePowerupWheel_f, NEED_FRAME | NO_DEMO },
 
-    { "cl_weapprev", CG_WeapPrev_f },
-    { "cl_weapnext", CG_WeapNext_f },
-    { "+wheel", CG_ShowWeaponWheel_f },
-    { "-wheel", CG_HideWeaponWheel_f },
-    { "+wheel2", CG_ShowPowerupWheel_f },
-    { "-wheel2", CG_HidePowerupWheel_f },
-
-    // forward to server commands
-    { "players" }, { "score" }, { "help" },
-    { "say", NULL, CG_Say_c }, { "say_team", NULL, CG_Say_c },
-    { "showsecrets" }, { "showmonsters" }, { "listmonsters" },
-    { "target" }, { "spawn" }, { "teleport" },
-    { "wave" }, { "kill" }, { "use", NULL, CG_Item_c },
-    { "drop", NULL, CG_Item_c }, { "give", NULL, CG_Item_c },
-    { "god" }, { "notarget" }, { "noclip" }, { "immortal" },
-    { "novisible" }, { "inven" }, { "invuse" }, { "invprev" },
-    { "invnext" }, { "invdrop" }, { "invnextw" }, { "invprevw" },
-    { "invnextp" }, { "invprevp" }, { "weapnext" }, { "weapprev" },
-    { "weaplast" }
+    // forward to server commands. these are only here for
+    // command completion if *not* running a local server.
+    { "drop", .comp = CG_Item_c },
+    { "give", .comp = CG_Item_c },
+    { "god" },
+    { "help" },
+    { "immortal" },
+    { "invdrop" },
+    { "inven" },
+    { "invnext" },
+    { "invprev" },
+    { "invuse" },
+    { "kill" },
+    { "noclip" },
+    { "notarget" },
+    { "novisible" },
+    { "players" },
+    { "resurrect" },
+    { "say", .comp = CG_Say_c },
+    { "say_team", .comp = CG_Say_c },
+    { "score" },
+    { "use", .comp = CG_Item_c },
+    { "wave" },
+    { "weaplast" },
+    { "weapnext" },
+    { "weapprev" },
 };
 
-// Register cgame commands for command completion.
-void CG_RegisterCommands(void)
+static const cg_consolecmd_t *CG_FindConsoleCommand(const char *name)
 {
     for (int i = 0; i < q_countof(cg_consolecmds); i++)
-        if (cg_consolecmds[i].name)
-            trap_RegisterCommand(cg_consolecmds[i].name);
+        if (strcmp(name, cg_consolecmds[i].name) == 0)
+            return &cg_consolecmds[i];
+    return NULL;
 }
 
-// Cgame must return true if it handles the command, otherwise it will be
-// forwarded to server.
+static bool CG_CommandAllowed(const cg_consolecmd_t *cmd)
+{
+    if (cmd->flags & NEED_FRAME && !cg.frame)
+        return false;
+    if (cmd->flags & NO_DEMO && cgs.demoplayback)
+        return false;
+    if (!cmd->func && (sv_running.integer || cgs.demoplayback))
+        return false;
+    return true;
+}
+
+/*
+=================
+CG_ConsoleCommand
+
+Returns true if cgame handles the command, otherwise it will be
+forwarded to server.
+=================
+*/
 qvm_exported bool CG_ConsoleCommand(void)
 {
-    char cmd[MAX_QPATH];
-    trap_Argv(0, cmd, sizeof(cmd));
+    char buf[MAX_QPATH];
+    trap_Argv(0, buf, sizeof(buf));
 
-    for (int i = 0; i < q_countof(cg_consolecmds); i++) {
-        const vm_cmd_reg_t *reg = &cg_consolecmds[i];
-        if (!reg->name) {
-            if (cgs.demoplayback || !cg.frame)
-                break;
-            continue;
-        }
-        if (strcmp(cmd, reg->name))
-            continue;
-        if (reg->func) {
-            reg->func();
-            return true;
-        }
-        break;
-    }
-
-    return false;
+    const cg_consolecmd_t *cmd = CG_FindConsoleCommand(buf);
+    if (!cmd || !cmd->func)
+        return false;
+    if (CG_CommandAllowed(cmd))
+        cmd->func();
+    return true;
 }
 
-// firstarg is absolute argument index of command being completed.
-// argnum is relative argument number to that command.
+/*
+=================
+CG_CompleteCommand
+
+Completes command name or argument for cgame recognized command.
+=================
+*/
 qvm_exported void CG_CompleteCommand(int firstarg, int argnum)
 {
-    char cmd[MAX_QPATH];
-    trap_Argv(firstarg, cmd, sizeof(cmd));
-
-    for (int i = 0; i < q_countof(cg_consolecmds); i++) {
-        const vm_cmd_reg_t *reg = &cg_consolecmds[i];
-        if (!reg->name) {
-            if (cgs.demoplayback || !cg.frame)
-                break;
-            continue;
+    if (argnum == 0) {
+        for (int i = 0; i < q_countof(cg_consolecmds); i++) {
+            const cg_consolecmd_t *cmd = &cg_consolecmds[i];
+            if (CG_CommandAllowed(cmd))
+                trap_AddCommandCompletion(cmd->name);
         }
-        if (strcmp(cmd, reg->name))
-            continue;
-        if (reg->comp)
-            reg->comp(firstarg, argnum);
-        break;
+        return;
     }
+
+    char buf[MAX_QPATH];
+    trap_Argv(firstarg, buf, sizeof(buf));
+
+    const cg_consolecmd_t *cmd = CG_FindConsoleCommand(buf);
+    if (cmd && cmd->comp && CG_CommandAllowed(cmd))
+        cmd->comp(firstarg, argnum);
 }

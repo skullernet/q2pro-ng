@@ -445,8 +445,6 @@ static const spawn_func_t spawn_funcs[] = {
     { "target_achievement", SP_target_achievement }, // [Paril-KEX]
     { "target_story", SP_target_story }, // [Paril-KEX]
 
-    { "worldspawn", SP_worldspawn },
-
     { "dynamic_light", SP_dynamic_light },
     { "light", SP_light },
     { "light_mine1", SP_light_mine1 },
@@ -646,8 +644,6 @@ static const spawn_func_t spawn_funcs[] = {
     { "misc_fiend_craft", SP_misc_fiend_craft },
     { "trigger_key2", SP_trigger_key2 },
     // CotV
-
-    { NULL }
 };
 // clang-format on
 
@@ -676,7 +672,7 @@ static const spawn_field_t entity_fields[] = {
     { "move_angles", FOFS(move_angles), F_VECTOR },
     { "style", FOFS(style), F_INT },
     { "style_off", FOFS(style_off), F_LSTRING },
-    { "style_on", FOFS(style_off), F_LSTRING },
+    { "style_on", FOFS(style_on), F_LSTRING },
     { "crosslevel_flags", FOFS(crosslevel_flags), F_INT },
     { "count", FOFS(count), F_INT },
     { "health", FOFS(health), F_INT },
@@ -810,6 +806,27 @@ static byte entity_bitmap[(q_countof(entity_fields) + 7) / 8];
 static byte temp_bitmap[(q_countof(temp_fields) + 7) / 8];
 static byte precache_bitmap[(q_countof(spawn_funcs) + 7) / 8];
 
+void Cmd_Spawn_c(int firstarg, int argnum)
+{
+    int i;
+
+    if (argnum == 1) {
+        for (i = IT_NULL + 1; i < IT_TOTAL; i++)
+            if (itemlist[i].classname)
+                trap_AddCommandCompletion(itemlist[i].classname);
+        for (i = 0; i < q_countof(spawn_funcs); i++)
+            trap_AddCommandCompletion(spawn_funcs[i].name);
+        return;
+    }
+
+    if (!(argnum & 1)) {
+        for (i = 0; i < q_countof(temp_fields); i++)
+            trap_AddCommandCompletion(temp_fields[i].name);
+        for (i = 0; i < q_countof(entity_fields); i++)
+            trap_AddCommandCompletion(entity_fields[i].name);
+    }
+}
+
 static void ED_PrecacheSpawn(const spawn_func_t *s)
 {
     ptrdiff_t bit = s - spawn_funcs;
@@ -833,18 +850,19 @@ void ED_CallSpawn(edict_t *ent)
     const gitem_t      *item;
     int                 i;
 
+    // worldspawn is special
+    if (ent == world) {
+        if (!ent->classname || strcmp(ent->classname, "worldspawn"))
+            G_Error("ED_CallSpawn: first entity must be worldspawn");
+        SP_worldspawn(ent);
+        return;
+    }
+
     if (!ent->classname) {
         G_Printf("ED_CallSpawn: NULL classname\n");
         G_FreeEdict(ent);
         return;
     }
-
-    if (ent == world && strcmp(ent->classname, "worldspawn"))
-        G_Error("ED_CallSpawn: first entity must be worldspawn");
-
-    // PGM - do this before calling the spawn function so it can be overridden.
-    ent->gravityVector = Vec3(0, 0, -1);
-    // PGM
 
     // FIXME - PMM classnames hack
     if (!strcmp(ent->classname, "weapon_nailgun"))
@@ -881,7 +899,7 @@ void ED_CallSpawn(edict_t *ent)
     }
 
     // check normal spawn functions
-    for (s = spawn_funcs; s->name; s++) {
+    for (i = 0, s = spawn_funcs; i < q_countof(spawn_funcs); i++, s++) {
         if (!strcmp(s->name, ent->classname)) {
             // auto-remove monsters for deathmatch
             if (!strncmp(s->name, CONST_STR_LEN("monster_")) && !M_AllowSpawn(ent)) {
@@ -1389,9 +1407,9 @@ void G_RefreshPrecaches(void)
         if (!ent->r.inuse)
             continue;
 
-        for (const spawn_func_t *s = spawn_funcs; s->name; s++) {
-            if (!strcmp(s->name, ent->classname)) {
-                ED_PrecacheSpawn(s);
+        for (int j = 0; j < q_countof(spawn_funcs); j++) {
+            if (!strcmp(spawn_funcs[j].name, ent->classname)) {
+                ED_PrecacheSpawn(&spawn_funcs[j]);
                 break;
             }
         }

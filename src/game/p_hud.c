@@ -11,8 +11,6 @@ INTERMISSION
 ======================================================================
 */
 
-void DeathmatchScoreboard(edict_t *ent);
-
 void MoveClientToIntermission(edict_t *ent)
 {
     // [Paril-KEX]
@@ -412,45 +410,12 @@ void DeathmatchScoreboard(edict_t *ent)
 
 /*
 ==================
-Cmd_Score_f
-
-Display the scoreboard
-==================
-*/
-void Cmd_Score_f(edict_t *ent)
-{
-    if (level.intermissiontime)
-        return;
-
-    ent->client->showinventory = false;
-    ent->client->showhelp = false;
-
-    // ZOID
-    if (ent->client->menu)
-        PMenu_Close(ent);
-    // ZOID
-
-    if (!deathmatch.integer && !coop.integer)
-        return;
-
-    if (ent->client->showscores) {
-        ent->client->showscores = false;
-        ent->client->update_chase = true;
-        return;
-    }
-
-    ent->client->showscores = true;
-    DeathmatchScoreboard(ent);
-}
-
-/*
-==================
 HelpComputer
 
 Draw help computer.
 ==================
 */
-static void HelpComputer(edict_t *ent)
+void HelpComputer(edict_t *ent)
 {
     const char *sk;
 
@@ -498,39 +463,6 @@ static void HelpComputer(edict_t *ent)
     sb_xv(265), sb_yv(172), sb_rstring2(va("Secrets: %d/%d", level.found_secrets, level.total_secrets));
 
     trap_ClientCommand(ent, va("layout %s", sb_buffer()), true);
-}
-
-/*
-==================
-Cmd_Help_f
-
-Display the current help message
-==================
-*/
-void Cmd_Help_f(edict_t *ent)
-{
-    // this is for backwards compatibility
-    if (deathmatch.integer) {
-        Cmd_Score_f(ent);
-        return;
-    }
-
-    if (level.intermissiontime)
-        return;
-
-    ent->client->showinventory = false;
-    ent->client->showscores = false;
-
-    if (ent->client->showhelp &&
-        (ent->client->pers.game_help1changed == game.help1changed ||
-         ent->client->pers.game_help2changed == game.help2changed)) {
-        ent->client->showhelp = false;
-        return;
-    }
-
-    ent->client->showhelp = true;
-    ent->client->pers.helpchanged = 0;
-    HelpComputer(ent);
 }
 
 //=======================================================================

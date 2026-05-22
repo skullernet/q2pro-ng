@@ -38,3 +38,30 @@ qvm_exported void G_ServerCommand(void)
     else
         G_Printf("Unknown server command \"%s\"\n", cmd);
 }
+
+/*
+=================
+G_CompleteCommand
+
+Completes command name or argument for game recognized command.
+=================
+*/
+qvm_exported void G_CompleteCommand(int firstarg, int argnum)
+{
+    char cmd[MAX_QPATH];
+    trap_Argv(firstarg, cmd, sizeof(cmd));
+
+    // complete server command
+    if (!strcmp(cmd, "sv")) {
+        if (argnum == 1) {
+            trap_AddCommandCompletion("test");
+            trap_AddCommandCompletion("nextmap");
+            trap_AddCommandCompletion("meminfo");
+        }
+        return;
+    }
+
+    // complete client commands for local system
+    if (!sv_dedicated.integer)
+        G_CompleteClientCommand(firstarg, argnum);
+}

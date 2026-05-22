@@ -40,6 +40,7 @@ unsigned SV_Frame(unsigned msec);
 void SV_SetConsoleTitle(void);
 #endif
 //void SV_ConsoleOutput(const char *msg);
+void SV_CompleteCommand(int firstarg, int argnum);
 void SV_RestartFilesystem(void);
 
 #if USE_MVD_CLIENT && USE_CLIENT

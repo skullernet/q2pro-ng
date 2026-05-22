@@ -81,6 +81,7 @@ vm_cvar_t   cg_railspiral_color;
 vm_cvar_t   cg_railspiral_radius;
 vm_cvar_t   cl_paused;
 vm_cvar_t   sv_paused;
+vm_cvar_t   sv_running;
 vm_cvar_t   s_reverb;
 vm_cvar_t   com_timedemo;
 vm_cvar_t   info_hand;
@@ -140,6 +141,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_railspiral_radius, "3", 0),
     VM_CVAR(cl_paused, "0", CVAR_ROM),
     VM_CVAR(sv_paused, "0", CVAR_ROM),
+    VM_CVAR(sv_running, "0", CVAR_ROM),
     VM_CVAR(s_reverb, "1", 0),
 
     { &com_timedemo, "timedemo", "0", CVAR_CHEAT },
@@ -157,8 +159,6 @@ qvm_exported void CG_Init(void)
         const vm_cvar_reg_t *reg = &cg_cvars[i];
         trap_Cvar_Register(reg->var, reg->name, reg->default_string, reg->flags);
     }
-
-    CG_RegisterCommands();
 
     SCR_Init();
     CG_InitEffects();

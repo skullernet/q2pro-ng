@@ -69,6 +69,7 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from);
 void CL_SendStatusRequest(const netadr_t *address);
 bool CL_GetDemoInfo(const char *path, demoInfo_t *info);
 bool CL_CheatsOK(void);
+void CL_CompleteCommand(int firstarg, int argnum);
 void CL_SetSky(void);
 
 #if USE_CURL
@@ -103,6 +104,7 @@ void SCR_UpdateScreen(void);
 #define CL_RestartFilesystem(total)     FS_Restart(total)
 #define CL_ForwardToServer()            false
 #define CL_CheatsOK()                   (bool)Cvar_VariableInteger("cheats")
+#define CL_CompleteCommand(firstarg, argnum) (void)0
 
 #define Con_Init()                      (void)0
 #define Con_SetColor(color)             (void)0

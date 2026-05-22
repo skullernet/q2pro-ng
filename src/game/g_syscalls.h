@@ -68,6 +68,9 @@ size_t trap_Argv(int arg, char *buf, size_t size);
 size_t trap_Args(char *buf, size_t size);
 void trap_AddCommandString(const char *text);
 
+void trap_SetCompletionOptions(completion_option_t opt);
+void trap_AddCommandCompletion(const char *s);
+
 void trap_DebugGraph(float value, int color);
 
 int64_t trap_FS_OpenFile(const char *path, qhandle_t *f, unsigned mode);
@@ -150,6 +153,9 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_Argv gi->Argv
 #define trap_Args gi->Args
 #define trap_AddCommandString gi->AddCommandString
+
+#define trap_SetCompletionOptions gi->SetCompletionOptions
+#define trap_AddCommandCompletion gi->AddCommandCompletion
 
 #define trap_DebugGraph gi->DebugGraph
 

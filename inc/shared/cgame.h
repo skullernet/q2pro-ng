@@ -88,7 +88,6 @@ typedef struct {
     void (*GetClientInfo)(cg_client_info_t *info);
 
     void (*ClientCommand)(const char *cmd);
-    void (*RegisterCommand)(const char *cmd);
 
     void (*SetCompletionOptions)(completion_option_t opt);
     void (*AddCommandCompletion)(const char *s);

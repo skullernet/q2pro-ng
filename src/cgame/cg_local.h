@@ -453,6 +453,7 @@ extern vm_cvar_t    cg_railspiral_radius;
 
 extern vm_cvar_t    cl_paused;
 extern vm_cvar_t    sv_paused;
+extern vm_cvar_t    sv_running;
 extern vm_cvar_t    s_reverb;
 extern vm_cvar_t    com_timedemo;
 
@@ -731,7 +732,6 @@ void CG_ServerCommand(void);
 // cg_consolecmds.c
 //
 
-void CG_RegisterCommands(void);
 bool CG_ConsoleCommand(void);
 void CG_CompleteCommand(int firstarg, int argnum);
 

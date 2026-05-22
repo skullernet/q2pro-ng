@@ -223,7 +223,7 @@ static void WizardSpitRight(edict_t *self)
 
 static void wizard_prespit(edict_t *self)
 {
-    G_StartSound(self, CHAN_WEAPON, SOUND.attack, 1, ATTN_NORM);
+    G_StartSound(self, CHAN_VOICE, SOUND.attack, 1, ATTN_NORM);
 }
 
 // Attack

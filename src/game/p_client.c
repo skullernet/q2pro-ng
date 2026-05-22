@@ -554,7 +554,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
         CTFDeadDropTech(self);
         // ZOID
         if (deathmatch.integer && !self->client->showscores)
-            Cmd_Help_f(self); // show scores
+            Cmd_Help_f(self, 0); // show scores
 
         if (coop.integer && !P_UseCoopInstancedItems()) {
             // clear inventory

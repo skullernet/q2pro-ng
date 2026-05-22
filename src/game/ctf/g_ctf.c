@@ -839,7 +839,7 @@ void CheckEndTDMLevel(void)
     }
 }
 
-void CTFID_f(edict_t *ent)
+void CTFID_f(edict_t *ent, cmdflags_t flags)
 {
     if (ent->client->resp.id_state) {
         G_ClientPrintf(ent, PRINT_HIGH, "Disabling player identification display.\n");
@@ -1377,11 +1377,8 @@ void CTFDirtyTeamMenu(void)
     }
 }
 
-void CTFTeam_f(edict_t *ent)
+void CTFTeam_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_TeamplayEnabled())
-        return;
-
     char t[MAX_QPATH];
     ctfteam_t   desired_team;
 
@@ -1454,6 +1451,85 @@ void CTFTeam_f(edict_t *ent)
 
     G_ClientPrintf(NULL, PRINT_HIGH, "%s changed to the %s team.\n",
                    ent->client->pers.netname, CTFTeamName(desired_team));
+}
+
+void CTFSwitchTeam_f(edict_t *ent, cmdflags_t flags)
+{
+    // [Paril-KEX] in force-join, just do a regular team join.
+    if (g_teamplay_force_join.integer) {
+        // check if we should even switch teams
+        edict_t *player;
+        int team1count = 0, team2count = 0;
+        ctfteam_t best_team;
+
+        for (int i = 0; i < game.maxclients; i++) {
+            player = &g_edicts[i];
+
+            // NB: we are counting ourselves in this one, unlike
+            // the other assign team func
+            if (!player->r.inuse)
+                continue;
+
+            switch (player->client->resp.ctf_team) {
+            case CTF_TEAM1:
+                team1count++;
+                break;
+            case CTF_TEAM2:
+                team2count++;
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (team1count < team2count)
+            best_team = CTF_TEAM1;
+        else
+            best_team = CTF_TEAM2;
+
+        if (ent->client->resp.ctf_team != best_team) {
+            ////
+            ent->r.svflags = SVF_NONE;
+            ent->flags &= ~FL_GODMODE;
+            ent->client->resp.ctf_team = best_team;
+            ent->client->resp.ctf_state = 0;
+            CTFAssignSkin(ent, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
+
+            // if anybody has a menu open, update it immediately
+            CTFDirtyTeamMenu();
+
+            if (ent->r.solid == SOLID_NOT) {
+                // spectator
+                PutClientInServer(ent);
+
+                G_PostRespawn(ent);
+
+                G_ClientPrintf(NULL, PRINT_HIGH, "%s joined the %s team.\n",
+                               ent->client->pers.netname, CTFTeamName(best_team));
+                return;
+            }
+
+            ent->health = 0;
+            player_die(ent, ent, ent, 100000, vec3_origin, MOD_SUICIDE_NP);
+
+            // don't even bother waiting for death frames
+            ent->deadflag = true;
+            respawn(ent);
+
+            ent->client->resp.score = 0;
+
+            G_ClientPrintf(NULL, PRINT_HIGH, "%s changed to the %s team.\n",
+                           ent->client->pers.netname, CTFTeamName(best_team));
+        }
+
+        return;
+    }
+
+    if (ent->client->resp.ctf_team != CTF_NOTEAM)
+        CTFObserver_f(ent, flags);
+
+    if (!ent->client->menu)
+        CTFOpenJoinMenu(ent);
 }
 
 #define MAX_CTF_STAT_LENGTH 1024
@@ -1921,7 +1997,7 @@ bool CTFHasRegeneration(edict_t *ent)
     return ent->client && ent->client->pers.inventory[IT_TECH_REGENERATION];
 }
 
-void CTFSay_Team(edict_t *who)
+void CTFSayTeam_f(edict_t *who, cmdflags_t flags)
 {
     edict_t *cl_ent;
     char outmsg[256];
@@ -2242,7 +2318,7 @@ static void CTFWinElection(void)
     ctfgame.election = ELECT_NONE;
 }
 
-void CTFVoteYes(edict_t *ent)
+void CTFVoteYes_f(edict_t *ent, cmdflags_t flags)
 {
     if (ctfgame.election == ELECT_NONE) {
         G_ClientPrintf(ent, PRINT_HIGH, "No election is in progress.\n");
@@ -2270,7 +2346,7 @@ void CTFVoteYes(edict_t *ent)
                    (int)TO_SEC(ctfgame.electtime - level.time));
 }
 
-void CTFVoteNo(edict_t *ent)
+void CTFVoteNo_f(edict_t *ent, cmdflags_t flags)
 {
     if (ctfgame.election == ELECT_NONE) {
         G_ClientPrintf(ent, PRINT_HIGH, "No election is in progress.\n");
@@ -2292,7 +2368,7 @@ void CTFVoteNo(edict_t *ent)
                    (int)TO_SEC(ctfgame.electtime - level.time));
 }
 
-void CTFReady(edict_t *ent)
+void CTFReady_f(edict_t *ent, cmdflags_t flags)
 {
     int i, j;
     edict_t *e;
@@ -2338,7 +2414,7 @@ void CTFReady(edict_t *ent)
     }
 }
 
-void CTFNotReady(edict_t *ent)
+void CTFNotReady_f(edict_t *ent, cmdflags_t flags)
 {
     if (ent->client->resp.ctf_team == CTF_NOTEAM) {
         G_ClientPrintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
@@ -2365,7 +2441,7 @@ void CTFNotReady(edict_t *ent)
     }
 }
 
-void CTFGhost(edict_t *ent)
+void CTFGhost_f(edict_t *ent, cmdflags_t flags)
 {
     int i;
     int n;
@@ -2699,9 +2775,9 @@ bool CTFStartClient(edict_t *ent)
     return false;
 }
 
-void CTFObserver(edict_t *ent)
+void CTFObserver_f(edict_t *ent, cmdflags_t flags)
 {
-    if (!G_TeamplayEnabled() || g_teamplay_force_join.integer)
+    if (g_teamplay_force_join.integer)
         return;
 
     // start as 'observer'
@@ -3264,7 +3340,7 @@ static void CTFOpenAdminMenu(edict_t *ent)
     PMenu_Open(ent, adminmenu, -1, q_countof(adminmenu), NULL, NULL);
 }
 
-void CTFAdmin(edict_t *ent)
+void CTFAdmin_f(edict_t *ent, cmdflags_t flags)
 {
     if (!allow_admin.integer) {
         G_ClientPrintf(ent, PRINT_HIGH, "Administration is disabled\n");
@@ -3295,16 +3371,13 @@ void CTFAdmin(edict_t *ent)
 
 /*----------------------------------------------------------------*/
 
-void CTFStats(edict_t *ent)
+void CTFStats_f(edict_t *ent, cmdflags_t flags)
 {
     int i, e;
     ghost_t *g;
     char st[80];
     char text[MAX_CTF_STAT_LENGTH];
     edict_t *e2;
-
-    if (!G_TeamplayEnabled())
-        return;
 
     *text = 0;
     if (ctfgame.match == MATCH_SETUP) {
@@ -3363,7 +3436,7 @@ void CTFStats(edict_t *ent)
     G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
-void CTFPlayerList(edict_t *ent)
+void CTFPlayerList_f(edict_t *ent, cmdflags_t flags)
 {
     char st[80];
     char text[MAX_CTF_STAT_LENGTH];
@@ -3400,7 +3473,7 @@ void CTFPlayerList(edict_t *ent)
     G_ClientPrintf(ent, PRINT_HIGH, "%s", text);
 }
 
-void CTFWarp(edict_t *ent)
+void CTFWarp_f(edict_t *ent, cmdflags_t flags)
 {
     char list[MAX_STRING_CHARS];
     trap_Cvar_VariableString("warp_list", list, sizeof(list));
@@ -3440,7 +3513,7 @@ void CTFWarp(edict_t *ent)
         Q_strlcpy(ctfgame.elevel, buf, sizeof(ctfgame.elevel));
 }
 
-void CTFBoot(edict_t *ent)
+void CTFBoot_f(edict_t *ent, cmdflags_t flags)
 {
     edict_t *targ;
 

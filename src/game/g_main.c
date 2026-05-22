@@ -413,6 +413,7 @@ q_exported const game_export_t *GetGameAPI(const game_import_t *import)
         .PrepFrame = G_PrepFrame,
 
         .ServerCommand = G_ServerCommand,
+        .CompleteCommand = G_CompleteCommand,
         .RestartFilesystem = G_RestartFilesystem,
     };
 

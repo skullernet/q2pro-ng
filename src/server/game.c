@@ -538,6 +538,14 @@ VM_THUNK(AddCommandString) {
     PF_AddCommandString(VM_STR(0));
 }
 
+VM_THUNK(SetCompletionOptions) {
+    Prompt_SetOptions(VM_U32(0));
+}
+
+VM_THUNK(AddCommandCompletion) {
+    Prompt_AddMatch(VM_STR(0));
+}
+
 VM_THUNK(DebugGraph) {
     SCR_DebugGraph(VM_F32(0), VM_U32(1));
 }
@@ -677,6 +685,8 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(Argv, "i iii"),
     VM_IMPORT(Args, "i ii"),
     VM_IMPORT(AddCommandString, "i"),
+    VM_IMPORT(SetCompletionOptions, "i"),
+    VM_IMPORT(AddCommandCompletion, "i"),
     VM_IMPORT(DebugGraph, "fi"),
     VM_IMPORT(FS_OpenFile, "I iii"),
     VM_IMPORT(FS_CloseFile, "i i"),
@@ -726,6 +736,7 @@ typedef enum {
     vm_G_PrepFrame,
     vm_G_RunFrame,
     vm_G_ServerCommand,
+    vm_G_CompleteCommand,
     vm_G_RestartFilesystem,
 } game_entry_t;
 
@@ -748,6 +759,7 @@ static const vm_export_t game_vm_exports[] = {
     VM_EXPORT(G_PrepFrame, ""),
     VM_EXPORT(G_RunFrame, "I"),
     VM_EXPORT(G_ServerCommand, ""),
+    VM_EXPORT(G_CompleteCommand, "ii"),
     VM_EXPORT(G_RestartFilesystem, ""),
 
     { 0 }
@@ -769,62 +781,66 @@ static void thunk_G_SpawnEntities(void) {
     VM_Call(game.vm, vm_G_SpawnEntities);
 }
 
-static void thunk_G_WriteGame(qhandle_t handle, bool autosave) {
-    vm_value_t *stack = VM_Push(game.vm, 2);
-    VM_U32(0) = handle;
-    VM_U32(1) = autosave;
-    VM_Call(game.vm, vm_G_WriteGame);
-}
-
-static void call_single(game_entry_t entry, uint32_t arg) {
+static void call_one(game_entry_t entry, uint32_t arg) {
     vm_value_t *stack = VM_Push(game.vm, 1);
     VM_U32(0) = arg;
     VM_Call(game.vm, entry);
 }
 
+static void call_two(game_entry_t entry, uint32_t arg1, uint32_t arg2) {
+    vm_value_t *stack = VM_Push(game.vm, 2);
+    VM_U32(0) = arg1;
+    VM_U32(1) = arg2;
+    VM_Call(game.vm, entry);
+}
+
+static void thunk_G_WriteGame(qhandle_t handle, bool autosave) {
+    call_two(vm_G_WriteGame, handle, autosave);
+}
+
 static void thunk_G_ReadGame(qhandle_t handle) {
-    call_single(vm_G_ReadGame, handle);
+    call_one(vm_G_ReadGame, handle);
 }
 
 static void thunk_G_WriteLevel(qhandle_t handle) {
-    call_single(vm_G_WriteLevel, handle);
+    call_one(vm_G_WriteLevel, handle);
 }
 
 static void thunk_G_ReadLevel(qhandle_t handle) {
-    call_single(vm_G_ReadLevel, handle);
+    call_one(vm_G_ReadLevel, handle);
 }
 
 static bool thunk_G_CanSave(bool autosave) {
-    call_single(vm_G_CanSave, autosave);
+    call_one(vm_G_CanSave, autosave);
     const vm_value_t *stack = VM_Pop(game.vm);
     return VM_U32(0);
 }
 
 static const char *thunk_G_ClientConnect(int clientnum) {
-    call_single(vm_G_ClientConnect, clientnum);
+    call_one(vm_G_ClientConnect, clientnum);
     const vm_value_t *stack = VM_Pop(game.vm);
     const vm_memory_t *m = VM_Memory(game.vm);
     return VM_STR_NULL(0);
 }
 
 static void thunk_G_ClientBegin(int clientnum) {
-    call_single(vm_G_ClientBegin, clientnum);
+    call_one(vm_G_ClientBegin, clientnum);
 }
 
 static void thunk_G_ClientUserinfoChanged(int clientnum) {
-    call_single(vm_G_ClientUserinfoChanged, clientnum);
+    call_one(vm_G_ClientUserinfoChanged, clientnum);
 }
 
 static void thunk_G_ClientDisconnect(int clientnum) {
-    call_single(vm_G_ClientDisconnect, clientnum);
+    call_one(vm_G_ClientDisconnect, clientnum);
 }
 
 static void thunk_G_ClientCommand(int clientnum) {
-    call_single(vm_G_ClientCommand, clientnum);
+    call_one(vm_G_ClientCommand, clientnum);
 }
 
 static void thunk_G_ClientThink(int clientnum) {
-    call_single(vm_G_ClientThink, clientnum);
+    call_one(vm_G_ClientThink, clientnum);
 }
 
 static void thunk_G_PrepFrame(void) {
@@ -839,6 +855,10 @@ static void thunk_G_RunFrame(int64_t time) {
 
 static void thunk_G_ServerCommand(void) {
     VM_Call(game.vm, vm_G_ServerCommand);
+}
+
+static void thunk_G_CompleteCommand(int firstarg, int argnum) {
+    call_two(vm_G_CompleteCommand, firstarg, argnum);
 }
 
 static void thunk_G_RestartFilesystem(void) {
@@ -901,6 +921,8 @@ static const game_import_t game_dll_imports = {
     .Argv = Cmd_ArgvBuffer,
     .Args = Cmd_RawArgsBuffer,
     .AddCommandString = PF_AddCommandString,
+    .SetCompletionOptions = Prompt_SetOptions,
+    .AddCommandCompletion = Prompt_AddMatch,
 
     .DebugGraph = SCR_DebugGraph,
 
@@ -953,6 +975,7 @@ static const game_export_t game_dll_exports = {
     .PrepFrame = thunk_G_PrepFrame,
     .RunFrame = thunk_G_RunFrame,
     .ServerCommand = thunk_G_ServerCommand,
+    .CompleteCommand = thunk_G_CompleteCommand,
     .RestartFilesystem = thunk_G_RestartFilesystem,
 };
 
@@ -965,6 +988,12 @@ static const vm_interface_t game_iface = {
     .dll_exports = &game_dll_exports,
     .api_version = GAME_API_VERSION,
 };
+
+void SV_CompleteCommand(int firstarg, int argnum)
+{
+    if (ge)
+        ge->CompleteCommand(firstarg, argnum);
+}
 
 /*
 ===============
