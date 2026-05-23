@@ -701,10 +701,13 @@ static void OGG_Play_f(void)
 
 static void OGG_Info_f(void)
 {
-    if (ogg.fmt_ctx)
+    if (ogg.fmt_ctx) {
+        av_log_set_level(AV_LOG_INFO);
         av_dump_format(ogg.fmt_ctx, 0, ogg.fmt_ctx->url, 0);
-    else
+        av_log_set_level(AV_LOG_WARNING);
+    } else {
         Com_Printf("Playback stopped.\n");
+    }
 }
 
 static void OGG_Cmd_c(int firstarg, int argnum)

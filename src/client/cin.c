@@ -106,6 +106,9 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
         return;
     }
 
+    if (level > av_log_get_level())
+        return;
+
     if (level <= AV_LOG_ERROR)
         type = PRINT_ERROR;
     else if (level <= AV_LOG_WARNING)
@@ -113,7 +116,7 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
     else if (level <= AV_LOG_INFO)
         type = PRINT_ALL;
     else
-        return;
+        type = PRINT_DEVELOPER;
 
     av_log_format_line2(avcl, level, fmt, vl, line, sizeof(line), &print_prefix);
     UTF8_TranslitBuffer(temp, line, sizeof(temp));
@@ -127,6 +130,7 @@ SCR_InitCinematics
 */
 void SCR_InitCinematics(void)
 {
+    av_log_set_level(AV_LOG_WARNING);
     av_log_set_callback(my_av_log_cb);
 
     for (int i = 0; i < q_countof(formats); i++) {
