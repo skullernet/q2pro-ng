@@ -76,10 +76,13 @@ void PlayerTrail_Destroy(edict_t *player)
             G_FreeEdict(ent);
     }
 
-    if (player)
+    if (player) {
         player->client->trail_head = player->client->trail_tail = NULL;
-    else for (int i = 0; i < game.maxclients; i++)
+        player->mynoise = player->mynoise2 = NULL;
+    } else for (int i = 0; i < game.maxclients; i++) {
         g_clients[i].trail_head = g_clients[i].trail_tail = NULL;
+        g_edicts[i].mynoise = g_edicts[i].mynoise2 = NULL;
+    }
 }
 
 // check to see if we can add a new player trail spot

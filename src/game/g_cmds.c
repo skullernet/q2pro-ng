@@ -304,6 +304,7 @@ static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
     ent->health = ent->max_health;
     ent->deadflag = false;
     ent->takedamage = true;
+    ent->flags &= ~(FL_NO_KNOCKBACK | FL_ALIVE_KNOCKBACK_ONLY | FL_NO_DAMAGE_EFFECTS);
     ent->clipmask = MASK_PLAYERSOLID;
     ent->movetype = MOVETYPE_WALK;
     ent->r.solid = SOLID_BBOX;
@@ -317,12 +318,13 @@ static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
     ent->client->anim_priority = ANIM_BASIC;
     ent->client->ps.pm_type = PM_NORMAL;
     ent->air_finished = level.time + SEC(12);
+    ent->dead_time = 0;
 
     trap_LinkEntity(ent);
     G_FixStuckObject(ent, ent->s.origin);
 
     // force the current weapon up
-    NoAmmoWeaponChange(ent, false);
+    ent->client->newweapon = ent->client->pers.lastweapon;
     ChangeWeapon(ent);
 }
 
