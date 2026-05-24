@@ -207,6 +207,9 @@ void PF_UnlinkEdict(edict_t *ent)
 
 static uint32_t SV_PackSolid(const edict_t *ent)
 {
+    if (ent->r.svflags & (SVF_DEADMONSTER | SVF_PROJECTILE))
+        return 0;
+
     box3_t box = ent->r.box;
 
     // undo scaling before packing
@@ -255,10 +258,7 @@ void PF_LinkEdict(edict_t *ent)
     // encode the size into the entity_state for client prediction
     switch (ent->r.solid) {
     case SOLID_BBOX:
-        if ((ent->r.svflags & SVF_DEADMONSTER) || Box3_IsPoint(ent->r.box))
-            ent->s.solid = 0;
-        else
-            ent->s.solid = SV_PackSolid(ent);
+        ent->s.solid = SV_PackSolid(ent);
         break;
     case SOLID_BSP:
         ent->s.solid = PACKED_BSP;      // a SOLID_BBOX will never create this value
