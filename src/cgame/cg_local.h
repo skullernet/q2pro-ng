@@ -134,7 +134,10 @@ typedef struct {
         int     anim_start;
     } weapon;
 
+#if USE_DEBUG
     entity_t    test_model;
+    entity_t    test_muzzle;
+#endif
 
     float       xyspeed;
     float       bobfracsin;

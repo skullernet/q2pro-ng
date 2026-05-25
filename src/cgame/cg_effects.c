@@ -2373,7 +2373,7 @@ void CG_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count)
 
         p->org = Vec3_MA(org, frand() * 7, dir);
         p->org = Vec3_MA(p->org, 4, Vec3_CenterRandom());
-        p->vel =  Vec3_Scale(Vec3_CenterRandom(), 20);
+        p->vel = Vec3_Scale(Vec3_CenterRandom(), 20);
 
         p->accel.x = p->accel.y = 0;
         p->accel.z = PARTICLE_GRAVITY;

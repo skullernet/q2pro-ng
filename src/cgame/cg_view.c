@@ -698,8 +698,12 @@ void CG_RenderView(void)
     // build a refresh entity list
     CG_AddEntities();
 
+#if USE_DEBUG
     if (cg.test_model.model)
         trap_R_AddEntity(&cg.test_model);
+    if (cg.test_muzzle.model)
+        trap_R_AddEntity(&cg.test_muzzle);
+#endif
 
     // never let it sit exactly on a node line, because a water plane can
     // disappear when viewed with the eye exactly on it.

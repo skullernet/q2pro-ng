@@ -372,8 +372,8 @@ const vec3_t monster_flash_offset[MZ2_LAST] = {
     [MZ2_HELLKNIGHT_MAGIC] = { 10, 0, 10 },
     [MZ2_HELLKNIGHT_HYPER] = { 35, -12.5f, 15 },
 
-    [MZ2_OGRE_GRENADE] = { 35, -8, 18 },
-    [MZ2_OGRE_SHOTGUN] = { 35, -8, 18 },
+    [MZ2_OGRE_GRENADE] = { 50, -2, 18 },
+    [MZ2_OGRE_SHOTGUN] = { 50, -2, 18 },
     [MZ2_OGRE_GRENADE_S] = { 4.6f * 1.15f, 16.8f * 1.15f, 19.3f * 1.15f },
 
     [MZ2_IRONVORE_PLASMA] = { 24.8f, -9.0f, 39.0f },

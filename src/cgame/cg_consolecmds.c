@@ -263,9 +263,12 @@ static void CG_WeapNext_f(void)
     cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
 }
 
+#if USE_DEBUG
+
 static void CG_TestModel_f(void)
 {
     cg.test_model = (entity_t){ 0 };
+    cg.test_muzzle = (entity_t){ 0 };
 
     if (trap_Argc() < 2)
         return;
@@ -327,6 +330,60 @@ static void CG_TestModelPrevSkin_f(void)
     Com_Printf("skin %u\n", cg.test_model.skinnum);
 }
 
+static void CG_TestModelMuzzle_f(void)
+{
+    vec3_t ofs, origin;
+    vec3_t forward, right;
+    float scale, muzzle_scale;
+    cg_muzzlefx_t muzzle_type;
+    char buf[MAX_QPATH];
+
+    if (!cg.test_model.model)
+        return;
+
+    if (trap_Argc() < 4) {
+        cg.test_muzzle = (entity_t){ 0 };
+        return;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        trap_Argv(1 + i, buf, sizeof(buf));
+        ofs.xyz[i] = Q_atof(buf);
+    }
+
+    trap_Argv(4, buf, sizeof(buf));
+    muzzle_type = Q_atoi(buf);
+    if (muzzle_type >= q_countof(cgs.models.muzzles))
+        return;
+
+    trap_Argv(5, buf, sizeof(buf));
+    muzzle_scale = Q_atof(buf);
+    if (!muzzle_scale)
+        muzzle_scale = 16.0f;
+
+    AngleVectors(cg.test_model.angles, &forward, &right, NULL);
+
+    scale = cg.test_model.scale;
+    if (!scale)
+        scale = 1.0f;
+
+    ofs = Vec3_Scale(ofs, scale);
+
+    origin = cg.test_model.origin;
+    origin = Vec3_MA(origin, ofs.forward, forward);
+    origin = Vec3_MA(origin, ofs.right, right);
+    origin.z += ofs.up;
+
+    cg.test_muzzle.origin = Vec3_MA(origin, 4.0f * scale, forward);
+    cg.test_muzzle.angles = cg.test_model.angles;
+    cg.test_muzzle.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
+    cg.test_muzzle.alpha = 1.0f;
+    cg.test_muzzle.model = cgs.models.muzzles[muzzle_type];
+    cg.test_muzzle.scale = muzzle_scale * scale;
+}
+
+#endif
+
 typedef enum {
     NEED_FRAME = BIT(0),
     NO_DEMO    = BIT(1),
@@ -348,11 +405,14 @@ static cg_consolecmd_t cg_consolecmds[] = {
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
 
+#if USE_DEBUG
     { "testmodel", CG_TestModel_f },
     { "nextframe", CG_TestModelNextFrame_f },
     { "prevframe", CG_TestModelPrevFrame_f },
     { "nextskin", CG_TestModelNextSkin_f },
     { "prevskin", CG_TestModelPrevSkin_f },
+    { "testmuzzle", CG_TestModelMuzzle_f },
+#endif
 
     { "cl_weapprev", CG_WeapPrev_f, NEED_FRAME | NO_DEMO },
     { "cl_weapnext", CG_WeapNext_f, NEED_FRAME | NO_DEMO },
