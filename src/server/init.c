@@ -133,8 +133,9 @@ void SV_SpawnServer(const mapcmd_t *cmd)
 
     resolve_masters();
 
+    // load the map
     if (cmd->state == ss_game) {
-        sv.cm = cmd->cm;
+        CM_LoadMap(&sv.cm, cmd->server);
     } else {
         // no real map
         sv.cm.entitystring = "";
@@ -246,16 +247,13 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
         break;
 
     default:
-        CM_LoadOverride(&cmd->cm, cmd->server, sizeof(cmd->server));    // may override server!
         if (Q_concat(expanded, sizeof(expanded), "maps/", cmd->server, ".bsp") < sizeof(expanded))
-            ret = CM_LoadMap(&cmd->cm, expanded);
-        if (ret < 0)
-            CM_FreeMap(&cmd->cm);   // free entstring if overridden
+            ret = FS_LoadFile(expanded, NULL);
         break;
     }
 
     if (ret < 0) {
-        Com_Printf("Couldn't load %s: %s\n", expanded, BSP_ErrorString(ret));
+        Com_Printf("Couldn't load %s: %s\n", expanded, Q_ErrorString(ret));
         return false;
     }
 
@@ -268,7 +266,6 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
 SV_ParseMapCmd
 
 Parses mapcmd into more C friendly form.
-Loads and fully validates the map to make sure server doesn't get killed.
 ==============
 */
 bool SV_ParseMapCmd(mapcmd_t *cmd)

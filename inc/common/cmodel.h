@@ -35,7 +35,7 @@ extern const mleaf_t    nullleaf;
 void        CM_Init(void);
 
 void        CM_FreeMap(cm_t *cm);
-int         CM_LoadMap(cm_t *cm, const char *name);
+void        CM_LoadMap(cm_t *cm, const char *name);
 void        CM_LoadOverride(cm_t *cm, char *server, size_t server_size);
 
 // creates a clipping hull for an arbitrary box

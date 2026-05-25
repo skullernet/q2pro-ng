@@ -112,6 +112,7 @@ May modify server buffer if name override is in effect.
 May allocate enstring, must be freed with CM_FreeMap().
 ==================
 */
+#if 0
 void CM_LoadOverride(cm_t *cm, char *server, size_t server_size)
 {
     sizebuf_t sz;
@@ -178,6 +179,7 @@ fail:
     Com_EPrintf("Couldn't load %s: %s\n", buffer, Q_ErrorString(ret));
     FS_FreeFile(data);
 }
+#endif
 
 /*
 ==================
@@ -204,13 +206,17 @@ CM_LoadMap
 Loads in the map and all submodels
 ==================
 */
-int CM_LoadMap(cm_t *cm, const char *name)
+void CM_LoadMap(cm_t *cm, const char *name)
 {
+    char path[MAX_QPATH];
     int ret;
 
-    ret = BSP_Load(name, &cm->cache);
+    if (Q_concat(path, sizeof(path), "maps/", name, ".bsp") >= sizeof(path))
+        Com_Error(ERR_DROP, "%s: oversize path", __func__);
+
+    ret = BSP_Load(path, &cm->cache);
     if (!cm->cache)
-        return ret;
+        Com_Error(ERR_DROP, "%s: couldn't load %s: %s", __func__, path, BSP_ErrorString(ret));
 
     if (!(cm->override_bits & OVERRIDE_ENTS))
         load_entstring_override(cm);
@@ -224,8 +230,6 @@ int CM_LoadMap(cm_t *cm, const char *name)
     cm->floodnums = Z_TagMallocz(sizeof(cm->floodnums[0]) * cm->cache->numareas, TAG_CMODEL);
     cm->portalopen = Z_TagMallocz(sizeof(cm->portalopen[0]) * cm->cache->numportals, TAG_CMODEL);
     FloodAreaConnections(cm);
-
-    return Q_ERR_SUCCESS;
 }
 
 //=======================================================================

@@ -279,7 +279,6 @@ typedef struct {
     server_state_t  state;
     int             loadgame;
     bool            endofunit;
-    cm_t            cm;
 } mapcmd_t;
 
 typedef struct {

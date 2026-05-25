@@ -204,12 +204,14 @@ void SCR_BeginLoadingPlaque(void)
 
 #if USE_DEBUG
     if (developer->integer) {
+        SCR_UpdateScreen();
         return;
     }
 #endif
 
     // if at console or menu, don't bring up the plaque
     if (cls.key_dest & (KEY_CONSOLE | KEY_MENU)) {
+        SCR_UpdateScreen();
         return;
     }
 

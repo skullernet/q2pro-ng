@@ -795,8 +795,6 @@ void CL_Changing_f(void)
     if (cge)
         cge->ClearState();
 
-    SCR_BeginLoadingPlaque();
-
     cls.state = ca_connected;   // not active anymore, but not disconnected
     cl.mapname[0] = 0;
 
@@ -813,7 +811,7 @@ void CL_Changing_f(void)
         }
     }
 
-    SCR_UpdateScreen();
+    SCR_BeginLoadingPlaque();
 }
 
 /*

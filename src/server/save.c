@@ -327,11 +327,6 @@ char *SV_GetSaveInfo(const char *dir)
     return Z_CopyString(va("%s %s", date, name));
 }
 
-static void abort_func(void *arg)
-{
-    CM_FreeMap(arg);
-}
-
 static int read_server_file(void)
 {
     char        name[MAX_QPATH], string[MAX_STRING_CHARS];
@@ -367,9 +362,6 @@ static int read_server_file(void)
     if (!SV_ParseMapCmd(&cmd))
         return -1;
 
-    // save pending CM to be freed later if ERR_DROP is thrown
-    Com_AbortFunc(abort_func, &cmd.cm);
-
     // any error will drop from this point
     SV_Shutdown("Server restarted\n", ERR_RECONNECT);
 
@@ -401,9 +393,6 @@ static int read_server_file(void)
     ge->ReadGame(f);
 
     PF_CloseFile(f);
-
-    // clear pending CM
-    Com_AbortFunc(NULL, NULL);
 
     // go to the map
     SV_SpawnServer(&cmd);

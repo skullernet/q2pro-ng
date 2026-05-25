@@ -241,12 +241,6 @@ another level:
     map tram.cin+jail_e3
 ======================
 */
-
-static void abort_func(void *arg)
-{
-    CM_FreeMap(arg);
-}
-
 static void SV_Map(bool restart)
 {
     mapcmd_t cmd = {
@@ -270,17 +264,11 @@ static void SV_Map(bool restart)
     }
 #endif
 
-    // save pending CM to be freed later if ERR_DROP is thrown
-    Com_AbortFunc(abort_func, &cmd.cm);
-
     SV_AutoSaveBegin(&cmd);
 
     // any error will drop from this point
     if (sv.state < ss_game || restart)
         SV_InitGame();  // the game is just starting
-
-    // clear pending CM
-    Com_AbortFunc(NULL, NULL);
 
     SV_SpawnServer(&cmd);
 

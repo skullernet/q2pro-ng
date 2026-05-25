@@ -338,6 +338,7 @@ void BSP_Free(bsp_t *bsp)
     }
     Q_assert(bsp->refcount > 0);
     if (--bsp->refcount == 0) {
+        Com_DPrintf("%s: freeing %s\n", __func__, bsp->name);
         Hunk_Free(&bsp->hunk);
         List_Remove(&bsp->entry);
         Z_Free(bsp->materials);
