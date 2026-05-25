@@ -140,10 +140,7 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 void GL_Blend(void)
 {
     if (glr.fd.screen_blend.a) {
-        color_t color;
-
-        Vec4_Store(color.u8, Vec4_Scale(glr.fd.screen_blend, 255));
-
+        color_t color = Vec4_ToColor(glr.fd.screen_blend);
         GL_StretchPic_(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
                        color.u32, TEXNUM_WHITE, 0);
     }
@@ -151,8 +148,8 @@ void GL_Blend(void)
     if (glr.fd.damage_blend.a) {
         color_t outer, inner;
 
-        Vec4_Store(outer.u8, Vec4_Scale(glr.fd.damage_blend, 255));
-        inner.u32 = outer.u32 & U32_RGB;
+        outer = inner = Vec4_ToColor(glr.fd.damage_blend);
+        inner.a = 0;
 
         if (gl_damageblend_frac->value > 0)
             GL_DrawVignette(Cvar_ClampValue(gl_damageblend_frac, 0, 0.5f), outer, inner);

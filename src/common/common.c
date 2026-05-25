@@ -444,19 +444,19 @@ void Com_LPrintf(print_type_t rawtype, const char *fmt, ...)
         case PRINT_ALL:
             break;
         case PRINT_TALK:
-            Com_SetColor(COLOR_ALT);
+            Com_SetColor(COLOR_INDEX_ALT);
             break;
         case PRINT_DEVELOPER:
-            Com_SetColor(COLOR_GREEN);
+            Com_SetColor(COLOR_INDEX_GREEN);
             break;
         case PRINT_WARNING:
-            Com_SetColor(COLOR_YELLOW);
+            Com_SetColor(COLOR_INDEX_YELLOW);
             break;
         case PRINT_ERROR:
-            Com_SetColor(COLOR_RED);
+            Com_SetColor(COLOR_INDEX_RED);
             break;
         case PRINT_NOTICE:
-            Com_SetColor(COLOR_CYAN);
+            Com_SetColor(COLOR_INDEX_CYAN);
             break;
         default:
             Q_assert(!"bad type");
@@ -479,7 +479,7 @@ void Com_LPrintf(print_type_t rawtype, const char *fmt, ...)
         }
 
         if (type) {
-            Com_SetColor(COLOR_NONE);
+            Com_SetColor(COLOR_INDEX_NONE);
         }
     }
 
@@ -749,9 +749,9 @@ void Com_Generic_c(int firstarg, int argnum)
 #if USE_CLIENT
 void Com_Color_g(void)
 {
-    int color;
+    color_index_t color;
 
-    for (color = 0; color < COLOR_ALT; color++)
+    for (color = 0; color < COLOR_INDEX_ALT; color++)
         Prompt_AddMatch(colorNames[color]);
 }
 #endif

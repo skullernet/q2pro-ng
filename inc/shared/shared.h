@@ -637,6 +637,16 @@ static inline vec4_t Vec4_Lerp(vec4_t a, vec4_t b, float t) {
     return Vec4_Add(a, Vec4_Scale(Vec4_Sub(b, a), t));
 }
 
+static inline color_t Vec4_ToColor(vec4_t v) {
+    color_t color;
+    Vec4_Store(color.u8, Vec4_Scale(v, 255));
+    return color;
+}
+
+static inline vec4_t Vec4_FromColor(color_t color) {
+    return Vec4_Scale(Vec4_Load(color.u8), 1.0f / 255.0f);
+}
+
 #define box2_origin (box2_t){ 0 }
 #define box3_origin (box3_t){ 0 }
 
@@ -1030,22 +1040,22 @@ size_t COM_EscapeString(char *dst, const char *src, size_t size);
 char *COM_MakePrintable(const char *s);
 
 typedef enum {
-    COLOR_BLACK,
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_BLUE,
-    COLOR_CYAN,
-    COLOR_MAGENTA,
-    COLOR_WHITE,
+    COLOR_INDEX_BLACK,
+    COLOR_INDEX_RED,
+    COLOR_INDEX_GREEN,
+    COLOR_INDEX_YELLOW,
+    COLOR_INDEX_BLUE,
+    COLOR_INDEX_CYAN,
+    COLOR_INDEX_MAGENTA,
+    COLOR_INDEX_WHITE,
 
-    COLOR_ALT,
-    COLOR_NONE,
+    COLOR_INDEX_ALT,
+    COLOR_INDEX_NONE,
 
-    COLOR_COUNT
+    COLOR_INDEX_COUNT
 } color_index_t;
 
-extern const char *const colorNames[COLOR_COUNT];
+extern const char *const colorNames[COLOR_INDEX_COUNT];
 extern const uint32_t    colorTable[8];
 
 color_index_t COM_ParseColorIndex(const char *s);

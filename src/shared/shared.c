@@ -916,7 +916,7 @@ char *COM_MakePrintable(const char *s)
 ============================================================================
 */
 
-const char *const colorNames[COLOR_COUNT] = {
+const char *const colorNames[COLOR_INDEX_COUNT] = {
     "black", "red", "green", "yellow",
     "blue", "cyan", "magenta", "white",
     "alt", "none"
@@ -932,7 +932,7 @@ const uint32_t colorTable[8] = {
 COM_ParseColorIndex
 
 Parses color name or index.
-Returns COLOR_NONE in case of error.
+Returns COLOR_INDEX_NONE in case of error.
 ================
 */
 color_index_t COM_ParseColorIndex(const char *s)
@@ -941,19 +941,19 @@ color_index_t COM_ParseColorIndex(const char *s)
 
     if (COM_IsUint(s)) {
         i = Q_atoi(s);
-        if (i < 0 || i >= COLOR_COUNT) {
-            return COLOR_NONE;
+        if (i < 0 || i >= COLOR_INDEX_COUNT) {
+            return COLOR_INDEX_NONE;
         }
         return i;
     }
 
-    for (i = 0; i < COLOR_COUNT; i++) {
+    for (i = 0; i < COLOR_INDEX_COUNT; i++) {
         if (!strcmp(colorNames[i], s)) {
             return i;
         }
     }
 
-    return COLOR_NONE;
+    return COLOR_INDEX_NONE;
 }
 
 bool COM_ParseColor(const char *s, color_t *color)

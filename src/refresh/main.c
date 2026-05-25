@@ -1117,7 +1117,7 @@ static void gl_clearcolor_changed(cvar_t *self)
         color.u32 = U32_BLACK;
     }
 
-    gl_static.clearcolor = Vec4_Scale(Vec4_Load(color.u8), 1.0f / 255.0f);
+    gl_static.clearcolor = Vec4_FromColor(color);
 
     if (qglClearColor)
         qglClearColor(Vec4_Unpack(gl_static.clearcolor));

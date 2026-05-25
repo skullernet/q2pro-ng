@@ -476,7 +476,7 @@ void Con_Init(void)
     r_config.height = 480;
     con.linewidth = -1;
     con.scale = 1;
-    con.color = COLOR_NONE;
+    con.color = COLOR_INDEX_NONE;
     con.newline = '\r';
 
     Con_CheckResize();
@@ -704,10 +704,10 @@ static int Con_DrawLine(int v, int row, float alpha, bool notify)
         return x;
 
     switch (line->color) {
-    case COLOR_ALT:
+    case COLOR_INDEX_ALT:
         flags = UI_ALTCOLOR;
         // fall through
-    case COLOR_NONE:
+    case COLOR_INDEX_NONE:
         R_ClearColor();
         break;
     default:

@@ -712,12 +712,12 @@ void Sys_SetConsoleColor(color_index_t color)
     buf[0] = '\033';
     buf[1] = '[';
     switch (color) {
-    case COLOR_NONE:
+    case COLOR_INDEX_NONE:
         buf[2] = '0';
         buf[3] = 'm';
         len = 4;
         break;
-    case COLOR_ALT:
+    case COLOR_INDEX_ALT:
         buf[2] = '3';
         buf[3] = '2';
         buf[4] = 'm';
@@ -731,11 +731,11 @@ void Sys_SetConsoleColor(color_index_t color)
         break;
     }
 
-    if (color != COLOR_NONE) {
+    if (color != COLOR_INDEX_NONE) {
         tty_hide_input();
     }
     tty_write(buf, len);
-    if (color == COLOR_NONE) {
+    if (color == COLOR_INDEX_NONE) {
         tty_show_input();
     }
 }

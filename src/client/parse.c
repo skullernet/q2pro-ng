@@ -314,9 +314,9 @@ static void CL_ParseConfigstring(unsigned index)
     if (cls.state < ca_precached) {
         // print the full level name
         if (index == CS_NAME) {
-            Com_SetColor(COLOR_ALT);
+            Com_SetColor(COLOR_INDEX_ALT);
             Com_Printf("%s\n", string);
-            Com_SetColor(COLOR_NONE);
+            Com_SetColor(COLOR_INDEX_NONE);
         }
         return;
     }

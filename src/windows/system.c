@@ -538,10 +538,10 @@ void Sys_SetConsoleColor(color_index_t color)
     attr = info.wAttributes & ~FOREGROUND_WHITE;
 
     switch (color) {
-    case COLOR_NONE:
+    case COLOR_INDEX_NONE:
         w = attr | FOREGROUND_WHITE;
         break;
-    case COLOR_ALT:
+    case COLOR_INDEX_ALT:
         w = attr | FOREGROUND_GREEN;
         break;
     default:
@@ -549,11 +549,11 @@ void Sys_SetConsoleColor(color_index_t color)
         break;
     }
 
-    if (color != COLOR_NONE) {
+    if (color != COLOR_INDEX_NONE) {
         hide_console_input();
     }
     SetConsoleTextAttribute(houtput, w);
-    if (color == COLOR_NONE) {
+    if (color == COLOR_INDEX_NONE) {
         show_console_input();
     }
 }
@@ -802,11 +802,11 @@ void Sys_Error(const char *error, ...)
 #endif
 
 #if USE_SYSCON
-    Sys_SetConsoleColor(COLOR_RED);
+    Sys_SetConsoleColor(COLOR_INDEX_RED);
     Sys_Printf("********************\n"
                "FATAL: %s\n"
                "********************\n", text);
-    Sys_SetConsoleColor(COLOR_NONE);
+    Sys_SetConsoleColor(COLOR_INDEX_NONE);
 #endif
 
 #if USE_WINSVC
