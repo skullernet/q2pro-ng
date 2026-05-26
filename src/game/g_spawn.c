@@ -719,7 +719,7 @@ static const spawn_field_t entity_fields[] = {
     { "heightfog_end_dist_off", FOFS(heightfog_off.end.dist), F_FLOAT },
 
     // [Paril-KEX] func_eye stuff
-    { "eye_position", FOFS(move_origin), F_VECTOR },
+    { "eye_position", 0, F_IGNORE },
     { "vision_cone", FOFS(vision_cone), F_FLOAT },
 
     // [Paril-KEX] for trigger_coop_relay

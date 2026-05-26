@@ -2513,7 +2513,7 @@ void THINK(func_eye_think)(edict_t *self)
         vec3_t dir = Vec3_Sub(player->s.origin, self->s.origin);
         float dist = Vec3_Normalize(&dir);
 
-        if (Vec3_Dot(dir, self->movedir) < self->yaw_speed)
+        if (Vec3_Dot(dir, self->movedir) < self->vision_cone)
             continue;
 
         if (dist >= self->dmg_radius)
@@ -2530,21 +2530,13 @@ void THINK(func_eye_think)(edict_t *self)
     // tracking player
     vec3_t wanted_angles;
 
-    vec3_t fwd, rgt, up;
-    AngleVectors(self->s.angles, &fwd, &rgt, &up);
-
-    vec3_t eye_pos = self->s.origin;
-    eye_pos = Vec3_MA(eye_pos, self->move_origin.x, fwd);
-    eye_pos = Vec3_MA(eye_pos, self->move_origin.y, rgt);
-    eye_pos = Vec3_MA(eye_pos, self->move_origin.z, up);
-
     if (self->enemy) {
         if (!(self->spawnflags & SPAWNFLAG_FUNC_EYE_FIRED_TARGETS)) {
             G_UseTargets(self, self->enemy);
             self->spawnflags |= SPAWNFLAG_FUNC_EYE_FIRED_TARGETS;
         }
 
-        vec3_t dir = Vec3_Direction(self->enemy->s.origin, eye_pos);
+        vec3_t dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
         wanted_angles = vectoangles(dir);
 
         self->s.frame = 2;
@@ -2594,10 +2586,10 @@ void THINK(func_eye_setup)(edict_t *self)
 
     if (!eye_pos)
         G_Printf("%s: bad target\n", etos(self));
-    else
-        self->move_origin = Vec3_Sub(eye_pos->s.origin, self->s.origin);
-
-    self->movedir = Vec3_Normalize(self->move_origin);
+    else {
+        self->movedir = Vec3_Direction(eye_pos->s.origin, self->s.origin);
+        self->s.angles = self->move_angles = vectoangles(self->movedir);
+    }
 
     self->think = func_eye_think;
     self->nextthink = level.time + HZ(10);
@@ -2618,16 +2610,15 @@ void SP_func_eye(edict_t *ent)
         ent->speed = 45;
 
     // set vision cone
-    if (ED_WasKeySpecified("vision_cone"))
-        ent->yaw_speed = ent->vision_cone;
-
-    if (!ent->yaw_speed)
-        ent->yaw_speed = 0.5f;
+    if (!ED_WasKeySpecified("vision_cone"))
+        ent->vision_cone = 0.5f;
 
     ent->speed *= FRAME_TIME_SEC;
     ent->move_angles = ent->s.angles;
 
     ent->wait = 1.0f;
+
+    AngleVectors(ent->move_angles, &ent->movedir, NULL, NULL);
 
     if (ent->pathtarget) {
         ent->think = func_eye_setup;
@@ -2635,14 +2626,6 @@ void SP_func_eye(edict_t *ent)
     } else {
         ent->think = func_eye_think;
         ent->nextthink = level.time + HZ(10);
-
-        vec3_t right, up;
-        AngleVectors(ent->move_angles, &ent->movedir, &right, &up);
-
-        vec3_t move_origin = ent->move_origin;
-        ent->move_origin = Vec3_Scale(ent->movedir, move_origin.x);
-        ent->move_origin = Vec3_MA(ent->move_origin, move_origin.y, right);
-        ent->move_origin = Vec3_MA(ent->move_origin, move_origin.z, up);
     }
 
     trap_LinkEntity(ent);
