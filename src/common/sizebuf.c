@@ -211,3 +211,21 @@ int64_t SZ_ReadSignedLeb(sizebuf_t *sb, int len)
         return SignExtend64(v, bits);
     return v;
 }
+
+bstr_t SZ_ReadLines(sizebuf_t *sb, int count)
+{
+    uint32_t pos = sb->readcount;
+
+    while (count-- > 0) {
+        if (sb->readcount >= sb->cursize)
+            return bstr_null;
+        const byte *s = sb->data + sb->readcount;
+        const byte *p = memchr(s, '\n', sb->cursize - sb->readcount);
+        if (p)
+            sb->readcount += p - s + 1;
+        else
+            sb->readcount = sb->cursize;
+    }
+
+    return (bstr_t){ sb->data + pos, sb->readcount - pos };
+}

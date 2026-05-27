@@ -81,3 +81,60 @@ char *UTF8_TranslitString(const char *src);
             if (Q_IsBitSet(array, index))
 
 #define BC_FOR_EACH_END }}
+
+// Binary strings
+typedef struct {
+    byte *str;
+    size_t len;
+} bstr_t;
+
+#define bstr_null (bstr_t){ 0 }
+
+static inline bool Bstr_StartsWith(bstr_t bs, const char *s)
+{
+    size_t len = strlen(s);
+
+    return bs.len >= len && !memcmp(bs.str, s, len);
+}
+
+static inline bool Bstr_EndsWith(bstr_t bs, const char *s)
+{
+    size_t len = strlen(s);
+
+    return bs.len >= len && !memcmp(bs.str + bs.len - len, s, len);
+}
+
+static inline bstr_t Bstr_EatStart(bstr_t bs, const char *s)
+{
+    size_t len = strlen(s);
+
+    if (bs.len >= len && !memcmp(bs.str, s, len)) {
+        bs.str += len;
+        bs.len -= len;
+        return bs;
+    }
+
+    return bstr_null;
+}
+
+static inline bstr_t Bstr_EatEnd(bstr_t bs, const char *s)
+{
+    size_t len = strlen(s);
+
+    if (bs.len >= len && !memcmp(bs.str + bs.len - len, s, len)) {
+        bs.len -= len;
+        return bs;
+    }
+
+    return bstr_null;
+}
+
+static inline bool Bstr_IsEqualStr(bstr_t bs, const char *s)
+{
+    return bs.len == strlen(s) && !memcmp(bs.str, s, bs.len);
+}
+
+static inline bool Bstr_IsEqual(bstr_t a, bstr_t b)
+{
+    return a.len == b.len && !memcmp(a.str, b.str, a.len);
+}

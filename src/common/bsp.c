@@ -36,7 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 extern mtexinfo_t nulltexinfo;
 
-static cvar_t *map_visibility_patch;
+static cvar_t *map_patch_vis;
 
 /*
 ===============================================================================
@@ -463,7 +463,7 @@ static void BSP_LoadVisPatches(const bsp_t *bsp)
 
     if (!bsp->vis)
         return;
-    if (!map_visibility_patch->integer)
+    if (!map_patch_vis->integer)
         return;
     if (!Com_ParseMapName(name, bsp->name, sizeof(name)))
         return;
@@ -1314,7 +1314,7 @@ const mleaf_t *BSP_PointLeaf(const mnode_t *node, vec3_t p)
 
 void BSP_Init(void)
 {
-    map_visibility_patch = Cvar_Get("map_visibility_patch", "1", 0);
+    map_patch_vis = Cvar_Get("map_patch_vis", "1", 0);
 
     Cmd_AddCommand("bspinfo", BSP_Info_f);
 

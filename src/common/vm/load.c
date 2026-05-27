@@ -28,11 +28,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "vm.h"
 #include "common/files.h"
 
-static bool vm_string_eq(const vm_string_t *s, const char *str)
-{
-    return s->len == strlen(str) && !memcmp(s->data, str, s->len);
-}
-
 // Static definition of block_types
 static const vm_type_t block_types[5] = {
     { .form = BLOCK, .num_results = 0, },
@@ -98,24 +93,24 @@ static bool vm_type_eq(const vm_type_t *type, const char *s)
     return *s == 0;
 }
 
-static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_t *name, const vm_type_t *type)
+static bool import_function(vm_t *m, bstr_t module, bstr_t name, const vm_type_t *type)
 {
     const vm_import_t *import;
 
-    ASSERT(vm_string_eq(module, "env"), "Unknown import module %.*s", module->len, module->data);
+    ASSERT(Bstr_IsEqualStr(module, "env"), "Unknown import module %.*s", (int)module.len, module.str);
 
     for (import = m->imports; import->name; import++)
-        if (vm_string_eq(name, import->name))
+        if (Bstr_IsEqualStr(name, import->name))
             break;
 
     if (!import->name)
         for (import = vm_stdlib; import->name; import++)
-            if (vm_string_eq(name, import->name))
+            if (Bstr_IsEqualStr(name, import->name))
                 break;
 
-    ASSERT(import->name, "Import %.*s not found", name->len, name->data);
+    ASSERT(import->name, "Import %.*s not found", (int)name.len, name.str);
 
-    ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", name->len, name->data);
+    ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", (int)name.len, name.str);
 
     ASSERT(m->num_funcs < MAX_FUNCS, "Too many functions");
     m->num_imports++;
@@ -128,12 +123,12 @@ static bool import_function(vm_t *m, const vm_string_t *module, const vm_string_
     return true;
 }
 
-static bool vm_read_string(sizebuf_t *sz, vm_string_t *s)
+static bstr_t vm_read_string(sizebuf_t *sz)
 {
-    s->len = SZ_ReadLeb(sz);
-    s->data = SZ_ReadData(sz, s->len);
-    ASSERT(s->data, "Read past end of section");
-    return true;
+    bstr_t s;
+    s.len = SZ_ReadLeb(sz);
+    s.str = SZ_ReadData(sz, s.len);
+    return s;
 }
 
 static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
@@ -198,18 +193,16 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_imports = SZ_ReadLeb(sz);
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
-        vm_string_t module, name;
-        if (!vm_read_string(sz, &module))
-            return false;
-        if (!vm_read_string(sz, &name))
-            return false;
+        bstr_t module = vm_read_string(sz);
+        bstr_t name = vm_read_string(sz);
+        ASSERT(module.str && name.str, "Read past end of section");
 
         uint32_t kind = SZ_ReadByte(sz);
         ASSERT(kind == KIND_FUNCTION, "Import of kind %d not supported", kind);
 
         uint32_t tidx = SZ_ReadLeb(sz);
         ASSERT(tidx < m->num_types, "Bad type index");
-        if (!import_function(m, &module, &name, &m->types[tidx]))
+        if (!import_function(m, module, name, &m->types[tidx]))
             return false;
     }
 
@@ -313,8 +306,8 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
 
     for (uint32_t e = 0; e < num_exports; e++) {
         wa_export_t *export = &m->exports[e];
-        if (!vm_read_string(sz, &export->name))
-            return false;
+        export->name = vm_read_string(sz);
+        ASSERT(export->name.str, "Read past end of section");
         uint32_t kind = SZ_ReadByte(sz);
         uint32_t index = SZ_ReadLeb(sz);
         export->kind = kind;
@@ -495,7 +488,7 @@ static const wa_export_t *find_export(vm_t *m, uint32_t kind, const char *name)
 {
     for (uint32_t e = 0; e < m->num_exports; e++) {
         const wa_export_t *export = &m->exports[e];
-        if (export->kind == kind && vm_string_eq(&export->name, name))
+        if (export->kind == kind && Bstr_IsEqualStr(export->name, name))
             return export;
     }
     return NULL;
@@ -530,7 +523,7 @@ static bool fill_exports(vm_t *m, const vm_export_t *exports)
 
     // Prevent dangling pointers after file is freed
     for (e = 0; e < m->num_exports; e++)
-        m->exports[e].name = (vm_string_t){ 0 };
+        m->exports[e].name = bstr_null;
 
     return true;
 }

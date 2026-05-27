@@ -479,13 +479,6 @@ void SP_monster_wizard_prototype(edict_t *self)
 
 void SP_monster_wizard_strogg(edict_t *self)
 {
-    if (game.dirtype == GAMEDIR_COTV && !Q_stricmp(level.mapname, "oldbase1")) {
-        if (Vec3_IsEqual(self->s.origin, Vec3(1344, -1504, 200)) ||
-            Vec3_IsEqual(self->s.origin, Vec3(1344, -1920, 264)) ||
-            Vec3_IsEqual(self->s.origin, Vec3(1344, -1904, 88)))
-        self->s.origin.x -= 30;
-    }
-
     self->style = Strogg;
     self->health = 120;
     self->s.modelindex = G_ModelIndex("models/monsters/wizardstrogg/tris.md2");

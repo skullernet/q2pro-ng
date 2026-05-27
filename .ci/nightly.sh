@@ -65,9 +65,10 @@ unix2dos -k -n $SRC/LICENSE build/LICENSE.txt $SRC/doc/client.asciidoc build/MAN
 cp -a $SRC/etc/q2pro.menu build/baseq2/
 cp -a $SRC/etc/default.cfg build/baseq2/
 cp -a $SRC/etc/vispatches build/baseq2/
+cp -a $SRC/etc/entpatches build/baseq2/
 
 cd build/baseq2
-zip -9 q2pro.pkz q2pro.menu default.cfg vm/*.qvm vispatches/*
+zip -9 q2pro.pkz q2pro.menu default.cfg vm/*.qvm vispatches/* entpatches/*
 
 cd ..
 zip -9 ../q2pro-ng-client_win64_x64.zip \

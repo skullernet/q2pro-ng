@@ -28,6 +28,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "shared/shared.h"
 #include "common/common.h"
 #include "common/sizebuf.h"
+#include "common/utils.h"
 #include "common/vm.h"
 #include "opcodes.h"
 
@@ -99,15 +100,10 @@ typedef struct {
     uint32_t   *entries;
 } vm_table_t;
 
-typedef struct {
-    char       *data;
-    uint32_t    len;
-} vm_string_t;
-
 // Internal WASM export
 typedef struct {
     uint32_t    kind;
-    vm_string_t name;
+    bstr_t      name;
     void       *value;
 } wa_export_t;
 

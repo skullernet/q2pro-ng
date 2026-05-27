@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "common/utils.h"
+
 typedef struct {
     bool        allowoverflow;
     bool        allowunderflow;
@@ -47,6 +49,11 @@ static inline void SZ_Write(sizebuf_t *buf, const void *data, size_t len)
         memcpy(SZ_GetSpace(buf, len), data, len);
 }
 
+static inline void SZ_WriteBstr(sizebuf_t *buf, bstr_t s)
+{
+    SZ_Write(buf, s.str, s.len);
+}
+
 static inline uint32_t SZ_Remaining(const sizebuf_t *buf)
 {
     if (buf->readcount > buf->cursize)
@@ -63,3 +70,17 @@ float SZ_ReadFloat(sizebuf_t *sb);
 vec3_t SZ_ReadVector(sizebuf_t *sb);
 uint32_t SZ_ReadLeb(sizebuf_t *sb);
 int64_t SZ_ReadSignedLeb(sizebuf_t *sb, int len);
+bstr_t SZ_ReadLines(sizebuf_t *sb, int count);
+
+static inline bstr_t SZ_ReadLine(sizebuf_t *sb)
+{
+    return SZ_ReadLines(sb, 1);
+}
+
+static inline bstr_t SZ_ReadRest(sizebuf_t *sb)
+{
+    bstr_t s;
+    s.len = SZ_Remaining(sb);
+    s.str = SZ_ReadData(sb, s.len);
+    return s;
+}

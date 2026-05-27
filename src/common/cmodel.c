@@ -22,11 +22,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cmd.h"
 #include "common/cmodel.h"
 #include "common/common.h"
-#include "common/crc.h"
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/math.h"
 #include "common/sizebuf.h"
+#include "common/utils.h"
 #include "common/zone.h"
 #include "system/hunk.h"
 
@@ -38,7 +38,7 @@ static unsigned     floodvalid;
 static unsigned     checkcount;
 
 static cvar_t       *map_noareas;
-static cvar_t       *map_override_path;
+static cvar_t       *map_patch_ents;
 
 static void    FloodAreaConnections(const cm_t *cm);
 
@@ -51,135 +51,170 @@ enum {
     OVERRIDE_ALL    = MASK(3)
 };
 
-static void load_entstring_override(cm_t *cm)
+typedef struct {
+    sizebuf_t src, dst, patch;
+    int srcline, patchline;
+} patch_ctx_t;
+
+static void Patch_SkipComment(patch_ctx_t *ctx)
 {
-    char buffer[MAX_QPATH], name[MAX_QPATH], *data = NULL;
-    const bsp_t *bsp = cm->cache;
-    const char *path = map_override_path->string;
-    int ret, crc = 0;
-
-    if (!*path)
-        return;
-
-    if (!Com_ParseMapName(name, bsp->name, sizeof(name)))
-        return;
-
-    // last byte is excluded from CRC (why?)
-    if (bsp->numentitychars > 0)
-        crc = CRC_Block((const byte *)bsp->entitystring, bsp->numentitychars - 1);
-
-    // load entity string from `<mapname>@<hash>.ent'
-    if (Q_snprintf(buffer, sizeof(buffer), "%s/%s@%04x.ent", path, name, crc) >= sizeof(buffer)) {
-        ret = Q_ERR(ENAMETOOLONG);
-        goto fail;
+    if (ctx->patch.readcount < ctx->patch.cursize &&
+        ctx->patch.data[ctx->patch.readcount] == '\\') {
+        SZ_ReadLine(&ctx->patch);
+        ctx->patchline++;
     }
-    ret = FS_LoadFileEx(buffer, (void **)&data, 0, TAG_CMODEL);
+}
 
-    // fall back to no hash
-    if (ret == Q_ERR(ENOENT)) {
-        Q_snprintf(buffer, sizeof(buffer), "%s/%s.ent", path, name);
-        ret = FS_LoadFileEx(buffer, (void **)&data, 0, TAG_CMODEL);
-    }
-    if (ret == Q_ERR(ENOENT))
-        return;
+static bool Patch_Append(patch_ctx_t *ctx, int count)
+{
+    for (int i = 0; i <= count; i++) {
+        bstr_t p = SZ_ReadLine(&ctx->patch);
 
-    if (ret < 0)
-        goto fail;
+        p = Bstr_EatStart(p, "> ");
+        if (!p.len)
+            return false;
 
-    if (ret < 2) {
-        ret = Q_ERR_FILE_TOO_SMALL;
-        goto fail;
+        SZ_WriteBstr(&ctx->dst, p);
+        ctx->patchline++;
     }
 
-    Com_Printf("Loaded entity string from %s\n", buffer);
-    cm->entitystring = data;
+    Patch_SkipComment(ctx);
+    return true;
+}
+
+static bool Patch_Delete(patch_ctx_t *ctx, int count)
+{
+    for (int i = 0; i <= count; i++) {
+        bstr_t p = SZ_ReadLine(&ctx->patch);
+        bstr_t s = SZ_ReadLine(&ctx->src);
+
+        p = Bstr_EatStart(p, "< ");
+        if (!p.len || !s.len)
+            return false;
+
+        if (ctx->src.readcount == ctx->src.cursize && !Bstr_EndsWith(s, "\n"))
+            p = Bstr_EatEnd(p, "\n");
+
+        if (!Bstr_IsEqual(p, s))
+            return false;
+        ctx->patchline++;
+    }
+
+    Patch_SkipComment(ctx);
+    return true;
+}
+
+static bool Patch_Parse(patch_ctx_t *ctx)
+{
+    unsigned long src1, src2, dst1, dst2;
+
+    bstr_t bs = SZ_ReadLine(&ctx->patch);
+    if (!Bstr_EndsWith(bs, "\n"))
+        return false;
+
+    // strip newline
+    bs.str[bs.len - 1] = 0;
+
+    char *s = (char *)bs.str;
+    src1 = src2 = strtoul(s, &s, 10);
+    if (*s == ',')
+        src2 = strtoul(s + 1, &s, 10);
+    int cmd = *s++;
+    if (cmd != 'a' && cmd != 'd' && cmd != 'c')
+        return false;
+
+    dst1 = dst2 = strtoul(s, &s, 10);
+    if (*s == ',')
+        dst2 = strtoul(s + 1, &s, 10);
+    if (*s)
+        return false;
+
+    if (src2 > INT_MAX || dst2 > INT_MAX || src2 < src1 || dst2 < dst1)
+        return false;
+
+    // copy unchanged lines
+    if (src1 > ctx->srcline) {
+        bs = SZ_ReadLines(&ctx->src, src1 - ctx->srcline);
+        if (!bs.str)
+            return false;
+        SZ_WriteBstr(&ctx->dst, bs);
+        ctx->srcline = src1;
+    }
+
+    ctx->patchline++;
+    switch (cmd) {
+    case 'a':
+        if (!Patch_Append(ctx, dst2 - dst1))
+            return false;
+        break;
+
+    case 'd':
+        if (!Patch_Delete(ctx, src2 - src1))
+            return false;
+        ctx->srcline = src2 + 1;
+        break;
+
+    case 'c':
+        if (!Patch_Delete(ctx, src2 - src1))
+            return false;
+        if (!Bstr_IsEqualStr(SZ_ReadLine(&ctx->patch), "---\n"))
+            return false;
+        ctx->patchline++;
+        if (!Patch_Append(ctx, dst2 - dst1))
+            return false;
+        ctx->srcline = src2 + 1;
+        break;
+    }
+
+    return true;
+}
+
+static void CM_LoadEntPatches(cm_t *cm, const char *name)
+{
+    char path[MAX_QPATH], *data;
+
+    if (!map_patch_ents->integer)
+        return;
+    if (Q_snprintf(path, sizeof(path), "entpatches/%s.%08x", name, cm->cache->checksum) >= sizeof(path))
+        return;
+    int len = FS_LoadFile(path, (void **)&data);
+    if (!data)
+        return;
+
+    // can't grow by more than patch size
+    int outlen = cm->cache->numentitychars + len + 1;
+    char *out = Z_Malloc(outlen);
+
+    patch_ctx_t ctx;
+    SZ_InitRead(&ctx.patch, data, len);
+    SZ_InitRead(&ctx.src, cm->cache->entitystring, cm->cache->numentitychars);
+    SZ_Init(&ctx.dst, out, outlen, "patch");
+    ctx.srcline = ctx.patchline = 1;
+
+    q_unused int numpatches = 0;
+
+    while (ctx.patch.readcount < ctx.patch.cursize) {
+        if (Patch_Parse(&ctx)) {
+            numpatches++;
+            continue;
+        }
+        Com_WPrintf("Error at line %d in %s\n", ctx.patchline, path);
+        Z_Free(out);
+        FS_FreeFile(data);
+        return;
+    }
+
+    // append remaining data
+    SZ_WriteBstr(&ctx.dst, SZ_ReadRest(&ctx.src));
+    SZ_WriteByte(&ctx.dst, 0);
+
+    cm->entitystring = out;
     cm->override_bits |= OVERRIDE_ENTS;
-    return;
 
-fail:
     FS_FreeFile(data);
-    Com_EPrintf("Couldn't load entity string from %s: %s\n", buffer, Q_ErrorString(ret));
+
+    Com_DPrintf("%s: %d patches loaded\n", __func__, numpatches);
 }
-
-/*
-==================
-CM_LoadOverride
-
-Load R1Q2-style binary override file.
-
-Must be called before CM_LoadMap().
-May modify server buffer if name override is in effect.
-May allocate enstring, must be freed with CM_FreeMap().
-==================
-*/
-#if 0
-void CM_LoadOverride(cm_t *cm, char *server, size_t server_size)
-{
-    sizebuf_t sz;
-    char buffer[MAX_QPATH];
-    byte *data = NULL;
-    int ret, bits, len;
-    char *buf, name_buf[MAX_QPATH];
-
-    if (!*map_override_path->string)
-        return;
-
-    if (Q_snprintf(buffer, sizeof(buffer), "%s/%s.bsp.override", map_override_path->string, server) >= sizeof(buffer)) {
-        ret = Q_ERR(ENAMETOOLONG);
-        goto fail;
-    }
-
-    ret = FS_LoadFile(buffer, (void **)&data);
-    if (!data) {
-        if (ret == Q_ERR(ENOENT))
-            return;
-        goto fail;
-    }
-
-    SZ_InitRead(&sz, data, ret);
-
-    ret = Q_ERR_INVALID_FORMAT;
-
-    bits = SZ_ReadLong(&sz);
-    if (bits & ~OVERRIDE_ALL)
-        goto fail;
-
-    if (bits & OVERRIDE_NAME) {
-        if (!(buf = SZ_ReadData(&sz, MAX_QPATH)))
-            goto fail;
-        if (!memchr(buf, 0, MAX_QPATH))
-            goto fail;
-        if (!Com_ParseMapName(name_buf, buf, sizeof(name_buf)))
-            goto fail;
-    }
-
-    if (bits & OVERRIDE_CSUM)
-        cm->checksum = SZ_ReadLong(&sz);
-
-    if (bits & OVERRIDE_ENTS) {
-        len = SZ_ReadLong(&sz);
-        if (len <= 0)
-            goto fail;
-        if (!(buf = SZ_ReadData(&sz, len)))
-            goto fail;
-        cm->entitystring = Z_TagMalloc(len + 1, TAG_CMODEL);
-        memcpy(cm->entitystring, buf, len);
-        cm->entitystring[len] = 0;
-    }
-
-    if (bits & OVERRIDE_NAME)
-        Q_strlcpy(server, name_buf, server_size);
-
-    Com_Printf("Loaded %s\n", buffer);
-    FS_FreeFile(data);
-    cm->override_bits = bits;
-    return;
-
-fail:
-    Com_EPrintf("Couldn't load %s: %s\n", buffer, Q_ErrorString(ret));
-    FS_FreeFile(data);
-}
-#endif
 
 /*
 ==================
@@ -219,7 +254,7 @@ void CM_LoadMap(cm_t *cm, const char *name)
         Com_Error(ERR_DROP, "%s: couldn't load %s: %s", __func__, path, BSP_ErrorString(ret));
 
     if (!(cm->override_bits & OVERRIDE_ENTS))
-        load_entstring_override(cm);
+        CM_LoadEntPatches(cm, name);
 
     if (!(cm->override_bits & OVERRIDE_CSUM))
         cm->checksum = cm->cache->checksum;
@@ -1073,5 +1108,5 @@ void CM_Init(void)
     CM_InitBoxHull();
 
     map_noareas = Cvar_Get("map_noareas", "0", 0);
-    map_override_path = Cvar_Get("map_override_path", "", 0);
+    map_patch_ents = Cvar_Get("map_patch_ents", "1", 0);
 }
