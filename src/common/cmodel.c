@@ -30,8 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/zone.h"
 #include "system/hunk.h"
 
-mtexinfo_t nulltexinfo;
-
+const mtexinfo_t    nulltexinfo;
 const mleaf_t       nullleaf = { .cluster = -1 };
 
 static unsigned     floodvalid;
@@ -269,14 +268,14 @@ void CM_LoadMap(cm_t *cm, const char *name)
 
 //=======================================================================
 
-static cplane_t box_planes[12];
-static mnode_t  box_nodes[6];
-static mnode_t  *box_headnode;
-static mbrush_t box_brush;
-static mbrush_t *box_leafbrush;
+static cplane_t     box_planes[12];
+static mnode_t      box_nodes[6];
+static mnode_t     *box_headnode;
+static mbrush_t     box_brush;
+static mbrush_t    *box_leafbrush;
 static mbrushside_t box_brushsides[6];
-static mleaf_t  box_leaf;
-static mleaf_t  box_emptyleaf;
+static mleaf_t      box_leaf;
+static mleaf_t      box_emptyleaf;
 
 /*
 ===================

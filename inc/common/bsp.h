@@ -117,7 +117,7 @@ typedef struct mnode_s {
 
 typedef struct {
     cplane_t            *plane;
-    mtexinfo_t          *texinfo;
+    const mtexinfo_t    *texinfo;
 } mbrushside_t;
 
 typedef struct {

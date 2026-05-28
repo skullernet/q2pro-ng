@@ -34,7 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/utils.h"
 #include "system/hunk.h"
 
-extern mtexinfo_t nulltexinfo;
+extern const mtexinfo_t nulltexinfo;
 
 static cvar_t *map_patch_vis;
 
