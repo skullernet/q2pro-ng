@@ -962,7 +962,7 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
     if ((!ducker) && (!dodger))
         return;
 
-    if (!self->enemy) {
+    if (!self->enemy && (attacker->client || M_CanInfight(self, attacker))) {
         self->enemy = attacker;
         FoundTarget(self);
     }

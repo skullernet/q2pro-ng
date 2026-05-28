@@ -259,8 +259,10 @@ static int CheckArmor(edict_t *ent, vec3_t point, int normal, int damage, entity
     return save;
 }
 
-static bool M_CanInfight(edict_t *targ, edict_t *attacker)
+bool M_CanInfight(edict_t *targ, edict_t *attacker)
 {
+    if (targ == attacker->enemy)
+        return true;
     if ((targ->flags ^ attacker->flags) & (FL_FLY | FL_SWIM))
         return false;
     if ((targ->monsterinfo.aiflags | attacker->monsterinfo.aiflags) & AI_IGNORE_SHOTS)
@@ -360,7 +362,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker, edict_t *inflictor
     // if they *meant* to shoot us, then shoot back
     // it's the same base (walk/swim/fly) type and both don't ignore shots,
     // get mad at them
-    if (attacker->enemy == targ || M_CanInfight(targ, attacker)) {
+    if (M_CanInfight(targ, attacker)) {
         if (targ->enemy != attacker) {
             if (targ->enemy && targ->enemy->client)
                 targ->oldenemy = targ->enemy;

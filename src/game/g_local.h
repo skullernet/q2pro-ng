@@ -1424,6 +1424,7 @@ typedef enum {
 bool OnSameTeam(edict_t *ent1, edict_t *ent2);
 bool CanDamage(edict_t *targ, edict_t *inflictor);
 bool CheckTeamDamage(edict_t *targ, edict_t *attacker);
+bool M_CanInfight(edict_t *targ, edict_t *attacker);
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point,
               int normal, int damage, int knockback, damageflags_t dflags, mod_t mod);
 void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t *ignore,
