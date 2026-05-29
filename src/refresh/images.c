@@ -192,8 +192,10 @@ static int uncompress_pcx(sizebuf_t *s, int scan, byte *pix)
 
         if ((dataByte & 0xC0) == 0xC0) {
             runLength = dataByte & 0x3F;
-            if (x + runLength > scan)
-                return Q_ERR_OVERRUN;
+            if (x + runLength > scan) {
+                Com_SetLastError("RLE decompression overrun");
+                return Q_ERR_INVALID_DATA;
+            }
             if ((dataByte = SZ_ReadByte(s)) == -1)
                 return Q_ERR_UNEXPECTED_EOF;
         } else {
@@ -221,30 +223,32 @@ static int load_pcx(const byte *rawdata, size_t rawlen,
 
     pcx = (const dpcx_t *)rawdata;
 
-    if (pcx->manufacturer != 10 || pcx->version != 5)
-        return Q_ERR_UNKNOWN_FORMAT;
+    if (pcx->manufacturer != 10 || pcx->version != 5) {
+        Com_SetLastError("Invalid manufacturer or version");
+        return Q_ERR_INVALID_DATA;
+    }
 
     if (pcx->encoding != 1 || pcx->bits_per_pixel != 8) {
         Com_SetLastError("Unsupported encoding or bits per pixel");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     w = (LittleShort(pcx->xmax) - LittleShort(pcx->xmin)) + 1;
     h = (LittleShort(pcx->ymax) - LittleShort(pcx->ymin)) + 1;
     if (check_image_size(w, h)) {
         Com_SetLastError("Invalid image dimensions");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     if (pcx->color_planes != 1 && (palette || pcx->color_planes != 3)) {
         Com_SetLastError("Unsupported number of color planes");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     bytes_per_line = LittleShort(pcx->bytes_per_line);
     if (bytes_per_line < w) {
         Com_SetLastError("Invalid number of bytes per line");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     //
@@ -348,13 +352,13 @@ IMG_LOAD(WAL)
     h = LittleLong(mt->height);
     if (check_image_size(w, h))  {
         Com_SetLastError("Invalid image dimensions");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     offset = LittleLong(mt->offsets[0]);
     if ((uint64_t)offset + w * h > rawlen) {
         Com_SetLastError("Data out of bounds");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     *pic = IMG_AllocPixels(w * h * 4);
@@ -502,8 +506,10 @@ static int tga_decode_rle(sizebuf_t *s, uint32_t **row_pointers,
     }
 
 done:
-    if (packet_size)
-        return Q_ERR_OVERRUN;
+    if (packet_size) {
+        Com_SetLastError("RLE decompression overrun");
+        return Q_ERR_INVALID_DATA;
+    }
 
     return Q_ERR_SUCCESS;
 }
@@ -547,12 +553,12 @@ IMG_LOAD(TGA)
         break;
     default:
         Com_SetLastError("Unsupported targa image type");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     if (check_image_size(w, h)) {
         Com_SetLastError("Invalid image dimensions");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     switch (pixel_size) {
@@ -564,7 +570,7 @@ IMG_LOAD(TGA)
         break;
     default:
         Com_SetLastError("Unsupported number of bits per pixel");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     switch (attributes & (TGA_INTERLEAVE_2 | TGA_INTERLEAVE_4)) {
@@ -579,17 +585,17 @@ IMG_LOAD(TGA)
         break;
     default:
         Com_SetLastError("Unsupported interleaving flag");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     if (image_type == TGA_Colormap) {
         if (!colormap_type) {
             Com_SetLastError("Colormapped image but no colormap present");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
         if (pixel_size != 8) {
             Com_SetLastError("Only 8-bit colormaps are supported");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
     }
 
@@ -610,12 +616,12 @@ IMG_LOAD(TGA)
             break;
         default:
             Com_SetLastError("Unsupported number of bits per colormap pixel");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
 
         if (colormap_start + colormap_length > 256) {
             Com_SetLastError("Too many colormap entries");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
 
         in = SZ_ReadData(&s, colormap_length * colormap_bpp);
@@ -698,7 +704,7 @@ static int IMG_SaveTGA(const screenshot_t *s)
 
     byte *row = malloc(s->width * 3);
     if (!row)
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     int ret = Q_ERR_SUCCESS;
     for (int i = 0; i < s->height; i++) {
@@ -772,7 +778,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     jpeg_create_decompress(cinfo);
     jpeg_mem_src(cinfo, rawdata, rawlen);
@@ -780,7 +786,7 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
 
     if (cinfo->out_color_space != JCS_RGB && cinfo->out_color_space != JCS_GRAYSCALE) {
         Com_SetLastError("Invalid image color space");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     cinfo->out_color_space = JCS_EXT_RGBA;
@@ -789,12 +795,12 @@ static int my_jpeg_start_decompress(j_decompress_ptr cinfo, const byte *rawdata,
 
     if (cinfo->output_components != 4) {
         Com_SetLastError("Invalid number of color components");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     if (check_image_size(cinfo->output_width, cinfo->output_height)) {
         Com_SetLastError("Invalid image dimensions");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     return Q_ERR_SUCCESS;
@@ -805,7 +811,7 @@ static int my_jpeg_finish_decompress(j_decompress_ptr cinfo, JSAMPARRAY row_poin
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     while (cinfo->output_scanline < cinfo->output_height)
         jpeg_read_scanlines(cinfo, &row_pointers[cinfo->output_scanline], cinfo->output_height - cinfo->output_scanline);
@@ -858,7 +864,7 @@ static int my_jpeg_compress(j_compress_ptr cinfo, JSAMPARRAY row_pointers, const
     my_error_ptr jerr = (my_error_ptr)cinfo->err;
 
     if (setjmp(jerr->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     jpeg_create_compress(cinfo);
     jpeg_stdio_dest(cinfo, s->fp);
@@ -892,7 +898,7 @@ static int IMG_SaveJPG(const screenshot_t *s)
 
     row_pointers = malloc(sizeof(JSAMPROW) * s->height);
     if (!row_pointers)
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     for (i = 0; i < s->height; i++)
         row_pointers[i] = (JSAMPROW)(s->pixels + (s->height - i - 1) * s->rowbytes);
@@ -964,7 +970,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
     int bitdepth, colortype;
 
     if (setjmp(err->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     png_set_read_fn(png_ptr, io_ptr, my_png_read_fn);
 
@@ -975,7 +981,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
 
     if (check_image_size(w, h)) {
         Com_SetLastError("Invalid image dimensions");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     switch (colortype) {
@@ -1023,7 +1029,7 @@ static int my_png_read_image(png_structp png_ptr, png_infop info_ptr, png_bytepp
     my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (setjmp(err->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     png_read_image(png_ptr, row_pointers);
     png_read_end(png_ptr, info_ptr);
@@ -1043,15 +1049,17 @@ IMG_LOAD(PNG)
     if (rawlen < 8)
         return Q_ERR_FILE_TOO_SMALL;
 
-    if (png_sig_cmp(rawdata, 0, 8))
-        return Q_ERR_UNKNOWN_FORMAT;
+    if (png_sig_cmp(rawdata, 0, 8)) {
+        Com_SetLastError("Not a PNG file");
+        return Q_ERR_INVALID_DATA;
+    }
 
     my_err.filename = image->name;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
                                      (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
     if (!png_ptr) {
         Com_SetLastError("png_create_read_struct failed");
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
     }
 
     png_set_option(png_ptr, PNG_SKIP_sRGB_CHECK_PROFILE, PNG_OPTION_ON);
@@ -1093,7 +1101,7 @@ static int my_png_write_image(png_structp png_ptr, png_infop info_ptr,
     my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (setjmp(err->setjmp_buffer))
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
 
     png_init_io(png_ptr, s->fp);
     png_set_IHDR(png_ptr, info_ptr, s->width, s->height, 8, PNG_COLOR_TYPE_RGB,
@@ -1118,7 +1126,7 @@ static int IMG_SavePNG(const screenshot_t *s)
     if (!png_ptr) {
         if (!s->async)
             Com_SetLastError("png_create_write_struct failed");
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
     }
 
     info_ptr = png_create_info_struct(png_ptr);
@@ -1129,7 +1137,7 @@ static int IMG_SavePNG(const screenshot_t *s)
 
     row_pointers = malloc(sizeof(png_bytep) * s->height);
     if (!row_pointers) {
-        ret = Q_ERR(ENOMEM);
+        ret = Q_ERR_OUT_OF_MEMORY;
         goto fail;
     }
 
@@ -1202,18 +1210,18 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
     if (name && *name) {
         // save to user supplied name
         if (FS_NormalizePathBuffer(temp, name, sizeof(temp)) >= sizeof(temp))
-            return Q_ERR(ENAMETOOLONG);
+            return Q_ERR_PATH_TOO_LONG;
 
         FS_CleanupPath(temp);
 
         if (Q_snprintf(buffer, size, "%s/screenshots/%s%s", fs_gamedir, temp, ext) >= size)
-            return Q_ERR(ENAMETOOLONG);
+            return Q_ERR_PATH_TOO_LONG;
 
         if ((ret = FS_CreatePath(buffer)) < 0)
             return ret;
 
         if (!(*f = fopen(buffer, "wb")))
-            return Q_ERRNO;
+            return Q_Errno();
 
         return Q_ERR_SUCCESS;
     }
@@ -1222,7 +1230,7 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
 
     // create the directory
     if (Q_snprintf(buffer, size, "%s/screenshots/%s", fs_gamedir, temp) >= size)
-        return Q_ERR(ENAMETOOLONG);
+        return Q_ERR_PATH_TOO_LONG;
 
     if ((ret = FS_CreatePath(buffer)) < 0)
         return ret;
@@ -1234,13 +1242,13 @@ static int create_screenshot(char *buffer, size_t size, FILE **f,
     // find a file name to save it to
     for (i = 0; i < count; i++) {
         if (Q_snprintf(buffer, size, "%s/screenshots/%s%0*d%s", fs_gamedir, temp, width, i, ext) >= size)
-            return Q_ERR(ENAMETOOLONG);
+            return Q_ERR_PATH_TOO_LONG;
 
         if ((*f = Q_fopen(buffer, "wxb")))
             return Q_ERR_SUCCESS;
 
-        ret = Q_ERRNO;
-        if (ret != Q_ERR(EEXIST))
+        ret = Q_Errno();
+        if (ret != Q_ERR_ALREADY_EXISTS)
             return ret;
     }
 
@@ -1258,13 +1266,13 @@ static void screenshot_done_cb(void *arg)
     screenshot_t *s = arg;
 
     if (fclose(s->fp) && !s->status)
-        s->status = Q_ERRNO;
+        s->status = Q_Errno();
     Z_Free(s->pixels);
 
     if (s->status < 0) {
         const char *msg;
 
-        if (s->status == Q_ERR_LIBRARY_ERROR && !s->async)
+        if (s->status == Q_ERR_EXTERNAL && !s->async)
             msg = Com_GetLastError();
         else
             msg = Q_ErrorString(s->status);
@@ -1679,14 +1687,14 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
             continue;   // don't retry twice
 
         ret = try_replace_ext(fmt, image, pic);
-        if (ret != Q_ERR(ENOENT))
+        if (ret != Q_ERR_DOES_NOT_EXIST)
             return ret; // found something
     }
 
     // fall back to 8-bit formats
     fmt = (image->type == IT_WALL) ? IM_WAL : IM_PCX;
     if (fmt == orig)
-        return Q_ERR(ENOENT); // don't retry twice
+        return Q_ERR_DOES_NOT_EXIST; // don't retry twice
 
     return try_replace_ext(fmt, image, pic);
 }
@@ -1768,17 +1776,17 @@ static bool need_override_image(imagetype_t type, imageformat_t fmt)
 
 #endif // USE_PNG || USE_JPG || USE_TGA
 
-static void print_error(const char *name, imageflags_t flags, int err)
+static void print_error(const char *name, imageflags_t flags, qerror_t err)
 {
     const char *msg;
     int level = PRINT_ERROR;
 
     switch (err) {
-    case Q_ERR_INVALID_FORMAT:
-    case Q_ERR_LIBRARY_ERROR:
+    case Q_ERR_INVALID_DATA:
+    case Q_ERR_EXTERNAL:
         msg = Com_GetLastError();
         break;
-    case Q_ERR(ENOENT):
+    case Q_ERR_DOES_NOT_EXIST:
         if (flags == -1) {
             return;
         } else if ((flags & (IF_PERMANENT | IF_OPTIONAL)) == IF_PERMANENT) {
@@ -1807,7 +1815,7 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensio
     if (fmt == IM_MAX) {
         // unknown extension, but give it a chance to load anyway
         ret = try_other_formats(IM_MAX, image, pic);
-        if (ret == Q_ERR(ENOENT)) {
+        if (ret == Q_ERR_DOES_NOT_EXIST) {
             // not found, change error to invalid path
             ret = Q_ERR_INVALID_PATH;
         }
@@ -1817,7 +1825,7 @@ static int load_image_data(image_t *image, imageformat_t fmt, bool need_dimensio
     } else {
         // first try with original extension
         ret = try_image_format(fmt, image, pic);
-        if (ret == Q_ERR(ENOENT)) {
+        if (ret == Q_ERR_DOES_NOT_EXIST) {
             // retry with remaining extensions
             ret = try_other_formats(fmt, image, pic);
         }
@@ -2084,7 +2092,7 @@ static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t f
     }
 
     if (len >= sizeof(fullname)) {
-        print_error(fullname, flags, Q_ERR(ENAMETOOLONG));
+        print_error(fullname, flags, Q_ERR_PATH_TOO_LONG);
         return 0;
     }
 

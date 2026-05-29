@@ -153,7 +153,7 @@ typedef struct {
 
 #define VM_HANDLE_CHECK(f) \
     do { if (f < 1 || f > MAX_VM_HANDLES) \
-        return Q_ERR(EBADF); } while (0)
+        return Q_ERR_INVALID_HANDLE; } while (0)
 
 typedef struct {
     list_t entry;

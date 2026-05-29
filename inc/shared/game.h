@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include "shared/error.h"
+
 //
 // game.h -- game dll information visible to server
 //
@@ -250,7 +252,7 @@ typedef struct {
     int         (*FS_SeekFile)(qhandle_t f, int64_t offset, int whence);
     int         (*FS_ReadLine)(qhandle_t f, char *buffer, size_t size);
     size_t      (*FS_ListFiles)(const char *path, const char *filter, unsigned flags, char *buffer, size_t size);
-    size_t      (*FS_ErrorString)(int error, char *buf, size_t size);
+    size_t      (*FS_ErrorString)(qerror_t error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
     void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);

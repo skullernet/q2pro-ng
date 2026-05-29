@@ -490,7 +490,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 // load it in
     len = FS_LoadFile(s->name, (void **)&data);
     if (!data) {
-        if (len != Q_ERR(ENOENT))
+        if (len != Q_ERR_DOES_NOT_EXIST)
             Com_EPrintf("Couldn't load %s: %s\n", COM_MakePrintable(s->name), Q_ErrorString(len));
         s->error = len;
         return NULL;
@@ -502,7 +502,7 @@ sfxcache_t *S_LoadSound(sfx_t *s)
     SZ_InitRead(&sz, data, len);
 
     if (!GetWavinfo(&sz)) {
-        s->error = Q_ERR_INVALID_FORMAT;
+        s->error = Q_ERR_INVALID_DATA;
         goto fail;
     }
 

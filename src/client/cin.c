@@ -793,18 +793,18 @@ Name should be in format "video/<something>.cin".
 int SCR_CheckForCinematic(const char *name)
 {
     int len = strlen(name) - 4;
-    int ret = Q_ERR(ENOSYS);
+    int ret = Q_ERR_DOES_NOT_EXIST;
 
     for (int i = 0; i < q_countof(formats); i++) {
         if (!(supported & BIT(i)))
             continue;
         ret = FS_LoadFileEx(va("%.*s%s", len, name, formats[i].ext),
                             NULL, FS_TYPE_REAL, TAG_FREE);
-        if (ret != Q_ERR(ENOENT))
+        if (ret != Q_ERR_DOES_NOT_EXIST)
             break;
     }
 
-    if (ret == Q_ERR(EFBIG))
+    if (ret == Q_ERR_FILE_TOO_BIG)
         ret = Q_ERR_SUCCESS;
 
     return ret;

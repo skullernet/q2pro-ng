@@ -243,7 +243,7 @@ Loads in the map and all submodels
 void CM_LoadMap(cm_t *cm, const char *name)
 {
     char path[MAX_QPATH];
-    int ret;
+    qerror_t ret;
 
     if (Q_concat(path, sizeof(path), "maps/", name, ".bsp") >= sizeof(path))
         Com_Error(ERR_DROP, "%s: oversize path", __func__);

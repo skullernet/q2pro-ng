@@ -158,7 +158,7 @@ static void BSP_Test_f(void)
     char *name;
     int i, count, errors;
     bsp_t *bsp;
-    int ret;
+    qerror_t ret;
     unsigned start, end;
 
     list = FS_ListFiles(NULL, ".bsp", FS_SEARCH_RECURSIVE, &count);
@@ -836,7 +836,7 @@ static void Com_Extract_f(void)
     path = Cmd_Argv(1);
     len = FS_LoadFileEx(path, &data, FS_TYPE_PAK, TAG_FILESYSTEM);
     if (!data) {
-        if (len == Q_ERR(ENOENT) && FS_FileExistsEx(path, FS_TYPE_REAL))
+        if (len == Q_ERR_DOES_NOT_EXIST && FS_FileExistsEx(path, FS_TYPE_REAL))
             Com_Printf("%s is not in a pack file\n", path);
         else
             Com_Printf("Couldn't extract %s: %s\n", path, Q_ErrorString(len));

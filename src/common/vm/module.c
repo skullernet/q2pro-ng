@@ -176,7 +176,7 @@ int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned m
     // NULL handle tests for file existence
     if (!f) {
         if ((mode & FS_MODE_MASK) != FS_MODE_READ)
-            return Q_ERR(EINVAL);
+            return Q_ERR_INVALID_ARGS;
         ret = FS_OpenFile(path, &h, mode | FS_FLAG_LOADFILE);
         if (h)
             FS_CloseFile(h);
@@ -186,21 +186,21 @@ int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned m
     *f = 0;
 
     if (mode & FS_FLAG_LOADFILE)
-        return Q_ERR(EPERM);
+        return Q_ERR_ACCESS_DENIED;
 
     if ((mode & FS_MODE_MASK) != FS_MODE_READ) {
         char normalized[MAX_OSPATH];
         if (FS_NormalizePathBuffer(normalized, path, sizeof(normalized)) >= sizeof(normalized))
-            return Q_ERR(ENAMETOOLONG);
+            return Q_ERR_PATH_TOO_LONG;
         if (!strchr(normalized, '/'))
-            return Q_ERR(EPERM);
+            return Q_ERR_ACCESS_DENIED;
     }
 
     for (i = 0; i < MAX_VM_HANDLES; i++)
         if (!mod->handles[i])
             break;
     if (i == MAX_VM_HANDLES)
-        return Q_ERR(EMFILE);
+        return Q_ERR_TOO_MANY_OPEN_FILES;
 
     ret = FS_OpenFile(path, &h, mode);
     if (h) {

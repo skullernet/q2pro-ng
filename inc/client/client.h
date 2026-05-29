@@ -119,7 +119,7 @@ void SCR_UpdateScreen(void);
 int SCR_CheckForCinematic(const char *name);
 void SCR_Cinematic_g(void);
 #else
-#define SCR_CheckForCinematic(name)     Q_ERR(ENOSYS)
+#define SCR_CheckForCinematic(name)     Q_ERR_NOT_IMPLEMENTED
 #define SCR_Cinematic_g(ctx)            (void)0
 #endif
 

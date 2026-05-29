@@ -56,7 +56,7 @@ static cvar_t *map_patch_vis;
     Com_SetLastError(va("%s: %s", __func__, msg))
 
 #define BSP_ENSURE(cond, msg) \
-    do { if (!(cond)) { BSP_ERROR(msg); return Q_ERR_INVALID_FORMAT; } } while (0)
+    do { if (!(cond)) { BSP_ERROR(msg); return Q_ERR_INVALID_DATA; } } while (0)
 
 #define BSP_EXTENDED 0
 #include "bsp_template.c"
@@ -246,7 +246,7 @@ static int BSP_SetParent(mnode_t *node, unsigned key)
         for (i = 0, face = node->firstface; i < node->numfaces; i++, face++) {
             if (face->drawframe) {
                 BSP_ERROR("Duplicate face");
-                return Q_ERR_INFINITE_LOOP;
+                return Q_ERR_INVALID_DATA;
             }
             face->drawframe = key;
         }
@@ -255,17 +255,17 @@ static int BSP_SetParent(mnode_t *node, unsigned key)
         child = node->children[0];
         if (child->parent) {
             BSP_ERROR("Cycle encountered");
-            return Q_ERR_INFINITE_LOOP;
+            return Q_ERR_INVALID_DATA;
         }
         child->parent = node;
         if (BSP_SetParent(child, key)) {
-            return Q_ERR_INFINITE_LOOP;
+            return Q_ERR_INVALID_DATA;
         }
 
         child = node->children[1];
         if (child->parent) {
             BSP_ERROR("Cycle encountered");
-            return Q_ERR_INFINITE_LOOP;
+            return Q_ERR_INVALID_DATA;
         }
         child->parent = node;
         node = child;
@@ -291,7 +291,7 @@ static int BSP_ValidateTree(bsp_t *bsp)
     for (i = 0, mod = bsp->models; i < bsp->nummodels; i++, mod++) {
         if (i == 0 && mod->headnode != bsp->nodes) {
             BSP_ERROR("Map model 0 headnode is not the first node");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
 
         ret = BSP_SetParent(mod->headnode, ~i);
@@ -304,7 +304,7 @@ static int BSP_ValidateTree(bsp_t *bsp)
         for (j = 0, face = mod->firstface; j < mod->numfaces; j++, face++) {
             if (face->drawframe && face->drawframe != ~i) {
                 BSP_ERROR("Duplicate face");
-                return Q_ERR_INFINITE_LOOP;
+                return Q_ERR_INVALID_DATA;
             }
             face->drawframe = ~i;
         }
@@ -959,7 +959,7 @@ BSP_Load
 Loads in the map and all submodels
 ==================
 */
-int BSP_Load(const char *name, bsp_t **bsp_p)
+qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
 {
     bsp_t           *bsp;
     byte            *buf;
@@ -978,7 +978,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     *bsp_p = NULL;
 
     if (!*name)
-        return Q_ERR(ENOENT);
+        return Q_ERR_DOES_NOT_EXIST;
 
     if ((bsp = BSP_Find(name)) != NULL) {
         Com_PageInMemory(bsp->hunk.base, bsp->hunk.cursize);
@@ -1009,11 +1009,13 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         extended = true;
         break;
     default:
-        ret = Q_ERR_UNKNOWN_FORMAT;
+        Com_SetLastError("Invalid ident");
+        ret = Q_ERR_INVALID_DATA;
         goto fail2;
     }
     if (LittleLong(header->version) != BSPVERSION) {
-        ret = Q_ERR_UNKNOWN_FORMAT;
+        Com_SetLastError("Invalid version");
+        ret = Q_ERR_INVALID_DATA;
         goto fail2;
     }
 
@@ -1030,13 +1032,13 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
                 len = filelen - ofs;
             } else {
                 Com_SetLastError(va("%s lump out of bounds", info->name));
-                ret = Q_ERR_INVALID_FORMAT;
+                ret = Q_ERR_INVALID_DATA;
                 goto fail2;
             }
         }
         if (len % info->disksize[extended]) {
             Com_SetLastError(va("%s lump has odd size", info->name));
-            ret = Q_ERR_INVALID_FORMAT;
+            ret = Q_ERR_INVALID_DATA;
             goto fail2;
         }
         count = len / info->disksize[extended];
@@ -1127,15 +1129,12 @@ fail2:
     return ret;
 }
 
-const char *BSP_ErrorString(int err)
+const char *BSP_ErrorString(qerror_t err)
 {
-    switch (err) {
-    case Q_ERR_INVALID_FORMAT:
-    case Q_ERR_INFINITE_LOOP:
+    if (err == Q_ERR_INVALID_DATA)
         return Com_GetLastError();
-    default:
+    else
         return Q_ErrorString(err);
-    }
 }
 
 /*

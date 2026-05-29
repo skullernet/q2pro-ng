@@ -170,7 +170,7 @@ BSP_LOAD(Texinfo)
         for (mtexinfo_t *step = out->next; step && step != out; step = step->next) {
             if (out->numframes == count) {
                 BSP_ERROR("Infinite anim chain");
-                return Q_ERR_INFINITE_LOOP;
+                return Q_ERR_INVALID_DATA;
             }
             out->numframes++;
         }

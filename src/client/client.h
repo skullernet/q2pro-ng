@@ -528,7 +528,7 @@ void HTTP_CleanupDownloads(void);
 #define HTTP_Init()                     (void)0
 #define HTTP_Shutdown()                 (void)0
 #define HTTP_SetServer(url)             (void)0
-#define HTTP_QueueDownload(path, type)  Q_ERR(ENOSYS)
+#define HTTP_QueueDownload(path, type)  Q_ERR_INVALID_OPERATION
 #define HTTP_RunDownloads()             (void)0
 #define HTTP_CleanupDownloads()         (void)0
 #endif

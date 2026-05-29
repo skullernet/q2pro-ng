@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../client.h"
 #include "common/list.h"
+#include "shared/error.h"
 
 #if USE_MINIAUDIO
 #include <miniaudio.h>
@@ -51,7 +52,7 @@ typedef struct {
     char        name[MAX_QPATH];
     sfxcache_t  *cache;
     unsigned    registration_sequence;
-    int         error;
+    qerror_t    error;
 } sfx_t;
 
 #define PS_FIRST(list)      LIST_FIRST(playsound_t, list, entry)

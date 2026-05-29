@@ -211,10 +211,12 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
     // byte swap the header
     LittleBlock(&header, rawdata, sizeof(header));
 
-    if (header.ident != SP2_IDENT)
-        return Q_ERR_UNKNOWN_FORMAT;
-    if (header.version != SP2_VERSION)
-        return Q_ERR_UNKNOWN_FORMAT;
+    // check ident and version
+    Q_assert(header.ident == SP2_IDENT);
+    if (header.version != SP2_VERSION) {
+        Com_SetLastError("Invalid version");
+        return Q_ERR_INVALID_DATA;
+    }
     if (header.numframes < 1) {
         // empty models draw nothing
         model->type = MOD_EMPTY;
@@ -222,11 +224,11 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
     }
     if (header.numframes > SP2_MAX_FRAMES) {
         Com_SetLastError("Too many frames");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
     if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length) {
         Com_SetLastError("Frames out of bounds");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     model->type = MOD_SPRITE;
@@ -347,10 +349,11 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     LittleBlock(&header, rawdata, sizeof(header));
 
     // check ident and version
-    if (header.ident != MD2_IDENT)
-        return Q_ERR_UNKNOWN_FORMAT;
-    if (header.version != MD2_VERSION)
-        return Q_ERR_UNKNOWN_FORMAT;
+    Q_assert(header.ident == MD2_IDENT);
+    if (header.version != MD2_VERSION) {
+        Com_SetLastError("Invalid version");
+        return Q_ERR_INVALID_DATA;
+    }
 
     // empty models draw nothing
     if (header.num_tris < 1 || header.num_st < 3 || header.num_xyz < 3 || header.num_frames < 1) {
@@ -362,7 +365,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     err = MOD_ValidateMD2(&header, length);
     if (err) {
         Com_SetLastError(err);
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     // load all triangle indices
@@ -389,7 +392,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
 
     if (numindices < 3) {
         Com_SetLastError("Too few valid indices");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     for (i = 0; i < numindices; i++)
@@ -419,7 +422,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
 
     if (numverts > TESS_MAX_VERTICES) {
         Com_SetLastError("Too many verts");
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     MOD_HunkBegin();
@@ -430,7 +433,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     model->meshes = MOD_CpuMalloc(sizeof(model->meshes[0]));
     model->frames = MOD_CpuMalloc(sizeof(model->frames[0]) * header.num_frames);
     if (!model->meshes || !model->frames)
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     mesh = model->meshes;
     mesh->numtris = numindices / 3;
@@ -438,7 +441,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     mesh->numverts = numverts;
     mesh->numskins = header.num_skins;
     if (!MOD_AllocMesh(model, mesh))
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     if (mesh->numtris != header.num_tris)
         Com_DPrintf("%s has %d bad triangles\n", model->name, header.num_tris - mesh->numtris);
@@ -455,8 +458,10 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
 #else
         maliasskinname_t skinname;
 #endif
-        if (!Q_memccpy(skinname, src_skin, 0, sizeof(maliasskinname_t)))
-            return Q_ERR_STRING_TRUNCATED;
+        if (!Q_memccpy(skinname, src_skin, 0, sizeof(maliasskinname_t))) {
+            Com_SetLastError("Bad skin name");
+            return Q_ERR_INVALID_DATA;
+        }
         mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin += MD2_MAX_SKINNAME;
     }
@@ -567,7 +572,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     err = MOD_ValidateMD3Mesh(model, &header, length);
     if (err) {
         Com_SetLastError(err);
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     mesh->numtris = header.num_tris;
@@ -575,7 +580,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
     mesh->numverts = header.num_verts;
     mesh->numskins = header.num_skins;
     if (!MOD_AllocMesh(model, mesh))
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     // load all skins
     src_skin = (dmd3skin_t *)(rawdata + header.ofs_skins);
@@ -585,8 +590,10 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
 #else
         maliasskinname_t skinname;
 #endif
-        if (!Q_memccpy(skinname, src_skin->name, 0, sizeof(maliasskinname_t)))
-            return Q_ERR_STRING_TRUNCATED;
+        if (!Q_memccpy(skinname, src_skin->name, 0, sizeof(maliasskinname_t))) {
+            Com_SetLastError("Bad skin name");
+            return Q_ERR_INVALID_DATA;
+        }
         mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_NONE);
         src_skin++;
     }
@@ -627,7 +634,7 @@ static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
         index = LittleLong(*src_idx++);
         if (index >= header.num_verts) {
             Com_SetLastError("Bad triangle index");
-            return Q_ERR_INVALID_FORMAT;
+            return Q_ERR_INVALID_DATA;
         }
         *dst_idx++ = index;
     }
@@ -666,16 +673,17 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     LittleBlock(&header, rawdata, sizeof(header));
 
     // check ident and version
-    if (header.ident != MD3_IDENT)
-        return Q_ERR_UNKNOWN_FORMAT;
-    if (header.version != MD3_VERSION)
-        return Q_ERR_UNKNOWN_FORMAT;
+    Q_assert(header.ident == MD3_IDENT);
+    if (header.version != MD3_VERSION) {
+        Com_SetLastError("Invalid version");
+        return Q_ERR_INVALID_DATA;
+    }
 
     // validate the header
     err = MOD_ValidateMD3(&header, length);
     if (err) {
         Com_SetLastError(err);
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     MOD_HunkBegin();
@@ -686,7 +694,7 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     model->meshes = MOD_CpuMalloc(sizeof(model->meshes[0]) * header.num_meshes);
     model->frames = MOD_CpuMalloc(sizeof(model->frames[0]) * header.num_frames);
     if (!model->meshes || !model->frames)
-        return Q_ERR(ENOMEM);
+        return Q_ERR_OUT_OF_MEMORY;
 
     // load all frames
     src_frame = (dmd3frame_t *)((byte *)rawdata + header.ofs_frames);
@@ -724,16 +732,16 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
 }
 #endif
 
-static void MOD_PrintError(const char *path, int err)
+static void MOD_PrintError(const char *path, qerror_t err)
 {
     print_type_t level = PRINT_ERROR;
     const char *msg;
 
     switch (err) {
-    case Q_ERR_INVALID_FORMAT:
+    case Q_ERR_INVALID_DATA:
         msg = Com_GetLastError();
         break;
-    case Q_ERR(ENOENT):
+    case Q_ERR_DOES_NOT_EXIST:
         if (COM_DEVELOPER < 2)
             return;
         level = PRINT_DEVELOPER;
@@ -1123,7 +1131,7 @@ static void MD5_LoadScales(const md5_model_t *model, const char *path, joint_inf
 
     len = FS_LoadFile(path, (void **)&data);
     if (!data) {
-        if (len != Q_ERR(ENOENT))
+        if (len != Q_ERR_DOES_NOT_EXIST)
             MOD_PrintError(path, len);
         return;
     }
@@ -1340,7 +1348,7 @@ static bool MD5_LoadFile(model_t *model, const char *path, bool (*parse)(model_t
     ret = parse(model, data, path);
     FS_FreeFile(data);
     if (!ret) {
-        MOD_PrintError(path, Q_ERR_INVALID_FORMAT);
+        MOD_PrintError(path, Q_ERR_INVALID_DATA);
         return false;
     }
 
@@ -1536,7 +1544,7 @@ qhandle_t R_RegisterModel(const char *name)
 
     // this should never happen
     if (namelen >= MAX_QPATH) {
-        ret = Q_ERR(ENAMETOOLONG);
+        ret = Q_ERR_PATH_TOO_LONG;
         goto fail1;
     }
 
@@ -1576,7 +1584,8 @@ qhandle_t R_RegisterModel(const char *name)
         load = MOD_LoadSP2;
         break;
     default:
-        ret = Q_ERR_UNKNOWN_FORMAT;
+        Com_SetLastError("Invalid ident");
+        ret = Q_ERR_INVALID_DATA;
         goto fail2;
     }
 

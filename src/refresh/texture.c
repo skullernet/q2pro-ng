@@ -885,17 +885,17 @@ int IMG_ReadPixels(screenshot_t *s)
     int align = 4, bpp = format == GL_RGBA ? 4 : 3;
 
     if (r_config.width < 1 || r_config.height < 1)
-        return Q_ERR(EINVAL);
+        return Q_ERR_INVALID_ARGS;
 
     qglGetIntegerv(GL_PACK_ALIGNMENT, &align);
 
     if (r_config.width > (INT_MAX - align + 1) / bpp)
-        return Q_ERR(EOVERFLOW);
+        return Q_ERR_OUT_OF_RANGE;
 
     int rowbytes = Q_ALIGN(r_config.width * bpp, align);
 
     if (r_config.height > INT_MAX / rowbytes)
-        return Q_ERR(EOVERFLOW);
+        return Q_ERR_OUT_OF_RANGE;
 
     int buf_size = rowbytes * r_config.height;
 

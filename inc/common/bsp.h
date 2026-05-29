@@ -298,9 +298,9 @@ typedef struct {
     char            name[1];
 } bsp_t;
 
-int BSP_Load(const char *name, bsp_t **bsp_p);
+qerror_t BSP_Load(const char *name, bsp_t **bsp_p);
 void BSP_Free(bsp_t *bsp);
-const char *BSP_ErrorString(int err);
+const char *BSP_ErrorString(qerror_t err);
 
 #if USE_REF
 typedef struct {

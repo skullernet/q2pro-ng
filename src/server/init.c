@@ -204,7 +204,7 @@ static server_state_t get_server_state(const char *s)
 static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nextserver)
 {
     char    expanded[MAX_QPATH], *ch;
-    int     ret = Q_ERR(ENAMETOOLONG);
+    int     ret = Q_ERR_PATH_TOO_LONG;
 
     // copy it off
     Q_strlcpy(cmd->server, server, sizeof(cmd->server));
@@ -236,12 +236,12 @@ static bool parse_and_check_server(mapcmd_t *cmd, const char *server, bool nexts
             return false;       // skip it
         if (Q_concat(expanded, sizeof(expanded), "demos/", cmd->server) >= sizeof(expanded))
             break;
-        ret = Q_ERR(ENOSYS);    // only works if running a client
+        ret = Q_ERR_INVALID_OPERATION;  // only works if running a client
 #if USE_CLIENT
         if (dedicated->integer || cmd->loadgame)
             break;              // not supported
         ret = FS_LoadFile(expanded, NULL);
-        if (ret == Q_ERR(EFBIG))
+        if (ret == Q_ERR_FILE_TOO_BIG)
             ret = Q_ERR_SUCCESS;
 #endif
         break;

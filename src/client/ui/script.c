@@ -618,7 +618,7 @@ static bool Parse_File(const char *path, int depth)
 
     ret = FS_LoadFile(path, (void **)&raw);
     if (!raw) {
-        if (ret != Q_ERR(ENOENT) || depth) {
+        if (ret != Q_ERR_DOES_NOT_EXIST || depth) {
             Com_WPrintf("Couldn't %s %s: %s\n", depth ? "include" : "load",
                         path, Q_ErrorString(ret));
         }

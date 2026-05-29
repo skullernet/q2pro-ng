@@ -502,7 +502,8 @@ void GL_LoadWorld(const char *name)
     bsp_t *bsp;
     mtexinfo_t *info;
     mface_t *surf;
-    int i, n64surfs, ret;
+    int i, n64surfs;
+    qerror_t ret;
 
     if (!name || !*name)
         return;

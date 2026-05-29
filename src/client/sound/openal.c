@@ -289,21 +289,21 @@ static int AL_UploadSfx(sfx_t *s)
 
     if (!format) {
         Com_SetLastError("Unsupported sample format");
-        return Q_ERR(EINVAL);
+        return Q_ERR_INVALID_ARGS;
     }
 
     qalGetError();
     qalGenBuffers(1, &buffer);
     if (qalGetError()) {
         Com_SetLastError("Failed to generate buffer");
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
     }
 
     qalBufferData(buffer, format, s_info.data, size, s_info.rate);
     if (qalGetError()) {
         Com_SetLastError("Failed to upload samples");
         qalDeleteBuffers(1, &buffer);
-        return Q_ERR_LIBRARY_ERROR;
+        return Q_ERR_EXTERNAL;
     }
 
     // specify OpenAL-Soft style loop points

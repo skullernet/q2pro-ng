@@ -1113,7 +1113,7 @@ Registers main BSP file and inline models
 static void CL_LoadMap(void)
 {
     char name[MAX_QPATH];
-    int ret;
+    qerror_t ret;
 
     if (cl.bsp)
         return;

@@ -159,7 +159,7 @@ static int MA_UploadSfx(sfx_t *s)
         break;
     default:
         Com_SetLastError("Unsupported sample format");
-        return Q_ERR(EINVAL);
+        return Q_ERR_INVALID_ARGS;
     }
 
     int size = s_info.samples * s_info.width * s_info.channels;

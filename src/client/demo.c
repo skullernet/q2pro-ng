@@ -523,7 +523,7 @@ static int read_first_message(qhandle_t f)
     }
 
     if (msglen > sizeof(msg_read_buffer)) {
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     // read packet data
@@ -554,7 +554,7 @@ static int read_next_message(qhandle_t f)
 
     msglen = LittleLong(msglen);
     if (msglen > sizeof(msg_read_buffer)) {
-        return Q_ERR_INVALID_FORMAT;
+        return Q_ERR_INVALID_DATA;
     }
 
     // read packet data
