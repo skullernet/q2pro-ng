@@ -211,6 +211,41 @@ int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned m
     return ret;
 }
 
+int VM_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
+{
+    void **list;
+    int count;
+    size_t total = 0;
+
+    list = FS_ListFiles(path, filter, flags, &count);
+
+    if (flags & FS_SEARCH_EXTRAINFO) {
+        for (int i = 0; i < count; i++) {
+            file_info_t *info = list[i];
+            size_t len = 24 + strlen(info->name) + 1;
+            if (total + len > size) {
+                count = i;
+                break;
+            }
+            memcpy(buffer + total, info, len);
+            total += Q_ALIGN(len, 8);
+        }
+    } else {
+        for (int i = 0; i < count; i++) {
+            size_t len = strlen(list[i]) + 1;
+            if (total + len > size) {
+                count = i;
+                break;
+            }
+            memcpy(buffer + total, list[i], len);
+            total += len;
+        }
+    }
+
+    FS_FreeList(list);
+    return count;
+}
+
 void VM_FreeModule(vm_module_t *mod)
 {
     VM_Free(mod->vm);

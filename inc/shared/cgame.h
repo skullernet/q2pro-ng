@@ -182,7 +182,7 @@ typedef struct {
     int64_t (*FS_TellFile)(qhandle_t f);
     int (*FS_SeekFile)(qhandle_t f, int64_t offset, int whence);
     int (*FS_ReadLine)(qhandle_t f, char *buffer, size_t size);
-    size_t (*FS_ListFiles)(const char *path, const char *filter, unsigned flags, char *buffer, size_t size);
+    int (*FS_ListFiles)(const char *path, const char *filter, unsigned flags, char *buffer, size_t size);
     size_t (*FS_ErrorString)(qerror_t error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);

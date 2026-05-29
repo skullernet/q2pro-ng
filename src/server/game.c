@@ -361,11 +361,6 @@ static int PF_ReadLine(qhandle_t f, char *buffer, size_t size)
     return FS_ReadLine(VM_HANDLE(f), buffer, size);
 }
 
-static size_t PF_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size)
-{
-    return 0;
-}
-
 // edict pointers need custom validation
 static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr, const char *func)
 {
@@ -591,7 +586,7 @@ VM_THUNK(FS_ReadLine) {
 }
 
 VM_THUNK(FS_ListFiles) {
-    VM_U32(0) = PF_ListFiles(VM_STR(0), VM_STR_NULL(1), VM_U32(2), VM_STR_BUF(3, 4), VM_U32(4));
+    VM_U32(0) = VM_ListFiles(VM_STR(0), VM_STR_NULL(1), VM_U32(2), VM_STR_BUF(3, 4), VM_U32(4));
 }
 
 VM_THUNK(FS_ErrorString) {
@@ -935,7 +930,7 @@ static const game_import_t game_dll_imports = {
     .FS_TellFile = PF_TellFile,
     .FS_SeekFile = PF_SeekFile,
     .FS_ReadLine = FS_ReadLine,
-    .FS_ListFiles = PF_ListFiles,
+    .FS_ListFiles = VM_ListFiles,
     .FS_ErrorString = Q_ErrorStringBuffer,
 
     .R_ClearDebugLines = R_ClearDebugLines,

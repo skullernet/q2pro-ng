@@ -171,3 +171,4 @@ bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const c
 void VM_CvarChanged(const cvar_t *var);
 
 int64_t VM_OpenFile(vm_module_t *mod, const char *path, qhandle_t *f, unsigned mode);
+int VM_ListFiles(const char *path, const char *filter, unsigned flags, char *buffer, size_t size);
