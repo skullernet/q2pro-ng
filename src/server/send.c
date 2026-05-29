@@ -40,9 +40,9 @@ void SV_FlushRedirect(int redirected, const char *outputbuf, size_t len)
         NET_SendPacket(NS_SERVER, buffer, len + 10, &net_from);
     } else if (redirected == RD_CLIENT) {
         MSG_WriteByte(svc_stringcmd);
-        MSG_WriteData(CONST_STR_LEN("print "));
+        MSG_WriteData(CONST_STR_LEN("print \""));
         MSG_WriteData(outputbuf, len);
-        MSG_WriteByte(0);
+        MSG_WriteData("\"", 2);
         SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
     }
 }

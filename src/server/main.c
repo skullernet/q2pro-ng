@@ -1924,7 +1924,7 @@ static void SV_FinalMessage(const char *message, error_type_t type)
 
     if (message) {
         MSG_WriteByte(svc_stringcmd);
-        MSG_WriteString(va("print %s", message));
+        MSG_WriteString(va("print \"%s\"", message));
     }
 
     if (type == ERR_RECONNECT)
