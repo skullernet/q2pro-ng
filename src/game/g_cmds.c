@@ -971,9 +971,15 @@ static void Cmd_Kill_AI_f(edict_t *ent, cmdflags_t flags)
             continue;
         }
 
-        edict->takedamage = true;
-        T_Damage(edict, world, edict, vec3_origin, edict->s.origin, 0,
-                 edict->health, 0, DAMAGE_RADIUS | DAMAGE_NO_PROTECTION, MOD_UNKNOWN);
+        // kill it next frame
+        edict->health = 0;
+        edict->enemy = ent;
+        edict->monsterinfo.damage_attacker = ent;
+        edict->monsterinfo.damage_inflictor = world;
+        edict->monsterinfo.damage_blood = 1;
+        edict->monsterinfo.damage_knockback = 0;
+        edict->monsterinfo.damage_from = edict->s.origin;
+        edict->monsterinfo.damage_mod = MOD_UNKNOWN;
     }
 }
 
