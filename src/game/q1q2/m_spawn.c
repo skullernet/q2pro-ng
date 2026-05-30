@@ -246,8 +246,6 @@ void SP_monster_spawn(edict_t *self)
     self->monsterinfo.melee = spawn_melee;
     self->monsterinfo.sight = spawn_sight;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &spawn_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

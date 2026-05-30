@@ -522,8 +522,6 @@ void SP_monster_dog_strogg(edict_t *self)
     self->monsterinfo.blocked = dog_str_blocked; // PGM
     self->monsterinfo.setskin = dog_str_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &dog_str_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
     self->monsterinfo.can_jump = !(self->spawnflags & SPAWNFLAG_DOG_STR_NO_JUMPING);

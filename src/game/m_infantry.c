@@ -896,8 +896,6 @@ void SP_monster_infantry(edict_t *self)
     self->monsterinfo.idle = infantry_fidget;
     self->monsterinfo.setskin = infantry_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &infantry_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
     self->monsterinfo.can_jump = !(self->spawnflags & SPAWNFLAG_INFANTRY_NOJUMPING);

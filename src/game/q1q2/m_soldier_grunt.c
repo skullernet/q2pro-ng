@@ -501,8 +501,6 @@ static void SP_monster_soldier_grunt_x(edict_t *self)
     self->monsterinfo.search = grunt_search;
     self->monsterinfo.setskin = grunt_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &grunt_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

@@ -498,8 +498,6 @@ static void SP_monster_enforcer_x(edict_t *self)
     self->monsterinfo.search = enforcer_search;
     self->monsterinfo.setskin = enforcer_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &enforcer_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

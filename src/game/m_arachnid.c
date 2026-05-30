@@ -660,8 +660,6 @@ void SP_monster_arachnid(edict_t *self)
 
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &arachnid_move_stand);
 
     walkmonster_start(self);

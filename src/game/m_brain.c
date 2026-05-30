@@ -770,8 +770,6 @@ void SP_monster_brain(edict_t *self)
     if (!ED_WasKeySpecified("power_armor_power"))
         self->monsterinfo.power_armor_power = 100;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &brain_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

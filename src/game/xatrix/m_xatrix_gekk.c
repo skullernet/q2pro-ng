@@ -1511,13 +1511,8 @@ void SP_monster_gekk(edict_t *self)
     self->monsterinfo.checkattack = gekk_checkattack;
     self->monsterinfo.setskin = gekk_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &gekk_move_stand);
-
     self->monsterinfo.scale = MODEL_SCALE;
-
-    walkmonster_start(self);
 
     if (self->spawnflags & SPAWNFLAG_GEKK_CHANT)
         M_SetAnimation(self, &gekk_move_chant);
@@ -1528,6 +1523,8 @@ void SP_monster_gekk(edict_t *self)
     self->monsterinfo.blocked = gekk_blocked;
 
     gekk_set_fly_parameters(self);
+
+    walkmonster_start(self);
 }
 
 #if 0

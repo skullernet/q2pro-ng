@@ -453,8 +453,6 @@ static void SP_monster_wizard_x(edict_t *self)
     self->monsterinfo.search = wizard_search;
     self->monsterinfo.setskin = wizard_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &wizard_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

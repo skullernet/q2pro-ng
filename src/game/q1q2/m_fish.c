@@ -270,8 +270,6 @@ void SP_monster_fish(edict_t *self)
     self->monsterinfo.melee = fish_melee;
     self->monsterinfo.search = fish_search;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &fish_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

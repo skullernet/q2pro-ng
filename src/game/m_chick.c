@@ -771,8 +771,6 @@ static void SP_monster_chick_x(edict_t *self)
     self->monsterinfo.sight = chick_sight;
     self->monsterinfo.setskin = chick_setpain;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &chick_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

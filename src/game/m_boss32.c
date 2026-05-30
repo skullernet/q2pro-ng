@@ -726,17 +726,15 @@ void SP_monster_makron(edict_t *self)
     self->monsterinfo.checkattack = Makron_CheckAttack;
     self->monsterinfo.setskin = makron_setskin;
 
-    trap_LinkEntity(self);
-
     //  M_SetAnimation(self, &makron_move_stand);
     M_SetAnimation(self, &makron_move_sight);
     self->monsterinfo.scale = MODEL_SCALE;
 
-    walkmonster_start(self);
-
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     // pmm
+
+    walkmonster_start(self);
 }
 
 /*

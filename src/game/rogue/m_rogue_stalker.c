@@ -902,8 +902,6 @@ void SP_monster_stalker(edict_t *self)
     self->monsterinfo.setskin = stalker_setskin;
     self->monsterinfo.physics_change = stalker_physics_change;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &stalker_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

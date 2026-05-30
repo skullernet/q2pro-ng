@@ -503,8 +503,6 @@ static void SP_monster_ogre_x(edict_t *self)
     self->monsterinfo.search = ogre_search;
     self->monsterinfo.setskin = ogre_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &ogre_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
     self->monsterinfo.aiflags |= AI_STINKY;

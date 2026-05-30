@@ -921,8 +921,6 @@ void SP_monster_parasite(edict_t *self)
     self->monsterinfo.blocked = parasite_blocked; // PGM
     self->monsterinfo.setskin = parasite_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &parasite_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
     self->yaw_speed = 30;

@@ -529,15 +529,13 @@ static void SP_monster_hover_x(edict_t *self)
     self->monsterinfo.search = hover_search;
     self->monsterinfo.setskin = hover_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &hover_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 
-    flymonster_start(self);
-
     self->monsterinfo.aiflags |= AI_ALTERNATE_FLY;
     hover_set_fly_parameters(self);
+
+    flymonster_start(self);
 }
 
 /*QUAKED monster_hover (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight

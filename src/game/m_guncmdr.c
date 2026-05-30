@@ -1413,8 +1413,6 @@ void SP_monster_guncmdr(edict_t *self)
     self->monsterinfo.search = guncmdr_search;
     self->monsterinfo.setskin = guncmdr_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &guncmdr_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

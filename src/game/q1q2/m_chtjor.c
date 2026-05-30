@@ -654,13 +654,12 @@ static void SP_monster_chtjor_x(edict_t *self)
     self->monsterinfo.sight = NULL;
     self->monsterinfo.checkattack = chtjor_CheckAttack;
     self->monsterinfo.setskin = chtjor_setskin;
-    trap_LinkEntity(self);
 
     M_SetAnimation(self, &chtjor_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 
-    walkmonster_start(self);
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
+    walkmonster_start(self);
 }
 
 /*QUAKED monster_chtjor (1 .5 0) (-80 -80 0) (90 90 140) Ambush Trigger_Spawn Sight */

@@ -815,7 +815,5 @@ void SP_monster_berserk(edict_t *self)
     self->monsterinfo.drop_height = 256;
     self->monsterinfo.jump_height = 40;
 
-    trap_LinkEntity(self);
-
     walkmonster_start(self);
 }

@@ -1521,16 +1521,14 @@ static void SP_monster_medic_x(edict_t *self)
     self->monsterinfo.checkattack = medic_checkattack;
     self->monsterinfo.setskin = medic_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &medic_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
-
-    walkmonster_start(self);
 
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     // pmm
+
+    walkmonster_start(self);
 }
 
 /*QUAKED monster_medic (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight

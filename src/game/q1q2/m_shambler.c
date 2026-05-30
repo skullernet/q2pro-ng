@@ -731,8 +731,6 @@ static void SP_monster_shambler_x(edict_t *self)
     if (self->style)
         self->monsterinfo.setskin = shambler_setskin;
 
-    trap_LinkEntity(self);
-
     if (self->spawnflags & SPAWNFLAG_SHAMBLER_PRECISE)
         self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
 

@@ -905,6 +905,7 @@ void SP_monster_carrier(edict_t *self)
     self->s.modelindex = G_ModelIndex("models/monsters/carrier/tris.md2");
 
     G_PrecacheGibs(carrier_gibs);
+    CarrierPrecache();
 
     self->r.box = Box3_FromSize(56, -44, 44);
 
@@ -934,16 +935,9 @@ void SP_monster_carrier(edict_t *self)
     self->monsterinfo.sight = carrier_sight;
     self->monsterinfo.checkattack = Carrier_CheckAttack;
     self->monsterinfo.setskin = carrier_setskin;
-    trap_LinkEntity(self);
 
     M_SetAnimation(self, &carrier_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
-
-    CarrierPrecache();
-
-    flymonster_start(self);
-
-    self->monsterinfo.attack_finished = 0;
 
     const char *reinforcements = DEFAULT_REINFORCEMENTS;
 
@@ -965,4 +959,6 @@ void SP_monster_carrier(edict_t *self)
     self->monsterinfo.fly_above = true;
     self->monsterinfo.fly_min_distance = 1000;
     self->monsterinfo.fly_max_distance = 1000;
+
+    flymonster_start(self);
 }

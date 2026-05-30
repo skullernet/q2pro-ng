@@ -657,8 +657,6 @@ void SP_misc_insane(edict_t *self)
     self->monsterinfo.sight = NULL;
     self->monsterinfo.aiflags |= AI_GOOD_GUY;
 
-    trap_LinkEntity(self);
-
     if (self->spawnflags & SPAWNFLAG_INSANE_STAND_GROUND) // Stand Ground
         self->monsterinfo.aiflags |= AI_STAND_GROUND;
 

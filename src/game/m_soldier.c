@@ -1747,8 +1747,6 @@ static void SP_monster_soldier_x(edict_t *self)
     // ROGUE
     //=====
 
-    trap_LinkEntity(self);
-
     self->monsterinfo.stand(self);
 
     walkmonster_start(self);

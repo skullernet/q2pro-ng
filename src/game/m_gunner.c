@@ -912,8 +912,6 @@ static void SP_monster_gunner_x(edict_t *self)
     self->monsterinfo.sight = gunner_sight;
     self->monsterinfo.search = gunner_search;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &gunner_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

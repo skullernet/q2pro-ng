@@ -738,8 +738,6 @@ static void SP_monster_flyer_x(edict_t *self)
     self->monsterinfo.blocked = flyer_blocked;
     self->monsterinfo.setskin = flyer_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &flyer_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

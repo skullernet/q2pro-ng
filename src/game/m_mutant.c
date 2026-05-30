@@ -726,8 +726,6 @@ static void SP_monster_mutant_x(edict_t *self)
     self->monsterinfo.blocked = mutant_blocked; // PGM
     self->monsterinfo.setskin = mutant_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &mutant_move_stand);
 
     self->monsterinfo.combat_style = COMBAT_MELEE;

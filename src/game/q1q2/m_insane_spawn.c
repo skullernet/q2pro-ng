@@ -574,8 +574,6 @@ void SP_monster_insane_spawn(edict_t *self)
     self->monsterinfo.attack = insane_spawn_attack;
     self->monsterinfo.setskin = insane_spawn_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &insane_spawn_move_stand_normal);
     self->monsterinfo.scale = MODEL_SCALE;
 

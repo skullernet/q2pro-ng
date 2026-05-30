@@ -615,8 +615,6 @@ static void SP_monster_zombie_x(edict_t *self)
     self->monsterinfo.sight = zombie_sight;
     self->monsterinfo.search = zombie_search;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &zombie_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

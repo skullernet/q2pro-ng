@@ -1163,8 +1163,6 @@ void SP_monster_widow(edict_t *self)
     self->monsterinfo.setskin = widow_setskin;
     self->monsterinfo.blocked = widow_blocked;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &widow_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

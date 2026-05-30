@@ -1093,8 +1093,6 @@ void SP_monster_fixbot(edict_t *self)
     self->monsterinfo.run = fixbot_run;
     self->monsterinfo.attack = fixbot_attack;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &fixbot_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
     self->monsterinfo.aiflags |= AI_ALTERNATE_FLY;

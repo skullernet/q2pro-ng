@@ -738,8 +738,6 @@ static void SP_monster_supertank_x(edict_t *self)
     self->monsterinfo.blocked = supertank_blocked; // PGM
     self->monsterinfo.setskin = supertank_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &supertank_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 
@@ -752,8 +750,6 @@ static void SP_monster_supertank_x(edict_t *self)
     }
     // RAFAEL
 
-    walkmonster_start(self);
-
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     // pmm
@@ -763,6 +759,8 @@ static void SP_monster_supertank_x(edict_t *self)
         self->spawnflags |= SPAWNFLAG_SUPERTANK_LONG_DEATH;
         self->count = 10;
     }
+
+    walkmonster_start(self);
 }
 
 //

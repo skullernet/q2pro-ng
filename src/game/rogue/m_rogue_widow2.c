@@ -968,7 +968,6 @@ void SP_monster_widow2(edict_t *self)
     self->monsterinfo.search = widow2_search;
     self->monsterinfo.checkattack = Widow2_CheckAttack;
     self->monsterinfo.setskin = widow2_setskin;
-    trap_LinkEntity(self);
 
     M_SetAnimation(self, &widow2_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;

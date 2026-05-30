@@ -313,8 +313,6 @@ static void SP_monster_shalrath_x(edict_t *self)
     self->monsterinfo.sight = shalrath_sight;
     self->monsterinfo.search = shalrath_search;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &shalrath_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

@@ -690,8 +690,6 @@ static void SP_monster_hellknight_x(edict_t *self)
     self->monsterinfo.search = hellknight_search;
     self->monsterinfo.setskin = hellknight_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &hellknight_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

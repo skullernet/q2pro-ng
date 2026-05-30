@@ -300,7 +300,6 @@ void SP_monster_chthon(edict_t *self)
     self->monsterinfo.walk = chthon_walk;
     self->monsterinfo.run = chthon_run;
     self->monsterinfo.attack = chthon_attack;
-    trap_LinkEntity(self);
 
     self->monsterinfo.scale = MODEL_SCALE;
 

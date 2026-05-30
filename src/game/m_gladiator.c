@@ -434,7 +434,6 @@ static void SP_monster_gladiator_x(edict_t *self)
     self->monsterinfo.blocked = gladiator_blocked; // PGM
     self->monsterinfo.setskin = gladiator_setskin;
 
-    trap_LinkEntity(self);
     M_SetAnimation(self, &gladiator_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

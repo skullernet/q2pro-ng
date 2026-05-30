@@ -347,8 +347,6 @@ void SP_monster_ogre_strogg(edict_t *self)
     self->monsterinfo.blocked = ogrestrogg_blocked;
     self->monsterinfo.setskin = ogrestrogg_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &ogrestrogg_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

@@ -564,8 +564,6 @@ static void SP_monster_fiend_x(edict_t *self)
     self->monsterinfo.search = fiend_search;
     self->monsterinfo.setskin = fiend_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &fiend_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

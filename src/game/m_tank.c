@@ -1006,16 +1006,14 @@ static void SP_monster_tank_x(edict_t *self)
     self->monsterinfo.blocked = tank_blocked; // PGM
     self->monsterinfo.setskin = tank_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &tank_move_stand);
-
-    walkmonster_start(self);
 
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     self->monsterinfo.blindfire = true;
     // pmm
+
+    walkmonster_start(self);
 }
 
 /*QUAKED monster_tank (1 .5 0) (-32 -32 -16) (32 32 72) Ambush Trigger_Spawn Sight

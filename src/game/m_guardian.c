@@ -895,8 +895,6 @@ void SP_monster_guardian(edict_t *self)
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     self->monsterinfo.blindfire = true;
 
-    trap_LinkEntity(self);
-
     guardian_stand(self);
 
     walkmonster_start(self);

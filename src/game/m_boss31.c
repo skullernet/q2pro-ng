@@ -597,14 +597,14 @@ void SP_monster_jorg(edict_t *self)
     self->monsterinfo.sight = NULL;
     self->monsterinfo.checkattack = Jorg_CheckAttack;
     self->monsterinfo.setskin = jorg_setskin;
-    trap_LinkEntity(self);
 
     M_SetAnimation(self, &jorg_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 
-    walkmonster_start(self);
     // PMM
     self->monsterinfo.aiflags |= AI_IGNORE_SHOTS;
     // pmm
     self->monsterinfo.aiflags |= AI_DOUBLE_TROUBLE;
+
+    walkmonster_start(self);
 }

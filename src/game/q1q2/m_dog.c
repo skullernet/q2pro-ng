@@ -362,8 +362,6 @@ static void SP_monster_dog_x(edict_t *self)
     self->monsterinfo.search = dog_search;
     self->monsterinfo.setskin = dog_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &dog_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

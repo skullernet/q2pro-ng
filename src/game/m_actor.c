@@ -403,8 +403,6 @@ void SP_misc_actor(edict_t *self)
 
     self->monsterinfo.aiflags |= AI_GOOD_GUY;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &actor_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 

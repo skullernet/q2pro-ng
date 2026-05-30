@@ -1070,6 +1070,8 @@ bool monster_start(edict_t *self)
     // [Paril-KEX] co-op health scale
     G_Monster_ScaleCoopHealth(self);
 
+    trap_LinkEntity(self);
+
     return true;
 }
 

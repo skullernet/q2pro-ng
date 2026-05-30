@@ -314,8 +314,6 @@ void SP_monster_shalrath_strogg(edict_t *self)
     self->monsterinfo.search = shalrath_strogg_search;
     self->monsterinfo.setskin = shalrath_strogg_setskin;
 
-    trap_LinkEntity(self);
-
     M_SetAnimation(self, &shalrath_strogg_move_stand);
     self->monsterinfo.scale = MODEL_SCALE;
 
