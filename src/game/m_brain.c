@@ -128,8 +128,12 @@ const mmove_t MMOVE_T(brain_move_idle) = { FRAME_stand31, FRAME_stand60, brain_f
 
 void MONSTERINFO_IDLE(brain_idle)(edict_t *self)
 {
-    G_StartSound(self, CHAN_AUTO, sound_idle3, 1, ATTN_IDLE);
-    M_SetAnimation(self, &brain_move_idle);
+    if (irandom1(3) == 2) {
+        G_StartSound(self, CHAN_AUTO, sound_idle1, 1, ATTN_IDLE);
+    } else {
+        G_StartSound(self, CHAN_AUTO, sound_idle3, 1, ATTN_IDLE);
+        M_SetAnimation(self, &brain_move_idle);
+    }
 }
 
 //

@@ -21,10 +21,35 @@ static int sound_search;
 static int sound_sight;
 
 static const mframe_t flipper_frames_stand[] = {
-    { ai_stand }
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
+    { ai_stand },
 };
 
-const mmove_t MMOVE_T(flipper_move_stand) = { FRAME_flphor01, FRAME_flphor01, flipper_frames_stand, NULL };
+const mmove_t MMOVE_T(flipper_move_stand) = { FRAME_flphor01, FRAME_flphor24, flipper_frames_stand, NULL };
 
 void MONSTERINFO_STAND(flipper_stand)(edict_t *self)
 {
@@ -297,6 +322,16 @@ void MONSTERINFO_SIGHT(flipper_sight)(edict_t *self, edict_t *other)
     G_StartSound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM);
 }
 
+void MONSTERINFO_SEARCH(flipper_search)(edict_t *self)
+{
+    G_StartSound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM);
+}
+
+void MONSTERINFO_IDLE(flipper_idle)(edict_t *self)
+{
+    G_StartSound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE);
+}
+
 static const gib_def_t flipper_gibs[] = {
     { "models/objects/gibs/bone/tris.md2", 2 },
     { "models/objects/gibs/sm_meat/tris.md2", 2 },
@@ -368,6 +403,8 @@ void SP_monster_flipper(edict_t *self)
     self->monsterinfo.run = flipper_start_run;
     self->monsterinfo.melee = flipper_melee;
     self->monsterinfo.sight = flipper_sight;
+    self->monsterinfo.search = flipper_search;
+    self->monsterinfo.idle = flipper_idle;
     self->monsterinfo.setskin = flipper_setskin;
 
     M_SetAnimation(self, &flipper_move_stand);

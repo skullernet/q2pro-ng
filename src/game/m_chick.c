@@ -275,6 +275,11 @@ static void chick_shrink(edict_t *self)
     trap_LinkEntity(self);
 }
 
+static void chick_fall_down(edict_t *self)
+{
+    G_StartSound(self, CHAN_VOICE, SOUND.fall_down, 1, ATTN_NORM);
+}
+
 static const mframe_t chick_frames_death2[] = {
     { ai_move, -6 },
     { ai_move },
@@ -297,7 +302,7 @@ static const mframe_t chick_frames_death2[] = {
     { ai_move, -5 },
     { ai_move, 4 },
     { ai_move, 15, chick_shrink },
-    { ai_move, 14, monster_footstep },
+    { ai_move, 14, chick_fall_down },
     { ai_move, 1 }
 };
 const mmove_t MMOVE_T(chick_move_death2) = { FRAME_death201, FRAME_death223, chick_frames_death2, chick_dead };
@@ -665,6 +670,11 @@ void MONSTERINFO_SIGHT(chick_sight)(edict_t *self, edict_t *other)
     G_StartSound(self, CHAN_VOICE, SOUND.sight, 1, ATTN_NORM);
 }
 
+void MONSTERINFO_SEARCH(chick_search)(edict_t *self)
+{
+    G_StartSound(self, CHAN_VOICE, SOUND.search, 1, ATTN_NORM);
+}
+
 //===========
 // PGM
 bool MONSTERINFO_BLOCKED(chick_blocked)(edict_t *self, float dist)
@@ -769,6 +779,7 @@ static void SP_monster_chick_x(edict_t *self)
     self->monsterinfo.attack = chick_attack;
     self->monsterinfo.melee = chick_melee;
     self->monsterinfo.sight = chick_sight;
+    self->monsterinfo.search = chick_search;
     self->monsterinfo.setskin = chick_setpain;
 
     M_SetAnimation(self, &chick_move_stand);
