@@ -1670,10 +1670,10 @@ typedef struct {
 
 static inline uint32_t MSG_PackSolid(box3_t box)
 {
-    int x = Q_clip_uint8(box.maxs.x);
-    int y = Q_clip_uint8(box.maxs.y);
-    int zd = Q_clip_uint8(-box.mins.z);
-    int zu = Q_clip_uint8(box.maxs.z + 32);
+    int x = Q_clip_uint8(box.maxs.x + 0.5f);
+    int y = Q_clip_uint8(box.maxs.y + 0.5f);
+    int zd = Q_clip_uint8(-box.mins.z + 0.5f);
+    int zu = Q_clip_uint8(box.maxs.z + 32.5f);
 
     return MakeLittleLong(x, y, zd, zu);
 }

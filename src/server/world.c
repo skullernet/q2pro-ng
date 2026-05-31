@@ -216,19 +216,7 @@ static uint32_t SV_PackSolid(const edict_t *ent)
     if (ent->s.scale)
         box = Box3_Scale(box, 1.0f / ent->s.scale);
 
-    uint32_t solid = MSG_PackSolid(box);
-
-#if USE_DEBUG
-    // check if bbox is symmetrical
-    if (developer->integer && sv.state == ss_loading) {
-        box3_t box2 = MSG_UnpackSolid(solid);
-
-        if (!Box3_IsEqual(box, box2))
-            Com_LPrintf(PRINT_DEVELOPER, "Entity %d has bad bbox: %s\n", SV_NumForEdict(ent), btos(ent->r.box));
-    }
-#endif
-
-    return solid;
+    return MSG_PackSolid(box);
 }
 
 void PF_LinkEdict(edict_t *ent)
