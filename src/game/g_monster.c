@@ -1226,7 +1226,10 @@ void monster_start_go(edict_t *self)
         self->monsterinfo.aiflags &= ~AI_SPAWNED_DEAD;
     } else {
         self->think = monster_think;
-        self->nextthink = level.time + FRAME_TIME;
+        if (level.time < BASE_FRAMETIME)
+            self->nextthink = level.time + irandom2(1, TICK_RATE / BASE_FRAMERATE + 1) * FRAME_TIME;
+        else
+            self->nextthink = level.time + FRAME_TIME;
         self->monsterinfo.aiflags |= AI_SPAWNED_ALIVE;
     }
 }
