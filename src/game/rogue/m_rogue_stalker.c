@@ -633,7 +633,7 @@ void MONSTERINFO_DODGE(stalker_dodge)(edict_t *self, edict_t *attacker, gtime_t 
     if (!self->groundentity || self->health <= 0)
         return;
 
-    if (!self->enemy) {
+    if (!self->enemy && M_CanInfight(self, attacker)) {
         self->enemy = attacker;
         FoundTarget(self);
         return;

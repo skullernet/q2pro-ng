@@ -261,7 +261,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, int normal, int damage, entity
 
 bool M_CanInfight(edict_t *targ, edict_t *attacker)
 {
-    if (targ == attacker->enemy)
+    if (attacker->client || attacker->enemy == targ)
         return true;
     if ((targ->flags ^ attacker->flags) & (FL_FLY | FL_SWIM))
         return false;
@@ -496,7 +496,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
     damage = CTFApplyStrength(attacker, damage);
     // ZOID
 
-    if ((targ->flags & FL_NO_KNOCKBACK) || ((targ->flags & FL_ALIVE_KNOCKBACK_ONLY) && (!targ->deadflag || targ->dead_time != level.time)))
+    if ((targ->flags & FL_NO_KNOCKBACK) || ((targ->flags & FL_ALIVE_KNOCKBACK_ONLY) && targ->deadflag && targ->dead_time != level.time))
         knockback = 0;
 
     // figure momentum add
@@ -567,8 +567,8 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
     // ZOID
 
     // ROGUE - this option will do damage both to the armor and person. originally for DPU rounds
-    if ((dflags & DAMAGE_DESTROY_ARMOR) && !(targ->flags & FL_GODMODE) &&
-        !(dflags & DAMAGE_NO_PROTECTION) && !(client && client->invincible_time > level.time))
+    if (((dflags & DAMAGE_DESTROY_ARMOR) && !(targ->flags & FL_GODMODE) &&
+         !(client && client->invincible_time > level.time)) || (dflags & DAMAGE_NO_PROTECTION))
         take = damage;
     // ROGUE
 
@@ -602,7 +602,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
         if (!CTFMatchSetup())
             targ->health = targ->health - take;
 
-        if ((targ->flags & FL_IMMORTAL) && targ->health <= 0)
+        if ((targ->flags & FL_IMMORTAL) && targ->health <= 0 && !targ->deadflag)
             targ->health = 1;
 
         // PGM - spheres need to know who to shoot at
@@ -614,7 +614,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
         // PGM
 
         if (targ->health <= 0) {
-            if ((targ->r.svflags & SVF_MONSTER) || (client)) {
+            if (!(targ->flags & FL_ALIVE_KNOCKBACK_ONLY) && ((targ->r.svflags & SVF_MONSTER) || (client))) {
                 targ->flags |= FL_ALIVE_KNOCKBACK_ONLY;
                 targ->dead_time = level.time;
             }

@@ -195,7 +195,10 @@ static void Cmd_Give_f(edict_t *ent, cmdflags_t flags)
     if (give_all) {
         SpawnAndGiveItem(ent, IT_ITEM_POWER_SHIELD);
 
-        for (i = 0; i < IT_TOTAL; i++) {
+        // CotV hack
+        index = (game.dirtype == GAMEDIR_COTV) ? IT_TOTAL : IT_KEY_Q1_RUNE_END1;
+
+        for (i = 0; i < index; i++) {
             it = itemlist + i;
             if (!it->pickup)
                 continue;

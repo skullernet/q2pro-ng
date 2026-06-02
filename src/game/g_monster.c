@@ -597,6 +597,9 @@ void M_ProcessPain(edict_t *e)
 
             e->touch = NULL;
             monster_death_use(e);
+
+            if (!e->r.inuse)
+                return;
         }
 
         e->die(e, e->monsterinfo.damage_inflictor, e->monsterinfo.damage_attacker, e->monsterinfo.damage_blood, e->monsterinfo.damage_from, e->monsterinfo.damage_mod);

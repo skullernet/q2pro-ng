@@ -143,7 +143,7 @@ static void insane_spawn_check_landing(edict_t *self)
 
 static void insane_spawn_check_reattack(edict_t *self)
 {
-    if (self->health < 50) {
+    if (self->health < 50 && has_valid_enemy(self)) {
         if (self->groundentity)
             self->monsterinfo.nextframe = FRAME_jump1;
         else
@@ -422,7 +422,7 @@ const mmove_t MMOVE_T(insane_spawn_move_stand_pain) = { FRAME_st_pain2, FRAME_st
 
 void MONSTERINFO_WALK(insane_spawn_walk)(edict_t *self)
 {
-    if (frandom())
+    if (brandom())
         M_SetAnimation(self, &insane_spawn_move_walk_normal);
     else
         M_SetAnimation(self, &insane_spawn_move_walk_insane);
@@ -439,11 +439,11 @@ static const mframe_t insane_spawn_frames_run[] = {
     { ai_run, 15 },
     { ai_run, 25 }
 };
-const mmove_t MMOVE_T(insane_spawn_move_run) = { FRAME_run1, FRAME_run9, insane_spawn_frames_run, NULL};
+const mmove_t MMOVE_T(insane_spawn_move_run) = { FRAME_run1, FRAME_run9, insane_spawn_frames_run, NULL };
 
 void MONSTERINFO_RUN(insane_spawn_run)(edict_t *self)
 {
-    if (self->health < 50) {
+    if (self->health < 50 && has_valid_enemy(self)) {
         self->monsterinfo.attack_finished = 0;
         M_SetAnimation(self, &insane_spawn_move_jump);
     } else {

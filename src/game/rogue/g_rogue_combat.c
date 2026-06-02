@@ -47,8 +47,6 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
             continue;
         if (!ent->takedamage)
             continue;
-        if (!ent->r.inuse)
-            continue;
         if (!(ent->client || (ent->r.svflags & SVF_MONSTER) || (ent->flags & FL_DAMAGEABLE)))
             continue;
 
@@ -69,10 +67,11 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
             T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
     }
-    ent = g_edicts; // skip the worldspawn
+
     // cycle through players
-    while (ent) {
-        if ((ent->client) && (ent->client->nuke_time != level.time + SEC(2)) && (ent->r.inuse)) {
+    for (int i = 0; i < game.maxclients; i++) {
+        edict_t *ent = &g_edicts[i];
+        if ((ent->r.inuse) && (ent->client) && (ent->client->nuke_time != level.time + SEC(2))) {
             tr = G_TraceLine(inflictor->s.origin, ent->s.origin, inflictor->s.number, MASK_SOLID);
             if (tr.fraction == 1.0f)
                 ent->client->nuke_time = level.time + SEC(2);
@@ -83,9 +82,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
                 else
                     ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1));
             }
-            ent++;
-        } else
-            ent = NULL;
+        }
     }
 }
 

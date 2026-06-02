@@ -355,7 +355,7 @@ static void zombie_down(edict_t *self)
 
     if (!M_walkmove(self, 0, 0)) {
         if (self->sounds >= 5) {
-            zombie_die(self, world, self, 1, vec3_origin, MOD_UNKNOWN);
+            T_Damage(self, world, self, vec3_origin, self->s.origin, 0, 500, 0, DAMAGE_NO_PROTECTION, MOD_UNKNOWN);
             return;
         }
         self->sounds++;
