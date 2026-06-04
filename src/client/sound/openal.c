@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "sound.h"
 #include "qal.h"
+#include "common/hash_map.h"
 
 // translates from AL coordinate system to quake
 #define AL_UnpackVector(v)  -(v).y,(v).z,-(v).x
@@ -532,9 +533,9 @@ static void AL_MergeLoopSounds(void)
 
 static void AL_AddLoopSounds(void)
 {
-    int         i;
+    int         i, offset;
     loopsound_t *loop;
-    channel_t   *ch, *ch2;
+    channel_t   *ch;
     sfx_t       *sfx;
     sfxcache_t  *sc;
 
@@ -558,13 +559,9 @@ static void AL_AddLoopSounds(void)
         if (!ch)
             continue;
 
-        // attempt to synchronize with existing sounds of the same type
-        ch2 = S_FindAutoChannel(ENTITYNUM_NONE, sfx);
-        if (ch2) {
-            ALfloat offset = 0;
-            qalGetSourcef(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
-            qalSourcef(s_srcnums[ch - s_channels], AL_SAMPLE_OFFSET, offset);
-        }
+        // give unmerged autosounds random (but stable) offset
+        offset = (cls.realtime + HashInt32(&loop->entnum)) % sc->length;
+        qalSourcef(s_srcnums[ch - s_channels], AL_SEC_OFFSET, offset * 0.001f);
 
         ch->autosound = AUTOSOUND_DISCRETE; // remove next frame
         ch->autoframe = s_framecount;

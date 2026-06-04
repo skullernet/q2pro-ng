@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "sound.h"
+#include "common/hash_map.h"
 
 #define MA_UnpackVector(v)  -(v).y,(v).z,-(v).x
 
@@ -272,14 +273,11 @@ static void MA_PlayChannel(channel_t *ch)
 
     MA_Spatialize(ch);
 
-    // attempt to synchronize with existing sounds of the same type
+    // give unmerged autosounds random (but stable) offset
     if (ch->autosound) {
-        ma_uint32 rate   = ma_engine_get_sample_rate(&engine);
         ma_uint64 frames = ma_engine_get_time_in_pcm_frames(&engine);
-        if (!rate)
-            goto fail3;
-        frames = (frames * sc->rate / rate) % sc->samples;
-        result = ma_data_source_seek_pcm_frames(&ch->buffer, frames, NULL);
+        frames = (frames + HashInt32(&ch->entnum)) % sc->samples;
+        result = ma_data_source_seek_to_pcm_frame(&ch->buffer, frames);
         if (result < 0)
             goto fail3;
     }
