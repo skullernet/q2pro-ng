@@ -352,7 +352,7 @@ static edict_t *SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
                 check->s.angles.yaw += amove.yaw;
 
             // figure movement due to the pusher's amove
-            org = Vec3_Sub(check->s.origin, pusher->s.origin);
+            org = Vec3_Sub(G_EntityCenter(check), pusher->s.origin);
             org2 = Vec3_Rotate(org, axis);
             move2 = Vec3_Sub(org2, org);
             check->s.origin = Vec3_Add(check->s.origin, move2);

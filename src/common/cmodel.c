@@ -815,24 +815,32 @@ rotating entities
 void CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
                             const mnode_t *headnode, vec3_t origin, vec3_t angles)
 {
-    vec3_t      start_l, end_l;
     vec3_t      axis[3];
     bool        rotated;
 
+    // make bbox symmetric
+    vec3_t mid = Box3_Center(args->box);
+    trace_args_t l = {
+        .start = Vec3_Add(args->start, mid),
+        .end = Vec3_Add(args->end, mid),
+        .box = Box3_Translate(args->box, Vec3_Negate(mid)),
+        .mask = args->mask
+    };
+
     // subtract origin offset
-    start_l = Vec3_Sub(args->start, origin);
-    end_l = Vec3_Sub(args->end, origin);
+    l.start = Vec3_Sub(l.start, origin);
+    l.end = Vec3_Sub(l.end, origin);
 
     // rotate start and end into the models frame of reference
     rotated = headnode != box_headnode && !Vec3_IsEmpty(angles);
     if (rotated) {
         AnglesToAxis(angles, axis);
-        start_l = Vec3_Rotate(start_l, axis);
-        end_l = Vec3_Rotate(end_l, axis);
+        l.start = Vec3_Rotate(l.start, axis);
+        l.end = Vec3_Rotate(l.end, axis);
     }
 
     // sweep the box through the model
-    CM_BoxTrace(trace, &(trace_args_t){ start_l, end_l, args->box, 0, args->mask }, headnode);
+    CM_BoxTrace(trace, &l, headnode);
 
     if (trace->fraction != 1.0f) {
         // rotate plane normal into the worlds frame of reference
