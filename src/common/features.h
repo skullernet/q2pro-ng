@@ -49,6 +49,9 @@ static const char *Com_GetFeatures(void)
 #if USE_OPENAL
     "openal "
 #endif
+#if USE_QVM
+    "qvm "
+#endif
 #if USE_SAVEGAMES
     "save-games "
 #endif

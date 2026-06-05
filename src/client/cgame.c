@@ -248,6 +248,8 @@ static void PF_GetClientInfo(cg_client_info_t *info)
 
 //==============================================
 
+#if USE_QVM
+
 VM_THUNK(Print) {
     PF_Print(VM_U32(0), VM_STR(1));
 }
@@ -892,6 +894,27 @@ static void thunk_CG_MouseEvent(int x, int y) {
     call_two(vm_CG_MouseEvent, x, y);
 }
 
+static const cgame_export_t cgame_vm_thunks = {
+    .apiversion = CGAME_API_VERSION,
+    .structsize = sizeof(cgame_export_t),
+
+    .Init = thunk_CG_Init,
+    .Shutdown = thunk_CG_Shutdown,
+    .PrepRefresh = thunk_CG_PrepRefresh,
+    .ClearState = thunk_CG_ClearState,
+    .DrawFrame = thunk_CG_DrawFrame,
+    .ModeChanged = thunk_CG_ModeChanged,
+    .ConsoleCommand = thunk_CG_ConsoleCommand,
+    .CompleteCommand = thunk_CG_CompleteCommand,
+    .ServerCommand = thunk_CG_ServerCommand,
+    .UpdateConfigstring = thunk_CG_UpdateConfigstring,
+    .KeyEvent = thunk_CG_KeyEvent,
+    .CharEvent = thunk_CG_CharEvent,
+    .MouseEvent = thunk_CG_MouseEvent,
+};
+
+#endif  // USE_QVM
+
 //==============================================
 
 static const cgame_import_t cgame_dll_imports = {
@@ -1029,33 +1052,15 @@ static const cgame_import_t cgame_dll_imports = {
     .R_AddDebugAngledText = R_AddDebugAngledText,
 };
 
-// "fake" exports for calling into VM
-static const cgame_export_t cgame_dll_exports = {
-    .apiversion = CGAME_API_VERSION,
-    .structsize = sizeof(cgame_export_t),
-
-    .Init = thunk_CG_Init,
-    .Shutdown = thunk_CG_Shutdown,
-    .PrepRefresh = thunk_CG_PrepRefresh,
-    .ClearState = thunk_CG_ClearState,
-    .DrawFrame = thunk_CG_DrawFrame,
-    .ModeChanged = thunk_CG_ModeChanged,
-    .ConsoleCommand = thunk_CG_ConsoleCommand,
-    .CompleteCommand = thunk_CG_CompleteCommand,
-    .ServerCommand = thunk_CG_ServerCommand,
-    .UpdateConfigstring = thunk_CG_UpdateConfigstring,
-    .KeyEvent = thunk_CG_KeyEvent,
-    .CharEvent = thunk_CG_CharEvent,
-    .MouseEvent = thunk_CG_MouseEvent,
-};
-
 static const vm_interface_t cgame_iface = {
     .name = "cgame",
+#if USE_QVM
     .vm_imports = cgame_vm_imports,
     .vm_exports = cgame_vm_exports,
+    .vm_thunks = &cgame_vm_thunks,
+#endif
     .dll_entry_name = "GetCGameAPI",
     .dll_imports = &cgame_dll_imports,
-    .dll_exports = &cgame_dll_exports,
     .api_version = CGAME_API_VERSION,
 };
 

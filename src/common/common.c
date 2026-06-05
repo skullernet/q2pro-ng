@@ -106,7 +106,9 @@ cvar_t  *com_time_format;
 cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
+#if USE_QVM
 cvar_t  *com_native_modules;
+#endif
 
 cvar_t  *rcon_password;
 
@@ -919,7 +921,9 @@ void Qcommon_Init(int argc, char **argv)
     com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
+#if USE_QVM
     com_native_modules = Cvar_Get("com_native_modules", "0", CVAR_NOSET);
+#endif
     com_version = Cvar_Get("version", com_version_string, CVAR_USERINFO | CVAR_SERVERINFO | CVAR_ROM);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);

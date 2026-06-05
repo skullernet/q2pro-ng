@@ -61,8 +61,9 @@ static void *try_load_lib(const char *libdir, const char *gamedir, const char *n
 
 const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
 {
-    Q_assert(!mod->vm);
     Q_assert(!mod->lib);
+#if USE_QVM
+    Q_assert(!mod->vm);
 
     if (!com_native_modules->integer) {
         char buffer[MAX_QPATH];
@@ -71,11 +72,12 @@ const void *VM_LoadModule(vm_module_t *mod, const vm_interface_t *iface)
         mod->vm = VM_Load(buffer, iface->vm_imports, iface->vm_exports);
         if (mod->vm) {
             List_Append(&vm_modules, &mod->entry);
-            return iface->dll_exports;
+            return iface->vm_thunks;
         }
 
         Com_Error(ERR_DROP, "Couldn't load %s: %s", buffer, Com_GetLastError());
     }
+#endif
 
     void *handle = NULL;
 

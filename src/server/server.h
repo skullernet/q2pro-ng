@@ -293,8 +293,10 @@ typedef struct {
     int         edict_size;
     int         num_edicts;
 
+#if USE_QVM
     uint32_t    vm_edicts_minptr;
     uint32_t    vm_edicts_maxptr;
+#endif
 
     gclient_t   *clients;
     int         client_size;

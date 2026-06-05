@@ -350,6 +350,10 @@ static int PF_ReadLine(qhandle_t f, char *buffer, size_t size)
     return FS_ReadLine(VM_HANDLE(f), buffer, size);
 }
 
+//==============================================
+
+#if USE_QVM
+
 // edict pointers need custom validation
 static inline edict_t *VM_GetEntity(const vm_memory_t *m, uint32_t ptr, const char *func)
 {
@@ -840,6 +844,34 @@ static void thunk_G_RestartFilesystem(void) {
     VM_Call(game.vm, vm_G_RestartFilesystem);
 }
 
+static const game_export_t game_vm_thunks = {
+    .apiversion = GAME_API_VERSION,
+    .structsize = sizeof(game_export_t),
+
+    .PreInit = thunk_G_PreInit,
+    .Init = thunk_G_Init,
+    .Shutdown = thunk_G_Shutdown,
+    .SpawnEntities = thunk_G_SpawnEntities,
+    .WriteGame = thunk_G_WriteGame,
+    .ReadGame = thunk_G_ReadGame,
+    .WriteLevel = thunk_G_WriteLevel,
+    .ReadLevel = thunk_G_ReadLevel,
+    .CanSave = thunk_G_CanSave,
+    .ClientConnect = thunk_G_ClientConnect,
+    .ClientBegin = thunk_G_ClientBegin,
+    .ClientUserinfoChanged = thunk_G_ClientUserinfoChanged,
+    .ClientDisconnect = thunk_G_ClientDisconnect,
+    .ClientCommand = thunk_G_ClientCommand,
+    .ClientThink = thunk_G_ClientThink,
+    .PrepFrame = thunk_G_PrepFrame,
+    .RunFrame = thunk_G_RunFrame,
+    .ServerCommand = thunk_G_ServerCommand,
+    .CompleteCommand = thunk_G_CompleteCommand,
+    .RestartFilesystem = thunk_G_RestartFilesystem,
+};
+
+#endif  // USE_QVM
+
 //==============================================
 
 static const game_import_t game_dll_imports = {
@@ -926,40 +958,15 @@ static const game_import_t game_dll_imports = {
     .R_AddDebugAngledText = R_AddDebugAngledText,
 };
 
-// "fake" exports for calling into VM
-static const game_export_t game_dll_exports = {
-    .apiversion = GAME_API_VERSION,
-    .structsize = sizeof(game_export_t),
-
-    .PreInit = thunk_G_PreInit,
-    .Init = thunk_G_Init,
-    .Shutdown = thunk_G_Shutdown,
-    .SpawnEntities = thunk_G_SpawnEntities,
-    .WriteGame = thunk_G_WriteGame,
-    .ReadGame = thunk_G_ReadGame,
-    .WriteLevel = thunk_G_WriteLevel,
-    .ReadLevel = thunk_G_ReadLevel,
-    .CanSave = thunk_G_CanSave,
-    .ClientConnect = thunk_G_ClientConnect,
-    .ClientBegin = thunk_G_ClientBegin,
-    .ClientUserinfoChanged = thunk_G_ClientUserinfoChanged,
-    .ClientDisconnect = thunk_G_ClientDisconnect,
-    .ClientCommand = thunk_G_ClientCommand,
-    .ClientThink = thunk_G_ClientThink,
-    .PrepFrame = thunk_G_PrepFrame,
-    .RunFrame = thunk_G_RunFrame,
-    .ServerCommand = thunk_G_ServerCommand,
-    .CompleteCommand = thunk_G_CompleteCommand,
-    .RestartFilesystem = thunk_G_RestartFilesystem,
-};
-
 static const vm_interface_t game_iface = {
     .name = "game",
+#if USE_QVM
     .vm_imports = game_vm_imports,
     .vm_exports = game_vm_exports,
+    .vm_thunks = &game_vm_thunks,
+#endif
     .dll_entry_name = "GetGameAPI",
     .dll_imports = &game_dll_imports,
-    .dll_exports = &game_dll_exports,
     .api_version = GAME_API_VERSION,
 };
 

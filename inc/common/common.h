@@ -160,7 +160,9 @@ extern cvar_t   *cl_paused;
 extern cvar_t   *sv_running;
 extern cvar_t   *sv_paused;
 extern cvar_t   *com_timedemo;
+#if USE_QVM
 extern cvar_t   *com_native_modules;
+#endif
 
 extern cvar_t   *rcon_password;
 

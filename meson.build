@@ -28,13 +28,16 @@ common_src = [
   'src/common/prompt.c',
   'src/common/sizebuf.c',
   'src/common/utils.c',
-  'src/common/vm/interp.c',
-  'src/common/vm/load.c',
   'src/common/vm/module.c',
-  'src/common/vm/printf.c',
-  'src/common/vm/stdlib.c',
   'src/common/zone.c',
   'src/shared/shared.c',
+]
+
+qvm_src = [
+  'src/common/vm/interp.c',
+  'src/common/vm/load.c',
+  'src/common/vm/printf.c',
+  'src/common/vm/stdlib.c',
 ]
 
 client_src = [
@@ -357,6 +360,11 @@ if get_option('debug')
   refresh_src += 'src/refresh/debug.c'
 endif
 
+if get_option('qvm')
+  common_src += qvm_src
+  config.set10('USE_QVM', true)
+endif
+
 executable('q2pro-ng', common_src, client_src, refresh_src,
   dependencies:          common_deps + client_deps,
   include_directories:   'inc',
@@ -385,7 +393,6 @@ shared_library('cgame' + cpu, cgame_src,
   link_args:             dll_link_args,
   install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
-  override_options:      get_option('game-build-options'),
 )
 
 shared_library('game' + cpu, game_src,
@@ -396,7 +403,6 @@ shared_library('game' + cpu, game_src,
   link_args:             dll_link_args,
   install:               system_wide,
   install_dir:           libdir / get_option('base-game'),
-  override_options:      get_option('game-build-options'),
 )
 
 config.set('REVISION',            meson.project_version().substring(1).split('~')[0].to_int())
@@ -443,6 +449,7 @@ summary({
   'md3'                : config.get('USE_MD3', 0) != 0,
   'md5'                : config.get('USE_MD5', 0) != 0,
   'openal'             : config.get('USE_OPENAL', 0) != 0,
+  'qvm'                : config.get('USE_QVM', 0) != 0,
   'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
   'sdl2'               : config.get('USE_SDL', '') != '',
   'software-sound'     : config.get('USE_SNDDMA', 0) != 0,

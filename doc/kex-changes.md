@@ -1,6 +1,8 @@
 Non-exhaustive list of technical changes/fixes from KEX Quake II:
 
 * Game code converted from C++ to C11 with GNU extensions.
+* Game compiles to cross-platform WASM bytecode and runs fully sandboxed by
+  default.
 * Save games use easy to read/parse plain text format rather than JSON.
 * Entity 0 *is* player 0 now. World entity has been moved to slot 8190. Slot
   8191 is special "none" entity that's never spawned.

@@ -34,6 +34,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
 #define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
 
+#if USE_QVM
+
 #define VM_ASSERT_FUNC(cond, msg, func) \
     do { if (!(cond)) Com_Error(ERR_DROP, "%s: %s", func, msg); } while (0)
 
@@ -134,13 +136,22 @@ const vm_memory_t *VM_Memory(const vm_t *m);
 void VM_Reset(vm_t *m);
 int VM_vsnprintf(const vm_memory_t *m, char *str, size_t size, const char *fmt, uint32_t ap);
 
+#else   // USE_QVM
+
+#define VM_Free(m)  (void)0
+#define VM_Reset(m) (void)0
+
+#endif  // !USE_QVM
+
 typedef struct {
     const char *name;
+#if USE_QVM
     const vm_import_t *vm_imports;
     const vm_export_t *vm_exports;
+    const void *vm_thunks;
+#endif
     const char *dll_entry_name;
     const void *dll_imports;
-    const void *dll_exports;    // only used for thunking VM calls
     uint32_t api_version;
 } vm_interface_t;
 
@@ -157,7 +168,9 @@ typedef struct {
 
 typedef struct {
     list_t entry;
+#if USE_QVM
     vm_t *vm;
+#endif
     void *lib;
     vm_cvar_glue_t *cvars;
     int num_cvars;
