@@ -27,30 +27,25 @@ const game_export_t     *ge;
 
 static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
 {
-    client_t *client = NULL;
     int flags = reliable ? MSG_RELIABLE : 0;
+    client_t *client;
 
     if (ent) {
-        int clientNum = SV_NumForEdict(ent);
-        if (clientNum < 0 || clientNum >= svs.maxclients) {
-            Com_DWPrintf("%s to a non-client %d\n", __func__, clientNum);
-            return;
-        }
+        unsigned clientnum = SV_NumForEdict(ent);
+        Q_assert_soft(clientnum < svs.maxclients);
 
-        client = svs.client_pool + clientNum;
-        if (client->state <= cs_zombie) {
-            Com_DWPrintf("%s to a free/zombie client %d\n", __func__, clientNum);
-            return;
-        }
+        client = svs.client_pool + clientnum;
+        Q_assert_soft(client->state);
+
+        MSG_WriteByte(svc_stringcmd);
+        MSG_WriteString(str);
+
+        SV_ClientAddMessage(client, flags | MSG_CLEAR);
+        return;
     }
 
     MSG_WriteByte(svc_stringcmd);
     MSG_WriteString(str);
-
-    if (client) {
-        SV_ClientAddMessage(client, flags | MSG_CLEAR);
-        return;
-    }
 
     FOR_EACH_CLIENT(client)
         if (client->state == cs_spawned)
@@ -235,17 +230,13 @@ static bool PF_AreasConnected(int area1, int area2)
 static size_t PF_GetUserinfo(unsigned clientnum, char *buf, size_t size)
 {
     Q_assert_soft(clientnum < svs.maxclients);
-    const client_t *cl = &svs.client_pool[clientnum];
-    Q_assert_soft(cl->state > cs_zombie);
-    return Q_strlcpy(buf, cl->userinfo, size);
+    return Q_strlcpy(buf, svs.client_pool[clientnum].userinfo, size);
 }
 
 static void PF_GetUsercmd(unsigned clientnum, usercmd_t *ucmd)
 {
     Q_assert_soft(clientnum < svs.maxclients);
-    const client_t *cl = &svs.client_pool[clientnum];
-    Q_assert_soft(cl->state > cs_zombie);
-    *ucmd = cl->lastcmd;
+    *ucmd = svs.client_pool[clientnum].lastcmd;
 }
 
 static size_t PF_GetLevelName(char *buf, size_t size)

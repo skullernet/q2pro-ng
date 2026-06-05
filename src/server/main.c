@@ -106,6 +106,7 @@ void SV_RemoveClient(client_t *client)
 
     client->state = cs_free;    // can now be reused
     client->name[0] = 0;
+    client->userinfo[0] = 0;
 }
 
 void SV_CleanClient(client_t *client)
@@ -120,7 +121,9 @@ void SV_CleanClient(client_t *client)
 
     // free datagram
     Z_Free(client->datagram.data);
+
     client->datagram = (sizebuf_t){ 0 };
+    client->lastcmd  = (usercmd_t){ 0 };
 }
 
 static void print_drop_reason(client_t *client, const char *reason, clstate_t oldstate)
@@ -142,7 +145,7 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
         // announce to others
         SV_BroadcastCommand("print \"%s%s%s\n\"", client->name, prefix, reason);
 
-    if (announce)
+    if (announce == 1)
         // print this to client as they will not receive broadcast
         SV_ClientCommand(client, "print \"%s%s%s\n\"", client->name, prefix, reason);
 
@@ -173,6 +176,10 @@ void SV_DropClient(client_t *client, const char *reason)
     client->state = cs_zombie;        // become free in a few seconds
     client->lastmessage = svs.realtime;
 
+    // call the prog function for removing a client
+    // this will remove the body, among other things
+    ge->ClientDisconnect(client->number);
+
     // print the reason
     if (reason)
         print_drop_reason(client, reason, oldstate);
@@ -180,10 +187,6 @@ void SV_DropClient(client_t *client, const char *reason)
     // add the disconnect
     MSG_WriteByte(svc_disconnect);
     SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
-
-    // call the prog function for removing a client
-    // this will remove the body, among other things
-    ge->ClientDisconnect(client->number);
 
     SV_CleanClient(client);
 
@@ -743,18 +746,7 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
 
 static client_t *redirect(const char *addr)
 {
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect");
-
-    // set up a fake server netchan
-    MSG_WriteLong(1);
-    MSG_WriteLong(0);
-    MSG_WriteByte(svc_stringcmd);
-    MSG_WriteString(va("print Server is full. Redirecting you to %s...\n", addr));
-    MSG_WriteByte(svc_stringcmd);
-    MSG_WriteString(va("stuff connect %s\n", addr));
-
-    NET_SendPacket(NS_SERVER, msg_write.data, msg_write.cursize, &net_from);
-    SZ_Clear(&msg_write);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "redirect %s", addr);
     return NULL;
 }
 
@@ -846,7 +838,6 @@ static void SVC_DirectConnect(void)
     newcl->edict = SV_EdictForNum(number);
     newcl->client = SV_ClientForNum(number);
     Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
-    newcl->state = cs_assigned;
 
     // get the game a chance to reject this connection or modify the userinfo
     sv_client = newcl;
@@ -858,7 +849,7 @@ static void SVC_DirectConnect(void)
         } else {
             reject_printf("Connection refused.\n");
         }
-        newcl->state = cs_free;
+        newcl->userinfo[0] = 0;
         return;
     }
 
