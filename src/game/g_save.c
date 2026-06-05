@@ -33,6 +33,8 @@ typedef enum {
     F_UINT64,       // hexadecimal
     F_BOOL,
     F_FLOAT,
+    F_VEC3,
+    F_VEC4,
     F_LSTRING,      // string on disk, pointer in memory
     F_ZSTRING,      // string on disk, string in memory
     F_EDICT,        // index on disk, pointer in memory
@@ -63,12 +65,10 @@ typedef struct save_field_s {
 
 #define KIND2(name) _Generic(FIELD(name), \
     int32_t: F_INT, \
-    int32_t *: F_INT, \
     uint32_t: F_UINT, \
     float: F_FLOAT, \
-    float *: F_FLOAT, \
-    vec3_t: F_FLOAT, \
-    vec4_t: F_FLOAT, \
+    vec3_t: F_VEC3, \
+    vec4_t: F_VEC4, \
     char *: F_ZSTRING, \
     const char *: F_ZSTRING, \
     byte *: F_BYTE, \
@@ -85,12 +85,8 @@ typedef struct save_field_s {
     default: KIND2(name))
 
 #define COUNT2(name) _Generic(FIELD(name), \
-    int32_t *: sizeof(FIELD(name)) / sizeof(int32_t), \
-    float *: sizeof(FIELD(name)) / sizeof(float), \
     byte *: sizeof(FIELD(name)), \
     char *: sizeof(FIELD(name)), \
-    vec3_t: 3, \
-    vec4_t: 4, \
     default: 1)
 
 // ditto
@@ -783,7 +779,28 @@ static struct {
 } block;
 
 #define indent(s)   (int)(block.indent + strlen(s)), s
-#define write_str(...)  trap_FS_FilePrintf(g_savefile, __VA_ARGS__)
+
+q_printf(1, 2)
+static void write_str(const char *fmt, ...)
+{
+    va_list     argptr;
+    char        text[MAX_STRING_CHARS * 4];
+    size_t      len;
+    int         res;
+
+    va_start(argptr, fmt);
+    len = Q_vsnprintf(text, sizeof(text), fmt, argptr);
+    va_end(argptr);
+
+    if (len >= sizeof(text))
+        G_Error("oversize text");
+
+    res = trap_FS_WriteFile(text, len, g_savefile);
+    if (res != len) {
+        trap_FS_ErrorString(res, text, sizeof(text));
+        G_Error("error writing savegame: %s", text);
+    }
+}
 
 static void begin_block(const char *name)
 {
@@ -825,20 +842,19 @@ static void write_uint64(const char *name, uint64_t v)
     write_str("%*s %#"PRIx64"\n", indent(name), v);
 }
 
-static void write_int_v(const char *name, const int32_t *v, int n)
+static void write_float(const char *name, float v)
 {
-    write_str("%*s ", indent(name));
-    for (int i = 0; i < n; i++)
-        write_str("%d ", v[i]);
-    write_str("\n");
+    write_str("%*s %.6g\n", indent(name), v);
 }
 
-static void write_float_v(const char *name, const float *v, int n)
+static void write_vec3(const char *name, vec3_t v)
 {
-    write_str("%*s ", indent(name));
-    for (int i = 0; i < n; i++)
-        write_str("%.6g ", v[i]);
-    write_str("\n");
+    write_str("%*s %.6g %.6g %.6g\n", indent(name), v.x, v.y, v.z);
+}
+
+static void write_vec4(const char *name, vec4_t v)
+{
+    write_str("%*s %.6g %.6g %.6g %.6g\n", indent(name), v.x, v.y, v.z, v.w);
 }
 
 static void write_string(const char *name, const char *s)
@@ -968,7 +984,7 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_byte_v(field->name, p, field->count);
         break;
     case F_INT:
-        write_int_v(field->name, p, field->count);
+        write_int(field->name, *(int32_t *)p);
         break;
     case F_UINT:
         write_uint(field->name, *(uint32_t *)p);
@@ -983,7 +999,13 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_str("%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
         break;
     case F_FLOAT:
-        write_float_v(field->name, p, field->count);
+        write_float(field->name, *(float *)p);
+        break;
+    case F_VEC3:
+        write_vec3(field->name, *(vec3_t *)p);
+        break;
+    case F_VEC4:
+        write_vec4(field->name, *(vec4_t *)p);
         break;
 
     case F_ZSTRING:
@@ -1026,6 +1048,9 @@ static void write_field(const save_field_t *field, const void *from, const void 
     case F_REINFORCEMENTS:
         write_reinforcements(p);
         break;
+
+    default:
+        q_unreachable();
     }
 }
 
@@ -1271,6 +1296,25 @@ static float parse_float(void)
     return v;
 }
 
+static vec3_t parse_vec3(void)
+{
+    vec3_t v;
+    v.x = parse_float();
+    v.y = parse_float();
+    v.z = parse_float();
+    return v;
+}
+
+static vec4_t parse_vec4(void)
+{
+    vec4_t v;
+    v.x = parse_float();
+    v.y = parse_float();
+    v.z = parse_float();
+    v.w = parse_float();
+    return v;
+}
+
 static uint64_t parse_uint64(void)
 {
     char *tok, *end;
@@ -1282,18 +1326,6 @@ static uint64_t parse_uint64(void)
         parse_error("expected int, got %s", COM_MakePrintable(tok));
 
     return v;
-}
-
-static void parse_int_v(int32_t *v, int n)
-{
-    for (int i = 0; i < n; i++)
-        v[i] = parse_int32();
-}
-
-static void parse_float_v(float *v, int n)
-{
-    for (int i = 0; i < n; i++)
-        v[i] = parse_float();
 }
 
 static void parse_byte_v(byte *v, int n)
@@ -1460,7 +1492,7 @@ static void read_field(const save_field_t *field, void *base)
         parse_byte_v(p, field->count);
         break;
     case F_INT:
-        parse_int_v(p, field->count);
+        *(int32_t *)p = parse_int32();
         break;
     case F_UINT:
         *(uint32_t *)p = parse_uint(UINT32_MAX);
@@ -1473,7 +1505,13 @@ static void read_field(const save_field_t *field, void *base)
         *(bool *)p = parse_bool();
         break;
     case F_FLOAT:
-        parse_float_v(p, field->count);
+        *(float *)p = parse_float();
+        break;
+    case F_VEC3:
+        *(vec3_t *)p = parse_vec3();
+        break;
+    case F_VEC4:
+        *(vec4_t *)p = parse_vec4();
         break;
 
     case F_LSTRING:
@@ -1514,6 +1552,9 @@ static void read_field(const save_field_t *field, void *base)
     case F_REINFORCEMENTS:
         read_reinforcements(p);
         break;
+
+    default:
+        q_unreachable();
     }
 }
 

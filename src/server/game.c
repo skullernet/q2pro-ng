@@ -326,17 +326,6 @@ static int PF_WriteFile(const void *buffer, size_t len, qhandle_t f)
     return FS_Write(buffer, len, VM_HANDLE(f));
 }
 
-static int PF_FilePrintf(qhandle_t f, const char *fmt, ...)
-{
-    char buffer[MAXPRINTMSG];
-    va_list ap;
-    va_start(ap, fmt);
-    int len = Q_vsnprintf(buffer, sizeof(buffer), fmt, ap);
-    va_end(ap);
-    Q_assert_soft(len < sizeof(buffer));
-    return PF_WriteFile(buffer, len, f);
-}
-
 static int PF_FlushFile(qhandle_t f)
 {
     VM_HANDLE_CHECK(f);
@@ -561,14 +550,6 @@ VM_THUNK(FS_WriteFile) {
     VM_I32(0) = PF_WriteFile(VM_STR_BUF(0, 1), VM_U32(1), VM_U32(2));
 }
 
-VM_THUNK(FS_FilePrintf) {
-    char buffer[MAXPRINTMSG];
-    int len = VM_vsnprintf(m, buffer, sizeof(buffer), VM_STR(1), VM_U32(2));
-    Q_assert_soft(len >= 0);
-    Q_assert_soft(len < sizeof(buffer));
-    VM_I32(0) = PF_WriteFile(buffer, len, VM_U32(0));
-}
-
 VM_THUNK(FS_FlushFile) {
     VM_I32(0) = PF_FlushFile(VM_U32(0));
 }
@@ -687,7 +668,6 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(FS_CloseFile, "i i"),
     VM_IMPORT(FS_ReadFile, "i iii"),
     VM_IMPORT(FS_WriteFile, "i iii"),
-    VM_IMPORT(FS_FilePrintf, "i iii"),
     VM_IMPORT(FS_FlushFile, "i i"),
     VM_IMPORT(FS_TellFile, "I i"),
     VM_IMPORT(FS_SeekFile, "i iIi"),
@@ -925,11 +905,10 @@ static const game_import_t game_dll_imports = {
     .FS_CloseFile = PF_CloseFile,
     .FS_ReadFile = PF_ReadFile,
     .FS_WriteFile = PF_WriteFile,
-    .FS_FilePrintf = PF_FilePrintf,
     .FS_FlushFile = PF_FlushFile,
     .FS_TellFile = PF_TellFile,
     .FS_SeekFile = PF_SeekFile,
-    .FS_ReadLine = FS_ReadLine,
+    .FS_ReadLine = PF_ReadLine,
     .FS_ListFiles = VM_ListFiles,
     .FS_ErrorString = Q_ErrorStringBuffer,
 
