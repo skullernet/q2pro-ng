@@ -594,6 +594,9 @@ const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uin
 {
     uint32_t nodenum = grid->rootnode;
 
+    if (point[0] >= grid->size[0] || point[1] >= grid->size[1] || point[2] >= grid->size[2])
+        return NULL;
+
     while (1) {
         if (nodenum & FLAG_OCCLUDED)
             return NULL;
@@ -628,14 +631,11 @@ const lightgrid_sample_t *BSP_LookupLightgrid(const lightgrid_t *grid, const uin
 // ugh, requires parsing entire thing
 static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
 {
-    int i;
-
-    for (i = 0; i < 3; i++)
-        grid->scale.xyz[i] = 1.0f / SZ_ReadFloat(s);
-    for (i = 0; i < 3; i++)
-        grid->size[i] = SZ_ReadLong(s);
-    for (i = 0; i < 3; i++)
-        grid->mins.xyz[i] = SZ_ReadFloat(s);
+    grid->scale = Vec3_Reciprocal(SZ_ReadVector(s));
+    grid->size[0] = SZ_ReadLong(s);
+    grid->size[1] = SZ_ReadLong(s);
+    grid->size[2] = SZ_ReadLong(s);
+    grid->mins = SZ_ReadVector(s);
 
     // misaligns everything. what were they thinking?!
     grid->numstyles = SZ_ReadByte(s);
@@ -652,7 +652,7 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
     if (grid->numleafs - 1 >= SZ_Remaining(s) / 24)
         return false;
 
-    for (i = 0; i < grid->numleafs; i++) {
+    for (int i = 0; i < grid->numleafs; i++) {
         uint32_t x, y, z, numsamples;
 
         s->readcount += 12;
@@ -699,7 +699,7 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
 static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
 {
     if (nodenum & FLAG_OCCLUDED)
-        return true;
+        return !(nodenum & ~FLAG_OCCLUDED);
 
     if (nodenum & FLAG_LEAF)
         return (nodenum & ~FLAG_LEAF) < grid->numleafs;

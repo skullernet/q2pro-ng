@@ -77,6 +77,8 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, vec3_t start, vec3_t *col
 
     if (!grid->numleafs || !gl_lightgrid->integer)
         return false;
+    if (start.x < grid->mins.x || start.y < grid->mins.y || start.z < grid->mins.z)
+        return false;
 
     point = Vec3_Mul(Vec3_Sub(start, grid->mins), grid->scale);
     Vec3_Store(point_i, point);

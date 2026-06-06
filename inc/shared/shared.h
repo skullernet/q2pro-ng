@@ -456,6 +456,10 @@ static inline vec3_t Vec3_Negate(vec3_t a) {
     return Vec3(-a.x, -a.y, -a.z);
 }
 
+static inline vec3_t Vec3_Reciprocal(vec3_t a) {
+    return Vec3(1.0f / a.x, 1.0f / a.y, 1.0f / a.z);
+}
+
 static inline vec3_t Vec3_Scale(vec3_t in, float scale) {
     return Vec3(in.x * scale, in.y * scale, in.z * scale);
 }
