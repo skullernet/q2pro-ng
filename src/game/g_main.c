@@ -798,7 +798,7 @@ qvm_exported void G_RunFrame(int64_t time)
     // reload the map start save if restart time is set (all players are dead)
     if (level.coop_level_restart_time > 0 && level.time > level.coop_level_restart_time) {
         ClientEndServerFrames();
-        trap_AddCommandString("restart_level\n");
+        trap_AddCommandString("load save0\n");
     }
 
     // clear client coop respawn states; this is done
