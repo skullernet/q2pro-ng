@@ -1,15 +1,17 @@
 Prerequisities
 --------------
 
-Q2PRO requires a C11 compiler with GNU extensions support. Using recent version
-of GCC or Clang is strongly recommended.
+Q2PRO-ng requires a C11 compiler with GNU extensions support. Using recent
+version of GCC or Clang is strongly recommended.
 
-On Linux, BSD and similar platfroms Q2PRO client requires either SDL2 or OpenAL
-for sound output. For video output, native X11 and Wayland backends are
-available, as well as generic SDL2 backend.
+For graphics output there are native Windows, X11 and Wayland backends, as well
+as generic SDL2 backend.
 
-SDL2 is optional if using native X11 and Wayland backends and OpenAL, which is
-preferred configuration.
+SDL2 is completely optional, and should be only used on systems lacking native
+graphics backend such as macOS.
+
+For audio output Q2PRO-ng can use either built-in Miniaudio sound backend or
+OpenAL. OpenAL is currently required for reverb effect to work.
 
 Both client and dedicated server require zlib support for full compatibility at
 network protocol level. The rest of dependencies are optional.
@@ -23,10 +25,10 @@ OpenAL sound backend requires OpenAL Soft development headers for compilation.
 At runtime, OpenAL library from any vendor can be used (but OpenAL Soft is
 strongly recommended).
 
-To install the *full* set of dependencies for building Q2PRO on Debian or
+To install the *full* set of dependencies for building Q2PRO-ng on Debian or
 Ubuntu use the following command:
 
-    apt-get install meson gcc libc6-dev libsdl2-dev libopenal-dev \
+    apt-get install meson gcc clang libc6-dev libsdl2-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
                     libcurl4-gnutls-dev libx11-dev libxi-dev \
                     libwayland-dev wayland-protocols libdecor-0-dev \
@@ -36,7 +38,7 @@ Ubuntu use the following command:
 If you intend to build just dedicated server, smaller set of dependencies can
 be installed:
 
-    apt-get install meson gcc libc6-dev zlib1g-dev
+    apt-get install meson gcc clang libc6-dev zlib1g-dev
 
 Users of other distributions should look for equivalent development packages
 and install them.
@@ -45,7 +47,7 @@ and install them.
 Building
 --------
 
-Q2PRO uses Meson build system for its build process.
+Q2PRO-ng uses Meson build system for its build process.
 
 Setup build directory (arbitrary name can be used instead of `builddir`):
 
@@ -55,7 +57,7 @@ Review and configure options:
 
     meson configure builddir
 
-Q2PRO specific options are listed in `Project options` section. They are
+Q2PRO-ng specific options are listed in `Project options` section. They are
 defined in `meson_options.txt` file.
 
 E.g. to install to different prefix:
@@ -72,55 +74,38 @@ Building QVMs
 -------------
 
 For building WASM-based Quake Virtual Machine (QVM) modules Clang 19 or higher
-is required. Run `wasm.sh` shell script from the root of source tree to build.
+is required. Run `build-qvm.sh` shell script from the root of source tree to build.
 
-Additionally, `binaryen` package can be installed to run some automatic
-optimization passes on generated QVMs (but benefits of this are marginal at
-best).
+You may need to set `QVM_CC` environment variable to the name of your Clang
+compiler binary before invoking `build-qvm.sh`.
+
+For debugging, development, or embedded systems it is possible to use native
+game modules as well.
 
 Installation
 ------------
 
-You need to have either full version of Quake 2 unpacked somewhere, or a demo.
-Both should be patched to 3.20 point release.
+Q2PRO-ng requires 2023 re-release (aka "remaster") game assets.
 
-Run `sudo ninja -C builddir install` to install Q2PRO system-wide into
-configured prefix (`/usr/local` by default).
+After building the client using Meson, run the following commands, assuming
+`re-release-dir` is where re-release assets are located:
 
-Copy `baseq2/pak*.pak` files and `baseq2/players` directory from unpacked
-Quake 2 data into `/usr/local/share/q2pro/baseq2` to complete the
-installation.
+    ./build-qvm.sh
+    ./copy-assets.sh <re-release-dir>
 
-Alternatively, configure with `-Dsystem-wide=false` to build a ‘portable’
-version that expects to be launched from the root of Quake 2 data tree (this
-is default when building for Windows).
+This will build QVM files and copy re-release assets to `~/.q2pro-ng` directory.
+Then run the client with `./builddir/q2pro-ng`.
 
-On Windows, Q2PRO automatically sets current directory to the directory Q2PRO
-executable is in. On other platforms current directory must be set before
-launching Q2PRO executable if portable version is built.
-
-
-Music support
--------------
-
-Q2PRO supports playback of background music ripped off original CD in Ogg
-Vorbis format. Music files should be placed in `music` subdirectory of the game
-directory in format `music/trackNN.ogg`, where `NN` corresponds to CD track
-number. `NN` should be typically in range 02-11 (track 01 is data track on
-original CD and should never be used). GOG naming scheme which has tracks 02-21
-(with extra tracks for `rogue` and `xatrix` addons) is also supported.
-
-Depending on FFmpeg configuration, music in several other formats can be
-transparently supported: FLAC, Opus, MP3 and WAV.
+When invoking `copy-assets.sh` without arguments it will refresh `q2pro.pkz` file.
+This is useful for updating QVM files.
 
 MinGW-w64
 ---------
 
-MinGW-w64 cross-compiler is available in recent versions of all major Linux
-distributions.
+Windows binaries are built using MinGW-w64 cross-compiler on Linux.
 
-Library dependencies that Q2PRO uses have been prepared as Meson subprojects
-and will be automatically downloaded and built by Meson.
+Library dependencies that Q2PRO-ng uses have been prepared as Meson subprojects
+and will be automatically downloaded and built by Meson (except of FFmpeg).
 
 To install MinGW-w64 on Debian or Ubuntu, use the following command:
 

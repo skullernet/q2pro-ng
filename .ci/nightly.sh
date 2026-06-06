@@ -54,18 +54,15 @@ x86_64-w64-mingw32-strip build/q2pro-ng.exe
 
 mkdir -p build/baseq2/vm
 cd $SRC
-export WASM_CC=clang-19
-export WASM_DIR=../build/baseq2/vm
-export WASM_OPT=-Werror
-./wasm.sh
+export QVM_CC=clang-19
+export QVM_DIR=../build/baseq2/vm
+export QVM_OPT=-Werror
+./build-qvm.sh
 
 cd ..
 unix2dos -k -n $SRC/LICENSE build/LICENSE.txt $SRC/doc/client.asciidoc build/MANUAL.txt README build/README.txt
 
-cp -a $SRC/etc/q2pro.menu build/baseq2/
-cp -a $SRC/etc/default.cfg build/baseq2/
-cp -a $SRC/etc/vispatches build/baseq2/
-cp -a $SRC/etc/entpatches build/baseq2/
+cp -a $SRC/baseq2/* build/baseq2/
 
 cd build/baseq2
 zip -9 q2pro.pkz q2pro.menu default.cfg vm/*.qvm vispatches/* entpatches/*

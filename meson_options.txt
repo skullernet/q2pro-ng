@@ -20,7 +20,7 @@ option('default-game',
 
 option('homedir',
   type: 'string',
-  value: '~/.q2pro',
+  value: '~/.q2pro-ng',
   description: 'Default value for "homedir" console variable')
 
 option('icmp-errors',

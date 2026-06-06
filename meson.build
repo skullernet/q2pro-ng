@@ -327,7 +327,7 @@ if get_option('client-ui')
   client_src += ui_src
   config.set10('USE_UI', true)
   if system_wide
-    install_data('etc/q2pro.menu', install_dir: datadir / get_option('base-game'))
+    install_data('baseq2/q2pro.menu', install_dir: datadir / get_option('base-game'))
   endif
 endif
 
