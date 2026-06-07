@@ -340,7 +340,7 @@ void CL_InitRefresh(void)
     // Create the video variables so we know how to start the graphics drivers
     cvar_t *vid_driver = Cvar_Get("vid_driver", "", CVAR_REFRESH);
     vid_driver->generator = vid_driver_g;
-    vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
+    vid_fullscreen = Cvar_Get("vid_fullscreen", "1", CVAR_ARCHIVE);
     _vid_fullscreen = Cvar_Get("_vid_fullscreen", "1", CVAR_ARCHIVE);
     vid_geometry = Cvar_Get("vid_geometry", VID_GEOMETRY, CVAR_ARCHIVE);
 

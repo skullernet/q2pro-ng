@@ -777,10 +777,7 @@ bool Nav_GetPathToGoal(const PathRequest *request, PathInfo *info, vec3_t *point
 
 static box3_t Nav_GetNodeBounds(const nav_node_t *node)
 {
-    box3_t box = {
-        .mins = { -16, -16, -24 },
-        .maxs = { 16, 16, 32 }
-    };
+    box3_t box = Box3_FromSize(16, -24, 32);
 
     if (node->flags & NodeFlag_Crouch)
         box.maxs.z = 4.0f;

@@ -617,10 +617,6 @@ static inline vec3_t Vec3_SphereDir(float phi, float theta) {
     };
 }
 
-static inline float Vec3_RadiusFromBounds(vec3_t mins, vec3_t maxs) {
-    return Vec3_Length(Vec3_Max(Vec3_Abs(mins), Vec3_Abs(maxs)));
-}
-
 static inline vec4_t Vec4_FromVec3(vec3_t a, float w) {
     return Vec4(a.x, a.y, a.z, w);
 }
@@ -731,7 +727,7 @@ static inline float Box3_Radius(box3_t a) {
 }
 
 static inline float Box3_RadiusFromBounds(box3_t a) {
-    return Vec3_RadiusFromBounds(a.mins, a.maxs);
+    return Vec3_Length(Vec3_Max(Vec3_Abs(a.mins), Vec3_Abs(a.maxs)));
 }
 
 static inline box3_t Box3_Scale(box3_t a, float scale) {
