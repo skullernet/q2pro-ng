@@ -1961,8 +1961,16 @@ Should be safe to call even if server is not fully initialized yet.
 */
 void SV_Shutdown(const char *finalmsg, error_type_t type)
 {
+    static bool recursive = false;
+
     if (!sv_registered)
         return;
+
+    if (recursive) {
+        Com_Printf("%s: recursive shutdown\n", __func__);
+        return;
+    }
+    recursive = true;
 
     R_ClearDebugLines();    // for local system
 
@@ -2003,4 +2011,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 #endif
 
     Z_LeakTest(TAG_SERVER);
+
+    recursive = false;
 }

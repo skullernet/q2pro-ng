@@ -2379,17 +2379,17 @@ to run quit through here before the final handoff to the sys code.
 */
 void CL_Shutdown(void)
 {
-    static bool isdown = false;
-
-    if (isdown) {
-        Com_Printf("CL_Shutdown: recursive shutdown\n");
-        return;
-    }
-    isdown = true;
+    static bool recursive = false;
 
     if (!cl_running || !cl_running->integer) {
         return;
     }
+
+    if (recursive) {
+        Com_Printf("%s: recursive shutdown\n", __func__);
+        return;
+    }
+    recursive = true;
 
     CL_Disconnect(ERR_FATAL);
 
@@ -2409,5 +2409,5 @@ void CL_Shutdown(void)
 
     Cvar_Set("cl_running", "0");
 
-    isdown = false;
+    recursive = false;
 }
