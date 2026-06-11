@@ -563,6 +563,15 @@ static void Cmd_Noclip_f(edict_t *ent, cmdflags_t flags)
     }
 }
 
+static void Cmd_Fly_f(edict_t *ent, cmdflags_t flags)
+{
+    ent->flags ^= FL_FLY;
+    if (!(ent->flags & FL_FLY))
+        G_ClientPrintf(ent, PRINT_HIGH, "fly mode OFF\n");
+    else
+        G_ClientPrintf(ent, PRINT_HIGH, "fly mode ON\n");
+}
+
 /*
 ==================
 Cmd_Use_f
@@ -1544,6 +1553,7 @@ static const clientcmd_t clientcmds[] = {
     { "novisible", Cmd_Novisible_f, CHEAT },
     { "nodrown", Cmd_Nodrown_f, CHEAT },
     { "noclip", Cmd_Noclip_f, CHEAT },
+    { "fly", Cmd_Fly_f, CHEAT },
     { "inven", Cmd_Inven_f },
     { "invnext", SelectNextItem },
     { "invprev", SelectPrevItem },

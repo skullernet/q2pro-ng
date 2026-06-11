@@ -1116,7 +1116,7 @@ void BG_Pmove(pmove_t *pmove)
     PM_ClampAngles(pm->s, &pm->cmd);
     AngleVectors(pm->s->viewangles, &pml.forward, &pml.right, &pml.up);
 
-    if (pm->s->pm_type == PM_SPECTATOR || pm->s->pm_type == PM_NOCLIP) {
+    if (pm->s->pm_type == PM_SPECTATOR || pm->s->pm_type == PM_NOCLIP || pm->s->pm_type == PM_FLY) {
         pm->s->pm_flags = PMF_NONE;
         pm->s->pm_time = 0;
         PM_SetDimensions();

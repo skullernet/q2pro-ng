@@ -985,7 +985,7 @@ void SaveClientData(void)
             continue;
         g_clients[i].pers.health = ent->health;
         g_clients[i].pers.max_health = ent->max_health;
-        g_clients[i].pers.savedFlags = (ent->flags & (FL_FLASHLIGHT | FL_GODMODE | FL_NOTARGET | FL_POWER_ARMOR | FL_WANTS_POWER_ARMOR));
+        g_clients[i].pers.savedFlags = ent->flags & FL_CLIENT_SAVED_MASK;
         if (coop.integer)
             g_clients[i].pers.score = ent->client->resp.score;
     }
@@ -2608,6 +2608,8 @@ qvm_exported void G_ClientThink(int clientnum)
             client->ps.pm_type = PM_DEAD;
         else if (ent->client->ctf_grapplestate >= CTF_GRAPPLE_STATE_PULL)
             client->ps.pm_type = PM_GRAPPLE;
+        else if (ent->flags & FL_FLY)
+            client->ps.pm_type = PM_FLY;
         else
             client->ps.pm_type = PM_NORMAL;
 

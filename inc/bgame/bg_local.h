@@ -445,7 +445,9 @@ typedef enum {
     PM_NORMAL,
     PM_GRAPPLE, // [Paril-KEX] pull towards velocity, no gravity
     PM_NOCLIP,
-    PM_SPECTATOR,
+    PM_SPECTATOR,   // only clip to world
+    PM_FLY,         // normal clipmask
+
     // no acceleration or turning
     PM_DEAD,
     PM_GIB,     // different bounding box

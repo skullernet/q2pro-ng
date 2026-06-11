@@ -257,6 +257,11 @@ typedef enum {
 #define FL_DEEPONE              BIT_ULL(32) // never drown
 #define FL_ACIDIC               BIT_ULL(33) // green blood
 
+// player entity flags that survive level change
+#define FL_CLIENT_SAVED_MASK \
+    (FL_FLY | FL_GODMODE | FL_NOTARGET | FL_POWER_ARMOR | FL_FLASHLIGHT | \
+     FL_NOVISIBLE | FL_WANTS_POWER_ARMOR | FL_IMMORTAL | FL_DEEPONE)
+
 // gitem_t->flags
 typedef enum {
     IF_ANY          = -1,
