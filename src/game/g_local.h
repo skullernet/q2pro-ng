@@ -2037,10 +2037,10 @@ typedef struct {
 
     item_id_t selected_item;
     gtime_t   selected_item_time;
-    int16_t   inventory[IT_TOTAL];
+    uint16_t  inventory[IT_TOTAL];
 
     // ammo capacities
-    int16_t max_ammo[AMMO_MAX];
+    uint16_t  max_ammo[AMMO_MAX];
 
     const gitem_t *weapon;
     const gitem_t *lastweapon;

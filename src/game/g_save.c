@@ -897,7 +897,7 @@ static void write_pointer(const char *name, const void *p, ptr_type_t type)
     G_Error("unknown pointer of type %d: %p", type, p);
 }
 
-static void write_inventory(const int16_t *inven)
+static void write_inventory(const uint16_t *inven)
 {
     begin_block("inventory");
     for (int i = IT_NULL + 1; i < IT_TOTAL; i++) {
@@ -909,7 +909,7 @@ static void write_inventory(const int16_t *inven)
     end_block();
 }
 
-static void write_max_ammo(const int16_t *max_ammo)
+static void write_max_ammo(const uint16_t *max_ammo)
 {
     begin_block("max_ammo");
     for (int i = AMMO_BULLETS; i < AMMO_MAX; i++)
@@ -1245,11 +1245,6 @@ static int parse_int(int v_min, int v_max)
     return parse_int_tok(parse(), v_min, v_max);
 }
 
-static int parse_int16(void)
-{
-    return parse_int(INT16_MIN, INT16_MAX);
-}
-
 static int parse_int32(void)
 {
     return parse_int(INT32_MIN, INT32_MAX);
@@ -1407,7 +1402,7 @@ static void *read_pointer(ptr_type_t type)
     return NULL;
 }
 
-static void read_inventory(int16_t *inven)
+static void read_inventory(uint16_t *inven)
 {
     expect("{");
     while (1) {
@@ -1416,13 +1411,13 @@ static void read_inventory(int16_t *inven)
             break;
         const gitem_t *item = FindItemByClassname(tok);
         if (item)
-            inven[item->id] = parse_int16();
+            inven[item->id] = parse_uint(UINT16_MAX);
         else
             unknown("item");
     }
 }
 
-static void read_max_ammo(int16_t *max_ammo)
+static void read_max_ammo(uint16_t *max_ammo)
 {
     expect("{");
     while (1) {
@@ -1431,7 +1426,7 @@ static void read_max_ammo(int16_t *max_ammo)
             break;
         const gitem_t *item = FindItemByClassname(tok);
         if (item && (item->flags & IF_AMMO))
-            max_ammo[item->tag] = parse_int16();
+            max_ammo[item->tag] = parse_uint(UINT16_MAX);
         else
             unknown("ammo");
     }

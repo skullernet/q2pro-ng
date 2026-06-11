@@ -131,14 +131,15 @@ Give items to a client
 static void Cmd_Give_f(edict_t *ent, cmdflags_t flags)
 {
     char           name[MAX_QPATH];
-    char           count[MAX_QPATH];
+    char           temp[MAX_QPATH];
     const gitem_t *it;
     item_id_t      index;
-    int            i;
+    int            i, count;
     bool           give_all;
 
     trap_Argv(1, name, sizeof(name));
-    trap_Argv(2, count, sizeof(count));
+    trap_Argv(2, temp, sizeof(temp));
+    count = Q_atoi(temp);
 
     if (Q_strcasecmp(name, "all") == 0)
         give_all = true;
@@ -146,8 +147,8 @@ static void Cmd_Give_f(edict_t *ent, cmdflags_t flags)
         give_all = false;
 
     if (give_all || Q_strcasecmp(name, "health") == 0) {
-        if (trap_Argc() == 3)
-            ent->health = Q_atoi(count);
+        if (!give_all && count > 0)
+            ent->health = count;
         else
             ent->health = ent->max_health;
         if (!give_all)
@@ -246,8 +247,8 @@ static void Cmd_Give_f(edict_t *ent, cmdflags_t flags)
     }
 
     if (it->flags & IF_AMMO) {
-        if (trap_Argc() == 3)
-            ent->client->pers.inventory[index] = Q_atoi(count);
+        if (count > 0)
+            ent->client->pers.inventory[index] = count;
         else
             ent->client->pers.inventory[index] += it->quantity;
     } else {
