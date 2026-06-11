@@ -941,17 +941,6 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
 
 #endif
 
-// remaster needs ORed contents from all brushes for solid leafs
-static void BSP_MergeLeafContents(bsp_t *bsp)
-{
-    mleaf_t *leaf;
-    int i, j;
-
-    for (i = 1, leaf = bsp->leafs + i; i < bsp->numleafs; i++, leaf++)
-        for (j = 0; j < leaf->numleafbrushes; j++)
-            leaf->contents |= leaf->firstleafbrush[j]->contents;
-}
-
 /*
 ==================
 BSP_Load
@@ -1107,8 +1096,6 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
 
     // calculate the checksum
     bsp->checksum = Com_BlockChecksum(buf, filelen);
-
-    BSP_MergeLeafContents(bsp);
 
     BSP_LoadMaterials(bsp);
 

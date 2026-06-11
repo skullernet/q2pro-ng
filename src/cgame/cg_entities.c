@@ -478,9 +478,8 @@ static void CG_SetEntitySoundOrigin(const centity_t *ent)
 
     // set velocity for doppler effect
     if (cg.frame->servertime > cg.oldframe->servertime) {
-        float time = 1000.0f / (cg.frame->servertime - cg.oldframe->servertime);
         vel = Vec3_Sub(ent->current.origin, ent->prev.origin);
-        vel = Vec3_Scale(vel, time);
+        vel = Vec3_Scale(vel, 1000.0f / (cg.frame->servertime - cg.oldframe->servertime));
     } else {
         vel = vec3_origin;
     }
@@ -853,8 +852,7 @@ static void CG_AddPacketEntities(void)
             };
 
             if (s1->number == cg.frame->ps.clientnum) {
-                float hand = CG_HandMultiplier();
-                light.origin = Vec3_MA(cg.refdef.vieworg, 7.0f * hand, cg.v_right);
+                light.origin = Vec3_MA(cg.refdef.vieworg, 7.0f * CG_HandMultiplier(), cg.v_right);
                 light.dir = cg.v_forward;
                 light.flags = RF_VIEWERMODEL;   // skip player model shadow
             } else {
@@ -1056,7 +1054,7 @@ static void CG_AddPacketEntities(void)
         } else if (effects & EF_FLIES) {
             CG_FlyEffect(cent, ent.origin);
         } else if (effects & EF_BFG) {
-            static const uint16_t bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
+            static const uint16_t bfg_lightramp[6] = { 300, 400, 600, 300, 150, 75 };
             if (effects & EF_ANIM_ALLFAST) {
                 CG_BfgParticles(&ent);
                 i = 200;

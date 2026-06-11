@@ -144,7 +144,7 @@ bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const c
             return true;
 
     if (mod->num_cvars >= MAX_VM_CVARS) {
-        Com_WPrintf("Too many VM cvars\n");
+        Com_WPrintf("%s: too many VM cvars\n", __func__);
         return false;
     }
 
@@ -254,9 +254,12 @@ void VM_FreeModule(vm_module_t *mod)
     Sys_FreeLibrary(mod->lib);
     Z_Free(mod->cvars);
 
-    for (int i = 0; i < MAX_VM_HANDLES; i++)
-        if (mod->handles[i])
+    for (int i = 0; i < MAX_VM_HANDLES; i++) {
+        if (mod->handles[i]) {
+            Com_WPrintf("%s: closing handle %d\n", __func__, i + 1);
             FS_CloseFile(mod->handles[i]);
+        }
+    }
 
     if (mod->entry.next)
         List_Remove(&mod->entry);

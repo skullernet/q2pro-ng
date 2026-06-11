@@ -168,7 +168,13 @@ qvm_exported void CG_Shutdown(void)
 {
 }
 
-// Called after demo seek, or whenever server time reset occurs
+/*
+=================
+CG_ClearState
+
+Called after demo seek, or whenever server time reset occurs
+=================
+*/
 qvm_exported void CG_ClearState(void)
 {
     // release holster button
@@ -190,7 +196,13 @@ qvm_exported void CG_ClearState(void)
     cg.serverframe = trap_GetServerFrameNumber() - 1;
 }
 
-// Called before entering a new level, or after subsystem restart
+/*
+=================
+CG_PrepRefresh
+
+Called before entering a new level, or after subsystem restart
+=================
+*/
 qvm_exported void CG_PrepRefresh(bool demoplayback)
 {
     memset(&cgs, 0, sizeof(cgs));
@@ -207,8 +219,14 @@ qvm_exported void CG_PrepRefresh(bool demoplayback)
     CG_ClearState();
 }
 
-// Cgame must return true if it handles the key, otherwise it will be passed
-// to command interpreter as usual.
+/*
+=================
+CG_KeyEvent
+
+Returns true if cgame handles the key, otherwise it will be passed
+to command interpreter as usual.
+=================
+*/
 qvm_exported bool CG_KeyEvent(unsigned key, bool down)
 {
     if (!down)

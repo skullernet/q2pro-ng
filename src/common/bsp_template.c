@@ -539,6 +539,10 @@ BSP_LOAD(Leafs)
         BSP_ENSURE((uint64_t)firstleafbrush + numleafbrushes <= bsp->numleafbrushes, "Bad leafbrushes");
         out->firstleafbrush = bsp->leafbrushes + firstleafbrush;
         out->numleafbrushes = numleafbrushes;
+
+        // pmove needs ORed contents from all brushes for solid leafs
+        for (int j = 0; j < numleafbrushes; j++)
+            out->contents |= out->firstleafbrush[j]->contents;
     }
 
     BSP_ENSURE(bsp->leafs[0].contents == CONTENTS_SOLID, "Map leaf 0 is not CONTENTS_SOLID");

@@ -131,8 +131,13 @@ static void CG_Path(void)
     trap_S_PositionedSound(point, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NORM, 0);
 }
 
-// server commands allow transmitting arbitrary data from game to cgame
-// without changing network protocol
+/*
+=================
+CG_ServerCommand
+
+Handle cgame private server command.
+=================
+*/
 qvm_exported void CG_ServerCommand(void)
 {
     char cmd[MAX_QPATH];
