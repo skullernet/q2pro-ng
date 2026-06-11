@@ -26,15 +26,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SAVE_VERSION_CURRENT            1
 
 typedef enum {
-    F_BYTE,
+    F_INVALID,
+
+    // these are generic field types
+    F_BOOL,
     F_INT,
     F_UINT,         // hexadecimal
     F_INT64,
     F_UINT64,       // hexadecimal
-    F_BOOL,
     F_FLOAT,
     F_VEC3,
     F_VEC4,
+    F_BSTRING,      // byte array
     F_LSTRING,      // string on disk, pointer in memory
     F_ZSTRING,      // string on disk, string in memory
     F_EDICT,        // index on disk, pointer in memory
@@ -44,6 +47,7 @@ typedef enum {
     F_STRUCT,
 
     // these use custom writing methods
+    F_OLD_ORIGIN,
     F_INVENTORY,
     F_MAX_AMMO,
     F_STATS,
@@ -54,7 +58,7 @@ typedef struct save_field_s {
     const char *name;
     uint32_t ofs;
     uint32_t size;
-    uint16_t count;
+    uint16_t count; // for structs
     uint8_t kind;
     uint8_t ptrtyp;
     const struct save_field_s *fields;  // for structs
@@ -62,62 +66,45 @@ typedef struct save_field_s {
 
 #define OFFSET(name) offsetof(STRUCT, name)
 #define FIELD(name) ((STRUCT *)0)->name
+#define SIZE(name) sizeof(FIELD(name))
 
-#define KIND2(name) _Generic(FIELD(name), \
-    int32_t: F_INT, \
-    uint32_t: F_UINT, \
-    float: F_FLOAT, \
-    vec3_t: F_VEC3, \
-    vec4_t: F_VEC4, \
-    char *: F_ZSTRING, \
-    const char *: F_ZSTRING, \
-    byte *: F_BYTE, \
-    bool: F_BOOL, \
-    int64_t: F_INT64, \
-    uint64_t: F_UINT64, \
-    const gitem_t *: F_ITEM, \
-    edict_t *: F_EDICT)
-
-// hack to distinguish between char * and char []
 #define KIND(name) _Generic(&FIELD(name), \
     char **: F_LSTRING, \
     const char **: F_LSTRING, \
-    default: KIND2(name))
-
-#define COUNT2(name) _Generic(FIELD(name), \
-    byte *: sizeof(FIELD(name)), \
-    char *: sizeof(FIELD(name)), \
-    default: 1)
-
-// ditto
-#define COUNT(name) _Generic(&FIELD(name), \
-    char **: 1, \
-    const char **: 1, \
-    default: COUNT2(name))
+    default: _Generic(FIELD(name), \
+    bool: F_BOOL, \
+    int32_t: F_INT, \
+    uint32_t: F_UINT, \
+    int64_t: F_INT64, \
+    uint64_t: F_UINT64, \
+    float: F_FLOAT, \
+    vec3_t: F_VEC3, \
+    vec4_t: F_VEC4, \
+    byte *: F_BSTRING, \
+    char *: F_ZSTRING, \
+    const char *: F_ZSTRING, \
+    const gitem_t *: F_ITEM, \
+    edict_t *: F_EDICT))
 
 // generic field
-#define F(name) \
-    { #name, OFFSET(name), sizeof(FIELD(name)) / COUNT(name), COUNT(name), KIND(name), 0, NULL }
+#define F(fld) \
+    { .name = #fld, .ofs = OFFSET(fld), .size = SIZE(fld), .count = 1, .kind = KIND(fld) }
+
+// custom field
+#define A(kin, fld) \
+    { .name = #fld, .ofs = OFFSET(fld), .size = SIZE(fld), .count = 1, .kind = kin }
 
 // custom field (size unknown)
-#define C(kind, name) \
-    { #name, OFFSET(name), 0, 0, kind, 0, NULL }
-
-// custom array
-#define A(kind, name) \
-    { #name, OFFSET(name), sizeof(FIELD(name)[0]), q_countof(FIELD(name)), kind, 0, NULL }
+#define C(kin, fld) \
+    { .name = #fld, .ofs = OFFSET(fld), .kind = kin }
 
 // function or moveinfo pointer
-#define P(name, ptrtyp) \
-    { #name, OFFSET(name), sizeof(void *), 1, F_POINTER, ptrtyp, NULL }
+#define P(typ, fld) \
+    { .name = #fld, .ofs = OFFSET(fld), .size = sizeof(void *), .count = 1, .kind = F_POINTER, .ptrtyp = typ }
 
-// struct
-#define S(type, name) \
-    { #name, OFFSET(name), sizeof(type), 1, F_STRUCT, 0, type##_fields }
-
-// array of structs
-#define SA(type, name) \
-    { #name, OFFSET(name), sizeof(type), q_countof(FIELD(name)), F_STRUCT, 0, type##_fields }
+// struct or array of structs
+#define S(typ, fld) \
+    { .name = #fld, .ofs = OFFSET(fld), .size = sizeof(typ), .count = SIZE(fld) / sizeof(typ), .kind = F_STRUCT, .fields = typ##_fields }
 
 #define STRUCT moveinfo_t
 static const save_field_t moveinfo_t_fields[] = {
@@ -147,8 +134,8 @@ static const save_field_t moveinfo_t_fields[] = {
     F(next_speed),
     F(remaining_distance),
     F(decel_distance),
-    P(endfunc, P_moveinfo_endfunc),
-    P(blocked, P_moveinfo_blocked),
+    P(P_moveinfo_endfunc, endfunc),
+    P(P_moveinfo_blocked, blocked),
     { 0 }
 };
 #undef STRUCT
@@ -166,24 +153,24 @@ static const save_field_t reinforcement_t_fields[] = {
 
 #define STRUCT monsterinfo_t
 static const save_field_t monsterinfo_t_fields[] = {
-    P(active_move, P_mmove_t),
-    P(next_move, P_mmove_t),
+    P(P_mmove_t, active_move),
+    P(P_mmove_t, next_move),
     F(aiflags),
     F(nextframe),
     F(scale),
 
-    P(stand, P_monsterinfo_stand),
-    P(idle, P_monsterinfo_idle),
-    P(search, P_monsterinfo_search),
-    P(walk, P_monsterinfo_walk),
-    P(run, P_monsterinfo_run),
-    P(dodge, P_monsterinfo_dodge),
-    P(attack, P_monsterinfo_attack),
-    P(melee, P_monsterinfo_melee),
-    P(sight, P_monsterinfo_sight),
-    P(checkattack, P_monsterinfo_checkattack),
-    P(setskin, P_monsterinfo_setskin),
-    P(physics_change, P_monsterinfo_physchanged),
+    P(P_monsterinfo_stand, stand),
+    P(P_monsterinfo_idle, idle),
+    P(P_monsterinfo_search, search),
+    P(P_monsterinfo_walk, walk),
+    P(P_monsterinfo_run, run),
+    P(P_monsterinfo_dodge, dodge),
+    P(P_monsterinfo_attack, attack),
+    P(P_monsterinfo_melee, melee),
+    P(P_monsterinfo_sight, sight),
+    P(P_monsterinfo_checkattack, checkattack),
+    P(P_monsterinfo_setskin, setskin),
+    P(P_monsterinfo_physchanged, physics_change),
 
     F(pausetime),
     F(attack_finished),
@@ -206,16 +193,16 @@ static const save_field_t monsterinfo_t_fields[] = {
     F(weapon_sound),
     F(engine_sound),
 
-    P(blocked, P_monsterinfo_blocked),
+    P(P_monsterinfo_blocked, blocked),
     F(last_hint_time),
     F(goal_hint),
     F(medicTries),
     F(badMedic1),
     F(badMedic2),
     F(healer),
-    P(duck, P_monsterinfo_duck),
-    P(unduck, P_monsterinfo_unduck),
-    P(sidestep, P_monsterinfo_sidestep),
+    P(P_monsterinfo_duck, duck),
+    P(P_monsterinfo_unduck, unduck),
+    P(P_monsterinfo_sidestep, sidestep),
     F(base_height),
     F(next_duck_time),
     F(duck_wait_time),
@@ -331,7 +318,7 @@ static const save_field_t player_heightfog_t_fields[] = {
 static const save_field_t edict_t_fields[] = {
     F(s.origin),
     F(s.angles),
-    F(s.old_origin),
+    C(F_OLD_ORIGIN, s.old_origin),
     F(s.modelindex),
     F(s.modelindex2),
     F(s.modelindex3),
@@ -400,13 +387,13 @@ static const save_field_t edict_t_fields[] = {
     F(ideal_yaw),
 
     F(nextthink),
-    P(prethink, P_prethink),
-    P(postthink, P_prethink),
-    P(think, P_think),
-    P(touch, P_touch),
-    P(use, P_use),
-    P(pain, P_pain),
-    P(die, P_die),
+    P(P_prethink, prethink),
+    P(P_prethink, postthink),
+    P(P_think, think),
+    P(P_touch, touch),
+    P(P_use, use),
+    P(P_pain, pain),
+    P(P_die, die),
 
     F(touch_debounce_time),
     F(pain_debounce_time),
@@ -754,7 +741,7 @@ static const save_field_t game_locals_t_fields[] = {
 
     F(autosaved),
 
-    SA(level_entry_t, level_entries),
+    S(level_entry_t, level_entries),
     { 0 }
 };
 #undef STRUCT
@@ -865,13 +852,8 @@ static void write_string(const char *name, const char *s)
     write_str("%*s \"%s\"\n", indent(name), buffer);
 }
 
-static void write_byte_v(const char *name, const byte *p, int n)
+static void write_bstring(const char *name, const byte *p, int n)
 {
-    if (n == 1) {
-        write_int(name, *p);
-        return;
-    }
-
     write_str("%*s ", indent(name));
     int cnt = 1;
     for (int i = 0; i < n; i++)
@@ -980,8 +962,8 @@ static void write_field(const save_field_t *field, const void *from, const void 
         return;
 
     switch (field->kind) {
-    case F_BYTE:
-        write_byte_v(field->name, p, field->count);
+    case F_BOOL:
+        write_str("%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
         break;
     case F_INT:
         write_int(field->name, *(int32_t *)p);
@@ -995,9 +977,6 @@ static void write_field(const save_field_t *field, const void *from, const void 
     case F_UINT64:
         write_uint64(field->name, *(uint64_t *)p);
         break;
-    case F_BOOL:
-        write_str("%*s %s\n", indent(field->name), *(bool *)p ? "true" : "false");
-        break;
     case F_FLOAT:
         write_float(field->name, *(float *)p);
         break;
@@ -1008,6 +987,9 @@ static void write_field(const save_field_t *field, const void *from, const void 
         write_vec4(field->name, *(vec4_t *)p);
         break;
 
+    case F_BSTRING:
+        write_bstring(field->name, p, field->size);
+        break;
     case F_ZSTRING:
         write_string(field->name, (const char *)p);
         break;
@@ -1031,6 +1013,11 @@ static void write_field(const save_field_t *field, const void *from, const void 
 
     case F_STRUCT:
         write_struct(field, e, p);
+        break;
+
+    case F_OLD_ORIGIN:
+        if (((const edict_t *)to)->s.renderfx & RF_BEAM)
+            write_vec3(field->name, *(vec3_t *)p);
         break;
 
     case F_INVENTORY:
@@ -1323,13 +1310,8 @@ static uint64_t parse_uint64(void)
     return v;
 }
 
-static void parse_byte_v(byte *v, int n)
+static void read_bstring(byte *v, int n)
 {
-    if (n == 1) {
-        *v = parse_uint(255);
-        return;
-    }
-
     parse();
     if (line.len & 1 || line.len < 2 || line.len > n * 2)
         parse_error("unexpected number of characters");
@@ -1483,8 +1465,8 @@ static void read_field(const save_field_t *field, void *base)
     void *p = (byte *)base + field->ofs;
 
     switch (field->kind) {
-    case F_BYTE:
-        parse_byte_v(p, field->count);
+    case F_BOOL:
+        *(bool *)p = parse_bool();
         break;
     case F_INT:
         *(int32_t *)p = parse_int32();
@@ -1496,24 +1478,25 @@ static void read_field(const save_field_t *field, void *base)
     case F_UINT64:
         *(uint64_t *)p = parse_uint64();
         break;
-    case F_BOOL:
-        *(bool *)p = parse_bool();
-        break;
     case F_FLOAT:
         *(float *)p = parse_float();
         break;
     case F_VEC3:
+    case F_OLD_ORIGIN:
         *(vec3_t *)p = parse_vec3();
         break;
     case F_VEC4:
         *(vec4_t *)p = parse_vec4();
         break;
 
+    case F_BSTRING:
+        read_bstring(p, field->size);
+        break;
     case F_LSTRING:
         *(char **)p = read_string();
         break;
     case F_ZSTRING:
-        read_zstring(p, field->count);
+        read_zstring(p, field->size);
         break;
 
     case F_EDICT:
