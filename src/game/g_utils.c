@@ -269,20 +269,29 @@ char *etos(edict_t *ent)
     return va("%s @ %s", ent->classname, vtos(G_EntityCenter(ent)));
 }
 
-static const vec3_t VEC_UP = { 0, -1, 0 };
-static const vec3_t MOVEDIR_UP = { 0, 0, 1 };
-static const vec3_t VEC_DOWN = { 0, -2, 0 };
-static const vec3_t MOVEDIR_DOWN = { 0, 0, -1 };
+static vec3_t G_AnglesToMovedir(vec3_t a)
+{
+    // handle special values for yaw
+    if (a.pitch == 0 && a.roll == 0) {
+        if (a.yaw == -1)
+            return Vec3(0, 0, 1);
+        if (a.yaw == -2)
+            return Vec3(0, 0, -1);
+    }
+
+    AngleVectors(a, &a, NULL, NULL);
+
+    // avoid epsilon issues with axial
+    for (int i = 0; i < 3; i++)
+        if (fabsf(a.xyz[i]) < 1e-06f)
+            a.xyz[i] = 0.0f;
+
+    return a;
+}
 
 void G_SetMovedir(edict_t *ent)
 {
-    if (Vec3_IsEqual(ent->s.angles, VEC_UP))
-        ent->movedir = MOVEDIR_UP;
-    else if (Vec3_IsEqual(ent->s.angles, VEC_DOWN))
-        ent->movedir = MOVEDIR_DOWN;
-    else
-        AngleVectors(ent->s.angles, &ent->movedir, NULL, NULL);
-
+    ent->movedir = G_AnglesToMovedir(ent->s.angles);
     ent->s.angles = vec3_origin;
 }
 
