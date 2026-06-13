@@ -133,10 +133,7 @@ void THINK(Think_Delay)(edict_t *ent)
 
 void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global)
 {
-    //
-    // print the message
-    //
-    if ((ent->message) && !(activator->r.svflags & SVF_MONSTER)) {
+    if (ent->message && *ent->message && activator->client) {
         if (coop_global && coop.integer)
             G_ClientPrintf(NULL, PRINT_CENTER, "%s", ent->message);
         else
@@ -816,6 +813,11 @@ void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)
     default:
         cmd = "print";
         break;
+    }
+
+    if (ent && !ent->client) {
+        G_Printf("%s: %s to a non-client %s\n", __func__, cmd, etos(ent));
+        return;
     }
 
     va_start(argptr, fmt);
