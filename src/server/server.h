@@ -126,10 +126,14 @@ typedef enum {
     cs_spawned      // client is fully in game
 } clstate_t;
 
-#define MSG_RELIABLE        BIT(0)
-#define MSG_CLEAR           BIT(1)
-#define MSG_COMPRESS        BIT(2)
-#define MSG_COMPRESS_AUTO   BIT(3)
+typedef enum {
+    MSG_NONE            = 0U,
+    MSG_RELIABLE        = BIT(0),
+    MSG_CLEAR           = BIT(1),
+    MSG_COMPRESS        = BIT(2),
+    MSG_COMPRESS_AUTO   = BIT(3),
+    MSG_GAMESTATE       = MSG_RELIABLE | MSG_CLEAR | MSG_COMPRESS,
+} message_flags_t;
 
 #define ZPACKET_HEADER      5
 
@@ -439,7 +443,7 @@ void SV_SendAsyncPackets(void);
 
 void SV_ClientCommand(client_t *cl, const char *fmt, ...) q_printf(2, 3);
 void SV_BroadcastCommand(const char *fmt, ...) q_printf(1, 2);
-void SV_ClientAddMessage(client_t *client, int flags);
+void SV_ClientAddMessage(client_t *client, message_flags_t flags);
 void SV_ShutdownClientSend(client_t *client);
 void SV_InitClientSend(client_t *newcl);
 

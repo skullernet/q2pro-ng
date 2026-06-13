@@ -27,7 +27,7 @@ const game_export_t     *ge;
 
 static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
 {
-    int flags = reliable ? MSG_RELIABLE : 0;
+    message_flags_t flags = reliable ? MSG_RELIABLE : MSG_NONE;
     client_t *client;
 
     if (ent) {

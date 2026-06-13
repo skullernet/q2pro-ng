@@ -1232,27 +1232,30 @@ CVARS (console variables)
 ==========================================================
 */
 
-#define CVAR_ARCHIVE        BIT(0)      // set to cause it to be saved to vars.rc
-#define CVAR_USERINFO       BIT(1)      // added to userinfo when changed
-#define CVAR_SERVERINFO     BIT(2)      // added to serverinfo when changed
-#define CVAR_NOSET          BIT(3)      // don't allow change from console at all,
-                                        // but can be set from the command line
-#define CVAR_LATCH          BIT(4)      // save changes until server restart
-#define CVAR_CHEAT          BIT(5)      // can't be changed when connected
-#define CVAR_PRIVATE        BIT(6)      // never macro expanded or saved to config
-#define CVAR_ROM            BIT(7)      // can't be changed even from cmdline
-#define CVAR_MODIFIED       BIT(8)      // modified by user
-#define CVAR_CUSTOM         BIT(9)      // created by user
-#define CVAR_WEAK           BIT(10)     // doesn't have value
-#define CVAR_GAME           BIT(11)     // created by game library
-#define CVAR_NOARCHIVE      BIT(12)     // never saved to config
-#define CVAR_FILES          BIT(13)     // r_reload when changed
-#define CVAR_REFRESH        BIT(14)     // vid_restart when changed
-#define CVAR_SOUND          BIT(15)     // snd_restart when changed
+typedef enum : uint32_t {
+    CVAR_NONE           = 0U,
+    CVAR_ARCHIVE        = BIT(0),   // set to cause it to be saved to vars.rc
+    CVAR_USERINFO       = BIT(1),   // added to userinfo when changed
+    CVAR_SERVERINFO     = BIT(2),   // added to serverinfo when changed
+    CVAR_NOSET          = BIT(3),   // don't allow change from console at all,
+                                    // but can be set from the command line
+    CVAR_LATCH          = BIT(4),   // save changes until server restart
+    CVAR_CHEAT          = BIT(5),   // can't be changed when connected
+    CVAR_PRIVATE        = BIT(6),   // never macro expanded or saved to config
+    CVAR_ROM            = BIT(7),   // can't be changed even from cmdline
+    CVAR_MODIFIED       = BIT(8),   // modified by user
+    CVAR_CUSTOM         = BIT(9),   // created by user
+    CVAR_WEAK           = BIT(10),  // doesn't have value
+    CVAR_GAME           = BIT(11),  // created by game library
+    CVAR_NOARCHIVE      = BIT(12),  // never saved to config
+    CVAR_FILES          = BIT(13),  // r_reload when changed
+    CVAR_REFRESH        = BIT(14),  // vid_restart when changed
+    CVAR_SOUND          = BIT(15),  // snd_restart when changed
 
-#define CVAR_INFOMASK       (CVAR_USERINFO | CVAR_SERVERINFO)
-#define CVAR_MODIFYMASK     (CVAR_INFOMASK | CVAR_FILES | CVAR_REFRESH | CVAR_SOUND)
-#define CVAR_NOARCHIVEMASK  (CVAR_NOSET | CVAR_CHEAT | CVAR_PRIVATE | CVAR_ROM | CVAR_NOARCHIVE)
+    CVAR_INFOMASK       = CVAR_USERINFO | CVAR_SERVERINFO,
+    CVAR_MODIFYMASK     = CVAR_INFOMASK | CVAR_FILES | CVAR_REFRESH | CVAR_SOUND,
+    CVAR_NOARCHIVEMASK  = CVAR_NOSET | CVAR_CHEAT | CVAR_PRIVATE | CVAR_ROM | CVAR_NOARCHIVE,
+} cvar_flags_t;
 
 typedef struct {
     int integer;
@@ -1265,7 +1268,7 @@ typedef struct {
     vm_cvar_t *var;
     const char *name;
     const char *default_string;
-    unsigned flags;
+    cvar_flags_t flags;
 } vm_cvar_reg_t;
 
 #define VM_CVAR(name, def, flags) { &name, #name, def, flags }
@@ -1304,75 +1307,82 @@ COLLISION DETECTION
 ==============================================================
 */
 
+typedef enum : uint32_t {
 // lower bits are stronger, and will eat weaker brushes completely
-#define CONTENTS_NONE           0U
-#define CONTENTS_SOLID          BIT(0)      // an eye is never valid in a solid
-#define CONTENTS_WINDOW         BIT(1)      // translucent, but not watery
-#define CONTENTS_AUX            BIT(2)
-#define CONTENTS_LAVA           BIT(3)
-#define CONTENTS_SLIME          BIT(4)
-#define CONTENTS_WATER          BIT(5)
-#define CONTENTS_MIST           BIT(6)
+    CONTENTS_NONE           = 0U,
+    CONTENTS_SOLID          = BIT(0),   // an eye is never valid in a solid
+    CONTENTS_WINDOW         = BIT(1),   // translucent, but not watery
+    CONTENTS_AUX            = BIT(2),
+    CONTENTS_LAVA           = BIT(3),
+    CONTENTS_SLIME          = BIT(4),
+    CONTENTS_WATER          = BIT(5),
+    CONTENTS_MIST           = BIT(6),
 
 // remaining contents are non-visible, and don't eat brushes
+    CONTENTS_NO_WATERJUMP   = BIT(13),  // KEX
+    CONTENTS_PROJECTILECLIP = BIT(14),  // KEX
+    CONTENTS_AREAPORTAL     = BIT(15),
 
-#define CONTENTS_NO_WATERJUMP   BIT(13)     // KEX
-#define CONTENTS_PROJECTILECLIP BIT(14)     // KEX
-#define CONTENTS_AREAPORTAL     BIT(15)
-
-#define CONTENTS_PLAYERCLIP     BIT(16)
-#define CONTENTS_MONSTERCLIP    BIT(17)
+    CONTENTS_PLAYERCLIP     = BIT(16),
+    CONTENTS_MONSTERCLIP    = BIT(17),
 
 // currents can be added to any other contents, and may be mixed
-#define CONTENTS_CURRENT_0      BIT(18)
-#define CONTENTS_CURRENT_90     BIT(19)
-#define CONTENTS_CURRENT_180    BIT(20)
-#define CONTENTS_CURRENT_270    BIT(21)
-#define CONTENTS_CURRENT_UP     BIT(22)
-#define CONTENTS_CURRENT_DOWN   BIT(23)
+    CONTENTS_CURRENT_0      = BIT(18),
+    CONTENTS_CURRENT_90     = BIT(19),
+    CONTENTS_CURRENT_180    = BIT(20),
+    CONTENTS_CURRENT_270    = BIT(21),
+    CONTENTS_CURRENT_UP     = BIT(22),
+    CONTENTS_CURRENT_DOWN   = BIT(23),
 
-#define CONTENTS_ORIGIN         BIT(24)     // removed before bsping an entity
+    CONTENTS_ORIGIN         = BIT(24),  // removed before bsping an entity
 
-#define CONTENTS_MONSTER        BIT(25)     // should never be on a brush, only in game
-#define CONTENTS_DEADMONSTER    BIT(26)
-#define CONTENTS_DETAIL         BIT(27)     // brushes to be added after vis leafs
-#define CONTENTS_TRANSLUCENT    BIT(28)     // auto set if any surface has trans
-#define CONTENTS_LADDER         BIT(29)
-
-//KEX
-#define CONTENTS_PLAYER         BIT(30)     // should never be on a brush, only in game
-#define CONTENTS_PROJECTILE     BIT(31)
-//KEX
-
-#define SURF_LIGHT              BIT(0)      // value will hold the light strength
-#define SURF_SLICK              BIT(1)      // effects game physics
-#define SURF_SKY                BIT(2)      // don't draw, but add to skybox
-#define SURF_WARP               BIT(3)      // turbulent water warp
-#define SURF_TRANS33            BIT(4)
-#define SURF_TRANS66            BIT(5)
-#define SURF_FLOWING            BIT(6)      // scroll towards angle
-#define SURF_NODRAW             BIT(7)      // don't bother referencing the texture
-
-#define SURF_ALPHATEST          BIT(25)     // used by KMQuake2
+    CONTENTS_MONSTER        = BIT(25),  // should never be on a brush, only in game
+    CONTENTS_DEADMONSTER    = BIT(26),
+    CONTENTS_DETAIL         = BIT(27),  // brushes to be added after vis leafs
+    CONTENTS_TRANSLUCENT    = BIT(28),  // auto set if any surface has trans
+    CONTENTS_LADDER         = BIT(29),
 
 //KEX
-#define SURF_N64_UV             BIT(28)
-#define SURF_N64_SCROLL_X       BIT(29)
-#define SURF_N64_SCROLL_Y       BIT(30)
-#define SURF_N64_SCROLL_FLIP    BIT(31)
+    CONTENTS_PLAYER         = BIT(30),  // should never be on a brush, only in game
+    CONTENTS_PROJECTILE     = BIT(31),
 //KEX
 
 // content masks
-#define MASK_ALL                (-1)
-#define MASK_SOLID              (CONTENTS_SOLID|CONTENTS_WINDOW)
-#define MASK_PLAYERSOLID        (CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER|CONTENTS_PLAYER)
-#define MASK_DEADSOLID          (CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_WINDOW)
-#define MASK_MONSTERSOLID       (CONTENTS_SOLID|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW|CONTENTS_MONSTER|CONTENTS_PLAYER)
-#define MASK_WATER              (CONTENTS_WATER|CONTENTS_LAVA|CONTENTS_SLIME)
-#define MASK_OPAQUE             (CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
-#define MASK_SHOT               (CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_PLAYER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
-#define MASK_CURRENT            (CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
-#define MASK_PROJECTILE         (MASK_SHOT|CONTENTS_PROJECTILECLIP)
+    MASK_ALL                = ~CONTENTS_NONE,
+    MASK_SOLID              = CONTENTS_SOLID | CONTENTS_WINDOW,
+    MASK_PLAYERSOLID        = CONTENTS_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_WINDOW | CONTENTS_MONSTER | CONTENTS_PLAYER,
+    MASK_DEADSOLID          = CONTENTS_SOLID | CONTENTS_PLAYERCLIP | CONTENTS_WINDOW,
+    MASK_MONSTERSOLID       = CONTENTS_SOLID | CONTENTS_MONSTERCLIP | CONTENTS_WINDOW | CONTENTS_MONSTER | CONTENTS_PLAYER,
+    MASK_WATER              = CONTENTS_WATER | CONTENTS_LAVA | CONTENTS_SLIME,
+    MASK_OPAQUE             = CONTENTS_SOLID | CONTENTS_LAVA | CONTENTS_SLIME,
+    MASK_SHOT               = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_WINDOW | CONTENTS_DEADMONSTER,
+    MASK_CURRENT            = CONTENTS_CURRENT_0 | CONTENTS_CURRENT_90 | CONTENTS_CURRENT_180 | CONTENTS_CURRENT_270 |
+                              CONTENTS_CURRENT_UP | CONTENTS_CURRENT_DOWN,
+    MASK_PROJECTILE         = MASK_SHOT | CONTENTS_PROJECTILECLIP,
+} contents_t;
+
+typedef enum : uint32_t {
+    SURF_NONE               = 0U,
+    SURF_LIGHT              = BIT(0),   // value will hold the light strength
+    SURF_SLICK              = BIT(1),   // effects game physics
+    SURF_SKY                = BIT(2),   // don't draw, but add to skybox
+    SURF_WARP               = BIT(3),   // turbulent water warp
+    SURF_TRANS33            = BIT(4),
+    SURF_TRANS66            = BIT(5),
+    SURF_FLOWING            = BIT(6),   // scroll towards angle
+    SURF_NODRAW             = BIT(7),   // don't bother referencing the texture
+
+    SURF_ALPHATEST          = BIT(25),  // used by KMQuake2
+
+//KEX
+    SURF_N64_UV             = BIT(28),
+    SURF_N64_SCROLL_X       = BIT(29),
+    SURF_N64_SCROLL_Y       = BIT(30),
+    SURF_N64_SCROLL_FLIP    = BIT(31),
+//KEX
+
+    SURF_TRANS_MASK         = SURF_TRANS33 | SURF_TRANS66,
+} surface_flags_t;
 
 // flags for CM_InVis()
 typedef enum {
@@ -1380,6 +1390,17 @@ typedef enum {
     VIS_PHS     = 1,
     VIS_NOAREAS = 2     // can be OR'ed with one of above
 } vis_t;
+
+// 0-2 are axial planes
+typedef enum {
+    PLANE_X,
+    PLANE_Y,
+    PLANE_Z,
+    PLANE_ANYX,
+    PLANE_ANYY,
+    PLANE_ANYZ,
+    PLANE_NON_AXIAL
+} plane_type_t;
 
 // plane_t structure
 typedef struct {
@@ -1396,31 +1417,23 @@ static inline float PlaneDiff(vec3_t v, const cplane_t *p)
     return Vec3_Dot(v, p->normal) - p->dist;
 }
 
-// 0-2 are axial planes
-#define PLANE_X         0
-#define PLANE_Y         1
-#define PLANE_Z         2
-#define PLANE_NON_AXIAL 6
-
-typedef unsigned int contents_t;
-
-enum {
+typedef enum {
     MATERIAL_ID_DEFAULT,
     MATERIAL_ID_LADDER,
     MATERIAL_RESERVED_COUNT
-};
+} material_id_t;
 
 typedef struct {
     char    material[16];
 } material_info_t;
 
 typedef struct {
-    char    name[32];
-    char    material[16];
-    int     material_id;
-    int     flags;
-    int     value;
-    int     reserved;
+    char            name[32];
+    char            material[16];
+    int             material_id;
+    surface_flags_t flags;
+    int             value;
+    int             reserved;
 } surface_info_t;
 
 // a trace is returned when a box is swept through the world
@@ -1430,8 +1443,8 @@ typedef struct {
     float           fraction;       // time completed, 1.0 = didn't hit anything
     vec3_t          endpos;         // final position
     cplane_t        plane;          // surface normal at impact
-    int             surface_flags;  // surface flags
-    int             surface_id;     // surface id
+    surface_flags_t surface_flags;  // surface flags
+    int             surface_id;     // surface id, 0 = didn't hit anything
     contents_t      contents;       // contents on other side of surface hit
     int             entnum;         // not set by CM_*() functions
 } trace_t;
@@ -1470,13 +1483,15 @@ static inline void CM_ClipEntity(trace_t *dst, const trace_t *src, int entnum)
 //
 // button bits
 //
-#define BUTTON_NONE     0U
-#define BUTTON_ATTACK   BIT(0)
-#define BUTTON_USE      BIT(1)
-#define BUTTON_HOLSTER  BIT(2)
-#define BUTTON_JUMP     BIT(3)
-#define BUTTON_CROUCH   BIT(4)
-#define BUTTON_ANY      BIT(7)  // any key whatsoever
+typedef enum : uint32_t {
+    BUTTON_NONE     = 0U,
+    BUTTON_ATTACK   = BIT(0),
+    BUTTON_USE      = BIT(1),
+    BUTTON_HOLSTER  = BIT(2),
+    BUTTON_JUMP     = BIT(3),
+    BUTTON_CROUCH   = BIT(4),
+    BUTTON_ANY      = BIT(7),  // any key whatsoever
+} button_t;
 
 // usercmd_t is sent to the server each client frame
 typedef struct {
@@ -1489,56 +1504,60 @@ typedef struct {
 } usercmd_t;
 
 // entity_state_t->renderfx flags
-#define RF_NONE             0U
-#define RF_MINLIGHT         BIT(0)      // always have some light (viewmodel)
-#define RF_VIEWERMODEL      BIT(1)      // don't draw through eyes, only mirrors
-#define RF_WEAPONMODEL      BIT(2)      // only draw through eyes
-#define RF_FULLBRIGHT       BIT(3)      // always draw full intensity
-#define RF_DEPTHHACK        BIT(4)      // for view weapon Z crunching
-#define RF_TRANSLUCENT      BIT(5)
-#define RF_FRAMELERP        BIT(6)
-#define RF_BEAM             BIT(7)
-#define RF_CUSTOMSKIN       BIT(8)      // skin is an index in image_precache
-#define RF_GLOW             BIT(9)      // pulse lighting for bonus items
-#define RF_SHELL_RED        BIT(10)
-#define RF_SHELL_GREEN      BIT(11)
-#define RF_SHELL_BLUE       BIT(12)
-#define RF_NOSHADOW         BIT(13)     // used by YQ2
-#define RF_CASTSHADOW       BIT(14)     // used by KEX
+typedef enum : uint32_t {
+    RF_NONE             = 0U,
+    RF_MINLIGHT         = BIT(0),   // always have some light (viewmodel)
+    RF_VIEWERMODEL      = BIT(1),   // don't draw through eyes, only mirrors
+    RF_WEAPONMODEL      = BIT(2),   // only draw through eyes
+    RF_FULLBRIGHT       = BIT(3),   // always draw full intensity
+    RF_DEPTHHACK        = BIT(4),   // for view weapon Z crunching
+    RF_TRANSLUCENT      = BIT(5),
+    RF_FRAMELERP        = BIT(6),
+    RF_BEAM             = BIT(7),
+    RF_CUSTOMSKIN       = BIT(8),   // skin is an index in image_precache
+    RF_GLOW             = BIT(9),   // pulse lighting for bonus items
+    RF_SHELL_RED        = BIT(10),
+    RF_SHELL_GREEN      = BIT(11),
+    RF_SHELL_BLUE       = BIT(12),
+    RF_NOSHADOW         = BIT(13),  // used by YQ2
+    RF_CASTSHADOW       = BIT(14),  // used by KEX
 
 //ROGUE
-#define RF_IR_VISIBLE       BIT(15)
-#define RF_SHELL_DOUBLE     BIT(16)
-#define RF_SHELL_HALF_DAM   BIT(17)
-#define RF_USE_DISGUISE     BIT(18)
+    RF_IR_VISIBLE       = BIT(15),
+    RF_SHELL_DOUBLE     = BIT(16),
+    RF_SHELL_HALF_DAM   = BIT(17),
+    RF_USE_DISGUISE     = BIT(18),
 //ROGUE
 
 //KEX
-#define RF_SHELL_LITE_GREEN BIT(19)
-#define RF_CUSTOM_LIGHT     BIT(20)
-#define RF_FLARE            BIT(21)
-#define RF_OLD_FRAME_LERP   BIT(22)
-#define RF_DOT_SHADOW       BIT(23)
-#define RF_LOW_PRIORITY     BIT(24)
-#define RF_NO_LOD           BIT(25)
-#define RF_STAIR_STEP       BIT(26)
+    RF_SHELL_LITE_GREEN = BIT(19),
+    RF_CUSTOM_LIGHT     = BIT(20),
+    RF_FLARE            = BIT(21),
+    RF_OLD_FRAME_LERP   = BIT(22),
+    RF_DOT_SHADOW       = BIT(23),
+    RF_LOW_PRIORITY     = BIT(24),
+    RF_NO_LOD           = BIT(25),
+    RF_STAIR_STEP       = BIT(26),
 
-#define RF_FLARE_LOCK_ANGLE RF_MINLIGHT
-#define RF_BEAM_LIGHTNING   (RF_BEAM | RF_GLOW)
+    RF_FLARE_LOCK_ANGLE = RF_MINLIGHT,
+    RF_BEAM_LIGHTNING   = RF_BEAM | RF_GLOW,
 //KEX
+} renderfx_t;
 
 // player_state_t->refdef flags
-#define RDF_NONE            0U
-#define RDF_UNDERWATER      BIT(0)      // warp the screen as appropriate
-#define RDF_NOWORLDMODEL    BIT(1)      // used for player configuration screen
+typedef enum : uint32_t {
+    RDF_NONE            = 0U,
+    RDF_UNDERWATER      = BIT(0),   // warp the screen as appropriate
+    RDF_NOWORLDMODEL    = BIT(1),   // used for player configuration screen
 
 //ROGUE
-#define RDF_IRGOGGLES       BIT(2)
-#define RDF_UVGOGGLES       BIT(3)
+    RDF_IRGOGGLES       = BIT(2),
+    RDF_UVGOGGLES       = BIT(3),
 //ROGUE
 
-#define RDF_TELEPORT_BIT    BIT(4)      // used by Q2PRO (extended servers)
-#define RDF_NO_WEAPON_BOB   BIT(5)
+    RDF_TELEPORT_BIT    = BIT(4),
+    RDF_NO_WEAPON_BOB   = BIT(5),
+} rdflags_t;
 
 // hack to encode ATTN_STATIC more efficiently
 #define ATTN_ESCAPE_CODE    (ATTN_STATIC * 64)

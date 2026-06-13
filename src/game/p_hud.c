@@ -714,7 +714,7 @@ void G_SetStats(edict_t *ent)
     //
     // layouts
     //
-    ent->client->ps.stats[STAT_LAYOUTS] = 0;
+    ent->client->ps.stats[STAT_LAYOUTS] = LAYOUTS_NONE;
 
     if (deathmatch.integer) {
         if (ent->client->pers.health <= 0 || level.intermissiontime || ent->client->showscores)

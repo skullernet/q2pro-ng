@@ -227,7 +227,7 @@ Does NOT clean the buffer for multicast delivery purpose,
 unless told otherwise.
 =======================
 */
-void SV_ClientAddMessage(client_t *client, int flags)
+void SV_ClientAddMessage(client_t *client, message_flags_t flags)
 {
     sizebuf_t *buf;
     int len;

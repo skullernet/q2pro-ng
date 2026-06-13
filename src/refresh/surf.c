@@ -590,16 +590,17 @@ void GL_LoadWorld(const char *name)
     if (!bsp->has_bspx)
         remove_fake_sky_faces(bsp);
 
-    gl_static.nolm_mask = SURF_NOLM_MASK_DEFAULT;
-    gl_static.nodraw_mask = SURF_SKY | SURF_NODRAW;
-
     // allow lightmapped liquids in BSPX and N64 maps
     if (bsp->has_bspx || n64surfs > 100)
-        gl_static.nolm_mask = SURF_NOLM_MASK_REMASTER;
+        gl_static.nolm_mask = SURF_NODRAW | SURF_SKY;
+    else
+        gl_static.nolm_mask = SURF_NODRAW | SURF_SKY | SURF_WARP | SURF_TRANS_MASK;
 
     // allow bmodel skies in BSPX maps
     if (bsp->has_bspx)
         gl_static.nodraw_mask = SURF_NODRAW;
+    else
+        gl_static.nodraw_mask = SURF_NODRAW | SURF_SKY;
 
     // post process all surfaces
     upload_world_surfaces();

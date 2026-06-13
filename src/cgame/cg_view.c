@@ -42,7 +42,8 @@ static void CG_AddViewWeapon(void)
     const centity_t *ent;
     const player_state_t *ps;
     entity_t    gun;        // view model
-    int         i, flags;
+    renderfx_t  shellfx;
+    int         i;
 
     // allow the gun to be completely removed
     if (cg_gun.integer < 1)
@@ -169,9 +170,9 @@ static void CG_AddViewWeapon(void)
     trap_R_AddEntity(&gun);
 
     // add shell effect from player entity
-    if (ent && (flags = CG_EntityShellEffect(&ent->current))) {
+    if (ent && (shellfx = CG_EntityShellEffect(&ent->current))) {
         gun.alpha *= 0.30f;
-        gun.flags |= flags | RF_TRANSLUCENT;
+        gun.flags |= shellfx | RF_TRANSLUCENT;
         trap_R_AddEntity(&gun);
     }
 

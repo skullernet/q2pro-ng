@@ -516,9 +516,9 @@ static void CG_AddEntityLoopingSound(const entity_state_t *ent)
     trap_S_AddLoopingSound(ent->number, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, !(channel & CHAN_NO_STEREO));
 }
 
-int CG_EntityShellEffect(const entity_state_t *s)
+renderfx_t CG_EntityShellEffect(const entity_state_t *s)
 {
-    int renderfx = 0;
+    renderfx_t renderfx = RF_NONE;
 
     if (s->effects & EF_PENT)
         renderfx |= RF_SHELL_RED;
@@ -584,7 +584,8 @@ static void CG_AddPacketEntities(void)
     int                     i, pnum, autoanim;
     centity_t               *cent;
     const clientinfo_t      *ci;
-    unsigned int            effects, renderfx, shellfx;
+    effects_t               effects;
+    renderfx_t              renderfx, shellfx;
     bool                    has_trail;
     float                   ent_alpha;
     uint64_t                ent_flags;
@@ -594,7 +595,7 @@ static void CG_AddPacketEntities(void)
 
     // brush models can auto animate their frames
     autoanim = cg.time / 500;
-    autolerp = 1.0f - (cg.time % 500) * 0.002;
+    autolerp = 1.0f - (cg.time % 500) * 0.002f;
 
     autobob = 5 * sinf(cg.time / 400.0f);
 
@@ -876,7 +877,7 @@ static void CG_AddPacketEntities(void)
 
         // beams don't have color shells
         if (renderfx & RF_BEAM)
-            shellfx = 0;
+            shellfx = RF_NONE;
         else
             shellfx = CG_EntityShellEffect(s1);
 

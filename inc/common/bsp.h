@@ -31,7 +31,7 @@ typedef char material_t[16];
 
 typedef struct mtexinfo_s {
     char                name[MAX_TEXNAME];
-    int                 flags;
+    surface_flags_t     flags;
     int                 value;
     int                 surface_id;
     int                 material_id;
@@ -57,12 +57,6 @@ typedef struct {
     uint32_t    edge: 31;
     uint32_t    vert:  1;
 } msurfedge_t;
-
-#define SURF_TRANS_MASK (SURF_TRANS33 | SURF_TRANS66)
-#define SURF_COLOR_MASK (SURF_TRANS_MASK | SURF_WARP)
-
-#define SURF_NOLM_MASK_REMASTER     (SURF_SKY | SURF_NODRAW)
-#define SURF_NOLM_MASK_DEFAULT      (SURF_COLOR_MASK | SURF_NOLM_MASK_REMASTER)
 
 #define DSURF_PLANEBACK     1
 
@@ -121,7 +115,7 @@ typedef struct {
 } mbrushside_t;
 
 typedef struct {
-    int                 contents;
+    contents_t          contents;
     int                 numsides;
     mbrushside_t        *firstbrushside;
     unsigned            checkcount;         // to avoid repeated testings
@@ -138,7 +132,7 @@ typedef struct {
 #endif
     /* <====== */
 
-    int             contents;
+    contents_t      contents;
     int             cluster;
     int             area;
     int             numleafbrushes;

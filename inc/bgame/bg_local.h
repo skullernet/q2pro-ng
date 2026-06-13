@@ -65,21 +65,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 // STAT_LAYOUTS flags
-#define LAYOUTS_LAYOUT          BIT(0)
-#define LAYOUTS_INVENTORY       BIT(1)
-#define LAYOUTS_HIDE_HUD        BIT(2)
-#define LAYOUTS_INTERMISSION    BIT(3)
-#define LAYOUTS_HELP            BIT(4)
-#define LAYOUTS_HIDE_CROSSHAIR  BIT(5)
+typedef enum : uint32_t {
+    LAYOUTS_NONE            = 0U,
+    LAYOUTS_LAYOUT          = BIT(0),
+    LAYOUTS_INVENTORY       = BIT(1),
+    LAYOUTS_HIDE_HUD        = BIT(2),
+    LAYOUTS_INTERMISSION    = BIT(3),
+    LAYOUTS_HELP            = BIT(4),
+    LAYOUTS_HIDE_CROSSHAIR  = BIT(5),
+} layout_flags_t;
 
 // uf flags
-#define UF_AUTOSCREENSHOT   BIT(0)
-#define UF_AUTORECORD       BIT(1)
-#define UF_LOCALFOV         BIT(2)
-#define UF_MUTE_PLAYERS     BIT(3)
-#define UF_MUTE_OBSERVERS   BIT(4)
-#define UF_MUTE_MISC        BIT(5)
-#define UF_PLAYERFOV        BIT(6)
+typedef enum : uint32_t {
+    UF_NONE             = 0U,
+    UF_AUTOSCREENSHOT   = BIT(0),
+    UF_AUTORECORD       = BIT(1),
+    UF_LOCALFOV         = BIT(2),
+    UF_MUTE_PLAYERS     = BIT(3),
+    UF_MUTE_OBSERVERS   = BIT(4),
+    UF_MUTE_MISC        = BIT(5),
+    UF_PLAYERFOV        = BIT(6),
+} user_flags_t;
 
 //==============================================
 
@@ -88,56 +94,68 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // that happen constantly on the given entity.
 // An entity that has effects will be sent to the client
 // even if it has a zero index model.
-#define EF_NONE             0U
-#define EF_ROTATE           BIT(0)      // rotate (bonus items)
-#define EF_GIB              BIT(1)      // leave a trail
-#define EF_BOB              BIT(2)      // used by KEX
-#define EF_BLASTER          BIT(3)      // redlight + trail
-#define EF_ROCKET           BIT(4)      // redlight + trail
-#define EF_GRENADE          BIT(5)
-#define EF_HYPERBLASTER     BIT(6)
-#define EF_BFG              BIT(7)
-#define EF_COLOR_SHELL      BIT(8)
-#define EF_POWERSCREEN      BIT(9)
-#define EF_ANIM01           BIT(10)     // automatically cycle between frames 0 and 1 at 2 hz
-#define EF_ANIM23           BIT(11)     // automatically cycle between frames 2 and 3 at 2 hz
-#define EF_ANIM_ALL         BIT(12)     // automatically cycle through all frames at 2hz
-#define EF_ANIM_ALLFAST     BIT(13)     // automatically cycle through all frames at 10hz
-#define EF_FLIES            BIT(14)
-#define EF_QUAD             BIT(15)
-#define EF_PENT             BIT(16)
-#define EF_TELEPORTER       BIT(17)     // particle fountain
-#define EF_FLAG1            BIT(18)
-#define EF_FLAG2            BIT(19)
+typedef enum : uint32_t {
+    EF_NONE             = 0U,
+    EF_ROTATE           = BIT(0),   // rotate (bonus items)
+    EF_GIB              = BIT(1),   // leave a trail
+    EF_BOB              = BIT(2),   // used by KEX
+    EF_BLASTER          = BIT(3),   // redlight + trail
+    EF_ROCKET           = BIT(4),   // redlight + trail
+    EF_GRENADE          = BIT(5),
+    EF_HYPERBLASTER     = BIT(6),
+    EF_BFG              = BIT(7),
+    EF_COLOR_SHELL      = BIT(8),
+    EF_POWERSCREEN      = BIT(9),
+    EF_ANIM01           = BIT(10),  // automatically cycle between frames 0 and 1 at 2 hz
+    EF_ANIM23           = BIT(11),  // automatically cycle between frames 2 and 3 at 2 hz
+    EF_ANIM_ALL         = BIT(12),  // automatically cycle through all frames at 2hz
+    EF_ANIM_ALLFAST     = BIT(13),  // automatically cycle through all frames at 10hz
+    EF_FLIES            = BIT(14),
+    EF_QUAD             = BIT(15),
+    EF_PENT             = BIT(16),
+    EF_TELEPORTER       = BIT(17),  // particle fountain
+    EF_FLAG1            = BIT(18),
+    EF_FLAG2            = BIT(19),
 
-// RAFAEL
-#define EF_IONRIPPER        BIT(20)
-#define EF_GREENGIB         BIT(21)
-#define EF_BLUEHYPERBLASTER BIT(22)
-#define EF_SPINNINGLIGHTS   BIT(23)
-#define EF_PLASMA           BIT(24)
-#define EF_TRAP             BIT(25)
+//RAFAEL
+    EF_IONRIPPER        = BIT(20),
+    EF_GREENGIB         = BIT(21),
+    EF_BLUEHYPERBLASTER = BIT(22),
+    EF_SPINNINGLIGHTS   = BIT(23),
+    EF_PLASMA           = BIT(24),
+    EF_TRAP             = BIT(25),
+//RAFAEL
 
 //ROGUE
-#define EF_TRACKER          BIT(26)
-#define EF_DOUBLE           BIT(27)
-#define EF_SPHERETRANS      BIT(28)
-#define EF_TAGTRAIL         BIT(29)
-#define EF_HALF_DAMAGE      BIT(30)
-#define EF_TRACKERTRAIL     BIT(31)
+    EF_TRACKER          = BIT(26),
+    EF_DOUBLE           = BIT(27),
+    EF_SPHERETRANS      = BIT(28),
+    EF_TAGTRAIL         = BIT(29),
+    EF_HALF_DAMAGE      = BIT(30),
+    EF_TRACKERTRAIL     = BIT(31),
 //ROGUE
+
+    EF_TRAIL_MASK       = EF_ROCKET | EF_BLASTER | EF_HYPERBLASTER | EF_GIB | EF_GRENADE |
+                          EF_FLIES | EF_BFG | EF_TRAP | EF_FLAG1 | EF_FLAG2 | EF_TAGTRAIL |
+                          EF_TRACKERTRAIL | EF_TRACKER | EF_GREENGIB | EF_IONRIPPER |
+                          EF_BLUEHYPERBLASTER | EF_PLASMA,
+
+    EF_SHELL_MASK       = EF_COLOR_SHELL | EF_PENT | EF_QUAD | EF_DOUBLE | EF_HALF_DAMAGE,
+} effects_t;
 
 // entity_state_t->morefx flags
+typedef enum : uint32_t {
 //KEX
-#define EFX_NONE                0U
-#define EFX_DUALFIRE            BIT(0)
-#define EFX_HOLOGRAM            BIT(1)
-#define EFX_FLASHLIGHT          BIT(2)
-#define EFX_BARREL_EXPLODING    BIT(3)
-#define EFX_TELEPORTER2         BIT(4)
-#define EFX_GRENADE_LIGHT       BIT(5)
+    EFX_NONE                = 0U,
+    EFX_DUALFIRE            = BIT(0),
+    EFX_HOLOGRAM            = BIT(1),
+    EFX_FLASHLIGHT          = BIT(2),
+    EFX_BARREL_EXPLODING    = BIT(3),
+    EFX_TELEPORTER2         = BIT(4),
+    EFX_GRENADE_LIGHT       = BIT(5),
 //KEX
-#define EFX_STEAM               BIT(6)
+    EFX_STEAM               = BIT(6),
+} morefx_t;
 
 // entity_state_t->event values
 // entity events are for effects that take place relative
@@ -399,7 +417,11 @@ typedef enum {
 
     // [Paril-KEX]
     STAT_HEALTH_BARS, // two health bar values (0 - inactive, 1 - dead, 2-255 - alive)
+
+    STAT_END
 } stat_index_t;
+
+_Static_assert(STAT_END <= MAX_STATS, "Too many stats");
 
 typedef struct {
     char        name[MAX_QPATH];
@@ -452,25 +474,27 @@ typedef enum {
     PM_DEAD,
     PM_GIB,     // different bounding box
     PM_FREEZE
-} pmtype_t;
+} pmove_type_t;
 
 // pmove->pm_flags
-#define PMF_NONE            0U
-#define PMF_DUCKED          BIT(0)
-#define PMF_JUMP_HELD       BIT(1)
-#define PMF_ON_GROUND       BIT(2)
-#define PMF_TIME_WATERJUMP  BIT(3)      // pm_time is waterjump
-#define PMF_TIME_LAND       BIT(4)      // pm_time is time before rejump
-#define PMF_TIME_TELEPORT   BIT(5)      // pm_time is non-moving time
-#define PMF_NO_PREDICTION   BIT(6)      // temporarily disables prediction (used for grappling hook)
+typedef enum : uint32_t {
+    PMF_NONE            = 0U,
+    PMF_DUCKED          = BIT(0),
+    PMF_JUMP_HELD       = BIT(1),
+    PMF_ON_GROUND       = BIT(2),
+    PMF_TIME_WATERJUMP  = BIT(3),   // pm_time is waterjump
+    PMF_TIME_LAND       = BIT(4),   // pm_time is time before rejump
+    PMF_TIME_TELEPORT   = BIT(5),   // pm_time is non-moving time
+    PMF_NO_PREDICTION   = BIT(6),   // temporarily disables prediction (used for grappling hook)
 
 //KEX
-#define PMF_ON_LADDER                   BIT(7)
-#define PMF_NO_ANGULAR_PREDICTION       BIT(8)
-#define PMF_IGNORE_PLAYER_COLLISION     BIT(9)
-#define PMF_TIME_TRICK                  BIT(10)
-#define PMF_NO_GROUND_SEEK              BIT(11)
+    PMF_ON_LADDER                   = BIT(7),
+    PMF_NO_ANGULAR_PREDICTION       = BIT(8),
+    PMF_IGNORE_PLAYER_COLLISION     = BIT(9),
+    PMF_TIME_TRICK                  = BIT(10),
+    PMF_NO_GROUND_SEEK              = BIT(11),
 //KEX
+} pmove_flags_t;
 
 typedef enum {
     WATER_NONE,
@@ -523,8 +547,8 @@ typedef enum {
 stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
                                          contents_t mask, trace_func_t trace_func);
 
-typedef enum {
-    PHYSICS_PC = 0,
+typedef enum : uint32_t {
+    PHYSICS_PC           = 0U,
     PHYSICS_N64_MOVEMENT = BIT(0),
     PHYSICS_PSX_MOVEMENT = BIT(1),
     PHYSICS_PSX_SCALE    = BIT(2),

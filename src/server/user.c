@@ -19,8 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
-#define MSG_GAMESTATE   (MSG_RELIABLE | MSG_CLEAR | MSG_COMPRESS)
-
 /*
 ============================================================
 

@@ -96,7 +96,7 @@ typedef struct {
     player_heightfog_t  heightfog;
     float       frametime;          // seconds since last video frame
     float       time;               // time is used to auto animate
-    int         rdflags;            // RDF_UNDERWATER, etc
+    rdflags_t   rdflags;            // RDF_UNDERWATER, etc
     byte        areabits[MAX_MAP_AREA_BYTES];   // only areas with set bits will be drawn
 } refdef_t;
 
