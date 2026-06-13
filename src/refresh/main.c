@@ -1644,7 +1644,7 @@ void R_AddLight(const dlight_t *light)
     if (light->resolution > 0)
         dl->resolution = BIT(Q_clip(Q_log2(light->resolution), 8, gl_config.max_texture_size_log2));
     else
-        dl->resolution = 512;
+        dl->resolution = 256;
     dl->flags = light->flags;
     dl->key = light->key;
     if (light->color.r < 0 || light->color.g < 0 || light->color.b < 0)

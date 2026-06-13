@@ -852,6 +852,7 @@ static void CG_AddPacketEntities(void)
                 .radius = 512.0f,
                 .cone_angle = 22.0f,
                 .color = { 2, 2, 2 },
+                .resolution = 512,
             };
 
             if (s1->number == cg.frame->ps.clientnum) {
