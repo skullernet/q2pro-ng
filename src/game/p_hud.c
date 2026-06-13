@@ -480,10 +480,7 @@ void G_SetCoopStats(edict_t *ent)
         ent->client->ps.stats[STAT_LIVES] = 0;
 
     // stat for text on what we're doing for respawn
-    if (ent->client->coop_respawn_state)
-        ent->client->ps.stats[STAT_COOP_RESPAWN] = CONFIG_COOP_RESPAWN_STRING + (ent->client->coop_respawn_state - COOP_RESPAWN_IN_COMBAT);
-    else
-        ent->client->ps.stats[STAT_COOP_RESPAWN] = 0;
+    ent->client->ps.stats[STAT_COOP_RESPAWN] = ent->client->coop_respawn_state;
 }
 
 static int G_EncodeHealthBar(int bar)

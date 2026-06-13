@@ -870,7 +870,7 @@ static void CTFSetIDView(edict_t *ent)
     tr = G_TraceLine(ent->s.origin, forward, ent->s.number, MASK_SOLID);
     hit = &g_edicts[tr.entnum];
     if (tr.fraction < 1 && hit->client) {
-        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + tr.entnum;
+        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CS_CTF_PLAYER_NAME + tr.entnum;
         if (hit->client->resp.ctf_team == CTF_TEAM1)
             ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = imageindex_sbfctf1;
         else if (hit->client->resp.ctf_team == CTF_TEAM2)
@@ -898,7 +898,7 @@ static void CTFSetIDView(edict_t *ent)
         }
     }
     if (bd > 0.90f) {
-        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CONFIG_CTF_PLAYER_NAME + best->s.number;
+        ent->client->ps.stats[STAT_CTF_ID_VIEW] = CS_CTF_PLAYER_NAME + best->s.number;
         if (best->client->resp.ctf_team == CTF_TEAM1)
             ent->client->ps.stats[STAT_CTF_ID_VIEW_COLOR] = imageindex_sbfctf1;
         else if (best->client->resp.ctf_team == CTF_TEAM2)
@@ -916,16 +916,14 @@ void SetCTFStats(edict_t *ent)
         return;
 
     if (ctfgame.match > MATCH_NONE)
-        ent->client->ps.stats[STAT_CTF_MATCH] = CONFIG_CTF_MATCH;
+        ent->client->ps.stats[STAT_CTF_MATCH] = CS_CTF_MATCH;
     else
         ent->client->ps.stats[STAT_CTF_MATCH] = 0;
 
-#if 0
     if (ctfgame.warnactive)
-        ent->client->ps.stats[STAT_CTF_TEAMINFO] = CONFIG_CTF_TEAMINFO;
+        ent->client->ps.stats[STAT_CTF_TEAMINFO] = CS_CTF_TEAMINFO;
     else
         ent->client->ps.stats[STAT_CTF_TEAMINFO] = 0;
-#endif
 
     // ghosting
     if (ent->client->resp.ghost) {
@@ -2874,12 +2872,12 @@ bool CTFCheckRules(void)
             else
                 Q_snprintf(text, sizeof(text), "SETUP: %d not ready", j);
 
-            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CS_CTF_MATCH, text);
             break;
 
         case MATCH_PREGAME:
             Q_snprintf(text, sizeof(text), "%02d:%02d UNTIL START", t / 60, t % 60);
-            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CS_CTF_MATCH, text);
 
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
@@ -2889,7 +2887,7 @@ bool CTFCheckRules(void)
 
         case MATCH_GAME:
             Q_snprintf(text, sizeof(text), "%02d:%02d MATCH", t / 60, t % 60);
-            trap_SetConfigstring(CONFIG_CTF_MATCH, text);
+            trap_SetConfigstring(CS_CTF_MATCH, text);
             if (t <= 10 && !ctfgame.countdown) {
                 ctfgame.countdown = true;
                 G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("world/10_0.wav"), 1, ATTN_NONE);
@@ -2923,12 +2921,12 @@ bool CTFCheckRules(void)
             if (team1 - team2 >= 2 && team2 >= 2) {
                 if (ctfgame.warnactive != CTF_TEAM1) {
                     ctfgame.warnactive = CTF_TEAM1;
-                    trap_SetConfigstring(CONFIG_CTF_TEAMINFO, "WARNING: Red has too many players");
+                    trap_SetConfigstring(CS_CTF_TEAMINFO, "WARNING: Red has too many players");
                 }
             } else if (team2 - team1 >= 2 && team1 >= 2) {
                 if (ctfgame.warnactive != CTF_TEAM2) {
                     ctfgame.warnactive = CTF_TEAM2;
-                    trap_SetConfigstring(CONFIG_CTF_TEAMINFO, "WARNING: Blue has too many players");
+                    trap_SetConfigstring(CS_CTF_TEAMINFO, "WARNING: Blue has too many players");
                 }
             } else
                 ctfgame.warnactive = 0;

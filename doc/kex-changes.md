@@ -45,7 +45,7 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * All view pitching effects have been moved to client and are server FPS
   independent. Weapon and damage kicks are processed at 10 FPS like in vanilla.
 * Horizontal movement speed on ladders increased by 50%.
-* Maximum configstring length increased to 8192 characters.
+* Maximum configstring length increased to 4096 characters.
 * Brush models no longer pollute configstring namespace.
 * Server checks all entity clusters for visibility rather than falling back to
   topnode check (which can be slow).

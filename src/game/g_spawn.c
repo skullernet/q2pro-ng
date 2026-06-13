@@ -1625,7 +1625,7 @@ static void G_InitStatusbar(void)
         }
 
         sb_if(STAT_HEALTH_BARS),
-            sb_xv(0), sb_yt(24), sb_health_bars(STAT_HEALTH_BARS, CONFIG_HEALTH_BAR_NAME),
+            sb_xv(0), sb_yt(24), sb_health_bars(STAT_HEALTH_BARS, CS_HEALTH_BAR_NAME),
         sb_endif();
     } else if (G_TeamplayEnabled()) {
         CTFPrecache();
@@ -1698,7 +1698,7 @@ static void G_InitStatusbar(void)
         }
 
         // team info
-        //sb_if(STAT_CTF_TEAMINFO), sb_xl(0), sb_yb(-88), sb_stat_string(STAT_CTF_TEAMINFO), sb_endif();
+        sb_if(STAT_CTF_TEAMINFO), sb_xl(0), sb_yb(-88), sb_stat_string(STAT_CTF_TEAMINFO), sb_endif();
     } else {
         // dm
         // frags
@@ -1895,7 +1895,7 @@ void SP_worldspawn(edict_t *ent)
             pm_config.physics_flags |= PHYSICS_DEATHMATCH;
     }
 
-    trap_SetConfigstring(CONFIG_PHYSICS_FLAGS, va("%d", pm_config.physics_flags));
+    trap_SetConfigstring(CS_PHYSICS_FLAGS, va("%d", pm_config.physics_flags));
 
     trap_SetConfigstring(CS_AIRACCEL, va("%d", sv_airaccelerate.integer));
     pm_config.airaccel = sv_airaccelerate.integer;
@@ -2017,15 +2017,10 @@ void SP_worldspawn(edict_t *ent)
 
     // coop respawn strings
     if (coop.integer) {
-        static const char *const str[] = {
-            "Can't respawn - in combat",
-            "Can't respawn - bad area",
-            "Can't respawn - blocked by something",
-            "Waiting to respawn...",
-            "No lives left; leave the level to respawn the team"
-        };
-
-        for (int i = 0; i < q_countof(str); i++)
-            trap_SetConfigstring(CONFIG_COOP_RESPAWN_STRING + i, str[i]);
+        trap_SetConfigstring(CS_COOP_RESPAWN_IN_COMBAT, "Can't respawn - in combat");
+        trap_SetConfigstring(CS_COOP_RESPAWN_BAD_AREA, "Can't respawn - bad area");
+        trap_SetConfigstring(CS_COOP_RESPAWN_BLOCKED, "Can't respawn - blocked by something");
+        trap_SetConfigstring(CS_COOP_RESPAWN_WAITING, "Waiting to respawn...");
+        trap_SetConfigstring(CS_COOP_RESPAWN_NO_LIVES, "No lives left; leave the level to respawn the team");
     }
 }

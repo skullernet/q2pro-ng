@@ -1829,7 +1829,7 @@ void USE(use_target_healthbar)(edict_t *ent, edict_t *other, edict_t *activator)
 
         ent->enemy = target;
         level.health_bar_entities[i] = ent;
-        trap_SetConfigstring(CONFIG_HEALTH_BAR_NAME, ent->message);
+        trap_SetConfigstring(CS_HEALTH_BAR_NAME, ent->message);
         return;
     }
 

@@ -810,13 +810,13 @@ qvm_exported void G_RunFrame(int64_t time)
             if (!player->r.inuse)
                 continue;
             if (player->client->respawn_time >= level.time)
-                player->client->coop_respawn_state = COOP_RESPAWN_WAITING;
+                player->client->coop_respawn_state = CS_COOP_RESPAWN_WAITING;
             else if (g_coop_enable_lives.integer && player->health <= 0 && player->client->pers.lives == 0)
-                player->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
+                player->client->coop_respawn_state = CS_COOP_RESPAWN_NO_LIVES;
             else if (g_coop_enable_lives.integer && G_AnyDeadPlayersWithoutLives())
-                player->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
+                player->client->coop_respawn_state = CS_COOP_RESPAWN_NO_LIVES;
             else
-                player->client->coop_respawn_state = COOP_RESPAWN_NONE;
+                player->client->coop_respawn_state = 0;
         }
     }
 
@@ -890,7 +890,7 @@ qvm_exported void G_RunFrame(int64_t time)
             for (int i = 0; i < game.maxclients; i++) {
                 edict_t *player = &g_edicts[i];
                 if (player->r.inuse)
-                    player->client->coop_respawn_state = COOP_RESPAWN_NONE;
+                    player->client->coop_respawn_state = 0;
             }
         }
     }

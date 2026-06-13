@@ -2237,7 +2237,7 @@ struct gclient_s {
     int last_step_time;
     vec3_t last_ladder_pos; // for ladder step sounds
     gtime_t last_ladder_sound;
-    coop_respawn_t coop_respawn_state;
+    cs_index_t coop_respawn_state;
     gtime_t last_damage_time;
 
     // [Paril-KEX] these are now per-player, to work better in coop

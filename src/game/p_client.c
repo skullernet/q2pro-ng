@@ -795,7 +795,7 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     // ZOID
     //  set player name field (used in id_state view)
     if (G_TeamplayEnabled())
-        trap_SetConfigstring(CONFIG_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
+        trap_SetConfigstring(CS_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
     // ZOID
 
     // fov
@@ -2940,39 +2940,39 @@ static edict_t *G_FindSquadRespawnTarget(vec3_t *spot)
 
         // check combat state; we can't have taken damage recently
         if (player->client->last_damage_time >= level.time) {
-            player->client->coop_respawn_state = COOP_RESPAWN_IN_COMBAT;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_IN_COMBAT;
             continue;
         }
 
         // check if any monsters are currently targeting us
         // or searching for us
         if (G_MonstersSearchingFor(player)) {
-            player->client->coop_respawn_state = COOP_RESPAWN_IN_COMBAT;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_IN_COMBAT;
             continue;
         }
 
         // check firing state; if any enemies are mad at any players,
         // don't respawn until everybody has cooled down
         if (monsters_searching_for_anybody && player->client->last_firing_time >= level.time) {
-            player->client->coop_respawn_state = COOP_RESPAWN_IN_COMBAT;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_IN_COMBAT;
             continue;
         }
 
         // check positioning; we must be on world ground
         if (player->groundentity != world) {
-            player->client->coop_respawn_state = COOP_RESPAWN_BAD_AREA;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_BAD_AREA;
             continue;
         }
 
         // can't be in liquid
         if (player->waterlevel >= WATER_UNDER) {
-            player->client->coop_respawn_state = COOP_RESPAWN_BAD_AREA;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_BAD_AREA;
             continue;
         }
 
         // good player; pick a spot
         if (!G_FindRespawnSpot(player, spot)) {
-            player->client->coop_respawn_state = COOP_RESPAWN_BLOCKED;
+            player->client->coop_respawn_state = CS_COOP_RESPAWN_BLOCKED;
             continue;
         }
 
@@ -3008,7 +3008,7 @@ static bool G_CoopRespawn(edict_t *ent)
     // first pass: if we have no lives left, just move to spectator
     if (g_coop_enable_lives.integer && !ent->client->pers.lives) {
         state = RESPAWN_SPECTATE;
-        ent->client->coop_respawn_state = COOP_RESPAWN_NO_LIVES;
+        ent->client->coop_respawn_state = CS_COOP_RESPAWN_NO_LIVES;
     }
 
     // second pass: check for where to spawn
@@ -3063,7 +3063,7 @@ static bool G_CoopRespawn(edict_t *ent)
         use_squad_respawn = false;
     } else if (state == RESPAWN_SPECTATE) {
         if (!ent->client->coop_respawn_state)
-            ent->client->coop_respawn_state = COOP_RESPAWN_WAITING;
+            ent->client->coop_respawn_state = CS_COOP_RESPAWN_WAITING;
 
         if (!ent->client->resp.spectator) {
             // move us to spectate just so we don't have to twiddle

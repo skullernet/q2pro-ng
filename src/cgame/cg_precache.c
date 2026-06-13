@@ -438,6 +438,11 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
+    if (index == CS_PHYSICS_FLAGS) {
+        pm_config.physics_flags = Q_atoi(s);
+        return;
+    }
+
     if (index == CS_MAXCLIENTS) {
         cgs.maxclients = Q_atoi(s);
         return;
@@ -465,11 +470,6 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
 
     if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
         CG_LoadClientinfo(&cgs.clientinfo[index - CS_PLAYERSKINS], s);
-        return;
-    }
-
-    if (index == CONFIG_PHYSICS_FLAGS) {
-        pm_config.physics_flags = Q_atoi(s);
         return;
     }
 }

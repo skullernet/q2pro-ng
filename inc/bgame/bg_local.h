@@ -32,37 +32,58 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define INFINITE_AMMO   MASK(AMMO_BITS)
 
 //
-// config strings are a general means of communication from
-// the server to all connected clients.
-// Each config string can be at most MAX_QPATH characters.
+// Config strings are a general means of communication from the server to all
+// connected clients. All config strings except the very first one (CS_NAME)
+// are private to bgame and not interpreted by engine. Each config string can
+// be at most MAX_NET_STRING characters.
 //
+
 #define MAX_ITEMS           256
 #define MAX_CLIENTWEAPONS   256     // PGM -- upped from 16 to fit the chainfist vwep
-#define MAX_GENERAL         512     // general config strings
 #define MAX_WHEEL_ITEMS     32
 
-#define CS_NAME             0       // server and game both reference!!!
-#define CS_CDTRACK          1
-#define CS_SKY              2
-#define CS_STATUSBAR        3       // display program string
-#define CS_AIRACCEL         4
-#define CS_MAXCLIENTS       5
-#define CS_MODELS           6
-#define CS_SOUNDS           (CS_MODELS + MAX_MODELS)
-#define CS_IMAGES           (CS_SOUNDS + MAX_SOUNDS)
-#define CS_LIGHTS           (CS_IMAGES + MAX_IMAGES)
-#define CS_ITEMS            (CS_LIGHTS + MAX_LIGHTSTYLES)
-#define CS_CLIENTWEAPONS    (CS_ITEMS + MAX_ITEMS)
-#define CS_PLAYERSKINS      (CS_CLIENTWEAPONS + MAX_CLIENTWEAPONS)
-#define CS_GENERAL          (CS_PLAYERSKINS + MAX_CLIENTS)
-#define CS_WHEEL_WEAPONS    (CS_GENERAL + MAX_GENERAL)
-#define CS_WHEEL_AMMO       (CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS)
-#define CS_WHEEL_POWERUPS   (CS_WHEEL_AMMO + MAX_WHEEL_ITEMS)
-#define CS_END              (CS_GENERAL + MAX_GENERAL)
+typedef enum {
+// generic parameters
+    CS_CDTRACK = 1,
+    CS_SKY,
+    CS_STATUSBAR,
+    CS_AIRACCEL,
+    CS_PHYSICS_FLAGS,
+    CS_MAXCLIENTS,
 
-#if CS_END > MAX_CONFIGSTRINGS
-#error Too many configstrings
-#endif
+// generic configstring ranges
+    CS_MODELS               = 32,
+    CS_SOUNDS               = CS_MODELS + MAX_MODELS,
+    CS_IMAGES               = CS_SOUNDS + MAX_SOUNDS,
+    CS_LIGHTS               = CS_IMAGES + MAX_IMAGES,
+    CS_ITEMS                = CS_LIGHTS + MAX_LIGHTSTYLES,
+    CS_CLIENTWEAPONS        = CS_ITEMS + MAX_ITEMS,
+    CS_PLAYERSKINS          = CS_CLIENTWEAPONS + MAX_CLIENTWEAPONS,
+    CS_WHEEL_WEAPONS        = CS_PLAYERSKINS + MAX_CLIENTS,
+    CS_WHEEL_AMMO           = CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS,
+    CS_WHEEL_POWERUPS       = CS_WHEEL_AMMO + MAX_WHEEL_ITEMS,
+    CS_WHEEL_POWERUPS_LAST  = CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS - 1,
+
+// CTF stats
+    CS_CTF_MATCH,
+    CS_CTF_TEAMINFO,
+    CS_CTF_PLAYER_NAME,
+    CS_CTF_PLAYER_NAME_LAST = CS_CTF_PLAYER_NAME + MAX_CLIENTS - 1,
+
+// coop respawn strings
+    CS_COOP_RESPAWN_IN_COMBAT,  // player is in combat
+    CS_COOP_RESPAWN_BAD_AREA,   // player not in a good spot
+    CS_COOP_RESPAWN_BLOCKED,    // spawning was blocked by something
+    CS_COOP_RESPAWN_WAITING,    // for players that are waiting to respawn
+    CS_COOP_RESPAWN_NO_LIVES,   // out of lives, so need to wait until level switch
+
+// misc
+    CS_HEALTH_BAR_NAME, // active health bar name
+
+    CS_END
+} cs_index_t;
+
+_Static_assert(CS_END <= MAX_CONFIGSTRINGS, "Too many configstrings");
 
 // STAT_LAYOUTS flags
 typedef enum : uint32_t {
@@ -329,36 +350,6 @@ typedef enum {
     PRINT_TYPEWRITER,
     PRINT_CENTER,
 } print_level_t;
-
-// state for coop respawning; used to select which
-// message to print for the player this is set on.
-typedef enum {
-    COOP_RESPAWN_NONE, // no messagee
-    COOP_RESPAWN_IN_COMBAT, // player is in combat
-    COOP_RESPAWN_BAD_AREA, // player not in a good spot
-    COOP_RESPAWN_BLOCKED, // spawning was blocked by something
-    COOP_RESPAWN_WAITING, // for players that are waiting to respawn
-    COOP_RESPAWN_NO_LIVES, // out of lives, so need to wait until level switch
-    COOP_RESPAWN_TOTAL
-} coop_respawn_t;
-
-// reserved general CS ranges
-enum {
-    CONFIG_CTF_MATCH = CS_GENERAL,
-    CONFIG_CTF_TEAMINFO,
-    CONFIG_CTF_PLAYER_NAME,
-    CONFIG_CTF_PLAYER_NAME_END = CONFIG_CTF_PLAYER_NAME + MAX_CLIENTS,
-
-    // nb: offset by 1 since NONE is zero
-    CONFIG_COOP_RESPAWN_STRING,
-    CONFIG_COOP_RESPAWN_STRING_END = CONFIG_COOP_RESPAWN_STRING + (COOP_RESPAWN_TOTAL - 1),
-
-    // [Paril-KEX] see enum physics_flags_t
-    CONFIG_PHYSICS_FLAGS,
-    CONFIG_HEALTH_BAR_NAME, // active health bar name
-
-    CONFIG_LAST
-};
 
 // player_state->stats[] indexes
 typedef enum {
