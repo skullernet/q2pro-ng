@@ -406,6 +406,39 @@ int CM_BoxLeafs_headnode(box3_t box, const mleaf_t **list,
 }
 
 /*
+================
+CM_PointContents
+================
+*/
+contents_t CM_PointContents(vec3_t p, const mnode_t *headnode)
+{
+    if (!headnode)
+        return CONTENTS_NONE;   // map not loaded
+
+    const mleaf_t *leaf = BSP_PointLeaf(headnode, p);
+    contents_t contents = CONTENTS_NONE;
+
+    for (int i = 0; i < leaf->numleafbrushes; i++) {
+        const mbrush_t *brush = leaf->firstleafbrush[i];
+        const mbrushside_t *side = brush->firstbrushside;
+        int j;
+
+        if (!brush->numsides)
+            continue;
+
+        for (j = 0; j < brush->numsides; j++, side++)
+            if (PlaneDiff(p, side->plane) > 0)
+                break;
+
+        // inside this brush
+        if (j == brush->numsides)
+            contents |= brush->contents;
+    }
+
+    return contents;
+}
+
+/*
 ==================
 CM_TransformedPointContents
 
@@ -413,14 +446,14 @@ Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
-int CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
-                                vec3_t origin, vec3_t angles)
+contents_t CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
+                                       vec3_t origin, vec3_t angles)
 {
     vec3_t      p_l;
     vec3_t      axis[3];
 
     if (!headnode)
-        return 0;
+        return CONTENTS_NONE;
 
     // subtract origin offset
     p_l = Vec3_Sub(p, origin);
@@ -431,7 +464,7 @@ int CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
         p_l = Vec3_Rotate(p_l, axis);
     }
 
-    return BSP_PointLeaf(headnode, p_l)->contents;
+    return CM_PointContents(p_l, headnode);
 }
 
 /*

@@ -42,14 +42,8 @@ void        CM_LoadOverride(cm_t *cm, char *server, size_t server_size);
 const mnode_t   *CM_HeadnodeForBox(box3_t box);
 
 // returns an ORed contents mask
-static inline int CM_PointContents(vec3_t p, const mnode_t *headnode)
-{
-    if (!headnode)
-        return 0;   // map not loaded
-    return BSP_PointLeaf(headnode, p)->contents;
-}
-
-int         CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
+contents_t  CM_PointContents(vec3_t p, const mnode_t *headnode);
+contents_t  CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
                                         vec3_t origin, vec3_t angles);
 
 void        CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headnode);
