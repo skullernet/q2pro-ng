@@ -2615,9 +2615,9 @@ qvm_exported void G_ClientThink(int clientnum)
 
         // [Paril-KEX]
         if (!(ent->clipmask & CONTENTS_PLAYER))
-            client->ps.pm_flags |= PMF_IGNORE_PLAYER_COLLISION;
+            client->ps.pm_flags |= PMF_NO_PLAYER_COLLISION;
         else
-            client->ps.pm_flags &= ~PMF_IGNORE_PLAYER_COLLISION;
+            client->ps.pm_flags &= ~PMF_NO_PLAYER_COLLISION;
 
         // PGM  trigger_gravity support
         if (ent->no_gravity_time > level.time) {

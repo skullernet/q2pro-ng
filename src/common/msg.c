@@ -510,7 +510,7 @@ static const netfield_t player_state_fields[] = {
     NETF(velocity.x, NETF_FLOAT),
     NETF(velocity.y, NETF_FLOAT),
     NETF(velocity.z, NETF_FLOAT),
-    NETF(pm_flags, 16),
+    NETF(pm_flags, NETF_LEB),
     NETF(pm_time, 16),
     NETF(gravity, -16),
     NETF(delta_angles.x, NETF_ANGLE),

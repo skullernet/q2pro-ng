@@ -106,7 +106,7 @@ static contents_t PM_TraceMask(void)
     else
         mask = MASK_PLAYERSOLID;
 
-    if (pm->s->pm_flags & PMF_IGNORE_PLAYER_COLLISION)
+    if (pm->s->pm_flags & PMF_NO_PLAYER_COLLISION)
         mask &= ~CONTENTS_PLAYER;
 
     return mask;
@@ -623,7 +623,7 @@ static void PM_CategorizePosition(void)
 
             // hitting solid ground will end a waterjump
             if (pm->s->pm_flags & PMF_TIME_WATERJUMP) {
-                pm->s->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT | PMF_TIME_TRICK);
+                pm->s->pm_flags &= ~PMF_TIME_MASK;
                 pm->s->pm_time = 0;
             }
 
@@ -1117,7 +1117,7 @@ void BG_Pmove(pmove_t *pmove)
     AngleVectors(pm->s->viewangles, &pml.forward, &pml.right, &pml.up);
 
     if (pm->s->pm_type == PM_SPECTATOR || pm->s->pm_type == PM_NOCLIP || pm->s->pm_type == PM_FLY) {
-        pm->s->pm_flags = PMF_NONE;
+        pm->s->pm_flags &= PMF_EXTERNAL_MASK;
         pm->s->pm_time = 0;
         PM_SetDimensions();
         if (PM_GoodPosition()) {
@@ -1160,7 +1160,7 @@ void BG_Pmove(pmove_t *pmove)
     // drop timing counter
     if (pm->s->pm_time) {
         if (pm->cmd.msec >= pm->s->pm_time) {
-            pm->s->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT | PMF_TIME_TRICK);
+            pm->s->pm_flags &= ~PMF_TIME_MASK;
             pm->s->pm_time = 0;
         } else
             pm->s->pm_time -= pm->cmd.msec;
@@ -1173,7 +1173,7 @@ void BG_Pmove(pmove_t *pmove)
         pml.velocity.z -= pm->s->gravity * pml.frametime;
         if (pml.velocity.z < 0) {
             // cancel as soon as we are falling down again
-            pm->s->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT | PMF_TIME_TRICK);
+            pm->s->pm_flags &= ~PMF_TIME_MASK;
             pm->s->pm_time = 0;
         }
 

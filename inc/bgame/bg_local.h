@@ -478,22 +478,21 @@ typedef enum {
 
 // pmove->pm_flags
 typedef enum : uint32_t {
-    PMF_NONE            = 0U,
-    PMF_DUCKED          = BIT(0),
-    PMF_JUMP_HELD       = BIT(1),
-    PMF_ON_GROUND       = BIT(2),
-    PMF_TIME_WATERJUMP  = BIT(3),   // pm_time is waterjump
-    PMF_TIME_LAND       = BIT(4),   // pm_time is time before rejump
-    PMF_TIME_TELEPORT   = BIT(5),   // pm_time is non-moving time
-    PMF_NO_PREDICTION   = BIT(6),   // temporarily disables prediction (used for grappling hook)
+    PMF_NONE                = 0U,
+    PMF_DUCKED              = BIT(0),
+    PMF_JUMP_HELD           = BIT(1),
+    PMF_ON_GROUND           = BIT(2),
+    PMF_ON_LADDER           = BIT(3),   // signal to game that we are on a ladder
+    PMF_TIME_WATERJUMP      = BIT(4),   // pm_time is waterjump
+    PMF_TIME_LAND           = BIT(5),   // pm_time is time before rejump
+    PMF_TIME_TELEPORT       = BIT(6),   // pm_time is non-moving time
+    PMF_TIME_TRICK          = BIT(7),   // pm_time is trick jump time
+    PMF_NO_PREDICTION       = BIT(8),   // temporarily disables prediction
+    PMF_NO_GROUND_SEEK      = BIT(9),   // temporarily disables ground seeking
+    PMF_NO_PLAYER_COLLISION = BIT(10),  // don't collide with other players
 
-//KEX
-    PMF_ON_LADDER                   = BIT(7),
-    PMF_NO_ANGULAR_PREDICTION       = BIT(8),
-    PMF_IGNORE_PLAYER_COLLISION     = BIT(9),
-    PMF_TIME_TRICK                  = BIT(10),
-    PMF_NO_GROUND_SEEK              = BIT(11),
-//KEX
+    PMF_TIME_MASK = PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT | PMF_TIME_TRICK,
+    PMF_EXTERNAL_MASK = PMF_NO_PREDICTION | PMF_NO_GROUND_SEEK | PMF_NO_PLAYER_COLLISION,
 } pmove_flags_t;
 
 typedef enum {
