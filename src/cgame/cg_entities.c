@@ -695,13 +695,15 @@ static void CG_AddPacketEntities(void)
                 goto skip;
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
-            float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
-            if (d < fade_start)
-                goto skip;
-            if (d > fade_end)
+            if (fade_end > fade_start) {
+                float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
+                float f = Q_smoothstep(fade_start, fade_end, d);
+                if (f == 0.0f)
+                    goto skip;
+                ent.alpha = f;
+            } else {
                 ent.alpha = 1;
-            else
-                ent.alpha = (d - fade_start) / (fade_end - fade_start);
+            }
             ent.skin = 0;
             if (renderfx & RF_CUSTOMSKIN && s1->frame < MAX_IMAGES)
                 ent.skin = cgs.images.precache[s1->frame];
@@ -742,10 +744,10 @@ static void CG_AddPacketEntities(void)
             float fade_end = s1->modelindex3;
             if (fade_end > fade_start) {
                 float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
-                if (d > fade_end)
+                float f = 1.0f - Q_smoothstep(fade_start, fade_end, d);
+                if (f == 0.0f)
                     goto skip;
-                if (d > fade_start)
-                    scale *= 1.0f - (d - fade_start) / (fade_end - fade_start);
+                scale *= f;
             }
 
             int style = s1->frame & 255;

@@ -288,6 +288,12 @@ static inline float Q_circ_clipf(float a, float b, float c)
     return b > c ? Q_clipf(a, c, b) : Q_clipf(a, b, c);
 }
 
+static inline float Q_smoothstep(float a, float b, float f)
+{
+    f = Q_clipf((f - a) / (b - a), 0.0f, 1.0f);
+    return f * f * (3.0f - 2.0f * f);
+}
+
 static inline int8_t Q_clip_int8(int a)
 {
     return ((a + 0x80U) & ~0xFF) ? (a >> 31) ^ 0x7F : a;
