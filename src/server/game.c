@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static vm_module_t      game;
 const game_export_t     *ge;
 
-static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
+static void PF_ClientMessage(edict_t *ent, bool reliable)
 {
     message_flags_t flags = reliable ? MSG_RELIABLE : MSG_NONE;
     client_t *client;
@@ -37,21 +37,46 @@ static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
         client = svs.client_pool + clientnum;
         Q_assert_soft(client->state);
 
-        MSG_WriteByte(svc_stringcmd);
-        MSG_WriteString(str);
-
         SV_ClientAddMessage(client, flags | MSG_CLEAR);
         return;
     }
-
-    MSG_WriteByte(svc_stringcmd);
-    MSG_WriteString(str);
 
     FOR_EACH_CLIENT(client)
         if (client->state == cs_spawned)
             SV_ClientAddMessage(client, flags);
 
     SZ_Clear(&msg_write);
+}
+
+/*
+===============
+PF_ClientCommand
+
+Send text command to specified client. If ent is NULL, send to everyone.
+===============
+*/
+static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
+{
+    MSG_WriteByte(svc_stringcmd);
+    MSG_WriteString(str);
+    PF_ClientMessage(ent, reliable);
+}
+
+/*
+===============
+PF_ClientConfigstring
+
+Send private configstring to specified client. If ent is NULL, send to everyone.
+===============
+*/
+static void PF_ClientConfigstring(edict_t *ent, unsigned index, const char *str, bool reliable)
+{
+    Q_assert_soft(index < MAX_CONFIGSTRINGS);
+
+    MSG_WriteByte(svc_configstring);
+    MSG_WriteShort(index);
+    MSG_WriteString(str);
+    PF_ClientMessage(ent, reliable);
 }
 
 /*
@@ -417,6 +442,10 @@ VM_THUNK(ClientCommand) {
     PF_ClientCommand(VM_ENT_NULL(0), VM_STR(1), VM_U32(2));
 }
 
+VM_THUNK(ClientConfigstring) {
+    PF_ClientConfigstring(VM_ENT_NULL(0), VM_U32(1), VM_STR_NULL(2), VM_U32(3));
+}
+
 VM_THUNK(GetSurfaceInfo) {
     VM_U32(0) = PF_GetSurfaceInfo(VM_U32(0), VM_PTR(1, surface_info_t));
 }
@@ -630,6 +659,7 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(UnlinkEntity, "i"),
     VM_IMPORT(SetBrushModel, "ii"),
     VM_IMPORT(ClientCommand, "iii"),
+    VM_IMPORT(ClientConfigstring, "iiii"),
     VM_IMPORT(GetSurfaceInfo, "i ii"),
     VM_IMPORT(GetMaterialInfo, "i ii"),
     VM_IMPORT(LocateGameData, "iiii"),
@@ -889,6 +919,7 @@ static const game_import_t game_dll_imports = {
     .GetMaterialInfo = PF_GetMaterialInfo,
 
     .ClientCommand = PF_ClientCommand,
+    .ClientConfigstring = PF_ClientConfigstring,
 
     .LocateGameData = PF_LocateGameData,
     .SetNumEdicts = PF_SetNumEdicts,

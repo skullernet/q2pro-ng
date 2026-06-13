@@ -41,6 +41,7 @@ bool trap_GetSurfaceInfo(unsigned surf_id, surface_info_t *info);
 bool trap_GetMaterialInfo(unsigned material_id, material_info_t *info);
 
 void trap_ClientCommand(edict_t *ent, const char *str, bool reliable);
+void trap_ClientConfigstring(edict_t *ent, unsigned index, const char *str, bool reliable);
 
 void trap_LocateGameData(edict_t *edicts, size_t edict_size, gclient_t *clients, size_t client_size);
 void trap_SetNumEdicts(unsigned num_edicts);
@@ -126,6 +127,7 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_GetMaterialInfo gi->GetMaterialInfo
 
 #define trap_ClientCommand gi->ClientCommand
+#define trap_ClientConfigstring gi->ClientConfigstring
 
 #define trap_LocateGameData gi->LocateGameData
 #define trap_SetNumEdicts gi->SetNumEdicts
