@@ -489,8 +489,6 @@ static inline void CG_AdvanceValue(float *restrict val, float target, float spee
     }
 }
 
-#define Com_SlowRand  Q_rand
-
 //
 // cg_main.c
 //

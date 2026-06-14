@@ -98,6 +98,8 @@ typedef struct {
     int64_t (*RealTime)(void);
     bool (*LocalTime)(int64_t time, vm_time_t *localtime);
 
+    uint32_t (*SlowRand)(void);
+
     bool (*Cvar_Register)(vm_cvar_t *var, const char *name, const char *value, unsigned flags);
     void (*Cvar_Set)(const char *name, const char *value);
     int (*Cvar_VariableInteger)(const char *name);

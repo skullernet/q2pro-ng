@@ -338,6 +338,10 @@ VM_THUNK(LocalTime) {
     VM_U32(0) = Com_LocalTime(VM_I64(0), VM_PTR(1, vm_time_t));
 }
 
+VM_THUNK(SlowRand) {
+    VM_U32(0) = Com_SlowRand();
+}
+
 VM_THUNK(Cvar_Register) {
     VM_U32(0) = PF_Cvar_Register(VM_PTR_NULL(0, vm_cvar_t), VM_STR(1), VM_STR_NULL(2), VM_U32(3));
 }
@@ -697,6 +701,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(SetLoadText, "i"),
     VM_IMPORT(RealTime, "I "),
     VM_IMPORT(LocalTime, "i Ii"),
+    VM_IMPORT(SlowRand, "i "),
     VM_IMPORT(Cvar_Register, "i iiii"),
     VM_IMPORT(Cvar_Set, "ii"),
     VM_IMPORT(Cvar_VariableInteger, "i i"),
@@ -953,6 +958,8 @@ static const cgame_import_t cgame_dll_imports = {
 
     .RealTime = Com_RealTime,
     .LocalTime = Com_LocalTime,
+
+    .SlowRand = Com_SlowRand,
 
     .Cvar_Register = PF_Cvar_Register,
     .Cvar_Set = PF_Cvar_Set,

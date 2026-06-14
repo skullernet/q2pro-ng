@@ -55,6 +55,8 @@ void trap_SetLoadText(const char *text);
 int64_t trap_RealTime(void);
 bool trap_LocalTime(int64_t time, vm_time_t *localtime);
 
+uint32_t trap_SlowRand(void);
+
 bool trap_Cvar_Register(vm_cvar_t *var, const char *name, const char *value, unsigned flags);
 void trap_Cvar_Set(const char *name, const char *value);
 int trap_Cvar_VariableInteger(const char *name);
@@ -194,6 +196,8 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 
 #define trap_RealTime cgi->RealTime
 #define trap_LocalTime cgi->LocalTime
+
+#define trap_SlowRand cgi->SlowRand
 
 #define trap_Cvar_Register cgi->Cvar_Register
 #define trap_Cvar_Set cgi->Cvar_Set

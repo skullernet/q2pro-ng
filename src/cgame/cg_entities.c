@@ -459,7 +459,7 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
     ent.origin = org;
     for (i = 0; i < steps; i++) {
         if (model != cgs.models.heatbeam)
-            ent.angles.roll = Com_SlowRand() % 360;
+            ent.angles.roll = trap_SlowRand() % 360;
         trap_R_AddEntity(&ent);
         ent.origin = Vec3_Add(ent.origin, dist);
     }
@@ -783,7 +783,7 @@ static void CG_AddPacketEntities(void)
         // tweak the color of beams
         if (renderfx & RF_BEAM) {
             // the four beam colors are encoded in 32 bits of skinnum (hack)
-            ent.skinnum = (s1->skinnum >> ((Com_SlowRand() % 4) * 8)) & 0xff;
+            ent.skinnum = (s1->skinnum >> ((trap_SlowRand() % 4) * 8)) & 0xff;
             ent.skin = 0;
             ent.model = 0;
         } else {
@@ -1070,7 +1070,7 @@ static void CG_AddPacketEntities(void)
         } else if (effects & EF_TRAP) {
             ent.origin.z += 32;
             CG_TrapParticles(cent, ent.origin);
-            i = (Com_SlowRand() % 100) + 100;
+            i = (trap_SlowRand() % 100) + 100;
             CG_AddSphereLight(ent.origin, i, 1, 0.8f, 0.1f);
         } else if (effects & EF_FLAG1) {
             CG_FlagTrail(cent, ent.origin, 242);
