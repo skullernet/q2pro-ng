@@ -1577,8 +1577,8 @@ static void G_InitStatusbar(void)
 
     // timer
     sb_if(STAT_TIMER_ICON),
-        sb_xv(262),
-        sb_num(2, STAT_TIMER),
+        sb_xv(246),
+        sb_num(3, STAT_TIMER),
         sb_xv(296),
         sb_pic(STAT_TIMER_ICON),
     sb_endif();

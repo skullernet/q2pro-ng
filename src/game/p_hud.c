@@ -552,8 +552,8 @@ void G_SetStats(edict_t *ent)
 {
     const gitem_t *item;
     item_id_t index;
-    int       cells = 0;
     item_id_t power_armor_type;
+    int sec;
 
     //
     // health
@@ -562,7 +562,7 @@ void G_SetStats(edict_t *ent)
         ent->client->ps.stats[STAT_HEALTH_ICON] = level.disguise_icon;
     else
         ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-    ent->client->ps.stats[STAT_HEALTH] = ent->health;
+    ent->client->ps.stats[STAT_HEALTH] = Q_clip(ent->health, -99, 999);
 
     //
     // weapons
@@ -596,7 +596,7 @@ void G_SetStats(edict_t *ent)
 
         if (!G_CheckInfiniteAmmo(item)) {
             ent->client->ps.stats[STAT_AMMO_ICON] = G_ImageIndex(item->icon);
-            ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->pers.weapon->ammo];
+            ent->client->ps.stats[STAT_AMMO] = min(ent->client->pers.inventory[ent->client->pers.weapon->ammo], 999);
         }
     }
 
@@ -606,21 +606,21 @@ void G_SetStats(edict_t *ent)
         if (G_CheckInfiniteAmmo(item))
             ent->client->ps.ammo[i] = INFINITE_AMMO;
         else
-            ent->client->ps.ammo[i] = Q_clip(ent->client->pers.inventory[item->id], 0, 999);
+            ent->client->ps.ammo[i] = min(ent->client->pers.inventory[item->id], 999);
     }
 
     //
     // armor
     //
     power_armor_type = PowerArmorType(ent);
-    if (power_armor_type)
-        cells = ent->client->pers.inventory[IT_AMMO_CELLS];
-
     index = ArmorIndex(ent);
     if (power_armor_type && (!index || (TO_MSEC(level.time) % 3000) < 1500)) {
         // flash between power armor and other armor icon
-        ent->client->ps.stats[STAT_ARMOR_ICON] = power_armor_type == IT_ITEM_POWER_SHIELD ? G_ImageIndex("i_powershield") : G_ImageIndex("i_powerscreen");
-        ent->client->ps.stats[STAT_ARMOR] = cells;
+        if (power_armor_type == IT_ITEM_POWER_SHIELD)
+            ent->client->ps.stats[STAT_ARMOR_ICON] = G_ImageIndex("i_powershield");
+        else
+            ent->client->ps.stats[STAT_ARMOR_ICON] = G_ImageIndex("i_powerscreen");
+        ent->client->ps.stats[STAT_ARMOR] = min(ent->client->pers.inventory[IT_AMMO_CELLS], 999);
     } else if (index) {
         item = GetItemByIndex(index);
         ent->client->ps.stats[STAT_ARMOR_ICON] = G_ImageIndex(item->icon);
@@ -666,7 +666,8 @@ void G_SetStats(edict_t *ent)
         else // error case
             ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("i_fixme");
 
-        ent->client->ps.stats[STAT_TIMER] = ceilf(TO_SEC(ent->client->owned_sphere->timestamp - level.time));
+        sec = ceilf(TO_SEC(ent->client->owned_sphere->timestamp - level.time));
+        ent->client->ps.stats[STAT_TIMER] = min(sec, 999);
     } else {
         const powerup_info_t *best_powerup = NULL;
         gtime_t best_time = INT64_MAX;
@@ -685,11 +686,12 @@ void G_SetStats(edict_t *ent)
         }
 
         if (best_powerup) {
+            sec = ceilf(TO_SEC(best_time - level.time));
             ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex(GetItemByIndex(best_powerup->item)->icon);
-            ent->client->ps.stats[STAT_TIMER] = ceilf(TO_SEC(best_time - level.time));
+            ent->client->ps.stats[STAT_TIMER] = min(sec, 999);
         } else if (ent->client->silencer_shots) {
             ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex(GetItemByIndex(IT_ITEM_SILENCER)->icon);
-            ent->client->ps.stats[STAT_TIMER] = ent->client->silencer_shots;
+            ent->client->ps.stats[STAT_TIMER] = min(ent->client->silencer_shots, 999);
         }
     }
     // PGM
@@ -742,8 +744,6 @@ void G_SetStats(edict_t *ent)
 
     // [Paril-KEX] key display
     if (!deathmatch.integer) {
-        int key_offset = 0;
-
         ent->client->ps.stats[STAT_KEY_A] =
         ent->client->ps.stats[STAT_KEY_B] =
         ent->client->ps.stats[STAT_KEY_C] = 0;
@@ -751,7 +751,8 @@ void G_SetStats(edict_t *ent)
         // there's probably a way to do this in one pass but
         // I'm lazy
         item_id_t keys_held[IT_TOTAL];
-        int num_keys_held = 0;
+        uint32_t num_keys_held = 0;
+        uint32_t key_offset = 0;
 
         for (int i = IT_NULL; i < IT_TOTAL; i++) {
             item = &itemlist[i];
@@ -763,7 +764,7 @@ void G_SetStats(edict_t *ent)
         }
 
         if (num_keys_held > 3)
-            key_offset = TO_SEC(level.time) / 5;
+            key_offset = TO_MSEC(level.time) / 5000;
 
         for (int i = 0; i < min(num_keys_held, 3); i++)
             ent->client->ps.stats[STAT_KEY_A + i] = G_ImageIndex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);
@@ -772,7 +773,7 @@ void G_SetStats(edict_t *ent)
     //
     // frags
     //
-    ent->client->ps.stats[STAT_FRAGS] = ent->client->resp.score;
+    ent->client->ps.stats[STAT_FRAGS] = Q_clip(ent->client->resp.score, -99, 999);
 
     //
     // help icon / current weapon if not shown
