@@ -173,7 +173,7 @@ void G_EndOfUnitMessage(void)
 
     sb_yb(-48), sb_xv(0), sb_cstring2("Press any button to continue.");
 
-    trap_ClientCommand(NULL, va("layout %s", sb_buffer()), true);
+    trap_ClientConfigstring(NULL, CS_LAYOUT, sb_buffer(), true);
 
     for (int i = 0; i < game.maxclients; i++) {
         if (g_edicts[i].r.inuse)
@@ -374,7 +374,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
             Q_snprintf(entry, sizeof(entry),
                        "xv %i yv %i picn %s ", x + 32, y, tag);
             j = strlen(entry);
-            if (stringlength + j > MAX_SCOREBOARD_SIZE)
+            if (stringlength + j >= MAX_SCOREBOARD_SIZE)
                 break;
             strcpy(string + stringlength, entry);
             stringlength += j;
@@ -385,13 +385,13 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
                    "client %i %i %i %i %i %.f ",
                    x, y, sorted[i], cl->resp.score, cl->ping, TO_SEC(level.time - cl->resp.entertime) / 60);
         j = strlen(entry);
-        if (stringlength + j > MAX_SCOREBOARD_SIZE)
+        if (stringlength + j >= MAX_SCOREBOARD_SIZE)
             break;
         strcpy(string + stringlength, entry);
         stringlength += j;
     }
 
-    trap_ClientCommand(ent, va("layout %s", string), reliable);
+    trap_ClientConfigstring(ent, CS_LAYOUT, string, reliable);
 }
 
 /*
@@ -462,7 +462,7 @@ void HelpComputer(edict_t *ent)
     sb_xv(265), sb_yv(164), sb_rstring2(va("Goals: %d/%d", level.found_goals, level.total_goals));
     sb_xv(265), sb_yv(172), sb_rstring2(va("Secrets: %d/%d", level.found_secrets, level.total_secrets));
 
-    trap_ClientCommand(ent, va("layout %s", sb_buffer()), true);
+    trap_ClientConfigstring(ent, CS_LAYOUT, sb_buffer(), true);
 }
 
 //=======================================================================

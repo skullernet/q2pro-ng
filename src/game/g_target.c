@@ -2033,7 +2033,7 @@ void USE(use_target_story)(edict_t *self, edict_t *other, edict_t *activator)
         level.story_active = false;
 
     if (level.story_active)
-        trap_ClientCommand(NULL, va("layout xv 0 yv 0 cstring \"%s\"", self->message), true);
+        trap_ClientConfigstring(NULL, CS_LAYOUT, va("xv 0 yv 0 cstring \"%s\"", self->message), true);
 }
 
 void SP_target_story(edict_t *self)

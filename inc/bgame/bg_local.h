@@ -47,6 +47,7 @@ typedef enum {
     CS_CDTRACK = 1,
     CS_SKY,
     CS_STATUSBAR,
+    CS_LAYOUT,
     CS_AIRACCEL,
     CS_PHYSICS_FLAGS,
     CS_MAXCLIENTS,

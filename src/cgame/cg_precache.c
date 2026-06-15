@@ -425,6 +425,11 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
         return;
     }
 
+    if (index == CS_LAYOUT) {
+        trap_GetConfigstring(index, cg.layout, sizeof(cg.layout));
+        return;
+    }
+
     char s[MAX_QPATH];
     trap_GetConfigstring(index, s, sizeof(s));
 

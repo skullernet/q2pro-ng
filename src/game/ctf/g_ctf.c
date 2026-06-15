@@ -1709,7 +1709,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
     //if (level.intermissiontime)
     //    fmt::format_to(std::back_inserter(string), FMT_STRING("ifgef {} yb -48 xv 0 loc_cstring2 0 \"$m_eou_press_button\" endif "), (level.intermission_server_frame + (5_sec).frames()));
 
-    trap_ClientCommand(ent, va("layout %s", string), reliable);
+    trap_ClientConfigstring(ent, CS_LAYOUT, string, reliable);
 }
 
 /*------------------------------------------------------------------------*/

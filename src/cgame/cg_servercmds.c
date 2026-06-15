@@ -143,11 +143,6 @@ qvm_exported void CG_ServerCommand(void)
     char cmd[MAX_QPATH];
     trap_Argv(0, cmd, sizeof(cmd));
 
-    if (!strcmp(cmd, "layout")) {
-        trap_Args(cg.layout, sizeof(cg.layout));
-        return;
-    }
-
     if (!strcmp(cmd, "inven")) {
         CG_Inventory();
         return;

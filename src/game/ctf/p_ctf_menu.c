@@ -146,7 +146,7 @@ void PMenu_Do_Update(edict_t *ent, bool reliable)
         alt = false;
     }
 
-    trap_ClientCommand(ent, va("layout %s", sb_buffer()), reliable);
+    trap_ClientConfigstring(ent, CS_LAYOUT, sb_buffer(), reliable);
 }
 
 void PMenu_Update(edict_t *ent)
