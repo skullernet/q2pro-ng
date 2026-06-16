@@ -22,7 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Z_CopyStruct(ptr)       memcpy(Z_Malloc(sizeof(*ptr)), ptr, sizeof(*ptr))
 
 // memory tags to allow dynamic memory to be cleaned up
-// game DLL has separate tag namespace starting at TAG_MAX
 typedef enum {
     TAG_FREE,       // should have never been set
     TAG_STATIC,
@@ -34,7 +33,6 @@ typedef enum {
     TAG_RENDERER,
     TAG_UI,
     TAG_SERVER,
-    TAG_MVD,
     TAG_SOUND,
     TAG_CMODEL,
     TAG_NAV,
@@ -48,18 +46,13 @@ void    Z_Free(void *ptr);
 void    Z_Freep(void *ptr);
 void    *Z_Realloc(void *ptr, size_t size);
 void    *Z_TagRealloc(void *ptr, size_t size, memtag_t tag);
-void    *Z_TagReallocz(void *ptr, size_t size, memtag_t tag);
 void    *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag);
-q_malloc
-void    *Z_Malloc(size_t size);
-q_malloc
-void    *Z_Mallocz(size_t size);
-q_malloc
-void    *Z_TagMalloc(size_t size, memtag_t tag);
-q_malloc
-void    *Z_TagMallocz(size_t size, memtag_t tag);
-q_malloc
-char    *Z_TagCopyString(const char *in, memtag_t tag);
+
+q_malloc void *Z_Malloc(size_t size);
+q_malloc void *Z_TagMalloc(size_t size, memtag_t tag);
+q_malloc void *Z_MallocArray(size_t nmemb, size_t size, memtag_t tag);
+q_malloc char *Z_TagCopyString(const char *in, memtag_t tag);
+
 void    Z_FreeTags(memtag_t tag);
 void    Z_LeakTest(memtag_t tag);
 void    Z_Stats_f(void);

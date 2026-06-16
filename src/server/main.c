@@ -864,7 +864,7 @@ static void SVC_DirectConnect(void)
 
     SV_RateInit(&newcl->ratelimit_namechange, sv_namechange_limit->string);
 
-    SZ_InitWrite(&newcl->datagram, SV_Mallocz(MAX_MSGLEN), MAX_MSGLEN);
+    SZ_InitWrite(&newcl->datagram, SV_Malloc(MAX_MSGLEN), MAX_MSGLEN);
 
     // add them to the linked list of connected clients
     List_SeqAdd(&sv_clientlist, &newcl->entry);

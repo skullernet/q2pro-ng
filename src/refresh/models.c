@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MOD_GpuMallocIndices(size) \
     Hunk_TryAlloc(&temp_hunk[1], size, gl_static.hunk_align)
 
-#define MOD_CpuMalloc(size) R_Mallocz(size)
+#define MOD_CpuMalloc(size) R_Malloc(size)
 
 #define ENSURE(x, e)    if (!(x)) return e
 
@@ -783,7 +783,7 @@ static void *MD5_HunkAlloc(memhunk_t *hunk, size_t size)
 
 #define MD5_GpuMalloc(size) MD5_HunkAlloc(&temp_hunk[0], size)
 #define MD5_GpuMallocIndices(size) MD5_HunkAlloc(&temp_hunk[1], size)
-#define MD5_CpuMalloc(size) R_Mallocz(size)
+#define MD5_CpuMalloc(size) R_Malloc(size)
 
 static void MD5_ParseExpect(const char **buffer, const char *expect)
 {

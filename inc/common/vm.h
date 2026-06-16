@@ -31,8 +31,11 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "common/list.h"
 #include "common/zone.h"
 
-#define VM_Malloc(size)         Z_TagMallocz(size, TAG_VM)
-#define VM_Realloc(ptr, size)   Z_TagReallocz(ptr, size, TAG_VM)
+#define VM_Malloc(size)         Z_TagMalloc(size, TAG_VM)
+#define VM_Realloc(ptr, size)   Z_TagRealloc(ptr, size, TAG_VM)
+
+#define VM_MallocArray(nmemb, size)         Z_MallocArray(nmemb, size, TAG_VM)
+#define VM_ReallocArray(ptr, nmemb, size)   Z_ReallocArray(ptr, nmemb, size, TAG_VM)
 
 #if USE_QVM
 

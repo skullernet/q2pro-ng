@@ -49,7 +49,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //=============================================================================
 
 #define SV_Malloc(size)         Z_TagMalloc(size, TAG_SERVER)
-#define SV_Mallocz(size)        Z_TagMallocz(size, TAG_SERVER)
 #define SV_CopyString(s)        Z_TagCopyString(s, TAG_SERVER)
 
 #if USE_DEBUG

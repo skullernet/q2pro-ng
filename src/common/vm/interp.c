@@ -952,8 +952,8 @@ bool VM_PrepareInterpreter(vm_t *m, sizebuf_t *in)
     vm_block_t  blocks[BLOCKSTACK_SIZE];
     sizebuf_t   out;
 
-    m->code = VM_Malloc(in->cursize * 2);
-    SZ_InitWrite(&out, m->code, in->cursize * 2);
+    m->code = VM_Malloc(m->num_code_bytes * 2);
+    SZ_InitWrite(&out, m->code, m->num_code_bytes * 2);
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         vm_block_t *func = &m->funcs[f];
@@ -973,7 +973,7 @@ bool VM_PrepareInterpreter(vm_t *m, sizebuf_t *in)
     }
 
     m->code = VM_Realloc(m->code, Q_ALIGN(out.cursize, 64) + 64);
-    m->num_bytes = out.cursize;
+    m->num_code_bytes = out.cursize;
 
     return true;
 }

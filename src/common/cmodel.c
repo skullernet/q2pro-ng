@@ -179,6 +179,11 @@ static void CM_LoadEntPatches(cm_t *cm, const char *name)
     int len = FS_LoadFile(path, (void **)&data);
     if (!data)
         return;
+    if (len >= INT_MAX - cm->cache->numentitychars) {
+        Com_WPrintf("%s is too large\n", path);
+        FS_FreeFile(data);
+        return;
+    }
 
     // can't grow by more than patch size
     int outlen = cm->cache->numentitychars + len + 1;
@@ -261,8 +266,8 @@ void CM_LoadMap(cm_t *cm, const char *name)
     if (!(cm->override_bits & OVERRIDE_ENTS))
         cm->entitystring = cm->cache->entitystring;
 
-    cm->floodnums = Z_TagMallocz(sizeof(cm->floodnums[0]) * cm->cache->numareas, TAG_CMODEL);
-    cm->portalopen = Z_TagMallocz(sizeof(cm->portalopen[0]) * cm->cache->numportals, TAG_CMODEL);
+    cm->floodnums = Z_TagMalloc(sizeof(cm->floodnums[0]) * cm->cache->numareas, TAG_CMODEL);
+    cm->portalopen = Z_TagMalloc(sizeof(cm->portalopen[0]) * cm->cache->numportals, TAG_CMODEL);
     FloodAreaConnections(cm);
 }
 

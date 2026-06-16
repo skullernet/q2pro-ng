@@ -140,10 +140,6 @@ void        Sys_Printf(const char *fmt, ...) q_printf(1, 2);
 #define Com_DWPrintf(...) ((void)0)
 #endif
 
-#if USE_TESTS
-extern cvar_t   *z_perturb;
-#endif
-
 #if USE_DEBUG
 extern cvar_t   *developer;
 #endif

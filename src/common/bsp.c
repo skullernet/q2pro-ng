@@ -357,8 +357,8 @@ static void BSP_LoadMaterials(bsp_t *bsp)
     // init default materials
     bsp->nummaterials = MATERIAL_RESERVED_COUNT;
     bsp->materials = Z_Malloc(bsp->nummaterials * sizeof(bsp->materials[0]));
-    strncpy(bsp->materials[MATERIAL_ID_DEFAULT], "default", sizeof(bsp->materials[0]));
-    strncpy(bsp->materials[MATERIAL_ID_LADDER ], "ladder",  sizeof(bsp->materials[0]));
+    strcpy(bsp->materials[MATERIAL_ID_DEFAULT], "default");
+    strcpy(bsp->materials[MATERIAL_ID_LADDER ], "ladder");
 
     hash_map_t *map = HashMap_Create(const char *, int, HashCaseStr, HashCaseStrCmp);
 
@@ -400,8 +400,8 @@ static void BSP_LoadMaterials(bsp_t *bsp)
 
         // allocate new material
         out->material_id = bsp->nummaterials++;
-        bsp->materials = Z_Realloc(bsp->materials, bsp->nummaterials * sizeof(bsp->materials[0]));
-        strncpy(bsp->materials[out->material_id], material, sizeof(bsp->materials[0]));
+        bsp->materials = Z_ReallocArray(bsp->materials, bsp->nummaterials, sizeof(bsp->materials[0]), TAG_GENERAL);
+        strcpy(bsp->materials[out->material_id], material);
 done:
         HashMap_Insert(map, &(const char *){ out->name }, &out->material_id);
     }
@@ -1031,7 +1031,6 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
             goto fail2;
         }
         count = len / info->disksize[extended];
-        Q_assert(count <= INT_MAX / info->memsize);
 
         lump_ofs[i] = ofs;
         lump_count[i] = count;
@@ -1046,6 +1045,12 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
             count = BSP_VisibilitySize(numclusters);
         }
 
+        if (count > INT_MAX / info->memsize) {
+            Com_SetLastError(va("%s lump too large", info->name));
+            ret = Q_ERR_INVALID_DATA;
+            goto fail2;
+        }
+
         // round to cacheline
         memsize += BSP_ALIGN(count * info->memsize);
         maxpos = max(maxpos, ofs + len);
@@ -1053,7 +1058,7 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
 
     // load into hunk
     len = strlen(name);
-    bsp = Z_Mallocz(sizeof(*bsp) + len);
+    bsp = Z_Malloc(sizeof(*bsp) + len);
     memcpy(bsp->name, name, len + 1);
     bsp->refcount = 1;
     bsp->extended = extended;

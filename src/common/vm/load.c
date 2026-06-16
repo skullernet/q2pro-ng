@@ -115,7 +115,7 @@ static bool import_function(vm_t *m, bstr_t module, bstr_t name, const vm_type_t
     ASSERT(m->num_funcs < MAX_FUNCS, "Too many functions");
     m->num_imports++;
     m->num_funcs++;
-    m->funcs = VM_Realloc(m->funcs, m->num_imports * sizeof(m->funcs[0]));
+    m->funcs = VM_ReallocArray(m->funcs, m->num_imports, sizeof(m->funcs[0]));
 
     vm_block_t *func = &m->funcs[m->num_imports - 1];
     func->type = type;
@@ -167,7 +167,7 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 {
     m->num_types = SZ_ReadLeb(sz);
     ASSERT(m->num_types <= MAX_TYPES, "Too many types");
-    m->types = VM_Malloc(m->num_types * sizeof(m->types[0]));
+    m->types = VM_MallocArray(m->num_types, sizeof(m->types[0]));
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
@@ -176,7 +176,7 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 
         type->num_params = SZ_ReadLeb(sz);
         ASSERT(type->num_params <= MAX_LOCALS, "Too many parameters");
-        type->params = VM_Malloc(type->num_params * sizeof(type->params[0]));
+        type->params = VM_MallocArray(type->num_params, sizeof(type->params[0]));
         for (uint32_t p = 0; p < type->num_params; p++)
             type->params[p] = SZ_ReadLeb(sz);
 
@@ -214,7 +214,7 @@ static bool parse_functions(vm_t *m, sizebuf_t *sz)
     uint32_t count = SZ_ReadLeb(sz);
     ASSERT(count <= MAX_FUNCS - m->num_funcs, "Too many functions");
     m->num_funcs += count;
-    m->funcs = VM_Realloc(m->funcs, m->num_funcs * sizeof(m->funcs[0]));
+    m->funcs = VM_ReallocArray(m->funcs, m->num_funcs, sizeof(m->funcs[0]));
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
@@ -247,7 +247,7 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
     ASSERT(m->table.size <= m->table.maximum, "Bad table size");
 
     // Allocate the table
-    m->table.entries = VM_Malloc(m->table.size * sizeof(m->table.entries[0]));
+    m->table.entries = VM_MallocArray(m->table.size, sizeof(m->table.entries[0]));
     return true;
 }
 
@@ -273,8 +273,8 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
     ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
+    m->memory.bytes = VM_MallocArray(m->memory.pages + 1, VM_PAGE_SIZE);
     m->memory.bytesize = m->memory.pages * VM_PAGE_SIZE;
-    m->memory.bytes = VM_Malloc(m->memory.bytesize + 4096);
     return true;
 }
 
@@ -282,7 +282,7 @@ static bool parse_globals(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_globals = SZ_ReadLeb(sz);
     ASSERT(num_globals <= MAX_GLOBALS, "Too many globals");
-    m->globals = VM_Malloc(num_globals * sizeof(m->globals[0]));
+    m->globals = VM_MallocArray(num_globals, sizeof(m->globals[0]));
     m->num_globals = num_globals;
 
     for (uint32_t g = 0; g < num_globals; g++) {
@@ -301,7 +301,7 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_exports = SZ_ReadLeb(sz);
     ASSERT(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
-    m->exports = VM_Malloc(num_exports * sizeof(m->exports[0]));
+    m->exports = VM_MallocArray(num_exports, sizeof(m->exports[0]));
     m->num_exports = num_exports;
 
     for (uint32_t e = 0; e < num_exports; e++) {
@@ -407,7 +407,7 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
             tidx = SZ_ReadLeb(sz);
             (void)tidx;
         }
-        func->locals = VM_Malloc(func->num_locals * sizeof(func->locals[0]));
+        func->locals = VM_MallocArray(func->num_locals, sizeof(func->locals[0]));
 
         // Restore position and read the locals
         sz->readcount = save_pos;
@@ -423,6 +423,8 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
         func->end_addr = payload_start + body_size - 1;
         ASSERT(sz->data[func->end_addr] == End, "Function block doesn't end with End opcode");
         sz->readcount = func->end_addr + 1;
+        m->num_code_bytes += func->end_addr - func->start_addr + 1;
+        ASSERT(m->num_code_bytes <= INT32_MAX / 2, "Too many bytes of code");
     }
 
     return true;
@@ -503,7 +505,7 @@ static bool fill_exports(vm_t *m, const vm_export_t *exports)
     for (e = 0, exp = exports; exp->name; e++, exp++)
         ;
     m->num_func_exports = e;
-    m->func_exports = VM_Malloc(m->num_func_exports * sizeof(m->func_exports[0]));
+    m->func_exports = VM_MallocArray(m->num_func_exports, sizeof(m->func_exports[0]));
 
     // Find function exports
     for (e = 0, exp = exports; e < m->num_func_exports; e++, exp++) {
@@ -579,7 +581,7 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
         m->llvm_stack_start = *m->llvm_stack_pointer;
 
     Com_DPrintf("Loaded %s: %d KB of code, %d MB of memory\n", name,
-                m->num_bytes / 1000, m->memory.bytesize / 1000000);
+                m->num_code_bytes / 1000, m->memory.bytesize / 1000000);
 
     return m;
 

@@ -371,7 +371,7 @@ void SV_InitGame(void)
     svs.maxclients_soft = sv_maxclients->integer - sv_reserved_slots->integer;
 
     svs.maxclients = sv_maxclients->integer;
-    svs.client_pool = SV_Mallocz(sizeof(svs.client_pool[0]) * svs.maxclients);
+    svs.client_pool = SV_Malloc(sizeof(svs.client_pool[0]) * svs.maxclients);
 
 #if USE_ZLIB
     svs.z.zalloc = SV_zalloc;

@@ -110,7 +110,7 @@ typedef struct {
 typedef struct vm_s {
     const vm_import_t  *imports;
 
-    uint32_t    num_bytes;      // number of bytes in the module
+    uint32_t    num_code_bytes; // number of bytes in the module
     uint8_t    *code;           // module content/bytes
 
     uint32_t    num_types;      // number of function types

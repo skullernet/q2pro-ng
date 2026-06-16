@@ -32,7 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "refresh/refresh.h"
 
 #define UI_Malloc(s)        Z_TagMalloc(s, TAG_UI)
-#define UI_Mallocz(s)       Z_TagMallocz(s, TAG_UI)
 #define UI_CopyString(s)    Z_TagCopyString(s, TAG_UI)
 
 #define MIN_MENU_ITEMS  64

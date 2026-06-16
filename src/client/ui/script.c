@@ -135,7 +135,7 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
         return;
     }
 
-    s = UI_Mallocz(sizeof(*s));
+    s = UI_Malloc(sizeof(*s));
     s->generic.type = type;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     s->generic.status = UI_CopyString(status);
@@ -145,7 +145,7 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
     if (strchr(Cmd_ArgsFrom(cmd_optind), '$')) {
         long_args_hack(s, numItems);
     } else {
-        s->itemnames = UI_Mallocz(sizeof(char *) * (numItems + 1));
+        s->itemnames = UI_Malloc(sizeof(char *) * (numItems + 1));
         for (i = 0; i < numItems; i++) {
             s->itemnames[i] = UI_CopyString(Cmd_Argv(cmd_optind + i));
         }
@@ -177,14 +177,14 @@ static void Parse_Pairs(menuFrameWork_t *menu)
         return;
     }
 
-    s = UI_Mallocz(sizeof(*s));
+    s = UI_Malloc(sizeof(*s));
     s->generic.type = MTYPE_PAIRS;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     s->generic.status = UI_CopyString(status);
     s->cvar = Cvar_WeakGet(Cmd_Argv(cmd_optind + 1));
     numItems /= 2;
-    s->itemnames = UI_Mallocz(sizeof(char *) * (numItems + 1));
-    s->itemvalues = UI_Mallocz(sizeof(char *) * (numItems + 1));
+    s->itemnames = UI_Malloc(sizeof(char *) * (numItems + 1));
+    s->itemvalues = UI_Malloc(sizeof(char *) * (numItems + 1));
     for (i = 0; i < numItems; i++) {
         s->itemnames[i] = UI_CopyString(Cmd_Argv(cmd_optind + 2 + i * 2));
         s->itemvalues[i] = UI_CopyString(Cmd_Argv(cmd_optind + 3 + i * 2));
@@ -215,7 +215,7 @@ static void Parse_Range(menuFrameWork_t *menu)
         return;
     }
 
-    s = UI_Mallocz(sizeof(*s));
+    s = UI_Malloc(sizeof(*s));
     s->generic.type = MTYPE_SLIDER;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     s->generic.status = UI_CopyString(status);
@@ -261,7 +261,7 @@ static void Parse_Action(menuFrameWork_t *menu)
         return;
     }
 
-    a = UI_Mallocz(sizeof(*a));
+    a = UI_Malloc(sizeof(*a));
     a->generic.type = MTYPE_ACTION;
     a->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     a->generic.activate = Activate;
@@ -301,7 +301,7 @@ static void Parse_Bitmap(menuFrameWork_t *menu)
         return;
     }
 
-    b = UI_Mallocz(sizeof(*b));
+    b = UI_Malloc(sizeof(*b));
     b->generic.type = MTYPE_BITMAP;
     b->generic.activate = Activate;
     b->generic.status = UI_CopyString(status);
@@ -345,7 +345,7 @@ static void Parse_Bind(menuFrameWork_t *menu)
         return;
     }
 
-    k = UI_Mallocz(sizeof(*k));
+    k = UI_Malloc(sizeof(*k));
     k->generic.type = MTYPE_KEYBIND;
     k->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     k->generic.uiFlags = UI_CENTER;
@@ -377,7 +377,7 @@ static void Parse_Savegame(menuFrameWork_t *menu, menuType_t type)
         return;
     }
 
-    a = UI_Mallocz(sizeof(*a));
+    a = UI_Malloc(sizeof(*a));
     a->generic.type = type;
     a->generic.name = UI_CopyString("<EMPTY>");
     a->generic.activate = Activate;
@@ -429,7 +429,7 @@ static void Parse_Toggle(menuFrameWork_t *menu)
         type = MTYPE_BITFIELD;
     }
 
-    s = UI_Mallocz(sizeof(*s));
+    s = UI_Malloc(sizeof(*s));
     s->generic.type = type;
     s->generic.name = UI_CopyString(Cmd_Argv(cmd_optind));
     s->generic.status = UI_CopyString(status);
@@ -483,7 +483,7 @@ static void Parse_Field(menuFrameWork_t *menu)
         }
     }
 
-    f = UI_Mallocz(sizeof(*f));
+    f = UI_Malloc(sizeof(*f));
     f->generic.type = MTYPE_FIELD;
     f->generic.name = center ? NULL : UI_CopyString(Cmd_Argv(cmd_optind));
     f->generic.status = UI_CopyString(status);
@@ -498,7 +498,7 @@ static void Parse_Blank(menuFrameWork_t *menu)
 {
     menuSeparator_t *s;
 
-    s = UI_Mallocz(sizeof(*s));
+    s = UI_Malloc(sizeof(*s));
     s->generic.type = MTYPE_SEPARATOR;
 
     Menu_AddItem(menu, s);
@@ -700,7 +700,7 @@ static bool Parse_File(const char *path, int depth)
                             menu->free(menu);
                         }
                     }
-                    menu = UI_Mallocz(sizeof(*menu));
+                    menu = UI_Malloc(sizeof(*menu));
                     menu->name = UI_CopyString(s);
                     menu->push = Menu_Push;
                     menu->pop = Menu_Pop;

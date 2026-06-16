@@ -41,7 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  */
 
 #define R_Malloc(size)  Z_TagMalloc(size, TAG_RENDERER)
-#define R_Mallocz(size) Z_TagMallocz(size, TAG_RENDERER)
 
 #if USE_GLES
 #define QGL_INDEX_TYPE  GL_UNSIGNED_SHORT

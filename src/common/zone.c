@@ -53,49 +53,50 @@ static const zstatic_t z_static[11] = {
 #undef S
 
 static const char *const z_tagnames[TAG_MAX] = {
-    "game",
-    "static",
-    "generic",
-    "cmd",
-    "cvar",
-    "fs",
-    "refresh",
-    "ui",
-    "server",
-    "mvd",
-    "sound",
-    "cmodel",
-    "nav",
-    "vm"
+    [TAG_STATIC]     = "static",
+    [TAG_GENERAL]    = "generic",
+    [TAG_CMD]        = "cmd",
+    [TAG_CVAR]       = "cvar",
+    [TAG_FILESYSTEM] = "fs",
+    [TAG_RENDERER]   = "refresh",
+    [TAG_UI]         = "ui",
+    [TAG_SERVER]     = "server",
+    [TAG_SOUND]      = "sound",
+    [TAG_CMODEL]     = "cmodel",
+    [TAG_NAV]        = "nav",
+    [TAG_VM]         = "vm",
 };
-
-#define TAG_INDEX(tag)  ((tag) < TAG_MAX ? (tag) : TAG_FREE)
 
 static inline void Z_CountFree(const zhead_t *z)
 {
-    zstats_t *s = &z_stats[TAG_INDEX(z->tag)];
+    zstats_t *s = &z_stats[z->tag];
     s->count--;
     s->bytes -= z->size;
 }
 
 static inline void Z_CountAlloc(const zhead_t *z)
 {
-    zstats_t *s = &z_stats[TAG_INDEX(z->tag)];
+    zstats_t *s = &z_stats[z->tag];
     s->count++;
     s->bytes += z->size;
 }
 
+#define Z_ValidateTag(tag) \
+    Q_assert((tag) > TAG_FREE && (tag) < TAG_MAX)
+
 #define Z_Validate(z) \
-    Q_assert((z)->magic == Z_MAGIC && (z)->tag != TAG_FREE)
+    Q_assert((z)->magic == Z_MAGIC && (z)->tag > TAG_FREE && (z)->tag < TAG_MAX)
 
 void Z_LeakTest(memtag_t tag)
 {
     zhead_t *z;
     size_t numLeaks = 0, numBytes = 0;
 
+    Z_ValidateTag(tag);
+
     LIST_FOR_EACH(z, &z_chain, entry) {
         Z_Validate(z);
-        if (z->tag == tag || (tag == TAG_FREE && z->tag >= TAG_MAX)) {
+        if (z->tag == tag) {
             numLeaks++;
             numBytes += z->size;
         }
@@ -105,7 +106,7 @@ void Z_LeakTest(memtag_t tag)
         Com_WPrintf("************* Z_LeakTest *************\n"
                     "%s leaked %zu bytes of memory (%zu object%s)\n"
                     "**************************************\n",
-                    z_tagnames[TAG_INDEX(tag)],
+                    z_tagnames[tag],
                     numBytes, numLeaks, numLeaks == 1 ? "" : "s");
     }
 }
@@ -167,7 +168,7 @@ void Z_Stats_f(void)
     Com_Printf("    bytes blocks name\n"
                "--------- ------ -------\n");
 
-    for (i = 0, s = z_stats; i < TAG_MAX; i++, s++) {
+    for (i = 1, s = z_stats + i; i < TAG_MAX; i++, s++) {
         if (!s->count) {
             continue;
         }
@@ -190,6 +191,8 @@ void Z_FreeTags(memtag_t tag)
 {
     zhead_t *z, *n;
 
+    Z_ValidateTag(tag);
+
     LIST_FOR_EACH_SAFE(z, n, &z_chain, entry) {
         Z_Validate(z);
         if (z->tag == tag) {
@@ -203,7 +206,7 @@ void Z_FreeTags(memtag_t tag)
 Z_TagMalloc
 ========================
 */
-static void *Z_TagMallocInternal(size_t size, memtag_t tag, bool init)
+void *Z_TagMalloc(size_t size, memtag_t tag)
 {
     zhead_t *z;
 
@@ -211,11 +214,11 @@ static void *Z_TagMallocInternal(size_t size, memtag_t tag, bool init)
         return NULL;
     }
 
-    Q_assert(size <= INT_MAX);
-    Q_assert(tag > TAG_FREE && tag <= UINT16_MAX);
+    Q_assert(size <= SIZE_MAX - sizeof(*z));
+    Z_ValidateTag(tag);
 
     size += sizeof(*z);
-    z = init ? calloc(1, size) : malloc(size);
+    z = calloc(1, size);
     if (!z) {
         Com_Error(ERR_FATAL, "%s: couldn't allocate %zu bytes", __func__, size);
     }
@@ -225,25 +228,9 @@ static void *Z_TagMallocInternal(size_t size, memtag_t tag, bool init)
 
     List_Insert(&z_chain, &z->entry);
 
-#if USE_TESTS
-    if (!init && z_perturb && z_perturb->integer) {
-        memset(z + 1, z_perturb->integer, size - sizeof(*z));
-    }
-#endif
-
     Z_CountAlloc(z);
 
     return z + 1;
-}
-
-void *Z_TagMalloc(size_t size, memtag_t tag)
-{
-    return Z_TagMallocInternal(size, tag, false);
-}
-
-void *Z_TagMallocz(size_t size, memtag_t tag)
-{
-    return Z_TagMallocInternal(size, tag, true);
 }
 
 void *Z_Malloc(size_t size)
@@ -251,9 +238,10 @@ void *Z_Malloc(size_t size)
     return Z_TagMalloc(size, TAG_GENERAL);
 }
 
-void *Z_Mallocz(size_t size)
+void *Z_MallocArray(size_t nmemb, size_t size, memtag_t tag)
 {
-    return Z_TagMallocz(size, TAG_GENERAL);
+    Q_assert(!size || nmemb <= SIZE_MAX / size);
+    return Z_TagMalloc(nmemb * size, tag);
 }
 
 /*
@@ -261,12 +249,12 @@ void *Z_Mallocz(size_t size)
 Z_Realloc
 ========================
 */
-static void *Z_TagReallocInternal(void *ptr, size_t size, memtag_t tag, bool init)
+void *Z_TagRealloc(void *ptr, size_t size, memtag_t tag)
 {
     zhead_t *z;
 
     if (!ptr) {
-        return Z_TagMallocInternal(size, tag, init);
+        return Z_TagMalloc(size, tag);
     }
 
     if (!size) {
@@ -278,7 +266,7 @@ static void *Z_TagReallocInternal(void *ptr, size_t size, memtag_t tag, bool ini
 
     Z_Validate(z);
 
-    Q_assert(size <= INT_MAX);
+    Q_assert(size <= SIZE_MAX - sizeof(*z));
 
     size += sizeof(*z);
     if (z->size == size) {
@@ -294,7 +282,7 @@ static void *Z_TagReallocInternal(void *ptr, size_t size, memtag_t tag, bool ini
         Com_Error(ERR_FATAL, "%s: couldn't realloc %zu bytes", __func__, size);
     }
 
-    if (init && size > z->size) {
+    if (size > z->size) {
         memset((byte *)z + z->size, 0, size - z->size);
     }
 
@@ -306,16 +294,6 @@ static void *Z_TagReallocInternal(void *ptr, size_t size, memtag_t tag, bool ini
     return z + 1;
 }
 
-void *Z_TagRealloc(void *ptr, size_t size, memtag_t tag)
-{
-    return Z_TagReallocInternal(ptr, size, tag, false);
-}
-
-void *Z_TagReallocz(void *ptr, size_t size, memtag_t tag)
-{
-    return Z_TagReallocInternal(ptr, size, tag, true);
-}
-
 void *Z_Realloc(void *ptr, size_t size)
 {
     return Z_TagRealloc(ptr, size, TAG_GENERAL);
@@ -323,7 +301,7 @@ void *Z_Realloc(void *ptr, size_t size)
 
 void *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag)
 {
-    Q_assert(!size || nmemb <= INT_MAX / size);
+    Q_assert(!size || nmemb <= SIZE_MAX / size);
     return Z_TagRealloc(ptr, nmemb * size, tag);
 }
 

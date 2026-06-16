@@ -28,11 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8
 
-// prevents integer overflows
-#define MAX_LOADFILE            0x8001000   // 128 MiB + some slop
-
 #define FS_Malloc(size)         Z_TagMalloc(size, TAG_FILESYSTEM)
-#define FS_Mallocz(size)        Z_TagMallocz(size, TAG_FILESYSTEM)
 #define FS_CopyString(string)   Z_TagCopyString(string, TAG_FILESYSTEM)
 #define FS_LoadFile(path, buf)  FS_LoadFileEx(path, buf, 0, TAG_FILESYSTEM)
 #define FS_FreeFile(buf)        Z_Free(buf)

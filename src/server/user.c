@@ -72,7 +72,7 @@ static void SV_CreateBaselines(void)
 
         chunk = &sv_client->baselines[i >> SV_BASELINES_SHIFT];
         if (*chunk == NULL) {
-            *chunk = SV_Mallocz(sizeof(*base) * SV_BASELINES_PER_CHUNK);
+            *chunk = SV_Malloc(sizeof(*base) * SV_BASELINES_PER_CHUNK);
         }
 
         base = *chunk + (i & SV_BASELINES_MASK);
@@ -253,7 +253,7 @@ void SV_Begin_f(void)
 
     // allocate packet entities if not done yet
     if (!sv_client->entities)
-        sv_client->entities = SV_Mallocz(sizeof(sv_client->entities[0]) * MAX_PARSE_ENTITIES);
+        sv_client->entities = SV_Malloc(sizeof(sv_client->entities[0]) * MAX_PARSE_ENTITIES);
 
     // call the game begin function
     ge->ClientBegin(sv_client->number);

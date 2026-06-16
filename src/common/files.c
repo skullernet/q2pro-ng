@@ -1865,7 +1865,7 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
     }
 
     // sanity check file size
-    if (len > MAX_LOADFILE) {
+    if (len >= INT_MAX) {
         len = Q_ERR_FILE_TOO_BIG;
         goto done;
     }
@@ -2075,7 +2075,7 @@ static void pack_calc_hashes(pack_t *pack)
     int i;
 
     pack->hash_size = Q_npot32(pack->num_files / 3);
-    pack->file_hash = FS_Mallocz(pack->hash_size * sizeof(pack->file_hash[0]));
+    pack->file_hash = FS_Malloc(pack->hash_size * sizeof(pack->file_hash[0]));
 
     for (i = 0, file = pack->files; i < pack->num_files; i++, file++) {
         char *name = pack->names + file->nameofs;
@@ -2668,7 +2668,7 @@ file_info_t *FS_CopyInfo(const char *name, int64_t size, time_t ctime, time_t mt
     }
 
     len = strlen(name);
-    out = FS_Mallocz(sizeof(*out) + len);
+    out = FS_Malloc(sizeof(*out) + len);
     out->size = size;
     out->ctime = ctime;
     out->mtime = mtime;

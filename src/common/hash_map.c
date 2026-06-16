@@ -104,7 +104,7 @@ hash_map_t *HashMap_CreateImpl(const uint32_t key_size, const uint32_t value_siz
                                bool (*comp)(const void *const, const void *const),
                                memtag_t tag)
 {
-    hash_map_t *map = Z_TagMallocz(sizeof(*map), tag);
+    hash_map_t *map = Z_TagMalloc(sizeof(*map), tag);
     map->key_size = key_size;
     map->value_size = value_size;
     map->hasher = hasher;
