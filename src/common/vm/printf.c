@@ -128,14 +128,14 @@ static bool pop_arg(const vm_memory_t *m, union arg *arg, int type, uint32_t *ap
     case UMAX:
     case DBL:
     case LDBL:
-        if (*ap > m->bytesize - 8)
+        if (*ap > m->num_bytes - 8)
             return false;
         *ap = Q_ALIGN(*ap, 8);
         val = RN64(m->bytes + *ap);
         *ap += 8;
         break;
     default:
-        if (*ap > m->bytesize - 4)
+        if (*ap > m->num_bytes - 4)
             return false;
         *ap = Q_ALIGN(*ap, 4);
         val = RN32(m->bytes + *ap);
@@ -149,7 +149,7 @@ static bool pop_arg(const vm_memory_t *m, union arg *arg, int type, uint32_t *ap
             arg->p = NULL;
             break;
         }
-        if (val >= m->bytesize)
+        if (val >= m->num_bytes)
             return false;
         arg->p = m->bytes + val;
         break;
@@ -195,7 +195,7 @@ static bool pop_arg(const vm_memory_t *m, union arg *arg, int type, uint32_t *ap
 
 static bool put_cnt(const vm_memory_t *m, byte *p, int type, int cnt)
 {
-    const byte *end = m->bytes + m->bytesize;
+    const byte *end = m->bytes + m->num_bytes;
 
     switch (type) {
     case BARE:

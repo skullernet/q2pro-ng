@@ -48,6 +48,8 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #define MAX_LOCALS      0x1000
 #define MAX_GLOBALS     0x10000
 #define MAX_TYPES       0x10000
+#define MAX_ELEMS       0x10000
+#define MAX_PAGES       0x1000
 #define MAX_RESULTS     1
 
 #define I32         0x7f    // -0x01

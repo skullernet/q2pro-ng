@@ -57,8 +57,8 @@ typedef union {
 typedef struct {
     uint32_t    initial;    // initial size (64K pages)
     uint32_t    maximum;    // maximum size (64K pages)
-    uint32_t    pages;      // current size (64K pages)
-    uint32_t    bytesize;   // current size (bytes)
+    uint32_t    num_pages;  // current size (64K pages)
+    uint32_t    num_bytes;  // current size (bytes)
     uint8_t    *bytes;      // memory area
 } vm_memory_t;
 
@@ -80,7 +80,7 @@ static inline void *VM_GetPointer(const vm_memory_t *m, uint32_t ptr, uint32_t s
 {
     VM_ASSERT2(ptr, "Null VM pointer");
     VM_ASSERT2(!(ptr & (align - 1)), "Misaligned VM pointer");
-    VM_ASSERT2((uint64_t)ptr + (uint64_t)size * nmemb <= m->bytesize, "Out of bounds VM pointer");
+    VM_ASSERT2((uint64_t)ptr + (uint64_t)size * nmemb <= m->num_bytes, "Out of bounds VM pointer");
     return m->bytes + ptr;
 }
 

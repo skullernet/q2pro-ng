@@ -112,12 +112,7 @@ static bool import_function(vm_t *m, bstr_t module, bstr_t name, const vm_type_t
 
     ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", (int)name.len, name.str);
 
-    ASSERT(m->num_funcs < MAX_FUNCS, "Too many functions");
-    m->num_imports++;
-    m->num_funcs++;
-    m->funcs = VM_ReallocArray(m->funcs, m->num_imports, sizeof(m->funcs[0]));
-
-    vm_block_t *func = &m->funcs[m->num_imports - 1];
+    vm_block_t *func = &m->funcs[m->num_imports++];
     func->type = type;
     func->thunk = import->thunk;
     return true;
@@ -192,6 +187,9 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 static bool parse_imports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_imports = SZ_ReadLeb(sz);
+    ASSERT(num_imports <= MAX_FUNCS, "Too many imports");
+    m->funcs = VM_MallocArray(num_imports, sizeof(m->funcs[0]));
+
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         bstr_t module = vm_read_string(sz);
         bstr_t name = vm_read_string(sz);
@@ -206,6 +204,7 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
             return false;
     }
 
+    m->num_funcs = m->num_imports;
     return true;
 }
 
@@ -240,9 +239,9 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
     // Limit the maximum to 64K elements
     if (flags & 0x1) {
         tsize = SZ_ReadLeb(sz); // Max size
-        m->table.maximum = min(0x10000, tsize);
+        m->table.maximum = min(MAX_ELEMS, tsize);
     } else {
-        m->table.maximum = 0x10000;
+        m->table.maximum = MAX_ELEMS;
     }
     ASSERT(m->table.size <= m->table.maximum, "Bad table size");
 
@@ -259,22 +258,22 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t pages = SZ_ReadLeb(sz); // Initial size
     m->memory.initial = pages;
-    m->memory.pages = pages;
-    // Limit the maximum to 1.5K pages (100MB)
+    m->memory.num_pages = pages;
+    // Limit the maximum to 4096 pages (256 MiB)
     if (flags & 0x1) {
         pages = SZ_ReadLeb(sz); // Max size
-        m->memory.maximum = min(0x600, pages);
+        m->memory.maximum = min(MAX_PAGES, pages);
     } else {
-        m->memory.maximum = 0x600;
+        m->memory.maximum = MAX_PAGES;
     }
     if (flags & 0x8) {
         SZ_ReadLeb(sz); // Page size
     }
-    ASSERT(m->memory.pages <= m->memory.maximum, "Bad memory size");
+    ASSERT(m->memory.num_pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
-    m->memory.bytes = VM_MallocArray(m->memory.pages + 1, VM_PAGE_SIZE);
-    m->memory.bytesize = m->memory.pages * VM_PAGE_SIZE;
+    m->memory.bytes = VM_MallocArray(m->memory.num_pages + 1, VM_PAGE_SIZE);
+    m->memory.num_bytes = m->memory.num_pages * VM_PAGE_SIZE;
     return true;
 }
 
@@ -374,7 +373,7 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         // Copy the data to the memory offset
         uint32_t offset = init.u32;
         uint32_t size = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + size <= m->memory.bytesize, "Memory init out of bounds");
+        ASSERT((uint64_t)offset + size <= m->memory.num_bytes, "Memory init out of bounds");
         void *data = SZ_ReadData(sz, size);
         ASSERT(data, "Read past end of section");
         memcpy(m->memory.bytes + offset, data, size);
@@ -430,38 +429,33 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
     return true;
 }
 
-#define NUM_SECTIONS    13
-
 typedef struct {
     uint32_t pos, len;
 } vm_section_t;
 
-typedef bool (*parsefunc_t)(vm_t *m, sizebuf_t *sz);
+typedef bool (*vm_parsefunc_t)(vm_t *m, sizebuf_t *sz);
 
-static const parsefunc_t parsefuncs[NUM_SECTIONS] = {
-    NULL,   // custom
-    parse_types,
-    parse_imports,
-    parse_functions,
-    parse_tables,
-    parse_memory,
-    parse_globals,
-    parse_exports,
-    NULL,   // start
-    parse_elements,
-    parse_code,
-    parse_data,
-    NULL,   // data count
+static const vm_parsefunc_t parsefuncs[NumSections] = {
+    [SectTypes]     = parse_types,
+    [SectImports]   = parse_imports,
+    [SectFunctions] = parse_functions,
+    [SectTables]    = parse_tables,
+    [SectMemory]    = parse_memory,
+    [SectGlobals]   = parse_globals,
+    [SectExports]   = parse_exports,
+    [SectElements]  = parse_elements,
+    [SectCode]      = parse_code,
+    [SectData]      = parse_data,
 };
 
 static bool parse_sections(vm_t *m, sizebuf_t *sz)
 {
     // Read the sections
-    vm_section_t sections[NUM_SECTIONS] = { 0 };
+    vm_section_t sections[NumSections] = { 0 };
     while (sz->readcount < sz->cursize) {
         uint32_t id = SZ_ReadByte(sz);
         uint32_t len = SZ_ReadLeb(sz);
-        ASSERT(id < NUM_SECTIONS, "Unknown section %u", id);
+        ASSERT(id < NumSections, "Unknown section %u", id);
         ASSERT(len <= SZ_Remaining(sz), "Section %u out of bounds", id);
         sections[id].pos = sz->readcount;
         sections[id].len = len;
@@ -469,7 +463,7 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
     }
 
     uint32_t cursize = sz->cursize;
-    for (uint32_t id = 0; id < NUM_SECTIONS; id++) {
+    for (uint32_t id = 0; id < NumSections; id++) {
         if (!sections[id].len)
             continue;
         if (!parsefuncs[id])
@@ -581,7 +575,7 @@ vm_t *VM_Load(const char *name, const vm_import_t *imports, const vm_export_t *e
         m->llvm_stack_start = *m->llvm_stack_pointer;
 
     Com_DPrintf("Loaded %s: %d KB of code, %d MB of memory\n", name,
-                m->num_code_bytes / 1000, m->memory.bytesize / 1000000);
+                m->num_code_bytes / 1000, m->memory.num_bytes / 1000000);
 
     return m;
 

@@ -72,8 +72,8 @@ VM_THUNK(memcmp) {
     uint32_t p2   = VM_U32(1);
     uint32_t size = VM_U32(2);
 
-    VM_ASSERT((uint64_t)p1 + size <= m->bytesize &&
-              (uint64_t)p2 + size <= m->bytesize, "Memory compare out of bounds");
+    VM_ASSERT((uint64_t)p1 + size <= m->num_bytes &&
+              (uint64_t)p2 + size <= m->num_bytes, "Memory compare out of bounds");
 
     VM_I32(0) = memcmp(m->bytes + p1, m->bytes + p2, size);
 }
@@ -86,7 +86,7 @@ VM_THUNK(snprintf) {
 }
 
 VM_THUNK(sprintf) {
-    VM_I32(0) = VM_vsnprintf(m, VM_STR(0), m->bytesize - VM_U32(0), VM_STR(1), VM_U32(2));
+    VM_I32(0) = VM_vsnprintf(m, VM_STR(0), m->num_bytes - VM_U32(0), VM_STR(1), VM_U32(2));
 }
 
 VM_THUNK(strtof) {
