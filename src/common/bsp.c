@@ -637,9 +637,13 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
     grid->size[2] = SZ_ReadLong(s);
     grid->mins = SZ_ReadVector(s);
 
+    uint64_t xy = (uint64_t)grid->size[0] * grid->size[1];
+    if (xy > UINT32_MAX || xy * grid->size[2] > UINT32_MAX)
+        return false;
+
     // misaligns everything. what were they thinking?!
     grid->numstyles = SZ_ReadByte(s);
-    if (grid->numstyles - 1 >= MAX_LIGHTMAPS)
+    if (grid->numstyles > MAX_LIGHTMAPS)
         return false;
 
     grid->rootnode = SZ_ReadLong(s);
@@ -649,16 +653,24 @@ static bool BSP_ParseLightgridHeader_(lightgrid_t *grid, sizebuf_t *s)
 
     s->readcount += grid->numnodes * 44;
     grid->numleafs = SZ_ReadLong(s);
-    if (grid->numleafs - 1 >= SZ_Remaining(s) / 24)
+    if (grid->numleafs > SZ_Remaining(s) / 24)
         return false;
 
     for (int i = 0; i < grid->numleafs; i++) {
-        uint32_t x, y, z, numsamples;
+        uint32_t min_x, min_y, min_z, x, y, z, numsamples;
 
-        s->readcount += 12;
+        min_x = SZ_ReadLong(s);
+        min_y = SZ_ReadLong(s);
+        min_z = SZ_ReadLong(s);
+
         x = SZ_ReadLong(s);
         y = SZ_ReadLong(s);
         z = SZ_ReadLong(s);
+
+        if ((uint64_t)min_x + x > grid->size[0] ||
+            (uint64_t)min_y + y > grid->size[1] ||
+            (uint64_t)min_z + z > grid->size[2])
+            return false;
 
         numsamples = x * y * z;
         grid->numsamples += numsamples;
@@ -686,14 +698,22 @@ static size_t BSP_ParseLightgridHeader(bsp_t *bsp, const byte *in, size_t filele
 
     if (!BSP_ParseLightgridHeader_(grid, &s)) {
         Com_WPrintf("Bad LIGHTGRID_OCTREE header\n");
-        memset(grid, 0, sizeof(*grid));
-        return 0;
+        goto fail;
+    }
+
+    if (!grid->numleafs || !grid->numsamples || !grid->numstyles) {
+        Com_WPrintf("Ignoring empty LIGHTGRID_OCTREE\n");
+        goto fail;
     }
 
     return
         BSP_ALIGN(sizeof(grid->nodes[0]) * grid->numnodes) +
         BSP_ALIGN(sizeof(grid->leafs[0]) * grid->numleafs) +
         BSP_ALIGN(sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles);
+
+fail:
+    *grid = (lightgrid_t){ 0 };
+    return 0;
 }
 
 static bool BSP_ValidateLightgrid_r(const lightgrid_t *grid, uint32_t nodenum)
@@ -739,7 +759,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     // ignore if map isn't lit
     if (!bsp->lightmap) {
         Com_WPrintf("Ignoring LIGHTGRID_OCTREE, map isn't lit\n");
-        memset(grid, 0, sizeof(*grid));
+        *grid = (lightgrid_t){ 0 };
         return;
     }
 
@@ -758,7 +778,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     // validate tree
     if (!BSP_ValidateLightgrid_r(grid, grid->rootnode)) {
         Com_WPrintf("Bad LIGHTGRID_OCTREE structure\n");
-        memset(grid, 0, sizeof(*grid));
+        *grid = (lightgrid_t){ 0 };
         return;
     }
 
