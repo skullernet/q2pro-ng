@@ -314,6 +314,7 @@ extern cvar_t *gl_md5_use;
 extern cvar_t *gl_md5_distance;
 #endif
 extern cvar_t *gl_damageblend_frac;
+extern cvar_t *gl_resolution_scale;
 extern cvar_t *gl_waterwarp;
 extern cvar_t *gl_bloom;
 extern cvar_t *gl_bloom_sigma;

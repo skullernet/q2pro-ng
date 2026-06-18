@@ -320,8 +320,6 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
 
 static void GL_DrawDynamicShadows(const cplane_t *frustum)
 {
-    glr.num_shadow_views = 0;
-
     for (int i = 0; i < r_numdlights; i++) {
         gldlight_t *light = &r_dlights[i];
         int j, num_views;
@@ -370,6 +368,8 @@ void GL_DrawShadowMap(const refdef_t *fd)
         GL_FreeStaticLights();
         GL_CreateShadowNodes();
     }
+
+    glr.num_shadow_views = 0;
 
     if (!r_numdlights || (fd->rdflags & RDF_NOWORLDMODEL) || !gl_shadowmap->integer)
         return;

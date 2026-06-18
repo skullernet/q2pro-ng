@@ -1020,7 +1020,7 @@ void GL_ShaderStateBits(glStateBits_t key)
 
 void GL_ShaderUpdateBlur(void)
 {
-    float sigma = Cvar_ClampValue(gl_bloom_sigma, 1, MAX_SIGMA) * glr.fd.height / 1080;
+    float sigma = Cvar_ClampValue(gl_bloom_sigma, 1, MAX_SIGMA) * glr.framebuffer_height / 1080;
     if (gl_static.bloom_sigma == sigma)
         return;
 

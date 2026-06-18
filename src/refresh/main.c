@@ -62,6 +62,7 @@ cvar_t *gl_md5_use;
 cvar_t *gl_md5_distance;
 #endif
 cvar_t *gl_damageblend_frac;
+cvar_t *gl_resolution_scale;
 cvar_t *gl_waterwarp;
 cvar_t *gl_fog;
 cvar_t *gl_bloom;
@@ -767,8 +768,8 @@ static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
 static void GL_DrawBloom(bool waterwarp)
 {
     int iterations = Cvar_ClampInteger(gl_bloom, 1, 8) * 2;
-    int w = glr.fd.width / 4;
-    int h = glr.fd.height / 4;
+    int w = glr.framebuffer_width / 4;
+    int h = glr.framebuffer_height / 4;
 
     qglViewport(0, 0, w, h);
     GL_Ortho(0, w, h, 0, -1, 1);
@@ -813,14 +814,24 @@ static void GL_DrawBloom(bool waterwarp)
 
 typedef enum {
     PP_NONE      = 0,
-    PP_WATERWARP = BIT(0),
-    PP_BLOOM     = BIT(1),
+    PP_SCALE     = BIT(0),
+    PP_WATERWARP = BIT(1),
+    PP_BLOOM     = BIT(2),
 } pp_flags_t;
 
 static pp_flags_t GL_BindFramebuffer(void)
 {
     pp_flags_t flags = PP_NONE;
+    int scaled_w = glr.fd.width;
+    int scaled_h = glr.fd.height;
+    float scale  = Cvar_ClampValue(gl_resolution_scale, 0.125f, 2.0f);
     bool resized = false;
+
+    if (scale != 1.0f) {
+        scaled_w *= scale;
+        scaled_h *= scale;
+        flags |= PP_SCALE;
+    }
 
     if ((glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer)
         flags |= PP_WATERWARP;
@@ -829,14 +840,13 @@ static pp_flags_t GL_BindFramebuffer(void)
         flags |= PP_BLOOM;
 
     if (flags)
-        resized = glr.fd.width != glr.framebuffer_width || glr.fd.height != glr.framebuffer_height;
+        resized = scaled_w != glr.framebuffer_width || scaled_h != glr.framebuffer_height;
 
     if (resized || gl_waterwarp->modified || gl_bloom->modified) {
+        glr.framebuffer_width  = scaled_w;
+        glr.framebuffer_height = scaled_h;
         glr.framebuffer_ok     = GL_InitFramebuffers();
-        glr.framebuffer_width  = glr.fd.width;
-        glr.framebuffer_height = glr.fd.height;
-        gl_waterwarp->modified = false;
-        gl_bloom->modified     = false;
+        gl_waterwarp->modified = gl_bloom->modified = false;
         if (gl_bloom->integer)
             GL_ShaderUpdateBlur();
     }
@@ -846,6 +856,9 @@ static pp_flags_t GL_BindFramebuffer(void)
 
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
     glr.framebuffer_bound = true;
+
+    glr.fd.width = scaled_w;
+    glr.fd.height = scaled_h;
 
     if (gl_clear->integer) {
         if (flags & PP_BLOOM) {
@@ -942,6 +955,8 @@ void R_RenderFrame(const refdef_t *fd)
     if (glr.framebuffer_bound) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
         glr.framebuffer_bound = false;
+        glr.fd.width = fd->width;
+        glr.fd.height = fd->height;
     }
 
     // go back into 2D mode
@@ -949,9 +964,10 @@ void R_RenderFrame(const refdef_t *fd)
 
     if (pp_flags & PP_BLOOM) {
         GL_DrawBloom(pp_flags & PP_WATERWARP);
-    } else if (pp_flags & PP_WATERWARP) {
+    } else if (pp_flags) {
+        glStateBits_t bits = (pp_flags & PP_WATERWARP) ? GLS_WARP_ENABLE : GLS_DEFAULT;
         GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
-        GL_PostProcess(GLS_WARP_ENABLE, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
+        GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
     }
 
     if (gl_polyblend->integer)
@@ -1150,6 +1166,7 @@ static void GL_Register(void)
     gl_md5_distance = Cvar_Get("gl_md5_distance", "2048", 0);
 #endif
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
+    gl_resolution_scale = Cvar_Get("gl_resolution_scale", "1", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "1", 0);
     gl_fog = Cvar_Get("gl_fog", "1", 0);
     gl_bloom = Cvar_Get("gl_bloom", "1", 0);

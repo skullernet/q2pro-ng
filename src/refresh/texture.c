@@ -39,6 +39,7 @@ static cvar_t *gl_gamma_scale_pics;
 static cvar_t *gl_bilerp_chars;
 static cvar_t *gl_bilerp_pics;
 static cvar_t *gl_bilerp_skies;
+static cvar_t *gl_bilerp_scene;
 static cvar_t *gl_upscale_pcx;
 static cvar_t *gl_texturemode;
 static cvar_t *gl_texturebits;
@@ -1102,11 +1103,11 @@ static void GL_InitCubemaps(void)
     sky->texnum = TEXNUM_CUBEMAP_DEFAULT;
 }
 
-static void GL_InitPostProcTexture(int w, int h)
+static void GL_InitPostProcTexture(int w, int h, GLenum filter_max)
 {
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_max);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
@@ -1137,28 +1138,28 @@ bool GL_InitFramebuffers(void)
     int scene_w = 0, scene_h = 0, bloom_w = 0, bloom_h = 0;
 
     if (gl_waterwarp->integer || gl_bloom->integer) {
-        scene_w = glr.fd.width;
-        scene_h = glr.fd.height;
+        scene_w = glr.framebuffer_width;
+        scene_h = glr.framebuffer_height;
     }
 
     if (gl_bloom->integer) {
-        bloom_w = glr.fd.width;
-        bloom_h = glr.fd.height;
+        bloom_w = glr.framebuffer_width;
+        bloom_h = glr.framebuffer_height;
     }
 
     GL_ClearErrors();
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
-    GL_InitPostProcTexture(scene_w, scene_h);
+    GL_InitPostProcTexture(scene_w, scene_h, gl_bilerp_scene->integer ? GL_LINEAR : GL_NEAREST);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
-    GL_InitPostProcTexture(bloom_w, bloom_h);
+    GL_InitPostProcTexture(bloom_w, bloom_h, GL_LINEAR);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_0);
-    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4);
+    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4, GL_LINEAR);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_1);
-    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4);
+    GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4, GL_LINEAR);
 
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
     qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scene_w ? TEXNUM_PP_SCENE : GL_NONE, 0);
@@ -1233,6 +1234,12 @@ bool GL_InitShadowBuffer(void)
     return true;
 }
 
+static void gl_bilerp_scene_changed(cvar_t *self)
+{
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+    qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, self->integer ? GL_LINEAR : GL_NEAREST);
+}
+
 static void gl_partshape_changed(cvar_t *self)
 {
     GL_InitParticleTexture();
@@ -1251,6 +1258,8 @@ void GL_InitImages(void)
     gl_bilerp_pics->changed = gl_bilerp_pics_changed;
     gl_bilerp_skies = Cvar_Get("gl_bilerp_skies", "1", 0);
     gl_bilerp_skies->changed = gl_bilerp_skies_changed;
+    gl_bilerp_scene = Cvar_Get("gl_bilerp_scene", "1", 0);
+    gl_bilerp_scene->changed = gl_bilerp_scene_changed;
     gl_texturemode = Cvar_Get("gl_texturemode", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
@@ -1328,6 +1337,7 @@ void GL_ShutdownImages(void)
     gl_bilerp_chars->changed = NULL;
     gl_bilerp_pics->changed = NULL;
     gl_bilerp_skies->changed = NULL;
+    gl_bilerp_scene->changed = NULL;
     gl_texturemode->changed = NULL;
     gl_texturemode->generator = NULL;
     gl_anisotropy->changed = NULL;
