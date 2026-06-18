@@ -27,8 +27,9 @@ typedef struct {
 void    Hunk_Init(void);
 size_t  Hunk_PageSize(void);
 void    Hunk_Begin(memhunk_t *hunk, size_t maxsize);
-void    *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align);
-void    *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align);
+void   *Hunk_TryAlloc(memhunk_t *hunk, size_t size, size_t align);
+void   *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align);
+void   *Hunk_AllocArray(memhunk_t *hunk, size_t size, size_t nmemb, size_t align);
 void    Hunk_FreeToWatermark(memhunk_t *hunk, size_t size);
 void    Hunk_End(memhunk_t *hunk);
 void    Hunk_Free(memhunk_t *hunk);

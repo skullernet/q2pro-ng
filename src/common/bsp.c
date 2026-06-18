@@ -52,6 +52,9 @@ static cvar_t *map_patch_vis;
 #define BSP_ALLOC(size) \
     Hunk_Alloc(&bsp->hunk, size, BSP_ALIGN_BYTES)
 
+#define BSP_ALLOC_ARRAY(size, nmemb) \
+    Hunk_AllocArray(&bsp->hunk, size, nmemb, BSP_ALIGN_BYTES)
+
 #define BSP_ERROR(msg) \
     Com_SetLastError(va("%s: %s", __func__, msg))
 
@@ -750,7 +753,6 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
     uint32_t remaining;
     sizebuf_t s;
     byte *data;
-    size_t size;
     int i, j;
 
     if (!grid->numleafs)
@@ -765,7 +767,7 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
 
     SZ_InitRead(&s, in, filelen);
 
-    grid->nodes = BSP_ALLOC(sizeof(grid->nodes[0]) * grid->numnodes);
+    grid->nodes = BSP_ALLOC_ARRAY(sizeof(grid->nodes[0]), grid->numnodes);
 
     // load children first
     s.readcount = 45;   // misaligned shit
@@ -790,12 +792,13 @@ static void BSP_ParseLightgrid(bsp_t *bsp, const byte *in, size_t filelen)
         s.readcount += 32;
     }
 
-    grid->leafs = BSP_ALLOC(sizeof(grid->leafs[0]) * grid->numleafs);
+    grid->leafs = BSP_ALLOC_ARRAY(sizeof(grid->leafs[0]), grid->numleafs);
 
     // init samples to fully occluded
-    size = sizeof(grid->samples[0]) * grid->numsamples * grid->numstyles;
-    grid->samples = sample = memset(BSP_ALLOC(size), 255, size);
+    grid->samples = BSP_ALLOC_ARRAY(sizeof(grid->samples[0]) * grid->numstyles, grid->numsamples);
+    memset(grid->samples, 255, sizeof(grid->samples[0]) * grid->numstyles * grid->numsamples);
 
+    sample = grid->samples;
     remaining = grid->numsamples;
     s.readcount += 4;
     for (i = 0, leaf = grid->leafs; i < grid->numleafs; i++, leaf++) {
@@ -872,8 +875,8 @@ static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
         return;
     }
 
-    bsp->normals = BSP_ALLOC(sizeof(bsp->normals[0]) * bsp->num_normals);
-    bsp->normal_indices = BSP_ALLOC(sizeof(bsp->normal_indices[0]) * bsp->num_normal_indices);
+    bsp->normals = BSP_ALLOC_ARRAY(sizeof(bsp->normals[0]), bsp->num_normals);
+    bsp->normal_indices = BSP_ALLOC_ARRAY(sizeof(bsp->normal_indices[0]), bsp->num_normal_indices);
 
     in += sizeof(uint32_t);
     for (int i = 0; i < bsp->num_normals; i++)
@@ -974,11 +977,11 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
     byte            *buf;
     dheader_t       *header;
     const lump_info_t *info;
-    uint32_t        filelen, ofs, len, count, maxpos;
+    uint32_t        filelen, ofs, len, maxpos;
     int             i, ret;
     uint32_t        lump_ofs[q_countof(bsp_lumps)];
     uint32_t        lump_count[q_countof(bsp_lumps)];
-    size_t          memsize;
+    size_t          memsize, count;
     bool            extended = false;
 
     Q_assert(name);
@@ -1063,12 +1066,6 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
         if (info->lump == LUMP_VISIBILITY && len >= 4) {
             uint32_t numclusters = RL32(buf + ofs);
             count = BSP_VisibilitySize(numclusters);
-        }
-
-        if (count > INT_MAX / info->memsize) {
-            Com_SetLastError(va("%s lump too large", info->name));
-            ret = Q_ERR_INVALID_DATA;
-            goto fail2;
         }
 
         // round to cacheline

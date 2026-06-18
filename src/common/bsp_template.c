@@ -131,7 +131,7 @@ BSP_LOAD(Texinfo)
     mtexinfo_t  *out;
 
     bsp->numtexinfo = count;
-    bsp->texinfo = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->texinfo = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
 #if USE_REF
@@ -185,7 +185,7 @@ BSP_LOAD(Planes)
     cplane_t    *out;
 
     bsp->numplanes = count;
-    bsp->planes = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->planes = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, in += 4, out++) {
         BSP_Vector(out->normal);
@@ -203,7 +203,7 @@ BSP_LOAD(Brushes)
     mbrush_t    *out;
 
     bsp->numbrushes = count;
-    bsp->brushes = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->brushes = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t firstside = BSP_Long();
@@ -235,7 +235,7 @@ BSP_LOAD(Vertices)
     mvertex_t   *out;
 
     bsp->numvertices = count;
-    bsp->vertices = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->vertices = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++)
         BSP_Vector(out->point);
@@ -248,7 +248,7 @@ BSP_LOAD(SurfEdges)
     msurfedge_t *out;
 
     bsp->numsurfedges = count;
-    bsp->surfedges = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->surfedges = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t index = BSP_Long();
@@ -272,7 +272,7 @@ BSP_LOAD(SubModels)
     BSP_ENSURE(count <= MAX_MODELS, "Too many models");
 
     bsp->nummodels = count;
-    bsp->models = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->models = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         BSP_Vector(out->box.mins);
@@ -325,7 +325,7 @@ BSP_LOAD(AreaPortals)
     mareaportal_t   *out;
 
     bsp->numareaportals = count;
-    bsp->areaportals = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->areaportals = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         out->portalnum = BSP_Long();
@@ -342,7 +342,7 @@ BSP_LOAD(Areas)
     BSP_ENSURE(count <= MAX_MAP_AREAS, "Too many areas");
 
     bsp->numareas = count;
-    bsp->areas = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->areas = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t numareaportals = BSP_Long();
@@ -373,7 +373,7 @@ BSP_LOAD(BrushSides)
     mbrushside_t    *out;
 
     bsp->numbrushsides = count;
-    bsp->brushsides = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->brushsides = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t planenum = BSP_ExtLong();
@@ -397,7 +397,7 @@ BSP_LOAD(LeafBrushes)
     mbrush_t    **out;
 
     bsp->numleafbrushes = count;
-    bsp->leafbrushes = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->leafbrushes = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t brushnum = BSP_ExtLong();
@@ -414,7 +414,7 @@ BSP_LOAD(Edges)
     medge_t     *out;
 
     bsp->numedges = count;
-    bsp->edges = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->edges = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         for (int j = 0; j < 2; j++) {
@@ -432,7 +432,7 @@ BSP_LOAD(Faces)
     mface_t     *out;
 
     bsp->numfaces = count;
-    bsp->faces = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->faces = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0, j; i < count; i++, out++) {
         uint32_t planenum = BSP_ExtLong();
@@ -477,7 +477,7 @@ BSP_LOAD(LeafFaces)
     mface_t     **out;
 
     bsp->numleaffaces = count;
-    bsp->leaffaces = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->leaffaces = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t facenum = BSP_ExtLong();
@@ -496,7 +496,7 @@ BSP_LOAD(Leafs)
     BSP_ENSURE(count > 0, "Map with no leafs");
 
     bsp->numleafs = count;
-    bsp->leafs = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->leafs = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         out->plane = NULL;
@@ -557,7 +557,7 @@ BSP_LOAD(Nodes)
     BSP_ENSURE(count > 0, "Map with no nodes");
 
     bsp->numnodes = count;
-    bsp->nodes = out = BSP_ALLOC(sizeof(*out) * count);
+    bsp->nodes = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
         uint32_t planenum = BSP_Long();
