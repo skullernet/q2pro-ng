@@ -305,6 +305,7 @@ extern cvar_t *gl_shadowmap;
 extern cvar_t *gl_modulate;
 extern cvar_t *gl_modulate_world;
 extern cvar_t *gl_modulate_entities;
+extern cvar_t *gl_coloredlightmaps;
 extern cvar_t *gl_dynamic;
 extern cvar_t *gl_flarespeed;
 extern cvar_t *gl_fontshadow;
@@ -716,6 +717,10 @@ typedef struct {
     GLfloat     fog_sky_factor;
     GLfloat     heightfog_density;
     GLfloat     heightfog_falloff;
+    GLfloat     lightmap_scale;
+    GLfloat     pad_4;
+    GLfloat     pad_5;
+    GLfloat     pad_6;
     vec2_t      w_amp;
     vec2_t      w_phase;
     vec2_t      scroll;
@@ -978,6 +983,7 @@ void GL_ClearSolidFaces(void);
  * gl_world.c
  *
  */
+bool GL_LightPoint(vec3_t start, vec3_t *color);
 void GL_DrawBspModel(const mmodel_t *model);
 void GL_DrawWorld(void);
 

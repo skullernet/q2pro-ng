@@ -100,7 +100,6 @@ void    trap_R_AddLight(const dlight_t *light);
 void    trap_R_SetLightStyles(const float *value);
 void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);
-void    trap_R_LightPoint(vec3_t origin, vec3_t light);
 
 void    trap_R_GetConfig(refcfg_t *cfg);
 void    trap_R_GetPalette(uint32_t palette[256]);
@@ -241,7 +240,6 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_R_SetLightStyles cgi->R_SetLightStyles
 #define trap_R_LocateParticles cgi->R_LocateParticles
 #define trap_R_RenderScene cgi->R_RenderScene
-#define trap_R_LightPoint cgi->R_LightPoint
 
 #define trap_R_GetConfig cgi->R_GetConfig
 #define trap_R_GetPalette cgi->R_GetPalette

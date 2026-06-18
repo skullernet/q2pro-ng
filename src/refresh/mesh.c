@@ -199,10 +199,10 @@ static void setup_color(void)
         color = Vec3(1, 0, 0);
     } else if (flags & RF_TRACKER) {
         color = vec3_origin;
-    } else {
+    } else if (GL_LightPoint(origin, &color)) {
         float f, m;
 
-        R_LightPoint(origin, &color);
+        color = Vec3_Scale(color, 1.0f / 255.0f);
 
         if (flags & RF_MINLIGHT) {
             f = Vec3_Length(color);
@@ -221,6 +221,14 @@ static void setup_color(void)
                     color.rgb[i] = m;
             }
         }
+
+        f = LUMINANCE(color.r, color.g, color.b);
+        color = Vec3_Lerp(Vec3_Fill(f), color, gl_coloredlightmaps->value);
+
+        f = gl_modulate->value * gl_modulate_entities->value;
+        color = Vec3_Scale(color, f);
+    } else {
+        color = Vec3(1, 1, 1);
     }
 
     float alpha = (flags & RF_TRANSLUCENT) ? glr.ent->e.alpha : 1.0f;

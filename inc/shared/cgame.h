@@ -143,7 +143,6 @@ typedef struct {
     void    (*R_SetLightStyles)(const float *value);
     void    (*R_LocateParticles)(const particle_t *p, int count);
     void    (*R_RenderScene)(const refdef_t *fd);
-    void    (*R_LightPoint)(vec3_t origin, vec3_t *light);
 
     void    (*R_GetConfig)(refcfg_t *cfg);
     void    (*R_GetPalette)(uint32_t palette[256]);

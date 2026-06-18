@@ -100,6 +100,10 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
         float u_fog_sky_factor;
         float u_heightfog_density;
         float u_heightfog_falloff;
+        float u_lightmap_scale;
+        float pad_4;
+        float pad_5;
+        float pad_6;
         vec2 w_amp;
         vec2 w_phase;
         vec2 u_scroll;
@@ -745,7 +749,12 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_DYNAMIC_LIGHTS)
             GLSL(lightmap += calc_dynamic_lights();)
 
-        GLSL(diffuse.rgb *= clamp(lightmap, 0.0, 1.0) * u_modulate_world;)
+        GLSL(
+            lightmap = clamp(lightmap, 0.0, 1.0);
+            float lightmap_y = lightmap.r * 0.2126 + lightmap.g * 0.7152 + lightmap.b * 0.0722;
+            lightmap = mix(vec3(lightmap_y), lightmap, u_lightmap_scale);
+            diffuse.rgb *= lightmap * u_modulate_world;
+        )
     }
 
     if (bits & GLS_DEFAULT_FLARE)

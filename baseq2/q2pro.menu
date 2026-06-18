@@ -81,6 +81,7 @@ begin video
         trilinear GL_LINEAR_MIPMAP_LINEAR
     pairs "anisotropic filter" gl_anisotropy no 1 2x 2 4x 4 8x 8 16x 16
     range "texture saturation" gl_saturation 0 1
+    range "lightmap saturation" gl_coloredlightmaps 0 1
 end
 
 begin options

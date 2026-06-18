@@ -482,10 +482,6 @@ VM_THUNK(R_RenderScene) {
     R_RenderFrame(VM_PTR(0, refdef_t));
 }
 
-VM_THUNK(R_LightPoint) {
-    R_LightPoint(VM_VEC3(0), VM_VEC3_PTR(1));
-}
-
 VM_THUNK(R_GetConfig) {
     PF_R_GetConfig(VM_PTR(0, refcfg_t));
 }
@@ -737,7 +733,6 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_SetLightStyles, "i"),
     VM_IMPORT(R_LocateParticles, "ii"),
     VM_IMPORT(R_RenderScene, "i"),
-    VM_IMPORT(R_LightPoint, "ii"),
     VM_IMPORT(R_GetConfig, "i"),
     VM_IMPORT(R_GetPalette, "i"),
     VM_IMPORT(R_ClearColor, ""),
@@ -1025,7 +1020,6 @@ static const cgame_import_t cgame_dll_imports = {
     .R_SetLightStyles = R_SetLightStyles,
     .R_LocateParticles = R_LocateParticles,
     .R_RenderScene = R_RenderFrame,
-    .R_LightPoint = R_LightPoint,
 
     .R_GetConfig = PF_R_GetConfig,
     .R_GetPalette = R_GetPalette,

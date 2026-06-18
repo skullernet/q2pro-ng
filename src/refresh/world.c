@@ -147,7 +147,7 @@ static bool GL_LightGridPoint(const lightgrid_t *grid, vec3_t start, vec3_t *col
     return true;
 }
 
-static bool GL_LightPoint(vec3_t start, vec3_t *color)
+bool GL_LightPoint(vec3_t start, vec3_t *color)
 {
     const bsp_t     *bsp = gl_static.world.cache;
     lightpoint_t    pt;
@@ -262,18 +262,6 @@ static void GL_TransformLights(const mmodel_t *model)
         lightbit = BIT_ULL(i);
         GL_MarkLights_r(model->headnode);
     }
-}
-
-void R_LightPoint(vec3_t origin, vec3_t *color)
-{
-    // get lighting from world
-    if (!GL_LightPoint(origin, color)) {
-        *color = Vec3(1, 1, 1);
-        return;
-    }
-
-    float scale = gl_modulate->value * gl_modulate_entities->value / 255.0f;
-    *color = Vec3_Scale(*color, scale);
 }
 
 static void GL_MarkLeaves(void)

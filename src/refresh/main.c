@@ -53,6 +53,7 @@ cvar_t *gl_shadowmap;
 cvar_t *gl_modulate;
 cvar_t *gl_modulate_world;
 cvar_t *gl_modulate_entities;
+cvar_t *gl_coloredlightmaps;
 cvar_t *gl_dynamic;
 cvar_t *gl_flarespeed;
 cvar_t *gl_fontshadow;
@@ -1157,6 +1158,7 @@ static void GL_Register(void)
     gl_modulate = Cvar_Get("gl_modulate", "2", CVAR_ARCHIVE);
     gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
+    gl_coloredlightmaps = Cvar_Get("gl_coloredlightmaps", "1", 0);
     gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_flarespeed = Cvar_Get("gl_flarespeed", "8", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
