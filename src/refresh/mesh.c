@@ -319,9 +319,6 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
 
     c.trisDrawn += num_indices / 3;
 
-    // fall back to entity matrix
-    GL_LoadMatrix(glr.entmatrix);
-
     gls.u_block.mesh.color = meshcolor;
     GL_ForceUniforms();
 

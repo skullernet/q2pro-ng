@@ -265,12 +265,6 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
     return true;
 }
 
-// P = A * B
-void GL_MultMatrix(GLfloat *restrict p, const GLfloat *restrict a, const GLfloat *restrict b)
-{
-    Matrix_Multiply(a, b, p);
-}
-
 void GL_SetEntityAxis(void)
 {
     const entity_t *e = &glr.ent->e;
@@ -294,38 +288,36 @@ void GL_SetEntityAxis(void)
     }
 }
 
-void GL_RotationMatrix(GLfloat *matrix)
+void GL_RotateForWorld(void)
 {
-    matrix[ 0] = glr.entaxis[0].x;
-    matrix[ 4] = glr.entaxis[1].x;
-    matrix[ 8] = glr.entaxis[2].x;
-    matrix[12] = glr.ent->e.origin.x;
+    if (gls.is_world_matrix)
+        return;
 
-    matrix[ 1] = glr.entaxis[0].y;
-    matrix[ 5] = glr.entaxis[1].y;
-    matrix[ 9] = glr.entaxis[2].y;
-    matrix[13] = glr.ent->e.origin.y;
-
-    matrix[ 2] = glr.entaxis[0].z;
-    matrix[ 6] = glr.entaxis[1].z;
-    matrix[10] = glr.entaxis[2].z;
-    matrix[14] = glr.ent->e.origin.z;
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
+    gls.u_block.m_model = Mat4_Identity();
+    gls.u_block.m_sky[0] = glr.skymatrix[0];
+    gls.u_block.m_sky[1] = glr.skymatrix[1];
+    gls.view_matrix = glr.viewmatrix;
+    gls.u_block_dirty |= DIRTY_MATRIX;
+    gls.is_world_matrix = true;
 }
 
 void GL_RotateForEntity(void)
 {
-    GL_RotationMatrix(gls.u_block.m_model);
-    if (glr.ent == &gl_world || (glr.ent->e.model & BIT(31) && !(gl_static.nodraw_mask & SURF_SKY))) {
-        GL_MultMatrix(gls.u_block.m_sky[0], glr.skymatrix[0], gls.u_block.m_model);
-        GL_MultMatrix(gls.u_block.m_sky[1], glr.skymatrix[1], gls.u_block.m_model);
+    gls.u_block.m_model = Mat4_FromCols(
+        Vec4_FromVec3(glr.entaxis[0], 0),
+        Vec4_FromVec3(glr.entaxis[1], 0),
+        Vec4_FromVec3(glr.entaxis[2], 0),
+        Vec4_FromVec3(glr.ent->e.origin, 1)
+    );
+
+    if (glr.ent->bmodel && !(gl_static.nodraw_mask & SURF_SKY)) {
+        gls.u_block.m_sky[0] = Mat4_Multiply(glr.skymatrix[0], gls.u_block.m_model);
+        gls.u_block.m_sky[1] = Mat4_Multiply(glr.skymatrix[1], gls.u_block.m_model);
     }
-    GL_MultMatrix(glr.entmatrix, glr.viewmatrix, gls.u_block.m_model);
-    GL_ForceMatrix(glr.entmatrix);
+
+    gls.view_matrix = Mat4_Multiply(glr.viewmatrix, gls.u_block.m_model);
+    gls.u_block_dirty |= DIRTY_MATRIX;
+    gls.is_world_matrix = false;
 }
 
 static void GL_DrawSpriteModel(const model_t *model)
@@ -352,7 +344,7 @@ static void GL_DrawSpriteModel(const model_t *model)
         bits |= GLS_COLOR_ENABLE | GLS_BLEND_BLEND;
     }
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
     GL_LoadUniforms();
     GL_BindTexture(TMU_TEXTURE, image->texnum);
     GL_BindArrays(VA_SPRITE);
@@ -409,7 +401,7 @@ static void GL_DrawNullModel(void)
     WN32(tess.vertices + 19, U32_BLUE);
     WN32(tess.vertices + 23, U32_BLUE);
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
     GL_LoadUniforms();
     GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
     GL_BindArrays(VA_NULLMODEL);
@@ -481,7 +473,7 @@ static void GL_OccludeFlares(void)
         }
 
         if (!set) {
-            GL_LoadMatrix(glr.viewmatrix);
+            GL_RotateForWorld();
             GL_LoadUniforms();
             GL_BindTexture(TMU_TEXTURE, TEXNUM_WHITE);
             GL_BindArrays(VA_OCCLUDE);
@@ -938,8 +930,6 @@ void R_RenderFrame(const refdef_t *fd)
     GL_DrawEntities(glr.ents.alpha_back);
 
     GL_DrawAlphaFaces();
-
-    memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
 
     GL_DrawBeams();
 

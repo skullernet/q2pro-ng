@@ -542,7 +542,7 @@ void GL_DrawWorld(void)
         GL_MarkLights();
     }
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
 
     GL_BindArrays(VA_3D);
 

@@ -23,58 +23,6 @@ static bool     skyautorotate;
 static vec3_t   skyaxis;
 static vec3_t   skymatrix[3];
 
-static void DefaultSkyMatrix(GLfloat *matrix)
-{
-    if (skyautorotate) {
-        SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
-        TransposeAxis(skymatrix);
-    }
-
-    matrix[ 0] = skymatrix[0].x;
-    matrix[ 4] = skymatrix[0].y;
-    matrix[ 8] = skymatrix[0].z;
-    matrix[12] = -Vec3_Dot(skymatrix[0], glr.fd.vieworg);
-
-    matrix[ 1] = skymatrix[2].x;
-    matrix[ 5] = skymatrix[2].y;
-    matrix[ 9] = skymatrix[2].z;
-    matrix[13] = -Vec3_Dot(skymatrix[2], glr.fd.vieworg);
-
-    matrix[ 2] = skymatrix[1].x;
-    matrix[ 6] = skymatrix[1].y;
-    matrix[10] = skymatrix[1].z;
-    matrix[14] = -Vec3_Dot(skymatrix[1], glr.fd.vieworg);
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
-}
-
-// classic skies don't rotate
-static void ClassicSkyMatrix(GLfloat *matrix)
-{
-    matrix[ 0] = 1;
-    matrix[ 4] = 0;
-    matrix[ 8] = 0;
-    matrix[12] = -glr.fd.vieworg.x;
-
-    matrix[ 1] = 0;
-    matrix[ 5] = 1;
-    matrix[ 9] = 0;
-    matrix[13] = -glr.fd.vieworg.y;
-
-    matrix[ 2] = 0;
-    matrix[ 6] = 0;
-    matrix[10] = 3;
-    matrix[14] = -glr.fd.vieworg.z * 3;
-
-    matrix[ 3] = 0;
-    matrix[ 7] = 0;
-    matrix[11] = 0;
-    matrix[15] = 1;
-}
-
 /*
 ============
 R_RotateForSky
@@ -82,8 +30,25 @@ R_RotateForSky
 */
 void R_RotateForSky(void)
 {
-    DefaultSkyMatrix(glr.skymatrix[0]);
-    ClassicSkyMatrix(glr.skymatrix[1]);
+    if (skyautorotate) {
+        SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
+        TransposeAxis(skymatrix);
+    }
+
+    glr.skymatrix[0] = Mat4_FromRows(
+        Vec4_FromVec3(skymatrix[0], -Vec3_Dot(skymatrix[0], glr.fd.vieworg)),
+        Vec4_FromVec3(skymatrix[2], -Vec3_Dot(skymatrix[2], glr.fd.vieworg)),
+        Vec4_FromVec3(skymatrix[1], -Vec3_Dot(skymatrix[1], glr.fd.vieworg)),
+        Vec4(0, 0, 0, 1)
+    );
+
+    // classic skies don't rotate
+    glr.skymatrix[1] = Mat4_FromRows(
+        Vec4(1, 0, 0, -glr.fd.vieworg.x),
+        Vec4(0, 1, 0, -glr.fd.vieworg.y),
+        Vec4(0, 0, 3, -glr.fd.vieworg.z * 3),
+        Vec4(0, 0, 0, 1)
+    );
 }
 
 static void R_UnsetSky(void)

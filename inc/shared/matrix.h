@@ -18,7 +18,38 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-static inline void Matrix_Ortho(float xmin, float xmax, float ymin, float ymax, float znear, float zfar, mat4_t out)
+typedef union {
+    float v[16];
+    float m[4][4];
+    vec4_t cols[4];
+} mat4_t;
+
+static inline mat4_t Mat4_FromCols(vec4_t a, vec4_t b, vec4_t c, vec4_t d)
+{
+    return (mat4_t){ .cols = { a, b, c, d } };
+}
+
+static inline mat4_t Mat4_FromRows(vec4_t a, vec4_t b, vec4_t c, vec4_t d)
+{
+    return Mat4_FromCols(
+        Vec4(a.x, b.x, c.x, d.x),
+        Vec4(a.y, b.y, c.y, d.y),
+        Vec4(a.z, b.z, c.z, d.z),
+        Vec4(a.w, b.w, c.w, d.w)
+    );
+}
+
+static inline mat4_t Mat4_Identity(void)
+{
+    return Mat4_FromCols(
+        Vec4(1, 0, 0, 0),
+        Vec4(0, 1, 0, 0),
+        Vec4(0, 0, 1, 0),
+        Vec4(0, 0, 0, 1)
+    );
+}
+
+static inline mat4_t Mat4_Ortho(float xmin, float xmax, float ymin, float ymax, float znear, float zfar)
 {
     float width, height, depth;
 
@@ -26,28 +57,15 @@ static inline void Matrix_Ortho(float xmin, float xmax, float ymin, float ymax, 
     height = ymax - ymin;
     depth  = zfar - znear;
 
-    out[ 0] = 2 / width;
-    out[ 4] = 0;
-    out[ 8] = 0;
-    out[12] = -(xmax + xmin) / width;
-
-    out[ 1] = 0;
-    out[ 5] = 2 / height;
-    out[ 9] = 0;
-    out[13] = -(ymax + ymin) / height;
-
-    out[ 2] = 0;
-    out[ 6] = 0;
-    out[10] = -2 / depth;
-    out[14] = -(zfar + znear) / depth;
-
-    out[ 3] = 0;
-    out[ 7] = 0;
-    out[11] = 0;
-    out[15] = 1;
+    return Mat4_FromRows(
+        Vec4(2 / width, 0, 0, -(xmax + xmin) / width),
+        Vec4(0, 2 / height, 0, -(ymax + ymin) / height),
+        Vec4(0, 0, -2 / depth, -(zfar + znear) / depth),
+        Vec4(0, 0, 0, 1)
+    );
 }
 
-static inline void Matrix_Frustum(float fov_x, float fov_y, float znear, float zfar, mat4_t out)
+static inline mat4_t Mat4_Frustum(float fov_x, float fov_y, float znear, float zfar)
 {
     float xmin, xmax, ymin, ymax, width, height, depth;
 
@@ -61,71 +79,40 @@ static inline void Matrix_Frustum(float fov_x, float fov_y, float znear, float z
     height = ymax - ymin;
     depth  = zfar - znear;
 
-    out[ 0] = 2 * znear / width;
-    out[ 4] = 0;
-    out[ 8] = (xmax + xmin) / width;
-    out[12] = 0;
-
-    out[ 1] = 0;
-    out[ 5] = 2 * znear / height;
-    out[ 9] = (ymax + ymin) / height;
-    out[13] = 0;
-
-    out[ 2] = 0;
-    out[ 6] = 0;
-    out[10] = -(zfar + znear) / depth;
-    out[14] = -2 * zfar * znear / depth;
-
-    out[ 3] = 0;
-    out[ 7] = 0;
-    out[11] = -1;
-    out[15] = 0;
+    return Mat4_FromRows(
+        Vec4(2 * znear / width, 0, (xmax + xmin) / width, 0),
+        Vec4(0, 2 * znear / height, (ymax + ymin) / height, 0),
+        Vec4(0, 0, -(zfar + znear) / depth, -2 * zfar * znear / depth),
+        Vec4(0, 0, -1, 0)
+    );
 }
 
-static inline void Matrix_RotateForViewer(vec3_t origin, vec3_t axis[3], mat4_t out)
+static inline mat4_t Mat4_RotateForViewer(vec3_t origin, const vec3_t axis[3])
 {
-    out[ 0] = -axis[1].x;
-    out[ 4] = -axis[1].y;
-    out[ 8] = -axis[1].z;
-    out[12] = Vec3_Dot(axis[1], origin);
-
-    out[ 1] = axis[2].x;
-    out[ 5] = axis[2].y;
-    out[ 9] = axis[2].z;
-    out[13] = -Vec3_Dot(axis[2], origin);
-
-    out[ 2] = -axis[0].x;
-    out[ 6] = -axis[0].y;
-    out[10] = -axis[0].z;
-    out[14] = Vec3_Dot(axis[0], origin);
-
-    out[ 3] = 0;
-    out[ 7] = 0;
-    out[11] = 0;
-    out[15] = 1;
+    return Mat4_FromRows(
+        Vec4_FromVec3(Vec3_Negate(axis[1]), Vec3_Dot(axis[1], origin)),
+        Vec4_FromVec3(            axis[2], -Vec3_Dot(axis[2], origin)),
+        Vec4_FromVec3(Vec3_Negate(axis[0]), Vec3_Dot(axis[0], origin)),
+        Vec4(0, 0, 0, 1)
+    );
 }
 
-static inline void Matrix_Multiply(const mat4_t a, const mat4_t b, mat4_t out)
+static inline vec4_t Mat4_TransformVector(mat4_t a, vec4_t b)
 {
-    for (int i = 0; i < 4; i++) {
-        const float b0 = b[i * 4 + 0];
-        const float b1 = b[i * 4 + 1];
-        const float b2 = b[i * 4 + 2];
-        const float b3 = b[i * 4 + 3];
-        out[i * 4 + 0] = a[0] * b0 + a[4] * b1 + a[ 8] * b2 + a[12] * b3;
-        out[i * 4 + 1] = a[1] * b0 + a[5] * b1 + a[ 9] * b2 + a[13] * b3;
-        out[i * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
-        out[i * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
-    }
-}
-
-static inline vec4_t Matrix_TransformVector3(const mat4_t a, vec3_t b)
-{
-    vec4_t out = {
-        .x = a[0] * b.x + a[4] * b.y + a[ 8] * b.z + a[12],
-        .y = a[1] * b.x + a[5] * b.y + a[ 9] * b.z + a[13],
-        .z = a[2] * b.x + a[6] * b.y + a[10] * b.z + a[14],
-        .w = a[3] * b.x + a[7] * b.y + a[11] * b.z + a[15]
+    return (vec4_t) {
+        .x = a.m[0][0] * b.x + a.m[1][0] * b.y + a.m[2][0] * b.z + a.m[3][0] * b.w,
+        .y = a.m[0][1] * b.x + a.m[1][1] * b.y + a.m[2][1] * b.z + a.m[3][1] * b.w,
+        .z = a.m[0][2] * b.x + a.m[1][2] * b.y + a.m[2][2] * b.z + a.m[3][2] * b.w,
+        .w = a.m[0][3] * b.x + a.m[1][3] * b.y + a.m[2][3] * b.z + a.m[3][3] * b.w
     };
-    return out;
+}
+
+static inline mat4_t Mat4_Multiply(mat4_t a, mat4_t b)
+{
+    return Mat4_FromCols(
+        Mat4_TransformVector(a, b.cols[0]),
+        Mat4_TransformVector(a, b.cols[1]),
+        Mat4_TransformVector(a, b.cols[2]),
+        Mat4_TransformVector(a, b.cols[3])
+    );
 }

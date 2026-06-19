@@ -164,7 +164,7 @@ static void GL_DrawStaticShadowView(const gldlight_t *light, vec3_t dir, float f
 {
     glr.fd.viewangles = vectoangles(dir);
 
-    Matrix_Frustum(fov, fov, 1.0f, light->d.radius, gls.proj_matrix);
+    gls.proj_matrix = Mat4_Frustum(fov, fov, 1.0f, light->d.radius);
     glr.fd.fov_x = glr.fd.fov_y = fov;
 
     GL_RotateForViewer();
@@ -288,12 +288,12 @@ static void GL_DrawShadowView(const gldlight_t *light, vec3_t dir, float fov, in
 
     glr.fd.viewangles = vectoangles(dir);
 
-    Matrix_Frustum(fov, fov, 1.0f, light->d.radius, gls.proj_matrix);
+    gls.proj_matrix = Mat4_Frustum(fov, fov, 1.0f, light->d.radius);
     glr.fd.fov_x = glr.fd.fov_y = fov;
 
     GL_RotateForViewer();
 
-    GL_MultMatrix(view->matrix, gls.proj_matrix, gls.view_matrix);
+    view->matrix = Mat4_Multiply(gls.proj_matrix, glr.viewmatrix);
 
     qglViewport(s, t, res, res);
 

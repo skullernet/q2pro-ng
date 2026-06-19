@@ -189,7 +189,6 @@ typedef struct {
     bool            entrotated;
     float           entscale;
     vec3_t          entaxis[3];
-    mat4_t          entmatrix;
     mat4_t          skymatrix[2];
     lightpoint_t    lightpoint;
 
@@ -356,9 +355,8 @@ void GL_SetupFrustum(float zfar);
 bool GL_AllocBlock(int width, int height, uint16_t *inuse,
                    int w, int h, int *s, int *t);
 
-void GL_MultMatrix(GLfloat *restrict out, const GLfloat *restrict a, const GLfloat *restrict b);
 void GL_SetEntityAxis(void);
-void GL_RotationMatrix(GLfloat *matrix);
+void GL_RotateForWorld(void);
 void GL_RotateForEntity(void);
 void GL_DrawEntity(const glentity_t *ent);
 
@@ -755,7 +753,7 @@ typedef struct {
     glArrayBits_t       array_bits;
     GLuint              currentbuffer[GLB_COUNT];
     glVertexArray_t     currentva;
-    const GLfloat      *currentmatrix;
+    bool                is_world_matrix;
     mat4_t              view_matrix;
     mat4_t              proj_matrix;
     glUniformBlock_t    u_block;
@@ -775,8 +773,6 @@ typedef struct {
     uint8_t offset;
 } glVaDesc_t;
 
-extern const mat4_t gl_identity;
-
 static inline void GL_ActiveTexture(glTmu_t tmu)
 {
     if (gls.server_tmu != tmu) {
@@ -794,19 +790,6 @@ static inline void GL_LoadUniforms(void)
 {
     if (gls.u_block_dirty)
         GL_ForceUniforms();
-}
-
-static inline void GL_ForceMatrix(const GLfloat *matrix)
-{
-    memcpy(gls.view_matrix, matrix, sizeof(gls.view_matrix));
-    gls.u_block_dirty |= DIRTY_MATRIX;
-    gls.currentmatrix = matrix;
-}
-
-static inline void GL_LoadMatrix(const GLfloat *matrix)
-{
-    if (gls.currentmatrix != matrix)
-        GL_ForceMatrix(matrix);
 }
 
 static inline glBufferBinding_t GL_BindingForTarget(GLenum target)

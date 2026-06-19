@@ -20,8 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 glState_t gls;
 
-const mat4_t gl_identity = { [0] = 1, [5] = 1, [10] = 1, [15] = 1 };
-
 // for uploading
 void GL_ForceTexture(glTmu_t tmu, GLuint texnum)
 {
@@ -240,7 +238,7 @@ void GL_ArrayBits(glArrayBits_t bits)
 
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar)
 {
-    Matrix_Ortho(xmin, xmax, ymin, ymax, znear, zfar, gls.proj_matrix);
+    gls.proj_matrix = Mat4_Ortho(xmin, xmax, ymin, ymax, znear, zfar);
     gls.u_block_dirty |= DIRTY_MATRIX;
 }
 
@@ -269,7 +267,7 @@ void GL_Setup2D(void)
     gls.u_block.w_phase.s = M_PIf * 10;
     gls.u_block.w_phase.t = M_PIf * 10;
 
-    GL_ForceMatrix(gl_identity);
+    gls.view_matrix = Mat4_Identity();
 }
 
 void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
@@ -281,8 +279,8 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
     else
         zfar = gl_static.world.size * 2;
 
-    Matrix_Frustum(fov_x, fov_y, gl_znear->value, zfar, gls.proj_matrix);
-    gls.proj_matrix[0] *= reflect_x;
+    gls.proj_matrix = Mat4_Frustum(fov_x, fov_y, gl_znear->value, zfar);
+    gls.proj_matrix.v[0] *= reflect_x;
 
     gls.u_block_dirty |= DIRTY_MATRIX;
 }
@@ -290,8 +288,8 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 void GL_RotateForViewer(void)
 {
     AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
-    Matrix_RotateForViewer(glr.fd.vieworg, glr.viewaxis, glr.viewmatrix);
-    GL_ForceMatrix(glr.viewmatrix);
+    glr.viewmatrix = Mat4_RotateForViewer(glr.fd.vieworg, glr.viewaxis);
+    gls.is_world_matrix = false;
 }
 
 void GL_Setup3D(void)
@@ -318,10 +316,6 @@ void GL_Setup3D(void)
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_STYLES]);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_styles), &gls.u_styles, GL_STREAM_DRAW);
-
-    // setup default matrices for world
-    memcpy(gls.u_block.m_sky, glr.skymatrix, sizeof(gls.u_block.m_sky));
-    memcpy(gls.u_block.m_model, gl_identity, sizeof(gls.u_block.m_model));
 
     gls.u_block.vieworg = Vec4_FromVec3(glr.fd.vieworg, 0);
 
@@ -383,7 +377,7 @@ void GL_DrawOutlines(GLsizei count, GLenum type, const void *indices)
 void GL_ForceUniforms(void)
 {
     if (gls.u_block_dirty & DIRTY_MATRIX)
-        GL_MultMatrix(gls.u_block.m_vp, gls.proj_matrix, gls.view_matrix);
+        gls.u_block.m_vp = Mat4_Multiply(gls.proj_matrix, gls.view_matrix);
 
     GL_BindBuffer(GL_UNIFORM_BUFFER, gl_static.uniform_buffers[UBO_UNIFORMS]);
     qglBufferData(GL_UNIFORM_BUFFER, sizeof(gls.u_block), &gls.u_block, GL_STREAM_DRAW);

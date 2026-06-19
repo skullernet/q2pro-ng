@@ -70,7 +70,7 @@ void GL_DrawParticles(void)
     if (!r_numparticles)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
     GL_LoadUniforms();
     GL_BindArrays(VA_EFFECT);
 
@@ -324,7 +324,7 @@ void GL_DrawBeams(void)
     if (!glr.ents.beams)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
 
     if (gl_beamstyle->integer) {
         GL_BindArrays(VA_NULLMODEL);
@@ -417,7 +417,7 @@ void GL_DrawFlares(void)
     if (!glr.ents.flares)
         return;
 
-    GL_LoadMatrix(glr.viewmatrix);
+    GL_RotateForWorld();
     GL_BindArrays(VA_EFFECT);
 
     samples = glr.fd.width * glr.fd.height / 82944; // 25 samples @ 1080p
@@ -846,9 +846,9 @@ void GL_DrawAlphaFaces(void)
 
     glr.ent = &gl_world;
 
+    GL_RotateForWorld();
+
     GL_BindArrays(VA_3D);
-    GL_SetEntityAxis();
-    GL_RotateForEntity();
 
     for (const mface_t *face = faces_alpha; face; face = face->next)
         GL_DrawFace(face);

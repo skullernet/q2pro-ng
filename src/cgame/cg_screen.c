@@ -1771,10 +1771,10 @@ static void SCR_DrawPOIs(void)
     vec3_t viewaxis[3];
     AnglesToAxis(cg.refdef.viewangles, viewaxis);
 
-    mat4_t projection, view, vp;
-    Matrix_Frustum(cg.refdef.fov_x, cg.refdef.fov_y, 2.0f, 8192.0f, projection);
-    Matrix_RotateForViewer(cg.refdef.vieworg, viewaxis, view);
-    Matrix_Multiply(projection, view, vp);
+    mat4_t vp = Mat4_Multiply(
+        Mat4_Frustum(cg.refdef.fov_x, cg.refdef.fov_y, 2.0f, 8192.0f),
+        Mat4_RotateForViewer(cg.refdef.vieworg, viewaxis)
+    );
 
     float scale = 0.5f / scr.hud_scale;
     trap_R_SetAlpha(scr_alpha.value);
@@ -1783,7 +1783,7 @@ static void SCR_DrawPOIs(void)
         if (poi->time <= cg.time)
             continue;
 
-        vec4_t sp = Matrix_TransformVector3(vp, poi->pos);
+        vec4_t sp = Mat4_TransformVector(vp, Vec4_FromVec3(poi->pos, 1.0f));
 
         float w = sp.w;
         if (w)

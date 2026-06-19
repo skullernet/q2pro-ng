@@ -202,8 +202,6 @@ typedef union {
     vec3_t bounds[2];
 } box3_t;
 
-typedef float mat4_t[16];
-
 typedef union {
     uint32_t u32;
     uint8_t u8[4];
