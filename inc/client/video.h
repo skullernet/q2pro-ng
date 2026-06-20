@@ -27,7 +27,6 @@ typedef struct {
     void (*fatal_shutdown)(void);
     void (*pump_events)(void);
 
-    char *(*get_mode_list)(void);
     int (*get_dpi_scale)(void);
     void (*set_mode)(void);
     void (*update_gamma)(const byte *table);
@@ -48,13 +47,10 @@ typedef struct {
 } vid_driver_t;
 
 extern cvar_t       *vid_geometry;
-extern cvar_t       *vid_modelist;
 extern cvar_t       *vid_fullscreen;
-extern cvar_t       *_vid_fullscreen;
 
 extern const vid_driver_t   *vid;
 
-bool VID_GetFullscreen(vrect_t *rc, int *freq_p, int *depth_p);
 bool VID_GetGeometry(vrect_t *rc);
 void VID_SetGeometry(const vrect_t *rc);
 void VID_ToggleFullscreen(void);

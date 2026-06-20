@@ -79,8 +79,6 @@ typedef struct {
     HWND    wnd;
     HDC     dc;
 
-    DEVMODE  dm;
-
     DWORD   lastMsgTime;
     HHOOK   kbdHook;
 
@@ -121,7 +119,6 @@ extern win_state_t      win;
 
 void Win_Init(void);
 void Win_Shutdown(void);
-char *Win_GetModeList(void);
 int Win_GetDpiScale(void);
 void Win_SetMode(void);
 void Win_UpdateGamma(const byte *table);

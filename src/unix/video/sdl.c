@@ -23,8 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/cvar.h"
 #include "common/common.h"
-#include "common/files.h"
-#include "common/zone.h"
 #include "client/client.h"
 #include "client/input.h"
 #include "client/keys.h"
@@ -131,22 +129,9 @@ static void set_mode(void)
 {
     Uint32 flags;
     vrect_t rc;
-    int freq;
 
     if (vid_fullscreen->integer) {
-        if (VID_GetFullscreen(&rc, &freq, NULL)) {
-            SDL_DisplayMode mode = {
-                .format         = SDL_PIXELFORMAT_UNKNOWN,
-                .w              = rc.width,
-                .h              = rc.height,
-                .refresh_rate   = freq,
-                .driverdata     = NULL
-            };
-            SDL_SetWindowDisplayMode(sdl.window, &mode);
-            flags = SDL_WINDOW_FULLSCREEN;
-        } else {
-            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
-        }
+        flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
     } else {
         if (VID_GetGeometry(&rc)) {
             SDL_SetWindowSize(sdl.window, rc.width, rc.height);
@@ -198,34 +183,6 @@ static int my_event_filter(void *userdata, SDL_Event *event)
     // SDL uses relative time, we need absolute
     event->common.timestamp = Sys_Milliseconds();
     return 1;
-}
-
-static char *get_mode_list(void)
-{
-    SDL_DisplayMode mode;
-    size_t size, len;
-    char *buf;
-    int i, num_modes;
-
-    num_modes = SDL_GetNumDisplayModes(0);
-    if (num_modes < 1)
-        return Z_CopyString(VID_MODELIST);
-
-    size = 8 + num_modes * 32 + 1;
-    buf = Z_Malloc(size);
-
-    len = Q_strlcpy(buf, "desktop ", size);
-    for (i = 0; i < num_modes; i++) {
-        if (SDL_GetDisplayMode(0, i, &mode) < 0)
-            break;
-        if (mode.refresh_rate == 0)
-            continue;
-        len += Q_scnprintf(buf + len, size - len, "%dx%d@%d ",
-                           mode.w, mode.h, mode.refresh_rate);
-    }
-    buf[len - 1] = 0;
-
-    return buf;
 }
 
 static int get_dpi_scale(void)
@@ -571,7 +528,6 @@ const vid_driver_t vid_sdl = {
     .fatal_shutdown = fatal_shutdown,
     .pump_events = pump_events,
 
-    .get_mode_list = get_mode_list,
     .get_dpi_scale = get_dpi_scale,
     .set_mode = set_mode,
     .update_gamma = update_gamma,

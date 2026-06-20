@@ -842,11 +842,6 @@ static void set_mode(void)
         libdecor_frame_unset_fullscreen(wl.frame);
 }
 
-static char *get_mode_list(void)
-{
-    return Z_CopyString("desktop");
-}
-
 static int get_dpi_scale(void)
 {
     return wl.scale_factor;
@@ -1195,7 +1190,6 @@ const vid_driver_t vid_wayland = {
     .pump_events = pump_events,
 
     .set_mode = set_mode,
-    .get_mode_list = get_mode_list,
     .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,

@@ -499,11 +499,6 @@ static void set_mode(void)
     }
 }
 
-static char *get_mode_list(void)
-{
-    return Z_CopyString("desktop");
-}
-
 static int get_dpi_scale(void)
 {
     return x11.dpi_scale;
@@ -944,7 +939,6 @@ const vid_driver_t vid_x11 = {
     .pump_events = pump_events,
 
     .set_mode = set_mode,
-    .get_mode_list = get_mode_list,
     .get_dpi_scale = get_dpi_scale,
 
     .get_proc_addr = get_proc_addr,

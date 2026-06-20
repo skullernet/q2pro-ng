@@ -418,7 +418,6 @@ if not win32
 endif
 config.set_quoted('R_TEXTURE_FORMATS', ' '.join(texture_formats))
 config.set_quoted('VID_GEOMETRY', get_option('vid-geometry'))
-config.set_quoted('VID_MODELIST', get_option('vid-modelist'))
 
 config.set10('USE_DEBUG',         get_option('debug'))
 config.set10('USE_ICMP',          get_option('icmp-errors').require(win32 or cc.has_header('linux/errqueue.h')).allowed())

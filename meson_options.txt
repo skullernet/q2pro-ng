@@ -103,11 +103,6 @@ option('vid-geometry',
   value: '640x480',
   description: 'Default window geometry')
 
-option('vid-modelist',
-  type: 'string',
-  value: '640x480 800x600 1024x768',
-  description: 'Default video mode list')
-
 option('wayland',
   type: 'feature',
   value: 'auto',
