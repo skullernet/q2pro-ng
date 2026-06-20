@@ -86,7 +86,7 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 
     tess.texnum[TMU_TEXTURE] = TEXNUM_WHITE;
 
-    int x = 0, y = 0;
+    int x = glr.fd.x, y = glr.fd.y;
     int w = glr.fd.width, h = glr.fd.height;
     int distance = min(w, h) * frac;
 
@@ -325,6 +325,8 @@ void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
 
 void R_TileClear(int x, int y, int w, int h, qhandle_t pic)
 {
+    if (!w || !h)
+        return;
     GL_StretchPic(x, y, w, h, x * DIV64, y * DIV64,
                   (x + w) * DIV64, (y + h) * DIV64, U32_WHITE, IMG_ForHandle(pic));
 }

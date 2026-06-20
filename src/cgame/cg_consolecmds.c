@@ -101,30 +101,6 @@ static void V_Fog_f(void)
 
 /*
 =================
-SCR_SizeUp_f
-
-Keybinding command
-=================
-*/
-static void SCR_SizeUp_f(void)
-{
-    trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer + 10));
-}
-
-/*
-=================
-SCR_SizeDown_f
-
-Keybinding command
-=================
-*/
-static void SCR_SizeDown_f(void)
-{
-    trap_Cvar_Set("viewsize", va("%d", scr_viewsize.integer - 10));
-}
-
-/*
-=================
 SCR_Sky_f
 
 Set a specific sky and rotation speed. If empty sky name is provided, falls
@@ -400,8 +376,6 @@ static cg_consolecmd_t cg_consolecmds[] = {
     // use anytime commands
     { "viewpos", V_Viewpos_f },
     { "fog", V_Fog_f },
-    { "sizeup", SCR_SizeUp_f },
-    { "sizedown", SCR_SizeDown_f },
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
 

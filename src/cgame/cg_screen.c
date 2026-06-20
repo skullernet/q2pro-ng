@@ -73,6 +73,7 @@ static vm_cvar_t scr_lag_min;
 static vm_cvar_t scr_lag_max;
 static vm_cvar_t scr_alpha;
 
+static vm_cvar_t scr_viewaspect;
 static vm_cvar_t scr_demobar;
 static vm_cvar_t scr_font;
 static vm_cvar_t scr_scale;
@@ -98,7 +99,6 @@ static vm_cvar_t ch_y;
 static vm_cvar_t scr_hit_marker_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
-vm_cvar_t   scr_viewsize;
 
 /*
 ===============================================================================
@@ -756,7 +756,7 @@ void SCR_RegisterMedia(void)
 }
 
 static const vm_cvar_reg_t scr_cvars[] = {
-    { &scr_viewsize, "viewsize", "100", CVAR_ARCHIVE },
+    { &scr_viewaspect, "scr_viewaspect", "0", 0 },
     { &scr_showpause, "scr_showpause", "1", 0 },
     { &scr_showfps, "scr_showfps", "0", 0 },
     { &scr_showpoi, "scr_showpoi", "1", 0 },
@@ -814,15 +814,29 @@ void SCR_Init(void)
 // Sets scr_vrect, the coordinates of the rendered window
 static void SCR_CalcVrect(void)
 {
-    int     size;
+    if (scr_viewaspect.modified) {
+        char *s = scr_viewaspect.string;
+        float a = strtof(s, &s);
+        if (*s == '/' || *s == ':') {
+            float b = strtof(s + 1, NULL);
+            scr_viewaspect.value = a / b;
+        }
+        scr_viewaspect.modified = false;
+    }
 
-    // bound viewsize
-    size = Q_clip(scr_viewsize.integer, 40, 100);
-    if (size != scr_viewsize.integer)
-        trap_Cvar_Set("viewsize", va("%d", size));
+    float aspect1 = (float)scr.hud_width / scr.hud_height;
+    float aspect2 = aspect1;
 
-    scr_vrect.width = scr.hud_width * size / 100;
-    scr_vrect.height = scr.hud_height * size / 100;
+    if (scr_viewaspect.value > 0.0f)
+        aspect2 = Q_clipf(scr_viewaspect.value, 0.4f, 4.0f);
+
+    if (aspect1 > aspect2) {
+        scr_vrect.width = scr.hud_height * aspect2 + 0.5f;
+        scr_vrect.height = scr.hud_height;
+    } else {
+        scr_vrect.width = scr.hud_width;
+        scr_vrect.height = scr.hud_width / aspect2 + 0.5f;
+    }
 
     scr_vrect.x = (scr.hud_width - scr_vrect.width) / 2;
     scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
@@ -833,7 +847,8 @@ static void SCR_TileClear(void)
 {
     int top, bottom, left, right;
 
-    if (scr_viewsize.integer == 100)
+    if (scr_vrect.width == scr.hud_width &&
+        scr_vrect.height == scr.hud_height)
         return;     // full screen rendering
 
     top = scr_vrect.y;
