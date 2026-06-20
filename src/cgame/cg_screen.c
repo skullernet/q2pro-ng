@@ -275,6 +275,9 @@ void SCR_ClearCenterPrints(void)
     scr_centerhead = scr_centertail = 0;
 }
 
+#define SCR_Printf(...) \
+    Com_LPrintf(PRINT_ALL | PRINT_SKIPNOTIFY, __VA_ARGS__)
+
 /*
 ==============
 SCR_CenterPrint
@@ -321,7 +324,18 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     }
 
     // echo it to the console
-    Com_LPrintf(PRINT_ALL | PRINT_SKIPNOTIFY, "%s\n", cp->string);
+    if (typewrite) {
+        int w;
+        SCR_Printf(BAR_STR);
+        for (s = cp->string; *s; s += w) {
+            w = Q_strchrnul(s, '\n') - s;
+            SCR_Printf("%*.*s\n", 18 + w / 2, w, s);
+            if (s[w]) w++;
+        }
+        SCR_Printf(&BAR_STR[1]);
+    } else {
+        SCR_Printf("%s\n", cp->string);
+    }
 
     scr_centerhead++;
     if (scr_centerhead - scr_centertail > MAX_CENTERPRINTS)
@@ -343,7 +357,7 @@ static void SCR_DrawCenterString(void)
         scr_centertime.modified = false;
     }
 
-    if (!scr_centertime.integer) {
+    if (!scr_centertime.integer || (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INTERMISSION)) {
         scr_centertail = scr_centerhead;
         return;
     }
@@ -362,7 +376,10 @@ static void SCR_DrawCenterString(void)
 
     trap_R_SetAlpha(alpha * scr_alpha.value);
 
-    y = scr.hud_height / 4 - cp->lines * CONCHAR_HEIGHT / 2;
+    if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_LAYOUT | LAYOUTS_INVENTORY))
+        y = CONCHAR_HEIGHT;
+    else
+        y = scr.hud_height / 4 - cp->lines * CONCHAR_HEIGHT / 2;
     flags = UI_CENTER;
 
     if (cp->typewrite) {
@@ -743,8 +760,8 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_showpause, "scr_showpause", "1", 0 },
     { &scr_showfps, "scr_showfps", "0", 0 },
     { &scr_showpoi, "scr_showpoi", "1", 0 },
-    { &scr_centertime, "scr_centertime", "2.5", 0 },
-    { &scr_printspeed, "scr_printspeed", "16", 0 },
+    { &scr_centertime, "scr_centertime", "5", 0 },
+    { &scr_printspeed, "scr_printspeed", "25", 0 },
     { &scr_demobar, "scr_demobar", "1", 0 },
     { &scr_font, "scr_font", "conchars", 0 },
     { &scr_scale, "scr_scale", "0", 0 },

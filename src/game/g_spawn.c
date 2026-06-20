@@ -929,28 +929,26 @@ void ED_CallSpawn(edict_t *ent)
 ED_NewString
 =============
 */
-char *ED_NewString(const char *string)
+char *ED_NewString(const char *s)
 {
-    char    *newb, *new_p;
-    int     i;
-    size_t  l;
+    char    *newb, *p;
 
-    l = strlen(string) + 1;
+    newb = p = G_Malloc(strlen(s) + 1);
 
-    newb = G_Malloc(l);
-
-    new_p = newb;
-
-    for (i = 0; i < l; i++) {
-        if (string[i] == '\\' && i < l - 1) {
-            i++;
-            if (string[i] == 'n')
-                *new_p++ = '\n';
-            else
-                *new_p++ = '\\';
-        } else
-            *new_p++ = string[i];
+    while (*s) {
+        if (*s == '\\' && s[1] == 'n') {
+            // trim spaces around \n
+            while (p > newb && p[-1] == ' ')
+                p--;
+            s += 2;
+            while (*s == ' ')
+                s++;
+            *p++ = '\n';
+        } else {
+            *p++ = *s++;
+        }
     }
+    *p = 0;
 
     return newb;
 }

@@ -397,12 +397,7 @@ static void CL_ParseServerData(void)
     if (cl.serverstate == ss_pic || cl.serverstate == ss_cinematic) {
         SCR_PlayCinematic(cl.mapname);
     } else {
-        Con_Printf(
-            "\n\n"
-            "\35\36\36\36\36\36\36\36\36\36\36\36"
-            "\36\36\36\36\36\36\36\36\36\36\36\36"
-            "\36\36\36\36\36\36\36\36\36\36\36\37"
-            "\n\n");
+        Con_Printf(BAR_STR);
     }
 }
 

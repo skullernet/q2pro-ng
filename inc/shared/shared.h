@@ -1065,6 +1065,10 @@ extern const uint32_t    colorTable[8];
 color_index_t COM_ParseColorIndex(const char *s);
 bool COM_ParseColor(const char *s, color_t *color);
 
+#define BAR_STR \
+    "\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36" \
+    "\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n"
+
 int SortStrcmp(const void *p1, const void *p2);
 int SortStricmp(const void *p1, const void *p2);
 
