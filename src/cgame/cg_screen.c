@@ -1910,16 +1910,18 @@ static void SCR_DrawHitMarker(void)
     float frac = (float)(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time.integer;
     float alpha = 1.0f - (frac * frac);
 
-    int x = (scr.hud_width - scr.hit_marker_width) / 2;
-    int y = (scr.hud_height - scr.hit_marker_height) / 2;
+    float scale = 1.0f - min(frac, 0.5f);
+    int w = scr.hit_marker_width * scale + 0.5f;
+    int h = scr.hit_marker_height * scale + 0.5f;
+
+    int x = (scr.hud_width - w) / 2;
+    int y = (scr.hud_height - h) / 2;
 
     trap_R_SetColor32(MakeColor(255, 0, 0, alpha * 255));
 
     trap_R_DrawStretchPic(x + ch_x.integer,
                           y + ch_y.integer,
-                          scr.hit_marker_width,
-                          scr.hit_marker_height,
-                          scr.hit_marker_pic);
+                          w, h, scr.hit_marker_pic);
 }
 
 static void SCR_DrawCrosshair(void)
