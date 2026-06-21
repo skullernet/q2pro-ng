@@ -32,7 +32,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "common/vm.h"
 #include "opcodes.h"
 
-#define ASSERT(cond, ...) \
+#define VM_ENSURE(cond, ...) \
     do { if (!(cond)) { Com_SetLastError(va(__VA_ARGS__)); return false; } } while (0)
 
 #define VM_MAGIC    MakeLittleLong(0, 'a', 's', 'm')

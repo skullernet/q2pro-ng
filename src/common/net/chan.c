@@ -97,8 +97,7 @@ static cvar_t       *showdrop;
 
 #define REL_BIT     BIT(31)
 #define FRG_BIT     BIT(30)
-#define OLD_MASK    (REL_BIT - 1)
-#define NEW_MASK    (FRG_BIT - 1)
+#define SEQ_MASK    (FRG_BIT - 1)
 
 cvar_t      *net_qport;
 cvar_t      *net_maxmsglen;
@@ -186,11 +185,11 @@ int Netchan_TransmitNextFragment(netchan_t *chan)
     }
 
     // write the packet header
-    w1 = (chan->outgoing_sequence & NEW_MASK) | FRG_BIT;
+    w1 = (chan->outgoing_sequence & SEQ_MASK) | FRG_BIT;
     if (send_reliable)
         w1 |= REL_BIT;
 
-    w2 = chan->incoming_sequence & NEW_MASK;
+    w2 = chan->incoming_sequence & SEQ_MASK;
     if (chan->incoming_reliable_sequence)
         w2 |= REL_BIT;
     if (more_fragments)
@@ -297,11 +296,11 @@ int Netchan_Transmit(netchan_t *chan, size_t length, const void *data, int numpa
     }
 
 // write the packet header
-    w1 = chan->outgoing_sequence & NEW_MASK;
+    w1 = chan->outgoing_sequence & SEQ_MASK;
     if (send_reliable)
         w1 |= REL_BIT;
 
-    w2 = chan->incoming_sequence & NEW_MASK;
+    w2 = chan->incoming_sequence & SEQ_MASK;
     if (chan->incoming_reliable_sequence)
         w2 |= REL_BIT;
 
@@ -373,8 +372,8 @@ bool Netchan_Process(netchan_t *chan)
     fragmented_message = sequence & FRG_BIT;
     more_fragments = sequence_ack & FRG_BIT;
 
-    sequence &= NEW_MASK;
-    sequence_ack &= NEW_MASK;
+    sequence &= SEQ_MASK;
+    sequence_ack &= SEQ_MASK;
 
     if (fragmented_message) {
         fragment_offset = MSG_ReadShort();

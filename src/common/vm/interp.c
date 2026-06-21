@@ -683,7 +683,7 @@ static vm_opcode_t extended_opcode(wa_extended_opcode_t opcode)
         case I64_Trunc_sat_f64_u: return OP_I64_Trunc_f64_u;
         case MemoryCopy: return OP_MemoryCopy;
         case MemoryFill: return OP_MemoryFill;
-        default: ASSERT(0, "Unrecognized extended opcode %#x", opcode);
+        default: VM_ENSURE(0, "Unrecognized extended opcode %#x", opcode);
     }
 }
 
@@ -757,7 +757,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
         case Block:
         case Loop:
         case If:
-            ASSERT(num_blocks < BLOCKSTACK_SIZE, "Too many blocks");
+            VM_ENSURE(num_blocks < BLOCKSTACK_SIZE, "Too many blocks");
             block = &blocks[num_blocks++];
 
             // For speed, we are not managing block stack at runtime. Instead
@@ -774,7 +774,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
                 Q_assert(block->opcode == opcode);
             }
 
-            ASSERT(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
+            VM_ENSURE(top < BLOCKSTACK_SIZE - 1, "Blockstack overflow");
             blockstack[++top] = block;
 
             if (opcode == Loop)
@@ -791,9 +791,9 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
             break;
 
         case Else:
-            ASSERT(top >= 0, "Blockstack underflow");
+            VM_ENSURE(top >= 0, "Blockstack underflow");
             block = blockstack[top];
-            ASSERT(block->opcode == If, "Else not matched with if");
+            VM_ENSURE(block->opcode == If, "Else not matched with if");
             put_u8(out, OP_Br);
             put_u32(out, block->end_addr);
             block->start_addr = out->cursize;
@@ -804,7 +804,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
                 put_u8(out, OP_Return);
                 break;
             }
-            ASSERT(top >= 0, "Blockstack underflow");
+            VM_ENSURE(top >= 0, "Blockstack underflow");
             block = blockstack[top--];
             if (block->opcode != Loop)
                 block->end_addr = out->cursize; // block, if: label at end
@@ -816,18 +816,18 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
 
         case Br:
         case BrIf:
-            ASSERT(top >= 0, "Blockstack underflow");
+            VM_ENSURE(top >= 0, "Blockstack underflow");
             index = SZ_ReadLeb(in);
-            ASSERT(index <= top, "Bad label");
+            VM_ENSURE(index <= top, "Bad label");
             put_u8(out, opcode + OP_Br - Br);
             put_u32(out, blockstack[top - index]->end_addr);
             break;
 
         case BrTable:
-            ASSERT(top >= 0, "Blockstack underflow");
+            VM_ENSURE(top >= 0, "Blockstack underflow");
 
             count = SZ_ReadLeb(in); // target count
-            ASSERT(count < BR_TABLE_SIZE, "BrTable size too big");
+            VM_ENSURE(count < BR_TABLE_SIZE, "BrTable size too big");
 
             put_u8(out, OP_BrTable);
             put_u16(out, count);
@@ -835,29 +835,29 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
             out->cursize += -out->cursize & 3;
             for (uint32_t i = 0; i < count; i++) {
                 index = SZ_ReadLeb(in);
-                ASSERT(index <= top, "Bad label");
+                VM_ENSURE(index <= top, "Bad label");
                 put_u32(out, blockstack[top - index]->end_addr);
             }
 
             index = SZ_ReadLeb(in); // default target
-            ASSERT(index <= top, "Bad label");
+            VM_ENSURE(index <= top, "Bad label");
             put_u32(out, blockstack[top - index]->end_addr);
             break;
 
         case Call:
             index = SZ_ReadLeb(in);
-            ASSERT(index < m->num_funcs, "Bad function index");
+            VM_ENSURE(index < m->num_funcs, "Bad function index");
             put_u8(out, OP_Call);
             put_u16(out, index);
             break;
 
         case CallIndirect:
             index = SZ_ReadLeb(in);
-            ASSERT(index < m->num_types, "Bad type index");
+            VM_ENSURE(index < m->num_types, "Bad type index");
             put_u8(out, OP_CallIndirect);
             put_u16(out, index);
             index = SZ_ReadLeb(in);
-            ASSERT(index == 0, "Only 1 default table supported");
+            VM_ENSURE(index == 0, "Only 1 default table supported");
             break;
 
         case Drop:
@@ -872,7 +872,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
         case LocalSet:
         case LocalTee:
             index = SZ_ReadLeb(in);
-            ASSERT(index < func->type->num_params + func->num_locals, "Bad local index");
+            VM_ENSURE(index < func->type->num_params + func->num_locals, "Bad local index");
             put_u8(out, opcode + OP_LocalGet - LocalGet);
             put_u16(out, index);
             break;
@@ -880,7 +880,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
         case GlobalGet:
         case GlobalSet:
             index = SZ_ReadLeb(in);
-            ASSERT(index < m->num_globals, "Bad global index");
+            VM_ENSURE(index < m->num_globals, "Bad global index");
             put_u8(out, opcode + OP_GlobalGet - GlobalGet);
             put_u16(out, index);
             break;
@@ -944,15 +944,15 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
             break;
 
         default:
-            ASSERT(0, "Unrecognized opcode %#x", opcode);
+            VM_ENSURE(0, "Unrecognized opcode %#x", opcode);
         }
     }
 
     func->end_addr = out->cursize - 1;
 
-    ASSERT(!out->overflowed, "Output buffer overflowed");
-    ASSERT(top == -1, "Function ended in middle of block");
-    ASSERT(opcode == End, "Function block doesn't end with End opcode");
+    VM_ENSURE(!out->overflowed, "Output buffer overflowed");
+    VM_ENSURE(top == -1, "Function ended in middle of block");
+    VM_ENSURE(opcode == End, "Function block doesn't end with End opcode");
 
     return num_blocks + 1;
 }

@@ -51,7 +51,7 @@ const vm_type_t *VM_GetBlockType(uint32_t value_type)
     case F64:
         return &block_types[4];
     default:
-        ASSERT(0, "Invalid block value_type: %#x", value_type);
+        VM_ENSURE(0, "Invalid block value_type: %#x", value_type);
         return NULL;
     }
 }
@@ -97,7 +97,7 @@ static bool import_function(vm_t *m, bstr_t module, bstr_t name, const vm_type_t
 {
     const vm_import_t *import;
 
-    ASSERT(Bstr_IsEqualStr(module, "env"), "Unknown import module %.*s", (int)module.len, module.str);
+    VM_ENSURE(Bstr_IsEqualStr(module, "env"), "Unknown import module %.*s", (int)module.len, module.str);
 
     for (import = m->imports; import->name; import++)
         if (Bstr_IsEqualStr(name, import->name))
@@ -108,9 +108,9 @@ static bool import_function(vm_t *m, bstr_t module, bstr_t name, const vm_type_t
             if (Bstr_IsEqualStr(name, import->name))
                 break;
 
-    ASSERT(import->name, "Import %.*s not found", (int)name.len, name.str);
+    VM_ENSURE(import->name, "Import %.*s not found", (int)name.len, name.str);
 
-    ASSERT(vm_type_eq(type, import->mask), "Import %.*s type mismatch", (int)name.len, name.str);
+    VM_ENSURE(vm_type_eq(type, import->mask), "Import %.*s type mismatch", (int)name.len, name.str);
 
     vm_block_t *func = &m->funcs[m->num_imports++];
     func->type = type;
@@ -134,7 +134,7 @@ static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
     switch (opcode) {
     case GlobalGet:
         arg = SZ_ReadLeb(sz);
-        ASSERT(arg < m->num_globals, "Bad global index");
+        VM_ENSURE(arg < m->num_globals, "Bad global index");
         *val = m->globals[arg];
         break;
     case I32_Const:
@@ -150,33 +150,33 @@ static bool run_init_expr(vm_t *m, vm_value_t *val, sizebuf_t *sz)
         val->u64 = SZ_ReadLong64(sz);
         break;
     default:
-        ASSERT(0, "Init expression not constant (opcode = %#x)", opcode);
+        VM_ENSURE(0, "Init expression not constant (opcode = %#x)", opcode);
     }
 
     opcode = SZ_ReadByte(sz);
-    ASSERT(opcode == End, "End opcode expected after init expression");
+    VM_ENSURE(opcode == End, "End opcode expected after init expression");
     return true;
 }
 
 static bool parse_types(vm_t *m, sizebuf_t *sz)
 {
     m->num_types = SZ_ReadLeb(sz);
-    ASSERT(m->num_types <= MAX_TYPES, "Too many types");
+    VM_ENSURE(m->num_types <= MAX_TYPES, "Too many types");
     m->types = VM_MallocArray(m->num_types, sizeof(m->types[0]));
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
         type->form = SZ_ReadLeb(sz);
-        ASSERT(type->form == FUNC, "Must be function type");
+        VM_ENSURE(type->form == FUNC, "Must be function type");
 
         type->num_params = SZ_ReadLeb(sz);
-        ASSERT(type->num_params <= MAX_LOCALS, "Too many parameters");
+        VM_ENSURE(type->num_params <= MAX_LOCALS, "Too many parameters");
         type->params = VM_MallocArray(type->num_params, sizeof(type->params[0]));
         for (uint32_t p = 0; p < type->num_params; p++)
             type->params[p] = SZ_ReadLeb(sz);
 
         type->num_results = SZ_ReadLeb(sz);
-        ASSERT(type->num_results <= MAX_RESULTS, "Too many results");
+        VM_ENSURE(type->num_results <= MAX_RESULTS, "Too many results");
         for (uint32_t r = 0; r < type->num_results; r++)
             type->results[r] = SZ_ReadLeb(sz);
     }
@@ -187,19 +187,19 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 static bool parse_imports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_imports = SZ_ReadLeb(sz);
-    ASSERT(num_imports <= MAX_FUNCS, "Too many imports");
+    VM_ENSURE(num_imports <= MAX_FUNCS, "Too many imports");
     m->funcs = VM_MallocArray(num_imports, sizeof(m->funcs[0]));
 
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         bstr_t module = vm_read_string(sz);
         bstr_t name = vm_read_string(sz);
-        ASSERT(module.str && name.str, "Read past end of section");
+        VM_ENSURE(module.str && name.str, "Read past end of section");
 
         uint32_t kind = SZ_ReadByte(sz);
-        ASSERT(kind == KIND_FUNCTION, "Import of kind %d not supported", kind);
+        VM_ENSURE(kind == KIND_FUNCTION, "Import of kind %d not supported", kind);
 
         uint32_t tidx = SZ_ReadLeb(sz);
-        ASSERT(tidx < m->num_types, "Bad type index");
+        VM_ENSURE(tidx < m->num_types, "Bad type index");
         if (!import_function(m, module, name, &m->types[tidx]))
             return false;
     }
@@ -211,13 +211,13 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
 static bool parse_functions(vm_t *m, sizebuf_t *sz)
 {
     uint32_t count = SZ_ReadLeb(sz);
-    ASSERT(count <= MAX_FUNCS - m->num_funcs, "Too many functions");
+    VM_ENSURE(count <= MAX_FUNCS - m->num_funcs, "Too many functions");
     m->num_funcs += count;
     m->funcs = VM_ReallocArray(m->funcs, m->num_funcs, sizeof(m->funcs[0]));
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
-        ASSERT(tidx < m->num_types, "Bad type index");
+        VM_ENSURE(tidx < m->num_types, "Bad type index");
         m->funcs[f].type = &m->types[tidx];
     }
 
@@ -227,10 +227,10 @@ static bool parse_functions(vm_t *m, sizebuf_t *sz)
 static bool parse_tables(vm_t *m, sizebuf_t *sz)
 {
     uint32_t table_count = SZ_ReadLeb(sz);
-    ASSERT(table_count == 1, "Only 1 default table supported");
+    VM_ENSURE(table_count == 1, "Only 1 default table supported");
 
     uint32_t type = SZ_ReadLeb(sz);
-    ASSERT(type == FUNCREF, "Must be funcref");
+    VM_ENSURE(type == FUNCREF, "Must be funcref");
 
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t tsize = SZ_ReadLeb(sz); // Initial size
@@ -243,7 +243,7 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
     } else {
         m->table.maximum = MAX_ELEMS;
     }
-    ASSERT(m->table.size <= m->table.maximum, "Bad table size");
+    VM_ENSURE(m->table.size <= m->table.maximum, "Bad table size");
 
     // Allocate the table
     m->table.entries = VM_MallocArray(m->table.size, sizeof(m->table.entries[0]));
@@ -253,7 +253,7 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
 static bool parse_memory(vm_t *m, sizebuf_t *sz)
 {
     uint32_t memory_count = SZ_ReadLeb(sz);
-    ASSERT(memory_count == 1, "Only 1 default memory supported");
+    VM_ENSURE(memory_count == 1, "Only 1 default memory supported");
 
     uint32_t flags = SZ_ReadByte(sz);
     uint32_t pages = SZ_ReadLeb(sz); // Initial size
@@ -267,9 +267,10 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
         m->memory.maximum = MAX_PAGES;
     }
     if (flags & 0x8) {
-        SZ_ReadLeb(sz); // Page size
+        uint32_t page_size = SZ_ReadLeb(sz); // Page size
+        VM_ENSURE(page_size == VM_PAGE_SIZE, "Page size %u not supported", page_size);
     }
-    ASSERT(m->memory.num_pages <= m->memory.maximum, "Bad memory size");
+    VM_ENSURE(m->memory.num_pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
     m->memory.bytes = VM_MallocArray(m->memory.num_pages + 1, VM_PAGE_SIZE);
@@ -280,7 +281,7 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
 static bool parse_globals(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_globals = SZ_ReadLeb(sz);
-    ASSERT(num_globals <= MAX_GLOBALS, "Too many globals");
+    VM_ENSURE(num_globals <= MAX_GLOBALS, "Too many globals");
     m->globals = VM_MallocArray(num_globals, sizeof(m->globals[0]));
     m->num_globals = num_globals;
 
@@ -299,37 +300,37 @@ static bool parse_globals(vm_t *m, sizebuf_t *sz)
 static bool parse_exports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_exports = SZ_ReadLeb(sz);
-    ASSERT(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
+    VM_ENSURE(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
     m->exports = VM_MallocArray(num_exports, sizeof(m->exports[0]));
     m->num_exports = num_exports;
 
     for (uint32_t e = 0; e < num_exports; e++) {
         wa_export_t *export = &m->exports[e];
         export->name = vm_read_string(sz);
-        ASSERT(export->name.str, "Read past end of section");
+        VM_ENSURE(export->name.str, "Read past end of section");
         uint32_t kind = SZ_ReadByte(sz);
         uint32_t index = SZ_ReadLeb(sz);
         export->kind = kind;
 
         switch (kind) {
         case KIND_FUNCTION:
-            ASSERT(index < m->num_funcs, "Bad function index");
+            VM_ENSURE(index < m->num_funcs, "Bad function index");
             export->value = &m->funcs[index];
             break;
         case KIND_TABLE:
-            ASSERT(index == 0, "Only 1 default table supported");
+            VM_ENSURE(index == 0, "Only 1 default table supported");
             export->value = &m->table;
             break;
         case KIND_MEMORY:
-            ASSERT(index == 0, "Only 1 default memory supported");
+            VM_ENSURE(index == 0, "Only 1 default memory supported");
             export->value = &m->memory;
             break;
         case KIND_GLOBAL:
-            ASSERT(index < m->num_globals, "Bad global index");
+            VM_ENSURE(index < m->num_globals, "Bad global index");
             export->value = &m->globals[index];
             break;
         default:
-            ASSERT(0, "Export of kind %d not supported", kind);
+            VM_ENSURE(0, "Export of kind %d not supported", kind);
         }
     }
 
@@ -341,7 +342,7 @@ static bool parse_elements(vm_t *m, sizebuf_t *sz)
     uint32_t element_count = SZ_ReadLeb(sz);
     for (uint32_t c = 0; c < element_count; c++) {
         uint32_t flags = SZ_ReadLeb(sz);
-        ASSERT(flags == 0, "Element flags %#x not supported", flags);
+        VM_ENSURE(flags == 0, "Element flags %#x not supported", flags);
 
         // Run the init_expr to get offset
         vm_value_t init = { 0 };
@@ -350,7 +351,7 @@ static bool parse_elements(vm_t *m, sizebuf_t *sz)
 
         uint32_t offset = init.u32;
         uint32_t num_elem = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + num_elem <= m->table.size, "Table init out of bounds");
+        VM_ENSURE((uint64_t)offset + num_elem <= m->table.size, "Table init out of bounds");
         for (uint32_t n = 0; n < num_elem; n++)
             m->table.entries[offset + n] = SZ_ReadLeb(sz);
     }
@@ -363,7 +364,7 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
     uint32_t seg_count = SZ_ReadLeb(sz);
     for (uint32_t s = 0; s < seg_count; s++) {
         uint32_t flags = SZ_ReadLeb(sz);
-        ASSERT(flags == 0, "Segment flags %#x not supported", flags);
+        VM_ENSURE(flags == 0, "Segment flags %#x not supported", flags);
 
         // Run the init_expr to get the offset
         vm_value_t init = { 0 };
@@ -373,9 +374,9 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
         // Copy the data to the memory offset
         uint32_t offset = init.u32;
         uint32_t size = SZ_ReadLeb(sz);
-        ASSERT((uint64_t)offset + size <= m->memory.num_bytes, "Memory init out of bounds");
+        VM_ENSURE((uint64_t)offset + size <= m->memory.num_bytes, "Memory init out of bounds");
         void *data = SZ_ReadData(sz, size);
-        ASSERT(data, "Read past end of section");
+        VM_ENSURE(data, "Read past end of section");
         memcpy(m->memory.bytes + offset, data, size);
     }
 
@@ -385,13 +386,13 @@ static bool parse_data(vm_t *m, sizebuf_t *sz)
 static bool parse_code(vm_t *m, sizebuf_t *sz)
 {
     uint32_t body_count = SZ_ReadLeb(sz);
-    ASSERT(body_count <= m->num_funcs - m->num_imports, "Too many functions");
+    VM_ENSURE(body_count <= m->num_funcs - m->num_imports, "Too many functions");
 
     for (uint32_t b = 0; b < body_count; b++) {
         vm_block_t *func = &m->funcs[m->num_imports + b];
         uint32_t body_size = SZ_ReadLeb(sz);
-        ASSERT(body_size > 0, "Empty function");
-        ASSERT(body_size <= SZ_Remaining(sz), "Function out of bounds");
+        VM_ENSURE(body_size > 0, "Empty function");
+        VM_ENSURE(body_size <= SZ_Remaining(sz), "Function out of bounds");
         uint32_t payload_start = sz->readcount;
         uint32_t num_locals = SZ_ReadLeb(sz);
         uint32_t save_pos, tidx, lidx, lecount;
@@ -401,7 +402,7 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
         func->num_locals = 0;
         for (uint32_t l = 0; l < num_locals; l++) {
             lecount = SZ_ReadLeb(sz);
-            ASSERT(lecount <= MAX_LOCALS - func->num_locals, "Too many locals");
+            VM_ENSURE(lecount <= MAX_LOCALS - func->num_locals, "Too many locals");
             func->num_locals += lecount;
             tidx = SZ_ReadLeb(sz);
             (void)tidx;
@@ -420,10 +421,10 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
 
         func->start_addr = sz->readcount;
         func->end_addr = payload_start + body_size - 1;
-        ASSERT(sz->data[func->end_addr] == End, "Function block doesn't end with End opcode");
+        VM_ENSURE(sz->data[func->end_addr] == End, "Function block doesn't end with End opcode");
         sz->readcount = func->end_addr + 1;
         m->num_code_bytes += func->end_addr - func->start_addr + 1;
-        ASSERT(m->num_code_bytes <= INT32_MAX / 2, "Too many bytes of code");
+        VM_ENSURE(m->num_code_bytes <= INT32_MAX / 2, "Too many bytes of code");
     }
 
     return true;
@@ -455,8 +456,8 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
     while (sz->readcount < sz->cursize) {
         uint32_t id = SZ_ReadByte(sz);
         uint32_t len = SZ_ReadLeb(sz);
-        ASSERT(id < NumSections, "Unknown section %u", id);
-        ASSERT(len <= SZ_Remaining(sz), "Section %u out of bounds", id);
+        VM_ENSURE(id < NumSections, "Unknown section %u", id);
+        VM_ENSURE(len <= SZ_Remaining(sz), "Section %u out of bounds", id);
         sections[id].pos = sz->readcount;
         sections[id].len = len;
         sz->readcount += len;
@@ -472,7 +473,7 @@ static bool parse_sections(vm_t *m, sizebuf_t *sz)
         sz->cursize = sections[id].pos + sections[id].len;
         if (!parsefuncs[id](m, sz))
             return false;
-        ASSERT(sz->readcount <= sz->cursize, "Read past end of section");
+        VM_ENSURE(sz->readcount <= sz->cursize, "Read past end of section");
     }
 
     sz->readcount = 0;
@@ -504,9 +505,9 @@ static bool fill_exports(vm_t *m, const vm_export_t *exports)
     // Find function exports
     for (e = 0, exp = exports; e < m->num_func_exports; e++, exp++) {
         export = find_export(m, KIND_FUNCTION, exp->name);
-        ASSERT(export, "Export %s not found", exp->name);
+        VM_ENSURE(export, "Export %s not found", exp->name);
         const vm_block_t *func = export->value;
-        ASSERT(vm_type_eq(func->type, exp->mask), "Export %s type mismatch", exp->name);
+        VM_ENSURE(vm_type_eq(func->type, exp->mask), "Export %s type mismatch", exp->name);
         m->func_exports[e] = func - m->funcs;
     }
 
