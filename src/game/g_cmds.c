@@ -301,7 +301,7 @@ Resurrect dead player
 */
 static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
 {
-    if (ent->health > 0)
+    if (!ent->deadflag)
         return;
 
     // clear entity values

@@ -116,7 +116,8 @@ void USE(target_anger_use)(edict_t *self, edict_t *other, edict_t *activator)
             target->monsterinfo.aiflags |= AI_GOOD_GUY | AI_DO_NOT_COUNT;
             target->r.svflags |= SVF_MONSTER;
             target->health = 300;
-        }
+        } else if (target->health <= 0)
+            return;
 
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), self->target))) {
