@@ -314,6 +314,7 @@ float vectoyaw(vec3_t vec)
 
 void G_FreeMemory(void)
 {
+    memset(g_mem_pool, 0, g_mem_used);
     g_mem_used = 0;
 }
 

@@ -1337,13 +1337,8 @@ static bool parse_bool(void)
 
 static char *read_string(void)
 {
-    char *s;
-
     parse();
-    s = G_Malloc(line.len + 1);
-    memcpy(s, line.token, line.len + 1);
-
-    return s;
+    return memcpy(G_Malloc(line.len + 1), line.token, line.len + 1);
 }
 
 static void read_zstring(char *s, int size)
