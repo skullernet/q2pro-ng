@@ -131,6 +131,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define q_forceinline       inline __attribute__((always_inline))
 
+#define q_ckd_add(res, a, b) __builtin_add_overflow(a, b, res)
+#define q_ckd_sub(res, a, b) __builtin_sub_overflow(a, b, res)
+#define q_ckd_mul(res, a, b) __builtin_mul_overflow(a, b, res)
+
 #else /* __GNUC__ */
 
 #ifdef _MSC_VER

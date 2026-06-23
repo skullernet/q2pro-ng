@@ -126,6 +126,12 @@ void    Com_Error(error_type_t code, const char *fmt, ...);
 #define Q_assert_soft(expr) Q_assert_type(ERR_DROP, expr)
 #define Q_assert(expr) Q_assert_type(ERR_FATAL, expr)
 
+#define Q_assert_add(res, a, b) do { \
+    if (q_ckd_add(res, a, b)) Com_Error(ERR_FATAL, "%s: overflow", __func__); } while (0)
+
+#define Q_assert_mul(res, a, b) do { \
+    if (q_ckd_mul(res, a, b)) Com_Error(ERR_FATAL, "%s: overflow", __func__); } while (0)
+
 /*
 ==============================================================
 

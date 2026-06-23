@@ -1768,7 +1768,8 @@ static void sv_hostname_changed(cvar_t *self)
 #if USE_ZLIB
 voidpf SV_zalloc(voidpf opaque, uInt items, uInt size)
 {
-    return SV_Malloc((size_t)items * size);
+    Q_assert_mul(&size, items, size);
+    return SV_Malloc(size);
 }
 
 void SV_zfree(voidpf opaque, voidpf address)

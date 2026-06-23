@@ -86,8 +86,8 @@ void *Hunk_Alloc(memhunk_t *hunk, size_t size, size_t align)
 
 void *Hunk_AllocArray(memhunk_t *hunk, size_t size, size_t nmemb, size_t align)
 {
-    Q_assert(!size || nmemb <= SIZE_MAX / size);
-    return Hunk_Alloc(hunk, size * nmemb, align);
+    Q_assert_mul(&size, size, nmemb);
+    return Hunk_Alloc(hunk, size, align);
 }
 
 void Hunk_FreeToWatermark(memhunk_t *hunk, size_t size)

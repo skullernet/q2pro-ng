@@ -170,32 +170,32 @@ static bool Patch_Parse(patch_ctx_t *ctx)
 
 static void CM_LoadEntPatches(cm_t *cm, const char *name)
 {
-    char path[MAX_QPATH], *data;
+    char path[MAX_QPATH], *data, *out;
+    int len, outlen;
+    patch_ctx_t ctx;
+    q_unused int numpatches = 0;
 
     if (!map_patch_ents->integer)
         return;
     if (Q_snprintf(path, sizeof(path), "entpatches/%s.%08x", name, cm->cache->checksum) >= sizeof(path))
         return;
-    int len = FS_LoadFile(path, (void **)&data);
+    len = FS_LoadFile(path, (void **)&data);
     if (!data)
         return;
-    if (len >= INT_MAX - cm->cache->numentitychars) {
-        Com_WPrintf("%s is too large\n", path);
+
+    // can't grow by more than patch size
+    if (q_ckd_add(&outlen, cm->cache->numentitychars, len + 1)) {
+        Com_WPrintf("Patched entity string too large\n");
         FS_FreeFile(data);
         return;
     }
 
-    // can't grow by more than patch size
-    int outlen = cm->cache->numentitychars + len + 1;
-    char *out = Z_Malloc(outlen);
+    out = Z_Malloc(outlen);
 
-    patch_ctx_t ctx;
     SZ_InitRead(&ctx.patch, data, len);
     SZ_InitRead(&ctx.src, cm->cache->entitystring, cm->cache->numentitychars);
     SZ_Init(&ctx.dst, out, outlen, "patch");
     ctx.srcline = ctx.patchline = 1;
-
-    q_unused int numpatches = 0;
 
     while (ctx.patch.readcount < ctx.patch.cursize) {
         if (Patch_Parse(&ctx)) {

@@ -214,10 +214,9 @@ void *Z_TagMalloc(size_t size, memtag_t tag)
         return NULL;
     }
 
-    Q_assert(size <= SIZE_MAX - sizeof(*z));
     Z_ValidateTag(tag);
 
-    size += sizeof(*z);
+    Q_assert_add(&size, size, sizeof(*z));
     z = calloc(1, size);
     if (!z) {
         Com_Error(ERR_FATAL, "%s: couldn't allocate %zu bytes", __func__, size);
@@ -240,8 +239,8 @@ void *Z_Malloc(size_t size)
 
 void *Z_MallocArray(size_t nmemb, size_t size, memtag_t tag)
 {
-    Q_assert(!size || nmemb <= SIZE_MAX / size);
-    return Z_TagMalloc(nmemb * size, tag);
+    Q_assert_mul(&size, nmemb, size);
+    return Z_TagMalloc(size, tag);
 }
 
 /*
@@ -266,9 +265,7 @@ void *Z_TagRealloc(void *ptr, size_t size, memtag_t tag)
 
     Z_Validate(z);
 
-    Q_assert(size <= SIZE_MAX - sizeof(*z));
-
-    size += sizeof(*z);
+    Q_assert_add(&size, size, sizeof(*z));
     if (z->size == size) {
         return z + 1;
     }
@@ -301,8 +298,8 @@ void *Z_Realloc(void *ptr, size_t size)
 
 void *Z_ReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag)
 {
-    Q_assert(!size || nmemb <= SIZE_MAX / size);
-    return Z_TagRealloc(ptr, nmemb * size, tag);
+    Q_assert_mul(&size, nmemb, size);
+    return Z_TagRealloc(ptr, size, tag);
 }
 
 /*
