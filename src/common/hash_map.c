@@ -70,7 +70,7 @@ static void HashMap_Rehash(hash_map_t *map, const uint32_t new_size)
     if (map->hash_size >= new_size)
         return;
     map->hash_size = new_size;
-    map->hash_to_index = Z_ReallocArray(map->hash_to_index, map->hash_size, sizeof(uint32_t), map->tag);
+    map->hash_to_index = Z_ReallocArray(map, map->hash_to_index, map->hash_size, sizeof(uint32_t));
     memset(map->hash_to_index, 0xFF, map->hash_size * sizeof(uint32_t));
     for (uint32_t i = 0; i < map->num_entries; ++i) {
         void          *key = HashMap_GetKeyImpl(map, i);
@@ -88,9 +88,9 @@ HashMap_ExpandKeyValueStorage
 */
 static void HashMap_ExpandKeyValueStorage(hash_map_t *map, const uint32_t new_size)
 {
-    map->keys = Z_ReallocArray(map->keys, new_size, map->key_size, map->tag);
-    map->values = Z_ReallocArray(map->values, new_size, map->value_size, map->tag);
-    map->index_chain = Z_ReallocArray(map->index_chain, new_size, sizeof(uint32_t), map->tag);
+    map->keys = Z_ReallocArray(map, map->keys, new_size, map->key_size);
+    map->values = Z_ReallocArray(map, map->values, new_size, map->value_size);
+    map->index_chain = Z_ReallocArray(map, map->index_chain, new_size, sizeof(uint32_t));
     map->key_value_storage_size = new_size;
 }
 
@@ -120,10 +120,6 @@ HashMap_Destroy
 */
 void HashMap_Destroy(hash_map_t *map)
 {
-    Z_Free(map->hash_to_index);
-    Z_Free(map->index_chain);
-    Z_Free(map->keys);
-    Z_Free(map->values);
     Z_Free(map);
 }
 

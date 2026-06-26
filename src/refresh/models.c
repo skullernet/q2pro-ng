@@ -30,8 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MOD_GpuMallocIndices(size) \
     Hunk_TryAlloc(&temp_hunk[1], size, gl_static.hunk_align)
 
-#define MOD_CpuMalloc(size) R_Malloc(size)
-
 #define ENSURE(x, e)    if (!(x)) return e
 
 #define MAX_RMODELS     (MAX_MODELS * 2)
@@ -102,25 +100,13 @@ static void MOD_List_f(void)
     Com_Printf("Total resident: %zu\n", bytes);
 }
 
-#if USE_MD5
-static void MD5_Free(md5_model_t *mdl);
-#endif
-
 static void MOD_FreeAlias(model_t *model)
 {
     GL_DeleteBuffers(2, model->buffers);
 
 #if USE_MD5
-    MD5_Free(model->skeleton);
+    Z_Free(model->skeleton);
 #endif
-
-    for (int i = 0; i < model->nummeshes; i++) {
-        Z_Free(model->meshes[i].skins);
-#if USE_MD5
-        Z_Free(model->meshes[i].skinnames);
-#endif
-    }
-
     Z_Free(model->meshes);
     Z_Free(model->frames);
 }
@@ -309,14 +295,12 @@ static bool MOD_AllocMesh(model_t *model, maliasmesh_t *mesh)
         return false;
     if (!(mesh->indices = MOD_GpuMallocIndices(sizeof(mesh->indices[0]) * mesh->numindices)))
         return false;
-    if (!mesh->numskins)
-        return true;
-    if (!(mesh->skins = MOD_CpuMalloc(sizeof(mesh->skins[0]) * mesh->numskins)))
-        return false;
+    if (mesh->numskins) {
+        mesh->skins = Z_TreeMalloc(model->meshes, sizeof(mesh->skins[0]) * mesh->numskins);
 #if USE_MD5
-    if (!(mesh->skinnames = MOD_CpuMalloc(sizeof(mesh->skinnames[0]) * mesh->numskins)))
-        return false;
+        mesh->skinnames = Z_TreeMalloc(model->meshes, sizeof(mesh->skinnames[0]) * mesh->numskins);
 #endif
+    }
     return true;
 }
 
@@ -430,11 +414,8 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
     model->type = MOD_ALIAS;
     model->nummeshes = 1;
     model->numframes = header.num_frames;
-    model->meshes = MOD_CpuMalloc(sizeof(model->meshes[0]));
-    model->frames = MOD_CpuMalloc(sizeof(model->frames[0]) * header.num_frames);
-    if (!model->meshes || !model->frames)
-        return Q_ERR_OUT_OF_MEMORY;
-
+    model->meshes = R_Malloc(sizeof(model->meshes[0]));
+    model->frames = R_Malloc(sizeof(model->frames[0]) * header.num_frames);
     mesh = model->meshes;
     mesh->numtris = numindices / 3;
     mesh->numindices = numindices;
@@ -691,10 +672,8 @@ static int MOD_LoadMD3(model_t *model, const void *rawdata, size_t length)
     model->type = MOD_ALIAS;
     model->numframes = header.num_frames;
     model->nummeshes = header.num_meshes;
-    model->meshes = MOD_CpuMalloc(sizeof(model->meshes[0]) * header.num_meshes);
-    model->frames = MOD_CpuMalloc(sizeof(model->frames[0]) * header.num_frames);
-    if (!model->meshes || !model->frames)
-        return Q_ERR_OUT_OF_MEMORY;
+    model->meshes = R_Malloc(sizeof(model->meshes[0]) * header.num_meshes);
+    model->frames = R_Malloc(sizeof(model->frames[0]) * header.num_frames);
 
     // load all frames
     src_frame = (dmd3frame_t *)((byte *)rawdata + header.ofs_frames);
@@ -783,7 +762,6 @@ static void *MD5_HunkAlloc(memhunk_t *hunk, size_t size)
 
 #define MD5_GpuMalloc(size) MD5_HunkAlloc(&temp_hunk[0], size)
 #define MD5_GpuMallocIndices(size) MD5_HunkAlloc(&temp_hunk[1], size)
-#define MD5_CpuMalloc(size) R_Malloc(size)
 
 static void MD5_ParseExpect(const char **buffer, const char *expect)
 {
@@ -948,7 +926,7 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
     MD5_ParseExpect(&s, "MD5Version");
     MD5_ParseExpect(&s, "10");
 
-    model->skeleton = mdl = MD5_CpuMalloc(sizeof(*mdl));
+    model->skeleton = mdl = R_Malloc(sizeof(*mdl));
 
     MD5_ParseExpect(&s, "commandline");
     COM_SkipToken(&s);
@@ -977,7 +955,7 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
 
     MD5_ParseExpect(&s, "}");
 
-    mdl->meshes = MD5_CpuMalloc(mdl->num_meshes * sizeof(mdl->meshes[0]));
+    mdl->meshes = Z_TreeMalloc(mdl, mdl->num_meshes * sizeof(mdl->meshes[0]));
     for (i = 0; i < mdl->num_meshes; i++) {
         md5_mesh_t *mesh = &mdl->meshes[i];
 
@@ -1304,7 +1282,7 @@ static bool MD5_ParseAnim(model_t *model, const char *s, const char *path)
 
     MD5_ParseExpect(&s, "}");
 
-    mdl->skeleton_frames = MD5_CpuMalloc(sizeof(mdl->skeleton_frames[0]) * mdl->num_frames * mdl->num_joints);
+    mdl->skeleton_frames = Z_TreeMalloc(mdl, sizeof(mdl->skeleton_frames[0]) * mdl->num_frames * mdl->num_joints);
 
     // initialize scales
     for (i = 0; i < mdl->num_frames * mdl->num_joints; i++)
@@ -1355,20 +1333,16 @@ static bool MD5_LoadFile(model_t *model, const char *path, bool (*parse)(model_t
     return true;
 }
 
-static bool MD5_LoadSkins(model_t *model)
+static void MD5_LoadSkins(model_t *model)
 {
     md5_model_t *mdl = model->skeleton;
     const maliasmesh_t *mesh = &model->meshes[0];
 
     if (!mesh->numskins)
-        return true;
+        return;
 
     mdl->num_skins = mesh->numskins;
-    mdl->skins = MOD_CpuMalloc(sizeof(mdl->skins[0]) * mdl->num_skins);
-    if (!mdl->skins) {
-        Com_EPrintf("Out of memory for MD5 skins\n");
-        return false;
-    }
+    mdl->skins = Z_TreeMalloc(mdl, sizeof(mdl->skins[0]) * mdl->num_skins);
 
     for (int i = 0; i < mesh->numskins; i++) {
         // because skins are actually absolute and not always relative to the
@@ -1386,18 +1360,6 @@ static bool MD5_LoadSkins(model_t *model)
             mdl->skins[i] = R_NOTEXTURE;
         }
     }
-
-    return true;
-}
-
-static void MD5_Free(md5_model_t *mdl)
-{
-    if (!mdl)
-        return;
-    Z_Free(mdl->meshes);
-    Z_Free(mdl->skeleton_frames);
-    Z_Free(mdl->skins);
-    Z_Free(mdl);
 }
 
 static void MOD_LoadMD5(model_t *model)
@@ -1419,13 +1381,12 @@ static void MOD_LoadMD5(model_t *model)
         goto fail;
     if (!MD5_LoadFile(model, anim_path, MD5_ParseAnim))
         goto fail;
-    if (!MD5_LoadSkins(model))
-        goto fail;
 
+    MD5_LoadSkins(model);
     return;
 
 fail:
-    MD5_Free(model->skeleton);
+    Z_Free(model->skeleton);
     model->skeleton = NULL;
 }
 

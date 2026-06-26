@@ -187,7 +187,7 @@ static void SV_LinkEdict(const cm_t *cm, edict_t *ent, server_entity_t *sent)
     }
 
     if (num_clusters > sent->num_clusters)
-        sent->clusternums = Z_TagRealloc(sent->clusternums, sizeof(sent->clusternums[0]) * Q_ALIGN(num_clusters, 64), TAG_SERVER);
+        Z_ARRAY_GROW(sent->clusternums, num_clusters - 1, TAG_SERVER);
     sent->num_clusters = num_clusters;
     for (i = 0; i < num_clusters; i++)
         sent->clusternums[i] = clusters[i];

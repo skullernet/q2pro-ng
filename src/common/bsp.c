@@ -403,7 +403,7 @@ static void BSP_LoadMaterials(bsp_t *bsp)
 
         // allocate new material
         out->material_id = bsp->nummaterials++;
-        bsp->materials = Z_ReallocArray(bsp->materials, bsp->nummaterials, sizeof(bsp->materials[0]), TAG_GENERAL);
+        Z_ARRAY_GROW(bsp->materials, out->material_id, TAG_GENERAL);
         strcpy(bsp->materials[out->material_id], material);
 done:
         HashMap_Insert(map, &(const char *){ out->name }, &out->material_id);

@@ -1748,14 +1748,7 @@ Menu_AddItem
 void Menu_AddItem(menuFrameWork_t *menu, void *item)
 {
     Q_assert(menu->nitems < MAX_MENU_ITEMS);
-
-    if (!menu->nitems) {
-        menu->items = UI_Malloc(MIN_MENU_ITEMS * sizeof(void *));
-    } else {
-        menu->items = Z_Realloc(menu->items, Q_ALIGN(menu->nitems + 1, MIN_MENU_ITEMS) * sizeof(void *));
-    }
-
-    menu->items[menu->nitems++] = item;
+    Z_ARRAY_APPEND(menu->items, menu->nitems, item, TAG_UI);
     ((menuCommon_t *)item)->parent = menu;
 }
 

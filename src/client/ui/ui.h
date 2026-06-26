@@ -34,7 +34,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define UI_Malloc(s)        Z_TagMalloc(s, TAG_UI)
 #define UI_CopyString(s)    Z_TagCopyString(s, TAG_UI)
 
-#define MIN_MENU_ITEMS  64
 #define MAX_MENU_ITEMS  250000000
 
 typedef enum {

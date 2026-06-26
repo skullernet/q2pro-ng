@@ -2887,8 +2887,7 @@ void **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *c
                     info = FS_CopyString(s);
                 }
 
-                list.files = FS_ReallocList(list.files, list.count + 1);
-                list.files[list.count++] = info;
+                Z_ARRAY_APPEND(list.files, list.count, info, TAG_FILESYSTEM);
 
                 if (list.count >= MAX_LISTED_FILES) {
                     break;
@@ -2967,7 +2966,7 @@ void **FS_FinalizeList(listfiles_t *list)
     }
 
     // NULL terminate
-    list->files = FS_ReallocList(list->files, total + 1);
+    Z_ARRAY_GROW(list->files, total, TAG_FILESYSTEM);
     list->files[total] = NULL;
 
     return list->files;

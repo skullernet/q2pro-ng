@@ -694,7 +694,6 @@ static void CL_Demo_c(int firstarg, int argnum)
     }
 }
 
-#define MIN_SNAPSHOTS   64
 #define MAX_SNAPSHOTS   250000000
 
 /*
@@ -759,8 +758,7 @@ void CL_EmitDemoSnapshot(void)
         snap->msglen = msg_write.cursize;
         memcpy(snap->data, msg_write.data, msg_write.cursize);
 
-        cls.demo.snapshots = Z_Realloc(cls.demo.snapshots, sizeof(cls.demo.snapshots[0]) * Q_ALIGN(cls.demo.numsnapshots + 1, MIN_SNAPSHOTS));
-        cls.demo.snapshots[cls.demo.numsnapshots++] = snap;
+        Z_ARRAY_APPEND(cls.demo.snapshots, cls.demo.numsnapshots, snap, TAG_GENERAL);
 
         Com_DPrintf("[%d] snaplen %u\n", cls.demo.frames_read, msg_write.cursize);
     }

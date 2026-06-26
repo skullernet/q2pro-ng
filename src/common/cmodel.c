@@ -190,7 +190,7 @@ static void CM_LoadEntPatches(cm_t *cm, const char *name)
         return;
     }
 
-    out = Z_Malloc(outlen);
+    out = Z_TagMalloc(outlen, TAG_CMODEL);
 
     SZ_InitRead(&ctx.patch, data, len);
     SZ_InitRead(&ctx.src, cm->cache->entitystring, cm->cache->numentitychars);

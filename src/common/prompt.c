@@ -29,7 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/client.h"
 #include "server/server.h"
 
-#define MIN_MATCHES     64
 #define MAX_MATCHES     250000000
 
 typedef struct {
@@ -155,10 +154,7 @@ static bool ignore(const char *s)
 
 static void add_match(char *s)
 {
-    if (!(ctx.count & (MIN_MATCHES - 1)))
-        ctx.matches = Z_Realloc(ctx.matches, (ctx.count + MIN_MATCHES) * sizeof(char *));
-
-    ctx.matches[ctx.count++] = s;
+    Z_ARRAY_APPEND(ctx.matches, ctx.count, s, TAG_GENERAL);
 }
 
 void Prompt_SetOptions(completion_option_t opt)
@@ -181,7 +177,7 @@ void Prompt_AddMatchNoAlloc(char *s)
         return;
     }
 
-    add_match(s);
+    add_match(Z_SetParent(s, NULL));
 }
 
 static bool needs_quotes(const char *s)

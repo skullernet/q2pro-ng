@@ -799,7 +799,7 @@ int SCR_CheckForCinematic(const char *name)
         if (!(supported & BIT(i)))
             continue;
         ret = FS_LoadFileEx(va("%.*s%s", len, name, formats[i].ext),
-                            NULL, FS_TYPE_REAL, TAG_FREE);
+                            NULL, FS_TYPE_REAL, TAG_GENERAL);
         if (ret != Q_ERR_DOES_NOT_EXIST)
             break;
     }

@@ -24,7 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/files.h"
 #include "system/system.h"
 
-#define MIN_LISTED_FILES    1024
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8
 
@@ -61,7 +60,7 @@ qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
                           const char *dir, const char *name, const char *ext);
 
 #define FS_FileExistsEx(path, flags) \
-    (FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_DOES_NOT_EXIST)
+    (FS_LoadFileEx(path, NULL, flags, TAG_GENERAL) != Q_ERR_DOES_NOT_EXIST)
 #define FS_FileExists(path) \
     FS_FileExistsEx(path, 0)
 
@@ -93,9 +92,6 @@ bool FS_WildCmp(const char *filter, const char *string);
 bool FS_ExtCmp(const char *extension, const char *string);
 
 const char *FS_NextPath(const char *path);
-
-#define FS_ReallocList(list, count) \
-    Z_Realloc(list, Q_ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
 
 void    **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *count_p);
 void    **FS_CopyList(void **list, int count);

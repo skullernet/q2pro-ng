@@ -1109,8 +1109,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
             info = FS_CopyString(name);
         }
 
-        list->files = FS_ReallocList(list->files, list->count + 1);
-        list->files[list->count++] = info;
+        Z_ARRAY_APPEND(list->files, list->count, info, TAG_FILESYSTEM);
     } while (list->count < MAX_LISTED_FILES && _findnexti64(handle, &data) == 0);
 
     _findclose(handle);

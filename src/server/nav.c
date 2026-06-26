@@ -171,6 +171,7 @@ static struct {
     uint32_t    num_edicts;
     float       heuristic;
 
+    void            *mem;
     nav_node_t      *nodes;
     nav_link_t      *links;
     nav_traversal_t *traversals;
@@ -195,10 +196,10 @@ static cvar_t *nav_debug_range;
 
 static void Nav_AllocContext(nav_ctx_t *ctx)
 {
-    ctx->g_score   = Z_TagMalloc(sizeof(ctx->g_score  [0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->came_from = Z_TagMalloc(sizeof(ctx->came_from[0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->went_to   = Z_TagMalloc(sizeof(ctx->went_to  [0]) * nav_data.num_nodes, TAG_NAV);
-    ctx->open_set  = Z_TagMalloc(sizeof(ctx->open_set [0]) * nav_data.num_nodes, TAG_NAV);
+    ctx->g_score   = Z_MallocArray(nav_data.mem, sizeof(ctx->g_score  [0]), nav_data.num_nodes);
+    ctx->came_from = Z_MallocArray(nav_data.mem, sizeof(ctx->came_from[0]), nav_data.num_nodes);
+    ctx->went_to   = Z_MallocArray(nav_data.mem, sizeof(ctx->went_to  [0]), nav_data.num_nodes);
+    ctx->open_set  = Z_MallocArray(nav_data.mem, sizeof(ctx->open_set [0]), nav_data.num_nodes);
 }
 
 #define NAV_VERIFY(condition, error) \
@@ -245,9 +246,10 @@ bool Nav_Load(void)
     NAV_VERIFY(nav_data.num_links <= INVALID_ID, "Too many links");
     NAV_VERIFY(nav_data.num_traversals <= INVALID_ID, "Too many traversals");
 
-    nav_data.nodes      = Z_TagMalloc(sizeof(nav_data.nodes[0]) * nav_data.num_nodes, TAG_NAV);
-    nav_data.links      = Z_TagMalloc(sizeof(nav_data.links[0]) * nav_data.num_links, TAG_NAV);
-    nav_data.traversals = Z_TagMalloc(sizeof(nav_data.traversals[0]) * nav_data.num_traversals, TAG_NAV);
+    nav_data.mem        = Z_NewContext(TAG_SERVER);
+    nav_data.nodes      = Z_MallocArray(nav_data.mem, sizeof(nav_data.nodes[0]), nav_data.num_nodes);
+    nav_data.links      = Z_MallocArray(nav_data.mem, sizeof(nav_data.links[0]), nav_data.num_links);
+    nav_data.traversals = Z_MallocArray(nav_data.mem, sizeof(nav_data.traversals[0]), nav_data.num_traversals);
 
     nav_data.num_conditional_nodes = 0;
 
@@ -267,7 +269,7 @@ bool Nav_Load(void)
             nav_data.num_conditional_nodes++;
     }
 
-    nav_data.conditional_nodes = Z_TagMalloc(sizeof(nav_data.conditional_nodes[0]) * nav_data.num_conditional_nodes, TAG_NAV);
+    nav_data.conditional_nodes = Z_MallocArray(nav_data.mem, sizeof(nav_data.conditional_nodes[0]), nav_data.num_conditional_nodes);
 
     for (int i = 0, c = 0; i < nav_data.num_nodes; i++) {
         nav_node_t *node = nav_data.nodes + i;
@@ -316,7 +318,7 @@ bool Nav_Load(void)
     nav_data.num_edicts = SZ_ReadLong(&b);
     NAV_VERIFY(nav_data.num_edicts <= MAX_EDICTS, "Too many edicts");
 
-    nav_data.edicts = Z_TagMalloc(sizeof(nav_data.edicts[0]) * nav_data.num_edicts, TAG_NAV);
+    nav_data.edicts = Z_MallocArray(nav_data.mem, sizeof(nav_data.edicts[0]), nav_data.num_edicts);
 
     for (int i = 0; i < nav_data.num_edicts; i++) {
         nav_edict_t *edict = nav_data.edicts + i;
@@ -350,7 +352,7 @@ fail:
 
 void Nav_Unload(void)
 {
-    Z_FreeTags(TAG_NAV);
+    Z_Free(nav_data.mem);
     memset(&nav_data, 0, sizeof(nav_data));
 }
 

@@ -25,7 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "system/system.h"
 #include <errno.h>
 
-#define MIN_VM_CVARS    64
 #define MAX_VM_CVARS    1024
 
 static LIST_DECL(vm_modules);
@@ -148,12 +147,7 @@ bool VM_RegisterCvar(vm_module_t *mod, vm_cvar_t *vmc, const char *name, const c
         return false;
     }
 
-    if (!(mod->num_cvars & (MIN_VM_CVARS - 1)))
-        mod->cvars = VM_Realloc(mod->cvars, (mod->num_cvars + MIN_VM_CVARS) * sizeof(mod->cvars[0]));
-
-    vm_cvar_glue_t *glue = &mod->cvars[mod->num_cvars++];
-    glue->vmc = vmc;
-    glue->var = var;
+    Z_ARRAY_APPEND(mod->cvars, mod->num_cvars, ((vm_cvar_glue_t){ vmc, var }), TAG_VM);
 
     VM_UpdateCvar(vmc, var);
     return true;

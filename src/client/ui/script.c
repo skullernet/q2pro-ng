@@ -50,10 +50,8 @@ static const cmd_option_t o_common[] = {
 
 static void add_string(menuSpinControl_t *s, const char *tok)
 {
-    if (s->numItems < MAX_MENU_ITEMS) {
-        s->itemnames = Z_Realloc(s->itemnames, Q_ALIGN(s->numItems + 2, MIN_MENU_ITEMS) * sizeof(char *));
-        s->itemnames[s->numItems++] = UI_CopyString(tok);
-    }
+    if (s->numItems < MAX_MENU_ITEMS)
+        Z_ARRAY_APPEND(s->itemnames, s->numItems, UI_CopyString(tok), TAG_UI);
 }
 
 static void add_expand(menuSpinControl_t *s, const char *tok)
@@ -95,8 +93,6 @@ static void long_args_hack(menuSpinControl_t *s, int argc)
 {
     int i;
 
-    s->itemnames = UI_Malloc(MIN_MENU_ITEMS * sizeof(char *));
-
     for (i = 0; i < argc; i++) {
         char *tok = Cmd_Argv(cmd_optind + i);
         if (*tok == '$') {
@@ -110,6 +106,8 @@ static void long_args_hack(menuSpinControl_t *s, int argc)
         }
     }
 
+    // NULL terminate
+    Z_ARRAY_GROW(s->itemnames, s->numItems, TAG_UI);
     s->itemnames[s->numItems] = NULL;
 }
 

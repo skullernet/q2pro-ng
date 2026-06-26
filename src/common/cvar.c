@@ -33,6 +33,7 @@ cvar_t  *cvar_vars;
 int     cvar_modified;
 
 #define Cvar_Malloc(size)   Z_TagMalloc(size, TAG_CVAR)
+#define Cvar_CopyString(s)  Z_TagCopyString(s, TAG_CVAR)
 
 #define CVARHASH_SIZE    256
 
@@ -178,7 +179,7 @@ static void change_string_value(cvar_t *var, const char *value, from_t from)
     // free the old value string
     Z_Free(var->string);
 
-    var->string = Z_CvarCopyString(value);
+    var->string = Cvar_CopyString(value);
     parse_string_value(var);
 
     if (var->flags & CVAR_USERINFO) {
@@ -225,7 +226,7 @@ static void get_engine_cvar(cvar_t *var, const char *var_value, int flags)
     if (var->flags & (CVAR_CUSTOM | CVAR_WEAK)) {
         // update default string if cvar was set from command line
         Z_Free(var->default_string);
-        var->default_string = Z_CvarCopyString(var_value);
+        var->default_string = Cvar_CopyString(var_value);
 
         // see if it was changed from it's default value
         if (strcmp(var_value, var->string)) {
@@ -297,9 +298,9 @@ cvar_t *Cvar_Get(const char *var_name, const char *var_value, int flags)
     var = Cvar_Malloc(sizeof(*var) + length);
     var->name = (char *)(var + 1);
     memcpy(var->name, var_name, length);
-    var->string = Z_CvarCopyString(var_value);
+    var->string = Cvar_CopyString(var_value);
     var->latched_string = NULL;
-    var->default_string = Z_CvarCopyString(var_value);
+    var->default_string = Cvar_CopyString(var_value);
     parse_string_value(var);
     var->flags = flags;
     var->changed = NULL;
@@ -396,7 +397,7 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from)
             }
             Com_Printf("%s will be changed for next game.\n", var->name);
             Z_Free(var->latched_string);
-            var->latched_string = Z_CvarCopyString(value);
+            var->latched_string = Cvar_CopyString(value);
             return;
         }
     }
