@@ -2070,6 +2070,9 @@ static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t f
     if (!r_numImages)
         return 0;
 
+    if (!Q_stricmp(name, "*whiteimage"))
+        return 1;
+
     // hack for testing code
     if (*name == '#')
         flags |= IF_KEEP_EXTENSION;

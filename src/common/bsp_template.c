@@ -135,10 +135,11 @@ BSP_LOAD(Texinfo)
 
     for (int i = 0; i < count; i++, out++) {
 #if USE_REF
-        for (int j = 0; j < 2; j++) {
-            BSP_Vector(out->axis[j]);
-            out->offset.st[j] = BSP_Float();
-        }
+        BSP_Vector(out->axis.s);
+        out->offset.s = BSP_Float();
+
+        BSP_Vector(out->axis.t);
+        out->offset.t = BSP_Float();
 #else
         in += 32;
 #endif

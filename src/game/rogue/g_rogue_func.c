@@ -253,7 +253,7 @@ void USE(plat2_activate)(edict_t *ent, edict_t *other, edict_t *activator)
 
     trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
-    trigger->r.box = Box3_Expand3(trigger->r.box, Vec3(10, 10, 0));
+    trigger->r.box = Box3_Expand(trigger->r.box, Vec3(10, 10, 0));
 
     trap_LinkEntity(trigger);
 
@@ -342,7 +342,7 @@ void SP_func_plat2(edict_t *ent)
         trigger = plat_spawn_inside_trigger(ent); // the "start moving" trigger
 
         // PGM - debugging??
-        trigger->r.box = Box3_Expand3(trigger->r.box, Vec3(10, 10, 0));
+        trigger->r.box = Box3_Expand(trigger->r.box, Vec3(10, 10, 0));
 
         trap_LinkEntity(trigger);
 

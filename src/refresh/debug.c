@@ -18,15 +18,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 #include "common/list.h"
-#include <assert.h>
 
-#define MAX_DEBUG_LINES     TESS_MAX_VERTICES
+#define MAX_DEBUG_LINES     0x10000
 #define MAX_DEBUG_TEXTS     1024
 
 typedef struct {
     list_t          entry;
     vec3_t          start, end;
-    uint32_t        color;
+    color_t         color;
     uint32_t        time;
     glStateBits_t   bits;
 } debug_line_t;
@@ -39,7 +38,7 @@ typedef struct {
     list_t          entry;
     vec3_t          origin, angles;
     float           size;
-    uint32_t        color;
+    color_t         color;
     uint32_t        time;
     glStateBits_t   bits;
     char            text[128];
@@ -91,7 +90,7 @@ void R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, boo
 
     l->start = start;
     l->end = end;
-    l->color = color;
+    l->color.u32 = color;
     l->time = com_localTime2 + time;
     if (l->time < com_localTime2)
         l->time = UINT32_MAX;
@@ -342,7 +341,7 @@ static void R_AddDebugTextInternal(vec3_t origin, vec3_t angles, const char *tex
     t->origin = origin;
     t->angles = angles;
     t->size = size;
-    t->color = color;
+    t->color.u32 = color;
     t->time = com_localTime2 + time;
     if (t->time < com_localTime2)
         t->time = UINT32_MAX;
@@ -391,7 +390,7 @@ static void GL_DrawDebugLines(void)
 {
     glStateBits_t bits = -1;
     debug_line_t *l, *next;
-    GLfloat *dst_vert;
+    glVertex3DNoTex_t *dst_vert;
     int numverts;
 
     if (LIST_EMPTY(&debug_lines_active))
@@ -409,9 +408,7 @@ static void GL_DrawDebugLines(void)
     if (gl_config.caps & QGL_CAP_LINE_SMOOTH)
         qglEnable(GL_LINE_SMOOTH);
 
-    static_assert(q_countof(debug_lines) <= q_countof(tess.vertices) / 8, "Too many debug lines");
-
-    dst_vert = tess.vertices;
+    dst_vert = tess.vertices3DNoTex;
     numverts = 0;
     LIST_FOR_EACH_SAFE(l, next, &debug_lines_active, entry) {
         if (l->time < com_localTime2) { // expired
@@ -420,7 +417,7 @@ static void GL_DrawDebugLines(void)
             continue;
         }
 
-        if (bits != l->bits) {
+        if (bits != l->bits || numverts + 2 > TESS_MAX_VERTICES) {
             if (numverts) {
                 GL_LockArrays(numverts);
                 qglDrawArrays(GL_LINES, 0, numverts);
@@ -430,15 +427,15 @@ static void GL_DrawDebugLines(void)
             GL_StateBits(l->bits);
             bits = l->bits;
 
-            dst_vert = tess.vertices;
+            dst_vert = tess.vertices3DNoTex;
             numverts = 0;
         }
 
-        Vec3_Store(dst_vert, l->start);
-        Vec3_Store(dst_vert + 4, l->end);
-        WN32(dst_vert + 3, l->color);
-        WN32(dst_vert + 7, l->color);
-        dst_vert += 8;
+        dst_vert[0].xyz = l->start;
+        dst_vert[0].color = l->color;
+        dst_vert[1].xyz = l->end;
+        dst_vert[1].color = l->color;
+        dst_vert += 2;
 
         numverts += 2;
     }
@@ -471,9 +468,9 @@ static void GL_FlushDebugChars(void)
 }
 
 static void GL_DrawDebugChar(vec3_t pos, vec3_t right, vec3_t down,
-                             glStateBits_t bits, uint32_t color, int c)
+                             glStateBits_t bits, color_t color, int c)
 {
-    GLfloat *dst_vert;
+    glVertex3D_t *dst_vert;
     glIndex_t *dst_indices;
     float s, t;
 
@@ -485,29 +482,25 @@ static void GL_DrawDebugChar(vec3_t pos, vec3_t right, vec3_t down,
         (tess.numindices && bits != tess.flags))
         GL_FlushDebugChars();
 
-    dst_vert = tess.vertices + tess.numverts * 6;
+    dst_vert = &tess.vertices3D[tess.numverts];
 
-    Vec3_Store(dst_vert, pos);
-    Vec3_Store(dst_vert + 6, Vec3_Add(pos, right));
-    Vec3_Store(dst_vert + 12, Vec3_Add(Vec3_Add(pos, right), down));
-    Vec3_Store(dst_vert + 18, Vec3_Add(pos, down));
+    dst_vert[0].xyz = pos;
+    dst_vert[1].xyz = Vec3_Add(pos, right);
+    dst_vert[2].xyz = Vec3_Add(dst_vert[1].xyz, down);
+    dst_vert[3].xyz = Vec3_Add(pos, down);
 
     s = (c & 15) * 0.0625f;
     t = (c >> 4) * 0.0625f;
 
-    dst_vert[ 3] = s;
-    dst_vert[ 4] = t;
-    dst_vert[ 9] = s + 0.0625f;
-    dst_vert[10] = t;
-    dst_vert[15] = s + 0.0625f;
-    dst_vert[16] = t + 0.0625f;
-    dst_vert[21] = s;
-    dst_vert[22] = t + 0.0625f;
+    dst_vert[0].st = Vec2(s, t);
+    dst_vert[1].st = Vec2(s + 0.0625f, t);
+    dst_vert[2].st = Vec2(s + 0.0625f, t + 0.0625f);
+    dst_vert[3].st = Vec2(s, t + 0.0625f);
 
-    WN32(dst_vert +  5, color);
-    WN32(dst_vert + 11, color);
-    WN32(dst_vert + 17, color);
-    WN32(dst_vert + 23, color);
+    dst_vert[0].color =
+    dst_vert[1].color =
+    dst_vert[2].color =
+    dst_vert[3].color = color;
 
     dst_indices = tess.indices + tess.numindices;
     dst_indices[0] = tess.numverts + 0;

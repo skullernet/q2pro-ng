@@ -826,10 +826,10 @@ void IMG_Load(image_t *image, byte *pic)
 
         image->texnum = TEXNUM_SCRAP;
         image->flags |= IF_SCRAP | IF_TRANSPARENT;
-        image->sl = (s + 0.01f) / SCRAP_BLOCK_WIDTH;
-        image->sh = (s + width - 0.01f) / SCRAP_BLOCK_WIDTH;
-        image->tl = (t + 0.01f) / SCRAP_BLOCK_HEIGHT;
-        image->th = (t + height - 0.01f) / SCRAP_BLOCK_HEIGHT;
+        image->tc.mins.s = (s + 0.01f) / SCRAP_BLOCK_WIDTH;
+        image->tc.maxs.s = (s + width - 0.01f) / SCRAP_BLOCK_WIDTH;
+        image->tc.mins.t = (t + 0.01f) / SCRAP_BLOCK_HEIGHT;
+        image->tc.maxs.t = (t + height - 0.01f) / SCRAP_BLOCK_HEIGHT;
 
         maxlevel = GL_UpscaleLevel(SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
         if (maxlevel)
@@ -854,10 +854,7 @@ void IMG_Load(image_t *image, byte *pic)
             image->flags |= IF_TRANSPARENT;
         image->upload_width = upload_width << maxlevel;     // after power of 2 and scales
         image->upload_height = upload_height << maxlevel;
-        image->sl = 0;
-        image->sh = 1;
-        image->tl = 0;
-        image->th = 1;
+        image->tc = box2_unit;
     }
 }
 
@@ -986,10 +983,7 @@ static void GL_InitDefaultTexture(void)
     ntx->type = IT_WALL;
     ntx->flags = 0;
     ntx->texnum = TEXNUM_DEFAULT;
-    ntx->sl = 0;
-    ntx->sh = 1;
-    ntx->tl = 0;
-    ntx->th = 1;
+    ntx->tc = box2_unit;
 }
 
 static void GL_InitParticleTexture(void)
@@ -1050,8 +1044,8 @@ static void GL_InitWhiteImage(void)
     GL_Upload32((byte *)&pixel, 1, 1, 0, IT_SPRITE, IF_REPEAT | IF_NEAREST);
     GL_SetFilterAndRepeat(IT_SPRITE, IF_REPEAT | IF_NEAREST);
 
-    // init shell texture (don't set name to keep it immutable)
-    R_SHELLTEXTURE->texnum = TEXNUM_WHITE;
+    // init white texture (don't set name to keep it immutable)
+    R_WHITEIMAGE->texnum = TEXNUM_WHITE;
 }
 
 static void GL_InitBeamTexture(void)

@@ -36,7 +36,7 @@ typedef struct mtexinfo_s {
     int                 surface_id;
     int                 material_id;
 #if USE_REF
-    vec3_t              axis[2];
+    axis2_t             axis;
     vec2_t              offset;
     struct image_s      *image; // used for texturing
     struct mtexinfo_s   *next; // used for animation
@@ -72,7 +72,7 @@ typedef struct mface_s {
     uint16_t        numsurfedges;
 
     mtexinfo_t      *texinfo;
-    vec3_t          lm_axis[2];
+    axis2_t         lm_axis;
     vec2_t          lm_offset;
     uint16_t        lm_width;
     uint16_t        lm_height;

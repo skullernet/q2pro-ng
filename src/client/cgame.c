@@ -506,8 +506,8 @@ VM_THUNK(R_SetColor32) {
     R_SetColor(VM_U32(0));
 }
 
-VM_THUNK(R_SetClipRect) {
-    R_SetClipRect(VM_PTR(0, clipRect_t));
+VM_THUNK(R_SetClipBox) {
+    R_SetClipBox(VM_BOX2(0));
 }
 
 VM_THUNK(R_SetScale) {
@@ -530,16 +530,16 @@ VM_THUNK(R_DrawPic) {
     R_DrawPic(VM_U32(0), VM_U32(1), VM_U32(2));
 }
 
+VM_THUNK(R_DrawBoxPic) {
+    R_DrawBoxPic(VM_BOX2(0), VM_BOX2(1), VM_U32(2));
+}
+
 VM_THUNK(R_DrawStretchPic) {
     R_DrawStretchPic(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
 }
 
 VM_THUNK(R_DrawKeepAspectPic) {
     R_DrawKeepAspectPic(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
-}
-
-VM_THUNK(R_TileClear) {
-    R_TileClear(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
 }
 
 VM_THUNK(R_DrawFill8) {
@@ -739,15 +739,15 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_SetAlpha, "f"),
     VM_IMPORT(R_SetColor24, "i"),
     VM_IMPORT(R_SetColor32, "i"),
-    VM_IMPORT(R_SetClipRect, "i"),
+    VM_IMPORT(R_SetClipBox, "i"),
     VM_IMPORT(R_SetScale, "f"),
     VM_IMPORT(R_DrawChar, "iiiii"),
     VM_IMPORT(R_DrawString, "i iiiiii"),
     VM_IMPORT(R_GetPicSize, "i iii"),
     VM_IMPORT(R_DrawPic, "iii"),
+    VM_IMPORT(R_DrawBoxPic, "iii"),
     VM_IMPORT(R_DrawStretchPic, "iiiii"),
     VM_IMPORT(R_DrawKeepAspectPic, "iiiii"),
-    VM_IMPORT(R_TileClear, "iiiii"),
     VM_IMPORT(R_DrawFill8, "iiiii"),
     VM_IMPORT(R_DrawFill32, "iiiii"),
     VM_IMPORT(S_RegisterSound, "i i"),
@@ -1027,15 +1027,15 @@ static const cgame_import_t cgame_dll_imports = {
     .R_SetAlpha = R_SetAlpha,
     .R_SetColor24 = R_SetColor24,
     .R_SetColor32 = R_SetColor,
-    .R_SetClipRect = R_SetClipRect,
+    .R_SetClipBox = R_SetClipBox,
     .R_SetScale = R_SetScale,
     .R_DrawChar = R_DrawChar,
     .R_DrawString = R_DrawString,
     .R_GetPicSize = R_GetPicSize,
     .R_DrawPic = R_DrawPic,
+    .R_DrawBoxPic = R_DrawBoxPic,
     .R_DrawStretchPic = R_DrawStretchPic,
     .R_DrawKeepAspectPic = R_DrawKeepAspectPic,
-    .R_TileClear = R_TileClear,
     .R_DrawFill8 = R_DrawFill8,
     .R_DrawFill32 = R_DrawFill32,
 

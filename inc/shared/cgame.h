@@ -150,16 +150,16 @@ typedef struct {
     void    (*R_SetAlpha)(float alpha);
     void    (*R_SetColor24)(uint32_t color);
     void    (*R_SetColor32)(uint32_t color);
-    void    (*R_SetClipRect)(const clipRect_t *clip);
+    void    (*R_SetClipBox)(box2_t box);
     void    (*R_SetScale)(float scale);
     void    (*R_DrawChar)(int x, int y, int flags, int ch, qhandle_t font);
     int     (*R_DrawString)(int x, int y, int flags, size_t max_chars,
                             const char *string, qhandle_t font);  // returns advanced x coord
     bool    (*R_GetPicSize)(int *w, int *h, qhandle_t pic);   // returns transparency bit
     void    (*R_DrawPic)(int x, int y, qhandle_t pic);
+    void    (*R_DrawBoxPic)(box2_t pos, box2_t tc, qhandle_t pic);
     void    (*R_DrawStretchPic)(int x, int y, int w, int h, qhandle_t pic);
     void    (*R_DrawKeepAspectPic)(int x, int y, int w, int h, qhandle_t pic);
-    void    (*R_TileClear)(int x, int y, int w, int h, qhandle_t pic);
     void    (*R_DrawFill8)(int x, int y, int w, int h, int c);
     void    (*R_DrawFill32)(int x, int y, int w, int h, uint32_t color);
 

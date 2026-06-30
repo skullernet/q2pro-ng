@@ -493,7 +493,7 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
             box = Box3_AddPoint(box, Vec3_Load(dst_vert->pos));
         }
 
-        box = Box3_Scale3(box, dst_frame->scale);
+        box = Box3_Scale(box, dst_frame->scale);
         dst_frame->radius = Box3_RadiusFromBounds(box);
         dst_frame->box = Box3_Translate(box, dst_frame->translate);
 

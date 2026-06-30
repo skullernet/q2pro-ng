@@ -107,16 +107,16 @@ void    trap_R_ClearColor(void);
 void    trap_R_SetAlpha(float alpha);
 void    trap_R_SetColor24(uint32_t color);
 void    trap_R_SetColor32(uint32_t color);
-void    trap_R_SetClipRect(const clipRect_t *clip);
+void    trap_R_SetClipBox(box2_t box);
 void    trap_R_SetScale(float scale);
 void    trap_R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
 int     trap_R_DrawString(int x, int y, int flags, size_t max_chars,
                           const char *string, qhandle_t font);  // returns advanced x coord
 bool    trap_R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
 void    trap_R_DrawPic(int x, int y, qhandle_t pic);
+void    trap_R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic);
 void    trap_R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);
 void    trap_R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic);
-void    trap_R_TileClear(int x, int y, int w, int h, qhandle_t pic);
 void    trap_R_DrawFill8(int x, int y, int w, int h, int c);
 void    trap_R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 
@@ -247,15 +247,15 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_R_SetAlpha cgi->R_SetAlpha
 #define trap_R_SetColor24 cgi->R_SetColor24
 #define trap_R_SetColor32 cgi->R_SetColor32
-#define trap_R_SetClipRect cgi->R_SetClipRect
+#define trap_R_SetClipBix cgi->R_SetClipBox
 #define trap_R_SetScale cgi->R_SetScale
 #define trap_R_DrawChar cgi->R_DrawChar
 #define trap_R_DrawString cgi->R_DrawString
 #define trap_R_GetPicSize cgi->R_GetPicSize
 #define trap_R_DrawPic cgi->R_DrawPic
+#define trap_R_DrawBoxPic cgi->R_DrawBoxPic
 #define trap_R_DrawStretchPic cgi->R_DrawStretchPic
 #define trap_R_DrawKeepAspectPic cgi->R_DrawKeepAspectPic
-#define trap_R_TileClear cgi->R_TileClear
 #define trap_R_DrawFill8 cgi->R_DrawFill8
 #define trap_R_DrawFill32 cgi->R_DrawFill32
 

@@ -578,10 +578,11 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
             errors = true;
         }
 
-        for (int j = 0; j < 2; j++) {
-            BSP_Vector(out->lm_axis[j]);
-            out->lm_offset.st[j] = BSP_Float();
-        }
+        BSP_Vector(out->lm_axis.s);
+        out->lm_offset.s = BSP_Float();
+
+        BSP_Vector(out->lm_axis.t);
+        out->lm_offset.t = BSP_Float();
     }
 
     if (errors)
@@ -1193,8 +1194,8 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, v
             if (surf->drawflags & light_mask)
                 continue;
 
-            s = Vec3_Dot(surf->lm_axis[0], mid) + surf->lm_offset.s;
-            t = Vec3_Dot(surf->lm_axis[1], mid) + surf->lm_offset.t;
+            s = Vec3_Dot(surf->lm_axis.s, mid) + surf->lm_offset.s;
+            t = Vec3_Dot(surf->lm_axis.t, mid) + surf->lm_offset.t;
             if (s != s || s < 0 || s > surf->lm_width - 1)
                 continue;
             if (t != t || t < 0 || t > surf->lm_height - 1)

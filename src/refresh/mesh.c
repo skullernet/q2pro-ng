@@ -275,7 +275,7 @@ static const image_t *skin_for_mesh(image_t **skins, int num_skins)
     const entity_t *ent = &glr.ent->e;
 
     if (ent->flags & RF_SHELL_MASK)
-        return R_SHELLTEXTURE;
+        return R_WHITEIMAGE;
 
     if (ent->skin)
         return IMG_ForHandle(ent->skin);

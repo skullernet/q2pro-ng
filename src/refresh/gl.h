@@ -520,9 +520,6 @@ typedef struct {
     GLuint buffers[2];
 } model_t;
 
-// xyz[3] | color[1] | st[2] | lmst[2] | normal[3] | lightstyles[1]
-#define VERTEX_SIZE 12
-
 void MOD_FreeUnused(void);
 void MOD_FreeAll(void);
 void MOD_Init(void);
@@ -547,6 +544,18 @@ typedef struct {
 } lightmap_builder_t;
 
 extern lightmap_builder_t lm;
+
+// xyz[3] | color[1] | st[2] | lmst[2] | normal[3] | lightstyles[1]
+#define VERTEX_SIZE 12
+
+typedef struct {
+    vec3_t      xyz;
+    color_t     color;
+    vec2_t      st;
+    vec2_t      lmst;
+    vec3_t      normal;
+    byte        styles[MAX_LIGHTMAPS];
+} glWorldVertex_t;
 
 void GL_FreeWorld(void);
 void GL_LoadWorld(const char *name);
@@ -926,11 +935,33 @@ extern cvar_t *gl_intensity;
  * gl_tess.c
  *
  */
-#define TESS_MAX_VERTICES   6144
+#define TESS_MAX_VERTICES   8192
 #define TESS_MAX_INDICES    (3 * TESS_MAX_VERTICES)
 
 typedef struct {
-    GLfloat         vertices[VERTEX_SIZE * TESS_MAX_VERTICES];
+    vec2_t  xy;
+    vec2_t  st;
+    color_t color;
+} glVertex2D_t;
+
+typedef struct {
+    vec3_t  xyz;
+    vec2_t  st;
+    color_t color;
+} glVertex3D_t;
+
+typedef struct {
+    vec3_t  xyz;
+    color_t color;
+} glVertex3DNoTex_t;
+
+typedef struct {
+    union {
+        GLfloat             vertices[TESS_MAX_VERTICES];
+        glVertex2D_t        vertices2D[TESS_MAX_VERTICES];
+        glVertex3D_t        vertices3D[TESS_MAX_VERTICES];
+        glVertex3DNoTex_t   vertices3DNoTex[TESS_MAX_VERTICES];
+    };
     glIndex_t       indices[TESS_MAX_INDICES];
     GLuint          texnum[MAX_TMUS];
     int             numverts;

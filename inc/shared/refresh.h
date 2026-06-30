@@ -100,10 +100,6 @@ typedef struct {
     byte        areabits[MAX_MAP_AREA_BYTES];   // only areas with set bits will be drawn
 } refdef_t;
 
-typedef struct {
-    int left, right, top, bottom;
-} clipRect_t;
-
 typedef enum {
     QVF_FULLSCREEN      = BIT(0),
     QVF_GAMMARAMP       = BIT(1),

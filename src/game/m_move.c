@@ -302,8 +302,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
 
         // top & bottom are same, so we need to try right/left
         if (bottom_visible == top_visible) {
-            vec3_t left  = Vec3_Add(ent->s.origin, Vec3_Mul(ent->r.box.maxs, Vec3_Sub(aim_fwd, aim_rgt)));
-            vec3_t right = Vec3_Add(ent->s.origin, Vec3_Mul(ent->r.box.maxs, Vec3_Add(aim_fwd, aim_rgt)));
+            vec3_t left  = Vec3_Add(ent->s.origin, Vec3_Scale(ent->r.box.maxs, Vec3_Sub(aim_fwd, aim_rgt)));
+            vec3_t right = Vec3_Add(ent->s.origin, Vec3_Scale(ent->r.box.maxs, Vec3_Add(aim_fwd, aim_rgt)));
 
             bool left_visible  = G_TraceLine(left,  wanted_pos, ent->s.number, mask).fraction == 1.0f;
             bool right_visible = G_TraceLine(right, wanted_pos, ent->s.number, mask).fraction == 1.0f;

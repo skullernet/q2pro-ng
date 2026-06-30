@@ -95,9 +95,9 @@ typedef struct image_s {
     uint16_t        flags;
     uint16_t        width, height; // source image
     uint16_t        upload_width, upload_height; // after power of two and picmip
-    unsigned        registration_sequence;
-    unsigned        texnum, texnum2; // gl texture binding
-    float           sl, sh, tl, th;
+    uint32_t        registration_sequence;
+    uint32_t        texnum, texnum2; // gl texture binding
+    box2_t          tc; // for scrap texture
     float           aspect;
 } image_t;
 
@@ -110,7 +110,7 @@ extern unsigned r_registration_sequence;
 
 #define R_NUM_AUTO_IMG  3
 #define R_NOTEXTURE     (&r_images[0])
-#define R_SHELLTEXTURE  (&r_images[1])
+#define R_WHITEIMAGE    (&r_images[1])
 #define R_SKYTEXTURE    (&r_images[2])
 
 extern uint32_t d_8to24table[256];

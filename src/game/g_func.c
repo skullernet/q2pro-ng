@@ -1373,7 +1373,7 @@ void THINK(Think_SpawnDoorTrigger)(edict_t *ent)
         box = Box3_Union(box, other->r.absbox);
 
     // expand
-    box = Box3_Expand3(box, Vec3(60, 60, 0));
+    box = Box3_Expand(box, Vec3(60, 60, 0));
 
     other = G_Spawn();
     other->r.box = box;

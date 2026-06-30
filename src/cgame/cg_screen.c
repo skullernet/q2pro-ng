@@ -842,6 +842,11 @@ static void SCR_CalcVrect(void)
     scr_vrect.y = (scr.hud_height - scr_vrect.height) / 2;
 }
 
+static void SCR_TileClearBox(box2_t box)
+{
+    trap_R_DrawBoxPic(box, Box2_Scale(box, 1.0f / 64.0f), scr.backtile_pic);
+}
+
 // Clear any parts of the tiled background that were drawn on last frame
 static void SCR_TileClear(void)
 {
@@ -857,18 +862,16 @@ static void SCR_TileClear(void)
     right = left + scr_vrect.width;
 
     // clear above view screen
-    trap_R_TileClear(0, 0, scr.hud_width, top, scr.backtile_pic);
+    SCR_TileClearBox(Box2(Vec2(0, 0), Vec2(scr.hud_width, top)));
 
     // clear below view screen
-    trap_R_TileClear(0, bottom, scr.hud_width,
-                     scr.hud_height - bottom, scr.backtile_pic);
+    SCR_TileClearBox(Box2(Vec2(0, bottom), Vec2(scr.hud_width, scr.hud_height)));
 
     // clear left of view screen
-    trap_R_TileClear(0, top, left, scr_vrect.height, scr.backtile_pic);
+    SCR_TileClearBox(Box2(Vec2(0, top), Vec2(left, bottom)));
 
     // clear right of view screen
-    trap_R_TileClear(right, top, scr.hud_width - right,
-                     scr_vrect.height, scr.backtile_pic);
+    SCR_TileClearBox(Box2(Vec2(right, top), Vec2(scr.hud_width, bottom)));
 }
 
 /*

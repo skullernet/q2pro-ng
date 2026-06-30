@@ -192,6 +192,14 @@ typedef union {
     float rgba[4];
 } vec4_t;
 
+typedef struct {
+    vec3_t s, t;
+} axis2_t;
+
+typedef struct {
+    vec3_t x, y, z;
+} axis3_t;
+
 typedef union {
     struct {
         vec2_t mins;
@@ -406,6 +414,21 @@ static inline vec2_t Vec2_Scale(vec2_t in, float scale) {
     return Vec2(in.x * scale, in.y * scale);
 }
 
+static inline vec2_t Vec2_Scale2(vec2_t a, vec2_t b) {
+    return Vec2(a.x * b.x, a.y * b.y);
+}
+
+#define Vec2_Scale(a, v) \
+    _Generic((v), vec2_t: Vec2_Scale2, default: Vec2_Scale)((a), (v))
+
+static inline vec2_t Vec2_Offset(vec2_t in, float offset) {
+    return Vec2(in.x + offset, in.y + offset);
+}
+
+static inline vec2_t Vec2_Rotate(vec2_t in, const vec2_t axis[2]) {
+    return Vec2(Vec2_Dot(in, axis[0]), Vec2_Dot(in, axis[1]));
+}
+
 static inline vec2_t Vec2_Min(vec2_t a, vec2_t b) {
     return Vec2(min(a.x, b.x), min(a.y, b.y));
 }
@@ -458,10 +481,6 @@ static inline vec3_t Vec3_Add(vec3_t a, vec3_t b) {
     return Vec3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-static inline vec3_t Vec3_Mul(vec3_t a, vec3_t b) {
-    return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
-}
-
 static inline vec3_t Vec3_Negate(vec3_t a) {
     return Vec3(-a.x, -a.y, -a.z);
 }
@@ -473,6 +492,13 @@ static inline vec3_t Vec3_Reciprocal(vec3_t a) {
 static inline vec3_t Vec3_Scale(vec3_t in, float scale) {
     return Vec3(in.x * scale, in.y * scale, in.z * scale);
 }
+
+static inline vec3_t Vec3_Scale3(vec3_t a, vec3_t b) {
+    return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
+#define Vec3_Scale(a, v) \
+    _Generic((v), vec3_t: Vec3_Scale3, default: Vec3_Scale)((a), (v))
 
 static inline vec3_t Vec3_Offset(vec3_t in, float offset) {
     return Vec3(in.x + offset, in.y + offset, in.z + offset);
@@ -537,8 +563,11 @@ static inline vec3_t Vec3_Lerp(vec3_t a, vec3_t b, float t) {
 }
 
 static inline vec3_t Vec3_Lerp3(vec3_t a, vec3_t b, vec3_t t) {
-    return Vec3_Add(a, Vec3_Mul(Vec3_Sub(b, a), t));
+    return Vec3_Add(a, Vec3_Scale(Vec3_Sub(b, a), t));
 }
+
+#define Vec3_Lerp(a, b, t) \
+    _Generic((t), vec3_t: Vec3_Lerp3, default: Vec3_Lerp)((a), (b), (t))
 
 static inline vec3_t Vec3_Mix(vec3_t a, vec3_t b, float t1, float t2) {
     return Vec3_Add(Vec3_Scale(a, t1), Vec3_Scale(b, t2));
@@ -648,9 +677,12 @@ static inline vec4_t Vec4_Lerp(vec4_t a, vec4_t b, float t) {
 }
 
 static inline color_t Vec4_ToColor(vec4_t v) {
-    color_t color;
-    Vec4_Store(color.u8, Vec4_Scale(v, 255));
-    return color;
+    return (color_t) {
+        .r = Q_clip_uint8(v.r * 255),
+        .g = Q_clip_uint8(v.g * 255),
+        .b = Q_clip_uint8(v.b * 255),
+        .a = Q_clip_uint8(v.a * 255)
+    };
 }
 
 static inline vec4_t Vec4_FromColor(color_t color) {
@@ -660,6 +692,9 @@ static inline vec4_t Vec4_FromColor(color_t color) {
 #define box2_origin (box2_t){ 0 }
 #define box3_origin (box3_t){ 0 }
 
+#define box2_unit (box2_t){ .maxs = { 1, 1 } }
+#define box3_unit (box3_t){ .maxs = { 1, 1, 1 } }
+
 #define Box2(a, b) (box2_t){ .mins = (a), .maxs = (b) }
 #define Box3(a, b) (box3_t){ .mins = (a), .maxs = (b) }
 
@@ -667,8 +702,54 @@ static inline box2_t Box2_Null(void) {
     return Box2(Vec2_Fill(FLT_MAX), Vec2_Fill(-FLT_MAX));
 }
 
+static inline bool Box2_IsNull(box2_t a) {
+    return a.mins.x > a.maxs.x || a.mins.y > a.maxs.y;
+}
+
+static inline box2_t Box2_At(float x, float y, float w, float h) {
+    return Box2(Vec2(x, y), Vec2(x + w, y + h));
+}
+
 static inline box2_t Box2_AddPoint(box2_t a, vec2_t v) {
     return Box2(Vec2_Min(a.mins, v), Vec2_Max(a.maxs, v));
+}
+
+static inline vec2_t Box2_Size(box2_t a) {
+    return Vec2_Sub(a.maxs, a.mins);
+}
+
+static inline box2_t Box2_Scale(box2_t a, float scale) {
+    return Box2(Vec2_Scale(a.mins, scale), Vec2_Scale(a.maxs, scale));
+}
+
+static inline box2_t Box2_Translate(box2_t a, vec2_t v) {
+    return Box2(Vec2_Add(a.mins, v), Vec2_Add(a.maxs, v));
+}
+
+static inline box2_t Box2_Expand(box2_t a, float ofs) {
+    return Box2(Vec2_Offset(a.mins, -ofs), Vec2_Offset(a.maxs, ofs));
+}
+
+static inline box2_t Box2_Expand2(box2_t a, vec2_t ofs) {
+    return Box2(Vec2_Sub(a.mins, ofs), Vec2_Add(a.maxs, ofs));
+}
+
+#define Box2_Expand(a, v) \
+    _Generic((v), vec2_t: Box2_Expand2, default: Box2_Expand)((a), (v))
+
+static inline bool Box2_Intersects(box2_t a, box2_t b)
+{
+    if (a.mins.x > b.maxs.x || a.mins.y > b.maxs.y)
+        return false;
+    if (a.maxs.x < b.mins.x || a.maxs.y < b.mins.y)
+        return false;
+    return true;
+}
+
+static inline box2_t Box2_Intersection(box2_t a, box2_t b) {
+    if (Box2_Intersects(a, b))
+        return Box2(Vec2_Max(a.mins, b.mins), Vec2_Min(a.maxs, b.maxs));
+    return Box2_Null();
 }
 
 static inline box3_t Box3_Null(void) {
@@ -745,8 +826,11 @@ static inline box3_t Box3_Scale(box3_t a, float scale) {
 }
 
 static inline box3_t Box3_Scale3(box3_t a, vec3_t scale) {
-    return Box3(Vec3_Mul(a.mins, scale), Vec3_Mul(a.maxs, scale));
+    return Box3(Vec3_Scale(a.mins, scale), Vec3_Scale(a.maxs, scale));
 }
+
+#define Box3_Scale(a, v) \
+    _Generic((v), vec3_t: Box3_Scale3, default: Box3_Scale)((a), (v))
 
 static inline box3_t Box3_Translate(box3_t a, vec3_t v) {
     return Box3(Vec3_Add(a.mins, v), Vec3_Add(a.maxs, v));
@@ -760,6 +844,9 @@ static inline box3_t Box3_Expand3(box3_t a, vec3_t ofs) {
     return Box3(Vec3_Sub(a.mins, ofs), Vec3_Add(a.maxs, ofs));
 }
 
+#define Box3_Expand(a, v) \
+    _Generic((v), vec3_t: Box3_Expand3, default: Box3_Expand)((a), (v))
+
 static inline vec3_t Box3_ClampPoint(box3_t a, vec3_t v) {
     return (vec3_t) {
         Q_clipf(v.x, a.mins.x, a.maxs.x),
@@ -769,7 +856,7 @@ static inline vec3_t Box3_ClampPoint(box3_t a, vec3_t v) {
 }
 
 static inline vec3_t Box3_RandomPoint(box3_t a) {
-    return Vec3_Lerp3(a.mins, a.maxs, Vec3_Random());
+    return Vec3_Lerp(a.mins, a.maxs, Vec3_Random());
 }
 
 static inline box3_t Box3_FromRotated(box3_t box) {

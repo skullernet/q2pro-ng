@@ -100,13 +100,14 @@ static void LM_EndBuilding(void)
     Com_DPrintf("%s: %d lightmaps built\n", __func__, lm.nummaps);
 }
 
-static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
+static void LM_BuildSurface(mface_t *surf, glWorldVertex_t *dst_vert)
 {
     const bsp_t *bsp = gl_static.world.cache;
     int i, j, k, smax, tmax, size, s, t, stride, offset;
     const byte *src;
     byte *out, *dst;
     float scale;
+    vec2_t ofs;
 
     if (!surf->lightmap)
         return;
@@ -168,14 +169,9 @@ static void LM_BuildSurface(mface_t *surf, vec_t *vbo)
 
     // normalize and store lightmap texture coordinates in vertices
     scale = 1.0f / lm.block_size;
-    for (i = 0; i < surf->numsurfedges; i++) {
-        vbo[6] += s + 0.5f;
-        vbo[7] += t + 0.5f;
-        vbo[6] *= scale;
-        vbo[7] *= scale;
-
-        vbo += VERTEX_SIZE;
-    }
+    ofs = Vec2(s + 0.5f, t + 0.5f);
+    for (i = 0; i < surf->numsurfedges; i++, dst_vert++)
+        dst_vert->lmst = Vec2_Scale(Vec2_Add(dst_vert->lmst, ofs), scale);
 }
 
 /*
@@ -188,6 +184,10 @@ POLYGONS BUILDING
 
 static inline double Vec3_Dot64(vec3_t a, vec3_t b) {
     return (double)a.x * b.x + (double)a.y * b.y + (double)a.z * b.z;
+}
+
+static inline vec2_t project_tc(vec3_t point, axis2_t axis, vec2_t offset) {
+    return Vec2(Vec3_Dot64(point, axis.s) + offset.s, Vec3_Dot64(point, axis.t) + offset.t);
 }
 
 static uint32_t color_for_surface(const mface_t *surf)
@@ -238,7 +238,7 @@ static glStateBits_t statebits_for_surface(const mface_t *surf)
     return statebits;
 }
 
-static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal_index)
+static void build_surface_poly(mface_t *surf, glWorldVertex_t *dst_vert, const uint32_t *normal_index)
 {
     const bsp_t *bsp = gl_static.world.cache;
     const msurfedge_t *src_surfedge;
@@ -249,7 +249,7 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
     vec2_t scale, tc;
     box2_t box = Box2_Null();
     vec2i_t bmins, bmaxs;
-    int i;
+    int i, j;
 
     // convert surface flags to state bits
     surf->statebits = statebits_for_surface(surf);
@@ -268,43 +268,40 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
         src_surfedge++;
 
         // vertex coordinates
-        Vec3_Store(vbo, src_vert->point);
+        dst_vert->xyz = src_vert->point;
 
         // vertex color
-        WN32(vbo + 3, color);
+        dst_vert->color.u32 = color;
 
         // texture coordinates
-        tc.s = Vec3_Dot64(src_vert->point, texinfo->axis[0]) + texinfo->offset.s;
-        tc.t = Vec3_Dot64(src_vert->point, texinfo->axis[1]) + texinfo->offset.t;
+        tc = project_tc(src_vert->point, texinfo->axis, texinfo->offset);
 
-        vbo[4] = tc.s * scale.s;
-        vbo[5] = tc.t * scale.t;
+        dst_vert->st = Vec2_Scale(tc, scale);
 
         // lightmap coordinates
         if (bsp->lm_decoupled) {
-            vbo[6] = Vec3_Dot(src_vert->point, surf->lm_axis[0]) + surf->lm_offset.s;
-            vbo[7] = Vec3_Dot(src_vert->point, surf->lm_axis[1]) + surf->lm_offset.t;
+            dst_vert->lmst = project_tc(src_vert->point, surf->lm_axis, surf->lm_offset);
         } else {
+            dst_vert->lmst = Vec2_Scale(tc, 1.0f / 16.0f);
             box = Box2_AddPoint(box, tc);
-            vbo[6] = tc.s / 16;
-            vbo[7] = tc.t / 16;
         }
 
         // normals
         if (normal_index && *normal_index < bsp->num_normals)
-            Vec3_Store(vbo + 8, bsp->normals[*normal_index]);
+            dst_vert->normal = bsp->normals[*normal_index];
         else if (surf->drawflags & DSURF_PLANEBACK)
-            Vec3_Store(vbo + 8, Vec3_Negate(surf->plane->normal));
+            dst_vert->normal = Vec3_Negate(surf->plane->normal);
         else
-            Vec3_Store(vbo + 8, surf->plane->normal);
+            dst_vert->normal = surf->plane->normal;
 
         if (normal_index)
             normal_index++;
 
         // light styles
-        memcpy(vbo + 11, surf->styles, sizeof(surf->styles));
+        for (j = 0; j < MAX_LIGHTMAPS; j++)
+            dst_vert->styles[j] = surf->styles[j];
 
-        vbo += VERTEX_SIZE;
+        dst_vert++;
     }
 
     if (bsp->lm_decoupled)
@@ -316,17 +313,17 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo, const uint32_t *normal
     bmaxs.s = ceilf(box.maxs.s / 16);
     bmaxs.t = ceilf(box.maxs.t / 16);
 
-    surf->lm_axis[0] = Vec3_Scale(texinfo->axis[0], 1.0f / 16);
-    surf->lm_axis[1] = Vec3_Scale(texinfo->axis[1], 1.0f / 16);
+    surf->lm_axis.s = Vec3_Scale(texinfo->axis.s, 1.0f / 16);
+    surf->lm_axis.t = Vec3_Scale(texinfo->axis.t, 1.0f / 16);
     surf->lm_offset.s = texinfo->offset.s / 16 - bmins.s;
     surf->lm_offset.t = texinfo->offset.t / 16 - bmins.t;
     surf->lm_width  = bmaxs.s - bmins.s + 1;
     surf->lm_height = bmaxs.t - bmins.t + 1;
 
     for (i = 0; i < surf->numsurfedges; i++) {
-        vbo -= VERTEX_SIZE;
-        vbo[6] -= bmins.s;
-        vbo[7] -= bmins.t;
+        dst_vert--;
+        dst_vert->lmst.s -= bmins.s;
+        dst_vert->lmst.t -= bmins.t;
     }
 }
 
@@ -353,18 +350,18 @@ static void upload_world_surfaces(void)
     const bsp_t *bsp = gl_static.world.cache;
     const uint32_t *normal_index = bsp->normal_indices;
     size_t size = 0;
-    vec_t *vbo, *data;
+    glWorldVertex_t *dst_vert, *data;
     mface_t *surf;
     int i, currvert = 0;
 
     // calculate vertex buffer size in bytes
     for (i = 0, surf = bsp->faces; i < bsp->numfaces; i++, surf++)
         if (!(surf->drawflags & SURF_NODRAW))
-            size += surf->numsurfedges * VERTEX_SIZE * sizeof(vbo[0]);
+            size += surf->numsurfedges * sizeof(dst_vert[0]);
 
     // allocate temporary vertex buffer
     Com_DPrintf("%s: %zu bytes of vertex data\n", __func__, size);
-    vbo = data = R_Malloc(size);
+    dst_vert = data = R_Malloc(size);
 
     // begin building lightmaps
     LM_BeginBuilding();
@@ -377,11 +374,11 @@ static void upload_world_surfaces(void)
         }
 
         surf->firstvert = currvert;
-        build_surface_poly(surf, vbo, normal_index);
+        build_surface_poly(surf, dst_vert, normal_index);
 
         surf->lm_texnum = 0;    // start with no lightmap
-        LM_BuildSurface(surf, vbo);
-        vbo += surf->numsurfedges * VERTEX_SIZE;
+        LM_BuildSurface(surf, dst_vert);
+        dst_vert += surf->numsurfedges;
 
         calc_surface_hash(surf);
 

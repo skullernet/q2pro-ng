@@ -20,14 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 drawStatic_t draw;
 
-static inline void GL_StretchPic_(
-    float x, float y, float w, float h,
-    float s1, float t1, float s2, float t2,
-    uint32_t color, int texnum, int flags)
+static void GL_StretchPicVerts(const glVertex2D_t verts[4], GLuint texnum, imageflags_t flags)
 {
-    vec_t *dst_vert;
-    glIndex_t *dst_indices;
-
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
         tess.numindices + 6 > TESS_MAX_INDICES ||
         (tess.numverts && tess.texnum[TMU_TEXTURE] != texnum))
@@ -35,24 +29,16 @@ static inline void GL_StretchPic_(
 
     tess.texnum[TMU_TEXTURE] = texnum;
 
-    dst_vert = tess.vertices + tess.numverts * 5;
-    Vec4_Set(dst_vert,      x,     y,     s1, t1);
-    Vec4_Set(dst_vert +  5, x + w, y,     s2, t1);
-    Vec4_Set(dst_vert + 10, x + w, y + h, s2, t2);
-    Vec4_Set(dst_vert + 15, x,     y + h, s1, t2);
+    for (int i = 0; i < 4; i++)
+        tess.vertices2D[tess.numverts + i] = verts[i];
 
-    WN32(dst_vert +  4, color);
-    WN32(dst_vert +  9, color);
-    WN32(dst_vert + 14, color);
-    WN32(dst_vert + 19, color);
-
-    dst_indices = tess.indices + tess.numindices;
+    glIndex_t *dst_indices = tess.indices + tess.numindices;
     dst_indices[0] = tess.numverts + 0;
-    dst_indices[1] = tess.numverts + 2;
-    dst_indices[2] = tess.numverts + 3;
-    dst_indices[3] = tess.numverts + 0;
-    dst_indices[4] = tess.numverts + 1;
-    dst_indices[5] = tess.numverts + 2;
+    dst_indices[1] = tess.numverts + 1;
+    dst_indices[2] = tess.numverts + 2;
+    dst_indices[3] = tess.numverts + 3;
+    dst_indices[4] = tess.numverts + 2;
+    dst_indices[5] = tess.numverts + 1;
 
     if (flags & IF_TRANSPARENT) {
         if ((flags & IF_PALETTED) && draw.scale == 1)
@@ -61,24 +47,35 @@ static inline void GL_StretchPic_(
             tess.flags |= GLS_BLEND_BLEND;
     }
 
-    if ((color & U32_ALPHA) != U32_ALPHA)
+    if (verts[0].color.a != 255)
         tess.flags |= GLS_BLEND_BLEND;
 
     tess.numverts += 4;
     tess.numindices += 6;
 }
 
-#define GL_StretchPic(x,y,w,h,s1,t1,s2,t2,color,image) \
-    GL_StretchPic_(x,y,w,h,s1,t1,s2,t2,color,(image)->texnum,(image)->flags)
-
-static void GL_DrawVignette(float frac, color_t outer, color_t inner)
+static inline void GL_MakePicVerts(glVertex2D_t verts[4], box2_t box, box2_t tc, color_t color)
 {
-    static const byte indices[24] = {
-        0, 5, 4, 0, 1, 5, 1, 6, 5, 1, 2, 6, 6, 2, 3, 6, 3, 7, 0, 7, 3, 0, 4, 7
-    };
-    vec_t *dst_vert;
-    glIndex_t *dst_indices;
+    for (int i = 0; i < 4; i++) {
+        verts[i].xy = Vec2(box.bounds[i & 1].x, box.bounds[i >> 1].y);
+        verts[i].st = Vec2(tc.bounds[i & 1].s, tc.bounds[i >> 1].t);
+        verts[i].color = color;
+    }
+}
 
+static inline void GL_StretchPic(box2_t box, box2_t tc, color_t color, const image_t *image)
+{
+    glVertex2D_t verts[4];
+
+    if (image->flags & IF_SCRAP)
+        tc = image->tc;
+
+    GL_MakePicVerts(verts, box, tc, color);
+    GL_StretchPicVerts(verts, image->texnum, image->flags);
+}
+
+static void GL_DrawVignette(box2_t box, color_t outer, color_t inner, float frac)
+{
     if (tess.numverts + 8 > TESS_MAX_VERTICES ||
         tess.numindices + 24 > TESS_MAX_INDICES ||
         (tess.numverts && tess.texnum[TMU_TEXTURE] != TEXNUM_WHITE))
@@ -86,48 +83,26 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 
     tess.texnum[TMU_TEXTURE] = TEXNUM_WHITE;
 
-    int x = glr.fd.x, y = glr.fd.y;
-    int w = glr.fd.width, h = glr.fd.height;
-    int distance = min(w, h) * frac;
-
     // outer vertices
-    dst_vert = tess.vertices + tess.numverts * 5;
-    Vec4_Set(dst_vert,      x,     y,     0, 0);
-    Vec4_Set(dst_vert +  5, x + w, y,     0, 0);
-    Vec4_Set(dst_vert + 10, x + w, y + h, 0, 0);
-    Vec4_Set(dst_vert + 15, x,     y + h, 0, 0);
-
-    WN32(dst_vert +  4, outer.u32);
-    WN32(dst_vert +  9, outer.u32);
-    WN32(dst_vert + 14, outer.u32);
-    WN32(dst_vert + 19, outer.u32);
+    GL_MakePicVerts(tess.vertices2D + tess.numverts, box, box2_origin, outer);
 
     // inner vertices
-    x += distance;
-    y += distance;
-    w -= distance * 2;
-    h -= distance * 2;
-
-    dst_vert += 20;
-    Vec4_Set(dst_vert,      x,     y,     0, 0);
-    Vec4_Set(dst_vert +  5, x + w, y,     0, 0);
-    Vec4_Set(dst_vert + 10, x + w, y + h, 0, 0);
-    Vec4_Set(dst_vert + 15, x,     y + h, 0, 0);
-
-    WN32(dst_vert +  4, inner.u32);
-    WN32(dst_vert +  9, inner.u32);
-    WN32(dst_vert + 14, inner.u32);
-    WN32(dst_vert + 19, inner.u32);
+    box = Box2_Expand(box, Vec2_Scale(Box2_Size(box), -frac));
+    GL_MakePicVerts(tess.vertices2D + tess.numverts + 4, box, box2_origin, inner);
 
     /*
     0             1
         4     5
 
-        7     6
-    3             2
+        6     7
+    2             3
     */
 
-    dst_indices = tess.indices + tess.numindices;
+    static const byte indices[24] = {
+        0, 5, 4, 0, 1, 5, 1, 7, 5, 1, 3, 7, 7, 3, 2, 7, 2, 6, 0, 6, 2, 0, 4, 6
+    };
+
+    glIndex_t *dst_indices = tess.indices + tess.numindices;
     for (int i = 0; i < 24; i++)
         dst_indices[i] = tess.numverts + indices[i];
 
@@ -139,10 +114,11 @@ static void GL_DrawVignette(float frac, color_t outer, color_t inner)
 
 void GL_Blend(void)
 {
+    box2_t box = Box2_At(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
+
     if (glr.fd.screen_blend.a) {
         color_t color = Vec4_ToColor(glr.fd.screen_blend);
-        GL_StretchPic_(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
-                       color.u32, TEXNUM_WHITE, 0);
+        GL_StretchPic(box, box2_origin, color, R_WHITEIMAGE);
     }
 
     if (glr.fd.damage_blend.a) {
@@ -152,10 +128,9 @@ void GL_Blend(void)
         inner.a = 0;
 
         if (gl_damageblend_frac->value > 0)
-            GL_DrawVignette(Cvar_ClampValue(gl_damageblend_frac, 0, 0.5f), outer, inner);
+            GL_DrawVignette(box, outer, inner, Cvar_ClampValue(gl_damageblend_frac, 0, 0.5f));
         else
-            GL_StretchPic_(glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height, 0, 0, 1, 1,
-                           outer.u32, TEXNUM_WHITE, 0);
+            GL_StretchPic(box, box2_origin, outer, R_WHITEIMAGE);
     }
 }
 
@@ -188,14 +163,13 @@ void R_SetColor(uint32_t color)
     draw.colors[1].a = draw.colors[0].a;
 }
 
-void R_SetClipRect(const clipRect_t *clip)
+void R_SetClipBox(box2_t box)
 {
-    clipRect_t rc;
-    float scale;
+    int left, right, top, bottom;
 
     GL_Flush2D();
 
-    if (!clip) {
+    if (Box2_IsNull(box)) {
 clear:
         if (draw.scissor) {
             qglDisable(GL_SCISSOR_TEST);
@@ -204,29 +178,18 @@ clear:
         return;
     }
 
-    scale = 1 / draw.scale;
-
-    rc.left = clip->left * scale;
-    rc.top = clip->top * scale;
-    rc.right = clip->right * scale;
-    rc.bottom = clip->bottom * scale;
-
-    if (rc.left < 0)
-        rc.left = 0;
-    if (rc.top < 0)
-        rc.top = 0;
-    if (rc.right > r_config.width)
-        rc.right = r_config.width;
-    if (rc.bottom > r_config.height)
-        rc.bottom = r_config.height;
-    if (rc.right < rc.left)
+    box = Box2_Scale(box, 1.0f / draw.scale);
+    box = Box2_Intersection(box, Box2_At(0, 0, r_config.width, r_config.height));
+    if (Box2_IsNull(box))
         goto clear;
-    if (rc.bottom < rc.top)
-        goto clear;
+
+    left = box.mins.x + 0.5f;
+    right = box.maxs.x + 0.5f;
+    top = box.mins.y + 0.5f;
+    bottom = box.maxs.y + 0.5f;
 
     qglEnable(GL_SCISSOR_TEST);
-    qglScissor(rc.left, r_config.height - rc.bottom,
-               rc.right - rc.left, rc.bottom - rc.top);
+    qglScissor(left, r_config.height - bottom, right - left, bottom - top);
     draw.scissor = true;
 }
 
@@ -269,28 +232,25 @@ void R_SetScale(float scale)
 
     GL_Flush2D();
 
-    GL_Ortho(0, Q_rint(r_config.width * scale),
-             Q_rint(r_config.height * scale), 0, -1, 1);
+    GL_Ortho(0, r_config.width * scale, r_config.height * scale, 0, -1, 1);
 
     draw.scale = scale;
+}
+
+void R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic)
+{
+    GL_StretchPic(box, tc, draw.colors[0], IMG_ForHandle(pic));
 }
 
 void R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic)
 {
     const image_t *image = IMG_ForHandle(pic);
-
-    GL_StretchPic(x, y, w, h, image->sl, image->tl, image->sh, image->th,
-                  draw.colors[0].u32, image);
+    GL_StretchPic(Box2_At(x, y, w, h), image->tc, draw.colors[0], image);
 }
 
 void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
 {
     const image_t *image = IMG_ForHandle(pic);
-
-    if (image->flags & IF_SCRAP) {
-        R_DrawStretchPic(x, y, w, h, pic);
-        return;
-    }
 
     float scale_w = w;
     float scale_h = h * image->aspect;
@@ -299,20 +259,20 @@ void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
     float s = (1.0f - scale_w / scale) * 0.5f;
     float t = (1.0f - scale_h / scale) * 0.5f;
 
-    GL_StretchPic(x, y, w, h, s, t, 1.0f - s, 1.0f - t, draw.colors[0].u32, image);
+    GL_StretchPic(Box2_At(x, y, w, h), Box2_Expand(box2_unit, Vec2(-s, -t)), draw.colors[0], image);
 }
 
 void R_DrawPic(int x, int y, qhandle_t pic)
 {
     const image_t *image = IMG_ForHandle(pic);
-
-    GL_StretchPic(x, y, image->width, image->height,
-                  image->sl, image->tl, image->sh, image->th, draw.colors[0].u32, image);
+    GL_StretchPic(Box2_At(x, y, image->width, image->height), image->tc, draw.colors[0], image);
 }
 
 void R_DrawStretchRaw(int x, int y, int w, int h)
 {
-    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, U32_WHITE, TEXNUM_RAW, 0);
+    glVertex2D_t verts[4];
+    GL_MakePicVerts(verts, Box2_At(x, y, w, h), box2_unit, (color_t){ U32_WHITE });
+    GL_StretchPicVerts(verts, TEXNUM_RAW, IF_NONE);
 }
 
 void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
@@ -321,28 +281,18 @@ void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
     qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pic_w, pic_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic);
 }
 
-#define DIV64 (1.0f / 64.0f)
-
-void R_TileClear(int x, int y, int w, int h, qhandle_t pic)
-{
-    if (!w || !h)
-        return;
-    GL_StretchPic(x, y, w, h, x * DIV64, y * DIV64,
-                  (x + w) * DIV64, (y + h) * DIV64, U32_WHITE, IMG_ForHandle(pic));
-}
-
 void R_DrawFill8(int x, int y, int w, int h, int c)
 {
     if (!w || !h)
         return;
-    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, d_8to24table[c & 0xff], TEXNUM_WHITE, 0);
+    GL_StretchPic(Box2_At(x, y, w, h), box2_unit, (color_t){ d_8to24table[c & 0xff] }, R_WHITEIMAGE);
 }
 
 void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
 {
     if (!w || !h)
         return;
-    GL_StretchPic_(x, y, w, h, 0, 0, 1, 1, color, TEXNUM_WHITE, 0);
+    GL_StretchPic(Box2_At(x, y, w, h), box2_unit, (color_t){ color }, R_WHITEIMAGE);
 }
 
 static inline void draw_char(int x, int y, int flags, int c, const image_t *image)
@@ -362,19 +312,19 @@ static inline void draw_char(int x, int y, int flags, int c, const image_t *imag
     s = (c & 15) * 0.0625f;
     t = (c >> 4) * 0.0625f;
 
-    if (flags & UI_DROPSHADOW && c != 0x83) {
-        uint32_t black = draw.colors[0].u32 & U32_ALPHA;
+    box2_t box = Box2_At(x, y, CONCHAR_WIDTH, CONCHAR_HEIGHT);
+    box2_t tc  = Box2_At(s, t, 0.0625f, 0.0625f);
 
-        GL_StretchPic(x + 1, y + 1, CONCHAR_WIDTH, CONCHAR_HEIGHT, s, t,
-                      s + 0.0625f, t + 0.0625f, black, image);
+    if (flags & UI_DROPSHADOW && c != 0x83) {
+        color_t black = { .a = draw.colors[0].a };
+
+        GL_StretchPic(Box2_Translate(box, Vec2(1, 1)), tc, black, image);
 
         if (gl_fontshadow->integer > 1)
-            GL_StretchPic(x + 2, y + 2, CONCHAR_WIDTH, CONCHAR_HEIGHT, s, t,
-                          s + 0.0625f, t + 0.0625f, black, image);
+            GL_StretchPic(Box2_Translate(box, Vec2(2, 2)), tc, black, image);
     }
 
-    GL_StretchPic(x, y, CONCHAR_WIDTH, CONCHAR_HEIGHT,
-                  s, t, s + 0.0625f, t + 0.0625f, draw.colors[c >> 7].u32, image);
+    GL_StretchPic(box, tc, draw.colors[c >> 7], image);
 }
 
 void R_DrawChar(int x, int y, int flags, int c, qhandle_t font)
@@ -484,8 +434,9 @@ void Draw_Lightmaps(void)
 
 void Draw_Scrap(void)
 {
-    GL_StretchPic_(0, 0, 512, 512,
-                   0, 0, 1, 1, U32_WHITE, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
+    glVertex2D_t verts[4];
+    GL_MakePicVerts(verts, Box2_At(0, 0, 512, 512), box2_unit, (color_t){ U32_WHITE });
+    GL_StretchPicVerts(verts, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
 }
 
 #endif

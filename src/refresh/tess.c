@@ -64,7 +64,7 @@ void GL_DrawParticles(void)
     vec_t scale, scale2, dist;
     color_t color;
     int numverts;
-    vec_t *dst_vert;
+    glVertex3D_t *dst_vert;
     glStateBits_t bits;
 
     if (!r_numparticles)
@@ -90,7 +90,7 @@ void GL_DrawParticles(void)
         count = min(total, TESS_MAX_VERTICES / 3);
         total -= count;
 
-        dst_vert = tess.vertices;
+        dst_vert = tess.vertices3D;
         numverts = count * 3;
         do {
             transformed = Vec3_Sub(p->origin, glr.fd.vieworg);
@@ -108,25 +108,17 @@ void GL_DrawParticles(void)
             p2 = Vec3_MA(p1,  scale,  glr.viewaxis[2]);
             p3 = Vec3_MA(p1, -scale,  glr.viewaxis[1]);
 
-            Vec3_Store(dst_vert,      p1);
-            Vec3_Store(dst_vert +  6, p2);
-            Vec3_Store(dst_vert + 12, p3);
-
-            dst_vert[ 3] = 0;               dst_vert[ 4] = 0;
-            dst_vert[ 9] = 0;               dst_vert[10] = PARTICLE_SIZE;
-            dst_vert[15] = PARTICLE_SIZE;   dst_vert[16] = 0;
-
             if (p->color == -1)
-                color.u32 = p->rgba.u32;
+                color = p->rgba;
             else
                 color.u32 = d_8to24table[p->color & 0xff];
             color.a *= p->alpha;
 
-            WN32(dst_vert +  5, color.u32);
-            WN32(dst_vert + 11, color.u32);
-            WN32(dst_vert + 17, color.u32);
+            dst_vert[0] = (glVertex3D_t){ p1, Vec2(0, 0), color };
+            dst_vert[1] = (glVertex3D_t){ p2, Vec2(0, PARTICLE_SIZE), color };
+            dst_vert[2] = (glVertex3D_t){ p3, Vec2(PARTICLE_SIZE, 0), color };
 
-            dst_vert += 18;
+            dst_vert += 3;
             p++;
         } while (--count);
 
@@ -172,7 +164,7 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
     int i, j, k, firstvert;
     vec3_t points[BEAM_POINTS];
     vec3_t dir, right, up;
-    vec_t *dst_vert;
+    glVertex3DNoTex_t *dst_vert;
     glIndex_t *dst_indices;
 
     dir = Vec3_Sub(segments[num_segments], segments[0]);
@@ -186,13 +178,13 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
                    tess.numindices + BEAM_POINTS * 6 * num_segments > TESS_MAX_INDICES))
         GL_FlushBeamSegments();
 
-    dst_vert = tess.vertices + tess.numverts * 4;
+    dst_vert = &tess.vertices3DNoTex[tess.numverts];
 
     for (i = 0; i < BEAM_POINTS; i++) {
         points[i] = Vec3_RotateDir(right, dir, (360.0f / BEAM_POINTS) * i);
-        Vec3_Store(dst_vert, Vec3_Add(points[i], segments[0]));
-        WN32(dst_vert + 3, color.u32);
-        dst_vert += 4;
+        dst_vert->xyz = Vec3_Add(points[i], segments[0]);
+        dst_vert->color = color;
+        dst_vert++;
     }
 
     dst_indices = tess.indices + tess.numindices;
@@ -200,9 +192,9 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
 
     for (i = 1; i <= num_segments; i++) {
         for (j = 0; j < BEAM_POINTS; j++) {
-            Vec3_Store(dst_vert, Vec3_Add(points[j], segments[i]));
-            WN32(dst_vert + 3, color.u32);
-            dst_vert += 4;
+            dst_vert->xyz = Vec3_Add(points[j], segments[i]);
+            dst_vert->color = color;
+            dst_vert++;
 
             k = (j + 1) % BEAM_POINTS;
             dst_indices[0] = firstvert + j;
@@ -223,7 +215,7 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
 static void GL_DrawSimpleBeam(vec3_t start, vec3_t end, color_t color, float width)
 {
     vec3_t d1, d2, d3;
-    vec_t *dst_vert;
+    glVertex3D_t *dst_vert;
     glIndex_t *dst_indices;
 
     d1 = Vec3_Sub(end, start);
@@ -237,21 +229,22 @@ static void GL_DrawSimpleBeam(vec3_t start, vec3_t end, color_t color, float wid
                    tess.numindices + 6 > TESS_MAX_INDICES))
         GL_FlushBeamSegments();
 
-    dst_vert = tess.vertices + tess.numverts * 6;
-    Vec3_Store(dst_vert,      Vec3_Add(start, d3));
-    Vec3_Store(dst_vert +  6, Vec3_Sub(start, d3));
-    Vec3_Store(dst_vert + 12, Vec3_Sub(end, d3));
-    Vec3_Store(dst_vert + 18, Vec3_Add(end, d3));
+    dst_vert = &tess.vertices3D[tess.numverts];
 
-    dst_vert[ 3] = 0; dst_vert[ 4] = 0;
-    dst_vert[ 9] = 1; dst_vert[10] = 0;
-    dst_vert[15] = 1; dst_vert[16] = 1;
-    dst_vert[21] = 0; dst_vert[22] = 1;
+    dst_vert[0].xyz = Vec3_Add(start, d3);
+    dst_vert[1].xyz = Vec3_Sub(start, d3);
+    dst_vert[2].xyz = Vec3_Sub(end, d3);
+    dst_vert[3].xyz = Vec3_Add(end, d3);
 
-    WN32(dst_vert +  5, color.u32);
-    WN32(dst_vert + 11, color.u32);
-    WN32(dst_vert + 17, color.u32);
-    WN32(dst_vert + 23, color.u32);
+    dst_vert[0].st = Vec2(0, 0);
+    dst_vert[1].st = Vec2(1, 0);
+    dst_vert[2].st = Vec2(1, 1);
+    dst_vert[3].st = Vec2(0, 1);
+
+    dst_vert[0].color =
+    dst_vert[1].color =
+    dst_vert[2].color =
+    dst_vert[3].color = color;
 
     dst_indices = tess.indices + tess.numindices;
     dst_indices[0] = tess.numverts + 0;
@@ -339,7 +332,7 @@ void GL_DrawBeams(void)
         segs[1] = ent->e.oldorigin;
 
         if (ent->e.skinnum == -1)
-            color.u32 = ent->e.rgba.u32;
+            color = ent->e.rgba;
         else
             color.u32 = d_8to24table[ent->e.skinnum & 0xff];
         color.a *= ent->e.alpha;
@@ -402,10 +395,9 @@ static void GL_PollQuery(glquery_t *q, int samples)
 void GL_DrawFlares(void)
 {
     static const byte indices[12] = { 0, 2, 3, 0, 3, 4, 0, 4, 1, 0, 1, 2 };
-    static const float tcoords[10] = { 0.5f, 0.5f, 0, 1, 0, 0, 1, 0, 1, 1 };
     vec3_t up, down, left, right;
     color_t inner, outer;
-    vec_t *dst_vert;
+    glVertex3D_t *dst_vert;
     glIndex_t *dst_indices;
     const glentity_t *ent;
     const image_t *image;
@@ -466,18 +458,19 @@ void GL_DrawFlares(void)
         down = Vec3_Add(ent->e.origin, down);
         up   = Vec3_Add(ent->e.origin, up);
 
-        dst_vert = tess.vertices + tess.numverts * 6;
+        dst_vert = &tess.vertices3D[tess.numverts];
 
-        Vec3_Store(dst_vert, ent->e.origin);
-        Vec3_Store(dst_vert +  6, Vec3_Add(down, left));
-        Vec3_Store(dst_vert + 12, Vec3_Add(up,   left));
-        Vec3_Store(dst_vert + 18, Vec3_Add(up,   right));
-        Vec3_Store(dst_vert + 24, Vec3_Add(down, right));
+        dst_vert[0].xyz = ent->e.origin;
+        dst_vert[1].xyz = Vec3_Add(down, left);
+        dst_vert[2].xyz = Vec3_Add(up,   left);
+        dst_vert[3].xyz = Vec3_Add(up,   right);
+        dst_vert[4].xyz = Vec3_Add(down, right);
 
-        for (i = 0; i < 5; i++) {
-            dst_vert[i * 6 + 3] = tcoords[i * 2 + 0];
-            dst_vert[i * 6 + 4] = tcoords[i * 2 + 1];
-        }
+        dst_vert[0].st = Vec2(0.5f, 0.5f);
+        dst_vert[1].st = Vec2(0, 1);
+        dst_vert[2].st = Vec2(0, 0);
+        dst_vert[3].st = Vec2(1, 0);
+        dst_vert[4].st = Vec2(1, 1);
 
         inner = ent->e.rgba;
         inner.a = (128 + def * 32) * (ent->e.alpha * q->frac);
@@ -493,11 +486,11 @@ void GL_DrawFlares(void)
                 outer.b = 255;
         }
 
-        WN32(dst_vert +  5, inner.u32);
-        WN32(dst_vert + 11, outer.u32);
-        WN32(dst_vert + 17, outer.u32);
-        WN32(dst_vert + 23, outer.u32);
-        WN32(dst_vert + 29, outer.u32);
+        dst_vert[0].color = inner;
+        dst_vert[1].color =
+        dst_vert[2].color =
+        dst_vert[3].color =
+        dst_vert[4].color = outer;
 
         dst_indices = tess.indices + tess.numindices;
         for (i = 0; i < 12; i++)

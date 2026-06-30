@@ -1066,10 +1066,10 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
 
         center = Box3_Center(self->r.absbox);
         half_size = Vec3_Average(self->r.size, other->r.size);
-        end = Vec3_Mul(half_size, self->movedir);
+        end = Vec3_Scale(half_size, self->movedir);
         start = Vec3_Negate(end);
         player_dist = Vec3_Sub(other->s.origin, center);
-        player_dist = Vec3_Mul(player_dist, Vec3_Abs(self->movedir));
+        player_dist = Vec3_Scale(player_dist, Vec3_Abs(self->movedir));
 
         float frac = Q_clipf(Vec3_Distance(player_dist, start) / Vec3_Distance(end, start), 0, 1);
 
