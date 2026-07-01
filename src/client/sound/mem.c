@@ -91,7 +91,7 @@ static bool OGG_Load(sizebuf_t *sz)
     AVCodecContext *dec_ctx = NULL;
     AVStream *st;
     bool res = false;
-    int ret, sample_rate;
+    int ret;
 
     const AVInputFormat *fmt = av_find_input_format("ogg");
     if (!fmt) {
@@ -187,17 +187,13 @@ static bool OGG_Load(sizebuf_t *sz)
         goto fail;
     }
 
-    sample_rate = S_GetSampleRate();
-    if (!sample_rate)
-        sample_rate = dec_ctx->sample_rate;
-
     ret = av_channel_layout_copy(&out->ch_layout, &dec_ctx->ch_layout);
     if (ret < 0) {
         Com_SetLastError("Failed to copy channel layout");
         goto fail;
     }
     out->format = AV_SAMPLE_FMT_S16;
-    out->sample_rate = sample_rate;
+    out->sample_rate = dec_ctx->sample_rate;
     out->nb_samples = MAX_RAW_SAMPLES;
 
     ret = av_frame_get_buffer(out, 0);
@@ -206,12 +202,7 @@ static bool OGG_Load(sizebuf_t *sz)
         goto fail;
     }
 
-    int64_t nb_samples = st->duration;
-
-    if (out->sample_rate != dec_ctx->sample_rate)
-        nb_samples = av_rescale_rnd(st->duration + 2, out->sample_rate, dec_ctx->sample_rate, AV_ROUND_UP) + 2;
-
-    int bufsize = nb_samples << out->ch_layout.nb_channels;
+    int bufsize = st->duration << out->ch_layout.nb_channels;
     int offset = 0;
     bool eof = false;
 
