@@ -4,10 +4,6 @@
 #include "g_local.h"
 #include "shared/files.h"
 
-// we don't support localization, but still have to parse this file to
-// uncripple base maps
-#define L10N_FILE   "localization/loc_english.txt"
-
 typedef struct {
     const char *key;
     const char *value;
@@ -83,16 +79,22 @@ void G_FreeL10nFile(void)
 
 void G_LoadL10nFile(void)
 {
-    char buf[MAX_QPATH], *s, *p;
+    char name[MAX_QPATH], buf[MAX_QPATH], *s, *p;
     qhandle_t f;
     int ret;
 
     G_FreeL10nFile();
 
-    ret = trap_FS_OpenFile(L10N_FILE, &f, FS_MODE_READ);
+    ret = Q_snprintf(name, sizeof(name), "localization/loc_%s.txt", g_language.string);
+    if (ret >= sizeof(name)) {
+        G_Printf("Localization file name too long\n");
+        return;
+    }
+
+    ret = trap_FS_OpenFile(name, &f, FS_MODE_READ);
     if (!f) {
         trap_FS_ErrorString(ret, buf, sizeof(buf));
-        G_Printf("Couldn't open %s: %s\n", L10N_FILE, buf);
+        G_Printf("Couldn't open %s: %s\n", name, buf);
         return;
     }
 
@@ -100,7 +102,7 @@ void G_LoadL10nFile(void)
     trap_FS_CloseFile(f);
     if (ret < 0) {
         trap_FS_ErrorString(ret, buf, sizeof(buf));
-        G_Printf("Couldn't read %s: %s\n", L10N_FILE, buf);
+        G_Printf("Couldn't read %s: %s\n", name, buf);
         return;
     }
 
@@ -119,7 +121,7 @@ void G_LoadL10nFile(void)
 
     qsort(messages, nb_messages, sizeof(messages[0]), messagecmp);
 
-    G_DPrintf("Loaded %d messages from %s\n", nb_messages, L10N_FILE);
+    G_DPrintf("Loaded %d messages from %s\n", nb_messages, name);
 }
 
 const char *G_GetL10nString(const char *key)

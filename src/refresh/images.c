@@ -1598,7 +1598,7 @@ static void IMG_List_f(void)
     Com_Printf("Total texels: %zu (not counting mipmaps)\n", texels);
 }
 
-static image_t *alloc_image(void)
+image_t *IMG_Alloc(void)
 {
     int i;
     image_t *image, *placeholder = NULL;
@@ -1928,7 +1928,7 @@ static image_t *find_or_load_image(const char *name, size_t len,
     }
 
     // allocate image slot
-    image = alloc_image();
+    image = IMG_Alloc();
     if (!image) {
         ret = Q_ERR_OUT_OF_SLOTS;
         goto fail;
@@ -2054,7 +2054,7 @@ image_t *IMG_ForHandle(qhandle_t h)
 R_RegisterImage
 ===============
 */
-static qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t flags)
+qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t flags)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
@@ -2109,16 +2109,8 @@ qhandle_t R_RegisterPic(const char *name) {
     return IMG_Register(name, IT_PIC, IF_PERMANENT);
 }
 
-qhandle_t R_RegisterFont(const char *name) {
-    return IMG_Register(name, IT_FONT, IF_PERMANENT);
-}
-
 qhandle_t R_RegisterTempPic(const char *name) {
     return IMG_Register(name, IT_PIC, IF_NONE);
-}
-
-qhandle_t R_RegisterTempFont(const char *name) {
-    return IMG_Register(name, IT_FONT, IF_NONE);
 }
 
 qhandle_t R_RegisterSkin(const char *name) {

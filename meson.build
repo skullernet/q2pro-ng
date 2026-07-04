@@ -76,6 +76,7 @@ ui_src = [
 
 refresh_src = [
   'src/refresh/draw.c',
+  'src/refresh/font.c',
   'src/refresh/hq2x.c',
   'src/refresh/images.c',
   'src/refresh/main.c',
@@ -317,6 +318,17 @@ if avcodec.found() and avformat.found() and avutil.found() and swresample.found(
   config.set10('USE_AVCODEC', true)
 endif
 
+freetype2 = dependency('freetype2',
+  required: get_option('freetype2'),
+  default_options: fallback_opt + [
+    'brotli=disabled', 'bzip2=disabled', 'harfbuzz=disabled', 'mmap=disabled'
+  ]
+)
+if freetype2.found()
+  client_deps += freetype2
+  config.set10('USE_FREETYPE', true)
+endif
+
 if win32
   subdir('src/windows')
 else
@@ -441,6 +453,7 @@ summary({
   'avcodec'            : config.get('USE_AVCODEC', 0) != 0,
   'client-ui'          : config.get('USE_UI', 0) != 0,
   'debug'              : config.get('USE_DEBUG', 0) != 0,
+  'freetype2'          : config.get('USE_FREETYPE', 0) != 0,
   'icmp-errors'        : config.get('USE_ICMP', 0) != 0,
   'libcurl'            : config.get('USE_CURL', 0) != 0,
   'libjpeg'            : config.get('USE_JPG', 0) != 0,
@@ -451,7 +464,6 @@ summary({
   'qvm'                : config.get('USE_QVM', 0) != 0,
   'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
   'sdl2'               : config.get('USE_SDL', '') != '',
-  'software-sound'     : config.get('USE_SNDDMA', 0) != 0,
   'system-console'     : config.get('USE_SYSCON', 0) != 0,
   'tests'              : config.get('USE_TESTS', 0) != 0,
   'tga'                : config.get('USE_TGA', 0) != 0,

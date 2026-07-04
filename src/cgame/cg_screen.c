@@ -42,9 +42,11 @@ static struct {
     qhandle_t   field_pic;
 
     qhandle_t   backtile_pic;
-
     qhandle_t   net_pic;
-    qhandle_t   font_pic;
+
+    qhandle_t   legacy_font;
+    qhandle_t   norm_font, big_font, small_font;
+    bool        font_is_ttf;
 
     qhandle_t   wheel_pic;
     qhandle_t   wheel_cursor;
@@ -76,6 +78,7 @@ static vm_cvar_t scr_alpha;
 static vm_cvar_t scr_viewaspect;
 static vm_cvar_t scr_demobar;
 static vm_cvar_t scr_font;
+static vm_cvar_t scr_font_size;
 static vm_cvar_t scr_scale;
 
 static vm_cvar_t scr_crosshair;
@@ -109,26 +112,22 @@ UTILS
 */
 
 #define SCR_DrawString(x, y, flags, string) \
-    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, scr.font_pic)
+    SCR_DrawStringEx(x, y, flags, MAX_STRING_CHARS, string, scr.norm_font)
 
 /*
 ==============
 SCR_DrawStringEx
 ==============
 */
-int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
-                     const char *s, qhandle_t font)
+float SCR_DrawStringEx(float x, float y, ui_flags_t flags, size_t maxlen,
+                       const char *s, qhandle_t font)
 {
-    size_t len = strlen(s);
-
-    if (len > maxlen) {
-        len = maxlen;
-    }
-
-    if ((flags & UI_CENTER) == UI_CENTER) {
-        x -= len * CONCHAR_WIDTH / 2;
-    } else if (flags & UI_RIGHT) {
-        x -= len * CONCHAR_WIDTH;
+    if (flags & UI_RIGHT) {
+        float w = trap_R_MeasureString(flags, maxlen, s, font);
+        if (flags & UI_LEFT)
+            x -= w / 2;
+        else
+            x -= w;
     }
 
     return trap_R_DrawString(x, y, flags, maxlen, s, font);
@@ -139,33 +138,38 @@ int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
 SCR_DrawStringMulti
 ==============
 */
-void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
+void SCR_DrawStringMulti(float x, float y, ui_flags_t flags, size_t maxlen,
                          const char *s, qhandle_t font)
 {
-    char    *p;
-    size_t  len;
-    int     last_x = x;
-    int     last_y = y;
+    const char *o;
+    size_t      len;
+    float       last_x = x;
+    float       last_y = y;
+    float       h = trap_R_GetFontHeight(font);
 
     while (*s && maxlen) {
-        p = strchr(s, '\n');
-        if (!p) {
-            last_x = SCR_DrawStringEx(x, y, flags, maxlen, s, font);
-            last_y = y;
-            break;
+        for (o = s, len = 0; *o && len < maxlen; len++) {
+            if (*o == '\n') {
+                o++;
+                break;
+            }
+            UTF8_ReadCodePoint(&o);
         }
 
-        len = min(p - s, maxlen);
         last_x = SCR_DrawStringEx(x, y, flags, len, s, font);
         last_y = y;
         maxlen -= len;
 
-        y += CONCHAR_HEIGHT;
-        s = p + 1;
+        y += h;
+        s = o;
     }
 
-    if (flags & UI_DRAWCURSOR && cgs.realtime & BIT(8))
-        trap_R_DrawChar(last_x, last_y, flags, 11, font);
+    if (flags & UI_DRAWCURSOR && cgs.realtime & BIT(8)) {
+        if (scr.font_is_ttf)
+            trap_R_DrawChar(last_x, last_y, flags, '_', font);
+        else
+            trap_R_DrawChar(last_x, last_y, flags, 11, scr.legacy_font);
+    }
 }
 
 
@@ -232,7 +236,7 @@ static void SCR_DrawDemo(void)
 
     len = Q_scnprintf(buffer, sizeof(buffer), "%.f%%", info.demoprogress * 100);
     x = (w - len * CONCHAR_WIDTH) / 2;
-    trap_R_DrawString(x, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+    SCR_DrawString(x, h, UI_NONE, buffer);
 
     if (scr_demobar.integer > 1) {
         int sub = cg.frame->servertime / BASE_FRAMETIME;
@@ -240,7 +244,7 @@ static void SCR_DrawDemo(void)
         int min = sec / 60; sec %= 60;
 
         Q_snprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, sub);
-        trap_R_DrawString(0, h, 0, MAX_STRING_CHARS, buffer, scr.font_pic);
+        SCR_DrawString(0, h, UI_NONE, buffer);
     }
 
     if (sv_paused.integer && cl_paused.integer && scr_showpause.integer == 2)
@@ -390,7 +394,7 @@ static void SCR_DrawCenterString(void)
     }
 
     SCR_DrawStringMulti(scr.hud_width / 2, y, flags,
-                        maxlen, cp->string, scr.font_pic);
+                        maxlen, cp->string, scr.norm_font);
 
     trap_R_SetAlpha(scr_alpha.value);
 }
@@ -676,11 +680,29 @@ void SCR_SetCrosshairColor(void)
     }
 }
 
+static qhandle_t SCR_RegisterScaledFont(float scale)
+{
+    int size = scr_font_size.value * scale + 0.5f;
+    qhandle_t h = trap_R_RegisterFont(scr_font.string, size);
+    if (h)
+        return h;
+    trap_Cvar_Set("scr_font", "conchars");
+    return trap_R_RegisterFont("conchars", size);
+}
+
 static void scr_font_changed(void)
 {
-    scr.font_pic = trap_R_RegisterFont(scr_font.string);
-    if (!scr.font_pic)
-        scr.font_pic = trap_R_RegisterFont("conchars");
+    trap_R_SetScale(scr.hud_scale);
+
+    scr.legacy_font = trap_R_RegisterFont("conchars", scr_font_size.value + 0.5f);
+    scr.norm_font  = SCR_RegisterScaledFont(1.0f);
+    scr.small_font = SCR_RegisterScaledFont(0.8f);
+    scr.big_font   = SCR_RegisterScaledFont(2.0f);
+
+    const char *ext = COM_FileExtension(scr_font.string);
+    scr.font_is_ttf = !Q_stricmp(ext, ".ttf") || !Q_stricmp(ext, ".otf");
+
+    trap_R_SetScale(1.0f);
 }
 
 static void scr_scale_changed(void)
@@ -689,6 +711,7 @@ static void scr_scale_changed(void)
         scr.hud_scale = 1.0f / min(scr_scale.value, 10.0f);
     else
         scr.hud_scale = scr.config.scale;
+    scr_font_changed();
 }
 
 static void SCR_UpdateCvars(void)
@@ -698,9 +721,9 @@ static void SCR_UpdateCvars(void)
         scr_scale.modified = false;
     }
 
-    if (scr_font.modified) {
+    if (scr_font.modified || scr_font_size.modified) {
         scr_font_changed();
-        scr_font.modified = false;
+        scr_font.modified = scr_font_size.modified = false;
     }
 
     if (ch_scale.modified) {
@@ -763,7 +786,8 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_centertime, "scr_centertime", "5", 0 },
     { &scr_printspeed, "scr_printspeed", "25", 0 },
     { &scr_demobar, "scr_demobar", "1", 0 },
-    { &scr_font, "scr_font", "conchars", 0 },
+    { &scr_font, "scr_font", "qconfont.kfont", 0 },
+    { &scr_font_size, "scr_font_size", STRINGIFY(CONCHAR_HEIGHT), 0 },
     { &scr_scale, "scr_scale", "0", 0 },
     { &scr_crosshair, "crosshair", "0", CVAR_ARCHIVE },
 
@@ -888,22 +912,22 @@ STAT PROGRAMS
 #define ICON_SPACE  8
 
 #define HUD_DrawString(x, y, string) \
-    trap_R_DrawString(x, y, 0, MAX_STRING_CHARS, string, scr.font_pic)
+    trap_R_DrawString(x, y, 0, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawAltString(x, y, string) \
-    trap_R_DrawString(x, y, UI_XORCOLOR, MAX_STRING_CHARS, string, scr.font_pic)
+    trap_R_DrawString(x, y, UI_XORCOLOR, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawCenterString(x, y, string) \
-    SCR_DrawStringMulti(x, y, UI_CENTER, MAX_STRING_CHARS, string, scr.font_pic)
+    SCR_DrawStringMulti(x, y, UI_CENTER, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawAltCenterString(x, y, string) \
-    SCR_DrawStringMulti(x, y, UI_CENTER | UI_XORCOLOR, MAX_STRING_CHARS, string, scr.font_pic)
+    SCR_DrawStringMulti(x, y, UI_CENTER | UI_XORCOLOR, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawRightString(x, y, string) \
-    SCR_DrawStringEx(x, y, UI_RIGHT, MAX_STRING_CHARS, string, scr.font_pic)
+    SCR_DrawStringEx(x, y, UI_RIGHT, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawAltRightString(x, y, string) \
-    SCR_DrawStringEx(x, y, UI_RIGHT | UI_XORCOLOR, MAX_STRING_CHARS, string, scr.font_pic)
+    SCR_DrawStringEx(x, y, UI_RIGHT | UI_XORCOLOR, MAX_STRING_CHARS, string, scr.norm_font)
 
 static void HUD_DrawNumber(int x, int y, int color, int width, int value)
 {
@@ -939,19 +963,16 @@ static void HUD_DrawNumber(int x, int y, int color, int width, int value)
     }
 }
 
-#define DISPLAY_ITEMS   17
-
 static void SCR_DrawInventory(void)
 {
     int     i;
     int     num, selected_num, item;
     int     index[MAX_ITEMS];
-    char    string[MAX_STRING_CHARS];
+    char    string[MAX_QPATH];
     char    name[MAX_QPATH];
-    char    bind[MAX_QPATH];
-    int     x, y;
+    int     x, y, h, l, flags;
     int     selected;
-    int     top;
+    int     top, display_items;
 
     if (!(cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INVENTORY))
         return;
@@ -969,49 +990,53 @@ static void SCR_DrawInventory(void)
         }
     }
 
+    h = trap_R_GetFontHeight(scr.norm_font);
+    display_items = 152 / h;
+
     // determine scroll point
-    top = selected_num - DISPLAY_ITEMS / 2;
-    if (top > num - DISPLAY_ITEMS) {
-        top = num - DISPLAY_ITEMS;
+    top = selected_num - display_items / 2;
+    if (top > num - display_items) {
+        top = num - display_items;
     }
     if (top < 0) {
         top = 0;
     }
 
     x = (scr.hud_width - 256) / 2;
-    y = (scr.hud_height - 240) / 2;
+    y = (scr.hud_height - 256) / 2;
 
-    trap_R_DrawPic(x, y + 8, scr.inven_pic);
-    y += 24;
-    x += 24;
+    trap_R_DrawPic(x, y, scr.inven_pic);
+    y += 20;
+    x += 16;
 
-    HUD_DrawString(x, y, "hotkey ### item");
-    y += CONCHAR_HEIGHT;
+    const char *cur;
+    qhandle_t   cur_font;
 
-    HUD_DrawString(x, y, "------ --- ----");
-    y += CONCHAR_HEIGHT;
+    if (scr.font_is_ttf) {
+        cur = "•";
+        cur_font = scr.norm_font;
+    } else {
+        cur = "\x0E";
+        cur_font = scr.legacy_font;
+    }
 
-    for (i = top; i < num && i < top + DISPLAY_ITEMS; i++) {
+    l = trap_R_MeasureString(UI_NONE, -1, cur, cur_font);
+
+    for (i = top; i < num && i < top + display_items; i++) {
         item = index[i];
-        // search for a binding
+
         trap_GetConfigstring(CS_ITEMS + item, name, sizeof(name));
+        Q_snprintf(string, sizeof(string), "%3i", cg.inventory[item]);
 
-        Q_concat(string, sizeof(string), "use ", name);
-        trap_Key_GetBinding(string, bind, sizeof(bind));
+        flags = item == selected ? 0 : UI_XORCOLOR;
+        SCR_DrawString(x + l, y, flags, name);
+        SCR_DrawString(x + 256 - 34, y, flags | UI_RIGHT, string);
 
-        Q_snprintf(string, sizeof(string), "%6s %3i %s",
-                   bind, cg.inventory[item], name);
+        // draw a blinky cursor by the selected item
+        if (item == selected && cgs.realtime & BIT(8))
+            SCR_DrawStringEx(x, y, flags, -1, cur, cur_font);
 
-        if (item != selected) {
-            HUD_DrawAltString(x, y, string);
-        } else {    // draw a blinky cursor by the selected item
-            HUD_DrawString(x, y, string);
-            if ((cgs.realtime >> 8) & 1) {
-                trap_R_DrawChar(x - CONCHAR_WIDTH, y, 0, 15, scr.font_pic);
-            }
-        }
-
-        y += CONCHAR_HEIGHT;
+        y += h;
     }
 }
 
@@ -1184,13 +1209,15 @@ static void SCR_ExecuteLayoutString(const char *s)
             time = Q_atoi(token);
 
             HUD_DrawAltString(x + 32, y, ci->name);
-            HUD_DrawString(x + 32, y + CONCHAR_HEIGHT, "Score: ");
+            HUD_DrawString(x + 32, y + 1 * CONCHAR_HEIGHT, "Score:");
+            HUD_DrawString(x + 32, y + 2 * CONCHAR_HEIGHT, "Ping:");
+            HUD_DrawString(x + 32, y + 3 * CONCHAR_HEIGHT, "Time:");
             Q_snprintf(buffer, sizeof(buffer), "%i", score);
             HUD_DrawAltString(x + 32 + 7 * CONCHAR_WIDTH, y + CONCHAR_HEIGHT, buffer);
-            Q_snprintf(buffer, sizeof(buffer), "Ping:  %i", ping);
-            HUD_DrawString(x + 32, y + 2 * CONCHAR_HEIGHT, buffer);
-            Q_snprintf(buffer, sizeof(buffer), "Time:  %i", time);
-            HUD_DrawString(x + 32, y + 3 * CONCHAR_HEIGHT, buffer);
+            Q_snprintf(buffer, sizeof(buffer), "%i", ping);
+            HUD_DrawString(x + 32 + 7 * CONCHAR_WIDTH, y + 2 * CONCHAR_HEIGHT, buffer);
+            Q_snprintf(buffer, sizeof(buffer), "%i", time);
+            HUD_DrawString(x + 32 + 7 * CONCHAR_WIDTH, y + 3 * CONCHAR_HEIGHT, buffer);
 
             if (!ci->icon) {
                 ci = &cgs.baseclientinfo;
@@ -1456,13 +1483,8 @@ static void SCR_DrawAmmoCount(int x, int y, const cg_wheel_item_t *item, bool se
     else
         trap_R_SetColor24(selected ? SELECTED_NORM : U32_WHITE);
 
-    float scale = rintf(0.66f / scr.hud_scale);
-    trap_R_SetScale(1.0f / scale);
+    SCR_DrawStringEx(x, y, UI_CENTER | UI_DROPSHADOW, -1, va("%d", ammo), scr.small_font);
 
-    scale *= scr.hud_scale;
-    SCR_DrawString(x / scale, y / scale, UI_CENTER | UI_DROPSHADOW, va("%d", ammo));
-
-    trap_R_SetScale(scr.hud_scale);
     trap_R_SetColor24(U32_WHITE);
 }
 
@@ -1858,9 +1880,7 @@ static void SCR_DrawFps(void)
         scr.timestamp = cgs.realtime;
         scr.frames = 0;
     }
-    trap_R_SetScale(scr.hud_scale * 0.5f);
-    SCR_DrawString(scr.hud_width / 2, 0, UI_RIGHT, va("%dfps", scr.fps));
-    trap_R_SetScale(scr.hud_scale);
+    SCR_DrawStringEx(scr.hud_width, 0, UI_RIGHT, -1, va("%dfps", scr.fps), scr.big_font);
 }
 
 static void SCR_DrawPause(void)

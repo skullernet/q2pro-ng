@@ -692,7 +692,7 @@ void Sys_SetConsoleTitle(const char *title)
         if (!c) {
             break;
         }
-        buf[len] = Q_charascii(c);
+        buf[len] = Q_normalize_char(c);
     }
 
     buf[len++] = '\007';

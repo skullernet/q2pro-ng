@@ -374,6 +374,8 @@ static inline float anglemod(float a)
 #define vec3_origin     (vec3_t){ 0 }
 #define vec4_origin     (vec4_t){ 0 }
 
+#define Vec2i(a, b)         (vec2i_t){ .x = (a), .y = (b) }
+
 #define Vec2(a, b)          (vec2_t){ .x = (a), .y = (b) }
 #define Vec3(a, b, c)       (vec3_t){ .x = (a), .y = (b), .z = (c) }
 #define Vec4(a, b, c, d)    (vec4_t){ .x = (a), .y = (b), .z = (c), .w = (d) }
@@ -389,6 +391,10 @@ static inline float anglemod(float a)
 
 #define Vec3_Unpack(v) (v).x, (v).y, (v).z
 #define Vec4_Unpack(v) (v).x, (v).y, (v).z, (v).w
+
+static inline bool Vec2i_IsEqual(vec2i_t a, vec2i_t b) {
+    return a.x == b.x && a.y == b.y;
+}
 
 static inline vec2_t Vec2_Fill(float v) {
     return Vec2(v, v);
@@ -1045,23 +1051,17 @@ static inline int Q_charhex(int c)
     return -1;
 }
 
-// converts quake char to ASCII equivalent
-static inline int Q_charascii(int c)
+static inline int Q_normalize_char(int c)
 {
     if (c == ' ' || c == '\r' || c == '\n') {
         // white-space chars are output as-is
         return c;
     }
-    c &= 127; // strip high bits
-    if (Q_isprint(c)) {
-        return c;
+    if (c < 32U) {
+        // don't output control chars, etc
+        return '.';
     }
-    switch (c) {
-        // handle bold brackets
-        case 16: return '[';
-        case 17: return ']';
-    }
-    return '.'; // don't output control chars, etc
+    return c;
 }
 
 // portable case insensitive compare
@@ -1136,6 +1136,10 @@ extern const char com_hexchars[16];
 size_t COM_EscapeString(char *dst, const char *src, size_t size);
 char *COM_MakePrintable(const char *s);
 
+#define UNICODE_UNKNOWN     0xFFFD
+#define UNICODE_MAX         0x10FFFF
+uint32_t UTF8_ReadCodePoint(const char **src);
+
 typedef enum {
     COLOR_INDEX_BLACK,
     COLOR_INDEX_RED,
@@ -1198,18 +1202,22 @@ char    *btos(box3_t b);
 #define CONCHAR_WIDTH   8
 #define CONCHAR_HEIGHT  8
 
-#define UI_LEFT             BIT(0)
-#define UI_RIGHT            BIT(1)
-#define UI_CENTER           (UI_LEFT | UI_RIGHT)
-#define UI_BOTTOM           BIT(2)
-#define UI_TOP              BIT(3)
-#define UI_MIDDLE           (UI_BOTTOM | UI_TOP)
-#define UI_DROPSHADOW       BIT(4)
-#define UI_ALTCOLOR         BIT(5)
-#define UI_XORCOLOR         BIT(6)
-#define UI_IGNORECOLOR      (UI_ALTCOLOR | UI_XORCOLOR)
-#define UI_MULTILINE        BIT(7)
-#define UI_DRAWCURSOR       BIT(8)
+typedef enum : uint32_t {
+    UI_NONE             = 0U,
+    UI_LEFT             = BIT(0),
+    UI_RIGHT            = BIT(1),
+    UI_CENTER           = UI_LEFT | UI_RIGHT,
+    UI_BOTTOM           = BIT(2),
+    UI_TOP              = BIT(3),
+    UI_MIDDLE           = UI_BOTTOM | UI_TOP,
+    UI_DROPSHADOW       = BIT(4),
+    UI_ALTCOLOR         = BIT(5),
+    UI_XORCOLOR         = BIT(6),
+    UI_IGNORECOLOR      = UI_ALTCOLOR | UI_XORCOLOR,
+    UI_MULTILINE        = BIT(7),
+    UI_DRAWCURSOR       = BIT(8),
+    UI_TRANSLIT         = BIT(9),
+} ui_flags_t;
 
 //=============================================
 

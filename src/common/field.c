@@ -255,7 +255,7 @@ The input line scrolls horizontally if typing goes beyond the right edge.
 Returns x offset of the rightmost character drawn.
 ================
 */
-int IF_Draw(const inputField_t *field, int x, int y, int flags, qhandle_t font)
+int IF_Draw(const inputField_t *field, int x, int y, ui_flags_t flags, qhandle_t font)
 {
     const char *text = field->text;
     size_t cursorPos = field->cursorPos;
@@ -279,8 +279,8 @@ int IF_Draw(const inputField_t *field, int x, int y, int flags, qhandle_t font)
 
     // draw blinking cursor
     if (flags & UI_DRAWCURSOR && com_localTime & BIT(8)) {
-        R_DrawChar(x + cursorPos * CONCHAR_WIDTH, y, flags,
-                   Key_GetOverstrikeMode() ? 11 : '_', font);
+        x += R_MeasureString(flags, cursorPos, text + offset, font);
+        R_DrawChar(x, y, flags, Key_GetOverstrikeMode() ? 11 : '_', font);
     }
 
     return ret;

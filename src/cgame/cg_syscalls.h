@@ -89,7 +89,7 @@ int     trap_Key_EnumBindings(int keynum, const char *binding);
 
 qhandle_t trap_R_RegisterModel(const char *name);
 qhandle_t trap_R_RegisterPic(const char *name);
-qhandle_t trap_R_RegisterFont(const char *name);
+qhandle_t trap_R_RegisterFont(const char *name, int size);
 qhandle_t trap_R_RegisterSkin(const char *name);
 qhandle_t trap_R_RegisterSprite(const char *name);
 void    trap_R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis);
@@ -109,9 +109,11 @@ void    trap_R_SetColor24(uint32_t color);
 void    trap_R_SetColor32(uint32_t color);
 void    trap_R_SetClipBox(box2_t box);
 void    trap_R_SetScale(float scale);
-void    trap_R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
-int     trap_R_DrawString(int x, int y, int flags, size_t max_chars,
-                          const char *string, qhandle_t font);  // returns advanced x coord
+float   trap_R_DrawChar(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t font);
+float   trap_R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen,
+                          const char *s, qhandle_t font);   // returns advanced x coord
+float   trap_R_MeasureString(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
+float   trap_R_GetFontHeight(qhandle_t hfont);
 bool    trap_R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
 void    trap_R_DrawPic(int x, int y, qhandle_t pic);
 void    trap_R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic);
@@ -251,6 +253,8 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_R_SetScale cgi->R_SetScale
 #define trap_R_DrawChar cgi->R_DrawChar
 #define trap_R_DrawString cgi->R_DrawString
+#define trap_R_MeasureString cgi->R_MeasureString
+#define trap_R_GetFontHeight cgi->R_GetFontHeight
 #define trap_R_GetPicSize cgi->R_GetPicSize
 #define trap_R_DrawPic cgi->R_DrawPic
 #define trap_R_DrawBoxPic cgi->R_DrawBoxPic

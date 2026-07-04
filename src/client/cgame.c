@@ -443,7 +443,7 @@ VM_THUNK(R_RegisterPic) {
 }
 
 VM_THUNK(R_RegisterFont) {
-    VM_U32(0) = R_RegisterTempFont(VM_STR(0));
+    VM_U32(0) = R_RegisterTempFont(VM_STR(0), VM_U32(1));
 }
 
 VM_THUNK(R_RegisterSkin) {
@@ -515,11 +515,19 @@ VM_THUNK(R_SetScale) {
 }
 
 VM_THUNK(R_DrawChar) {
-    R_DrawChar(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    VM_F32(0) = R_DrawChar(VM_F32(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
 }
 
 VM_THUNK(R_DrawString) {
-    VM_U32(0) = R_DrawString(VM_U32(0), VM_U32(1), VM_U32(2), VM_U32(3), VM_STR(4), VM_U32(5));
+    VM_F32(0) = R_DrawString(VM_F32(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_STR(4), VM_U32(5));
+}
+
+VM_THUNK(R_MeasureString) {
+    VM_F32(0) = R_MeasureString(VM_U32(0), VM_U32(1), VM_STR(2), VM_U32(3));
+}
+
+VM_THUNK(R_GetFontHeight) {
+    VM_F32(0) = R_GetFontHeight(VM_U32(0));
 }
 
 VM_THUNK(R_GetPicSize) {
@@ -723,7 +731,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(Key_EnumBindings, "i ii"),
     VM_IMPORT(R_RegisterModel, "i i"),
     VM_IMPORT(R_RegisterPic, "i i"),
-    VM_IMPORT(R_RegisterFont, "i i"),
+    VM_IMPORT(R_RegisterFont, "i ii"),
     VM_IMPORT(R_RegisterSkin, "i i"),
     VM_IMPORT(R_RegisterSprite, "i i"),
     VM_IMPORT(R_SetSky, "ifii"),
@@ -741,8 +749,10 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_SetColor32, "i"),
     VM_IMPORT(R_SetClipBox, "i"),
     VM_IMPORT(R_SetScale, "f"),
-    VM_IMPORT(R_DrawChar, "iiiii"),
-    VM_IMPORT(R_DrawString, "i iiiiii"),
+    VM_IMPORT(R_DrawChar, "f ffiii"),
+    VM_IMPORT(R_DrawString, "f ffiiii"),
+    VM_IMPORT(R_MeasureString, "f iiii"),
+    VM_IMPORT(R_GetFontHeight, "f i"),
     VM_IMPORT(R_GetPicSize, "i iii"),
     VM_IMPORT(R_DrawPic, "iii"),
     VM_IMPORT(R_DrawBoxPic, "iii"),
@@ -1031,6 +1041,8 @@ static const cgame_import_t cgame_dll_imports = {
     .R_SetScale = R_SetScale,
     .R_DrawChar = R_DrawChar,
     .R_DrawString = R_DrawString,
+    .R_MeasureString = R_MeasureString,
+    .R_GetFontHeight = R_GetFontHeight,
     .R_GetPicSize = R_GetPicSize,
     .R_DrawPic = R_DrawPic,
     .R_DrawBoxPic = R_DrawBoxPic,

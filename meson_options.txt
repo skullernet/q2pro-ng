@@ -18,6 +18,11 @@ option('default-game',
   value: '',
   description: 'Default value for "game" console variable')
 
+option('freetype2',
+  type: 'feature',
+  value: 'auto',
+  description: 'Freetype2 fonts support')
+
 option('homedir',
   type: 'string',
   value: '~/.q2pro-ng',

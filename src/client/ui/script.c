@@ -730,7 +730,7 @@ static bool Parse_File(const char *path, int depth)
                         uis.transparent = R_GetPicSize(NULL, NULL, uis.backgroundHandle);
                     }
                 } else if (!strcmp(cmd, "font")) {
-                    uis.fontHandle = R_RegisterFont(Cmd_Argv(1));
+                    uis.fontHandle = R_RegisterFont(Cmd_Argv(1), 0);
                 } else if (!strcmp(cmd, "cursor")) {
                     uis.cursorHandle = R_RegisterPic(Cmd_Argv(1));
                     R_GetPicSize(&uis.cursorWidth,

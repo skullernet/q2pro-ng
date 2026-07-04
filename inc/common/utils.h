@@ -61,9 +61,8 @@ int64_t Com_RealTime(void);
 bool Com_LocalTime(int64_t in, vm_time_t *out);
 
 #if USE_CLIENT
-#define UNICODE_UNKNOWN     0xFFFD
-#define UNICODE_MAX         0x10FFFF
-uint32_t UTF8_ReadCodePoint(const char **src);
+#define QCHAR_BOX   11
+const char *UTF8_TranslitCode(uint32_t code);
 size_t UTF8_TranslitBuffer(char *dst, const char *src, size_t size);
 char *UTF8_TranslitString(const char *src);
 #endif

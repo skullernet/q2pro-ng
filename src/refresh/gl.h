@@ -1041,3 +1041,31 @@ void GL_DrawDebugObjects(void);
 #define GL_ShutdownDebugDraw()  (void)0
 #define GL_DrawDebugObjects()   (void)0
 #endif
+
+/*
+ * font.c
+ *
+ */
+#define MAX_FONT_PAGES  32
+
+typedef struct {
+    int w, h, left, top, adv;
+    box2_t tc;
+    qhandle_t page;
+} glyph_t;
+
+typedef struct {
+    char name[MAX_QPATH];
+    int size, ascent, height;
+    float scale, cached_scale;
+    unsigned registration_sequence;
+    bool permanent, scalable;
+    int numpages;
+    image_t *pages[MAX_FONT_PAGES];
+    hash_map_t *map;
+} font_t;
+
+void R_InitFonts(void);
+void R_ShutdownFonts(void);
+void R_FreeFonts(void);
+const font_t *R_FontForHandle(qhandle_t hfont);

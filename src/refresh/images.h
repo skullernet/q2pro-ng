@@ -115,6 +115,7 @@ extern unsigned r_registration_sequence;
 
 extern uint32_t d_8to24table[256];
 
+image_t *IMG_Alloc(void);
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags);
 void IMG_FreeUnused(void);
 void IMG_FreeAll(void);
@@ -122,6 +123,7 @@ void IMG_Init(void);
 void IMG_Shutdown(void);
 void IMG_GetPalette(void);
 
+qhandle_t IMG_Register(const char *name, imagetype_t type, imageflags_t flags);
 image_t *IMG_ForHandle(qhandle_t h);
 
 void IMG_Unload(image_t *image);

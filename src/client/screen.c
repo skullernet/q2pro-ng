@@ -181,7 +181,7 @@ void SCR_Shutdown(void)
 
 void SCR_RegisterMedia(void)
 {
-    scr_font = R_RegisterFont("conchars");
+    scr_font = R_RegisterFont("conchars", 0);
 }
 
 /*

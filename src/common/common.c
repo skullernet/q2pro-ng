@@ -280,7 +280,7 @@ static size_t prefix_lines(char *buf, size_t size, const char *text, const char 
         if (c == '\n') {
             *state = false;
         } else {
-            c = Q_charascii(c);
+            c = Q_normalize_char(c);
         }
 
         *p++ = c;

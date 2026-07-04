@@ -117,6 +117,7 @@ vm_cvar_t ai_allow_dm_spawn;
 vm_cvar_t ai_movement_disabled;
 vm_cvar_t g_monster_footsteps;
 vm_cvar_t g_auto_save_min_time;
+vm_cvar_t g_language;
 
 static const vm_cvar_reg_t g_cvars[] = {
     { &developer, "developer", "0", 0 },
@@ -202,6 +203,7 @@ static const vm_cvar_reg_t g_cvars[] = {
     { &ai_movement_disabled, "ai_movement_disabled", "0", 0 },
     { &g_monster_footsteps, "g_monster_footsteps", "1", 0 },
     { &g_auto_save_min_time, "g_auto_save_min_time", "60", 0 },
+    { &g_language, "g_language", "english", CVAR_LATCH },
 
     { &g_coop_health_scaling, "g_coop_health_scaling", "0", CVAR_LATCH },
     { &g_weapon_respawn_time, "g_weapon_respawn_time", "30", 0 },

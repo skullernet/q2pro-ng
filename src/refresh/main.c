@@ -234,7 +234,7 @@ bool GL_AllocBlock(int width, int height, uint16_t *inuse,
 {
     int i, j, k, x, y, max_inuse, min_inuse;
 
-    if (w > width || h > height)
+    if (w < 0 || h < 0 || w > width || h > height)
         return false;
 
     x = 0; y = height;
@@ -1328,6 +1328,7 @@ static void GL_PostInit(void)
     GL_InitImages();
     GL_InitQueries();
     MOD_Init();
+    R_InitFonts();
 }
 
 void GL_InitQueries(void)
@@ -1431,6 +1432,7 @@ void R_Shutdown(bool total)
     GL_DeleteQueries();
     GL_ShutdownImages();
     MOD_Shutdown();
+    R_ShutdownFonts();
 
     if (!total)
         return;
@@ -1545,6 +1547,7 @@ void R_EndRegistration(void)
 {
     IMG_FreeUnused();
     MOD_FreeUnused();
+    R_FreeFonts();
     Scrap_Upload();
     gl_static.registering = false;
 }

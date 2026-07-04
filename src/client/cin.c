@@ -98,7 +98,6 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
 {
     static int print_prefix = 1;
     char line[MAX_STRING_CHARS];
-    char temp[MAX_STRING_CHARS];
     print_type_t type;
 
     if (!Sys_IsMainThread()) {
@@ -119,8 +118,7 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
         type = PRINT_DEVELOPER;
 
     av_log_format_line2(avcl, level, fmt, vl, line, sizeof(line), &print_prefix);
-    UTF8_TranslitBuffer(temp, line, sizeof(temp));
-    Com_LPrintf(type | PRINT_SKIPNOTIFY, "%s", temp);
+    Com_LPrintf(type | PRINT_SKIPNOTIFY, "%s", line);
 }
 
 /*

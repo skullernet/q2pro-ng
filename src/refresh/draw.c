@@ -295,7 +295,7 @@ void R_DrawFill32(int x, int y, int w, int h, uint32_t color)
     GL_StretchPic(Box2_At(x, y, w, h), box2_unit, (color_t){ color }, R_WHITEIMAGE);
 }
 
-static inline void draw_char(int x, int y, int flags, int c, const image_t *image)
+static void draw_char(float x, float y, ui_flags_t flags, int c, const font_t *font)
 {
     float s, t;
 
@@ -312,43 +312,167 @@ static inline void draw_char(int x, int y, int flags, int c, const image_t *imag
     s = (c & 15) * 0.0625f;
     t = (c >> 4) * 0.0625f;
 
-    box2_t box = Box2_At(x, y, CONCHAR_WIDTH, CONCHAR_HEIGHT);
+    box2_t box = Box2_At(x, y, CONCHAR_WIDTH * font->scale, CONCHAR_HEIGHT * font->scale);
     box2_t tc  = Box2_At(s, t, 0.0625f, 0.0625f);
 
     if (flags & UI_DROPSHADOW && c != 0x83) {
         color_t black = { .a = draw.colors[0].a };
-
-        GL_StretchPic(Box2_Translate(box, Vec2(1, 1)), tc, black, image);
-
-        if (gl_fontshadow->integer > 1)
-            GL_StretchPic(Box2_Translate(box, Vec2(2, 2)), tc, black, image);
+        GL_StretchPic(Box2_Translate(box, Vec2(1, 1)), tc, black, font->pages[0]);
     }
 
-    GL_StretchPic(box, tc, draw.colors[c >> 7], image);
+    GL_StretchPic(box, tc, draw.colors[c >> 7], font->pages[0]);
 }
 
-void R_DrawChar(int x, int y, int flags, int c, qhandle_t font)
+static const glyph_t *glyph_for_code(uint32_t code, const font_t *font)
 {
-    if (gl_fontshadow->integer > 0)
-        flags |= UI_DROPSHADOW;
+    const glyph_t *gl = HashMap_Lookup(glyph_t, font->map, &code);
+    if (gl)
+        return gl;
 
-    draw_char(x, y, flags, c & 255, IMG_ForHandle(font));
+    gl = HashMap_Lookup(glyph_t, font->map, &(uint32_t){ UNICODE_UNKNOWN });
+    if (gl)
+        return gl;
+
+    static glyph_t none; return &none;
 }
 
-int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font)
+static float draw_char_map(float x, float y, ui_flags_t flags, uint32_t code, const font_t *font)
 {
-    const image_t *image = IMG_ForHandle(font);
+    const glyph_t *gl = glyph_for_code(code, font);
+    if (!gl->w || !gl->h)
+        return gl->adv * font->scale;
 
-    if (gl_fontshadow->integer > 0)
-        flags |= UI_DROPSHADOW;
+    box2_t box = Box2_At(gl->left, font->ascent - gl->top, gl->w, gl->h);
+    box = Box2_Scale(box, font->scale);
+    box = Box2_Translate(box, Vec2(x, y));
+    const image_t *image = font->pages[gl->page];
 
-    while (maxlen-- && *s) {
-        byte c = *s++;
-        draw_char(x, y, flags, c, image);
-        x += CONCHAR_WIDTH;
+    if (flags & UI_DROPSHADOW) {
+        color_t black = { .a = draw.colors[0].a };
+        GL_StretchPic(Box2_Translate(box, Vec2(1, 1)), gl->tc, black, image);
+    }
+
+    color_t color = draw.colors[0];
+    if (flags & UI_IGNORECOLOR) {
+        color.r = color.b = 0;
+        color.g = 255;
+    }
+    GL_StretchPic(box, gl->tc, color, image);
+
+    return gl->adv * font->scale;
+}
+
+float R_DrawChar(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t hfont)
+{
+    const font_t *font = R_FontForHandle(hfont);
+
+    x = (int)(x / draw.scale + 0.5f) * draw.scale;
+    y = (int)(y / draw.scale + 0.5f) * draw.scale;
+
+    if (font->map) {
+        x += draw_char_map(x, y, flags, code, font);
+    } else {
+        draw_char(x, y, flags, code & 255, font);
+        x += CONCHAR_WIDTH * font->scale;
     }
 
     return x;
+}
+
+static float draw_string_translit(float x, float y, ui_flags_t flags, size_t maxlen, const char *s, const font_t *font)
+{
+    float w = CONCHAR_WIDTH * font->scale;
+
+    while (maxlen-- && *s) {
+        uint32_t code = UTF8_ReadCodePoint(&s);
+
+        if (code < 0x80) {
+            draw_char(x, y, flags, code, font);
+            x += w;
+            continue;
+        }
+
+        const char *res = UTF8_TranslitCode(code);
+        if (!res) {
+            draw_char(x, y, flags, QCHAR_BOX, font);
+            x += w;
+            continue;
+        }
+
+        for (int i = 0; i < 4 && res[i]; i++) {
+            byte c = res[i];
+            draw_char(x, y, flags, c, font);
+            x += w;
+        }
+    }
+
+    return x;
+}
+
+float R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen, const char *s, qhandle_t hfont)
+{
+    const font_t *font = R_FontForHandle(hfont);
+
+    x = (int)(x / draw.scale + 0.5f) * draw.scale;
+    y = (int)(y / draw.scale + 0.5f) * draw.scale;
+
+    if (font->map) {
+        while (maxlen-- && *s) {
+            uint32_t code = UTF8_ReadCodePoint(&s);
+            x += draw_char_map(x, y, flags, code, font);
+        }
+        return x;
+    }
+
+    if (flags & UI_TRANSLIT)
+        return draw_string_translit(x, y, flags, maxlen, s, font);
+
+    float w = CONCHAR_WIDTH * font->scale;
+    while (maxlen-- && *s) {
+        byte c = *s++;
+        draw_char(x, y, flags, c, font);
+        x += w;
+    }
+
+    return x;
+}
+
+float R_MeasureString(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t hfont)
+{
+    const font_t *font = R_FontForHandle(hfont);
+
+    if (font->map) {
+        int x = 0;
+        while (maxlen-- && *s) {
+            uint32_t code = UTF8_ReadCodePoint(&s);
+            x += glyph_for_code(code, font)->adv;
+        }
+        return x * font->scale;
+    }
+
+    float w = CONCHAR_WIDTH * font->scale;
+
+    if (flags & UI_TRANSLIT) {
+        int x = 0;
+        while (maxlen-- && *s) {
+            uint32_t code = UTF8_ReadCodePoint(&s);
+            if (code < 0x80) {
+                x++;
+            } else {
+                const char *res = UTF8_TranslitCode(code);
+                x += res ? Q_strnlen(res, 4) : 1;
+            }
+        }
+        return x * w;
+    }
+
+    return Q_strnlen(s, maxlen) * w;
+}
+
+float R_GetFontHeight(qhandle_t hfont)
+{
+    const font_t *font = R_FontForHandle(hfont);
+    return font->height * font->scale;
 }
 
 #if USE_DEBUG

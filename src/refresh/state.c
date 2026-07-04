@@ -424,6 +424,8 @@ void GL_PushLights(uint64_t bits)
 
 void GL_InitState(void)
 {
+    draw.scale = 1;
+
     qglClearColor(Vec4_Unpack(gl_static.clearcolor));
     GL_ClearDepth(1);
     qglClearStencil(0);

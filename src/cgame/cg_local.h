@@ -697,8 +697,8 @@ void    SCR_LagClear(void);
 void    SCR_SetCrosshairColor(void);
 
 float   SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
-int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
-void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
+float   SCR_DrawStringEx(float x, float y, ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
+void    SCR_DrawStringMulti(float x, float y, ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
 
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);

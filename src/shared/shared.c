@@ -909,6 +909,60 @@ char *COM_MakePrintable(const char *s)
 }
 
 /*
+==================
+UTF8_ReadCodePoint
+
+Reads at most 4 bytes from *src and advances the pointer.
+Returns 32-bit codepoint, or UNICODE_UNKNOWN on error.
+==================
+*/
+uint32_t UTF8_ReadCodePoint(const char **src)
+{
+    static const uint32_t mincode[3] = { 0x80, 0x800, 0x10000 };
+    const char  *text = *src;
+    uint32_t    code;
+    uint8_t     first, cont;
+    int         bytes, i;
+
+    first = text[0];
+    if (!first)
+        return 0;
+
+    if (first < 128) {
+        *src = text + 1;
+        return first;
+    }
+
+    bytes = 7 - Q_log2(first ^ 255);
+    if (bytes < 2 || bytes > 4) {
+        *src = text + 1;
+        return UNICODE_UNKNOWN;
+    }
+
+    code = first & (127 >> bytes);
+    for (i = 1; i < bytes; i++) {
+        cont = text[i];
+        if ((cont & 0xC0) != 0x80) {
+            *src = text + i;
+            return UNICODE_UNKNOWN;
+        }
+        code = (code << 6) | (cont & 63);
+    }
+
+    *src = text + i;
+
+    if (code > UNICODE_MAX)
+        return UNICODE_UNKNOWN; // out of range
+
+    if (code >= 0xD800 && code <= 0xDFFF)
+        return UNICODE_UNKNOWN; // surrogate
+
+    if (code < mincode[bytes - 2])
+        return UNICODE_UNKNOWN; // overlong
+
+    return code;
+}
+/*
 ============================================================================
 
                     COLORS PARSING

@@ -28,6 +28,9 @@ static const char *Com_GetFeatures(void)
 #if USE_DEBUG
     "debug "
 #endif
+#if USE_FREETYPE
+    "freetype2 "
+#endif
 #if USE_ICMP
     "icmp-errors "
 #endif

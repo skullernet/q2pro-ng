@@ -132,7 +132,7 @@ typedef struct {
 
     qhandle_t (*R_RegisterModel)(const char *name);
     qhandle_t (*R_RegisterPic)(const char *name);
-    qhandle_t (*R_RegisterFont)(const char *name);
+    qhandle_t (*R_RegisterFont)(const char *name, int size);
     qhandle_t (*R_RegisterSkin)(const char *name);
     qhandle_t (*R_RegisterSprite)(const char *name);
     void    (*R_SetSky)(const char *name, float rotate, bool autorotate, vec3_t axis);
@@ -152,10 +152,12 @@ typedef struct {
     void    (*R_SetColor32)(uint32_t color);
     void    (*R_SetClipBox)(box2_t box);
     void    (*R_SetScale)(float scale);
-    void    (*R_DrawChar)(int x, int y, int flags, int ch, qhandle_t font);
-    int     (*R_DrawString)(int x, int y, int flags, size_t max_chars,
-                            const char *string, qhandle_t font);  // returns advanced x coord
-    bool    (*R_GetPicSize)(int *w, int *h, qhandle_t pic);   // returns transparency bit
+    float   (*R_DrawChar)(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t font);
+    float   (*R_DrawString)(float x, float y, ui_flags_t flags, size_t maxlen,
+                            const char *s, qhandle_t font); // returns advanced x coord
+    float   (*R_MeasureString)(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
+    float   (*R_GetFontHeight)(qhandle_t hfont);
+    bool    (*R_GetPicSize)(int *w, int *h, qhandle_t pic); // returns transparency bit
     void    (*R_DrawPic)(int x, int y, qhandle_t pic);
     void    (*R_DrawBoxPic)(box2_t pos, box2_t tc, qhandle_t pic);
     void    (*R_DrawStretchPic)(int x, int y, int w, int h, qhandle_t pic);
