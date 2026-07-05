@@ -251,8 +251,10 @@ static void SCR_DrawActive(void)
     if (cls.state == ca_cinematic)
         SCR_DrawCinematic();
 
-    if (cls.state == ca_active || cls.draw_loading)
+    if (cls.state == ca_active || cls.draw_loading) {
         cge->DrawFrame(cls.realtime, cls.state == ca_active, cls.draw_loading);
+        R_SetTransform(Mat4_Identity()); // undo any transform set by cgame
+    }
 
     R_SetScale(r_config.scale);
 

@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/error.h"
 #include "shared/keys.h"
+#include "shared/matrix.h"
 #include "shared/refresh.h"
 #include "shared/sound.h"
 
@@ -152,6 +153,7 @@ typedef struct {
     void    (*R_SetColor32)(uint32_t color);
     void    (*R_SetClipBox)(box2_t box);
     void    (*R_SetScale)(float scale);
+    void    (*R_SetTransform)(mat4_t mat);
     float   (*R_DrawChar)(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t font);
     float   (*R_DrawString)(float x, float y, ui_flags_t flags, size_t maxlen,
                             const char *s, qhandle_t font); // returns advanced x coord

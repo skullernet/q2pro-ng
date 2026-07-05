@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "common/cvar.h"
 #include "common/error.h"
+#include "shared/matrix.h"
 #include "shared/refresh.h"
 
 enum {
@@ -86,6 +87,7 @@ void    R_SetColor(uint32_t color);
 void    R_SetClipBox(box2_t box);
 float   R_ClampScale(cvar_t *var);
 void    R_SetScale(float scale);
+void    R_SetTransform(mat4_t mat);
 float   R_DrawChar(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t font);
 float   R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen,
                      const char *s, qhandle_t font);  // returns advanced x coord

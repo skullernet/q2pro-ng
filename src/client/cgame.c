@@ -514,6 +514,10 @@ VM_THUNK(R_SetScale) {
     R_SetScale(VM_F32(0));
 }
 
+VM_THUNK(R_SetTransform) {
+    R_SetTransform(*VM_PTR(0, mat4_t));
+}
+
 VM_THUNK(R_DrawChar) {
     VM_F32(0) = R_DrawChar(VM_F32(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
 }
@@ -749,6 +753,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_SetColor32, "i"),
     VM_IMPORT(R_SetClipBox, "i"),
     VM_IMPORT(R_SetScale, "f"),
+    VM_IMPORT(R_SetTransform, "i"),
     VM_IMPORT(R_DrawChar, "f ffiii"),
     VM_IMPORT(R_DrawString, "f ffiiii"),
     VM_IMPORT(R_MeasureString, "f iiii"),
@@ -1039,6 +1044,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_SetColor32 = R_SetColor,
     .R_SetClipBox = R_SetClipBox,
     .R_SetScale = R_SetScale,
+    .R_SetTransform = R_SetTransform,
     .R_DrawChar = R_DrawChar,
     .R_DrawString = R_DrawString,
     .R_MeasureString = R_MeasureString,

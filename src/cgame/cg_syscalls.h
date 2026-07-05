@@ -109,6 +109,7 @@ void    trap_R_SetColor24(uint32_t color);
 void    trap_R_SetColor32(uint32_t color);
 void    trap_R_SetClipBox(box2_t box);
 void    trap_R_SetScale(float scale);
+void    trap_R_SetTransform(mat4_t mat);
 float   trap_R_DrawChar(float x, float y, ui_flags_t flags, uint32_t code, qhandle_t font);
 float   trap_R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen,
                           const char *s, qhandle_t font);   // returns advanced x coord
@@ -251,6 +252,7 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_R_SetColor32 cgi->R_SetColor32
 #define trap_R_SetClipBix cgi->R_SetClipBox
 #define trap_R_SetScale cgi->R_SetScale
+#define trap_R_SetTransform cgi->R_SetTransform
 #define trap_R_DrawChar cgi->R_DrawChar
 #define trap_R_DrawString cgi->R_DrawString
 #define trap_R_MeasureString cgi->R_MeasureString

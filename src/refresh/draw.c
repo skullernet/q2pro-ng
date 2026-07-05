@@ -237,6 +237,13 @@ void R_SetScale(float scale)
     draw.scale = scale;
 }
 
+void R_SetTransform(mat4_t mat)
+{
+    GL_Flush2D();
+    gls.view_matrix = mat;
+    gls.u_block_dirty |= DIRTY_MATRIX;
+}
+
 void R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic)
 {
     GL_StretchPic(box, tc, draw.colors[0], IMG_ForHandle(pic));
