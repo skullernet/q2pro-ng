@@ -191,6 +191,7 @@ qvm_exported void CG_ClearState(void)
     CG_ClearTEnts();
     SCR_ClearCenterPrints();
     SCR_RemovePOI(0);
+    SCR_ClearDamageDisplays();
 
     // refresh current frame
     cg.serverframe = trap_GetServerFrameNumber() - 1;

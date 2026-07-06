@@ -716,6 +716,9 @@ void    CG_HidePowerupWheel_f(void);
 void    SCR_RemovePOI(int id);
 void    SCR_AddPOI(int id, vec3_t point, qhandle_t image, uint32_t color, int time);
 
+void    SCR_ClearDamageDisplays(void);
+void    SCR_AddToDamageDisplay(int damage, vec3_t color, vec3_t dir);
+
 //
 // cg_servercmds.c
 //

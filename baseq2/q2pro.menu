@@ -137,6 +137,7 @@ begin effects
     toggle "flares" cg_flares
     toggle "muzzle flashes" cg_muzzleflashes
     values "hit markers" cg_hit_markers "no" "yes" "silent"
+    toggle "damage indicators" scr_damage_indicators
     toggle "shadow lights" cg_shadowlights
     toggle "shadow mapping" gl_shadowmap
     toggle "screen blending" gl_polyblend

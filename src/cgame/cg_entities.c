@@ -199,6 +199,7 @@ static void CG_DeltaPlayerstate(void)
     if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
         *ops = *ps;
 
+    // damage kicks
     if (ps->stats[STAT_DAMAGE]) {
         float kick = (ps->stats[STAT_DAMAGE] & 255) * 0.3f;
         int dir_b = (ps->stats[STAT_DAMAGE] >> 8) & 255;
@@ -214,6 +215,28 @@ static void CG_DeltaPlayerstate(void)
         }
 
         cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
+    }
+
+    // damage indicators
+    uint64_t encoded = (uint32_t)ps->stats[STAT_DAMAGE_DIR_LO] | (uint64_t)(uint32_t)ps->stats[STAT_DAMAGE_DIR_HI] << 32;
+    while (encoded) {
+        vec3_t color = vec3_origin;
+        int damage = encoded & 0xff;
+
+        if (damage & DAMAGE_INDICATOR_HEALTH)
+            color.r += 1.0f;
+
+        if (damage & DAMAGE_INDICATOR_POWER)
+            color.g += 1.0f;
+
+        if (damage & DAMAGE_INDICATOR_ARMOR) {
+            color.r += 1.0f;
+            color.g += 1.0f;
+            color.b += 1.0f;
+        }
+
+        SCR_AddToDamageDisplay(damage & 0x1F, color, ByteToDir((encoded >> 8) & 0xff));
+        encoded >>= 16;
     }
 
     if (!CG_PredictionEnabled()) {

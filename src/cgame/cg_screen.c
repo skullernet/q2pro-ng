@@ -32,6 +32,9 @@ static struct {
     qhandle_t   hit_marker_pic;
     int         hit_marker_width, hit_marker_height;
 
+    int         damage_display_pic;
+    int         damage_display_w, damage_display_h;
+
     qhandle_t   pause_pic;
 
     qhandle_t   loading_pic;
@@ -100,6 +103,8 @@ static vm_cvar_t ch_x;
 static vm_cvar_t ch_y;
 
 static vm_cvar_t scr_hit_marker_time;
+static vm_cvar_t scr_damage_indicators;
+static vm_cvar_t scr_damage_indicator_time;
 
 vrect_t     scr_vrect;      // position of render window on screen
 
@@ -766,11 +771,13 @@ void SCR_RegisterMedia(void)
     scr.loading_pic = trap_R_RegisterPic("loading");
     scr.net_pic = trap_R_RegisterPic("net");
     scr.hit_marker_pic = trap_R_RegisterPic("marker");
+    scr.damage_display_pic = trap_R_RegisterPic("damage_indicator");
     scr.wheel_pic = trap_R_RegisterPic("/gfx/weaponwheel.png");
     scr.wheel_cursor = trap_R_RegisterPic("/gfx/wheelbutton.png");
     scr.selected_pic = trap_R_RegisterPic("carousel/selected");
 
     trap_R_GetPicSize(&scr.wheel_cursor_w, &scr.wheel_cursor_h, scr.wheel_cursor);
+    trap_R_GetPicSize(&scr.damage_display_w, &scr.damage_display_h, scr.damage_display_pic);
 
     scr_font.modified = true;
     scr_crosshair.modified = true;
@@ -816,6 +823,8 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_alpha, "scr_alpha", "1", 0 },
 
     { &scr_hit_marker_time, "scr_hit_marker_time", "500", 0 },
+    { &scr_damage_indicators, "scr_damage_indicators", "1", 0 },
+    { &scr_damage_indicator_time, "scr_damage_indicator_time", "1000", 0 },
 };
 
 /*
@@ -1868,6 +1877,94 @@ static void SCR_DrawPOIs(void)
     }
 }
 
+/*
+===============================================================================
+
+DAMAGE INDICATORS
+
+===============================================================================
+*/
+
+typedef struct {
+    int time, damage;
+    vec3_t color, dir;
+    float yaw;
+} scr_damage_entry_t;
+
+static scr_damage_entry_t   scr_damage_entries[MAX_DAMAGE_INDICATORS];
+
+void SCR_ClearDamageDisplays(void)
+{
+    memset(scr_damage_entries, 0, sizeof(scr_damage_entries));
+}
+
+static scr_damage_entry_t *SCR_AllocDamageDisplay(vec3_t dir)
+{
+    scr_damage_entry_t *entry = scr_damage_entries;
+
+    for (int i = 0; i < MAX_DAMAGE_INDICATORS; i++, entry++) {
+        if (entry->time <= cg.time)
+            goto new_entry;
+
+        if (Vec3_Dot(entry->dir, dir) >= 0.95f)
+            return entry;
+    }
+
+    entry = scr_damage_entries;
+
+new_entry:
+    memset(entry, 0, sizeof(*entry));
+    return entry;
+}
+
+void SCR_AddToDamageDisplay(int damage, vec3_t color, vec3_t dir)
+{
+    if (!scr_damage_indicators.integer)
+        return;
+
+    scr_damage_entry_t *entry = SCR_AllocDamageDisplay(dir);
+    entry->damage += damage;
+    entry->color = Vec3_Add(entry->color, color);
+    entry->dir = dir;
+    entry->yaw = vectoangles(dir).yaw;
+    entry->time = cg.time + scr_damage_indicator_time.integer;
+}
+
+static void SCR_DrawDamageDisplays(void)
+{
+    for (int i = 0; i < MAX_DAMAGE_INDICATORS; i++) {
+        const scr_damage_entry_t *entry = &scr_damage_entries[i];
+        if (entry->time <= cg.time)
+            continue;
+
+        float frac = (entry->time - cg.time) / scr_damage_indicator_time.value;
+        color_t color = Vec4_ToColor(Vec4_FromVec3(Vec3_Normalize(entry->color), frac * ch_alpha.value));
+
+        float angle = DEG2RAD(cg.refdef.viewangles.yaw - entry->yaw + 180);
+        float s = sinf(angle);
+        float c = cosf(angle);
+
+        int x = scr.hud_width / 2;
+        int y = scr.hud_height / 2;
+
+        mat4_t mat = Mat4_FromRows(
+            Vec4(c,-s, 0, x),
+            Vec4(s, c, 0, y),
+            Vec4(0, 0, 1, 0),
+            Vec4(0, 0, 0, 1)
+        );
+
+        int w = min(scr.damage_display_w, entry->damage * 3) * ch_scale.value;
+        int h = scr.damage_display_h * ch_scale.value;
+
+        trap_R_SetTransform(mat);
+        trap_R_SetColor32(color.u32);
+        trap_R_DrawStretchPic(-w / 2, scr.crosshair_height, w, h, scr.damage_display_pic);
+    }
+
+    trap_R_SetTransform(Mat4_Identity());
+}
+
 //=============================================================================
 
 static void SCR_DrawFps(void)
@@ -1968,6 +2065,8 @@ static void SCR_DrawCrosshair(void)
                           scr.crosshair_pic);
 
     SCR_DrawHitMarker();
+
+    SCR_DrawDamageDisplays();
 }
 
 // The status bar is a small layout program that is based on the stats array

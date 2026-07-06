@@ -2105,6 +2105,11 @@ typedef struct {
 // time after firing that we can't respawn on a player for
 #define COOP_DAMAGE_FIRING_TIME     SEC(2.5f)
 
+typedef struct {
+    vec3_t from;
+    int health, armor, power;
+} damage_indicator_t;
+
 // this structure is cleared on each PutClientInServer(),
 // except for 'client->pers'
 struct gclient_s {
@@ -2145,6 +2150,9 @@ struct gclient_s {
     int    damage_blood;     // damage taken out of health
     int    damage_knockback; // impact damage
     vec3_t damage_from;      // origin for vector calculation
+
+    damage_indicator_t      damage_indicators[MAX_DAMAGE_INDICATORS];
+    int                     num_damage_indicators;
 
     float killer_yaw; // when dead, look at killer
 

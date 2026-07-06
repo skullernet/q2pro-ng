@@ -669,6 +669,31 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
         client->damage_knockback += knockback;
         client->damage_from = point;
         client->last_damage_time = level.time + COOP_DAMAGE_RESPAWN_TIME;
+
+        if (!(dflags & DAMAGE_NO_INDICATOR) && inflictor != world && attacker != world && (take || psave || asave)) {
+            // for projectile direct hits, use the attacker; otherwise
+            // use the inflictor (rocket splash should point to the rocket)
+            vec3_t from = (dflags & DAMAGE_RADIUS) ? inflictor->s.origin : attacker->s.origin;
+            damage_indicator_t *indicator = NULL;
+
+            for (int i = 0; i < client->num_damage_indicators; i++) {
+                if (Vec3_DistanceSquared(from, client->damage_indicators[i].from) < 32 * 32) {
+                    indicator = &client->damage_indicators[i];
+                    break;
+                }
+            }
+
+            if (!indicator && client->num_damage_indicators < MAX_DAMAGE_INDICATORS) {
+                indicator = &client->damage_indicators[client->num_damage_indicators++];
+                *indicator = (damage_indicator_t){ .from = from };
+            }
+
+            if (indicator) {
+                indicator->health += take;
+                indicator->power += psave;
+                indicator->armor += asave;
+            }
+        }
     }
 }
 

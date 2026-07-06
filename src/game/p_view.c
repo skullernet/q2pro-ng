@@ -67,7 +67,9 @@ static void P_DamageFeedback(edict_t *player)
     } else if (client->flash_time < level.time)
         client->ps.stats[STAT_FLASHES] = 0;
 
-    client->ps.stats[STAT_DAMAGE] = 0;
+    client->ps.stats[STAT_DAMAGE] =
+    client->ps.stats[STAT_DAMAGE_DIR_LO] =
+    client->ps.stats[STAT_DAMAGE_DIR_HI] = 0;
 
     // total points of damage shot at the player this frame
     count = client->damage_blood + client->damage_armor + client->damage_parmor;
@@ -162,12 +164,41 @@ static void P_DamageFeedback(edict_t *player)
     }
 
     //
+    // encode damage indicators
+    //
+    uint64_t encoded = 0;
+
+    for (int i = 0; i < client->num_damage_indicators; i++) {
+        const damage_indicator_t *indicator = &client->damage_indicators[i];
+
+        // encode total damage into 5 bits
+        int damage = Q_clip((indicator->health + indicator->power + indicator->armor) / 3, 1, 0x1F);
+
+        // encode types in the latter 3 bits
+        if (indicator->health)
+            damage |= DAMAGE_INDICATOR_HEALTH;
+        if (indicator->armor)
+            damage |= DAMAGE_INDICATOR_ARMOR;
+        if (indicator->power)
+            damage |= DAMAGE_INDICATOR_POWER;
+
+        v = Vec3_Direction(indicator->from, player->s.origin);
+
+        encoded <<= 16;
+        encoded |= DirToByte(v) << 8 | damage;
+    }
+
+    client->ps.stats[STAT_DAMAGE_DIR_LO] = encoded & 0xffffffff;
+    client->ps.stats[STAT_DAMAGE_DIR_HI] = encoded >> 32;
+
+    //
     // clear totals
     //
     client->damage_blood = 0;
     client->damage_armor = 0;
     client->damage_parmor = 0;
     client->damage_knockback = 0;
+    client->num_damage_indicators = 0;
 }
 
 /*

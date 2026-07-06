@@ -31,6 +31,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define INFINITE_AMMO   MASK(AMMO_BITS)
 
+#define MAX_DAMAGE_INDICATORS   4
+
+#define DAMAGE_INDICATOR_HEALTH 0x20
+#define DAMAGE_INDICATOR_ARMOR  0x40
+#define DAMAGE_INDICATOR_POWER  0x80
+
 //
 // Config strings are a general means of communication from the server to all
 // connected clients. All config strings except the very first one (CS_NAME)
@@ -374,6 +380,8 @@ typedef enum {
     STAT_SPECTATOR,
     STAT_HITS,
     STAT_DAMAGE,
+    STAT_DAMAGE_DIR_LO,
+    STAT_DAMAGE_DIR_HI,
 
     // More stats for weapon wheel
     STAT_ACTIVE_WEAPON,
