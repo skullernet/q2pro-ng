@@ -153,7 +153,7 @@ static bool OGG_Load(sizebuf_t *sz)
         goto fail;
     }
 
-    if (st->duration < 1 || st->duration > MAX_SFX_SAMPLES) {
+    if (st->duration < 1 || st->duration > INT_MAX >> 2) {
         Com_SetLastError("Unsupported duration");
         goto fail;
     }
@@ -382,10 +382,6 @@ static bool GetWavinfo(sizebuf_t *sz)
     s_info.samples = chunk_len / (s_info.width * s_info.channels);
     if (s_info.samples < 1) {
         Com_SetLastError("No samples");
-        return false;
-    }
-    if (s_info.samples > MAX_SFX_SAMPLES) {
-        Com_SetLastError("Too many samples");
         return false;
     }
 

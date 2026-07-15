@@ -29,8 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <stdatomic.h>
 #endif
 
-#define MAX_SFX_SAMPLES     ((1 << 23) - 1)
-
 typedef struct {
     int         length;
     int         loopstart;
