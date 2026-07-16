@@ -49,6 +49,9 @@ static const char *Com_GetFeatures(void)
 #if USE_MD5
     "md5 "
 #endif
+#if USE_MINIAUDIO
+    "miniaudio "
+#endif
 #if USE_OPENAL
     "openal "
 #endif
@@ -60,9 +63,6 @@ static const char *Com_GetFeatures(void)
 #endif
 #if USE_SDL
     "sdl2 "
-#endif
-#if USE_SNDDMA
-    "software-sound "
 #endif
 #if USE_SYSCON
     "system-console "

@@ -17,17 +17,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "sound.h"
-#include "common/hash_map.h"
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 
 typedef struct {
+    qhandle_t file;
+    int fmt;
+    char *path;
+} ogg_handle_t;
+
+typedef struct {
     AVFormatContext     *fmt_ctx;
+    AVIOContext         *avio_ctx;
     AVCodecContext      *dec_ctx;
+    qhandle_t           file;
     int                 stream_index;
     char                autotrack[MAX_QPATH];
+    byte                avio_ctx_buffer[4096];
 } ogg_state_t;
 
 static ogg_state_t          ogg;
@@ -45,14 +53,13 @@ static cvar_t   *ogg_enable;
 static cvar_t   *ogg_volume;
 static cvar_t   *ogg_shuffle;
 static cvar_t   *ogg_menu_track;
-static cvar_t   *ogg_remap_tracks;
 
-static hash_map_t   *trackmap;
-static const char   **tracklist;
-static int          trackcount;
-static int          trackindex;
+static void     **tracklist;
+static int      trackcount;
+static int      trackindex;
 
 static char     extensions[MAX_QPATH];
+static int      supported;
 
 static const avformat_t formats[] = {
     { ".flac", "flac", AV_CODEC_ID_FLAC },
@@ -71,6 +78,7 @@ static void init_formats(void)
         if (f->codec_id != AV_CODEC_ID_NONE &&
             !avcodec_find_decoder(f->codec_id))
             continue;
+        supported |= BIT(i);
         if (*extensions)
             Q_strlcat(extensions, ";", sizeof(extensions));
         Q_strlcat(extensions, f->ext, sizeof(extensions));
@@ -91,45 +99,75 @@ static void ogg_close(void)
 {
     avcodec_free_context(&ogg.dec_ctx);
     avformat_close_input(&ogg.fmt_ctx);
+    avio_context_free(&ogg.avio_ctx);
+    FS_CloseFile(ogg.file);
 
     memset(&ogg, 0, sizeof(ogg));
 }
 
-// open from filesystem only. since packfiles are downloadable, music from
-// packfiles can pose security risk due to huge lavf/lavc attack surface.
-static bool ogg_play(const char *path)
+static int vfs_read_packet(void *opaque, uint8_t *buf, int size)
 {
-    const avformat_t    *avf;
+    int ret = FS_Read(buf, size, ogg.file);
+    if (ret == 0)
+        return AVERROR_EOF;
+    if (ret < 0)
+        return AVERROR(EINVAL);
+    return ret;
+}
+
+static int64_t vfs_seek(void *opaque, int64_t offset, int whence)
+{
+    if (whence == AVSEEK_SIZE)
+        return FS_Length(ogg.file);
+
+    int ret = FS_Seek(ogg.file, offset, whence);
+    if (ret < 0)
+        return AVERROR(EINVAL);
+
+    return FS_Tell(ogg.file);
+}
+
+static bool ogg_play(ogg_handle_t h)
+{
     const AVInputFormat *fmt;
     const AVStream      *st;
     const AVCodec       *dec;
     int                 ret;
 
-    Q_assert(!ogg.fmt_ctx);
-    Q_assert(!ogg.dec_ctx);
+    Q_assert(!ogg.file);
+    ogg.file = h.file;
 
-    avf = find_format(COM_FileExtension(path));
-    if (!avf) {
-        Com_EPrintf("Bad filename: %s\n", path);
-        return false;
-    }
-
-    fmt = av_find_input_format(avf->fmt);
+    fmt = av_find_input_format(formats[h.fmt].fmt);
     if (!fmt) {
-        Com_EPrintf("Failed to find input format %s\n", avf->fmt);
-        return false;
+        Com_EPrintf("Failed to find input format %s\n", formats[h.fmt].fmt);
+        goto fail;
     }
 
-    ret = avformat_open_input(&ogg.fmt_ctx, path, fmt, NULL);
+    ogg.fmt_ctx = avformat_alloc_context();
+    if (!ogg.fmt_ctx) {
+        Com_EPrintf("Failed to allocate format context\n");
+        goto fail;
+    }
+
+    ogg.avio_ctx = avio_alloc_context(ogg.avio_ctx_buffer, sizeof(ogg.avio_ctx_buffer),
+                                      0, NULL, vfs_read_packet, NULL, vfs_seek);
+    if (!ogg.avio_ctx) {
+        Com_EPrintf("Failed to allocate avio context\n");
+        goto fail;
+    }
+
+    ogg.fmt_ctx->pb = ogg.avio_ctx;
+
+    ret = avformat_open_input(&ogg.fmt_ctx, h.path, fmt, NULL);
     if (ret < 0) {
-        Com_EPrintf("Couldn't open %s: %s\n", path, av_err2str(ret));
-        return false;
+        Com_EPrintf("Couldn't open %s: %s\n", h.path, av_err2str(ret));
+        goto fail;
     }
 
     ret = avformat_find_stream_info(ogg.fmt_ctx, NULL);
     if (ret < 0) {
         Com_EPrintf("Couldn't find stream info: %s\n", av_err2str(ret));
-        goto fail0;
+        goto fail;
     }
 
 #if USE_DEBUG
@@ -140,7 +178,7 @@ static bool ogg_play(const char *path)
     ret = av_find_best_stream(ogg.fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (ret < 0) {
         Com_EPrintf("Couldn't find audio stream\n");
-        goto fail0;
+        goto fail;
     }
 
     ogg.stream_index = ret;
@@ -149,36 +187,36 @@ static bool ogg_play(const char *path)
     dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
         Com_EPrintf("Failed to find audio codec %s\n", avcodec_get_name(st->codecpar->codec_id));
-        goto fail0;
+        goto fail;
     }
 
     ogg.dec_ctx = avcodec_alloc_context3(dec);
     if (!ogg.dec_ctx) {
         Com_EPrintf("Failed to allocate audio codec context\n");
-        goto fail0;
+        goto fail;
     }
 
     ret = avcodec_parameters_to_context(ogg.dec_ctx, st->codecpar);
     if (ret < 0) {
         Com_EPrintf("Failed to copy audio codec parameters to decoder context\n");
-        goto fail1;
+        goto fail;
     }
 
     ret = avcodec_open2(ogg.dec_ctx, dec, NULL);
     if (ret < 0) {
         Com_EPrintf("Failed to open audio codec\n");
-        goto fail1;
+        goto fail;
     }
 
     ogg.dec_ctx->pkt_timebase = st->time_base;
 
-    Com_DPrintf("Playing %s\n", path);
+    Com_DPrintf("Playing %s\n", h.path);
+    Z_Free(h.path);
     return true;
 
-fail1:
-    avcodec_free_context(&ogg.dec_ctx);
-fail0:
-    avformat_close_input(&ogg.fmt_ctx);
+fail:
+    Z_Free(h.path);
+    ogg_close();
     return false;
 }
 
@@ -186,59 +224,48 @@ static void shuffle(void)
 {
     for (int i = trackcount - 1; i > 0; i--) {
         int j = Q_rand_uniform(i + 1);
-        SWAP(const char *, tracklist[i], tracklist[j]);
+        SWAP(void *, tracklist[i], tracklist[j]);
     }
 }
 
-static int remap_track(int track)
+static ogg_handle_t open_track(const char *name)
 {
-    if (ogg_remap_tracks->integer && track >= 2 && track <= 11) {
-        if (!Q_stricmp(cl.gamedir, "rogue"))
-            return track + 10;
+    char path[MAX_OSPATH];
+    qhandle_t f;
 
-        if (!Q_stricmp(cl.gamedir, "xatrix")) {
-            static const byte remap[10] = { 9, 13, 14, 7, 16, 2, 15, 3, 4, 18 };
-            return remap[track - 2];
-        }
+    for (int i = 0; i < q_countof(formats); i++) {
+        if (!(supported & BIT(i)))
+            continue;
+        if (Q_snprintf(path, sizeof(path), "music/%s%s", name, formats[i].ext) >= sizeof(path))
+            break;
+        FS_OpenFile(path, &f, FS_MODE_READ);
+        if (f)
+            return (ogg_handle_t){ .file = f, .fmt = i, .path = Z_CopyString(path) };
     }
 
-    return track;
+    return (ogg_handle_t){ 0 };
 }
 
-static const char *lookup_track(const char *name)
+static ogg_handle_t open_track_ext(const char *name)
 {
-    const char **path = HashMap_Lookup(const char *, trackmap, &name);
-    return path ? *path : NULL;
-}
-
-static const char *lookup_track_path(const char *name)
-{
-    if (!trackcount)
-        return NULL;
-
     if (COM_IsUint(name)) {
-        int track = remap_track(Q_atoi(name));
+        int track = Q_atoi(name);
         if (track <= 0)
-            return NULL;
-        const char *path = lookup_track(va("track%02d", track));
-        if (!path)
-            path = lookup_track(va("%02d", track));
-        return path;
+            return (ogg_handle_t){ 0 };
+        return open_track(va("track%02d", track));
     } else {
-        char normalized[MAX_OSPATH];
-        if (FS_NormalizePathBuffer(normalized, name, sizeof(normalized)) >= sizeof(normalized))
-            return NULL;
         // strip extension and lookup first possible format
-        char *ext = COM_FileExtension(normalized);
+        char *ext = COM_FileExtension(name);
         if (find_format(ext))
-            *ext = 0;
-        return lookup_track(normalized);
+            name = va("%.*s", (int)(ext - name), name);
+        return open_track(name);
     }
 }
 
 void OGG_Play(void)
 {
-    const char *s, *path;
+    const char *s;
+    ogg_handle_t h;
 
     if (!s_started || cls.state == ca_cinematic || ogg_manual_play)
         return;
@@ -271,15 +298,15 @@ void OGG_Play(void)
         for (int i = 0; i < trackcount; i++) {
             if (trackindex == 0)
                 shuffle();
-            path = tracklist[trackindex];
+            h = open_track(tracklist[trackindex]);
             trackindex = (trackindex + 1) % trackcount;
-            if (ogg_play(path))
+            if (h.file && ogg_play(h))
                 break;
         }
     } else {
-        path = lookup_track_path(s);
-        if (path)
-            ogg_play(path);
+        h = open_track_ext(s);
+        if (h.file)
+            ogg_play(h);
         else
             Com_DPrintf("No such track: %s\n", s);
     }
@@ -586,54 +613,9 @@ void OGG_Update(void)
     }
 }
 
-static void add_music_dir(const char *path, unsigned flags)
-{
-    char fullpath[MAX_OSPATH];
-    size_t len;
-
-    len = Q_snprintf(fullpath, sizeof(fullpath), "%s/music", path);
-    if (len >= sizeof(fullpath))
-        return;
-
-    listfiles_t list = { .filter = extensions, .flags = flags };
-    Sys_ListFiles_r(&list, fullpath, 0);
-    FS_FinalizeList(&list);
-
-    if (HashMap_Size(trackmap) > MAX_LISTED_FILES - list.count) {
-        FS_FreeList(list.files);
-        return;
-    }
-
-    for (int i = 0; i < list.count; i++) {
-        char *val = list.files[i];
-        char base[MAX_OSPATH];
-
-        COM_StripExtension(base, val + len + 1, sizeof(base));
-        if (!lookup_track(base)) {
-            char *key = Z_CopyString(base);
-            HashMap_Insert(trackmap, &key, &val);
-            Com_DDPrintf("Adding %s\n", val);
-        } else {
-            Z_Free(val);
-        }
-    }
-
-    Z_Free(list.files);
-}
-
 static void free_track_list(void)
 {
-    if (trackmap) {
-        for (int i = 0; i < trackcount; i++) {
-            Z_Free(*HashMap_GetKey  (char *, trackmap, i));
-            Z_Free(*HashMap_GetValue(char *, trackmap, i));
-        }
-
-        HashMap_Destroy(trackmap);
-        trackmap = NULL;
-    }
-
-    Z_Free(tracklist);
+    FS_FreeList(tracklist);
     tracklist  = NULL;
     trackcount = trackindex = 0;
 }
@@ -644,26 +626,7 @@ void OGG_LoadTrackList(void)
         return;
 
     free_track_list();
-
-    trackmap = HashMap_Create(char *, char *, HashCaseStr, HashCaseStrCmp);
-
-    const char *path = NULL;
-    while ((path = FS_NextPath(path)))
-        add_music_dir(path, FS_SEARCH_RECURSIVE);
-
-    // GOG hacks. not recursing here to avoid security issues.
-    if (sys_homedir->string[0])
-        add_music_dir(sys_homedir->string, 0);
-
-    add_music_dir(sys_basedir->string, 0);
-
-    // prepare tracklist for shuffling
-    trackcount = HashMap_Size(trackmap);
-    tracklist  = Z_Malloc(trackcount * sizeof(tracklist[0]));
-
-    for (int i = 0; i < trackcount; i++)
-        tracklist[i] = *HashMap_GetValue(const char *, trackmap, i);
-
+    tracklist = FS_ListFiles("music", extensions, FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, &trackcount);
     Com_DPrintf("Found %d music tracks.\n", trackcount);
 }
 
@@ -684,8 +647,8 @@ static void OGG_Play_f(void)
         return;
     }
 
-    const char *path = lookup_track_path(Cmd_Argv(2));
-    if (!path) {
+    ogg_handle_t h = open_track_ext(Cmd_Argv(2));
+    if (!h.file) {
         Com_Printf("No such track: %s\n", Cmd_Argv(2));
         return;
     }
@@ -695,7 +658,7 @@ static void OGG_Play_f(void)
     else
         OGG_Stop();
 
-    if (ogg_play(path))
+    if (ogg_play(h))
         ogg_manual_play = true;
 }
 
@@ -724,7 +687,7 @@ static void OGG_Cmd_c(int firstarg, int argnum)
     if (argnum == 2 && !strcmp(Cmd_Argv(firstarg + 1), "play")) {
         Prompt_SetOptions(CMPL_CASELESS);
         for (int i = 0; i < trackcount; i++)
-            Prompt_AddMatch(*HashMap_GetKey(const char *, trackmap, i));
+            Prompt_AddMatch(tracklist[i]);
     }
 }
 
@@ -808,12 +771,6 @@ static void ogg_menu_track_changed(cvar_t *self)
         OGG_Play();
 }
 
-static void ogg_remap_tracks_changed(cvar_t *self)
-{
-    if (cls.state >= ca_connected)
-        OGG_Play();
-}
-
 static const cmdreg_t c_ogg[] = {
     { "ogg", OGG_Cmd_f, OGG_Cmd_c },
     { NULL }
@@ -828,8 +785,6 @@ void OGG_Init(void)
     ogg_shuffle = Cvar_Get("ogg_shuffle", "0", 0);
     ogg_menu_track = Cvar_Get("ogg_menu_track", "0", 0);
     ogg_menu_track->changed = ogg_menu_track_changed;
-    ogg_remap_tracks = Cvar_Get("ogg_remap_tracks", "1", 0);
-    ogg_remap_tracks->changed = ogg_remap_tracks_changed;
 
     Cmd_Register(c_ogg);
 
