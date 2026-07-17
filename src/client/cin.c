@@ -56,8 +56,10 @@ typedef struct {
     int         crop;
 
     qhandle_t   static_pic;
+    qhandle_t   file;
 
     AVFormatContext     *fmt_ctx;
+    AVIOContext         *avio_ctx;
     AVPacket            *pkt;
     AVFrame             *frame;
     struct SwsContext   *sws_ctx;
@@ -70,6 +72,8 @@ typedef struct {
     unsigned            framenum;
     unsigned            start_time;
     bool                eof;
+
+    byte                avio_ctx_buffer[4096];
 } cinematic_t;
 
 static cinematic_t  cin;
@@ -164,6 +168,8 @@ void SCR_StopCinematic(void)
     avcodec_free_context(&cin.audio.dec_ctx);
 
     avformat_close_input(&cin.fmt_ctx);
+    avio_context_free(&cin.avio_ctx);
+
     av_packet_free(&cin.pkt);
     av_frame_free(&cin.frame);
 
@@ -175,6 +181,8 @@ void SCR_StopCinematic(void)
 
     packet_queue_destroy(&cin.video.queue);
     packet_queue_destroy(&cin.audio.queue);
+
+    FS_CloseFile(cin.file);
 
     memset(&cin, 0, sizeof(cin));
 }
@@ -626,6 +634,28 @@ static bool open_codec_context(enum AVMediaType type)
     return true;
 }
 
+static int vfs_read_packet(void *opaque, uint8_t *buf, int size)
+{
+    int ret = FS_Read(buf, size, cin.file);
+    if (ret == 0)
+        return AVERROR_EOF;
+    if (ret < 0)
+        return AVERROR(EINVAL);
+    return ret;
+}
+
+static int64_t vfs_seek(void *opaque, int64_t offset, int whence)
+{
+    if (whence == AVSEEK_SIZE)
+        return FS_Length(cin.file);
+
+    int ret = FS_Seek(cin.file, offset, whence);
+    if (ret < 0)
+        return AVERROR(EINVAL);
+
+    return FS_Tell(cin.file);
+}
+
 /*
 ==================
 SCR_StartCinematic
@@ -633,47 +663,55 @@ SCR_StartCinematic
 */
 static bool SCR_StartCinematic(const char *name)
 {
-    char        normalized[MAX_QPATH];
-    char        fullname[MAX_OSPATH];
-    const char  *path = NULL;
-    int         ret;
+    char    path[MAX_OSPATH];
+    int     len, i;
+    int64_t ret;
 
     if (!supported) {
         Com_EPrintf("No supported cinematic formats\n");
         return false;
     }
 
-    FS_NormalizePathBuffer(normalized, name, sizeof(normalized));
-    *COM_FileExtension(normalized) = 0;
+    len = COM_FileExtension(name) - name;
+    ret = Q_ERR_DOES_NOT_EXIST;
 
-    // open from filesystem only. since packfiles are downloadable, videos from
-    // packfiles can pose security risk due to huge lavf/lavc attack surface.
-    while (1) {
-        path = FS_NextPath(path);
-        if (!path) {
-            ret = AVERROR(ENOENT);
+    for (i = 0; i < q_countof(formats); i++) {
+        if (!(supported & BIT(i)))
+            continue;
+
+        if (Q_snprintf(path, sizeof(path), "video/%.*s%s", len, name, formats[i].ext) >= sizeof(path)) {
+            ret = Q_ERR_PATH_TOO_LONG;
             break;
         }
 
-        for (int i = 0; i < q_countof(formats); i++) {
-            if (!(supported & BIT(i)))
-                continue;
-
-            if (Q_snprintf(fullname, sizeof(fullname), "%s/video/%s%s",
-                           path, normalized, formats[i].ext) >= sizeof(fullname)) {
-                ret = AVERROR(ENAMETOOLONG);
-                goto done;
-            }
-
-            ret = avformat_open_input(&cin.fmt_ctx, fullname, fmt_cache[i], NULL);
-            if (ret != AVERROR(ENOENT))
-                goto done;
-        }
+        ret = FS_OpenFile(path, &cin.file, FS_MODE_READ);
+        if (ret != Q_ERR_DOES_NOT_EXIST)
+            break;
     }
 
-done:
     if (ret < 0) {
-        Com_EPrintf("Couldn't open %s: %s\n", ret == AVERROR(ENOENT) ? name : fullname, av_err2str(ret));
+        Com_EPrintf("Couldn't open %s: %s\n", name, Q_ErrorString(ret));
+        return false;
+    }
+
+    cin.fmt_ctx = avformat_alloc_context();
+    if (!cin.fmt_ctx) {
+        Com_EPrintf("Failed to allocate format context\n");
+        return false;
+    }
+
+    cin.avio_ctx = avio_alloc_context(cin.avio_ctx_buffer, sizeof(cin.avio_ctx_buffer),
+                                      0, NULL, vfs_read_packet, NULL, vfs_seek);
+    if (!cin.avio_ctx) {
+        Com_EPrintf("Failed to allocate avio context\n");
+        return false;
+    }
+
+    cin.fmt_ctx->pb = cin.avio_ctx;
+
+    ret = avformat_open_input(&cin.fmt_ctx, path, fmt_cache[i], NULL);
+    if (ret < 0) {
+        Com_EPrintf("Couldn't open %s: %s\n", path, av_err2str(ret));
         return false;
     }
 
@@ -685,7 +723,7 @@ done:
 
 #if USE_DEBUG
     if (developer->integer)
-        av_dump_format(cin.fmt_ctx, 0, fullname, 0);
+        av_dump_format(cin.fmt_ctx, 0, path, 0);
 #endif
 
     cin.video.stream_idx = cin.audio.stream_idx = -1;
@@ -708,11 +746,10 @@ done:
     cin.info = NULL;
 
     // find cropping info for some well-known cinematics
-    name = COM_SkipPath(fullname);
     for (int i = 0; i < q_countof(crop_info); i++) {
         const crop_info_t *info = &crop_info[i];
         if (!Q_stricmp(name, info->name)) {
-            if (avio_size(cin.fmt_ctx->pb) == info->size) {
+            if (FS_Length(cin.file) == info->size) {
                 Com_DPrintf("Found cropping info for %s\n", info->name);
                 cin.info = info;
             }
@@ -790,14 +827,13 @@ Name should be in format "video/<something>.cin".
 */
 int SCR_CheckForCinematic(const char *name)
 {
-    int len = strlen(name) - 4;
+    int len = COM_FileExtension(name) - name;
     int ret = Q_ERR_DOES_NOT_EXIST;
 
     for (int i = 0; i < q_countof(formats); i++) {
         if (!(supported & BIT(i)))
             continue;
-        ret = FS_LoadFileEx(va("%.*s%s", len, name, formats[i].ext),
-                            NULL, FS_TYPE_REAL, TAG_GENERAL);
+        ret = FS_LoadFile(va("%.*s%s", len, name, formats[i].ext), NULL);
         if (ret != Q_ERR_DOES_NOT_EXIST)
             break;
     }
@@ -815,15 +851,13 @@ SCR_Cinematic_g
 */
 void SCR_Cinematic_g(void)
 {
-    const unsigned flags = FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT | FS_TYPE_REAL;
     int count;
     void **list;
 
     if (!*extensions)
         return;
 
-    Prompt_SetOptions(CMPL_CHECKDUPS);
-    list = FS_ListFiles("video", extensions, flags, &count);
+    list = FS_ListFiles("video", extensions, FS_SEARCH_RECURSIVE | FS_SEARCH_STRIPEXT, &count);
     for (int i = 0; i < count; i++)
         Prompt_AddMatch(va("%s.cin", (char *)list[i]));
     FS_FreeList(list);
