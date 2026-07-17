@@ -497,6 +497,9 @@ void    SCR_DrawCinematic(void);
 void    SCR_ReloadCinematic(void);
 void    SCR_PlayCinematic(const char *name);
 
+struct  AVFormatContext;
+void    AV_DumpFormat(struct AVFormatContext *fmt_ctx);
+
 #else
 
 static inline void SCR_FinishCinematic(void)

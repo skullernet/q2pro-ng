@@ -125,6 +125,13 @@ static void my_av_log_cb(void *avcl, int level, const char *fmt, va_list vl)
     Com_LPrintf(type | PRINT_SKIPNOTIFY, "%s", line);
 }
 
+void AV_DumpFormat(AVFormatContext *fmt_ctx)
+{
+    av_log_set_level(AV_LOG_INFO);
+    av_dump_format(fmt_ctx, 0, fmt_ctx->url, 0);
+    av_log_set_level(AV_LOG_WARNING);
+}
+
 /*
 ==================
 SCR_InitCinematics
@@ -723,7 +730,7 @@ static bool SCR_StartCinematic(const char *name)
 
 #if USE_DEBUG
     if (developer->integer)
-        av_dump_format(cin.fmt_ctx, 0, path, 0);
+        AV_DumpFormat(cin.fmt_ctx);
 #endif
 
     cin.video.stream_idx = cin.audio.stream_idx = -1;

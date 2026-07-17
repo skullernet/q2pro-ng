@@ -172,7 +172,7 @@ static bool ogg_play(ogg_handle_t h)
 
 #if USE_DEBUG
     if (developer->integer)
-        av_dump_format(ogg.fmt_ctx, 0, ogg.fmt_ctx->url, 0);
+        AV_DumpFormat(ogg.fmt_ctx);
 #endif
 
     ret = av_find_best_stream(ogg.fmt_ctx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
@@ -665,9 +665,7 @@ static void OGG_Play_f(void)
 static void OGG_Info_f(void)
 {
     if (ogg.fmt_ctx) {
-        av_log_set_level(AV_LOG_INFO);
-        av_dump_format(ogg.fmt_ctx, 0, ogg.fmt_ctx->url, 0);
-        av_log_set_level(AV_LOG_WARNING);
+        AV_DumpFormat(ogg.fmt_ctx);
     } else {
         Com_Printf("Playback stopped.\n");
     }
