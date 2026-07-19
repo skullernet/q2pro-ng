@@ -473,10 +473,16 @@ static void flush_samples(const AVFrame *out)
 {
     Com_DDDPrintf("%d raw samples\n", out->nb_samples);
 
-    if (!s_api->raw_samples(out->nb_samples, out->sample_rate,
-                            av_get_bytes_per_sample(out->format),
-                            out->ch_layout.nb_channels,
-                            out->data[0], ogg_volume->value))
+    raw_samples_t raw = {
+        .nb_samples = out->nb_samples,
+        .sample_rate = out->sample_rate,
+        .bytes_per_sample = av_get_bytes_per_sample(out->format),
+        .nb_channels = out->ch_layout.nb_channels,
+        .data = out->data[0],
+        .volume = ogg_volume->value
+    };
+
+    if (!s_api->raw_samples(&raw))
         s_api->drop_raw_samples();
 }
 

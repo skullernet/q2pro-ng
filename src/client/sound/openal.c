@@ -631,9 +631,9 @@ static bool AL_HaveRawSamples(void)
     return s_stream_buffers > 0;
 }
 
-static bool AL_RawSamples(int samples, int rate, int width, int channels, const void *data, float volume)
+static bool AL_RawSamples(const raw_samples_t *raw)
 {
-    ALenum format = AL_GetSampleFormat(width, channels);
+    ALenum format = AL_GetSampleFormat(raw->bytes_per_sample, raw->nb_channels);
     if (!format)
         return false;
 
@@ -645,7 +645,8 @@ static bool AL_RawSamples(int samples, int rate, int width, int channels, const 
         if (qalGetError())
             return false;
 
-        qalBufferData(buffer, format, data, samples * width * channels, rate);
+        qalBufferData(buffer, format, raw->data, raw->nb_samples *
+                      raw->bytes_per_sample * raw->nb_channels, raw->sample_rate);
         if (qalGetError()) {
             qalDeleteBuffers(1, &buffer);
             return false;
@@ -659,7 +660,7 @@ static bool AL_RawSamples(int samples, int rate, int width, int channels, const 
         s_stream_buffers++;
     }
 
-    qalSourcef(s_stream, AL_GAIN, volume);
+    qalSourcef(s_stream, AL_GAIN, raw->volume);
 
     ALint state = AL_PLAYING;
     qalGetSourcei(s_stream, AL_SOURCE_STATE, &state);

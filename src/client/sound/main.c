@@ -796,10 +796,10 @@ void S_StopAllSounds(void)
     memset(s_channels, 0, sizeof(s_channels));
 }
 
-void S_RawSamples(int samples, int rate, int width, int channels, const void *data)
+void S_RawSamples(const raw_samples_t *raw)
 {
     if (s_started && s_active)
-        s_api->raw_samples(samples, rate, width, channels, data, 1.0f);
+        s_api->raw_samples(raw);
 }
 
 int S_GetSampleRate(void)

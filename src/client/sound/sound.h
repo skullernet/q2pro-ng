@@ -149,7 +149,7 @@ typedef struct {
     int (*upload_sfx)(sfx_t *s);
     void (*delete_sfx)(sfx_t *s);
     void (*page_in_sfx)(sfx_t *s);
-    bool (*raw_samples)(int samples, int rate, int width, int channels, const void *data, float volume);
+    bool (*raw_samples)(const raw_samples_t *raw);
     bool (*need_raw_samples)(void);
     bool (*have_raw_samples)(void);
     void (*drop_raw_samples)(void);

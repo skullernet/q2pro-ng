@@ -323,12 +323,17 @@ static bool MA_HaveRawSamples(void)
     return ma_pcm_rb_available_read(&stream_rb) > 0;
 }
 
-static bool MA_RawSamples(int samples, int rate, int width, int channels, const void *data, float volume)
+static bool MA_RawSamples(const raw_samples_t *raw)
 {
-    if (channels != 2 || width != 4 || rate != ma_pcm_rb_get_sample_rate(&stream_rb))
+    if (raw->nb_channels != 2)
+        return false;
+    if (raw->bytes_per_sample != 4)
+        return false;
+    if (raw->sample_rate != ma_pcm_rb_get_sample_rate(&stream_rb))
         return false;
 
-    const byte *src = data;
+    const byte *src = raw->data;
+    int samples = raw->nb_samples;
     while (samples > 0) {
         ma_uint32 frames = samples;
         void *buffer;
@@ -343,7 +348,7 @@ static bool MA_RawSamples(int samples, int rate, int width, int channels, const 
         samples -= frames;
     }
 
-    ma_sound_set_volume(&stream_sound, volume);
+    ma_sound_set_volume(&stream_sound, raw->volume);
     ma_sound_start(&stream_sound);
     s_stream_paused = false;
     return true;

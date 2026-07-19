@@ -311,10 +311,17 @@ static int process_audio(void)
         return ret;
     }
 
-    if (out->nb_samples)
-        S_RawSamples(out->nb_samples, out->sample_rate,
-                     av_get_bytes_per_sample(out->format),
-                     out->ch_layout.nb_channels, out->data[0]);
+    if (out->nb_samples) {
+        S_RawSamples(&(raw_samples_t) {
+            .nb_samples = out->nb_samples,
+            .sample_rate = out->sample_rate,
+            .bytes_per_sample = av_get_bytes_per_sample(out->format),
+            .nb_channels = out->ch_layout.nb_channels,
+            .data = out->data[0],
+            .volume = 1.0f
+        });
+    }
+
     return 0;
 }
 

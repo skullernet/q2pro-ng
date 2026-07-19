@@ -56,7 +56,16 @@ void S_EndRegistration(void);
 
 #define MAX_RAW_SAMPLES     8192
 
-void S_RawSamples(int samples, int rate, int width, int channels, const void *data);
+typedef struct {
+    int nb_samples;
+    int sample_rate;
+    int bytes_per_sample;
+    int nb_channels;
+    const void *data;
+    float volume;
+} raw_samples_t;
+
+void S_RawSamples(const raw_samples_t *raw);
 int S_GetSampleRate(void);
 bool S_SupportsFloat(void);
 void S_PauseRawSamples(bool paused);
