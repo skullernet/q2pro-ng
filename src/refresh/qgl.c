@@ -248,6 +248,14 @@ static const glsection_t sections[] = {
         }
     },
 
+    // GL 3.0, not ES
+    // EXT_sRGB_write_control
+    {
+        .extension = "GL_EXT_sRGB_write_control",
+        .ver_gl = QGL_VER(3, 0),
+        .caps = QGL_CAP_FRAMEBUFFER_SRGB,
+    },
+
     // GL 3.1
     // ES 3.2
     {

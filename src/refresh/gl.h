@@ -229,6 +229,8 @@ typedef enum {
     QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(7),
     QGL_CAP_BUFFER_TEXTURE              = BIT(8),
     QGL_CAP_SHADER_STORAGE              = BIT(9),
+    QGL_CAP_FRAMEBUFFER_SRGB            = BIT(10),
+
     QGL_CAP_SKELETON_MASK               = QGL_CAP_BUFFER_TEXTURE | QGL_CAP_SHADER_STORAGE,
 } glcap_t;
 

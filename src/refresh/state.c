@@ -443,6 +443,9 @@ void GL_InitState(void)
 
     if (gl_config.ver_gl >= QGL_VER(3, 2))
         qglEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    if (gl_config.caps & QGL_CAP_FRAMEBUFFER_SRGB)
+        qglDisable(GL_FRAMEBUFFER_SRGB);
 }
 
 void GL_ShutdownState(void)

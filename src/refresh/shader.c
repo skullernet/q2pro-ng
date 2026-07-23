@@ -61,8 +61,8 @@ static void write_header(sizebuf_t *buf, glStateBits_t bits)
     }
 
     if (gl_config.ver_es) {
-        GLSL(precision mediump float;)
-        GLSL(precision mediump int;)
+        GLSL(precision highp float;)
+        GLSL(precision highp int;)
     }
 }
 
@@ -403,28 +403,20 @@ static void write_mesh_shader(sizebuf_t *buf, glStateBits_t bits)
             )
 
         GLSL(vec3 pos = vec3(a_old_pos.xyz) * u_old_scale + vec3(a_new_pos.xyz) * u_new_scale + u_translate;)
-
-        if (bits & GLS_MESH_SHELL)
-            GLSL(pos += norm * u_shellscale;)
-
-        if (bits & GLS_MESH_SHADE)
-            GLSL(v_color = vec4(u_color.rgb * shadedot(norm), u_color.a);)
-        else
-            GLSL(v_color = u_color;)
     } else {
         if (bits & GLS_MESH_NORMAL_MASK)
             GLSL(vec3 norm = get_normal(a_new_pos.w);)
 
         GLSL(vec3 pos = vec3(a_new_pos.xyz) * u_new_scale + u_translate;)
-
-        if (bits & GLS_MESH_SHELL)
-            GLSL(pos += norm * u_shellscale;)
-
-        if (bits & GLS_MESH_SHADE)
-            GLSL(v_color = vec4(u_color.rgb * shadedot(norm), u_color.a);)
-        else
-            GLSL(v_color = u_color;)
     }
+
+    if (bits & GLS_MESH_SHELL)
+        GLSL(pos += norm * u_shellscale;)
+
+    if (bits & GLS_MESH_SHADE)
+        GLSL(v_color = vec4(u_color.rgb * shadedot(norm), u_color.a);)
+    else
+        GLSL(v_color = u_color;)
 
     if (bits & (GLS_FOG_HEIGHT | GLS_DYNAMIC_LIGHTS))
         GLSL(v_world_pos = (m_model * vec4(pos, 1.0)).xyz;)
@@ -658,7 +650,7 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 
     if (bits & GLS_LIGHTMAP_ENABLE) {
         if (gl_config.ver_es)
-            GLSL(uniform mediump)
+            GLSL(uniform highp)
         else
             GLSL(uniform)
         GLSL(

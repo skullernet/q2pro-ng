@@ -1234,41 +1234,25 @@ static void APIENTRY myDebugProc(GLenum source, GLenum type, GLuint id, GLenum s
 
 static void GL_SetupConfig(void)
 {
+    GLenum backbuf = gl_config.ver_es ? GL_BACK : GL_BACK_LEFT;
     GLint integer = 0;
 
     qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &integer);
     gl_config.max_texture_size_log2 = Q_log2(min(integer, MAX_TEXTURE_SIZE));
     gl_config.max_texture_size = 1U << gl_config.max_texture_size_log2;
 
-    if (gl_config.caps & QGL_CAP_CLIENT_VA) {
-        qglGetIntegerv(GL_RED_BITS, &integer);
-        gl_config.colorbits = integer;
-        qglGetIntegerv(GL_GREEN_BITS, &integer);
-        gl_config.colorbits += integer;
-        qglGetIntegerv(GL_BLUE_BITS, &integer);
-        gl_config.colorbits += integer;
+    qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, &integer);
+    gl_config.colorbits = integer;
+    qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE, &integer);
+    gl_config.colorbits += integer;
+    qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, &integer);
+    gl_config.colorbits += integer;
 
-        qglGetIntegerv(GL_DEPTH_BITS, &integer);
-        gl_config.depthbits = integer;
+    qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE, &integer);
+    gl_config.depthbits = integer;
 
-        qglGetIntegerv(GL_STENCIL_BITS, &integer);
-        gl_config.stencilbits = integer;
-    } else if (qglGetFramebufferAttachmentParameteriv) {
-        GLenum backbuf = gl_config.ver_es ? GL_BACK : GL_BACK_LEFT;
-
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE, &integer);
-        gl_config.colorbits = integer;
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_GREEN_SIZE, &integer);
-        gl_config.colorbits += integer;
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, backbuf, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE, &integer);
-        gl_config.colorbits += integer;
-
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE, &integer);
-        gl_config.depthbits = integer;
-
-        qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, &integer);
-        gl_config.stencilbits = integer;
-    }
+    qglGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE, &integer);
+    gl_config.stencilbits = integer;
 
     if (qglDebugMessageCallback && qglIsEnabled(GL_DEBUG_OUTPUT)) {
         Com_Printf("Enabling GL debug output.\n");
