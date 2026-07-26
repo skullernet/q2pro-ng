@@ -417,6 +417,7 @@ void sv_min_timeout_changed(cvar_t *self);
 
 void SV_ClientReset(client_t *client);
 void SV_SetState(server_state_t state);
+void SV_FreeLevel(void);
 void SV_SpawnServer(const mapcmd_t *cmd);
 bool SV_ParseMapCmd(mapcmd_t *cmd);
 void SV_InitGame(void);

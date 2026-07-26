@@ -28,8 +28,6 @@ sv_client and sv_player will be valid.
 ============================================================
 */
 
-static int      stringCmdCount;
-
 /*
 ================
 SV_CreateBaselines
@@ -412,6 +410,7 @@ USER CMD EXECUTION
 */
 
 static bool     moveIssued;
+static int      stringCmdCount;
 static int      userinfoUpdateCount;
 
 /*
@@ -625,8 +624,7 @@ static void SV_ParseFullUserinfo(void)
 {
     // malicious users may try sending too many userinfo updates
     if (userinfoUpdateCount >= MAX_PACKET_USERINFOS) {
-        Com_DPrintf("Too many userinfos from %s\n", sv_client->name);
-        MSG_ReadString(NULL, 0);
+        SV_DropClient(sv_client, "too many userinfos");
         return;
     }
 
@@ -646,16 +644,14 @@ static void SV_ParseDeltaUserinfo(void)
 {
     char key[MAX_INFO_KEY], value[MAX_INFO_VALUE];
 
-    // malicious users may try sending too many userinfo updates
-    if (userinfoUpdateCount >= MAX_PACKET_USERINFOS) {
-        Com_DPrintf("Too many userinfos from %s\n", sv_client->name);
-        MSG_ReadString(NULL, 0);
-        MSG_ReadString(NULL, 0);
-        return;
-    }
-
     // optimize by combining multiple delta updates into one (hack)
     while (1) {
+        // malicious users may try sending too many userinfo updates
+        if (userinfoUpdateCount >= MAX_PACKET_USERINFOS) {
+            SV_DropClient(sv_client, "too many userinfos");
+            return;
+        }
+
         if (MSG_ReadString(key, sizeof(key)) >= sizeof(key)) {
             SV_DropClient(sv_client, "oversize userinfo key");
             return;
@@ -666,19 +662,15 @@ static void SV_ParseDeltaUserinfo(void)
             return;
         }
 
-        if (userinfoUpdateCount < MAX_PACKET_USERINFOS) {
-            if (!Info_SetValueForKey(sv_client->userinfo, key, value)) {
-                SV_DropClient(sv_client, "malformed userinfo");
-                return;
-            }
-
-            Com_DDPrintf("%s(%s): %s %s [%d]\n", __func__,
-                         sv_client->name, key, value, userinfoUpdateCount);
-
-            userinfoUpdateCount++;
-        } else {
-            Com_DPrintf("Too many userinfos from %s\n", sv_client->name);
+        if (!Info_SetValueForKey(sv_client->userinfo, key, value)) {
+            SV_DropClient(sv_client, "malformed userinfo");
+            return;
         }
+
+        Com_DDPrintf("%s(%s): %s %s [%d]\n", __func__,
+                     sv_client->name, key, value, userinfoUpdateCount);
+
+        userinfoUpdateCount++;
 
         if (msg_read.readcount >= msg_read.cursize)
             break; // end of message
@@ -696,14 +688,14 @@ static void SV_ParseClientCommand(void)
 {
     char buffer[MAX_STRING_CHARS];
 
-    if (MSG_ReadString(buffer, sizeof(buffer)) >= sizeof(buffer)) {
-        SV_DropClient(sv_client, "oversize stringcmd");
+    // malicious users may try using too many string commands
+    if (stringCmdCount >= MAX_PACKET_STRINGCMDS) {
+        SV_DropClient(sv_client, "too many stringcmds");
         return;
     }
 
-    // malicious users may try using too many string commands
-    if (stringCmdCount >= MAX_PACKET_STRINGCMDS) {
-        Com_DPrintf("Too many stringcmds from %s\n", sv_client->name);
+    if (MSG_ReadString(buffer, sizeof(buffer)) >= sizeof(buffer)) {
+        SV_DropClient(sv_client, "oversize stringcmd");
         return;
     }
 

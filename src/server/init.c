@@ -82,6 +82,24 @@ void SV_SetState(server_state_t state)
 
 /*
 ================
+SV_FreeLevel
+================
+*/
+void SV_FreeLevel(void)
+{
+    for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
+        Z_Free(sv.configstrings[i]);
+    for (int i = 0; i < MAX_EDICTS; i++)
+        Z_Free(sv.entities[i].clusternums);
+    CM_FreeMap(&sv.cm);
+    Nav_Unload();
+
+    // wipe the entire per-level structure
+    memset(&sv, 0, sizeof(sv));
+}
+
+/*
+================
 SV_SpawnServer
 
 Change the server to a new map, taking all connected
@@ -111,15 +129,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     SV_SendAsyncPackets();
 
     // free current level
-    for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
-        Z_Free(sv.configstrings[i]);
-    for (int i = 0; i < MAX_EDICTS; i++)
-        Z_Free(sv.entities[i].clusternums);
-    CM_FreeMap(&sv.cm);
-    Nav_Unload();
+    SV_FreeLevel();
 
-    // wipe the entire per-level structure
-    memset(&sv, 0, sizeof(sv));
     sv.spawncount = Q_rand() & INT_MAX;
 
     // set framerate parameters

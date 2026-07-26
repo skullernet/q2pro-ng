@@ -1980,13 +1980,7 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
     SV_ShutdownGameProgs();
 
     // free current level
-    for (int i = 0; i < MAX_CONFIGSTRINGS; i++)
-        Z_Free(sv.configstrings[i]);
-    for (int i = 0; i < MAX_EDICTS; i++)
-        Z_Free(sv.entities[i].clusternums);
-    CM_FreeMap(&sv.cm);
-    Nav_Unload();
-    memset(&sv, 0, sizeof(sv));
+    SV_FreeLevel();
 
     // free server static data
     Z_Free(svs.client_pool);
