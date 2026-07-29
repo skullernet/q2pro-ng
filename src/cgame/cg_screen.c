@@ -1965,6 +1965,112 @@ static void SCR_DrawDamageDisplays(void)
     trap_R_SetTransform(Mat4_Identity());
 }
 
+/*
+===============================================================================
+
+END OF UNIT
+
+===============================================================================
+*/
+
+static void SCR_EndOfUnitEntry(float x, float y, const level_entry_t *entry, float widths[3])
+{
+    // we didn't visit this level, so print it as an unknown entry
+    if (!entry->pretty_name[0]) {
+        SCR_DrawString(x, y, UI_DROPSHADOW, "???");
+        return;
+    }
+
+    SCR_DrawString(x, y, UI_DROPSHADOW, entry->pretty_name);
+    x += widths[0];
+
+    SCR_DrawString(x + widths[1] / 2, y, UI_CENTER | UI_DROPSHADOW, va("%d/%d", entry->killed_monsters, entry->total_monsters));
+    x += widths[1];
+
+    SCR_DrawString(x + widths[2] / 2, y, UI_CENTER | UI_DROPSHADOW, va("%d/%d", entry->found_secrets, entry->total_secrets));
+    x += widths[2];
+
+    int minutes = entry->time / 60000;
+    int seconds = (entry->time / 1000) % 60;
+    int tensofsec = (entry->time / 100) % 10;
+
+    SCR_DrawString(x, y, UI_DROPSHADOW, va("%02d:%02d.%d", minutes, seconds, tensofsec));
+}
+
+static void SCR_EndOfUnitHeader(float x, float y, float widths[3])
+{
+    SCR_DrawString(x, y, UI_DROPSHADOW | UI_ALTCOLOR, "Level");
+    x += widths[0];
+
+    SCR_DrawString(x + widths[1] / 2, y, UI_CENTER | UI_DROPSHADOW | UI_ALTCOLOR, "Kills");
+    x += widths[1];
+
+    SCR_DrawString(x + widths[2] / 2, y, UI_CENTER | UI_DROPSHADOW | UI_ALTCOLOR, "Secrets");
+    x += widths[2];
+
+    SCR_DrawString(x, y, UI_DROPSHADOW | UI_ALTCOLOR, "Time");
+}
+
+static void SCR_DrawEndOfUnit(void)
+{
+    if (!(cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_EOU))
+        return;
+
+    level_entry_t totals = { 0 };
+    float widths[4] = { 0 };
+    int num_rows = 0;
+
+    for (int i = 0; i < MAX_LEVELS_PER_UNIT; i++) {
+        const level_entry_t *entry = &cgs.level_entries[i];
+        if (!entry->map_name[0])
+            break;
+
+        totals.total_secrets += entry->total_secrets;
+        totals.found_secrets += entry->found_secrets;
+        totals.total_monsters += entry->total_monsters;
+        totals.killed_monsters += entry->killed_monsters;
+        totals.time += entry->time;
+
+        float w = trap_R_MeasureString(UI_NONE, -1, va("%s ", entry->pretty_name), scr.norm_font);
+        widths[0] = max(widths[0], w);
+
+        if (entry->visit_order)
+            num_rows++;
+    }
+
+    widths[1] =
+    widths[2] = trap_R_MeasureString(UI_NONE, -1, "9999/9999 ", scr.norm_font);
+    widths[3] = trap_R_MeasureString(UI_NONE, -1, "999:99.9", scr.norm_font);
+
+    float x = scr.hud_width  / 2 - (widths[0] + widths[1] + widths[2] + widths[3]) / 2;
+    float y = scr.hud_height / 2 - 120;
+    float h = trap_R_GetFontHeight(scr.norm_font);
+
+    SCR_EndOfUnitHeader(x, y, widths);
+    y += h;
+
+    for (int i = 0; i < MAX_LEVELS_PER_UNIT; i++) {
+        const level_entry_t *entry = &cgs.level_entries[i];
+        if (!entry->map_name[0])
+            break;
+
+        SCR_EndOfUnitEntry(x, y, entry, widths);
+        y += h;
+    }
+
+    // empty row to separate totals
+    y += h;
+
+    if (num_rows > 1) {
+        // make this a space so it prints totals
+        totals.pretty_name[0] = ' ';
+        SCR_EndOfUnitEntry(x, y, &totals, widths);
+    }
+
+    SCR_DrawString(scr.hud_width / 2, scr.hud_height - 48,
+                   UI_CENTER | UI_DROPSHADOW | UI_ALTCOLOR, "Press any button to continue.");
+}
+
 //=============================================================================
 
 static void SCR_DrawFps(void)
@@ -2118,6 +2224,8 @@ static void SCR_Draw2D(void)
     trap_R_SetAlpha(scr_alpha.value);
 
     SCR_DrawStats();
+
+    SCR_DrawEndOfUnit();
 
     SCR_DrawLayout();
 

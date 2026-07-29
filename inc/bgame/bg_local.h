@@ -48,6 +48,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_CLIENTWEAPONS   256     // PGM -- upped from 16 to fit the chainfist vwep
 #define MAX_WHEEL_ITEMS     32
 
+// the total number of levels we'll track for the
+// end of unit screen.
+#define MAX_LEVELS_PER_UNIT 16
+
 typedef enum {
 // generic parameters
     CS_CDTRACK = 1,
@@ -70,6 +74,8 @@ typedef enum {
     CS_WHEEL_AMMO           = CS_WHEEL_WEAPONS + MAX_WHEEL_ITEMS,
     CS_WHEEL_POWERUPS       = CS_WHEEL_AMMO + MAX_WHEEL_ITEMS,
     CS_WHEEL_POWERUPS_LAST  = CS_WHEEL_POWERUPS + MAX_WHEEL_ITEMS - 1,
+    CS_LEVEL_ENTRIES,
+    CS_LEVEL_ENTRIES_LAST   = CS_LEVEL_ENTRIES + MAX_LEVELS_PER_UNIT - 1,
 
 // CTF stats
     CS_CTF_MATCH,
@@ -101,6 +107,7 @@ typedef enum : uint32_t {
     LAYOUTS_INTERMISSION    = BIT(3),
     LAYOUTS_HELP            = BIT(4),
     LAYOUTS_HIDE_CROSSHAIR  = BIT(5),
+    LAYOUTS_EOU             = BIT(6),
 } layout_flags_t;
 
 // uf flags
@@ -430,8 +437,27 @@ typedef struct {
     vec3_t      axis;
 } sky_params_t;
 
-void BG_ParseSkyParams(const char *s, sky_params_t *sky);
+void BG_ParseSkyParams(sky_params_t *sky, const char *s);
 const char *BG_FormatSkyParams(const sky_params_t *sky);
+
+typedef struct {
+    // bsp name
+    char map_name[MAX_QPATH];
+    // map name
+    char pretty_name[MAX_QPATH];
+    // these are set when we leave the level
+    int total_secrets;
+    int found_secrets;
+    int total_monsters;
+    int killed_monsters;
+    // total time spent in the level, for end screen
+    int64_t time;
+    // the order we visited levels in
+    int visit_order;
+} level_entry_t;
+
+void BG_ParseLevelEntry(level_entry_t *entry, const char *s);
+const char *BG_FormatLevelEntry(const level_entry_t *entry);
 
 static inline player_fog_t BG_LerpFog(player_fog_t a, player_fog_t b, float t)
 {

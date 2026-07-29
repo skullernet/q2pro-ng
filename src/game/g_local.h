@@ -591,26 +591,6 @@ typedef enum {
 #define STOFS(x) offsetof(spawn_temp_t, x)
 #define CLOFS(x) offsetof(gclient_t, x)
 
-// the total number of levels we'll track for the
-// end of unit screen.
-#define MAX_LEVELS_PER_UNIT 8
-
-typedef struct {
-    // bsp name
-    char map_name[MAX_QPATH];
-    // map name
-    char pretty_name[MAX_QPATH];
-    // these are set when we leave the level
-    int total_secrets;
-    int found_secrets;
-    int total_monsters;
-    int killed_monsters;
-    // total time spent in the level, for end screen
-    gtime_t time;
-    // the order we visited levels in
-    int visit_order;
-} level_entry_t;
-
 //
 // this structure is left intact through an entire game
 // it should be initialized at dll load time, and read/written to

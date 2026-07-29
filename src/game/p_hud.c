@@ -83,28 +83,6 @@ void G_UpdateLevelEntry(void)
     level.entry->total_monsters = level.total_monsters;
 }
 
-static void G_EndOfUnitEntry(int y, const level_entry_t *entry, int maxlen)
-{
-    sb_yv(y);
-
-    // we didn't visit this level, so print it as an unknown entry
-    if (!entry->pretty_name[0]) {
-        sb_string("???");
-        return;
-    }
-
-    int64_t msec = TO_MSEC(entry->time);
-    int minutes = msec / 60000;
-    int seconds = (msec / 1000) % 60;
-    int tensofsec = (msec / 100) % 10;
-
-    sb_printf("string \"%*s %4d/%-4d %3d/%-3d %02d:%02d.%d\" ",
-              maxlen, entry->pretty_name,
-              entry->killed_monsters, entry->total_monsters,
-              entry->found_secrets, entry->total_secrets,
-              minutes, seconds, tensofsec);
-}
-
 static int entrycmp(const void *p1, const void *p2)
 {
     const level_entry_t *a = (const level_entry_t *)p1;
@@ -128,52 +106,12 @@ void G_EndOfUnitMessage(void)
     // sort entries
     qsort(game.level_entries, MAX_LEVELS_PER_UNIT, sizeof(game.level_entries[0]), entrycmp);
 
-    int maxlen = 0;
     for (int i = 0; i < MAX_LEVELS_PER_UNIT; i++) {
         const level_entry_t *entry = &game.level_entries[i];
         if (!entry->map_name[0])
             break;
-        maxlen = max(maxlen, strlen(entry->pretty_name));
+        trap_SetConfigstring(CS_LEVEL_ENTRIES + i, BG_FormatLevelEntry(entry));
     }
-
-    sb_begin();
-    sb_xv(60 - maxlen * 4);
-    sb_yv(26);
-    sb_printf("string2 \"%*s   Kills   Secrets  Time  \" ", maxlen, "Level");
-
-    level_entry_t totals = { 0 };
-    int num_rows = 0;
-    int y = 34;
-
-    for (int i = 0; i < MAX_LEVELS_PER_UNIT; i++) {
-        const level_entry_t *entry = &game.level_entries[i];
-        if (!entry->map_name[0])
-            break;
-
-        G_EndOfUnitEntry(y, entry, maxlen);
-        y += 8;
-
-        totals.found_secrets += entry->found_secrets;
-        totals.killed_monsters += entry->killed_monsters;
-        totals.time += entry->time;
-        totals.total_monsters += entry->total_monsters;
-        totals.total_secrets += entry->total_secrets;
-
-        if (entry->visit_order)
-            num_rows++;
-    }
-
-    y += 8; // empty row to separate totals
-
-    // make this a space so it prints totals
-    if (num_rows > 1) {
-        totals.pretty_name[0] = ' ';
-        G_EndOfUnitEntry(y, &totals, maxlen);
-    }
-
-    sb_yb(-48), sb_xv(0), sb_cstring2("Press any button to continue.");
-
-    trap_ClientConfigstring(NULL, CS_LAYOUT, sb_buffer(), true);
 
     for (int i = 0; i < game.maxclients; i++) {
         if (g_edicts[i].r.inuse)
@@ -721,13 +659,16 @@ void G_SetStats(edict_t *ent)
         if (ent->client->showinventory && ent->client->pers.health > 0)
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
     } else {
-        if (ent->client->showscores || ent->client->showhelp || ent->client->showeou)
+        if (ent->client->showscores || ent->client->showhelp)
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_LAYOUT;
         if (ent->client->showinventory && ent->client->pers.health > 0)
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
 
         if (ent->client->showhelp)
             ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_HELP;
+
+        if (ent->client->showeou)
+            ent->client->ps.stats[STAT_LAYOUTS] |= LAYOUTS_EOU;
     }
 
     if (level.intermissiontime || ent->client->awaiting_respawn) {

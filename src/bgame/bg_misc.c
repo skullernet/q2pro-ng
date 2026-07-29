@@ -117,7 +117,7 @@ const char *BG_EventName(entity_event_t event)
     return va("UNKNOWN_%d", event);
 }
 
-void BG_ParseSkyParams(const char *s, sky_params_t *sky)
+void BG_ParseSkyParams(sky_params_t *sky, const char *s)
 {
     COM_ParseToken(&s, sky->name, sizeof(sky->name));
     sky->rotate     = Q_atof(COM_Parse(&s));
@@ -132,6 +132,27 @@ const char *BG_FormatSkyParams(const sky_params_t *sky)
     return va("\"%s\" %f %d %f %f %f",
               sky->name, sky->rotate, sky->autorotate,
               sky->axis.x, sky->axis.y, sky->axis.z);
+}
+
+void BG_ParseLevelEntry(level_entry_t *entry, const char *s)
+{
+    COM_ParseToken(&s, entry->map_name, sizeof(entry->map_name));
+    COM_ParseToken(&s, entry->pretty_name, sizeof(entry->pretty_name));
+    entry->total_secrets = Q_atoi(COM_Parse(&s));
+    entry->found_secrets = Q_atoi(COM_Parse(&s));
+    entry->total_monsters = Q_atoi(COM_Parse(&s));
+    entry->killed_monsters = Q_atoi(COM_Parse(&s));
+    entry->time = strtoll(COM_Parse(&s), NULL, 10);
+    entry->visit_order = Q_atoi(COM_Parse(&s));
+}
+
+const char *BG_FormatLevelEntry(const level_entry_t *entry)
+{
+    return va("\"%s\" \"%s\" %d %d %d %d %"PRId64" %d",
+              entry->map_name, entry->pretty_name,
+              entry->total_secrets, entry->found_secrets,
+              entry->total_monsters, entry->killed_monsters,
+              entry->time, entry->visit_order);
 }
 
 void BG_AddBlend(float r, float g, float b, float a, vec4_t *v_blend)

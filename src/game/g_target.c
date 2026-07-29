@@ -1918,7 +1918,7 @@ void USE(use_target_sky)(edict_t *self, edict_t *other, edict_t *activator)
     sky_params_t sky;
 
     trap_GetConfigstring(CS_SKY, buffer, sizeof(buffer));
-    BG_ParseSkyParams(buffer, &sky);
+    BG_ParseSkyParams(&sky, buffer);
 
     if (self->map)
         Q_strlcpy(sky.name, self->map, sizeof(sky.name));

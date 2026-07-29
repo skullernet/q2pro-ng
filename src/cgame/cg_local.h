@@ -354,6 +354,8 @@ typedef struct {
     int                 num_footsteps;
 
     cg_lightstyle_t     lightstyles[MAX_LIGHTSTYLES];
+
+    level_entry_t       level_entries[MAX_LEVELS_PER_UNIT];
 } cgame_static_t;
 
 extern cgame_static_t   cgs;

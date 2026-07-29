@@ -251,7 +251,7 @@ void CG_SetSky(void)
     sky_params_t sky;
 
     trap_GetConfigstring(CS_SKY, buffer, sizeof(buffer));
-    BG_ParseSkyParams(buffer, &sky);
+    BG_ParseSkyParams(&sky, buffer);
     trap_R_SetSky(sky.name, sky.rotate, sky.autorotate, sky.axis);
 }
 
@@ -427,6 +427,13 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
 
     if (index == CS_LAYOUT) {
         trap_GetConfigstring(index, cg.layout, sizeof(cg.layout));
+        return;
+    }
+
+    if (index >= CS_LEVEL_ENTRIES && index <= CS_LEVEL_ENTRIES_LAST) {
+        char s[MAX_STRING_CHARS];
+        trap_GetConfigstring(index, s, sizeof(s));
+        BG_ParseLevelEntry(&cgs.level_entries[index - CS_LEVEL_ENTRIES], s);
         return;
     }
 

@@ -948,7 +948,8 @@ static void write_struct(const save_field_t *field, const byte *from, const byte
 
     begin_block(field->name);
     for (int i = 0; i < field->count; i++)
-        write_fields(va("%d", i), field->fields, from + i * field->size, to + i * field->size);
+        if (memcmp(from + i * field->size, to + i * field->size, field->size))
+            write_fields(va("%d", i), field->fields, from + i * field->size, to + i * field->size);
     end_block();
 }
 
