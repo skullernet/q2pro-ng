@@ -988,6 +988,8 @@ static bool MD5_ParseMesh(model_t *model, const char *s, const char *path)
 
         MD5_ParseExpect(&s, "numtris");
         uint32_t num_tris = MD5_ParseUint(&s, 0, MD5_MAX_INDICES / 3);
+        if (num_tris && !mesh->num_verts)
+            MD5_ParseError("Mesh has tris but no verts");
         mesh->indices = MD5_GpuMallocIndices(num_tris * 3 * sizeof(mesh->indices[0]));
         mesh->num_indices = num_tris * 3;
 
