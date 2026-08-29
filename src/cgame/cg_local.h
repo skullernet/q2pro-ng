@@ -567,21 +567,17 @@ static inline bool CG_PredictionEnabled(void)
 void CG_PredictAngles(void);
 void CG_PredictMovement(void);
 void CG_CheckPredictionError(void);
-void CG_TraceArgs(trace_t *tr, const trace_args_t *args);
+trace_t CG_TraceArgs(const trace_args_t *args);
 contents_t CG_PointContents(vec3_t point);
 
 static inline trace_t CG_TraceLine(vec3_t start, vec3_t end, int passent, contents_t mask)
 {
-    trace_t tr;
-    CG_TraceArgs(&tr, &(trace_args_t){ start, end, box3_origin, passent, mask });
-    return tr;
+    return CG_TraceArgs(&(trace_args_t){ start, end, box3_origin, passent, mask });
 }
 
 static inline trace_t CG_Trace(vec3_t start, vec3_t end, box3_t box, int passent, contents_t mask)
 {
-    trace_t tr;
-    CG_TraceArgs(&tr, &(trace_args_t){ start, end, box, passent, mask });
-    return tr;
+    return CG_TraceArgs(&(trace_args_t){ start, end, box, passent, mask });
 }
 
 

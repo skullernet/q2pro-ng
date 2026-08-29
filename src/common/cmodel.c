@@ -487,7 +487,7 @@ static vec3_t   trace_start, trace_end;
 static vec3_t   trace_offsets[8];
 static vec3_t   trace_extents;
 
-static trace_t  *trace_trace;
+static trace_t  trace_trace;
 static int      trace_contents;
 static bool     trace_ispoint;      // optimized case
 
@@ -651,8 +651,8 @@ static void CM_TraceToLeaf(const mleaf_t *leaf)
 
         if (!(b->contents & trace_contents))
             continue;
-        CM_ClipBoxToBrush(trace_start, trace_end, trace_trace, b);
-        if (!trace_trace->fraction)
+        CM_ClipBoxToBrush(trace_start, trace_end, &trace_trace, b);
+        if (!trace_trace.fraction)
             return;
     }
 }
@@ -679,8 +679,8 @@ static void CM_TestInLeaf(const mleaf_t *leaf)
 
         if (!(b->contents & trace_contents))
             continue;
-        CM_TestBoxInBrush(trace_start, trace_trace, b);
-        if (!trace_trace->fraction)
+        CM_TestBoxInBrush(trace_start, &trace_trace, b);
+        if (!trace_trace.fraction)
             return;
     }
 }
@@ -701,7 +701,7 @@ static void CM_RecursiveHullCheck(const mnode_t *node, float p1f, float p2f, vec
     int         side;
     float       midf;
 
-    if (trace_trace->fraction <= p1f)
+    if (trace_trace.fraction <= p1f)
         return;     // already hit something nearer
 
 recheck:
@@ -781,18 +781,17 @@ recheck:
 CM_BoxTrace
 ==================
 */
-void CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headnode)
+trace_t CM_BoxTrace(const trace_args_t *args, const mnode_t *headnode)
 {
     int i, j;
 
     checkcount++;       // for multi-check avoidance
 
     // fill in a default trace
-    trace_trace = trace;
-    *trace_trace = (trace_t){ .fraction = 1 };
+    trace_trace = (trace_t){ .fraction = 1 };
 
     if (!headnode)
-        return;
+        return trace_trace;
 
     trace_contents = args->mask;
     trace_start = args->start;
@@ -813,11 +812,11 @@ void CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headno
         num_leafs = CM_BoxLeafs_headnode(box, leafs, q_countof(leafs), headnode);
         for (i = 0; i < num_leafs; i++) {
             CM_TestInLeaf(leafs[i]);
-            if (trace_trace->allsolid)
+            if (trace_trace.allsolid)
                 break;
         }
-        trace_trace->endpos = args->start;
-        return;
+        trace_trace.endpos = args->start;
+        return trace_trace;
     }
 
     //
@@ -836,10 +835,11 @@ void CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headno
     //
     CM_RecursiveHullCheck(headnode, 0, 1, args->start, args->end);
 
-    if (trace_trace->fraction == 1)
-        trace_trace->endpos = args->end;
+    if (trace_trace.fraction == 1)
+        trace_trace.endpos = args->end;
     else
-        trace_trace->endpos = Vec3_Lerp(args->start, args->end, trace_trace->fraction);
+        trace_trace.endpos = Vec3_Lerp(args->start, args->end, trace_trace.fraction);
+    return trace_trace;
 }
 
 /*
@@ -850,11 +850,12 @@ Handles offsetting and rotation of the end points for moving and
 rotating entities
 ==================
 */
-void CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
-                            const mnode_t *headnode, vec3_t origin, vec3_t angles)
+trace_t CM_TransformedBoxTrace(const trace_args_t *args,
+                               const mnode_t *headnode, vec3_t origin, vec3_t angles)
 {
     vec3_t      axis[3];
     bool        rotated;
+    trace_t     trace;
 
     // make bbox symmetric
     vec3_t mid = Box3_Center(args->box);
@@ -878,20 +879,21 @@ void CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
     }
 
     // sweep the box through the model
-    CM_BoxTrace(trace, &l, headnode);
+    trace = CM_BoxTrace(&l, headnode);
 
-    if (trace->fraction != 1.0f) {
+    if (trace.fraction != 1.0f) {
         // rotate plane normal into the worlds frame of reference
         if (rotated) {
             TransposeAxis(axis);
-            trace->plane.normal = Vec3_Rotate(trace->plane.normal, axis);
+            trace.plane.normal = Vec3_Rotate(trace.plane.normal, axis);
         }
 
         // offset plane distance
-        trace->plane.dist += Vec3_Dot(trace->plane.normal, origin);
+        trace.plane.dist += Vec3_Dot(trace.plane.normal, origin);
     }
 
-    trace->endpos = Vec3_Lerp(args->start, args->end, trace->fraction);
+    trace.endpos = Vec3_Lerp(args->start, args->end, trace.fraction);
+    return trace;
 }
 
 /*

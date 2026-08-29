@@ -489,9 +489,9 @@ static void SV_ClipMoveToEntities(trace_t *tr, const trace_args_t *args)
             continue;
 
         // might intersect, so do an exact clip
-        CM_TransformedBoxTrace(&trace, args,
-                               SV_HullForEntity(touch, SVF_NONE),
-                               touch->s.origin, touch->s.angles);
+        trace = CM_TransformedBoxTrace(args,
+                                       SV_HullForEntity(touch, SVF_NONE),
+                                       touch->s.origin, touch->s.angles);
 
         CM_ClipEntity(tr, &trace, touchlist[i]);
     }
@@ -505,18 +505,19 @@ Moves the given mins/maxs volume through the world from start to end.
 Passedict and edicts owned by passedict are explicitly not checked.
 ==================
 */
-void SV_Trace(trace_t *trace, const trace_args_t *args)
+trace_t SV_Trace(const trace_args_t *args)
 {
     Q_assert_soft(args->entnum < MAX_EDICTS);
 
     // clip to world
-    CM_BoxTrace(trace, args, SV_WorldNodes());
-    trace->entnum = ENTITYNUM_WORLD;
-    if (trace->fraction == 0)
-        return;     // blocked by the world
+    trace_t trace = CM_BoxTrace(args, SV_WorldNodes());
+    trace.entnum = ENTITYNUM_WORLD;
+    if (trace.fraction == 0)
+        return trace;   // blocked by the world
 
     // clip to other solid entities
-    SV_ClipMoveToEntities(trace, args);
+    SV_ClipMoveToEntities(&trace, args);
+    return trace;
 }
 
 /*
@@ -527,17 +528,19 @@ Like SV_Trace(), but clip to specified entity only.
 Can be used to clip to SOLID_TRIGGER by its BSP tree.
 ==================
 */
-void SV_Clip(trace_t *trace, const trace_args_t *args)
+trace_t SV_Clip(const trace_args_t *args)
 {
+    trace_t trace;
     Q_assert_soft(args->entnum < MAX_EDICTS);
 
     if (args->entnum == ENTITYNUM_WORLD) {
-        CM_BoxTrace(trace, args, SV_WorldNodes());
+        trace = CM_BoxTrace(args, SV_WorldNodes());
     } else {
         edict_t *clip = SV_EdictForNum(args->entnum);
-        CM_TransformedBoxTrace(trace, args,
-                               SV_HullForEntity(clip, SVF_HULL),
-                               clip->s.origin, clip->s.angles);
+        trace = CM_TransformedBoxTrace(args,
+                                       SV_HullForEntity(clip, SVF_HULL),
+                                       clip->s.origin, clip->s.angles);
     }
-    trace->entnum = args->entnum;
+    trace.entnum = args->entnum;
+    return trace;
 }

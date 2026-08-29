@@ -535,7 +535,7 @@ typedef struct {
     trace_t traces[MAXTOUCH];
 } touch_list_t;
 
-typedef void (*trace_func_t)(trace_t *tr, const trace_args_t *args);
+typedef trace_t (*trace_func_t)(const trace_args_t *args);
 
 typedef struct {
     // state (in / out)

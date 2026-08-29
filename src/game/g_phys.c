@@ -213,7 +213,7 @@ SV_PushEntity
 Does not change the entities velocity at all
 ============
 */
-static void SV_PushEntity(edict_t *ent, vec3_t push, trace_t *trace)
+static trace_t SV_PushEntity(edict_t *ent, vec3_t push)
 {
     trace_args_t args = {
         .start = ent->s.origin,
@@ -222,22 +222,23 @@ static void SV_PushEntity(edict_t *ent, vec3_t push, trace_t *trace)
         .entnum = ent->s.number,
         .mask = G_GetClipMask(ent)
     };
+    trace_t trace;
 
     while (true) {
-        trap_Trace(trace, &args);
+        trace = trap_Trace(&args);
 
-        ent->s.origin = Vec3_MA(trace->endpos, 0.5f, trace->plane.normal);
+        ent->s.origin = Vec3_MA(trace.endpos, 0.5f, trace.plane.normal);
         trap_LinkEntity(ent);
 
-        if (trace->fraction == 1.0f && !trace->startsolid)
+        if (trace.fraction == 1.0f && !trace.startsolid)
             break;
 
-        G_Impact(ent, trace);
+        G_Impact(ent, &trace);
 
         if (!ent->r.inuse)
-            return;
+            return trace;
 
-        if (g_edicts[trace->entnum].r.inuse)
+        if (g_edicts[trace.entnum].r.inuse)
             break;
 
         // if the pushed entity went away and the pusher is still there
@@ -254,6 +255,7 @@ static void SV_PushEntity(edict_t *ent, vec3_t push, trace_t *trace)
     // ================
 
     G_TouchTriggers(ent);
+    return trace;
 }
 
 typedef struct {
@@ -577,7 +579,7 @@ static void SV_Physics_Toss(edict_t *ent)
 
         num_tries--;
         move = Vec3_Scale(ent->velocity, time_left);
-        SV_PushEntity(ent, move, &trace);
+        trace = SV_PushEntity(ent, move);
 
         if (!ent->r.inuse)
             return;

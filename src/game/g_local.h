@@ -2576,21 +2576,15 @@ static inline contents_t G_ProjectileClipmask(const edict_t *self)
 
 static inline trace_t G_TraceLine(vec3_t start, vec3_t end, int passent, contents_t mask)
 {
-    trace_t tr;
-    trap_Trace(&tr, &(trace_args_t){ start, end, box3_origin, passent, mask });
-    return tr;
+    return trap_Trace(&(trace_args_t){ start, end, box3_origin, passent, mask });
 }
 
 static inline trace_t G_Trace(vec3_t start, vec3_t end, box3_t box, int passent, contents_t mask)
 {
-    trace_t tr;
-    trap_Trace(&tr, &(trace_args_t){ start, end, box, passent, mask });
-    return tr;
+    return trap_Trace(&(trace_args_t){ start, end, box, passent, mask });
 }
 
 static inline trace_t G_Clip(vec3_t start, vec3_t end, box3_t box, int clipent, contents_t mask)
 {
-    trace_t tr;
-    trap_Clip(&tr, &(trace_args_t){ start, end, box, clipent, mask });
-    return tr;
+    return trap_Clip(&(trace_args_t){ start, end, box, clipent, mask });
 }

@@ -26,13 +26,16 @@ static const side_check_t side_checks[NUM_SIDE_CHECKS] = {
     { { 0,-1, 0 }, {-1, 0,-1 }, { 1, 0, 1 } },
 };
 
+#define PM_TraceGeneric(start, end, box, passent, mask) \
+    trace_func(&(trace_args_t){ start, end, box, passent, mask })
+
 // [Paril-KEX] generic code to detect & fix a stuck object
 stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
                                          contents_t mask, trace_func_t trace_func)
 {
     trace_t tr;
 
-    trace_func(&tr, &(trace_args_t){ *origin, *origin, own, ignore, mask });
+    tr = PM_TraceGeneric(*origin, *origin, own, ignore, mask);
     if (!tr.startsolid)
         return GOOD_POSITION;
 
@@ -65,7 +68,7 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
         int needed_epsilon_fix = -1;
         int needed_epsilon_dir = 0;
 
-        trace_func(&tr, &(trace_args_t){ start, start, box, ignore, mask });
+        tr = PM_TraceGeneric(start, start, box, ignore, mask);
 
         if (tr.startsolid) {
             for (int e = 0; e < 3; e++) {
@@ -75,7 +78,7 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
                 vec3_t ep_start = start;
                 ep_start.xyz[e] += 1;
 
-                trace_func(&tr, &(trace_args_t){ ep_start, ep_start, box, ignore, mask });
+                tr = PM_TraceGeneric(ep_start, ep_start, box, ignore, mask);
 
                 if (!tr.startsolid) {
                     start = ep_start;
@@ -85,7 +88,7 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
                 }
 
                 ep_start.xyz[e] -= 2;
-                trace_func(&tr, &(trace_args_t){ ep_start, ep_start, box, ignore, mask });
+                tr = PM_TraceGeneric(ep_start, ep_start, box, ignore, mask);
 
                 if (!tr.startsolid) {
                     start = ep_start;
@@ -115,7 +118,7 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
 
         // potentially a good side; start from our center, push back to the opposite side
         // to find how much clearance we have
-        trace_func(&tr, &(trace_args_t){ start, opposite_start, box, ignore, mask });
+        tr = PM_TraceGeneric(start, opposite_start, box, ignore, mask);
 
         // ???
         if (tr.startsolid)
@@ -132,7 +135,7 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
         if (needed_epsilon_fix >= 0)
             new_origin.xyz[needed_epsilon_fix] += needed_epsilon_dir;
 
-        trace_func(&tr, &(trace_args_t){ new_origin, new_origin, own, ignore, mask });
+        tr = PM_TraceGeneric(new_origin, new_origin, own, ignore, mask);
 
         // bad
         if (tr.startsolid)
@@ -237,7 +240,7 @@ void PM_StepSlideMove_Generic(vec3_t *origin, vec3_t *velocity, float frametime,
     for (int bumpcount = 0; bumpcount < 4; bumpcount++) {
         end = Vec3_MA(*origin, time_left, *velocity);
 
-        trace_func(&trace, &(trace_args_t){ *origin, end, box, passent, mask });
+        trace = PM_TraceGeneric(*origin, end, box, passent, mask);
         if (trace.allsolid) {
             // entity is trapped in another solid
             velocity->z = 0; // don't build up falling damage

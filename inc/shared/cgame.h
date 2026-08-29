@@ -67,9 +67,9 @@ typedef struct {
 
     size_t (*GetConfigstring)(unsigned index, char *buf, size_t size);
 
-    void (*BoxTrace)(trace_t *trace, const trace_args_t *args, qhandle_t hmodel);
-    void (*TransformedBoxTrace)(trace_t *trace, const trace_args_t *args,
-                                qhandle_t hmodel, vec3_t origin, vec3_t angles);
+    trace_t (*BoxTrace)(const trace_args_t *args, qhandle_t hmodel);
+    trace_t (*TransformedBoxTrace)(const trace_args_t *args,
+                                   qhandle_t hmodel, vec3_t origin, vec3_t angles);
 
     contents_t (*PointContents)(vec3_t point, qhandle_t hmodel);
     contents_t (*TransformedPointContents)(vec3_t point, qhandle_t hmodel,

@@ -588,7 +588,7 @@ contents_t SV_PointContents(vec3_t p);
 // returns the CONTENTS_* value from the world at the given point.
 // Quake 2 extends this to also check entities, to allow moving liquids
 
-void SV_Trace(trace_t *trace, const trace_args_t *args);
+trace_t SV_Trace(const trace_args_t *args);
 // mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set,
@@ -599,4 +599,4 @@ void SV_Trace(trace_t *trace, const trace_args_t *args);
 
 // passedict is explicitly excluded from clipping checks (normally NULL)
 
-void SV_Clip(trace_t *trace, const trace_args_t *args);
+trace_t SV_Clip(const trace_args_t *args);

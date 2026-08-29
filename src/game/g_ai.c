@@ -1263,7 +1263,6 @@ void ai_run(edict_t *self, float dist)
     bool     newEnemy;
     edict_t *marker;
     float    d1, d2;
-    trace_t  tr;
     vec3_t   v_forward, v_right;
     float    left, center, right;
     vec3_t   left_target, right_target;
@@ -1567,11 +1566,10 @@ void ai_run(edict_t *self, float dist)
             .entnum = self->s.number,
             .mask = MASK_PLAYERSOLID
         };
-        trap_Trace(&tr, &args);
-        if (tr.fraction < 1) {
+        center = trap_Trace(&args).fraction;
+        if (center < 1) {
             v = Vec3_Sub(self->goalentity->s.origin, self->s.origin);
             d1 = Vec3_Length(v);
-            center = tr.fraction;
             d2 = d1 * ((center + 1) / 2);
             float backup_yaw = self->s.angles.yaw;
             self->s.angles.yaw = self->ideal_yaw = vectoyaw(v);
@@ -1579,13 +1577,11 @@ void ai_run(edict_t *self, float dist)
 
             v = Vec3(d2, -16, 0);
             args.end = left_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
-            trap_Trace(&tr, &args);
-            left = tr.fraction;
+            left = trap_Trace(&args).fraction;
 
             v = Vec3(d2, 16, 0);
             args.end = right_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
-            trap_Trace(&tr, &args);
-            right = tr.fraction;
+            right = trap_Trace(&args).fraction;
 
             center = (d1 * center) / d2;
             if (left >= center && left > right) {

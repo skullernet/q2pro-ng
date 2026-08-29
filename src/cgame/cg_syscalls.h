@@ -22,9 +22,9 @@ q_noreturn void trap_Error(const char *msg);
 
 size_t trap_GetConfigstring(unsigned index, char *buf, size_t size);
 
-void trap_BoxTrace(trace_t *trace, const trace_args_t *args, qhandle_t hmodel);
-void trap_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
-                              qhandle_t hmodel, vec3_t origin, vec3_t angles);
+trace_t trap_BoxTrace(const trace_args_t *args, qhandle_t hmodel);
+trace_t trap_TransformedBoxTrace(const trace_args_t *args,
+                                 qhandle_t hmodel, vec3_t origin, vec3_t angles);
 
 contents_t trap_PointContents(vec3_t point, qhandle_t hmodel);
 contents_t trap_TransformedPointContents(vec3_t point, qhandle_t hmodel,

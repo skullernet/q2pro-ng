@@ -46,8 +46,8 @@ contents_t  CM_PointContents(vec3_t p, const mnode_t *headnode);
 contents_t  CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
                                         vec3_t origin, vec3_t angles);
 
-void        CM_BoxTrace(trace_t *trace, const trace_args_t *args, const mnode_t *headnode);
-void        CM_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
+trace_t     CM_BoxTrace(const trace_args_t *args, const mnode_t *headnode);
+trace_t     CM_TransformedBoxTrace(const trace_args_t *args,
                                    const mnode_t *headnode, vec3_t origin, vec3_t angles);
 
 // call with topnode set to the headnode, returns with topnode

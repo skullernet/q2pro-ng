@@ -184,8 +184,8 @@ typedef struct {
     int (*FindConfigstring)(const char *name, int start, int max, bool create);
 
     // collision detection
-    void (*Trace)(trace_t *tr, const trace_args_t *args);
-    void (*Clip)(trace_t *tr, const trace_args_t *args);
+    trace_t (*Trace)(const trace_args_t *args);
+    trace_t (*Clip)(const trace_args_t *args);
     contents_t (*PointContents)(vec3_t point);
     int (*BoxEdicts)(box3_t box, int *list, int maxcount, int areatype);
 

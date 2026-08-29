@@ -24,8 +24,8 @@ void trap_SetConfigstring(unsigned index, const char *str);
 size_t trap_GetConfigstring(unsigned index, char *buf, size_t size);
 int trap_FindConfigstring(const char *name, int start, int max, bool create);
 
-void trap_Trace(trace_t *tr, const trace_args_t *args);
-void trap_Clip(trace_t *tr, const trace_args_t *args);
+trace_t trap_Trace(const trace_args_t *args);
+trace_t trap_Clip(const trace_args_t *args);
 contents_t trap_PointContents(vec3_t point);
 int trap_BoxEdicts(box3_t box, int *list, int maxcount, int areatype);
 

@@ -80,7 +80,7 @@ static vec3_t event_lighting_pierce(edict_t *self)
     pierce_begin(&pierce);
 
     do {
-        trap_Trace(&tr, &args);
+        tr = trap_Trace(&args);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)

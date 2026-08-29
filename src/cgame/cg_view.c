@@ -324,17 +324,17 @@ static void CG_SetupFirstPersonView(void)
 }
 
 // need to interpolate bmodel positions, or third person view would be very jerky
-static void CG_LerpedTrace(trace_t *tr, const trace_args_t *args)
+static trace_t CG_LerpedTrace(const trace_args_t *args)
 {
-    trace_t trace;
+    trace_t trace, tr;
     const centity_t *ent;
     vec3_t org, ang;
 
     // check against world
-    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
-    tr->entnum = ENTITYNUM_WORLD;
-    if (tr->fraction == 0)
-        return;     // blocked by the world
+    tr = trap_BoxTrace(args, MODELINDEX_WORLD);
+    tr.entnum = ENTITYNUM_WORLD;
+    if (tr.fraction == 0)
+        return tr;  // blocked by the world
 
     // check all other solid models
     for (int i = 0; i < cg.num_solid_entities; i++) {
@@ -347,10 +347,12 @@ static void CG_LerpedTrace(trace_t *tr, const trace_args_t *args)
         org = Vec3_Lerp(ent->prev.origin, ent->current.origin, cg.lerpfrac);
         ang = Vec3_LerpAngles(ent->prev.angles, ent->current.angles, cg.lerpfrac);
 
-        trap_TransformedBoxTrace(&trace, args, ent->current.modelindex, org, ang);
+        trace = trap_TransformedBoxTrace(args, ent->current.modelindex, org, ang);
 
-        CM_ClipEntity(tr, &trace, ent->current.number);
+        CM_ClipEntity(&tr, &trace, ent->current.number);
     }
+
+    return tr;
 }
 
 /*
@@ -392,7 +394,7 @@ static void CG_SetupThirdPersionView(void)
         .mask = CONTENTS_SOLID
     };
 
-    CG_LerpedTrace(&trace, &args);
+    trace = CG_LerpedTrace(&args);
     cg.refdef.vieworg = trace.endpos;
     cg.third_person_alpha = trace.fraction;
 

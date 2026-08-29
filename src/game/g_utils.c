@@ -489,8 +489,7 @@ void G_TouchProjectiles(edict_t *ent, vec3_t previous_origin)
     };
 
     while (num_skipped < q_countof(skipped)) {
-        trace_t tr;
-        trap_Trace(&tr, &args);
+        trace_t tr = trap_Trace(&args);
         if (tr.fraction == 1.0f)
             break;
 

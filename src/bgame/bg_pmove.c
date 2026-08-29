@@ -114,14 +114,10 @@ static contents_t PM_TraceMask(void)
 
 static inline trace_t PM_Trace(vec3_t start, vec3_t end, box3_t box, contents_t mask)
 {
-    trace_t tr;
-
     if (pm->s->pm_type == PM_SPECTATOR)
-        pm->clip(&tr, &(trace_args_t){ start, end, box, ENTITYNUM_WORLD, MASK_SOLID });
+        return pm->clip(&(trace_args_t){ start, end, box, ENTITYNUM_WORLD, MASK_SOLID });
     else
-        pm->trace(&tr, &(trace_args_t){ start, end, box, pm->s->clientnum, mask });
-
-    return tr;
+        return pm->trace(&(trace_args_t){ start, end, box, pm->s->clientnum, mask });
 }
 
 static inline void PM_StepSlideMove_(void)

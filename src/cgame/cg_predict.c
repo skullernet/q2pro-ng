@@ -91,8 +91,8 @@ static void CG_ClipMoveToEntities(trace_t *tr, const trace_args_t *args)
         if (tr->allsolid)
             return;
 
-        trap_TransformedBoxTrace(&trace, args, hmodel,
-                                 ent->current.origin, ent->current.angles);
+        trace = trap_TransformedBoxTrace(args,
+            hmodel, ent->current.origin, ent->current.angles);
 
         CM_ClipEntity(tr, &trace, ent->current.number);
     }
@@ -103,23 +103,25 @@ static void CG_ClipMoveToEntities(trace_t *tr, const trace_args_t *args)
 CG_Trace
 ================
 */
-void CG_TraceArgs(trace_t *tr, const trace_args_t *args)
+trace_t CG_TraceArgs(const trace_args_t *args)
 {
     // check against world
-    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
-    tr->entnum = ENTITYNUM_WORLD;
-    if (tr->fraction == 0)
-        return;     // blocked by the world
+    trace_t tr = trap_BoxTrace(args, MODELINDEX_WORLD);
+    tr.entnum = ENTITYNUM_WORLD;
+    if (tr.fraction == 0)
+        return tr;  // blocked by the world
 
     // check all other solid models
-    CG_ClipMoveToEntities(tr, args);
+    CG_ClipMoveToEntities(&tr, args);
+    return tr;
 }
 
-static void CG_ClipArgs(trace_t *tr, const trace_args_t *args)
+static trace_t CG_ClipArgs(const trace_args_t *args)
 {
     // only clip to world for now
-    trap_BoxTrace(tr, args, MODELINDEX_WORLD);
-    tr->entnum = ENTITYNUM_WORLD;
+    trace_t tr = trap_BoxTrace(args, MODELINDEX_WORLD);
+    tr.entnum = ENTITYNUM_WORLD;
+    return tr;
 }
 
 contents_t CG_PointContents(vec3_t point)

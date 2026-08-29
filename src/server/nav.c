@@ -465,8 +465,7 @@ static const nav_node_t *Nav_ClosestNodeTo(nav_path_t *path, vec3_t p)
         args.end = node->origin;
         args.end.z += 32;
 
-        trace_t tr;
-        SV_Trace(&tr, &args);
+        trace_t tr = SV_Trace(&args);
         if (tr.fraction < 1.0f)
             continue;
 
@@ -991,7 +990,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
     if (node->flags & NodeFlag_CheckInSolid) {
         args.mask = MASK_SOLID;
-        SV_Trace(&tr, &args);
+        tr = SV_Trace(&args);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1001,7 +1000,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
     if (node->flags & NodeFlag_CheckInLiquid) {
         args.mask = MASK_WATER;
-        SV_Trace(&tr, &args);
+        tr = SV_Trace(&args);
 
         if (!(tr.startsolid || tr.allsolid)) {
             node->flags |= NodeFlag_Disabled;
@@ -1011,7 +1010,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
 
     if (node->flags & NodeFlag_CheckForHazard) {
         args.mask = CONTENTS_SLIME | CONTENTS_LAVA;
-        SV_Trace(&tr, &args);
+        tr = SV_Trace(&args);
 
         if (tr.startsolid || tr.allsolid) {
             node->flags |= NodeFlag_Disabled;
@@ -1048,7 +1047,7 @@ static void Nav_UpdateConditionalNode(nav_node_t *node)
         args.box.mins.z = args.box.maxs.z = 0;
         args.end.z -= NavFloorDistance;
 
-        SV_Trace(&tr, &args);
+        tr = SV_Trace(&args);
 
         if (tr.fraction == 1.0f) {
             node->flags |= NodeFlag_Disabled;

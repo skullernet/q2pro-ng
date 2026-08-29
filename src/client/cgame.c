@@ -54,15 +54,15 @@ static size_t PF_GetConfigstring(unsigned index, char *buf, size_t size)
     return Q_strlcpy_null(buf, cl.configstrings[index], size);
 }
 
-static void PF_BoxTrace(trace_t *trace, const trace_args_t *args, qhandle_t hmodel)
+static trace_t PF_BoxTrace(const trace_args_t *args, qhandle_t hmodel)
 {
-    CM_BoxTrace(trace, args, CL_ClipHandleToNode(hmodel, false));
+    return CM_BoxTrace(args, CL_ClipHandleToNode(hmodel, false));
 }
 
-static void PF_TransformedBoxTrace(trace_t *trace, const trace_args_t *args,
-                                   qhandle_t hmodel, vec3_t origin, vec3_t angles)
+static trace_t PF_TransformedBoxTrace(const trace_args_t *args,
+                                      qhandle_t hmodel, vec3_t origin, vec3_t angles)
 {
-    CM_TransformedBoxTrace(trace, args, CL_ClipHandleToNode(hmodel, true), origin, angles);
+    return CM_TransformedBoxTrace(args, CL_ClipHandleToNode(hmodel, true), origin, angles);
 }
 
 static contents_t PF_PointContents(vec3_t point, qhandle_t hmodel)
@@ -263,11 +263,11 @@ VM_THUNK(GetConfigstring) {
 }
 
 VM_THUNK(BoxTrace) {
-    PF_BoxTrace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t), VM_U32(2));
+    *VM_PTR(0, trace_t) = PF_BoxTrace(VM_PTR(1, trace_args_t), VM_U32(2));
 }
 
 VM_THUNK(TransformedBoxTrace) {
-    PF_TransformedBoxTrace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t), VM_U32(2), VM_VEC3(3), VM_VEC3(4));
+    *VM_PTR(0, trace_t) = PF_TransformedBoxTrace(VM_PTR(1, trace_args_t), VM_U32(2), VM_VEC3(3), VM_VEC3(4));
 }
 
 VM_THUNK(PointContents) {

@@ -602,7 +602,7 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
     pierce_begin(&pierce);
 
     while (1) {
-        trap_Trace(&tr, &args);
+        tr = trap_Trace(&args);
 
         // didn't hit anything, so we're done
         if (tr.fraction == 1.0f)
@@ -831,7 +831,7 @@ void THINK(bfg_think)(edict_t *self)
         pierce_begin(&pierce);
 
         do {
-            trap_Trace(&tr, &args);
+            tr = trap_Trace(&args);
 
             // didn't hit anything, so we're done
             if (tr.fraction == 1.0f)

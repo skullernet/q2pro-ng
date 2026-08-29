@@ -399,11 +399,11 @@ VM_THUNK(FindConfigstring) {
 }
 
 VM_THUNK(Trace) {
-    SV_Trace(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t));
+    *VM_PTR(0, trace_t) = SV_Trace(VM_PTR(1, trace_args_t));
 }
 
 VM_THUNK(Clip) {
-    SV_Clip(VM_PTR(0, trace_t), VM_PTR(1, trace_args_t));
+    *VM_PTR(0, trace_t) = SV_Clip(VM_PTR(1, trace_args_t));
 }
 
 VM_THUNK(PointContents) {
