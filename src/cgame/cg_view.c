@@ -444,12 +444,12 @@ static void CG_ScreenEffects(void)
     // add for contents
     contents_t contents = CG_PointContents(cg.refdef.vieworg);
 
-    if (contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_WATER))
+    if (contents & MASK_WATER)
         cg.refdef.rdflags |= RDF_UNDERWATER;
     else
         cg.refdef.rdflags &= ~RDF_UNDERWATER;
 
-    if (contents & (CONTENTS_SOLID | CONTENTS_LAVA))
+    if (contents & CONTENTS_LAVA)
         BG_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, &cg.refdef.screen_blend);
     else if (contents & CONTENTS_SLIME)
         BG_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, &cg.refdef.screen_blend);

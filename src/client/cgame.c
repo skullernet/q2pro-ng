@@ -67,7 +67,7 @@ static trace_t PF_TransformedBoxTrace(const trace_args_t *args,
 
 static contents_t PF_PointContents(vec3_t point, qhandle_t hmodel)
 {
-    return BSP_PointLeaf(CL_ClipHandleToNode(hmodel, false), point)->contents;
+    return CM_PointContents(point, CL_ClipHandleToNode(hmodel, false));
 }
 
 static contents_t PF_TransformedPointContents(vec3_t point, qhandle_t hmodel,
