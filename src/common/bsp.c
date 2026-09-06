@@ -577,10 +577,10 @@ static void BSP_ParseDecoupledLM(bsp_t *bsp, const byte *in, size_t filelen)
             errors = true;
         }
 
-        BSP_Vector(out->lm_axis.s);
+        out->lm_axis.s = BSP_Vector();
         out->lm_offset.s = BSP_Float();
 
-        BSP_Vector(out->lm_axis.t);
+        out->lm_axis.t = BSP_Vector();
         out->lm_offset.t = BSP_Float();
     }
 
@@ -880,7 +880,7 @@ static void BSP_ParseFaceNormals(bsp_t *bsp, const byte *in, size_t filelen)
 
     in += sizeof(uint32_t);
     for (int i = 0; i < bsp->num_normals; i++)
-        BSP_Vector(bsp->normals[i]);
+        bsp->normals[i] = BSP_Vector();
 
     for (int i = 0; i < bsp->num_normal_indices; i++) {
         // validate index

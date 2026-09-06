@@ -50,11 +50,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define BSP_ExtLong()   BSP_Short()
 #define BSP_ExtNull     (uint16_t)-1
 
-#define BSP_Vector(v) \
-    ((v).x = BSP_Float(), (v).y = BSP_Float(), (v).z = BSP_Float())
+#define BSP_Vector() \
+    ({ vec3_t v_; v_.x = BSP_Float(); v_.y = BSP_Float(); v_.z = BSP_Float(); v_; })
 
-#define BSP_ExtVector(v) \
-    ((v).x = BSP_ExtFloat(), (v).y = BSP_ExtFloat(), (v).z = BSP_ExtFloat())
+#define BSP_ExtVector() \
+    ({ vec3_t v_; v_.x = BSP_ExtFloat(); v_.y = BSP_ExtFloat(); v_.z = BSP_ExtFloat(); v_; })
 
 #define BSP_CLUSTER_VIS(bsp, cluster, type) \
     ((bsp)->vis + ((cluster) * DVIS_COUNT + (type)) * (bsp)->visrowsize)
@@ -135,10 +135,10 @@ BSP_LOAD(Texinfo)
 
     for (int i = 0; i < count; i++, out++) {
 #if USE_REF
-        BSP_Vector(out->axis.s);
+        out->axis.s = BSP_Vector();
         out->offset.s = BSP_Float();
 
-        BSP_Vector(out->axis.t);
+        out->axis.t = BSP_Vector();
         out->offset.t = BSP_Float();
 #else
         in += 32;
@@ -189,7 +189,7 @@ BSP_LOAD(Planes)
     bsp->planes = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, in += 4, out++) {
-        BSP_Vector(out->normal);
+        out->normal = BSP_Vector();
         out->dist = BSP_Float();
         SetPlaneType(out);
         SetPlaneSignbits(out);
@@ -239,7 +239,7 @@ BSP_LOAD(Vertices)
     bsp->vertices = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++)
-        BSP_Vector(out->point);
+        out->point = BSP_Vector();
 
     return Q_ERR_SUCCESS;
 }
@@ -276,9 +276,9 @@ BSP_LOAD(SubModels)
     bsp->models = out = BSP_ALLOC_ARRAY(sizeof(*out), count);
 
     for (int i = 0; i < count; i++, out++) {
-        BSP_Vector(out->box.mins);
-        BSP_Vector(out->box.maxs);
-        BSP_Vector(out->origin);
+        out->box.mins = BSP_Vector();
+        out->box.maxs = BSP_Vector();
+        out->origin = BSP_Vector();
 
         // spread the mins / maxs by a pixel
         out->box = Box3_Expand(out->box, 1);
@@ -521,8 +521,8 @@ BSP_LOAD(Leafs)
         out->area = area;
 
 #if USE_REF
-        BSP_ExtVector(out->box.mins);
-        BSP_ExtVector(out->box.maxs);
+        out->box.mins = BSP_ExtVector();
+        out->box.maxs = BSP_ExtVector();
         uint32_t firstleafface = BSP_ExtLong();
         uint32_t numleaffaces = BSP_ExtLong();
         BSP_ENSURE((uint64_t)firstleafface + numleaffaces <= bsp->numleaffaces, "Bad leaffaces");
@@ -578,8 +578,8 @@ BSP_LOAD(Nodes)
         }
 
 #if USE_REF
-        BSP_ExtVector(out->box.mins);
-        BSP_ExtVector(out->box.maxs);
+        out->box.mins = BSP_ExtVector();
+        out->box.maxs = BSP_ExtVector();
         uint32_t firstface = BSP_ExtLong();
         uint32_t numfaces = BSP_ExtLong();
         BSP_ENSURE((uint64_t)firstface + numfaces <= bsp->numfaces, "Bad faces");
