@@ -1221,38 +1221,24 @@ typedef enum : uint32_t {
 
 //=============================================
 
+typedef union {
+    float       f;
+    uint32_t    l;
+} floatlong_t;
+
+static inline float LongAsFloat(uint32_t l)
+{
+    return (floatlong_t){ .l = l }.f;
+}
+
+static inline uint32_t FloatAsLong(float f)
+{
+    return (floatlong_t){ .f = f }.l;
+}
+
 static inline float FloatSwap(float f)
 {
-    union {
-        float f;
-        uint32_t l;
-    } dat1, dat2;
-
-    dat1.f = f;
-    dat2.l = __builtin_bswap32(dat1.l);
-    return dat2.f;
-}
-
-static inline float LongToFloat(uint32_t l)
-{
-    union {
-        float f;
-        uint32_t l;
-    } dat;
-
-    dat.l = l;
-    return dat.f;
-}
-
-static inline uint32_t FloatToLong(float f)
-{
-    union {
-        float f;
-        uint32_t l;
-    } dat;
-
-    dat.f = f;
-    return dat.l;
+    return LongAsFloat(__builtin_bswap32(FloatAsLong(f)));
 }
 
 static inline int32_t SignExtend(uint32_t v, int bits)
@@ -1268,18 +1254,22 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define BigShort(x)     __builtin_bswap16(x)
 #define BigLong(x)      __builtin_bswap32(x)
+#define BigLong64(x)    __builtin_bswap64(x)
 #define BigFloat(x)     FloatSwap(x)
 #define LittleShort(x)  ((uint16_t)(x))
 #define LittleLong(x)   ((uint32_t)(x))
+#define LittleLong64(x) ((uint64_t)(x))
 #define LittleFloat(x)  ((float)(x))
 #define MakeRawLong(b1,b2,b3,b4) MakeLittleLong(b1,b2,b3,b4)
 #define MakeRawShort(b1,b2) MakeLittleShort(b1,b2)
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BigShort(x)     ((uint16_t)(x))
 #define BigLong(x)      ((uint32_t)(x))
+#define BigLong64(x)    ((uint64_t)(x))
 #define BigFloat(x)     ((float)(x))
 #define LittleShort(x)  __builtin_bswap16(x)
 #define LittleLong(x)   __builtin_bswap32(x)
+#define LittleLong64(x) __builtin_bswap64(x)
 #define LittleFloat(x)  FloatSwap(x)
 #define MakeRawLong(b1,b2,b3,b4) MakeBigLong(b1,b2,b3,b4)
 #define MakeRawShort(b1,b2) MakeBigShort(b1,b2)
@@ -1315,6 +1305,34 @@ static inline int64_t SignExtend64(uint64_t v, int bits)
 #define U32_CYAN    MakeColor(  0, 255, 255, 255)
 #define U32_MAGENTA MakeColor(255,   0, 255, 255)
 #define U32_WHITE   MakeColor(255, 255, 255, 255)
+
+//=============================================
+
+static inline uint16_t Q_RN16(const void *p) { uint16_t v; memcpy(&v, p, sizeof(v)); return v; }
+static inline uint32_t Q_RN32(const void *p) { uint32_t v; memcpy(&v, p, sizeof(v)); return v; }
+static inline uint64_t Q_RN64(const void *p) { uint64_t v; memcpy(&v, p, sizeof(v)); return v; }
+
+static inline void Q_WN16(void *p, uint16_t v) { memcpy(p, &v, sizeof(v)); }
+static inline void Q_WN32(void *p, uint32_t v) { memcpy(p, &v, sizeof(v)); }
+static inline void Q_WN64(void *p, uint64_t v) { memcpy(p, &v, sizeof(v)); }
+
+#define Q_RN8(p)      (*(const uint8_t *)(p))
+#define Q_RN8S(p)     ((int8_t)Q_RN8(p))
+#define Q_RN16S(p)    ((int16_t)Q_RN16(p))
+#define Q_RN32S(p)    ((int32_t)Q_RN32(p))
+#define Q_RN64S(p)    ((int64_t)Q_RN64(p))
+
+#define Q_WN8(p, v)   (*(uint8_t *)(p) = (v))
+
+#define Q_RL16(p)   LittleShort(Q_RN16(p))
+#define Q_RL32(p)   LittleLong(Q_RN32(p))
+#define Q_RL32F(p)  LongAsFloat(Q_RL32(p))
+#define Q_RL64(p)   LittleLong64(Q_RN64(p))
+
+#define Q_WL16(p, v)    Q_WN16(p, LittleShort(v))
+#define Q_WL32(p, v)    Q_WN32(p, LittleLong(v))
+#define Q_WL32F(p, v)   Q_WL32(p, FloatAsLong(v))
+#define Q_WL64(p, v)    Q_WN64(p, LittleLong64(v))
 
 //=============================================
 

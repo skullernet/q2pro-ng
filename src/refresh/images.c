@@ -26,7 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/common.h"
 #include "common/cvar.h"
 #include "common/files.h"
-#include "common/intreadwrite.h"
 #include "common/sizebuf.h"
 #include "system/system.h"
 #include "format/pcx.h"
@@ -695,8 +694,8 @@ static int IMG_SaveTGA(const screenshot_t *s)
     byte header[TARGA_HEADER_SIZE] = { 0 };
 
     header[ 2] = 2;     // uncompressed type
-    WL16(&header[12], s->width);
-    WL16(&header[14], s->height);
+    Q_WL16(&header[12], s->width);
+    Q_WL16(&header[14], s->height);
     header[16] = 24;    // pixel size
 
     if (!fwrite(&header, sizeof(header), 1, s->fp))

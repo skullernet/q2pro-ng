@@ -392,14 +392,14 @@ static void GL_DrawNullModel(void)
     Vec3_Store(tess.vertices + 12, Vec3_MA(e->origin, 16, glr.entaxis[1]));
     Vec3_Store(tess.vertices + 20, Vec3_MA(e->origin, 16, glr.entaxis[2]));
 
-    WN32(tess.vertices +  3, U32_RED);
-    WN32(tess.vertices +  7, U32_RED);
+    Q_WN32(tess.vertices +  3, U32_RED);
+    Q_WN32(tess.vertices +  7, U32_RED);
 
-    WN32(tess.vertices + 11, U32_GREEN);
-    WN32(tess.vertices + 15, U32_GREEN);
+    Q_WN32(tess.vertices + 11, U32_GREEN);
+    Q_WN32(tess.vertices + 15, U32_GREEN);
 
-    WN32(tess.vertices + 19, U32_BLUE);
-    WN32(tess.vertices + 23, U32_BLUE);
+    Q_WN32(tess.vertices + 19, U32_BLUE);
+    Q_WN32(tess.vertices + 23, U32_BLUE);
 
     GL_RotateForWorld();
     GL_LoadUniforms();

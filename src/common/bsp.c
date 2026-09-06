@@ -26,7 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/hash_map.h"
-#include "common/intreadwrite.h"
 #include "common/list.h"
 #include "common/math.h"
 #include "common/mdfour.h"
@@ -835,7 +834,7 @@ static size_t BSP_ParseFaceNormalsHeader(bsp_t *bsp, const byte *in, size_t file
     }
     filelen -= sizeof(uint32_t);
 
-    uint32_t num_normals = RL32(in);
+    uint32_t num_normals = Q_RL32(in);
     if (num_normals > filelen / sizeof(vec3_t)) {
         Com_WPrintf("FACENORMALS lump too short\n");
         return 0;
@@ -910,11 +909,11 @@ static size_t BSP_ParseExtensionHeader(bsp_t *bsp, lump_t *out, const byte *buf,
     pos = Q_ALIGN(pos, 4);
     if (pos > filelen - 8)
         return 0;
-    if (RL32(buf + pos) != BSPXHEADER)
+    if (Q_RL32(buf + pos) != BSPXHEADER)
         return 0;
     pos += 8;
 
-    uint32_t numlumps = RL32(buf + pos - 4);
+    uint32_t numlumps = Q_RL32(buf + pos - 4);
     if (numlumps > (filelen - pos) / sizeof(xlump_t)) {
         Com_WPrintf("Bad BSPX header\n");
         return 0;
@@ -1065,7 +1064,7 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
 
         // estimate decompressed visibility size
         if (info->lump == LUMP_VISIBILITY && len >= 4) {
-            uint32_t numclusters = RL32(buf + ofs);
+            uint32_t numclusters = Q_RL32(buf + ofs);
             count = BSP_VisibilitySize(numclusters);
         }
 

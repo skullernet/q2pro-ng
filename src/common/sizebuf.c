@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/shared.h"
 #include "common/sizebuf.h"
-#include "common/intreadwrite.h"
 
 void SZ_Init(sizebuf_t *buf, void *data, size_t size, const char *tag)
 {
@@ -84,17 +83,17 @@ void *SZ_GetSpace(sizebuf_t *buf, size_t len)
 
 void SZ_WriteByte(sizebuf_t *sb, int c)
 {
-    WN8(SZ_GetSpace(sb, 1), c);
+    Q_WN8(SZ_GetSpace(sb, 1), c);
 }
 
 void SZ_WriteShort(sizebuf_t *sb, int c)
 {
-    WL16(SZ_GetSpace(sb, 2), c);
+    Q_WL16(SZ_GetSpace(sb, 2), c);
 }
 
 void SZ_WriteLong(sizebuf_t *sb, int c)
 {
-    WL32(SZ_GetSpace(sb, 4), c);
+    Q_WL32(SZ_GetSpace(sb, 4), c);
 }
 
 void SZ_WriteString(sizebuf_t *sb, const char *s)
@@ -136,31 +135,31 @@ void *SZ_ReadData(sizebuf_t *buf, size_t len)
 int SZ_ReadByte(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 1);
-    return buf ? RN8(buf) : -1;
+    return buf ? Q_RN8(buf) : -1;
 }
 
 int SZ_ReadShort(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 2);
-    return buf ? RL16(buf) : -1;
+    return buf ? Q_RL16(buf) : -1;
 }
 
 int SZ_ReadLong(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 4);
-    return buf ? RL32(buf) : -1;
+    return buf ? Q_RL32(buf) : -1;
 }
 
 int64_t SZ_ReadLong64(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 8);
-    return buf ? RL64(buf) : -1;
+    return buf ? Q_RL64(buf) : -1;
 }
 
 float SZ_ReadFloat(sizebuf_t *sb)
 {
     byte *buf = SZ_ReadData(sb, 4);
-    return buf ? LongToFloat(RL32(buf)) : -1.0f;
+    return buf ? Q_RL32F(buf) : -1.0f;
 }
 
 vec3_t SZ_ReadVector(sizebuf_t *sb)

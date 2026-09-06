@@ -39,9 +39,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #else
 
-#define BSP_Short()     (in += 2, RL16(in - 2))
-#define BSP_Long()      (in += 4, RL32(in - 4))
-#define BSP_Float()     LongToFloat(BSP_Long())
+#define BSP_Short()     (in += 2, Q_RL16(in - 2))
+#define BSP_Long()      (in += 4, Q_RL32(in - 4))
+#define BSP_Float()     LongAsFloat(BSP_Long())
 
 #define BSP_LOAD(func) \
     static int BSP_Load##func(bsp_t *const bsp, const byte *in, const size_t count)

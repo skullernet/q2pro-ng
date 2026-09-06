@@ -18,7 +18,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // snd_mem.c: sound caching
 
 #include "sound.h"
-#include "common/intreadwrite.h"
 
 #define FORMAT_PCM  1
 
@@ -438,7 +437,7 @@ static void ConvertSamples(void)
 // sigh. truncate 24 bit to 16
     if (s_info.width == 3) {
         for (int i = 0; i < count; i++)
-            data[i] = RL32(&s_info.data[i * 3]) >> 8;
+            data[i] = Q_RL32(&s_info.data[i * 3]) >> 8;
         s_info.width = 2;
         return;
     }

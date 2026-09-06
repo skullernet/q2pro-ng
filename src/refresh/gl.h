@@ -26,7 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #include "common/hash_map.h"
-#include "common/intreadwrite.h"
 #include "common/math.h"
 #include "client/video.h"
 #include "client/client.h"

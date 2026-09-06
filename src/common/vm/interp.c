@@ -26,7 +26,6 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 #include "vm.h"
-#include "common/intreadwrite.h"
 
 //
 // Stack machine (byte code related functions)
@@ -83,21 +82,21 @@ static void VM_ThunkOut(vm_t *m, uint32_t fidx)
 
 static uint16_t get_u16(vm_pc_t *pc)
 {
-    uint16_t v = RN16(*pc);
+    uint16_t v = Q_RN16(*pc);
     *pc += 2;
     return v;
 }
 
 static uint32_t get_u32(vm_pc_t *pc)
 {
-    uint32_t v = RN32(*pc);
+    uint32_t v = Q_RN32(*pc);
     *pc += 4;
     return v;
 }
 
 static uint64_t get_u64(vm_pc_t *pc)
 {
-    uint64_t v = RN64(*pc);
+    uint64_t v = Q_RN64(*pc);
     *pc += 8;
     return v;
 }
@@ -432,29 +431,29 @@ void VM_Interpret(vm_t *m)
     //
     // Memory load operators
     //
-    LOAD_OP(I32_Load,     u32, 4, RN32)
-    LOAD_OP(I64_Load,     u64, 8, RN64)
-    LOAD_OP(I32_Load8_s,  i32, 1, RN8S)
-    LOAD_OP(I32_Load8_u,  u32, 1, RN8)
-    LOAD_OP(I32_Load16_s, i32, 2, RN16S)
-    LOAD_OP(I32_Load16_u, u32, 2, RN16)
-    LOAD_OP(I64_Load8_s,  i64, 1, RN8S)
-    LOAD_OP(I64_Load8_u,  u64, 1, RN8)
-    LOAD_OP(I64_Load16_s, i64, 2, RN16S)
-    LOAD_OP(I64_Load16_u, u64, 2, RN16)
-    LOAD_OP(I64_Load32_s, i64, 4, RN32S)
-    LOAD_OP(I64_Load32_u, u64, 4, RN32)
+    LOAD_OP(I32_Load,     u32, 4, Q_RN32)
+    LOAD_OP(I64_Load,     u64, 8, Q_RN64)
+    LOAD_OP(I32_Load8_s,  i32, 1, Q_RN8S)
+    LOAD_OP(I32_Load8_u,  u32, 1, Q_RN8)
+    LOAD_OP(I32_Load16_s, i32, 2, Q_RN16S)
+    LOAD_OP(I32_Load16_u, u32, 2, Q_RN16)
+    LOAD_OP(I64_Load8_s,  i64, 1, Q_RN8S)
+    LOAD_OP(I64_Load8_u,  u64, 1, Q_RN8)
+    LOAD_OP(I64_Load16_s, i64, 2, Q_RN16S)
+    LOAD_OP(I64_Load16_u, u64, 2, Q_RN16)
+    LOAD_OP(I64_Load32_s, i64, 4, Q_RN32S)
+    LOAD_OP(I64_Load32_u, u64, 4, Q_RN32)
 
     //
     // Memory store operators
     //
-    STOR_OP(I32_Store,   u32, 4, WN32)
-    STOR_OP(I64_Store,   u64, 8, WN64)
-    STOR_OP(I32_Store8,  u32, 1, WN8)
-    STOR_OP(I32_Store16, u32, 2, WN16)
-    STOR_OP(I64_Store8,  u64, 1, WN8)
-    STOR_OP(I64_Store16, u64, 2, WN16)
-    STOR_OP(I64_Store32, u64, 4, WN32)
+    STOR_OP(I32_Store,   u32, 4, Q_WN32)
+    STOR_OP(I64_Store,   u64, 8, Q_WN64)
+    STOR_OP(I32_Store8,  u32, 1, Q_WN8)
+    STOR_OP(I32_Store16, u32, 2, Q_WN16)
+    STOR_OP(I64_Store8,  u64, 1, Q_WN8)
+    STOR_OP(I64_Store16, u64, 2, Q_WN16)
+    STOR_OP(I64_Store32, u64, 4, Q_WN32)
 
     //
     // Constants
@@ -710,22 +709,22 @@ static vm_opcode_t memload_opcode(wa_opcode_t opcode)
 
 static void put_u8(sizebuf_t *out, uint8_t v)
 {
-    WN8(SZ_GetSpace(out, 1), v);
+    Q_WN8(SZ_GetSpace(out, 1), v);
 }
 
 static void put_u16(sizebuf_t *out, uint16_t v)
 {
-    WN16(SZ_GetSpace(out, 2), v);
+    Q_WN16(SZ_GetSpace(out, 2), v);
 }
 
 static void put_u32(sizebuf_t *out, uint32_t v)
 {
-    WN32(SZ_GetSpace(out, 4), v);
+    Q_WN32(SZ_GetSpace(out, 4), v);
 }
 
 static void put_u64(sizebuf_t *out, uint64_t v)
 {
-    WN64(SZ_GetSpace(out, 8), v);
+    Q_WN64(SZ_GetSpace(out, 8), v);
 }
 
 // Converts from WASM bytecode to interpreter internal bytecode.

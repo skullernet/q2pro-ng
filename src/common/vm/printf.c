@@ -20,7 +20,6 @@
  */
 
 #include "shared/shared.h"
-#include "common/intreadwrite.h"
 #include "common/vm.h"
 
 /* Some useful macros */
@@ -131,14 +130,14 @@ static bool pop_arg(const vm_memory_t *m, union arg *arg, int type, uint32_t *ap
         if (*ap > m->num_bytes - 8)
             return false;
         *ap = Q_ALIGN(*ap, 8);
-        val = RN64(m->bytes + *ap);
+        val = Q_RN64(m->bytes + *ap);
         *ap += 8;
         break;
     default:
         if (*ap > m->num_bytes - 4)
             return false;
         *ap = Q_ALIGN(*ap, 4);
-        val = RN32(m->bytes + *ap);
+        val = Q_RN32(m->bytes + *ap);
         *ap += 4;
         break;
     }
@@ -203,23 +202,23 @@ static bool put_cnt(const vm_memory_t *m, byte *p, int type, int cnt)
     case ZTPRE:
         if (p > end - 4)
             return false;
-        WN32(p, cnt);
+        Q_WN32(p, cnt);
         break;
     case LLPRE:
     case JPRE:
         if (p > end - 8)
             return false;
-        WN64(p, cnt);
+        Q_WN64(p, cnt);
         break;
     case HPRE:
         if (p > end - 2)
             return false;
-        WN16(p, cnt);
+        Q_WN16(p, cnt);
         break;
     case HHPRE:
         if (p > end - 1)
             return false;
-        WN8(p, cnt);
+        Q_WN8(p, cnt);
         break;
     default:
         return false;

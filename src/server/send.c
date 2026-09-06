@@ -202,8 +202,8 @@ static int compress_message(const client_t *client)
     // write the packet header
     hdr = svs.z_buffer;
     hdr[0] = svc_zpacket;
-    WL16(&hdr[1], len);
-    WL16(&hdr[3], msg_write.cursize);
+    Q_WL16(&hdr[1], len);
+    Q_WL16(&hdr[3], msg_write.cursize);
 
     return len + ZPACKET_HEADER;
 }

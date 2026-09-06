@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/protocol.h"
 #include "common/sizebuf.h"
 #include "common/math.h"
-#include "common/intreadwrite.h"
 #include <assert.h>
 
 /*
@@ -90,7 +89,7 @@ MSG_WriteByte
 */
 void MSG_WriteByte(int c)
 {
-    WN8(SZ_GetSpace(&msg_write, 1), c);
+    Q_WN8(SZ_GetSpace(&msg_write, 1), c);
 }
 
 /*
@@ -100,7 +99,7 @@ MSG_WriteShort
 */
 void MSG_WriteShort(int c)
 {
-    WL16(SZ_GetSpace(&msg_write, 2), c);
+    Q_WL16(SZ_GetSpace(&msg_write, 2), c);
 }
 
 /*
@@ -110,7 +109,7 @@ MSG_WriteLong
 */
 void MSG_WriteLong(int c)
 {
-    WL32(SZ_GetSpace(&msg_write, 4), c);
+    Q_WL32(SZ_GetSpace(&msg_write, 4), c);
 }
 
 /*
@@ -120,7 +119,7 @@ MSG_WriteLong64
 */
 void MSG_WriteLong64(int64_t c)
 {
-    WL64(SZ_GetSpace(&msg_write, 8), c);
+    Q_WL64(SZ_GetSpace(&msg_write, 8), c);
 }
 
 /*
@@ -378,8 +377,8 @@ static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, co
     int nc = 0;
 
     for (int i = 0; i < n; i++, f++) {
-        uint32_t from_v = RN32((const byte *)from + f->offset);
-        uint32_t to_v   = RN32((const byte *)to   + f->offset);
+        uint32_t from_v = Q_RN32((const byte *)from + f->offset);
+        uint32_t to_v   = Q_RN32((const byte *)to   + f->offset);
 
         if (from_v == to_v)
             continue;
@@ -396,7 +395,7 @@ static int MSG_CountDeltaFields(const netfield_t *f, int n, const void *from, co
 
 static void MSG_WriteFloat(uint32_t to_v)
 {
-    float f_val = LongToFloat(to_v);
+    float f_val = LongAsFloat(to_v);
 
     if (f_val == 0.0f) {
         MSG_WriteBit(0);
@@ -416,8 +415,8 @@ static void MSG_WriteFloat(uint32_t to_v)
 static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, const void *to)
 {
     for (int i = 0; i < n; i++, f++) {
-        uint32_t from_v = RN32((const byte *)from + f->offset);
-        uint32_t to_v   = RN32((const byte *)to   + f->offset);
+        uint32_t from_v = Q_RN32((const byte *)from + f->offset);
+        uint32_t to_v   = Q_RN32((const byte *)to   + f->offset);
 
         if (from_v == to_v) {
             MSG_WriteBit(0);    // not changed
@@ -434,10 +433,10 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
             MSG_WriteLeb32(to_v);
             break;
         case NETF_ANGLE:
-            MSG_WriteBits(ANGLE2SHORT(LongToFloat(to_v)), -16);
+            MSG_WriteBits(ANGLE2SHORT(LongAsFloat(to_v)), -16);
             break;
         case NETF_COLOR:
-            MSG_WriteBits(Q_clip_uint8(LongToFloat(to_v) * 255), 8);
+            MSG_WriteBits(Q_clip_uint8(LongAsFloat(to_v) * 255), 8);
             break;
         default:
             MSG_WriteBits(to_v, f->bits);
@@ -642,25 +641,25 @@ byte *MSG_ReadData(size_t len)
 int MSG_ReadByte(void)
 {
     byte *buf = MSG_ReadData(1);
-    return buf ? RN8(buf) : -1;
+    return buf ? Q_RN8(buf) : -1;
 }
 
 int MSG_ReadShort(void)
 {
     byte *buf = MSG_ReadData(2);
-    return buf ? RL16(buf) : -1;
+    return buf ? Q_RL16(buf) : -1;
 }
 
 int MSG_ReadLong(void)
 {
     byte *buf = MSG_ReadData(4);
-    return buf ? RL32(buf) : -1;
+    return buf ? Q_RL32(buf) : -1;
 }
 
 int64_t MSG_ReadLong64(void)
 {
     byte *buf = MSG_ReadData(8);
-    return buf ? RL64(buf) : -1;
+    return buf ? Q_RL64(buf) : -1;
 }
 
 size_t MSG_ReadString(char *dest, size_t size)
@@ -835,11 +834,11 @@ static uint32_t MSG_ReadFloat(void)
 {
     if (MSG_ReadBit()) {
         if (MSG_ReadBit())
-            return FloatToLong(MSG_ReadBits(-FLOAT_INT_BITS));
+            return FloatAsLong(MSG_ReadBits(-FLOAT_INT_BITS));
         else
             return MSG_ReadBits(32);
     } else {
-        return FloatToLong(0.0f);
+        return FloatAsLong(0.0f);
     }
 }
 
@@ -854,19 +853,19 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
         switch (f->bits) {
         case NETF_FLOAT:
             to_v = MSG_ReadFloat();
-            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
+            SHOWNET(3, "%s:%g ", f->name, LongAsFloat(to_v));
             break;
         case NETF_LEB:
             to_v = MSG_ReadLeb32();
             SHOWNET(3, to_v > 1023 ? "%s:%#x " : "%s:%d ", f->name, to_v);
             break;
         case NETF_ANGLE:
-            to_v = FloatToLong(SHORT2ANGLE(MSG_ReadBits(-16)));
-            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
+            to_v = FloatAsLong(SHORT2ANGLE(MSG_ReadBits(-16)));
+            SHOWNET(3, "%s:%g ", f->name, LongAsFloat(to_v));
             break;
         case NETF_COLOR:
-            to_v = FloatToLong(MSG_ReadBits(8) / 255.0f);
-            SHOWNET(3, "%s:%g ", f->name, LongToFloat(to_v));
+            to_v = FloatAsLong(MSG_ReadBits(8) / 255.0f);
+            SHOWNET(3, "%s:%g ", f->name, LongAsFloat(to_v));
             break;
         default:
             to_v = MSG_ReadBits(f->bits);
@@ -874,7 +873,7 @@ static void MSG_ReadDeltaFields(const netfield_t *f, int n, void *to)
             break;
         }
 
-        WN32((byte *)to + f->offset, to_v);
+        Q_WN32((byte *)to + f->offset, to_v);
     }
 }
 

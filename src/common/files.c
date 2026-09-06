@@ -23,7 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/files.h"
 #include "common/list.h"
 #include "common/prompt.h"
-#include "common/intreadwrite.h"
 #include "system/system.h"
 #include "client/client.h"
 #include "server/server.h"
@@ -935,15 +934,15 @@ static int check_header_coherency(FILE *fp, packfile_t *entry)
         return FS_ERR_READ(fp);
 
     // check the magic
-    if (RL32(&header[0]) != ZIP_LOCALHEADERMAGIC)
+    if (Q_RL32(&header[0]) != ZIP_LOCALHEADERMAGIC)
         return Q_ERR_NOT_COHERENT;
 
-    flags     = RL16(&header[ 6]);
-    comp_mtd  = RL16(&header[ 8]);
-    comp_len  = RL32(&header[18]);
-    file_len  = RL32(&header[22]);
-    name_size = RL16(&header[26]);
-    xtra_size = RL16(&header[28]);
+    flags     = Q_RL16(&header[ 6]);
+    comp_mtd  = Q_RL16(&header[ 8]);
+    comp_len  = Q_RL32(&header[18]);
+    file_len  = Q_RL32(&header[22]);
+    name_size = Q_RL16(&header[26]);
+    xtra_size = Q_RL16(&header[28]);
 
     if (comp_mtd != entry->compmtd)
         return Q_ERR_NOT_COHERENT;
@@ -2253,14 +2252,14 @@ static int64_t search_central_header64(FILE *fp, int64_t header_pos)
         return 0;
     if (!fread(header, sizeof(header), 1, fp))
         return 0;
-    if (RL32(&header[0]) != ZIP_LOCATOR64MAGIC)
+    if (Q_RL32(&header[0]) != ZIP_LOCATOR64MAGIC)
         return 0;
-    if (RL32(&header[4]) != 0)
+    if (Q_RL32(&header[4]) != 0)
         return 0;
-    if (RL32(&header[16]) != 1)
+    if (Q_RL32(&header[16]) != 1)
         return 0;
     // FIXME: this won't work if there is prepended data
-    pos = RL64(&header[8]);
+    pos = Q_RL64(&header[8]);
     if (os_fseek(fp, pos, SEEK_SET))
         return 0;
     if (!fread(&magic, sizeof(magic), 1, fp))
@@ -2281,13 +2280,13 @@ static bool parse_zip64_extra_data(packfile_t *file, const byte *buf, int size)
         return false;
 
     if (file->filelen == UINT32_MAX)
-        file->filelen = RL64(buf), buf += 8;
+        file->filelen = Q_RL64(buf), buf += 8;
 
     if (file->complen == UINT32_MAX)
-        file->complen = RL64(buf), buf += 8;
+        file->complen = Q_RL64(buf), buf += 8;
 
     if (file->filepos == UINT32_MAX)
-        file->filepos = RL64(buf), buf += 8;
+        file->filepos = Q_RL64(buf), buf += 8;
 
     return true;
 }
@@ -2301,8 +2300,8 @@ static bool parse_extra_data(const pack_t *pack, packfile_t *file, int xtra_size
         return false;
 
     while (pos + 4 < xtra_size) {
-        int id   = RL16(&buf[pos+0]);
-        int size = RL16(&buf[pos+2]);
+        int id   = Q_RL16(&buf[pos+0]);
+        int size = Q_RL16(&buf[pos+2]);
         if (pos + 4 + size > xtra_size)
             break;
         if (id == 0x0001)
@@ -2326,18 +2325,18 @@ static bool get_file_info(const pack_t *pack, packfile_t *file, char *name, size
     }
 
     // check the magic
-    if (RL32(&header[0]) != ZIP_CENTRALHEADERMAGIC) {
+    if (Q_RL32(&header[0]) != ZIP_CENTRALHEADERMAGIC) {
         Com_SetLastError("Bad central directory magic");
         return false;
     }
 
-    comp_mtd  = RL16(&header[10]);
-    comp_len  = RL32(&header[20]);
-    file_len  = RL32(&header[24]);
-    name_size = RL16(&header[28]);
-    xtra_size = RL16(&header[30]);
-    comm_size = RL16(&header[32]);
-    file_pos  = RL32(&header[42]);
+    comp_mtd  = Q_RL16(&header[10]);
+    comp_len  = Q_RL32(&header[20]);
+    file_len  = Q_RL32(&header[24]);
+    name_size = Q_RL16(&header[28]);
+    xtra_size = Q_RL16(&header[30]);
+    comm_size = Q_RL16(&header[32]);
+    file_pos  = Q_RL32(&header[42]);
 
     if (!file_len || !comp_len || !name_size || name_size >= MAX_QPATH) {
         goto skip; // skip directories and empty files
@@ -2422,19 +2421,19 @@ static pack_t *load_zip_file(const char *packfile)
     }
 
     if (zip64) {
-        num_disk     = RL32(&header[16]);
-        num_disk_cd  = RL32(&header[20]);
-        num_files    = RL64(&header[24]);
-        num_files_cd = RL64(&header[32]);
-        central_size = RL64(&header[40]);
-        central_ofs  = RL64(&header[48]);
+        num_disk     = Q_RL32(&header[16]);
+        num_disk_cd  = Q_RL32(&header[20]);
+        num_files    = Q_RL64(&header[24]);
+        num_files_cd = Q_RL64(&header[32]);
+        central_size = Q_RL64(&header[40]);
+        central_ofs  = Q_RL64(&header[48]);
     } else {
-        num_disk     = RL16(&header[ 4]);
-        num_disk_cd  = RL16(&header[ 6]);
-        num_files    = RL16(&header[ 8]);
-        num_files_cd = RL16(&header[10]);
-        central_size = RL32(&header[12]);
-        central_ofs  = RL32(&header[16]);
+        num_disk     = Q_RL16(&header[ 4]);
+        num_disk_cd  = Q_RL16(&header[ 6]);
+        num_files    = Q_RL16(&header[ 8]);
+        num_files_cd = Q_RL16(&header[10]);
+        central_size = Q_RL32(&header[12]);
+        central_ofs  = Q_RL32(&header[16]);
     }
 
     if (num_files_cd != num_files || num_disk_cd != 0 || num_disk != 0) {
