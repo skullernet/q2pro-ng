@@ -12,11 +12,6 @@ typedef struct {
     int8_t maxs[3];
 } side_check_t;
 
-typedef struct {
-    vec3_t origin;
-    float dist;
-} good_position_t;
-
 static const side_check_t side_checks[NUM_SIDE_CHECKS] = {
     { { 0, 0, 1 }, {-1,-1, 0 }, { 1, 1, 0 } },
     { { 0, 0,-1 }, {-1,-1, 0 }, { 1, 1, 0 } },
@@ -33,14 +28,12 @@ static const side_check_t side_checks[NUM_SIDE_CHECKS] = {
 stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
                                          contents_t mask, trace_func_t trace_func)
 {
-    trace_t tr;
-
-    tr = PM_TraceGeneric(*origin, *origin, own, ignore, mask);
+    trace_t tr = PM_TraceGeneric(*origin, *origin, own, ignore, mask);
     if (!tr.startsolid)
         return GOOD_POSITION;
 
-    good_position_t good_positions[NUM_SIDE_CHECKS];
-    int num_good_positions = 0;
+    float best_dist = FLT_MAX;
+    vec3_t best = *origin;
 
     for (int sn = 0; sn < NUM_SIDE_CHECKS; sn++) {
         const side_check_t *side = &side_checks[sn];
@@ -141,24 +134,15 @@ stuck_result_t PM_FixStuckObject_Generic(vec3_t *origin, box3_t own, int ignore,
         if (tr.startsolid)
             continue;
 
-        good_position_t *good = &good_positions[num_good_positions++];
-        good->origin = new_origin;
-        good->dist = Vec3_LengthSquared(delta);
+        float dist = Vec3_LengthSquared(delta);
+        if (dist < best_dist) {
+            best = new_origin;
+            best_dist = dist;
+        }
     }
 
-    if (num_good_positions) {
-        float best_dist = FLT_MAX;
-        int best = 0;
-
-        for (int i = 0; i < num_good_positions; i++) {
-            good_position_t *good = &good_positions[i];
-            if (good->dist < best_dist) {
-                best_dist = good->dist;
-                best = i;
-            }
-        }
-
-        *origin = good_positions[best].origin;
+    if (best_dist < FLT_MAX) {
+        *origin = best;
         return STUCK_FIXED;
     }
 
