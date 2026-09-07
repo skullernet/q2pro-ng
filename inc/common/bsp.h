@@ -27,10 +27,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // take advantage of 64-bit systems
 typedef size_t visrow_t;
 
-typedef char material_t[16];
+typedef char material_t[MAX_MATERIAL_NAME];
 
 typedef struct mtexinfo_s {
-    char                name[MAX_TEXNAME];
+    char                name[MAX_TEXTURE_NAME];
     surface_flags_t     flags;
     int                 value;
     int                 surface_id;

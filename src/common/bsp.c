@@ -382,7 +382,7 @@ static void BSP_LoadMaterials(bsp_t *bsp)
         FS_Read(material, sizeof(material), f);
         FS_CloseFile(f);
 
-        if (material[sizeof(material) - 1]) {
+        if (!memchr(material, 0, sizeof(material))) {
             Com_WPrintf("Oversize material in %s\n", path);
             goto done;
         }

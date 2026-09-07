@@ -1550,13 +1550,16 @@ typedef enum {
     MATERIAL_RESERVED_COUNT
 } material_id_t;
 
+#define MAX_TEXTURE_NAME    32
+#define MAX_MATERIAL_NAME   16
+
 typedef struct {
-    char    material[16];
+    char    material[MAX_MATERIAL_NAME];
 } material_info_t;
 
 typedef struct {
-    char            name[32];
-    char            material[16];
+    char            name[MAX_TEXTURE_NAME];
+    char            material[MAX_MATERIAL_NAME];
     int             material_id;
     surface_flags_t flags;
     int             value;
