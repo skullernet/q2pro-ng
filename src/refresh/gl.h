@@ -230,12 +230,11 @@ typedef enum {
     QGL_CAP_SHADER                      = BIT(0),
     QGL_CAP_CLIENT_VA                   = BIT(1),
     QGL_CAP_LINE_SMOOTH                 = BIT(2),
-    QGL_CAP_TEXTURE_BITS                = BIT(3),
-    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(4),
-    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(5),
-    QGL_CAP_BUFFER_TEXTURE              = BIT(6),
-    QGL_CAP_SHADER_STORAGE              = BIT(7),
-    QGL_CAP_FRAMEBUFFER_SRGB            = BIT(8),
+    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(3),
+    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(4),
+    QGL_CAP_BUFFER_TEXTURE              = BIT(5),
+    QGL_CAP_SHADER_STORAGE              = BIT(6),
+    QGL_CAP_FRAMEBUFFER_SRGB            = BIT(7),
 
     QGL_CAP_SKELETON_MASK               = QGL_CAP_BUFFER_TEXTURE | QGL_CAP_SHADER_STORAGE,
 } glcap_t;

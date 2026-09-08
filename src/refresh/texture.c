@@ -23,8 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static int gl_filter_min;
 static int gl_filter_max;
 static float gl_filter_anisotropy;
-static int gl_tex_alpha_format;
-static int gl_tex_solid_format;
 
 static int upload_width;
 static int upload_height;
@@ -32,7 +30,6 @@ static bool upload_alpha;
 static GLenum upload_target;
 
 static cvar_t *gl_noscrap;
-static cvar_t *gl_round_down;
 static cvar_t *gl_picmip;
 static cvar_t *gl_downsample_skins;
 static cvar_t *gl_bilerp_chars;
@@ -40,7 +37,6 @@ static cvar_t *gl_bilerp_pics;
 static cvar_t *gl_bilerp_skies;
 static cvar_t *gl_bilerp_scene;
 static cvar_t *gl_texturemode;
-static cvar_t *gl_texturebits;
 static cvar_t *gl_anisotropy;
 static cvar_t *gl_partshape;
 
@@ -157,26 +153,6 @@ static void gl_bilerp_skies_changed(cvar_t *self)
 {
     // change all the existing sky texture objects
     update_image_params(BIT(IT_SKY));
-}
-
-static void gl_texturebits_changed(cvar_t *self)
-{
-    if (!(gl_config.caps & QGL_CAP_TEXTURE_BITS)) {
-        gl_tex_alpha_format = GL_RGBA;
-        gl_tex_solid_format = GL_RGBA;
-    } else if (self->integer > 16) {
-        gl_tex_alpha_format = GL_RGBA8;
-        gl_tex_solid_format = GL_RGB8;
-    } else if (self->integer > 8)  {
-        gl_tex_alpha_format = GL_RGBA4;
-        gl_tex_solid_format = GL_RGB5;
-    } else if (self->integer > 0)  {
-        gl_tex_alpha_format = GL_RGBA2;
-        gl_tex_solid_format = GL_R3_G3_B2;
-    } else {
-        gl_tex_alpha_format = GL_RGBA;
-        gl_tex_solid_format = GL_RGB;
-    }
 }
 
 /*
@@ -323,23 +299,15 @@ GL_Upload32
 static void GL_Upload32(byte *data, int width, int height, imagetype_t type, imageflags_t flags)
 {
     byte        *scaled;
-    int         scaled_width, scaled_height, comp;
+    int         scaled_width, scaled_height;
     bool        power_of_two;
 
     scaled_width = width;
     scaled_height = height;
     power_of_two = !(width & (width - 1)) && !(height & (height - 1));
 
+    // let people sample down the world textures for speed
     if (type == IT_WALL || (type == IT_SKIN && gl_downsample_skins->integer)) {
-        // round world textures down, if requested
-        if (gl_round_down->integer) {
-            if (scaled_width > width)
-                scaled_width >>= 1;
-            if (scaled_height > height)
-                scaled_height >>= 1;
-        }
-
-        // let people sample down the world textures for speed
         int shift = Cvar_ClampInteger(gl_picmip, 0, 31);
         scaled_width >>= shift;
         scaled_height >>= shift;
@@ -376,17 +344,11 @@ static void GL_Upload32(byte *data, int width, int height, imagetype_t type, ima
         upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
     }
 
-    comp = gl_tex_solid_format;
+    if (!(flags & IF_CUBEMAP))
+        upload_target = GL_TEXTURE_2D;
 
-    if (upload_alpha)
-        comp = gl_tex_alpha_format;
-
-    if (flags & IF_CUBEMAP)
-        qglTexImage2D(upload_target, 0, GL_RGBA, scaled_width,
-                      scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
-    else
-        qglTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
-                      scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+    qglTexImage2D(upload_target, 0, GL_RGBA, scaled_width,
+                  scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
 
     c.texUploads++;
 
@@ -405,7 +367,7 @@ static void GL_Upload32(byte *data, int width, int height, imagetype_t type, ima
                 if (scaled_height < 1)
                     scaled_height = 1;
                 miplevel++;
-                qglTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
+                qglTexImage2D(GL_TEXTURE_2D, miplevel, GL_RGBA, scaled_width,
                               scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
             }
         }
@@ -1033,18 +995,15 @@ void GL_InitImages(void)
     gl_texturemode = Cvar_Get("gl_texturemode", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
-    gl_texturebits = Cvar_Get("gl_texturebits", "0", CVAR_FILES);
     gl_anisotropy = Cvar_Get("gl_anisotropy", "8", 0);
     gl_anisotropy->changed = gl_anisotropy_changed;
     gl_noscrap = Cvar_Get("gl_noscrap", "0", CVAR_FILES);
-    gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
     gl_picmip = Cvar_Get("gl_picmip", "0", CVAR_FILES);
     gl_downsample_skins = Cvar_Get("gl_downsample_skins", "1", CVAR_FILES);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
 
     gl_texturemode_changed(gl_texturemode);
-    gl_texturebits_changed(gl_texturebits);
     gl_anisotropy_changed(gl_anisotropy);
 
     IMG_Init();
