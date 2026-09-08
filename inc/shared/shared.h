@@ -267,7 +267,7 @@ uint32_t Q_rand_uniform(uint32_t n);
 
 static inline float Q_lerpf(float a, float b, float f)
 {
-    return a * (1.0f - f) + b * f;
+    return a + (b - a) * f;
 }
 
 static inline int Q_clip(int a, int b, int c)
@@ -459,6 +459,21 @@ static inline float Vec2_Distance(vec2_t a, vec2_t b) {
     return sqrtf(Vec2_DistanceSquared(a, b));
 }
 
+static inline vec2_t Vec2_Mix(vec2_t a, vec2_t b, float t1, float t2) {
+    return Vec2_Add(Vec2_Scale(a, t1), Vec2_Scale(b, t2));
+}
+
+static inline vec2_t Vec2_Lerp(vec2_t a, vec2_t b, float t) {
+    return Vec2_Add(a, Vec2_Scale(Vec2_Sub(b, a), t));
+}
+
+static inline vec2_t Vec2_Lerp2(vec2_t a, vec2_t b, vec2_t t) {
+    return Vec2_Add(a, Vec2_Scale(Vec2_Sub(b, a), t));
+}
+
+#define Vec2_Lerp(a, b, t) \
+    _Generic((t), vec2_t: Vec2_Lerp2, default: Vec2_Lerp)((a), (b), (t))
+
 static inline vec3_t Vec3_Fill(float v) {
     return Vec3(v, v, v);
 }
@@ -564,6 +579,10 @@ static inline float Vec3_Distance(vec3_t a, vec3_t b) {
     return sqrtf(Vec3_DistanceSquared(a, b));
 }
 
+static inline vec3_t Vec3_Mix(vec3_t a, vec3_t b, float t1, float t2) {
+    return Vec3_Add(Vec3_Scale(a, t1), Vec3_Scale(b, t2));
+}
+
 static inline vec3_t Vec3_Lerp(vec3_t a, vec3_t b, float t) {
     return Vec3_Add(a, Vec3_Scale(Vec3_Sub(b, a), t));
 }
@@ -574,10 +593,6 @@ static inline vec3_t Vec3_Lerp3(vec3_t a, vec3_t b, vec3_t t) {
 
 #define Vec3_Lerp(a, b, t) \
     _Generic((t), vec3_t: Vec3_Lerp3, default: Vec3_Lerp)((a), (b), (t))
-
-static inline vec3_t Vec3_Mix(vec3_t a, vec3_t b, float t1, float t2) {
-    return Vec3_Add(Vec3_Scale(a, t1), Vec3_Scale(b, t2));
-}
 
 static inline vec3_t Vec3_LerpAngles(vec3_t a, vec3_t b, float t) {
     return (vec3_t) {
@@ -678,6 +693,10 @@ static inline vec4_t Vec4_Scale(vec4_t in, float scale) {
     return Vec4(in.x * scale, in.y * scale, in.z * scale, in.w * scale);
 }
 
+static inline vec4_t Vec4_Mix(vec4_t a, vec4_t b, float t1, float t2) {
+    return Vec4_Add(Vec4_Scale(a, t1), Vec4_Scale(b, t2));
+}
+
 static inline vec4_t Vec4_Lerp(vec4_t a, vec4_t b, float t) {
     return Vec4_Add(a, Vec4_Scale(Vec4_Sub(b, a), t));
 }
@@ -743,6 +762,14 @@ static inline box2_t Box2_Expand2(box2_t a, vec2_t ofs) {
 #define Box2_Expand(a, v) \
     _Generic((v), vec2_t: Box2_Expand2, default: Box2_Expand)((a), (v))
 
+static inline box2_t Box2_Frac(box2_t a, box2_t b)
+{
+    return (box2_t) {
+        .mins = Vec2_Lerp(a.mins, a.maxs, b.mins),
+        .maxs = Vec2_Lerp(a.mins, a.maxs, b.maxs)
+    };
+}
+
 static inline bool Box2_Intersects(box2_t a, box2_t b)
 {
     if (a.mins.x > b.maxs.x || a.mins.y > b.maxs.y)
@@ -794,7 +821,7 @@ static inline box3_t Box3_AddPoint(box3_t a, vec3_t v) {
     return Box3(Vec3_Min(a.mins, v), Vec3_Max(a.maxs, v));
 }
 
-static inline box3_t Box3_FromPoints(vec3_t *v, int count) {
+static inline box3_t Box3_FromPoints(const vec3_t *v, int count) {
     if (count < 1)
         return Box3_Null();
     box3_t box = Box3_FromPoint(v[0]);

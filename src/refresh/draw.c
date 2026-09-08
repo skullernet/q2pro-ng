@@ -68,7 +68,7 @@ static inline void GL_StretchPic(box2_t box, box2_t tc, color_t color, const ima
     glVertex2D_t verts[4];
 
     if (image->flags & IF_SCRAP)
-        tc = image->tc;
+        tc = Box2_Frac(image->tc, tc);
 
     GL_MakePicVerts(verts, box, tc, color);
     GL_StretchPicVerts(verts, image->texnum, image->flags);
@@ -252,7 +252,7 @@ void R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic)
 void R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic)
 {
     const image_t *image = IMG_ForHandle(pic);
-    GL_StretchPic(Box2_At(x, y, w, h), image->tc, draw.colors[0], image);
+    GL_StretchPic(Box2_At(x, y, w, h), box2_unit, draw.colors[0], image);
 }
 
 void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
@@ -272,7 +272,7 @@ void R_DrawKeepAspectPic(int x, int y, int w, int h, qhandle_t pic)
 void R_DrawPic(int x, int y, qhandle_t pic)
 {
     const image_t *image = IMG_ForHandle(pic);
-    GL_StretchPic(Box2_At(x, y, image->width, image->height), image->tc, draw.colors[0], image);
+    GL_StretchPic(Box2_At(x, y, image->width, image->height), box2_unit, draw.colors[0], image);
 }
 
 void R_DrawStretchRaw(int x, int y, int w, int h)

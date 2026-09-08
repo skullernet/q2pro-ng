@@ -734,22 +734,25 @@ void IMG_Load(image_t *image, byte *pic)
     height = image->upload_height;
 
     // load small pics onto the scrap
-    if (image->type == IT_PIC && width < 64 && height < 64 &&
-        gl_noscrap->integer == 0 && Scrap_AllocBlock(width, height, &s, &t)) {
+    if (image->type == IT_PIC && width < 64 && height < 64 && !(image->flags & IF_REPEAT) &&
+        gl_noscrap->integer == 0 && Scrap_AllocBlock(width + 2, height + 2, &s, &t)) {
         src = pic;
         dst = &scrap_data[(t * SCRAP_BLOCK_WIDTH + s) * 4];
-        for (i = 0; i < height; i++) {
-            memcpy(dst, src, width * 4);
-            src += width * 4;
+
+        // create 1-pixel border around image to simulate UV clamping
+        for (i = 0; i < height + 2; i++) {
+            memcpy(dst, src, 4);
+            memcpy(dst + 4, src, width * 4);
+            memcpy(dst + 4 + width * 4, src + (width - 1) * 4, 4);
+            if (i > 0 && i < height)
+                src += width * 4;
             dst += SCRAP_BLOCK_WIDTH * 4;
         }
 
         image->texnum = TEXNUM_SCRAP;
         image->flags |= IF_SCRAP | IF_TRANSPARENT;
-        image->tc.mins.s = (s + 0.01f) / SCRAP_BLOCK_WIDTH;
-        image->tc.maxs.s = (s + width - 0.01f) / SCRAP_BLOCK_WIDTH;
-        image->tc.mins.t = (t + 0.01f) / SCRAP_BLOCK_HEIGHT;
-        image->tc.maxs.t = (t + height - 0.01f) / SCRAP_BLOCK_HEIGHT;
+        image->tc = Box2_At(s + 1, t + 1, width, height);
+        image->tc = Box2_Scale(image->tc, 1.0f / SCRAP_BLOCK_WIDTH);
 
         scrap_dirty = true;
     } else {
