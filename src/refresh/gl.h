@@ -391,6 +391,13 @@ static inline void GL_AdvanceValue(float *restrict val, float target, float spee
     }
 }
 
+static inline vec3_t GL_Desaturate(vec3_t color, float scale)
+{
+    float y = LUMINANCE(color.r, color.g, color.b);
+    return Vec3_Lerp(Vec3_Fill(y), color, scale);
+}
+
+
 /*
  * gl_model.c
  *

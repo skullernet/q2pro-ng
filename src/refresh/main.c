@@ -903,6 +903,13 @@ static void GL_SetupFog(void)
     if (!(glr.fog_bits | glr.fog_bits_sky))
         return;
 
+    float f = Cvar_ClampValue(gl_saturation, 0.0f, 1.0f);
+    if (f != 1.0f) {
+        glr.fd.fog.color = GL_Desaturate(glr.fd.fog.color, f);
+        glr.fd.heightfog.start.color = GL_Desaturate(glr.fd.heightfog.start.color, f);
+        glr.fd.heightfog.end.color = GL_Desaturate(glr.fd.heightfog.end.color, f);
+    }
+
     gls.u_block.fog_color = Vec4_FromVec3(glr.fd.fog.color, glr.fd.fog.density / 64);
     gls.u_block.fog_sky_factor = glr.fd.fog.sky_factor;
 
@@ -1661,6 +1668,8 @@ void R_AddLight(const dlight_t *light)
     dl->key = light->key;
     if (light->color.r < 0 || light->color.g < 0 || light->color.b < 0)
         dl->flags |= RF_NOSHADOW;
+    else
+        dl->d.color = GL_Desaturate(dl->d.color, gl_coloredlightmaps->value);
 }
 
 /*

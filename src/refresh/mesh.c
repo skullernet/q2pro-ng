@@ -222,11 +222,8 @@ static void setup_color(void)
             }
         }
 
-        f = LUMINANCE(color.r, color.g, color.b);
-        color = Vec3_Lerp(Vec3_Fill(f), color, gl_coloredlightmaps->value);
-
-        f = gl_modulate->value * gl_modulate_entities->value;
-        color = Vec3_Scale(color, f);
+        color = GL_Desaturate(color, gl_coloredlightmaps->value);
+        color = Vec3_Scale(color, gl_modulate->value * gl_modulate_entities->value);
     } else {
         color = Vec3(1, 1, 1);
     }
