@@ -714,8 +714,6 @@ static void PM_CheckSpecialMovement(void)
     if (pm->s->pm_time)
         return;
 
-    pm->s->pm_flags &= ~PMF_ON_LADDER;
-
     // check for ladder
     vec3_t flatforward = { pml.forward.x, pml.forward.y };
     flatforward = Vec3_Normalize(flatforward);
@@ -724,6 +722,8 @@ static void PM_CheckSpecialMovement(void)
     trace_t trace = PM_Trace(pml.origin, spot, pm->box, CONTENTS_LADDER);
     if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER) && pm->waterlevel < WATER_WAIST)
         pm->s->pm_flags |= PMF_ON_LADDER;
+    else
+        pm->s->pm_flags &= ~PMF_ON_LADDER;
 
     if (pm->s->gravity <= 0)
         return;
@@ -1101,13 +1101,12 @@ void BG_Pmove(pmove_t *pmove)
     pm->impact_delta = 0;
 
     // clear all pmove local vars
-    pml = (pml_t){ 0 };
-
-    pml.origin = pm->s->origin;
-    pml.velocity = pm->s->velocity;
-
-    pml.frametime = pm->cmd.msec * 0.001f;
-    pml.clipmask = PM_TraceMask();
+    pml = (pml_t) {
+        .origin = pm->s->origin,
+        .velocity = pm->s->velocity,
+        .frametime = pm->cmd.msec * 0.001f,
+        .clipmask = PM_TraceMask(),
+    };
 
     PM_ClampAngles(pm->s, &pm->cmd);
     AngleVectors(pm->s->viewangles, &pml.forward, &pml.right, &pml.up);
