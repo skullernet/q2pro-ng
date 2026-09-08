@@ -118,7 +118,6 @@ static const glsection_t sections[] = {
     {
         .ver_gl = QGL_VER(1, 2),
         .ver_es = QGL_VER(3, 0),
-        .caps = QGL_CAP_TEXTURE_MAX_LEVEL,
         .functions = (const glfunction_t []) {
             QGL_FN(TexImage3D),
             { NULL }
@@ -133,13 +132,6 @@ static const glsection_t sections[] = {
             QGL_FN(ActiveTexture),
             { NULL }
         }
-    },
-
-    // GL 1.4, compat
-    {
-        .ver_gl = QGL_VER(1, 4),
-        .excl_gl = QGL_VER(3, 1),
-        .caps = QGL_CAP_TEXTURE_LOD_BIAS,
     },
 
     // GL 1.5

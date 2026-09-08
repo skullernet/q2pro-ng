@@ -222,13 +222,11 @@ typedef enum {
     QGL_CAP_CLIENT_VA                   = BIT(1),
     QGL_CAP_LINE_SMOOTH                 = BIT(2),
     QGL_CAP_TEXTURE_BITS                = BIT(3),
-    QGL_CAP_TEXTURE_LOD_BIAS            = BIT(4),
-    QGL_CAP_TEXTURE_MAX_LEVEL           = BIT(5),
-    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(6),
-    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(7),
-    QGL_CAP_BUFFER_TEXTURE              = BIT(8),
-    QGL_CAP_SHADER_STORAGE              = BIT(9),
-    QGL_CAP_FRAMEBUFFER_SRGB            = BIT(10),
+    QGL_CAP_TEXTURE_ANISOTROPY          = BIT(4),
+    QGL_CAP_QUERY_RESULT_NO_WAIT        = BIT(5),
+    QGL_CAP_BUFFER_TEXTURE              = BIT(6),
+    QGL_CAP_SHADER_STORAGE              = BIT(7),
+    QGL_CAP_FRAMEBUFFER_SRGB            = BIT(8),
 
     QGL_CAP_SKELETON_MASK               = QGL_CAP_BUFFER_TEXTURE | QGL_CAP_SHADER_STORAGE,
 } glcap_t;
@@ -1020,14 +1018,6 @@ void GL_DrawAliasModel(const model_t *model);
  *
  */
 void GL_DrawShadowMap(const refdef_t *fd);
-
-/*
- * hq2x.c
- *
- */
-void HQ2x_Render(uint32_t *output, const uint32_t *input, int width, int height);
-void HQ4x_Render(uint32_t *output, const uint32_t *input, int width, int height);
-void HQ2x_Init(void);
 
 /*
  * debug.c

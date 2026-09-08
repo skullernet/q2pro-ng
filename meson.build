@@ -77,7 +77,6 @@ ui_src = [
 refresh_src = [
   'src/refresh/draw.c',
   'src/refresh/font.c',
-  'src/refresh/hq2x.c',
   'src/refresh/images.c',
   'src/refresh/main.c',
   'src/refresh/mesh.c',
