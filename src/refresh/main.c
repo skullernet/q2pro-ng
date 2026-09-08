@@ -54,6 +54,7 @@ cvar_t *gl_modulate;
 cvar_t *gl_modulate_world;
 cvar_t *gl_modulate_entities;
 cvar_t *gl_coloredlightmaps;
+cvar_t *gl_saturation;
 cvar_t *gl_dynamic;
 cvar_t *gl_flarespeed;
 cvar_t *gl_fontshadow;
@@ -68,6 +69,8 @@ cvar_t *gl_waterwarp;
 cvar_t *gl_fog;
 cvar_t *gl_bloom;
 cvar_t *gl_bloom_sigma;
+cvar_t *gl_gamma;
+cvar_t *gl_gamma_scale_pics;
 cvar_t *gl_swapinterval;
 
 // development variables
@@ -758,7 +761,67 @@ static void GL_PostProcess(glStateBits_t bits, int x, int y, int w, int h)
     GL_UnlockArrays();
 }
 
-static void GL_DrawBloom(bool waterwarp)
+static pp_flags_t GL_BindFramebuffer(void)
+{
+    pp_flags_t flags = PP_NONE;
+    int scaled_w = glr.fd.width;
+    int scaled_h = glr.fd.height;
+    float scale  = Cvar_ClampValue(gl_resolution_scale, 0.125f, 2.0f);
+    bool resized = false;
+
+    if (scale != 1.0f) {
+        scaled_w *= scale;
+        scaled_h *= scale;
+        flags |= PP_SCALE;
+    }
+
+    if (gl_gamma->value != 1.0f)
+        flags |= PP_GAMMA;
+
+    if ((glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer)
+        flags |= PP_WATERWARP;
+
+    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer)
+        flags |= PP_BLOOM;
+
+    if (flags)
+        resized = scaled_w != glr.framebuffer_width || scaled_h != glr.framebuffer_height;
+
+    if (glr.framebuffer_pp != flags || resized) {
+        glr.framebuffer_width  = scaled_w;
+        glr.framebuffer_height = scaled_h;
+        glr.framebuffer_pp     = flags;
+        glr.framebuffer_ok     = GL_InitFramebuffers();
+        if (flags & PP_BLOOM)
+            GL_ShaderUpdateBlur();
+    }
+
+    if (!flags || !glr.framebuffer_ok)
+        return PP_NONE;
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+    glr.framebuffer_bound = true;
+
+    glr.fd.width = scaled_w;
+    glr.fd.height = scaled_h;
+
+    if (gl_clear->integer) {
+        if (flags & PP_BLOOM) {
+            static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+            static const vec4_t black = { .a = 1 };
+            qglDrawBuffers(2, buffers);
+            qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor.rgba);
+            qglClearBufferfv(GL_COLOR, 1, black.rgba);
+            qglDrawBuffers(1, buffers);
+        } else {
+            qglClear(GL_COLOR_BUFFER_BIT);
+        }
+    }
+
+    return flags;
+}
+
+static void GL_DrawBloom(pp_flags_t pp_flags)
 {
     int iterations = Cvar_ClampInteger(gl_bloom, 1, 8) * 2;
     int w = glr.framebuffer_width / 4;
@@ -796,7 +859,9 @@ static void GL_DrawBloom(bool waterwarp)
     } else {
         GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
         GL_ForceTexture(TMU_LIGHTMAP, TEXNUM_PP_BLUR_0);
-        if (waterwarp)
+        if (pp_flags & PP_GAMMA)
+            bits |= GLS_GAMMA_ENABLE;
+        if (pp_flags & PP_WATERWARP)
             bits |= GLS_WARP_ENABLE;
     }
 
@@ -805,68 +870,22 @@ static void GL_DrawBloom(bool waterwarp)
     GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
 }
 
-typedef enum {
-    PP_NONE      = 0,
-    PP_SCALE     = BIT(0),
-    PP_WATERWARP = BIT(1),
-    PP_BLOOM     = BIT(2),
-} pp_flags_t;
-
-static pp_flags_t GL_BindFramebuffer(void)
+static void GL_PostProcessScene(pp_flags_t pp_flags)
 {
-    pp_flags_t flags = PP_NONE;
-    int scaled_w = glr.fd.width;
-    int scaled_h = glr.fd.height;
-    float scale  = Cvar_ClampValue(gl_resolution_scale, 0.125f, 2.0f);
-    bool resized = false;
+    if (pp_flags & PP_BLOOM) {
+        GL_DrawBloom(pp_flags);
+    } else if (pp_flags) {
+        glStateBits_t bits = GLS_DEFAULT;
 
-    if (scale != 1.0f) {
-        scaled_w *= scale;
-        scaled_h *= scale;
-        flags |= PP_SCALE;
+        if (pp_flags & PP_GAMMA)
+            bits |= GLS_GAMMA_ENABLE;
+
+        if (pp_flags & PP_WATERWARP)
+            bits |= GLS_WARP_ENABLE;
+
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+        GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
     }
-
-    if ((glr.fd.rdflags & RDF_UNDERWATER) && gl_waterwarp->integer)
-        flags |= PP_WATERWARP;
-
-    if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer)
-        flags |= PP_BLOOM;
-
-    if (flags)
-        resized = scaled_w != glr.framebuffer_width || scaled_h != glr.framebuffer_height;
-
-    if (resized || gl_waterwarp->modified || gl_bloom->modified) {
-        glr.framebuffer_width  = scaled_w;
-        glr.framebuffer_height = scaled_h;
-        glr.framebuffer_ok     = GL_InitFramebuffers();
-        gl_waterwarp->modified = gl_bloom->modified = false;
-        if (gl_bloom->integer)
-            GL_ShaderUpdateBlur();
-    }
-
-    if (!flags || !glr.framebuffer_ok)
-        return PP_NONE;
-
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
-    glr.framebuffer_bound = true;
-
-    glr.fd.width = scaled_w;
-    glr.fd.height = scaled_h;
-
-    if (gl_clear->integer) {
-        if (flags & PP_BLOOM) {
-            static const GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-            static const vec4_t black = { .a = 1 };
-            qglDrawBuffers(2, buffers);
-            qglClearBufferfv(GL_COLOR, 0, gl_static.clearcolor.rgba);
-            qglClearBufferfv(GL_COLOR, 1, black.rgba);
-            qglDrawBuffers(1, buffers);
-        } else {
-            qglClear(GL_COLOR_BUFFER_BIT);
-        }
-    }
-
-    return flags;
 }
 
 static void GL_SetupFog(void)
@@ -953,13 +972,7 @@ void R_RenderFrame(const refdef_t *fd)
     // go back into 2D mode
     GL_Setup2D();
 
-    if (pp_flags & PP_BLOOM) {
-        GL_DrawBloom(pp_flags & PP_WATERWARP);
-    } else if (pp_flags) {
-        glStateBits_t bits = (pp_flags & PP_WATERWARP) ? GLS_WARP_ENABLE : GLS_DEFAULT;
-        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
-        GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
-    }
+    GL_PostProcessScene(pp_flags);
 
     if (gl_polyblend->integer)
         GL_Blend();
@@ -1149,6 +1162,7 @@ static void GL_Register(void)
     gl_modulate_world = Cvar_Get("gl_modulate_world", "1", 0);
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_coloredlightmaps = Cvar_Get("gl_coloredlightmaps", "1", 0);
+    gl_saturation = Cvar_Get("gl_saturation", "1", 0);
     gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_flarespeed = Cvar_Get("gl_flarespeed", "8", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
@@ -1164,6 +1178,8 @@ static void GL_Register(void)
     gl_bloom = Cvar_Get("gl_bloom", "1", 0);
     gl_bloom_sigma = Cvar_Get("gl_bloom_sigma", "4", 0);
     gl_bloom_sigma->changed = gl_bloom_sigma_changed;
+    gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
+    gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", 0);
     gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
     gl_swapinterval->changed = gl_swapinterval_changed;
 

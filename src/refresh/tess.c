@@ -36,6 +36,8 @@ void GL_Flush2D(void)
     bits = GLS_COLOR_ENABLE | GLS_DEPTHTEST_DISABLE | GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE | tess.flags;
     if (bits & GLS_BLEND_BLEND)
         bits &= ~GLS_ALPHATEST_ENABLE;
+    if (gl_gamma_scale_pics->integer && gl_gamma->value != 1.0f)
+        bits |= GLS_GAMMA_ENABLE;
 
     Scrap_Upload();
 
@@ -697,6 +699,10 @@ void GL_Flush3D(void)
                     GL_Color(1, 1, 1, ent->alpha);
             }
         }
+
+        if (gls.u_block.colorscale_lightmap != 1.0f ||
+            gls.u_block.colorscale_texture  != 1.0f)
+            state |= GLS_DESATURATE;
 
         if (state & GLS_SKY_MASK)
             state |= glr.fog_bits_sky;

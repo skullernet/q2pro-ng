@@ -100,9 +100,9 @@ static void write_block(sizebuf_t *buf, glStateBits_t bits)
         float u_fog_sky_factor;
         float u_heightfog_density;
         float u_heightfog_falloff;
-        float u_lightmap_scale;
-        float pad_4;
-        float pad_5;
+        float u_colorscale_lightmap;
+        float u_colorscale_texture;
+        float u_gamma;
         float pad_6;
         vec2 w_amp;
         vec2 w_phase;
@@ -690,6 +690,13 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_DYNAMIC_LIGHTS)
         write_dynamic_lights(buf, bits);
 
+    if (bits & GLS_DESATURATE) {
+        GLSL(vec3 desaturate(vec3 color, float scale) {
+            float y = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+            return mix(vec3(y), color, scale);
+        })
+    }
+
     GLSF("void main() {\n");
     if (bits & GLS_CLASSIC_SKY) {
         GLSL(
@@ -721,6 +728,9 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
     if (bits & GLS_BLOOM_GENERATE)
         GLSL(vec4 bloom = vec4(0.0);)
 
+    if (bits & GLS_DESATURATE)
+        GLSL(diffuse.rgb = desaturate(diffuse.rgb, u_colorscale_texture);)
+
     if (bits & GLS_LIGHTMAP_ENABLE) {
         GLSL(
             vec3 lightmap;
@@ -741,12 +751,12 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
         if (bits & GLS_DYNAMIC_LIGHTS)
             GLSL(lightmap += calc_dynamic_lights();)
 
-        GLSL(
-            lightmap = clamp(lightmap, 0.0, 1.0);
-            float lightmap_y = lightmap.r * 0.2126 + lightmap.g * 0.7152 + lightmap.b * 0.0722;
-            lightmap = mix(vec3(lightmap_y), lightmap, u_lightmap_scale);
-            diffuse.rgb *= lightmap * u_modulate_world;
-        )
+        GLSL(lightmap = clamp(lightmap, 0.0, 1.0);)
+
+        if (bits & GLS_DESATURATE)
+            GLSL(lightmap = desaturate(lightmap, u_colorscale_lightmap);)
+
+        GLSL(diffuse.rgb *= lightmap * u_modulate_world;)
     }
 
     if (bits & GLS_DEFAULT_FLARE)
@@ -804,6 +814,9 @@ static void write_fragment_shader(sizebuf_t *buf, glStateBits_t bits)
 
     if (bits & GLS_BLOOM_GENERATE)
         GLSL(o_bloom = bloom;)
+
+    if (bits & GLS_GAMMA_ENABLE)
+        GLSL(diffuse.rgb = pow(diffuse.rgb, vec3(u_gamma));)
 
     GLSL(o_color = diffuse;)
     GLSF("}\n");

@@ -35,7 +35,6 @@ static cvar_t *gl_noscrap;
 static cvar_t *gl_round_down;
 static cvar_t *gl_picmip;
 static cvar_t *gl_downsample_skins;
-static cvar_t *gl_gamma_scale_pics;
 static cvar_t *gl_bilerp_chars;
 static cvar_t *gl_bilerp_pics;
 static cvar_t *gl_bilerp_skies;
@@ -43,9 +42,6 @@ static cvar_t *gl_bilerp_scene;
 static cvar_t *gl_texturemode;
 static cvar_t *gl_texturebits;
 static cvar_t *gl_anisotropy;
-static cvar_t *gl_saturation;
-static cvar_t *gl_gamma;
-static cvar_t *gl_invert;
 static cvar_t *gl_partshape;
 
 static void GL_Upload32(byte *data, int width, int height, imagetype_t type, imageflags_t flags);
@@ -281,122 +277,17 @@ static void Scrap_Init(void)
 
 void Scrap_Upload(void)
 {
-    byte *data;
-
     if (!scrap_dirty)
         return;
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_SCRAP);
-
-    // make a copy so that effects like gamma scaling don't accumulate
-    data = FS_AllocTempMem(sizeof(scrap_data));
-    memcpy(data, scrap_data, sizeof(scrap_data));
-
-    GL_Upload32(data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP);
+    GL_Upload32(scrap_data, SCRAP_BLOCK_WIDTH, SCRAP_BLOCK_HEIGHT, IT_PIC, IF_SCRAP | IF_TRANSPARENT);
     GL_SetFilterAndRepeat(IT_PIC, IF_SCRAP);
-
-    FS_FreeTempMem(data);
 
     scrap_dirty = false;
 }
 
 //=======================================================
-
-static byte gammatable[256];
-static float colorscale;
-static bool lightscale;
-
-/*
-================
-GL_GrayScaleTexture
-
-Transform to grayscale by replacing color components with
-overall pixel luminance computed from weighted color sum
-================
-*/
-static int GL_GrayScaleTexture(byte *in, int inwidth, int inheight, imagetype_t type, imageflags_t flags)
-{
-    int     i, c;
-    byte    *p;
-    float   r, g, b, y;
-
-    if (type != IT_WALL)
-        return gl_tex_solid_format; // only grayscale world textures
-    if (flags & IF_TURBULENT)
-        return gl_tex_solid_format; // don't grayscale turbulent surfaces
-    if (colorscale == 1)
-        return gl_tex_solid_format;
-
-    p = in;
-    c = inwidth * inheight;
-
-    for (i = 0; i < c; i++, p += 4) {
-        r = p[0];
-        g = p[1];
-        b = p[2];
-        y = LUMINANCE(r, g, b);
-        p[0] = y + (r - y) * colorscale;
-        p[1] = y + (g - y) * colorscale;
-        p[2] = y + (b - y) * colorscale;
-    }
-
-    if (colorscale == 0 && (gl_config.caps & QGL_CAP_TEXTURE_BITS))
-        return GL_LUMINANCE;
-
-    return gl_tex_solid_format;
-}
-
-/*
-================
-GL_LightScaleTexture
-
-Scale up the pixel values in a texture to increase the
-lighting range
-================
-*/
-static void GL_LightScaleTexture(byte *in, int inwidth, int inheight, imagetype_t type, imageflags_t flags)
-{
-    int     i, c;
-    byte    *p;
-
-    if (r_config.flags & QVF_GAMMARAMP)
-        return;
-    if (!lightscale)
-        return;
-
-    p = in;
-    c = inwidth * inheight;
-
-    if (type == IT_WALL || type == IT_SKIN || gl_gamma_scale_pics->integer) {
-        for (i = 0; i < c; i++, p += 4) {
-            p[0] = gammatable[p[0]];
-            p[1] = gammatable[p[1]];
-            p[2] = gammatable[p[2]];
-        }
-    }
-}
-
-static void GL_ColorInvertTexture(byte *in, int inwidth, int inheight, imagetype_t type, imageflags_t flags)
-{
-    int     i, c;
-    byte    *p;
-
-    if (type != IT_WALL)
-        return; // only invert world textures
-    if (flags & IF_TURBULENT)
-        return; // don't invert turbulent surfaces
-    if (!gl_invert->integer)
-        return;
-
-    p = in;
-    c = inwidth * inheight;
-
-    for (i = 0; i < c; i++, p += 4) {
-        p[0] = 255 - p[0];
-        p[1] = 255 - p[1];
-        p[2] = 255 - p[2];
-    }
-}
 
 static bool GL_TextureHasAlpha(const byte *data, int width, int height)
 {
@@ -459,11 +350,6 @@ static void GL_Upload32(byte *data, int width, int height, imagetype_t type, ima
     upload_width = scaled_width;
     upload_height = scaled_height;
 
-    // set colorscale and lightscale before mipmap
-    comp = GL_GrayScaleTexture(data, width, height, type, flags);
-    GL_LightScaleTexture(data, width, height, type, flags);
-    GL_ColorInvertTexture(data, width, height, type, flags);
-
     if (scaled_width == width && scaled_height == height) {
         // optimized case, do nothing
         scaled = data;
@@ -489,6 +375,8 @@ static void GL_Upload32(byte *data, int width, int height, imagetype_t type, ima
         // scan the texture for any non-255 alpha
         upload_alpha = GL_TextureHasAlpha(scaled, scaled_width, scaled_height);
     }
+
+    comp = gl_tex_solid_format;
 
     if (upload_alpha)
         comp = gl_tex_alpha_format;
@@ -830,30 +718,6 @@ int IMG_ReadPixels(screenshot_t *s)
     return Q_ERR_SUCCESS;
 }
 
-static void GL_BuildGammaTable(void)
-{
-    int i;
-    float inf, g = gl_gamma->value;
-
-    if (g == 1.0f) {
-        for (i = 0; i < 256; i++) {
-            gammatable[i] = i;
-        }
-    } else {
-        for (i = 0; i < 256; i++) {
-            inf = 255 * pow((i + 0.5) / 255.5, g) + 0.5;
-            gammatable[i] = min(inf, 255);
-        }
-    }
-}
-
-static void gl_gamma_changed(cvar_t *self)
-{
-    GL_BuildGammaTable();
-    if (vid && vid->update_gamma)
-        vid->update_gamma(gammatable);
-}
-
 static const byte dottexture[8][8] = {
     {0, 0, 0, 0, 0, 0, 0, 0},
     {0, 0, 1, 1, 0, 0, 0, 0},
@@ -1043,12 +907,12 @@ bool GL_InitFramebuffers(void)
 {
     int scene_w = 0, scene_h = 0, bloom_w = 0, bloom_h = 0;
 
-    if (gl_waterwarp->integer || gl_bloom->integer) {
+    if (glr.framebuffer_pp) {
         scene_w = glr.framebuffer_width;
         scene_h = glr.framebuffer_height;
     }
 
-    if (gl_bloom->integer) {
+    if (glr.framebuffer_pp & PP_BLOOM) {
         bloom_w = glr.framebuffer_width;
         bloom_h = glr.framebuffer_height;
     }
@@ -1176,19 +1040,8 @@ void GL_InitImages(void)
     gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
     gl_picmip = Cvar_Get("gl_picmip", "0", CVAR_FILES);
     gl_downsample_skins = Cvar_Get("gl_downsample_skins", "1", CVAR_FILES);
-    gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
-    gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
-    gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
-    gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
-
-    if (r_config.flags & QVF_GAMMARAMP) {
-        gl_gamma->changed = gl_gamma_changed;
-        gl_gamma->flags &= ~CVAR_FILES;
-    } else {
-        gl_gamma->flags |= CVAR_FILES;
-    }
 
     gl_texturemode_changed(gl_texturemode);
     gl_texturebits_changed(gl_texturebits);
@@ -1197,15 +1050,6 @@ void GL_InitImages(void)
     IMG_Init();
 
     IMG_GetPalette();
-
-    if (r_config.flags & QVF_GAMMARAMP)
-        gl_gamma_changed(gl_gamma);
-    else
-        GL_BuildGammaTable();
-
-    // FIXME: the name 'saturation' is misleading in this context
-    colorscale = Cvar_ClampValue(gl_saturation, 0, 1);
-    lightscale = gl_gamma->value != 1.0f;
 
     qglGenTextures(NUM_AUTO_TEXTURES, gl_static.texnums);
     qglGenTextures(LM_MAX_LIGHTMAPS, lm.texnums);
@@ -1243,7 +1087,6 @@ void GL_ShutdownImages(void)
     gl_texturemode->changed = NULL;
     gl_texturemode->generator = NULL;
     gl_anisotropy->changed = NULL;
-    gl_gamma->changed = NULL;
     gl_partshape->changed = NULL;
 
     // delete auto textures

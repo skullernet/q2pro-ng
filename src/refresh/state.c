@@ -260,7 +260,9 @@ void GL_Setup2D(void)
     gls.u_block.time = glr.fd.time;
     gls.u_block.modulate_world = 1.0f;
     gls.u_block.modulate_entities = 1.0f;
-    gls.u_block.lightmap_scale = 1.0f;
+    gls.u_block.colorscale_lightmap = 1.0f;
+    gls.u_block.colorscale_texture = 1.0f;
+    gls.u_block.gamma = Cvar_ClampValue(gl_gamma, 0.1f, 2.0f);
 
     gls.u_block.w_amp.s = 0.0025f;
     gls.u_block.w_amp.t = 0.0025f;
@@ -303,7 +305,9 @@ void GL_Setup3D(void)
     gls.u_block.time = glr.fd.time;
     gls.u_block.modulate_world = gl_modulate->value * gl_modulate_world->value;
     gls.u_block.modulate_entities = gl_modulate->value * gl_modulate_entities->value;
-    gls.u_block.lightmap_scale = Cvar_ClampValue(gl_coloredlightmaps, 0.0f, 1.0f);
+    gls.u_block.colorscale_lightmap = Cvar_ClampValue(gl_coloredlightmaps, 0.0f, 1.0f);
+    gls.u_block.colorscale_texture = Cvar_ClampValue(gl_saturation, 0.0f, 1.0f);
+    gls.u_block.gamma = Cvar_ClampValue(gl_gamma, 0.1f, 2.0f);
 
     gls.u_block.w_amp.s = 0.0625f;
     gls.u_block.w_amp.t = 0.0625f;
