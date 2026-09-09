@@ -458,7 +458,7 @@ static void GL_FlushDebugChars(void)
     if (!tess.numindices)
         return;
 
-    GL_BindTexture(TMU_TEXTURE, IMG_ForHandle(r_charset)->texnum);
+    GL_BindTexture(TMU_TEXTURE, R_FontForHandle(r_charset)->pages[0]->texnum);
     GL_StateBits(tess.flags);
     GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
     GL_DrawIndexed(SHOWTRIS_NONE);
