@@ -162,7 +162,7 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 {
     m->num_types = SZ_ReadLeb(sz);
     VM_ENSURE(m->num_types <= MAX_TYPES, "Too many types");
-    m->types = Z_MallocArray(m, m->num_types, sizeof(m->types[0]));
+    m->types = Z_TreeMallocArray(m, m->num_types, sizeof(m->types[0]));
 
     for (uint32_t c = 0; c < m->num_types; c++) {
         vm_type_t *type = &m->types[c];
@@ -171,7 +171,7 @@ static bool parse_types(vm_t *m, sizebuf_t *sz)
 
         type->num_params = SZ_ReadLeb(sz);
         VM_ENSURE(type->num_params <= MAX_LOCALS, "Too many parameters");
-        type->params = Z_MallocArray(m, type->num_params, sizeof(type->params[0]));
+        type->params = Z_TreeMallocArray(m, type->num_params, sizeof(type->params[0]));
         for (uint32_t p = 0; p < type->num_params; p++)
             type->params[p] = SZ_ReadLeb(sz);
 
@@ -188,7 +188,7 @@ static bool parse_imports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_imports = SZ_ReadLeb(sz);
     VM_ENSURE(num_imports <= MAX_FUNCS, "Too many imports");
-    m->funcs = Z_MallocArray(m, num_imports, sizeof(m->funcs[0]));
+    m->funcs = Z_TreeMallocArray(m, num_imports, sizeof(m->funcs[0]));
 
     for (uint32_t gidx = 0; gidx < num_imports; gidx++) {
         bstr_t module = vm_read_string(sz);
@@ -213,7 +213,7 @@ static bool parse_functions(vm_t *m, sizebuf_t *sz)
     uint32_t count = SZ_ReadLeb(sz);
     VM_ENSURE(count <= MAX_FUNCS - m->num_funcs, "Too many functions");
     m->num_funcs += count;
-    m->funcs = Z_ReallocArray(m, m->funcs, m->num_funcs, sizeof(m->funcs[0]));
+    m->funcs = Z_TreeReallocArray(m, m->funcs, m->num_funcs, sizeof(m->funcs[0]));
 
     for (uint32_t f = m->num_imports; f < m->num_funcs; f++) {
         uint32_t tidx = SZ_ReadLeb(sz);
@@ -246,7 +246,7 @@ static bool parse_tables(vm_t *m, sizebuf_t *sz)
     VM_ENSURE(m->table.size <= m->table.maximum, "Bad table size");
 
     // Allocate the table
-    m->table.entries = Z_MallocArray(m, m->table.size, sizeof(m->table.entries[0]));
+    m->table.entries = Z_TreeMallocArray(m, m->table.size, sizeof(m->table.entries[0]));
     return true;
 }
 
@@ -273,7 +273,7 @@ static bool parse_memory(vm_t *m, sizebuf_t *sz)
     VM_ENSURE(m->memory.num_pages <= m->memory.maximum, "Bad memory size");
 
     // Allocate memory
-    uintptr_t ptr = (uintptr_t)Z_MallocArray(m, m->memory.num_pages + 1, VM_PAGE_SIZE);
+    uintptr_t ptr = (uintptr_t)Z_TreeMallocArray(m, m->memory.num_pages + 1, VM_PAGE_SIZE);
     m->memory.bytes = (uint8_t *)Q_ALIGN(ptr, 4096);
     m->memory.num_bytes = m->memory.num_pages * VM_PAGE_SIZE;
     return true;
@@ -283,7 +283,7 @@ static bool parse_globals(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_globals = SZ_ReadLeb(sz);
     VM_ENSURE(num_globals <= MAX_GLOBALS, "Too many globals");
-    m->globals = Z_MallocArray(m, num_globals, sizeof(m->globals[0]));
+    m->globals = Z_TreeMallocArray(m, num_globals, sizeof(m->globals[0]));
     m->num_globals = num_globals;
 
     for (uint32_t g = 0; g < num_globals; g++) {
@@ -302,7 +302,7 @@ static bool parse_exports(vm_t *m, sizebuf_t *sz)
 {
     uint32_t num_exports = SZ_ReadLeb(sz);
     VM_ENSURE(num_exports <= SZ_Remaining(sz) / 3, "Too many exports");
-    m->exports = Z_MallocArray(m, num_exports, sizeof(m->exports[0]));
+    m->exports = Z_TreeMallocArray(m, num_exports, sizeof(m->exports[0]));
     m->num_exports = num_exports;
 
     for (uint32_t e = 0; e < num_exports; e++) {
@@ -408,7 +408,7 @@ static bool parse_code(vm_t *m, sizebuf_t *sz)
             tidx = SZ_ReadLeb(sz);
             (void)tidx;
         }
-        func->locals = Z_MallocArray(m, func->num_locals, sizeof(func->locals[0]));
+        func->locals = Z_TreeMallocArray(m, func->num_locals, sizeof(func->locals[0]));
 
         // Restore position and read the locals
         sz->readcount = save_pos;
@@ -501,7 +501,7 @@ static bool fill_exports(vm_t *m, const vm_export_t *exports)
     for (e = 0, exp = exports; exp->name; e++, exp++)
         ;
     m->num_func_exports = e;
-    m->func_exports = Z_MallocArray(m, m->num_func_exports, sizeof(m->func_exports[0]));
+    m->func_exports = Z_TreeMallocArray(m, m->num_func_exports, sizeof(m->func_exports[0]));
 
     // Find function exports
     for (e = 0, exp = exports; e < m->num_func_exports; e++, exp++) {

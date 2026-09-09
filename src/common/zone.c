@@ -300,7 +300,7 @@ void *Z_Malloc(size_t size)
     return Z_TagMalloc(size, TAG_GENERAL);
 }
 
-void *Z_MallocArray(void *parent, size_t nmemb, size_t size)
+void *Z_TreeMallocArray(void *parent, size_t nmemb, size_t size)
 {
     Q_assert_mul(&size, nmemb, size);
     return Z_TreeMalloc(parent, size);
@@ -309,7 +309,7 @@ void *Z_MallocArray(void *parent, size_t nmemb, size_t size)
 void *Z_TagMallocArray(size_t nmemb, size_t size, memtag_t tag)
 {
     Q_assert(tag < TAG_MAX);
-    return Z_MallocArray(&z_tags[tag] + 1, nmemb, size);
+    return Z_TreeMallocArray(&z_tags[tag] + 1, nmemb, size);
 }
 
 /*
@@ -368,7 +368,7 @@ void *Z_Realloc(void *ptr, size_t size)
     return Z_TreeRealloc(&z_tags[TAG_GENERAL] + 1, ptr, size);
 }
 
-void *Z_ReallocArray(void *parent, void *ptr, size_t nmemb, size_t size)
+void *Z_TreeReallocArray(void *parent, void *ptr, size_t nmemb, size_t size)
 {
     Q_assert_mul(&size, nmemb, size);
     return Z_TreeRealloc(parent, ptr, size);
@@ -377,7 +377,7 @@ void *Z_ReallocArray(void *parent, void *ptr, size_t nmemb, size_t size)
 void *Z_TagReallocArray(void *ptr, size_t nmemb, size_t size, memtag_t tag)
 {
     Q_assert(tag < TAG_MAX);
-    return Z_ReallocArray(&z_tags[tag] + 1, ptr, nmemb, size);
+    return Z_TreeReallocArray(&z_tags[tag] + 1, ptr, nmemb, size);
 }
 
 /*
