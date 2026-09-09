@@ -228,7 +228,7 @@ bool Nav_Load(void)
     NAV_VERIFY(len >= 7*4, "File too small");
 
     sizebuf_t b;
-    SZ_InitRead(&b, data, len + 1); // +1 for terminating NUL
+    SZ_InitRead(&b, data, len);
 
     uint32_t v = SZ_ReadLong(&b);
     NAV_VERIFY(v == NAV_MAGIC, "Bad magic");
@@ -333,8 +333,7 @@ bool Nav_Load(void)
         edict->maxs = SZ_ReadVector(&b);
     }
 
-    // must not have consumed terminating NUL
-    NAV_VERIFY(b.readcount < b.cursize, "Read past end of file");
+    NAV_VERIFY(b.readcount <= b.cursize, "Read past end of file");
 
     Com_DPrintf("Loaded %s (version %d): %u nodes, %u links, %u traversals, %u edicts\n",
                 filename, v, nav_data.num_nodes, nav_data.num_links, nav_data.num_traversals, nav_data.num_edicts);
