@@ -643,25 +643,23 @@ int IMG_ReadPixels(screenshot_t *s)
 {
     int format = gl_config.ver_es ? GL_RGBA : GL_RGB;
     int align = 4, bpp = format == GL_RGBA ? 4 : 3;
+    int rowbytes, buf_size;
 
     if (r_config.width < 1 || r_config.height < 1)
         return Q_ERR_INVALID_ARGS;
 
     qglGetIntegerv(GL_PACK_ALIGNMENT, &align);
 
-    if (r_config.width > (INT_MAX - align + 1) / bpp)
+    if (q_ckd_mul(&rowbytes, r_config.width, bpp) || q_ckd_add(&rowbytes, rowbytes, align - 1))
         return Q_ERR_OUT_OF_RANGE;
+    rowbytes &= ~(align - 1);
 
-    int rowbytes = Q_ALIGN(r_config.width * bpp, align);
-
-    if (r_config.height > INT_MAX / rowbytes)
+    if (q_ckd_mul(&buf_size, r_config.height, rowbytes))
         return Q_ERR_OUT_OF_RANGE;
-
-    int buf_size = rowbytes * r_config.height;
 
     s->bpp = bpp;
     s->rowbytes = rowbytes;
-    s->pixels = R_Malloc(buf_size);
+    s->pixels = Z_TreeMalloc(s, buf_size);
     s->width = r_config.width;
     s->height = r_config.height;
 

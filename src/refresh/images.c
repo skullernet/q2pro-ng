@@ -1266,7 +1266,6 @@ static void screenshot_done_cb(void *arg)
 
     if (fclose(s->fp) && !s->status)
         s->status = Q_Errno();
-    Z_Free(s->pixels);
 
     if (s->status < 0) {
         const char *msg;
@@ -1282,10 +1281,7 @@ static void screenshot_done_cb(void *arg)
         Com_Printf("Wrote %s\n", s->filename);
     }
 
-    if (s->async) {
-        Z_Free(s->filename);
-        Z_Free(s);
-    }
+    Z_Free(s);
 }
 
 static void make_screenshot(const char *name, const char *ext,
@@ -1294,6 +1290,7 @@ static void make_screenshot(const char *name, const char *ext,
     char        buffer[MAX_OSPATH];
     FILE        *fp;
     int         ret;
+    screenshot_t *s;
 
     ret = create_screenshot(buffer, sizeof(buffer), &fp, name, ext);
     if (ret < 0) {
@@ -1301,32 +1298,32 @@ static void make_screenshot(const char *name, const char *ext,
         return;
     }
 
-    screenshot_t s = {
+    s = Z_Malloc(sizeof(*s));
+    *s = (screenshot_t) {
         .save_cb = save_cb,
         .fp = fp,
-        .filename = async ? Z_CopyString(buffer) : buffer,
+        .filename = Z_TreeCopyString(s, buffer),
         .status = -1,
         .param = param,
         .async = async,
     };
 
-    ret = IMG_ReadPixels(&s);
+    ret = IMG_ReadPixels(s);
     if (ret < 0) {
-        s.status = ret;
-        screenshot_done_cb(&s);
+        s->status = ret;
+        screenshot_done_cb(s);
         return;
     }
 
     if (async) {
-        asyncwork_t work = {
+        Com_QueueAsyncWork(&(asyncwork_t) {
             .work_cb = screenshot_work_cb,
             .done_cb = screenshot_done_cb,
-            .cb_arg = Z_CopyStruct(&s),
-        };
-        Com_QueueAsyncWork(&work);
+            .cb_arg = s,
+        });
     } else {
-        screenshot_work_cb(&s);
-        screenshot_done_cb(&s);
+        screenshot_work_cb(s);
+        screenshot_done_cb(s);
     }
 }
 
