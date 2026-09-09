@@ -261,8 +261,7 @@ void *Z_TreeMalloc(void *parent, size_t size)
 
     Q_assert_add(&size, size, sizeof(*z));
     z = calloc(1, size);
-    if (!z)
-        Com_Error(ERR_FATAL, "%s: couldn't allocate %zu bytes", __func__, size);
+    Q_assert(z);
     z->magic = Z_MAGIC;
     z->size = size;
     Z_SetParent(z + 1, parent);
@@ -342,8 +341,7 @@ void *Z_TreeRealloc(void *parent, void *ptr, size_t size)
 
     old_z = z;
     z = realloc(z, size);
-    if (!z)
-        Com_Error(ERR_FATAL, "%s: couldn't realloc %zu bytes", __func__, size);
+    Q_assert(z);
 
     if (size > z->size)
         memset((byte *)z + z->size, 0, size - z->size);

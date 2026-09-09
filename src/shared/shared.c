@@ -1341,6 +1341,21 @@ float Q_atof(const char *s)
     return isfinite(f) ? f : 0.0f;
 }
 
+#ifndef Q2_VM
+void Com_Abort(const char *fmt, ...)
+{
+    va_list argptr;
+
+    va_start(argptr, fmt);
+    fputs("\n********************\n", stderr);
+    vfprintf(stderr, fmt, argptr);
+    fputs("\n********************\n", stderr);
+    va_end(argptr);
+
+    abort();
+}
+#endif
+
 /*
 =====================================================================
 

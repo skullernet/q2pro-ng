@@ -109,6 +109,9 @@ static void Com_Crash_f(void)
         ((void (*)(void))buf3)();
         Z_Free(buf3);
         break;
+    case 4:
+        Z_Free(malloc(1));
+        break;
     default:
         break;
     }

@@ -115,22 +115,34 @@ void    Com_LPrintf(print_type_t type, const char *fmt, ...);
 q_cold q_noreturn q_printf(2, 3)
 void    Com_Error(error_type_t code, const char *fmt, ...);
 
+#ifndef Q2_VM
+q_cold q_noreturn q_printf(1, 2)
+void    Com_Abort(const char *fmt, ...);
+#endif
+
 #define Com_Printf(...) Com_LPrintf(PRINT_ALL, __VA_ARGS__)
 #define Com_WPrintf(...) Com_LPrintf(PRINT_WARNING, __VA_ARGS__)
 #define Com_EPrintf(...) Com_LPrintf(PRINT_ERROR, __VA_ARGS__)
 #define Com_NPrintf(...) Com_LPrintf(PRINT_NOTICE, __VA_ARGS__)
 
-// an assertion that's ALWAYS enabled. `expr' may have side effects.
-#define Q_assert_type(type, expr) \
-    do { if (!(expr)) Com_Error(type, "%s: assertion `%s' failed", __func__, #expr); } while (0)
-#define Q_assert_soft(expr) Q_assert_type(ERR_DROP, expr)
-#define Q_assert(expr) Q_assert_type(ERR_FATAL, expr)
+// thread unsafe assertions that longjmp()/exit()
+#define Q_assert_soft(expr) \
+    do { if (!(expr)) Com_Error(ERR_DROP, "%s: assertion `%s' failed", __func__, #expr); } while (0)
 
-#define Q_assert_add(res, a, b) do { \
-    if (q_ckd_add(res, a, b)) Com_Error(ERR_FATAL, "%s: overflow", __func__); } while (0)
+#define Q_assert_hard(expr) \
+    do { if (!(expr)) Com_Error(ERR_FATAL, "%s: assertion `%s' failed", __func__, #expr); } while (0)
 
-#define Q_assert_mul(res, a, b) do { \
-    if (q_ckd_mul(res, a, b)) Com_Error(ERR_FATAL, "%s: overflow", __func__); } while (0)
+// thread safe assertion that aborts the program
+#ifdef Q2_VM
+#define Q_assert(expr) Q_assert_hard(expr)
+#else
+#define Q_assert(expr) \
+    do { if (!(expr)) Com_Abort("%s: assertion `%s' failed", __func__, #expr); } while (0)
+#endif
+
+// assertions are ALWAYS enabled. `expr' may have side effects.
+#define Q_assert_add(res, a, b) Q_assert(!q_ckd_add(res, a, b))
+#define Q_assert_mul(res, a, b) Q_assert(!q_ckd_mul(res, a, b))
 
 /*
 ==============================================================
