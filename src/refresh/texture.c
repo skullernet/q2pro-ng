@@ -678,17 +678,6 @@ int IMG_ReadPixels(screenshot_t *s)
     return Q_ERR_SUCCESS;
 }
 
-static const byte dottexture[8][8] = {
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 1, 1, 1, 1, 0, 0, 0},
-    {0, 0, 1, 1, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-};
-
 static void GL_InitDefaultTexture(void)
 {
     int i, j;
@@ -699,9 +688,7 @@ static void GL_InitDefaultTexture(void)
     dst = pixels;
     for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
-            dst[0] = dottexture[i & 3][j & 3] * 255;
-            dst[1] = 0;
-            dst[2] = 0;
+            dst[0] = dst[1] = dst[2] = -((i >> 2) ^ (j >> 2));
             dst[3] = 255;
             dst += 4;
         }
