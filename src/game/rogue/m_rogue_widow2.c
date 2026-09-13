@@ -1031,7 +1031,7 @@ static void ThrowWidowGibReal(edict_t *self, const char *gibname, int damage, gi
     else
         gib->s.origin = Box3_RandomPoint(self->r.absbox);
 
-    gib->r.solid = SOLID_NOT;
+    gib->r.solid = SOLID_TRIGGER;
     gib->s.effects |= EF_GIB;
     gib->flags |= FL_NO_KNOCKBACK;
     gib->takedamage = true;

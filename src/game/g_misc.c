@@ -110,7 +110,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
     gib->s.modelindex2 = 0;
     gib->s.scale = scale;
     gib->s.alpha = self->s.alpha;
-    gib->r.solid = SOLID_NOT;
+    gib->r.solid = SOLID_TRIGGER;
     gib->r.svflags |= SVF_DEADMONSTER;
     gib->r.svflags &= ~SVF_MONSTER;
     gib->clipmask = MASK_SOLID;
@@ -1507,7 +1507,7 @@ Intended for use with the target_spawner
 void SP_misc_gib_arm(edict_t *ent)
 {
     ent->s.modelindex = G_ModelIndex("models/objects/gibs/arm/tris.md2");
-    ent->r.solid = SOLID_NOT;
+    ent->r.solid = SOLID_TRIGGER;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
     ent->die = gib_die;
@@ -1525,7 +1525,7 @@ Intended for use with the target_spawner
 void SP_misc_gib_leg(edict_t *ent)
 {
     ent->s.modelindex = G_ModelIndex("models/objects/gibs/leg/tris.md2");
-    ent->r.solid = SOLID_NOT;
+    ent->r.solid = SOLID_TRIGGER;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
     ent->die = gib_die;
@@ -1543,7 +1543,7 @@ Intended for use with the target_spawner
 void SP_misc_gib_head(edict_t *ent)
 {
     ent->s.modelindex = G_ModelIndex("models/objects/gibs/head/tris.md2");
-    ent->r.solid = SOLID_NOT;
+    ent->r.solid = SOLID_TRIGGER;
     ent->s.effects |= EF_GIB;
     ent->takedamage = true;
     ent->die = gib_die;
