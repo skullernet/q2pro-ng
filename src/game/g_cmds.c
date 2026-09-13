@@ -428,15 +428,15 @@ static void Cmd_Spawn_f(edict_t *ent, cmdflags_t flags)
                 other->s.origin.xyz[i] += other->r.box.maxs.xyz[i] * -tr.plane.normal.xyz[i];
         }
 
+        float size = Vec2_Length(Vec2_FromVec3(Box3_Size(other->r.box)));
+
         while (1) {
             tr = G_Trace(other->s.origin, other->s.origin, other->r.box,
                          other->s.number, MASK_SHOT | CONTENTS_MONSTERCLIP);
             if (!tr.startsolid)
                 break;
 
-            float f = Vec2_Length(Vec2_FromVec3(Box3_Size(other->r.box)));
-
-            other->s.origin = Vec3_MA(other->s.origin, -f, forward);
+            other->s.origin = Vec3_MA(other->s.origin, -size, forward);
             vec3_t dir = Vec3_Sub(other->s.origin, ent->s.origin);
 
             if (Vec3_Dot(dir, forward) < 0) {
@@ -446,11 +446,14 @@ static void Cmd_Spawn_f(edict_t *ent, cmdflags_t flags)
             }
         }
 
-        if (other->r.inuse)
+        if (other->r.inuse) {
             trap_LinkEntity(other);
 
-        if ((other->r.svflags & SVF_MONSTER) && other->think)
-            other->think(other);
+            if ((other->r.svflags & SVF_MONSTER) && other->think)
+                other->think(other);
+
+            other->s.old_origin = other->s.origin;
+        }
     }
 
     ent->r.solid = backup;
