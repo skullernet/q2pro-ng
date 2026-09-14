@@ -718,7 +718,7 @@ static void CG_AddPacketEntities(void)
                 goto skip;
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
-            if (fade_end > fade_start) {
+            if (fade_start > 0 && fade_end > fade_start) {
                 float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
                 float f = Q_smoothstep(fade_start, fade_end, d);
                 if (f == 0.0f)
@@ -765,7 +765,7 @@ static void CG_AddPacketEntities(void)
             float scale = s1->scale;
             float fade_start = s1->modelindex2;
             float fade_end = s1->modelindex3;
-            if (fade_end > fade_start) {
+            if (fade_start > 0 && fade_end > fade_start) {
                 float d = Vec3_Distance(cg.refdef.vieworg, ent.origin);
                 float f = 1.0f - Q_smoothstep(fade_start, fade_end, d);
                 if (f == 0.0f)
