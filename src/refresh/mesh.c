@@ -334,7 +334,7 @@ static void draw_alias_mesh(const uint16_t *indices, int num_indices,
     }
 
     if (glr.shadowbuffer_bound) {
-        state = meshbits;
+        state = meshbits | GLS_CULL_DISABLE;
         GL_BindTexture(TMU_TEXTURE, TEXNUM_BLACK);
     } else {
         state = GLS_COLOR_ENABLE | glr.fog_bits | meshbits;
