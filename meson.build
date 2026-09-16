@@ -9,6 +9,7 @@ project('q2pro', 'c',
 )
 
 common_src = [
+  'src/common/blake2b.c',
   'src/common/bsp.c',
   'src/common/cmd.c',
   'src/common/cmodel.c',
@@ -21,7 +22,6 @@ common_src = [
   'src/common/files.c',
   'src/common/hash_map.c',
   'src/common/math.c',
-  'src/common/mdfour.c',
   'src/common/msg.c',
   'src/common/net/chan.c',
   'src/common/net/net.c',

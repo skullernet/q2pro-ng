@@ -26,7 +26,7 @@ typedef struct {
                                 // they are connected
     bool        *portalopen;
     int         override_bits;
-    int         checksum;
+    byte        checksum[BSP_HASH_LEN];
     char        *entitystring;
 } cm_t;
 

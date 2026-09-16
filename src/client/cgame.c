@@ -1145,13 +1145,13 @@ static void CL_LoadMap(void)
         Com_Error(ERR_DROP, "Couldn't load %s: %s", name, BSP_ErrorString(ret));
     }
 
-    if (cl.bsp->checksum != cl.mapchecksum) {
+    if (memcmp(cl.mapchecksum, cl.bsp->checksum, sizeof(cl.mapchecksum))) {
+        Com_Printf("Client map version: %s\n", BSP_HashToString(cl.bsp->checksum));
+        Com_Printf("Server map version: %s\n", BSP_HashToString(cl.mapchecksum));
         if (cls.demo.playback) {
-            Com_WPrintf("Local map version differs from demo: %#x != %#x\n",
-                        cl.bsp->checksum, cl.mapchecksum);
+            Com_WPrintf("Local map version differs from demo\n");
         } else {
-            Com_Error(ERR_DROP, "Local map version differs from server: %#x != %#x",
-                      cl.bsp->checksum, cl.mapchecksum);
+            Com_Error(ERR_DROP, "Local map version differs from server");
         }
     }
 

@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ui.h"
 #include "common/files.h"
-#include "common/mdfour.h"
+#include "common/blake2b.h"
 
 /*
 =======================================================================
@@ -235,17 +235,17 @@ static void WriteCache(void)
 
 static void CalcHash(void **list)
 {
-    struct mdfour md;
+    blake2b_state md;
     file_info_t *info;
     size_t len;
 
-    mdfour_begin(&md);
+    blake2b_init(&md, sizeof(m_demos.hash));
     while (*list) {
         info = *list++;
         len = sizeof(*info) + strlen(info->name) - 1;
-        mdfour_update(&md, (uint8_t *)info, len);
+        blake2b_update(&md, info, len);
     }
-    mdfour_result(&md, m_demos.hash);
+    blake2b_final(&md, m_demos.hash, sizeof(m_demos.hash));
 }
 
 static menuSound_t Change(menuCommon_t *self)

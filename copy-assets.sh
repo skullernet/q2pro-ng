@@ -24,4 +24,5 @@ fi
 mkdir -p "$DST/baseq2"
 
 cd baseq2
+rm -f "$DST/baseq2/q2pro.pkz"
 zip -9 "$DST/baseq2/q2pro.pkz" q2pro.menu default.cfg vm/*.qvm vispatches/* entpatches/*

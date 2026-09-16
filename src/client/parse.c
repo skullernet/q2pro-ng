@@ -392,7 +392,7 @@ static void CL_ParseServerData(void)
 
     // get the map name
     MSG_ReadString(cl.mapname, sizeof(cl.mapname));
-    cl.mapchecksum = MSG_ReadLong();
+    MSG_ReadBuffer(cl.mapchecksum, sizeof(cl.mapchecksum));
 
     if (cl.serverstate == ss_pic || cl.serverstate == ss_cinematic) {
         SCR_PlayCinematic(cl.mapname);

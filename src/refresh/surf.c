@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  *
  */
 #include "gl.h"
-#include "common/mdfour.h"
+#include "common/hash_map.h"
 
 lightmap_builder_t lm;
 
@@ -333,16 +333,13 @@ static void calc_surface_hash(mface_t *surf)
         surf->texinfo->image - r_images,
         surf->lm_texnum, surf->statebits
     };
-    struct mdfour md;
-    uint8_t out[16];
 
-    mdfour_begin(&md);
-    mdfour_update(&md, (uint8_t *)args, sizeof(args));
-    mdfour_result(&md, out);
+    uint32_t hash = HashCombine(
+        HashCombine(HashInt32(args), HashInt32(args + 1)),
+        HashInt32(args + 2)
+    );
 
-    surf->hash = 0;
-    for (int i = 0; i < 16; i++)
-        surf->hash ^= out[i];
+    surf->hash = hash ^ hash >> 8 ^ hash >> 16 ^ hash >> 24;
 }
 
 static void upload_world_surfaces(void)

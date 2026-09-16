@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
-#include "common/mdfour.h"
+#include "common/blake2b.h"
 
 #define MAX_FONTS   128
 
@@ -216,13 +216,15 @@ static bool Font_RegisterKFont(font_t *font)
     float sx, sy;
     image_t *image = NULL;
     int len;
-    bool shit;
+    bool shit = false;
 
     len = FS_LoadFile(va("fonts/%s", font->name), (void **)&data);
     if (!data)
         return false;
 
-    shit = len == 5202 && Com_BlockChecksum(data, len) == 0xa4dd7cc5;
+    if (len == 5202) {
+        byte out[4]; blake2b(out, sizeof(out), data, len); shit = Q_RL32(out) == 0x2d67809e;
+    }
 
     s = data;
     while (1) {

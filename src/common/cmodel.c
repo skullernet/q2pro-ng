@@ -171,15 +171,21 @@ static bool Patch_Parse(patch_ctx_t *ctx)
 static void CM_LoadEntPatches(cm_t *cm, const char *name)
 {
     char path[MAX_QPATH], *data, *out;
+    const char *csum;
     int len, outlen;
     patch_ctx_t ctx;
     q_unused int numpatches = 0;
 
     if (!map_patch_ents->integer)
         return;
-    if (Q_snprintf(path, sizeof(path), "entpatches/%s.%08x", name, cm->cache->checksum) >= sizeof(path))
-        return;
-    len = FS_LoadFile(path, (void **)&data);
+
+    data = NULL;
+    len = Q_ERR_FAILURE;
+    csum = BSP_HashToString(cm->cache->checksum);
+    if (Q_snprintf(path, sizeof(path), "entpatches/%s.%.8s", name, csum) < sizeof(path))
+        len = FS_LoadFile(path, (void **)&data);
+    if (!data && Q_snprintf(path, sizeof(path), "entpatches/%s", csum) < sizeof(path))
+        len = FS_LoadFile(path, (void **)&data);
     if (!data)
         return;
 
@@ -261,7 +267,7 @@ void CM_LoadMap(cm_t *cm, const char *name)
         CM_LoadEntPatches(cm, name);
 
     if (!(cm->override_bits & OVERRIDE_CSUM))
-        cm->checksum = cm->cache->checksum;
+        memcpy(cm->checksum, cm->cache->checksum, sizeof(cm->checksum));
 
     if (!(cm->override_bits & OVERRIDE_ENTS))
         cm->entitystring = cm->cache->entitystring;

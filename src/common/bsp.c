@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // bsp.c -- model loading
 
 #include "shared/shared.h"
+#include "common/blake2b.h"
 #include "common/bsp.h"
 #include "common/cmd.h"
 #include "common/common.h"
@@ -28,7 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/hash_map.h"
 #include "common/list.h"
 #include "common/math.h"
-#include "common/mdfour.h"
 #include "common/sizebuf.h"
 #include "common/utils.h"
 #include "system/hunk.h"
@@ -194,7 +194,7 @@ static void BSP_PrintStats(const bsp_t *bsp)
 #endif
         Com_Printf("\n");
     }
-    Com_Printf("Checksum : %#x\n", bsp->checksum);
+    Com_Printf("Checksum : %s\n", BSP_HashToString(bsp->checksum));
 
     Com_Printf("------------------\n");
 }
@@ -286,8 +286,7 @@ static int BSP_ValidateTree(bsp_t *bsp)
 #endif
 
     // what the fuck?
-    if (bsp->checksum == 0x247a28b4 && bsp->nummodels == 99 &&
-        bsp->models[90].headnode == bsp->models[91].headnode)
+    if (bsp->nummodels == 99 && bsp->models[90].headnode == bsp->models[91].headnode)
         bsp->models[90].headnode = (mnode_t *)bsp->leafs;
 
     for (i = 0, mod = bsp->models; i < bsp->nummodels; i++, mod++) {
@@ -457,7 +456,7 @@ static void BSP_ApplyVisPatch(const bsp_t *bsp, dvis_t vis,
 static void BSP_LoadVisPatches(const bsp_t *bsp)
 {
     char path[MAX_QPATH], name[MAX_QPATH], *data;
-    const char *s, *tok;
+    const char *s, *tok, *csum;
     cluster_range_t range;
     cluster_range_t src[1024];
     cluster_range_t dst[1024];
@@ -467,12 +466,14 @@ static void BSP_LoadVisPatches(const bsp_t *bsp)
         return;
     if (!map_patch_vis->integer)
         return;
-    if (!Com_ParseMapName(name, bsp->name, sizeof(name)))
-        return;
 
-    if (Q_snprintf(path, sizeof(path), "vispatches/%s.%08x", name, bsp->checksum) >= sizeof(path))
-        return;
-    FS_LoadFile(path, (void **)&data);
+    data = NULL;
+    csum = BSP_HashToString(bsp->checksum);
+    if (Com_ParseMapName(name, bsp->name, sizeof(name)) &&
+        Q_snprintf(path, sizeof(path), "vispatches/%s.%.8s", name, csum) < sizeof(path))
+        FS_LoadFile(path, (void **)&data);
+    if (!data && Q_snprintf(path, sizeof(path), "vispatches/%s", csum) < sizeof(path))
+        FS_LoadFile(path, (void **)&data);
     if (!data)
         return;
 
@@ -1117,7 +1118,8 @@ qerror_t BSP_Load(const char *name, bsp_t **bsp_p)
     Hunk_End(&bsp->hunk);
 
     // calculate the checksum
-    bsp->checksum = Com_BlockChecksum(buf, filelen);
+    blake2b(bsp->checksum, sizeof(bsp->checksum), buf, filelen);
+    Com_DPrintf("%s: loaded %s (%s)\n", __func__, bsp->name, BSP_HashToString(bsp->checksum));
 
     BSP_LoadMaterials(bsp);
 
@@ -1144,6 +1146,19 @@ const char *BSP_ErrorString(qerror_t err)
         return Com_GetLastError();
     else
         return Q_ErrorString(err);
+}
+
+const char *BSP_HashToString(const byte *hash)
+{
+    static char buffer[BSP_HASH_LEN*2+1];
+    static const char hexchars[16] = "0123456789abcdef";
+
+    for (int i = 0; i < BSP_HASH_LEN; i++) {
+        buffer[i*2+0] = hexchars[hash[i] >> 4];
+        buffer[i*2+1] = hexchars[hash[i] & 15];
+    }
+
+    return buffer;
 }
 
 /*

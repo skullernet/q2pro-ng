@@ -638,6 +638,15 @@ byte *MSG_ReadData(size_t len)
     return SZ_ReadData(&msg_read, len);
 }
 
+void MSG_ReadBuffer(void *dest, size_t len)
+{
+    byte *buf = MSG_ReadData(len);
+    if (buf)
+        memcpy(dest, buf, len);
+    else
+        memset(dest, 0, len);
+}
+
 int MSG_ReadByte(void)
 {
     byte *buf = MSG_ReadData(1);

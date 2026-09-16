@@ -66,6 +66,7 @@ static inline void MSG_FlushTo(sizebuf_t *buf)
 
 void    MSG_BeginReading(void);
 byte    *MSG_ReadData(size_t len);
+void    MSG_ReadBuffer(void *dest, size_t len);
 int     MSG_ReadByte(void);
 int     MSG_ReadShort(void);
 int     MSG_ReadLong(void);

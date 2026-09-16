@@ -355,7 +355,7 @@ static void CL_Record_f(void)
     MSG_WriteByte(cl.clientnum);
     MSG_WriteString(cl.gamedir);
     MSG_WriteString(cl.mapname);
-    MSG_WriteLong(cl.mapchecksum);
+    MSG_WriteData(cl.mapchecksum, sizeof(cl.mapchecksum));
 
     // configstrings
     MSG_WriteByte(svc_configstringstream);

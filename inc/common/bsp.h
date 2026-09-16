@@ -207,11 +207,13 @@ typedef struct {
 
 #endif
 
+#define BSP_HASH_LEN    16
+
 typedef struct {
     list_t      entry;
     int         refcount;
 
-    unsigned    checksum;
+    byte        checksum[BSP_HASH_LEN];
 
     memhunk_t   hunk;
 
@@ -295,6 +297,7 @@ typedef struct {
 qerror_t BSP_Load(const char *name, bsp_t **bsp_p);
 void BSP_Free(bsp_t *bsp);
 const char *BSP_ErrorString(qerror_t err);
+const char *BSP_HashToString(const byte *hash);
 
 #if USE_REF
 typedef struct {

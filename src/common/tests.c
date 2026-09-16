@@ -17,11 +17,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
+#include "common/blake2b.h"
 #include "common/bsp.h"
 #include "common/cmd.h"
 #include "common/common.h"
 #include "common/files.h"
-#include "common/mdfour.h"
 #include "common/tests.h"
 #include "common/utils.h"
 #include "refresh/refresh.h"
@@ -654,53 +654,52 @@ static void Com_TestSounds_f(void)
 }
 #endif
 
-static const char *const mdfour_str[] = {
+static const char *const blake2b_str[] = {
     "", "a", "abc", "message digest", "abcdefghijklmnopqrstuvwxyz",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
     "12345678901234567890123456789012345678901234567890123456789012345678901234567890"
 };
 
-static const char *const mdfour_res[] = {
-    "31d6cfe0d16ae931b73c59d7e0c089c0", "bde52cb31de33e46245e05fbdbd6fb24",
-    "a448017aaf21d8525fc10ae87aa6729d", "d9130a8164549fe818874806e1c7014b",
-    "d79e1c308aa5bbcdeea8ed63df412da9", "043f8582f241db351ce627e153e7f0e4",
-    "e33b4ddc9c38f2199c3e7b164fcc0536"
+static const char *const blake2b_res[] = {
+    "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce",
+    "333fcb4ee1aa7c115355ec66ceac917c8bfd815bf7587d325aec1864edd24e34d5abe2c6b1b5ee3face62fed78dbef802f2a85cb91d455a8f5249d330853cb3c",
+    "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923",
+    "3c26ce487b1c0f062363afa3c675ebdbf5f4ef9bdc022cfbef91e3111cdc283840d8331fc30a8a0906cff4bcdbcd230c61aaec60fdfad457ed96b709a382359a",
+    "c68ede143e416eb7b4aaae0d8e48e55dd529eafed10b1df1a61416953a2b0a5666c761e7d412e6709e31ffe221b7a7a73908cb95a4d120b8b090a87d1fbedb4c",
+    "99964802e5c25e703722905d3fb80046b6bca698ca9e2cc7e49b4fe1fa087c2edf0312dfbb275cf250a1e542fd5dc2edd313f9c491127c2e8c0c9b24168e2d50",
+    "686f41ec5afff6e87e1f076f542aa466466ff5fbde162c48481ba48a748d842799f5b30f5b67fc684771b33b994206d05cc310f31914edd7b97e41860d77d282"
 };
 
-static const uint32_t blocksum_res[] = {
-    0xc6f640b7, 0x2aec8e5f, 0x5da10e2e, 0x24dc0744, 0x3767d26c, 0xb2897fb9, 0xe5c1f1ac
-};
-
-static bool mdfour_test(int num, int chunk)
+static bool blake2b_test(int num, int chunk)
 {
-    struct mdfour md;
-    uint8_t digest[16];
-    uint8_t *data = (uint8_t *)mdfour_str[num];
-    size_t size = strlen(mdfour_str[num]);
-    const char *res = mdfour_res[num];
+    blake2b_state md;
+    uint8_t digest[BLAKE2B_OUTBYTES];
+    uint8_t *data = (uint8_t *)blake2b_str[num];
+    size_t size = strlen(blake2b_str[num]);
+    const char *res = blake2b_res[num];
     int i;
 
-    mdfour_begin(&md);
-    if (chunk == -1) {
-        mdfour_update(&md, data, size);
+    blake2b_init(&md, sizeof(digest));
+    if (chunk == 0) {
+        blake2b_update(&md, data, size);
     } else while (size) {
         size_t n = min(size, chunk);
-        mdfour_update(&md, data, n);
+        blake2b_update(&md, data, n);
         data += n;
         size -= n;
     }
-    mdfour_result(&md, digest);
+    blake2b_final(&md, digest, sizeof(digest));
 
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < sizeof(digest); i++) {
         int c1 = Q_charhex(res[i*2+0]);
         int c2 = Q_charhex(res[i*2+1]);
         if (digest[i] != (c1 << 4 | c2))
             break;
     }
 
-    if (i != 16) {
-        Com_EPrintf("String '%s', expected '%s', calculated '", mdfour_str[num], mdfour_res[num]);
-        for (i = 0; i < 16; i++)
+    if (i != sizeof(digest)) {
+        Com_EPrintf("String '%s', expected '%s', calculated '", blake2b_str[num], blake2b_res[num]);
+        for (i = 0; i < sizeof(digest); i++)
             Com_EPrintf("%02x", digest[i]);
         Com_EPrintf("'\n");
         return false;
@@ -709,37 +708,28 @@ static bool mdfour_test(int num, int chunk)
     return true;
 }
 
-static void Com_MdfourTest_f(void)
+static void Com_Blake2Test_f(void)
 {
-    static const int8_t chunks[] = { -1, 1, 3, 7, 16, 32, 64 };
+    static const uint8_t chunks[] = { 0, 1, 3, 5, 7, 16, 32, 48, 64 };
     int errors = 0;
     int tests = 0;
 
     for (int i = 0; i < q_countof(chunks); i++) {
         Com_Printf("Testing chunk size %d...\n", chunks[i]);
-        for (int j = 0; j < q_countof(mdfour_str); j++) {
-            if (!mdfour_test(j, chunks[i]))
+        for (int j = 0; j < q_countof(blake2b_str); j++) {
+            if (!blake2b_test(j, chunks[i]))
                 errors++;
             tests++;
         }
     }
 
-    for (int i = 0; i < q_countof(mdfour_str); i++) {
-        uint32_t res = Com_BlockChecksum((uint8_t *)mdfour_str[i], strlen(mdfour_str[i]));
-        if (res != blocksum_res[i]) {
-            Com_EPrintf("String '%s', expected %#x, calculated %#x\n", mdfour_str[i], blocksum_res[i], res);
-            errors++;
-        }
-        tests++;
-    }
-
     Com_Printf("%d failures, %d strings tested\n", errors, tests);
 }
 
-static void Com_MdfourSum_f(void)
+static void Com_Blake2Sum_f(void)
 {
-    uint8_t digest[16];
-    struct mdfour md;
+    uint8_t digest[BLAKE2B_OUTBYTES];
+    blake2b_state md;
     qhandle_t f;
     int64_t len;
 
@@ -754,7 +744,7 @@ static void Com_MdfourSum_f(void)
         return;
     }
 
-    mdfour_begin(&md);
+    blake2b_init(&md, sizeof(digest));
     while (len > 0) {
         uint8_t buf[1 << 16];
         int n = min(len, sizeof(buf));
@@ -762,12 +752,12 @@ static void Com_MdfourSum_f(void)
             Com_Printf("Read error\n");
             goto fail;
         }
-        mdfour_update(&md, buf, n);
+        blake2b_update(&md, buf, n);
         len -= n;
     }
 
-    mdfour_result(&md, digest);
-    for (int i = 0; i < 16; i++)
+    blake2b_final(&md, digest, sizeof(digest));
+    for (int i = 0; i < sizeof(digest); i++)
         Com_Printf("%02x", digest[i]);
     Com_Printf("\n");
 
@@ -911,8 +901,8 @@ static const cmdreg_t c_test[] = {
     { "activate", Com_Activate_f },
     { "utf8test", UTF8_Test_f },
 #endif
-    { "mdfourtest", Com_MdfourTest_f },
-    { "mdfoursum", Com_MdfourSum_f },
+    { "blake2test", Com_Blake2Test_f },
+    { "blake2sum", Com_Blake2Sum_f },
     { "extcmptest", Com_ExtCmpTest_f },
     { "nextpathtest", Com_NextPathTest_f },
     { "extract", Com_Extract_f },

@@ -195,7 +195,7 @@ void SV_New_f(void)
     MSG_WriteByte(sv_client->number);
     MSG_WriteString(fs_game->string);
     MSG_WriteString(sv.name);
-    MSG_WriteLong(sv.cm.checksum);
+    MSG_WriteData(sv.cm.checksum, sizeof(sv.cm.checksum));
 
     SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 

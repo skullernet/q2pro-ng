@@ -147,8 +147,8 @@ typedef struct {
     //
     // locally derived information from server state
     //
-    bsp_t        *bsp;
-    unsigned    mapchecksum;
+    bsp_t       *bsp;
+    byte        mapchecksum[BSP_HASH_LEN];
 } client_state_t;
 
 extern client_state_t   cl;
