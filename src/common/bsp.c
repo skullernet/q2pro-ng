@@ -1195,7 +1195,7 @@ static bool BSP_RecursiveLightPoint(const mnode_t *node, float p1f, float p2f, v
 
         // find crossing point
         frac = d1 / (d1 - d2);
-        midf = p1f + (p2f - p1f) * frac;
+        midf = Q_lerpf(p1f, p2f, frac);
         mid = Vec3_Lerp(p1, p2, frac);
 
         // check near side

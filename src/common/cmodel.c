@@ -752,7 +752,7 @@ recheck:
         idist = 1.0f / (t1 - t2);
         side = 1;
         frac2 = (t1 + offset + DIST_EPSILON) * idist;
-        frac = (t1 - offset + DIST_EPSILON) * idist;
+        frac = (t1 - offset - DIST_EPSILON) * idist;
     } else if (t1 > t2) {
         idist = 1.0f / (t1 - t2);
         side = 0;
@@ -768,13 +768,13 @@ recheck:
     frac2 = Q_clipf(frac2, 0, 1);
 
     // move up to the node
-    midf = p1f + (p2f - p1f) * frac;
+    midf = Q_lerpf(p1f, p2f, frac);
     mid = Vec3_Lerp(p1, p2, frac);
 
     CM_RecursiveHullCheck(node->children[side], p1f, midf, p1, mid);
 
     // go past the node
-    midf = p1f + (p2f - p1f) * frac2;
+    midf = Q_lerpf(p1f, p2f, frac2);
     mid = Vec3_Lerp(p1, p2, frac2);
 
     CM_RecursiveHullCheck(node->children[side ^ 1], midf, p2f, mid, p2);
