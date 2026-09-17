@@ -1652,7 +1652,7 @@ void R_AddLight(const dlight_t *light)
     dl->d.origin = light->origin;
     dl->d.radius = light->radius;
     dl->d.color = light->color;
-    dl->sphere = Vec3_IsEmpty(light->dir) || light->cone_angle == 0.0f;
+    dl->sphere = Vec3_IsEmpty(light->dir) || light->cone_angle <= 0.0f || light->cone_angle >= 90.0f;
     if (dl->sphere) {
         dl->d.dir = vec3_origin;
         dl->d.cone = 0.0f;
