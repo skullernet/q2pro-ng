@@ -26,6 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <setjmp.h>
 #endif
 
+#include <bcrypt.h>
+#include <ntstatus.h>
 #include <stdatomic.h>
 
 HINSTANCE                       hGlobalInstance;
@@ -890,6 +892,11 @@ const char *Sys_ErrorString(int err)
         Q_snprintf(buf, sizeof(buf), "unknown error %d", err);
 
     return buf;
+}
+
+bool Sys_GetRandom(uint8_t *buf, size_t len)
+{
+    return BCryptGenRandom(NULL, buf, len, BCRYPT_USE_SYSTEM_PREFERRED_RNG) == STATUS_SUCCESS;
 }
 
 /*

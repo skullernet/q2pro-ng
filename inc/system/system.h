@@ -73,6 +73,8 @@ bool    Sys_IsMainThread(void);
 bool    Sys_SetNonBlock(int fd, bool nb);
 #endif
 
+bool    Sys_GetRandom(uint8_t *buf, size_t len);
+
 extern cvar_t   *sys_basedir;
 extern cvar_t   *sys_libdir;
 extern cvar_t   *sys_homedir;

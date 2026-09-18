@@ -908,6 +908,35 @@ char *COM_MakePrintable(const char *s)
     return buffer;
 }
 
+void COM_FormatHexString(char *out, const uint8_t *in, size_t size)
+{
+    static const char hexchars[16] = "0123456789abcdef";
+
+    for (size_t i = 0; i < size / 2; i++) {
+        out[i*2+0] = hexchars[in[i] >> 4];
+        out[i*2+1] = hexchars[in[i] & 15];
+    }
+
+    if (size)
+        out[size-1] = 0;
+}
+
+bool COM_ParseHexString(uint8_t *out, const char *in, size_t size)
+{
+    if (strlen(in) != size * 2)
+        return false;
+
+    for (size_t i = 0; i < size; i++, in += 2) {
+        int c1 = Q_charhex(in[0]);
+        int c2 = Q_charhex(in[1]);
+        if (c1 == -1 || c2 == -1)
+            return false;
+        out[i] = c1 << 4 | c2;
+    }
+
+    return true;
+}
+
 /*
 ==================
 UTF8_ReadCodePoint

@@ -376,6 +376,7 @@ void SV_InitGame(void)
     // enable networking
     if (sv_maxclients->integer > 1) {
         NET_Config(NET_SERVER);
+        Q_assert_soft(Sys_GetRandom(svs.challenge_key, sizeof(svs.challenge_key)));
     }
 
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);

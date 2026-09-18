@@ -281,7 +281,7 @@ void CL_CheckForResend(void)
 
     Cvar_BitInfo(userinfo, CVAR_USERINFO);
     Netchan_OutOfBand(NS_CLIENT, &cls.serverAddress,
-                      "connect %i %i %i \"%s\" %i %i %i\n", PROTOCOL_VERSION_MAJOR, cls.quakePort,
+                      "connect %i %i \"%s\" \"%s\" %i %i %i\n", PROTOCOL_VERSION_MAJOR, cls.quakePort,
                       cls.challenge, userinfo, PROTOCOL_VERSION_MINOR, maxmsglen, USE_ZLIB);
 }
 
@@ -542,6 +542,7 @@ void CL_Disconnect(error_type_t type)
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
+    cls.challenge[0] = 0;
 
     // start menu track, or stop music
     if (type == ERR_DROP || type == ERR_DISCONNECT) {
@@ -945,7 +946,7 @@ static void CL_ConnectionlessPacket(void)
             return;
         }
 
-        cls.challenge = Q_atoi(Cmd_Argv(1));
+        Cmd_ArgvBuffer(1, cls.challenge, sizeof(cls.challenge));
         cls.state = ca_connecting;
         cls.connect_time -= CONNECT_INSTANT; // fire immediately
         //cls.connect_count = 0;

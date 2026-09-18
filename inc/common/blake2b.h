@@ -50,6 +50,7 @@ typedef struct blake2b_param__ {
 
 /* Streaming API */
 void blake2b_init(blake2b_state *S, size_t outlen);
+void blake2b_init_key(blake2b_state *S, size_t outlen, const void *key, size_t keylen);
 void blake2b_update(blake2b_state *S, const void *in, size_t inlen);
 void blake2b_final(blake2b_state *S, void *out, size_t outlen);
 

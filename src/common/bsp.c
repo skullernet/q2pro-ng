@@ -1150,14 +1150,8 @@ const char *BSP_ErrorString(qerror_t err)
 
 const char *BSP_HashToString(const byte *hash)
 {
-    static char buffer[BSP_HASH_LEN*2+1];
-    static const char hexchars[16] = "0123456789abcdef";
-
-    for (int i = 0; i < BSP_HASH_LEN; i++) {
-        buffer[i*2+0] = hexchars[hash[i] >> 4];
-        buffer[i*2+1] = hexchars[hash[i] & 15];
-    }
-
+    static char buffer[BSP_HASH_LEN * 2 + 1];
+    COM_FormatHexString(buffer, hash, sizeof(buffer));
     return buffer;
 }
 

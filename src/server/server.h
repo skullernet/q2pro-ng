@@ -137,6 +137,9 @@ typedef enum {
 
 #define RATE_MESSAGES   10
 
+#define CHALLENGE_SIZE      8
+#define CHALLENGE_SHIFT     12  // at least 4 sec to reply
+
 #define FOR_EACH_CLIENT(client) \
     LIST_FOR_EACH(client, &sv_clientlist, entry)
 
@@ -210,7 +213,6 @@ typedef struct client_s {
     unsigned        send_time, send_delta;          // used to rate drop async packets
 
     // protocol stuff
-    int             challenge;  // challenge of this user, randomly generated
     int             protocol;   // minor version
 
     // per-client baseline chunks
@@ -238,17 +240,6 @@ typedef struct client_s {
 // a program error, like an overflowed reliable buffer
 
 //=============================================================================
-
-// MAX_CHALLENGES is made large to prevent a denial
-// of service attack that could cycle all of them
-// out before legitimate users connected
-#define    MAX_CHALLENGES    1024
-
-typedef struct {
-    netadr_t    adr;
-    unsigned    challenge;
-    unsigned    time;
-} challenge_t;
 
 typedef struct {
     list_t      entry;
@@ -318,7 +309,7 @@ typedef struct {
     ratelimit_t     ratelimit_auth;
     ratelimit_t     ratelimit_rcon;
 
-    challenge_t     challenges[MAX_CHALLENGES]; // to prevent invalid IPs from connecting
+    uint8_t         challenge_key[16];  // to prevent invalid IPs from connecting
 } server_static_t;
 
 //=============================================================================

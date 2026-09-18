@@ -1175,6 +1175,9 @@ extern const char com_hexchars[16];
 size_t COM_EscapeString(char *dst, const char *src, size_t size);
 char *COM_MakePrintable(const char *s);
 
+void COM_FormatHexString(char *out, const uint8_t *in, size_t size);
+bool COM_ParseHexString(uint8_t *out, const char *in, size_t size);
+
 #define UNICODE_UNKNOWN     0xFFFD
 #define UNICODE_MAX         0x10FFFF
 uint32_t UTF8_ReadCodePoint(const char **src);

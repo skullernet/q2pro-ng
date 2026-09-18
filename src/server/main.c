@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 #include "client/input.h"
+#include "common/blake2b.h"
 
 master_t    sv_masters[MAX_MASTERS];   // address of group servers
 
@@ -515,42 +516,30 @@ flood the server with invalid connection IPs.  With a
 challenge, they must give a valid IP address.
 =================
 */
+static void make_challenge(uint8_t *out, uint32_t time)
+{
+    blake2b_state md;
+
+    blake2b_init_key(&md, CHALLENGE_SIZE, svs.challenge_key, sizeof(svs.challenge_key));
+    blake2b_update(&md, &time, sizeof(time));
+    blake2b_update(&md, &net_from, sizeof(net_from));
+    blake2b_final(&md, out, CHALLENGE_SIZE);
+
+    // save timestamp parity bit
+    out[0] &= ~1;
+    out[0] |= time & 1;
+}
+
 static void SVC_GetChallenge(void)
 {
-    int         i, oldest;
-    unsigned    challenge;
-    unsigned    oldestTime;
+    uint8_t out[CHALLENGE_SIZE];
+    char buf[CHALLENGE_SIZE * 2 + 1];
 
-    oldest = 0;
-    oldestTime = UINT_MAX;
-
-    // see if we already have a challenge for this ip
-    for (i = 0; i < MAX_CHALLENGES; i++) {
-        if (NET_IsEqualBaseAdr(&net_from, &svs.challenges[i].adr))
-            break;
-        if (svs.challenges[i].time > com_eventTime) {
-            svs.challenges[i].time = com_eventTime;
-        }
-        if (svs.challenges[i].time < oldestTime) {
-            oldestTime = svs.challenges[i].time;
-            oldest = i;
-        }
-    }
-
-    challenge = Q_rand() & INT_MAX;
-    if (i == MAX_CHALLENGES) {
-        // overwrite the oldest
-        svs.challenges[oldest].challenge = challenge;
-        svs.challenges[oldest].adr = net_from;
-        svs.challenges[oldest].time = com_eventTime;
-    } else {
-        svs.challenges[i].challenge = challenge;
-        svs.challenges[i].time = com_eventTime;
-    }
+    make_challenge(out, svs.realtime >> CHALLENGE_SHIFT);
+    COM_FormatHexString(buf, out, sizeof(buf));
 
     // send it back
-    Netchan_OutOfBand(NS_SERVER, &net_from,
-                      "challenge %u p=34,35,36", challenge);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "challenge %s", buf);
 }
 
 /*
@@ -564,11 +553,8 @@ A connection request that did not come from the master
 typedef struct {
     int         protocol;   // minor version
     int         qport;
-    int         challenge;
-
     int         maxlength;
     bool        has_zlib;
-
     int         maxclients; // hidden client slots
 } conn_params_t;
 
@@ -584,10 +570,9 @@ static bool parse_basic_params(conn_params_t *p)
     // parse major protocol version
     int protocol = Q_atoi(Cmd_Argv(1));
     if (protocol != PROTOCOL_VERSION_MAJOR)
-        return reject("Unsupported major protocol version %d.\n", protocol);
+        return reject("Unsupported protocol version %d.\n", protocol);
 
     p->qport = Q_atoi(Cmd_Argv(2));
-    p->challenge = Q_atoi(Cmd_Argv(3));
 
     // parse minor protocol version
     p->protocol = Q_atoi(Cmd_Argv(5));
@@ -622,10 +607,26 @@ static bool parse_basic_params(conn_params_t *p)
     return true;
 }
 
+static bool check_challenge(void)
+{
+    uint8_t out[CHALLENGE_SIZE];
+    uint8_t buf[CHALLENGE_SIZE];
+    uint32_t time;
+
+    if (!COM_ParseHexString(buf, Cmd_Argv(3), sizeof(buf)))
+        return false;
+
+    time  = svs.realtime >> CHALLENGE_SHIFT;
+    time -= (time ^ buf[0]) & 1;    // fix timestamp parity
+
+    make_challenge(out, time);
+    return memcmp(out, buf, sizeof(out)) == 0;
+}
+
 static bool permit_connection(conn_params_t *p)
 {
     addrmatch_t *match;
-    int i, count;
+    int count;
     client_t *cl;
     const char *s;
 
@@ -634,22 +635,8 @@ static bool permit_connection(conn_params_t *p)
         return true;
 
     // see if the challenge is valid
-    for (i = 0; i < MAX_CHALLENGES; i++) {
-        if (!svs.challenges[i].challenge)
-            continue;
-
-        if (NET_IsEqualBaseAdr(&net_from, &svs.challenges[i].adr)) {
-            if (svs.challenges[i].challenge == p->challenge)
-                break;        // good
-
-            return reject("Bad challenge.\n");
-        }
-    }
-
-    if (i == MAX_CHALLENGES)
-        return reject("No challenge for address.\n");
-
-    svs.challenges[i].challenge = 0;
+    if (!check_challenge())
+        return reject("Bad challenge.\n");
 
     // check for banned address
     if ((match = SV_MatchAddress(&sv_banlist, &net_from)) != NULL) {
@@ -832,7 +819,6 @@ static void SVC_DirectConnect(void)
     // this is the only place a client_t is ever initialized
     memset(newcl, 0, sizeof(*newcl));
     newcl->number = number;
-    newcl->challenge = params.challenge; // save challenge for checksumming
     newcl->protocol = params.protocol;
     newcl->has_zlib = params.has_zlib;
     newcl->edict = SV_EdictForNum(number);

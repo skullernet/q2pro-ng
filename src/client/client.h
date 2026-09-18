@@ -265,7 +265,7 @@ typedef struct {
     netchan_t   netchan;
     int         protocol;           // minor version
 
-    int         challenge;          // from the server to use for connecting
+    char        challenge[MAX_QPATH];   // from the server to use for connecting
 
 #if USE_ICMP
     bool        errorReceived;      // got an ICMP error from server

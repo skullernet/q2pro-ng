@@ -82,6 +82,26 @@ void blake2b_init(blake2b_state *S, size_t outlen)
     });
 }
 
+void blake2b_init_key(blake2b_state *S, size_t outlen, const void *key, size_t keylen)
+{
+    Q_assert(outlen >= 1);
+    Q_assert(outlen <= BLAKE2B_OUTBYTES);
+
+    Q_assert(keylen >= 1);
+    Q_assert(keylen <= BLAKE2B_KEYBYTES);
+
+    blake2b_init_param(S, &(blake2b_param) {
+        .digest_length = (uint8_t)outlen,
+        .key_length = (uint8_t)keylen,
+        .fanout = 1,
+        .depth = 1,
+    });
+
+    uint8_t block[BLAKE2B_BLOCKBYTES] = { 0 };
+    memcpy(block, key, keylen);
+    blake2b_update(S, block, BLAKE2B_BLOCKBYTES);
+}
+
 static inline uint64_t rotr64(uint64_t w, unsigned c)
 {
     return (w >> c) | (w << (64 - c));

@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/mman.h>
+#include <sys/random.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -146,6 +147,11 @@ bool Sys_SetNonBlock(int fd, bool nb)
     if ((bool)(ret & O_NONBLOCK) == nb)
         return true;
     return fcntl(fd, F_SETFL, ret ^ O_NONBLOCK) == 0;
+}
+
+bool Sys_GetRandom(uint8_t *buf, size_t len)
+{
+    return getentropy(buf, len) == 0;
 }
 
 static void usr1_handler(int signum)
