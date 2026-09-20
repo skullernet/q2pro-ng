@@ -197,6 +197,7 @@ if cc.get_argument_syntax() == 'gcc'
     '-Wno-missing-braces',
     '-Wpointer-arith',
     '-Wstrict-prototypes',
+    '-fno-common',
     '-fno-math-errno',
     '-fno-trapping-math',
     '-fsigned-char',
