@@ -1557,8 +1557,10 @@ static void read_fields(const save_field_t *field, void *base)
             f = find_field(field, tok);
         if (f)
             read_field(f++, base);
-        else
+        else {
             unknown("field");
+            f = field;
+        }
     }
 }
 
