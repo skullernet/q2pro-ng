@@ -886,10 +886,7 @@ static void monster_triggered_start(edict_t *self)
     self->use = monster_triggered_spawn_use;
 
     if (self->targetname)
-        for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-            edict_t *ent = &g_edicts[i];
-            if (!ent->r.inuse)
-                continue;
+        FOR_EACH_ENTITY(ent) {
             for (int j = 0; j < q_countof(offsets); j++) {
                 char *s = *(char **)((byte *)ent + offsets[j]);
                 if (!s)
@@ -966,9 +963,8 @@ static void G_Monster_ScaleCoopHealth(edict_t *self)
 // check all active monsters' scaling
 void G_Monster_CheckCoopHealthScaling(void)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *ent = &g_edicts[i];
-        if (ent->r.inuse && (ent->flags & FL_COOP_HEALTH_SCALE) && ent->health > 0)
+    FOR_EACH_ENTITY(ent) {
+        if ((ent->flags & FL_COOP_HEALTH_SCALE) && ent->health > 0)
             G_Monster_ScaleCoopHealth(ent);
     }
 }

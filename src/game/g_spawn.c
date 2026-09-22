@@ -1353,9 +1353,8 @@ void G_PrecacheInventoryItems(void)
         return;
 
     for (int i = 0; i < game.maxclients; i++) {
-        gclient_t *cl = &g_clients[i];
         for (item_id_t id = IT_NULL; id < IT_TOTAL; id++)
-            if (cl->pers.inventory[id])
+            if (g_clients[i].pers.inventory[id])
                 PrecacheItem(GetItemByIndex(id));
     }
 }
@@ -1399,12 +1398,7 @@ void G_RefreshPrecaches(void)
 {
     memset(precache_bitmap, 0, sizeof(precache_bitmap));
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        const edict_t *ent = &g_edicts[i];
-
-        if (!ent->r.inuse)
-            continue;
-
+    FOR_EACH_ENTITY(ent) {
         for (int j = 0; j < q_countof(spawn_funcs); j++) {
             if (!strcmp(spawn_funcs[j].name, ent->classname)) {
                 ED_PrecacheSpawn(&spawn_funcs[j]);

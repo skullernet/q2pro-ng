@@ -796,11 +796,7 @@ static void P_CheckEnableCollide(edict_t *ent)
     if ((ent->clipmask & CONTENTS_PLAYER) || !ent->takedamage || !G_ShouldPlayersCollide(false))
         return;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        const edict_t *player = &g_edicts[i];
-
-        if (!player->r.inuse)
-            continue;
+    FOR_EACH_PLAYER(player) {
         if (player == ent)
             continue;
         if (Box3_Intersects(ent->r.absbox, player->r.absbox))

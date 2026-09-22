@@ -296,8 +296,6 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     if (self->spawnflags & SPAWNFLAG_KEY_NOITEMREMOVE) {
     } else if (coop.integer) {
-        edict_t *ent;
-
         if (index == IT_KEY_POWER_CUBE || index == IT_KEY_EXPLOSIVE_CHARGES) {
             int cube;
 
@@ -305,12 +303,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
                 if (activator->client->pers.power_cubes & (1 << cube))
                     break;
 
-            for (int player = 0; player < game.maxclients; player++) {
-                ent = &g_edicts[player];
-                if (!ent->r.inuse)
-                    continue;
-                if (!ent->client)
-                    continue;
+            FOR_EACH_PLAYER(ent) {
                 if (ent->client->pers.power_cubes & (1 << cube)) {
                     ent->client->pers.inventory[index]--;
                     ent->client->pers.power_cubes &= ~(1 << cube);
@@ -324,12 +317,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
                 }
             }
         } else {
-            for (int player = 0; player < game.maxclients; player++) {
-                ent = &g_edicts[player];
-                if (!ent->r.inuse)
-                    continue;
-                if (!ent->client)
-                    continue;
+            FOR_EACH_PLAYER(ent) {
                 ent->client->pers.inventory[index] = 0;
 
                 // [Paril-KEX] don't allow respawning players to keep
@@ -1143,8 +1131,7 @@ requiring to be fired by something else. Frees itself after firing.
 
 static bool trigger_coop_relay_ok(edict_t *player)
 {
-    return player->r.inuse && player->client && player->health > 0 &&
-        player->movetype != MOVETYPE_NOCLIP && player->s.modelindex == MODELINDEX_PLAYER;
+    return player->health > 0 && player->movetype != MOVETYPE_NOCLIP && player->s.modelindex == MODELINDEX_PLAYER;
 }
 
 static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
@@ -1157,9 +1144,7 @@ static bool trigger_coop_relay_can_use(edict_t *self, edict_t *activator)
     // to those in/out of range
     bool can_use = true;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-
+    FOR_EACH_PLAYER(player) {
         // dead or spectator, don't count them
         if (!trigger_coop_relay_ok(player))
             continue;
@@ -1195,8 +1180,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
 {
     int num_active = 0, num_present = 0;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
+    FOR_EACH_PLAYER(player) {
         if (!trigger_coop_relay_ok(player))
             continue;
         num_active++;
@@ -1215,8 +1199,7 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
     }
 
     if (num_present && self->timestamp < level.time) {
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
+        FOR_EACH_PLAYER(player) {
             if (!trigger_coop_relay_ok(player))
                 continue;
             if (Box3_Intersects(player->r.absbox, self->r.absbox))

@@ -465,19 +465,12 @@ bool fire_player_melee(edict_t *self, vec3_t start, vec3_t aim, int reach, int d
 
 void THINK(Nuke_Quake)(edict_t *self)
 {
-    int      i;
-    edict_t *e;
-
     if (self->last_move_time < level.time) {
         G_StartSound(self, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE);
         self->last_move_time = level.time + SEC(0.5f);
     }
 
-    for (i = 0, e = g_edicts + i; i < game.maxclients; i++, e++) {
-        if (!e->r.inuse)
-            continue;
-        if (!e->client)
-            continue;
+    FOR_EACH_PLAYER(e) {
         if (!e->groundentity)
             continue;
 
@@ -700,9 +693,8 @@ static void tesla_blow(edict_t *self)
 
 static edict_t *tesla_find_beam(edict_t *self, edict_t *hit)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *ent = &g_edicts[i];
-        if (ent->r.inuse && ent->r.ownernum == self->s.number && ent->enemy == hit)
+    FOR_EACH_ENTITY(ent) {
+        if (ent->r.ownernum == self->s.number && ent->enemy == hit)
             return ent;
     }
 

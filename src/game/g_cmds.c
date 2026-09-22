@@ -356,10 +356,7 @@ static void Cmd_Target_c(int firstarg, int argnum)
 
     trap_SetCompletionOptions(CMPL_CASELESS | CMPL_CHECKDUPS);
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        const edict_t *ent = &g_edicts[i];
-        if (!ent->r.inuse)
-            continue;
+    FOR_EACH_ENTITY(ent) {
         if (ent->targetname)
             trap_AddCommandCompletion(ent->targetname);
     }
@@ -972,13 +969,8 @@ Kill spawned monsters, free unspawned ones
 */
 static void Cmd_Kill_AI_f(edict_t *ent, cmdflags_t flags)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *edict = &g_edicts[i];
-        if (!edict->r.inuse)
-            continue;
-        if (!(edict->r.svflags & SVF_MONSTER))
-            continue;
-        if (edict->health < 1)
+    FOR_EACH_ENTITY(edict) {
+        if (!(edict->r.svflags & SVF_MONSTER) || edict->health <= 0)
             continue;
 
         if (edict->r.svflags & SVF_NOCLIENT) {
@@ -1016,13 +1008,9 @@ Cmd_Clear_AI_Enemy_f
 */
 static void Cmd_Clear_AI_Enemy_f(edict_t *ent, cmdflags_t flags)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *edict = &g_edicts[i];
-        if (!edict->r.inuse)
-            continue;
-        if (!(edict->r.svflags & SVF_MONSTER))
-            continue;
-        edict->monsterinfo.aiflags |= AI_FORGET_ENEMY;
+    FOR_EACH_ENTITY(edict) {
+        if (edict->r.svflags & SVF_MONSTER)
+            edict->monsterinfo.aiflags |= AI_FORGET_ENEMY;
     }
 }
 
@@ -1033,14 +1021,12 @@ Cmd_AlertAll_f
 */
 static void Cmd_AlertAll_f(edict_t *ent, cmdflags_t flags)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *t = &g_edicts[i];
-
-        if (!t->r.inuse || t->health <= 0 || !(t->r.svflags & SVF_MONSTER))
+    FOR_EACH_ENTITY(edict) {
+        if (!(edict->r.svflags & SVF_MONSTER) || edict->health <= 0)
             continue;
 
-        t->enemy = ent;
-        FoundTarget(t);
+        edict->enemy = ent;
+        FoundTarget(edict);
     }
 }
 
@@ -1162,7 +1148,7 @@ static void Cmd_Players_f(edict_t *ent, cmdflags_t flags)
 
     count = 0;
     for (i = 0; i < game.maxclients; i++)
-        if (g_clients[i].pers.connected) {
+        if (g_clients[i].pers.spawned) {
             index[count] = i;
             count++;
         }
@@ -1243,9 +1229,8 @@ static void Cmd_Wave_f(edict_t *ent, cmdflags_t flags)
     edict_t *aiming_at = NULL;
     float best_dist = -9999;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (!player->r.inuse || player == ent)
+    FOR_EACH_PLAYER(player) {
+        if (player == ent)
             continue;
 
         vec3_t dir = Vec3_Sub(player->s.origin, aim.start);
@@ -1314,9 +1299,8 @@ static void Cmd_Wave_f(edict_t *ent, cmdflags_t flags)
     bool has_a_target = false;
 
     if (cmd == GESTURE_POINT) {
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
-            if (player->r.inuse && player != ent && OnSameTeam(ent, player)) {
+        FOR_EACH_PLAYER(player) {
+            if (player != ent && OnSameTeam(ent, player)) {
                 has_a_target = true;
                 break;
             }
@@ -1331,10 +1315,7 @@ static void Cmd_Wave_f(edict_t *ent, cmdflags_t flags)
 
         if (tr.fraction != 1.0f) {
             // send to all teammates
-            for (int i = 0; i < game.maxclients; i++) {
-                edict_t *player = &g_edicts[i];
-                if (!player->r.inuse)
-                    continue;
+            FOR_EACH_PLAYER(player) {
                 if (player != ent && !OnSameTeam(ent, player))
                     continue;
 
@@ -1374,8 +1355,6 @@ Cmd_Say_f
 */
 static void Cmd_Say_f(edict_t *ent, cmdflags_t flags)
 {
-    int     j;
-    edict_t *other;
     char    text[152];
     char    buf[152];
 
@@ -1406,36 +1385,25 @@ static void Cmd_Say_f(edict_t *ent, cmdflags_t flags)
     if (sv_dedicated.integer)
         Com_LPrintf(PRINT_TALK, "%s", text);
 
-    for (j = 0; j < game.maxclients; j++) {
-        other = &g_edicts[j];
-        if (!other->r.inuse)
-            continue;
-        if (!other->client)
-            continue;
+    FOR_EACH_PLAYER(other)
         G_ClientPrintf(other, PRINT_CHAT, "%s", text);
-    }
 }
 
 static void Cmd_PlayerList_f(edict_t *ent, cmdflags_t flags)
 {
-    int i;
     char st[80];
     char text[MAX_IDEAL_PACKET_SIZE];
-    edict_t *e2;
 
     // connect time, ping, score, name
     *text = 0;
-    for (i = 0, e2 = g_edicts; i < game.maxclients; i++, e2++) {
-        if (!e2->r.inuse)
-            continue;
-
-        int sec = TO_SEC(level.time - e2->client->resp.entertime);
+    FOR_EACH_CLIENT(cl) {
+        int sec = TO_SEC(level.time - cl->resp.entertime);
         Q_snprintf(st, sizeof(st), "%02d:%02d %4d %3d %s%s\n",
                    sec / 60, sec % 60,
-                   e2->client->ping,
-                   e2->client->resp.score,
-                   e2->client->pers.netname,
-                   e2->client->resp.spectator ? " (spectator)" : "");
+                   cl->ping,
+                   cl->resp.score,
+                   cl->pers.netname,
+                   cl->resp.spectator ? " (spectator)" : "");
         if (strlen(text) + strlen(st) > sizeof(text) - 50) {
             if (strlen(text) < sizeof(text) - 12)
                 strcat(text, "And more...\n");
@@ -1453,14 +1421,8 @@ static void Cmd_ListMonsters_f(edict_t *ent, cmdflags_t flags)
 {
     int monsters = 0;
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *e = &g_edicts[i];
-
-        if (!e->r.inuse)
-            continue;
-        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
-            continue;
-        if (e->deadflag)
+    FOR_EACH_ENTITY(e) {
+        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT) || e->deadflag)
             continue;
 
         G_ClientPrintf(ent, PRINT_HIGH, "%s\n", etos(e));
@@ -1476,22 +1438,11 @@ static void Cmd_ShowMonsters_f(edict_t *ent, cmdflags_t flags)
 
     trap_R_ClearDebugLines();
 
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *e = &g_edicts[i];
-        uint32_t color;
-
-        if (!e->r.inuse)
-            continue;
-        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT))
-            continue;
-        if (e->deadflag)
+    FOR_EACH_ENTITY(e) {
+        if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT) || e->deadflag)
             continue;
 
-        if (e->r.svflags & SVF_NOCLIENT)
-            color = U32_BLUE;
-        else
-            color = U32_RED;
-        trap_R_AddDebugBounds(e->r.absbox, color, 10000, false);
+        trap_R_AddDebugBounds(e->r.absbox, (e->r.svflags & SVF_NOCLIENT) ? U32_BLUE : U32_RED, 10000, false);
         monsters++;
     }
 

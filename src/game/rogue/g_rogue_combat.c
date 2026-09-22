@@ -69,19 +69,16 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
     }
 
     // cycle through players
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *ent = &g_edicts[i];
-        if ((ent->r.inuse) && (ent->client) && (ent->client->nuke_time != level.time + SEC(2))) {
-            tr = G_TraceLine(inflictor->s.origin, ent->s.origin, inflictor->s.number, MASK_SOLID);
-            if (tr.fraction == 1.0f)
-                ent->client->nuke_time = level.time + SEC(2);
-            else {
-                dist = realrange(ent, inflictor);
-                if (dist < 2048)
-                    ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1.5f));
-                else
-                    ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1));
-            }
+    FOR_EACH_PLAYER(ent) {
+        tr = G_TraceLine(inflictor->s.origin, ent->s.origin, inflictor->s.number, MASK_SOLID);
+        if (tr.fraction == 1.0f)
+            ent->client->nuke_time = level.time + SEC(2);
+        else {
+            dist = realrange(ent, inflictor);
+            if (dist < 2048)
+                ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1.5f));
+            else
+                ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1));
         }
     }
 }

@@ -2478,6 +2478,18 @@ extern dm_game_rt DMGame;
 // ROGUE
 //============
 
+// iterate in-use entities except players/bodyque
+#define FOR_EACH_ENTITY(ent) \
+    for (edict_t *ent = &g_edicts[game.maxclients + BODY_QUEUE_SIZE]; ent < &g_edicts[level.num_edicts]; ent++) if (ent->r.inuse)
+
+// iterate in-use player entities
+#define FOR_EACH_PLAYER(ent) \
+    for (edict_t *ent = g_edicts; ent < &g_edicts[game.maxclients]; ent++) if (ent->r.inuse)
+
+// iterate spawned clients
+#define FOR_EACH_CLIENT(cli) \
+    for (gclient_t *cli = g_clients; cli < &g_clients[game.maxclients]; cli++) if (cli->pers.spawned)
+
 // we won't ever pierce more than this many entities for a single trace.
 #define MAX_PIERCE  16
 

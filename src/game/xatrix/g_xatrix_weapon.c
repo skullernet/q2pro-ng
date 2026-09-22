@@ -430,10 +430,8 @@ void THINK(Trap_Think)(edict_t *ent)
     ent->s.frame = 5;
 
     // link up any gibs that this monster may have spawned
-    for (int i = game.maxclients; i < level.num_edicts; i++) {
-        edict_t *e = &g_edicts[i];
-
-        if (!e->r.inuse)
+    FOR_EACH_ENTITY(e) {
+        if (!ent->classname)
             continue;
         if (strcmp(e->classname, "gib"))
             continue;

@@ -684,10 +684,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
             bool allPlayersDead = true;
 
-            for (int i = 0; i < game.maxclients; i++) {
-                edict_t *player = &g_edicts[i];
-                if (!player->r.inuse)
-                    continue;
+            FOR_EACH_PLAYER(player) {
                 if (player->health > 0 || (!level.deadly_kill_box && g_coop_enable_lives.integer && player->client->pers.lives > 0)) {
                     allPlayersDead = false;
                     break;
@@ -697,11 +694,8 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             if (allPlayersDead) { // allow respawns for telefrags and weird shit
                 level.coop_level_restart_time = level.time + SEC(5);
 
-                for (int i = 0; i < game.maxclients; i++) {
-                    edict_t *player = &g_edicts[i];
-                    if (player->r.inuse)
-                        G_ClientPrintf(player, PRINT_CENTER, "Everyone is dead. You lose.\nRestarting level...");
-                }
+                FOR_EACH_PLAYER(player)
+                    G_ClientPrintf(player, PRINT_CENTER, "Everyone is dead. You lose.\nRestarting level...");
             }
 
             // in 3 seconds, attempt a respawn or put us into
@@ -858,9 +852,8 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
         bool taken_loadout = false;
 
         if (coop.integer) {
-            for (int i = 0; i < game.maxclients; i++) {
-                edict_t *player = &g_edicts[i];
-                if (!player->r.inuse || player == ent || !player->client->pers.spawned ||
+            FOR_EACH_PLAYER(player) {
+                if (player == ent || !player->client->pers.spawned ||
                     player->client->resp.spectator || player->movetype == MOVETYPE_NOCLIP)
                     continue;
 
@@ -977,17 +970,12 @@ edicts are wiped.
 */
 void SaveClientData(void)
 {
-    edict_t *ent;
-
-    for (int i = 0; i < game.maxclients; i++) {
-        ent = &g_edicts[i];
-        if (!ent->r.inuse)
-            continue;
-        g_clients[i].pers.health = ent->health;
-        g_clients[i].pers.max_health = ent->max_health;
-        g_clients[i].pers.savedFlags = ent->flags & FL_CLIENT_SAVED_MASK;
+    FOR_EACH_PLAYER(ent) {
+        ent->client->pers.health = ent->health;
+        ent->client->pers.max_health = ent->max_health;
+        ent->client->pers.savedFlags = ent->flags & FL_CLIENT_SAVED_MASK;
         if (coop.integer)
-            g_clients[i].pers.score = ent->client->resp.score;
+            ent->client->pers.score = ent->client->resp.score;
     }
 }
 
@@ -1017,18 +1005,12 @@ Returns the distance to the nearest player from the given spot
 */
 float PlayersRangeFromSpot(edict_t *spot)
 {
-    edict_t *player;
     float    bestplayerdistance;
     float    playerdistance;
 
     bestplayerdistance = 9999999;
 
-    for (int n = 0; n < game.maxclients; n++) {
-        player = &g_edicts[n];
-
-        if (!player->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(player) {
         if (player->health <= 0)
             continue;
 
@@ -1621,7 +1603,7 @@ void respawn(edict_t *self)
  */
 static void spectator_respawn(edict_t *ent)
 {
-    int i, numspec;
+    int numspec;
 
     // if the user wants to become a spectator, make sure he doesn't
     // exceed max_spectators
@@ -1639,9 +1621,11 @@ static void spectator_respawn(edict_t *ent)
         }
 
         // count spectators
-        for (i = 0, numspec = 0; i < game.maxclients; i++)
-            if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
+        numspec = 0;
+        FOR_EACH_CLIENT(cl) {
+            if (cl->pers.spectator)
                 numspec++;
+        }
 
         if (numspec >= maxspectators.integer) {
             G_ClientPrintf(ent, PRINT_HIGH, "Server spectator limit is full.");
@@ -1906,6 +1890,7 @@ void PutClientInServer(edict_t *ent)
 
     // fix level switch issue
     ent->client->pers.connected = true;
+    ent->client->pers.spawned = true;
 
     // copy some data from the client to the entity
     FetchClientEntData(ent);
@@ -2118,9 +2103,10 @@ static void G_SetLevelEntry(void)
         level.entry->visit_order = highest_order + 1;
 
         // give all of the clients an extra life back
-        if (g_coop_enable_lives.integer)
-            for (int i = 0; i < game.maxclients; i++)
-                g_clients[i].pers.lives = min(g_coop_num_lives.integer + 1, g_clients[i].pers.lives + 1);
+        if (g_coop_enable_lives.integer) {
+            FOR_EACH_CLIENT(cl)
+                cl->pers.lives = min(g_coop_num_lives.integer + 1, cl->pers.lives + 1);
+        }
     }
 
     // scan for all new maps we can go to, for secret levels
@@ -2281,7 +2267,7 @@ qvm_exported const char *G_ClientConnect(int clientnum)
     char *value = Info_ValueForKey(userinfo, "spectator");
 
     if (deathmatch.integer && *value && strcmp(value, "0")) {
-        int i, numspec;
+        int numspec;
 
         if (*spectator_password.string &&
             strcmp(spectator_password.string, "none") &&
@@ -2290,9 +2276,11 @@ qvm_exported const char *G_ClientConnect(int clientnum)
         }
 
         // count spectators
-        for (i = numspec = 0; i < game.maxclients; i++)
-            if (g_edicts[i].r.inuse && g_edicts[i].client->pers.spectator)
+        numspec = 0;
+        FOR_EACH_CLIENT(cl) {
+            if (cl->pers.spectator)
                 numspec++;
+        }
 
         if (numspec >= maxspectators.integer)
             return "Server spectator limit is full.";
@@ -2391,10 +2379,9 @@ qvm_exported void G_ClientDisconnect(int clientnum)
 
     // update active scoreboards
     if (deathmatch.integer) {
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
-            if (player->r.inuse && player->client->showscores)
-                player->client->menutime = level.time;
+        FOR_EACH_CLIENT(cl) {
+            if (cl->showscores)
+                cl->menutime = level.time;
         }
     }
 }
@@ -2785,18 +2772,16 @@ qvm_exported void G_ClientThink(int clientnum)
     }
 
     // update chase cam if being followed
-    for (i = 0; i < game.maxclients; i++) {
-        other = g_edicts + i;
-        if (other->r.inuse && other->client->chase_target == ent)
+    FOR_EACH_PLAYER(other) {
+        if (other->client->chase_target == ent)
             UpdateChaseCam(other);
     }
 }
 
 static bool G_MonstersSearchingFor(edict_t *player)
 {
-    for (int i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *ent = &g_edicts[i];
-        if (!ent->r.inuse || !(ent->r.svflags & SVF_MONSTER) || ent->health <= 0)
+    FOR_EACH_ENTITY(ent) {
+        if (!(ent->r.svflags & SVF_MONSTER) || ent->health <= 0)
             continue;
 
         // check for *any* player target
@@ -2931,10 +2916,9 @@ static edict_t *G_FindSquadRespawnTarget(vec3_t *spot)
 {
     bool monsters_searching_for_anybody = G_MonstersSearchingFor(NULL);
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
+    FOR_EACH_PLAYER(player) {
         // no dead players
-        if (!player->r.inuse || player->deadflag)
+        if (player->deadflag)
             continue;
 
         // check combat state; we can't have taken damage recently
@@ -3016,9 +3000,8 @@ static bool G_CoopRespawn(edict_t *ent)
         if (g_coop_squad_respawn.integer) {
             bool allDead = true;
 
-            for (int i = 0; i < game.maxclients; i++) {
-                edict_t *player = &g_edicts[i];
-                if (player->r.inuse && player->health > 0) {
+            FOR_EACH_PLAYER(player) {
+                if (player->health > 0) {
                     allDead = false;
                     break;
                 }

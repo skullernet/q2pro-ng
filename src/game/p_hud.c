@@ -113,15 +113,13 @@ void G_EndOfUnitMessage(void)
         trap_SetConfigstring(CS_LEVEL_ENTRIES + i, BG_FormatLevelEntry(entry));
     }
 
-    for (int i = 0; i < game.maxclients; i++) {
-        if (g_edicts[i].r.inuse)
-            g_clients[i].showeou = true;
-    }
+    FOR_EACH_CLIENT(client)
+        client->showeou = true;
 }
 
 void BeginIntermission(edict_t *targ)
 {
-    edict_t *ent, *client;
+    edict_t *ent;
 
     if (level.intermissiontime)
         return; // already activated
@@ -136,10 +134,7 @@ void BeginIntermission(edict_t *targ)
     level.intermissiontime = level.time;
 
     // respawn any dead clients
-    for (int i = 0; i < game.maxclients; i++) {
-        client = g_edicts + i;
-        if (!client->r.inuse)
-            continue;
+    FOR_EACH_PLAYER(client) {
         if (client->health <= 0) {
             // give us our max health back since it will reset
             // to pers.health; in instanced items we'd lose the items
@@ -165,10 +160,7 @@ void BeginIntermission(edict_t *targ)
 
     if (strstr(level.changemap, "*")) {
         if (coop.integer) {
-            for (int i = 0; i < game.maxclients; i++) {
-                client = g_edicts + i;
-                if (!client->r.inuse)
-                    continue;
+            FOR_EACH_PLAYER(client) {
                 // strip players of all keys between units
                 for (int n = 0; n < IT_TOTAL; n++)
                     if (itemlist[n].flags & IF_KEY)
@@ -219,12 +211,8 @@ void BeginIntermission(edict_t *targ)
     }
 
     // move all clients to the intermission point
-    for (int i = 0; i < game.maxclients; i++) {
-        client = g_edicts + i;
-        if (!client->r.inuse)
-            continue;
+    FOR_EACH_PLAYER(client)
         MoveClientToIntermission(client);
-    }
 }
 
 #define MAX_SCOREBOARD_SIZE 1024
@@ -743,14 +731,11 @@ G_CheckChaseStats
 */
 void G_CheckChaseStats(edict_t *ent)
 {
-    gclient_t *cl;
-
-    for (int i = 0; i < game.maxclients; i++) {
-        cl = g_edicts[i].client;
-        if (!g_edicts[i].r.inuse || cl->chase_target != ent)
+    FOR_EACH_PLAYER(other) {
+        if (other->client->chase_target != ent)
             continue;
-        memcpy(cl->ps.stats, ent->client->ps.stats, sizeof(cl->ps.stats));
-        G_SetSpectatorStats(g_edicts + i);
+        memcpy(other->client->ps.stats, ent->client->ps.stats, sizeof(other->client->ps.stats));
+        G_SetSpectatorStats(other);
     }
 }
 

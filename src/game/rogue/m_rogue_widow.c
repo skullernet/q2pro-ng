@@ -962,42 +962,25 @@ static void WidowRespondPowerup(edict_t *self, edict_t *other)
 
 void WidowPowerups(edict_t *self)
 {
-    edict_t *ent;
-
     if (!coop.integer) {
         WidowRespondPowerup(self, self->enemy);
     } else {
         // in coop, check for pents, then quads, then doubles
-        for (int player = 0; player < game.maxclients; player++) {
-            ent = &g_edicts[player];
-            if (!ent->r.inuse)
-                continue;
-            if (!ent->client)
-                continue;
+        FOR_EACH_PLAYER(ent) {
             if (ent->s.effects & EF_PENT) {
                 WidowRespondPowerup(self, ent);
                 return;
             }
         }
 
-        for (int player = 0; player < game.maxclients; player++) {
-            ent = &g_edicts[player];
-            if (!ent->r.inuse)
-                continue;
-            if (!ent->client)
-                continue;
+        FOR_EACH_PLAYER(ent) {
             if (ent->s.effects & EF_QUAD) {
                 WidowRespondPowerup(self, ent);
                 return;
             }
         }
 
-        for (int player = 0; player < game.maxclients; player++) {
-            ent = &g_edicts[player];
-            if (!ent->r.inuse)
-                continue;
-            if (!ent->client)
-                continue;
+        FOR_EACH_PLAYER(ent) {
             if (ent->s.effects & EF_DOUBLE) {
                 WidowRespondPowerup(self, ent);
                 return;

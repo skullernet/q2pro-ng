@@ -79,12 +79,7 @@ static void CarrierCoopCheck(edict_t *self)
         return;
 
     // cycle through players
-    for (int player = 0; player < game.maxclients; player++) {
-        ent = &g_edicts[player];
-        if (!ent->r.inuse)
-            continue;
-        if (!ent->client)
-            continue;
+    FOR_EACH_PLAYER(ent) {
         if (inback(self, ent) || below(self, ent)) {
             tr = G_TraceLine(self->s.origin, ent->s.origin, self->s.number, MASK_SOLID);
             if (tr.fraction == 1.0f)

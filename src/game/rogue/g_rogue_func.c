@@ -226,18 +226,13 @@ void MOVEINFO_BLOCKED(plat2_blocked)(edict_t *self, edict_t *other)
 
 void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    int i;
-
     if (ent->moveinfo.state > STATE_BOTTOM)
         return;
     // [Paril-KEX] disabled this; causes confusing situations
     //if ((ent->last_move_time + SEC(2)) > level.time)
     //  return;
 
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        edict_t *trigger = g_edicts + i;
-        if (!trigger->r.inuse)
-            continue;
+    FOR_EACH_ENTITY(trigger) {
         if (trigger->touch == Touch_Plat_Center2 && trigger->enemy == ent) {
             plat2_operate(trigger, activator);
             return;

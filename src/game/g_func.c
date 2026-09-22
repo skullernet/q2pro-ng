@@ -1183,7 +1183,6 @@ void THINK(smart_water_go_up)(edict_t *self)
 {
     float    distance;
     edict_t *lowestPlayer;
-    edict_t *ent;
     float    lowestPlayerPt;
 
     if (self->moveinfo.state == STATE_TOP) {
@@ -1208,11 +1207,9 @@ void THINK(smart_water_go_up)(edict_t *self)
     // find the lowest player point.
     lowestPlayerPt = 999999;
     lowestPlayer = NULL;
-    for (int i = 0; i < game.maxclients; i++) {
-        ent = &g_edicts[i];
-
+    FOR_EACH_PLAYER(ent) {
         // don't count dead or unused player slots
-        if ((ent->r.inuse) && (ent->health > 0) && (ent->r.absbox.mins.z < lowestPlayerPt)) {
+        if ((ent->health > 0) && (ent->r.absbox.mins.z < lowestPlayerPt)) {
             lowestPlayerPt = ent->r.absbox.mins.z;
             lowestPlayer = ent;
         }
@@ -2505,11 +2502,7 @@ void THINK(func_eye_think)(edict_t *self)
     float closest_dist = FLT_MAX;
     edict_t *closest_player = NULL;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (!player->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(player) {
         vec3_t dir = Vec3_Sub(player->s.origin, self->s.origin);
         float dist = Vec3_Normalize(&dir);
 

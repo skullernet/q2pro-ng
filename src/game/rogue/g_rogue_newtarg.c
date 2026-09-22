@@ -171,22 +171,14 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 {
     level.deadly_kill_box = true;
 
-    edict_t *ent, *player;
-
     // kill any visible monsters
-    for (ent = g_edicts; ent < &g_edicts[level.num_edicts]; ent++) {
-        if (!ent->r.inuse)
-            continue;
+    FOR_EACH_ENTITY(ent) {
         if (ent->health < 1)
             continue;
         if (!ent->takedamage)
             continue;
 
-        for (int i = 0; i < game.maxclients; i++) {
-            player = &g_edicts[i];
-            if (!player->r.inuse)
-                continue;
-
+        FOR_EACH_PLAYER(player) {
             if (trap_InVis(player->s.origin, ent->s.origin, VIS_PVS)) {
                 T_Damage(ent, self, self, vec3_origin, ent->s.origin, 0,
                          ent->health, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
@@ -196,11 +188,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
     }
 
     // kill the players
-    for (int i = 0; i < game.maxclients; i++) {
-        player = &g_edicts[i];
-        if (!player->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(player) {
         // nail it
         T_Damage(player, self, self, vec3_origin, self->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
     }

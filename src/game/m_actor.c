@@ -446,12 +446,8 @@ void TOUCH(target_actor_touch)(edict_t *self, edict_t *other, const trace_t *tr,
     other->goalentity = other->movetarget = NULL;
 
     if (self->message) {
-        for (int n = 0; n < game.maxclients; n++) {
-            edict_t *ent = &g_edicts[n];
-            if (!ent->r.inuse)
-                continue;
+        FOR_EACH_PLAYER(ent)
             G_ClientPrintf(ent, PRINT_CHAT, "%s: %s\n", actor_names[other->s.number % q_countof(actor_names)], self->message);
-        }
     }
 
     if (self->spawnflags & SPAWNFLAG_TARGET_ACTOR_JUMP) { // jump

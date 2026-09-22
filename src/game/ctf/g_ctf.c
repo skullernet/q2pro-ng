@@ -262,7 +262,6 @@ void CTFAssignSkin(edict_t *ent, const char *s)
 
 void CTFAssignTeam(gclient_t *who)
 {
-    edict_t *player;
     int team1count = 0, team2count = 0;
 
     who->resp.ctf_state = 0;
@@ -272,10 +271,8 @@ void CTFAssignTeam(gclient_t *who)
         return;
     }
 
-    for (int i = 0; i < game.maxclients; i++) {
-        player = &g_edicts[i];
-
-        if (!player->r.inuse || player->client == who)
+    FOR_EACH_PLAYER(player) {
+        if (player->client == who)
             continue;
 
         switch (player->client->resp.ctf_team) {
@@ -379,7 +376,6 @@ order.
 */
 void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
 {
-    edict_t *ent;
     item_id_t   flag_item, enemy_flag_item;
     int         otherteam;
     edict_t *flag, *carrier = NULL;
@@ -420,9 +416,8 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
 
         // the target had the flag, clear the hurt carrier
         // field on the other team
-        for (int i = 0; i < game.maxclients; i++) {
-            ent = g_edicts + i;
-            if (ent->r.inuse && ent->client->resp.ctf_team == otherteam)
+        FOR_EACH_PLAYER(ent) {
+            if (ent->client->resp.ctf_team == otherteam)
                 ent->client->resp.ctf_lasthurtcarrier = 0;
         }
         return;
@@ -467,12 +462,12 @@ void CTFFragBonuses(edict_t *targ, edict_t *inflictor, edict_t *attacker)
         return; // can't find attacker's flag
 
     // find attacker's team's flag carrier
-    for (int i = 0; i < game.maxclients; i++) {
-        carrier = g_edicts + i;
-        if (carrier->r.inuse &&
-            carrier->client->pers.inventory[flag_item])
+    carrier = NULL;
+    FOR_EACH_PLAYER(player) {
+        if (player->client->pers.inventory[flag_item]) {
+            carrier = player;
             break;
-        carrier = NULL;
+        }
     }
 
     // ok we have the attackers flag and a pointer to the carrier
@@ -575,7 +570,6 @@ static void CTFResetFlags(void)
 bool CTFPickup_Flag(edict_t *ent, edict_t *other)
 {
     int       ctf_team;
-    edict_t  *player;
     item_id_t flag_item, enemy_flag_item;
 
     // figure out what team this flag is
@@ -622,11 +616,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                     other->client->resp.ghost->caps++;
 
                 // Ok, let's do the player loop, hand out the bonuses
-                for (int i = 0; i < game.maxclients; i++) {
-                    player = &g_edicts[i];
-                    if (!player->r.inuse)
-                        continue;
-
+                FOR_EACH_PLAYER(player) {
                     if (player->client->resp.ctf_team != other->client->resp.ctf_team)
                         player->client->resp.ctf_lasthurtcarrier = -SEC(5);
                     else if (player->client->resp.ctf_team == other->client->resp.ctf_team) {
@@ -802,13 +792,11 @@ void CTFEffects(edict_t *player)
 void CTFCalcScores(void)
 {
     ctfgame.total1 = ctfgame.total2 = 0;
-    for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i].r.inuse)
-            continue;
-        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
-            ctfgame.total1 += g_clients[i].resp.score;
-        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
-            ctfgame.total2 += g_clients[i].resp.score;
+    FOR_EACH_CLIENT(cl) {
+        if (cl->resp.ctf_team == CTF_TEAM1)
+            ctfgame.total1 += cl->resp.score;
+        else if (cl->resp.ctf_team == CTF_TEAM2)
+            ctfgame.total2 += cl->resp.score;
     }
 }
 
@@ -824,10 +812,9 @@ void CTFCalcRankings(int player_ranks[MAX_CLIENTS])
 
     ctfteam_t winning_team = (ctfgame.total1 > ctfgame.total2) ? CTF_TEAM1 : CTF_TEAM2;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (player->r.inuse && player->client->pers.spawned && player->client->resp.ctf_team != CTF_NOTEAM)
-            player_ranks[i] = player->client->resp.ctf_team == winning_team ? 1 : 2;
+    FOR_EACH_CLIENT(cl) {
+        if (cl->resp.ctf_team != CTF_NOTEAM)
+            player_ranks[cl - g_clients] = cl->resp.ctf_team == winning_team ? 1 : 2;
     }
 }
 
@@ -854,7 +841,7 @@ static void CTFSetIDView(edict_t *ent)
 {
     vec3_t   forward, dir;
     trace_t  tr;
-    edict_t *who, *best, *hit;
+    edict_t *best, *hit;
     float    bd = 0, d;
 
     // only check every few frames
@@ -880,9 +867,8 @@ static void CTFSetIDView(edict_t *ent)
 
     AngleVectors(ent->client->v_angle, &forward, NULL, NULL);
     best = NULL;
-    for (int i = 0; i < game.maxclients; i++) {
-        who = g_edicts + i;
-        if (!who->r.inuse || who->r.solid == SOLID_NOT)
+    FOR_EACH_PLAYER(who) {
+        if (who->r.solid == SOLID_NOT)
             continue;
 
         // we have teammate indicators that are better for this
@@ -979,13 +965,13 @@ void SetCTFStats(edict_t *ent)
                 // not at base
                 // check if on player
                 p1 = imageindex_i_ctf1d; // default to dropped
-                for (i = 0; i < game.maxclients; i++)
-                    if (g_edicts[i].r.inuse &&
-                        g_edicts[i].client->pers.inventory[IT_FLAG1]) {
+                FOR_EACH_CLIENT(cl) {
+                    if (cl->pers.inventory[IT_FLAG1]) {
                         // enemy has it
                         p1 = imageindex_i_ctf1t;
                         break;
                     }
+                }
 
                 // [Paril-KEX] make sure there is a dropped version on the map somewhere
                 if (p1 == imageindex_i_ctf1d) {
@@ -1007,13 +993,13 @@ void SetCTFStats(edict_t *ent)
                 // not at base
                 // check if on player
                 p2 = imageindex_i_ctf2d; // default to dropped
-                for (i = 0; i < game.maxclients; i++)
-                    if (g_edicts[i].r.inuse &&
-                        g_edicts[i].client->pers.inventory[IT_FLAG2]) {
+                FOR_EACH_CLIENT(cl) {
+                    if (cl->pers.inventory[IT_FLAG2]) {
                         // enemy has it
                         p2 = imageindex_i_ctf2t;
                         break;
                     }
+                }
 
                 // [Paril-KEX] make sure there is a dropped version on the map somewhere
                 if (p2 == imageindex_i_ctf2d) {
@@ -1366,11 +1352,10 @@ void CTFWeapon_Grapple(edict_t *ent)
 
 void CTFDirtyTeamMenu(void)
 {
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (player->r.inuse && player->client->menu) {
-            player->client->menudirty = true;
-            player->client->menutime = level.time;
+    FOR_EACH_CLIENT(cl) {
+        if (cl->menu) {
+            cl->menudirty = true;
+            cl->menutime = level.time;
         }
     }
 }
@@ -1456,18 +1441,12 @@ void CTFSwitchTeam_f(edict_t *ent, cmdflags_t flags)
     // [Paril-KEX] in force-join, just do a regular team join.
     if (g_teamplay_force_join.integer) {
         // check if we should even switch teams
-        edict_t *player;
         int team1count = 0, team2count = 0;
         ctfteam_t best_team;
 
-        for (int i = 0; i < game.maxclients; i++) {
-            player = &g_edicts[i];
-
+        FOR_EACH_PLAYER(player) {
             // NB: we are counting ourselves in this one, unlike
             // the other assign team func
-            if (!player->r.inuse)
-                continue;
-
             switch (player->client->resp.ctf_team) {
             case CTF_TEAM1:
                 team1count++;
@@ -1875,12 +1854,8 @@ void CTFSetupTechSpawn(void)
 
 void CTFResetTech(void)
 {
-    edict_t *ent;
-    int i;
-
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        ent = g_edicts + i;
-        if (ent->r.inuse && ent->item && (ent->item->flags & IF_TECH))
+    FOR_EACH_ENTITY(ent) {
+        if (ent->item && (ent->item->flags & IF_TECH))
             G_FreeEdict(ent);
     }
 
@@ -1997,7 +1972,6 @@ bool CTFHasRegeneration(edict_t *ent)
 
 void CTFSayTeam_f(edict_t *who, cmdflags_t flags)
 {
-    edict_t *cl_ent;
     char outmsg[256];
 
     if (CheckFlood(who))
@@ -2006,10 +1980,7 @@ void CTFSayTeam_f(edict_t *who, cmdflags_t flags)
     trap_Args(outmsg, sizeof(outmsg));
     char *msg = COM_StripQuotes(outmsg);
 
-    for (int i = 0; i < game.maxclients; i++) {
-        cl_ent = g_edicts + i;
-        if (!cl_ent->r.inuse)
-            continue;
+    FOR_EACH_PLAYER(cl_ent) {
         if (cl_ent->client->resp.ctf_team == who->client->resp.ctf_team)
             G_ClientPrintf(cl_ent, PRINT_CHAT, "(%s): %s\n",
                            who->client->pers.netname, msg);
@@ -2089,7 +2060,6 @@ static void SetLevelName(pmenu_t *p)
 static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
 {
     int      count;
-    edict_t *e;
 
     if (electpercentage.value == 0) {
         G_ClientPrintf(ent, PRINT_HIGH, "Elections are disabled, only an admin can process this action.\n");
@@ -2103,11 +2073,9 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
 
     // clear votes
     count = 0;
-    for (int i = 0; i < game.maxclients; i++) {
-        e = g_edicts + i;
+    FOR_EACH_PLAYER(e) {
         e->client->resp.voted = false;
-        if (e->r.inuse)
-            count++;
+        count++;
     }
 
     if (count < 2) {
@@ -2135,14 +2103,7 @@ void DoRespawn(edict_t *ent);
 
 static void CTFResetAllPlayers(void)
 {
-    int i;
-    edict_t *ent;
-
-    for (i = 0; i < game.maxclients; i++) {
-        ent = g_edicts + i;
-        if (!ent->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(ent) {
         if (ent->client->menu)
             PMenu_Close(ent);
 
@@ -2162,10 +2123,8 @@ static void CTFResetAllPlayers(void)
     CTFResetTech();
     CTFResetFlags();
 
-    for (i = game.maxclients + BODY_QUEUE_SIZE; i < level.num_edicts; i++) {
-        ent = g_edicts + i;
-        if (ent->r.inuse && ent->r.solid == SOLID_NOT &&
-            ent->think == DoRespawn && ent->nextthink >= level.time) {
+    FOR_EACH_ENTITY(ent) {
+        if (ent->r.solid == SOLID_NOT && ent->think == DoRespawn && ent->nextthink >= level.time) {
             ent->nextthink = 0;
             DoRespawn(ent);
         }
@@ -2204,8 +2163,6 @@ static void CTFAssignGhost(edict_t *ent)
 // start a match
 static void CTFStartMatch(void)
 {
-    edict_t *ent;
-
     ctfgame.match = MATCH_GAME;
     ctfgame.matchtime = level.time + FROM_MIN(matchtime.value);
     ctfgame.countdown = false;
@@ -2214,11 +2171,7 @@ static void CTFStartMatch(void)
 
     memset(ctfgame.ghosts, 0, sizeof(ctfgame.ghosts));
 
-    for (int i = 0; i < game.maxclients; i++) {
-        ent = g_edicts + i;
-        if (!ent->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(ent) {
         ent->client->resp.score = 0;
         ent->client->resp.ctf_state = 0;
         ent->client->resp.ghost = NULL;
@@ -2368,9 +2321,7 @@ void CTFVoteNo_f(edict_t *ent, cmdflags_t flags)
 
 void CTFReady_f(edict_t *ent, cmdflags_t flags)
 {
-    int i, j;
-    edict_t *e;
-    int t1, t2;
+    int j, t1, t2;
 
     if (ent->client->resp.ctf_team == CTF_NOTEAM) {
         G_ClientPrintf(ent, PRINT_HIGH, "Pick a team first (hit <TAB> for menu)\n");
@@ -2390,11 +2341,8 @@ void CTFReady_f(edict_t *ent, cmdflags_t flags)
     ent->client->resp.ready = true;
     G_ClientPrintf(NULL, PRINT_HIGH, "%s is ready.\n", ent->client->pers.netname);
 
-    t1 = t2 = 0;
-    for (j = 0, i = 0; i < game.maxclients; i++) {
-        e = g_edicts + i;
-        if (!e->r.inuse)
-            continue;
+    j = t1 = t2 = 0;
+    FOR_EACH_PLAYER(e) {
         if (e->client->resp.ctf_team != CTF_NOTEAM && !e->client->resp.ready)
             j++;
         if (e->client->resp.ctf_team == CTF_TEAM1)
@@ -2584,8 +2532,6 @@ static void CTFNoChaseCamUpdate(edict_t *ent)
 
 static void CTFChaseCam(edict_t *ent, pmenuhnd_t *p)
 {
-    edict_t *e;
-
     CTFJoinTeam(ent, CTF_NOTEAM);
 
     if (ent->client->chase_target) {
@@ -2594,9 +2540,8 @@ static void CTFChaseCam(edict_t *ent, pmenuhnd_t *p)
         return;
     }
 
-    for (int i = 0; i < game.maxclients; i++) {
-        e = g_edicts + i;
-        if (e->r.inuse && e->r.solid != SOLID_NOT) {
+    FOR_EACH_PLAYER(e) {
+        if (e->r.solid != SOLID_NOT) {
             ent->client->chase_target = e;
             PMenu_Close(ent);
             ent->client->update_chase = true;
@@ -2677,12 +2622,10 @@ static void CTFUpdateJoinMenu(edict_t *ent)
     SetLevelName(entries + jmenu_level);
 
     int num1 = 0, num2 = 0;
-    for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i].r.inuse)
-            continue;
-        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
+    FOR_EACH_CLIENT(cl) {
+        if (cl->resp.ctf_team == CTF_TEAM1)
             num1++;
-        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
+        else if (cl->resp.ctf_team == CTF_TEAM2)
             num2++;
     }
 
@@ -2728,12 +2671,10 @@ static void CTFUpdateJoinMenu(edict_t *ent)
 void CTFOpenJoinMenu(edict_t *ent)
 {
     int num1 = 0, num2 = 0;
-    for (int i = 0; i < game.maxclients; i++) {
-        if (!g_edicts[i].r.inuse)
-            continue;
-        if (g_clients[i].resp.ctf_team == CTF_TEAM1)
+    FOR_EACH_CLIENT(cl) {
+        if (cl->resp.ctf_team == CTF_TEAM1)
             num1++;
-        else if (g_clients[i].resp.ctf_team == CTF_TEAM2)
+        else if (cl->resp.ctf_team == CTF_TEAM2)
             num2++;
     }
 
@@ -2804,9 +2745,8 @@ bool CTFInMatch(void)
 bool CTFCheckRules(void)
 {
     int      t;
-    int      i, j;
+    int      j;
     char     text[MAX_QPATH];
-    edict_t *ent;
 
     if (ctfgame.election != ELECT_NONE && ctfgame.electtime <= level.time) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Election timed out and has been cancelled.\n");
@@ -2858,12 +2798,9 @@ bool CTFCheckRules(void)
 
         switch (ctfgame.match) {
         case MATCH_SETUP:
-            for (j = 0, i = 0; i < game.maxclients; i++) {
-                ent = g_edicts + i;
-                if (!ent->r.inuse)
-                    continue;
-                if (ent->client->resp.ctf_team != CTF_NOTEAM &&
-                    !ent->client->resp.ready)
+            j = 0;
+            FOR_EACH_CLIENT(cl) {
+                if (cl->resp.ctf_team != CTF_NOTEAM && !cl->resp.ready)
                     j++;
             }
 
@@ -2908,13 +2845,10 @@ bool CTFCheckRules(void)
 
         if (warn_unbalanced.integer) {
             // count up the team totals
-            for (i = 0; i < game.maxclients; i++) {
-                ent = g_edicts + i;
-                if (!ent->r.inuse)
-                    continue;
-                if (ent->client->resp.ctf_team == CTF_TEAM1)
+            FOR_EACH_CLIENT(cl) {
+                if (cl->resp.ctf_team == CTF_TEAM1)
                     team1++;
-                else if (ent->client->resp.ctf_team == CTF_TEAM2)
+                else if (cl->resp.ctf_team == CTF_TEAM2)
                     team2++;
             }
 
@@ -3375,16 +3309,12 @@ void CTFStats_f(edict_t *ent, cmdflags_t flags)
     ghost_t *g;
     char st[80];
     char text[MAX_CTF_STAT_LENGTH];
-    edict_t *e2;
 
     *text = 0;
     if (ctfgame.match == MATCH_SETUP) {
-        for (i = 0; i < game.maxclients; i++) {
-            e2 = g_edicts + i;
-            if (!e2->r.inuse)
-                continue;
-            if (!e2->client->resp.ready && e2->client->resp.ctf_team != CTF_NOTEAM) {
-                Q_snprintf(st, sizeof(st), "%s is not ready.\n", e2->client->pers.netname);
+        FOR_EACH_CLIENT(cl) {
+            if (!cl->resp.ready && cl->resp.ctf_team != CTF_NOTEAM) {
+                Q_snprintf(st, sizeof(st), "%s is not ready.\n", cl->pers.netname);
                 if (strlen(text) + strlen(st) < MAX_CTF_STAT_LENGTH - 50)
                     strcat(text, st);
             }
@@ -3438,27 +3368,22 @@ void CTFPlayerList_f(edict_t *ent, cmdflags_t flags)
 {
     char st[80];
     char text[MAX_CTF_STAT_LENGTH];
-    edict_t *e2;
 
     // number, name, connect time, ping, score, admin
 
     *text = 0;
-    for (int i = 0; i < game.maxclients; i++) {
-        e2 = g_edicts + i;
-        if (!e2->r.inuse)
-            continue;
-
-        int sec = TO_SEC(level.time - e2->client->resp.entertime);
+    FOR_EACH_CLIENT(cl) {
+        int sec = TO_SEC(level.time - cl->resp.entertime);
         Q_snprintf(st, sizeof(st), "%3d %-16.16s %02d:%02d %4d %3d%s%s\n",
-                  i,
-                  e2->client->pers.netname,
+                  (int)(cl - g_clients),
+                  cl->pers.netname,
                   sec / 60,
                   sec % 60,
-                  e2->client->ping,
-                  e2->client->resp.score,
+                  cl->ping,
+                  cl->resp.score,
                   (ctfgame.match == MATCH_SETUP || ctfgame.match == MATCH_PREGAME) ?
-                  (e2->client->resp.ready ? " (ready)" : " (notready)") : "",
-                  e2->client->resp.admin ? " (admin)" : "");
+                  (cl->resp.ready ? " (ready)" : " (notready)") : "",
+                  cl->resp.admin ? " (admin)" : "");
 
         if (strlen(text) + strlen(st) > MAX_CTF_STAT_LENGTH - 50) {
             strcat(text, "And more...\n");

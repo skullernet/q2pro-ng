@@ -33,9 +33,8 @@ edict_t *AI_GetSightClient(edict_t *self)
     edict_t *visible_players[MAX_CLIENTS];
     int num_visible = 0;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
+    FOR_EACH_PLAYER(player) {
+        if (player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
         if (player->flags & (FL_NOTARGET | FL_DISGUISED))
             continue;
@@ -529,11 +528,9 @@ void FoundTarget(edict_t *self)
 // check them & get mad at them even around corners
 static edict_t *AI_GetMonsterAlertedByPlayers(edict_t *self)
 {
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-
+    FOR_EACH_PLAYER(player) {
         // dead
-        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
+        if (player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
 
         // we didn't alert any other monster, or it wasn't recently
@@ -557,11 +554,9 @@ static edict_t *AI_GetSoundClient(edict_t *self, bool direct)
     edict_t *best_sound = NULL;
     float best_distance = FLT_MAX;
 
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *player = &g_edicts[i];
-
+    FOR_EACH_PLAYER(player) {
         // dead
-        if (!player->r.inuse || player->health <= 0 || player->deadflag || !player->r.solid)
+        if (player->health <= 0 || player->deadflag || !player->r.solid)
             continue;
 
         edict_t *sound = direct ? player->client->sound_entity : player->client->sound2_entity;

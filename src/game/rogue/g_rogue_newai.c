@@ -1139,18 +1139,12 @@ edict_t *PickCoopTarget(edict_t *self)
 {
     edict_t *targets[MAX_CLIENTS];
     int      num_targets = 0;
-    edict_t *ent;
 
     // if we're not in coop, this is a noop
     if (!coop.integer)
         return NULL;
 
-    for (int player = 0; player < game.maxclients; player++) {
-        ent = &g_edicts[player];
-        if (!ent->r.inuse)
-            continue;
-        if (!ent->client)
-            continue;
+    FOR_EACH_PLAYER(ent) {
         if (visible(self, ent))
             targets[num_targets++] = ent;
     }
@@ -1164,21 +1158,14 @@ edict_t *PickCoopTarget(edict_t *self)
 // only meant to be used in coop
 int CountPlayers(void)
 {
-    edict_t *ent;
     int      count = 0;
 
     // if we're not in coop, this is a noop
     if (!coop.integer)
         return 1;
 
-    for (int player = 0; player < game.maxclients; player++) {
-        ent = &g_edicts[player];
-        if (!ent->r.inuse)
-            continue;
-        if (!ent->client)
-            continue;
+    FOR_EACH_PLAYER(ent)
         count++;
-    }
 
     return count;
 }

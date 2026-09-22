@@ -813,19 +813,11 @@ static void GuardianRespondPowerup(edict_t *self, edict_t *other)
 
 static void GuardianPowerups(edict_t *self)
 {
-    edict_t *ent;
-
     if (!coop.integer) {
         GuardianRespondPowerup(self, self->enemy);
     } else {
-        for (int player = 0; player < game.maxclients; player++) {
-            ent = &g_edicts[player];
-            if (!ent->r.inuse)
-                continue;
-            if (!ent->client)
-                continue;
+        FOR_EACH_PLAYER(ent)
             GuardianRespondPowerup(self, ent);
-        }
     }
 }
 

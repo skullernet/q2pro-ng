@@ -199,11 +199,7 @@ static void arachnid_rail_real(edict_t *self, monster_muzzleflash_id_t id)
         edict_t *players_scanned[MAX_CLIENTS];
         int num_players = 0;
 
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
-
-            if (!player->r.inuse)
-                continue;
+        FOR_EACH_PLAYER(player) {
             if (!visible_ex(self, player, false))
                 continue;
 

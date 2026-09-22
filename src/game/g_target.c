@@ -379,11 +379,8 @@ void USE(use_target_goal)(edict_t *ent, edict_t *other, edict_t *activator)
         level.goal_num++;
         game.help1changed++;
 
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *player = &g_edicts[i];
-            if (player->r.inuse)
-                G_PlayerNotifyGoal(player);
-        }
+        FOR_EACH_PLAYER(player)
+            G_PlayerNotifyGoal(player);
     }
 
     G_UseTargets(ent, activator);
@@ -1138,12 +1135,8 @@ void THINK(update_target_camera)(edict_t *self)
 
     // only allow skipping after 2 seconds
     if ((self->hackflags & HACKFLAG_SKIPPABLE) && level.time > SEC(2)) {
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *client = g_edicts + i;
-            if (!client->r.inuse || !client->client->pers.connected)
-                continue;
-
-            if (client->client->buttons & BUTTON_ANY) {
+        FOR_EACH_CLIENT(client) {
+            if (client->buttons & BUTTON_ANY) {
                 do_skip = true;
                 break;
             }
@@ -1197,11 +1190,8 @@ void THINK(update_target_camera)(edict_t *self)
         level.intermission_origin = newpos;
 
         // move all clients to the intermission point
-        for (int i = 0; i < game.maxclients; i++) {
-            edict_t *client = g_edicts + i;
-            if (client->r.inuse)
-                MoveClientToIntermission(client);
-        }
+        FOR_EACH_PLAYER(client)
+            MoveClientToIntermission(client);
     } else {
         if (self->killtarget) {
             // destroy dummy player
@@ -1299,11 +1289,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
     level.intermission_origin = self->s.origin;
 
     // move all clients to the intermission point
-    for (int i = 0; i < game.maxclients; i++) {
-        edict_t *client = g_edicts + i;
-        if (!client->r.inuse)
-            continue;
-
+    FOR_EACH_PLAYER(client) {
         // respawn any dead clients
         if (client->health <= 0) {
             // give us our max health back since it will reset
