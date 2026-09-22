@@ -691,6 +691,9 @@ static void ExitLevel(void)
             Q_strlcpy(client->pers.userinfo, userinfo, sizeof(client->pers.userinfo));
             Q_strlcpy(client->resp.coop_respawn.userinfo, userinfo, sizeof(client->resp.coop_respawn.userinfo));
         }
+
+        // no help spam plz
+        game.help1changed = game.help2changed = 0;
     }
 
     // [Paril-KEX] end of unit, so clear level trackers

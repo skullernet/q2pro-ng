@@ -585,8 +585,6 @@ static const save_field_t client_persistent_t_fields[] = {
 
     F(game_help1changed),
     F(game_help2changed),
-    F(helpchanged),
-    F(help_time),
 
     F(spectator),
 

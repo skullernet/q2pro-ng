@@ -594,14 +594,6 @@ G_SetClientSound
 */
 static void G_SetClientSound(edict_t *ent)
 {
-    // help beep (no more than three times)
-    if (ent->client->pers.helpchanged && ent->client->pers.helpchanged <= 3 && ent->client->pers.help_time < level.time) {
-        if (ent->client->pers.helpchanged == 1) // [KEX] haleyjd: once only
-            G_StartSound(ent, CHAN_AUTO, G_SoundIndex("misc/pc_up.wav"), 1, ATTN_STATIC);
-        ent->client->pers.helpchanged++;
-        ent->client->pers.help_time = level.time + SEC(5);
-    }
-
     // reset defaults
     ent->s.sound = 0;
 

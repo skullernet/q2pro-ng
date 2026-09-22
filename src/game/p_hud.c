@@ -719,7 +719,7 @@ void G_SetStats(edict_t *ent)
     //
     // help icon / current weapon if not shown
     //
-    if (ent->client->pers.helpchanged >= 1 && ent->client->pers.helpchanged <= 2 && (TO_MSEC(level.time) % 1000) < 500) // haleyjd: time-limited
+    if (ent->client->help_changed && (TO_MSEC(level.time) % 1000) < 500)
         ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex("i_help");
     else if ((ent->client->pers.hand == CENTER_HANDED) && ent->client->pers.weapon)
         ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex(ent->client->pers.weapon->icon);

@@ -1106,7 +1106,7 @@ void Cmd_Help_f(edict_t *ent, cmdflags_t flags)
     }
 
     ent->client->showhelp = true;
-    ent->client->pers.helpchanged = 0;
+    ent->client->help_changed = false;
     HelpComputer(ent);
 }
 

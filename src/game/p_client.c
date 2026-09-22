@@ -1873,7 +1873,6 @@ void PutClientInServer(edict_t *ent)
             if (!P_UseCoopInstancedItems()) {
                 resp.coop_respawn.game_help1changed = client->pers.game_help1changed;
                 resp.coop_respawn.game_help2changed = client->pers.game_help2changed;
-                resp.coop_respawn.helpchanged = client->pers.helpchanged;
                 client->pers = resp.coop_respawn;
             } else {
                 // fix weapon

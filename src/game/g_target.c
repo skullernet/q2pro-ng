@@ -326,23 +326,36 @@ void G_PlayerNotifyGoal(edict_t *player)
 
     if (player->client->pers.game_help1changed != game.help1changed) {
         player->client->pers.game_help1changed = game.help1changed;
-        player->client->pers.helpchanged = 1;
-        player->client->pers.help_time = level.time + SEC(5);
+        player->client->help_time = level.time + SEC(5);
 
         if (*game.helpmessage1 && level.primary_objective_string)
             // [Sam-KEX] Print objective to screen
             G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.primary_objective_string, game.helpmessage1));
+
+        // help beep
+        if (!player->client->help_changed) {
+            G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/pc_up.wav"), 1, ATTN_NONE);
+            player->client->help_changed = true;
+        }
     }
 
     if (player->client->pers.game_help2changed != game.help2changed) {
         player->client->pers.game_help2changed = game.help2changed;
-        player->client->pers.helpchanged = 1;
-        player->client->pers.help_time = level.time + SEC(5);
+        player->client->help_time = level.time + SEC(5);
 
         if (*game.helpmessage2 && level.secondary_objective_string)
             // [Sam-KEX] Print objective to screen
             G_ClientPrintf(player, PRINT_TYPEWRITER, "%s", G_ExpandArgument(level.secondary_objective_string, game.helpmessage2));
+
+        // help beep
+        if (!player->client->help_changed) {
+            G_LocalSound(player, CHAN_AUTO, G_SoundIndex("misc/pc_up.wav"), 1, ATTN_NONE);
+            player->client->help_changed = true;
+        }
     }
+
+    if (player->client->help_time < level.time)
+        player->client->help_changed = false;
 }
 
 /*QUAKED target_goal (1 0 1) (-8 -8 -8) (8 8 8) KEEP_MUSIC

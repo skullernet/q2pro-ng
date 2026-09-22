@@ -2037,9 +2037,6 @@ typedef struct {
     int score;       // for calculating total unit score in coop games
 
     int game_help1changed, game_help2changed;
-    int helpchanged; // flash F1 icon if non 0, play sound
-                     // and increment only if 1, 2, or 3
-    gtime_t help_time;
 
     bool spectator; // client wants to be a spectator
 
@@ -2240,6 +2237,8 @@ struct gclient_s {
     // not saved
     int help_draw_index, help_draw_count;
     gtime_t help_draw_time;
+    gtime_t help_time;
+    bool help_changed; // flash F1 icon
 
     // only set temporarily
     bool awaiting_respawn;
