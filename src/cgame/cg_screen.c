@@ -269,10 +269,8 @@ CENTER PRINTING
 #define MAX_CENTERPRINTS    4
 
 typedef struct {
-    char        string[MAX_STRING_CHARS - 8];
-    uint32_t    start;
-    uint16_t    lines;
-    uint16_t    typewrite;  // msec to typewrite (0 if instant)
+    char string[MAX_STRING_CHARS];
+    unsigned start, lines, typewrite;
 } centerprint_t;
 
 static centerprint_t    scr_centerprints[MAX_CENTERPRINTS];
@@ -280,7 +278,8 @@ static unsigned         scr_centerhead, scr_centertail;
 
 void SCR_ClearCenterPrints(void)
 {
-    memset(scr_centerprints, 0, sizeof(scr_centerprints));
+    for (int i = 0; i < MAX_CENTERPRINTS; i++)
+        scr_centerprints[i].string[0] = 0;
     scr_centerhead = scr_centertail = 0;
 }
 
@@ -292,7 +291,8 @@ void SCR_ClearCenterPrints(void)
 SCR_CenterPrint
 
 Called for important messages that should stay in the center of the screen
-for a few moments
+for a few moments. Typewritten strings are queued (for objective printing).
+Instant centerprints always override any displayed string.
 ==============
 */
 void SCR_CenterPrint(const char *str, bool typewrite)
@@ -300,18 +300,20 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     centerprint_t *cp;
     const char *s;
 
-    // refresh duplicate message
-    cp = &scr_centerprints[(scr_centerhead - 1) & (MAX_CENTERPRINTS - 1)];
-    if (!strcmp(cp->string, str)) {
-        if (cp->start)
+    if (typewrite) {
+        cp = &scr_centerprints[++scr_centerhead & (MAX_CENTERPRINTS - 1)];
+    } else {
+        cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
+        // refresh duplicate message
+        if (!strcmp(cp->string, str)) {
             cp->start = cgs.realtime;
-        if (scr_centertail == scr_centerhead)
-            scr_centertail--;
-        return;
+            return;
+        }
     }
 
-    cp = &scr_centerprints[scr_centerhead & (MAX_CENTERPRINTS - 1)];
     Q_strlcpy(cp->string, str, sizeof(cp->string));
+    if (!cp->string[0])
+        return;
 
     // count the number of lines for centering
     cp->lines = 1;
@@ -325,11 +327,10 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     cp->start = 0;  // not yet displayed
     cp->typewrite = 0;
 
-    // for typewritten strings set minimum display time,
-    // but no longer than 30 sec
+    // for typewritten strings set minimum display time
     if (typewrite && scr_printspeed.value > 0) {
         size_t nb_chars = strlen(cp->string) - cp->lines + 2;
-        cp->typewrite = min(nb_chars * 1000 / scr_printspeed.value + 300, 30000);
+        cp->typewrite = nb_chars * 1000 / scr_printspeed.value + 300;
     }
 
     // echo it to the console
@@ -345,55 +346,38 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     } else {
         SCR_Printf("%s\n", cp->string);
     }
-
-    scr_centerhead++;
-    if (scr_centerhead - scr_centertail > MAX_CENTERPRINTS)
-        scr_centertail++;
 }
 
-static void SCR_DrawCenterString(void)
+static bool SCR_DrawCenterString(unsigned index)
 {
-    centerprint_t *cp;
-    int y, flags;
-    float alpha;
+    centerprint_t *cp = &scr_centerprints[index & (MAX_CENTERPRINTS - 1)];
+    ui_flags_t flags;
+    float y, h, alpha;
     size_t maxlen;
 
-    if (scr_centertime.modified) {
-        if (scr_centertime.value > 0)
-            scr_centertime.integer = 1000 * Q_clipf(scr_centertime.value, 1.0f, 30.0f);
-        else
-            scr_centertime.integer = 0;
-        scr_centertime.modified = false;
-    }
+    if (!cp->string[0])
+        return false;
 
-    if (!scr_centertime.integer || (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INTERMISSION)) {
-        scr_centertail = scr_centerhead;
-        return;
-    }
+    if (!cp->start)
+        cp->start = cgs.realtime;
 
-    while (1) {
-        if (scr_centertail == scr_centerhead)
-            return;
-        cp = &scr_centerprints[scr_centertail & (MAX_CENTERPRINTS - 1)];
-        if (!cp->start)
-            cp->start = cgs.realtime;
-        alpha = SCR_FadeAlpha(cp->start, scr_centertime.integer + cp->typewrite, 300);
-        if (alpha > 0)
-            break;
-        scr_centertail++;
-    }
+    alpha = SCR_FadeAlpha(cp->start, scr_centertime.integer + cp->typewrite, 300);
+    if (!alpha)
+        return false;
 
     trap_R_SetAlpha(alpha * scr_alpha.value);
 
+    h = trap_R_GetFontHeight(scr.norm_font);
     if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_LAYOUT | LAYOUTS_INVENTORY))
-        y = CONCHAR_HEIGHT;
+        y = h * 2;
     else
-        y = scr.hud_height / 4 - cp->lines * CONCHAR_HEIGHT / 2;
-    flags = UI_CENTER;
+        y = scr.hud_height / 4 - cp->lines * h / 2;
+
+    flags = UI_CENTER | UI_DROPSHADOW;
 
     if (cp->typewrite) {
         maxlen = scr_printspeed.value * 0.001f * (cgs.realtime - cp->start);
-        flags |= UI_DROPSHADOW | UI_DRAWCURSOR;
+        flags |= UI_DRAWCURSOR;
     } else {
         maxlen = MAX_STRING_CHARS;
     }
@@ -402,6 +386,30 @@ static void SCR_DrawCenterString(void)
                         maxlen, cp->string, scr.norm_font);
 
     trap_R_SetAlpha(scr_alpha.value);
+
+    return true;
+}
+
+static void SCR_DrawCenterStrings(void)
+{
+    if (scr_centertime.modified) {
+        if (scr_centertime.value > 0)
+            scr_centertime.integer = 1000 * Q_clipf(scr_centertime.value, 1.0f, 30.0f);
+        else
+            scr_centertime.integer = 0;
+        scr_centertime.modified = false;
+    }
+
+    if (!scr_centertime.integer || (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INTERMISSION))
+        return;
+
+    while (true) {
+        if (SCR_DrawCenterString(scr_centertail))
+            break;
+        if (scr_centertail == scr_centerhead)
+            break;
+        scr_centertail++;
+    }
 }
 
 /*
@@ -2231,7 +2239,7 @@ static void SCR_Draw2D(void)
 
     SCR_DrawInventory();
 
-    SCR_DrawCenterString();
+    SCR_DrawCenterStrings();
 
     SCR_DrawNet();
 

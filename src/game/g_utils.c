@@ -133,7 +133,7 @@ void THINK(Think_Delay)(edict_t *ent)
 
 void G_PrintActivationMessage(edict_t *ent, edict_t *activator, bool coop_global)
 {
-    if (ent->message && *ent->message && activator->client) {
+    if (ent->message && activator->client) {
         if (coop_global && coop.integer)
             G_ClientPrintf(NULL, PRINT_CENTER, "%s", ent->message);
         else
