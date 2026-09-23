@@ -612,7 +612,7 @@ void fire_nuke(edict_t *self, vec3_t start, vec3_t aimdir, int speed)
     nuke->velocity = Vec3_Scale(aimdir, speed);
     nuke->velocity = Vec3_MA(nuke->velocity, 200 + crandom() * 10.0f, up);
     nuke->velocity = Vec3_MA(nuke->velocity, crandom() * 10.0f, right);
-    nuke->r.svflags |= SVF_NOCULL;
+    nuke->r.svflags |= SVF_BROADCAST;
     nuke->movetype = MOVETYPE_BOUNCE;
     nuke->clipmask = MASK_PROJECTILE;
     nuke->r.solid = SOLID_BBOX;

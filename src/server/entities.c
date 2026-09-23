@@ -276,7 +276,7 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore if not linked anywhere
-        if (!ent->r.linked && !(ent->r.svflags & SVF_NOCULL))
+        if (!ent->r.linked && !(ent->r.svflags & SVF_BROADCAST))
             continue;
 
         // ignore if pov number matches mask
@@ -289,7 +289,7 @@ void SV_BuildClientFrame(client_t *client)
             continue;
 
         // ignore if not touching a PV leaf
-        if (e != frame->ps.clientnum && !sv_novis->integer && !(ent->r.svflags & SVF_NOCULL)) {
+        if (e != frame->ps.clientnum && !sv_novis->integer && !(ent->r.svflags & SVF_BROADCAST)) {
             // check area
             if (!CM_AreasConnected(&sv.cm, clientarea, ent->r.areanum)) {
                 // doors can legally straddle two areas, so

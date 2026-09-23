@@ -2091,8 +2091,10 @@ typedef struct {
 // except for 'client->pers'
 struct gclient_s {
     // shared with server; do not touch members until the "private" section
-    player_state_t ps; // communicated by server to clients
-    int            ping;
+    player_state_t  ps; // communicated by server to clients
+    player_shared_t r;
+
+    //================================
 
     // private to game
     client_persistent_t pers;

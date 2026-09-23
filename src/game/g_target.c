@@ -143,14 +143,14 @@ void SP_target_speaker(edict_t *ent)
         else
             ent->attenuation = ATTN_NORM;
     } else if (ent->attenuation == ATTN_NONE)
-        ent->r.svflags |= SVF_NOCULL;
+        ent->r.svflags |= SVF_BROADCAST;
 
     // reliable sounds are sent to everyone
     if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE) {
         if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
             G_Printf("%s: mixed reliable and looped flags\n", etos(ent));
         else
-            ent->r.svflags |= SVF_NOCULL;
+            ent->r.svflags |= SVF_BROADCAST;
     }
 
     ent->use = Use_Target_Speaker;
@@ -1117,7 +1117,7 @@ void SP_target_earthquake(edict_t *self)
     if (!(self->spawnflags & SPAWNFLAGS_EARTHQUAKE_SILENT)) // PGM
         self->noise_index = G_SoundIndex("world/quake.wav");
 
-    self->r.svflags |= SVF_NOCULL;
+    self->r.svflags |= SVF_BROADCAST;
     trap_LinkEntity(self);
 }
 
@@ -1367,7 +1367,7 @@ void SP_target_soundfx(edict_t *self)
     if (!ED_WasKeySpecified("attenuation"))
         self->attenuation = ATTN_NORM;
     else if (self->attenuation == ATTN_NONE)
-        self->r.svflags |= SVF_NOCULL;
+        self->r.svflags |= SVF_BROADCAST;
 
     self->noise_index = Q_atoi(st.noise);
 

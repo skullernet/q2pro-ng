@@ -309,7 +309,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         // send the layout
         Q_snprintf(entry, sizeof(entry),
                    "client %i %i %i %i %i %.f ",
-                   x, y, sorted[i], cl->resp.score, cl->ping, TO_SEC(level.time - cl->resp.entertime) / 60);
+                   x, y, sorted[i], cl->resp.score, cl->r.ping, TO_SEC(level.time - cl->resp.entertime) / 60);
         j = strlen(entry);
         if (stringlength + j >= MAX_SCOREBOARD_SIZE)
             break;

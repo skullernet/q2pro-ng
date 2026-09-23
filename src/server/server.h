@@ -538,7 +538,7 @@ static inline int SV_GetClient_Stat(const client_t *client, int stat)
 
 static inline void SV_SetClient_Ping(const client_t *client, int ping)
 {
-    client->client->ping = ping;
+    client->client->r.ping = ping;
 }
 
 //============================================================
@@ -561,7 +561,7 @@ void PF_LinkEdict(edict_t *ent);
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
 
-int SV_AreaEdicts(box3_t box, int *list, int maxcount, int areatype);
+int SV_AreaEdicts(box3_t box, int *list, int maxcount, areatype_t areatype);
 // fills in a table of edict pointers with edicts that have bounding boxes
 // that intersect the given area.  It is possible for a non-axial bmodel
 // to be returned that doesn't actually intersect the area on an exact

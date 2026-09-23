@@ -27,7 +27,7 @@ int trap_FindConfigstring(const char *name, int start, int max, bool create);
 trace_t trap_Trace(const trace_args_t *args);
 trace_t trap_Clip(const trace_args_t *args);
 contents_t trap_PointContents(vec3_t point);
-int trap_BoxEdicts(box3_t box, int *list, int maxcount, int areatype);
+int trap_BoxEdicts(box3_t box, int *list, int maxcount, areatype_t areatype);
 
 bool trap_InVis(vec3_t p1, vec3_t p2, vis_t vis);
 void trap_SetAreaPortalState(unsigned portalnum, bool open);

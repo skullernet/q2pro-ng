@@ -1400,7 +1400,7 @@ static void Cmd_PlayerList_f(edict_t *ent, cmdflags_t flags)
         int sec = TO_SEC(level.time - cl->resp.entertime);
         Q_snprintf(st, sizeof(st), "%02d:%02d %4d %3d %s%s\n",
                    sec / 60, sec % 60,
-                   cl->ping,
+                   cl->r.ping,
                    cl->resp.score,
                    cl->pers.netname,
                    cl->resp.spectator ? " (spectator)" : "");

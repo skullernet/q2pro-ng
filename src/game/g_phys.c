@@ -314,7 +314,7 @@ static edict_t *SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
         return NULL;
 
     int list[MAX_EDICTS_OLD];
-    int count = trap_BoxEdicts(box, list, q_countof(list), AREA_SOLID | AREA_TRIGGERS);
+    int count = trap_BoxEdicts(box, list, q_countof(list), AREA_ANY);
 
     // see if any solid entities are inside the final position
     for (int i = 0; i < count; i++) {

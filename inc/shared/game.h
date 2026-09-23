@@ -28,24 +28,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // edict->svflags
 
-#define SVF_NONE                0U
-#define SVF_NOCLIENT            BIT(0)      // don't send entity to clients, even if it has effects
-#define SVF_DEADMONSTER         BIT(1)      // treat as CONTENTS_DEADMONSTER for collision
-#define SVF_MONSTER             BIT(2)      // only used by server as entity priority hint
-#define SVF_PLAYER              BIT(3)      // treat as CONTENTS_PLAYER for collision
-#define SVF_BOT                 BIT(4)
-#define SVF_NOBOTS              BIT(5)
-#define SVF_RESPAWNING          BIT(6)
-#define SVF_PROJECTILE          BIT(7)      // treat as CONTENTS_PROJECTILE for collision
-#define SVF_INSTANCED           BIT(8)
-#define SVF_DOOR                BIT(9)
-#define SVF_NOCULL              BIT(10)     // always send entity to clients (no PVS checks)
-#define SVF_HULL                BIT(11)
-#define SVF_LOCKED              BIT(12)
-#define SVF_LASER_FIELD         BIT(13)
-#define SVF_TRAP                BIT(14)
-#define SVF_CLIENTMASK          BIT(15)     // don't send entity to clients in r.clientmask
-#define SVF_PHS                 BIT(16)
+typedef enum {
+    SVF_NONE                = 0U,
+    SVF_NOCLIENT            = BIT(0),       // don't send entity to clients, even if it has effects
+    SVF_DEADMONSTER         = BIT(1),       // treat as CONTENTS_DEADMONSTER for collision
+    SVF_MONSTER             = BIT(2),       // only used by server as entity priority hint
+    SVF_PLAYER              = BIT(3),       // treat as CONTENTS_PLAYER for collision
+    SVF_PROJECTILE          = BIT(4),       // treat as CONTENTS_PROJECTILE for collision
+    SVF_BOT                 = BIT(5),
+    SVF_RESPAWNING          = BIT(6),
+    SVF_INSTANCED           = BIT(7),
+    SVF_BROADCAST           = BIT(8),       // always send entity to clients (no PVS checks)
+    SVF_CLIENTMASK          = BIT(9),       // don't send entity to clients in r.clientmask
+    SVF_PHS                 = BIT(10),      // PHS cull this entity
+    SVF_HULL                = BIT(11),      // always clip to BSP model
+    SVF_DOOR                = BIT(12),      // entity is a door
+    SVF_LOCKED              = BIT(13),      // entity is a locked door
+    SVF_LASER_FIELD         = BIT(14),      // entity is a laser
+    SVF_TRAP                = BIT(15),      // entity is a trap
+} svflags_t;
 
 // edict->solid values
 typedef enum {
@@ -57,8 +58,12 @@ typedef enum {
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
 // FIXME: eliminate AREA_ distinction?
-#define AREA_SOLID      1
-#define AREA_TRIGGERS   2
+typedef enum {
+    AREA_NONE,
+    AREA_SOLID,
+    AREA_TRIGGERS,
+    AREA_ANY
+} areatype_t;
 
 //===============================================================
 
@@ -87,13 +92,13 @@ typedef enum {
 } PathLinkType;
 
 typedef enum {
-    PathFlags_All             = -1,
-    PathFlags_Water           = BIT(0), // swim to your goal ( useful for fish/gekk/etc. )
-    PathFlags_Walk            = BIT(1), // walk to your goal
-    PathFlags_WalkOffLedge    = BIT(2), // allow walking over ledges
-    PathFlags_LongJump        = BIT(3), // allow jumping over gaps
-    PathFlags_BarrierJump     = BIT(4), // allow jumping over low barriers
-    PathFlags_Elevator        = BIT(5)  // allow using elevators
+    PathFlags_All           = ~0U,
+    PathFlags_Water         = BIT(0), // swim to your goal ( useful for fish/gekk/etc. )
+    PathFlags_Walk          = BIT(1), // walk to your goal
+    PathFlags_WalkOffLedge  = BIT(2), // allow walking over ledges
+    PathFlags_LongJump      = BIT(3), // allow jumping over gaps
+    PathFlags_BarrierJump   = BIT(4), // allow jumping over low barriers
+    PathFlags_Elevator      = BIT(5)  // allow using elevators
 } PathFlags;
 
 typedef struct {
@@ -134,23 +139,27 @@ typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
 
 typedef struct {
-    bool        inuse;
-    bool        linked;
-    int         linkcount;
-    int         areanum, areanum2;
-    int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-    box3_t      box, absbox;
-    vec3_t      size;
-    solid_t     solid;
-    int         ownernum;
-    byte        clientmask[MAX_CLIENTS / CHAR_BIT];
+    bool            inuse;
+    bool            linked;
+    int             linkcount;
+    int             areanum, areanum2;
+    svflags_t       svflags;        // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
+    box3_t          box, absbox;
+    vec3_t          size;
+    solid_t         solid;
+    int             ownernum;
+    byte            clientmask[MAX_CLIENTS / CHAR_BIT];
 } entity_shared_t;
+
+typedef struct {
+    int             ping;
+} player_shared_t;
 
 #ifndef GAME_INCLUDE
 
 struct gclient_s {
     player_state_t      ps;     // communicated by server to clients
-    int                 ping;
+    player_shared_t     r;
 };
 
 struct edict_s {
@@ -187,7 +196,7 @@ typedef struct {
     trace_t (*Trace)(const trace_args_t *args);
     trace_t (*Clip)(const trace_args_t *args);
     contents_t (*PointContents)(vec3_t point);
-    int (*BoxEdicts)(box3_t box, int *list, int maxcount, int areatype);
+    int (*BoxEdicts)(box3_t box, int *list, int maxcount, areatype_t areatype);
 
     bool (*InVis)(vec3_t p1, vec3_t p2, vis_t vis);
     void (*SetAreaPortalState)(unsigned portalnum, bool open);

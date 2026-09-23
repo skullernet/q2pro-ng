@@ -45,7 +45,7 @@ static int          sv_numareanodes;
 static box3_t       area_box;
 static int          *area_list;
 static int          area_count, area_maxcount;
-static int          area_type;
+static areatype_t   area_type;
 
 /*
 ===============
@@ -301,11 +301,8 @@ static void SV_TouchAreaEdicts(const list_t *list)
             continue;       // deactivated
         if (!Box3_Intersects(check->r.absbox, area_box))
             continue;       // not touching
-
-        if (area_count == area_maxcount) {
-            Com_WPrintf("SV_AreaEdicts: MAXCOUNT\n");
+        if (area_count >= area_maxcount)
             return;
-        }
 
         area_list[area_count] = sent->number;
         area_count++;
@@ -327,8 +324,10 @@ static void SV_AreaEdicts_r(const areanode_t *node)
     if (q_likely(area_type & AREA_TRIGGERS))
         SV_TouchAreaEdicts(&node->trigger_edicts);
 
-    if (area_count == area_maxcount)
+    if (area_count >= area_maxcount) {
+        Com_WPrintf("SV_AreaEdicts: MAXCOUNT\n");
         return;     // no free space
+    }
 
     if (node->axis == -1)
         return;     // terminal node
@@ -345,7 +344,7 @@ static void SV_AreaEdicts_r(const areanode_t *node)
 SV_AreaEdicts
 ================
 */
-int SV_AreaEdicts(box3_t box, int *list, int maxcount, int areatype)
+int SV_AreaEdicts(box3_t box, int *list, int maxcount, areatype_t areatype)
 {
     area_box = box;
     area_list = list;
@@ -369,9 +368,9 @@ Returns a headnode that can be used for testing or clipping an
 object of mins/maxs size.
 ================
 */
-static const mnode_t *SV_HullForEntity(const edict_t *ent, int mask)
+static const mnode_t *SV_HullForEntity(const edict_t *ent, svflags_t hull)
 {
-    if (ent->r.solid == SOLID_BSP || (ent->r.svflags & mask)) {
+    if (ent->r.solid == SOLID_BSP || (ent->r.svflags & hull)) {
         const bsp_t *bsp = sv.cm.cache;
 
         if (!bsp)

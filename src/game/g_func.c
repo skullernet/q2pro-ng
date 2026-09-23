@@ -71,7 +71,7 @@ void G_SetMoveinfoSounds(edict_t *self, const char *default_start, const char *d
     self->moveinfo.sound_end    = G_EncodeMoveinfoSound(self, CHAN_VOICE, default_end,   st.noise_end);
 
     if (self->attenuation == ATTN_NONE)
-        self->r.svflags |= SVF_NOCULL;
+        self->r.svflags |= SVF_BROADCAST;
 }
 
 static void G_ScaleMoveinfoAccel(edict_t *ent)

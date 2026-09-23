@@ -1612,7 +1612,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
                        42 + i * 8,
                        sorted[0][i],
                        cl->resp.score,
-                       cl->ping > 999 ? 999 : cl->ping);
+                       cl->r.ping > 999 ? 999 : cl->r.ping);
 
             if (strlen(string) + strlen(entry) < MAX_CTF_STAT_LENGTH) {
                 strcat(string, entry);
@@ -1629,7 +1629,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
                        42 + i * 8,
                        sorted[1][i],
                        cl->resp.score,
-                       cl->ping > 999 ? 999 : cl->ping);
+                       cl->r.ping > 999 ? 999 : cl->r.ping);
 
             if (strlen(string) + strlen(entry) < MAX_CTF_STAT_LENGTH) {
                 strcat(string, entry);
@@ -1667,7 +1667,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
                        j,                   // y
                        i,                   // playernum
                        cl->resp.score,
-                       cl->ping > 999 ? 999 : cl->ping);
+                       cl->r.ping > 999 ? 999 : cl->r.ping);
 
             if (strlen(string) + strlen(entry) < MAX_CTF_STAT_LENGTH)
                 strcat(string, entry);
@@ -3379,7 +3379,7 @@ void CTFPlayerList_f(edict_t *ent, cmdflags_t flags)
                   cl->pers.netname,
                   sec / 60,
                   sec % 60,
-                  cl->ping,
+                  cl->r.ping,
                   cl->resp.score,
                   (ctfgame.match == MATCH_SETUP || ctfgame.match == MATCH_PREGAME) ?
                   (cl->resp.ready ? " (ready)" : " (notready)") : "",
