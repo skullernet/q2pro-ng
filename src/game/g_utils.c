@@ -226,7 +226,10 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
             if ((t->r.svflags & SVF_MONSTER) && !t->deadflag)
                 G_MonsterKilled(t);
 
-            // PMM
+            // clean up beams too
+            M_FreeBeams(t);
+
+            // this will remove teamchain
             G_FreeEdict(t);
 
             if (!ent->r.inuse) {
