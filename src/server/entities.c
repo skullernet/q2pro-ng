@@ -66,9 +66,7 @@ static void SV_EmitPacketEntities(client_t *client, const client_frame_t *from, 
         if (newnum == oldnum) {
             // Delta update from old position. Because the force param is false,
             // this will not result in any bytes being emitted if the entity has
-            // not changed at all. Note that players are always 'newentities',
-            // this updates their old_origin always and prevents warping in case
-            // of packet loss.
+            // not changed at all.
             MSG_WriteDeltaEntity(oldent, newent, false);
             oldindex++;
             newindex++;

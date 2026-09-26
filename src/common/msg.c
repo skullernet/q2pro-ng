@@ -330,13 +330,13 @@ static const netfield_t entity_state_fields[] = {
     NETF(othernum, ENTITYNUM_BITS),
 };
 
-static const netfield_t entity_state_fields2[] = {
+static const netfield_t old_origin_fields[] = {
     NETF(old_origin.x, NETF_FLOAT),
     NETF(old_origin.y, NETF_FLOAT),
     NETF(old_origin.z, NETF_FLOAT),
 };
 
-static_assert(sizeof(entity_state_t) / sizeof(uint32_t) == q_countof(entity_state_fields) + 4, "Bad entity_state_fields size");
+static_assert(sizeof(entity_state_t) / sizeof(uint32_t) == q_countof(entity_state_fields) + q_countof(old_origin_fields) + 1, "Bad entity_state_fields size");
 
 static unsigned entity_state_counts[q_countof(entity_state_fields)];
 
@@ -346,10 +346,9 @@ static const int entity_state_nc_bits = 32 - __builtin_clz(q_countof(entity_stat
 
 static int MSG_CountDeltaMaxBits(const netfield_t *f, int n)
 {
-    int bits = 0;
+    int bits = n;
 
     for (int i = 0; i < n; i++, f++) {
-        bits++;
         switch (f->bits) {
         case NETF_FLOAT:
             bits += 2 + 32;
@@ -445,6 +444,8 @@ static void MSG_WriteDeltaFields(const netfield_t *f, int n, const void *from, c
     }
 }
 
+enum { OO_UNC, OO_OLD, OO_NEW, OO_RAW, OO_BITS = 2 };
+
 void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, bool force)
 {
     int oldorg, nc;
@@ -463,18 +464,20 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
 
     baseline = false;
     if (!from) {
+        Q_assert(!force);
         from = &nullEntityState;
         baseline = true;
     }
 
+    // old_origin is always sent, but uses special encoding
     if (Vec3_IsEqual(to->old_origin, from->old_origin))
-        oldorg = 0;
+        oldorg = OO_UNC;
     else if (Vec3_IsEqual(to->old_origin, from->origin))
-        oldorg = 1;
+        oldorg = OO_OLD;
     else if (Vec3_IsEqual(to->old_origin, to->origin))
-        oldorg = 2;
+        oldorg = OO_NEW;
     else
-        oldorg = 3;
+        oldorg = OO_RAW;
 
     nc = MSG_CountDeltaFields(entity_state_fields, q_countof(entity_state_fields), from, to, entity_state_counts);
     if (!nc && !oldorg) {
@@ -494,9 +497,9 @@ void MSG_WriteDeltaEntity(const entity_state_t *from, const entity_state_t *to, 
     MSG_WriteBits(nc, entity_state_nc_bits);
     MSG_WriteDeltaFields(entity_state_fields, nc, from, to);
 
-    MSG_WriteBits(oldorg, 2);
-    if (oldorg == 3)
-        MSG_WriteDeltaFields(entity_state_fields2, 3, from, to);
+    MSG_WriteBits(oldorg, OO_BITS);
+    if (oldorg == OO_RAW)
+        MSG_WriteDeltaFields(old_origin_fields, q_countof(old_origin_fields), from, to);
 }
 
 #define NETF(f, bits)  { #f, offsetof(player_state_t, f), bits }
@@ -903,15 +906,15 @@ void MSG_ParseDeltaEntity(const entity_state_t *from, entity_state_t *to)
 
     MSG_ReadDeltaFields(entity_state_fields, nc, to);
 
-    switch (MSG_ReadBits(2)) {
-    case 1:
+    switch (MSG_ReadBits(OO_BITS)) {
+    case OO_OLD:
         to->old_origin = from->origin;
         break;
-    case 2:
+    case OO_NEW:
         to->old_origin = to->origin;
         break;
-    case 3:
-        MSG_ReadDeltaFields(entity_state_fields2, 3, to);
+    case OO_RAW:
+        MSG_ReadDeltaFields(old_origin_fields, q_countof(old_origin_fields), to);
         break;
     }
 }
@@ -1039,9 +1042,9 @@ static void MSG_ChangeVectors_f(void)
 
 void MSG_Init(void)
 {
-    int bits = ENTITYNUM_BITS + 2 + entity_state_nc_bits + 2;
-    bits += MSG_CountDeltaMaxBits(entity_state_fields,  q_countof(entity_state_fields ));
-    bits += MSG_CountDeltaMaxBits(entity_state_fields2, q_countof(entity_state_fields2));
+    int bits = ENTITYNUM_BITS + 2 + entity_state_nc_bits + OO_BITS;
+    bits += MSG_CountDeltaMaxBits(entity_state_fields, q_countof(entity_state_fields));
+    bits += MSG_CountDeltaMaxBits(old_origin_fields,   q_countof(old_origin_fields));
     msg_max_entity_bytes = (bits + 7) / 8;
 
     MSG_Clear();
