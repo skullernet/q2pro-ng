@@ -27,7 +27,7 @@ bool M_CheckBottom_Fast_Generic(box3_t absbox, bool ceiling)
     for (int i = 0; i < 4; i++) {
         start.x = absbox.bounds[i  & 1].x;
         start.y = absbox.bounds[i >> 1].y;
-        if (trap_PointContents(start) != CONTENTS_SOLID)
+        if (!(trap_PointContents(start) & CONTENTS_SOLID))
             return false;
     }
 
