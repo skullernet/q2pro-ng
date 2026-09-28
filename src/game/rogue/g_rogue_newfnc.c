@@ -53,7 +53,7 @@ void DIE(fd_secret_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker,
 // Wait after first movement...
 void MOVEINFO_ENDFUNC(fd_secret_move1)(edict_t *self)
 {
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
     self->think = fd_secret_move2;
 }
 
@@ -67,7 +67,7 @@ void THINK(fd_secret_move2)(edict_t *self)
 void MOVEINFO_ENDFUNC(fd_secret_move3)(edict_t *self)
 {
     if (!(self->spawnflags & SPAWNFLAG_SEC_OPEN_ONCE)) {
-        self->nextthink = level.time + SEC(self->wait);
+        self->nextthink = level.time + Time_FromSec(self->wait);
         self->think = fd_secret_move4;
     }
 }
@@ -81,7 +81,7 @@ void THINK(fd_secret_move4)(edict_t *self)
 // Wait 1 second...
 void MOVEINFO_ENDFUNC(fd_secret_move5)(edict_t *self)
 {
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
     self->think = fd_secret_move6;
 }
 
@@ -123,7 +123,7 @@ void TOUCH(secret_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool 
     if (self->monsterinfo.attack_finished > level.time)
         return;
 
-    self->monsterinfo.attack_finished = level.time + SEC(2);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(2);
 
     if (self->message)
         G_ClientPrintf(other, PRINT_CENTER, "%s", self->message);
@@ -231,7 +231,7 @@ void THINK(force_wall_think)(edict_t *self)
     }
 
     self->think = force_wall_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -245,7 +245,7 @@ void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
     } else {
         self->wait = 0;
         self->think = force_wall_think;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
         self->r.solid = SOLID_BSP;
         trap_LinkEntity(self);
         G_KillBox(self, KILLBOX_BSPCLIP, MOD_TELEFRAG); // Is this appropriate?
@@ -289,7 +289,7 @@ void SP_func_force_wall(edict_t *ent)
     if (ent->spawnflags & SPAWNFLAG_FORCEWALL_START_ON) {
         ent->r.solid = SOLID_BSP;
         ent->think = force_wall_think;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     } else
         ent->r.solid = SOLID_NOT;
 

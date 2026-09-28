@@ -14,8 +14,8 @@ black widow
 #include "g_local.h"
 #include "m_rogue_widow.h"
 
-#define RAIL_TIME           SEC(3)
-#define BLASTER_TIME        SEC(2)
+#define RAIL_TIME           Time_FromSec(3)
+#define BLASTER_TIME        Time_FromSec(2)
 #define BLASTER2_DAMAGE     10
 #define WIDOW_RAIL_DAMAGE   50
 
@@ -837,7 +837,7 @@ void PAIN(widow_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(5);
+    self->pain_debounce_time = level.time + Time_FromSec(5);
 
     if (damage < 15)
         G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE);

@@ -325,9 +325,9 @@ void PAIN(ogre_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
 
     r = frandom();
     if (r < 0.75f)
-        self->pain_debounce_time = level.time + SEC(1);
+        self->pain_debounce_time = level.time + Time_FromSec(1);
     else
-        self->pain_debounce_time = level.time + SEC(2);
+        self->pain_debounce_time = level.time + Time_FromSec(2);
 
     G_StartSound(self, CHAN_VOICE, SOUND.pain, 1, ATTN_NORM);
 

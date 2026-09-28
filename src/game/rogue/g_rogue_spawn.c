@@ -145,7 +145,7 @@ bool CheckGroundSpawnPoint(vec3_t origin, box3_t box, float height, float gravit
 // ****************************
 
 #define SPAWNGROW_LIFESPAN_SEC  1
-#define SPAWNGROW_LIFESPAN      SEC(SPAWNGROW_LIFESPAN_SEC)
+#define SPAWNGROW_LIFESPAN      Time_FromSec(SPAWNGROW_LIFESPAN_SEC)
 
 void THINK(spawngrow_think)(edict_t *self)
 {
@@ -157,7 +157,7 @@ void THINK(spawngrow_think)(edict_t *self)
 
     self->s.angles = Vec3_MA(self->s.angles, FRAME_TIME_SEC, self->avelocity);
 
-    float t = 1.0f - TO_SEC(level.time - self->teleport_time) / self->wait;
+    float t = 1.0f - Time_ToSec(level.time - self->teleport_time) / self->wait;
     float s = Q_lerpf(self->decel, self->accel, t) / 16;
 
     self->s.scale = Q_clipf(s, 1.0f / 16, 16);
@@ -237,7 +237,7 @@ void SpawnGrow_Spawn(vec3_t startpos, float start_size, float end_size)
 // ****************************
 
 #define MAX_LEGSFRAME   23
-#define LEG_WAIT_TIME   SEC(1)
+#define LEG_WAIT_TIME   Time_FromSec(1)
 
 void ThrowMoreStuff(edict_t *self, vec3_t point);
 void ThrowSmallStuff(edict_t *self, vec3_t point);
@@ -260,7 +260,7 @@ void THINK(widowlegs_think)(edict_t *self)
 
     if (self->s.frame < MAX_LEGSFRAME) {
         self->s.frame++;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
         return;
     }
 
@@ -291,7 +291,7 @@ void THINK(widowlegs_think)(edict_t *self)
         return;
     }
 
-    if ((level.time > self->timestamp - SEC(0.5f)) && (self->count == 0)) {
+    if ((level.time > self->timestamp - Time_FromSec(0.5f)) && (self->count == 0)) {
         self->count = 1;
         AngleVectors(self->s.angles, &f, &r, NULL);
 
@@ -304,7 +304,7 @@ void THINK(widowlegs_think)(edict_t *self)
         G_TempEntity(point, EV_EXPLOSION1, 0);
     }
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void Widowlegs_Spawn(edict_t *self)
@@ -324,6 +324,6 @@ void Widowlegs_Spawn(edict_t *self)
     ent->s.modelindex = G_ModelIndex("models/monsters/legs/tris.md2");
     ent->think = widowlegs_think;
 
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     trap_LinkEntity(ent);
 }

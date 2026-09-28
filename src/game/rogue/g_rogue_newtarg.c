@@ -54,7 +54,7 @@ void USE(use_target_steam)(edict_t *self, edict_t *other, edict_t *activator)
     self->s.skinnum = MakeBigLong(self->style, self->count, self->sounds, DirToByte(self->movedir));
     self->s.morefx = EFX_STEAM;
 
-    self->nextthink = level.time + SEC(self->wait);
+    self->nextthink = level.time + Time_FromSec(self->wait);
     self->think = target_steam_think;
 }
 
@@ -94,7 +94,7 @@ void SP_target_steam(edict_t *self)
 
     if (self->target) {
         self->think = target_steam_start;
-        self->nextthink = level.time + SEC(1);
+        self->nextthink = level.time + Time_FromSec(1);
     } else
         target_steam_start(self);
 }
@@ -245,7 +245,7 @@ void SP_target_orb(edict_t *ent)
     }
 
     ent->think = blacklight_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->s.skinnum = 1;
     ent->s.modelindex = G_ModelIndex("models/items/spawngro3/tris.md2");
     ent->s.frame = 2;

@@ -22,7 +22,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
         self->nextthink = 0;
     } else {
         G_StartSound(self, CHAN_VOICE, self->noise_index, 1, ATTN_STATIC);
-        self->nextthink = level.time + SEC(1);
+        self->nextthink = level.time + Time_FromSec(1);
     }
 }
 
@@ -94,7 +94,7 @@ The default delay is 1 second
 
 void THINK(object_repair_fx)(edict_t *ent)
 {
-    ent->nextthink = level.time + SEC(ent->delay);
+    ent->nextthink = level.time + Time_FromSec(ent->delay);
 
     if (ent->health <= 100)
         ent->health++;
@@ -105,19 +105,19 @@ void THINK(object_repair_fx)(edict_t *ent)
 void THINK(object_repair_dead)(edict_t *ent)
 {
     G_UseTargets(ent, ent);
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->think = object_repair_fx;
 }
 
 void THINK(object_repair_sparks)(edict_t *ent)
 {
     if (ent->health <= 0) {
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
         ent->think = object_repair_dead;
         return;
     }
 
-    ent->nextthink = level.time + SEC(ent->delay);
+    ent->nextthink = level.time + Time_FromSec(ent->delay);
 
     G_AddEvent(ent, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
 }
@@ -129,7 +129,7 @@ void SP_object_repair(edict_t *ent)
     ent->classname = "object_repair";
     ent->r.box = Box3_FromRadius(8);
     ent->think = object_repair_sparks;
-    ent->nextthink = level.time + SEC(1);
+    ent->nextthink = level.time + Time_FromSec(1);
     ent->health = 100;
     if (!ent->delay)
         ent->delay = 1.0f;

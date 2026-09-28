@@ -246,7 +246,7 @@ void PAIN(guardian_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     if ((self->s.frame >= FRAME_kick_in1) && (self->s.frame <= FRAME_kick_in13))
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (brandom())
         G_StartSound(self, CHAN_BODY, sound_pain1, 1, 0.1f);
@@ -418,7 +418,7 @@ const mmove_t MMOVE_T(guardian_move_atk2_in) = { FRAME_atk2_in1, FRAME_atk2_in12
 static void guardian_kick(edict_t *self)
 {
     if (!fire_hit(self, Vec3(160, 0, -80), 85, 700))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(3.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3.5f);
 }
 
 static const mframe_t guardian_frames_kick[] = {
@@ -566,7 +566,7 @@ static void fire_guardian_heat(edict_t *self, vec3_t start, vec3_t dir, vec3_t r
     heat->takedamage = true;
     heat->die = guardian_heat_die;
 
-    heat->nextthink = level.time + SEC(0.2f);
+    heat->nextthink = level.time + Time_FromSec(0.2f);
     heat->think = heat_guardian_think;
 
     heat->dmg = damage;
@@ -575,7 +575,7 @@ static void fire_guardian_heat(edict_t *self, vec3_t start, vec3_t dir, vec3_t r
 
     if (visible(heat, self->enemy)) {
         heat->oldenemy = self->enemy;
-        heat->timestamp = level.time + SEC(0.6f);
+        heat->timestamp = level.time + Time_FromSec(0.6f);
         G_StartSound(heat, CHAN_WEAPON, G_SoundIndex("weapons/railgr1a.wav"), 1, 0.25f);
     }
 

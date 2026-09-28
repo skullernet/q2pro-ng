@@ -79,7 +79,7 @@ static void monster_jump_start(edict_t *self)
 {
     monster_done_dodge(self);
 
-    self->monsterinfo.jump_time = level.time + SEC(3);
+    self->monsterinfo.jump_time = level.time + Time_FromSec(3);
 }
 
 bool monster_jump_finished(edict_t *self)
@@ -559,7 +559,7 @@ void TOUCH(hint_path_touch)(edict_t *self, edict_t *other, const trace_t *tr, bo
     // have the monster freeze if the hint path we just touched has a wait time
     // on it, for example, when riding a plat.
     if (self->wait)
-        other->nextthink = level.time + SEC(self->wait);
+        other->nextthink = level.time + Time_FromSec(self->wait);
 }
 
 /*QUAKED hint_path (.5 .3 0) (-8 -8 -8) (8 8 8) END
@@ -800,7 +800,7 @@ bool MarkTeslaArea(edict_t *self, edict_t *tesla)
     } else { // otherwise we just guess at how long it'll last.
         box3_t box = Box3_FromRadius(TESLA_DAMAGE_RADIUS);
         box.mins.z = tesla->r.box.mins.z;
-        area = SpawnBadArea(Box3_Translate(box, tesla->s.origin), SEC(30), tesla);
+        area = SpawnBadArea(Box3_Translate(box, tesla->s.origin), Time_FromSec(30), tesla);
     }
 
     // if we spawned a bad area, then link it to the tesla
@@ -969,7 +969,7 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
 
     // PMM - don't bother if it's going to hit anyway; fix for weird in-your-face etas (I was
     // seeing numbers like 13 and 14)
-    if ((eta < FRAME_TIME) || (eta > SEC(2.5f)))
+    if ((eta < FRAME_TIME) || (eta > Time_FromSec(2.5f)))
         return;
 
     // skill level determination..
@@ -1037,7 +1037,7 @@ void MONSTERINFO_DODGE(M_MonsterDodge)(edict_t *self, edict_t *attacker, gtime_t
 
     // [Paril-KEX] we don't need to duck until projectiles are going to hit us very
     // soon.
-    if (ducker && tr && eta < SEC(0.5f)) {
+    if (ducker && tr && eta < Time_FromSec(0.5f)) {
         if (self->monsterinfo.next_duck_time > level.time)
             return;
 

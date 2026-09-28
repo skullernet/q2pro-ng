@@ -360,7 +360,7 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
     if (bad_movement_direction) {
         if (ent->monsterinfo.fly_recovery_time < level.time) {
             ent->monsterinfo.fly_recovery_dir = Vec3_RandomDir();
-            ent->monsterinfo.fly_recovery_time = level.time + SEC(1);
+            ent->monsterinfo.fly_recovery_time = level.time + Time_FromSec(1);
         }
 
         wanted_dir = ent->monsterinfo.fly_recovery_dir;
@@ -694,7 +694,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
     // [Paril-KEX] if we didn't move at all (or barely moved), don't count it
     if (Vec3_Distance(trace.endpos, oldorg) < Vec3_Length(move) * 0.05f) {
-        ent->monsterinfo.bad_move_time = level.time + SEC(1);
+        ent->monsterinfo.bad_move_time = level.time + Time_FromSec(1);
 
         if (ent->monsterinfo.bump_time < level.time && chosen_forward->fraction < 1.0f) {
             // adjust ideal_yaw to move against the object we hit and try again
@@ -705,8 +705,8 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 
             if (Vec3_LengthSquared(dir) > 0.1f && ent->ideal_yaw != new_yaw) {
                 ent->ideal_yaw = new_yaw;
-                ent->monsterinfo.random_change_time = level.time + SEC(0.1f);
-                ent->monsterinfo.bump_time = level.time + SEC(0.2f);
+                ent->monsterinfo.random_change_time = level.time + Time_FromSec(0.1f);
+                ent->monsterinfo.bump_time = level.time + Time_FromSec(0.2f);
                 return true;
             }
         }
@@ -1000,7 +1000,7 @@ static bool SV_NewChaseDir(edict_t *actor, vec3_t pos, float dist)
             if (!(actor->monsterinfo.aiflags & (AI_LOST_SIGHT | AI_COMBAT_POINT | AI_TARGET_ANGER | AI_PATHING | AI_TEMP_MELEE_COMBAT | AI_NO_PATH_FINDING))) {
                 if (++actor->monsterinfo.move_block_counter > 2) {
                     actor->monsterinfo.aiflags |= AI_TEMP_MELEE_COMBAT;
-                    actor->monsterinfo.move_block_change_time = level.time + SEC(3);
+                    actor->monsterinfo.move_block_change_time = level.time + Time_FromSec(3);
                     actor->monsterinfo.move_block_counter = 0;
                 }
             }
@@ -1095,7 +1095,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist)
             return false;
         }
 
-        self->monsterinfo.nav_path_cache_time = level.time + SEC(2);
+        self->monsterinfo.nav_path_cache_time = level.time + Time_FromSec(2);
     }
 
     float yaw;
@@ -1139,7 +1139,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist)
             }
 
             if (self->monsterinfo.random_change_time < level.time && self->r.inuse) {
-                self->monsterinfo.random_change_time = level.time + SEC(1.5f);
+                self->monsterinfo.random_change_time = level.time + Time_FromSec(1.5f);
                 if (SV_NewChaseDir(self, path_to, dist))
                     return true;
             }
@@ -1147,7 +1147,7 @@ static bool M_NavPathToGoal(edict_t *self, float dist)
             self->monsterinfo.path_blocked_counter += FRAME_TIME * 3;
         }
 
-        if (self->monsterinfo.path_blocked_counter > SEC(1.5f))
+        if (self->monsterinfo.path_blocked_counter > Time_FromSec(1.5f))
             return false;
     }
 
@@ -1219,15 +1219,15 @@ static bool M_MoveToPath(edict_t *self, float dist)
         return false;
 
     if (self->monsterinfo.nav_path.returnCode > PathReturnCode_StartPathErrors) {
-        self->monsterinfo.path_wait_time = level.time + SEC(10);
+        self->monsterinfo.path_wait_time = level.time + Time_FromSec(10);
         return false;
     }
 
     self->monsterinfo.path_blocked_counter += FRAME_TIME * 3;
 
-    if (self->monsterinfo.path_blocked_counter > SEC(5)) {
+    if (self->monsterinfo.path_blocked_counter > Time_FromSec(5)) {
         self->monsterinfo.path_blocked_counter = 0;
-        self->monsterinfo.path_wait_time = level.time + SEC(5);
+        self->monsterinfo.path_wait_time = level.time + Time_FromSec(5);
         return false;
     }
 
@@ -1303,7 +1303,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         // we didn't make a step, so don't try this for a while
         // *unless* we're going to a path corner
         if (goal->classname && strcmp(goal->classname, "path_corner") && strcmp(goal->classname, "point_combat")) {
-            ent->monsterinfo.bad_move_time = level.time + SEC(5);
+            ent->monsterinfo.bad_move_time = level.time + Time_FromSec(5);
             ent->monsterinfo.aiflags &= ~AI_CHARGING;
         }
     }
@@ -1322,7 +1322,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
         SV_NewChaseDir(ent, goal->s.origin, dist);
         ent->monsterinfo.move_block_counter = 0;
     } else
-        ent->monsterinfo.bad_move_time -= SEC(0.25f);
+        ent->monsterinfo.bad_move_time -= Time_FromSec(0.25f);
 }
 
 /*

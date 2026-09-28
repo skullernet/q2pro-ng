@@ -419,7 +419,7 @@ void MOVEINFO_ENDFUNC(plat_hit_top)(edict_t *ent)
     ent->moveinfo.state = STATE_TOP;
 
     ent->think = plat_go_down;
-    ent->nextthink = level.time + SEC(3);
+    ent->nextthink = level.time + Time_FromSec(3);
 }
 
 void MOVEINFO_ENDFUNC(plat_hit_bottom)(edict_t *ent)
@@ -525,7 +525,7 @@ void TOUCH(Touch_Plat_Center)(edict_t *ent, edict_t *other, const trace_t *tr, b
     if (ent->moveinfo.state == STATE_BOTTOM)
         plat_go_up(ent);
     else if (ent->moveinfo.state == STATE_TOP)
-        ent->nextthink = level.time + SEC(1); // the player is still on the plat, so delay going down
+        ent->nextthink = level.time + Time_FromSec(1); // the player is still on the plat, so delay going down
 }
 
 // PGM - plat2's change the trigger field
@@ -714,7 +714,7 @@ void MOVEINFO_BLOCKED(rotating_blocked)(edict_t *self, edict_t *other)
         return;
     if (level.time < self->touch_debounce_time)
         return;
-    self->touch_debounce_time = level.time + HZ(10);
+    self->touch_debounce_time = level.time + Time_FromHertz(10);
     T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
@@ -920,7 +920,7 @@ void MOVEINFO_ENDFUNC(button_wait)(edict_t *self)
     G_UseTargets(self, self->activator);
 
     if (self->moveinfo.wait >= 0) {
-        self->nextthink = level.time + SEC(self->moveinfo.wait);
+        self->nextthink = level.time + Time_FromSec(self->moveinfo.wait);
         self->think = button_return;
     }
 }
@@ -1102,7 +1102,7 @@ void MOVEINFO_ENDFUNC(door_hit_top)(edict_t *self)
 
     if (self->moveinfo.wait >= 0) {
         self->think = door_go_down;
-        self->nextthink = level.time + SEC(self->moveinfo.wait);
+        self->nextthink = level.time + Time_FromSec(self->moveinfo.wait);
     }
 
     if (self->spawnflags & SPAWNFLAG_DOOR_START_OPEN)
@@ -1153,7 +1153,7 @@ static void door_go_up(edict_t *self, edict_t *activator)
     if (self->moveinfo.state == STATE_TOP) {
         // reset top wait time
         if (self->moveinfo.wait >= 0)
-            self->nextthink = level.time + SEC(self->moveinfo.wait);
+            self->nextthink = level.time + Time_FromSec(self->moveinfo.wait);
         return;
     }
 
@@ -1188,7 +1188,7 @@ void THINK(smart_water_go_up)(edict_t *self)
     if (self->moveinfo.state == STATE_TOP) {
         // reset top wait time
         if (self->moveinfo.wait >= 0)
-            self->nextthink = level.time + SEC(self->moveinfo.wait);
+            self->nextthink = level.time + Time_FromSec(self->moveinfo.wait);
         return;
     }
 
@@ -1314,7 +1314,7 @@ void TOUCH(Touch_DoorTrigger)(edict_t *self, edict_t *other, const trace_t *tr, 
 
     if (level.time < self->touch_debounce_time)
         return;
-    self->touch_debounce_time = level.time + SEC(1);
+    self->touch_debounce_time = level.time + Time_FromSec(1);
 
     door_use(owner, other, other);
 }
@@ -1397,7 +1397,7 @@ void MOVEINFO_BLOCKED(door_blocked)(edict_t *self, edict_t *other)
     }
 
     if (self->dmg && !(level.time < self->touch_debounce_time)) {
-        self->touch_debounce_time = level.time + HZ(10);
+        self->touch_debounce_time = level.time + Time_FromHertz(10);
         T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
     }
 
@@ -1434,7 +1434,7 @@ void TOUCH(door_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
 
     if (level.time < self->touch_debounce_time)
         return;
-    self->touch_debounce_time = level.time + SEC(5);
+    self->touch_debounce_time = level.time + Time_FromSec(5);
 
     G_ClientPrintf(other, PRINT_CENTER, "%s", self->message);
     G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NORM);
@@ -1840,7 +1840,7 @@ void MOVEINFO_BLOCKED(train_blocked)(edict_t *self, edict_t *other)
 
     if (!self->dmg)
         return;
-    self->touch_debounce_time = level.time + SEC(0.5f);
+    self->touch_debounce_time = level.time + Time_FromSec(0.5f);
     T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
@@ -1863,7 +1863,7 @@ void MOVEINFO_ENDFUNC(train_wait)(edict_t *self)
 
     if (self->moveinfo.wait) {
         if (self->moveinfo.wait > 0) {
-            self->nextthink = level.time + SEC(self->moveinfo.wait);
+            self->nextthink = level.time + Time_FromSec(self->moveinfo.wait);
             self->think = train_next;
         } else if (self->spawnflags & SPAWNFLAG_TRAIN_TOGGLE) { // && wait < 0
             // PMM - clear target_ent, let train_next get called when we get used
@@ -2200,7 +2200,7 @@ These can used but not touched.
 void THINK(func_timer_think)(edict_t *self)
 {
     G_UseTargets(self, self->activator);
-    self->nextthink = level.time + SEC(self->wait + crandom() * self->random);
+    self->nextthink = level.time + Time_FromSec(self->wait + crandom() * self->random);
 }
 
 void USE(func_timer_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -2215,7 +2215,7 @@ void USE(func_timer_use)(edict_t *self, edict_t *other, edict_t *activator)
 
     // turn it on
     if (self->delay)
-        self->nextthink = level.time + SEC(self->delay);
+        self->nextthink = level.time + Time_FromSec(self->delay);
     else
         func_timer_think(self);
 }
@@ -2234,7 +2234,7 @@ void SP_func_timer(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_TIMER_START_ON) {
-        self->nextthink = level.time + SEC(1 + st.pausetime + self->delay + self->wait + crandom() * self->random);
+        self->nextthink = level.time + Time_FromSec(1 + st.pausetime + self->delay + self->wait + crandom() * self->random);
         self->activator = self;
     }
 
@@ -2318,7 +2318,7 @@ void USE(door_secret_use)(edict_t *self, edict_t *other, edict_t *activator)
 
 void MOVEINFO_ENDFUNC(door_secret_move1)(edict_t *self)
 {
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
     self->think = door_secret_move2;
 }
 
@@ -2331,7 +2331,7 @@ void MOVEINFO_ENDFUNC(door_secret_move3)(edict_t *self)
 {
     if (self->wait == -1)
         return;
-    self->nextthink = level.time + SEC(self->wait);
+    self->nextthink = level.time + Time_FromSec(self->wait);
     self->think = door_secret_move4;
 }
 
@@ -2342,7 +2342,7 @@ void THINK(door_secret_move4)(edict_t *self)
 
 void MOVEINFO_ENDFUNC(door_secret_move5)(edict_t *self)
 {
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
     self->think = door_secret_move6;
 }
 
@@ -2373,7 +2373,7 @@ void MOVEINFO_BLOCKED(door_secret_blocked)(edict_t *self, edict_t *other)
 
     if (level.time < self->touch_debounce_time)
         return;
-    self->touch_debounce_time = level.time + SEC(0.5f);
+    self->touch_debounce_time = level.time + Time_FromSec(0.5f);
 
     T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
@@ -2533,7 +2533,7 @@ void THINK(func_eye_think)(edict_t *self)
         wanted_angles = vectoangles(dir);
 
         self->s.frame = 2;
-        self->timestamp = level.time + SEC(self->wait);
+        self->timestamp = level.time + Time_FromSec(self->wait);
     } else {
         if (self->timestamp <= level.time) {
             // return to neutral
@@ -2585,7 +2585,7 @@ void THINK(func_eye_setup)(edict_t *self)
     }
 
     self->think = func_eye_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_func_eye(edict_t *ent)
@@ -2615,10 +2615,10 @@ void SP_func_eye(edict_t *ent)
 
     if (ent->pathtarget) {
         ent->think = func_eye_setup;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     } else {
         ent->think = func_eye_think;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     }
 
     trap_LinkEntity(ent);

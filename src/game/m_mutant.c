@@ -221,7 +221,7 @@ static void mutant_hit_left(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, SOUND.hit, 1, ATTN_NORM);
     else {
         G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -232,7 +232,7 @@ static void mutant_hit_right(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, SOUND.hit2, 1, ATTN_NORM);
     else {
         G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -310,7 +310,7 @@ static void mutant_jump_takeoff(edict_t *self)
     self->velocity.z = 160;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->dmg = 1;
     self->touch = mutant_jump_touch;
 }
@@ -451,7 +451,7 @@ void PAIN(mutant_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     r = frandom();
     if (r < 0.33f)

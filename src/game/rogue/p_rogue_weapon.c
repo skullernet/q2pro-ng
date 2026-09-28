@@ -32,7 +32,7 @@ static void weapon_tesla_fire(edict_t *ent, bool held)
     ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(0, 0, -22), false);
 
     if (ent->health > 0) {
-        float frac = 1.0f - TO_SEC(ent->client->grenade_time - level.time) / GRENADE_TIMER_SEC;
+        float frac = 1.0f - Time_ToSec(ent->client->grenade_time - level.time) / GRENADE_TIMER_SEC;
         speed = Q_lerpf(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
     } else
         speed = GRENADE_MINSPEED;
@@ -84,7 +84,7 @@ static void weapon_chainfist_fire(edict_t *ent)
 
     if (fire_player_melee(ent, aim.start, aim.dir, CHAINFIST_REACH, damage, 100, MOD_CHAINFIST)) {
         if (ent->client->empty_click_sound < level.time) {
-            ent->client->empty_click_sound = level.time + SEC(0.5f);
+            ent->client->empty_click_sound = level.time + Time_FromSec(0.5f);
             G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/sawslice.wav"), 1, ATTN_NORM);
         }
     }

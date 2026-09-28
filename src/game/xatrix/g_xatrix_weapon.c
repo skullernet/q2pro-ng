@@ -14,7 +14,7 @@ void fire_blueblaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int s
     bolt->s.skinnum = 1;
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
     bolt->touch = blaster_touch;
-    bolt->nextthink = level.time + SEC(2);
+    bolt->nextthink = level.time + Time_FromSec(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->classname = "bolt";
@@ -67,7 +67,7 @@ void fire_ionripper(edict_t *self, vec3_t start, vec3_t dir, int damage, int spe
     ion->s.modelindex = G_ModelIndex("models/objects/boomrang/tris.md2");
     ion->s.sound = G_SoundIndex("misc/lasfly.wav");
     ion->touch = ionripper_touch;
-    ion->nextthink = level.time + SEC(3);
+    ion->nextthink = level.time + Time_FromSec(3);
     ion->think = ionripper_sparks;
     ion->dmg = damage;
     ion->dmg_radius = 100;
@@ -216,7 +216,7 @@ void fire_plasma(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
     plasma->s.modelindex = G_ModelIndex("sprites/s_photon.sp2");
     plasma->s.sound = G_SoundIndex("weapons/rockfly.wav");
     plasma->touch = plasma_touch;
-    plasma->nextthink = level.time + SEC(8000.0f / speed);
+    plasma->nextthink = level.time + Time_FromSec(8000.0f / speed);
     plasma->think = G_FreeEdict;
     plasma->dmg = damage;
     plasma->radius_dmg = radius_damage;
@@ -285,7 +285,7 @@ void THINK(Trap_Think)(edict_t *ent)
         return;
     }
 
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 
     if (!ent->groundentity)
         return;
@@ -309,7 +309,7 @@ void THINK(Trap_Think)(edict_t *ent)
         }
         ent->s.frame++;
         if (ent->s.frame == 8) {
-            ent->nextthink = level.time + SEC(1);
+            ent->nextthink = level.time + Time_FromSec(1);
             ent->think = G_FreeEdict;
             ent->s.effects &= ~EF_TRAP;
 
@@ -420,7 +420,7 @@ void THINK(Trap_Think)(edict_t *ent)
     ent->enemy = best;
     ent->wait = 64;
     ent->s.old_origin = ent->s.origin;
-    ent->timestamp = level.time + SEC(30);
+    ent->timestamp = level.time + Time_FromSec(30);
     ent->accel = best->mass;
     if (deathmatch.integer)
         ent->mass = best->mass / 4;
@@ -474,7 +474,7 @@ void fire_trap(edict_t *self, vec3_t start, vec3_t aimdir, int speed)
     trap->s.modelindex = G_ModelIndex("models/weapons/z_trap/tris.md2");
     trap->teammaster = self;
     trap->r.ownernum = self->s.number;
-    trap->nextthink = level.time + SEC(1);
+    trap->nextthink = level.time + Time_FromSec(1);
     trap->think = Trap_Think;
     trap->classname = "food_cube_trap";
     // RAFAEL 16-APR-98
@@ -483,7 +483,7 @@ void fire_trap(edict_t *self, vec3_t start, vec3_t aimdir, int speed)
     trap->flags |= (FL_DAMAGEABLE | FL_MECHANICAL);
     trap->clipmask = G_ProjectileClipmask(self) & ~CONTENTS_DEADMONSTER;
     trap->r.svflags |= SVF_TRAP;
-    trap->timestamp = level.time + SEC(30);
+    trap->timestamp = level.time + Time_FromSec(30);
 
     trap_LinkEntity(trap);
 }

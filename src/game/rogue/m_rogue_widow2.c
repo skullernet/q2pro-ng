@@ -431,7 +431,7 @@ static void Widow2Tongue(edict_t *self)
 
     te->s.old_origin = G_SnapVector(start);
     te->s.origin = G_SnapVector(end);
-    te->nextthink = level.time + SEC(0.2f);
+    te->nextthink = level.time + Time_FromSec(0.2f);
     trap_LinkEntity(te);
 
     dir = Vec3_Sub(start, end);
@@ -496,7 +496,7 @@ static void Widow2Crunch(edict_t *self)
 
 static void Widow2Toss(edict_t *self)
 {
-    self->timestamp = level.time + SEC(3);
+    self->timestamp = level.time + Time_FromSec(3);
 }
 
 static const mframe_t widow2_frames_tongs[] = {
@@ -786,7 +786,7 @@ void PAIN(widow2_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(5);
+    self->pain_debounce_time = level.time + Time_FromSec(5);
 
     if (damage < 15)
         G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NONE);
@@ -1157,7 +1157,7 @@ void THINK(WidowExplode)(edict_t *self)
             ThrowWidowGib(self, "models/objects/gibs/sm_metal/tris.md2", 400, GIB_METALLIC);
         self->deadflag = true;
         self->think = monster_think;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
         M_SetAnimation(self, &widow2_move_dead);
         return;
     }
@@ -1194,7 +1194,7 @@ void THINK(WidowExplode)(edict_t *self)
         G_TempEntity(org, (self->count & 1) ? EV_EXPLOSION1 : EV_EXPLOSION1_NP, 0);
 
     self->think = WidowExplode;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 static const vec3_t explosion1_offsets[] = {

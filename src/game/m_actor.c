@@ -68,7 +68,7 @@ void MONSTERINFO_STAND(actor_stand)(edict_t *self)
     M_SetAnimation(self, &actor_move_stand);
 
     // randomize on startup
-    if (level.time < SEC(1))
+    if (level.time < Time_FromSec(1))
         self->s.frame = irandom2(self->monsterinfo.active_move->firstframe, self->monsterinfo.active_move->lastframe + 1);
 }
 
@@ -191,7 +191,7 @@ void PAIN(actor_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
     //  G_StartSound (self, CHAN_VOICE, actor.sound_pain, 1, ATTN_NORM);
 
     if ((other->client) && (frandom() < 0.4f)) {

@@ -136,7 +136,7 @@ void PAIN(arachnid_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
     G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))
@@ -307,7 +307,7 @@ static void arachnid_melee_hit(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, 0, 0 };
     if (!fire_hit(self, aim, 15, 50)) {
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1);
         self->count++;
     } else if (self->s.frame == FRAME_melee_atk11 &&
                self->monsterinfo.melee_debounce_time < level.time)
@@ -490,8 +490,8 @@ void MONSTERINFO_ATTACK(arachnid_attack)(edict_t *self)
         M_SetAnimation(self, &arachnid_taunt);
         G_StartSound(self, CHAN_VOICE, sound_pissed, 1, 0.25f);
         self->count = 0;
-        self->pain_debounce_time = level.time + SEC(4.5f);
-        self->last_move_time = level.time + SEC(10);
+        self->pain_debounce_time = level.time + Time_FromSec(4.5f);
+        self->last_move_time = level.time + Time_FromSec(10);
     } else if ((self->enemy->s.origin.z - self->s.origin.z) > 150 &&
                (M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL_UP1]) || M_CheckClearShot(self, monster_flash_offset[MZ2_ARACHNID_RAIL_UP2])))
         M_SetAnimation(self, &arachnid_attack_up1);

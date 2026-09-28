@@ -291,7 +291,7 @@ static void parasite_break_sound(edict_t *self)
     else
         G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 }
 
 void proboscis_segment_draw(edict_t *self);
@@ -512,7 +512,7 @@ void THINK(proboscis_think)(edict_t *self)
                     T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.dir, 2, 0, DAMAGE_NONE, MOD_UNKNOWN);
                     owner->health = min(owner->max_health, owner->health + 2);
                     owner->monsterinfo.setskin(owner);
-                    self->timestamp = level.time + HZ(10);
+                    self->timestamp = level.time + Time_FromHertz(10);
                 }
             }
 
@@ -852,7 +852,7 @@ void PAIN(parasite_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     if (self->proboscus && self->proboscus->style != 2)
         proboscis_retract(self->proboscus);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (brandom())
         G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);

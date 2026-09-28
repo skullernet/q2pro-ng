@@ -1753,7 +1753,7 @@ qvm_exported void G_ReadLevel(qhandle_t handle)
         // fire any cross-level triggers
         if (strcmp(ent->classname, "target_crosslevel_target") == 0 ||
             strcmp(ent->classname, "target_crossunit_target") == 0)
-            ent->nextthink = level.time + SEC(ent->delay);
+            ent->nextthink = level.time + Time_FromSec(ent->delay);
 
         // let the server rebuild world links for this ent
         trap_LinkEntity(ent);

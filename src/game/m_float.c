@@ -482,7 +482,7 @@ static void floater_wham(edict_t *self)
     G_StartSound(self, CHAN_WEAPON, sound_attack3, 1, ATTN_NORM);
 
     if (!fire_hit(self, aim, irandom2(5, 11), -50))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(3);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3);
 }
 
 static void floater_zap(edict_t *self)
@@ -544,7 +544,7 @@ void PAIN(floater_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     else
         G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare

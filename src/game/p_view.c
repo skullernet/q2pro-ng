@@ -62,7 +62,7 @@ static void P_DamageFeedback(edict_t *player)
         want_flashes |= 2;
 
     if (want_flashes) {
-        client->flash_time = level.time + HZ(10);
+        client->flash_time = level.time + Time_FromHertz(10);
         client->ps.stats[STAT_FLASHES] = want_flashes;
     } else if (client->flash_time < level.time)
         client->ps.stats[STAT_FLASHES] = 0;
@@ -118,7 +118,7 @@ static void P_DamageFeedback(edict_t *player)
 
     // play an appropriate pain sound
     if ((level.time > player->pain_debounce_time) && !(player->flags & FL_GODMODE) && (client->invincible_time <= level.time)) {
-        player->pain_debounce_time = level.time + SEC(0.7f);
+        player->pain_debounce_time = level.time + Time_FromSec(0.7f);
 
         G_AddEvent(player, EV_PAIN, player->health);
         // Paril: pain noises alert monsters
@@ -254,14 +254,14 @@ static void SV_CalcBlend(edict_t *ent)
     // add for powerups
     if (ent->client->quad_time > level.time) {
         remaining = ent->client->quad_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(0, 0, 1, 0.08f, &ent->client->ps.screen_blend);
     // RAFAEL
     } else if (ent->client->quadfire_time > level.time) {
         remaining = ent->client->quadfire_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/quadfire2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(1, 0.2f, 0.5f, 0.08f, &ent->client->ps.screen_blend);
@@ -269,32 +269,32 @@ static void SV_CalcBlend(edict_t *ent)
     // PMM - double damage
     } else if (ent->client->double_time > level.time) {
         remaining = ent->client->double_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ddamage2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(0.9f, 0.7f, 0, 0.08f, &ent->client->ps.screen_blend);
     // PMM
     } else if (ent->client->invincible_time > level.time) {
         remaining = ent->client->invincible_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(1, 1, 0, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->invisible_time > level.time) {
         remaining = ent->client->invisible_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect2.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(0.8f, 0.8f, 0.8f, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->enviro_time > level.time) {
         remaining = ent->client->enviro_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/airout.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(0, 1, 0, 0.08f, &ent->client->ps.screen_blend);
     } else if (ent->client->breather_time > level.time) {
         remaining = ent->client->breather_time - level.time;
-        if (remaining == SEC(3)) // beginning to fade
+        if (remaining == Time_FromSec(3)) // beginning to fade
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/airout.wav"), 1, ATTN_NORM);
         if (G_PowerUpExpiringRelative(remaining))
             BG_AddBlend(0.4f, 1, 0.4f, 0.04f, &ent->client->ps.screen_blend);
@@ -302,7 +302,7 @@ static void SV_CalcBlend(edict_t *ent)
 
     // PGM
     if (ent->client->nuke_time > level.time) {
-        float brightness = TO_SEC(ent->client->nuke_time - level.time) / 2.0f;
+        float brightness = Time_ToSec(ent->client->nuke_time - level.time) / 2.0f;
         BG_AddBlend(1, 1, 1, brightness, &ent->client->ps.screen_blend);
     }
     if (ent->client->ir_time > level.time) {
@@ -322,10 +322,10 @@ static void SV_CalcBlend(edict_t *ent)
         BG_AddBlend(ent->client->damage_blend.x, ent->client->damage_blend.y, ent->client->damage_blend.z, ent->client->damage_alpha, &ent->client->ps.damage_blend);
 
     // [Paril-KEX] drowning visual indicator
-    if (ent->air_finished < level.time + SEC(9)) {
+    if (ent->air_finished < level.time + Time_FromSec(9)) {
         float alpha = 1.0f;
         if (ent->air_finished > level.time)
-            alpha = 1.0f - TO_SEC(ent->air_finished - level.time) / 9.0f;
+            alpha = 1.0f - Time_ToSec(ent->air_finished - level.time) / 9.0f;
         BG_AddBlend(0.1f, 0.1f, 0.2f, alpha * 0.75f, &ent->client->ps.damage_blend);
     }
 
@@ -355,7 +355,7 @@ static void P_WorldEffects(void)
     water_level_t waterlevel, old_waterlevel;
 
     if (current_player->movetype == MOVETYPE_NOCLIP) {
-        current_player->air_finished = level.time + SEC(12); // don't need air
+        current_player->air_finished = level.time + Time_FromSec(12); // don't need air
         return;
     }
 
@@ -380,7 +380,7 @@ static void P_WorldEffects(void)
         current_player->flags |= FL_INWATER;
 
         // clear damage_debounce, so the pain sound will play immediately
-        current_player->damage_debounce_time = level.time - SEC(1);
+        current_player->damage_debounce_time = level.time - Time_FromSec(1);
     }
 
     //
@@ -407,7 +407,7 @@ static void P_WorldEffects(void)
             // gasp for air
             G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("player/gasp1.wav"), 1, ATTN_NORM);
             PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
-        } else if (current_player->air_finished < level.time + SEC(11)) {
+        } else if (current_player->air_finished < level.time + Time_FromSec(11)) {
             // just break surface
             G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("player/gasp2.wav"), 1, ATTN_NORM);
         }
@@ -419,9 +419,9 @@ static void P_WorldEffects(void)
     if (waterlevel == WATER_UNDER && !(current_player->flags & FL_DEEPONE)) {
         // breather or envirosuit give air
         if (breather || envirosuit) {
-            current_player->air_finished = level.time + SEC(10);
+            current_player->air_finished = level.time + Time_FromSec(10);
 
-            if (((current_client->breather_time - level.time) % SEC(2.5f)) == 0) {
+            if (((current_client->breather_time - level.time) % Time_FromSec(2.5f)) == 0) {
                 if (!current_client->breather_sound)
                     G_StartSound(current_player, CHAN_AUTO, G_SoundIndex("player/u_breath1.wav"), 1, ATTN_NORM);
                 else
@@ -436,7 +436,7 @@ static void P_WorldEffects(void)
         if (current_player->air_finished < level.time) {
             // drown!
             if (current_player->client->next_drown_time < level.time && current_player->health > 0) {
-                current_player->client->next_drown_time = level.time + SEC(1);
+                current_player->client->next_drown_time = level.time + Time_FromSec(1);
 
                 // take more damage the longer underwater
                 current_player->dmg += 2;
@@ -454,15 +454,15 @@ static void P_WorldEffects(void)
                 T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, current_player->dmg, 0, DAMAGE_NO_ARMOR, MOD_WATER);
             }
         // Paril: almost-drowning sounds
-        } else if (current_player->air_finished <= level.time + SEC(3)) {
+        } else if (current_player->air_finished <= level.time + Time_FromSec(3)) {
             if (current_player->client->next_drown_time < level.time) {
                 const char *fmt = (game.dirtype == GAMEDIR_PSX) ? "player/breathout%d.wav" : "player/wade%d.wav";
-                G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va(fmt, 1 + ((int)TO_SEC(level.time) % 3))), 1, ATTN_NORM);
-                current_player->client->next_drown_time = level.time + SEC(1);
+                G_StartSound(current_player, CHAN_VOICE, G_SoundIndex(va(fmt, 1 + ((int)Time_ToSec(level.time) % 3))), 1, ATTN_NORM);
+                current_player->client->next_drown_time = level.time + Time_FromSec(1);
             }
         }
     } else {
-        current_player->air_finished = level.time + SEC(12);
+        current_player->air_finished = level.time + Time_FromSec(12);
         current_player->dmg = 2;
     }
 
@@ -476,20 +476,20 @@ static void P_WorldEffects(void)
                     G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("player/burn1.wav"), 1, ATTN_NORM);
                 else
                     G_StartSound(current_player, CHAN_VOICE, G_SoundIndex("player/burn2.wav"), 1, ATTN_NORM);
-                current_player->pain_debounce_time = level.time + SEC(1);
+                current_player->pain_debounce_time = level.time + Time_FromSec(1);
             }
 
             int dmg = (envirosuit ? 1 : 3) * waterlevel; // take 1/3 damage with envirosuit
 
             T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, dmg, 0, DAMAGE_NONE, MOD_LAVA);
-            current_player->slime_debounce_time = level.time + HZ(10);
+            current_player->slime_debounce_time = level.time + Time_FromHertz(10);
         }
 
         if (current_player->watertype & CONTENTS_SLIME) {
             if (!envirosuit) {
                 // no damage from slime with envirosuit
                 T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, 1 * waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
-                current_player->slime_debounce_time = level.time + HZ(10);
+                current_player->slime_debounce_time = level.time + Time_FromHertz(10);
             }
         }
     }
@@ -669,7 +669,7 @@ void G_SetClientFrame(edict_t *ent)
     if ((client->anim_priority & ANIM_REVERSED) && (ent->s.frame > client->anim_end)) {
         if (client->anim_time <= level.time) {
             ent->s.frame--;
-            client->anim_time = level.time + HZ(10);
+            client->anim_time = level.time + Time_FromHertz(10);
         }
         return;
     }
@@ -677,7 +677,7 @@ void G_SetClientFrame(edict_t *ent)
         // continue an animation
         if (client->anim_time <= level.time) {
             ent->s.frame++;
-            client->anim_time = level.time + HZ(10);
+            client->anim_time = level.time + Time_FromHertz(10);
         }
         return;
     }
@@ -697,7 +697,7 @@ void G_SetClientFrame(edict_t *ent)
             ent->s.frame = FRAME_jump3;
             ent->client->anim_end = FRAME_jump6;
         }
-        ent->client->anim_time = level.time + HZ(10);
+        ent->client->anim_time = level.time + Time_FromHertz(10);
         return;
     }
 
@@ -706,7 +706,7 @@ newanim:
     client->anim_priority = ANIM_BASIC;
     client->anim_duck = duck;
     client->anim_run = run;
-    client->anim_time = level.time + HZ(10);
+    client->anim_time = level.time + Time_FromHertz(10);
 
     if (!ent->groundentity) {
         // ZOID: if on grapple, don't go into jump frame, go into standing
@@ -785,7 +785,7 @@ static void P_RunMegaHealth(edict_t *ent)
         ent->health--;
 
         if (ent->health > ent->max_health)
-            ent->client->pers.megahealth_time = SEC(1);
+            ent->client->pers.megahealth_time = Time_FromSec(1);
         else
             ent->client->pers.megahealth_time = 0;
     }
@@ -941,7 +941,7 @@ void ClientEndServerFrame(edict_t *ent)
         } else
         // ZOID
             DeathmatchScoreboardMessage(ent, ent->enemy, false);
-        ent->client->menutime = level.time + SEC(3);
+        ent->client->menutime = level.time + Time_FromSec(3);
     }
 
     P_AssignClientSkinnum(ent);

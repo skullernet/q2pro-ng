@@ -156,10 +156,10 @@ void PMenu_Update(edict_t *ent)
         return;
     }
 
-    if (level.time - ent->client->menutime >= SEC(1)) {
+    if (level.time - ent->client->menutime >= Time_FromSec(1)) {
         // been a second or more since last update, update now
         PMenu_Do_Update(ent, true);
-        ent->client->menutime = level.time + SEC(1);
+        ent->client->menutime = level.time + Time_FromSec(1);
         ent->client->menudirty = false;
     }
     ent->client->menutime = level.time;

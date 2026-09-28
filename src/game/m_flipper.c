@@ -221,7 +221,7 @@ void PAIN(flipper_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     n = brandom();
     if (n == 0)

@@ -58,12 +58,13 @@ typedef enum {
 typedef int64_t gtime_t;
 typedef uint32_t spawnflags_t;
 
-#define SEC(n)  ((gtime_t)((n) * 1000LL))
-#define MSEC(n) ((gtime_t)(n))
-#define HZ(n)   ((gtime_t)(1000LL / (n)))
+#define Time_FromMin(n)     ((gtime_t)((n) * 60000LL))
+#define Time_FromSec(n)     ((gtime_t)((n) * 1000LL))
+#define Time_FromMsec(n)    ((gtime_t)(n))
+#define Time_FromHertz(n)   ((gtime_t)(1000LL / (n)))
 
-#define TO_SEC(f)   ((f) * 0.001f)
-#define TO_MSEC(f)  (f)
+#define Time_ToSec(f)   ((f) * 0.001f)
+#define Time_ToMsec(f)  (f)
 
 #define TICK_RATE       game.tick_rate
 #define FRAME_TIME      game.frame_time
@@ -1038,7 +1039,7 @@ typedef struct {
 // ROGUE
 // this determines how long to wait after a duck to duck again.
 // if we finish a duck-up, this gets cut in half.
-#define DUCK_INTERVAL   SEC(5)
+#define DUCK_INTERVAL   Time_FromSec(5)
 // ROGUE
 
 extern game_locals_t  game;
@@ -1066,8 +1067,8 @@ static inline float frandom1(float max_exclusive)
 // uniform time [min_inclusive, max_exclusive)
 static inline gtime_t random_time_sec(float min_inclusive, float max_exclusive)
 {
-    gtime_t a = SEC(min_inclusive);
-    gtime_t b = SEC(max_exclusive);
+    gtime_t a = Time_FromSec(min_inclusive);
+    gtime_t b = Time_FromSec(max_exclusive);
     return a + Q_rand_uniform(b - a);
 }
 
@@ -1926,7 +1927,7 @@ bool P_UseCoopInstancedItems(void);
 // will flash at 500ms intervals after 3 sec)
 static inline bool G_PowerUpExpiringRelative(gtime_t left)
 {
-    return TO_MSEC(left) > 3000 || (TO_MSEC(left) % 1000) < 500;
+    return Time_ToMsec(left) > 3000 || (Time_ToMsec(left) % 1000) < 500;
 }
 
 static inline bool G_PowerUpExpiring(gtime_t time)
@@ -1974,7 +1975,7 @@ enum {
     GESTURE_MAX
 };
 
-#define SELECTED_ITEM_TIME SEC(3)
+#define SELECTED_ITEM_TIME Time_FromSec(3)
 
 typedef enum {
     BMODEL_ANIM_FORWARDS,
@@ -2071,16 +2072,16 @@ typedef struct {
 
 // [Paril-KEX] seconds until we are fully invisible after
 // making a racket
-#define INVISIBILITY_TIME   SEC(2)
+#define INVISIBILITY_TIME   Time_FromSec(2)
 
 // time between ladder sounds
-#define LADDER_SOUND_TIME   SEC(0.3f)
+#define LADDER_SOUND_TIME   Time_FromSec(0.3f)
 
 // time after damage that we can't respawn on a player for
-#define COOP_DAMAGE_RESPAWN_TIME    SEC(2)
+#define COOP_DAMAGE_RESPAWN_TIME    Time_FromSec(2)
 
 // time after firing that we can't respawn on a player for
-#define COOP_DAMAGE_FIRING_TIME     SEC(2.5f)
+#define COOP_DAMAGE_FIRING_TIME     Time_FromSec(2.5f)
 
 typedef struct {
     vec3_t from;

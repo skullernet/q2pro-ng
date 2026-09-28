@@ -10,10 +10,10 @@
 
 #include "g_local.h"
 
-#define DEFENDER_LIFESPAN   SEC(30)
-#define HUNTER_LIFESPAN     SEC(30)
-#define VENGEANCE_LIFESPAN  SEC(30)
-#define MINIMUM_FLY_TIME    SEC(15)
+#define DEFENDER_LIFESPAN   Time_FromSec(30)
+#define HUNTER_LIFESPAN     Time_FromSec(30)
+#define VENGEANCE_LIFESPAN  Time_FromSec(30)
+#define MINIMUM_FLY_TIME    Time_FromSec(15)
 
 void vengeance_touch(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self);
 void hunter_touch(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self);
@@ -62,7 +62,7 @@ static void sphere_fly(edict_t *self)
     dest = owner->s.origin;
     dest.z = owner->r.absbox.maxs.z + 4;
 
-    if (!(level.time % HZ(1)) && !visible(self, owner)) {
+    if (!(level.time % Time_FromHertz(1)) && !visible(self, owner)) {
         self->s.origin = dest;
         trap_LinkEntity(self);
         return;
@@ -255,7 +255,7 @@ static void defender_shoot(edict_t *self, edict_t *enemy)
     start.z += 2;
     fire_blaster2(owner, start, dir, 10, 1000, EF_BLASTER, 0);
 
-    self->monsterinfo.attack_finished = level.time + SEC(0.4f);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(0.4f);
 }
 
 // *************************
@@ -416,7 +416,7 @@ void THINK(defender_think)(edict_t *self)
     sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void THINK(hunter_think)(edict_t *self)
@@ -470,7 +470,7 @@ void THINK(hunter_think)(edict_t *self)
         sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void THINK(vengeance_think)(edict_t *self)
@@ -492,7 +492,7 @@ void THINK(vengeance_think)(edict_t *self)
         sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 // *************************
@@ -557,7 +557,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
         return NULL;
     }
 
-    sphere->nextthink = level.time + HZ(10);
+    sphere->nextthink = level.time + Time_FromHertz(10);
 
     trap_LinkEntity(sphere);
 

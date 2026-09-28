@@ -303,7 +303,7 @@ void TOUCH(path_corner_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     other->goalentity = other->movetarget = next;
 
     if (self->wait) {
-        other->monsterinfo.pausetime = level.time + SEC(self->wait);
+        other->monsterinfo.pausetime = level.time + Time_FromSec(self->wait);
         other->monsterinfo.stand(other);
         return;
     }
@@ -685,7 +685,7 @@ void TOUCH(func_object_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     vec3_t pos = Box3_ClampPoint(self->r.absbox, other->s.origin);
     T_Damage(other, self, self, vec3_origin, pos, tr->plane.dir, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 
-    other->damage_debounce_time = level.time + HZ(10);
+    other->damage_debounce_time = level.time + Time_FromHertz(10);
 }
 
 void THINK(func_object_release)(edict_t *self)
@@ -716,7 +716,7 @@ void SP_func_object(edict_t *self)
         self->r.solid = SOLID_BSP;
         self->movetype = MOVETYPE_PUSH;
         self->think = func_object_release;
-        self->nextthink = level.time + HZ(5);
+        self->nextthink = level.time + Time_FromHertz(5);
     } else {
         self->r.solid = SOLID_NOT;
         self->movetype = MOVETYPE_PUSH;
@@ -961,7 +961,7 @@ void DIE(barrel_delay)(edict_t *self, edict_t *inflictor, edict_t *attacker, int
         self->think = barrel_explode;
         self->activator = attacker;
     } else {
-        self->timestamp = level.time + SEC(0.75f);
+        self->timestamp = level.time + Time_FromSec(0.75f);
         self->think = barrel_burn;
         self->activator = attacker;
     }
@@ -977,7 +977,7 @@ void THINK(barrel_think)(edict_t *self)
 
     M_CategorizePosition(self, self->s.origin, &self->waterlevel, &self->watertype);
     self->flags |= FL_IMMUNE_SLIME;
-    self->air_finished = level.time + SEC(100);
+    self->air_finished = level.time + Time_FromSec(100);
     M_WorldEffects(self);
 }
 
@@ -1028,7 +1028,7 @@ void SP_misc_explobox(edict_t *self)
 
     // PGM - change so barrels will think and hence, blow up
     self->think = barrel_start;
-    self->nextthink = level.time + HZ(5);
+    self->nextthink = level.time + Time_FromHertz(5);
     // PGM
 
     trap_LinkEntity(self);
@@ -1054,7 +1054,7 @@ void THINK(misc_blackhole_think)(edict_t *self)
     if (self->timestamp <= level.time) {
         if (++self->s.frame >= 19)
             self->s.frame = 0;
-        self->timestamp = level.time + HZ(10);
+        self->timestamp = level.time + Time_FromHertz(10);
     }
 
     if (self->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE) {
@@ -1074,7 +1074,7 @@ void SP_misc_blackhole(edict_t *ent)
     ent->s.renderfx = RF_TRANSLUCENT | RF_NOSHADOW;
     ent->use = misc_blackhole_use;
     ent->think = misc_blackhole_think;
-    ent->nextthink = level.time + HZ(5);
+    ent->nextthink = level.time + Time_FromHertz(5);
 
     if (ent->spawnflags & SPAWNFLAG_BLACKHOLE_AUTO_NOISE)
         ent->s.sound = G_EncodeSound(CHAN_AUTO, G_SoundIndex("world/blackhole.wav"), 1, ATTN_NORM);
@@ -1088,10 +1088,10 @@ void SP_misc_blackhole(edict_t *ent)
 void THINK(misc_eastertank_think)(edict_t *self)
 {
     if (++self->s.frame < 293)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     else {
         self->s.frame = 254;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -1103,7 +1103,7 @@ void SP_misc_eastertank(edict_t *ent)
     ent->s.modelindex = G_ModelIndex("models/monsters/tank/tris.md2");
     ent->s.frame = 254;
     ent->think = misc_eastertank_think;
-    ent->nextthink = level.time + HZ(5);
+    ent->nextthink = level.time + Time_FromHertz(5);
     trap_LinkEntity(ent);
 }
 
@@ -1113,10 +1113,10 @@ void SP_misc_eastertank(edict_t *ent)
 void THINK(misc_easterchick_think)(edict_t *self)
 {
     if (++self->s.frame < 247)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     else {
         self->s.frame = 208;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -1128,7 +1128,7 @@ void SP_misc_easterchick(edict_t *ent)
     ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 208;
     ent->think = misc_easterchick_think;
-    ent->nextthink = level.time + HZ(5);
+    ent->nextthink = level.time + Time_FromHertz(5);
     trap_LinkEntity(ent);
 }
 
@@ -1138,10 +1138,10 @@ void SP_misc_easterchick(edict_t *ent)
 void THINK(misc_easterchick2_think)(edict_t *self)
 {
     if (++self->s.frame < 287)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     else {
         self->s.frame = 248;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -1153,7 +1153,7 @@ void SP_misc_easterchick2(edict_t *ent)
     ent->s.modelindex = G_ModelIndex("models/monsters/bitch/tris.md2");
     ent->s.frame = 248;
     ent->think = misc_easterchick2_think;
-    ent->nextthink = level.time + HZ(5);
+    ent->nextthink = level.time + Time_FromHertz(5);
     trap_LinkEntity(ent);
 }
 
@@ -1165,7 +1165,7 @@ There should be a item_commander_head that has this as it's target.
 void THINK(commander_body_think)(edict_t *self)
 {
     if (++self->s.frame < 24)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     else
         self->nextthink = 0;
 
@@ -1176,7 +1176,7 @@ void THINK(commander_body_think)(edict_t *self)
 void USE(commander_body_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->think = commander_body_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     G_StartSound(self, CHAN_BODY, G_SoundIndex("tank/pain.wav"), 1, ATTN_NORM);
 }
 
@@ -1202,7 +1202,7 @@ void SP_monster_commander_body(edict_t *self)
     G_SoundIndex("tank/pain.wav");
 
     self->think = commander_body_drop;
-    self->nextthink = level.time + HZ(2);
+    self->nextthink = level.time + Time_FromHertz(2);
 }
 
 /*QUAKED misc_banner (1 .5 0) (-4 -4 -4) (4 4 4)
@@ -1213,7 +1213,7 @@ model="models/objects/banner/tris.md2"
 void THINK(misc_banner_think)(edict_t *ent)
 {
     ent->s.frame = (ent->s.frame + 1) % 16;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_misc_banner(edict_t *ent)
@@ -1226,7 +1226,7 @@ void SP_misc_banner(edict_t *ent)
     trap_LinkEntity(ent);
 
     ent->think = misc_banner_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 /*QUAKED misc_deadsoldier (1 .5 0) (-16 -16 0) (16 16 16) ON_BACK ON_STOMACH BACK_DECAP FETAL_POS SIT_DECAP IMPALED
@@ -1326,7 +1326,7 @@ void SP_misc_viper(edict_t *ent)
     ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->use = misc_viper_use;
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
@@ -1363,7 +1363,7 @@ void PRETHINK(misc_viper_bomb_prethink)(edict_t *self)
 {
     self->groundentity = NULL;
 
-    float diff = TO_SEC(self->timestamp - level.time);
+    float diff = Time_ToSec(self->timestamp - level.time);
     if (diff < -1.0f)
         diff = -1.0f;
 
@@ -1444,7 +1444,7 @@ void SP_misc_strogg_ship(edict_t *ent)
     ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->use = misc_strogg_ship_use;
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
@@ -1459,14 +1459,14 @@ void THINK(misc_satellite_dish_think)(edict_t *self)
 {
     self->s.frame++;
     if (self->s.frame < 38)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(misc_satellite_dish_use)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->s.frame = 0;
     self->think = misc_satellite_dish_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_misc_satellite_dish(edict_t *ent)
@@ -1515,7 +1515,7 @@ void SP_misc_gib_arm(edict_t *ent)
     ent->deadflag = true;
     ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
-    ent->nextthink = level.time + SEC(10);
+    ent->nextthink = level.time + Time_FromSec(10);
     trap_LinkEntity(ent);
 }
 
@@ -1533,7 +1533,7 @@ void SP_misc_gib_leg(edict_t *ent)
     ent->deadflag = true;
     ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
-    ent->nextthink = level.time + SEC(10);
+    ent->nextthink = level.time + Time_FromSec(10);
     trap_LinkEntity(ent);
 }
 
@@ -1551,7 +1551,7 @@ void SP_misc_gib_head(edict_t *ent)
     ent->deadflag = true;
     ent->avelocity = Vec3_Scale(Vec3_Random(), 200);
     ent->think = G_FreeEdict;
-    ent->nextthink = level.time + SEC(10);
+    ent->nextthink = level.time + Time_FromSec(10);
     trap_LinkEntity(ent);
 }
 
@@ -1706,7 +1706,7 @@ void THINK(func_clock_think)(edict_t *self)
             return;
     }
 
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
 }
 
 void USE(func_clock_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1743,7 +1743,7 @@ void SP_func_clock(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_TIMER_START_OFF)
         self->use = func_clock_use;
     else
-        self->nextthink = level.time + SEC(1);
+        self->nextthink = level.time + Time_FromSec(1);
 }
 
 //=================================================================================
@@ -1974,7 +1974,7 @@ void THINK(fire_fly)(edict_t *self)
     fireball->classname = "fireball";
     fireball->s.modelindex = G_ModelIndex("models/objects/gibs/sm_meat/tris.md2");
     fireball->s.origin = self->s.origin;
-    fireball->nextthink = level.time + SEC(5);
+    fireball->nextthink = level.time + Time_FromSec(5);
     fireball->think = G_FreeEdict;
     fireball->touch = fire_touch;
     fireball->spawnflags = self->spawnflags;
@@ -2118,7 +2118,7 @@ void THINK(misc_player_mannequin_think)(edict_t *self)
             }
         }
 
-        self->teleport_time = level.time + HZ(10);
+        self->teleport_time = level.time + Time_FromHertz(10);
     }
 
     if (self->enemy) {
@@ -2189,7 +2189,7 @@ void SP_misc_player_mannequin(edict_t *self)
     self->r.box = player_box;
     self->yaw_speed = 30;
     self->ideal_yaw = 0;
-    self->teleport_time = level.time + HZ(10);
+    self->teleport_time = level.time + Time_FromHertz(10);
     self->s.modelindex = MODELINDEX_PLAYER;
     self->count = st.distance;
 

@@ -276,7 +276,7 @@ void PAIN(tank_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
             return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (self->style)
         G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
@@ -744,9 +744,9 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
         float chance;
 
         // setup shot probabilities
-        if (self->monsterinfo.blind_fire_delay < SEC(1))
+        if (self->monsterinfo.blind_fire_delay < Time_FromSec(1))
             chance = 1.0f;
-        else if (self->monsterinfo.blind_fire_delay < SEC(7.5f))
+        else if (self->monsterinfo.blind_fire_delay < Time_FromSec(7.5f))
             chance = 0.4f;
         else
             chance = 0.1f;
@@ -780,7 +780,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
         }
 
         self->monsterinfo.attack_finished = level.time + random_time_sec(3, 5);
-        self->pain_debounce_time = level.time + SEC(5); // no pain for a while
+        self->pain_debounce_time = level.time + Time_FromSec(5); // no pain for a while
         return;
     }
     // pmm
@@ -811,7 +811,7 @@ void MONSTERINFO_ATTACK(tank_attack)(edict_t *self)
             M_SetAnimation(self, &tank_move_attack_chain);
         else if (can_rocket && r < 0.66f) {
             M_SetAnimation(self, &tank_move_attack_pre_rocket);
-            self->pain_debounce_time = level.time + SEC(5); // no pain for a while
+            self->pain_debounce_time = level.time + Time_FromSec(5); // no pain for a while
         } else if (M_CheckClearShot(self, monster_flash_offset[MZ2_TANK_BLASTER_1]))
             M_SetAnimation(self, &tank_move_attack_blast);
     }
@@ -1046,7 +1046,7 @@ void THINK(Think_TankStand)(edict_t *ent)
         ent->s.frame = FRAME_stand01;
     else
         ent->s.frame++;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 /*QUAKED monster_tank_stand (1 .5 0) (-32 -32 0) (32 32 90)
@@ -1073,6 +1073,6 @@ void SP_monster_tank_stand(edict_t *self)
 
     self->use = Use_Boss3;
     self->think = Think_TankStand;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     trap_LinkEntity(self);
 }

@@ -14,7 +14,7 @@ static void target_mal_laser_on(edict_t *self)
     self->r.svflags &= ~SVF_NOCLIENT;
     self->r.svflags |= SVF_TRAP;
     // target_laser_think (self);
-    self->nextthink = level.time + SEC(self->wait + self->delay);
+    self->nextthink = level.time + Time_FromSec(self->wait + self->delay);
 }
 
 void USE(target_mal_laser_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -32,7 +32,7 @@ void THINK(mal_laser_think2)(edict_t *self)
 {
     self->r.svflags |= SVF_NOCLIENT;
     self->think = mal_laser_think;
-    self->nextthink = level.time + SEC(self->wait);
+    self->nextthink = level.time + Time_FromSec(self->wait);
     self->spawnflags |= SPAWNFLAG_LASER_ZAP;
 }
 
@@ -41,7 +41,7 @@ void THINK(mal_laser_think)(edict_t *self)
     self->r.svflags &= ~SVF_NOCLIENT;
     target_laser_think(self);
     self->think = mal_laser_think2;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_target_mal_laser(edict_t *self)
@@ -83,7 +83,7 @@ void SP_target_mal_laser(edict_t *self)
 
     self->r.box = Box3_FromRadius(8);
 
-    self->nextthink = level.time + SEC(self->delay);
+    self->nextthink = level.time + Time_FromSec(self->delay);
     self->think = mal_laser_think;
 
     self->use = target_mal_laser_use;

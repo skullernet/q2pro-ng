@@ -463,7 +463,7 @@ void PAIN(chtjor_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
                 return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     bool do_pain3 = false;
 

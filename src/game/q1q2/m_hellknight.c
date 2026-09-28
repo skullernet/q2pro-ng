@@ -45,11 +45,11 @@ static void SwingSword(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, 0, 24 };
     int damage = (frandom() + frandom() + frandom()) * 3;
     if (!fire_hit(self, aim, damage, 20))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.2f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.2f);
 
     if (self->touch_debounce_time < level.time) {
         G_StartSound(self, CHAN_WEAPON, sound[self->style == Hyper].melee, 1, ATTN_NORM);
-        self->touch_debounce_time = level.time + SEC(0.7f);
+        self->touch_debounce_time = level.time + Time_FromSec(0.7f);
     }
 }
 
@@ -110,7 +110,7 @@ static bool CheckForCharge(edict_t *self)
     if (range_to(self, self->enemy) < 80)
         return false;
 
-    self->monsterinfo.attack_finished = level.time + SEC(2);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(2);
     return true;
 }
 
@@ -169,7 +169,7 @@ static void hellknight_reset_magic(edict_t *self)
 {
     self->radius_dmg = -2;
     if (self->enemy && range_to(self, self->enemy) < 320 && (frandom() < 0.75f))
-        self->monsterinfo.attack_finished = level.time + SEC(1);
+        self->monsterinfo.attack_finished = level.time + Time_FromSec(1);
 }
 
 void TOUCH(magic_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -200,7 +200,7 @@ static void fire_magic(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
     magic->s.effects |= EF_IONRIPPER;
     magic->s.modelindex = G_ModelIndex("models/monsters/spikestrogg/tris.md2");
     magic->touch = magic_touch;
-    magic->nextthink = level.time + SEC(10);
+    magic->nextthink = level.time + Time_FromSec(10);
     magic->think = G_FreeEdict;
     magic->dmg = damage;
     magic->enemy = self->enemy;
@@ -246,7 +246,7 @@ static void FireMagic_Hyper(edict_t *self)
 
 static void FireMagic_Hyper_Start(edict_t *self)
 {
-    self->fly_sound_debounce_time = level.time + SEC(1.5f);
+    self->fly_sound_debounce_time = level.time + Time_FromSec(1.5f);
     FireMagic_Hyper(self);
 }
 
@@ -256,7 +256,7 @@ static void FireMagic_Hyper_End(edict_t *self)
     if (self->fly_sound_debounce_time > level.time)
         self->s.frame = FRAME_magica10;
     else
-        self->monsterinfo.attack_finished = level.time + SEC(2);
+        self->monsterinfo.attack_finished = level.time + Time_FromSec(2);
 }
 
 static void hellknight_attack_slam(edict_t *self)
@@ -316,7 +316,7 @@ static void hellknight_jump_takeoff(edict_t *self)
     self->velocity.z = 450;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = hellknight_jump_touch_slam;
     hellknight_high_gravity(self);
 }
@@ -394,7 +394,7 @@ void MONSTERINFO_ATTACK(hellknight_attack)(edict_t *self)
         if (!(self->spawnflags & SPAWNFLAG_HELLKNIGHT_NOJUMPING) && (self->timestamp < level.time) && range_to(self, self->enemy) > 50) {
             M_SetAnimation(self, &hknight_bsk_move_attack);
             G_StartSound(self, CHAN_WEAPON, sound[1].jump, 1, ATTN_NORM);
-            self->timestamp = level.time + SEC(5);
+            self->timestamp = level.time + Time_FromSec(5);
         }
         break;
     case Hyper:
@@ -499,7 +499,7 @@ void PAIN(hellknight_pain)(edict_t *self, edict_t *other, float kick, int damage
         return;
     if (level.time < self->pain_debounce_time)
         return;
-    self->pain_debounce_time = level.time + SEC(1);
+    self->pain_debounce_time = level.time + Time_FromSec(1);
 
     G_StartSound(self, CHAN_VOICE, SOUND.pain, 1, ATTN_NORM);
 

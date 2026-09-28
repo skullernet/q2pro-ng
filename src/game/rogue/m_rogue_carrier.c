@@ -19,9 +19,9 @@ carrier
 #define DEFAULT_REINFORCEMENTS      "monster_flyer 1;monster_flyer 1;monster_flyer 1;monster_kamikaze 1"
 #define DEFAULT_MONSTER_SLOTS_BASE  3
 
-#define CARRIER_ROCKET_TIME     SEC(2) // number of seconds between rocket shots
+#define CARRIER_ROCKET_TIME     Time_FromSec(2) // number of seconds between rocket shots
 #define CARRIER_ROCKET_SPEED    750
-#define RAIL_FIRE_TIME          SEC(3)
+#define RAIL_FIRE_TIME          Time_FromSec(3)
 
 static int sound_pain1;
 static int sound_pain2;
@@ -128,7 +128,7 @@ static void CarrierGrenade(edict_t *self)
     else
         direction = 1.0f;
 
-    mytime = TO_SEC(level.time - self->timestamp) / 0.4f;
+    mytime = Time_ToSec(level.time - self->timestamp) / 0.4f;
 
     if (mytime == 0) {
         spreadR = 0.15f * direction;
@@ -286,7 +286,7 @@ static void carrier_spawn_check(edict_t *self)
     CarrierCoopCheck(self);
     CarrierSpawn(self);
 
-    if (level.time > (self->timestamp + SEC(2))) { // 0.5 seconds per flyer.  this gets three
+    if (level.time > (self->timestamp + Time_FromSec(2))) { // 0.5 seconds per flyer.  this gets three
         self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
         self->yaw_speed = orig_yaw_speed;
     } else
@@ -338,7 +338,7 @@ static void carrier_start_spawn(edict_t *self)
     if (!self->enemy)
         return;
 
-    mytime = TO_SEC(level.time - self->timestamp) / 0.5f;
+    mytime = Time_ToSec(level.time - self->timestamp) / 0.5f;
 
     temp = Vec3_Sub(self->enemy->s.origin, self->s.origin);
     enemy_yaw = vectoyaw(temp);
@@ -730,7 +730,7 @@ static void carrier_attack_gren(edict_t *self)
 static void carrier_reattack_gren(edict_t *self)
 {
     CarrierCoopCheck(self);
-    if (infront(self, self->enemy) && self->timestamp + SEC(1.3f) > level.time) // four grenades
+    if (infront(self, self->enemy) && self->timestamp + Time_FromSec(1.3f) > level.time) // four grenades
         M_SetAnimation(self, &carrier_move_attack_gren);
     else
         M_SetAnimation(self, &carrier_move_attack_post_gren);
@@ -743,7 +743,7 @@ void PAIN(carrier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(5);
+    self->pain_debounce_time = level.time + Time_FromSec(5);
 
     if (damage < 10)
         G_StartSound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE);

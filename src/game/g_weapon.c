@@ -327,7 +327,7 @@ edict_t *fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int s
     bolt->s.modelindex = G_ModelIndex("models/objects/laser/tris.md2");
     bolt->s.sound = G_SoundIndex("misc/lasfly.wav");
     bolt->touch = blaster_touch;
-    bolt->nextthink = level.time + SEC(2);
+    bolt->nextthink = level.time + Time_FromSec(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->classname = "bolt";
@@ -570,7 +570,7 @@ edict_t *fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int sp
     rocket->s.modelindex = G_ModelIndex("models/objects/rocket/tris.md2");
     rocket->s.sound = G_SoundIndex("weapons/rockfly.wav");
     rocket->touch = rocket_touch;
-    rocket->nextthink = level.time + SEC(8000.0f / speed);
+    rocket->nextthink = level.time + Time_FromSec(8000.0f / speed);
     rocket->think = G_FreeEdict;
     rocket->dmg = damage;
     rocket->radius_dmg = radius_damage;
@@ -680,7 +680,7 @@ static void bfg_spawn_laser(edict_t *self)
     laser->s.skinnum = 0xD0D0D0D0;
     laser->think = bfg_laser_update;
     laser->nextthink = level.time + FRAME_TIME;
-    laser->timestamp = level.time + SEC(0.3f);
+    laser->timestamp = level.time + Time_FromSec(0.3f);
     laser->r.ownernum = self->s.number;
     trap_LinkEntity(laser);
 }
@@ -732,7 +732,7 @@ void THINK(bfg_explode)(edict_t *self)
         }
     }
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     self->s.frame++;
     if (self->s.frame == 5)
         self->think = G_FreeEdict;
@@ -771,7 +771,7 @@ void TOUCH(bfg_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool oth
     self->s.sound = 0;
     self->s.effects &= ~EF_ANIM_ALLFAST;
     self->think = bfg_explode;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     self->enemy = other;
 
     G_AddEvent(self, EV_BFG_EXPLOSION_BIG, 0);
@@ -856,7 +856,7 @@ void THINK(bfg_think)(edict_t *self)
         G_SpawnTrail(self->s.origin, tr.endpos, EV_BFG_LASER);
     }
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius)
@@ -871,7 +871,7 @@ void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, fl
         bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
     bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     bfg->touch = bfg_touch;
-    bfg->nextthink = level.time + SEC(8000.0f / speed);
+    bfg->nextthink = level.time + Time_FromSec(8000.0f / speed);
     bfg->think = G_FreeEdict;
     bfg->radius_dmg = damage;
     bfg->dmg_radius = damage_radius;
@@ -893,7 +893,7 @@ void TOUCH(disintegrator_touch)(edict_t *self, edict_t *other, const trace_t *tr
     G_FreeEdict(self);
 
     if (other->r.svflags & (SVF_MONSTER | SVF_PLAYER)) {
-        other->disintegrator_time += SEC(50);
+        other->disintegrator_time += Time_FromSec(50);
         other->disintegrator = &g_edicts[self->r.ownernum];
     }
 }
@@ -909,7 +909,7 @@ void fire_disintegrator(edict_t *self, vec3_t start, vec3_t dir, int speed)
     bfg->s.modelindex = G_ModelIndex("sprites/s_bfg1.sp2");
     bfg->s.sound = G_SoundIndex("weapons/bfg__l1a.wav");
     bfg->touch = disintegrator_touch;
-    bfg->nextthink = level.time + SEC(8000.0f / speed);
+    bfg->nextthink = level.time + Time_FromSec(8000.0f / speed);
     bfg->think = G_FreeEdict;
     bfg->classname = "disint ball";
 

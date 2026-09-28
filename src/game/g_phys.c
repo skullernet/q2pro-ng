@@ -903,7 +903,7 @@ static void G_RunBmodelAnimation(edict_t *ent)
             ent->s.frame = p->start;
     }
 
-    anim->next_tick = level.time + MSEC(p->speed);
+    anim->next_tick = level.time + Time_FromMsec(p->speed);
 }
 
 //============================================================================

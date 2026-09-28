@@ -576,7 +576,7 @@ static void gekk_hit_left(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM);
     else {
         G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -590,7 +590,7 @@ static void gekk_hit_right(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM);
     else {
         G_StartSound(self, CHAN_WEAPON, sound_swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -643,7 +643,7 @@ static void fire_loogie(edict_t *self, vec3_t start, vec3_t dir, int damage, int
     loogie->s.renderfx |= RF_FULLBRIGHT;
     loogie->s.modelindex = G_ModelIndex("models/objects/loogy/tris.md2");
     loogie->touch = loogie_touch;
-    loogie->nextthink = level.time + SEC(2);
+    loogie->nextthink = level.time + Time_FromSec(2);
     loogie->think = G_FreeEdict;
     loogie->dmg = damage;
     trap_LinkEntity(loogie);
@@ -890,7 +890,7 @@ static void gekk_jump_takeoff(edict_t *self)
 
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = gekk_jump_touch;
     self->style = 1;
 }
@@ -914,7 +914,7 @@ static void gekk_jump_takeoff2(edict_t *self)
 
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = gekk_jump_touch;
     self->style = 1;
 }
@@ -968,13 +968,13 @@ void MONSTERINFO_ATTACK(gekk_attack)(edict_t *self)
             M_SetAnimation(self, &gekk_move_spit);
         } else {
             M_SetAnimation(self, &gekk_move_run_start);
-            self->monsterinfo.attack_finished = level.time + SEC(2);
+            self->monsterinfo.attack_finished = level.time + Time_FromSec(2);
         }
     } else if (frandom() > 0.7f) {
         M_SetAnimation(self, &gekk_move_spit);
     } else if ((self->spawnflags & SPAWNFLAG_GEKK_NOJUMPING) || frandom() > 0.7f) {
         M_SetAnimation(self, &gekk_move_run_start);
-        self->monsterinfo.attack_finished = level.time + SEC(1.4f);
+        self->monsterinfo.attack_finished = level.time + Time_FromSec(1.4f);
     } else {
         M_SetAnimation(self, &gekk_move_leapatk);
     }
@@ -1038,7 +1038,7 @@ void PAIN(gekk_pain)(edict_t *self, edict_t *other, float kick, int damage, mod_
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
 
@@ -1313,7 +1313,7 @@ void MONSTERINFO_DODGE(gekk_dodge)(edict_t *self, edict_t *attacker, gtime_t eta
         return;
     }
 
-    self->monsterinfo.pausetime = level.time + eta + SEC(0.3f);
+    self->monsterinfo.pausetime = level.time + eta + Time_FromSec(0.3f);
     r = frandom();
 
     if (skill.integer == 1) {

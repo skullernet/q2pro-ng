@@ -213,7 +213,7 @@ void PAIN(infantry_pain)(edict_t *self, edict_t *other, float kick, int damage, 
         return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     n = brandom();
     if (n == 0)
@@ -634,7 +634,7 @@ static void infantry_smack(edict_t *self)
     if (fire_hit(self, aim, irandom2(5, 10), 50))
         G_StartSound(self, CHAN_WEAPON, sound_punch_hit, 1, ATTN_NORM);
     else
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
 }
 
 static const mframe_t infantry_frames_attack2[] = {

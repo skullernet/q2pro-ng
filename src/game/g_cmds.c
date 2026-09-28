@@ -321,7 +321,7 @@ static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
     ent->s.skinnum = 0;
     ent->client->anim_priority = ANIM_BASIC;
     ent->client->ps.pm_type = PM_NORMAL;
-    ent->air_finished = level.time + SEC(12);
+    ent->air_finished = level.time + Time_FromSec(12);
     ent->dead_time = 0;
 
     trap_LinkEntity(ent);
@@ -939,7 +939,7 @@ static void Cmd_Kill_f(edict_t *ent, cmdflags_t flags)
         return;
     // ZOID
 
-    if ((level.time - ent->client->respawn_time) < SEC(5))
+    if ((level.time - ent->client->respawn_time) < Time_FromSec(5))
         return;
 
     ent->flags &= ~FL_GODMODE;
@@ -1184,7 +1184,7 @@ bool CheckFlood(edict_t *ent)
 
         if (level.time < cl->flood_locktill) {
             G_ClientPrintf(ent, PRINT_HIGH, "You can't talk for %.f more seconds\n",
-                           TO_SEC(cl->flood_locktill - level.time));
+                           Time_ToSec(cl->flood_locktill - level.time));
             return true;
         }
         i = cl->flood_whenhead - flood_msgs.integer + 1;
@@ -1192,8 +1192,8 @@ bool CheckFlood(edict_t *ent)
             i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
         if (i >= q_countof(cl->flood_when))
             i = 0;
-        if (cl->flood_when[i] && level.time - cl->flood_when[i] < SEC(flood_persecond.value)) {
-            cl->flood_locktill = level.time + SEC(flood_waitdelay.value);
+        if (cl->flood_when[i] && level.time - cl->flood_when[i] < Time_FromSec(flood_persecond.value)) {
+            cl->flood_locktill = level.time + Time_FromSec(flood_waitdelay.value);
             G_ClientPrintf(ent, PRINT_CHAT, "You can't talk for %d more seconds\n",
                            flood_waitdelay.integer);
             return true;
@@ -1397,7 +1397,7 @@ static void Cmd_PlayerList_f(edict_t *ent, cmdflags_t flags)
     // connect time, ping, score, name
     *text = 0;
     FOR_EACH_CLIENT(cl) {
-        int sec = TO_SEC(level.time - cl->resp.entertime);
+        int sec = Time_ToSec(level.time - cl->resp.entertime);
         Q_snprintf(st, sizeof(st), "%02d:%02d %4d %3d %s%s\n",
                    sec / 60, sec % 60,
                    cl->r.ping,

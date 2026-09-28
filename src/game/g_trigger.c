@@ -43,7 +43,7 @@ static void multi_trigger(edict_t *ent)
 
     if (ent->wait > 0) {
         ent->think = multi_wait;
-        ent->nextthink = level.time + SEC(ent->wait);
+        ent->nextthink = level.time + Time_FromSec(ent->wait);
     } else {
         // we can't just remove (self) here, because this is a touch function
         // called while looping through area links...
@@ -285,7 +285,7 @@ void USE(trigger_key_use)(edict_t *self, edict_t *other, edict_t *activator)
             return;
         if (level.time < self->touch_debounce_time)
             return;
-        self->touch_debounce_time = level.time + SEC(5);
+        self->touch_debounce_time = level.time + Time_FromSec(5);
         G_ClientPrintf(activator, PRINT_CENTER, "You need the %s", self->item->pickup_name);
         G_StartSound(activator, CHAN_AUTO, G_SoundIndex("misc/keytry.wav"), 1, ATTN_NORM);
         return;
@@ -472,7 +472,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             if (Vec3_Dot(other->velocity, dir) < max_speed) {
                 float speed_adjust = max_speed * FRAME_TIME_SEC * 2;
                 other->velocity = Vec3_MA(other->velocity, speed_adjust, dir);
-                other->no_gravity_time = level.time + SEC(0.1f);
+                other->no_gravity_time = level.time + Time_FromSec(0.1f);
             }
         } else
             other->velocity = Vec3_Scale(dir, self->speed * 10);
@@ -482,7 +482,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             other->client->oldvelocity = other->velocity;
             other->client->oldgroundentity = other->groundentity;
             if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT) && (other->fly_sound_debounce_time < level.time)) {
-                other->fly_sound_debounce_time = level.time + SEC(1.5f);
+                other->fly_sound_debounce_time = level.time + Time_FromSec(1.5f);
                 G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/windfly.wav"), 1, ATTN_NORM);
             }
             if (self->movetarget)
@@ -528,25 +528,25 @@ static void trigger_push_effect(edict_t *self)
 void THINK(trigger_push_inactive)(edict_t *self)
 {
     if (self->timestamp > level.time) {
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     } else {
         self->touch = trigger_push_touch;
         self->think = trigger_push_active;
-        self->nextthink = level.time + HZ(10);
-        self->timestamp = self->nextthink + SEC(self->wait);
+        self->nextthink = level.time + Time_FromHertz(10);
+        self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
 }
 
 void THINK(trigger_push_active)(edict_t *self)
 {
     if (self->timestamp > level.time) {
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
         trigger_push_effect(self);
     } else {
         self->touch = NULL;
         self->think = trigger_push_inactive;
-        self->nextthink = level.time + HZ(10);
-        self->timestamp = self->nextthink + SEC(self->wait);
+        self->nextthink = level.time + Time_FromHertz(10);
+        self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
 }
 // RAFAEL
@@ -579,8 +579,8 @@ void SP_trigger_push(edict_t *self)
             self->wait = 10;
 
         self->think = trigger_push_active;
-        self->nextthink = level.time + HZ(10);
-        self->timestamp = self->nextthink + SEC(self->wait);
+        self->nextthink = level.time + Time_FromHertz(10);
+        self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
     // RAFAEL
 
@@ -661,9 +661,9 @@ void USE(hurt_use)(edict_t *self, edict_t *other, edict_t *activator)
     if (self->spawnflags & SPAWNFLAG_HURT_PASSIVE) {
         if (self->r.solid == SOLID_TRIGGER) {
             if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
-                self->nextthink = level.time + SEC(1);
+                self->nextthink = level.time + Time_FromSec(1);
             else
-                self->nextthink = level.time + HZ(10);
+                self->nextthink = level.time + Time_FromHertz(10);
         } else
             self->nextthink = 0;
     }
@@ -708,7 +708,7 @@ void THINK(hurt_think)(edict_t *self)
         if (!(self->spawnflags & SPAWNFLAG_HURT_SILENT)) {
             if (self->fly_sound_debounce_time < level.time) {
                 G_StartSound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
-                self->fly_sound_debounce_time = level.time + SEC(1);
+                self->fly_sound_debounce_time = level.time + Time_FromSec(1);
             }
         }
 
@@ -716,9 +716,9 @@ void THINK(hurt_think)(edict_t *self)
     }
 
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
-        self->nextthink = level.time + SEC(1);
+        self->nextthink = level.time + Time_FromSec(1);
     else
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -732,14 +732,14 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
         return;
 
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
-        self->timestamp = level.time + SEC(1);
+        self->timestamp = level.time + Time_FromSec(1);
     else
-        self->timestamp = level.time + HZ(10);
+        self->timestamp = level.time + Time_FromHertz(10);
 
     if (!(self->spawnflags & SPAWNFLAG_HURT_SILENT)) {
         if (self->fly_sound_debounce_time < level.time) {
             G_StartSound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
-            self->fly_sound_debounce_time = level.time + SEC(1);
+            self->fly_sound_debounce_time = level.time + Time_FromSec(1);
         }
     }
 
@@ -762,9 +762,9 @@ void SP_trigger_hurt(edict_t *self)
 
         if (!(self->spawnflags & SPAWNFLAG_HURT_START_OFF)) {
             if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
-                self->nextthink = level.time + SEC(1);
+                self->nextthink = level.time + Time_FromSec(1);
             else
-                self->nextthink = level.time + HZ(10);
+                self->nextthink = level.time + Time_FromHertz(10);
         }
     } else
         self->touch = hurt_touch;
@@ -1032,7 +1032,7 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
     if (self->timestamp > level.time)
         return;
 
-    self->timestamp = level.time + SEC(self->wait);
+    self->timestamp = level.time + Time_FromSec(self->wait);
 
     edict_t *fog_value_storage = self;
 
@@ -1043,7 +1043,7 @@ void TOUCH(trigger_fog_touch)(edict_t *self, edict_t *other, const trace_t *tr, 
         other->client->fog_transition_end   = 0;
         other->client->fog_transition_start = 0;
     } else if (other->client->fog_transition_end <= level.time) {
-        other->client->fog_transition_end   = level.time + SEC(fog_value_storage->delay);
+        other->client->fog_transition_end   = level.time + Time_FromSec(fog_value_storage->delay);
         other->client->fog_transition_start = level.time;
         other->client->start_fog            = other->client->ps.fog;
         other->client->start_heightfog      = other->client->ps.heightfog;
@@ -1166,7 +1166,7 @@ void USE(trigger_coop_relay_use)(edict_t *self, edict_t *other, edict_t *activat
         if (self->timestamp < level.time)
             G_ClientPrintf(activator, PRINT_CENTER, "%s", self->message);
 
-        self->timestamp = level.time + SEC(5);
+        self->timestamp = level.time + Time_FromSec(5);
         return;
     }
 
@@ -1208,10 +1208,10 @@ void THINK(trigger_coop_relay_think)(edict_t *self)
                 G_ClientPrintf(player, PRINT_CENTER, "%s", self->map);
         }
 
-        self->timestamp = level.time + SEC(5);
+        self->timestamp = level.time + Time_FromSec(5);
     }
 
-    self->nextthink = level.time + SEC(self->wait);
+    self->nextthink = level.time + Time_FromSec(self->wait);
 }
 
 void SP_trigger_coop_relay(edict_t *self)
@@ -1232,7 +1232,7 @@ void SP_trigger_coop_relay(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_COOP_RELAY_AUTO_FIRE) {
         self->think = trigger_coop_relay_think;
-        self->nextthink = level.time + SEC(self->wait);
+        self->nextthink = level.time + Time_FromSec(self->wait);
     } else
         self->use = trigger_coop_relay_use;
     trap_LinkEntity(self);

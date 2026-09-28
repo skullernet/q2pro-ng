@@ -114,7 +114,7 @@ static void insane_spawn_jump_takeoff(edict_t *self)
     self->velocity.z = 400;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = insane_spawn_jump_touch;
     insane_spawn_high_gravity(self);
 }
@@ -469,7 +469,7 @@ void PAIN(insane_spawn_pain)(edict_t *self, edict_t *other, float kick, int dama
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
     M_SetAnimation(self, &insane_spawn_move_stand_pain);
 }
 

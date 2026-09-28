@@ -230,7 +230,7 @@ static void DogStrLeaper(edict_t *self)
     self->velocity.z = 250;
     self->groundentity = NULL;
     self->touch = DogLeapTouch;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
 }
 
 static const mframe_t dog_str_frames_leap[] = {
@@ -258,7 +258,7 @@ static void DogStrBite(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, 0, 8 };
     G_StartSound(self, CHAN_VOICE, sound_melee, 1, ATTN_NORM);
     if (!fire_hit(self, aim, irandom2(5, 11), 10))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.2f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.2f);
 }
 
 static const mframe_t dog_str_frames_melee[] = {
@@ -459,7 +459,7 @@ void PAIN(dog_str_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (brandom())
         G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);

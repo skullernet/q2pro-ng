@@ -425,7 +425,7 @@ void PAIN(soldier_pain)(edict_t *self, edict_t *other, float kick, int damage, m
         return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (is_light())
         G_StartSound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM);
@@ -875,7 +875,7 @@ static void soldier_attack3_refire(edict_t *self)
 {
     if (self->dmg)
         monster_duck_hold(self);
-    else if ((level.time + SEC(0.4f)) < self->monsterinfo.duck_wait_time)
+    else if ((level.time + Time_FromSec(0.4f)) < self->monsterinfo.duck_wait_time)
         self->monsterinfo.nextframe = FRAME_attak303;
 }
 
@@ -1025,9 +1025,9 @@ void MONSTERINFO_ATTACK(soldier_attack)(edict_t *self)
         float chance;
 
         // setup shot probabilities
-        if (self->monsterinfo.blind_fire_delay < SEC(1))
+        if (self->monsterinfo.blind_fire_delay < Time_FromSec(1))
             chance = 1.0f;
-        else if (self->monsterinfo.blind_fire_delay < SEC(7.5f))
+        else if (self->monsterinfo.blind_fire_delay < Time_FromSec(7.5f))
             chance = 0.4f;
         else
             chance = 0.1f;

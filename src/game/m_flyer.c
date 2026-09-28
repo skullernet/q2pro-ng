@@ -453,7 +453,7 @@ static void flyer_slash_left(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, 0 };
     if (!fire_hit(self, aim, 5, 0))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
 }
 
@@ -461,7 +461,7 @@ static void flyer_slash_right(edict_t *self)
 {
     vec3_t aim = { MELEE_DISTANCE, self->r.box.maxs.x, 0 };
     if (!fire_hit(self, aim, 5, 0))
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     G_StartSound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM);
 }
 
@@ -547,7 +547,7 @@ void MONSTERINFO_ATTACK(flyer_attack)(edict_t *self)
     // down, kind of like a pseudo-stand ground
     if (!self->monsterinfo.fly_pinned && brandom() && self->enemy && visible(self, self->enemy)) {
         self->monsterinfo.fly_pinned = true;
-        self->monsterinfo.fly_position_time = self->monsterinfo.fly_position_time + SEC(1.7f); // make sure there's enough time for attack2/3
+        self->monsterinfo.fly_position_time = self->monsterinfo.fly_position_time + Time_FromSec(1.7f); // make sure there's enough time for attack2/3
 
         if (brandom())
             self->monsterinfo.fly_ideal_position = Vec3_MA(self->s.origin, frandom(), self->velocity); // pin to our current position
@@ -591,7 +591,7 @@ void PAIN(flyer_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     n = irandom1(3);
     if (n == 0)
@@ -686,7 +686,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
     if ((other->monsterinfo.aiflags & AI_ALTERNATE_FLY) && (other->flags & FL_FLY) &&
         (ent->monsterinfo.duck_wait_time < level.time))
     {
-        ent->monsterinfo.duck_wait_time = level.time + SEC(1);
+        ent->monsterinfo.duck_wait_time = level.time + Time_FromSec(1);
         ent->monsterinfo.fly_thrusters = false;
 
         vec3_t dir = Vec3_Direction(ent->s.origin, other->s.origin);

@@ -458,7 +458,7 @@ void PAIN(guncmdr_pain)(edict_t *self, edict_t *other, float kick, int damage, m
         return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (brandom())
         G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
@@ -494,14 +494,14 @@ void PAIN(guncmdr_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     } else if (Vec3_Dot(dif, forward) < -0.40f) {
         M_SetAnimation(self, &guncmdr_move_pain6);
 
-        self->pain_debounce_time += SEC(1.5f);
+        self->pain_debounce_time += Time_FromSec(1.5f);
     } else {
         if (brandom())
             M_SetAnimation(self, &guncmdr_move_pain4);
         else
             M_SetAnimation(self, &guncmdr_move_pain5);
 
-        self->pain_debounce_time += SEC(1.5f);
+        self->pain_debounce_time += Time_FromSec(1.5f);
     }
 
     self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
@@ -1074,7 +1074,7 @@ const mmove_t MMOVE_T(guncmdr_move_attack_grenade_back_dodge_left) = { FRAME_c_a
 
 static void guncmdr_kick_finished(edict_t *self)
 {
-    self->monsterinfo.melee_debounce_time = level.time + SEC(3);
+    self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3);
     self->monsterinfo.attack(self);
 }
 

@@ -175,7 +175,7 @@ void THINK(body_think)(edict_t *self)
         r = frandom();
         if (r < 0.10f) {
             self->ideal_yaw = frandom1(350.0f);
-            self->timestamp = level.time + SEC(1);
+            self->timestamp = level.time + Time_FromSec(1);
         }
     } else
         M_ChangeYaw(self);
@@ -185,7 +185,7 @@ void THINK(body_think)(edict_t *self)
         if (self->s.frame > FRAME_stand40)
             self->s.frame = FRAME_stand01;
 
-        self->teleport_time = level.time + HZ(10);
+        self->teleport_time = level.time + Time_FromHertz(10);
     }
 
     self->nextthink = level.time + FRAME_TIME;
@@ -214,7 +214,7 @@ void fire_doppleganger(edict_t *ent, vec3_t start, vec3_t aimdir)
     base->pain = doppleganger_pain;
     base->die = doppleganger_die;
 
-    base->nextthink = level.time + SEC(30);
+    base->nextthink = level.time + Time_FromSec(30);
     base->think = doppleganger_timeout;
 
     base->classname = "doppleganger";
@@ -230,7 +230,7 @@ void fire_doppleganger(edict_t *ent, vec3_t start, vec3_t aimdir)
     body->ideal_yaw = 0;
     body->s.origin = start;
     body->s.origin.z += 8;
-    body->teleport_time = level.time + HZ(10);
+    body->teleport_time = level.time + Time_FromHertz(10);
     body->think = body_think;
     body->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(body);

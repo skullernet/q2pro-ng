@@ -253,7 +253,7 @@ void PAIN(shambler_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(2);
+    self->pain_debounce_time = level.time + Time_FromSec(2);
     M_SetAnimation(self, &shambler_move_pain);
 }
 
@@ -378,7 +378,7 @@ const mmove_t MMOVE_T(shambler_attack_bfg) = { FRAME_magic01, FRAME_magic12, sha
 
 static void ShamblerChecker(edict_t *self)
 {
-    self->fly_sound_debounce_time = level.time + SEC(1.5f);
+    self->fly_sound_debounce_time = level.time + Time_FromSec(1.5f);
 }
 
 static void ShamblerRocket(edict_t *self)

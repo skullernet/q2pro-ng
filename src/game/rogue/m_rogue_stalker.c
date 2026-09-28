@@ -361,7 +361,7 @@ void PAIN(stalker_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
@@ -460,7 +460,7 @@ static void stalker_swing_attack(edict_t *self)
         else
             G_StartSound(self, CHAN_WEAPON, sound_punch_hit1, 1, ATTN_NORM);
     } else
-        self->monsterinfo.melee_debounce_time = level.time + SEC(0.8f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(0.8f);
 }
 
 static const mframe_t stalker_frames_swing_l[] = {
@@ -641,7 +641,7 @@ void MONSTERINFO_DODGE(stalker_dodge)(edict_t *self, edict_t *attacker, gtime_t 
 
     // PMM - don't bother if it's going to hit anyway; fix for weird in-your-face etas (I was
     // seeing numbers like 13 and 14)
-    if ((eta < FRAME_TIME) || (eta > SEC(5)))
+    if ((eta < FRAME_TIME) || (eta > Time_FromSec(5)))
         return;
 
     if (self->timestamp > level.time)
@@ -677,7 +677,7 @@ static void stalker_jump_up(edict_t *self)
 static void stalker_jump_wait_land(edict_t *self)
 {
     if ((frandom() < 0.4f) && (level.time >= self->monsterinfo.attack_finished)) {
-        self->monsterinfo.attack_finished = level.time + SEC(0.3f);
+        self->monsterinfo.attack_finished = level.time + Time_FromSec(0.3f);
         stalker_shoot_attack(self);
     }
 

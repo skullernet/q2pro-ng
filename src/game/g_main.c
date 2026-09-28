@@ -616,7 +616,7 @@ static void CheckDMRules(void)
     //=======
 
     if (timelimit.value) {
-        if (level.time >= SEC(timelimit.value * 60)) {
+        if (level.time >= Time_FromMin(timelimit.value)) {
             G_ClientPrintf(NULL, PRINT_HIGH, "Time limit hit.\n");
             EndDMLevel();
             return;
@@ -649,7 +649,7 @@ static void ExitLevel(void)
 {
     // [Paril-KEX] N64 fade
     if (level.intermission_fade) {
-        level.intermission_fade_time = level.time + SEC(1.3f);
+        level.intermission_fade_time = level.time + Time_FromSec(1.3f);
         level.intermission_fading = true;
         return;
     }
@@ -757,7 +757,7 @@ qvm_exported void G_RunFrame(int64_t time)
 
     if (level.intermission_fading) {
         if (level.intermission_fade_time > level.time) {
-            float alpha = Q_clipf(1.3f - TO_SEC(level.intermission_fade_time - level.time), 0, 1);
+            float alpha = Q_clipf(1.3f - Time_ToSec(level.intermission_fade_time - level.time), 0, 1);
             FOR_EACH_PLAYER(player)
                 player->client->ps.screen_blend = (vec4_t){ .a = alpha };
         } else {

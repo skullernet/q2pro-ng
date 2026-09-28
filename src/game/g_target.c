@@ -249,7 +249,7 @@ void SP_target_secret(edict_t *ent)
     }
 
     ent->think = G_VerifyTargetted;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 
     ent->use = use_target_secret;
     if (!st.noise)
@@ -277,7 +277,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
     if (!player->client->pers.spawned)
         return;
-    if ((level.time - player->client->resp.entertime) < SEC(0.3f))
+    if ((level.time - player->client->resp.entertime) < Time_FromSec(0.3f))
         return;
 
     // N64 goals
@@ -326,7 +326,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
     if (player->client->pers.game_help1changed != game.help1changed) {
         player->client->pers.game_help1changed = game.help1changed;
-        player->client->help_time = level.time + SEC(5);
+        player->client->help_time = level.time + Time_FromSec(5);
 
         if (*game.helpmessage1 && level.primary_objective_string)
             // [Sam-KEX] Print objective to screen
@@ -341,7 +341,7 @@ void G_PlayerNotifyGoal(edict_t *player)
 
     if (player->client->pers.game_help2changed != game.help2changed) {
         player->client->pers.game_help2changed = game.help2changed;
-        player->client->help_time = level.time + SEC(5);
+        player->client->help_time = level.time + Time_FromSec(5);
 
         if (*game.helpmessage2 && level.secondary_objective_string)
             // [Sam-KEX] Print objective to screen
@@ -435,7 +435,7 @@ void USE(use_target_explosion)(edict_t *self, edict_t *other, edict_t *activator
     }
 
     self->think = target_explosion_explode;
-    self->nextthink = level.time + SEC(self->delay);
+    self->nextthink = level.time + Time_FromSec(self->delay);
 }
 
 void SP_target_explosion(edict_t *ent)
@@ -465,7 +465,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
     // if multiplayer, let everyone know who hit the exit
     if (deathmatch.integer) {
-        if (level.time < SEC(10))
+        if (level.time < Time_FromSec(10))
             return;
 
         if (activator && activator->client)
@@ -737,7 +737,7 @@ void SP_target_crosslevel_target(edict_t *self)
     self->r.svflags = SVF_NOCLIENT;
 
     self->think = target_crosslevel_target_think;
-    self->nextthink = level.time + SEC(self->delay);
+    self->nextthink = level.time + Time_FromSec(self->delay);
 }
 
 //==========================================================
@@ -829,7 +829,7 @@ void THINK(target_laser_think)(edict_t *self)
     self->s.old_origin = G_SnapVector(tr.endpos);
 
     if (damaged_thing)
-        self->damage_debounce_time = level.time + HZ(10);
+        self->damage_debounce_time = level.time + Time_FromHertz(10);
 
     self->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(self);
@@ -953,7 +953,7 @@ void SP_target_laser(edict_t *self)
     // let everything else get spawned before we start firing
     self->think = target_laser_start;
     self->r.svflags |= SVF_LASER_FIELD;
-    self->nextthink = level.time + SEC(1);
+    self->nextthink = level.time + Time_FromSec(1);
 }
 
 //==========================================================
@@ -969,7 +969,7 @@ message     two letters; starting lightlevel and ending lightlevel
 void THINK(target_lightramp_think)(edict_t *self)
 {
     char    style[2];
-    float   diff = TO_SEC(level.time - self->timestamp);
+    float   diff = Time_ToSec(level.time - self->timestamp);
 
     style[0] = (char)('a' + self->movedir.x + diff * self->movedir.z);
     style[1] = 0;
@@ -1061,14 +1061,14 @@ void THINK(target_earthquake_think)(edict_t *self)
     // PGM
         if (self->last_move_time < level.time) {
             G_StartSound(self, CHAN_VOICE, self->noise_index, 1.0f, ATTN_NONE);
-            self->last_move_time = level.time + SEC(6.5f);
+            self->last_move_time = level.time + Time_FromSec(6.5f);
         }
     }
 
     G_AddEvent(self, EV_EARTHQUAKE, self->speed);
 
     if (level.time < self->timestamp)
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1078,7 +1078,7 @@ void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activato
         return;
     }
 
-    self->timestamp = level.time + SEC(self->count);
+    self->timestamp = level.time + Time_FromSec(self->count);
 
     if (self->spawnflags & SPAWNFLAGS_EARTHQUAKE_TOGGLE) {
         if (self->style)
@@ -1134,7 +1134,7 @@ void THINK(update_target_camera)(edict_t *self)
     bool do_skip = false;
 
     // only allow skipping after 2 seconds
-    if ((self->hackflags & HACKFLAG_SKIPPABLE) && level.time > SEC(2)) {
+    if ((self->hackflags & HACKFLAG_SKIPPABLE) && level.time > Time_FromSec(2)) {
         FOR_EACH_CLIENT(client) {
             if (client->buttons & BUTTON_ANY) {
                 do_skip = true;
@@ -1151,12 +1151,12 @@ void THINK(update_target_camera)(edict_t *self)
                 if (self->enemy) {
                     G_AddEvent(self->enemy, EV_PLAYER_TELEPORT, 0);
                     self->enemy->hackflags = HACKFLAG_TELEPORT_OUT;
-                    self->enemy->pain_debounce_time = self->enemy->timestamp = SEC(self->movetarget->wait);
+                    self->enemy->pain_debounce_time = self->enemy->timestamp = Time_FromSec(self->movetarget->wait);
                 }
             }
 
             self->s.origin = self->movetarget->s.origin;
-            self->nextthink = level.time + SEC(self->movetarget->wait);
+            self->nextthink = level.time + Time_FromSec(self->movetarget->wait);
             if (self->movetarget->target) {
                 self->movetarget = G_PickTarget(self->movetarget->target);
 
@@ -1232,12 +1232,12 @@ void THINK(target_camera_dummy_think)(edict_t *self)
 
     // alpha fade out for voops
     if (self->hackflags & HACKFLAG_TELEPORT_OUT) {
-        self->timestamp = max(0, self->timestamp - HZ(10));
-        float frac = TO_SEC(self->timestamp) / TO_SEC(self->pain_debounce_time);
+        self->timestamp = max(0, self->timestamp - Time_FromHertz(10));
+        float frac = Time_ToSec(self->timestamp) / Time_ToSec(self->pain_debounce_time);
         self->s.alpha = max(1.0f / 255, frac);
     }
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1266,7 +1266,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         dummy->groundentity = activator->groundentity;
         dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->r.linkcount : 0;
         dummy->think = target_camera_dummy_think;
-        dummy->nextthink = level.time + HZ(10);
+        dummy->nextthink = level.time + Time_FromHertz(10);
         dummy->r.solid = SOLID_BBOX;
         dummy->movetype = MOVETYPE_STEP;
         dummy->r.box = activator->r.box;
@@ -1306,7 +1306,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
 
     self->activator = activator;
     self->think = update_target_camera;
-    self->nextthink = level.time + SEC(self->wait);
+    self->nextthink = level.time + Time_FromSec(self->wait);
     self->moveinfo.move_speed = self->speed;
 
     self->moveinfo.remaining_distance = Vec3_Distance(self->movetarget->s.origin, self->s.origin);
@@ -1356,7 +1356,7 @@ void THINK(update_target_soundfx)(edict_t *self)
 void USE(use_target_soundfx)(edict_t *self, edict_t *other, edict_t *activator)
 {
     self->think = update_target_soundfx;
-    self->nextthink = level.time + SEC(self->delay);
+    self->nextthink = level.time + Time_FromSec(self->delay);
 }
 
 void SP_target_soundfx(edict_t *self)
@@ -1411,7 +1411,7 @@ void THINK(target_light_flicker_think)(edict_t *self)
     if (brandom())
         self->r.svflags ^= SVF_NOCLIENT;
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 // think function handles interpolation from start to finish.
@@ -1453,7 +1453,7 @@ void THINK(target_light_think)(edict_t *self)
 
     self->s.skinnum = MakeBigLong(r, g, b, 0);
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1474,10 +1474,10 @@ void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
     // has dynamic light "target"
     if (self->chain) {
         self->think = target_light_think;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     } else if (self->spawnflags & SPAWNFLAG_TARGET_LIGHT_FLICKER) {
         self->think = target_light_flicker_think;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -1872,7 +1872,7 @@ void SP_target_healthbar(edict_t *self)
 
     self->use = use_target_healthbar;
     self->think = check_target_healthbar;
-    self->nextthink = level.time + SEC(0.025f);
+    self->nextthink = level.time + Time_FromSec(0.025f);
 }
 
 /*QUAKED target_autosave (0 1 0) (-8 -8 -8) (8 8 8)
@@ -1885,7 +1885,7 @@ void USE(use_target_autosave)(edict_t *ent, edict_t *other, edict_t *activator)
     if (g_auto_save_min_time.value < 0)
         return;
 
-    gtime_t save_time = SEC(g_auto_save_min_time.value);
+    gtime_t save_time = Time_FromSec(g_auto_save_min_time.value);
 
     if (level.time - level.next_auto_save > save_time) {
         trap_AddCommandString("autosave\n");
@@ -2001,7 +2001,7 @@ void SP_target_crossunit_target(edict_t *self)
     self->r.svflags = SVF_NOCLIENT;
 
     self->think = target_crossunit_target_think;
-    self->nextthink = level.time + SEC(self->delay);
+    self->nextthink = level.time + Time_FromSec(self->delay);
 }
 
 /*QUAKED target_achievement (.5 .5 .5) (-8 -8 -8) (8 8 8)

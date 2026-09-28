@@ -38,7 +38,7 @@ void monster_fire_flechette(edict_t *self, vec3_t start, vec3_t dir, int damage,
 void monster_fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed,
                           monster_muzzleflash_id_t flashtype, float right_adjust, float up_adjust)
 {
-    fire_grenade(self, start, aimdir, damage, speed, SEC(2.5f), damage + 40, right_adjust, up_adjust);
+    fire_grenade(self, start, aimdir, damage, speed, Time_FromSec(2.5f), damage + 40, right_adjust, up_adjust);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
@@ -259,20 +259,20 @@ void M_WorldEffects(edict_t *ent)
 
         if (!(ent->flags & FL_SWIM)) {
             if (ent->waterlevel < WATER_UNDER || (ent->flags & FL_DEEPONE))
-                ent->air_finished = level.time + SEC(12);
+                ent->air_finished = level.time + Time_FromSec(12);
             else if (ent->air_finished < level.time)
                 take_drown_damage = true; // drown!
         } else {
             if (ent->waterlevel > WATER_NONE)
-                ent->air_finished = level.time + SEC(9);
+                ent->air_finished = level.time + Time_FromSec(9);
             else if (ent->air_finished < level.time)
                 take_drown_damage = true; // suffocate!
         }
 
         if (take_drown_damage && ent->pain_debounce_time < level.time) {
-            dmg = 2 + (int)(2 * floorf(TO_SEC(level.time - ent->air_finished)));
+            dmg = 2 + (int)(2 * floorf(Time_ToSec(level.time - ent->air_finished)));
             T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, min(dmg, 15), 0, DAMAGE_NO_ARMOR, MOD_WATER);
-            ent->pain_debounce_time = level.time + SEC(1);
+            ent->pain_debounce_time = level.time + Time_FromSec(1);
         }
     }
 
@@ -284,13 +284,13 @@ void M_WorldEffects(edict_t *ent)
     } else {
         if ((ent->watertype & CONTENTS_LAVA) && !(ent->flags & FL_IMMUNE_LAVA)) {
             if (ent->damage_debounce_time < level.time) {
-                ent->damage_debounce_time = level.time + SEC(0.1f);
+                ent->damage_debounce_time = level.time + Time_FromSec(0.1f);
                 T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 10 * ent->waterlevel, 0, DAMAGE_NONE, MOD_LAVA);
             }
         }
         if ((ent->watertype & CONTENTS_SLIME) && !(ent->flags & FL_IMMUNE_SLIME)) {
             if (ent->damage_debounce_time < level.time) {
-                ent->damage_debounce_time = level.time + SEC(0.1f);
+                ent->damage_debounce_time = level.time + Time_FromSec(0.1f);
                 T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 4 * ent->waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
             }
         }
@@ -532,7 +532,7 @@ static void M_MoveFrame(edict_t *self)
         if (self->monsterinfo.aiflags & AI_HIGH_TICK_RATE)
             self->monsterinfo.next_move_time = level.time;
         else
-            self->monsterinfo.next_move_time = level.time + HZ(10);
+            self->monsterinfo.next_move_time = level.time + Time_FromHertz(10);
 
         if ((self->monsterinfo.nextframe) && !((self->monsterinfo.nextframe >= move->firstframe) &&
                                                (self->monsterinfo.nextframe <= move->lastframe)))
@@ -657,7 +657,7 @@ void THINK(monster_dead_think)(edict_t *self)
             if (!self->s.sound) {
                 self->s.effects |= EF_FLIES;
                 self->s.sound = G_SoundIndex("infantry/inflies1.wav");
-                self->fly_sound_debounce_time = level.time + SEC(60);
+                self->fly_sound_debounce_time = level.time + Time_FromSec(60);
             } else {
                 self->s.effects &= ~EF_FLIES;
                 self->s.sound = 0;
@@ -671,13 +671,13 @@ void THINK(monster_dead_think)(edict_t *self)
             self->s.frame++;
     }
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void monster_dead(edict_t *self)
 {
     self->think = monster_dead_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->monsterinfo.damage_blood = 0;
@@ -739,7 +739,7 @@ static void M_CheckDodge(edict_t *self)
         trace_t tr = G_Trace(ent->s.origin, pos, ent->r.box, ent->s.number, ent->clipmask);
 
         if (tr.entnum == self->s.number) {
-            gtime_t eta = SEC(Vec3_Distance(tr.endpos, ent->s.origin) / Vec3_Length(ent->velocity));
+            gtime_t eta = Time_FromSec(Vec3_Distance(tr.endpos, ent->s.origin) / Vec3_Length(ent->velocity));
             self->monsterinfo.dodge(self, &g_edicts[ent->r.ownernum], eta, &tr,
                                     (ent->movetype == MOVETYPE_BOUNCE || ent->movetype == MOVETYPE_TOSS));
             break;
@@ -813,7 +813,7 @@ void THINK(monster_triggered_spawn)(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_STEP;
     self->r.svflags &= ~SVF_NOCLIENT;
-    self->air_finished = level.time + SEC(12);
+    self->air_finished = level.time + Time_FromSec(12);
     trap_LinkEntity(self);
 
     G_KillBox(self, KILLBOX_NONE, MOD_TELEFRAG);
@@ -1003,7 +1003,7 @@ bool monster_start(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
     self->r.svflags |= SVF_MONSTER;
     self->takedamage = true;
-    self->air_finished = level.time + SEC(12);
+    self->air_finished = level.time + Time_FromSec(12);
     self->use = monster_use;
     self->max_health = self->health = max(self->health, 1);
     self->clipmask = MASK_MONSTERSOLID;

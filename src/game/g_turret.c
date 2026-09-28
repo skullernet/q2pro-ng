@@ -300,11 +300,11 @@ void THINK(turret_driver_think)(edict_t *self)
     if (level.time < self->monsterinfo.attack_finished)
         return;
 
-    gtime_t reaction_time = SEC(3 - skill.integer);
+    gtime_t reaction_time = Time_FromSec(3 - skill.integer);
     if ((level.time - self->monsterinfo.trail_time) < reaction_time)
         return;
 
-    self->monsterinfo.attack_finished = level.time + reaction_time + SEC(1);
+    self->monsterinfo.attack_finished = level.time + reaction_time + Time_FromSec(1);
     // FIXME how do we really want to pass this along?
     self->target_ent->spawnflags |= SPAWNFLAG_TURRET_BREACH_FIRE;
 }
@@ -443,11 +443,11 @@ void THINK(turret_brain_think)(edict_t *self)
     if (level.time < self->monsterinfo.attack_finished)
         return;
 
-    gtime_t reaction_time = self->delay ? SEC(self->delay) : SEC(3 - skill.integer);
+    gtime_t reaction_time = self->delay ? Time_FromSec(self->delay) : Time_FromSec(3 - skill.integer);
     if ((level.time - self->monsterinfo.trail_time) < reaction_time)
         return;
 
-    self->monsterinfo.attack_finished = level.time + reaction_time + SEC(1);
+    self->monsterinfo.attack_finished = level.time + reaction_time + Time_FromSec(1);
     // FIXME how do we really want to pass this along?
     self->target_ent->spawnflags |= SPAWNFLAG_TURRET_BREACH_FIRE;
 }
@@ -502,7 +502,7 @@ void USE(turret_brain_activate)(edict_t *self, edict_t *other, edict_t *activato
         self->enemy = activator;
 
     // wait at least 3 seconds to fire.
-    self->monsterinfo.attack_finished = level.time + SEC(self->wait ? self->wait : 3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(self->wait ? self->wait : 3);
     self->use = turret_brain_deactivate;
 
     // Paril NOTE: rhangar1 has a turret_invisible_brain that breaks the

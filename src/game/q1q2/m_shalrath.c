@@ -126,7 +126,7 @@ void THINK(shalrath_pod_home)(edict_t *self)
 
     G_AddEvent(self, EV_TUNNEL_SPARKS, MakeLittleLong(0, 15, 255, 0));
 
-    self->nextthink = level.time + HZ(5);
+    self->nextthink = level.time + Time_FromHertz(5);
     self->think = shalrath_pod_home;
 }
 
@@ -139,11 +139,11 @@ void fire_shalrath_pod(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
     pod->s.modelindex = G_ModelIndex("models/monsters/podstrogg/tris.md2");
     pod->s.effects |= EF_IONRIPPER;
     pod->touch = shalrath_pod_touch;
-    pod->nextthink = level.time + HZ(10);
+    pod->nextthink = level.time + Time_FromHertz(10);
     pod->think = shalrath_pod_home;
     pod->dmg = damage;
     pod->enemy = self->enemy;
-    pod->timestamp = level.time + SEC(15);
+    pod->timestamp = level.time + Time_FromSec(15);
     trap_LinkEntity(pod);
 
     G_CheckMissileImpact(self, pod);
@@ -207,7 +207,7 @@ void PAIN(shalrath_pain)(edict_t *self, edict_t *other, float kick, int damage, 
     if (M_ShouldReactToPain(self, mod))
         M_SetAnimation(self, &shalrath_move_pain);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 }
 
 void MONSTERINFO_SETSKIN(shalrath_setskin)(edict_t *self)

@@ -215,7 +215,7 @@ static void FireZombieGib(edict_t *self)
             up_adj = frandom() * 10.0f;
         else
             up_adj = 200.0f + crandom_open() * 10.0f;
-        fire_grenade(self, start, dir, 50, 600, SEC(2.5f), 90, right_adj, up_adj);
+        fire_grenade(self, start, dir, 50, 600, Time_FromSec(2.5f), 90, right_adj, up_adj);
     } else {
         up_adj = 100.0f + crandom_open() * 10.0f;
         fire_zombie_gib(self, start, dir, 10, 1200, right_adj, up_adj);
@@ -500,7 +500,7 @@ void PAIN(zombie_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     }
 
     if (self->count) {
-        self->pain_debounce_time = level.time + SEC(3);
+        self->pain_debounce_time = level.time + Time_FromSec(3);
         return;
     }
 

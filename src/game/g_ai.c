@@ -469,16 +469,16 @@ void FoundTarget(edict_t *self)
         self->enemy->client->sight_entity = self;
         self->enemy->client->sight_entity_time = level.time;
 
-        self->enemy->show_hostile = level.time + SEC(1); // wake up other monsters
+        self->enemy->show_hostile = level.time + Time_FromSec(1); // wake up other monsters
     }
 
     // [Paril-KEX] the first time we spot something, give us a bit of a grace
     // period on firing
     if (!self->monsterinfo.trail_time)
-        self->monsterinfo.attack_finished = level.time + SEC(0.6f);
+        self->monsterinfo.attack_finished = level.time + Time_FromSec(0.6f);
 
     // give easy/medium a little more reaction time
-    self->monsterinfo.attack_finished += skill.integer == 0 ? SEC(0.4f) : skill.integer == 1 ? SEC(0.2) : 0;
+    self->monsterinfo.attack_finished += skill.integer == 0 ? Time_FromSec(0.4f) : skill.integer == 1 ? Time_FromSec(0.2) : 0;
 
     self->monsterinfo.saved_goal = self->enemy->s.origin;
     self->monsterinfo.last_sighting = self->enemy->s.origin;
@@ -866,7 +866,7 @@ bool M_CheckAttack_Base(edict_t *self, float stand_ground_chance, float melee_ch
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 // Paril - *and* we have at least seen them once
                 if (!(hit->r.svflags & SVF_MONSTER) && !visible(self, self->enemy) && self->monsterinfo.had_visibility) {
-                    if (self->monsterinfo.blindfire && (self->monsterinfo.blind_fire_delay <= SEC(20))) {
+                    if (self->monsterinfo.blindfire && (self->monsterinfo.blind_fire_delay <= Time_FromSec(20))) {
                         // ROGUE
                         if (level.time < self->monsterinfo.attack_finished)
                             return false;
@@ -1107,7 +1107,7 @@ static bool ai_checkattack(edict_t *self, float dist)
         }
 
         if (self->monsterinfo.aiflags & AI_SOUND_TARGET) {
-            if ((level.time - self->enemy->teleport_time) > SEC(5)) {
+            if ((level.time - self->enemy->teleport_time) > Time_FromSec(5)) {
                 if (self->goalentity == self->enemy) {
                     if (self->movetarget)
                         self->goalentity = self->movetarget;
@@ -1116,7 +1116,7 @@ static bool ai_checkattack(edict_t *self, float dist)
                 }
                 self->monsterinfo.aiflags &= ~AI_SOUND_TARGET;
             } else {
-                self->enemy->show_hostile = level.time + SEC(1);
+                self->enemy->show_hostile = level.time + Time_FromSec(1);
                 return false;
             }
         }
@@ -1184,8 +1184,8 @@ static bool ai_checkattack(edict_t *self, float dist)
     enemy_vis = visible(self, self->enemy);
     if (enemy_vis) {
         self->monsterinfo.had_visibility = visible_ex(self, self->enemy, false);
-        self->enemy->show_hostile = level.time + SEC(1); // wake up other monsters
-        self->monsterinfo.search_time = level.time + SEC(5);
+        self->enemy->show_hostile = level.time + Time_FromSec(1); // wake up other monsters
+        self->monsterinfo.search_time = level.time + Time_FromSec(5);
         self->monsterinfo.saved_goal = self->enemy->s.origin;
         self->monsterinfo.last_sighting = self->enemy->s.origin;
         // ROGUE
@@ -1212,7 +1212,7 @@ static bool ai_checkattack(edict_t *self, float dist)
     retval = false;
 
     if (self->monsterinfo.checkattack_time <= level.time) {
-        self->monsterinfo.checkattack_time = level.time + HZ(10);
+        self->monsterinfo.checkattack_time = level.time + Time_FromHertz(10);
         retval = self->monsterinfo.checkattack(self);
     }
 
@@ -1473,9 +1473,9 @@ void ai_run(edict_t *self, float dist)
     // PGM
     // if we've been looking (unsuccessfully) for the player for 10 seconds
     // PMM - reduced to 5, makes them much nastier
-    if ((self->monsterinfo.trail_time + SEC(5)) <= level.time) {
+    if ((self->monsterinfo.trail_time + Time_FromSec(5)) <= level.time) {
         // and we haven't checked for valid hint paths in the last 10 seconds
-        if ((self->monsterinfo.last_hint_time + SEC(10)) <= level.time) {
+        if ((self->monsterinfo.last_hint_time + Time_FromSec(10)) <= level.time) {
             // check for hint_paths.
             self->monsterinfo.last_hint_time = level.time;
             if (monsterlost_checkhint(self))
@@ -1491,7 +1491,7 @@ void ai_run(edict_t *self, float dist)
         FindTarget(self);
     // pmm
 
-    if ((self->monsterinfo.search_time) && (level.time > (self->monsterinfo.search_time + SEC(20)))) {
+    if ((self->monsterinfo.search_time) && (level.time > (self->monsterinfo.search_time + Time_FromSec(20)))) {
         // PMM - double move protection
         if (!alreadyMoved)
             M_MoveToGoal(self, dist);
@@ -1520,7 +1520,7 @@ void ai_run(edict_t *self, float dist)
         self->monsterinfo.aiflags &= ~AI_PURSUE_NEXT;
 
         // give ourself more time since we got this far
-        self->monsterinfo.search_time = level.time + SEC(5);
+        self->monsterinfo.search_time = level.time + Time_FromSec(5);
 
         if (self->monsterinfo.aiflags & AI_PURSUE_TEMP) {
             self->monsterinfo.aiflags &= ~AI_PURSUE_TEMP;
@@ -1548,7 +1548,7 @@ void ai_run(edict_t *self, float dist)
         dist = min(dist, Vec3_Distance(self->s.origin, self->monsterinfo.last_sighting));
         // [Paril-KEX] this helps them navigate corners when two next pursuits
         // are really close together
-        self->monsterinfo.random_change_time = level.time + HZ(10);
+        self->monsterinfo.random_change_time = level.time + Time_FromHertz(10);
     }
 
     self->goalentity->s.origin = self->monsterinfo.last_sighting;

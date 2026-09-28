@@ -252,7 +252,7 @@ static bool Pickup_Powerup(edict_t *ent, edict_t *other)
     }
 
     if (deathmatch.integer && !(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && !is_dropped_from_death)
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -265,7 +265,7 @@ static bool Pickup_General(edict_t *ent, edict_t *other)
     other->client->pers.inventory[ent->item->id]++;
 
     if (deathmatch.integer && !(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -299,7 +299,7 @@ static bool Pickup_LegacyHead(edict_t *ent, edict_t *other)
     other->health += 5;
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -371,7 +371,7 @@ static bool Pickup_Bandolier(edict_t *ent, edict_t *other)
     G_AddAmmoAndCapQuantity(other, AMMO_SHELLS);
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -405,7 +405,7 @@ static bool Pickup_Pack(edict_t *ent, edict_t *other)
     // ROGUE
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -422,7 +422,7 @@ static void Use_Quad(edict_t *ent, const gitem_t *item)
         timeout = quad_drop_timeout_hack;
         quad_drop_timeout_hack = 0;
     } else {
-        timeout = SEC(30);
+        timeout = Time_FromSec(30);
     }
 
     ent->client->quad_time = max(level.time, ent->client->quad_time) + timeout;
@@ -442,7 +442,7 @@ static void Use_QuadFire(edict_t *ent, const gitem_t *item)
         timeout = quad_fire_drop_timeout_hack;
         quad_fire_drop_timeout_hack = 0;
     } else {
-        timeout = SEC(30);
+        timeout = Time_FromSec(30);
     }
 
     ent->client->quadfire_time = max(level.time, ent->client->quadfire_time) + timeout;
@@ -457,7 +457,7 @@ static void Use_Breather(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->breather_time = max(level.time, ent->client->breather_time) + SEC(30);
+    ent->client->breather_time = max(level.time, ent->client->breather_time) + Time_FromSec(30);
 
     //  G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
@@ -468,7 +468,7 @@ static void Use_Envirosuit(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->enviro_time = max(level.time, ent->client->enviro_time) + SEC(30);
+    ent->client->enviro_time = max(level.time, ent->client->enviro_time) + Time_FromSec(30);
 
     //  G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/damage.wav"), 1, ATTN_NORM);
 }
@@ -479,7 +479,7 @@ static void Use_Invulnerability(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->invincible_time = max(level.time, ent->client->invincible_time) + SEC(30);
+    ent->client->invincible_time = max(level.time, ent->client->invincible_time) + Time_FromSec(30);
 
     G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect.wav"), 1, ATTN_NORM);
 }
@@ -488,7 +488,7 @@ static void Use_Invisibility(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->invisible_time = max(level.time, ent->client->invisible_time) + SEC(30);
+    ent->client->invisible_time = max(level.time, ent->client->invisible_time) + Time_FromSec(30);
 
     G_StartSound(ent, CHAN_ITEM, G_SoundIndex("items/protect.wav"), 1, ATTN_NORM);
 }
@@ -592,7 +592,7 @@ static bool Pickup_Ammo(edict_t *ent, edict_t *other)
         G_CheckAutoSwitch(other, ent->item, !oldcount);
 
     if (!(ent->spawnflags & (SPAWNFLAG_ITEM_DROPPED | SPAWNFLAG_ITEM_DROPPED_PLAYER)) && deathmatch.integer)
-        SetRespawn(ent, SEC(30));
+        SetRespawn(ent, Time_FromSec(30));
     return true;
 }
 
@@ -635,13 +635,13 @@ void THINK(MegaHealth_think)(edict_t *self)
         //ZOID
        )
     {
-        self->nextthink = level.time + SEC(1);
+        self->nextthink = level.time + Time_FromSec(1);
         owner->health -= 1;
         return;
     }
 
     if (!(self->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-        SetRespawn(self, SEC(20));
+        SetRespawn(self, Time_FromSec(20));
     else
         G_FreeEdict(self);
 }
@@ -679,10 +679,10 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
         if (!deathmatch.integer) {
             // mega health doesn't need to be special in SP
             // since it never respawns.
-            other->client->pers.megahealth_time = SEC(5);
+            other->client->pers.megahealth_time = Time_FromSec(5);
         } else {
             ent->think = MegaHealth_think;
-            ent->nextthink = level.time + SEC(5);
+            ent->nextthink = level.time + Time_FromSec(5);
             ent->r.ownernum = other->s.number;
             ent->flags |= FL_RESPAWN;
             ent->r.svflags |= SVF_NOCLIENT;
@@ -690,7 +690,7 @@ static bool Pickup_Health(edict_t *ent, edict_t *other)
         }
     } else {
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-            SetRespawn(ent, SEC(30));
+            SetRespawn(ent, Time_FromSec(30));
     }
 
     return true;
@@ -782,7 +782,7 @@ static bool Pickup_Armor(edict_t *ent, edict_t *other)
     }
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED) && deathmatch.integer)
-        SetRespawn(ent, SEC(20));
+        SetRespawn(ent, Time_FromSec(20));
 
     return true;
 }
@@ -837,7 +837,7 @@ static bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 
     if (deathmatch.integer) {
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
-            SetRespawn(ent, SEC(ent->item->quantity));
+            SetRespawn(ent, Time_FromSec(ent->item->quantity));
         // auto-use for DM only if we didn't already have one
         if (!quantity)
             G_CheckPowerArmor(other);
@@ -892,7 +892,7 @@ void TOUCH(Touch_Item)(edict_t *ent, edict_t *other, const trace_t *tr, bool oth
         // show icon and name on status bar
         other->client->ps.stats[STAT_PICKUP_ICON] = G_ImageIndex(ent->item->icon);
         other->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ent->item->id;
-        other->client->pickup_msg_time = level.time + SEC(3);
+        other->client->pickup_msg_time = level.time + Time_FromSec(3);
 
         // change selected item if we still have it
         if (ent->item->use && other->client->pers.inventory[ent->item->id]) {
@@ -975,7 +975,7 @@ void THINK(drop_make_touchable)(edict_t *ent)
 {
     ent->touch = Touch_Item;
     if (deathmatch.integer) {
-        ent->nextthink = level.time + SEC(29);
+        ent->nextthink = level.time + Time_FromSec(29);
         ent->think = G_FreeEdict;
     }
 }
@@ -1014,7 +1014,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
     dropped->velocity.z = 300;
 
     dropped->think = drop_make_touchable;
-    dropped->nextthink = level.time + SEC(1);
+    dropped->nextthink = level.time + Time_FromSec(1);
 
     if (coop.integer && P_UseCoopInstancedItems())
         dropped->r.svflags |= SVF_INSTANCED;
@@ -1104,7 +1104,7 @@ void THINK(droptofloor)(edict_t *ent)
         ent->r.solid = SOLID_NOT;
 
         if (ent == ent->teammaster) {
-            ent->nextthink = level.time + HZ(10);
+            ent->nextthink = level.time + Time_FromHertz(10);
             ent->think = DoRespawn;
         }
     }
@@ -1346,7 +1346,7 @@ void SpawnItem(edict_t *ent, const gitem_t *item)
         ent->r.svflags |= SVF_INSTANCED;
 
     ent->item = item;
-    ent->nextthink = level.time + HZ(5); // items start after other solids
+    ent->nextthink = level.time + Time_FromHertz(5); // items start after other solids
     ent->think = droptofloor;
     if (!(level.is_spawning && ED_WasKeySpecified("effects")) && !ent->s.effects)
         ent->s.effects = item->world_model_flags;
@@ -1422,7 +1422,7 @@ void Compass_Update(edict_t *ent, bool first)
     trap_ClientCommand(ent, va("path %d %s %d", first, vtoa(point), DirToByte(dir)), false);
 
     ent->client->help_draw_index++;
-    ent->client->help_draw_time = level.time + SEC(0.2f);
+    ent->client->help_draw_time = level.time + Time_FromSec(0.2f);
 }
 
 static void Use_Compass(edict_t *ent, const gitem_t *inv)

@@ -45,16 +45,16 @@ void MOVEINFO_ENDFUNC(plat2_hit_top)(edict_t *ent)
         ent->plat2flags = PLAT2_WAITING;
         if (!(ent->spawnflags & SPAWNFLAGS_PLAT2_TOGGLE)) {
             ent->think = plat2_go_down;
-            ent->nextthink = level.time + SEC(ent->wait * 2.5f);
+            ent->nextthink = level.time + Time_FromSec(ent->wait * 2.5f);
         }
         if (deathmatch.integer)
-            ent->last_move_time = level.time - SEC(ent->wait * 0.5f);
+            ent->last_move_time = level.time - Time_FromSec(ent->wait * 0.5f);
         else
-            ent->last_move_time = level.time - SEC(ent->wait);
+            ent->last_move_time = level.time - Time_FromSec(ent->wait);
     } else if (!(ent->spawnflags & SPAWNFLAGS_PLAT2_TOP) && !(ent->spawnflags & SPAWNFLAGS_PLAT2_TOGGLE)) {
         ent->plat2flags = PLAT2_NONE;
         ent->think = plat2_go_down;
-        ent->nextthink = level.time + SEC(ent->wait);
+        ent->nextthink = level.time + Time_FromSec(ent->wait);
         ent->last_move_time = level.time;
     } else {
         ent->plat2flags = PLAT2_NONE;
@@ -75,16 +75,16 @@ void MOVEINFO_ENDFUNC(plat2_hit_bottom)(edict_t *ent)
         ent->plat2flags = PLAT2_WAITING;
         if (!(ent->spawnflags & SPAWNFLAGS_PLAT2_TOGGLE)) {
             ent->think = plat2_go_up;
-            ent->nextthink = level.time + SEC(ent->wait * 2.5f);
+            ent->nextthink = level.time + Time_FromSec(ent->wait * 2.5f);
         }
         if (deathmatch.integer)
-            ent->last_move_time = level.time - SEC(ent->wait * 0.5f);
+            ent->last_move_time = level.time - Time_FromSec(ent->wait * 0.5f);
         else
-            ent->last_move_time = level.time - SEC(ent->wait);
+            ent->last_move_time = level.time - Time_FromSec(ent->wait);
     } else if ((ent->spawnflags & SPAWNFLAGS_PLAT2_TOP) && !(ent->spawnflags & SPAWNFLAGS_PLAT2_TOGGLE)) {
         ent->plat2flags = PLAT2_NONE;
         ent->think = plat2_go_up;
-        ent->nextthink = level.time + SEC(ent->wait);
+        ent->nextthink = level.time + Time_FromSec(ent->wait);
         ent->last_move_time = level.time;
     } else {
         ent->plat2flags = PLAT2_NONE;
@@ -136,7 +136,7 @@ static void plat2_operate(edict_t *ent, edict_t *other)
     if (ent->plat2flags & PLAT2_MOVING)
         return;
 
-    if ((ent->last_move_time + SEC(ent->wait)) > level.time)
+    if ((ent->last_move_time + Time_FromSec(ent->wait)) > level.time)
         return;
 
     platCenter = (trigger->r.absbox.mins.z + trigger->r.absbox.maxs.z) / 2;
@@ -159,13 +159,13 @@ static void plat2_operate(edict_t *ent, edict_t *other)
     ent->plat2flags = PLAT2_MOVING;
 
     if (deathmatch.integer)
-        pauseTime = SEC(0.3f);
+        pauseTime = Time_FromSec(0.3f);
     else
-        pauseTime = SEC(0.5f);
+        pauseTime = Time_FromSec(0.5f);
 
     if (ent->moveinfo.state != otherState) {
         ent->plat2flags |= PLAT2_CALLED;
-        pauseTime = SEC(0.1f);
+        pauseTime = Time_FromSec(0.1f);
     }
 
     ent->last_move_time = level.time;
@@ -229,7 +229,7 @@ void USE(Use_Plat2)(edict_t *ent, edict_t *other, edict_t *activator)
     if (ent->moveinfo.state > STATE_BOTTOM)
         return;
     // [Paril-KEX] disabled this; causes confusing situations
-    //if ((ent->last_move_time + SEC(2)) > level.time)
+    //if ((ent->last_move_time + Time_FromSec(2)) > level.time)
     //  return;
 
     FOR_EACH_ENTITY(trigger) {

@@ -21,7 +21,7 @@ static void fire_lavaball(edict_t *self, vec3_t start, vec3_t dir, int damage, i
     lavaball->s.modelindex = G_ModelIndex("models/objects/lavaball/tris.md2");
     lavaball->s.sound = G_SoundIndex("weapons/rockfly.wav");
     lavaball->touch = rocket_touch;
-    lavaball->nextthink = level.time + SEC(8000.0f / speed);
+    lavaball->nextthink = level.time + Time_FromSec(8000.0f / speed);
     lavaball->think = G_FreeEdict;
     lavaball->dmg = damage;
     lavaball->radius_dmg = radius_damage;
@@ -259,7 +259,7 @@ void PAIN(chthon_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(1.0f);
+    self->pain_debounce_time = level.time + Time_FromSec(1.0f);
 
     G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NONE);
 

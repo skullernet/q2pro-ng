@@ -788,7 +788,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
     if (self->enemy && self->health > 0) {
         vec3_t point = Box3_Center(self->enemy->r.absbox);
         if (self->monsterinfo.aiflags & AI_MEDIC)
-            point.x += sinf(TO_SEC(level.time)) * 8;
+            point.x += sinf(Time_ToSec(level.time)) * 8;
         dir = Vec3_Direction(point, self->s.origin);
     }
 
@@ -1030,7 +1030,7 @@ void PAIN(fixbot_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
         return;
 
     fixbot_set_fly_parameters(self, FB_NONE);
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
     G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);
 
     if (damage <= 10)

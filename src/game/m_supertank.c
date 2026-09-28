@@ -423,7 +423,7 @@ void PAIN(supertank_pain)(edict_t *self, edict_t *other, float kick, int damage,
     else
         G_StartSound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare

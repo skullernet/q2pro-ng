@@ -409,7 +409,7 @@ void PAIN(hover_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     G_StartSound(self, CHAN_VOICE, random_element(SOUND.pain), 1, ATTN_NORM);
 
@@ -448,7 +448,7 @@ static void hover_dead(edict_t *self)
     self->movetype = MOVETYPE_TOSS;
     self->think = hover_deadthink;
     self->nextthink = level.time + FRAME_TIME;
-    self->timestamp = level.time + SEC(15);
+    self->timestamp = level.time + Time_FromSec(15);
     trap_LinkEntity(self);
 }
 

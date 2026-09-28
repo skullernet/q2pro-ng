@@ -107,7 +107,7 @@ void MONSTERINFO_WALK(grunt_walk)(edict_t *self)
 
 static void soldier_fire_checker(edict_t *self)
 {
-    self->fly_sound_debounce_time = level.time + SEC(1.5f);
+    self->fly_sound_debounce_time = level.time + Time_FromSec(1.5f);
 }
 
 static void soldier_fire_strogg(edict_t *self)
@@ -325,10 +325,10 @@ void PAIN(grunt_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
 
     r = frandom();
     if (r < 0.2f) {
-        self->pain_debounce_time = level.time + SEC(6);
+        self->pain_debounce_time = level.time + Time_FromSec(6);
         G_StartSound(self, CHAN_VOICE, SOUND.pain1, 1, ATTN_NORM);
     } else {
-        self->pain_debounce_time = level.time + SEC(1);
+        self->pain_debounce_time = level.time + Time_FromSec(1);
         G_StartSound(self, CHAN_VOICE, SOUND.pain2, 1, ATTN_NORM);
     }
 

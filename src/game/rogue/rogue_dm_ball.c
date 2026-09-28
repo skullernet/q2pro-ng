@@ -395,7 +395,7 @@ void DIE(DBall_BallDie)(edict_t *self, edict_t *inflictor, edict_t *attacker, in
     self->r.solid = SOLID_NOT;
     //  self->s.modelindex = 0;
     self->think = DBall_BallRespawn;
-    self->nextthink = level.time + SEC(2);
+    self->nextthink = level.time + Time_FromSec(2);
     trap_LinkEntity(self);
 }
 
@@ -455,7 +455,7 @@ void TOUCH(DBall_SpeedTouch)(edict_t *self, edict_t *other, const trace_t *tr, b
             return;
     }
 
-    self->timestamp = level.time + SEC(self->delay);
+    self->timestamp = level.time + Time_FromSec(self->delay);
     other->velocity = Vec3_Scale(other->velocity, self->speed);
 }
 

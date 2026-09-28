@@ -123,7 +123,7 @@ void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*updat
             self->beam = beam;
     }
 
-    beam->nextthink = level.time + SEC(0.2f);
+    beam->nextthink = level.time + Time_FromSec(0.2f);
     beam->spawnflags &= ~SPAWNFLAG_DABEAM_SPAWNED;
     update_func(beam);
     dabeam_update(beam, true);

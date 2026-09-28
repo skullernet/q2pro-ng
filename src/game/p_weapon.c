@@ -124,7 +124,7 @@ void PlayerNoise(edict_t *who, vec3_t where, player_noise_t type)
     if (who->flags & FL_DISGUISED) {
         if (type == PNOISE_WEAPON) {
             level.disguise_violator = who;
-            level.disguise_violation_time = level.time + SEC(0.5f);
+            level.disguise_violation_time = level.time + Time_FromSec(0.5f);
         } else
             return;
     }
@@ -206,7 +206,7 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
                 if (g_dm_weapons_stay.integer)
                     ent->flags |= FL_RESPAWN;
 
-                SetRespawnEx(ent, SEC(g_weapon_respawn_time.integer), !g_dm_weapons_stay.integer);
+                SetRespawnEx(ent, Time_FromSec(g_weapon_respawn_time.integer), !g_dm_weapons_stay.integer);
             }
             if (coop.integer)
                 ent->flags |= FL_RESPAWN;
@@ -308,7 +308,7 @@ void NoAmmoWeaponChange(edict_t *ent, bool sound)
 {
     if (sound && level.time >= ent->client->empty_click_sound) {
         G_StartSound(ent, CHAN_WEAPON, G_SoundIndex("weapons/noammo.wav"), 1, ATTN_NORM);
-        ent->client->empty_click_sound = level.time + SEC(1);
+        ent->client->empty_click_sound = level.time + Time_FromSec(1);
     }
 
     static const uint8_t no_ammo_order[] = {
@@ -383,7 +383,7 @@ static gtime_t Weapon_AnimationTime(edict_t *ent)
 
     ent->client->ps.gunrate = min(gunrate, TICK_RATE / BASE_FRAMERATE - 1);
 
-    return MSEC(BASE_FRAMETIME >> gunrate);
+    return Time_FromMsec(BASE_FRAMETIME >> gunrate);
 }
 
 /*
@@ -422,13 +422,13 @@ void Think_Weapon(edict_t *ent)
         if (relative_time < FRAME_TIME) {
             // check how many we can't run before the next server tick
             gtime_t next_frame = level.time + FRAME_TIME;
-            int64_t remaining_ms = TO_MSEC(next_frame - ent->client->weapon_think_time);
+            gtime_t remaining = next_frame - ent->client->weapon_think_time;
 
-            while (remaining_ms > 0) {
+            while (remaining > 0) {
                 ent->client->weapon_think_time -= relative_time;
                 ent->client->weapon_fire_finished -= relative_time;
                 Weapon_RunThink(ent);
-                remaining_ms -= TO_MSEC(relative_time);
+                remaining -= relative_time;
             }
         }
     }
@@ -561,7 +561,7 @@ void Weapon_PowerupSound(edict_t *ent)
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ddamage3.wav"), 1, ATTN_NORM);
         else if (ent->client->quadfire_time > level.time
                  && ent->client->ctf_techsndtime < level.time) {
-            ent->client->ctf_techsndtime = level.time + SEC(1);
+            ent->client->ctf_techsndtime = level.time + Time_FromSec(1);
             G_StartSound(ent, CHAN_ITEM, G_SoundIndex("ctf/tech3.wav"), 1, ATTN_NORM);
         }
     }
@@ -858,7 +858,7 @@ static void weapon_grenade_fire(edict_t *ent, bool held)
     gtime_t timer = ent->client->grenade_time - level.time;
 
     if (ent->health > 0) {
-        float frac = 1.0f - TO_SEC(timer) / GRENADE_TIMER_SEC;
+        float frac = 1.0f - Time_ToSec(timer) / GRENADE_TIMER_SEC;
         speed = Q_lerpf(GRENADE_MINSPEED, GRENADE_MAXSPEED, min(frac, 1.0f));
     } else
         speed = GRENADE_MINSPEED;
@@ -948,7 +948,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
                 G_StartSound(ent, CHAN_WEAPON, G_SoundIndex(prime_sound), 1, ATTN_NORM);
 
             // [Paril-KEX] dualfire/time accel
-            gtime_t grenade_wait_time = SEC(1);
+            gtime_t grenade_wait_time = Time_FromSec(1);
 
             if (CTFApplyHaste(ent))
                 grenade_wait_time *= 0.5f;
@@ -957,7 +957,7 @@ void Throw_Generic(edict_t *ent, int FRAME_FIRE_LAST, int FRAME_IDLE_LAST, int F
 
             if (ent->client->ps.gunframe == FRAME_THROW_HOLD) {
                 if (!ent->client->grenade_time && !ent->client->grenade_finished_time)
-                    ent->client->grenade_time = level.time + SEC(GRENADE_TIMER_SEC + 0.2f);
+                    ent->client->grenade_time = level.time + Time_FromSec(GRENADE_TIMER_SEC + 0.2f);
 
                 if (primed_sound && !ent->client->grenade_blew_up)
                     ent->client->weapon_sound = G_SoundIndex(primed_sound);
@@ -1077,7 +1077,7 @@ static void weapon_grenadelauncher_fire(edict_t *ent)
 
     ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(8, 0, -8), false);
 
-    fire_grenade(ent, aim.start, aim.dir, damage, 600, SEC(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f));
+    fire_grenade(ent, aim.start, aim.dir, damage, 600, Time_FromSec(2.5f), radius, (crandom_open() * 10.0f), (200 + crandom_open() * 10.0f));
 
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_GRENADE | is_silenced);
 

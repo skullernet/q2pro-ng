@@ -169,7 +169,7 @@ static void fire_spit(edict_t *self, vec3_t start, vec3_t dir, int damage, int s
     spit->s.effects |= (EF_BLASTER | EF_TRACKER);
     spit->s.modelindex = G_ModelIndex("models/monsters/spitstrogg/tris.md2");
     spit->touch = spit_touch;
-    spit->nextthink = level.time + SEC(10);
+    spit->nextthink = level.time + Time_FromSec(10);
     spit->think = G_FreeEdict;
     spit->dmg = damage;
     trap_LinkEntity(spit);
@@ -239,7 +239,7 @@ const mmove_t MMOVE_T(wizard_move_attack) = { FRAME_magatt01, FRAME_magatt06, wi
 
 static void wizarcuda_checker(edict_t *self)
 {
-    self->fly_sound_debounce_time = level.time + SEC(2.0f);
+    self->fly_sound_debounce_time = level.time + Time_FromSec(2.0f);
 }
 
 static void wizarcuda_beamfire(edict_t *self)
@@ -308,7 +308,7 @@ void PAIN(wizard_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (M_ShouldReactToPain(self, mod))
         M_SetAnimation(self, &wizard_move_pain);
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 }
 
 static void wizard_fling(edict_t *self)

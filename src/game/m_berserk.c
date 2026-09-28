@@ -159,7 +159,7 @@ static void berserk_attack_spike(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, 0, -24 };
 
     if (!fire_hit(self, aim, irandom2(5, 11), 400)) // Faster attack -- upwards and backwards
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.2f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.2f);
 }
 
 static void berserk_swing(edict_t *self)
@@ -184,7 +184,7 @@ static void berserk_attack_club(edict_t *self)
     vec3_t aim = { MELEE_DISTANCE, self->r.box.mins.x, -4 };
 
     if (!fire_hit(self, aim, irandom2(15, 21), 250)) // Slower attack
-        self->monsterinfo.melee_debounce_time = level.time + SEC(2.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(2.5f);
 }
 
 static const mframe_t berserk_frames_attack_club[] = {
@@ -312,7 +312,7 @@ static void berserk_jump_takeoff(edict_t *self)
     self->velocity.z = 400;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = berserk_jump_touch;
     berserk_high_gravity(self);
 
@@ -404,7 +404,7 @@ static void berserk_run_attack_speed(edict_t *self)
 static void berserk_run_swing(edict_t *self)
 {
     berserk_swing(self);
-    self->monsterinfo.melee_debounce_time = level.time + SEC(0.6f);
+    self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(0.6f);
 
     if (self->monsterinfo.attack_state == AS_SLIDING) {
         self->monsterinfo.attack_state = AS_STRAIGHT;
@@ -456,7 +456,7 @@ void MONSTERINFO_ATTACK(berserk_attack)(edict_t *self)
         M_SetAnimation(self, &berserk_move_attack_strike);
         // don't do this for a while, otherwise we just keep doing it
         G_StartSound(self, CHAN_WEAPON, sound_jump, 1, ATTN_NORM);
-        self->timestamp = level.time + SEC(5);
+        self->timestamp = level.time + Time_FromSec(5);
     } else if (self->monsterinfo.active_move == &berserk_move_run1 && (range_to(self, self->enemy) <= RANGE_NEAR)) {
         M_SetAnimation(self, &berserk_move_run_attack1);
         self->monsterinfo.nextframe = FRAME_r_att1 + (self->s.frame - FRAME_run1) + 1;
@@ -508,7 +508,7 @@ void PAIN(berserk_pain)(edict_t *self, edict_t *other, float kick, int damage, m
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
     G_StartSound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM);
 
     if (!M_ShouldReactToPain(self, mod))

@@ -120,7 +120,7 @@ static void weapon_trap_fire(edict_t *ent, bool held)
     ray3_t aim = P_ProjectSource(ent, P_GetThrowAngles(ent), Vec3(8, 0, -8), false);
 
     if (ent->health > 0) {
-        float frac = 1.0f - TO_SEC(ent->client->grenade_time - level.time) / TRAP_TIMER_SEC;
+        float frac = 1.0f - Time_ToSec(ent->client->grenade_time - level.time) / TRAP_TIMER_SEC;
         speed = Q_lerpf(TRAP_MINSPEED, TRAP_MAXSPEED, min(frac, 1.0f));
     } else
         speed = TRAP_MINSPEED;

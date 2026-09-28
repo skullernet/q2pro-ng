@@ -298,7 +298,7 @@ static void brain_hit_right(edict_t *self)
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
-        self->monsterinfo.melee_debounce_time = level.time + SEC(3);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3);
 }
 
 static void brain_swing_left(edict_t *self)
@@ -312,7 +312,7 @@ static void brain_hit_left(edict_t *self)
     if (fire_hit(self, aim, irandom2(15, 20), 40))
         G_StartSound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM);
     else
-        self->monsterinfo.melee_debounce_time = level.time + SEC(3);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3);
 }
 
 static const mframe_t brain_frames_attack1[] = {
@@ -350,7 +350,7 @@ static void brain_tentacle_attack(edict_t *self)
     if (fire_hit(self, aim, irandom2(10, 15), -600))
         self->count = 1;
     else
-        self->monsterinfo.melee_debounce_time = level.time + SEC(3);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(3);
     G_StartSound(self, CHAN_WEAPON, sound_tentacles_retract, 1, ATTN_NORM);
 }
 
@@ -447,7 +447,7 @@ static void brain_tounge_attack(edict_t *self)
     te->s.scale = self->s.scale;
     te->s.old_origin = G_SnapVector(start);
     te->s.origin = G_SnapVector(end);
-    te->nextthink = level.time + SEC(0.2f);
+    te->nextthink = level.time + Time_FromSec(0.2f);
     te->think = G_FreeEdict;
     trap_LinkEntity(te);
 
@@ -626,7 +626,7 @@ void PAIN(brain_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     r = frandom();
 

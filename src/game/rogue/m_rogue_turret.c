@@ -242,7 +242,7 @@ static void TurretAim(edict_t *self)
     if (visible(self, self->enemy))
         scan_range = 12;
 
-    float sec = TO_SEC(level.time);
+    float sec = Time_ToSec(level.time);
     tr.endpos.x += sinf(sec + self->s.number) * scan_range;
     tr.endpos.y += cosf((sec - self->s.number) * 3.0f) * scan_range;
     tr.endpos.z += sinf((sec - self->s.number) * 2.5f) * scan_range;
@@ -406,14 +406,14 @@ static void TurretFire(edict_t *self)
             else if (self->spawnflags & SPAWNFLAG_TURRET_MACHINEGUN) {
                 if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME)) {
                     self->monsterinfo.aiflags |= AI_HOLD_FRAME;
-                    self->monsterinfo.duck_wait_time = level.time + SEC(2 + frandom1(skill.value));
-                    self->monsterinfo.next_duck_time = level.time + SEC(1);
+                    self->monsterinfo.duck_wait_time = level.time + Time_FromSec(2 + frandom1(skill.value));
+                    self->monsterinfo.next_duck_time = level.time + Time_FromSec(1);
                     G_StartSound(self, CHAN_VOICE, G_SoundIndex("weapons/chngnu1a.wav"), 1, ATTN_NORM);
                 } else {
                     if (self->monsterinfo.next_duck_time < level.time &&
                         self->monsterinfo.melee_debounce_time <= level.time) {
                         monster_fire_bullet(self, start, dir, TURRET_BULLET_DAMAGE, 0, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_TURRET_MACHINEGUN);
-                        self->monsterinfo.melee_debounce_time = level.time + HZ(10);
+                        self->monsterinfo.melee_debounce_time = level.time + Time_FromHertz(10);
                     }
 
                     if (self->monsterinfo.duck_wait_time < level.time)
@@ -499,9 +499,9 @@ void MONSTERINFO_ATTACK(turret_attack)(edict_t *self)
         float chance;
 
         // setup shot probabilities
-        if (self->monsterinfo.blind_fire_delay < SEC(1))
+        if (self->monsterinfo.blind_fire_delay < Time_FromSec(1))
             chance = 1.0f;
-        else if (self->monsterinfo.blind_fire_delay < SEC(7.5f))
+        else if (self->monsterinfo.blind_fire_delay < Time_FromSec(7.5f))
             chance = 0.4f;
         else
             chance = 0.1f;
@@ -752,7 +752,7 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
             if (self->enemy->r.solid != SOLID_NOT || tr.fraction < 1.0f) { // PGM
                 // PMM - if we can't see our target, and we're not blocked by a monster, go into blind fire if available
                 if ((!(hit->r.svflags & SVF_MONSTER)) && (!visible(self, self->enemy))) {
-                    if ((self->monsterinfo.blindfire) && (self->monsterinfo.blind_fire_delay <= SEC(10))) {
+                    if ((self->monsterinfo.blindfire) && (self->monsterinfo.blind_fire_delay <= Time_FromSec(10))) {
                         if (level.time < (self->monsterinfo.trail_time + self->monsterinfo.blind_fire_delay))
                             // wait for our time
                             return false;
@@ -776,13 +776,13 @@ bool MONSTERINFO_CHECKATTACK(turret_checkattack)(edict_t *self)
 
     if (self->spawnflags & SPAWNFLAG_TURRET_ROCKET) {
         chance = 0.10f;
-        nexttime = SEC(1.8f - (0.2f * skill.integer));
+        nexttime = Time_FromSec(1.8f - (0.2f * skill.integer));
     } else if (self->spawnflags & SPAWNFLAG_TURRET_BLASTER) {
         chance = 0.35f;
-        nexttime = SEC(1.2f - (0.2f * skill.integer));
+        nexttime = Time_FromSec(1.2f - (0.2f * skill.integer));
     } else {
         chance = 0.50f;
-        nexttime = SEC(0.8f - (0.1f * skill.integer));
+        nexttime = Time_FromSec(0.8f - (0.1f * skill.integer));
     }
 
     if (skill.integer == 0)

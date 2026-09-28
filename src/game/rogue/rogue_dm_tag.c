@@ -116,7 +116,7 @@ void THINK(Tag_Respawn)(edict_t *ent)
 
     spot = SelectDeathmatchSpawnPoint(true, false, true, NULL);
     if (spot == NULL) {
-        ent->nextthink = level.time + SEC(1);
+        ent->nextthink = level.time + Time_FromSec(1);
         return;
     }
 
@@ -132,9 +132,9 @@ void THINK(Tag_MakeTouchable)(edict_t *ent)
 
     // check here to see if it's in lava or slime. if so, do a respawn sooner
     if (trap_PointContents(ent->s.origin) & (CONTENTS_LAVA | CONTENTS_SLIME))
-        tag_token->nextthink = level.time + SEC(3);
+        tag_token->nextthink = level.time + Time_FromSec(3);
     else
-        tag_token->nextthink = level.time + SEC(30);
+        tag_token->nextthink = level.time + Time_FromSec(30);
 }
 
 static void Tag_DropToken(edict_t *ent, const gitem_t *item)
@@ -170,7 +170,7 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->velocity.z = 300;
 
     tag_token->think = Tag_MakeTouchable;
-    tag_token->nextthink = level.time + SEC(1);
+    tag_token->nextthink = level.time + Time_FromSec(1);
 
     trap_LinkEntity(tag_token);
 

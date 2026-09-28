@@ -32,7 +32,7 @@ void THINK(stationarymonster_triggered_spawn)(edict_t *self)
     self->r.solid = SOLID_BBOX;
     self->movetype = MOVETYPE_NONE;
     self->r.svflags &= ~SVF_NOCLIENT;
-    self->air_finished = level.time + SEC(12);
+    self->air_finished = level.time + Time_FromSec(12);
     trap_LinkEntity(self);
 
     G_KillBox(self, KILLBOX_NONE, MOD_TELEFRAG);

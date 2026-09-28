@@ -104,7 +104,7 @@ static void fiend_hit_left(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, SOUND.hit, 1, ATTN_NORM);
     } else {
         G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -115,7 +115,7 @@ static void fiend_hit_right(edict_t *self)
         G_StartSound(self, CHAN_WEAPON, SOUND.hit, 1, ATTN_NORM);
     } else {
         G_StartSound(self, CHAN_WEAPON, SOUND.swing, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -197,7 +197,7 @@ static void fiend_jump_takeoff(edict_t *self)
     self->velocity.z = 250;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->dmg = 1;
     self->touch = fiend_jump_touch;
 }
@@ -302,7 +302,7 @@ static void fiend_jump_takeoff_slam(edict_t *self)
     self->velocity.z = 450;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + SEC(3);
+    self->monsterinfo.attack_finished = level.time + Time_FromSec(3);
     self->touch = fiend_jump_touch_slam;
     fiend_high_gravity(self);
 }
@@ -422,7 +422,7 @@ void PAIN(fiend_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
         return;
     if (self->pain_debounce_time > level.time)
         return;
-    self->pain_debounce_time = level.time + SEC(1);
+    self->pain_debounce_time = level.time + Time_FromSec(1);
 
     if (frandom() * 200 > damage)
         return;

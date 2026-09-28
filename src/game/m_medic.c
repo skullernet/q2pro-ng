@@ -15,7 +15,7 @@ enum { Medic, Commander, Shamedic };
 
 #define MEDIC_MIN_DISTANCE          32
 #define MEDIC_MAX_HEAL_DISTANCE     400
-#define MEDIC_TRY_TIME              SEC(10)
+#define MEDIC_TRY_TIME              Time_FromSec(10)
 
 // FIXME -
 //
@@ -647,7 +647,7 @@ void PAIN(medic_pain)(edict_t *self, edict_t *other, float kick, int damage, mod
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     float r = frandom();
 

@@ -110,7 +110,7 @@ static void GladiatorMelee(edict_t *self)
         G_StartSound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM);
     else {
         G_StartSound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM);
-        self->monsterinfo.melee_debounce_time = level.time + SEC(1.5f);
+        self->monsterinfo.melee_debounce_time = level.time + Time_FromSec(1.5f);
     }
 }
 
@@ -265,7 +265,7 @@ void PAIN(gladiator_pain)(edict_t *self, edict_t *other, float kick, int damage,
         return;
     }
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     if (brandom())
         G_StartSound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM);

@@ -262,7 +262,7 @@ void PAIN(gunner_pain)(edict_t *self, edict_t *other, float kick, int damage, mo
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + SEC(3);
+    self->pain_debounce_time = level.time + Time_FromSec(3);
 
     G_StartSound(self, CHAN_VOICE, random_element(SOUND.pain), 1, ATTN_NORM);
 
@@ -652,9 +652,9 @@ void MONSTERINFO_ATTACK(gunner_attack)(edict_t *self)
             return;
 
         // setup shot probabilities
-        if (self->monsterinfo.blind_fire_delay < SEC(1))
+        if (self->monsterinfo.blind_fire_delay < Time_FromSec(1))
             chance = 1.0f;
-        else if (self->monsterinfo.blind_fire_delay < SEC(7.5f))
+        else if (self->monsterinfo.blind_fire_delay < Time_FromSec(7.5f))
             chance = 0.4f;
         else
             chance = 0.1f;

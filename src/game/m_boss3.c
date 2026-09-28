@@ -28,7 +28,7 @@ void THINK(Think_Boss3Stand)(edict_t *self)
         self->s.frame = FRAME_stand201;
     else
         self->s.frame++;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 /*QUAKED monster_boss3_stand (1 .5 0) (-32 -32 0) (32 32 90)

@@ -40,7 +40,7 @@ void fire_flechette(edict_t *self, vec3_t start, vec3_t dir, int damage, int spe
     bolt->s.renderfx |= RF_FULLBRIGHT;
     bolt->s.modelindex = G_ModelIndex("models/proj/flechette/tris.md2");
     bolt->touch = flechette_touch;
-    bolt->nextthink = level.time + SEC(8000.0f / speed);
+    bolt->nextthink = level.time + Time_FromSec(8000.0f / speed);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->dmg_radius = kick;
@@ -53,8 +53,8 @@ void fire_flechette(edict_t *self, vec3_t start, vec3_t dir, int damage, int spe
 // PROX
 // **************************
 
-#define PROX_TIME_TO_LIVE   SEC(45) // 45, 30, 15, 10
-#define PROX_TIME_DELAY     SEC(0.5f)
+#define PROX_TIME_TO_LIVE   Time_FromSec(45) // 45, 30, 15, 10
+#define PROX_TIME_DELAY     Time_FromSec(0.5f)
 #define PROX_BOUND_SIZE     96
 #define PROX_DAMAGE_RADIUS  192
 #define PROX_HEALTH         20
@@ -158,7 +158,7 @@ void THINK(prox_seek)(edict_t *ent)
     if (ent->s.frame > 13)
         ent->s.frame = 9;
     ent->think = prox_seek;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 static bool monster_or_player(edict_t *ent)
@@ -219,19 +219,19 @@ void THINK(prox_open)(edict_t *ent)
                 ent->timestamp = level.time + PROX_TIME_TO_LIVE;
                 break;
             case 2:
-                ent->timestamp = level.time + SEC(30);
+                ent->timestamp = level.time + Time_FromSec(30);
                 break;
             case 4:
-                ent->timestamp = level.time + SEC(15);
+                ent->timestamp = level.time + Time_FromSec(15);
                 break;
             case 8:
-                ent->timestamp = level.time + SEC(10);
+                ent->timestamp = level.time + Time_FromSec(10);
                 break;
             }
         }
 
         ent->think = prox_seek;
-        ent->nextthink = level.time + SEC(0.2f);
+        ent->nextthink = level.time + Time_FromSec(0.2f);
     } else {
         if (ent->s.frame == 0) {
             G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/proxopen.wav"), 1, ATTN_NORM);
@@ -239,7 +239,7 @@ void THINK(prox_open)(edict_t *ent)
         }
         ent->s.frame++;
         ent->think = prox_open;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -381,13 +381,13 @@ void fire_prox(edict_t *self, vec3_t start, vec3_t aimdir, int prox_damage_multi
         prox->timestamp = level.time + PROX_TIME_TO_LIVE;
         break;
     case 2:
-        prox->timestamp = level.time + SEC(30);
+        prox->timestamp = level.time + Time_FromSec(30);
         break;
     case 4:
-        prox->timestamp = level.time + SEC(15);
+        prox->timestamp = level.time + Time_FromSec(15);
         break;
     case 8:
-        prox->timestamp = level.time + SEC(10);
+        prox->timestamp = level.time + Time_FromSec(10);
         break;
     }
 
@@ -456,18 +456,18 @@ bool fire_player_melee(edict_t *self, vec3_t start, vec3_t aim, int reach, int d
 // NUKE
 // *************************
 
-#define NUKE_DELAY          SEC(4)
-#define NUKE_TIME_TO_LIVE   SEC(6)
+#define NUKE_DELAY          Time_FromSec(4)
+#define NUKE_TIME_TO_LIVE   Time_FromSec(6)
 #define NUKE_RADIUS         512
 #define NUKE_DAMAGE         400
-#define NUKE_QUAKE_TIME     SEC(3)
+#define NUKE_QUAKE_TIME     Time_FromSec(3)
 #define NUKE_QUAKE_STRENGTH 100
 
 void THINK(Nuke_Quake)(edict_t *self)
 {
     if (self->last_move_time < level.time) {
         G_StartSound(self, CHAN_AUTO, self->noise_index, 0.75f, ATTN_NONE);
-        self->last_move_time = level.time + SEC(0.5f);
+        self->last_move_time = level.time + Time_FromSec(0.5f);
     }
 
     FOR_EACH_PLAYER(e) {
@@ -564,7 +564,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         }
 
         ent->think = Nuke_Think;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
         ent->health = 1;
         ent->r.ownernum = ENTITYNUM_NONE;
         G_AddEvent(ent, EV_MUZZLEFLASH, muzzleflash);
@@ -572,16 +572,16 @@ void THINK(Nuke_Think)(edict_t *ent)
         if (ent->pain_debounce_time <= level.time) {
             if (remaining <= (NUKE_TIME_TO_LIVE / 2.0f)) {
                 G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
-                ent->pain_debounce_time = level.time + SEC(0.3f);
+                ent->pain_debounce_time = level.time + Time_FromSec(0.3f);
             } else {
                 G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
-                ent->pain_debounce_time = level.time + SEC(0.5f);
+                ent->pain_debounce_time = level.time + Time_FromSec(0.5f);
             }
         }
     } else {
         if (ent->pain_debounce_time <= level.time) {
             G_StartSound(ent, CHAN_VOICE, G_SoundIndex("weapons/nukewarn2.wav"), 1, attenuation);
-            ent->pain_debounce_time = level.time + SEC(1);
+            ent->pain_debounce_time = level.time + Time_FromSec(1);
         }
         ent->nextthink = level.time + FRAME_TIME;
     }
@@ -647,11 +647,11 @@ void fire_nuke(edict_t *self, vec3_t start, vec3_t aimdir, int speed)
 // TESLA
 // *************************
 
-#define TESLA_TIME_TO_LIVE          SEC(30)
+#define TESLA_TIME_TO_LIVE          Time_FromSec(30)
 #define TESLA_DAMAGE_RADIUS         128
 #define TESLA_DAMAGE                3
 #define TESLA_KNOCKBACK             8
-#define TESLA_ACTIVATE_TIME         SEC(3)
+#define TESLA_ACTIVATE_TIME         Time_FromSec(3)
 #define TESLA_EXPLOSION_DAMAGE_MULT 50 // this is the amount the damage is multiplied by for underwater explosions
 #define TESLA_EXPLOSION_RADIUS      200
 
@@ -779,14 +779,14 @@ void THINK(tesla_think_active)(edict_t *self)
 
             te->s.old_origin = G_SnapVector(start);
             te->s.origin = G_SnapVector(tr.endpos);
-            te->nextthink = level.time + SEC(0.2f);
+            te->nextthink = level.time + Time_FromSec(0.2f);
             trap_LinkEntity(te);
         }
     }
 
     if (self->r.inuse) {
         self->think = tesla_think_active;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -860,7 +860,7 @@ void THINK(tesla_think)(edict_t *ent)
     if (ent->s.frame > 14) {
         ent->s.frame = 14;
         ent->think = tesla_activate;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     } else {
         if (ent->s.frame > 9) {
             if (ent->s.frame == 10) {
@@ -874,7 +874,7 @@ void THINK(tesla_think)(edict_t *ent)
                 ent->s.skinnum = 3;
         }
         ent->think = tesla_think;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     }
 }
 
@@ -1033,7 +1033,7 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
 
     te->s.old_origin = G_SnapVector(start);
     te->s.origin = G_SnapVector(tr.endpos);
-    te->nextthink = level.time + SEC(0.2f);
+    te->nextthink = level.time + Time_FromSec(0.2f);
     trap_LinkEntity(te);
 
     // if went through water, determine where the end is and make a bubble trail
@@ -1113,7 +1113,7 @@ void fire_blaster2(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
     bolt->s.skinnum = 2;
     bolt->s.scale = 2.5f;
     bolt->touch = blaster2_touch;
-    bolt->nextthink = level.time + SEC(2);
+    bolt->nextthink = level.time + Time_FromSec(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->dmg_radius = 128;
@@ -1130,7 +1130,7 @@ void fire_blaster2(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 #define TRACKER_DAMAGE_FLAGS    (DAMAGE_NO_POWER_ARMOR | DAMAGE_ENERGY | DAMAGE_NO_KNOCKBACK)
 #define TRACKER_IMPACT_FLAGS    (DAMAGE_NO_POWER_ARMOR | DAMAGE_ENERGY)
 #define TRACKER_DAMAGE_TIME_SEC 0.5f
-#define TRACKER_DAMAGE_TIME     SEC(TRACKER_DAMAGE_TIME_SEC)
+#define TRACKER_DAMAGE_TIME     Time_FromSec(TRACKER_DAMAGE_TIME_SEC)
 
 void THINK(tracker_pain_daemon_think)(edict_t *self)
 {
@@ -1165,7 +1165,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
                      hurt, 0, TRACKER_DAMAGE_FLAGS, MOD_TRACKER);
         }
 
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
 
         if (self->enemy->client)
             self->enemy->client->tracker_pain_time = self->nextthink;
@@ -1262,7 +1262,7 @@ void THINK(tracker_fly)(edict_t *self)
     self->velocity = Vec3_Scale(dir, self->speed);
     self->monsterinfo.saved_goal = dest;
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, edict_t *enemy)
@@ -1281,10 +1281,10 @@ void fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
     trap_LinkEntity(bolt);
 
     if (enemy) {
-        bolt->nextthink = level.time + HZ(10);
+        bolt->nextthink = level.time + Time_FromHertz(10);
         bolt->think = tracker_fly;
     } else {
-        bolt->nextthink = level.time + SEC(10);
+        bolt->nextthink = level.time + Time_FromSec(10);
         bolt->think = G_FreeEdict;
     }
 

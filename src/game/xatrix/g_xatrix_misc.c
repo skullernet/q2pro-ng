@@ -23,7 +23,7 @@ void SP_misc_crashviper(edict_t *ent)
     ent->r.box = Box3_FromSize(16, 0, 32);
 
     ent->think = func_train_find;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->use = misc_viper_use;
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
@@ -55,7 +55,7 @@ void USE(misc_viper_missile_use)(edict_t *self, edict_t *other, edict_t *activat
 
     monster_fire_rocket(self, start, dir, self->dmg, 500, MZ2_CHICK_ROCKET_1);
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
     self->think = G_FreeEdict;
 }
 
@@ -96,7 +96,7 @@ void SP_misc_transport(edict_t *ent)
     ent->s.modelindex = G_ModelIndex("models/objects/ship/tris.md2");
     ent->r.box = Box3_FromSize(16, 0, 32);
     ent->think = func_train_find;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->use = misc_strogg_ship_use;
     ent->r.svflags |= SVF_NOCLIENT;
     ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
@@ -113,14 +113,14 @@ Mal's amb4 loop entity
 */
 void THINK(amb4_think)(edict_t *ent)
 {
-    ent->nextthink = level.time + SEC(2.7f);
+    ent->nextthink = level.time + Time_FromSec(2.7f);
     G_StartSound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NONE);
 }
 
 void SP_misc_amb4(edict_t *ent)
 {
     ent->think = amb4_think;
-    ent->nextthink = level.time + SEC(1);
+    ent->nextthink = level.time + Time_FromSec(1);
     ent->noise_index = G_SoundIndex("world/amb4.wav");
     trap_LinkEntity(ent);
 }

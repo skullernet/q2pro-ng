@@ -42,7 +42,7 @@ void fire_nails(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, 
     bolt->s.renderfx |= RF_FULLBRIGHT;
     bolt->s.modelindex = G_ModelIndex("models/objects/spike/tris.md2");
     bolt->touch = nails_touch;
-    bolt->nextthink = level.time + SEC(8000.0f / speed);
+    bolt->nextthink = level.time + Time_FromSec(8000.0f / speed);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     bolt->dmg_radius = kick;
@@ -124,7 +124,7 @@ void THINK(event_lighting_think)(edict_t *self)
     self->beam->s.origin = G_SnapVector(end);
     trap_LinkEntity(self->beam);
 
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(use_event_lighting)(edict_t *self, edict_t *other, edict_t *activator)
@@ -146,9 +146,9 @@ void USE(use_event_lighting)(edict_t *self, edict_t *other, edict_t *activator)
     self->activator = activator;
 
     if (self->delay > 0) {
-        self->touch_debounce_time = level.time + SEC(self->delay);
+        self->touch_debounce_time = level.time + Time_FromSec(self->delay);
         self->think = event_lighting_think;
-        self->nextthink = level.time + HZ(10);
+        self->nextthink = level.time + Time_FromHertz(10);
         return;
     }
 
@@ -157,7 +157,7 @@ void USE(use_event_lighting)(edict_t *self, edict_t *other, edict_t *activator)
     te->s.old_origin = G_SnapVector(self->pos1);
     te->s.origin = G_SnapVector(end);
     te->think = G_FreeEdict;
-    te->nextthink = level.time + SEC(0.2f);
+    te->nextthink = level.time + Time_FromSec(0.2f);
     trap_LinkEntity(te);
 }
 
@@ -184,13 +184,13 @@ void THINK(misc_fiend_craft_think)(edict_t *self)
     self->s.frame++;
     if (self->s.frame >= 60)
         self->s.frame = 0;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void USE(misc_fiend_craft_use)(edict_t *self, edict_t* other, edict_t* activator)
 {
     self->think = misc_fiend_craft_think;
-    self->nextthink = level.time + HZ(10);
+    self->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_misc_fiend_craft(edict_t *ent)
@@ -201,7 +201,7 @@ void SP_misc_fiend_craft(edict_t *ent)
         ent->use = misc_fiend_craft_use;
     } else {
         ent->think = misc_fiend_craft_think;
-        ent->nextthink = level.time + HZ(10);
+        ent->nextthink = level.time + Time_FromHertz(10);
     }
     trap_LinkEntity(ent);
 }
@@ -213,14 +213,14 @@ void THINK(light_flame_small_think)(edict_t *ent)
     ent->s.frame++;
     if (ent->s.frame >= 11)
         ent->s.frame = 0;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_light_flame_small(edict_t *ent)
 {
     ent->s.modelindex = G_ModelIndex("models/props/flame/tris.md2");
     ent->think = light_flame_small_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     trap_LinkEntity(ent);
 }
 
@@ -231,13 +231,13 @@ void THINK(light_torch_small_think)(edict_t *ent)
     ent->s.frame++;
     if (ent->s.frame >= 6)
         ent->s.frame = 0;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 void SP_light_torch_small(edict_t *ent)
 {
     ent->s.modelindex = G_ModelIndex("models/props/torch/tris.md2");
     ent->think = light_torch_small_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     trap_LinkEntity(ent);
 }

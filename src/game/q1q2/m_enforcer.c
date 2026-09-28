@@ -128,7 +128,7 @@ static void fire_enfbolt(edict_t *self, vec3_t start, vec3_t dir, int damage, in
     bolt->s.effects |= EF_HYPERBLASTER;
     bolt->s.modelindex = G_ModelIndex("models/monsters/laserstrogg/tris.md2");
     bolt->touch = enfbolt_touch;
-    bolt->nextthink = level.time + SEC(2);
+    bolt->nextthink = level.time + Time_FromSec(2);
     bolt->think = G_FreeEdict;
     bolt->dmg = damage;
     trap_LinkEntity(bolt);
@@ -301,9 +301,9 @@ void PAIN(enforcer_pain)(edict_t *self, edict_t *other, float kick, int damage, 
 
     r = frandom();
     if (r < 0.2f)
-        self->pain_debounce_time = level.time + SEC(6);
+        self->pain_debounce_time = level.time + Time_FromSec(6);
     else
-        self->pain_debounce_time = level.time + SEC(1);
+        self->pain_debounce_time = level.time + Time_FromSec(1);
 
     if (!M_ShouldReactToPain(self, mod))
         return; // no pain anims in nightmare

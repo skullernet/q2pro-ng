@@ -20,7 +20,7 @@ bool Pickup_Nuke(edict_t *ent, edict_t *other)
     other->client->pers.inventory[ent->item->id]++;
 
     if (deathmatch.integer && !(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -31,7 +31,7 @@ void Use_IR(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->ir_time = max(level.time, ent->client->ir_time) + SEC(60);
+    ent->client->ir_time = max(level.time, ent->client->ir_time) + Time_FromSec(60);
 
     G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ir_start.wav"), 1, ATTN_NORM);
 }
@@ -40,7 +40,7 @@ void Use_Double(edict_t *ent, const gitem_t *item)
 {
     ent->client->pers.inventory[item->id]--;
 
-    ent->client->double_time = max(level.time, ent->client->double_time) + SEC(30);
+    ent->client->double_time = max(level.time, ent->client->double_time) + Time_FromSec(30);
 
     G_StartSound(ent, CHAN_ITEM, G_SoundIndex("misc/ddamage1.wav"), 1, ATTN_NORM);
 }
@@ -95,7 +95,7 @@ bool Pickup_Doppleganger(edict_t *ent, edict_t *other)
     other->client->pers.inventory[ent->item->id]++;
 
     if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
-        SetRespawn(ent, SEC(ent->item->quantity));
+        SetRespawn(ent, Time_FromSec(ent->item->quantity));
 
     return true;
 }
@@ -118,7 +118,7 @@ bool Pickup_Sphere(edict_t *ent, edict_t *other)
 
     if (deathmatch.integer) {
         if (!(ent->spawnflags & SPAWNFLAG_ITEM_DROPPED))
-            SetRespawn(ent, SEC(ent->item->quantity));
+            SetRespawn(ent, Time_FromSec(ent->item->quantity));
         if (g_dm_instant_items.integer) {
             // PGM
             if (ent->item->use)

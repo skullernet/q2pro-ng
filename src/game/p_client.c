@@ -420,13 +420,13 @@ static void TossClientWeapon(edict_t *self)
     if (g_dm_no_quad_drop.integer)
         quad = false;
     else
-        quad = (self->client->quad_time > (level.time + SEC(1)));
+        quad = (self->client->quad_time > (level.time + Time_FromSec(1)));
 
     // RAFAEL
     if (g_dm_no_quadfire_drop.integer)
         quadfire = false;
     else
-        quadfire = (self->client->quadfire_time > (level.time + SEC(1)));
+        quadfire = (self->client->quadfire_time > (level.time + Time_FromSec(1)));
     // RAFAEL
 
     if (item && quad)
@@ -537,9 +537,9 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 
     if (!self->deadflag) {
         if (deathmatch.integer && g_dm_force_respawn_time.integer)
-            self->client->respawn_time = (level.time + SEC(g_dm_force_respawn_time.value));
+            self->client->respawn_time = (level.time + Time_FromSec(g_dm_force_respawn_time.value));
         else
-            self->client->respawn_time = (level.time + SEC(1));
+            self->client->respawn_time = (level.time + Time_FromSec(1));
 
         LookAtKiller(self, inflictor, attacker);
         self->client->ps.pm_type = PM_DEAD;
@@ -692,7 +692,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             }
 
             if (allPlayersDead) { // allow respawns for telefrags and weird shit
-                level.coop_level_restart_time = level.time + SEC(5);
+                level.coop_level_restart_time = level.time + Time_FromSec(5);
 
                 FOR_EACH_PLAYER(player)
                     G_ClientPrintf(player, PRINT_CENTER, "Everyone is dead. You lose.\nRestarting level...");
@@ -701,7 +701,7 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             // in 3 seconds, attempt a respawn or put us into
             // spectator mode
             if (!level.coop_level_restart_time)
-                self->client->respawn_time = level.time + SEC(3);
+                self->client->respawn_time = level.time + Time_FromSec(3);
         }
     }
 
@@ -1782,7 +1782,7 @@ void PutClientInServer(edict_t *ent)
             memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
             ClientUserinfoChanged(ent, userinfo);
 
-            client->respawn_timeout = level.time + SEC(3);
+            client->respawn_timeout = level.time + Time_FromSec(3);
         }
 
         // find a spot to place us
@@ -1906,7 +1906,7 @@ void PutClientInServer(edict_t *ent)
     ent->mass = 200;
     ent->r.solid = SOLID_BBOX;
     ent->deadflag = false;
-    ent->air_finished = level.time + SEC(12);
+    ent->air_finished = level.time + Time_FromSec(12);
     ent->clipmask = MASK_PLAYERSOLID;
     ent->model = "players/male/tris.md2";
     ent->die = player_die;
@@ -2375,7 +2375,7 @@ qvm_exported void G_ClientDisconnect(int clientnum)
     ent->classname = "disconnected";
     ent->client->pers.connected = false;
     ent->client->pers.spawned = false;
-    ent->timestamp = level.time + SEC(1);
+    ent->timestamp = level.time + Time_FromSec(1);
 
     // update active scoreboards
     if (deathmatch.integer) {
@@ -2456,7 +2456,7 @@ static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
     if (ent->client->landmark_free_fall) {
         delta = min(30, delta);
         ent->client->landmark_free_fall = false;
-        ent->client->landmark_noise_time = level.time + HZ(10);
+        ent->client->landmark_noise_time = level.time + Time_FromHertz(10);
     }
 
     if (delta < 15) {
@@ -2557,7 +2557,7 @@ qvm_exported void G_ClientThink(int clientnum)
             // can exit intermission after five seconds
             // Paril: except in N64. the camera handles it.
             // Paril again: except on unit exits, we can leave immediately after camera finishes
-            if (level.changemap && (!n64_sp || level.level_intermission_set) && level.time > level.intermissiontime + SEC(5) && (ucmd.buttons & BUTTON_ANY))
+            if (level.changemap && (!n64_sp || level.level_intermission_set) && level.time > level.intermissiontime + Time_FromSec(5) && (ucmd.buttons & BUTTON_ANY))
                 level.exitintermission = true;
         }
 
@@ -2636,7 +2636,7 @@ qvm_exported void G_ClientThink(int clientnum)
 
         if (ent->client->landmark_free_fall && pm.groundentitynum != ENTITYNUM_NONE) {
             ent->client->landmark_free_fall = false;
-            ent->client->landmark_noise_time = level.time + HZ(10);
+            ent->client->landmark_noise_time = level.time + Time_FromHertz(10);
         }
 
         // [Paril-KEX] save old position for G_TouchProjectiles
@@ -2793,7 +2793,7 @@ static bool G_MonstersSearchingFor(edict_t *player)
             continue;
 
         // they lost sight of us
-        if ((ent->monsterinfo.aiflags & AI_LOST_SIGHT) && level.time > ent->monsterinfo.trail_time + SEC(5))
+        if ((ent->monsterinfo.aiflags & AI_LOST_SIGHT) && level.time > ent->monsterinfo.trail_time + Time_FromSec(5))
             continue;
 
         // no sir
@@ -3088,14 +3088,14 @@ void ClientBeginServerFrame(edict_t *ent)
     client = ent->client;
 
     if (client->awaiting_respawn) {
-        if ((TO_MSEC(level.time) % 500) == 0)
+        if ((Time_ToMsec(level.time) % 500) == 0)
             PutClientInServer(ent);
         return;
     }
 
     if (deathmatch.integer && !G_TeamplayEnabled() &&
         client->pers.spectator != client->resp.spectator &&
-        (level.time - client->respawn_time) >= SEC(5)) {
+        (level.time - client->respawn_time) >= Time_FromSec(5)) {
         spectator_respawn(ent);
         return;
     }

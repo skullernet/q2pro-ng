@@ -62,7 +62,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
 
         if (points > 0) {
             if (ent->client)
-                ent->client->nuke_time = level.time + SEC(2);
+                ent->client->nuke_time = level.time + Time_FromSec(2);
             dir = Vec3_Sub(ent->s.origin, inflictor->s.origin);
             T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
         }
@@ -72,13 +72,13 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
     FOR_EACH_PLAYER(ent) {
         tr = G_TraceLine(inflictor->s.origin, ent->s.origin, inflictor->s.number, MASK_SOLID);
         if (tr.fraction == 1.0f)
-            ent->client->nuke_time = level.time + SEC(2);
+            ent->client->nuke_time = level.time + Time_FromSec(2);
         else {
             dist = realrange(ent, inflictor);
             if (dist < 2048)
-                ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1.5f));
+                ent->client->nuke_time = max(ent->client->nuke_time, level.time + Time_FromSec(1.5f));
             else
-                ent->client->nuke_time = max(ent->client->nuke_time, level.time + SEC(1));
+                ent->client->nuke_time = max(ent->client->nuke_time, level.time + Time_FromSec(1));
         }
     }
 }

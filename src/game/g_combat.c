@@ -185,7 +185,7 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, int normal, int damage, d
     power_used = max(1, power_used);
 
     SpawnDamage(pa_te_type, point, normal, save);
-    ent->powerarmor_time = level.time + SEC(0.2f);
+    ent->powerarmor_time = level.time + Time_FromSec(0.2f);
 
     // Paril: adjustment so that power armor
     // always uses damagePerCell even if it does
@@ -533,7 +533,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
     // ROGUE
         if (targ->pain_debounce_time < level.time) {
             G_StartSound(targ, CHAN_ITEM, G_SoundIndex("items/protect4.wav"), 1, ATTN_NORM);
-            targ->pain_debounce_time = level.time + SEC(2);
+            targ->pain_debounce_time = level.time + Time_FromSec(2);
         }
         take = 0;
         save = damage;

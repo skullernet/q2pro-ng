@@ -3,8 +3,6 @@
 #include "g_local.h"
 #include "m_player.h"
 
-#define FROM_MIN(n) SEC((n) * 60)
-
 typedef enum {
     MATCH_NONE,
     MATCH_SETUP,
@@ -150,7 +148,7 @@ void CTFSpawn(void)
 
     if (competition.integer > 1) {
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
+        ctfgame.matchtime = level.time + Time_FromMin(matchsetuptime.value);
     }
 }
 
@@ -618,7 +616,7 @@ bool CTFPickup_Flag(edict_t *ent, edict_t *other)
                 // Ok, let's do the player loop, hand out the bonuses
                 FOR_EACH_PLAYER(player) {
                     if (player->client->resp.ctf_team != other->client->resp.ctf_team)
-                        player->client->resp.ctf_lasthurtcarrier = -SEC(5);
+                        player->client->resp.ctf_lasthurtcarrier = -Time_FromSec(5);
                     else if (player->client->resp.ctf_team == other->client->resp.ctf_team) {
                         if (player != other)
                             player->client->resp.score += CTF_TEAM_BONUS;
@@ -673,7 +671,7 @@ void TOUCH(CTFDropFlagTouch)(edict_t *ent, edict_t *other, const trace_t *tr, bo
 {
     // owner (who dropped us) can't touch for two secs
     if (other == &g_edicts[ent->r.ownernum] &&
-        ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT - SEC(2))
+        ent->nextthink - level.time > CTF_AUTO_FLAG_RETURN_TIMEOUT - Time_FromSec(2))
         return;
 
     Touch_Item(ent, other, tr, other_touching_self);
@@ -732,7 +730,7 @@ void THINK(CTFFlagThink)(edict_t *ent)
 {
     if (ent->r.solid != SOLID_NOT)
         ent->s.frame = 173 + (((ent->s.frame - 173) + 1) % 16);
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 void THINK(CTFFlagSetup)(edict_t *ent)
@@ -766,7 +764,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
 
     trap_LinkEntity(ent);
 
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
     ent->think = CTFFlagThink;
 }
 
@@ -845,7 +843,7 @@ static void CTFSetIDView(edict_t *ent)
     float    bd = 0, d;
 
     // only check every few frames
-    if (level.time - ent->client->resp.lastidtime < SEC(0.25f))
+    if (level.time - ent->client->resp.lastidtime < Time_FromSec(0.25f))
         return;
     ent->client->resp.lastidtime = level.time;
 
@@ -922,7 +920,7 @@ void SetCTFStats(edict_t *ent)
     ent->client->ps.stats[STAT_CTF_TEAM1_HEADER] = imageindex_ctfsb1;
     ent->client->ps.stats[STAT_CTF_TEAM2_HEADER] = imageindex_ctfsb2;
 
-    bool blink = (TO_MSEC(level.time) % 1000) < 500;
+    bool blink = (Time_ToMsec(level.time) % 1000) < 500;
 
     // if during intermission, we must blink the team header of the winning team
     if (level.intermissiontime && blink) {
@@ -1018,7 +1016,7 @@ void SetCTFStats(edict_t *ent)
         ent->client->ps.stats[STAT_CTF_TEAM1_PIC] = p1;
         ent->client->ps.stats[STAT_CTF_TEAM2_PIC] = p2;
 
-        if (ctfgame.last_flag_capture && level.time - ctfgame.last_flag_capture < SEC(5)) {
+        if (ctfgame.last_flag_capture && level.time - ctfgame.last_flag_capture < Time_FromSec(5)) {
             if (ctfgame.last_capture_team == CTF_TEAM1)
                 if (blink)
                     ent->client->ps.stats[STAT_CTF_TEAM1_PIC] = p1;
@@ -1105,7 +1103,7 @@ void CTFResetGrapple(edict_t *self)
     G_StartSound(owner, CHAN_WEAPON, G_SoundIndex("weapons/grapple/grreset.wav"), cl->silencer_shots ? 0.2f : 1.0f, ATTN_NORM);
 
     cl->ctf_grapple = NULL;
-    cl->ctf_grapplereleasetime = level.time + SEC(1);
+    cl->ctf_grapplereleasetime = level.time + Time_FromSec(1);
     cl->ctf_grapplestate = CTF_GRAPPLE_STATE_FLY; // we're firing, not on hook
     owner->flags &= ~FL_NO_KNOCKBACK;
 
@@ -1184,7 +1182,7 @@ static void CTFGrappleDrawCable(edict_t *self)
 
     te->s.old_origin = G_SnapVector(aim.start);
     te->s.origin = G_SnapVector(self->s.origin);
-    te->nextthink = level.time + SEC(0.2f);
+    te->nextthink = level.time + Time_FromSec(0.2f);
     trap_LinkEntity(te);
 }
 
@@ -1574,7 +1572,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
             sprintf(string, "xv -20 yv -10 string2 \"Capture Limit: %d\" ", capturelimit.integer);
     }
     //if (timelimit->value)
-    //    fmt::format_to(std::back_inserter(string), FMT_STRING("xv 340 yv -10 time_limit {} "), gi.ServerFrame() + ((FROM_MIN(timelimit->value) - level.time)).milliseconds() / FRAME_TIME.milliseconds());
+    //    fmt::format_to(std::back_inserter(string), FMT_STRING("xv 340 yv -10 time_limit {} "), gi.ServerFrame() + ((Time_FromMin(timelimit->value) - level.time)).milliseconds() / FRAME_TIME.milliseconds());
 
     // team one
     if (teamplay.integer) {
@@ -1697,7 +1695,7 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
 
 static void CTFHasTech(edict_t *who)
 {
-    if (level.time - who->client->ctf_lasttechmsg > SEC(2)) {
+    if (level.time - who->client->ctf_lasttechmsg > Time_FromSec(2)) {
         G_ClientPrintf(who, PRINT_CENTER, "You already have a TECH powerup.\n");
         who->client->ctf_lasttechmsg = level.time;
     }
@@ -1848,7 +1846,7 @@ void CTFSetupTechSpawn(void)
         return;
 
     ent = G_Spawn();
-    ent->nextthink = level.time + SEC(2);
+    ent->nextthink = level.time + Time_FromSec(2);
     ent->think = SpawnTechs;
 }
 
@@ -1894,7 +1892,7 @@ bool CTFApplyStrengthSound(edict_t *ent)
     if (ent->client &&
         ent->client->pers.inventory[IT_TECH_STRENGTH]) {
         if (ent->client->ctf_techsndtime < level.time) {
-            ent->client->ctf_techsndtime = level.time + SEC(1);
+            ent->client->ctf_techsndtime = level.time + Time_FromSec(1);
             if (ent->client->quad_time > level.time)
                 G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech2x.wav"), volume, ATTN_NORM);
             else
@@ -1920,7 +1918,7 @@ void CTFApplyHasteSound(edict_t *ent)
     if (ent->client &&
         ent->client->pers.inventory[IT_TECH_HASTE] &&
         ent->client->ctf_techsndtime < level.time) {
-        ent->client->ctf_techsndtime = level.time + SEC(1);
+        ent->client->ctf_techsndtime = level.time + Time_FromSec(1);
         G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech3.wav"), volume, ATTN_NORM);
     }
 }
@@ -1946,7 +1944,7 @@ void CTFApplyRegeneration(edict_t *ent)
                 ent->health += 5;
                 if (ent->health > 150)
                     ent->health = 150;
-                client->ctf_regentime += SEC(0.5f);
+                client->ctf_regentime += Time_FromSec(0.5f);
                 noise = true;
             }
             index = ArmorIndex(ent);
@@ -1954,12 +1952,12 @@ void CTFApplyRegeneration(edict_t *ent)
                 client->pers.inventory[index] += 5;
                 if (client->pers.inventory[index] > 150)
                     client->pers.inventory[index] = 150;
-                client->ctf_regentime += SEC(0.5f);
+                client->ctf_regentime += Time_FromSec(0.5f);
                 noise = true;
             }
         }
         if (noise && ent->client->ctf_techsndtime < level.time) {
-            ent->client->ctf_techsndtime = level.time + SEC(1);
+            ent->client->ctf_techsndtime = level.time + Time_FromSec(1);
             G_StartSound(ent, CHAN_AUX, G_SoundIndex("ctf/tech4.wav"), volume, ATTN_NORM);
         }
     }
@@ -1995,7 +1993,7 @@ The banner is 248 tall.
 void THINK(misc_ctf_banner_think)(edict_t *ent)
 {
     ent->s.frame = (ent->s.frame + 1) % 16;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 #define SPAWNFLAG_CTF_BANNER_BLUE   1
@@ -2012,7 +2010,7 @@ void SP_misc_ctf_banner(edict_t *ent)
     trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 /*QUAKED misc_ctf_small_banner (1 .5 0) (-4 -32 0) (4 32 124) TEAM2
@@ -2031,7 +2029,7 @@ void SP_misc_ctf_small_banner(edict_t *ent)
     trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
-    ent->nextthink = level.time + HZ(10);
+    ent->nextthink = level.time + Time_FromHertz(10);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -2087,14 +2085,14 @@ static bool CTFBeginElection(edict_t *ent, elect_t type, const char *msg)
     ctfgame.election = type;
     ctfgame.evotes = 0;
     ctfgame.needvotes = (int)((count * electpercentage.value) / 100);
-    ctfgame.electtime = level.time + SEC(20); // twenty seconds for election
+    ctfgame.electtime = level.time + Time_FromSec(20); // twenty seconds for election
     Q_strlcpy(ctfgame.emsg, msg, sizeof(ctfgame.emsg));
 
     // tell everyone
     G_ClientPrintf(NULL, PRINT_CHAT, "%s", ctfgame.emsg);
     G_ClientPrintf(NULL, PRINT_HIGH, "Type YES or NO to vote on this request.\n");
     G_ClientPrintf(NULL, PRINT_HIGH, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-                   (int)TO_SEC(ctfgame.electtime - level.time));
+                   (int)Time_ToSec(ctfgame.electtime - level.time));
 
     return true;
 }
@@ -2130,7 +2128,7 @@ static void CTFResetAllPlayers(void)
         }
     }
     if (ctfgame.match == MATCH_SETUP)
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
+        ctfgame.matchtime = level.time + Time_FromMin(matchsetuptime.value);
 }
 
 static void CTFAssignGhost(edict_t *ent)
@@ -2164,7 +2162,7 @@ static void CTFAssignGhost(edict_t *ent)
 static void CTFStartMatch(void)
 {
     ctfgame.match = MATCH_GAME;
-    ctfgame.matchtime = level.time + FROM_MIN(matchtime.value);
+    ctfgame.matchtime = level.time + Time_FromMin(matchtime.value);
     ctfgame.countdown = false;
 
     ctfgame.team1 = ctfgame.team2 = 0;
@@ -2294,7 +2292,7 @@ void CTFVoteYes_f(edict_t *ent, cmdflags_t flags)
     }
     G_ClientPrintf(NULL, PRINT_HIGH, "%s\n", ctfgame.emsg);
     G_ClientPrintf(NULL, PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-                   (int)TO_SEC(ctfgame.electtime - level.time));
+                   (int)Time_ToSec(ctfgame.electtime - level.time));
 }
 
 void CTFVoteNo_f(edict_t *ent, cmdflags_t flags)
@@ -2316,7 +2314,7 @@ void CTFVoteNo_f(edict_t *ent, cmdflags_t flags)
 
     G_ClientPrintf(NULL, PRINT_HIGH, "%s\n", ctfgame.emsg);
     G_ClientPrintf(NULL, PRINT_CHAT, "Votes: %d  Needed: %d  Time left: %ds\n", ctfgame.evotes, ctfgame.needvotes,
-                   (int)TO_SEC(ctfgame.electtime - level.time));
+                   (int)Time_ToSec(ctfgame.electtime - level.time));
 }
 
 void CTFReady_f(edict_t *ent, cmdflags_t flags)
@@ -2354,7 +2352,7 @@ void CTFReady_f(edict_t *ent, cmdflags_t flags)
         // everyone has committed
         G_ClientPrintf(NULL, PRINT_CHAT, "All players have committed.  Match starting\n");
         ctfgame.match = MATCH_PREGAME;
-        ctfgame.matchtime = level.time + SEC(matchstarttime.value);
+        ctfgame.matchtime = level.time + Time_FromSec(matchstarttime.value);
         ctfgame.countdown = false;
         G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
     }
@@ -2383,7 +2381,7 @@ void CTFNotReady_f(edict_t *ent, cmdflags_t flags)
     if (ctfgame.match == MATCH_PREGAME) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match halted.\n");
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
+        ctfgame.matchtime = level.time + Time_FromMin(matchsetuptime.value);
     }
 }
 
@@ -2754,7 +2752,7 @@ bool CTFCheckRules(void)
     }
 
     if (ctfgame.match != MATCH_NONE) {
-        t = TO_SEC(ctfgame.matchtime - level.time);
+        t = Time_ToSec(ctfgame.matchtime - level.time);
 
         // no team warnings in match mode
         ctfgame.warnactive = 0;
@@ -2770,7 +2768,7 @@ bool CTFCheckRules(void)
                     CTFResetAllPlayers();
                 } else {
                     // reset the time
-                    ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
+                    ctfgame.matchtime = level.time + Time_FromMin(matchsetuptime.value);
                 }
                 return false;
 
@@ -2838,9 +2836,9 @@ bool CTFCheckRules(void)
     } else {
         int team1 = 0, team2 = 0;
 
-        if (level.time == SEC(ctfgame.lasttime))
+        if (level.time == Time_FromSec(ctfgame.lasttime))
             return false;
-        ctfgame.lasttime = TO_SEC(level.time);
+        ctfgame.lasttime = Time_ToSec(level.time);
         // this is only done in non-match (public) mode
 
         if (warn_unbalanced.integer) {
@@ -2999,7 +2997,7 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
                        ent->client->pers.netname, settings->matchlen);
         if (ctfgame.match == MATCH_GAME) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchtime.value)) + FROM_MIN(settings->matchlen);
+            ctfgame.matchtime = (ctfgame.matchtime - Time_FromMin(matchtime.value)) + Time_FromMin(settings->matchlen);
         }
         trap_Cvar_Set("matchtime", va("%d", settings->matchlen));
     }
@@ -3009,7 +3007,7 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
                        ent->client->pers.netname, settings->matchsetuplen);
         if (ctfgame.match == MATCH_SETUP) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - FROM_MIN(matchsetuptime.value)) + FROM_MIN(settings->matchsetuplen);
+            ctfgame.matchtime = (ctfgame.matchtime - Time_FromMin(matchsetuptime.value)) + Time_FromMin(settings->matchsetuplen);
         }
         trap_Cvar_Set("matchsetuptime", va("%d", settings->matchsetuplen));
     }
@@ -3019,7 +3017,7 @@ static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
                        ent->client->pers.netname, settings->matchstartlen);
         if (ctfgame.match == MATCH_PREGAME) {
             // in the middle of a match, change it on the fly
-            ctfgame.matchtime = (ctfgame.matchtime - SEC(matchstarttime.value)) + SEC(settings->matchstartlen);
+            ctfgame.matchtime = (ctfgame.matchtime - Time_FromSec(matchstarttime.value)) + Time_FromSec(settings->matchstartlen);
         }
         trap_Cvar_Set("matchstarttime", va("%d", settings->matchstartlen));
     }
@@ -3198,13 +3196,13 @@ static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
     if (ctfgame.match == MATCH_SETUP) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to start.\n");
         ctfgame.match = MATCH_PREGAME;
-        ctfgame.matchtime = level.time + SEC(matchstarttime.value);
+        ctfgame.matchtime = level.time + Time_FromSec(matchstarttime.value);
         G_ReliableSound(world, CHAN_AUTO, G_SoundIndex("misc/talk1.wav"), 1, ATTN_NONE);
         ctfgame.countdown = false;
     } else if (ctfgame.match == MATCH_GAME) {
         G_ClientPrintf(NULL, PRINT_CHAT, "Match has been forced to terminate.\n");
         ctfgame.match = MATCH_SETUP;
-        ctfgame.matchtime = level.time + FROM_MIN(matchsetuptime.value);
+        ctfgame.matchtime = level.time + Time_FromMin(matchsetuptime.value);
         CTFResetAllPlayers();
     }
 }
@@ -3373,7 +3371,7 @@ void CTFPlayerList_f(edict_t *ent, cmdflags_t flags)
 
     *text = 0;
     FOR_EACH_CLIENT(cl) {
-        int sec = TO_SEC(level.time - cl->resp.entertime);
+        int sec = Time_ToSec(level.time - cl->resp.entertime);
         Q_snprintf(st, sizeof(st), "%3d %-16.16s %02d:%02d %4d %3d%s%s\n",
                   (int)(cl - g_clients),
                   cl->pers.netname,

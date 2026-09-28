@@ -309,7 +309,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         // send the layout
         Q_snprintf(entry, sizeof(entry),
                    "client %i %i %i %i %i %.f ",
-                   x, y, sorted[i], cl->resp.score, cl->r.ping, TO_SEC(level.time - cl->resp.entertime) / 60);
+                   x, y, sorted[i], cl->resp.score, cl->r.ping, Time_ToSec(level.time - cl->resp.entertime) / 60);
         j = strlen(entry);
         if (stringlength + j >= MAX_SCOREBOARD_SIZE)
             break;
@@ -331,7 +331,7 @@ Note that it isn't that hard to overflow the 1400 byte message limit!
 void DeathmatchScoreboard(edict_t *ent)
 {
     DeathmatchScoreboardMessage(ent, ent->enemy, true);
-    ent->client->menutime = level.time + SEC(3);
+    ent->client->menutime = level.time + Time_FromSec(3);
 }
 
 /*
@@ -438,7 +438,7 @@ static int G_EncodeHealthBar(int bar)
             return 1;
 
         if (ent->delay) {
-            ent->timestamp = level.time + SEC(ent->delay);
+            ent->timestamp = level.time + Time_FromSec(ent->delay);
             return 1;
         }
 
@@ -540,7 +540,7 @@ void G_SetStats(edict_t *ent)
     //
     power_armor_type = PowerArmorType(ent);
     index = ArmorIndex(ent);
-    if (power_armor_type && (!index || (TO_MSEC(level.time) % 3000) < 1500)) {
+    if (power_armor_type && (!index || (Time_ToMsec(level.time) % 3000) < 1500)) {
         // flash between power armor and other armor icon
         if (power_armor_type == IT_ITEM_POWER_SHIELD)
             ent->client->ps.stats[STAT_ARMOR_ICON] = G_ImageIndex("i_powershield");
@@ -592,7 +592,7 @@ void G_SetStats(edict_t *ent)
         else // error case
             ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex("i_fixme");
 
-        sec = ceilf(TO_SEC(ent->client->owned_sphere->timestamp - level.time));
+        sec = ceilf(Time_ToSec(ent->client->owned_sphere->timestamp - level.time));
         ent->client->ps.stats[STAT_TIMER] = min(sec, 999);
     } else {
         const powerup_info_t *best_powerup = NULL;
@@ -612,7 +612,7 @@ void G_SetStats(edict_t *ent)
         }
 
         if (best_powerup) {
-            sec = ceilf(TO_SEC(best_time - level.time));
+            sec = ceilf(Time_ToSec(best_time - level.time));
             ent->client->ps.stats[STAT_TIMER_ICON] = G_ImageIndex(GetItemByIndex(best_powerup->item)->icon);
             ent->client->ps.stats[STAT_TIMER] = min(sec, 999);
         } else if (ent->client->silencer_shots) {
@@ -693,7 +693,7 @@ void G_SetStats(edict_t *ent)
         }
 
         if (num_keys_held > 3)
-            key_offset = TO_MSEC(level.time) / 5000;
+            key_offset = Time_ToMsec(level.time) / 5000;
 
         for (int i = 0; i < min(num_keys_held, 3); i++)
             ent->client->ps.stats[STAT_KEY_A + i] = G_ImageIndex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);
@@ -707,7 +707,7 @@ void G_SetStats(edict_t *ent)
     //
     // help icon / current weapon if not shown
     //
-    if (ent->client->help_changed && (TO_MSEC(level.time) % 1000) < 500)
+    if (ent->client->help_changed && (Time_ToMsec(level.time) % 1000) < 500)
         ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex("i_help");
     else if ((ent->client->pers.hand == CENTER_HANDED) && ent->client->pers.weapon)
         ent->client->ps.stats[STAT_HELPICON] = G_ImageIndex(ent->client->pers.weapon->icon);
