@@ -723,35 +723,10 @@ edict_t *G_SpawnTrail(vec3_t start, vec3_t end, entity_event_t event)
     return ent;
 }
 
-// Turns entity into event, preserving only origin/angles and events.
-// Could be more efficient to create temp entity from scratch though.
 void G_BecomeEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
-    vec3_t origin = ent->s.origin;
-    vec3_t angles = ent->s.angles;
-    uint32_t old_event[MAX_EVENTS];
-    uint32_t old_param[MAX_EVENTS];
-
-    for (int i = 0; i < MAX_EVENTS; i++) {
-        old_event[i] = ent->s.event[i];
-        old_param[i] = ent->s.event_param[i];
-    }
-
-    // free entity and immediately reuse it
+    G_TempEntity(ent->s.origin, event, param);
     G_FreeEdict(ent);
-    G_InitEdict(ent);
-
-    ent->s.origin = origin;
-    ent->s.angles = angles;
-    for (int i = 0; i < MAX_EVENTS; i++) {
-        ent->s.event[i] = old_event[i];
-        ent->s.event_param[i] = old_param[i];
-    }
-
-    G_AddEvent(ent, event, param);
-
-    ent->free_after_event = true;
-    trap_LinkEntity(ent);
 }
 
 vec3_t G_SnapVectorTowards(vec3_t v, vec3_t to)
