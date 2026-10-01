@@ -366,7 +366,7 @@ void TOUCH(DBall_BallTouch)(edict_t *ent, edict_t *other, const trace_t *tr, boo
             dot = Vec3_Dot(dir, ent->velocity);
 
             if (dot > 0.7f) {
-                T_Damage(other, ent, ent, vec3_origin, ent->s.origin, 0,
+                T_Damage(other, ent, ent, vec3_origin, ent->s.origin, BYTEDIR_NONE,
                          speed / 10, speed / 10, DAMAGE_NONE, MOD_DBALL_CRUSH);
             }
         }

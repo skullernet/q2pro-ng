@@ -483,7 +483,7 @@ void TOUCH(trigger_push_touch)(edict_t *self, edict_t *other, const trace_t *tr,
             other->client->oldgroundentity = other->groundentity;
             if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT) && (other->fly_sound_debounce_time < level.time)) {
                 other->fly_sound_debounce_time = level.time + Time_FromSec(1.5f);
-                G_StartSound(other, CHAN_AUTO, G_SoundIndex("misc/windfly.wav"), 1, ATTN_NORM);
+                G_StartSound(other, CHAN_AUTO, self->noise_index, 1, ATTN_NORM);
             }
             if (self->movetarget)
                 other->client->landmark_free_fall = true;
@@ -521,7 +521,7 @@ static void trigger_push_effect(edict_t *self)
 
     for (i = 0; i < 10; i++) {
         origin.z += (self->speed * 0.01f) * (i + frandom());
-        G_TempEntity(origin, EV_TUNNEL_SPARKS, MakeLittleLong(0, irandom2(0x74, 0x7C), 1, 0));
+        G_TempEntity(origin, EV_TUNNEL_SPARKS, G_EncodeEffect(BYTEDIR_NONE, irandom2(0x74, 0x7C), 1));
     }
 }
 
@@ -569,8 +569,10 @@ SILENT - doesn't make wind noise
 void SP_trigger_push(edict_t *self)
 {
     InitTrigger(self);
+
     if (!(self->spawnflags & SPAWNFLAG_PUSH_SILENT))
-        G_SoundIndex("misc/windfly.wav");
+        self->noise_index = G_SoundIndex("misc/windfly.wav");
+
     self->touch = trigger_push_touch;
 
     // RAFAEL
@@ -712,7 +714,7 @@ void THINK(hurt_think)(edict_t *self)
             }
         }
 
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
     }
 
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
@@ -748,7 +750,7 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     else
         dflags = DAMAGE_NONE;
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, self->dmg, dflags, MOD_TRIGGER_HURT);
 }
 
 void SP_trigger_hurt(edict_t *self)

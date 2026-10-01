@@ -945,8 +945,8 @@ static inline float Box3_Distance(box3_t a, box3_t b)
 
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 
-#define DIRTOBYTE_NONE  0
-#define DIRTOBYTE_UP    6   // DirToByte({0, 0, 1})
+#define BYTEDIR_NONE    0
+#define BYTEDIR_UP      6   // DirToByte({0, 0, 1})
 
 int DirToByte(vec3_t dir);
 vec3_t ByteToDir(unsigned index);

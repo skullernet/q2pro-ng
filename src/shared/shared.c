@@ -289,7 +289,7 @@ int DirToByte(vec3_t dir)
     float   d, bestd;
 
     bestd = 0;
-    best = 0;
+    best = BYTEDIR_NONE;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
         d = Vec3_Dot(dir, bytedirs[i]);
         if (d > bestd) {
@@ -303,7 +303,7 @@ int DirToByte(vec3_t dir)
 
 vec3_t ByteToDir(unsigned index)
 {
-    if (!index)
+    if (index == BYTEDIR_NONE)
         return vec3_origin;
 
     Q_assert_soft(index <= NUMVERTEXNORMALS);

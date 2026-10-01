@@ -495,7 +495,7 @@ static void setup_shadow_light(edict_t *self)
     self->s.scale = st.sl.intensity;
     self->s.frame = (st.sl.lightstyle + 1) & 255;
     self->vision_cone = st.sl.coneangle;
-
+    self->s.angles = vec3_origin;
     self->s.renderfx = RF_CASTSHADOW;
     self->r.svflags |= SVF_PHS;
 
@@ -1951,7 +1951,7 @@ void TOUCH(fire_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     }
 
     if (other->takedamage)
-        T_Damage(other, self, self, vec3_origin, self->s.origin, 0, 20, 0, DAMAGE_NONE, MOD_EXPLOSIVE);
+        T_Damage(other, self, self, vec3_origin, self->s.origin, BYTEDIR_NONE, 20, 0, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     if (trap_PointContents(self->s.origin) & CONTENTS_LAVA)
         G_FreeEdict(self);

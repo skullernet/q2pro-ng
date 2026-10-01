@@ -30,7 +30,8 @@ extern const game_import_t  *gi;
 typedef enum {
     GAMEDIR_BASE,
     GAMEDIR_PSX,
-    GAMEDIR_COTV
+    GAMEDIR_COTV,
+    GAMEDIR_OTHER
 } gamedir_type_t;
 
 // edict->spawnflags
@@ -1326,6 +1327,8 @@ void G_StartSound(edict_t *ent, soundchan_t channel, int index, float volume, fl
 void G_LocalSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 void G_ReliableSound(edict_t *ent, soundchan_t channel, int index, float volume, float attenuation);
 uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float attenuation);
+#define G_EncodeEffect(dir, color, count) MakeLittleLong(dir, color, count, 0)
+#define G_EncodeSplash(dir, count) MakeLittleShort(dir, count)
 void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param);
 edict_t *G_TempEntity(vec3_t origin, entity_event_t event, uint32_t param);
 edict_t *G_SpawnTrail(vec3_t start, vec3_t end, entity_event_t event);
@@ -2509,12 +2512,12 @@ typedef struct {
     int count;
 } pierce_t;
 
-static inline void pierce_begin(pierce_t *p)
+static inline void G_PierceBegin(pierce_t *p)
 {
     p->count = 0;
 }
 
-static inline bool pierce_mark(pierce_t *p, edict_t *ent)
+static inline bool G_PierceMark(pierce_t *p, edict_t *ent)
 {
     // already deactivated
     if (ent->r.solid == SOLID_NOT)
@@ -2532,7 +2535,7 @@ static inline bool pierce_mark(pierce_t *p, edict_t *ent)
     return true;
 }
 
-static inline void pierce_end(pierce_t *p)
+static inline void G_PierceEnd(pierce_t *p)
 {
     for (int i = 0; i < p->count; i++) {
         pierce_entry_t *e = &p->entries[i];
@@ -2546,7 +2549,7 @@ static inline edict_t *ThrowGib(edict_t *self, const char *gibname, int damage, 
     return ThrowGibEx(self, gibname, damage, type, 0, self->s.scale);
 }
 
-static inline bool M_CheckGib(edict_t *self, mod_t mod)
+static inline bool M_CheckGib(const edict_t *self, mod_t mod)
 {
     if (self->deadflag && mod == MOD_CRUSH)
         return true;
@@ -2554,7 +2557,7 @@ static inline bool M_CheckGib(edict_t *self, mod_t mod)
     return self->health <= self->gib_health;
 }
 
-static inline bool M_ClientInvisible(edict_t *ent)
+static inline bool M_ClientInvisible(const edict_t *ent)
 {
     return ent->client && ent->client->invisible_time > level.time && ent->client->invisibility_fade_time <= level.time;
 }
@@ -2570,12 +2573,12 @@ static inline const char *vtoa(vec3_t p)
     return va("%.f %.f %.f", p.x, p.y, p.z);
 }
 
-static inline vec3_t G_EntityCenter(edict_t *ent)
+static inline vec3_t G_EntityCenter(const edict_t *ent)
 {
     return Vec3_Add(ent->s.origin, Box3_Center(ent->r.box));
 }
 
-static inline float G_EntityScale(edict_t *ent)
+static inline float G_EntityScale(const edict_t *ent)
 {
     return ent->s.scale ? ent->s.scale : 1.0f;
 }

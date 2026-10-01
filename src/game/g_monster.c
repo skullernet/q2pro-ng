@@ -271,7 +271,7 @@ void M_WorldEffects(edict_t *ent)
 
         if (take_drown_damage && ent->pain_debounce_time < level.time) {
             dmg = 2 + (int)(2 * floorf(Time_ToSec(level.time - ent->air_finished)));
-            T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, min(dmg, 15), 0, DAMAGE_NO_ARMOR, MOD_WATER);
+            T_Damage(ent, world, world, vec3_origin, ent->s.origin, BYTEDIR_NONE, min(dmg, 15), 0, DAMAGE_NO_ARMOR, MOD_WATER);
             ent->pain_debounce_time = level.time + Time_FromSec(1);
         }
     }
@@ -285,13 +285,13 @@ void M_WorldEffects(edict_t *ent)
         if ((ent->watertype & CONTENTS_LAVA) && !(ent->flags & FL_IMMUNE_LAVA)) {
             if (ent->damage_debounce_time < level.time) {
                 ent->damage_debounce_time = level.time + Time_FromSec(0.1f);
-                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 10 * ent->waterlevel, 0, DAMAGE_NONE, MOD_LAVA);
+                T_Damage(ent, world, world, vec3_origin, ent->s.origin, BYTEDIR_NONE, 10 * ent->waterlevel, 0, DAMAGE_NONE, MOD_LAVA);
             }
         }
         if ((ent->watertype & CONTENTS_SLIME) && !(ent->flags & FL_IMMUNE_SLIME)) {
             if (ent->damage_debounce_time < level.time) {
                 ent->damage_debounce_time = level.time + Time_FromSec(0.1f);
-                T_Damage(ent, world, world, vec3_origin, ent->s.origin, 0, 4 * ent->waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
+                T_Damage(ent, world, world, vec3_origin, ent->s.origin, BYTEDIR_NONE, 4 * ent->waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
             }
         }
 

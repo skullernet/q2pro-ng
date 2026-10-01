@@ -342,7 +342,7 @@ static void blastoff(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int
 
                 if (color != EV_SPLASH_UNKNOWN) {
                     pos = G_SnapVectorTowards(tr.endpos, start);
-                    G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
+                    G_TempEntity(pos, color, G_EncodeSplash(tr.plane.dir, 8));
                 }
 
                 // change bullet's course when it enters water

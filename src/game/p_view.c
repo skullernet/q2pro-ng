@@ -451,7 +451,8 @@ static void P_WorldEffects(void)
 
                 current_player->pain_debounce_time = level.time;
 
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, current_player->dmg, 0, DAMAGE_NO_ARMOR, MOD_WATER);
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin,
+                         BYTEDIR_NONE, current_player->dmg, 0, DAMAGE_NO_ARMOR, MOD_WATER);
             }
         // Paril: almost-drowning sounds
         } else if (current_player->air_finished <= level.time + Time_FromSec(3)) {
@@ -481,14 +482,14 @@ static void P_WorldEffects(void)
 
             int dmg = (envirosuit ? 1 : 3) * waterlevel; // take 1/3 damage with envirosuit
 
-            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, dmg, 0, DAMAGE_NONE, MOD_LAVA);
+            T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, BYTEDIR_NONE, dmg, 0, DAMAGE_NONE, MOD_LAVA);
             current_player->slime_debounce_time = level.time + Time_FromHertz(10);
         }
 
         if (current_player->watertype & CONTENTS_SLIME) {
             if (!envirosuit) {
                 // no damage from slime with envirosuit
-                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, 0, 1 * waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
+                T_Damage(current_player, world, world, vec3_origin, current_player->s.origin, BYTEDIR_NONE, 1 * waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
                 current_player->slime_debounce_time = level.time + Time_FromHertz(10);
             }
         }

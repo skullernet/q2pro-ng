@@ -77,7 +77,7 @@ static vec3_t event_lighting_pierce(edict_t *self)
         .mask = MASK_SHOT
     };
 
-    pierce_begin(&pierce);
+    G_PierceBegin(&pierce);
 
     do {
         tr = trap_Trace(&args);
@@ -91,16 +91,16 @@ static vec3_t event_lighting_pierce(edict_t *self)
         // hurt it if we can
         if (!strcmp(hit->classname, "monster_chthon")) {
             hit->takedamage = true;
-            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, 0, self->dmg, 1, DAMAGE_ENERGY, MOD_TARGET_LASER);
+            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, BYTEDIR_NONE, self->dmg, 1, DAMAGE_ENERGY, MOD_TARGET_LASER);
             hit->takedamage = false;
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client) && !(hit->flags & FL_DAMAGEABLE))
             break;
-    } while (pierce_mark(&pierce, hit));
+    } while (G_PierceMark(&pierce, hit));
 
-    pierce_end(&pierce);
+    G_PierceEnd(&pierce);
 
     return tr.endpos;
 }

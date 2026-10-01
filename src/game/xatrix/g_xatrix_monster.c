@@ -41,7 +41,7 @@ void dabeam_update(edict_t *self, bool damage)
         .mask = CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_PLAYER | CONTENTS_DEADMONSTER
     };
 
-    pierce_begin(&pierce);
+    G_PierceBegin(&pierce);
 
     do {
         tr = trap_Trace(&args);
@@ -55,7 +55,7 @@ void dabeam_update(edict_t *self, bool damage)
         if (damage) {
             // hurt it if we can
             if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
-                T_Damage(hit, self, owner, self->movedir, tr.endpos, 0,
+                T_Damage(hit, self, owner, self->movedir, tr.endpos, BYTEDIR_NONE,
                          self->dmg, skill.integer, DAMAGE_ENERGY, MOD_TARGET_LASER);
 
             if (self->dmg < 0) { // healer ray
@@ -71,13 +71,13 @@ void dabeam_update(edict_t *self, bool damage)
         if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client)) {
             if (damage) {
                 vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
-                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, 10, 0));
+                G_TempEntity(pos, EV_LASER_SPARKS, G_EncodeEffect(tr.plane.dir, self->s.skinnum & 255, 10));
             }
             break;
         }
-    } while (pierce_mark(&pierce, hit));
+    } while (G_PierceMark(&pierce, hit));
 
-    pierce_end(&pierce);
+    G_PierceEnd(&pierce);
 
     self->s.old_origin = G_SnapVector(tr.endpos);
     trap_LinkEntity(self);

@@ -230,7 +230,7 @@ void abortHeal(edict_t *self, bool gib, bool mark)
                 hurt = 500;
 
             T_Damage(self->enemy, self, self, vec3_origin, self->enemy->s.origin,
-                     DIRTOBYTE_UP, hurt, 0, DAMAGE_NONE, MOD_UNKNOWN);
+                     BYTEDIR_UP, hurt, 0, DAMAGE_NONE, MOD_UNKNOWN);
         }
 
         fixHealerEnemy(self);

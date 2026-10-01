@@ -9,7 +9,7 @@ pointers = {
     'touch'     : 'void {p}(edict_t *, edict_t *, const trace_t *, bool)',
     'use'       : 'void {p}(edict_t *, edict_t *, edict_t *)',
     'pain'      : 'void {p}(edict_t *, edict_t *, float, int, mod_t)',
-    'die'       : 'void {p}(edict_t *, edict_t *, edict_t *, int, const vec3_t, mod_t)',
+    'die'       : 'void {p}(edict_t *, edict_t *, edict_t *, int, vec3_t, mod_t)',
     'moveinfo_endfunc'          : 'void {p}(edict_t *)',
     'moveinfo_blocked'          : 'void {p}(edict_t *, edict_t *)',
     'mmove_t'                   : 'const mmove_t {p}',
@@ -29,7 +29,6 @@ pointers = {
     'monsterinfo_duck'          : 'bool {p}(edict_t *, gtime_t)',
     'monsterinfo_unduck'        : 'void {p}(edict_t *)',
     'monsterinfo_sidestep'      : 'bool {p}(edict_t *)',
-
 }
 
 if __name__ == "__main__":

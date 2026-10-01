@@ -465,7 +465,7 @@ void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
         // if it's still there, nuke it
         if (other->r.inuse && other->r.solid) // PGM
             BecomeExplosion1(other);
@@ -475,10 +475,10 @@ void MOVEINFO_BLOCKED(plat_blocked)(edict_t *self, edict_t *other)
     // PGM
     //  gib dead things
     if (other->health < 1)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100, 1, DAMAGE_NONE, MOD_CRUSH);
     // PGM
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 
     // [Paril-KEX] killed the thing, so don't switch directions
     if (!other->r.inuse || !other->r.solid)
@@ -715,13 +715,13 @@ void MOVEINFO_BLOCKED(rotating_blocked)(edict_t *self, edict_t *other)
     if (level.time < self->touch_debounce_time)
         return;
     self->touch_debounce_time = level.time + Time_FromHertz(10);
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
 void TOUCH(rotating_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
     if (!Vec3_IsEmpty(self->avelocity))
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
 void USE(rotating_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1389,20 +1389,19 @@ void MOVEINFO_BLOCKED(door_blocked)(edict_t *self, edict_t *other)
 
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
         // if it's still there, nuke it
         if (other->r.inuse)
             BecomeExplosion1(other);
         return;
     }
 
-    if (self->dmg && !(level.time < self->touch_debounce_time)) {
+    if (self->dmg && level.time >= self->touch_debounce_time) {
         self->touch_debounce_time = level.time + Time_FromHertz(10);
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
     }
 
-    // [Paril-KEX] don't allow wait -1 doors to return
-    if ((self->spawnflags & SPAWNFLAG_DOOR_CRUSHER) || self->wait == -1)
+    if (self->spawnflags & SPAWNFLAG_DOOR_CRUSHER)
         return;
 
     // if a door has a negative wait, it would never come back if blocked,
@@ -1711,14 +1710,14 @@ void MOVEINFO_BLOCKED(smart_water_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_LAVA);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_LAVA);
         // if it's still there, nuke it
         if (other->r.inuse && other->r.solid) // PGM
             BecomeExplosion1(other);
         return;
     }
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100, 1, DAMAGE_NONE, MOD_LAVA);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100, 1, DAMAGE_NONE, MOD_LAVA);
 }
 
 /*QUAKED func_water (0 .5 .8) ? START_OPEN SMART
@@ -1828,7 +1827,7 @@ void MOVEINFO_BLOCKED(train_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
         // if it's still there, nuke it
         if (other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
@@ -1841,7 +1840,7 @@ void MOVEINFO_BLOCKED(train_blocked)(edict_t *self, edict_t *other)
     if (!self->dmg)
         return;
     self->touch_debounce_time = level.time + Time_FromSec(0.5f);
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
 void MOVEINFO_ENDFUNC(train_wait)(edict_t *self)
@@ -1936,16 +1935,9 @@ again:
 
     // PGM
     if (ent->speed) {
-        self->speed = ent->speed;
-        self->moveinfo.speed = ent->speed;
-        if (ent->accel)
-            self->moveinfo.accel = ent->accel;
-        else
-            self->moveinfo.accel = ent->speed;
-        if (ent->decel)
-            self->moveinfo.decel = ent->decel;
-        else
-            self->moveinfo.decel = ent->speed;
+        self->moveinfo.speed = self->speed = ent->speed;
+        self->moveinfo.accel = ent->accel ?: ent->speed;
+        self->moveinfo.decel = ent->decel ?: ent->speed;
         self->moveinfo.current_speed = 0;
         G_ScaleMoveinfoAccel(self);
     }
@@ -2015,16 +2007,9 @@ static void train_resume(edict_t *self)
 
     // PGM (Paril)
     if (ent->speed) {
-        self->speed = ent->speed;
-        self->moveinfo.speed = ent->speed;
-        if (ent->accel)
-            self->moveinfo.accel = ent->accel;
-        else
-            self->moveinfo.accel = ent->speed;
-        if (ent->decel)
-            self->moveinfo.decel = ent->decel;
-        else
-            self->moveinfo.decel = ent->speed;
+        self->moveinfo.speed = self->speed = ent->speed;
+        self->moveinfo.accel = ent->accel ?: ent->speed;
+        self->moveinfo.decel = ent->decel ?: ent->speed;
         self->moveinfo.current_speed = 0;
         G_ScaleMoveinfoAccel(self);
     }
@@ -2364,7 +2349,7 @@ void MOVEINFO_BLOCKED(door_secret_blocked)(edict_t *self, edict_t *other)
 {
     if (!(other->r.svflags & SVF_MONSTER) && (!other->client)) {
         // give it a chance to go away on it's own terms (like gibs)
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_CRUSH);
         // if it's still there, nuke it
         if (other->r.inuse && other->r.solid)
             BecomeExplosion1(other);
@@ -2375,7 +2360,7 @@ void MOVEINFO_BLOCKED(door_secret_blocked)(edict_t *self, edict_t *other)
         return;
     self->touch_debounce_time = level.time + Time_FromSec(0.5f);
 
-    T_Damage(other, self, self, vec3_origin, other->s.origin, 0, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
+    T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
 void DIE(door_secret_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)

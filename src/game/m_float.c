@@ -500,9 +500,9 @@ static void floater_zap(edict_t *self)
     G_StartSound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM);
 
     // FIXME use the flash, Luke
-    G_TempEntity(origin, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
+    G_TempEntity(origin, EV_SPLASH_SPARKS, G_EncodeSplash(DirToByte(dir), 32));
 
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, 0, irandom2(5, 11), -10, DAMAGE_ENERGY, MOD_UNKNOWN);
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, BYTEDIR_NONE, irandom2(5, 11), -10, DAMAGE_ENERGY, MOD_UNKNOWN);
 }
 
 void MONSTERINFO_ATTACK(floater_attack)(edict_t *self)

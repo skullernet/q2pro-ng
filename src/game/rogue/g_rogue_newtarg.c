@@ -180,7 +180,7 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
 
         FOR_EACH_PLAYER(player) {
             if (trap_InVis(player->s.origin, ent->s.origin, VIS_PVS)) {
-                T_Damage(ent, self, self, vec3_origin, ent->s.origin, 0,
+                T_Damage(ent, self, self, vec3_origin, ent->s.origin, BYTEDIR_NONE,
                          ent->health, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
                 break;
             }
@@ -190,7 +190,8 @@ void USE(target_killplayers_use)(edict_t *self, edict_t *other, edict_t *activat
     // kill the players
     FOR_EACH_PLAYER(player) {
         // nail it
-        T_Damage(player, self, self, vec3_origin, self->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
+        T_Damage(player, self, self, vec3_origin, self->s.origin, BYTEDIR_NONE,
+                 100000, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
     }
 
     level.deadly_kill_box = false;

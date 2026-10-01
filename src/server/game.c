@@ -66,7 +66,7 @@ static void PF_ClientCommand(edict_t *ent, const char *str, bool reliable)
 ===============
 PF_ClientConfigstring
 
-Send private configstring to specified client. If ent is NULL, send to everyone.
+Send configstring command to specified client. If ent is NULL, send to everyone.
 ===============
 */
 static void PF_ClientConfigstring(edict_t *ent, unsigned index, const char *str, bool reliable)

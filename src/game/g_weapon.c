@@ -68,7 +68,7 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
     dir = Vec3_Sub(point, self->enemy->s.origin);
 
     // do the damage
-    T_Damage(hit, self, self, dir, point, 0, damage, kick / 2, DAMAGE_NO_KNOCKBACK, MOD_HIT);
+    T_Damage(hit, self, self, dir, point, BYTEDIR_NONE, damage, kick / 2, DAMAGE_NO_KNOCKBACK, MOD_HIT);
 
     if (!(hit->r.svflags & SVF_MONSTER) && (!hit->client))
         return false;
@@ -88,7 +88,7 @@ static trace_t fire_lead_pierce(edict_t *self, vec3_t start, vec3_t end, vec3_t 
 {
     trace_t tr;
     pierce_t pierce;
-    pierce_begin(&pierce);
+    G_PierceBegin(&pierce);
 
     while (1) {
         tr = G_TraceLine(start, end, self->s.number, *mask);
@@ -117,7 +117,7 @@ static trace_t fire_lead_pierce(edict_t *self, vec3_t start, vec3_t end, vec3_t 
 
                 if (color != EV_SPLASH_UNKNOWN) {
                     vec3_t pos = G_SnapVectorTowards(tr.endpos, start);
-                    G_TempEntity(pos, color, MakeLittleShort(tr.plane.dir, 8));
+                    G_TempEntity(pos, color, G_EncodeSplash(tr.plane.dir, 8));
                 }
 
                 // change bullet's course when it enters water
@@ -146,7 +146,7 @@ static trace_t fire_lead_pierce(edict_t *self, vec3_t start, vec3_t end, vec3_t 
             // only deadmonster is pierceable, or actual dead monsters
             // that haven't been made non-solid yet
             if ((hit->r.svflags & SVF_DEADMONSTER) || (hit->health <= 0 && (hit->r.svflags & SVF_MONSTER))) {
-                if (pierce_mark(&pierce, hit))
+                if (G_PierceMark(&pierce, hit))
                     continue;
             }
         } else {
@@ -165,7 +165,7 @@ static trace_t fire_lead_pierce(edict_t *self, vec3_t start, vec3_t end, vec3_t 
         break;
     }
 
-    pierce_end(&pierce);
+    G_PierceEnd(&pierce);
     return tr;
 }
 
@@ -599,7 +599,7 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
         .mask = G_ProjectileClipmask(self)
     };
 
-    pierce_begin(&pierce);
+    G_PierceBegin(&pierce);
 
     while (1) {
         tr = trap_Trace(&args);
@@ -615,7 +615,7 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
             T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_NONE, MOD_RAILGUN);
 
         // dead, so we don't need to care about checking pierce
-        if (!hit->r.inuse || (!hit->r.solid || hit->r.solid == SOLID_TRIGGER))
+        if (!hit->r.inuse || !hit->r.solid || hit->r.solid == SOLID_TRIGGER)
             continue;
 
         // ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
@@ -624,7 +624,7 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
             (hit->flags & FL_DAMAGEABLE) ||
             // ROGUE
             (hit->r.solid == SOLID_BBOX)) {
-            if (pierce_mark(&pierce, hit))
+            if (G_PierceMark(&pierce, hit))
                 continue;
         }
 
@@ -632,7 +632,7 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
         break;
     }
 
-    pierce_end(&pierce);
+    G_PierceEnd(&pierce);
 
     // send gun puff / flash
     G_SpawnTrail(start, tr.endpos, (deathmatch.integer && g_instagib.integer) ? EV_RAILTRAIL2 : EV_RAILTRAIL);
@@ -641,11 +641,6 @@ bool fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
         PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
 
     return pierce.count;
-}
-
-static vec3_t bfg_laser_pos(vec3_t p, float dist)
-{
-    return Vec3_MA(p, dist, Vec3_RandomDir());
 }
 
 void THINK(bfg_laser_update)(edict_t *self)
@@ -664,7 +659,7 @@ void THINK(bfg_laser_update)(edict_t *self)
 
 static void bfg_spawn_laser(edict_t *self)
 {
-    vec3_t end = bfg_laser_pos(self->s.origin, 256);
+    vec3_t end = Vec3_MA(self->s.origin, 256, Vec3_RandomDir());
     trace_t tr = G_TraceLine(self->s.origin, end, self->s.number, MASK_OPAQUE | CONTENTS_PROJECTILECLIP);
     if (tr.fraction == 1.0f)
         return;
@@ -725,7 +720,7 @@ void THINK(bfg_explode)(edict_t *self)
             dist = Vec3_Distance(self->s.origin, centroid);
             points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-            T_Damage(ent, self, owner, self->velocity, centroid, 0, points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
+            T_Damage(ent, self, owner, self->velocity, centroid, BYTEDIR_NONE, points, 0, DAMAGE_ENERGY, MOD_BFG_EFFECT);
 
             // Paril: draw BFG lightning laser to enemies
             G_SpawnTrail(self->s.origin, centroid, EV_BFG_ZAP);
@@ -828,7 +823,7 @@ void THINK(bfg_think)(edict_t *self)
         };
 
         pierce_t pierce;
-        pierce_begin(&pierce);
+        G_PierceBegin(&pierce);
 
         do {
             tr = trap_Trace(&args);
@@ -841,17 +836,17 @@ void THINK(bfg_think)(edict_t *self)
 
             // hurt it if we can
             if ((hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && (hit != owner))
-                T_Damage(hit, self, owner, dir, tr.endpos, 0, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
+                T_Damage(hit, self, owner, dir, tr.endpos, BYTEDIR_NONE, dmg, 1, DAMAGE_ENERGY, MOD_BFG_LASER);
 
             // if we hit something that's not a monster or player we're done
             if (!(hit->r.svflags & SVF_MONSTER) && !(hit->flags & FL_DAMAGEABLE) && (!hit->client)) {
                 vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
-                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, 208, 4, 0));
+                G_TempEntity(pos, EV_LASER_SPARKS, G_EncodeEffect(tr.plane.dir, 208, 4));
                 break;
             }
-        } while (pierce_mark(&pierce, hit));
+        } while (G_PierceMark(&pierce, hit));
 
-        pierce_end(&pierce);
+        G_PierceEnd(&pierce);
 
         G_SpawnTrail(self->s.origin, tr.endpos, EV_BFG_LASER);
     }

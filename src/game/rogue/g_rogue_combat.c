@@ -64,7 +64,7 @@ void T_RadiusNukeDamage(edict_t *inflictor, edict_t *attacker, float damage, edi
             if (ent->client)
                 ent->client->nuke_time = level.time + Time_FromSec(2);
             dir = Vec3_Sub(ent->s.origin, inflictor->s.origin);
-            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, 0, points, points, DAMAGE_RADIUS, mod);
+            T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, BYTEDIR_NONE, points, points, DAMAGE_RADIUS, mod);
         }
     }
 

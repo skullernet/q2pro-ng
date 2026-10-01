@@ -62,7 +62,7 @@ typedef enum {
     AREA_NONE,
     AREA_SOLID,
     AREA_TRIGGERS,
-    AREA_ANY
+    AREA_ALL
 } areatype_t;
 
 //===============================================================

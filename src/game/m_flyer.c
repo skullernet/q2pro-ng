@@ -236,7 +236,7 @@ static void flyer_kamikaze_explode(edict_t *self)
 
     if (self->enemy) {
         dir = Vec3_Sub(self->enemy->s.origin, self->s.origin);
-        T_Damage(self->enemy, self, self, dir, self->s.origin, 0, 50, 50, DAMAGE_RADIUS, MOD_UNKNOWN);
+        T_Damage(self->enemy, self, self, dir, self->s.origin, BYTEDIR_NONE, 50, 50, DAMAGE_RADIUS, MOD_UNKNOWN);
     }
 
     flyer_die(self, NULL, NULL, 0, dir, MOD_EXPLOSIVE);
@@ -667,7 +667,7 @@ bool MONSTERINFO_BLOCKED(flyer_blocked)(edict_t *self, float dist)
 
         // if the above didn't blow us up (i.e. I got blocked by the player)
         if (self->r.inuse)
-            T_Damage(self, self, self, vec3_origin, self->s.origin, 0, 9999, 100, DAMAGE_NONE, MOD_UNKNOWN);
+            T_Damage(self, self, self, vec3_origin, self->s.origin, BYTEDIR_NONE, 9999, 100, DAMAGE_NONE, MOD_UNKNOWN);
 
         return true;
     }
@@ -692,7 +692,7 @@ void TOUCH(flyer_touch)(edict_t *ent, edict_t *other, const trace_t *tr, bool ot
         vec3_t dir = Vec3_Direction(ent->s.origin, other->s.origin);
         ent->velocity = Vec3_Scale(dir, 500);
 
-        G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, MakeLittleShort(DirToByte(dir), 32));
+        G_TempEntity(tr->endpos, EV_SPLASH_SPARKS, G_EncodeSplash(DirToByte(dir), 32));
     }
 }
 

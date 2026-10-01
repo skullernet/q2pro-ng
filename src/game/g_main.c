@@ -356,6 +356,8 @@ qvm_exported void G_Init(void)
         game.dirtype = GAMEDIR_PSX;
     else if (!Q_stricmp(buf, "q1q2"))
         game.dirtype = GAMEDIR_COTV;
+    else if (*buf)
+        game.dirtype = GAMEDIR_OTHER;
     else
         game.dirtype = GAMEDIR_BASE;
 }

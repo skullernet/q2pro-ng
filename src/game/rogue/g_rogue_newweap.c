@@ -1147,7 +1147,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
     vec3_t center = G_EntityCenter(self->enemy);
 
     edict_t *owner = &g_edicts[self->r.ownernum];
-    T_Damage(self->enemy, self, owner, vec3_origin, center, DIRTOBYTE_UP,
+    T_Damage(self->enemy, self, owner, vec3_origin, center, BYTEDIR_UP,
              self->dmg, 0, TRACKER_DAMAGE_FLAGS, MOD_TRACKER);
 
     // if we kill the player, we'll be removed.
@@ -1161,7 +1161,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
             else
                 hurt = 500;
 
-            T_Damage(self->enemy, self, owner, vec3_origin, center, DIRTOBYTE_UP,
+            T_Damage(self->enemy, self, owner, vec3_origin, center, BYTEDIR_UP,
                      hurt, 0, TRACKER_DAMAGE_FLAGS, MOD_TRACKER);
         }
 

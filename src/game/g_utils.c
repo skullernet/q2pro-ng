@@ -583,7 +583,7 @@ void G_KillBox(edict_t *ent, killbox_t flags, mod_t mod)
         if (flags & KILLBOX_SAFETY && G_FixStuckObject(hit, hit->s.origin) != NO_GOOD_POSITION)
             continue;
 
-        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, 0, 100000, 0, DAMAGE_NO_PROTECTION, mod);
+        T_Damage(hit, ent, ent, vec3_origin, ent->s.origin, BYTEDIR_NONE, 100000, 0, DAMAGE_NO_PROTECTION, mod);
     }
 }
 
@@ -661,7 +661,7 @@ void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
     if (!event)
         return;
 
-    if (G_IsHearableEvent(event) && !(ent->r.svflags & SVF_PHS)) {
+    if (!(ent->r.svflags & SVF_PHS) && G_IsHearableEvent(event)) {
         ent->r.svflags |= SVF_PHS;
         ent->remove_phs_after_event = true;
     }

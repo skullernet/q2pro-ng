@@ -101,7 +101,7 @@ void TOUCH(shalrath_pod_touch)(edict_t *self, edict_t *other, const trace_t *tr,
         return;
 
     if (!strncmp(other->classname, CONST_STR_LEN("monster_zombie"))) // decino: According to shalrath.qc
-        T_Damage(other, self, owner, vec3_origin, other->s.origin, 0, 110, 110, DAMAGE_NONE, MOD_UNKNOWN);
+        T_Damage(other, self, owner, vec3_origin, other->s.origin, BYTEDIR_NONE, 110, 110, DAMAGE_NONE, MOD_UNKNOWN);
 
     T_RadiusDamage(self, owner, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
@@ -124,7 +124,7 @@ void THINK(shalrath_pod_home)(edict_t *self)
     dir = Vec3_Direction(end, self->s.origin);
     self->velocity = Vec3_Scale(dir, (skill.integer >= 3) ? 350 : 250);
 
-    G_AddEvent(self, EV_TUNNEL_SPARKS, MakeLittleLong(0, 15, 255, 0));
+    G_AddEvent(self, EV_TUNNEL_SPARKS, G_EncodeEffect(BYTEDIR_NONE, 15, 255));
 
     self->nextthink = level.time + Time_FromHertz(5);
     self->think = shalrath_pod_home;

@@ -234,13 +234,9 @@ typedef struct {
 } clientinfo_t;
 
 typedef struct {
-    qhandle_t   ric1;
-    qhandle_t   ric2;
-    qhandle_t   ric3;
+    qhandle_t   ric[3];
     qhandle_t   lashit;
-    qhandle_t   spark5;
-    qhandle_t   spark6;
-    qhandle_t   spark7;
+    qhandle_t   sparks[3];
     qhandle_t   railg;
     qhandle_t   rockexp;
     qhandle_t   grenexp;

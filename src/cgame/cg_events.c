@@ -182,13 +182,13 @@ CG_RegisterTEntSounds
 */
 void CG_RegisterTEntSounds(void)
 {
-    cgs.sounds.ric1 = trap_S_RegisterSound("world/ric1.wav");
-    cgs.sounds.ric2 = trap_S_RegisterSound("world/ric2.wav");
-    cgs.sounds.ric3 = trap_S_RegisterSound("world/ric3.wav");
+    cgs.sounds.ric[0] = trap_S_RegisterSound("world/ric1.wav");
+    cgs.sounds.ric[1] = trap_S_RegisterSound("world/ric2.wav");
+    cgs.sounds.ric[2] = trap_S_RegisterSound("world/ric3.wav");
     cgs.sounds.lashit = trap_S_RegisterSound("weapons/lashit.wav");
-    cgs.sounds.spark5 = trap_S_RegisterSound("world/spark5.wav");
-    cgs.sounds.spark6 = trap_S_RegisterSound("world/spark6.wav");
-    cgs.sounds.spark7 = trap_S_RegisterSound("world/spark7.wav");
+    cgs.sounds.sparks[0] = trap_S_RegisterSound("world/spark5.wav");
+    cgs.sounds.sparks[1] = trap_S_RegisterSound("world/spark6.wav");
+    cgs.sounds.sparks[2] = trap_S_RegisterSound("world/spark7.wav");
     cgs.sounds.railg = trap_S_RegisterSound("weapons/railgf1a.wav");
     cgs.sounds.rockexp = trap_S_RegisterSound("weapons/rocklx1a.wav");
     cgs.sounds.grenexp = trap_S_RegisterSound("weapons/grenlx1a.wav");
@@ -875,33 +875,23 @@ static void CG_SoundEvent(const centity_t *cent, entity_event_t event, uint32_t 
         trap_S_StartSound(cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
-static void CG_SplashEvent(centity_t *cent, entity_event_t color, uint32_t param)
+static void CG_SplashEvent(const centity_t *cent, entity_event_t color, uint32_t param)
 {
     int count = (param >> 8) & 255;
     vec3_t pos = cent->current.origin;
     vec3_t dir = ByteToDir(param & 255);
-    int r;
 
     if (color == EV_SPLASH_ELECTRIC_N64) {
         CG_ParticleEffect(pos, dir, 0x6c, count / 2);
         CG_ParticleEffect(pos, dir, 0xb0, (count + 1) / 2);
     } else {
         static const byte splash_color[] = { 0x00, 0xe0, 0xb0, 0x50, 0xd0, 0xe0, 0xe8 };
-        if (color - EV_SPLASH_UNKNOWN >= q_countof(splash_color))
-            r = 0x00;
-        else
-            r = splash_color[color - EV_SPLASH_UNKNOWN];
-        CG_ParticleEffect(pos, dir, r, count);
+        CG_ParticleEffect(pos, dir, splash_color[color - EV_SPLASH_UNKNOWN], count);
     }
 
     if (color == EV_SPLASH_SPARKS || color == EV_SPLASH_ELECTRIC_N64) {
-        r = Q_rand() & 3;
-        if (r == 0)
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark5, 1, ATTN_STATIC, 0);
-        else if (r == 1)
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark6, 1, ATTN_STATIC, 0);
-        else
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.spark7, 1, ATTN_STATIC, 0);
+        int r = Q_rand() & 3;
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.sparks[r == 3 ? 2 : r], 1, ATTN_STATIC, 0);
     }
 }
 
@@ -979,7 +969,7 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     case EV_SCREEN_SPARKS:
     case EV_SHIELD_SPARKS:
     case EV_ELECTRIC_SPARKS:
-        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, 257, cgs.sounds.lashit, 1, ATTN_NORM, 0);
+        trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_HIT, cgs.sounds.lashit, 1, ATTN_NORM, 0);
         break;
     default:
         break;
@@ -987,12 +977,8 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
 
     if (type == EV_GUNSHOT || type == EV_NAILS || type == EV_BULLET_SPARKS) {
         int r = Q_rand() & 15;
-        if (r == 1)
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric1, 1, ATTN_NORM, 0);
-        else if (r == 2)
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric2, 1, ATTN_NORM, 0);
-        else if (r == 3)
-            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric3, 1, ATTN_NORM, 0);
+        if (r < 3)
+            trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.ric[r], 1, ATTN_NORM, 0);
     }
 
     if (type == EV_WELDING_SPARKS)

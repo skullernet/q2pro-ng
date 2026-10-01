@@ -1093,6 +1093,8 @@ void THINK(droptofloor)(edict_t *ent)
             }
             // RAFAEL
         }
+
+        ent->s.old_origin = ent->s.origin;
     }
 
     if (ent->team) {

@@ -28,7 +28,7 @@ void THINK(rotating_light_alarm)(edict_t *self)
 
 void DIE(rotating_light_killed)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
-    G_BecomeEvent(self, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 30, 0));
+    G_BecomeEvent(self, EV_WELDING_SPARKS, G_EncodeEffect(BYTEDIR_NONE, irandom2(0xe0, 0xe8), 30));
 }
 
 void USE(rotating_light_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -99,7 +99,7 @@ void THINK(object_repair_fx)(edict_t *ent)
     if (ent->health <= 100)
         ent->health++;
     else
-        G_AddEvent(ent, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
+        G_AddEvent(ent, EV_WELDING_SPARKS, G_EncodeEffect(BYTEDIR_NONE, irandom2(0xe0, 0xe8), 10));
 }
 
 void THINK(object_repair_dead)(edict_t *ent)
@@ -119,7 +119,7 @@ void THINK(object_repair_sparks)(edict_t *ent)
 
     ent->nextthink = level.time + Time_FromSec(ent->delay);
 
-    G_AddEvent(ent, EV_WELDING_SPARKS, MakeLittleLong(0, irandom2(0xe0, 0xe8), 10, 0));
+    G_AddEvent(ent, EV_WELDING_SPARKS, G_EncodeEffect(BYTEDIR_NONE, irandom2(0xe0, 0xe8), 10));
 }
 
 void SP_object_repair(edict_t *ent)

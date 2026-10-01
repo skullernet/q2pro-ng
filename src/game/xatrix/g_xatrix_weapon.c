@@ -412,7 +412,7 @@ void THINK(Trap_Think)(edict_t *ent)
     ent->r.solid = SOLID_NOT;
     ent->die = NULL;
 
-    T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, 0, 100000, 1, DAMAGE_NONE, MOD_TRAP);
+    T_Damage(best, ent, ent->teammaster, vec3_origin, best->s.origin, BYTEDIR_NONE, 100000, 1, DAMAGE_NONE, MOD_TRAP);
 
     if (best->r.svflags & SVF_MONSTER)
         M_ProcessPain(best);

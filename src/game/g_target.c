@@ -459,7 +459,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
 
     // if noexit, do a ton of damage to other
     if (deathmatch.integer && !g_dm_allow_exit.integer && other != world) {
-        T_Damage(other, self, self, vec3_origin, other->s.origin, 0, 10 * other->max_health, 1000, DAMAGE_NONE, MOD_EXIT);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, 10 * other->max_health, 1000, DAMAGE_NONE, MOD_EXIT);
         return;
     }
 
@@ -567,11 +567,11 @@ void SP_target_splash(edict_t *self)
 
     if (self->sounds >= q_countof(splash_events)) {
         G_Printf("%s has bad sounds", etos(self));
-        self->sounds = 0;
+        self->sounds = SPLASH_UNKNOWN;
     }
 
     self->sounds = splash_events[self->sounds];
-    self->count  = MakeLittleShort(DirToByte(self->movedir), self->count & 255);
+    self->count  = G_EncodeSplash(DirToByte(self->movedir), self->count & 255);
 
     trap_LinkEntity(self);
 }
@@ -794,7 +794,7 @@ void THINK(target_laser_think)(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_LASER_NO_PROTECTION)
         dmg |= DAMAGE_NO_PROTECTION;
 
-    pierce_begin(&pierce);
+    G_PierceBegin(&pierce);
 
     do {
         tr = trap_Trace(&args);
@@ -808,7 +808,7 @@ void THINK(target_laser_think)(edict_t *self)
         // hurt it if we can
         if (self->dmg > 0 && (hit->takedamage) && !(hit->flags & FL_IMMUNE_LASER) && self->damage_debounce_time <= level.time) {
             damaged_thing = true;
-            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, 0, self->dmg, 1, dmg, MOD_TARGET_LASER);
+            T_Damage(hit, self, self->activator, self->movedir, tr.endpos, BYTEDIR_NONE, self->dmg, 1, dmg, MOD_TARGET_LASER);
         }
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
@@ -818,13 +818,13 @@ void THINK(target_laser_think)(edict_t *self)
             if (self->spawnflags & SPAWNFLAG_LASER_ZAP) {
                 self->spawnflags &= ~SPAWNFLAG_LASER_ZAP;
                 vec3_t pos = G_SnapVectorTowards(tr.endpos, args.start);
-                G_TempEntity(pos, EV_LASER_SPARKS, MakeLittleLong(tr.plane.dir, self->s.skinnum & 255, count, 0));
+                G_TempEntity(pos, EV_LASER_SPARKS, G_EncodeEffect(tr.plane.dir, self->s.skinnum & 255, count));
             }
             break;
         }
-    } while (pierce_mark(&pierce, hit));
+    } while (G_PierceMark(&pierce, hit));
 
-    pierce_end(&pierce);
+    G_PierceEnd(&pierce);
 
     self->s.old_origin = G_SnapVector(tr.endpos);
 

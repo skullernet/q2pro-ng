@@ -2479,7 +2479,7 @@ static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
             damage = min(4, damage);
 
         if (!deathmatch.integer || !g_dm_no_fall_damage.integer)
-            T_Damage(ent, world, world, dir, ent->s.origin, 0, damage, 0, DAMAGE_NONE, MOD_FALLING);
+            T_Damage(ent, world, world, dir, ent->s.origin, BYTEDIR_NONE, damage, 0, DAMAGE_NONE, MOD_FALLING);
     }
 
     // Paril: falling damage noises alert monsters
