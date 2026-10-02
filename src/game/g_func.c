@@ -107,7 +107,7 @@ void THINK(Move_Done)(edict_t *ent)
     ent->moveinfo.endfunc(ent);
 }
 
-void THINK(Move_Final)(edict_t *ent)
+static void Move_Final(edict_t *ent)
 {
     if (ent->moveinfo.remaining_distance == 0) {
         Move_Done(ent);
@@ -122,19 +122,26 @@ void THINK(Move_Final)(edict_t *ent)
     ent->nextthink = level.time + FRAME_TIME;
 }
 
-void THINK(Move_Begin)(edict_t *ent)
+void THINK(Move_Think)(edict_t *ent)
 {
-    float frames;
+    // [Paril-KEX] calculate distance dynamically
+    ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.dest, ent->s.origin);
 
-    if ((ent->moveinfo.speed * FRAME_TIME_SEC) >= ent->moveinfo.remaining_distance) {
+    // will the entire move complete on next frame?
+    if (ent->moveinfo.remaining_distance <= ent->moveinfo.current_speed) {
         Move_Final(ent);
         return;
     }
+
+    ent->nextthink = level.time + FRAME_TIME;
+    ent->think = Move_Think;
+}
+
+void THINK(Move_Begin)(edict_t *ent)
+{
+    ent->moveinfo.current_speed = ent->moveinfo.speed * FRAME_TIME_SEC;
     ent->velocity = Vec3_Scale(ent->moveinfo.dir, ent->moveinfo.speed);
-    frames = floorf((ent->moveinfo.remaining_distance / ent->moveinfo.speed) / FRAME_TIME_SEC);
-    ent->moveinfo.remaining_distance -= frames * ent->moveinfo.speed * FRAME_TIME_SEC;
-    ent->nextthink = level.time + (FRAME_TIME * frames);
-    ent->think = Move_Final;
+    Move_Think(ent);
 }
 
 void Think_AccelMove(edict_t *ent);
@@ -143,8 +150,7 @@ void Move_Calc(edict_t *ent, vec3_t dest, void (*endfunc)(edict_t *self))
 {
     ent->velocity = vec3_origin;
     ent->moveinfo.dest = dest;
-    ent->moveinfo.dir = Vec3_Sub(dest, ent->s.origin);
-    ent->moveinfo.dir = Vec3_NormalizeLength(ent->moveinfo.dir, &ent->moveinfo.remaining_distance);
+    ent->moveinfo.dir = Vec3_Direction(dest, ent->s.origin);
     ent->moveinfo.endfunc = endfunc;
 
     if (ent->moveinfo.speed == ent->moveinfo.accel && ent->moveinfo.speed == ent->moveinfo.decel) {
@@ -172,19 +178,9 @@ void THINK(AngleMove_Done)(edict_t *ent)
     ent->moveinfo.endfunc(ent);
 }
 
-static vec3_t AngleMove_Get(edict_t *ent)
+static void AngleMove_Final(edict_t *ent)
 {
-    if (ent->moveinfo.state != STATE_UP)
-        return Vec3_Sub(ent->moveinfo.start_angles, ent->s.angles);
-    else if (ent->moveinfo.reversing)
-        return Vec3_Sub(ent->moveinfo.end_angles_reversed, ent->s.angles);
-    else
-        return Vec3_Sub(ent->moveinfo.end_angles, ent->s.angles);
-}
-
-void THINK(AngleMove_Final)(edict_t *ent)
-{
-    vec3_t move = AngleMove_Get(ent);
+    vec3_t move = Vec3_Sub(ent->moveinfo.dest, ent->s.angles);
 
     if (Vec3_IsEmpty(move)) {
         AngleMove_Done(ent);
@@ -197,12 +193,9 @@ void THINK(AngleMove_Final)(edict_t *ent)
     ent->nextthink = level.time + FRAME_TIME;
 }
 
-void THINK(AngleMove_Begin)(edict_t *ent)
+void THINK(AngleMove_Think)(edict_t *ent)
 {
-    vec3_t destdelta;
     float  len;
-    float  traveltime;
-    float  frames;
 
     // PGM
     // accelerate as needed
@@ -213,54 +206,37 @@ void THINK(AngleMove_Begin)(edict_t *ent)
     }
     // PGM
 
-    // set destdelta to the vector needed to move
-    destdelta = AngleMove_Get(ent);
+    len = Vec3_Distance(ent->moveinfo.dest, ent->s.angles);
 
-    // calculate length of vector
-    len = Vec3_Length(destdelta);
-
-    // divide by speed to get time to reach dest
-    traveltime = len / ent->moveinfo.speed;
-
-    if (traveltime < FRAME_TIME_SEC) {
+    // will the entire move complete on next frame?
+    if (len <= ent->moveinfo.speed * FRAME_TIME_SEC) {
         AngleMove_Final(ent);
         return;
     }
 
-    frames = floorf(traveltime / FRAME_TIME_SEC);
-
-    // scale the destdelta vector by the time spent traveling to get velocity
-    ent->avelocity = Vec3_Scale(destdelta, 1.0f / traveltime);
-
-    // PGM
-    //  if we're done accelerating, act as a normal rotation
-    if (ent->moveinfo.speed >= ent->speed) {
-        // set nextthink to trigger a think when dest is reached
-        ent->nextthink = level.time + (FRAME_TIME * frames);
-        ent->think = AngleMove_Final;
-    } else {
-        ent->nextthink = level.time + FRAME_TIME;
-        ent->think = AngleMove_Begin;
-    }
-    // PGM
+    ent->avelocity = Vec3_Scale(ent->moveinfo.dir, ent->moveinfo.speed);
+    ent->nextthink = level.time + FRAME_TIME;
+    ent->think = AngleMove_Think;
 }
 
-static void AngleMove_Calc(edict_t *ent, void (*endfunc)(edict_t *self))
+static void AngleMove_Calc(edict_t *ent, vec3_t dest, void (*endfunc)(edict_t *self))
 {
     ent->avelocity = vec3_origin;
+    ent->moveinfo.dest = dest;
+    ent->moveinfo.dir = Vec3_Direction(dest, ent->s.angles);
     ent->moveinfo.endfunc = endfunc;
 
     // PGM
-    //  if we're supposed to accelerate, this will tell anglemove_begin to do so
+    //  if we're supposed to accelerate, this will tell AngleMove_Think to do so
     if (ent->accel != ent->speed)
         ent->moveinfo.speed = 0;
     // PGM
 
     if (level.current_entity == ((ent->flags & FL_TEAMSLAVE) ? ent->teammaster : ent)) {
-        AngleMove_Begin(ent);
+        AngleMove_Think(ent);
     } else {
         ent->nextthink = level.time + FRAME_TIME;
-        ent->think = AngleMove_Begin;
+        ent->think = AngleMove_Think;
     }
 }
 
@@ -378,19 +354,8 @@ static void plat_Accelerate(moveinfo_t *moveinfo)
 
 void THINK(Think_AccelMove)(edict_t *ent)
 {
-    int state;
-
-    // hack for accelerating doors
-    if (!strncmp(ent->classname, CONST_STR_LEN("func_plat")))
-        state = STATE_UP;
-    else
-        state = STATE_DOWN;
-
     // [Paril-KEX] calculate distance dynamically
-    if (ent->moveinfo.state == state)
-        ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.start_origin, ent->s.origin);
-    else
-        ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.end_origin, ent->s.origin);
+    ent->moveinfo.remaining_distance = Vec3_Distance(ent->moveinfo.dest, ent->s.origin);
 
     if (ent->moveinfo.current_speed == 0)       // starting or blocked
         plat_CalcAcceleratedMove(&ent->moveinfo);
@@ -1139,7 +1104,7 @@ void THINK(door_go_down)(edict_t *self)
         strcmp(self->classname, "func_door_secret") == 0)
         Move_Calc(self, self->moveinfo.start_origin, door_hit_bottom);
     else if (strcmp(self->classname, "func_door_rotating") == 0)
-        AngleMove_Calc(self, door_hit_bottom);
+        AngleMove_Calc(self, self->moveinfo.start_angles, door_hit_bottom);
 
     if (self->spawnflags & SPAWNFLAG_DOOR_START_OPEN)
         door_use_areaportals(self, true);
@@ -1168,7 +1133,9 @@ static void door_go_up(edict_t *self, edict_t *activator)
         strcmp(self->classname, "func_door_secret") == 0)
         Move_Calc(self, self->moveinfo.end_origin, door_hit_top);
     else if (strcmp(self->classname, "func_door_rotating") == 0)
-        AngleMove_Calc(self, door_hit_top);
+        AngleMove_Calc(self, self->moveinfo.reversing ?
+                       self->moveinfo.end_angles_reversed :
+                       self->moveinfo.end_angles, door_hit_top);
 
     G_UseTargets(self, activator);
 
