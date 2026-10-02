@@ -673,7 +673,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
         if (!(dflags & DAMAGE_NO_INDICATOR) && inflictor != world && attacker != world && (take || psave || asave)) {
             // for projectile direct hits, use the attacker; otherwise
             // use the inflictor (rocket splash should point to the rocket)
-            vec3_t from = (dflags & DAMAGE_RADIUS) ? inflictor->s.origin : attacker->s.origin;
+            vec3_t from = (dflags & DAMAGE_RADIUS) ? G_EntityCenter(inflictor) : G_EntityCenter(attacker);
             damage_indicator_t *indicator = NULL;
 
             for (int i = 0; i < client->num_damage_indicators; i++) {
