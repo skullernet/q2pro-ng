@@ -19,7 +19,9 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Entity bbox encoding is scale independent.
 * Looped sounds encode volume and attenuation information into sound index
   directly.
-* Acceleration of `func_*` entities is calculated at native server framerate.
+* Doors/trains no longer snap into final position after being blocked.
+* Accelerated `func_(door_)rotating` movement no longer depends on server frame
+  rate, which can affect some maps that rely on old buggy behavior.
 * Alias models with `EF_ANIM*` flags interpolate their frames correctly.
 * Alias model animations are never overridden mid-frame as workaround for
   re-release high tick rate animation bugs.

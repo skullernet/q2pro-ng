@@ -200,7 +200,7 @@ void THINK(AngleMove_Think)(edict_t *ent)
     // PGM
     // accelerate as needed
     if (ent->moveinfo.speed < ent->speed) {
-        ent->moveinfo.speed += ent->accel;
+        ent->moveinfo.speed += ent->accel / (TICK_RATE / 10);
         if (ent->moveinfo.speed > ent->speed)
             ent->moveinfo.speed = ent->speed;
     }
@@ -750,9 +750,6 @@ void SP_func_rotating(edict_t *ent)
     if (ent->dmg)
         ent->moveinfo.blocked = rotating_blocked;
 
-    if (ent->spawnflags & SPAWNFLAG_ROTATING_START_ON)
-        ent->use(ent, NULL, NULL);
-
     if (ent->spawnflags & SPAWNFLAG_ROTATING_ANIMATED)
         ent->s.effects |= EF_ANIM_ALL;
     if (ent->spawnflags & SPAWNFLAG_ROTATING_ANIMATED_FAST)
@@ -769,8 +766,14 @@ void SP_func_rotating(edict_t *ent)
             ent->decel = 1;
         else if (ent->decel > ent->speed)
             ent->decel = ent->speed;
+
+        ent->accel /= TICK_RATE / 10;
+        ent->decel /= TICK_RATE / 10;
     }
     // PGM
+
+    if (ent->spawnflags & SPAWNFLAG_ROTATING_START_ON)
+        ent->use(ent, NULL, NULL);
 
     trap_SetBrushModel(ent, ent->model);
     trap_LinkEntity(ent);
