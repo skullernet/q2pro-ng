@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
+#include "common/sizebuf.h"
 #include "format/md2.h"
 #if USE_MD3
 #include "format/md3.h"
@@ -185,59 +186,68 @@ static void LittleBlock(void *out, const void *in, size_t size)
 
 static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
 {
-    dsp2header_t header;
-    dsp2frame_t *src_frame;
     mspriteframe_t *dst_frame;
-    char buffer[SP2_MAX_FRAMENAME];
-    int i;
+    sizebuf_t sz;
+    const char *name;
+    uint32_t numframes;
+    size_t len;
 
-    if (length < sizeof(header))
+    if (length < sizeof(dsp2header_t))
         return Q_ERR_FILE_TOO_SMALL;
 
-    // byte swap the header
-    LittleBlock(&header, rawdata, sizeof(header));
+    SZ_InitRead(&sz, rawdata, length);
 
     // check ident and version
-    Q_assert(header.ident == SP2_IDENT);
-    if (header.version != SP2_VERSION) {
+    Q_assert(SZ_ReadLong(&sz) == SP2_IDENT);
+    if (SZ_ReadLong(&sz) != SP2_VERSION) {
         Com_SetLastError("Invalid version");
         return Q_ERR_INVALID_DATA;
     }
-    if (header.numframes < 1) {
+
+    numframes = SZ_ReadLong(&sz);
+    if (numframes < 1) {
         // empty models draw nothing
         model->type = MOD_EMPTY;
         return Q_ERR_SUCCESS;
     }
-    if (header.numframes > SP2_MAX_FRAMES) {
+
+    if (numframes > SP2_MAX_FRAMES) {
         Com_SetLastError("Too many frames");
-        return Q_ERR_INVALID_DATA;
-    }
-    if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length) {
-        Com_SetLastError("Frames out of bounds");
         return Q_ERR_INVALID_DATA;
     }
 
     model->type = MOD_SPRITE;
-    model->spriteframes = R_Malloc(sizeof(model->spriteframes[0]) * header.numframes);
-    model->numframes = header.numframes;
+    model->spriteframes = R_Malloc(sizeof(model->spriteframes[0]) * numframes);
+    model->numframes = numframes;
 
-    src_frame = (dsp2frame_t *)((byte *)rawdata + sizeof(dsp2header_t));
     dst_frame = model->spriteframes;
-    for (i = 0; i < header.numframes; i++) {
-        dst_frame->width = (int32_t)LittleLong(src_frame->width);
-        dst_frame->height = (int32_t)LittleLong(src_frame->height);
+    for (int i = 0; i < numframes; i++) {
+        dst_frame->width = SZ_ReadLong(&sz);
+        dst_frame->height = SZ_ReadLong(&sz);
 
-        dst_frame->origin_x = (int32_t)LittleLong(src_frame->origin_x);
-        dst_frame->origin_y = (int32_t)LittleLong(src_frame->origin_y);
+        dst_frame->origin_x = SZ_ReadLong(&sz);
+        dst_frame->origin_y = SZ_ReadLong(&sz);
 
-        if (!Q_memccpy(buffer, src_frame->name, 0, sizeof(buffer))) {
+        // broken files, eh?
+        // allow last frame name to be truncated.
+        if (i == numframes - 1) {
+            len = SZ_Remaining(&sz);
+            if (!len)
+                return Q_ERR_UNEXPECTED_EOF;
+        } else
+            len = SP2_MAX_FRAMENAME;
+
+        name = SZ_ReadData(&sz, len);
+        if (!name)
+            return Q_ERR_UNEXPECTED_EOF;
+
+        if (!memchr(name, 0, len)) {
             Com_WPrintf("%s has bad frame name\n", model->name);
             dst_frame->image = R_NOTEXTURE;
         } else {
-            dst_frame->image = IMG_Find(buffer, IT_SPRITE, IF_NONE);
+            dst_frame->image = IMG_Find(name, IT_SPRITE, IF_NONE);
         }
 
-        src_frame++;
         dst_frame++;
     }
 
