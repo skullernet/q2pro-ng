@@ -322,27 +322,15 @@ static const glsection_t sections[] = {
         .ver_gl = QGL_VER(4, 4),
         .caps = QGL_CAP_QUERY_RESULT_NO_WAIT,
         .functions = (const glfunction_t []) {
+            QGL_FN(BindTextures),
             QGL_FN(BufferStorage),
             { NULL }
         }
     },
 
-    // GL 4.4
-    // ARB_multi_bind
-    {
-        .ver_gl = QGL_VER(4, 4),
-        .extension = "GL_ARB_multi_bind",
-        .functions = (const glfunction_t []) {
-            QGL_FN(BindTextures),
-            { NULL }
-        }
-    },
-
     // GL 4.5
-    // ARB_direct_state_access
     {
         .ver_gl = QGL_VER(4, 5),
-        .extension = "GL_ARB_direct_state_access",
         .functions = (const glfunction_t []) {
             QGL_FN(BindTextureUnit),
             { NULL }
