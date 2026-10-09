@@ -704,7 +704,7 @@ void GL_Flush3D(void)
             gls.u_block.colorscale_texture  != 1.0f)
             state |= GLS_DESATURATE;
 
-        if (state & GLS_SKY_MASK)
+        if (state & GLS_DEFAULT_SKY)
             state |= glr.fog_bits_sky;
         else
             state |= glr.fog_bits;
