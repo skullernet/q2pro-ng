@@ -183,7 +183,7 @@ typedef struct {
     bool        draw_powerup_wheel;
     int         powerup_wheel_select;
 
-    int         mouse_x, mouse_y;
+    vec2_t      mouse_pos;
 
     vec3_t      size_probes[SIZE_PROBES];
     int         size_probe_index;
@@ -678,7 +678,6 @@ void CG_BarrelExplodingParticles(vec3_t org);
 //
 
 extern vrect_t      scr_vrect;        // position of render window
-extern vm_cvar_t    scr_viewsize;
 
 void    SCR_Init(void);
 void    SCR_Shutdown(void);

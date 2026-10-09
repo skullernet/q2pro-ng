@@ -26,19 +26,16 @@ static struct {
     refcfg_t    config;
 
     qhandle_t   crosshair_pic;
-    int         crosshair_width, crosshair_height;
+    vec2_t      crosshair_size;
     color_t     crosshair_color;
 
     qhandle_t   hit_marker_pic;
-    int         hit_marker_width, hit_marker_height;
+    vec2_t      hit_marker_size;
 
-    int         damage_display_pic;
-    int         damage_display_w, damage_display_h;
+    qhandle_t   damage_display_pic;
+    vec2_t      damage_display_size;
 
     qhandle_t   pause_pic;
-
-    qhandle_t   loading_pic;
-    bool        draw_loading;
 
     qhandle_t   sb_pics[2][STAT_PICS];
     qhandle_t   inven_pic;
@@ -53,11 +50,12 @@ static struct {
 
     qhandle_t   wheel_pic;
     qhandle_t   wheel_cursor;
-    int         wheel_cursor_w, wheel_cursor_h;
+    vec2_t      wheel_cursor_size;
 
     qhandle_t   selected_pic;
 
     int         hud_width, hud_height;
+    vec2_t      hud_center;
     float       hud_scale;
 
     unsigned    timestamp;
@@ -99,8 +97,6 @@ static vm_cvar_t ch_blue;
 static vm_cvar_t ch_alpha;
 
 static vm_cvar_t ch_scale;
-static vm_cvar_t ch_x;
-static vm_cvar_t ch_y;
 
 static vm_cvar_t scr_hit_marker_time;
 static vm_cvar_t scr_damage_indicators;
@@ -203,6 +199,16 @@ float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime)
     }
 
     return alpha;
+}
+
+static void SCR_DrawStretchPic(float x, float y, float w, float h, qhandle_t pic)
+{
+    trap_R_DrawBoxPic(Box2_At(x, y, w, h), box2_unit, pic);
+}
+
+static void SCR_DrawCenterPic(vec2_t pos, vec2_t size, qhandle_t pic)
+{
+    trap_R_DrawBoxPic(Box2_CenterAt(pos, size), box2_unit, pic);
 }
 
 /*
@@ -517,7 +523,7 @@ static void SCR_DrawNet(void)
     unsigned current = trap_GetUsercmdNumber();
     if (current - cg.frame->cmdnum > CMD_BACKUP) {
         if ((cgs.realtime >> 8) & 3) {
-            trap_R_DrawStretchPic(x, y, LAG_WIDTH, LAG_HEIGHT, scr.net_pic);
+            SCR_DrawStretchPic(x, y, LAG_WIDTH, LAG_HEIGHT, scr.net_pic);
         }
     }
 }
@@ -620,19 +626,11 @@ static void SCR_DrawChatHUD(void)
 
 static void ch_scale_changed(void)
 {
-    int w, h;
-    float scale;
-
-    scale = Q_clipf(ch_scale.value, 0.1f, 9.0f);
+    float scale = Q_clipf(ch_scale.value, 0.1f, 9.0f);
 
     // prescale
-    trap_R_GetPicSize(&w, &h, scr.crosshair_pic);
-    scr.crosshair_width = Q_rint(w * scale);
-    scr.crosshair_height = Q_rint(h * scale);
-
-    trap_R_GetPicSize(&w, &h, scr.hit_marker_pic);
-    scr.hit_marker_width = Q_rint(w * scale);
-    scr.hit_marker_height = Q_rint(h * scale);
+    scr.crosshair_size = Vec2_Scale(trap_R_GetPicSize(scr.crosshair_pic), scale);
+    scr.hit_marker_size = Vec2_Scale(trap_R_GetPicSize(scr.hit_marker_pic), scale);
 }
 
 static void ch_color_changed(void)
@@ -776,7 +774,6 @@ void SCR_RegisterMedia(void)
     scr.field_pic = trap_R_RegisterPic("field_3");
     scr.backtile_pic = trap_R_RegisterPic("*backtile");
     scr.pause_pic = trap_R_RegisterPic("pause");
-    scr.loading_pic = trap_R_RegisterPic("loading");
     scr.net_pic = trap_R_RegisterPic("net");
     scr.hit_marker_pic = trap_R_RegisterPic("marker");
     scr.damage_display_pic = trap_R_RegisterPic("damage_indicator");
@@ -784,8 +781,8 @@ void SCR_RegisterMedia(void)
     scr.wheel_cursor = trap_R_RegisterPic("/gfx/wheelbutton.png");
     scr.selected_pic = trap_R_RegisterPic("carousel/selected");
 
-    trap_R_GetPicSize(&scr.wheel_cursor_w, &scr.wheel_cursor_h, scr.wheel_cursor);
-    trap_R_GetPicSize(&scr.damage_display_w, &scr.damage_display_h, scr.damage_display_pic);
+    scr.wheel_cursor_size = trap_R_GetPicSize(scr.wheel_cursor);
+    scr.damage_display_size = trap_R_GetPicSize(scr.damage_display_pic);
 
     scr_font.modified = true;
     scr_crosshair.modified = true;
@@ -819,8 +816,6 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &ch_alpha, "ch_alpha", "1", 0 },
 
     { &ch_scale, "ch_scale", "1", 0 },
-    { &ch_x, "ch_x", "0", 0 },
-    { &ch_y, "ch_y", "0", 0 },
 
     { &scr_draw2d, "scr_draw2d", "2", 0 },
     { &scr_lag_x, "scr_lag_x", "-1", 0 },
@@ -1486,7 +1481,7 @@ ITEM WHEEL
 #define SELECTED_LOW    MakeColor(255,  62,  33, 255)
 #define SELECTED_NORM   MakeColor(255, 248, 134, 255)
 
-static void SCR_DrawAmmoCount(int x, int y, const cg_wheel_item_t *item, bool selected)
+static void SCR_DrawAmmoCount(float x, float y, const cg_wheel_item_t *item, bool selected)
 {
     if (item->ammo >= MAX_AMMO)
         return;
@@ -1546,13 +1541,15 @@ static void SCR_DrawWeaponSelect(void)
     }
 }
 
-#define WHEEL_WIDTH     450
-#define WHEEL_HEIGHT    450
 #define WHEEL_RADIUS    116
+#define WHEEL_SIZE      450
 
-static void SCR_DrawItemWheel(int center_x, int center_y, int owned, const cg_wheel_item_t *items, int num_items, int selected)
+#define WHEEL_CENTER_POWERUP    Vec2(WHEEL_SIZE / 2, scr.hud_height / 2)
+#define WHEEL_CENTER_WEAPON     Vec2(scr.hud_width - WHEEL_SIZE / 2, scr.hud_height / 2)
+
+static void SCR_DrawItemWheel(vec2_t center, int owned, const cg_wheel_item_t *items, int num_items, int selected)
 {
-    trap_R_DrawStretchPic(center_x - WHEEL_WIDTH / 2, center_y - WHEEL_HEIGHT / 2, WHEEL_WIDTH, WHEEL_HEIGHT, scr.wheel_pic);
+    SCR_DrawCenterPic(center, Vec2_Fill(WHEEL_SIZE), scr.wheel_pic);
 
     int count = __builtin_popcount(owned & MASK(num_items));
     float degrees = min(360.0f / count, 20.0f);
@@ -1565,13 +1562,13 @@ static void SCR_DrawItemWheel(int center_x, int center_y, int owned, const cg_wh
         const cg_wheel_item_t *item = &items[i];
         bool sel = selected && selected == i + 1;
 
-        int x = center_x + WHEEL_RADIUS * sinf(DEG2RAD(angle));
-        int y = center_y - WHEEL_RADIUS * cosf(DEG2RAD(angle));
-        int w = 24 + 12 * sel;
-        int h = 24 + 12 * sel;
-        trap_R_DrawStretchPic(x - w / 2, y - h / 2, w, h, item->icon[sel]);
+        float a = DEG2RAD(angle);
+        vec2_t pos = Vec2_MA(center, WHEEL_RADIUS, Vec2(sinf(a), -cosf(a)));
+        vec2_t size = Vec2_Fill(24 + 12 * sel);
 
-        SCR_DrawAmmoCount(x, y + 12, item, sel);
+        SCR_DrawCenterPic(pos, size, item->icon[sel]);
+
+        SCR_DrawAmmoCount(pos.x, pos.y + 12, item, sel);
         angle += degrees;
     }
 
@@ -1580,17 +1577,17 @@ static void SCR_DrawItemWheel(int center_x, int center_y, int owned, const cg_wh
         char name[MAX_QPATH];
 
         trap_GetConfigstring(CS_ITEMS + item->id, name, sizeof(name));
-        SCR_DrawString(center_x, center_y - 24, UI_CENTER | UI_DROPSHADOW, name);
+        SCR_DrawString(center.x, center.y - 24, UI_CENTER | UI_DROPSHADOW, name);
 
         if (item->ammo < MAX_AMMO) {
-            trap_R_DrawPic(center_x - 12, center_y - 12, cgs.wheel.ammo[item->ammo].icon);
+            trap_R_DrawPic(center.x - 12, center.y - 12, cgs.wheel.ammo[item->ammo].icon);
 
             int ammo = cg.frame->ps.ammo[item->ammo];
             if (ammo != INFINITE_AMMO) {
                 char num[4];
                 int l = Q_scnprintf(num, sizeof(num), "%u", ammo);
-                int x = center_x - l * DIGIT_WIDTH / 2;
-                int y = center_y + 16;
+                float x = center.x - l * DIGIT_WIDTH / 2;
+                float y = center.y + 16;
                 bool color = ammo <= item->quantity_warn;
 
                 for (int i = 0; i < l; i++) {
@@ -1607,9 +1604,8 @@ static void SCR_DrawWeaponWheel(void)
     if (!cg.draw_weapon_wheel)
         return;
 
-    SCR_DrawItemWheel(scr.hud_width - WHEEL_WIDTH / 2, scr.hud_height / 2,
-                      cg.frame->ps.stats[STAT_WEAPONS_OWNED], cgs.wheel.weapons,
-                      cgs.wheel.num_weapons, cg.weapon_wheel_select);
+    SCR_DrawItemWheel(WHEEL_CENTER_WEAPON, cg.frame->ps.stats[STAT_WEAPONS_OWNED],
+                      cgs.wheel.weapons, cgs.wheel.num_weapons, cg.weapon_wheel_select);
 }
 
 static void SCR_DrawPowerupWheel(void)
@@ -1617,9 +1613,8 @@ static void SCR_DrawPowerupWheel(void)
     if (!cg.draw_powerup_wheel)
         return;
 
-    SCR_DrawItemWheel(WHEEL_WIDTH / 2, scr.hud_height / 2,
-                      cg.frame->ps.stats[STAT_POWERUPS_OWNED], cgs.wheel.powerups,
-                      cgs.wheel.num_powerups, cg.powerup_wheel_select);
+    SCR_DrawItemWheel(WHEEL_CENTER_POWERUP, cg.frame->ps.stats[STAT_POWERUPS_OWNED],
+                      cgs.wheel.powerups, cgs.wheel.num_powerups, cg.powerup_wheel_select);
 }
 
 static void SCR_DrawMouse(void)
@@ -1631,24 +1626,21 @@ static void SCR_DrawMouse(void)
         return;
 
     trap_R_SetAlpha(scr_alpha.value * 0.5f);
-    trap_R_DrawPic(cg.mouse_x - scr.wheel_cursor_w / 2,
-                   cg.mouse_y - scr.wheel_cursor_h / 2, scr.wheel_cursor);
+    SCR_DrawCenterPic(cg.mouse_pos, scr.wheel_cursor_size, scr.wheel_cursor);
     trap_R_SetAlpha(scr_alpha.value);
 }
 
-static int CG_MouseSelectWheel(int center_x, int center_y, int owned, int num_items)
+static int CG_MouseSelectWheel(vec2_t center, int owned, int num_items)
 {
     int count = __builtin_popcount(owned & MASK(num_items));
     if (!count)
         return 0;
 
-    float dx = cg.mouse_x - center_x;
-    float dy = center_y - cg.mouse_y;
-    float mouse_dist = sqrtf(dx * dx + dy * dy);
-    if (fabsf(mouse_dist - WHEEL_RADIUS) > 30.0f)
+    vec2_t delta = Vec2_Sub(cg.mouse_pos, center);
+    if (fabsf(Vec2_Length(delta) - WHEEL_RADIUS) > 30.0f)
         return 0;
 
-    float mouse_angle = RAD2DEG(atan2f(dx, dy));
+    float mouse_angle = RAD2DEG(atan2f(delta.x, -delta.y));
     float degrees = min(360.0f / count, 20.0f);
     float angle = 0.0f;
 
@@ -1673,19 +1665,19 @@ static int CG_MouseSelectWheel(int center_x, int center_y, int owned, int num_it
 
 qvm_exported void CG_MouseEvent(int x, int y)
 {
-    cg.mouse_x = Q_clip(x * scr.hud_scale + 0.5f, 0, scr.hud_width - 1);
-    cg.mouse_y = Q_clip(y * scr.hud_scale + 0.5f, 0, scr.hud_height - 1);
+    cg.mouse_pos.x = Q_clipf(x * scr.hud_scale, 0, scr.hud_width - 1);
+    cg.mouse_pos.y = Q_clipf(y * scr.hud_scale, 0, scr.hud_height - 1);
 
     if (!cg.frame)
         return;
 
     if (cg.draw_weapon_wheel) {
-        cg.weapon_wheel_select = CG_MouseSelectWheel(scr.hud_width - WHEEL_WIDTH / 2,
-            scr.hud_height / 2, cg.frame->ps.stats[STAT_WEAPONS_OWNED], cgs.wheel.num_weapons);
+        cg.weapon_wheel_select = CG_MouseSelectWheel(WHEEL_CENTER_WEAPON,
+            cg.frame->ps.stats[STAT_WEAPONS_OWNED], cgs.wheel.num_weapons);
     }
 
     if (cg.draw_powerup_wheel) {
-        cg.powerup_wheel_select = CG_MouseSelectWheel(WHEEL_WIDTH / 2, scr.hud_height / 2,
+        cg.powerup_wheel_select = CG_MouseSelectWheel(WHEEL_CENTER_POWERUP,
             cg.frame->ps.stats[STAT_POWERUPS_OWNED], cgs.wheel.num_powerups);
     }
 }
@@ -1711,9 +1703,8 @@ void CG_ShowWeaponWheel_f(void)
 
     CG_SetTimeScale();
 
-    cg.mouse_x = scr.hud_width - WHEEL_WIDTH / 2;
-    cg.mouse_y = scr.hud_height / 2;
-    trap_WarpMouse(cg.mouse_x / scr.hud_scale, cg.mouse_y / scr.hud_scale);
+    cg.mouse_pos = WHEEL_CENTER_WEAPON;
+    trap_WarpMouse(cg.mouse_pos.x / scr.hud_scale, cg.mouse_pos.y / scr.hud_scale);
 }
 
 void CG_HideWeaponWheel_f(void)
@@ -1740,9 +1731,8 @@ void CG_ShowPowerupWheel_f(void)
 
     CG_SetTimeScale();
 
-    cg.mouse_x = WHEEL_WIDTH / 2;
-    cg.mouse_y = scr.hud_height / 2;
-    trap_WarpMouse(cg.mouse_x / scr.hud_scale, cg.mouse_y / scr.hud_scale);
+    cg.mouse_pos = WHEEL_CENTER_POWERUP;
+    trap_WarpMouse(cg.mouse_pos.x / scr.hud_scale, cg.mouse_pos.y / scr.hud_scale);
 }
 
 void CG_HidePowerupWheel_f(void)
@@ -1773,7 +1763,7 @@ typedef struct {
     int         id, time;
     vec3_t      pos;
     qhandle_t   image;
-    int         width, height;
+    vec2_t      size;
     uint32_t    color;
 } scr_poi_t;
 
@@ -1828,7 +1818,7 @@ void SCR_AddPOI(int id, vec3_t point, qhandle_t image, uint32_t color, int time)
     poi->time = cg.time + time;
     poi->pos = point;
     poi->image = image;
-    trap_R_GetPicSize(&poi->width, &poi->height, poi->image);
+    poi->size = trap_R_GetPicSize(poi->image);
     poi->color = color;
 }
 
@@ -1868,20 +1858,17 @@ static void SCR_DrawPOIs(void)
         if (w < 0)
             s = s > 0.5f;
 
-        int x = s * scr_vrect.width;
-        int y = t * scr_vrect.height;
+        float x = s * scr_vrect.width;
+        float y = t * scr_vrect.height;
 
-        int pic_w = poi->width  * scale;
-        int pic_h = poi->height * scale;
+        float pic_w = poi->size.x * scale;
+        float pic_h = poi->size.y * scale;
 
-        x -= pic_w / 2;
-        y -= pic_h / 2;
-
-        x = scr_vrect.x + Q_clip(x, 0, scr_vrect.width  - pic_w);
-        y = scr_vrect.y + Q_clip(y, 0, scr_vrect.height - pic_h);
+        x = scr_vrect.x + Q_clipf(x - pic_w / 2, 0, scr_vrect.width  - pic_w);
+        y = scr_vrect.y + Q_clipf(y - pic_h / 2, 0, scr_vrect.height - pic_h);
 
         trap_R_SetColor24(poi->color);
-        trap_R_DrawStretchPic(x, y, pic_w, pic_h, poi->image);
+        SCR_DrawStretchPic(x, y, pic_w, pic_h, poi->image);
     }
 }
 
@@ -1952,22 +1939,19 @@ static void SCR_DrawDamageDisplays(void)
         float s = sinf(angle);
         float c = cosf(angle);
 
-        int x = scr.hud_width / 2;
-        int y = scr.hud_height / 2;
-
         mat4_t mat = Mat4_FromRows(
-            Vec4(c,-s, 0, x),
-            Vec4(s, c, 0, y),
+            Vec4(c,-s, 0, scr.hud_center.x),
+            Vec4(s, c, 0, scr.hud_center.y),
             Vec4(0, 0, 1, 0),
             Vec4(0, 0, 0, 1)
         );
 
-        int w = min(scr.damage_display_w, entry->damage * 3) * ch_scale.value;
-        int h = scr.damage_display_h * ch_scale.value;
+        float w = min(scr.damage_display_size.x, entry->damage * 3) * ch_scale.value;
+        float h = scr.damage_display_size.y * ch_scale.value;
 
         trap_R_SetTransform(mat);
         trap_R_SetColor32(color.u32);
-        trap_R_DrawStretchPic(-w / 2, scr.crosshair_height, w, h, scr.damage_display_pic);
+        SCR_DrawStretchPic(-w / 2, scr.crosshair_size.y, w, h, scr.damage_display_pic);
     }
 
     trap_R_SetTransform(Mat4_Identity());
@@ -2050,8 +2034,8 @@ static void SCR_DrawEndOfUnit(void)
     widths[2] = trap_R_MeasureString(UI_NONE, -1, "9999/9999 ", scr.norm_font);
     widths[3] = trap_R_MeasureString(UI_NONE, -1, "999:99.9", scr.norm_font);
 
-    float x = scr.hud_width  / 2 - (widths[0] + widths[1] + widths[2] + widths[3]) / 2;
-    float y = scr.hud_height / 2 - 120;
+    float x = scr.hud_center.x - (widths[0] + widths[1] + widths[2] + widths[3]) / 2;
+    float y = scr.hud_center.y - 120;
     float h = trap_R_GetFontHeight(scr.norm_font);
 
     SCR_EndOfUnitHeader(x, y, widths);
@@ -2075,7 +2059,7 @@ static void SCR_DrawEndOfUnit(void)
         SCR_EndOfUnitEntry(x, y, &totals, widths);
     }
 
-    SCR_DrawString(scr.hud_width / 2, scr.hud_height - 48,
+    SCR_DrawString(scr.hud_center.x, scr.hud_height - 48,
                    UI_CENTER | UI_DROPSHADOW | UI_ALTCOLOR, "Press any button to continue.");
 }
 
@@ -2096,8 +2080,6 @@ static void SCR_DrawFps(void)
 
 static void SCR_DrawPause(void)
 {
-    int x, y, w, h;
-
     if (!sv_paused.integer)
         return;
     if (!cl_paused.integer)
@@ -2105,30 +2087,17 @@ static void SCR_DrawPause(void)
     if (scr_showpause.integer != 1)
         return;
 
-    trap_R_GetPicSize(&w, &h, scr.pause_pic);
-    x = (scr.hud_width - w) / 2;
-    y = (scr.hud_height - h) / 2;
-
-    trap_R_DrawPic(x, y, scr.pause_pic);
+    SCR_DrawCenterPic(scr.hud_center, trap_R_GetPicSize(scr.pause_pic), scr.pause_pic);
 }
 
 static void SCR_DrawLoading(void)
 {
-    int x, y, w, h;
+    qhandle_t pic = trap_R_RegisterPic("loading");
 
-    trap_R_SetScale(scr.hud_scale);
+    vec2_t pos = Vec2_Scale(Vec2(scr.config.width, scr.config.height), 0.5f);
+    vec2_t size = Vec2_Scale(trap_R_GetPicSize(pic), 1.0f / scr.hud_scale);
 
-    // register pic if not precached yet
-    if (!scr.loading_pic)
-        scr.loading_pic = trap_R_RegisterPic("loading");
-
-    trap_R_GetPicSize(&w, &h, scr.loading_pic);
-    x = (scr.config.width * scr.hud_scale - w) / 2;
-    y = (scr.config.height * scr.hud_scale - h) / 2;
-
-    trap_R_DrawPic(x, y, scr.loading_pic);
-
-    trap_R_SetScale(1.0f);
+    SCR_DrawCenterPic(pos, size, pic);
 }
 
 static void SCR_DrawHitMarker(void)
@@ -2145,38 +2114,21 @@ static void SCR_DrawHitMarker(void)
     float alpha = 1.0f - (frac * frac);
 
     float scale = 1.0f - min(frac, 0.5f);
-    int w = scr.hit_marker_width * scale + 0.5f;
-    int h = scr.hit_marker_height * scale + 0.5f;
-
-    int x = (scr.hud_width - w) / 2;
-    int y = (scr.hud_height - h) / 2;
+    vec2_t size = Vec2_Scale(scr.hit_marker_size, scale);
 
     trap_R_SetColor32(MakeColor(255, 0, 0, alpha * 255));
-
-    trap_R_DrawStretchPic(x + ch_x.integer,
-                          y + ch_y.integer,
-                          w, h, scr.hit_marker_pic);
+    SCR_DrawCenterPic(scr.hud_center, size, scr.hit_marker_pic);
 }
 
 static void SCR_DrawCrosshair(void)
 {
-    int x, y;
-
     if (!scr_crosshair.integer)
         return;
     if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
 
-    x = (scr.hud_width - scr.crosshair_width) / 2;
-    y = (scr.hud_height - scr.crosshair_height) / 2;
-
     trap_R_SetColor32(scr.crosshair_color.u32);
-
-    trap_R_DrawStretchPic(x + ch_x.integer,
-                          y + ch_y.integer,
-                          scr.crosshair_width,
-                          scr.crosshair_height,
-                          scr.crosshair_pic);
+    SCR_DrawCenterPic(scr.hud_center, scr.crosshair_size, scr.crosshair_pic);
 
     SCR_DrawHitMarker();
 
@@ -2221,8 +2173,9 @@ static void SCR_Draw2D(void)
 
     trap_R_SetScale(scr.hud_scale);
 
-    scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
+    scr.hud_center = Vec2_Scale(Vec2(scr.hud_width, scr.hud_height), scr.hud_scale * 0.5);
     scr.hud_width = Q_rint(scr.hud_width * scr.hud_scale);
+    scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();
@@ -2318,6 +2271,6 @@ qvm_exported void CG_DrawFrame(unsigned time, bool active, bool loading)
 
 qvm_exported void CG_ModeChanged(void)
 {
-    trap_R_GetConfig(&scr.config);
+    scr.config = trap_R_GetConfig();
     scr_scale_changed();
 }

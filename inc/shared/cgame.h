@@ -145,7 +145,7 @@ typedef struct {
     void    (*R_LocateParticles)(const particle_t *p, int count);
     void    (*R_RenderScene)(const refdef_t *fd);
 
-    void    (*R_GetConfig)(refcfg_t *cfg);
+    refcfg_t    (*R_GetConfig)(void);
     void    (*R_GetPalette)(uint32_t palette[256]);
     void    (*R_ClearColor)(void);
     void    (*R_SetAlpha)(float alpha);
@@ -159,7 +159,7 @@ typedef struct {
                             const char *s, qhandle_t font); // returns advanced x coord
     float   (*R_MeasureString)(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
     float   (*R_GetFontHeight)(qhandle_t hfont);
-    bool    (*R_GetPicSize)(int *w, int *h, qhandle_t pic); // returns transparency bit
+    vec2_t  (*R_GetPicSize)(qhandle_t pic);
     void    (*R_DrawPic)(int x, int y, qhandle_t pic);
     void    (*R_DrawBoxPic)(box2_t pos, box2_t tc, qhandle_t pic);
     void    (*R_DrawStretchPic)(int x, int y, int w, int h, qhandle_t pic);

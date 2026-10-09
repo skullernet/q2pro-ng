@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 drawStatic_t draw;
 
-static void GL_StretchPicVerts(const glVertex2D_t verts[4], GLuint texnum, imageflags_t flags)
+static void GL_DrawPicVerts(const glVertex2D_t verts[4], GLuint texnum, imageflags_t flags)
 {
     if (tess.numverts + 4 > TESS_MAX_VERTICES ||
         tess.numindices + 6 > TESS_MAX_INDICES ||
@@ -71,7 +71,7 @@ static inline void GL_StretchPic(box2_t box, box2_t tc, color_t color, const ima
         tc = Box2_Frac(image->tc, tc);
 
     GL_MakePicVerts(verts, box, tc, color);
-    GL_StretchPicVerts(verts, image->texnum, image->flags);
+    GL_DrawPicVerts(verts, image->texnum, image->flags);
 }
 
 static void GL_DrawVignette(box2_t box, color_t outer, color_t inner, float frac)
@@ -279,7 +279,7 @@ void R_DrawStretchRaw(int x, int y, int w, int h)
 {
     glVertex2D_t verts[4];
     GL_MakePicVerts(verts, Box2_At(x, y, w, h), box2_unit, (color_t){ U32_WHITE });
-    GL_StretchPicVerts(verts, TEXNUM_RAW, IF_NONE);
+    GL_DrawPicVerts(verts, TEXNUM_RAW, IF_NONE);
 }
 
 void R_UpdateRawPic(int pic_w, int pic_h, const uint32_t *pic)
@@ -567,7 +567,7 @@ void Draw_Scrap(void)
 {
     glVertex2D_t verts[4];
     GL_MakePicVerts(verts, Box2_At(0, 0, 512, 512), box2_unit, (color_t){ U32_WHITE });
-    GL_StretchPicVerts(verts, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
+    GL_DrawPicVerts(verts, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
 }
 
 #endif

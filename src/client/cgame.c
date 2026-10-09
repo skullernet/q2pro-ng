@@ -178,9 +178,9 @@ static int PF_ReadLine(qhandle_t f, char *buffer, size_t size)
     return FS_ReadLine(VM_HANDLE(f), buffer, size);
 }
 
-static void PF_R_GetConfig(refcfg_t *cfg)
+static refcfg_t PF_R_GetConfig(void)
 {
-    *cfg = r_config;
+    return r_config;
 }
 
 static unsigned PF_GetUsercmdNumber(void)
@@ -483,7 +483,7 @@ VM_THUNK(R_RenderScene) {
 }
 
 VM_THUNK(R_GetConfig) {
-    PF_R_GetConfig(VM_PTR(0, refcfg_t));
+    *VM_PTR(0, refcfg_t) = PF_R_GetConfig();
 }
 
 VM_THUNK(R_GetPalette) {
@@ -535,7 +535,7 @@ VM_THUNK(R_GetFontHeight) {
 }
 
 VM_THUNK(R_GetPicSize) {
-    VM_U32(0) = R_GetPicSize(VM_PTR(0, int), VM_PTR(1, int), VM_U32(2));
+    VM_VEC2(0) = R_GetPicSizeVec(VM_U32(1));
 }
 
 VM_THUNK(R_DrawPic) {
@@ -758,7 +758,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(R_DrawString, "f ffiiii"),
     VM_IMPORT(R_MeasureString, "f iiii"),
     VM_IMPORT(R_GetFontHeight, "f i"),
-    VM_IMPORT(R_GetPicSize, "i iii"),
+    VM_IMPORT(R_GetPicSize, "ii"),
     VM_IMPORT(R_DrawPic, "iii"),
     VM_IMPORT(R_DrawBoxPic, "iii"),
     VM_IMPORT(R_DrawStretchPic, "iiiii"),
@@ -1049,7 +1049,7 @@ static const cgame_import_t cgame_dll_imports = {
     .R_DrawString = R_DrawString,
     .R_MeasureString = R_MeasureString,
     .R_GetFontHeight = R_GetFontHeight,
-    .R_GetPicSize = R_GetPicSize,
+    .R_GetPicSize = R_GetPicSizeVec,
     .R_DrawPic = R_DrawPic,
     .R_DrawBoxPic = R_DrawBoxPic,
     .R_DrawStretchPic = R_DrawStretchPic,

@@ -2145,6 +2145,12 @@ bool R_GetPicSize(int *w, int *h, qhandle_t pic)
     return image->flags & IF_TRANSPARENT;
 }
 
+vec2_t R_GetPicSizeVec(qhandle_t pic)
+{
+    const image_t *image = IMG_ForHandle(pic);
+    return Vec2(image->width, image->height);
+}
+
 /*
 ================
 IMG_FreeUnused

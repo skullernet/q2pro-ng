@@ -101,7 +101,7 @@ void    trap_R_SetLightStyles(const float *value);
 void    trap_R_LocateParticles(const particle_t *p, int num_particles);
 void    trap_R_RenderScene(const refdef_t *fd);
 
-void    trap_R_GetConfig(refcfg_t *cfg);
+refcfg_t    trap_R_GetConfig(void);
 void    trap_R_GetPalette(uint32_t palette[256]);
 void    trap_R_ClearColor(void);
 void    trap_R_SetAlpha(float alpha);
@@ -115,7 +115,7 @@ float   trap_R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen,
                           const char *s, qhandle_t font);   // returns advanced x coord
 float   trap_R_MeasureString(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
 float   trap_R_GetFontHeight(qhandle_t hfont);
-bool    trap_R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
+vec2_t  trap_R_GetPicSize(qhandle_t pic);
 void    trap_R_DrawPic(int x, int y, qhandle_t pic);
 void    trap_R_DrawBoxPic(box2_t box, box2_t tc, qhandle_t pic);
 void    trap_R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);

@@ -94,6 +94,7 @@ float   R_DrawString(float x, float y, ui_flags_t flags, size_t maxlen,
 float   R_MeasureString(ui_flags_t flags, size_t maxlen, const char *s, qhandle_t font);
 float   R_GetFontHeight(qhandle_t hfont);
 bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
+vec2_t  R_GetPicSizeVec(qhandle_t pic);
 void    R_DrawPic(int x, int y, qhandle_t pic);
 void    R_DrawBoxPic(box2_t pos, box2_t tc, qhandle_t pic);
 void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);

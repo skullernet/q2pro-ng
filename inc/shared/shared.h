@@ -443,6 +443,10 @@ static inline vec2_t Vec2_Offset(vec2_t in, float offset) {
     return Vec2(in.x + offset, in.y + offset);
 }
 
+static inline vec2_t Vec2_MA(vec2_t a, float b, vec2_t c) {
+    return Vec2_Add(a, Vec2_Scale(c, b));
+}
+
 static inline vec2_t Vec2_Rotate(vec2_t in, const vec2_t axis[2]) {
     return Vec2(Vec2_Dot(in, axis[0]), Vec2_Dot(in, axis[1]));
 }
@@ -745,6 +749,10 @@ static inline bool Box2_IsNull(box2_t a) {
 
 static inline box2_t Box2_At(float x, float y, float w, float h) {
     return Box2(Vec2(x, y), Vec2(x + w, y + h));
+}
+
+static inline box2_t Box2_CenterAt(vec2_t pos, vec2_t size) {
+    return Box2(Vec2_MA(pos, -0.5f, size), Vec2_MA(pos, 0.5f, size));
 }
 
 static inline box2_t Box2_AddPoint(box2_t a, vec2_t v) {
