@@ -1594,7 +1594,13 @@ void respawn(edict_t *self)
     }
 
     // restart the entire server
-    trap_AddCommandString("pushmenu loadgame\n");
+    if (g_auto_load.integer) {
+        if (level.next_auto_save)
+            trap_AddCommandString("load save1\n");
+        else
+            trap_AddCommandString("load save0\n");
+    } else
+        trap_AddCommandString("pushmenu loadgame\n");
 }
 
 /*

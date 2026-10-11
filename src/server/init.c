@@ -351,9 +351,9 @@ void SV_InitGame(void)
         SV_Shutdown("Server restarted\n", ERR_RECONNECT);
     } else {
         // make sure the client is down
-        CL_Disconnect(ERR_RECONNECT);
         SCR_BeginLoadingPlaque();
         R_ClearDebugLines();
+        CL_Disconnect(ERR_RECONNECT);
 
         CM_FreeMap(&sv.cm);
         memset(&sv, 0, sizeof(sv));

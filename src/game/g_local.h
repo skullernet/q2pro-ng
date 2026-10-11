@@ -1215,6 +1215,7 @@ extern vm_cvar_t ai_allow_dm_spawn;
 extern vm_cvar_t ai_movement_disabled;
 extern vm_cvar_t g_monster_footsteps;
 extern vm_cvar_t g_auto_save_min_time;
+extern vm_cvar_t g_auto_load;
 extern vm_cvar_t g_language;
 
 #define world (&g_edicts[ENTITYNUM_WORLD])

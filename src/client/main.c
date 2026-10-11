@@ -505,7 +505,9 @@ void CL_Disconnect(error_type_t type)
         return;
     }
 
-    SCR_EndLoadingPlaque(); // get rid of loading plaque
+    if (type != ERR_RECONNECT) {
+        SCR_EndLoadingPlaque(); // get rid of loading plaque
+    }
 
     if (cls.state > ca_disconnected && !cls.demo.playback) {
         EXEC_TRIGGER(cl_disconnectcmd);
