@@ -167,7 +167,7 @@ void S_Init(void)
     s_underwater = Cvar_Get("s_underwater", "1", 0);
     s_underwater_gain_hf = Cvar_Get("s_underwater_gain_hf", "0.25", 0);
     s_merge_looping = Cvar_Get("s_merge_looping", "1", 0);
-    s_doppler_factor = Cvar_Get("s_doppler_factor", "1", 0);
+    s_doppler_factor = Cvar_Get("s_doppler_factor", "0", 0);
     s_speed_of_sound = Cvar_Get("s_speed_of_sound", "10000", 0);
     s_reverb = Cvar_Get("s_reverb", "1", 0);
 

@@ -113,9 +113,6 @@ void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
             ent->s.sound = 0; // turn it off
         else
             ent->s.sound = G_EncodeSound(chan, ent->noise_index, ent->volume, ent->attenuation); // start it
-    } else if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE) {
-        // reliable
-        G_ReliableSound(ent, CHAN_VOICE, ent->noise_index, ent->volume, ent->attenuation);
     } else {
         // normal sound
         G_StartSound(ent, CHAN_VOICE, ent->noise_index, ent->volume, ent->attenuation);
@@ -144,14 +141,6 @@ void SP_target_speaker(edict_t *ent)
             ent->attenuation = ATTN_NORM;
     } else if (ent->attenuation == ATTN_NONE)
         ent->r.svflags |= SVF_BROADCAST;
-
-    // reliable sounds are sent to everyone
-    if (ent->spawnflags & SPAWNFLAG_SPEAKER_RELIABLE) {
-        if (ent->spawnflags & (SPAWNFLAG_SPEAKER_LOOPED_OFF | SPAWNFLAG_SPEAKER_LOOPED_ON))
-            G_Printf("%s: mixed reliable and looped flags\n", etos(ent));
-        else
-            ent->r.svflags |= SVF_BROADCAST;
-    }
 
     ent->use = Use_Target_Speaker;
 

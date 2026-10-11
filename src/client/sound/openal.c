@@ -265,21 +265,19 @@ static void AL_Shutdown(void)
 
 static ALenum AL_GetSampleFormat(int width, int channels)
 {
-    if (channels < 1 || channels > 2)
+    if (channels != 1 && channels != 2)
         return 0;
 
-    switch (width) {
-    case 1:
-        return AL_FORMAT_MONO8 + (channels - 1) * 2;
-    case 2:
-        return AL_FORMAT_MONO16 + (channels - 1) * 2;
-    case 4:
-        if (!s_supports_float)
-            return 0;
-        return AL_FORMAT_MONO_FLOAT32 + (channels - 1);
-    default:
-        return 0;
-    }
+    if (width == 1)
+        return channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+
+    if (width == 2)
+        return channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+
+    if (width == 4 && s_supports_float)
+        return channels == 2 ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_MONO_FLOAT32;
+
+    return 0;
 }
 
 static int AL_UploadSfx(sfx_t *s)
@@ -706,7 +704,7 @@ static void AL_UpdateReverb(void)
         if (s_reverb_presets[i] == preset)
             continue;
 
-        if (preset > REVERB_PRESET_NONE && preset < REVERB_PRESET_MAX) {
+        if (preset - 1 < q_countof(s_reverb_params)) {
             AL_LoadEffect(s_reverb_effects[i], &s_reverb_params[preset - 1]);
             qalAuxiliaryEffectSloti(s_reverb_slots[i], AL_EFFECTSLOT_EFFECT, s_reverb_effects[i]);
         } else {

@@ -184,7 +184,7 @@ extern bool             s_active;
 extern bool             s_supports_float;
 extern const sndapi_t   *s_api;
 
-#define MAX_CHANNELS            64
+#define MAX_CHANNELS            128
 extern channel_t    s_channels[MAX_CHANNELS];
 extern int          s_numchannels;
 

@@ -497,7 +497,7 @@ static void CG_SetEntitySoundOrigin(const centity_t *ent)
 
     // offset the origin for BSP models
     if (ent->current.solid == PACKED_BSP)
-        org = Vec3_Add(org, Box3_Center(ent->box));
+        org = Box3_ClampPoint(Box3_Translate(ent->box, org), cg.listener.origin);
 
     // set velocity for doppler effect
     if (cg.frame->servertime > cg.oldframe->servertime) {
