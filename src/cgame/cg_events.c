@@ -792,7 +792,7 @@ static void CG_RailCore(vec3_t start, vec3_t end)
     l->start = start;
     l->end = end;
     l->color = -1;
-    l->lifetime = cg_railtrail_time.integer;
+    l->lifetime = cg_railtrail_time.value * 1000;
     l->width = cg_railcore_width.integer;
     l->rgba = railcore_color;
 }
