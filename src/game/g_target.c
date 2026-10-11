@@ -1786,6 +1786,8 @@ void SP_target_poi(edict_t *self)
         if (self->spawnflags & SPAWNFLAG_POI_DYNAMIC)
             G_Printf("%s has useless spawnflag 'DYNAMIC'\n", etos(self));
     }
+
+    level.have_compass = true;
 }
 
 /*QUAKED target_music (1 0 0) (-8 -8 -8) (8 8 8)

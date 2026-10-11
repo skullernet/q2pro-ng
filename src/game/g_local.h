@@ -713,6 +713,8 @@ typedef struct {
     const char *start_items;
     // disable grappling hook
     bool no_grapple;
+    // does map have compass data?
+    bool have_compass;
 
     // saved gravity
     float gravity;
