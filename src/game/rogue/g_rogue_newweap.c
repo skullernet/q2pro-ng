@@ -413,38 +413,34 @@ bool fire_player_melee(edict_t *self, vec3_t start, vec3_t aim, int reach, int d
             continue;
 
         // check distance
-        vec3_t closest_point_to_check = Box3_ClampPoint(check->r.absbox, start);
-        vec3_t closest_point_to_self = Box3_ClampPoint(self->r.absbox, closest_point_to_check);
-
-        if (Vec3_Distance(closest_point_to_check, closest_point_to_self) > reach)
+        box3_t self_box = Box3_Expand(self->r.absbox, -1);
+        box3_t check_box = Box3_Expand(check->r.absbox, -1);
+        if (Box3_Distance(self_box, check_box) > reach)
             continue;
 
         // check angle if we aren't intersecting
-        box3_t box1 = Box3_Expand(self->r.absbox, -2);
-        box3_t box2 = Box3_Expand(check->r.absbox, -2);
-
-        if (!Box3_Intersects(box1, box2)) {
-            vec3_t point = Box3_Center(check->r.absbox);
+        if (!Box3_ContainsPoint(check_box, start)) {
+            vec3_t point = Box3_Center(check_box);
             vec3_t dir = Vec3_Direction(point, start);
             if (Vec3_Dot(dir, aim) < 0.70f)
                 continue;
         }
 
-        if (!CanDamage(self, check))
+        if (!CanDamage(check, self))
             continue;
 
         // do the damage
         if (check->r.svflags & SVF_MONSTER)
             check->pain_debounce_time -= random_time_sec(0.005f, 0.075f);
 
-        vec3_t normal = Vec3_Negate(aim);
+        vec3_t point = Box3_ClampPoint(check_box, start);
+        int normal = DirToByte(Vec3_Negate(aim));
 
+        damageflags_t flags = DAMAGE_NO_KNOCKBACK;
         if (mod == MOD_CHAINFIST)
-            T_Damage(check, self, self, aim, closest_point_to_check, DirToByte(normal),
-                     damage, kick / 2, DAMAGE_DESTROY_ARMOR | DAMAGE_NO_KNOCKBACK, mod);
-        else
-            T_Damage(check, self, self, aim, closest_point_to_check, DirToByte(normal),
-                     damage, kick / 2, DAMAGE_NO_KNOCKBACK, mod);
+            flags |= DAMAGE_DESTROY_ARMOR;
+
+        T_Damage(check, self, self, aim, point, normal, damage, kick / 2, flags, mod);
 
         was_hit = true;
     }

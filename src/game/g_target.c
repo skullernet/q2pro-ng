@@ -7,30 +7,6 @@ Fire an origin based temp entity event to the clients.
 "style"     type byte
 */
 
-enum {
-    TE_EXPLOSION1 = 5,
-    TE_EXPLOSION2 = 6,
-    TE_ROCKET_EXPLOSION = 7,
-    TE_GRENADE_EXPLOSION = 8,
-    TE_ROCKET_EXPLOSION_WATER = 17,
-    TE_GRENADE_EXPLOSION_WATER = 18,
-    TE_BFG_EXPLOSION = 20,
-    TE_BFG_BIGEXPLOSION = 21,
-    TE_BOSSTPORT = 22,
-    TE_PLASMA_EXPLOSION = 28,
-    TE_PLAIN_EXPLOSION = 35,
-    TE_CHAINFIST_SMOKE = 45,
-    TE_TRACKER_EXPLOSION = 47,
-    TE_TELEPORT_EFFECT = 48,
-    TE_DBALL_GOAL = 49,
-    TE_NUKEBLAST = 51,
-    TE_WIDOWSPLASH = 52,
-    TE_EXPLOSION1_BIG = 53,
-    TE_EXPLOSION1_NP = 54,
-    TE_EXPLOSION1_NL = 62,
-    TE_EXPLOSION2_NL = 63,
-};
-
 // table to remap all single-byte temporary entities to events
 static const byte events_remap[] = {
     [TE_PLAIN_EXPLOSION]         = EV_EXPLOSION_PLAIN,
@@ -58,22 +34,20 @@ static const byte events_remap[] = {
 
 void USE(Use_Target_Tent)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    if (ent->style < q_countof(events_remap)) {
-        entity_event_t event = events_remap[ent->style];
-        if (event) {
-            G_AddEvent(ent, event, 0);
-            return;
-        }
-    }
-
-    G_Printf("%s has bad style\n", etos(ent));
-    G_FreeEdict(ent);
+    Q_assert_soft(ent->style < q_countof(events_remap));
+    G_AddEvent(ent, events_remap[ent->style], 0);
 }
 
 void SP_target_temp_entity(edict_t *ent)
 {
-    if (level.is_n64 && ent->style == 27)
+    if (level.is_n64 && ent->style == TE_BLUEHYPERBLASTER)
         ent->style = TE_TELEPORT_EFFECT;
+
+    if (ent->style >= q_countof(events_remap) || !events_remap[ent->style]) {
+        G_Printf("%s has bad style\n", etos(ent));
+        G_FreeEdict(ent);
+        return;
+    }
 
     ent->use = Use_Target_Tent;
     trap_LinkEntity(ent);
@@ -406,7 +380,8 @@ void THINK(target_explosion_explode)(edict_t *self)
 
     G_AddEvent(self, EV_EXPLOSION1, 0);
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
+    if (self->dmg)
+        T_RadiusDamage(self, self->activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_EXPLOSIVE);
 
     save = self->delay;
     self->delay = 0;
@@ -523,20 +498,9 @@ Set "sounds" to one of the following:
         useful for lava/sparks
 */
 
-static const byte splash_events[] = {
-    EV_SPLASH_UNKNOWN,
-    EV_SPLASH_SPARKS,
-    EV_SPLASH_BLUE_WATER,
-    EV_SPLASH_BROWN_WATER,
-    EV_SPLASH_SLIME,
-    EV_SPLASH_LAVA,
-    EV_SPLASH_BLOOD,
-    EV_SPLASH_ELECTRIC_N64,
-};
-
 void USE(use_target_splash)(edict_t *self, edict_t *other, edict_t *activator)
 {
-    G_AddEvent(self, self->sounds, self->count);
+    G_AddEvent(self, EV_SPLASH_UNKNOWN + self->sounds, self->count);
 
     if (self->dmg)
         T_RadiusDamage(self, activator, self->dmg, NULL, NULL, self->dmg + 40, DAMAGE_NONE, MOD_SPLASH);
@@ -554,13 +518,12 @@ void SP_target_splash(edict_t *self)
     if (level.is_n64 && self->sounds == SPLASH_SPARKS)
         self->sounds = SPLASH_ELECTRIC_N64;
 
-    if (self->sounds >= q_countof(splash_events)) {
+    if (self->sounds > SPLASH_ELECTRIC_N64) {
         G_Printf("%s has bad sounds", etos(self));
         self->sounds = SPLASH_UNKNOWN;
     }
 
-    self->sounds = splash_events[self->sounds];
-    self->count  = G_EncodeSplash(DirToByte(self->movedir), self->count & 255);
+    self->count = G_EncodeSplash(DirToByte(self->movedir), self->count & 255);
 
     trap_LinkEntity(self);
 }
@@ -579,7 +542,6 @@ For gibs:
     speed how fast it should be moving otherwise it
     will just be dropped
 */
-void ED_CallSpawn(edict_t *ent);
 
 void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
 {
@@ -606,6 +568,8 @@ void USE(use_target_spawner)(edict_t *self, edict_t *other, edict_t *activator)
 
     ED_InitSpawnVars();
     ED_CallSpawn(ent);
+    if (!ent->r.inuse)
+        return;
     trap_LinkEntity(ent);
 
     if (ent->r.solid == SOLID_BBOX || (G_GetClipMask(ent) & (CONTENTS_PLAYER)))

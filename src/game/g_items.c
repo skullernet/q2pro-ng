@@ -1001,7 +1001,7 @@ edict_t *Drop_Item(edict_t *ent, const gitem_t *item)
 
     if (ent->client) {
         AngleVectors(ent->client->v_angle, &forward, &right, NULL);
-        dropped->s.origin = G_ProjectSource(ent->s.origin, Vec3(24, 0, -16), forward, right);
+        dropped->s.origin = BG_ProjectSource(ent->s.origin, Vec3(24, 0, -16), forward, right);
         dropped->s.origin = G_Trace(ent->s.origin, dropped->s.origin, dropped->r.box, ent->s.number, CONTENTS_SOLID).endpos;
     } else {
         AngleVectors(ent->s.angles, &forward, NULL, NULL);

@@ -1571,18 +1571,18 @@ void ai_run(edict_t *self, float dist)
             AngleVectors(self->s.angles, &v_forward, &v_right, NULL);
 
             v = Vec3(d2, -16, 0);
-            args.end = left_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
+            args.end = left_target = BG_ProjectSource(self->s.origin, v, v_forward, v_right);
             left = trap_Trace(&args).fraction;
 
             v = Vec3(d2, 16, 0);
-            args.end = right_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
+            args.end = right_target = BG_ProjectSource(self->s.origin, v, v_forward, v_right);
             right = trap_Trace(&args).fraction;
 
             center = (d1 * center) / d2;
             if (left >= center && left > right) {
                 if (left < 1) {
                     v = Vec3(d2 * left * 0.5f, -16, 0);
-                    left_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
+                    left_target = BG_ProjectSource(self->s.origin, v, v_forward, v_right);
                 }
                 self->monsterinfo.saved_goal = self->monsterinfo.last_sighting;
                 self->monsterinfo.aiflags |= AI_PURSUE_TEMP;
@@ -1593,7 +1593,7 @@ void ai_run(edict_t *self, float dist)
             } else if (right >= center && right > left) {
                 if (right < 1) {
                     v = Vec3(d2 * right * 0.5f, 16, 0);
-                    right_target = G_ProjectSource(self->s.origin, v, v_forward, v_right);
+                    right_target = BG_ProjectSource(self->s.origin, v, v_forward, v_right);
                 }
                 self->monsterinfo.saved_goal = self->monsterinfo.last_sighting;
                 self->monsterinfo.aiflags |= AI_PURSUE_TEMP;

@@ -114,7 +114,7 @@ vec3_t M_ProjectFlashSource(edict_t *self, vec3_t offset, vec3_t forward, vec3_t
 {
     if (self->s.scale)
         offset = Vec3_Scale(offset, self->s.scale);
-    return G_ProjectSource(self->s.origin, offset, forward, right);
+    return BG_ProjectSource(self->s.origin, offset, forward, right);
 }
 
 // [Paril-KEX] check if shots fired from the given offset

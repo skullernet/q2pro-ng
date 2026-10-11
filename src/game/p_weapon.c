@@ -65,7 +65,7 @@ ray3_t P_ProjectSource(edict_t *ent, vec3_t angles, vec3_t distance, bool adjust
     AngleVectors(angles, &forward, &right, &up);
 
     ray3_t result;
-    result.start = G_ProjectSource2(eye_position, distance, forward, right, up);
+    result.start = BG_ProjectSource2(eye_position, distance, forward, right, up);
 
     vec3_t end = Vec3_MA(eye_position, 8192, forward);
 

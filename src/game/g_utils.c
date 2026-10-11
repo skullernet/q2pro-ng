@@ -7,22 +7,6 @@
 static byte g_mem_pool[0x100000];
 static int  g_mem_used;
 
-vec3_t G_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right)
-{
-    point = Vec3_MA(point, distance.x, forward);
-    point = Vec3_MA(point, distance.y, right);
-    point.z += distance.z;
-    return point;
-}
-
-vec3_t G_ProjectSource2(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t up)
-{
-    point = Vec3_MA(point, distance.x, forward);
-    point = Vec3_MA(point, distance.y, right);
-    point = Vec3_MA(point, distance.z, up);
-    return point;
-}
-
 /*
 =============
 G_Find
@@ -66,6 +50,8 @@ findradius (origin, radius)
 */
 edict_t *findradius(edict_t *from, vec3_t org, float rad)
 {
+    if (rad < 0)
+        return NULL;
     if (!from)
         from = g_edicts;
     else
@@ -616,7 +602,7 @@ uint32_t G_EncodeSound(soundchan_t channel, int index, float volume, float atten
 {
     uint32_t vol, att;
 
-    if (!index)
+    if (index <= 0)
         return 0;
 
     Q_assert(index < MAX_SOUNDS);

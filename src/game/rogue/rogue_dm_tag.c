@@ -141,7 +141,6 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
 {
     trace_t trace;
     vec3_t  forward, right;
-    static const vec3_t offset = { 24, 0, -16 };
 
     // reset the score count for next player
     tag_count = 0;
@@ -162,7 +161,7 @@ static void Tag_DropToken(edict_t *ent, const gitem_t *item)
     tag_token->r.ownernum = ent->s.number;
 
     AngleVectors(ent->client->v_angle, &forward, &right, NULL);
-    tag_token->s.origin = G_ProjectSource(ent->s.origin, offset, forward, right);
+    tag_token->s.origin = BG_ProjectSource(ent->s.origin, Vec3(24, 0, -16), forward, right);
     trace = G_Trace(ent->s.origin, tag_token->s.origin, tag_token->r.box, ent->s.number, CONTENTS_SOLID);
     tag_token->s.origin = trace.endpos;
 

@@ -1290,8 +1290,6 @@ void      Compass_Update(edict_t *ent, bool first);
 //
 // g_utils.c
 //
-vec3_t G_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right);
-vec3_t G_ProjectSource2(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t up);
 edict_t *G_Find(edict_t *from, int fieldofs, const char *match);
 edict_t *findradius(edict_t *from, vec3_t org, float rad);
 edict_t *G_PickTarget(const char *targetname);

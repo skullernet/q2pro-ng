@@ -227,6 +227,7 @@ typedef enum {
     EV_EARTHQUAKE,
     EV_EARTHQUAKE2,
 
+    // must match splash_color_t order!!!
     EV_SPLASH_UNKNOWN,
     EV_SPLASH_SPARKS,
     EV_SPLASH_BLUE_WATER,
@@ -338,6 +339,32 @@ typedef enum {
     SPLASH_BLOOD,
     SPLASH_ELECTRIC_N64, // KEX
 } splash_color_t;
+
+// all single-byte temporary entities, for remapping to events
+typedef enum {
+    TE_EXPLOSION1 = 5,
+    TE_EXPLOSION2 = 6,
+    TE_ROCKET_EXPLOSION = 7,
+    TE_GRENADE_EXPLOSION = 8,
+    TE_ROCKET_EXPLOSION_WATER = 17,
+    TE_GRENADE_EXPLOSION_WATER = 18,
+    TE_BFG_EXPLOSION = 20,
+    TE_BFG_BIGEXPLOSION = 21,
+    TE_BOSSTPORT = 22,
+    TE_BLUEHYPERBLASTER = 27,   // N64 hack only
+    TE_PLASMA_EXPLOSION = 28,
+    TE_PLAIN_EXPLOSION = 35,
+    TE_CHAINFIST_SMOKE = 45,
+    TE_TRACKER_EXPLOSION = 47,
+    TE_TELEPORT_EFFECT = 48,
+    TE_DBALL_GOAL = 49,
+    TE_NUKEBLAST = 51,
+    TE_WIDOWSPLASH = 52,
+    TE_EXPLOSION1_BIG = 53,
+    TE_EXPLOSION1_NP = 54,
+    TE_EXPLOSION1_NL = 62,
+    TE_EXPLOSION2_NL = 63,
+} legacy_tent_t;
 
 // sound channels
 // channel 0 never willingly overrides
@@ -482,6 +509,22 @@ static inline player_heightfog_t BG_LerpHeightFog(player_heightfog_t a, player_h
         .density = Q_lerpf(a.density, b.density, t),
         .falloff = Q_lerpf(a.falloff, b.falloff, t)
     };
+}
+
+static inline vec3_t BG_ProjectSource(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right)
+{
+    point = Vec3_MA(point, distance.x, forward);
+    point = Vec3_MA(point, distance.y, right);
+    point.z += distance.z;
+    return point;
+}
+
+static inline vec3_t BG_ProjectSource2(vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t up)
+{
+    point = Vec3_MA(point, distance.x, forward);
+    point = Vec3_MA(point, distance.y, right);
+    point = Vec3_MA(point, distance.z, up);
+    return point;
 }
 
 //==============================================
