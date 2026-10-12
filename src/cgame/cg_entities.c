@@ -330,23 +330,19 @@ static float CG_HandMultiplier(void)
     return 1;
 }
 
-static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
+static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
 {
     int         i, steps;
-    vec3_t      dist, org, offset = vec3_origin;
-    float       x, y, z, d;
+    vec3_t      dir, org, offset = vec3_origin;
+    vec3_t      tmp, f, r, u;
     entity_t    ent;
     vec3_t      angles;
-    float       len;
+    float       len, model_length;
     int         framenum;
-    float       model_length;
     float       hand_multiplier = 0;
     qhandle_t   model = cgs.models.precache[cent->current.modelindex];
     int         entnum = cent->current.othernum;
-    float       scale = cent->current.scale;
-
-    if (!scale)
-        scale = 1;
+    float       scale = cent->current.scale ?: 1;
 
     if (entnum < cgs.maxclients) {
         if (model == cgs.models.heatbeam)
@@ -359,48 +355,46 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
 
     // if coming from the player, update the start position
     if (entnum == cg.frame->ps.clientnum) {
-        hand_multiplier = CG_HandMultiplier();
+        AngleVectors(cg.refdef.viewangles, &f, &r, &u);
 
         // set up gun position
         org = cg.refdef.vieworg;
 
-        org = Vec3_MA(org, cg_gun_y.value, cg.v_forward);
-        org = Vec3_MA(org, cg_gun_x.value, cg.v_right);
-        org = Vec3_MA(org, cg_gun_z.value, cg.v_up);
-
-        x = offset.x;
-        y = offset.y;
-        z = offset.z;
+        org = Vec3_MA(org, cg_gun_x.value, r);
+        org = Vec3_MA(org, cg_gun_y.value, f);
+        org = Vec3_MA(org, cg_gun_z.value, u);
 
         // adjust offset for gun fov
         if (cg_gunfov.value > 0) {
             float fov_x = Q_clipf(cg_gunfov.value, 30, 160);
             float fov_y = V_CalcFov(fov_x, 4, 3);
 
-            x *= tanf(cg.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
-            z *= tanf(cg.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
+            offset.x *= tanf(cg.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
+            offset.z *= tanf(cg.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
         }
 
-        org = Vec3_MA(org, hand_multiplier * x, cg.v_right);
-        org = Vec3_MA(org, y, cg.v_forward);
-        org = Vec3_MA(org, z, cg.v_up);
+        // adjust offset for handedness
+        hand_multiplier = CG_HandMultiplier();
+        offset.x *= hand_multiplier;
+
         if (hand_multiplier == 0)
-            org = Vec3_MA(org, -1, cg.v_up);
+            offset.z -= 1;
+
+        org = Vec3_MA(org, offset.x, r);
+        org = Vec3_MA(org, offset.y, f);
+        org = Vec3_MA(org, offset.z, u);
 
         // calculate pitch and yaw
-        dist = Vec3_Sub(end, org);
+        dir = Vec3_Sub(end, org);
 
-        if (model != cgs.models.grapple_cable) {
-            d = Vec3_Length(dist);
-            dist = Vec3_Scale(cg.v_forward, d);
-        }
+        if (model != cgs.models.grapple_cable)
+            dir = Vec3_Scale(f, Vec3_Length(dir));
 
-        // FIXME: use cg.refdef.viewangles?
-        angles = vectoangles(dist);
+        angles = vectoangles(dir);
 
         // if it's the heatbeam, draw the particle effect
         if (model == cgs.models.heatbeam && !sv_paused.integer)
-            CG_Heatbeam(org, dist);
+            CG_Heatbeam(org, dir);
 
         framenum = 1;
     } else {
@@ -408,11 +402,9 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
 
         // if it's a player, use the hardcoded player offset
         if (entnum < cgs.maxclients) {
-            vec3_t  tmp, f, r, u;
-
             // calculate pitch and yaw
-            dist = Vec3_Sub(end, org);
-            angles = vectoangles(dist);
+            dir = Vec3_Sub(end, org);
+            angles = vectoangles(dir);
 
             tmp.pitch = -angles.pitch;
             tmp.yaw = angles.yaw + 180.0f;
@@ -428,14 +420,15 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
         }
 
         // calculate pitch and yaw
-        dist = Vec3_Sub(end, org);
-        angles = vectoangles(dist);
+        dir = Vec3_Sub(end, org);
+        angles = vectoangles(dir);
 
         framenum = 2;
     }
 
+    len = Vec3_Normalize(&dir);
+
     // add new entities for the beams
-    d = Vec3_Normalize(&dist);
     if (model == cgs.models.heatbeam)
         model_length = 32.0f * scale;
     else if (model == cgs.models.lightning)
@@ -445,11 +438,13 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
 
     // correction for grapple cable model, which has origin in the middle
     if (entnum == cg.frame->ps.clientnum && model == cgs.models.grapple_cable && hand_multiplier) {
-        org = Vec3_MA(org, model_length * 0.5f, dist);
-        d -= model_length * 0.5f;
+        org = Vec3_MA(org, model_length * 0.5f, dir);
+        len -= model_length * 0.5f;
     }
 
-    steps = ceilf(d / model_length);
+    steps = ceilf(len / model_length);
+    if (steps > 1)
+        dir = Vec3_Scale(dir, (len - model_length) / (steps - 1));
 
     memset(&ent, 0, sizeof(ent));
     ent.model = model;
@@ -457,11 +452,6 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
     ent.alpha = CG_LerpEntityAlpha(cent);
     if (ent.alpha != 1.0f)
         ent.flags |= RF_TRANSLUCENT;
-
-    if (steps > 1) {
-        len = (d - model_length) / (steps - 1);
-        dist = Vec3_Scale(dist, len);
-    }
 
     if (model == cgs.models.heatbeam) {
         ent.frame = framenum;
@@ -484,7 +474,7 @@ static void CG_DrawBeam(vec3_t start, vec3_t end, const centity_t *cent)
         if (model != cgs.models.heatbeam)
             ent.angles.roll = trap_SlowRand() % 360;
         trap_R_AddEntity(&ent);
-        ent.origin = Vec3_Add(ent.origin, dist);
+        ent.origin = Vec3_Add(ent.origin, dir);
     }
 }
 
@@ -798,8 +788,9 @@ static void CG_AddPacketEntities(void)
             goto skip;
         }
 
+        // draw model beams
         if (renderfx & RF_BEAM && s1->modelindex > MODELINDEX_DUMMY) {
-            CG_DrawBeam(ent.oldorigin, ent.origin, cent);
+            CG_DrawBeam(cent, ent.oldorigin, ent.origin);
             goto skip;
         }
 
@@ -839,7 +830,7 @@ static void CG_AddPacketEntities(void)
             }
         }
 
-        // allow skin override for remaster
+        // allow skin override
         if (renderfx & RF_CUSTOMSKIN && s1->skinnum < MAX_IMAGES) {
             ent.skin = cgs.images.precache[s1->skinnum];
             ent.skinnum = 0;

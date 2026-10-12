@@ -651,7 +651,7 @@ void CG_DebugTrail(vec3_t start, vec3_t end);
 void CG_Flashlight(int ent, vec3_t pos);
 void CG_ForceWall(vec3_t start, vec3_t end, int color);
 void CG_BubbleTrail2(vec3_t start, vec3_t end, int dist);
-void CG_Heatbeam(vec3_t start, vec3_t end);
+void CG_Heatbeam(vec3_t start, vec3_t forward);
 void CG_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude);
 void CG_TrackerTrail(centity_t *ent, vec3_t end);
 void CG_TagTrail(centity_t *ent, vec3_t end, int color);
