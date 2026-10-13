@@ -609,14 +609,14 @@ const mmove_t MMOVE_T(shambler_move_death) = { FRAME_death01, FRAME_death11, sha
 
 // FIXME: better gibs for shambler, shambler head
 static const gib_def_t shambler_gibs_plain[] = {
-    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/sm_meat/tris.md2", 8, .scale = 2 },
     { "models/objects/gibs/chest/tris.md2", 1 },
     { "models/objects/gibs/head2/tris.md2", 1, GIB_HEAD },
     { 0 }
 };
 
 static const gib_def_t shambler_gibs_proto[] = {
-    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/sm_meat/tris.md2", 6, .scale = 2 },
     { "models/objects/gibs/chest/tris.md2", 1 },
     { "models/monsters/shambler_prototype/gibs/g_arm.md2", 1 },
     { "models/monsters/shambler_prototype/gibs/g_leg.md2", 1 },
@@ -625,7 +625,7 @@ static const gib_def_t shambler_gibs_proto[] = {
 };
 
 static const gib_def_t shambler_gibs_strogg[] = {
-    { "models/objects/gibs/sm_meat/tris.md2", 1 },
+    { "models/objects/gibs/sm_meat/tris.md2", 6, .scale = 2 },
     { "models/objects/gibs/chest/tris.md2", 1 },
     { "models/monsters/shamblerstrogg/gibs/g_arm.md2", 1 },
     { "models/monsters/shamblerstrogg/gibs/g_leg.md2", 1 },
