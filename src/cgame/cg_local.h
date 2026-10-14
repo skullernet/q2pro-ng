@@ -648,7 +648,6 @@ void CG_AddLightStyles(void);
 void CG_BlasterParticles2(vec3_t org, vec3_t dir, unsigned int color);
 void CG_BlasterTrail2(centity_t *ent, vec3_t end);
 void CG_DebugTrail(vec3_t start, vec3_t end);
-void CG_Flashlight(int ent, vec3_t pos);
 void CG_ForceWall(vec3_t start, vec3_t end, int color);
 void CG_BubbleTrail2(vec3_t start, vec3_t end, int dist);
 void CG_Heatbeam(vec3_t start, vec3_t forward);

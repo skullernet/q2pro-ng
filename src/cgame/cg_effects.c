@@ -149,7 +149,26 @@ void CG_AddDLights(void)
     for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
         if (dl->die < cg.time)
             continue;
-        light.origin = dl->origin;
+
+        // keyed lights are muzzleflashes. make them follow the entity.
+        if (dl->key) {
+            int entnum = dl->key - 1;
+            vec3_t org, ang, fv, rv;
+
+            if (entnum == cg.frame->ps.clientnum) {
+                org = cg.player_entity_origin;
+                ang = cg.player_entity_angles;
+            } else {
+                const centity_t *ent = &cg_entities[entnum];
+                org = Vec3_Lerp(ent->prev.origin, ent->current.origin, cg.lerpfrac);
+                ang = Vec3_LerpAngles(ent->prev.angles, ent->current.angles, cg.lerpfrac);
+            }
+
+            AngleVectors(ang, &fv, &rv, NULL);
+            light.origin = BG_ProjectSource(org, dl->origin, fv, rv);
+        } else
+            light.origin = dl->origin;
+
         light.color = dl->color;
         light.radius = dl->radius;
         trap_R_AddLight(&light);
@@ -203,7 +222,6 @@ CG_MuzzleFlash
 */
 void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
 {
-    vec3_t      fv, rv;
     cdlight_t   *dl;
     float       volume;
     char        soundname[MAX_QPATH];
@@ -216,11 +234,8 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
     entnum = pl->current.number;
     local = entnum == cg.frame->ps.clientnum;
 
-    dl = CG_AllocDlight(entnum);
-    dl->origin = pl->current.origin;
-    AngleVectors(pl->current.angles, &fv, &rv, NULL);
-    dl->origin = Vec3_MA(dl->origin, 18, fv);
-    dl->origin = Vec3_MA(dl->origin, 16, rv);
+    dl = CG_AllocDlight(entnum + 1);
+    dl->origin = Vec3(18, 16, 0);
     dl->radius = 100 * (2 - silenced) + (Q_rand() & 31);
     dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
@@ -468,7 +483,7 @@ CG_MuzzleFlash2
 */
 void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 {
-    vec3_t      ofs, origin, flash_origin;
+    vec3_t      offset, origin, flash_origin;
     cdlight_t   *dl;
     vec3_t      forward, right;
     char        soundname[MAX_QPATH];
@@ -482,23 +497,17 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     // locate the origin
     AngleVectors(ent->current.angles, &forward, &right, NULL);
 
-    scale = ent->current.scale;
-    if (!scale)
-        scale = 1.0f;
-
+    scale = ent->current.scale ?: 1.0f;
     entnum = ent->current.number;
 
-    ofs = Vec3_Scale(monster_flash_offset[weapon], scale);
+    offset = Vec3_Scale(monster_flash_offset[weapon], scale);
+    origin = BG_ProjectSource(ent->current.origin, offset, forward, right);
 
-    origin = ent->current.origin;
-    origin = Vec3_MA(origin, ofs.forward, forward);
-    origin = Vec3_MA(origin, ofs.right, right);
-    origin.z += ofs.up;
-
+    offset.forward += 4.0f * scale;
     flash_origin = Vec3_MA(origin, 4.0f * scale, forward);
 
-    dl = CG_AllocDlight(entnum);
-    dl->origin = flash_origin;
+    dl = CG_AllocDlight(entnum + 1);
+    dl->origin = offset;
     dl->radius = 200 + (Q_rand() & 31);
     dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
 
@@ -1618,17 +1627,6 @@ void CG_TeleportParticles(vec3_t org)
                 p->accel.x = p->accel.y = 0;
                 p->accel.z = -PARTICLE_GRAVITY;
             }
-}
-
-void CG_Flashlight(int ent, vec3_t pos)
-{
-    cdlight_t   *dl;
-
-    dl = CG_AllocDlight(ent);
-    dl->origin = pos;
-    dl->radius = 400;
-    dl->die = cg.time + 100;
-    dl->color = Vec3(1, 1, 1);
 }
 
 /*
