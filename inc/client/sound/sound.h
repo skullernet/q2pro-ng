@@ -71,17 +71,17 @@ bool S_SupportsFloat(void);
 void S_PauseRawSamples(bool paused);
 
 #if USE_AVCODEC
-void OGG_Play(void);
-void OGG_Stop(void);
-void OGG_Update(void);
-void OGG_LoadTrackList(void);
-void OGG_Init(void);
-void OGG_Shutdown(void);
+void Music_Play(void);
+void Music_Stop(void);
+void Music_Update(void);
+void Music_LoadTrackList(void);
+void Music_Init(void);
+void Music_Shutdown(void);
 #else
-#define OGG_Play()          (void)0
-#define OGG_Stop()          (void)0
-#define OGG_Update()        (void)0
-#define OGG_LoadTrackList() (void)0
-#define OGG_Init()          (void)0
-#define OGG_Shutdown()      (void)0
+#define Music_Play()            (void)0
+#define Music_Stop()            (void)0
+#define Music_Update()          (void)0
+#define Music_LoadTrackList()   (void)0
+#define Music_Init()            (void)0
+#define Music_Shutdown()        (void)0
 #endif

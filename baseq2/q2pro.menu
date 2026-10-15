@@ -104,9 +104,9 @@ begin sound
     title "Sound Setup"
     values "sound backend" s_enable "Disabled" "Miniaudio" "OpenAL"
     range "sound volume" s_volume 0 1
-    range "music volume" ogg_volume 0 1
-    toggle "enable music" ogg_enable
-    toggle "shuffle tracks" ogg_shuffle
+    range "music volume" music_volume 0 1
+    toggle "enable music" music_enable
+    toggle "shuffle tracks" music_shuffle
     toggle "underwater effect" s_underwater
     toggle "reverb effect" s_reverb
     range "doppler factor" s_doppler_factor 0 1

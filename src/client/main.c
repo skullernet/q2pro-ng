@@ -548,7 +548,7 @@ void CL_Disconnect(error_type_t type)
 
     // start menu track, or stop music
     if (type == ERR_DROP || type == ERR_DISCONNECT) {
-        OGG_Play();
+        Music_Play();
     }
 
     if (type == ERR_DISCONNECT) {
@@ -1609,7 +1609,7 @@ void CL_RestartFilesystem(bool total)
         FS_Restart(total);
     }
 
-    OGG_LoadTrackList();
+    Music_LoadTrackList();
 
     if (cls_state == ca_disconnected) {
         UI_OpenMenu(UIMENU_DEFAULT);
@@ -2350,7 +2350,7 @@ void CL_Init(void)
 
     CL_InitRefresh();
 
-    OGG_Init();
+    Music_Init();
     S_Init();   // sound must be initialized after window is created
 
     CL_InitLocal();
@@ -2401,7 +2401,7 @@ void CL_Shutdown(void)
 #endif
 
     HTTP_Shutdown();
-    OGG_Shutdown();
+    Music_Shutdown();
     S_Shutdown();
     IN_Shutdown();
     Con_Shutdown();

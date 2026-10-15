@@ -211,7 +211,7 @@ void S_Init(void)
     s_registering = false;
 
     // start the cd track
-    OGG_Play();
+    Music_Play();
 
 fail:
     Cvar_SetInteger(s_enable, s_started, FROM_CODE);
@@ -253,7 +253,7 @@ void S_Shutdown(void)
 
     S_StopAllSounds();
     S_FreeAllSounds();
-    OGG_Stop();
+    Music_Stop();
 
     if (s_api) {
         s_api->shutdown();
@@ -905,7 +905,7 @@ void S_Update(void)
     if (!s_started || !s_active)
         return;
 
-    OGG_Update();
+    Music_Update();
 
     S_IssuePlaysounds();
 
