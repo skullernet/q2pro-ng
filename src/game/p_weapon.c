@@ -345,6 +345,8 @@ void NoAmmoWeaponChange(edict_t *ent, bool sound)
         ent->client->newweapon = item;
         return;
     }
+
+    ent->client->weapon_fire_buffered = false;
 }
 
 void G_RemoveAmmoEx(edict_t *ent, int quantity)
