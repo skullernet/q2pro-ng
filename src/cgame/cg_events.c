@@ -242,9 +242,6 @@ void CG_RegisterTEntModels(void)
 
     for (int i = 0; i < MFLASH_TOTAL; i++)
         cgs.models.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
-
-    // check for remaster powerscreen model
-    cgs.need_powerscreen_scale = trap_FS_OpenFile("models/items/armor/effect/tris.md2", NULL, 0) == 2300;
 }
 
 /*
@@ -257,7 +254,7 @@ EXPLOSION MANAGEMENT
 
 #define MAX_EXPLOSIONS  256
 
-typedef struct {
+typedef struct explosion_s {
     enum {
         ex_free,
         ex_misc,
@@ -309,7 +306,7 @@ static explosion_t *CG_AllocExplosion(void)
     return oldest;
 }
 
-static explosion_t *CG_PlainExplosion(vec3_t pos)
+explosion_t *CG_PlainExplosion(vec3_t pos)
 {
     explosion_t *ex;
 
@@ -480,19 +477,20 @@ void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir)
     ex->frames = 4;
 }
 
-void CG_WeldingLight(vec3_t pos)
+/*
+=================
+CG_ColorFlash - flash of light
+=================
+*/
+void CG_ColorFlash(vec3_t pos, int intensity, float r, float g, float b)
 {
-    explosion_t *ex = CG_PlainExplosion(pos);
+    explosion_t *ex = CG_AllocExplosion();
+    ex->ent.origin = pos;
     ex->type = ex_light;
-    ex->light = 100 + (Q_rand() % 75);
-    ex->lightcolor = Vec3(1.0f, 1.0f, 0.3f);
+    ex->start = cg.oldframe->servertime;
+    ex->light = intensity;
+    ex->lightcolor = Vec3(r, g, b);
     ex->frames = 2;
-}
-
-void CG_GenericExplosion(vec3_t pos)
-{
-    CG_PlainExplosion(pos);
-    CG_ExplosionParticles(pos);
 }
 
 static void CG_AddExplosions(void)
@@ -982,7 +980,7 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
     }
 
     if (type == EV_WELDING_SPARKS)
-        CG_WeldingLight(pos);
+        CG_ColorFlash(pos, 100 + (Q_rand() % 75), 1.0f, 1.0f, 0.3f);
 }
 
 static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
@@ -1110,25 +1108,25 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
         break;
 
     case EV_TRACKER_EXPLOSION:
-        CG_ColorFlash(pos, 0, 150, -1, -1, -1);
+        CG_ColorFlash(pos, 150, -1, -1, -1);
         CG_ColorExplosionParticles(pos, 0, 1);
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, cgs.sounds.disrexp, 1, ATTN_NORM, 0);
         break;
 
     case EV_ENFORCER_BOLT:
-        CG_ColorFlash(pos, 0, 150, 1.0f, 1.0f, 0.3f);
+        CG_ColorFlash(pos, 150, 1.0f, 1.0f, 0.3f);
         CG_ParticleEffect2(pos, dir, 226, 15);
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("enforcer/enfstop.wav"), 1, ATTN_NORM, 0);
         break;
 
     case EV_HELLKNIGHT_MAGIC:
-        CG_ColorFlash(pos, 0, 150, 1.0f, 1.0f, 0.3f);
+        CG_ColorFlash(pos, 150, 1.0f, 1.0f, 0.3f);
         CG_ParticleEffect2(pos, dir, 226, 15);
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("hknight/hit.wav"), 1, ATTN_NORM, 0);
         break;
 
     case EV_WIZARD_SPIT:
-        CG_ColorFlash(pos, 0, 150, 0.0f, 1.0f, 0.0f);
+        CG_ColorFlash(pos, 150, 0.0f, 1.0f, 0.0f);
         CG_ParticleEffect2(pos, dir, 209, 15);
         trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_AUTO, trap_S_RegisterSound("wizard/hit.wav"), 1, ATTN_NORM, 0);
         break;

@@ -328,7 +328,6 @@ typedef struct {
 
     int         maxclients;
     bool        demoplayback;
-    bool        need_powerscreen_scale;
 
     char        statusbar[MAX_NET_STRING];
 
@@ -533,14 +532,16 @@ typedef struct cg_sustain_s {
     void    (*think)(struct cg_sustain_s *self);
 } cg_sustain_t;
 
+typedef struct explosion_s explosion_t;
+
 void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, vec3_t offset, float scale);
 void CG_AddMuzzleFX(vec3_t origin, vec3_t angles, cg_muzzlefx_t fx, int skin, float scale);
 void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first);
 
+explosion_t *CG_PlainExplosion(vec3_t pos);
 void CG_SmokeAndFlash(vec3_t origin);
 void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir);
-void CG_WeldingLight(vec3_t pos);
-void CG_GenericExplosion(vec3_t pos);
+void CG_ColorFlash(vec3_t pos, int intensity, float r, float g, float b);
 
 void CG_EntityEffects(centity_t *cent);
 void CG_EntityEvents(centity_t *cent);
@@ -654,7 +655,6 @@ void CG_Heatbeam(vec3_t start, vec3_t forward);
 void CG_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude);
 void CG_TrackerTrail(centity_t *ent, vec3_t end);
 void CG_TagTrail(centity_t *ent, vec3_t end, int color);
-void CG_ColorFlash(vec3_t pos, int ent, int intensity, float r, float g, float b);
 void CG_Tracker_Shell(const centity_t *cent, vec3_t origin);
 void CG_MonsterPlasma_Shell(vec3_t origin);
 void CG_ColorExplosionParticles(vec3_t org, int color, int run);

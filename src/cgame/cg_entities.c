@@ -583,6 +583,8 @@ renderfx_t CG_EntityShellEffect(const entity_state_t *s)
     return renderfx;
 }
 
+#define GET_COLOR(skinnum)  (color_t){ skinnum ? BigLong(skinnum) : U32_WHITE }
+
 /*
 ===============
 CG_AddPacketEntities
@@ -724,21 +726,14 @@ static void CG_AddPacketEntities(void)
                 ent.skin = cgs.images.flare;
             ent.scale = s1->scale ? s1->scale : 1;
             ent.flags = renderfx | RF_TRANSLUCENT;
-            if (!s1->skinnum)
-                ent.rgba.u32 = U32_WHITE;
-            else
-                ent.rgba.u32 = BigLong(s1->skinnum);
+            ent.rgba = GET_COLOR(s1->skinnum);
             ent.skinnum = s1->number;
             trap_R_AddEntity(&ent);
             goto skip;
         }
 
         if (renderfx & RF_CUSTOM_LIGHT) {
-            color_t color;
-            if (!s1->skinnum)
-                color.u32 = U32_WHITE;
-            else
-                color.u32 = BigLong(s1->skinnum);
+            color_t color = GET_COLOR(s1->skinnum);
             dlight_t light = {
                 .origin = ent.origin,
                 .radius = s1->frame,
@@ -767,11 +762,7 @@ static void CG_AddPacketEntities(void)
             if (style)
                 scale *= cg.lightstyles[style - 1];
 
-            color_t color;
-            if (!s1->skinnum)
-                color.u32 = U32_WHITE;
-            else
-                color.u32 = BigLong(s1->skinnum);
+            color_t color = GET_COLOR(s1->skinnum);
 
             dlight_t light = {
                 .origin = ent.origin,
@@ -1003,26 +994,19 @@ static void CG_AddPacketEntities(void)
         }
 
         if (effects & EF_POWERSCREEN) {
-            ent.model = cgs.models.powerscreen;
-            ent.oldframe = 0;
-            ent.frame = 0;
-            ent.flags = RF_TRANSLUCENT;
-            ent.alpha = ent_alpha * 0.30f;
+            vec3_t forward, tmp = ent.origin;
 
-            // remaster powerscreen is tiny and needs scaling
-            if (cgs.need_powerscreen_scale) {
-                vec3_t forward, tmp = ent.origin;
-                ent.origin = Vec3_Add(ent.origin, Box3_Center(cent->box));
-                AngleVectors(ent.angles, &forward, NULL, NULL);
-                ent.origin = Vec3_MA(ent.origin, cent->box.maxs.x, forward);
-                ent.scale = cent->radius * 0.8f;
-                ent.flags |= RF_FULLBRIGHT;
-                trap_R_AddEntity(&ent);
-                ent.origin = tmp;
-            } else {
-                ent.flags |= RF_SHELL_GREEN;
-                trap_R_AddEntity(&ent);
-            }
+            AngleVectors(ent.angles, &forward, NULL, NULL);
+
+            ent.model = cgs.models.powerscreen;
+            ent.oldframe = ent.frame = 0;
+            ent.flags = RF_FULLBRIGHT | RF_TRANSLUCENT;
+            ent.alpha = ent_alpha * 0.30f;
+            ent.origin = Vec3_Add(ent.origin, Box3_Center(cent->box));
+            ent.origin = Vec3_MA(ent.origin, cent->box.maxs.x, forward);
+            ent.scale = cent->radius * 0.8f;
+            trap_R_AddEntity(&ent);
+            ent.origin = tmp;
         }
 
         if (s1->morefx & EFX_HOLOGRAM)
@@ -1072,20 +1056,20 @@ static void CG_AddPacketEntities(void)
         } else if (effects & EF_FLIES) {
             CG_FlyEffect(cent, ent.origin);
         } else if (effects & EF_BFG) {
-            static const uint16_t bfg_lightramp[6] = { 300, 400, 600, 300, 150, 75 };
+            float f = 200;
             if (effects & EF_ANIM_ALLFAST) {
                 CG_BfgParticles(&ent);
-                i = 200;
             } else {
-                i = bfg_lightramp[ent.oldframe % 6] * ent.backlerp +
+                static const uint16_t bfg_lightramp[6] = { 300, 400, 600, 300, 150, 75 };
+                f = bfg_lightramp[ent.oldframe % 6] * ent.backlerp +
                     bfg_lightramp[ent.frame    % 6] * (1.0f - ent.backlerp);
             }
-            CG_AddSphereLight(ent.origin, i, 0, 1, 0);
+            CG_AddSphereLight(ent.origin, f, 0, 1, 0);
         } else if (effects & EF_TRAP) {
-            ent.origin.z += 32;
-            CG_TrapParticles(cent, ent.origin);
-            i = (trap_SlowRand() % 100) + 100;
-            CG_AddSphereLight(ent.origin, i, 1, 0.8f, 0.1f);
+            vec3_t org = ent.origin;
+            org.z += 32;
+            CG_TrapParticles(cent, org);
+            CG_AddSphereLight(org, 100 + (trap_SlowRand() % 100), 1, 0.8f, 0.1f);
         } else if (effects & EF_FLAG1) {
             CG_FlagTrail(cent, ent.origin, 242);
             CG_AddSphereLight(ent.origin, 225, 1, 0.1f, 0.1f);

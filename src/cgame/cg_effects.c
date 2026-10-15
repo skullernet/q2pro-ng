@@ -791,7 +791,7 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
             qhandle_t sfx = trap_S_RegisterSound(va("misc/welder%d.wav", (Q_rand() & 3) + 1));
             trap_S_StartSound(entnum, CHAN_VOICE, sfx, 1, ATTN_IDLE, 0);
         }
-        CG_WeldingLight(origin);
+        CG_ColorFlash(origin, 100 + (Q_rand() % 75), 1.0f, 1.0f, 0.3f);
         break;
 
     case MZ2_ENFORCER_BOLT:
@@ -826,7 +826,8 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_CHTJOR_ROCKET_L:
     case MZ2_CHTJOR_ROCKET_R:
         memset(dl, 0, sizeof(*dl));
-        CG_GenericExplosion(origin);
+        CG_PlainExplosion(origin);
+        CG_ExplosionParticles(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
         break;
 
@@ -1627,22 +1628,6 @@ void CG_TeleportParticles(vec3_t org)
                 p->accel.x = p->accel.y = 0;
                 p->accel.z = -PARTICLE_GRAVITY;
             }
-}
-
-/*
-======
-CG_ColorFlash - flash of light
-======
-*/
-void CG_ColorFlash(vec3_t pos, int ent, int intensity, float r, float g, float b)
-{
-    cdlight_t   *dl;
-
-    dl = CG_AllocDlight(ent);
-    dl->origin = pos;
-    dl->radius = intensity;
-    dl->die = cg.time + 100;
-    dl->color = Vec3(r, g, b);
 }
 
 /*
