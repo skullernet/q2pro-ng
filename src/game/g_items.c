@@ -1050,19 +1050,12 @@ void THINK(droptofloor)(edict_t *ent)
 {
     trace_t     tr;
     vec3_t      dest;
-    const char *model;
+    float       size;
 
     // [Paril-KEX] scale foodcube based on how much we ingested
-    if (strcmp(ent->classname, "item_foodcube") == 0)
-        ent->r.box = Box3_FromRadius(8 * ent->s.scale);
-    else
-        ent->r.box = Box3_FromRadius(15);
-
-    if (ent->model)
-        model = ent->model;
-    else
-        model = ent->item->world_model;
-    ent->s.modelindex = G_ModelIndex(model);
+    size = strcmp(ent->classname, "item_foodcube") == 0 ? 8 : 15;
+    ent->r.box = Box3_FromRadius(size * G_EntityScale(ent));
+    ent->s.modelindex = G_ModelIndex(ent->model ?: ent->item->world_model);
     ent->r.solid = SOLID_TRIGGER;
     ent->movetype = MOVETYPE_TOSS;
     ent->touch = Touch_Item;
@@ -1074,7 +1067,7 @@ void THINK(droptofloor)(edict_t *ent)
         tr = G_Trace(ent->s.origin, dest, ent->r.box, ent->s.number, MASK_SOLID);
         if (!tr.startsolid) {
             ent->s.origin = G_SnapVectorTowards(tr.endpos, ent->s.origin);
-            if (tr.fraction < 1.0f) {
+            if (tr.fraction < 1.0f && Vec3_IsEmpty(ent->velocity)) {
                 ent->groundentity = &g_edicts[tr.entnum];
                 ent->groundentity_linkcount = ent->groundentity->r.linkcount;
             }
