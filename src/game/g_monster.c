@@ -78,13 +78,16 @@ void M_BossPredictiveRocket(edict_t *self, const float *offset, float speed, mon
 {
     vec3_t forward, right;
     vec3_t start, dir;
+    int damage = 50;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
+
+    G_AddEvent(self, EV_MUZZLEFLASH2, mz);
 
     for (int i = 0; i < 4; i++, mz++) {
         start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
         M_PredictAim(self, self->enemy, start, speed, false, offset[i], &dir, NULL);
-        monster_fire_rocket(self, start, dir, 50, speed, mz);
+        fire_rocket(self, start, dir, damage, speed, damage + 20, damage);
     }
 }
 
@@ -92,11 +95,15 @@ void M_BossRocket(edict_t *self, monster_muzzleflash_id_t mz)
 {
     vec3_t forward, right;
     vec3_t start, dir, vec;
+    int damage = 50;
+    int speed = 500;
 
     AngleVectors(self->s.angles, &forward, &right, NULL);
 
     static const float offset[4] = { -15, 0, 0, -15 };
     static const float spread[4] = { 0.4f, 0.025f, -0.025f, -0.4f };
+
+    G_AddEvent(self, EV_MUZZLEFLASH2, mz);
 
     for (int i = 0; i < 4; i++, mz++) {
         start = M_ProjectFlashSource(self, monster_flash_offset[mz], forward, right);
@@ -105,7 +112,7 @@ void M_BossRocket(edict_t *self, monster_muzzleflash_id_t mz)
         dir = Vec3_Direction(vec, start);
         dir = Vec3_MA(dir, spread[i], right);
         dir = Vec3_Normalize(dir);
-        monster_fire_rocket(self, start, dir, 50, 500, mz);
+        fire_rocket(self, start, dir, damage, speed, damage + 20, damage);
     }
 }
 

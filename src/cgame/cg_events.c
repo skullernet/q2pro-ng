@@ -1268,6 +1268,11 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
     case EV_MUZZLEFLASH2:
         CG_MuzzleFlash2(cent, param);
+        if (param == MZ2_BOSS2_ROCKET_1) {
+            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_2);
+            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_3);
+            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_4);
+        }
         break;
     case EV_SOUND:
     case EV_POSITIONED_SOUND:

@@ -647,11 +647,17 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_SUPERTANK_ROCKET_1 ... MZ2_SUPERTANK_ROCKET_3:
-    case MZ2_BOSS2_ROCKET_1 ... MZ2_BOSS2_ROCKET_N64_4:
+    case MZ2_BOSS2_ROCKET_N64_1 ... MZ2_BOSS2_ROCKET_N64_4:
+    case MZ2_BOSS2_ROCKET_1:
     case MZ2_CARRIER_ROCKET_1:
     case MZ2_SHAMBLER_ROCKET:
         dl->color = Vec3(1, 0.5f, 0.2f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
+        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
+        break;
+
+    case MZ2_BOSS2_ROCKET_2 ... MZ2_BOSS2_ROCKET_4:
+        dl->color = Vec3(1, 0.5f, 0.2f);
         CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
