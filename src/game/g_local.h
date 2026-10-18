@@ -1696,6 +1696,7 @@ void G_ClientBegin(int clientnum);
 void G_ClientUserinfoChanged(int clientnum);
 void P_AssignClientSkinnum(edict_t *ent);
 void P_SetClientAngles(gclient_t *client, vec3_t angles);
+stuck_result_t P_FixStuckSpawn(edict_t *ent, vec3_t *point);
 float PlayersRangeFromSpot(edict_t *spot);
 bool SpawnPointClear(edict_t *spot);
 bool SelectSpawnPoint(edict_t *ent, vec3_t *origin, vec3_t *angles, bool force_spawn);

@@ -324,8 +324,10 @@ static void Cmd_Resurrect_f(edict_t *ent, cmdflags_t flags)
     ent->air_finished = level.time + Time_FromSec(12);
     ent->dead_time = 0;
 
+    P_FixStuckSpawn(ent, &ent->s.origin);
+
     trap_LinkEntity(ent);
-    G_FixStuckObject(ent, ent->s.origin);
+    G_KillBox(ent, KILLBOX_PLAYERCLIP, MOD_TELEFRAG_SPAWN);
 
     // force the current weapon up
     ent->client->newweapon = ent->client->pers.lastweapon;

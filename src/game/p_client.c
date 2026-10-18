@@ -27,9 +27,7 @@ The normal starting point for a level.
 void SP_info_player_start(edict_t *self)
 {
     // fix stuck spawn points
-    trace_t tr = G_Trace(self->s.origin, self->s.origin, player_box, self->s.number, MASK_SOLID);
-    if (tr.startsolid)
-        G_FixStuckObject(self, self->s.origin);
+    PM_FixStuckObject_Generic(&self->s.origin, player_box, self->s.number, MASK_SOLID, trap_Trace);
 
     // [Paril-KEX] on n64, since these can spawn riding elevators,
     // allow them to "ride" the elevators so respawning works
@@ -80,9 +78,7 @@ void SP_info_player_coop_lava(edict_t *self)
     }
 
     // fix stuck spawn points
-    trace_t tr = G_Trace(self->s.origin, self->s.origin, player_box, self->s.number, MASK_SOLID);
-    if (tr.startsolid)
-        G_FixStuckObject(self, self->s.origin);
+    PM_FixStuckObject_Generic(&self->s.origin, player_box, self->s.number, MASK_SOLID, trap_Trace);
 }
 
 /*QUAKED info_player_intermission (1 0 1) (-16 -16 -24) (16 16 32)
@@ -1026,7 +1022,7 @@ float PlayersRangeFromSpot(edict_t *spot)
 bool SpawnPointClear(edict_t *spot)
 {
     vec3_t p = spot->s.origin;
-    p.z += 9;
+    p.z += spot->r.box.maxs.z - player_box.mins.z;
     return !G_Trace(p, p, player_box, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER).startsolid;
 }
 
@@ -1395,7 +1391,7 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t *origin, vec3_t *angles)
 
     // sometimes, landmark spawns can cause slight inconsistencies in collision;
     // we'll do a bit of tracing to make sure the bbox is clear
-    if (PM_FixStuckObject_Generic(&point, player_box, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, trap_Trace) == NO_GOOD_POSITION)
+    if (P_FixStuckSpawn(ent, &point) == NO_GOOD_POSITION)
         return false;
 
     *origin = point;
@@ -1432,7 +1428,7 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t *origin, vec3_t *angles, bool force_s
 
         if (spot) {
             *origin = spot->s.origin;
-            origin->z += 9;
+            origin->z += spot->r.box.maxs.z - player_box.mins.z;
             *angles = spot->s.angles;
             return true;
         }
@@ -1715,6 +1711,11 @@ void P_SetClientAngles(gclient_t *client, vec3_t angles)
     AngleVectors(client->v_angle, &client->v_forward, NULL, NULL);
 }
 
+stuck_result_t P_FixStuckSpawn(edict_t *ent, vec3_t *point)
+{
+    return PM_FixStuckObject_Generic(point, player_box, ent->s.number, MASK_PLAYERSOLID & ~CONTENTS_PLAYER, trap_Trace);
+}
+
 // [Paril-KEX] ugly global to handle squad respawn origin
 static bool use_squad_respawn;
 static bool spawn_from_begin;
@@ -1725,8 +1726,6 @@ static void PutClientOnSpawnPoint(edict_t *ent, vec3_t spawn_origin, vec3_t spaw
     gclient_t *client = ent->client;
 
     ent->s.origin = spawn_origin;
-    if (!use_squad_respawn)
-        ent->s.origin.z += 1; // make sure off ground
     ent->s.old_origin = ent->s.origin;
     client->ps.origin = ent->s.origin;
 
@@ -1998,7 +1997,8 @@ void PutClientInServer(edict_t *ent)
                 }
                 // else, no choice but to accept where ever we spawned :(
             }
-        }
+        } else
+            P_FixStuckSpawn(ent, &ent->s.origin);
 
         // give us one (1) free fall ticket even if
         // we didn't spawn from landmark
