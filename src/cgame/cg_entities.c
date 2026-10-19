@@ -62,7 +62,7 @@ static bool CG_EntityWasTeleported(const entity_state_t *state)
 static void CG_InitEntity(centity_t *ent, const entity_state_t *state)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
-    ent->step_time = 0;
+    ent->step_time = -STEP_TIME;
 
     // duplicate the current state so lerping doesn't hurt anything
     ent->prev = *state;
@@ -171,10 +171,13 @@ static void CG_DeltaPlayerstate(void)
     const player_state_t *ps = &cg.frame->ps;
     player_state_t *ops = &cg.oldframe->ps;
 
+    cg.teleported = false;
+
     // no lerping if POV number changed
     if (ops->clientnum != ps->clientnum) {
         *ops = *ps;
         cg.weapon.prev_frame = ps->gunframe;
+        cg.teleported = true;
     }
 
     // hit markers
@@ -196,8 +199,10 @@ static void CG_DeltaPlayerstate(void)
     }
 
     // no lerping if teleport bit was flipped
-    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT)
+    if ((ops->rdflags ^ ps->rdflags) & RDF_TELEPORT_BIT) {
         *ops = *ps;
+        cg.teleported = true;
+    }
 
     // damage kicks
     if (ps->stats[STAT_DAMAGE]) {

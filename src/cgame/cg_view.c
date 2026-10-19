@@ -309,11 +309,15 @@ static void CG_CalcViewOffset(void)
 static void CG_SetupFirstPersonView(void)
 {
     // smooth abrupt stops
-    for (int i = 0; i < 3; i++) {
-        float *a = &cg.slowvelocity.xyz[i];
-        float  b = cg.predicted_ps.velocity.xyz[i];
-        if (fabsf(*a - b) < 1000) CG_AdvanceValue(a, b, 1000);
-        else *a = b;
+    if (cg.teleported || Vec3_DistanceSquared(cg.slowvelocity, cg.predicted_ps.velocity) > 1000 * 1000)
+        cg.slowvelocity = cg.predicted_ps.velocity;
+    else for (int i = 0; i < 3; i++)
+        CG_AdvanceValue(&cg.slowvelocity.xyz[i], cg.predicted_ps.velocity.xyz[i], 1500);
+
+    if (cg.teleported) {
+        cg.kick_angles[0] = cg.kick_angles[1] = vec3_origin;
+        cg.kick_origin[0] = cg.kick_origin[1] = vec3_origin;
+        cg.v_dmg_time = cg.fall_time = 0;
     }
 
     cg.bobfracsin = sinf(cg.predicted_ps.bobtime * (M_PIf / 128));

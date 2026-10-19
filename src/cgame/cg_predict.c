@@ -220,7 +220,7 @@ void CG_PredictMovement(void)
         CG_RunUsercmd(&pm, ack);
 
     // check for ducking
-    if (cg.predicted_ps.viewheight != viewheight) {
+    if (cg.predicted_ps.viewheight != viewheight && !cg.teleported) {
         cg.duck_time = cg.time + DUCK_TIME;
         cg.duck_factor = (float)(cg.predicted_ps.viewheight - viewheight) / DUCK_TIME;
     }

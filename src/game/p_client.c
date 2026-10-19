@@ -105,9 +105,6 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
     bool friendly_fire = OnSameTeam(self, attacker);
     bool no_point_loss = mod == MOD_SUICIDE_NP;
 
-    if (coop.integer && attacker->client)
-        friendly_fire = true;
-
     switch (mod) {
     case MOD_SUICIDE:
     case MOD_SUICIDE_NP:
@@ -1880,6 +1877,7 @@ void PutClientInServer(edict_t *ent)
     }
 
     // clear everything but the persistent data
+    rdflags_t rdflags = client->ps.rdflags;
     saved = client->pers;
     memset(client, 0, sizeof(*client));
     client->pers = saved;
@@ -1925,9 +1923,9 @@ void PutClientInServer(edict_t *ent)
     ent->flags &= ~FL_SAM_RAIMI; // PGM - turn off sam raimi flag
 
     // clear playerstate values
-    memset(&ent->client->ps, 0, sizeof(client->ps));
     client->ps.clientnum = index;
     client->ps.viewheight = ent->viewheight;
+    client->ps.rdflags = rdflags & RDF_TELEPORT_BIT;
 
     char *val = Info_ValueForKey(ent->client->pers.userinfo, "fov");
     ent->client->ps.fov = Q_clip(Q_atoi(val), 1, 160);
