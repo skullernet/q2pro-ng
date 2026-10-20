@@ -1304,7 +1304,7 @@ edict_t *G_Spawn(void);
 void     G_FreeEdict(edict_t *e);
 
 bool G_ClipBrushModel(edict_t *self, edict_t *other);
-void G_TouchTriggers(edict_t *ent);
+void G_TouchTriggers(edict_t *ent, vec3_t previous_origin);
 void G_TouchProjectiles(edict_t *ent, vec3_t previous_origin);
 
 void G_FreeMemory(void);

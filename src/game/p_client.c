@@ -2722,7 +2722,7 @@ qvm_exported void G_ClientThink(int clientnum)
         // PGM
 
         if (ent->movetype != MOVETYPE_NOCLIP) {
-            G_TouchTriggers(ent);
+            G_TouchTriggers(ent, old_origin);
             G_TouchProjectiles(ent, old_origin);
         }
 

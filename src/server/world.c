@@ -443,16 +443,7 @@ static void SV_ClipMoveToEntities(trace_t *tr, const trace_args_t *args)
     trace_t     trace;
 
     // create the bounding box of the entire move
-    for (i = 0; i < 3; i++) {
-        if (args->end.xyz[i] > args->start.xyz[i]) {
-            box.mins.xyz[i] = args->start.xyz[i] + args->box.mins.xyz[i] - 1;
-            box.maxs.xyz[i] = args->end.xyz[i]   + args->box.maxs.xyz[i] + 1;
-        } else {
-            box.mins.xyz[i] = args->end.xyz[i]   + args->box.mins.xyz[i] - 1;
-            box.maxs.xyz[i] = args->start.xyz[i] + args->box.maxs.xyz[i] + 1;
-        }
-    }
-
+    box = Box3_Move(args->box, args->start, args->end);
     num = SV_AreaEdicts(box, touchlist, q_countof(touchlist), AREA_SOLID);
 
     if (passent != ENTITYNUM_NONE)

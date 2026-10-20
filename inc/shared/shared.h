@@ -949,6 +949,21 @@ static inline float Box3_Distance(box3_t a, box3_t b)
     return sqrtf(len);
 }
 
+static inline box3_t Box3_Move(box3_t box, vec3_t p1, vec3_t p2)
+{
+    for (int i = 0; i < 3; i++) {
+        if (p2.xyz[i] > p1.xyz[i]) {
+            box.mins.xyz[i] += p1.xyz[i] - 1;
+            box.maxs.xyz[i] += p2.xyz[i] + 1;
+        } else {
+            box.mins.xyz[i] += p2.xyz[i] - 1;
+            box.maxs.xyz[i] += p1.xyz[i] + 1;
+        }
+    }
+
+    return box;
+}
+
 #define NUMVERTEXNORMALS    162
 
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];

@@ -432,17 +432,19 @@ G_TouchTriggers
 
 ============
 */
-void G_TouchTriggers(edict_t *ent)
+void G_TouchTriggers(edict_t *ent, vec3_t previous_origin)
 {
     int      i, num;
     int      touch[MAX_EDICTS_OLD];
     edict_t *hit;
+    box3_t   box;
 
     // dead things don't activate triggers!
     if ((ent->client || (ent->r.svflags & SVF_MONSTER)) && (ent->health <= 0))
         return;
 
-    num = trap_BoxEdicts(ent->r.absbox, touch, q_countof(touch), AREA_TRIGGERS);
+    box = Box3_Move(ent->r.box, previous_origin, ent->s.origin);
+    num = trap_BoxEdicts(box, touch, q_countof(touch), AREA_TRIGGERS);
 
     // be careful, it is possible to have an entity in this
     // list removed before we get to it (killtriggered)

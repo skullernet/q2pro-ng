@@ -537,7 +537,7 @@ static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_
             else {
                 if (relink) {
                     trap_LinkEntity(ent);
-                    G_TouchTriggers(ent);
+                    G_TouchTriggers(ent, oldorg);
                 }
 
                 return true;
@@ -682,7 +682,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             ent->s.origin = Vec3_Add(ent->s.origin, move);
             if (relink) {
                 trap_LinkEntity(ent);
-                G_TouchTriggers(ent);
+                G_TouchTriggers(ent, oldorg);
             }
             ent->groundentity = NULL;
             return true;
@@ -749,7 +749,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
             // and is trying to correct
             if (relink) {
                 trap_LinkEntity(ent);
-                G_TouchTriggers(ent);
+                G_TouchTriggers(ent, oldorg);
             }
             return true;
         }
@@ -791,7 +791,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
         // [Paril-KEX] this is something N64 does to avoid doors opening
         // at the start of a level, which triggers some monsters to spawn.
         if (!level.is_n64 || level.time > FRAME_TIME)
-            G_TouchTriggers(ent);
+            G_TouchTriggers(ent, oldorg);
     }
 
     if (stepped && TICK_RATE > 10)
@@ -910,12 +910,12 @@ static bool SV_StepDirection(edict_t *ent, float yaw, float dist, bool allow_no_
             }
         }
         trap_LinkEntity(ent);
-        G_TouchTriggers(ent);
+        G_TouchTriggers(ent, old_origin);
         G_TouchProjectiles(ent, old_origin);
         return true;
     }
     trap_LinkEntity(ent);
-    G_TouchTriggers(ent);
+    G_TouchTriggers(ent, old_origin);
     ent->ideal_yaw = old_ideal_yaw;
     ent->s.angles.yaw = old_current_yaw;
     return false;

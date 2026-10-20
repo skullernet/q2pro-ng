@@ -254,7 +254,7 @@ static trace_t SV_PushEntity(edict_t *ent, vec3_t push)
     // PGM
     // ================
 
-    G_TouchTriggers(ent);
+    G_TouchTriggers(ent, args.start);
     return trace;
 }
 
@@ -409,7 +409,7 @@ static edict_t *SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
     // FIXME: is there a better way to handle this?
     // see if anything we moved has touched a trigger
     for (int i = num_pushed - 1; i >= 0; i--)
-        G_TouchTriggers(pushed[i].ent);
+        G_TouchTriggers(pushed[i].ent, pushed[i].origin);
 
     return NULL;
 }
@@ -828,7 +828,7 @@ static void SV_Physics_Step(edict_t *ent)
         // [Paril-KEX] this is something N64 does to avoid doors opening
         // at the start of a level, which triggers some monsters to spawn.
         if (!level.is_n64 || level.time > FRAME_TIME)
-            G_TouchTriggers(ent);
+            G_TouchTriggers(ent, old_origin);
 
         if (!ent->r.inuse)
             return;

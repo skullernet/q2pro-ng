@@ -73,7 +73,7 @@ void SV_Physics_NewToss(edict_t *ent)
     SV_FlyMove(ent, FRAME_TIME_SEC, ent->clipmask);
     trap_LinkEntity(ent);
 
-    G_TouchTriggers(ent);
+    G_TouchTriggers(ent, old_origin);
 
     // check for water transition
     wasinwater = (ent->watertype & MASK_WATER);
