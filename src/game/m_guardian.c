@@ -205,6 +205,8 @@ const mmove_t MMOVE_T(guardian_move_run) = { FRAME_walk1, FRAME_walk19, guardian
 
 void MONSTERINFO_RUN(guardian_run)(edict_t *self)
 {
+    self->monsterinfo.aiflags &= ~AI_MANUAL_STEERING;
+
     if (self->monsterinfo.aiflags & AI_STAND_GROUND)
         M_SetAnimation(self, &guardian_move_stand);
     else
@@ -589,14 +591,12 @@ static void guardian_fire_rocket(edict_t *self, float offset)
     vec3_t start;
 
     AngleVectors(self->s.angles, &forward, &right, &up);
-    start = Vec3_MA(self->s.origin, -8, forward);
-    start = Vec3_MA(start, offset, right);
-    start = Vec3_MA(start, 50, up);
+    start = M_ProjectFlashSource(self, Vec3(-8, offset, 50), forward, right);
 
     AngleVectors(Vec3(20.0f, self->s.angles.yaw - offset, 0), &forward, NULL, NULL);
 
     fire_guardian_heat(self, start, up, forward, 20, 250, 150, 35, 0.085f);
-    G_StartSound(self, CHAN_WEAPON, sound_pew, 1.f, 0.5f);
+    G_StartSound(self, CHAN_WEAPON, sound_pew, 1, 0.5f);
 }
 
 static void guardian_fire_rocket_l(edict_t *self)
@@ -788,10 +788,13 @@ const mmove_t MMOVE_T(guardian_move_death) = { FRAME_death1, FRAME_death26, guar
 
 void DIE(guardian_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
+    if (self->deadflag)
+        return;
+
     // regular death
     self->monsterinfo.weapon_sound = 0;
     self->deadflag = true;
-    self->takedamage = true;
+    self->takedamage = false;
 
     M_SetAnimation(self, &guardian_move_death);
     G_StartSound(self, CHAN_BODY, sound_death, 1, 0.1f);
