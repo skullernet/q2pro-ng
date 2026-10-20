@@ -767,8 +767,7 @@ static int VM_PrepareFunction(vm_t *m, vm_block_t *func, uint32_t func_end_addr,
                 memset(block, 0, sizeof(*block));
                 block->opcode = opcode;
                 block->type = VM_GetBlockType(index);   // unused, but validated
-                if (!block->type)
-                    return false;
+                VM_ENSURE(block->type, "Invalid block type %#x", index);
             } else {
                 Q_assert(block->opcode == opcode);
             }

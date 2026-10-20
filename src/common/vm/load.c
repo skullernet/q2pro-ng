@@ -51,7 +51,6 @@ const vm_type_t *VM_GetBlockType(uint32_t value_type)
     case F64:
         return &block_types[4];
     default:
-        VM_ENSURE(0, "Invalid block value_type: %#x", value_type);
         return NULL;
     }
 }
