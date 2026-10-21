@@ -259,14 +259,14 @@ if curl.found()
   config.set10('USE_CURL', true)
 endif
 
-sdl2 = dependency('sdl2', required: get_option('sdl2'))
-if sdl2.found()
+sdl3 = dependency('sdl3', required: get_option('sdl3'), default_options: fallback_opt)
+if sdl3.found()
   client_src += 'src/unix/video/sdl.c'
   config.set('USE_SDL', 'USE_CLIENT')
 endif
 
 common_deps = [zlib]
-client_deps = [png, curl, sdl2]
+client_deps = [png, curl, sdl3]
 server_deps = []
 game_deps = []
 
@@ -463,7 +463,7 @@ summary({
   'openal'             : config.get('USE_OPENAL', 0) != 0,
   'qvm'                : config.get('USE_QVM', 0) != 0,
   'save-games'         : config.get('USE_SAVEGAMES', 0) != 0,
-  'sdl2'               : config.get('USE_SDL', '') != '',
+  'sdl3'               : config.get('USE_SDL', '') != '',
   'system-console'     : config.get('USE_SYSCON', 0) != 0,
   'tests'              : config.get('USE_TESTS', 0) != 0,
   'tga'                : config.get('USE_TGA', 0) != 0,

@@ -763,7 +763,7 @@ int G_ImageIndex(const char *name)
 void G_ClientPrintf(edict_t *ent, print_level_t level, const char *fmt, ...)
 {
     va_list     argptr;
-    char        text[MAX_STRING_CHARS];
+    char        text[MAX_STRING_CHARS - 8];
     const char  *cmd;
 
     switch (level) {

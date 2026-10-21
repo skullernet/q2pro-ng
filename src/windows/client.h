@@ -129,7 +129,7 @@ bool Win_InitMouse(void);
 void Win_ShutdownMouse(void);
 void Win_GrabMouse(bool grab);
 void Win_WarpMouse(int x, int y);
-bool Win_GetMouseMotion(int *dx, int *dy);
+bool Win_GetMouseMotion(float *dx, float *dy);
 
 #endif // USE_CLIENT
 

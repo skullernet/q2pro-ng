@@ -60,8 +60,8 @@ INPUT SUBSYSTEM
 
 typedef struct {
     bool        modified;
-    int         old_dx;
-    int         old_dy;
+    float       old_dx;
+    float       old_dy;
 } in_state_t;
 
 static in_state_t   input;
@@ -448,7 +448,7 @@ CL_MouseMove
 */
 static void CL_MouseMove(void)
 {
-    int dx, dy;
+    float dx, dy;
     float mx, my;
     float speed;
 

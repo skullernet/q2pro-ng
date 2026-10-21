@@ -43,7 +43,7 @@ typedef struct {
     void (*shutdown_mouse)(void);
     void (*grab_mouse)(bool grab);
     void (*warp_mouse)(int x, int y);
-    bool (*get_mouse_motion)(int *dx, int *dy);
+    bool (*get_mouse_motion)(float *dx, float *dy);
 } vid_driver_t;
 
 extern cvar_t       *vid_geometry;

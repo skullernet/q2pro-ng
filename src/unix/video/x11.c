@@ -831,7 +831,7 @@ static void warp_mouse(int x, int y)
     XWarpPointer(x11.dpy, None, x11.win, 0, 0, 0, 0, x, y);
 }
 
-static bool get_mouse_motion(int *dx, int *dy)
+static bool get_mouse_motion(float *dx, float *dy)
 {
     if (!x11.mouse.grabbed)
         return false;

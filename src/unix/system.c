@@ -40,7 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <errno.h>
 
 #if USE_SDL
-#include <SDL.h>
+#include <SDL3/SDL_main.h>
 #endif
 
 #if USE_CLIENT

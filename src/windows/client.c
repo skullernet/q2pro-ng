@@ -828,7 +828,7 @@ static void Win_DeAcquireMouse(void)
         ;
 }
 
-bool Win_GetMouseMotion(int *dx, int *dy)
+bool Win_GetMouseMotion(float *dx, float *dy)
 {
     if (!win.mouse.grabbed) {
         return false;

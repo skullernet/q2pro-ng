@@ -5,9 +5,9 @@ Q2PRO-ng requires a C11 compiler with GNU extensions support. Using recent
 version of GCC or Clang is strongly recommended.
 
 For graphics output there are native Windows, X11 and Wayland backends, as well
-as generic SDL2 backend.
+as generic SDL3 backend.
 
-SDL2 is completely optional, and should be only used on systems lacking native
+SDL3 is completely optional, and should be only used on systems lacking native
 graphics backend such as macOS.
 
 For audio output Q2PRO-ng can use either built-in Miniaudio sound backend or
@@ -22,13 +22,13 @@ Linux distributions already provide libjpeg-turbo in place of libjpeg.
 For playing back music and cinematics FFmpeg libraries are required.
 
 OpenAL sound backend requires OpenAL Soft development headers for compilation.
-At runtime, OpenAL library from any vendor can be used (but OpenAL Soft is
+At runtime, OpenAL 1.1 library from any vendor can be used (but OpenAL Soft is
 strongly recommended).
 
 To install the *full* set of dependencies for building Q2PRO-ng on Debian or
 Ubuntu use the following command:
 
-    apt-get install meson gcc clang libc6-dev libsdl2-dev libopenal-dev \
+    apt-get install meson gcc clang libc6-dev libsdl3-dev libopenal-dev \
                     libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
                     libcurl4-gnutls-dev libx11-dev libxi-dev \
                     libwayland-dev wayland-protocols libdecor-0-dev \
@@ -79,8 +79,8 @@ is required. Run `build-qvm.sh` shell script from the root of source tree to bui
 You may need to set `QVM_CC` environment variable to the name of your Clang
 compiler binary before invoking `build-qvm.sh`.
 
-For debugging, development, or embedded systems it is possible to use native
-game modules as well.
+Loading native game modules is still possible for debugging/development, but
+requires passing `+set com_native_modules 1` parameter on command line.
 
 Installation
 ------------
@@ -96,7 +96,7 @@ After building the client using Meson, run the following commands, assuming
 This will build QVM files and copy re-release assets to `~/.q2pro-ng` directory.
 Then run the client with `./builddir/q2pro-ng`.
 
-When invoking `copy-assets.sh` without arguments it will refresh `q2pro.pkz` file.
+Invoking `copy-assets.sh` without arguments will refresh `q2pro.pkz` file.
 This is useful for updating QVM files.
 
 MinGW-w64

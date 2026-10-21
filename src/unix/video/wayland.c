@@ -946,12 +946,12 @@ static void warp_mouse(int x, int y)
     wl.abs_mouse_y = wl_fixed_from_int(y);
 }
 
-static bool get_mouse_motion(int *dx, int *dy)
+static bool get_mouse_motion(float *dx, float *dy)
 {
     if (!wl.mouse_grabbed)
         return false;
-    *dx = wl_fixed_to_int(wl.rel_mouse_x);
-    *dy = wl_fixed_to_int(wl.rel_mouse_y);
+    *dx = wl_fixed_to_double(wl.rel_mouse_x);
+    *dy = wl_fixed_to_double(wl.rel_mouse_y);
     wl.rel_mouse_x = 0;
     wl.rel_mouse_y = 0;
     return true;
