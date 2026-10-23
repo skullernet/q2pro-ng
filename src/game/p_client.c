@@ -710,7 +710,7 @@ static void Player_GiveStartItems(edict_t *ent, char *copy)
 {
     const char *s = copy;
     while (*s) {
-        char *p = strchr(s, ';');
+        char *p = (char *)strchr(s, ';');
         if (p)
             *p = 0;
 

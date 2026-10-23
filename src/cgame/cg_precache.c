@@ -79,7 +79,7 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *
     Q_assert(len < MAX_QPATH);
 
     // isolate the player's name
-    t = strchr(s, '\\');
+    t = (char *)strchr(s, '\\');
     if (t) {
         len = t - s;
         strcpy(model, t + 1);

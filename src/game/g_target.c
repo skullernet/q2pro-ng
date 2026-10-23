@@ -227,7 +227,7 @@ void SP_target_secret(edict_t *ent)
 // {} crap has made it into maps, so we have to support it
 static const char *G_ExpandArgument(const char *fmt, const char *arg)
 {
-    char *p = strstr(fmt, "{}");
+    const char *p = strstr(fmt, "{}");
     return p ? va("%.*s%s%s", (int)(p - fmt), fmt, arg, p + 2) : fmt;
 }
 

@@ -1367,11 +1367,11 @@ static void G_PrecacheStartItems(void)
 
     const char *s = copy;
     while (*s) {
-        char *p = strchr(s, ';');
+        char *p = (char *)strchr(s, ';');
         if (p)
             *p = 0;
 
-        char *token = COM_Parse(&s);
+        const char *token = COM_Parse(&s);
         if (*token) {
             const gitem_t *item = FindItemByClassname(token);
 

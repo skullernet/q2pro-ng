@@ -127,7 +127,7 @@ void M_SetupReinforcements(const char *reinforcements, reinforcement_list_t *lis
 
     const char *s = copy;
     while (1) {
-        char *p = strchr(s, ';');
+        char *p = (char *)strchr(s, ';');
         if (p)
             *p = 0;
 
