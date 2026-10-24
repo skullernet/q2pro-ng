@@ -644,6 +644,18 @@ static bool G_IsHearableEvent(entity_event_t event)
     }
 }
 
+static bool G_IsLowPriorityEvent(entity_event_t event)
+{
+    switch (event) {
+    case EV_FOOTSTEP:
+    case EV_OTHER_FOOTSTEP:
+    case EV_LADDER_STEP:
+        return true;
+    default:
+        return false;
+    }
+}
+
 void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     if (!event)
@@ -664,8 +676,11 @@ void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
         }
     }
 
+    if (G_IsLowPriorityEvent(event))
+        return;
+
     for (int i = 0; i < MAX_EVENTS; i++) {
-        if (ent->s.event[i] == EV_FOOTSTEP || ent->s.event[i] == EV_OTHER_FOOTSTEP) {
+        if (G_IsLowPriorityEvent(ent->s.event[i])) {
             ent->s.event[i] = event;
             ent->s.event_param[i] = param;
             return;
