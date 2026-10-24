@@ -696,6 +696,8 @@ void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
             if (!level.coop_level_restart_time)
                 self->client->respawn_time = level.time + Time_FromSec(3);
         }
+
+        self->client->latched_buttons = BUTTON_NONE;
     }
 
     self->deadflag = true;
@@ -3116,7 +3118,7 @@ void ClientBeginServerFrame(edict_t *ent)
             // check for coop handling
             if (!G_CoopRespawn(ent)) {
                 // in deathmatch, only wait for attack button
-                if (deathmatch.integer)
+                if (deathmatch.integer || g_auto_load.integer)
                     buttonMask = BUTTON_ATTACK;
                 else
                     buttonMask = -1;
