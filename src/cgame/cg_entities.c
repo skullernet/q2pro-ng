@@ -1139,5 +1139,5 @@ void CG_AddEntities(void)
     CG_AddPacketEntities();
     CG_AddTEnts();
     CG_AddParticles();
-    CG_AddDLights();
+    CG_AddMuzzleFlashes();
 }

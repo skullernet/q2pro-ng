@@ -66,6 +66,7 @@ extern centity_t    cg_entities[MAX_EDICTS];
 #define STEP_TIME   100
 #define QUAKE_TIME  1000
 #define FLASH_TIME  400
+#define MUZZLE_TIME 50
 
 #define MAX_STEP    32
 
@@ -252,6 +253,8 @@ typedef struct {
 } cg_sounds_t;
 
 typedef enum {
+    MFLASH_NONE,
+
     MFLASH_MACHN,
     MFLASH_SHOTG2,
     MFLASH_SHOTG,
@@ -440,7 +443,7 @@ extern vm_cvar_t    cg_thirdperson_range;
 extern vm_cvar_t    cg_adjustfov;
 extern vm_cvar_t    cg_lerp_lightstyles;
 extern vm_cvar_t    cg_muzzlelight_time;
-extern vm_cvar_t    cg_muzzleflashes;
+extern vm_cvar_t    cg_muzzleflashes_cvar;
 extern vm_cvar_t    cg_hit_markers;
 extern vm_cvar_t    cg_compass_time;
 extern vm_cvar_t    cg_weapon_select_msec;
@@ -534,8 +537,6 @@ typedef struct cg_sustain_s {
 
 typedef struct explosion_s explosion_t;
 
-void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, vec3_t offset, float scale);
-void CG_AddMuzzleFX(vec3_t origin, vec3_t angles, cg_muzzlefx_t fx, int skin, float scale);
 void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first);
 
 explosion_t *CG_PlainExplosion(vec3_t pos);
@@ -598,14 +599,6 @@ typedef struct cparticle_s {
     color_t rgba;
 } cparticle_t;
 
-typedef struct {
-    int     key;        // so entities can reuse same entry
-    vec3_t  color;
-    vec3_t  origin;
-    float   radius;
-    int     die;        // stop lighting after this time
-} cdlight_t;
-
 typedef enum {
     DT_GIB,
     DT_GREENGIB,
@@ -641,8 +634,7 @@ void CG_ParticleEffect(vec3_t org, vec3_t dir, int color, int count);
 void CG_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count);
 cparticle_t *CG_AllocParticle(void);
 void CG_AddParticles(void);
-cdlight_t *CG_AllocDlight(int key);
-void CG_AddDLights(void);
+void CG_AddMuzzleFlashes(void);
 void CG_SetLightStyle(int index, const char *s);
 void CG_AddLightStyles(void);
 

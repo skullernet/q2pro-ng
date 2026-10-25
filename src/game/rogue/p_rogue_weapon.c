@@ -254,7 +254,7 @@ static void weapon_etf_rifle_fire(edict_t *ent)
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
-    G_AddEvent(ent, EV_MUZZLEFLASH, (ent->client->ps.gunframe == 6 ? MZ_ETF_RIFLE : MZ_ETF_RIFLE_2) | is_silenced);
+    G_AddEvent(ent, EV_MUZZLEFLASH, (ent->client->ps.gunframe == 6 ? MZ_ETF_RIFLE_R : MZ_ETF_RIFLE_L) | is_silenced);
 
     PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 

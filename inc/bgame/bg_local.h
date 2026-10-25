@@ -315,8 +315,8 @@ typedef enum {
 
 //ROGUE
     MZ_PROX,
-    MZ_ETF_RIFLE,
-    MZ_ETF_RIFLE_2,
+    MZ_ETF_RIFLE_R,
+    MZ_ETF_RIFLE_L,
     MZ_HEATBEAM,
     MZ_BLASTER2,
     MZ_TRACKER,
@@ -326,6 +326,7 @@ typedef enum {
     MZ_NUKE8,
 //ROGUE
 
+    MZ_LAST,
     MZ_SILENCED = BIT(7),  // bit flag ORed with one of the above numbers
 } player_muzzle_t;
 

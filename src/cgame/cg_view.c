@@ -180,7 +180,7 @@ static void CG_AddViewWeapon(void)
     if (!cg.weapon.muzzle.model)
         return;
 
-    if (cg.time - cg.weapon.muzzle.time > 50) {
+    if (cg.time - cg.weapon.muzzle.time > MUZZLE_TIME) {
         cg.weapon.muzzle.model = 0;
         return;
     }

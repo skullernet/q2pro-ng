@@ -69,7 +69,7 @@ vm_cvar_t   cg_chat_sound;
 vm_cvar_t   cg_adjustfov;
 vm_cvar_t   cg_lerp_lightstyles;
 vm_cvar_t   cg_muzzlelight_time;
-vm_cvar_t   cg_muzzleflashes;
+vm_cvar_t   cg_muzzleflashes_cvar;
 vm_cvar_t   cg_hit_markers;
 vm_cvar_t   cg_compass_time;
 vm_cvar_t   cg_weapon_select_msec;
@@ -129,7 +129,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_adjustfov, "1", 0),
     VM_CVAR(cg_lerp_lightstyles, "1", 0),
     VM_CVAR(cg_muzzlelight_time, "100", 0),
-    VM_CVAR(cg_muzzleflashes, "1", 0),
+    { &cg_muzzleflashes_cvar, "cg_muzzleflashes", "1", 0 },
     VM_CVAR(cg_hit_markers, "1", 0),
     VM_CVAR(cg_compass_time, "10", 0),
     VM_CVAR(cg_weapon_select_msec, "500", 0),

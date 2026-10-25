@@ -84,98 +84,150 @@ void CG_AddLightStyles(void)
 /*
 ==============================================================
 
-DLIGHT MANAGEMENT
+MUZZLEFLASH MANAGEMENT
 
 ==============================================================
 */
 
-static cdlight_t       cg_dlights[MAX_DLIGHTS];
+#define MAX_MUZZLEFLASHES   128
 
-static void CG_ClearDlights(void)
+typedef struct {
+    int             key;
+    int             die, die2;
+    cg_muzzlefx_t   type;
+    vec3_t          color;
+    float           radius;
+    vec3_t          offset;
+    float           scale;
+    int             skinnum;
+    float           roll;
+    bool            monster;
+} cg_muzzleflash_t;
+
+static cg_muzzleflash_t     cg_muzzleflashes[MAX_MUZZLEFLASHES];
+
+static void CG_ClearMuzzleFlashes(void)
 {
-    memset(cg_dlights, 0, sizeof(cg_dlights));
+    memset(cg_muzzleflashes, 0, sizeof(cg_muzzleflashes));
 }
 
 /*
 ===============
-CG_AllocDlight
+CG_AllocMuzzleFlash
 ===============
 */
-cdlight_t *CG_AllocDlight(int key)
+static cg_muzzleflash_t *CG_AllocMuzzleFlash(int key)
 {
     int     i;
-    cdlight_t   *dl;
+    cg_muzzleflash_t    *mz;
 
 // first look for an exact key match
     if (key) {
-        dl = cg_dlights;
-        for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-            if (dl->key == key) {
-                memset(dl, 0, sizeof(*dl));
-                dl->key = key;
-                return dl;
+        mz = cg_muzzleflashes;
+        for (i = 0; i < MAX_MUZZLEFLASHES; i++, mz++) {
+            if (mz->key == key) {
+                memset(mz, 0, sizeof(*mz));
+                mz->key = key;
+                return mz;
             }
         }
     }
 
 // then look for anything else
-    dl = cg_dlights;
-    for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (dl->die < cg.time) {
-            memset(dl, 0, sizeof(*dl));
-            dl->key = key;
-            return dl;
+    mz = cg_muzzleflashes;
+    for (i = 0; i < MAX_MUZZLEFLASHES; i++, mz++) {
+        if (cg.time >= max(mz->die, mz->die2)) {
+            memset(mz, 0, sizeof(*mz));
+            mz->key = key;
+            return mz;
         }
     }
 
-    dl = &cg_dlights[0];
-    memset(dl, 0, sizeof(*dl));
-    dl->key = key;
-    return dl;
+    mz = &cg_muzzleflashes[0];
+    memset(mz, 0, sizeof(*mz));
+    mz->key = key;
+    return mz;
 }
 
 /*
 ===============
-CG_AddDLights
+CG_AddMuzzleFlashes
 ===============
 */
-void CG_AddDLights(void)
+void CG_AddMuzzleFlashes(void)
 {
-    int         i;
-    cdlight_t   *dl;
-    dlight_t    light = { 0 };
+    entity_t ent = { 0 };
+    dlight_t light = { 0 };
 
-    dl = cg_dlights;
-    for (i = 0; i < MAX_DLIGHTS; i++, dl++) {
-        if (dl->die < cg.time)
+    ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
+    ent.alpha = 1.0f;
+
+    for (int i = 0; i < MAX_MUZZLEFLASHES; i++) {
+        const cg_muzzleflash_t *mz = &cg_muzzleflashes[i];
+        if (cg.time >= max(mz->die, mz->die2))
             continue;
 
-        // keyed lights are muzzleflashes. make them follow the entity.
-        if (dl->key) {
-            int entnum = dl->key - 1;
-            vec3_t org, ang, fv, rv;
+        int entnum = mz->key & MASK(ENTITYNUM_BITS);
+        vec3_t org, ang, fv, rv, up;
 
-            if (entnum == cg.frame->ps.clientnum) {
-                org = cg.player_entity_origin;
-                ang = cg.player_entity_angles;
-            } else {
-                const centity_t *ent = &cg_entities[entnum];
-                org = Vec3_Lerp(ent->prev.origin, ent->current.origin, cg.lerpfrac);
-                ang = Vec3_LerpAngles(ent->prev.angles, ent->current.angles, cg.lerpfrac);
-            }
+        // muzzleflashes follow the entity
+        if (entnum == cg.frame->ps.clientnum) {
+            org = cg.player_entity_origin;
+            ang = cg.player_entity_angles;
+        } else {
+            const centity_t *cent = &cg_entities[entnum];
+            org = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
+            ang = Vec3_LerpAngles(cent->prev.angles, cent->current.angles, cg.lerpfrac);
+        }
 
-            AngleVectors(ang, &fv, &rv, NULL);
-            light.origin = BG_ProjectSource(org, dl->origin, fv, rv);
-        } else
-            light.origin = dl->origin;
+        AngleVectors(ang, &fv, &rv, &up);
+        ent.origin = BG_ProjectSource2(org, mz->offset, fv, rv, up);
 
-        light.color = dl->color;
-        light.radius = dl->radius;
-        trap_R_AddLight(&light);
+        // add model
+        if (mz->type && cg.time < mz->die2) {
+            ent.angles = ang;
+            ent.angles.roll = mz->roll;
+            ent.model = cgs.models.muzzles[mz->type];
+            ent.scale = mz->scale;
+            ent.skinnum = mz->skinnum;
+            if (ent.model)
+                trap_R_AddEntity(&ent);
+        }
+
+        // add light
+        if (mz->radius && cg.time < mz->die) {
+            if (mz->monster)
+                light.origin = ent.origin;
+            else
+                light.origin = BG_ProjectSource(org, Vec3(18, 16, 0), fv, rv);
+            light.color = mz->color;
+            light.radius = mz->radius;
+            trap_R_AddLight(&light);
+        }
     }
 }
 
 // ==============================================================
+
+static void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, vec3_t offset, float scale)
+{
+    if (!cg_muzzleflashes_cvar.integer)
+        return;
+
+    Q_assert(fx < q_countof(cgs.models.muzzles));
+
+    if (!cgs.models.muzzles[fx])
+        return;
+
+    cg.weapon.muzzle.model = cgs.models.muzzles[fx];
+    cg.weapon.muzzle.scale = scale;
+    if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
+        cg.weapon.muzzle.roll = Q_rand() % 360;
+    else
+        cg.weapon.muzzle.roll = 0;
+    cg.weapon.muzzle.offset = offset;
+    cg.weapon.muzzle.time = cg.oldframe->servertime;
+}
 
 static void CG_AddWeaponKick(float scale, float pitch)
 {
@@ -215,6 +267,29 @@ static void CG_AddBFGKick(void)
     cg.v_dmg_time = cg.oldframe->servertime + DAMAGE_TIME;
 }
 
+// these are vwep offests, not firing offsets
+static const vec3_t player_flash_offset[MZ_LAST] = {
+    [MZ_BLASTER] = { 8, 12, 10 },
+    [MZ_HYPERBLASTER] = { 14, 9, 12 },
+    [MZ_MACHINEGUN] = { 6, 9, 10 },
+    [MZ_SHOTGUN] = { 14, 9, 6 },
+    [MZ_SSHOTGUN] = { 18, 9, 6 },
+    [MZ_CHAINGUN1] = { 20, 9, 10 },
+    [MZ_CHAINGUN2] = { 20, 9, 10 },
+    [MZ_CHAINGUN3] = { 20, 9, 10 },
+    [MZ_RAILGUN] = { 18, 9, 6 },
+    [MZ_ROCKET] = { 22, 9, 6 },
+    [MZ_GRENADE] = { 18, 9, 6 },
+    [MZ_BFG2] = { 18, 9, 6 },
+    [MZ_IONRIPPER] = { 14, 9, 12 },
+    [MZ_PHALANX2] = { 14, 9, 12 },
+    [MZ_PROX] = { 18, 9, 6 },
+    [MZ_ETF_RIFLE_R] = { 12, 10, 14 },
+    [MZ_ETF_RIFLE_L] = { 12, 9, 14 },
+    [MZ_HEATBEAM] = { 12, 9, 14 },
+    [MZ_TRACKER] = { 16, 9, 10 },
+};
+
 /*
 ==============
 CG_MuzzleFlash
@@ -222,7 +297,7 @@ CG_MuzzleFlash
 */
 void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
 {
-    cdlight_t   *dl;
+    cg_muzzleflash_t    *mz;
     float       volume;
     char        soundname[MAX_QPATH];
     bool        silenced, local;
@@ -231,82 +306,105 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
     silenced = weapon & MZ_SILENCED;
     weapon &= ~MZ_SILENCED;
 
-    entnum = pl->current.number;
-    local = entnum == cg.frame->ps.clientnum;
+    // unknown muzzleflashes are ignored
+    if (weapon >= q_countof(player_flash_offset))
+        return;
 
-    dl = CG_AllocDlight(entnum + 1);
-    dl->origin = Vec3(18, 16, 0);
-    dl->radius = 100 * (2 - silenced) + (Q_rand() & 31);
-    dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    entnum = pl->current.number;
+    local = entnum == cg.frame->ps.clientnum && !cg.third_person_view;
+
+    mz = CG_AllocMuzzleFlash(entnum | weapon << ENTITYNUM_BITS);
+    mz->radius = 100 * (2 - silenced) + (Q_rand() & 31);
+    mz->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    mz->die2 = cg.time + MUZZLE_TIME;
+    mz->offset = player_flash_offset[weapon];
 
     volume = 1.0f - 0.8f * silenced;
 
     switch (weapon) {
     case MZ_BLASTER:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BLAST, Vec3(27.0f, 7.4f, -6.6f), 8.0f);
             CG_AddWeaponKick(-2, -1);
+        } else {
+            mz->type = MFLASH_BLAST;
+            mz->scale = 8;
         }
         break;
     case MZ_BLASTER2:
-        dl->color = Vec3(0, 1, 0);
+        mz->color = Vec3(0, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
         if (local)
             CG_AddWeaponKick(-2, -1);
         break;
     case MZ_HYPERBLASTER:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BLAST, Vec3(23.5f, 6.0f, -6.0f), 9.0f);
             CG_AddHyperblasterKick();
+        } else {
+            mz->type = MFLASH_BLAST;
+            mz->scale = 9;
         }
         break;
     case MZ_BLUEHYPERBLASTER:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
         break;
     case MZ_MACHINEGUN:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_MACHN, Vec3(29.0f, 9.7f, -8.0f), 12.0f);
             CG_AddMachinegunKick();
+        } else {
+            mz->type = MFLASH_MACHN;
+            mz->scale = 12;
         }
         break;
     case MZ_SHOTGUN:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO,   trap_S_RegisterSound("weapons/shotgr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_SHOTG, Vec3(26.5f, 8.6f, -9.5f), 12.0f);
             CG_AddWeaponKick(-2, -2);
+        } else {
+            mz->type = MFLASH_SHOTG;
+            mz->scale = 12;
         }
         break;
     case MZ_SSHOTGUN:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/sshotf1b.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_SHOTG2, Vec3(25.0f, 7.0f, -5.5f), 12.0f);
             CG_AddWeaponKick(-2, -2);
+        } else {
+            mz->type = MFLASH_SHOTG2;
+            mz->scale = 12;
         }
         break;
     case MZ_CHAINGUN1:
-        dl->radius = 200 + (Q_rand() & 31);
-        dl->color = Vec3(1, 0.25f, 0);
+        mz->radius = 200 + (Q_rand() & 31);
+        mz->color = Vec3(1, 0.25f, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_MACHN, Vec3(29.0f, 9.7f, -10.0f), 12.0f);
             CG_AddChaingunKick(1);
+        } else {
+            mz->type = MFLASH_MACHN;
+            mz->scale = 12;
         }
         break;
     case MZ_CHAINGUN2:
-        dl->radius = 225 + (Q_rand() & 31);
-        dl->color = Vec3(1, 0.5f, 0);
+        mz->radius = 225 + (Q_rand() & 31);
+        mz->color = Vec3(1, 0.5f, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
@@ -314,11 +412,14 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_MACHN, Vec3(29.0f, 9.7f, -10.0f), 16.0f);
             CG_AddChaingunKick(2);
+        } else {
+            mz->type = MFLASH_MACHN;
+            mz->scale = 16;
         }
         break;
     case MZ_CHAINGUN3:
-        dl->radius = 250 + (Q_rand() & 31);
-        dl->color = Vec3(1, 1, 0);
+        mz->radius = 250 + (Q_rand() & 31);
+        mz->color = Vec3(1, 1, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound(soundname), volume, ATTN_NORM, 0);
         Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
@@ -328,138 +429,181 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_MACHN, Vec3(29.0f, 9.7f, -10.0f), 20.0f);
             CG_AddChaingunKick(3);
+        } else {
+            mz->type = MFLASH_MACHN;
+            mz->scale = 20;
         }
         break;
     case MZ_RAILGUN:
-        dl->color = Vec3(0.5f, 0.5f, 1.0f);
+        mz->color = Vec3(0.5f, 0.5f, 1.0f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/railgf1a.wav"), volume, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO,   trap_S_RegisterSound("weapons/railgr1b.wav"), volume, ATTN_NORM, 0.4f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_RAIL, Vec3(20.0f, 5.2f, -7.0f), 12.0f);
             CG_AddWeaponKick(-3, -3);
+        } else {
+            mz->type = MFLASH_RAIL;
+            mz->scale = 12;
         }
         break;
     case MZ_ROCKET:
-        dl->color = Vec3(1, 0.5f, 0.2f);
+        mz->color = Vec3(1, 0.5f, 0.2f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/rocklf1a.wav"), volume, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO,   trap_S_RegisterSound("weapons/rocklr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ROCKET, Vec3(20.8f, 5.0f, -11.0f), 10.0f);
             CG_AddWeaponKick(-2, -1);
+        } else {
+            mz->type = MFLASH_ROCKET;
+            mz->scale = 16;
         }
         break;
     case MZ_GRENADE:
-        dl->color = Vec3(1, 0.5f, 0);
+        mz->color = Vec3(1, 0.5f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO,   trap_S_RegisterSound("weapons/grenlr1b.wav"), volume, ATTN_NORM, 0.1f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_LAUNCH, Vec3(18.0f, 6.0f, -6.5f), 9.0f);
             CG_AddWeaponKick(-2, -1);
+        } else {
+            mz->type = MFLASH_LAUNCH;
+            mz->scale = 16;
         }
         break;
     case MZ_BFG:
-        dl->color = Vec3(0, 1, 0);
+        mz->color = Vec3(0, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/bfg__f1y.wav"), volume, ATTN_NORM, 0);
         break;
     case MZ_BFG2:
-        dl->color = Vec3(0, 1, 0);
+        mz->color = Vec3(0, 1, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BFG, Vec3(18.0f, 8.0f, -7.5f), 16.0f);
             CG_AddBFGKick();
+        } else {
+            mz->type = MFLASH_BFG;
+            mz->scale = 16;
         }
         break;
 
     case MZ_LOGIN:
-        dl->color = Vec3(0, 1, 0);
+        mz->color = Vec3(0, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
         CG_LogoutEffect(pl->current.origin, 0xd0);  // green
         break;
     case MZ_LOGOUT:
-        dl->color = Vec3(1, 0, 0);
+        mz->color = Vec3(1, 0, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
         CG_LogoutEffect(pl->current.origin, 0x40);  // red
         break;
     case MZ_PHALANX:
-        dl->color = Vec3(1, 0.5f, 0.5f);
+        mz->color = Vec3(1, 0.5f, 0.5f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/plasshot.wav"), volume, ATTN_NORM, 0);
         if (local)
             CG_AddWeaponKick(-2, -2);
         break;
     case MZ_PHALANX2:
-        dl->color = Vec3(1, 0.5f, 0.5f);
+        mz->color = Vec3(1, 0.5f, 0.5f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ROCKET, Vec3(18.0f, 10.0f, -6.0f), 9.0f);
             CG_AddWeaponKick(-2, -2);
+        } else {
+            mz->type = MFLASH_ROCKET;
+            mz->scale = 16;
         }
         break;
     case MZ_IONRIPPER:
-        dl->color = Vec3(1, 0.5f, 0.5f);
+        mz->color = Vec3(1, 0.5f, 0.5f);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/rippfire.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BOOMER, Vec3(24.0f, 3.8f, -5.5f), 15.0f);
             CG_AddWeaponKick(-3, -3);
+        } else {
+            mz->type = MFLASH_BOOMER;
+            mz->scale = 15;
         }
         break;
 
     case MZ_PROX:
-        dl->color = Vec3(1, 0.5f, 0);
+        mz->color = Vec3(1, 0.5f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO,   trap_S_RegisterSound("weapons/proxlr1a.wav"), volume, ATTN_NORM, 0.1f);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_LAUNCH, Vec3(18.0f, 6.0f, -6.5f), 9.0f);
             CG_AddWeaponKick(-2, -1);
+        } else {
+            mz->type = MFLASH_LAUNCH;
+            mz->scale = 16;
         }
         break;
-    case MZ_ETF_RIFLE:
-        dl->color = Vec3(0.9f, 0.7f, 0);
+    case MZ_ETF_RIFLE_R:
+        mz->color = Vec3(0.9f, 0.7f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, Vec3(24.0f, 5.25f, -5.5f), 4.0f);
             CG_AddETFRifleKick();
+        } else {
+            mz->type = MFLASH_ETF_RIFLE;
+            mz->scale = 8;
         }
         break;
-    case MZ_ETF_RIFLE_2:
-        dl->color = Vec3(0.9f, 0.7f, 0);
+    case MZ_ETF_RIFLE_L:
+        mz->color = Vec3(0.9f, 0.7f, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_ETF_RIFLE, Vec3(24.0f, 4.0f, -5.5f), 4.0f);
             CG_AddETFRifleKick();
+        } else {
+            mz->type = MFLASH_ETF_RIFLE;
+            mz->scale = 8;
         }
         break;
     case MZ_HEATBEAM:
-        dl->color = Vec3(1, 1, 0);
-        dl->die = cg.time + 100;
-        if (local)
+        mz->color = Vec3(1, 1, 0);
+        mz->die = cg.time + 100;
+        if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BEAMER, Vec3(18.0f, 6.0f, -8.5f), 16.0f);
+        } else {
+            mz->type = MFLASH_BEAMER;
+            mz->scale = 24;
+        }
         break;
     case MZ_TRACKER:
-        dl->color = Vec3(-1, -1, -1);
+        mz->color = Vec3(-1, -1, -1);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/disint2.wav"), volume, ATTN_NORM, 0);
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_DIST, Vec3(18.0f, 6.0f, -6.5f), 10.0f);
             CG_AddWeaponKick(-2, -1);
+        } else {
+            mz->type = MFLASH_DIST;
+            mz->scale = 10;
         }
         break;
     case MZ_NUKE1:
-        dl->color = Vec3(1, 0, 0);
-        dl->die = cg.time + 100;
+        mz->color = Vec3(1, 0, 0);
+        mz->die = cg.time + 100;
         break;
     case MZ_NUKE2:
-        dl->color = Vec3(1, 1, 0);
-        dl->die = cg.time + 100;
+        mz->color = Vec3(1, 1, 0);
+        mz->die = cg.time + 100;
         break;
     case MZ_NUKE4:
-        dl->color = Vec3(0, 0, 1);
-        dl->die = cg.time + 100;
+        mz->color = Vec3(0, 0, 1);
+        mz->die = cg.time + 100;
         break;
     case MZ_NUKE8:
-        dl->color = Vec3(0, 1, 1);
-        dl->die = cg.time + 100;
+        mz->color = Vec3(0, 1, 1);
+        mz->die = cg.time + 100;
         break;
     default:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         break;
     }
+
+    if (!cg_muzzleflashes_cvar.integer)
+        mz->type = MFLASH_NONE;
+
+    if (mz->type && mz->type != MFLASH_BOOMER)
+        mz->roll = Q_rand() % 360;
 
     if (cg_dlight_hacks.integer & DLHACK_NO_MUZZLEFLASH) {
         switch (weapon) {
@@ -467,7 +611,7 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
         case MZ_CHAINGUN1:
         case MZ_CHAINGUN2:
         case MZ_CHAINGUN3:
-            memset(dl, 0, sizeof(*dl));
+            mz->radius = 0;
             break;
         default:
             break;
@@ -483,8 +627,8 @@ CG_MuzzleFlash2
 */
 void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 {
-    vec3_t      offset, origin, flash_origin;
-    cdlight_t   *dl;
+    cg_muzzleflash_t    *mz;
+    vec3_t      offset, origin;
     vec3_t      forward, right;
     char        soundname[MAX_QPATH];
     float       scale;
@@ -494,46 +638,53 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     if (weapon >= q_countof(monster_flash_offset))
         return;
 
-    // locate the origin
-    AngleVectors(ent->current.angles, &forward, &right, NULL);
-
     scale = ent->current.scale ?: 1.0f;
     entnum = ent->current.number;
 
-    offset = Vec3_Scale(monster_flash_offset[weapon], scale);
+    // boss2 rocket hack
+    if (weapon == MZ2_BOSS2_ROCKET_1)
+        offset = Vec3(22 * scale, 0, 10 * scale);
+    else
+        offset = Vec3_Scale(monster_flash_offset[weapon], scale);
+
+    // locate the origin for particle effect
+    AngleVectors(ent->current.angles, &forward, &right, NULL);
     origin = BG_ProjectSource(ent->current.origin, offset, forward, right);
 
-    offset.forward += 4.0f * scale;
-    flash_origin = Vec3_MA(origin, 4.0f * scale, forward);
-
-    dl = CG_AllocDlight(entnum + 1);
-    dl->origin = offset;
-    dl->radius = 200 + (Q_rand() & 31);
-    dl->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    mz = CG_AllocMuzzleFlash(entnum | weapon << ENTITYNUM_BITS);
+    mz->radius = 200 + (Q_rand() & 31);
+    mz->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    mz->die2 = cg.time + MUZZLE_TIME;
+    mz->offset = offset;
+    mz->offset.x += 4.0f * scale;
+    mz->monster = true;
 
     switch (weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1 ... MZ2_INFANTRY_MACHINEGUN_22:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 18;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 18.0f * scale);
         break;
 
     case MZ2_SOLDIER_MACHINEGUN_1 ... MZ2_SOLDIER_MACHINEGUN_9:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 13;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 13.0f * scale);
         break;
 
     case MZ2_GUNNER_MACHINEGUN_1 ... MZ2_GUNNER_MACHINEGUN_8:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 24;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("gunner/gunatck2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 24.0f * scale);
         break;
 
     case MZ2_SUPERTANK_MACHINEGUN_1 ... MZ2_SUPERTANK_MACHINEGUN_6:
@@ -542,108 +693,122 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_BOSS2_MACHINEGUN_L1:
     case MZ2_CARRIER_MACHINEGUN_L1:
     case MZ2_CARRIER_MACHINEGUN_L2:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 32;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("infantry/infatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_BOSS2_MACHINEGUN_R1:
     case MZ2_CARRIER_MACHINEGUN_R1:
     case MZ2_CARRIER_MACHINEGUN_R2:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 32;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_BOSS2_HYPERBLASTER_L1:
     case MZ2_BOSS2_HYPERBLASTER_R1:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 12;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NONE, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 12.0f * scale);
         break;
 
     case MZ2_SOLDIER_BLASTER_1 ... MZ2_SOLDIER_BLASTER_9:
     case MZ2_TURRET_BLASTER:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_FLYER_BLASTER_1:
     case MZ2_FLYER_BLASTER_2:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_ROTFLYER_BLASTER_1:
     case MZ2_ROTFLYER_BLASTER_2:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("flyer/flyatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_MEDIC_BLASTER_1:
     case MZ2_MEDIC_HYPERBLASTER1_1 ... MZ2_MEDIC_HYPERBLASTER1_12:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("medic/medatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_HOVER_BLASTER_1:
     case MZ2_HOVER_BLASTER_2:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("hover/hovatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_FLOAT_BLASTER_1:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("floater/fltatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_SOLDIER_SHOTGUN_1 ... MZ2_SOLDIER_SHOTGUN_9:
     case MZ2_GRUNT_SHOTGUN:
     case MZ2_OGRE_SHOTGUN:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_SHOTG;
+        mz->scale = 17;
         CG_SmokeAndFlash(origin);
         if (weapon == MZ2_GRUNT_SHOTGUN)
             trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("army/sattck1.wav"), 1, ATTN_NORM, 0);
         else
             trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("soldier/solatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_SHOTG, 0, 17.0f * scale);
         break;
 
     case MZ2_TANK_BLASTER_1 ... MZ2_TANK_BLASTER_3:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 24;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 24.0f * scale);
         break;
 
     case MZ2_TANK_MACHINEGUN_1 ... MZ2_TANK_MACHINEGUN_19:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 20;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         Q_snprintf(soundname, sizeof(soundname), "tank/tnkatk2%c.wav", 'a' + Q_rand() % 5);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound(soundname), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 20.0f * scale);
         break;
 
     case MZ2_CHICK_ROCKET_1:
     case MZ2_TURRET_ROCKET:
-        dl->color = Vec3(1, 0.5f, 0.2f);
+        mz->color = Vec3(1, 0.5f, 0.2f);
+        mz->type = MFLASH_ROCKET;
+        mz->scale = 16;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("chick/chkatck2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 16.0f * scale);
         break;
 
     case MZ2_TANK_ROCKET_1 ... MZ2_TANK_ROCKET_3:
-        dl->color = Vec3(1, 0.5f, 0.2f);
+        mz->color = Vec3(1, 0.5f, 0.2f);
+        mz->type = MFLASH_ROCKET;
+        mz->scale = 28;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck1.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
     case MZ2_SUPERTANK_ROCKET_1 ... MZ2_SUPERTANK_ROCKET_3:
@@ -651,14 +816,10 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_BOSS2_ROCKET_1:
     case MZ2_CARRIER_ROCKET_1:
     case MZ2_SHAMBLER_ROCKET:
-        dl->color = Vec3(1, 0.5f, 0.2f);
+        mz->color = Vec3(1, 0.5f, 0.2f);
+        mz->type = MFLASH_ROCKET;
+        mz->scale = weapon == MZ2_BOSS2_ROCKET_1 ? 36 : 28;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/rocket.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
-        break;
-
-    case MZ2_BOSS2_ROCKET_2 ... MZ2_BOSS2_ROCKET_4:
-        dl->color = Vec3(1, 0.5f, 0.2f);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, 28.0f * scale);
         break;
 
     case MZ2_GUNNER_GRENADE_1 ... MZ2_GUNNER_GRENADE2_4:
@@ -667,9 +828,10 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_CARRIER_GRENADE:
     case MZ2_OGRE_GRENADE:
     case MZ2_OGRE_GRENADE_S:
-        dl->color = Vec3(1, 0.5f, 0);
+        mz->color = Vec3(1, 0.5f, 0);
+        mz->type = MFLASH_LAUNCH;
+        mz->scale = 18;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("gunner/gunatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
 
     case MZ2_GLADIATOR_RAILGUN_1:
@@ -682,38 +844,43 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_ARACHNID_RAIL2:
     case MZ2_ARACHNID_RAIL_UP1:
     case MZ2_ARACHNID_RAIL_UP2:
-        dl->color = Vec3(0.5f, 0.5f, 1.0f);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_RAIL, 0, 32.0f * scale);
+        mz->color = Vec3(0.5f, 0.5f, 1.0f);
+        mz->type = MFLASH_RAIL;
+        mz->scale = 32;
         break;
 
     case MZ2_MAKRON_BFG:
     case MZ2_JORG_BFG_1:
     case MZ2_SHAMBLER_BFG:
     case MZ2_CHTJOR_BFG:
-        dl->color = Vec3(0.5f, 1, 0.5f);
+        mz->color = Vec3(0.5f, 1, 0.5f);
+        mz->type = MFLASH_BFG;
+        mz->scale = weapon == MZ2_SHAMBLER_BFG ? 32 : 64;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/bfg_fire.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BFG, 0, (weapon == MZ2_SHAMBLER_BFG ? 32.0f : 64.0f) * scale);
         break;
 
     case MZ2_MAKRON_BLASTER_1 ... MZ2_MAKRON_BLASTER_17:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 22;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("makron/blaster.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 22.0f * scale);
         break;
 
     case MZ2_JORG_MACHINEGUN_L1 ... MZ2_JORG_MACHINEGUN_L6:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 32;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("boss3/xfire.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_JORG_MACHINEGUN_R1 ... MZ2_JORG_MACHINEGUN_R6:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_MACHN;
+        mz->scale = 32;
         CG_ParticleEffect(origin, vec3_origin, 0, 40);
         CG_SmokeAndFlash(origin);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_MACHN, 0, 32.0f * scale);
         break;
 
     case MZ2_STALKER_BLASTER:
@@ -723,75 +890,85 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_WIDOW_BLASTER:
     case MZ2_WIDOW_BLASTER_SWEEP1 ... MZ2_WIDOW_RUN_8:
     case MZ2_MEDIC_HYPERBLASTER2_1 ... MZ2_MEDIC_HYPERBLASTER2_12:
-        dl->color = Vec3(0, 1, 0);
+        mz->color = Vec3(0, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 22;
+        mz->skinnum = 2;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("tank/tnkatck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 2, 22.0f * scale);
         break;
 
     case MZ2_WIDOW_DISRUPTOR:
-        dl->color = Vec3(-1, -1, -1);
+        mz->color = Vec3(-1, -1, -1);
+        mz->type = MFLASH_DIST;
+        mz->scale = 32;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/disint2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_DIST, 0, 32.0f * scale);
         break;
 
     case MZ2_WIDOW_PLASMABEAM:
     case MZ2_WIDOW2_BEAMER_1 ... MZ2_WIDOW2_BEAM_SWEEP_11:
     case MZ2_GRUNT_BEAM:
     case MZ2_WIZARD_BEAM:
-        dl->radius = 300 + (Q_rand() & 100);
-        dl->color = Vec3(1, 1, 0);
-        dl->die = cg.time + 200;
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BEAMER, 0, 32.0f * scale);
+        mz->radius = 300 + (Q_rand() & 100);
+        mz->color = Vec3(1, 1, 0);
+        mz->die = cg.time + 200;
+        mz->type = MFLASH_BEAMER;
+        mz->scale = 32;
         break;
 
     case MZ2_SOLDIER_RIPPER_1 ... MZ2_SOLDIER_RIPPER_9:
-        dl->color = Vec3(1, 0.5f, 0.5f);
+        mz->color = Vec3(1, 0.5f, 0.5f);
+        mz->type = MFLASH_BOOMER;
+        mz->scale = 32;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/rippfire.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BOOMER, 0, 32.0f * scale);
         break;
 
     case MZ2_SOLDIER_HYPERGUN_1 ... MZ2_SOLDIER_HYPERGUN_9:
     case MZ2_GRUNT_HYPERGUN_L:
     case MZ2_GRUNT_HYPERGUN_R:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
+        mz->skinnum = 1;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 1, 8.0f * scale);
         break;
 
     case MZ2_GUARDIAN_BLASTER:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 16;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/hyprbf1a.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 16.0f * scale);
         break;
 
     case MZ2_GUNCMDR_CHAINGUN_1:
     case MZ2_GUNCMDR_CHAINGUN_2:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
+        mz->type = MFLASH_ETF_RIFLE;
+        mz->scale = 16;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("guncmdr/gcdratck2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 16.0f * scale);
         break;
 
     case MZ2_GUNCMDR_GRENADE_MORTAR_1 ... MZ2_GUNCMDR_GRENADE_FRONT_3:
-        dl->color = Vec3(1, 0.5f, 0);
+        mz->color = Vec3(1, 0.5f, 0);
+        mz->type = MFLASH_LAUNCH;
+        mz->scale = 18;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("guncmdr/gcdratck3.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_LAUNCH, 0, 18.0f * scale);
         break;
 
     case MZ2_BERSERK_SLAM:
     case MZ2_GENERIC_SLAM:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("mutant/thud1.wav"), 1, ATTN_NORM, 0);
         trap_S_StartSound(entnum, CHAN_AUTO, trap_S_RegisterSound("world/explod2.wav"), 0.75f, ATTN_NORM, 0);
         CG_SlamEffect(ent->current.origin, origin, Vec3(0, 0, 1));
         break;
 
     case MZ2_GUNCMDR_SLAM:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         CG_SlamEffect(ent->current.origin, origin, forward);
         break;
 
     case MZ2_FIXBOT_WELDER:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         CG_ParticleEffect2(origin, vec3_origin, 0xe0 + (Q_rand() & 7), 10);
         if (frand() > 0.8f) {
             qhandle_t sfx = trap_S_RegisterSound(va("misc/welder%d.wav", (Q_rand() & 3) + 1));
@@ -801,37 +978,44 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
         break;
 
     case MZ2_ENFORCER_BOLT:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("enforcer/enfire.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
         break;
 
     case MZ2_ENFORCER_FLECHETTE1_L:
     case MZ2_ENFORCER_FLECHETTE1_R:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
+        mz->type = MFLASH_ETF_RIFLE;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/spike2.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 8.0f * scale);
         break;
 
     case MZ2_ENFORCER_FLECHETTE2_L:
     case MZ2_ENFORCER_FLECHETTE2_R:
     case MZ2_GUNNER_FLECHETTE_1 ... MZ2_GUNNER_FLECHETTE_8:
-        dl->color = Vec3(0, 0, 1);
+        mz->color = Vec3(0, 0, 1);
+        mz->type = MFLASH_ETF_RIFLE;
+        mz->scale = 8;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/nail1b.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ETF_RIFLE, 0, 8.0f * scale);
         break;
 
     case MZ2_HELLKNIGHT_MAGIC:
-    case MZ2_HELLKNIGHT_HYPER:
-        dl->color = Vec3(1, 1, 0);
+        mz->color = Vec3(1, 1, 0);
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("hknight/attack1.wav"), 1, ATTN_NORM, 0);
-        if (weapon == MZ2_HELLKNIGHT_HYPER)
-            CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_BLAST, 0, 8.0f * scale);
+        break;
+
+    case MZ2_HELLKNIGHT_HYPER:
+        mz->color = Vec3(1, 1, 0);
+        mz->type = MFLASH_BLAST;
+        mz->scale = 8;
+        trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("hknight/attack1.wav"), 1, ATTN_NORM, 0);
         break;
 
     case MZ2_CHTJOR_ROCKET_L:
     case MZ2_CHTJOR_ROCKET_R:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         CG_PlainExplosion(origin);
         CG_ExplosionParticles(origin);
         trap_S_StartSound(entnum, CHAN_WEAPON, cgs.sounds.rockexp, 1, ATTN_NORM, 0);
@@ -839,14 +1023,24 @@ void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
 
     case MZ2_SUPERSHAMBLERTANK_PLASMA_1 ... MZ2_SUPERSHAMBLERTANK_PLASMA_6:
     case MZ2_IRONVORE_PLASMA:
-        dl->color = Vec3(1, 0.5f, 0.2f);
+        mz->color = Vec3(1, 0.5f, 0.2f);
+        mz->type = MFLASH_ROCKET;
+        mz->scale = weapon == MZ2_IRONVORE_PLASMA ? 16 : 28;
         trap_S_StartSound(entnum, CHAN_WEAPON, trap_S_RegisterSound("weapons/plasshot.wav"), 1, ATTN_NORM, 0);
-        CG_AddMuzzleFX(flash_origin, ent->current.angles, MFLASH_ROCKET, 0, (weapon == MZ2_IRONVORE_PLASMA ? 16.0f : 28.0f) * scale);
         break;
 
     default:
-        memset(dl, 0, sizeof(*dl));
+        memset(mz, 0, sizeof(*mz));
         break;
+    }
+
+    if (!cg_muzzleflashes_cvar.integer)
+        mz->type = MFLASH_NONE;
+
+    if (mz->type) {
+        if (mz->type != MFLASH_BOOMER)
+            mz->roll = Q_rand() % 360;
+        mz->scale *= scale;
     }
 }
 
@@ -2616,7 +2810,7 @@ CG_ClearEffects
 void CG_ClearEffects(void)
 {
     CG_ClearParticles();
-    CG_ClearDlights();
+    CG_ClearMuzzleFlashes();
 }
 
 void CG_InitEffects(void)

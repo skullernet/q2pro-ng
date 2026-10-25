@@ -240,7 +240,7 @@ void CG_RegisterTEntModels(void)
     cgs.models.shell = trap_R_RegisterModel("models/items/shell/tris.md2");
     cgs.models.help_marker = trap_R_RegisterModel("models/objects/pointer/tris.md2");
 
-    for (int i = 0; i < MFLASH_TOTAL; i++)
+    for (int i = MFLASH_NONE + 1; i < MFLASH_TOTAL; i++)
         cgs.models.muzzles[i] = trap_R_RegisterModel(va("models/weapons/%s/flash/tris.md2", muzzlenames[i]));
 }
 
@@ -259,7 +259,6 @@ typedef struct explosion_s {
         ex_free,
         ex_misc,
         ex_flash,
-        ex_mflash,
         ex_poly,
         ex_light,
         ex_marker
@@ -339,52 +338,6 @@ static void CG_BFGExplosion(vec3_t pos)
     ex->ent.model = cgs.models.bfg_explo;
     ex->ent.alpha = 0.30f;
     ex->frames = 4;
-}
-
-void CG_AddWeaponMuzzleFX(cg_muzzlefx_t fx, vec3_t offset, float scale)
-{
-    if (!cg_muzzleflashes.integer)
-        return;
-
-    Q_assert(fx < q_countof(cgs.models.muzzles));
-
-    if (!cgs.models.muzzles[fx])
-        return;
-
-    cg.weapon.muzzle.model = cgs.models.muzzles[fx];
-    cg.weapon.muzzle.scale = scale;
-    if (fx == MFLASH_MACHN || fx == MFLASH_BEAMER)
-        cg.weapon.muzzle.roll = Q_rand() % 360;
-    else
-        cg.weapon.muzzle.roll = 0;
-    cg.weapon.muzzle.offset = offset;
-    cg.weapon.muzzle.time = cg.oldframe->servertime;
-}
-
-void CG_AddMuzzleFX(vec3_t origin, vec3_t angles, cg_muzzlefx_t fx, int skin, float scale)
-{
-    explosion_t *ex;
-
-    if (!cg_muzzleflashes.integer)
-        return;
-
-    Q_assert(fx < q_countof(cgs.models.muzzles));
-
-    if (!cgs.models.muzzles[fx])
-        return;
-
-    ex = CG_AllocExplosion();
-    ex->ent.origin = origin;
-    ex->ent.angles = angles;
-    ex->type = ex_mflash;
-    ex->ent.flags = RF_TRANSLUCENT | RF_NOSHADOW | RF_FULLBRIGHT;
-    ex->ent.alpha = 1.0f;
-    ex->start = cg.oldframe->servertime;
-    ex->ent.model = cgs.models.muzzles[fx];
-    ex->ent.skinnum = skin;
-    ex->ent.scale = scale;
-    if (fx != MFLASH_BOOMER)
-        ex->ent.angles.roll = Q_rand() % 360;
 }
 
 void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first)
@@ -527,13 +480,6 @@ static void CG_AddExplosions(void)
             }
             ent->alpha = 1.0f;
             break;
-
-        case ex_mflash:
-            if (cg.time - ex->start > 50)
-                ex->type = ex_free;
-            else
-                trap_R_AddEntity(ent);
-            continue;
 
         case ex_poly:
             if (f >= ex->frames - 1) {
@@ -1268,11 +1214,6 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
         break;
     case EV_MUZZLEFLASH2:
         CG_MuzzleFlash2(cent, param);
-        if (param == MZ2_BOSS2_ROCKET_1) {
-            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_2);
-            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_3);
-            CG_MuzzleFlash2(cent, MZ2_BOSS2_ROCKET_4);
-        }
         break;
     case EV_SOUND:
     case EV_POSITIONED_SOUND:
