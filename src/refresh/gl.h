@@ -53,7 +53,7 @@ typedef GLuint glIndex_t;
 #define TAB_COS(x)  gl_static.sintab[((x) + 64) & 255]
 
 // auto textures
-#define NUM_AUTO_TEXTURES       15
+#define NUM_AUTO_TEXTURES       16
 #define AUTO_TEX(n)             gl_static.texnums[n]
 
 #define TEXNUM_DEFAULT              AUTO_TEX(0)
@@ -65,22 +65,24 @@ typedef GLuint glIndex_t;
 #define TEXNUM_RAW                  AUTO_TEX(6)
 #define TEXNUM_CUBEMAP_DEFAULT      AUTO_TEX(7)
 #define TEXNUM_CUBEMAP_BLACK        AUTO_TEX(8)
-#define TEXNUM_PP_SCENE             AUTO_TEX(9)
-#define TEXNUM_PP_BLOOM             AUTO_TEX(10)
-#define TEXNUM_PP_BLUR_0            AUTO_TEX(11)
-#define TEXNUM_PP_BLUR_1            AUTO_TEX(12)
-#define TEXNUM_SHADOWMAP_STATIC     AUTO_TEX(13)
-#define TEXNUM_SHADOWMAP_DYNAMIC    AUTO_TEX(14)
+#define TEXNUM_PP_SCENE_0           AUTO_TEX(9)
+#define TEXNUM_PP_SCENE_1           AUTO_TEX(10)
+#define TEXNUM_PP_BLOOM             AUTO_TEX(11)
+#define TEXNUM_PP_BLUR_0            AUTO_TEX(12)
+#define TEXNUM_PP_BLUR_1            AUTO_TEX(13)
+#define TEXNUM_SHADOWMAP_STATIC     AUTO_TEX(14)
+#define TEXNUM_SHADOWMAP_DYNAMIC    AUTO_TEX(15)
 
 // framebuffers
-#define FBO_COUNT               5
+#define FBO_COUNT               6
 #define FBO_NAME(n)             gl_static.framebuffers[n]
 
-#define FBO_SCENE               FBO_NAME(0)
-#define FBO_BLUR_0              FBO_NAME(1)
-#define FBO_BLUR_1              FBO_NAME(2)
-#define FBO_SHADOWMAP_STATIC    FBO_NAME(3)
-#define FBO_SHADOWMAP_DYNAMIC   FBO_NAME(4)
+#define FBO_SCENE_0             FBO_NAME(0)
+#define FBO_SCENE_1             FBO_NAME(1)
+#define FBO_BLUR_0              FBO_NAME(2)
+#define FBO_BLUR_1              FBO_NAME(3)
+#define FBO_SHADOWMAP_STATIC    FBO_NAME(4)
+#define FBO_SHADOWMAP_DYNAMIC   FBO_NAME(5)
 
 enum { UBO_UNIFORMS, UBO_LIGHTS, UBO_SHADOWVIEWS, UBO_STYLES, UBO_SKELETON, UBO_COUNT };
 enum { SSBO_WEIGHTS, SSBO_JOINTNUMS, SSBO_COUNT };
@@ -91,6 +93,7 @@ typedef enum {
     PP_GAMMA     = BIT(1),
     PP_WATERWARP = BIT(2),
     PP_BLOOM     = BIT(3),
+    PP_BLUR      = BIT(4),
 } pp_flags_t;
 
 typedef struct {

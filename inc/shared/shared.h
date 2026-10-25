@@ -1752,6 +1752,7 @@ typedef enum : uint32_t {
 
     RDF_TELEPORT_BIT    = BIT(4),
     RDF_NO_WEAPON_BOB   = BIT(5),
+    RDF_DOF             = BIT(6),
 } rdflags_t;
 
 // hack to encode ATTN_STATIC more efficiently

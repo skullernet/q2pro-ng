@@ -463,6 +463,12 @@ static void CG_ScreenEffects(void)
         BG_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, &cg.refdef.screen_blend);
     else if (contents & CONTENTS_WATER)
         BG_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, &cg.refdef.screen_blend);
+
+    // add depth of field
+    if (cg.draw_weapon_wheel || cg.draw_powerup_wheel || (trap_Key_GetDest() & KEY_MENU))
+        cg.refdef.rdflags |= RDF_DOF;
+    else
+        cg.refdef.rdflags &= ~RDF_DOF;
 }
 
 #define S 0.57735f

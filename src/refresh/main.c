@@ -66,6 +66,7 @@ cvar_t *gl_md5_distance;
 cvar_t *gl_damageblend_frac;
 cvar_t *gl_resolution_scale;
 cvar_t *gl_waterwarp;
+cvar_t *gl_dof;
 cvar_t *gl_fog;
 cvar_t *gl_bloom;
 cvar_t *gl_bloom_sigma;
@@ -784,6 +785,9 @@ static pp_flags_t GL_BindFramebuffer(void)
     if (!(glr.fd.rdflags & RDF_NOWORLDMODEL) && gl_bloom->integer)
         flags |= PP_BLOOM;
 
+    if ((glr.fd.rdflags & RDF_DOF) && gl_dof->integer)
+        flags |= PP_BLUR;
+
     if (flags)
         resized = scaled_w != glr.framebuffer_width || scaled_h != glr.framebuffer_height;
 
@@ -792,14 +796,14 @@ static pp_flags_t GL_BindFramebuffer(void)
         glr.framebuffer_height = scaled_h;
         glr.framebuffer_pp     = flags;
         glr.framebuffer_ok     = GL_InitFramebuffers();
-        if (flags & PP_BLOOM)
+        if (flags & (PP_BLOOM | PP_BLUR))
             GL_ShaderUpdateBlur();
     }
 
     if (!flags || !glr.framebuffer_ok)
         return PP_NONE;
 
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE_0);
     glr.framebuffer_bound = true;
 
     glr.fd.width = scaled_w;
@@ -819,6 +823,28 @@ static pp_flags_t GL_BindFramebuffer(void)
     }
 
     return flags;
+}
+
+static void GL_DrawBlur(void)
+{
+    int w = glr.framebuffer_width;
+    int h = glr.framebuffer_height;
+
+    qglViewport(0, 0, w, h);
+    GL_Ortho(0, w, h, 0, -1, 1);
+
+    // blur X/Y
+    for (int i = 0; i < 2; i++) {
+        int j = i & 1;
+
+        gls.u_block.fog_color.x = 1.0f / w;
+        gls.u_block.fog_color.y = 1.0f / h;
+        gls.u_block.fog_color.xyzw[j] = 0;
+
+        GL_ForceTexture(TMU_TEXTURE, j ? TEXNUM_PP_SCENE_1 : TEXNUM_PP_SCENE_0);
+        qglBindFramebuffer(GL_FRAMEBUFFER, j ? FBO_SCENE_0 : FBO_SCENE_1);
+        GL_PostProcess(GLS_BLUR_GAUSS, 0, 0, w, h);
+    }
 }
 
 static void GL_DrawBloom(pp_flags_t pp_flags)
@@ -857,7 +883,7 @@ static void GL_DrawBloom(pp_flags_t pp_flags)
         GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_0);
         bits = GLS_DEFAULT;
     } else {
-        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE_0);
         GL_ForceTexture(TMU_LIGHTMAP, TEXNUM_PP_BLUR_0);
         if (pp_flags & PP_GAMMA)
             bits |= GLS_GAMMA_ENABLE;
@@ -872,6 +898,9 @@ static void GL_DrawBloom(pp_flags_t pp_flags)
 
 static void GL_PostProcessScene(pp_flags_t pp_flags)
 {
+    if (pp_flags & PP_BLUR)
+        GL_DrawBlur();
+
     if (pp_flags & PP_BLOOM) {
         GL_DrawBloom(pp_flags);
     } else if (pp_flags) {
@@ -883,7 +912,12 @@ static void GL_PostProcessScene(pp_flags_t pp_flags)
         if (pp_flags & PP_WATERWARP)
             bits |= GLS_WARP_ENABLE;
 
-        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+        if (pp_flags & PP_BLUR) {
+            GL_Setup2D();
+            qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE_0);
         GL_PostProcess(bits, glr.fd.x, glr.fd.y, glr.fd.width, glr.fd.height);
     }
 }
@@ -968,6 +1002,10 @@ void R_RenderFrame(const refdef_t *fd)
     GL_DrawFlares();
 
     GL_DrawDebugObjects();
+
+    // reset drawbuffers
+    if (pp_flags & PP_BLOOM)
+        GL_StateBits(GLS_DEFAULT);
 
     if (glr.framebuffer_bound) {
         qglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1181,6 +1219,7 @@ static void GL_Register(void)
     gl_damageblend_frac = Cvar_Get("gl_damageblend_frac", "0.2", 0);
     gl_resolution_scale = Cvar_Get("gl_resolution_scale", "1", 0);
     gl_waterwarp = Cvar_Get("gl_waterwarp", "1", 0);
+    gl_dof = Cvar_Get("gl_dof", "1", 0);
     gl_fog = Cvar_Get("gl_fog", "1", 0);
     gl_bloom = Cvar_Get("gl_bloom", "1", 0);
     gl_bloom_sigma = Cvar_Get("gl_bloom_sigma", "4", 0);

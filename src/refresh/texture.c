@@ -866,7 +866,10 @@ bool GL_InitFramebuffers(void)
 
     GL_ClearErrors();
 
-    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE_0);
+    GL_InitPostProcTexture(scene_w, scene_h, gl_bilerp_scene->integer ? GL_LINEAR : GL_NEAREST);
+
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE_1);
     GL_InitPostProcTexture(scene_w, scene_h, gl_bilerp_scene->integer ? GL_LINEAR : GL_NEAREST);
 
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLOOM);
@@ -878,8 +881,8 @@ bool GL_InitFramebuffers(void)
     GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_BLUR_1);
     GL_InitPostProcTexture(bloom_w / 4, bloom_h / 4, GL_LINEAR);
 
-    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE);
-    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scene_w ? TEXNUM_PP_SCENE : GL_NONE, 0);
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE_0);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scene_w ? TEXNUM_PP_SCENE_0 : GL_NONE, 0);
     qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, bloom_w ? TEXNUM_PP_BLOOM : GL_NONE, 0);
 
     qglBindRenderbuffer(GL_RENDERBUFFER, gl_static.renderbuffer);
@@ -888,7 +891,12 @@ bool GL_InitFramebuffers(void)
 
     qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, scene_w ? gl_static.renderbuffer : GL_NONE);
 
-    CHECK_FB(scene_w, "FBO_SCENE");
+    CHECK_FB(scene_w, "FBO_SCENE_0");
+
+    qglBindFramebuffer(GL_FRAMEBUFFER, FBO_SCENE_1);
+    qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, scene_w ? TEXNUM_PP_SCENE_1 : GL_NONE, 0);
+
+    CHECK_FB(scene_w, "FBO_SCENE_1");
 
     qglBindFramebuffer(GL_FRAMEBUFFER, FBO_BLUR_0);
     qglFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloom_w ? TEXNUM_PP_BLUR_0 : GL_NONE, 0);
@@ -953,7 +961,7 @@ bool GL_InitShadowBuffer(void)
 
 static void gl_bilerp_scene_changed(cvar_t *self)
 {
-    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE);
+    GL_ForceTexture(TMU_TEXTURE, TEXNUM_PP_SCENE_0);
     qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, self->integer ? GL_LINEAR : GL_NEAREST);
 }
 
