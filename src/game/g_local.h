@@ -1534,8 +1534,8 @@ void monster_fire_blaster2(edict_t *self, vec3_t start, vec3_t dir, int damage, 
                            monster_muzzleflash_id_t flashtype, effects_t effect);
 void monster_fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, edict_t *enemy,
                           monster_muzzleflash_id_t flashtype);
-void monster_fire_heatbeam(edict_t *self, vec3_t start, vec3_t dir, vec3_t offset, int damage,
-                           int kick, monster_muzzleflash_id_t flashtype);
+void monster_fire_heatbeam(edict_t *self, int damage, int kick, void (*update)(edict_t *self),
+                           monster_muzzleflash_id_t flashtype);
 void stationarymonster_start(edict_t *self);
 void monster_done_dodge(edict_t *self);
 // ROGUE
@@ -1831,8 +1831,10 @@ void fire_nuke(edict_t *self, vec3_t start, vec3_t aimdir, int speed);
 bool fire_player_melee(edict_t *self, vec3_t start, vec3_t aim, int reach, int damage, int kick, mod_t mod);
 void fire_tesla(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed);
 void fire_blaster2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, effects_t effect, bool hyper);
-void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, int damage, int kick);
+void fire_heatbeam(edict_t *self, int damage, int kick, void (*update)(edict_t *self));
 void fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, edict_t *enemy);
+
+void heatbeam_update(edict_t *self, vec3_t start, vec3_t aimdir);
 
 //
 // g_newai.c

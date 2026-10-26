@@ -956,7 +956,7 @@ fire_heat
 Fires a single heat beam.  Zap.
 =================
 */
-void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, int damage, int kick)
+void heatbeam_update(edict_t *self, vec3_t start, vec3_t aimdir)
 {
     trace_t    tr;
     vec3_t     dir;
@@ -964,6 +964,7 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
     vec3_t     water_start;
     bool       water = false, underwater = false;
     contents_t content_mask = G_ProjectileClipmask(self) | MASK_WATER;
+    edict_t   *owner = &g_edicts[self->r.ownernum];
 
     end = Vec3_MA(start, 8192, aimdir);
 
@@ -975,65 +976,52 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
     }
 
     // check initial firing position
-    tr = G_TraceLine(self->s.origin, start, self->s.number, content_mask & ~MASK_WATER);
+    tr = G_TraceLine(owner->s.origin, start, owner->s.number, content_mask & ~MASK_WATER);
     if (tr.fraction < 1.0f)
         // a bit ugly, but skip drawing the beam, keeping the flash
         start = tr.endpos;
     else
         // we're clear, so do the second pierce
-        tr = G_TraceLine(start, end, self->s.number, content_mask);
+        tr = G_TraceLine(start, end, owner->s.number, content_mask);
 
     // see if we hit water
     if (tr.contents & MASK_WATER) {
         water = true;
         water_start = tr.endpos;
 
-        if (!Vec3_IsEqual(start, tr.endpos)) {
+        if (self->sounds && !Vec3_IsEqual(start, tr.endpos)) {
             pos = G_SnapVectorTowards(water_start, start);
             G_TempEntity(pos, EV_HEATBEAM_STEAM, tr.plane.dir);
         }
 
         // re-trace ignoring water this time
-        tr = G_TraceLine(water_start, end, self->s.number, content_mask & ~MASK_WATER);
+        tr = G_TraceLine(water_start, end, owner->s.number, content_mask & ~MASK_WATER);
     }
-
-    // halve the damage if target underwater
-    if (water)
-        damage = damage / 2;
 
     edict_t *hit = &g_edicts[tr.entnum];
 
     // send gun puff / flash
-    if ((tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
+    if (self->sounds && (tr.fraction < 1.0f) && !(tr.surface_flags & SURF_SKY)) {
         if (hit->takedamage) {
-            T_Damage(hit, self, self, aimdir, tr.endpos, tr.plane.dir, damage, kick, DAMAGE_ENERGY, MOD_HEATBEAM);
+            // halve the damage if target underwater
+            T_Damage(hit, self, owner, aimdir, tr.endpos, tr.plane.dir,
+                     water ? self->dmg / 2 : self->dmg, self->radius_dmg,
+                     DAMAGE_ENERGY, MOD_HEATBEAM);
         } else if (!water) {
             pos = G_SnapVectorTowards(tr.endpos, start);
             G_TempEntity(pos, EV_HEATBEAM_SPARKS, tr.plane.dir);
 
-            if (self->client)
-                PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+            if (owner->client)
+                PlayerNoise(owner, tr.endpos, PNOISE_IMPACT);
         }
     }
 
-    // spawn the beam entity
-    edict_t *te = self->beam;
-    if (!te) {
-        self->beam = te = G_Spawn();
-        te->s.renderfx = RF_BEAM;
-        te->s.modelindex = G_ModelIndex("models/proj/beam/tris.md2");
-        te->s.othernum = self->s.number;
-        te->r.ownernum = self->s.number;
-        te->think = heatbeam_think;
-    }
-
-    te->s.old_origin = G_SnapVector(start);
-    te->s.origin = G_SnapVector(tr.endpos);
-    te->nextthink = level.time + Time_FromSec(0.2f);
-    trap_LinkEntity(te);
+    self->s.old_origin = G_SnapVector(start);
+    self->s.origin = G_SnapVector(tr.endpos);
+    trap_LinkEntity(self);
 
     // if went through water, determine where the end is and make a bubble trail
-    if ((water) || (underwater)) {
+    if (self->sounds && (water || underwater)) {
         dir = Vec3_Direction(tr.endpos, water_start);
         pos = Vec3_MA(tr.endpos, -2, dir);
         if (trap_PointContents(pos) & MASK_WATER)
@@ -1043,6 +1031,30 @@ void fire_heatbeam(edict_t *self, vec3_t start, vec3_t aimdir, vec3_t offset, in
 
         G_SpawnTrail(water_start, tr.endpos, EV_BUBBLETRAIL2);
     }
+
+    self->sounds = 0;
+}
+
+void fire_heatbeam(edict_t *self, int damage, int kick, void (*update_func)(edict_t *self))
+{
+    // spawn the beam entity
+    edict_t *beam = self->beam;
+    if (!beam) {
+        self->beam = beam = G_Spawn();
+        beam->s.renderfx = RF_BEAM;
+        beam->s.modelindex = G_ModelIndex("models/proj/beam/tris.md2");
+        beam->s.othernum = self->s.number;
+        beam->r.ownernum = self->s.number;
+        beam->think = heatbeam_think;
+        if (TICK_RATE > 10)
+            beam->postthink = update_func;
+    }
+
+    beam->dmg = damage;
+    beam->radius_dmg = kick;
+    beam->sounds = 1;
+    beam->nextthink = level.time + Time_FromSec(0.2f);
+    update_func(beam);
 }
 
 // *************************

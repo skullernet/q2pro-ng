@@ -25,6 +25,8 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Alias models with `EF_ANIM*` flags interpolate their frames correctly.
 * Alias model animations are never overridden mid-frame as workaround for
   re-release high tick rate animation bugs.
+* Monster/player heatbeam positions are updated at high tick rate and
+  properly interpolated.
 * `EF_BFG` effect calculates lightramp modulo current frame instead of
   clamping.
 * `RF_*` flags are propagated to linked models.

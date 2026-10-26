@@ -242,22 +242,28 @@ static void wizarcuda_checker(edict_t *self)
     self->fly_sound_debounce_time = level.time + Time_FromSec(2.0f);
 }
 
+void PRETHINK(wizarcuda_beamfire_update)(edict_t *self)
+{
+    edict_t *owner = &g_edicts[self->r.ownernum];
+
+    if (!owner->enemy || !owner->enemy->r.inuse)
+        return;
+
+    vec3_t forward, right;
+    AngleVectors(owner->s.angles, &forward, &right, NULL);
+
+    vec3_t start = M_ProjectFlashSource(owner, monster_flash_offset[MZ2_WIZARD_BEAM], forward, right);
+    M_PredictAim(owner, owner->enemy, start, 0, false, 0.1f, &forward, NULL);
+
+    heatbeam_update(self, start, forward);
+}
+
 static void wizarcuda_beamfire(edict_t *self)
 {
-    vec3_t  start;
-    vec3_t  dir;
-    vec3_t  forward;
-    vec3_t  right;
-
     if (!self->enemy || !self->enemy->r.inuse)
         return;
 
-    AngleVectors(self->s.angles, &forward, &right, NULL);
-    start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_WIZARD_BEAM], forward, right);
-
-    M_PredictAim(self, self->enemy, start, 0, false, 0.1f, &dir, NULL);
-
-    monster_fire_heatbeam(self, start, dir, start, 1, 0, MZ2_WIZARD_BEAM);
+    monster_fire_heatbeam(self, 1, 0, wizarcuda_beamfire_update, MZ2_WIZARD_BEAM);
 
     if (self->fly_sound_debounce_time > level.time)
         self->monsterinfo.nextframe = FRAME_magatt05;

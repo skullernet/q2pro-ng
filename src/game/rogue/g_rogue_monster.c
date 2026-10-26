@@ -16,9 +16,9 @@ void monster_fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, i
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 
-void monster_fire_heatbeam(edict_t *self, vec3_t start, vec3_t dir, vec3_t offset, int damage, int kick, monster_muzzleflash_id_t flashtype)
+void monster_fire_heatbeam(edict_t *self, int damage, int kick, void (*update)(edict_t *self), monster_muzzleflash_id_t flashtype)
 {
-    fire_heatbeam(self, start, dir, offset, damage, kick);
+    fire_heatbeam(self, damage, kick, update);
     G_AddEvent(self, EV_MUZZLEFLASH2, flashtype);
 }
 // ROGUE

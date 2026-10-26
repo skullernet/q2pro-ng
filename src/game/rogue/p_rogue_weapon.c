@@ -281,6 +281,18 @@ void Weapon_ETF_Rifle(edict_t *ent)
 #define HEATBEAM_DM_DMG 15
 #define HEATBEAM_SP_DMG 15
 
+void PRETHINK(Heatbeam_Update)(edict_t *self)
+{
+    edict_t *owner = &g_edicts[self->r.ownernum];
+
+    ray3_t aim = P_ProjectSource(owner, owner->client->v_angle, Vec3(7, 2, -3), false);
+
+    if (self->sounds)
+        PlayerNoise(owner, aim.start, PNOISE_WEAPON);
+
+    heatbeam_update(self, aim.start, aim.dir);
+}
+
 static void Heatbeam_Fire(edict_t *ent)
 {
     bool firing = (ent->client->buttons & BUTTON_ATTACK);
@@ -329,17 +341,11 @@ static void Heatbeam_Fire(edict_t *ent)
         kick *= damage_multiplier;
     }
 
-    // This offset is the "view" offset for the beam start (used by trace)
-    ray3_t aim = P_ProjectSource(ent, ent->client->v_angle, Vec3(7, 2, -3), false);
-
-    // This offset is the entity offset
-    fire_heatbeam(ent, aim.start, aim.dir, Vec3(2, 7, -3), damage, kick);
+    fire_heatbeam(ent, damage, kick, Heatbeam_Update);
     Weapon_PowerupSound(ent);
 
     // send muzzle flash
     G_AddEvent(ent, EV_MUZZLEFLASH, MZ_HEATBEAM | is_silenced);
-
-    PlayerNoise(ent, aim.start, PNOISE_WEAPON);
 
     G_RemoveAmmo(ent);
 

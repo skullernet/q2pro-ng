@@ -26,10 +26,6 @@ static const vec3_t spawnpoints[] = {
     { 30, -135, 0 }
 };
 
-static const float sweep_angles[] = {
-    -40, -32, -24, -16, -8, 0, 8, 16, 24, 32, 40
-};
-
 static const box3_t stalker_box = {
     .mins = { -28, -28, -18 },
     .maxs = { 28, 28, 18 }
@@ -44,7 +40,6 @@ static void widow2_reattack_beam(edict_t *self);
 void widow_start_spawn(edict_t *self);
 void widow_done_spawn(edict_t *self);
 static void widow2_spawn_check(edict_t *self);
-static void Widow2SaveBeamTarget(edict_t *self);
 
 // death stuff
 void WidowExplode(edict_t *self);
@@ -84,51 +79,60 @@ void MONSTERINFO_SEARCH(widow2_search)(edict_t *self)
         G_StartSound(self, CHAN_VOICE, sound_search1, 1, ATTN_NONE);
 }
 
+void PRETHINK(widow2_beamfire_update)(edict_t *self)
+{
+    edict_t                  *owner = &g_edicts[self->r.ownernum];
+    vec3_t                   forward, right, target;
+    vec3_t                   start, vec;
+    monster_muzzleflash_id_t flashnum;
+
+    if (!owner->enemy || !owner->enemy->r.inuse)
+        return;
+
+    AngleVectors(owner->s.angles, &forward, &right, NULL);
+
+    if ((owner->s.frame >= FRAME_fireb05) && (owner->s.frame <= FRAME_fireb09)) {
+        // regular beam attack
+        flashnum = MZ2_WIDOW2_BEAMER_1 + owner->s.frame - FRAME_fireb05;
+        start = M_ProjectFlashSource(owner, monster_flash_offset[flashnum], forward, right);
+        M_PredictAim(owner, owner->enemy, start, 0, false, 0.1f, &forward, NULL);
+    } else if ((owner->s.frame >= FRAME_spawn04) && (owner->s.frame <= FRAME_spawn14)) {
+        // sweep
+        flashnum = MZ2_WIDOW2_BEAM_SWEEP_1 + owner->s.frame - FRAME_spawn04;
+        start = M_ProjectFlashSource(owner, monster_flash_offset[flashnum], forward, right);
+        target = Vec3_Sub(owner->enemy->s.origin, start);
+
+        float frac = Time_ToSec(level.time - owner->fly_sound_debounce_time) / 1.1f;
+        vec = owner->s.angles;
+        vec.pitch = vectoangles(target).pitch;
+        vec.yaw += frac * 80 - 40;
+
+        AngleVectors(vec, &forward, NULL, NULL);
+    } else {
+        return;
+    }
+
+    heatbeam_update(self, start, forward);
+}
+
 static void Widow2Beam(edict_t *self)
 {
-    vec3_t                   forward, right, target;
-    vec3_t                   start, targ_angles, vec;
     monster_muzzleflash_id_t flashnum;
 
     if ((!self->enemy) || (!self->enemy->r.inuse))
         return;
 
-    AngleVectors(self->s.angles, &forward, &right, NULL);
-
     if ((self->s.frame >= FRAME_fireb05) && (self->s.frame <= FRAME_fireb09)) {
         // regular beam attack
-        Widow2SaveBeamTarget(self);
         flashnum = MZ2_WIDOW2_BEAMER_1 + self->s.frame - FRAME_fireb05;
-        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
-
-        target = self->pos2;
-        target.z += self->enemy->viewheight - 10;
-
-        forward = Vec3_Direction(target, start);
-        monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, flashnum);
     } else if ((self->s.frame >= FRAME_spawn04) && (self->s.frame <= FRAME_spawn14)) {
         // sweep
         flashnum = MZ2_WIDOW2_BEAM_SWEEP_1 + self->s.frame - FRAME_spawn04;
-        start = M_ProjectFlashSource(self, monster_flash_offset[flashnum], forward, right);
-        target = Vec3_Sub(self->enemy->s.origin, start);
-        targ_angles = vectoangles(target);
-
-        vec = self->s.angles;
-        vec.pitch += targ_angles.pitch;
-        vec.yaw -= sweep_angles[flashnum - MZ2_WIDOW2_BEAM_SWEEP_1];
-
-        AngleVectors(vec, &forward, NULL, NULL);
-        monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, flashnum);
     } else {
-        Widow2SaveBeamTarget(self);
-        start = M_ProjectFlashSource(self, monster_flash_offset[MZ2_WIDOW2_BEAMER_1], forward, right);
-
-        target = self->pos2;
-        target.z += self->enemy->viewheight - 10;
-
-        forward = Vec3_Direction(target, start);
-        monster_fire_heatbeam(self, start, forward, vec3_origin, 10, 50, MZ2_WIDOW2_BEAM_SWEEP_1);
+        return;
     }
+
+    monster_fire_heatbeam(self, 10, 50, widow2_beamfire_update, flashnum);
 }
 
 static void Widow2Spawn(edict_t *self)
@@ -314,6 +318,7 @@ static const mframe_t widow2_frames_attack_disrupt[] = {
 };
 const mmove_t MMOVE_T(widow2_move_attack_disrupt) = { FRAME_firea01, FRAME_firea07, widow2_frames_attack_disrupt, widow2_run };
 
+#if 0
 static void Widow2SaveBeamTarget(edict_t *self)
 {
     if (self->enemy && self->enemy->r.inuse) {
@@ -325,7 +330,6 @@ static void Widow2SaveBeamTarget(edict_t *self)
     }
 }
 
-#if 0
 static void Widow2BeamTargetRemove(edict_t *self)
 {
     self->pos1 = vec3_origin;
@@ -342,6 +346,7 @@ static void widow2_start_spawn(edict_t *self)
 {
     widow_start_spawn(self);
     widow2_step(self);
+    self->fly_sound_debounce_time = level.time + Time_FromHertz(10);
 }
 
 static const mframe_t widow2_frames_spawn[] = {
