@@ -339,51 +339,58 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
 {
     int         i, steps;
     vec3_t      dir, org, offset = vec3_origin;
-    vec3_t      tmp, f, r, u;
+    vec3_t      angles, f, r, u;
     entity_t    ent;
-    vec3_t      angles;
+    int         framenum = 2;
     float       len, model_length;
-    int         framenum;
-    float       hand_multiplier = 0;
+    float       hand_multiplier;
     qhandle_t   model = cgs.models.precache[cent->current.modelindex];
     int         entnum = cent->current.othernum;
     float       scale = cent->current.scale ?: 1;
 
-    if (entnum < cgs.maxclients) {
+    // if coming from the player, update the start position
+    if (entnum != ENTITYNUM_NONE && entnum == cg.frame->ps.clientnum) {
+        // these are firing offsets in (r, f, u) format
         if (model == cgs.models.heatbeam)
             offset = Vec3(2, 7, -3);
         else if (model == cgs.models.grapple_cable)
             offset = Vec3(9, 12, -3);
         else if (model == cgs.models.lightning)
             offset = Vec3(0, 12, -12);
-    }
 
-    // if coming from the player, update the start position
-    if (entnum == cg.frame->ps.clientnum) {
-        AngleVectors(cg.refdef.viewangles, &f, &r, &u);
+        if (cg.third_person_view) {
+            AngleVectors(cg.oldviewangles, &f, &r, &u);
 
-        // set up gun position
-        org = cg.refdef.vieworg;
+            // set up gun position
+            org = cg.player_entity_origin;
+            org.z += cg.predicted_ps.viewheight;
+        } else {
+            AngleVectors(cg.refdef.viewangles, &f, &r, &u);
 
-        org = Vec3_MA(org, cg_gun_x.value, r);
-        org = Vec3_MA(org, cg_gun_y.value, f);
-        org = Vec3_MA(org, cg_gun_z.value, u);
+            // set up gun position
+            org = cg.refdef.vieworg;
+            org = Vec3_MA(org, cg_gun_x.value, r);
+            org = Vec3_MA(org, cg_gun_y.value, f);
+            org = Vec3_MA(org, cg_gun_z.value, u);
 
-        // adjust offset for gun fov
-        if (cg_gunfov.value > 0) {
-            float fov_x = Q_clipf(cg_gunfov.value, 30, 160);
-            float fov_y = V_CalcFov(fov_x, 4, 3);
+            // adjust offset for gun fov
+            if (cg_gunfov.value > 0) {
+                float fov_x = Q_clipf(cg_gunfov.value, 30, 160);
+                float fov_y = V_CalcFov(fov_x, 4, 3);
 
-            offset.x *= tanf(cg.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
-            offset.z *= tanf(cg.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
+                offset.x *= tanf(cg.fov_x * (M_PIf / 360)) / tanf(fov_x * (M_PIf / 360));
+                offset.z *= tanf(cg.fov_y * (M_PIf / 360)) / tanf(fov_y * (M_PIf / 360));
+            }
+
+            // adjust offset for handedness
+            hand_multiplier = CG_HandMultiplier();
+            offset.x *= hand_multiplier;
+            if (hand_multiplier == 0)
+                offset.y = 0;
+
+            // smaller beam for first person view
+            framenum = 1;
         }
-
-        // adjust offset for handedness
-        hand_multiplier = CG_HandMultiplier();
-        offset.x *= hand_multiplier;
-
-        if (hand_multiplier == 0)
-            offset.z -= 1;
 
         org = Vec3_MA(org, offset.x, r);
         org = Vec3_MA(org, offset.y, f);
@@ -398,27 +405,27 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
         angles = vectoangles(dir);
 
         // if it's the heatbeam, draw the particle effect
-        if (model == cgs.models.heatbeam && !sv_paused.integer)
+        if (model == cgs.models.heatbeam && !sv_paused.integer && !cg.third_person_view)
             CG_Heatbeam(org, dir);
-
-        framenum = 1;
     } else {
         org = start;
 
         // if it's a player, use the hardcoded player offset
         if (entnum < cgs.maxclients) {
-            // calculate pitch and yaw
-            dir = Vec3_Sub(end, org);
-            angles = vectoangles(dir);
+            const centity_t *cent = &cg_entities[entnum];
+            org = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
+            angles = Vec3_LerpAngles(cent->prev.angles, cent->current.angles, cg.lerpfrac);
 
-            tmp.pitch = -angles.pitch;
-            tmp.yaw = angles.yaw + 180.0f;
-            tmp.roll = 0;
-            AngleVectors(tmp, &f, &r, &u);
+            // these are vwep offsets in (f, r, u) format
+            if (model == cgs.models.heatbeam)
+                offset = Vec3(12, 9, 14);
+            else if (model == cgs.models.grapple_cable)
+                offset = Vec3(6, 9, 10);
+            else if (model == cgs.models.lightning)
+                offset = Vec3(12, 0, 10);
 
-            org = Vec3_MA(org, -offset.x + 1, r);
-            org = Vec3_MA(org, -offset.y, f);
-            org = Vec3_MA(org, -offset.z - 10, u);
+            AngleVectors(angles, &f, &r, &u);
+            org = BG_ProjectSource2(org, offset, f, r, u);
         } else if (model == cgs.models.heatbeam) {
             // if it's a monster, do the particle effect
             CG_MonsterPlasma_Shell(start);
@@ -427,8 +434,6 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
         // calculate pitch and yaw
         dir = Vec3_Sub(end, org);
         angles = vectoangles(dir);
-
-        framenum = 2;
     }
 
     len = Vec3_Normalize(&dir);
@@ -442,7 +447,7 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
         model_length = 30.0f * scale;
 
     // correction for grapple cable model, which has origin in the middle
-    if (entnum == cg.frame->ps.clientnum && model == cgs.models.grapple_cable && hand_multiplier) {
+    if (model == cgs.models.grapple_cable) {
         org = Vec3_MA(org, model_length * 0.5f, dir);
         len -= model_length * 0.5f;
     }
