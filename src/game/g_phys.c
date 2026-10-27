@@ -282,7 +282,8 @@ static edict_t *SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
     bool      block;
     box3_t    box;
     pushed_t *p;
-    vec3_t    org, org2, move2, axis[3];
+    vec3_t    org, org2, move2;
+    axis3_t   axis;
 
     // find the bounding box of entire move
     box = pusher->r.absbox;
@@ -294,8 +295,7 @@ static edict_t *SV_Push(edict_t *pusher, vec3_t move, vec3_t amove)
     }
 
     // we need this for pushing things later
-    AnglesToAxis(amove, axis);
-    TransposeAxis(axis);
+    axis = Axis3_Transpose(Axis3_FromAngles(amove));
 
     // save the pusher's original position
     Q_assert(num_pushed < q_countof(pushed));

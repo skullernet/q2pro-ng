@@ -119,8 +119,8 @@ void GL_SetupFrustum(float zfar)
     sf = sinf(angle);
     cf = cosf(angle);
 
-    forward = Vec3_Scale(glr.viewaxis[0], sf);
-    left = Vec3_Scale(glr.viewaxis[1], cf);
+    forward = Vec3_Scale(glr.viewaxis.x, sf);
+    left = Vec3_Scale(glr.viewaxis.y, cf);
 
     glr.frustum[0].normal = Vec3_Add(forward, left);
     glr.frustum[1].normal = Vec3_Sub(forward, left);
@@ -130,14 +130,14 @@ void GL_SetupFrustum(float zfar)
     sf = sinf(angle);
     cf = cosf(angle);
 
-    forward = Vec3_Scale(glr.viewaxis[0], sf);
-    up = Vec3_Scale(glr.viewaxis[2], cf);
+    forward = Vec3_Scale(glr.viewaxis.x, sf);
+    up = Vec3_Scale(glr.viewaxis.z, cf);
 
     glr.frustum[2].normal = Vec3_Add(forward, up);
     glr.frustum[3].normal = Vec3_Sub(forward, up);
 
     // far
-    glr.frustum[4].normal = Vec3_Negate(glr.viewaxis[0]);
+    glr.frustum[4].normal = Vec3_Negate(glr.viewaxis.x);
 
     for (i = 0, p = glr.frustum; i < q_countof(glr.frustum); i++, p++) {
         p->dist = Vec3_Dot(glr.fd.vieworg, p->normal);
@@ -206,7 +206,7 @@ glCullResult_t GL_CullLocalBox(vec3_t origin, box3_t box)
     for (i = 0; i < 8; i++) {
         vec3_t t = origin;
         for (j = 0; j < 3; j++)
-            t = Vec3_MA(t, box.bounds[(i >> j) & 1].xyz[j], glr.entaxis[j]);
+            t = Vec3_MA(t, box.bounds[(i >> j) & 1].xyz[j], glr.entaxis.xyz[j]);
         points[i] = t;
     }
 
@@ -277,16 +277,14 @@ void GL_SetEntityAxis(void)
     glr.entscale = 1;
 
     if (Vec3_IsEmpty(e->angles)) {
-        AxisClear(glr.entaxis);
+        glr.entaxis = Axis3_Identity();
     } else {
-        AnglesToAxis(e->angles, glr.entaxis);
+        glr.entaxis = Axis3_FromAngles(e->angles);
         glr.entrotated = true;
     }
 
     if (e->scale && e->scale != 1) {
-        glr.entaxis[0] = Vec3_Scale(glr.entaxis[0], e->scale);
-        glr.entaxis[1] = Vec3_Scale(glr.entaxis[1], e->scale);
-        glr.entaxis[2] = Vec3_Scale(glr.entaxis[2], e->scale);
+        glr.entaxis = Axis3_Scale(glr.entaxis, e->scale);
         glr.entrotated = true;
         glr.entscale = e->scale;
     }
@@ -308,9 +306,9 @@ void GL_RotateForWorld(void)
 void GL_RotateForEntity(void)
 {
     gls.u_block.m_model = Mat4_FromCols(
-        Vec4_FromVec3(glr.entaxis[0], 0),
-        Vec4_FromVec3(glr.entaxis[1], 0),
-        Vec4_FromVec3(glr.entaxis[2], 0),
+        Vec4_FromVec3(glr.entaxis.x, 0),
+        Vec4_FromVec3(glr.entaxis.y, 0),
+        Vec4_FromVec3(glr.entaxis.z, 0),
         Vec4_FromVec3(glr.ent->e.origin, 1)
     );
 
@@ -356,10 +354,10 @@ static void GL_DrawSpriteModel(const model_t *model)
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
     GL_Color(1, 1, 1, alpha);
 
-    left  = Vec3_Scale(glr.viewaxis[1], frame->origin_x * scale);
-    right = Vec3_Scale(glr.viewaxis[1], (frame->origin_x - frame->width) * scale);
-    down  = Vec3_Scale(glr.viewaxis[2], -frame->origin_y * scale);
-    up    = Vec3_Scale(glr.viewaxis[2], (frame->height - frame->origin_y) * scale);
+    left  = Vec3_Scale(glr.viewaxis.y, frame->origin_x * scale);
+    right = Vec3_Scale(glr.viewaxis.y, (frame->origin_x - frame->width) * scale);
+    down  = Vec3_Scale(glr.viewaxis.z, -frame->origin_y * scale);
+    up    = Vec3_Scale(glr.viewaxis.z, (frame->height - frame->origin_y) * scale);
 
     down = Vec3_Add(e->origin, down);
     up   = Vec3_Add(e->origin, up);
@@ -392,9 +390,9 @@ static void GL_DrawNullModel(void)
     Vec3_Store(tess.vertices +  8, e->origin);
     Vec3_Store(tess.vertices + 16, e->origin);
 
-    Vec3_Store(tess.vertices +  4, Vec3_MA(e->origin, 16, glr.entaxis[0]));
-    Vec3_Store(tess.vertices + 12, Vec3_MA(e->origin, 16, glr.entaxis[1]));
-    Vec3_Store(tess.vertices + 20, Vec3_MA(e->origin, 16, glr.entaxis[2]));
+    Vec3_Store(tess.vertices +  4, Vec3_MA(e->origin, 16, glr.entaxis.x));
+    Vec3_Store(tess.vertices + 12, Vec3_MA(e->origin, 16, glr.entaxis.y));
+    Vec3_Store(tess.vertices + 20, Vec3_MA(e->origin, 16, glr.entaxis.z));
 
     Q_WN32(tess.vertices +  3, U32_RED);
     Q_WN32(tess.vertices +  7, U32_RED);
@@ -421,10 +419,10 @@ static void make_flare_quad(vec3_t origin, float scale)
 {
     vec3_t up, down, left, right;
 
-    left  = Vec3_Scale(glr.viewaxis[1],  scale);
-    right = Vec3_Scale(glr.viewaxis[1], -scale);
-    down  = Vec3_Scale(glr.viewaxis[2], -scale);
-    up    = Vec3_Scale(glr.viewaxis[2],  scale);
+    left  = Vec3_Scale(glr.viewaxis.y,  scale);
+    right = Vec3_Scale(glr.viewaxis.y, -scale);
+    down  = Vec3_Scale(glr.viewaxis.z, -scale);
+    up    = Vec3_Scale(glr.viewaxis.z,  scale);
 
     down = Vec3_Add(origin, down);
     up   = Vec3_Add(origin, up);
@@ -489,7 +487,7 @@ static void GL_OccludeFlares(void)
         }
 
         dir = Vec3_Sub(ent->e.origin, glr.fd.vieworg);
-        dist = Vec3_Dot(dir, glr.viewaxis[0]);
+        dist = Vec3_Dot(dir, glr.viewaxis.x);
 
         scale = 2.5f * ent->e.scale;
         if (dist > 20)

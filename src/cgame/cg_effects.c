@@ -2678,10 +2678,10 @@ void CG_HologramParticles(vec3_t org)
     cparticle_t *p;
     vec3_t      dir;
     float       ltime;
-    vec3_t      axis[3];
+    axis3_t     axis;
 
     ltime = cg.time * 0.03f;
-    AnglesToAxis(Vec3(ltime, ltime, 0), axis);
+    axis = Axis3_FromAngles(Vec3(ltime, ltime, 0));
 
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
         p = CG_AllocParticle();

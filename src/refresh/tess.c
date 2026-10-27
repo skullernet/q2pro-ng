@@ -96,7 +96,7 @@ void GL_DrawParticles(void)
         numverts = count * 3;
         do {
             transformed = Vec3_Sub(p->origin, glr.fd.vieworg);
-            dist = Vec3_Dot(transformed, glr.viewaxis[0]);
+            dist = Vec3_Dot(transformed, glr.viewaxis.x);
 
             scale = 1.0f;
             if (dist > 20)
@@ -105,10 +105,10 @@ void GL_DrawParticles(void)
             scale2 = scale * PARTICLE_SCALE;
 
             p1 = p->origin;
-            p1 = Vec3_MA(p1,  scale2, glr.viewaxis[1]);
-            p1 = Vec3_MA(p1, -scale2, glr.viewaxis[2]);
-            p2 = Vec3_MA(p1,  scale,  glr.viewaxis[2]);
-            p3 = Vec3_MA(p1, -scale,  glr.viewaxis[1]);
+            p1 = Vec3_MA(p1,  scale2, glr.viewaxis.y);
+            p1 = Vec3_MA(p1, -scale2, glr.viewaxis.z);
+            p2 = Vec3_MA(p1,  scale,  glr.viewaxis.z);
+            p3 = Vec3_MA(p1, -scale,  glr.viewaxis.y);
 
             if (p->color == -1)
                 color = p->rgba;
@@ -183,7 +183,7 @@ static void GL_DrawPolyBeam(const vec3_t *segments, int num_segments, color_t co
     dst_vert = &tess.vertices3DNoTex[tess.numverts];
 
     for (i = 0; i < BEAM_POINTS; i++) {
-        points[i] = Vec3_RotateDir(right, dir, (360.0f / BEAM_POINTS) * i);
+        points[i] = Vec3_RotateAroundVector(right, dir, (360.0f / BEAM_POINTS) * i);
         dst_vert->xyz = Vec3_Add(points[i], segments[0]);
         dst_vert->color = color;
         dst_vert++;
@@ -443,10 +443,10 @@ void GL_DrawFlares(void)
         scale = (25 << def) * (ent->e.scale * q->frac);
 
         if (ent->e.flags & RF_FLARE_LOCK_ANGLE) {
-            left  = Vec3_Scale(glr.viewaxis[1],  scale);
-            right = Vec3_Scale(glr.viewaxis[1], -scale);
-            down  = Vec3_Scale(glr.viewaxis[2], -scale);
-            up    = Vec3_Scale(glr.viewaxis[2],  scale);
+            left  = Vec3_Scale(glr.viewaxis.y,  scale);
+            right = Vec3_Scale(glr.viewaxis.y, -scale);
+            down  = Vec3_Scale(glr.viewaxis.z, -scale);
+            up    = Vec3_Scale(glr.viewaxis.z,  scale);
         } else {
             vec3_t dir, r, u;
             dir = Vec3_Direction(ent->e.origin, glr.fd.vieworg);

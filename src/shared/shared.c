@@ -55,10 +55,10 @@ void AngleVectors(vec3_t angles, vec3_t *forward, vec3_t *right, vec3_t *up)
 SetupRotationMatrix
 
 Setup rotation matrix given the normalized direction vector and angle to rotate
-around this vector. Adapted from Mesa 3D implementation of _math_matrix_rotate.
+around this vector. Adapted from Mesa 3D.
 ==================
 */
-void SetupRotationMatrix(vec3_t matrix[3], vec3_t dir, float degrees)
+void SetupRotationMatrix(axis3_t *matrix, vec3_t dir, float degrees)
 {
     vec_t   angle, s, c, one_c, xx, yy, zz, xy, yz, zx, xs, ys, zs;
 
@@ -77,17 +77,17 @@ void SetupRotationMatrix(vec3_t matrix[3], vec3_t dir, float degrees)
     ys = dir.y * s;
     zs = dir.z * s;
 
-    matrix[0].x = (one_c * xx) + c;
-    matrix[0].y = (one_c * xy) - zs;
-    matrix[0].z = (one_c * zx) + ys;
+    matrix->x.x = (one_c * xx) + c;
+    matrix->x.y = (one_c * xy) - zs;
+    matrix->x.z = (one_c * zx) + ys;
 
-    matrix[1].x = (one_c * xy) + zs;
-    matrix[1].y = (one_c * yy) + c;
-    matrix[1].z = (one_c * yz) - xs;
+    matrix->y.x = (one_c * xy) + zs;
+    matrix->y.y = (one_c * yy) + c;
+    matrix->y.z = (one_c * yz) - xs;
 
-    matrix[2].x = (one_c * zx) - ys;
-    matrix[2].y = (one_c * yz) + xs;
-    matrix[2].z = (one_c * zz) + c;
+    matrix->z.x = (one_c * zx) - ys;
+    matrix->z.y = (one_c * yz) + xs;
+    matrix->z.z = (one_c * zz) + c;
 }
 
 void MakeNormalVectors(vec3_t forward, vec3_t *right, vec3_t *up)

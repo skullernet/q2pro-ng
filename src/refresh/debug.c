@@ -115,21 +115,22 @@ void R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bo
 
 void R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test)
 {
-    vec3_t axis[3], end;
+    axis3_t axis;
+    vec3_t end;
     uint32_t color;
 
-    AnglesToAxis(angles, axis);
+    axis = Axis3_FromAngles(angles);
 
     color = U32_RED;
-    end = Vec3_MA(origin, size, axis[0]);
+    end = Vec3_MA(origin, size, axis.x);
     GL_DRAWLINEV(origin, end);
 
     color = U32_GREEN;
-    end = Vec3_MA(origin, size, axis[1]);
+    end = Vec3_MA(origin, size, axis.y);
     GL_DRAWLINEV(origin, end);
 
     color = U32_BLUE;
-    end = Vec3_MA(origin, size, axis[2]);
+    end = Vec3_MA(origin, size, axis.z);
     GL_DRAWLINEV(origin, end);
 }
 
@@ -555,7 +556,7 @@ static void GL_DrawDebugTexts(void)
 
         // distance cull
         pos = Vec3_Sub(text->origin, glr.fd.vieworg);
-        if (text->size < Vec3_Dot(pos, glr.viewaxis[0]) * gl_debug_distfrac->value)
+        if (text->size < Vec3_Dot(pos, glr.viewaxis.x) * gl_debug_distfrac->value)
             continue;
 
         if (text->bits & GLS_CULL_DISABLE) { // oriented
@@ -564,8 +565,8 @@ static void GL_DrawDebugTexts(void)
             right = Vec3_Scale(right, text->size);
             down  = Vec3_Scale(up,   -text->size);
         } else {
-            right = Vec3_Scale(glr.viewaxis[1], -text->size);
-            down  = Vec3_Scale(glr.viewaxis[2], -text->size);
+            right = Vec3_Scale(glr.viewaxis.y, -text->size);
+            down  = Vec3_Scale(glr.viewaxis.z, -text->size);
         }
         pos = text->origin;
 

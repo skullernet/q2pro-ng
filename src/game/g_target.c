@@ -455,8 +455,7 @@ void USE(use_target_changelevel)(edict_t *self, edict_t *other, edict_t *activat
             // rotated by the next map
             client->landmark_rel_pos = Vec3_Sub(activator->s.origin, self->target_ent->s.origin);
 
-            vec3_t axis[3];
-            AnglesToAxis(self->target_ent->s.angles, axis);
+            axis3_t axis = Axis3_FromAngles(self->target_ent->s.angles);
             client->landmark_rel_pos = Vec3_Rotate(client->landmark_rel_pos, axis);
             client->oldvelocity = Vec3_Rotate(client->oldvelocity, axis);
 

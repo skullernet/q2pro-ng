@@ -1240,7 +1240,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
                                const mnode_t *headnode, int nolm_mask, vec3_t origin, vec3_t angles)
 {
     vec3_t start_l, end_l;
-    vec3_t axis[3];
+    axis3_t axis;
     bool rotated;
 
     light_point = point;
@@ -1255,7 +1255,7 @@ void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
     // rotate start and end into the models frame of reference
     rotated = !Vec3_IsEmpty(angles);
     if (rotated) {
-        AnglesToAxis(angles, axis);
+        axis = Axis3_FromAngles(angles);
         start_l = Vec3_Rotate(start_l, axis);
         end_l = Vec3_Rotate(end_l, axis);
     }
@@ -1265,10 +1265,8 @@ void BSP_TransformedLightPoint(lightpoint_t *point, vec3_t start, vec3_t end,
         return;
 
     // rotate plane normal into the worlds frame of reference
-    if (rotated) {
-        TransposeAxis(axis);
-        point->plane.normal = Vec3_Rotate(point->plane.normal, axis);
-    }
+    if (rotated)
+        point->plane.normal = Vec3_Rotate(point->plane.normal, Axis3_Transpose(axis));
 
     // offset plane distance
     point->plane.dist += Vec3_Dot(point->plane.normal, origin);

@@ -187,7 +187,7 @@ typedef struct {
 
 typedef struct {
     refdef_t        fd;
-    vec3_t          viewaxis[3];
+    axis3_t         viewaxis;
     mat4_t          viewmatrix;
     unsigned        visframe;
     unsigned        drawframe;
@@ -198,7 +198,7 @@ typedef struct {
     const glentity_t *ent;
     bool            entrotated;
     float           entscale;
-    vec3_t          entaxis[3];
+    axis3_t         entaxis;
     mat4_t          skymatrix[2];
     lightpoint_t    lightpoint;
 

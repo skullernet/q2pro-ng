@@ -1832,12 +1832,9 @@ static void SCR_DrawPOIs(void)
     if (cg.frame->ps.stats[STAT_LAYOUTS] & (LAYOUTS_HIDE_HUD | LAYOUTS_HIDE_CROSSHAIR))
         return;
 
-    vec3_t viewaxis[3];
-    AnglesToAxis(cg.refdef.viewangles, viewaxis);
-
     mat4_t vp = Mat4_Multiply(
         Mat4_Frustum(cg.refdef.fov_x, cg.refdef.fov_y, 2.0f, 8192.0f),
-        Mat4_RotateForViewer(cg.refdef.vieworg, viewaxis)
+        Mat4_RotateForViewer(cg.refdef.vieworg, Axis3_FromAngles(cg.refdef.viewangles))
     );
 
     float scale = 0.5f / scr.hud_scale;

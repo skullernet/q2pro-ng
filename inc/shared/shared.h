@@ -204,12 +204,18 @@ typedef union {
     float rgba[4];
 } vec4_t;
 
-typedef struct {
-    vec3_t s, t;
+typedef union {
+    struct {
+        vec3_t s, t;
+    };
+    vec3_t st[2];
 } axis2_t;
 
-typedef struct {
-    vec3_t x, y, z;
+typedef union {
+    struct {
+        vec3_t x, y, z;
+    };
+    vec3_t xyz[3];
 } axis3_t;
 
 typedef union {
@@ -350,7 +356,7 @@ static inline uint16_t Q_clip_uint16(int a)
 }
 
 void AngleVectors(vec3_t angles, vec3_t *forward, vec3_t *right, vec3_t *up);
-void SetupRotationMatrix(vec3_t matrix[3], vec3_t dir, float degrees);
+void SetupRotationMatrix(axis3_t *matrix, vec3_t dir, float degrees);
 void MakeNormalVectors(vec3_t forward, vec3_t *right, vec3_t *up);
 float V_CalcFov(float fov_x, float width, float height);
 vec3_t vectoangles(vec3_t value);
@@ -381,6 +387,8 @@ static inline float anglemod(float a)
         a += 360;
     return a;
 }
+
+//=============================================
 
 #define vec2_origin     (vec2_t){ 0 }
 #define vec3_origin     (vec3_t){ 0 }
@@ -432,12 +440,12 @@ static inline vec2_t Vec2_Scale(vec2_t in, float scale) {
     return Vec2(in.x * scale, in.y * scale);
 }
 
-static inline vec2_t Vec2_Scale2(vec2_t a, vec2_t b) {
+static inline vec2_t Vec2_ScaleVec(vec2_t a, vec2_t b) {
     return Vec2(a.x * b.x, a.y * b.y);
 }
 
 #define Vec2_Scale(a, v) \
-    _Generic((v), vec2_t: Vec2_Scale2, default: Vec2_Scale)((a), (v))
+    _Generic((v), vec2_t: Vec2_ScaleVec, default: Vec2_Scale)((a), (v))
 
 static inline vec2_t Vec2_Offset(vec2_t in, float offset) {
     return Vec2(in.x + offset, in.y + offset);
@@ -445,10 +453,6 @@ static inline vec2_t Vec2_Offset(vec2_t in, float offset) {
 
 static inline vec2_t Vec2_MA(vec2_t a, float b, vec2_t c) {
     return Vec2_Add(a, Vec2_Scale(c, b));
-}
-
-static inline vec2_t Vec2_Rotate(vec2_t in, const vec2_t axis[2]) {
-    return Vec2(Vec2_Dot(in, axis[0]), Vec2_Dot(in, axis[1]));
 }
 
 static inline vec2_t Vec2_Min(vec2_t a, vec2_t b) {
@@ -483,12 +487,14 @@ static inline vec2_t Vec2_Lerp(vec2_t a, vec2_t b, float t) {
     return Vec2_Add(a, Vec2_Scale(Vec2_Sub(b, a), t));
 }
 
-static inline vec2_t Vec2_Lerp2(vec2_t a, vec2_t b, vec2_t t) {
+static inline vec2_t Vec2_LerpVec(vec2_t a, vec2_t b, vec2_t t) {
     return Vec2_Add(a, Vec2_Scale(Vec2_Sub(b, a), t));
 }
 
 #define Vec2_Lerp(a, b, t) \
-    _Generic((t), vec2_t: Vec2_Lerp2, default: Vec2_Lerp)((a), (b), (t))
+    _Generic((t), vec2_t: Vec2_LerpVec, default: Vec2_Lerp)((a), (b), (t))
+
+//=============================================
 
 static inline vec3_t Vec3_Fill(float v) {
     return Vec3(v, v, v);
@@ -530,12 +536,12 @@ static inline vec3_t Vec3_Scale(vec3_t in, float scale) {
     return Vec3(in.x * scale, in.y * scale, in.z * scale);
 }
 
-static inline vec3_t Vec3_Scale3(vec3_t a, vec3_t b) {
+static inline vec3_t Vec3_ScaleVec(vec3_t a, vec3_t b) {
     return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
 #define Vec3_Scale(a, v) \
-    _Generic((v), vec3_t: Vec3_Scale3, default: Vec3_Scale)((a), (v))
+    _Generic((v), vec3_t: Vec3_ScaleVec, default: Vec3_Scale)((a), (v))
 
 static inline vec3_t Vec3_Offset(vec3_t in, float offset) {
     return Vec3(in.x + offset, in.y + offset, in.z + offset);
@@ -549,13 +555,17 @@ static inline vec3_t Vec3_MA(vec3_t a, float b, vec3_t c) {
     return Vec3_Add(a, Vec3_Scale(c, b));
 }
 
-static inline vec3_t Vec3_Rotate(vec3_t in, const vec3_t axis[3]) {
-    return Vec3(Vec3_Dot(in, axis[0]), Vec3_Dot(in, axis[1]), Vec3_Dot(in, axis[2]));
+static inline vec3_t Vec3_Rotate(vec3_t in, axis3_t axis) {
+    return (vec3_t) {
+        .x = Vec3_Dot(in, axis.x),
+        .y = Vec3_Dot(in, axis.y),
+        .z = Vec3_Dot(in, axis.z)
+    };
 }
 
-static inline vec3_t Vec3_RotateDir(vec3_t in, vec3_t dir, float degrees) {
-    vec3_t matrix[3];
-    SetupRotationMatrix(matrix, dir, degrees);
+static inline vec3_t Vec3_RotateAroundVector(vec3_t in, vec3_t dir, float degrees) {
+    axis3_t matrix;
+    SetupRotationMatrix(&matrix, dir, degrees);
     return Vec3_Rotate(in, matrix);
 }
 
@@ -603,12 +613,12 @@ static inline vec3_t Vec3_Lerp(vec3_t a, vec3_t b, float t) {
     return Vec3_Add(a, Vec3_Scale(Vec3_Sub(b, a), t));
 }
 
-static inline vec3_t Vec3_Lerp3(vec3_t a, vec3_t b, vec3_t t) {
+static inline vec3_t Vec3_LerpVec(vec3_t a, vec3_t b, vec3_t t) {
     return Vec3_Add(a, Vec3_Scale(Vec3_Sub(b, a), t));
 }
 
 #define Vec3_Lerp(a, b, t) \
-    _Generic((t), vec3_t: Vec3_Lerp3, default: Vec3_Lerp)((a), (b), (t))
+    _Generic((t), vec3_t: Vec3_LerpVec, default: Vec3_Lerp)((a), (b), (t))
 
 static inline vec3_t Vec3_LerpAngles(vec3_t a, vec3_t b, float t) {
     return (vec3_t) {
@@ -693,6 +703,8 @@ static inline vec3_t Vec3_SphereDir(float phi, float theta) {
     };
 }
 
+//=============================================
+
 static inline vec4_t Vec4_FromVec3(vec3_t a, float w) {
     return Vec4(a.x, a.y, a.z, w);
 }
@@ -729,6 +741,8 @@ static inline color_t Vec4_ToColor(vec4_t v) {
 static inline vec4_t Vec4_FromColor(color_t color) {
     return Vec4_Scale(Vec4_Load(color.u8), 1.0f / 255.0f);
 }
+
+//=============================================
 
 #define box2_origin (box2_t){ 0 }
 #define box3_origin (box3_t){ 0 }
@@ -775,12 +789,12 @@ static inline box2_t Box2_Expand(box2_t a, float ofs) {
     return Box2(Vec2_Offset(a.mins, -ofs), Vec2_Offset(a.maxs, ofs));
 }
 
-static inline box2_t Box2_Expand2(box2_t a, vec2_t ofs) {
+static inline box2_t Box2_ExpandVec(box2_t a, vec2_t ofs) {
     return Box2(Vec2_Sub(a.mins, ofs), Vec2_Add(a.maxs, ofs));
 }
 
 #define Box2_Expand(a, v) \
-    _Generic((v), vec2_t: Box2_Expand2, default: Box2_Expand)((a), (v))
+    _Generic((v), vec2_t: Box2_ExpandVec, default: Box2_Expand)((a), (v))
 
 static inline box2_t Box2_Frac(box2_t a, box2_t b)
 {
@@ -804,6 +818,8 @@ static inline box2_t Box2_Intersection(box2_t a, box2_t b) {
         return Box2(Vec2_Max(a.mins, b.mins), Vec2_Min(a.maxs, b.maxs));
     return Box2_Null();
 }
+
+//=============================================
 
 static inline box3_t Box3_Null(void) {
     return Box3(Vec3_Fill(FLT_MAX), Vec3_Fill(-FLT_MAX));
@@ -878,12 +894,12 @@ static inline box3_t Box3_Scale(box3_t a, float scale) {
     return Box3(Vec3_Scale(a.mins, scale), Vec3_Scale(a.maxs, scale));
 }
 
-static inline box3_t Box3_Scale3(box3_t a, vec3_t scale) {
+static inline box3_t Box3_ScaleVec(box3_t a, vec3_t scale) {
     return Box3(Vec3_Scale(a.mins, scale), Vec3_Scale(a.maxs, scale));
 }
 
 #define Box3_Scale(a, v) \
-    _Generic((v), vec3_t: Box3_Scale3, default: Box3_Scale)((a), (v))
+    _Generic((v), vec3_t: Box3_ScaleVec, default: Box3_Scale)((a), (v))
 
 static inline box3_t Box3_Translate(box3_t a, vec3_t v) {
     return Box3(Vec3_Add(a.mins, v), Vec3_Add(a.maxs, v));
@@ -893,12 +909,12 @@ static inline box3_t Box3_Expand(box3_t a, float ofs) {
     return Box3(Vec3_Offset(a.mins, -ofs), Vec3_Offset(a.maxs, ofs));
 }
 
-static inline box3_t Box3_Expand3(box3_t a, vec3_t ofs) {
+static inline box3_t Box3_ExpandVec(box3_t a, vec3_t ofs) {
     return Box3(Vec3_Sub(a.mins, ofs), Vec3_Add(a.maxs, ofs));
 }
 
 #define Box3_Expand(a, v) \
-    _Generic((v), vec3_t: Box3_Expand3, default: Box3_Expand)((a), (v))
+    _Generic((v), vec3_t: Box3_ExpandVec, default: Box3_Expand)((a), (v))
 
 static inline vec3_t Box3_ClampPoint(box3_t a, vec3_t v) {
     return (vec3_t) {
@@ -964,6 +980,48 @@ static inline box3_t Box3_Move(box3_t box, vec3_t p1, vec3_t p2)
     return box;
 }
 
+//=============================================
+
+static inline axis3_t Axis3_FromAngles(vec3_t angles)
+{
+    vec3_t forward, right, up;
+    AngleVectors(angles, &forward, &right, &up);
+    return (axis3_t) {
+        .x = forward,
+        .y = Vec3_Negate(right),
+        .z = up
+    };
+}
+
+static inline axis3_t Axis3_Transpose(axis3_t axis)
+{
+    return (axis3_t) {
+        .x = Vec3(axis.x.x, axis.y.x, axis.z.x),
+        .y = Vec3(axis.x.y, axis.y.y, axis.z.y),
+        .z = Vec3(axis.x.z, axis.y.z, axis.z.z)
+    };
+}
+
+static inline axis3_t Axis3_Scale(axis3_t axis, float scale)
+{
+    return (axis3_t) {
+        .x = Vec3_Scale(axis.x, scale),
+        .y = Vec3_Scale(axis.y, scale),
+        .z = Vec3_Scale(axis.z, scale),
+    };
+}
+
+static inline axis3_t Axis3_Identity(void)
+{
+    return (axis3_t) {
+        .x = Vec3(1, 0, 0),
+        .y = Vec3(0, 1, 0),
+        .z = Vec3(0, 0, 1)
+    };
+}
+
+//=============================================
+
 #define NUMVERTEXNORMALS    162
 
 extern const vec3_t bytedirs[NUMVERTEXNORMALS];
@@ -973,26 +1031,6 @@ extern const vec3_t bytedirs[NUMVERTEXNORMALS];
 
 int DirToByte(vec3_t dir);
 vec3_t ByteToDir(unsigned index);
-
-static inline void AnglesToAxis(vec3_t angles, vec3_t axis[3])
-{
-    AngleVectors(angles, &axis[0], &axis[1], &axis[2]);
-    axis[1] = Vec3_Negate(axis[1]);
-}
-
-static inline void TransposeAxis(vec3_t axis[3])
-{
-    SWAP(vec_t, axis[0].y, axis[1].x);
-    SWAP(vec_t, axis[0].z, axis[2].x);
-    SWAP(vec_t, axis[1].z, axis[2].y);
-}
-
-static inline void AxisClear(vec3_t axis[3])
-{
-    axis[0] = Vec3(1, 0, 0);
-    axis[1] = Vec3(0, 1, 0);
-    axis[2] = Vec3(0, 0, 1);
-}
 
 static inline uint32_t Q_npot32(uint32_t k)
 {
@@ -1900,10 +1938,7 @@ static inline box3_t MSG_UnpackSolid(uint32_t solid)
     int zd = (solid >> 16) & 255;
     int zu = ((solid >> 24) & 255) - 32;
 
-    return (box3_t) {
-        .mins = { -x, -y, -zd },
-        .maxs = {  x,  y,  zu }
-    };
+    return Box3(Vec3(-x, -y, -zd), Vec3(x, y, zu));
 }
 
 static inline void Vec3_ToAngles16(short *angles, vec3_t a)

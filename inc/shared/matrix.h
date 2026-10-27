@@ -87,12 +87,12 @@ static inline mat4_t Mat4_Frustum(float fov_x, float fov_y, float znear, float z
     );
 }
 
-static inline mat4_t Mat4_RotateForViewer(vec3_t origin, const vec3_t axis[3])
+static inline mat4_t Mat4_RotateForViewer(vec3_t origin, axis3_t axis)
 {
     return Mat4_FromRows(
-        Vec4_FromVec3(Vec3_Negate(axis[1]), Vec3_Dot(axis[1], origin)),
-        Vec4_FromVec3(            axis[2], -Vec3_Dot(axis[2], origin)),
-        Vec4_FromVec3(Vec3_Negate(axis[0]), Vec3_Dot(axis[0], origin)),
+        Vec4_FromVec3(Vec3_Negate(axis.y), Vec3_Dot(axis.y, origin)),
+        Vec4_FromVec3(            axis.z, -Vec3_Dot(axis.z, origin)),
+        Vec4_FromVec3(Vec3_Negate(axis.x), Vec3_Dot(axis.x, origin)),
         Vec4(0, 0, 0, 1)
     );
 }

@@ -289,7 +289,7 @@ void GL_Frustum(GLfloat fov_x, GLfloat fov_y, GLfloat reflect_x)
 
 void GL_RotateForViewer(void)
 {
-    AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
+    glr.viewaxis = Axis3_FromAngles(glr.fd.viewangles);
     glr.viewmatrix = Mat4_RotateForViewer(glr.fd.vieworg, glr.viewaxis);
     gls.is_world_matrix = false;
 }

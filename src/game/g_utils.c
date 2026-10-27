@@ -737,19 +737,10 @@ vec3_t G_SnapVectorTowards(vec3_t v, vec3_t to)
     vec3_t out;
 
     for (int i = 0; i < 3; i++) {
-        float t = truncf(v.xyz[i]);
-
-        if (v.xyz[i] >= to.xyz[i]) {
-            if (v.xyz[i] < 0)
-               out.xyz[i] = t - 1;
-            else
-               out.xyz[i] = t;
-        } else {
-            if (v.xyz[i] < 0)
-                out.xyz[i] = t;
-            else
-                out.xyz[i] = t + 1;
-        }
+        if (v.xyz[i] >= to.xyz[i])
+            out.xyz[i] = floorf(v.xyz[i]);
+        else
+            out.xyz[i] = ceilf(v.xyz[i]);
     }
 
     return out;

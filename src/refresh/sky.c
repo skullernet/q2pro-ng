@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static float    skyrotate;
 static bool     skyautorotate;
 static vec3_t   skyaxis;
-static vec3_t   skymatrix[3];
+static axis3_t  skymatrix;
 
 /*
 ============
@@ -31,14 +31,14 @@ R_RotateForSky
 void R_RotateForSky(void)
 {
     if (skyautorotate) {
-        SetupRotationMatrix(skymatrix, skyaxis, glr.fd.time * skyrotate);
-        TransposeAxis(skymatrix);
+        SetupRotationMatrix(&skymatrix, skyaxis, glr.fd.time * skyrotate);
+        skymatrix = Axis3_Transpose(skymatrix);
     }
 
     glr.skymatrix[0] = Mat4_FromRows(
-        Vec4_FromVec3(skymatrix[0], -Vec3_Dot(skymatrix[0], glr.fd.vieworg)),
-        Vec4_FromVec3(skymatrix[2], -Vec3_Dot(skymatrix[2], glr.fd.vieworg)),
-        Vec4_FromVec3(skymatrix[1], -Vec3_Dot(skymatrix[1], glr.fd.vieworg)),
+        Vec4_FromVec3(skymatrix.x, -Vec3_Dot(skymatrix.x, glr.fd.vieworg)),
+        Vec4_FromVec3(skymatrix.z, -Vec3_Dot(skymatrix.z, glr.fd.vieworg)),
+        Vec4_FromVec3(skymatrix.y, -Vec3_Dot(skymatrix.y, glr.fd.vieworg)),
         Vec4(0, 0, 0, 1)
     );
 
@@ -55,7 +55,7 @@ static void R_UnsetSky(void)
 {
     skyrotate = 0;
     skyautorotate = false;
-    AxisClear(skymatrix);
+    skymatrix = Axis3_Identity();
     R_SKYTEXTURE->texnum = TEXNUM_CUBEMAP_BLACK;
 }
 
@@ -91,8 +91,8 @@ void R_SetSky(const char *name, float rotate, bool autorotate, vec3_t axis)
     skyautorotate = autorotate;
 
     if (!skyautorotate) {
-        SetupRotationMatrix(skymatrix, skyaxis, skyrotate);
-        TransposeAxis(skymatrix);
+        SetupRotationMatrix(&skymatrix, skyaxis, skyrotate);
+        skymatrix = Axis3_Transpose(skymatrix);
     }
 
     // try to load cubemap image first

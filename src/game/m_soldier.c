@@ -476,12 +476,11 @@ void MONSTERINFO_SETSKIN(soldier_setskin)(edict_t *self)
 void PRETHINK(soldierh_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
-    vec3_t start, axis[3];
 
-    AngleVectors(self->s.angles, &axis[0], &axis[1], &axis[2]);
-    TransposeAxis(axis);
+    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
 
-    start = monster_flash_offset[self->radius_dmg];
+    vec3_t start = monster_flash_offset[self->radius_dmg];
+    start.y = -start.y;
     start.z += 6;
     start = Vec3_Rotate(start, axis);
     start = Vec3_Add(start, self->s.origin);

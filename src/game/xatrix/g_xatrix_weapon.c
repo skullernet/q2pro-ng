@@ -240,7 +240,7 @@ void THINK(Trap_Gib_Think)(edict_t *ent)
     // rotate us around the center
     float degrees = (150 * FRAME_TIME_SEC) + owner->delay;
     vec3_t diff = Vec3_Sub(owner->s.origin, ent->s.origin);
-    vec3_t vec = Vec3_RotateDir(diff, up, degrees);
+    vec3_t vec = Vec3_RotateAroundVector(diff, up, degrees);
 
     ent->s.angles.yaw += degrees;
 

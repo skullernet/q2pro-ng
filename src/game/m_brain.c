@@ -494,14 +494,12 @@ static const vec3_t brain_leye[] = {
 void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
-    vec3_t start, axis[3];
 
     // rotate into worlds frame of reference
-    AnglesToAxis(self->s.angles, axis);
-    TransposeAxis(axis);
+    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
 
     // dis is my right eye
-    start = Vec3_Rotate(brain_reye[self->s.frame - FRAME_walk101], axis);
+    vec3_t start = Vec3_Rotate(brain_reye[self->s.frame - FRAME_walk101], axis);
     start = Vec3_Add(start, self->s.origin);
 
     M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
@@ -513,14 +511,12 @@ void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
 void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
-    vec3_t start, axis[3];
 
     // rotate into worlds frame of reference
-    AnglesToAxis(self->s.angles, axis);
-    TransposeAxis(axis);
+    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
 
     // dis is my left eye
-    start = Vec3_Rotate(brain_leye[self->s.frame - FRAME_walk101], axis);
+    vec3_t start = Vec3_Rotate(brain_leye[self->s.frame - FRAME_walk101], axis);
     start = Vec3_Add(start, self->s.origin);
 
     M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);

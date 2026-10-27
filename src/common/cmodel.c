@@ -460,22 +460,14 @@ rotating entities
 contents_t CM_TransformedPointContents(vec3_t p, const mnode_t *headnode,
                                        vec3_t origin, vec3_t angles)
 {
-    vec3_t      p_l;
-    vec3_t      axis[3];
-
-    if (!headnode)
-        return CONTENTS_NONE;
-
     // subtract origin offset
-    p_l = Vec3_Sub(p, origin);
+    p = Vec3_Sub(p, origin);
 
-    // rotate start and end into the models frame of reference
-    if (headnode != box_headnode && !Vec3_IsEmpty(angles)) {
-        AnglesToAxis(angles, axis);
-        p_l = Vec3_Rotate(p_l, axis);
-    }
+    // rotate point into the models frame of reference
+    if (headnode != box_headnode && !Vec3_IsEmpty(angles))
+        p = Vec3_Rotate(p, Axis3_FromAngles(angles));
 
-    return CM_PointContents(p_l, headnode);
+    return CM_PointContents(p, headnode);
 }
 
 /*
@@ -859,7 +851,7 @@ rotating entities
 trace_t CM_TransformedBoxTrace(const trace_args_t *args,
                                const mnode_t *headnode, vec3_t origin, vec3_t angles)
 {
-    vec3_t      axis[3];
+    axis3_t     axis;
     bool        rotated;
     trace_t     trace;
 
@@ -879,7 +871,7 @@ trace_t CM_TransformedBoxTrace(const trace_args_t *args,
     // rotate start and end into the models frame of reference
     rotated = headnode != box_headnode && !Vec3_IsEmpty(angles);
     if (rotated) {
-        AnglesToAxis(angles, axis);
+        axis = Axis3_FromAngles(angles);
         l.start = Vec3_Rotate(l.start, axis);
         l.end = Vec3_Rotate(l.end, axis);
     }
@@ -889,10 +881,8 @@ trace_t CM_TransformedBoxTrace(const trace_args_t *args,
 
     if (trace.fraction != 1.0f) {
         // rotate plane normal into the worlds frame of reference
-        if (rotated) {
-            TransposeAxis(axis);
-            trace.plane.normal = Vec3_Rotate(trace.plane.normal, axis);
-        }
+        if (rotated)
+            trace.plane.normal = Vec3_Rotate(trace.plane.normal, Axis3_Transpose(axis));
 
         // offset plane distance
         trace.plane.dist += Vec3_Dot(trace.plane.normal, origin);
