@@ -2101,6 +2101,9 @@ void CG_Tracker_Shell(const centity_t *ent, vec3_t origin)
     cparticle_t     *p;
     float           radius, scale;
 
+    if (sv_paused.integer)
+        return;
+
     org = Vec3_Add(origin, Box3_Center(ent->box));
     radius = ent->radius;
     scale = Q_clipf(ent->radius / 40.0f, 1, 2);
@@ -2128,6 +2131,9 @@ void CG_MonsterPlasma_Shell(vec3_t origin)
     int             i;
     cparticle_t     *p;
 
+    if (sv_paused.integer)
+        return;
+
     for (i = 0; i < 40; i++) {
         p = CG_AllocParticle();
         if (!p)
@@ -2150,6 +2156,9 @@ void CG_Widowbeamout(cg_sustain_t *self)
     int             i;
     cparticle_t     *p;
     float           ratio;
+
+    if (sv_paused.integer)
+        return;
 
     ratio = 1.0f - (self->endtime - cg.time) / 2100.0f;
 
@@ -2175,6 +2184,9 @@ void CG_Nukeblast(cg_sustain_t *self)
     int             i;
     cparticle_t     *p;
     float           ratio;
+
+    if (sv_paused.integer)
+        return;
 
     ratio = 1.0f - (self->endtime - cg.time) / 1000.0f;
 
