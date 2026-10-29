@@ -792,10 +792,7 @@ void PRETHINK(fixbot_laser_update)(edict_t *laser)
         dir = Vec3_Direction(point, self->s.origin);
     }
 
-    laser->s.origin = G_SnapVector(start);
-    laser->movedir = dir;
-    trap_LinkEntity(laser);
-    dabeam_update(laser, true);
+    dabeam_update(laser, start, dir);
 }
 
 static void fixbot_fire_laser(edict_t *self)

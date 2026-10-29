@@ -363,23 +363,19 @@ static const vec3_t laser_positions[] = {
 
 void PRETHINK(guardian_fire_update)(edict_t *laser)
 {
-    if (!(laser->spawnflags & SPAWNFLAG_DABEAM_SPAWNED)) {
-        edict_t *self = &g_edicts[laser->r.ownernum];
-        bool sec = laser->spawnflags & SPAWNFLAG_DABEAM_SECONDARY;
-        vec3_t forward, right, start;
+    if (!laser->sounds)
+        return;
 
-        AngleVectors(self->s.angles, &forward, &right, NULL);
-        start = M_ProjectFlashSource(self, laser_positions[sec], forward, right);
-        M_PredictAim(self, self->enemy, start, 0, false, 0.3f, &forward, NULL);
+    edict_t *self = &g_edicts[laser->r.ownernum];
+    vec3_t forward, right, start;
 
-        laser->s.origin = G_SnapVector(start);
-        forward.x += crandom() * 0.02f;
-        forward.y += crandom() * 0.02f;
-        laser->movedir = Vec3_Normalize(forward);
-        trap_LinkEntity(laser);
-    }
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, laser_positions[!!laser->style], forward, right);
+    M_PredictAim(self, self->enemy, start, 0, false, 0.3f, &forward, NULL);
 
-    dabeam_update(laser, false);
+    forward.x += crandom() * 0.02f;
+    forward.y += crandom() * 0.02f;
+    dabeam_update(laser, start, Vec3_Normalize(forward));
 }
 
 static void guardian_laser_fire(edict_t *self)

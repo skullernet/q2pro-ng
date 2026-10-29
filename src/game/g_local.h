@@ -1521,10 +1521,8 @@ void monster_fire_heat(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
                        monster_muzzleflash_id_t flashtype, float lerp_factor);
 void monster_fire_plasma(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                          monster_muzzleflash_id_t flashtype, float damage_radius, int radius_damage);
-#define SPAWNFLAG_DABEAM_SECONDARY  1
-#define SPAWNFLAG_DABEAM_SPAWNED    2
 void monster_fire_dabeam(edict_t *self, int damage, bool secondary, void (*update_func)(edict_t *self));
-void dabeam_update(edict_t *self, bool damage);
+void dabeam_update(edict_t *self, vec3_t start, vec3_t dir);
 void monster_fire_blueblaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
                               monster_muzzleflash_id_t flashtype, effects_t effect);
 void G_Monster_CheckCoopHealthScaling(void);

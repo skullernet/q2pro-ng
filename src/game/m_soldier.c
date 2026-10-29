@@ -476,21 +476,18 @@ void MONSTERINFO_SETSKIN(soldier_setskin)(edict_t *self)
 void PRETHINK(soldierh_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
+    vec3_t start, offset, forward, right;
 
-    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
+    offset = monster_flash_offset[self->radius_dmg];
+    offset.z += 6;
 
-    vec3_t start = monster_flash_offset[self->radius_dmg];
-    start.y = -start.y;
-    start.z += 6;
-    start = Vec3_Rotate(start, axis);
-    start = Vec3_Add(start, self->s.origin);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, offset, forward, right);
 
     if (!self->deadflag)
         M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
 
-    laser->s.origin = G_SnapVector(start);
-    trap_LinkEntity(laser);
-    dabeam_update(laser, false);
+    dabeam_update(laser, start, laser->movedir);
 }
 
 // RAFAEL

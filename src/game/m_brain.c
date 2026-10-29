@@ -463,76 +463,58 @@ static void brain_tounge_attack(edict_t *self)
 
 // Brain right eye center
 static const vec3_t brain_reye[] = {
-    { 0.238370f, -0.746700f, 34.167690f },
-    { 0.238370f, 1.076390f, 33.386372f },
-    { 5.334300f, 1.335500f, 32.177170f },
-    { 8.846370f, 0.175360f, 30.635479f },
-    { 7.804610f, 2.757590f, 30.150860f },
-    { 5.152840f, 5.575090f, 30.056160f },
-    { 3.262470f, 7.017550f, 30.552521f },
-    { 0.638800f, 7.915740f, 33.176189f },
-    { 8.285730f, 3.915390f, 33.976349f },
-    { 10.933030f, 0.913540f, 34.141811f },
-    { 8.923900f, 0.369900f, 34.189079f }
+    { 0.238370f, 0.746700f, 34.167690f },
+    { 0.238370f, -1.076390f, 33.386372f },
+    { 5.334300f, -1.335500f, 32.177170f },
+    { 8.846370f, -0.175360f, 30.635479f },
+    { 7.804610f, -2.757590f, 30.150860f },
+    { 5.152840f, -5.575090f, 30.056160f },
+    { 3.262470f, -7.017550f, 30.552521f },
+    { 0.638800f, -7.915740f, 33.176189f },
+    { 8.285730f, -3.915390f, 33.976349f },
+    { 10.933030f, -0.913540f, 34.141811f },
+    { 8.923900f, -0.369900f, 34.189079f }
 };
 
 // Brain left eye center
 static const vec3_t brain_leye[] = {
-    { 0.327750f, 3.364710f, 33.938381f },
-    { 0.493480f, 5.140450f, 32.659851f },
-    { 5.646980f, 5.341980f, 31.277901f },
-    { 9.277440f, 4.134480f, 29.925621f },
-    { 6.815090f, 6.598340f, 29.322620f },
-    { 2.529650f, 8.610840f, 29.251591f },
-    { 0.093280f, 9.231360f, 29.747959f },
-    { 1.936930f, 11.004110f, 32.395260f },
-    { 7.648190f, 7.878310f, 33.148151f },
-    { 11.430050f, 4.947370f, 33.313610f },
-    { 9.444570f, 4.332820f, 33.526340f }
+    { 0.327750f, -3.364710f, 33.938381f },
+    { 0.493480f, -5.140450f, 32.659851f },
+    { 5.646980f, -5.341980f, 31.277901f },
+    { 9.277440f, -4.134480f, 29.925621f },
+    { 6.815090f, -6.598340f, 29.322620f },
+    { 2.529650f, -8.610840f, 29.251591f },
+    { 0.093280f, -9.231360f, 29.747959f },
+    { 1.936930f, -11.004110f, 32.395260f },
+    { 7.648190f, -7.878310f, 33.148151f },
+    { 11.430050f, -4.947370f, 33.313610f },
+    { 9.444570f, -4.332820f, 33.526340f }
 };
 
-void PRETHINK(brain_right_eye_laser_update)(edict_t *laser)
+void PRETHINK(brain_laser_update)(edict_t *laser)
 {
     edict_t *self = &g_edicts[laser->r.ownernum];
+    vec3_t start, offset, forward, right, dir;
 
-    // rotate into worlds frame of reference
-    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
+    if (laser->style)
+        offset = brain_leye[self->s.frame - FRAME_walk101];
+    else
+        offset = brain_reye[self->s.frame - FRAME_walk101];
 
-    // dis is my right eye
-    vec3_t start = Vec3_Rotate(brain_reye[self->s.frame - FRAME_walk101], axis);
-    start = Vec3_Add(start, self->s.origin);
+    AngleVectors(self->s.angles, &forward, &right, NULL);
+    start = M_ProjectFlashSource(self, offset, forward, right);
 
-    M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
-
-    laser->s.origin = G_SnapVector(start);
-    trap_LinkEntity(laser);
-}
-
-void PRETHINK(brain_left_eye_laser_update)(edict_t *laser)
-{
-    edict_t *self = &g_edicts[laser->r.ownernum];
-
-    // rotate into worlds frame of reference
-    axis3_t axis = Axis3_Transpose(Axis3_FromAngles(self->s.angles));
-
-    // dis is my left eye
-    vec3_t start = Vec3_Rotate(brain_leye[self->s.frame - FRAME_walk101], axis);
-    start = Vec3_Add(start, self->s.origin);
-
-    M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &laser->movedir, NULL);
-
-    laser->s.origin = G_SnapVector(start);
-    trap_LinkEntity(laser);
-    dabeam_update(laser, false);
+    M_PredictAim(self, self->enemy, start, 0, false, frandom2(0.1f, 0.2f), &dir, NULL);
+    dabeam_update(laser, start, dir);
 }
 
 static void brain_laserbeam(edict_t *self)
 {
     // dis is my right eye
-    monster_fire_dabeam(self, 1, false, brain_right_eye_laser_update);
+    monster_fire_dabeam(self, 1, false, brain_laser_update);
 
     // dis is me left eye
-    monster_fire_dabeam(self, 1, true, brain_left_eye_laser_update);
+    monster_fire_dabeam(self, 1, true, brain_laser_update);
 }
 
 static void brain_laserbeam_reattack(edict_t *self)
