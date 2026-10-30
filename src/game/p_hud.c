@@ -19,6 +19,7 @@ void MoveClientToIntermission(edict_t *ent)
         ent->client->ps.rdflags ^= RDF_TELEPORT_BIT;
     }
     ent->s.origin = level.intermission_origin;
+    ent->s.angles = level.intermission_angle;
     ent->client->ps.origin = level.intermission_origin;
     ent->client->ps.viewangles = level.intermission_angle;
     ent->client->ps.pm_type = PM_FREEZE;
@@ -28,6 +29,11 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->ps.damage_blend.a = 0;
     ent->client->ps.rdflags &= RDF_TELEPORT_BIT;
     ent->client->ps.clientnum = ent->s.number;
+
+    if (deathmatch.integer || !level.is_n64)
+        ent->client->ps.viewheight = ent->viewheight = 22;
+    else
+        ent->client->ps.viewheight = ent->viewheight = 0;
 
     // clean up powerup info
     ent->client->quad_time = 0;
@@ -51,12 +57,12 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->tracker_pain_time = 0;
     // ROGUE
 
-    ent->viewheight = 0;
     ent->s.modelindex = 0;
     ent->s.modelindex2 = 0;
     ent->s.modelindex3 = 0;
     ent->s.modelindex4 = 0;
     ent->s.effects = EF_NONE;
+    ent->s.morefx = EFX_NONE;
     ent->s.sound = 0;
     ent->r.solid = SOLID_NOT;
     ent->movetype = MOVETYPE_NOCLIP;

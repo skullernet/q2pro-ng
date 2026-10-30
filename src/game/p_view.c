@@ -847,7 +847,7 @@ void ClientEndServerFrame(edict_t *ent)
     // the player any normal movement attributes
     //
     if (level.intermissiontime || ent->client->awaiting_respawn) {
-        if (ent->client->awaiting_respawn || (level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime))) {
+        if (ent->client->awaiting_respawn || level.intermission_eou || level.is_n64 || (deathmatch.integer && level.intermissiontime)) {
             current_client->ps.screen_blend.a = 0;
             current_client->ps.damage_blend.a = 0;
             current_client->ps.fov = 90;

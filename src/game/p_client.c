@@ -2553,22 +2553,14 @@ qvm_exported void G_ClientThink(int clientnum)
     if (level.intermissiontime || ent->client->awaiting_respawn) {
         client->ps.pm_type = PM_FREEZE;
 
-        bool n64_sp = false;
+        // can exit intermission after five seconds
+        // Paril: except in N64. the camera handles it.
+        // Paril again: except on unit exits, we can leave immediately after camera finishes
+        if (level.intermissiontime && level.changemap &&
+            (deathmatch.integer || !level.is_n64 || level.level_intermission_set) &&
+            level.time > level.intermissiontime + Time_FromSec(5) && (ucmd.buttons & BUTTON_ANY))
+            level.exitintermission = true;
 
-        if (level.intermissiontime) {
-            n64_sp = !deathmatch.integer && level.is_n64;
-
-            // can exit intermission after five seconds
-            // Paril: except in N64. the camera handles it.
-            // Paril again: except on unit exits, we can leave immediately after camera finishes
-            if (level.changemap && (!n64_sp || level.level_intermission_set) && level.time > level.intermissiontime + Time_FromSec(5) && (ucmd.buttons & BUTTON_ANY))
-                level.exitintermission = true;
-        }
-
-        if (!n64_sp)
-            ent->viewheight = 22;
-        else
-            ent->viewheight = 0;
         ent->movetype = MOVETYPE_NOCLIP;
         return;
     }
@@ -2686,8 +2678,6 @@ qvm_exported void G_ClientThink(int clientnum)
         // ROGUE sam raimi cam support
         if (ent->flags & FL_SAM_RAIMI)
             ent->viewheight = 8;
-        else if (client->ps.pm_type == PM_FREEZE)
-            ent->viewheight = 22; // FIXME: pmenu hack
         else
             ent->viewheight = pm.s->viewheight;
         // ROGUE
