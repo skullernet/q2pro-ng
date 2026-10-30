@@ -1577,24 +1577,36 @@ void CTFScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
     // team one
     if (teamplay.integer) {
         sprintf(string + strlen(string),
-                "if 25 xv -32 yv 8 pic 25 endif "
+                "if %d xv -32 yv 8 pic %d endif "
                 "xv -123 yv 28 cstring \"%d\" "
-                "xv 41 yv 12 num 3 19 "
-                "if 26 xv 208 yv 8 pic 26 endif "
+                "xv 41 yv 12 num 3 %d "
+                "if %d xv 208 yv 8 pic %d endif "
                 "xv 117 yv 28 cstring \"%d\" "
-                "xv 280 yv 12 num 3 21 ",
+                "xv 280 yv 12 num 3 %d ",
+                STAT_CTF_TEAM1_HEADER,
+                STAT_CTF_TEAM1_HEADER,
                 total[0],
-                total[1]);
+                STAT_CTF_TEAM1_CAPS,
+                STAT_CTF_TEAM2_HEADER,
+                STAT_CTF_TEAM2_HEADER,
+                total[1],
+                STAT_CTF_TEAM2_CAPS);
     } else {
         sprintf(string + strlen(string),
-                "if 25 xv -32 yv 8 pic 25 endif "
+                "if %d xv -32 yv 8 pic %d endif "
                 "xv 0 yv 28 string \"%4d/%-3d\" "
-                "xv 58 yv 12 num 2 19 "
-                "if 26 xv 208 yv 8 pic 26 endif "
+                "xv 58 yv 12 num 2 %d "
+                "if %d xv 208 yv 8 pic %d endif "
                 "xv 240 yv 28 string \"%4d/%-3d\" "
-                "xv 296 yv 12 num 2 21 ",
+                "xv 296 yv 12 num 2 %d ",
+                STAT_CTF_TEAM1_HEADER,
+                STAT_CTF_TEAM1_HEADER,
                 totalscore[0], total[0],
-                totalscore[1], total[1]);
+                STAT_CTF_TEAM1_CAPS,
+                STAT_CTF_TEAM2_HEADER,
+                STAT_CTF_TEAM2_HEADER,
+                totalscore[1], total[1],
+                STAT_CTF_TEAM2_CAPS);
     }
 
     for (i = 0; i < 16; i++) {
@@ -2452,7 +2464,7 @@ static const int jmenu_blue = 7;
 static const int jmenu_chase = 10;
 static const int jmenu_reqmatch = 12;
 
-static const pmenu_t joinmenu[] = {
+static pmenu_t joinmenu[] = {
     { "*ThreeWave Capture the Flag", PMENU_ALIGN_CENTER, NULL },
     { "", PMENU_ALIGN_CENTER, NULL },
     { "", PMENU_ALIGN_CENTER, NULL },
@@ -2468,7 +2480,7 @@ static const pmenu_t joinmenu[] = {
     { "", PMENU_ALIGN_LEFT, NULL },
 };
 
-static const pmenu_t nochasemenu[] = {
+static pmenu_t nochasemenu[] = {
     { "*ThreeWave Capture the Flag", PMENU_ALIGN_CENTER, NULL },
     { "", PMENU_ALIGN_CENTER, NULL },
     { "", PMENU_ALIGN_CENTER, NULL },
@@ -2985,7 +2997,8 @@ typedef struct {
     bool matchlock;
 } admin_settings_t;
 
-static void CTFAdmin_UpdateSettings(edict_t *ent, pmenuhnd_t *setmenu);
+static admin_settings_t settings_pool[MAX_CLIENTS];
+
 static void CTFOpenAdminMenu(edict_t *ent);
 
 static void CTFAdmin_SettingsApply(edict_t *ent, pmenuhnd_t *p)
@@ -3070,7 +3083,7 @@ static void CTFAdmin_ChangeMatchLen(edict_t *ent, pmenuhnd_t *p)
     if (settings->matchlen < 5)
         settings->matchlen = 5;
 
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeMatchSetupLen(edict_t *ent, pmenuhnd_t *p)
@@ -3081,7 +3094,7 @@ static void CTFAdmin_ChangeMatchSetupLen(edict_t *ent, pmenuhnd_t *p)
     if (settings->matchsetuplen < 5)
         settings->matchsetuplen = 5;
 
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeMatchStartLen(edict_t *ent, pmenuhnd_t *p)
@@ -3092,7 +3105,7 @@ static void CTFAdmin_ChangeMatchStartLen(edict_t *ent, pmenuhnd_t *p)
     if (settings->matchstartlen < 20)
         settings->matchstartlen = 20;
 
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeWeapStay(edict_t *ent, pmenuhnd_t *p)
@@ -3100,7 +3113,7 @@ static void CTFAdmin_ChangeWeapStay(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     settings->weaponsstay = !settings->weaponsstay;
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeInstantItems(edict_t *ent, pmenuhnd_t *p)
@@ -3108,7 +3121,7 @@ static void CTFAdmin_ChangeInstantItems(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     settings->instantitems = !settings->instantitems;
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeQuadDrop(edict_t *ent, pmenuhnd_t *p)
@@ -3116,7 +3129,7 @@ static void CTFAdmin_ChangeQuadDrop(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     settings->quaddrop = !settings->quaddrop;
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeInstantWeap(edict_t *ent, pmenuhnd_t *p)
@@ -3124,7 +3137,7 @@ static void CTFAdmin_ChangeInstantWeap(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     settings->instantweap = !settings->instantweap;
-    CTFAdmin_UpdateSettings(ent, p);
+    PMenu_Update(ent);
 }
 
 static void CTFAdmin_ChangeMatchLock(edict_t *ent, pmenuhnd_t *p)
@@ -3132,36 +3145,35 @@ static void CTFAdmin_ChangeMatchLock(edict_t *ent, pmenuhnd_t *p)
     admin_settings_t *settings = p->arg;
 
     settings->matchlock = !settings->matchlock;
-    CTFAdmin_UpdateSettings(ent, p);
-}
-
-void CTFAdmin_UpdateSettings(edict_t *ent, pmenuhnd_t *setmenu)
-{
-    admin_settings_t *settings = setmenu->arg;
-
-    PMenu_UpdateEntry(setmenu->entries + 2, va("Match Len:       %2d mins", settings->matchlen), PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchLen);
-    PMenu_UpdateEntry(setmenu->entries + 3, va("Match Setup Len: %2d mins", settings->matchsetuplen), PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchSetupLen);
-    PMenu_UpdateEntry(setmenu->entries + 4, va("Match Start Len: %2d secs", settings->matchstartlen), PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchStartLen);
-    PMenu_UpdateEntry(setmenu->entries + 5, va("Weapons Stay:    %s", settings->weaponsstay ? "Yes" : "No"), PMENU_ALIGN_LEFT, CTFAdmin_ChangeWeapStay);
-    PMenu_UpdateEntry(setmenu->entries + 6, va("Instant Items:   %s", settings->instantitems ? "Yes" : "No"), PMENU_ALIGN_LEFT, CTFAdmin_ChangeInstantItems);
-    PMenu_UpdateEntry(setmenu->entries + 7, va("Quad Drop:       %s", settings->quaddrop ? "Yes" : "No"), PMENU_ALIGN_LEFT, CTFAdmin_ChangeQuadDrop);
-    PMenu_UpdateEntry(setmenu->entries + 8, va("Instant Weapons: %s", settings->instantweap ? "Yes" : "No"), PMENU_ALIGN_LEFT, CTFAdmin_ChangeInstantWeap);
-    PMenu_UpdateEntry(setmenu->entries + 9, va("Match Lock:      %s", settings->matchlock ? "Yes" : "No"), PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchLock);
-
     PMenu_Update(ent);
 }
 
-static const pmenu_t def_setmenu[] = {
+static void CTFAdmin_UpdateSettings(edict_t *ent)
+{
+    admin_settings_t *settings = ent->client->menu->arg;
+    pmenu_t *entries = ent->client->menu->entries;
+
+    sprintf(entries[2].text, "Match Len:       %2d mins", settings->matchlen);
+    sprintf(entries[3].text, "Match Setup Len: %2d mins", settings->matchsetuplen);
+    sprintf(entries[4].text, "Match Start Len: %2d secs", settings->matchstartlen);
+    sprintf(entries[5].text, "Weapons Stay:    %s", settings->weaponsstay ? "Yes" : "No");
+    sprintf(entries[6].text, "Instant Items:   %s", settings->instantitems ? "Yes" : "No");
+    sprintf(entries[7].text, "Quad Drop:       %s", settings->quaddrop ? "Yes" : "No");
+    sprintf(entries[8].text, "Instant Weapons: %s", settings->instantweap ? "Yes" : "No");
+    sprintf(entries[9].text, "Match Lock:      %s", settings->matchlock ? "Yes" : "No");
+}
+
+static pmenu_t def_setmenu[] = {
     { "*Settings Menu", PMENU_ALIGN_CENTER, NULL },
     { "", PMENU_ALIGN_CENTER, NULL },
-    { "", PMENU_ALIGN_LEFT, NULL }, // int matchlen;
-    { "", PMENU_ALIGN_LEFT, NULL }, // int matchsetuplen;
-    { "", PMENU_ALIGN_LEFT, NULL }, // int matchstartlen;
-    { "", PMENU_ALIGN_LEFT, NULL }, // bool weaponsstay;
-    { "", PMENU_ALIGN_LEFT, NULL }, // bool instantitems;
-    { "", PMENU_ALIGN_LEFT, NULL }, // bool quaddrop;
-    { "", PMENU_ALIGN_LEFT, NULL }, // bool instantweap;
-    { "", PMENU_ALIGN_LEFT, NULL }, // bool matchlock;
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchLen },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchSetupLen },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchStartLen },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeWeapStay },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeInstantItems },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeQuadDrop },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeInstantWeap },
+    { "", PMENU_ALIGN_LEFT, CTFAdmin_ChangeMatchLock },
     { "", PMENU_ALIGN_LEFT, NULL },
     { "Apply", PMENU_ALIGN_LEFT, CTFAdmin_SettingsApply },
     { "Cancel", PMENU_ALIGN_LEFT, CTFAdmin_SettingsCancel }
@@ -3170,11 +3182,10 @@ static const pmenu_t def_setmenu[] = {
 static void CTFAdmin_Settings(edict_t *ent, pmenuhnd_t *p)
 {
     admin_settings_t *settings;
-    pmenuhnd_t       *menu;
 
     PMenu_Close(ent);
 
-    settings = NULL;//gi.TagMalloc(sizeof(*settings), TAG_LEVEL);
+    settings = &settings_pool[ent->s.number];
 
     settings->matchlen = matchtime.integer;
     settings->matchsetuplen = matchsetuptime.integer;
@@ -3185,8 +3196,7 @@ static void CTFAdmin_Settings(edict_t *ent, pmenuhnd_t *p)
     settings->instantweap = g_instant_weapon_switch.integer != 0;
     settings->matchlock = matchlock.integer != 0;
 
-    menu = PMenu_Open(ent, def_setmenu, -1, q_countof(def_setmenu), settings, NULL);
-    CTFAdmin_UpdateSettings(ent, menu);
+    PMenu_Open(ent, def_setmenu, -1, q_countof(def_setmenu), settings, CTFAdmin_UpdateSettings);
 }
 
 static void CTFAdmin_MatchSet(edict_t *ent, pmenuhnd_t *p)
@@ -3263,9 +3273,6 @@ static void CTFOpenAdminMenu(edict_t *ent)
         Q_strlcpy(adminmenu[3].text, "Switch to match mode", sizeof(adminmenu[3].text));
         adminmenu[3].SelectFunc = CTFAdmin_MatchMode;
     }
-
-    //  if (ent->client->menu)
-    //      PMenu_Close(ent->client->menu);
 
     PMenu_Open(ent, adminmenu, -1, q_countof(adminmenu), NULL, NULL);
 }

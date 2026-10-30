@@ -2,13 +2,12 @@
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
 
-// Note that the pmenu entries are duplicated
-// this is so that a static set of pmenu entries can be used
-// for multiple clients and changed without interference
-// note that arg will be freed when the menu is closed, it must be allocated memory
-pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc)
+static pmenuhnd_t pmenu_pool[MAX_CLIENTS];
+
+// pmenu entries are shared between clients.
+// UpdateFunc is expected to refresh them for current client.
+pmenuhnd_t *PMenu_Open(edict_t *ent, pmenu_t *entries, int cur, int num, void *arg, UpdateFunc_t UpdateFunc)
 {
-#if 0
     pmenuhnd_t    *hnd;
     const pmenu_t *p;
     int            i;
@@ -21,16 +20,11 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
         PMenu_Close(ent);
     }
 
-    hnd = gi.TagMalloc(sizeof(*hnd), TAG_LEVEL);
+    hnd = &pmenu_pool[ent->s.number];
     hnd->UpdateFunc = UpdateFunc;
 
     hnd->arg = arg;
-    hnd->entries = gi.TagMalloc(sizeof(pmenu_t) * num, TAG_LEVEL);
-    memcpy(hnd->entries, entries, sizeof(pmenu_t) * num);
-    // duplicate the strings since they may be from static memory
-    for (i = 0; i < num; i++)
-        Q_strlcpy(hnd->entries[i].text, entries[i].text, sizeof(entries[i].text));
-
+    hnd->entries = entries;
     hnd->num = num;
 
     if (cur < 0 || !entries[cur].SelectFunc) {
@@ -49,41 +43,18 @@ pmenuhnd_t *PMenu_Open(edict_t *ent, const pmenu_t *entries, int cur, int num, v
     ent->client->inmenu = true;
     ent->client->menu = hnd;
 
-    if (UpdateFunc)
-        UpdateFunc(ent);
-
     PMenu_Do_Update(ent, true);
 
     return hnd;
-#else
-    return NULL;
-#endif
 }
 
 void PMenu_Close(edict_t *ent)
 {
-#if 0
-    pmenuhnd_t *hnd;
-
     if (!ent->client->menu)
         return;
 
-    hnd = ent->client->menu;
-    gi.TagFree(hnd->entries);
-    if (hnd->arg)
-        gi.TagFree(hnd->arg);
-    gi.TagFree(hnd);
     ent->client->menu = NULL;
     ent->client->showscores = false;
-#endif
-}
-
-// only use on pmenu's that have been called with PMenu_Open
-void PMenu_UpdateEntry(pmenu_t *entry, const char *text, int align, SelectFunc_t SelectFunc)
-{
-    Q_strlcpy(entry->text, text, sizeof(entry->text));
-    entry->align = align;
-    entry->SelectFunc = SelectFunc;
 }
 
 #include "g_statusbar.h"
