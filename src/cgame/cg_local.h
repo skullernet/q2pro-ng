@@ -227,6 +227,7 @@ typedef struct {
     char        name[MAX_QPATH];
     qhandle_t   skin;
     qhandle_t   icon;
+    qhandle_t   dogtag;
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
     qhandle_t   model;

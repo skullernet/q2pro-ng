@@ -1447,6 +1447,7 @@ q_exported void G_SpawnEntities(void)
     // set client fields on player ents
     for (int i = 0; i < game.maxclients; i++) {
         g_edicts[i].client = g_clients + i;
+        g_edicts[i].s.number = i;
 
         // "disconnect" all players since the level is switching
         g_clients[i].pers.connected = false;

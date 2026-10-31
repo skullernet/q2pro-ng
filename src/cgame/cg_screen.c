@@ -924,7 +924,7 @@ STAT PROGRAMS
 #define ICON_SPACE  8
 
 #define HUD_DrawString(x, y, string) \
-    trap_R_DrawString(x, y, 0, MAX_STRING_CHARS, string, scr.norm_font)
+    trap_R_DrawString(x, y, UI_NONE, MAX_STRING_CHARS, string, scr.norm_font)
 
 #define HUD_DrawAltString(x, y, string) \
     trap_R_DrawString(x, y, UI_XORCOLOR, MAX_STRING_CHARS, string, scr.norm_font)
@@ -1062,7 +1062,7 @@ static void SCR_SkipToEndif(const char **s)
         if (!strcmp(token, "xl") || !strcmp(token, "xr") || !strcmp(token, "xv") ||
             !strcmp(token, "yt") || !strcmp(token, "yb") || !strcmp(token, "yv") ||
             !strcmp(token, "pic") || !strcmp(token, "picn") || !strcmp(token, "color") ||
-            strstr(token, "string")) {
+            !strcmp(token, "dogtag") || strstr(token, "string")) {
             COM_SkipToken(s);
             continue;
         }
@@ -1192,6 +1192,20 @@ static void SCR_ExecuteLayoutString(const char *s)
             if (value) {
                 trap_R_DrawPic(x, y, cgs.images.precache[value]);
             }
+            continue;
+        }
+
+        if (!strcmp(token, "dogtag")) {
+            token = COM_Parse(&s);
+            value = Q_atoi(token);
+            if (value < 0 || value >= MAX_CLIENTS) {
+                Com_Error(ERR_DROP, "%s: invalid client index", __func__);
+            }
+            ci = &cgs.clientinfo[value];
+            if (!ci->dogtag) {
+                ci = &cgs.baseclientinfo;
+            }
+            trap_R_DrawPic(x, y, ci->dogtag);
             continue;
         }
 

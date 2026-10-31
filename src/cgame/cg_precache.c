@@ -70,7 +70,7 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *s)
+static void CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
 {
     size_t len;
     char *t;
@@ -94,10 +94,17 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, const char *
         name[len] = 0;
     }
 
+    // isolate the dogtag name
+    t = strchr(model, '\\');
+    if (t) {
+        *t = 0;
+        strcpy(dogtag, t + 1);
+    } else {
+        *dogtag = 0;
+    }
+
     // isolate the model name
     t = strchr(model, '/');
-    if (!t)
-        t = strchr(model, '\\');
     if (!t)
         goto default_model;
     *t = 0;
@@ -140,12 +147,13 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     int         i;
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
+    char        dogtag_name[MAX_QPATH];
     char        model_filename[MAX_QPATH];
     char        skin_filename[MAX_QPATH];
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
 
-    CG_ParsePlayerSkin(ci->name, model_name, skin_name, s);
+    CG_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
@@ -217,6 +225,16 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
              "/players/", model_name, "/", skin_name, "_i.pcx");
     ci->icon = trap_R_RegisterPic(icon_filename);
 
+    // dogtag file
+    ci->dogtag = 0;
+    if (COM_IsPath(dogtag_name)) {
+        Q_concat(icon_filename, sizeof(icon_filename),
+                 "/tags/", dogtag_name, ".pcx");
+        ci->dogtag = trap_R_RegisterPic(icon_filename);
+    }
+    if (!ci->dogtag)
+        ci->dogtag = trap_R_RegisterPic("/tags/default.pcx");
+
     strcpy(ci->model_name, model_name);
     strcpy(ci->skin_name, skin_name);
 
@@ -232,6 +250,7 @@ static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
     if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]) {
         ci->skin = 0;
         ci->icon = 0;
+        ci->dogtag = 0;
         ci->model = 0;
         ci->weaponmodel[0] = 0;
         ci->model_name[0] = 0;

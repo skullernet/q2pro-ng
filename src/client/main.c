@@ -51,6 +51,7 @@ cvar_t  *info_password;
 cvar_t  *info_spectator;
 cvar_t  *info_name;
 cvar_t  *info_skin;
+cvar_t  *info_dogtag;
 cvar_t  *info_rate;
 cvar_t  *info_fov;
 cvar_t  *info_msg;
@@ -1742,6 +1743,11 @@ void cl_timeout_changed(cvar_t *self)
     self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
 }
 
+static void info_dogtag_g(void)
+{
+    FS_File_g("tags", NULL, FS_SEARCH_STRIPEXT);
+}
+
 static const cmdreg_t c_client[] = {
     { "cmd", CL_ForwardToServer_f },
     { "pause", CL_Pause_f },
@@ -1836,6 +1842,8 @@ static void CL_InitLocal(void)
     info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
     info_name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
     info_skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_dogtag = Cvar_Get("dogtag", "default", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_dogtag->generator = info_dogtag_g;
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);

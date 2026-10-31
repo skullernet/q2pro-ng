@@ -285,12 +285,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         y = 0 + 32 * (i % 8);
 
         // add a dogtag
-        if (cl_ent == ent)
-            tag = "tag1";
-        else if (cl_ent == killer)
-            tag = "tag2";
-        else
-            tag = NULL;
+        tag = NULL;
 
         //===============
         // ROGUE
@@ -302,15 +297,17 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer, bool reliable)
         // ROGUE
         //===============
 
-        if (tag) {
+        if (tag)
             Q_snprintf(entry, sizeof(entry),
                        "xv %i yv %i picn %s ", x + 32, y, tag);
-            j = strlen(entry);
-            if (stringlength + j >= MAX_SCOREBOARD_SIZE)
-                break;
-            strcpy(string + stringlength, entry);
-            stringlength += j;
-        }
+        else
+            Q_snprintf(entry, sizeof(entry),
+                       "xv %i yv %i dogtag %d ", x + 32, y, sorted[i]);
+        j = strlen(entry);
+        if (stringlength + j >= MAX_SCOREBOARD_SIZE)
+            break;
+        strcpy(string + stringlength, entry);
+        stringlength += j;
 
         // send the layout
         Q_snprintf(entry, sizeof(entry),

@@ -777,9 +777,15 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     // ZOID
     if (G_TeamplayEnabled())
         CTFAssignSkin(ent, val);
-    else
+    else {
     // ZOID
-        trap_SetConfigstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, val));
+        char buffer[MAX_QPATH];
+        char *tag = Info_ValueForKey(userinfo, "dogtag");
+        if (!COM_IsPath(tag))
+            tag = "default";
+        Q_snprintf(buffer, sizeof(buffer), "%s\\%s\\%s", ent->client->pers.netname, val, tag);
+        trap_SetConfigstring(CS_PLAYERSKINS + playernum, buffer);
+    }
 
     // ZOID
     //  set player name field (used in id_state view)
