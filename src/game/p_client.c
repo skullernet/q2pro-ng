@@ -1021,7 +1021,7 @@ float PlayersRangeFromSpot(edict_t *spot)
 bool SpawnPointClear(edict_t *spot)
 {
     vec3_t p = spot->s.origin;
-    p.z += spot->r.box.maxs.z - player_box.mins.z;
+    p.z += 9;
     return !G_Trace(p, p, player_box, spot->s.number, CONTENTS_PLAYER | CONTENTS_MONSTER).startsolid;
 }
 
@@ -1425,7 +1425,7 @@ bool SelectSpawnPoint(edict_t *ent, vec3_t *origin, vec3_t *angles, bool force_s
 
         if (spot) {
             *origin = spot->s.origin;
-            origin->z += spot->r.box.maxs.z - player_box.mins.z;
+            origin->z += 9;
             *angles = spot->s.angles;
             return true;
         }
@@ -1731,6 +1731,9 @@ static vec3_t squad_respawn_position, squad_respawn_angles;
 static void PutClientOnSpawnPoint(edict_t *ent, vec3_t spawn_origin, vec3_t spawn_angles)
 {
     gclient_t *client = ent->client;
+
+    if (!use_squad_respawn)
+        spawn_origin.z += 1; // make sure off ground
 
     ent->s.origin = spawn_origin;
     ent->s.old_origin = ent->s.origin;
