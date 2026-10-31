@@ -180,8 +180,6 @@ Build a client frame structure
 =============================================================================
 */
 
-static vec3_t clientorg;
-
 static bool SV_EntityVisible(int e, const visrow_t *mask)
 {
     const server_entity_t *ent = &sv.entities[e];
@@ -203,9 +201,9 @@ static float SV_GetEntityLoopDistMult(const edict_t *ent)
     return att * (SOUND_LOOPATTENUATE_MULT / 64.0f);
 }
 
-static bool SV_EntityAttenuatedAway(const edict_t *ent)
+static bool SV_EntityAttenuatedAway(const edict_t *ent, vec3_t clientorg)
 {
-    float dist = Vec3_Distance(clientorg, ent->s.origin) - SOUND_FULLVOLUME;
+    float dist = Vec3_Distance(ent->s.origin, clientorg) - SOUND_FULLVOLUME;
     float mult = SV_GetEntityLoopDistMult(ent);
 
     return dist * mult > 1.0f;
@@ -227,6 +225,7 @@ void SV_BuildClientFrame(client_t *client)
     entity_state_t  *state;
     const mleaf_t   *leaf;
     int             clientarea, clientcluster;
+    vec3_t          clientorg;
     const visrow_t  *clientphs;
     const visrow_t  *clientpvs;
 
@@ -301,7 +300,7 @@ void SV_BuildClientFrame(client_t *client)
                 if (!SV_EntityVisible(e, clientphs))
                     continue;
                 // don't send sounds if they will be attenuated away
-                if (SV_EntityAttenuatedAway(ent)) {
+                if (SV_EntityAttenuatedAway(ent, clientorg)) {
                     if (!ent->s.modelindex)
                         continue;
                     if (!(ent->r.svflags & SVF_PHS) && !SV_EntityVisible(e, clientpvs))
