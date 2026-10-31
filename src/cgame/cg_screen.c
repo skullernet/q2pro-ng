@@ -1760,7 +1760,8 @@ POI
 #define MAX_POIS    32
 
 typedef struct {
-    int         id, time;
+    poi_id_t    id;
+    int         time;
     vec3_t      pos;
     qhandle_t   image;
     vec2_t      size;
@@ -1769,12 +1770,12 @@ typedef struct {
 
 static scr_poi_t scr_pois[MAX_POIS];
 
-void SCR_RemovePOI(int id)
+void SCR_RemovePOI(poi_id_t id)
 {
     scr_poi_t *poi;
     int i;
 
-    if (id == 0) {
+    if (id == POI_NONE) {
         memset(scr_pois, 0, sizeof(scr_pois));
         return;
     }
@@ -1787,7 +1788,7 @@ void SCR_RemovePOI(int id)
     }
 }
 
-static scr_poi_t *SCR_AllocPOI(int id)
+static scr_poi_t *SCR_AllocPOI(poi_id_t id)
 {
     scr_poi_t *poi, *oldest = NULL;
     int i, oldest_time = INT_MAX;
@@ -1808,7 +1809,7 @@ static scr_poi_t *SCR_AllocPOI(int id)
     return oldest;
 }
 
-void SCR_AddPOI(int id, vec3_t point, qhandle_t image, uint32_t color, int time)
+void SCR_AddPOI(poi_id_t id, vec3_t point, qhandle_t image, uint32_t color, int time)
 {
     scr_poi_t *poi = SCR_AllocPOI(id);
     if (!poi)
@@ -1837,36 +1838,60 @@ static void SCR_DrawPOIs(void)
         Mat4_RotateForViewer(cg.refdef.vieworg, Axis3_FromAngles(cg.refdef.viewangles))
     );
 
-    float scale = 0.5f / scr.hud_scale;
+    float vrect_x = scr_vrect.x * scr.hud_scale;
+    float vrect_y = scr_vrect.y * scr.hud_scale;
+    float vrect_width  = scr_vrect.width  * scr.hud_scale;
+    float vrect_height = scr_vrect.height * scr.hud_scale;
+
     trap_R_SetAlpha(scr_alpha.value);
+    trap_R_SetClipBox(Box2_At(vrect_x, vrect_y, vrect_width, vrect_height));
 
     for (i = 0, poi = scr_pois; i < MAX_POIS; i++, poi++) {
         if (poi->time <= cg.time)
             continue;
-
         vec4_t sp = Mat4_TransformVector(vp, Vec4_FromVec3(poi->pos, 1.0f));
 
         float w = sp.w;
         if (w)
             sp = Vec4_Scale(sp, 1.0f / fabsf(w));
 
+        bool player = poi->id >= 1 && poi->id <= cgs.maxclients;
+        if (player && w < 0)
+            continue;
+
         float s =  sp.x * 0.5f + 0.5f;
         float t = -sp.y * 0.5f + 0.5f;
         if (w < 0)
             s = s > 0.5f;
 
-        float x = s * scr_vrect.width;
-        float y = t * scr_vrect.height;
+        float pic_w = poi->size.x;
+        float pic_h = poi->size.y;
 
-        float pic_w = poi->size.x * scale;
-        float pic_h = poi->size.y * scale;
+        float x = s * vrect_width  - pic_w * 0.5f;
+        float y = t * vrect_height - pic_h * 0.5f;
 
-        x = scr_vrect.x + Q_clipf(x - pic_w / 2, 0, scr_vrect.width  - pic_w);
-        y = scr_vrect.y + Q_clipf(y - pic_h / 2, 0, scr_vrect.height - pic_h);
+        if (player) {
+            y -= pic_h * 0.5f;
+        } else {
+            x = Q_clipf(x, 0, vrect_width  - pic_w);
+            y = Q_clipf(y, 0, vrect_height - pic_h);
+        }
+
+        x += vrect_x;
+        y += vrect_y;
 
         trap_R_SetColor24(poi->color);
         SCR_DrawStretchPic(x, y, pic_w, pic_h, poi->image);
+
+        if (player) {
+            trap_R_SetColor24(U32_WHITE);
+            x += pic_w * 0.5f;
+            y -= trap_R_GetFontHeight(scr.norm_font) * 1.5f;
+            SCR_DrawString(x, y, UI_CENTER | UI_DROPSHADOW, cgs.clientinfo[poi->id - 1].name);
+        }
     }
+
+    trap_R_SetClipBox(Box2_Null());
 }
 
 /*
@@ -2166,13 +2191,13 @@ static void SCR_Draw2D(void)
     if (trap_Key_GetDest() & KEY_MENU)
         return;
 
-    SCR_DrawPOIs();
-
     trap_R_SetScale(scr.hud_scale);
 
     scr.hud_center = Vec2_Scale(Vec2(scr.hud_width, scr.hud_height), scr.hud_scale * 0.5);
     scr.hud_width = Q_rint(scr.hud_width * scr.hud_scale);
     scr.hud_height = Q_rint(scr.hud_height * scr.hud_scale);
+
+    SCR_DrawPOIs();
 
     // crosshair has its own color and alpha
     SCR_DrawCrosshair();

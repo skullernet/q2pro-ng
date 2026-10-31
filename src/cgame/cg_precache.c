@@ -368,6 +368,7 @@ void CG_RegisterMedia(void)
 
     trap_SetLoadText("images");
     cgs.images.flare = trap_R_RegisterSprite("misc/flare.tga");
+    cgs.images.friend = trap_R_RegisterPic("friend");
     for (i = 1; i < MAX_IMAGES; i++) {
         if (!trap_GetConfigstring(CS_IMAGES + i, name, sizeof(name)))
             break;

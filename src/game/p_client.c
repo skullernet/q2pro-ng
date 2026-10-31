@@ -1687,13 +1687,23 @@ void P_AssignClientSkinnum(edict_t *ent)
     if (ent->s.modelindex != MODELINDEX_PLAYER)
         return;
 
-    int client_num = ent->client - g_clients;
-    int vwep_index = 0;
+    uint32_t vwep_index = 0;
+    uint32_t team_index = 0;
+    uint32_t poi_index = 0;
+
     const gitem_t *item = ent->client->pers.weapon;
     if (item)
         vwep_index = trap_FindConfigstring(item->vwep_model, CS_CLIENTWEAPONS, MAX_CLIENTWEAPONS, false);
 
-    ent->s.skinnum = client_num | (vwep_index << 8);
+    if (coop.integer)
+        team_index = 1; // all players are teamed in coop
+    else if (G_TeamplayEnabled())
+        team_index = ent->client->resp.ctf_team;
+
+    if (team_index)
+        poi_index = ent->deadflag;
+
+    ent->s.skinnum = ent->s.number | vwep_index << 8 | team_index << 16 | poi_index << 20;
 }
 
 // Set client angle after teleport/spawn

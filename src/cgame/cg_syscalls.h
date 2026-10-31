@@ -250,7 +250,7 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_R_SetAlpha cgi->R_SetAlpha
 #define trap_R_SetColor24 cgi->R_SetColor24
 #define trap_R_SetColor32 cgi->R_SetColor32
-#define trap_R_SetClipBix cgi->R_SetClipBox
+#define trap_R_SetClipBox cgi->R_SetClipBox
 #define trap_R_SetScale cgi->R_SetScale
 #define trap_R_SetTransform cgi->R_SetTransform
 #define trap_R_DrawChar cgi->R_DrawChar

@@ -2023,8 +2023,6 @@ void USE(info_world_text_use)(edict_t *self, edict_t *other, edict_t *activator)
         G_FreeEdict(self);
 }
 
-#define U32_ORANGE  MakeColor(255, 165, 0, 255)
-
 void THINK(info_world_text_think)(edict_t *self)
 {
     static const uint32_t colors[] = {

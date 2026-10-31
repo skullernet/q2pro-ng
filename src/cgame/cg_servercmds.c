@@ -88,12 +88,6 @@ static void CG_Sound(void)
     trap_S_StartSound(entnum, channel, cgs.sounds.precache[index], volume, attenuation, 0);
 }
 
-typedef enum {
-    POI_OBJECTIVE = MAX_EDICTS,
-    POI_PING,
-    POI_PING_END = POI_PING + MAX_CLIENTS - 1
-} pois_t;
-
 static void CG_Poi(void)
 {
     vec3_t point = CG_ParseVector(1);
@@ -116,7 +110,7 @@ static void CG_Ping(void)
     unsigned index = CG_ParseInt(5);
     Q_assert_soft(index < MAX_IMAGES);
 
-    SCR_AddPOI(POI_PING + entnum, point, cgs.images.precache[index], U32_GREEN, 5000);
+    SCR_AddPOI(POI_PING + entnum, point, cgs.images.precache[index], U32_GREEN, cg_location_time.value * 1000);
 
     trap_S_StartSound(cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
 }

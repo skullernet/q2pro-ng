@@ -290,6 +290,7 @@ typedef struct {
 
 typedef struct {
     qhandle_t   flare;
+    qhandle_t   friend;
     qhandle_t   precache[MAX_IMAGES];
 } cg_images_t;
 
@@ -446,6 +447,7 @@ extern vm_cvar_t    cg_muzzlelight_time;
 extern vm_cvar_t    cg_muzzleflashes_cvar;
 extern vm_cvar_t    cg_hit_markers;
 extern vm_cvar_t    cg_compass_time;
+extern vm_cvar_t    cg_location_time;
 extern vm_cvar_t    cg_weapon_select_msec;
 extern vm_cvar_t    cg_railtrail_type;
 extern vm_cvar_t    cg_railtrail_time;
@@ -697,8 +699,15 @@ void    CG_HideWeaponWheel_f(void);
 void    CG_ShowPowerupWheel_f(void);
 void    CG_HidePowerupWheel_f(void);
 
-void    SCR_RemovePOI(int id);
-void    SCR_AddPOI(int id, vec3_t point, qhandle_t image, uint32_t color, int time);
+typedef enum {
+    POI_NONE = 0,
+    POI_OBJECTIVE = MAX_EDICTS,
+    POI_PING,
+    POI_PING_END = POI_PING + MAX_CLIENTS - 1
+} poi_id_t;
+
+void    SCR_RemovePOI(poi_id_t id);
+void    SCR_AddPOI(poi_id_t id, vec3_t point, qhandle_t image, uint32_t color, int time);
 
 void    SCR_ClearDamageDisplays(void);
 void    SCR_AddToDamageDisplay(int damage, vec3_t color, vec3_t dir);

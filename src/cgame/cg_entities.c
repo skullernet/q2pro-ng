@@ -824,6 +824,16 @@ static void CG_AddPacketEntities(void)
                     Q_concat(buffer, sizeof(buffer), "players/", ci->model_name, "/disguise.pcx");
                     ent.skin = trap_R_RegisterSkin(buffer);
                 }
+                if (s1->number < cgs.maxclients && s1->number != cg.frame->ps.clientnum) {
+                    int self_index = (cg_entities[cg.frame->ps.clientnum].current.skinnum >> 16) & 15;
+                    int team_index = (s1->skinnum >> 16) & 15;
+                    int poi_index  = (s1->skinnum >> 20) & 15;
+                    if (team_index && team_index == self_index) {
+                        vec3_t point = ent.origin;
+                        point.z += cent->box.maxs.z + 32;
+                        SCR_AddPOI(s1->number + 1, point, cgs.images.friend, poi_index ? U32_RED : U32_ORANGE, 200);
+                    }
+                }
             } else {
                 ent.skinnum = s1->skinnum;
                 ent.skin = 0;
