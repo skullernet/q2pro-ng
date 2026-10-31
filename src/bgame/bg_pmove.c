@@ -20,6 +20,8 @@ typedef struct {
     int groundcontents;
 
     contents_t clipmask;
+    int clipent;
+    trace_func_t trace;
 } pml_t;
 
 // movement parameters
@@ -95,35 +97,39 @@ static const pmp_t  *pmp;
 
 // walking up a step should kill some velocity
 
-static contents_t PM_TraceMask(void)
+static void PM_SetTraceMask(void)
 {
-    contents_t mask = CONTENTS_NONE;
+    if (pm->s->pm_type == PM_NOCLIP)
+        return;
+
+    if (pm->s->pm_type == PM_SPECTATOR) {
+        pml.clipent = ENTITYNUM_WORLD;
+        pml.clipmask = MASK_SOLID;
+        pml.trace = pm->clip;
+        return;
+    }
+
+    pml.clipent = pm->s->clientnum;
+    pml.trace = pm->trace;
 
     if (pm->s->pm_type == PM_DEAD || pm->s->pm_type == PM_GIB)
-        mask = MASK_DEADSOLID;
-    else if (pm->s->pm_type == PM_SPECTATOR)
-        mask = MASK_SOLID;
+        pml.clipmask = MASK_DEADSOLID;
     else
-        mask = MASK_PLAYERSOLID;
+        pml.clipmask = MASK_PLAYERSOLID;
 
     if (pm->s->pm_flags & PMF_NO_PLAYER_COLLISION)
-        mask &= ~CONTENTS_PLAYER;
-
-    return mask;
+        pml.clipmask &= ~CONTENTS_PLAYER;
 }
 
 static inline trace_t PM_Trace(vec3_t start, vec3_t end, box3_t box, contents_t mask)
 {
-    if (pm->s->pm_type == PM_SPECTATOR)
-        return pm->clip(&(trace_args_t){ start, end, box, ENTITYNUM_WORLD, MASK_SOLID });
-    else
-        return pm->trace(&(trace_args_t){ start, end, box, pm->s->clientnum, mask });
+    return pml.trace(&(trace_args_t){ start, end, box, pml.clipent, mask });
 }
 
 static inline void PM_StepSlideMove_(void)
 {
     PM_StepSlideMove_Generic(&pml.origin, &pml.velocity, pml.frametime, pm->box,
-                             pm->s->clientnum, pml.clipmask, &pm->touch, pm->s->pm_time, pm->trace);
+                             pml.clipent, pml.clipmask, &pm->touch, pm->s->pm_time, pml.trace);
 }
 
 /*
@@ -138,7 +144,7 @@ static void PM_StepSlideMove(void)
     vec3_t  down_o, down_v;
     trace_t trace;
     float   down_dist, up_dist;
-    vec3_t up, down;
+    vec3_t  up, down;
 
     start_o = pml.origin;
     start_v = pml.velocity;
@@ -767,7 +773,7 @@ static void PM_CheckSpecialMovement(void)
             has_time = false;
 
         PM_StepSlideMove_Generic(&waterjump_origin, &waterjump_vel, time, pm->box,
-                                 pm->s->clientnum, pml.clipmask, NULL, has_time, pm->trace);
+                                 pml.clipent, pml.clipmask, NULL, has_time, pml.trace);
     }
 
     // snap down to ground
@@ -992,7 +998,7 @@ static bool PM_GoodPosition(void)
     if (!PM_Trace(pml.origin, pml.origin, pm->box, pml.clipmask).startsolid)
         return true;
 
-    if (PM_FixStuckObject_Generic(&pml.origin, pm->box, pm->s->clientnum, pml.clipmask, pm->trace) == NO_GOOD_POSITION)
+    if (PM_FixStuckObject_Generic(&pml.origin, pm->box, pml.clipent, pml.clipmask, pml.trace) == NO_GOOD_POSITION)
         return false;
 
     return true;
@@ -1105,8 +1111,9 @@ void BG_Pmove(pmove_t *pmove)
         .origin = pm->s->origin,
         .velocity = pm->s->velocity,
         .frametime = pm->cmd.msec * 0.001f,
-        .clipmask = PM_TraceMask(),
     };
+
+    PM_SetTraceMask();
 
     PM_ClampAngles(pm->s, &pm->cmd);
     AngleVectors(pm->s->viewangles, &pml.forward, &pml.right, &pml.up);
