@@ -732,21 +732,6 @@ void G_SetStats(edict_t *ent)
 
 /*
 ===============
-G_CheckChaseStats
-===============
-*/
-void G_CheckChaseStats(edict_t *ent)
-{
-    FOR_EACH_PLAYER(other) {
-        if (other->client->chase_target != ent)
-            continue;
-        memcpy(other->client->ps.stats, ent->client->ps.stats, sizeof(other->client->ps.stats));
-        G_SetSpectatorStats(other);
-    }
-}
-
-/*
-===============
 G_SetSpectatorStats
 ===============
 */
@@ -767,7 +752,7 @@ void G_SetSpectatorStats(edict_t *ent)
         cl->ps.stats[STAT_LAYOUTS] |= LAYOUTS_INVENTORY;
 
     if (cl->chase_target && cl->chase_target->r.inuse)
-        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS + cl->chase_target->s.number;
+        cl->ps.stats[STAT_CHASE] = CS_CTF_PLAYER_NAME + cl->chase_target->s.number;
     else
         cl->ps.stats[STAT_CHASE] = 0;
 }

@@ -908,8 +908,6 @@ void ClientEndServerFrame(edict_t *ent)
     else
         G_SetStats(ent);
 
-    G_CheckChaseStats(ent);
-
     G_SetCoopStats(ent);
 
     G_SetClientEffects(ent);

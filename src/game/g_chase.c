@@ -2,83 +2,56 @@
 // Licensed under the GNU General Public License 2.0.
 #include "g_local.h"
 
-void UpdateChaseCam(edict_t *ent)
+/*
+===============
+G_UpdateChaseCam
+===============
+*/
+void G_UpdateChaseCam(edict_t *ent)
 {
-    vec3_t   o, ownerv, goal;
-    edict_t *targ;
-    vec3_t   forward, right;
-    trace_t  trace;
-    vec3_t   angles;
+    edict_t *targ = ent->client->chase_target;
 
     // is our chase target gone?
-    if (!ent->client->chase_target->r.inuse || ent->client->chase_target->client->resp.spectator) {
-        edict_t *old = ent->client->chase_target;
+    if (!targ->r.inuse || targ->client->resp.spectator) {
         ChaseNext(ent);
-        if (ent->client->chase_target == old) {
-            ent->client->chase_target = NULL;
-            ent->client->ps.pm_flags &= ~PMF_NO_PREDICTION;
+        if (ent->client->chase_target == targ) {
+            G_StopChaseCam(ent);
             return;
         }
     }
 
-    targ = ent->client->chase_target;
+    // copy playerstate, inluding clientnum
+    ent->client->ps = targ->client->ps;
 
-    ownerv = targ->s.origin;
-
-    ownerv.z += targ->viewheight;
-
-    angles = targ->client->v_angle;
-    if (angles.pitch > 56)
-        angles.pitch = 56;
-    AngleVectors(angles, &forward, &right, NULL);
-    o = Vec3_MA(ownerv, -30, forward);
-
-    if (o.z < targ->s.origin.z + 20)
-        o.z = targ->s.origin.z + 20;
-
-    // jump animation lifts
-    if (!targ->groundentity)
-        o.z += 16;
-
-    trace = G_TraceLine(ownerv, o, targ->s.number, MASK_SOLID);
-
-    goal = Vec3_MA(trace.endpos, 2, forward);
-
-    // pad for floors and ceilings
-    o = goal;
-    o.z += 6;
-    trace = G_TraceLine(goal, o, targ->s.number, MASK_SOLID);
-    if (trace.fraction < 1) {
-        goal = trace.endpos;
-        goal.z -= 6;
-    }
-
-    o = goal;
-    o.z -= 6;
-    trace = G_TraceLine(goal, o, targ->s.number, MASK_SOLID);
-    if (trace.fraction < 1) {
-        goal = trace.endpos;
-        goal.z += 6;
-    }
-
-    if (targ->deadflag)
-        ent->client->ps.pm_type = PM_DEAD;
-    else
-        ent->client->ps.pm_type = PM_FREEZE;
-
-    ent->s.origin = goal;
-
-    if (targ->deadflag) {
-        ent->client->ps.viewangles.roll = 40;
-        ent->client->ps.viewangles.pitch = -15;
-        ent->client->ps.viewangles.yaw = targ->client->killer_yaw;
-    } else {
-        P_SetClientAngles(ent->client, targ->client->v_angle);
-    }
-
-    ent->viewheight = 0;
+    ent->client->ps.pm_type = PM_FREEZE;
     ent->client->ps.pm_flags |= PMF_NO_PREDICTION;
-    trap_LinkEntity(ent);
+
+    ent->client->v_angle = targ->client->v_angle;
+    ent->client->v_forward = targ->client->v_forward;
+
+    ent->s.origin = targ->s.origin;
+    ent->s.angles = targ->s.angles;
+    ent->viewheight = targ->viewheight;
+
+    G_SetSpectatorStats(ent);
+}
+
+/*
+===============
+G_StopChaseCam
+===============
+*/
+void G_StopChaseCam(edict_t *ent)
+{
+    ent->client->chase_target = NULL;
+    ent->client->ps.pm_type = PM_SPECTATOR;
+    ent->client->ps.pm_flags &= ~PMF_NO_PREDICTION;
+    ent->client->ps.clientnum = ent->s.number;
+    ent->client->ps.gunindex = 0;
+    ent->client->ps.gunskin = 0;
+    ent->client->ps.viewheight = ent->viewheight = 22;
+    ent->client->ps.velocity = ent->velocity = vec3_origin;
+    P_SetClientAngles(ent->client, ent->client->ps.viewangles);
 }
 
 void ChaseNext(edict_t *ent)
@@ -135,7 +108,7 @@ void GetChaseTarget(edict_t *ent)
         if (!other->client->resp.spectator) {
             ent->client->chase_target = other;
             ent->client->update_chase = true;
-            UpdateChaseCam(ent);
+            G_UpdateChaseCam(ent);
             return;
         }
     }

@@ -245,7 +245,7 @@ static void CG_DeltaPlayerstate(void)
     }
 
     if (!CG_PredictionEnabled()) {
-        if (ps->viewheight != ops->viewheight) {
+        if (ps->viewheight != ops->viewheight && !cg.teleported) {
             cg.duck_time = cg.oldframe->servertime + DUCK_TIME;
             cg.duck_factor = (float)(ps->viewheight - ops->viewheight) / DUCK_TIME;
         }

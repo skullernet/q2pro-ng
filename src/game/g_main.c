@@ -879,6 +879,11 @@ qvm_exported void G_RunFrame(int64_t time)
     // build the playerstate_t structures for all players
     ClientEndServerFrames();
 
+    // update chase cameras for all players
+    FOR_EACH_PLAYER(player)
+        if (player->client->chase_target)
+            G_UpdateChaseCam(player);
+
     // [Paril-KEX] if not in intermission and player 1 is loaded in
     // the game as an entity, increase timer on current entry
     if (level.entry && !level.intermissiontime && g_edicts[0].r.inuse && g_clients[0].pers.connected)

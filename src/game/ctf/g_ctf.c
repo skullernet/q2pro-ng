@@ -2545,7 +2545,7 @@ static void CTFChaseCam(edict_t *ent, pmenuhnd_t *p)
     CTFJoinTeam(ent, CTF_NOTEAM);
 
     if (ent->client->chase_target) {
-        ent->client->chase_target = NULL;
+        G_StopChaseCam(ent);
         PMenu_Close(ent);
         return;
     }

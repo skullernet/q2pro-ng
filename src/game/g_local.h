@@ -1813,7 +1813,8 @@ void EndDMLevel(void);
 //
 // g_chase.c
 //
-void UpdateChaseCam(edict_t *ent);
+void G_UpdateChaseCam(edict_t *ent);
+void G_StopChaseCam(edict_t *ent);
 void ChaseNext(edict_t *ent);
 void ChasePrev(edict_t *ent);
 void GetChaseTarget(edict_t *ent);

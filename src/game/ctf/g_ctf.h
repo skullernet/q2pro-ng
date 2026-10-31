@@ -149,7 +149,6 @@ void CTFWarp_f(edict_t *ent, cmdflags_t flags);
 void SP_misc_ctf_banner(edict_t *ent);
 void SP_misc_ctf_small_banner(edict_t *ent);
 
-void UpdateChaseCam(edict_t *ent);
 void ChaseNext(edict_t *ent);
 void ChasePrev(edict_t *ent);
 

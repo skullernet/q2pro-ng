@@ -783,7 +783,7 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
 
     // ZOID
     //  set player name field (used in id_state view)
-    if (G_TeamplayEnabled())
+    if (deathmatch.integer)
         trap_SetConfigstring(CS_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
     // ZOID
 
@@ -2731,10 +2731,9 @@ qvm_exported void G_ClientThink(int clientnum)
         if (client->resp.spectator) {
             client->latched_buttons = BUTTON_NONE;
 
-            if (client->chase_target) {
-                client->chase_target = NULL;
-                client->ps.pm_flags &= ~PMF_NO_PREDICTION;
-            } else
+            if (client->chase_target)
+                G_StopChaseCam(ent);
+            else
                 GetChaseTarget(ent);
         } else if (!ent->client->weapon_thunk) {
             // we can only do this during a ready state and
@@ -2757,18 +2756,10 @@ qvm_exported void G_ClientThink(int clientnum)
                     client->ps.pm_flags |= PMF_JUMP_HELD;
                     if (client->chase_target)
                         ChaseNext(ent);
-                    else
-                        GetChaseTarget(ent);
                 }
             } else
                 client->ps.pm_flags &= ~PMF_JUMP_HELD;
         }
-    }
-
-    // update chase cam if being followed
-    FOR_EACH_PLAYER(other) {
-        if (other->client->chase_target == ent)
-            UpdateChaseCam(other);
     }
 }
 

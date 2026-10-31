@@ -59,3 +59,4 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Player state has additional array for 10-bit unsigned ammo counters.
 * Fog parameters are part of player state.
 * Both weapon and powerup wheels can be shown at the same time.
+* Proper in-eyes chasecam.
