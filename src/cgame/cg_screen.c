@@ -1062,7 +1062,7 @@ static void SCR_SkipToEndif(const char **s)
         if (!strcmp(token, "xl") || !strcmp(token, "xr") || !strcmp(token, "xv") ||
             !strcmp(token, "yt") || !strcmp(token, "yb") || !strcmp(token, "yv") ||
             !strcmp(token, "pic") || !strcmp(token, "picn") || !strcmp(token, "color") ||
-            !strcmp(token, "dogtag") || strstr(token, "string")) {
+            !strcmp(token, "dogtag") || !strcmp(token, "lives_num") || strstr(token, "string")) {
             COM_SkipToken(s);
             continue;
         }
@@ -1304,6 +1304,28 @@ static void SCR_ExecuteLayoutString(const char *s)
             }
             value = cg.frame->ps.stats[value];
             HUD_DrawNumber(x, y, 0, width, value);
+            continue;
+        }
+
+        if (!strcmp(token, "lives_num")) {
+            // lives number
+            int     color;
+
+            token = COM_Parse(&s);
+            value = Q_atoi(token);
+            if (value < 0 || value >= MAX_STATS) {
+                Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
+            }
+
+            value = cg.frame->ps.stats[value];
+            if (value > 2)
+                color = 0;  // green
+            else if (value > 1)
+                color = (cg.time / FLASH_TIME) & 1; // flash
+            else
+                color = 1;
+
+            HUD_DrawNumber(x, y, color, 1, max(value - 2, 0));
             continue;
         }
 

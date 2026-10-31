@@ -1610,7 +1610,7 @@ static void G_InitStatusbar(void)
             sb_if(STAT_LIVES),
                 sb_xr(-16),
                 sb_yt(2),
-                sb_num(3, STAT_LIVES),
+                sb_lives_num(STAT_LIVES),
                 sb_xr(0),
                 sb_yt(28),
                 sb_rstring("Lives"),

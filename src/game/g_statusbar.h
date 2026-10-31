@@ -29,6 +29,7 @@ const char *sb_buffer(void);
 #define sb_hnum() sb_puts("hnum ")
 
 #define sb_num(width, stat) sb_printf("num %d %d ", width, stat)
+#define sb_lives_num(stat) sb_printf("lives_num %d ", stat)
 
 #define sb_stat_string(stat) sb_printf("stat_string %d ", stat)
 #define sb_stat_rstring(stat) sb_printf("stat_rstring %d ", stat)
