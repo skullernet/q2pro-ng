@@ -2279,6 +2279,10 @@ static void SCR_DrawActive(void)
 
     trap_S_ClearLoopingSounds();
 
+    // this is really ugly, but make damn sure all newly
+    // generated usercmds since last frame are predicted.
+    CG_PredictMovement();
+
     CG_ProcessFrames();
 
     // draw black background if not active

@@ -25,39 +25,44 @@ CG_CheckPredictionError
 */
 void CG_CheckPredictionError(void)
 {
+    cg_predicted_origin_t *pred;
     vec3_t      delta;
     unsigned    cmd;
     float       len;
 
-    if (cgs.demoplayback)
-        return;
+    cg.prediction_error = vec3_origin;
 
-    if (sv_paused.integer) {
-        cg.prediction_error = vec3_origin;
-        return;
-    }
-
-    if (!cg_predict.integer || (cg.frame->ps.pm_flags & PMF_NO_PREDICTION))
+    if (!CG_PredictionEnabled())
         return;
 
     // calculate the last usercmd_t we sent that the server has processed
     cmd = cg.frame->cmdnum;
+    pred = &cg.predicted_origins[cmd & CMD_MASK];
 
-    // compare what the server returned with what we had predicted it to be
-    delta = Vec3_Sub(cg.frame->ps.origin, cg.predicted_origins[cmd & CMD_MASK]);
-
-    // save the prediction error for interpolation
-    len = fabsf(delta.x) + fabsf(delta.y) + fabsf(delta.z);
-    if (len < 0x1p-5f || len > 80.0f) {
-        // > 80 world units is a teleport or something
-        cg.prediction_error = vec3_origin;
+    // ignore any error if teleported
+    if (cg.teleported) {
+        pred->origin = cg.frame->ps.origin;
         return;
     }
+
+    // was it ever predicted?
+    if (pred->cmd != cmd) {
+        SHOWMISS("%i: unpredicted usercmd acknowledged\n", cg.frame->number);
+        return;
+    }
+
+    // compare what the server returned with what we had predicted it to be
+    delta = Vec3_Sub(cg.frame->ps.origin, pred->origin);
+
+    // save the prediction error for interpolation
+    len = Vec3_Length(delta);
+    if (len < 0x1p-5f)
+        return;
 
     SHOWMISS("prediction miss on %i: %.f (%.f %.f %.f)\n",
              cg.frame->number, len, delta.x, delta.y, delta.z);
 
-    cg.predicted_origins[cmd & CMD_MASK] = cg.frame->ps.origin;
+    pred->origin = cg.frame->ps.origin;
 
     // save for error interpolation
     cg.prediction_error = delta;
@@ -143,15 +148,20 @@ contents_t CG_PointContents(vec3_t point)
 
 void CG_PredictAngles(void)
 {
+    // grab the most recent cmd
     usercmd_t cmd;
-    if (trap_GetUsercmd(trap_GetUsercmdNumber(), &cmd))
+    unsigned current = trap_GetUsercmdNumber();
+    if (trap_GetUsercmd(current + 1, &cmd) || trap_GetUsercmd(current, &cmd))
         PM_ClampAngles(&cg.predicted_ps, &cmd);
 }
 
-static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
+static void CG_RunUsercmd(pmove_t *pm, unsigned frame, bool save)
 {
-    if (trap_GetUsercmd(frame, &pm->cmd))
-        BG_Pmove(pm);
+    // too old, or no pending cmd
+    if (!trap_GetUsercmd(frame, &pm->cmd))
+        return;
+
+    BG_Pmove(pm);
 
     if (cg.predicted_step_frame < frame && fabsf(pm->step_height) >= 2.0f) {
         // check for stepping up before a previous step is completed
@@ -167,7 +177,8 @@ static void CG_RunUsercmd(pmove_t *pm, unsigned frame)
     }
 
     // save for debug checking
-    cg.predicted_origins[frame & CMD_MASK] = pm->s->origin;
+    if (save)
+        cg.predicted_origins[frame & CMD_MASK] = (cg_predicted_origin_t){ pm->s->origin, frame };
 }
 
 /*
@@ -178,10 +189,12 @@ CG_PredictMovement
 void CG_PredictMovement(void)
 {
     unsigned    ack, current;
-    pmove_t     pm;
     int         viewheight;
 
     if (sv_paused.integer)
+        return;
+
+    if (!cg.frame)
         return;
 
     if (!CG_PredictionEnabled()) {
@@ -203,21 +216,20 @@ void CG_PredictMovement(void)
     viewheight = cg.predicted_ps.viewheight;
     cg.predicted_ps = cg.frame->ps;
 
-    if (current == ack) {
-        SHOWMISS("%i: not moved\n", cg.frame->number);
-        return;
-    }
-
     // copy current state to pmove
-    memset(&pm, 0, sizeof(pm));
-    pm.trace = CG_TraceArgs;
-    pm.clip = CG_ClipArgs;
-    pm.pointcontents = CG_PointContents;
-    pm.s = &cg.predicted_ps;
+    pmove_t pm = {
+        .trace = CG_TraceArgs,
+        .clip = CG_ClipArgs,
+        .pointcontents = CG_PointContents,
+        .s = &cg.predicted_ps
+    };
 
     // run frames
     while (++ack <= current)
-        CG_RunUsercmd(&pm, ack);
+        CG_RunUsercmd(&pm, ack, true);
+
+    // run pending cmd
+    CG_RunUsercmd(&pm, ack, false);
 
     // check for ducking
     if (cg.predicted_ps.viewheight != viewheight && !cg.teleported) {

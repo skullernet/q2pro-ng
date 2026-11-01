@@ -80,7 +80,12 @@ extern cg_entity_t  cg_entities[MAX_EDICTS];
 // is wiped completely at every time reset or demo seek.
 //
 typedef struct {
-    vec3_t      predicted_origins[CMD_BACKUP];  // for debug comparing against server
+    vec3_t      origin;
+    unsigned    cmd;
+} cg_predicted_origin_t;
+
+typedef struct {
+    cg_predicted_origin_t   predicted_origins[CMD_BACKUP];  // for debug comparing against server
     vec3_t      prediction_error;
 
     float       predicted_step;                // for stair up smoothing

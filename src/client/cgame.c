@@ -185,7 +185,7 @@ static refcfg_t PF_R_GetConfig(void)
 
 static unsigned PF_GetUsercmdNumber(void)
 {
-    return cl.cmdNumber + !!cl.cmd.msec;
+    return cl.cmdNumber;
 }
 
 static bool PF_GetUsercmd(unsigned number, usercmd_t *ucmd)
