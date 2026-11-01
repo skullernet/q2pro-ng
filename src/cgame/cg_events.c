@@ -26,7 +26,7 @@ CG_FindFootstepSurface
 */
 static int CG_FindFootstepSurface(int entnum)
 {
-    const centity_t *cent = &cg_entities[entnum];
+    const cg_entity_t *cent = &cg_entities[entnum];
 
     // skip if no materials loaded
     if (cgs.num_footsteps <= MATERIAL_RESERVED_COUNT)
@@ -46,9 +46,9 @@ static int CG_FindFootstepSurface(int entnum)
     vec3_t trace_start = cent->current.origin;
     trace_start.z += 1;
 
-    // the end of the trace starts down by half of STEPSIZE
+    // the end of the trace starts down by half of STEP_SIZE
     vec3_t trace_end = trace_start;
-    trace_end.z -= STEPSIZE / 2;
+    trace_end.z -= STEP_SIZE / 2;
     if (cent->current.solid && cent->current.solid != PACKED_BSP) {
         // if the entity is a bbox'd entity, the mins.z is added to the end point as well
         trace_end.z += cent->box.mins.z;
@@ -254,7 +254,7 @@ EXPLOSION MANAGEMENT
 
 #define MAX_EXPLOSIONS  256
 
-typedef struct explosion_s {
+typedef struct cg_explosion_s {
     enum {
         ex_free,
         ex_misc,
@@ -270,18 +270,18 @@ typedef struct explosion_s {
     vec3_t      lightcolor;
     unsigned    start;
     int         baseframe;
-} explosion_t;
+} cg_explosion_t;
 
-static explosion_t  cg_explosions[MAX_EXPLOSIONS];
+static cg_explosion_t   cg_explosions[MAX_EXPLOSIONS];
 
 static void CG_ClearExplosions(void)
 {
     memset(cg_explosions, 0, sizeof(cg_explosions));
 }
 
-static explosion_t *CG_AllocExplosion(void)
+static cg_explosion_t *CG_AllocExplosion(void)
 {
-    explosion_t *e, *oldest;
+    cg_explosion_t *e, *oldest;
     int         i;
     unsigned    time;
 
@@ -305,9 +305,9 @@ static explosion_t *CG_AllocExplosion(void)
     return oldest;
 }
 
-explosion_t *CG_PlainExplosion(vec3_t pos)
+cg_explosion_t *CG_PlainExplosion(vec3_t pos)
 {
-    explosion_t *ex;
+    cg_explosion_t *ex;
 
     ex = CG_AllocExplosion();
     ex->ent.origin = pos;
@@ -326,7 +326,7 @@ explosion_t *CG_PlainExplosion(vec3_t pos)
 
 static void CG_BFGExplosion(vec3_t pos)
 {
-    explosion_t *ex;
+    cg_explosion_t *ex;
 
     ex = CG_AllocExplosion();
     ex->ent.origin = pos;
@@ -344,7 +344,7 @@ void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first)
 {
     if (first) {
         int i;
-        explosion_t *ex;
+        cg_explosion_t *ex;
 
         for (i = 0, ex = cg_explosions; i < MAX_EXPLOSIONS; i++, ex++) {
             if (ex->type == ex_marker) {
@@ -354,7 +354,7 @@ void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first)
         }
     }
 
-    explosion_t *ex = CG_AllocExplosion();
+    cg_explosion_t *ex = CG_AllocExplosion();
     ex->ent.origin = origin;
     ex->lightcolor.z = origin.z + 16.0f;
     ex->ent.angles = vectoangles(dir);
@@ -373,7 +373,7 @@ CG_SmokeAndFlash
 */
 void CG_SmokeAndFlash(vec3_t origin)
 {
-    explosion_t *ex;
+    cg_explosion_t *ex;
 
     ex = CG_AllocExplosion();
     ex->ent.origin = origin;
@@ -416,7 +416,7 @@ void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir)
 
     CG_SlamParticles(tr.endpos, dir);
 
-    explosion_t *ex = CG_AllocExplosion();
+    cg_explosion_t *ex = CG_AllocExplosion();
     ex->ent.origin = tr.endpos;
     ex->ent.angles = dirtoangles(dir);
     ex->type = ex_misc;
@@ -437,7 +437,7 @@ CG_ColorFlash - flash of light
 */
 void CG_ColorFlash(vec3_t pos, int intensity, float r, float g, float b)
 {
-    explosion_t *ex = CG_AllocExplosion();
+    cg_explosion_t *ex = CG_AllocExplosion();
     ex->ent.origin = pos;
     ex->type = ex_light;
     ex->start = cg.oldframe->servertime;
@@ -450,7 +450,7 @@ static void CG_AddExplosions(void)
 {
     entity_t    *ent;
     int         i;
-    explosion_t *ex;
+    cg_explosion_t *ex;
     float       frac;
     int         f;
 
@@ -564,18 +564,18 @@ typedef struct {
     color_t     rgba;
     int         width;
     int         lifetime, starttime;
-} laser_t;
+} cg_laser_t;
 
-static laser_t  cg_lasers[MAX_LASERS];
+static cg_laser_t   cg_lasers[MAX_LASERS];
 
 static void CG_ClearLasers(void)
 {
     memset(cg_lasers, 0, sizeof(cg_lasers));
 }
 
-static laser_t *CG_AllocLaser(void)
+static cg_laser_t *CG_AllocLaser(void)
 {
-    laser_t *l;
+    cg_laser_t *l;
     int i;
 
     for (i = 0, l = cg_lasers; i < MAX_LASERS; i++, l++) {
@@ -591,7 +591,7 @@ static laser_t *CG_AllocLaser(void)
 
 static void CG_AddLasers(void)
 {
-    laser_t     *l;
+    cg_laser_t  *l;
     entity_t    ent;
     int         i;
     int         time;
@@ -623,7 +623,7 @@ static void CG_AddLasers(void)
 
 static void CG_ParseLaser(vec3_t start, vec3_t end, uint32_t colors)
 {
-    laser_t *l;
+    cg_laser_t *l;
 
     l = CG_AllocLaser();
     if (!l)
@@ -696,7 +696,7 @@ static void CG_ParseWidow(vec3_t pos)
 
 static void CG_ParseNuke(vec3_t pos)
 {
-    explosion_t     *ex;
+    cg_explosion_t  *ex;
     cg_sustain_t    *s;
 
     trap_S_PositionedSound(pos, ENTITYNUM_WORLD, CHAN_VOICE, cgs.sounds.grenexp, 1, ATTN_NONE, 0);
@@ -722,7 +722,7 @@ static color_t  railspiral_color = { U32_BLUE };
 
 static void CG_RailCore(vec3_t start, vec3_t end)
 {
-    laser_t *l;
+    cg_laser_t *l;
 
     l = CG_AllocLaser();
     if (!l)
@@ -746,7 +746,7 @@ static void CG_RailSpiral(vec3_t start, vec3_t end)
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      right, up;
     int         i;
     float       d;
@@ -799,7 +799,7 @@ static void CG_RailTrail(vec3_t start, vec3_t end, entity_event_t event)
     }
 }
 
-static void CG_SoundEvent(const centity_t *cent, entity_event_t event, uint32_t param)
+static void CG_SoundEvent(const cg_entity_t *cent, entity_event_t event, uint32_t param)
 {
     int index = param & (MAX_SOUNDS - 1);
     int vol = (param >> 24) & 255;
@@ -819,7 +819,7 @@ static void CG_SoundEvent(const centity_t *cent, entity_event_t event, uint32_t 
         trap_S_StartSound(cent->current.number, channel, cgs.sounds.precache[index], vol / 255.0f, att / 64.0f, 0);
 }
 
-static void CG_SplashEvent(const centity_t *cent, entity_event_t color, uint32_t param)
+static void CG_SplashEvent(const cg_entity_t *cent, entity_event_t color, uint32_t param)
 {
     int count = (param >> 8) & 255;
     vec3_t pos = cent->current.origin;
@@ -839,7 +839,7 @@ static void CG_SplashEvent(const centity_t *cent, entity_event_t color, uint32_t
     }
 }
 
-static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t param)
+static void CG_DamageEvent(const cg_entity_t *cent, entity_event_t type, uint32_t param)
 {
     int color = (param >>  8) & 255;
     int count = (param >> 16) & 255;
@@ -929,11 +929,11 @@ static void CG_DamageEvent(const centity_t *cent, entity_event_t type, uint32_t 
         CG_ColorFlash(pos, 100 + (Q_rand() % 75), 1.0f, 1.0f, 0.3f);
 }
 
-static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32_t param)
+static void CG_ExplosionEvent(const cg_entity_t *cent, entity_event_t type, uint32_t param)
 {
     vec3_t pos = cent->current.origin;
     vec3_t dir = ByteToDir(param & 255);
-    explosion_t *ex;
+    cg_explosion_t *ex;
 
     switch (type) {
     case EV_EXPLOSION_PLAIN:
@@ -1082,9 +1082,9 @@ static void CG_ExplosionEvent(const centity_t *cent, entity_event_t type, uint32
     }
 }
 
-static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, float volume, float attenuation)
+static void CG_SexedSound(int number, soundchan_t channel, cg_sexed_sound_t index, float volume, float attenuation)
 {
-    const clientinfo_t *ci;
+    const cg_clientinfo_t *ci;
 
     if (number < MAX_CLIENTS)
         ci = &cgs.clientinfo[number];
@@ -1096,7 +1096,7 @@ static void CG_SexedSound(int number, soundchan_t channel, sexed_sound_t index, 
 
 static void CG_PainEvent(int number, int health)
 {
-    sexed_sound_t l;
+    cg_sexed_sound_t l;
 
     if (health < 25)
         l = SS_PAIN25_1;
@@ -1110,7 +1110,7 @@ static void CG_PainEvent(int number, int health)
     CG_SexedSound(number, CHAN_VOICE, l + (Q_rand() & 1), 1, ATTN_NORM);
 }
 
-static void CG_StairStep(centity_t *cent)
+static void CG_StairStep(cg_entity_t *cent)
 {
     float step_height = cent->current.origin.z - cent->prev.origin.z;
     float prev_step   = 0;
@@ -1139,7 +1139,7 @@ static void CG_StairStep(centity_t *cent)
 }
 
 // an entity has just been parsed that has an event value
-static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param)
+static void CG_EntityEvent(cg_entity_t *cent, entity_event_t event, uint32_t param)
 {
     entity_state_t *s = &cent->current;
     vec3_t start = s->old_origin;
@@ -1302,7 +1302,7 @@ static void CG_EntityEvent(centity_t *cent, entity_event_t event, uint32_t param
     }
 }
 
-void CG_EntityEffects(centity_t *cent)
+void CG_EntityEffects(cg_entity_t *cent)
 {
     const entity_state_t *s = &cent->current;
 
@@ -1325,7 +1325,7 @@ void CG_EntityEffects(centity_t *cent)
     }
 }
 
-void CG_EntityEvents(centity_t *cent)
+void CG_EntityEvents(cg_entity_t *cent)
 {
     const entity_state_t *s = &cent->current;
 

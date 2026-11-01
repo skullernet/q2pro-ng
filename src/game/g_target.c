@@ -1172,15 +1172,11 @@ void THINK(update_target_camera)(edict_t *self)
     self->nextthink = level.time + FRAME_TIME;
 }
 
-void G_SetClientFrame(edict_t *ent);
-
 void THINK(target_camera_dummy_think)(edict_t *self)
 {
     // bit of a hack, but this will let the dummy
     // move like a player
-    self->client = g_edicts[self->r.ownernum].client;
-    G_SetClientFrame(self);
-    self->client = NULL;
+    G_SetClientFrame(self, g_edicts[self->r.ownernum].client);
 
     // alpha fade out for voops
     if (self->hackflags & HACKFLAG_TELEPORT_OUT) {

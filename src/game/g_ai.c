@@ -1287,7 +1287,7 @@ void ai_run(edict_t *self, float dist)
             // nb: this is done from the centroid and not viewheight on purpose
             trace_t tr = G_Trace(Box3_Center(self->r.absbox), self->movetarget->s.origin,
                                  Box3_FromRadius(2), self->s.number, CONTENTS_SOLID);
-            if (tr.fraction == 1.0f || tr.plane.normal.z > 0.7f)
+            if (tr.fraction == 1.0f || tr.plane.normal.z > MIN_STEP_NORMAL)
                 return; // if we hit a climbable, ignore this result
         }
 

@@ -20,9 +20,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
-static const centity_t *CG_GetPlayerEntity(void)
+static const cg_entity_t *CG_GetPlayerEntity(void)
 {
-    const centity_t *ent = &cg_entities[cg.frame->ps.clientnum];
+    const cg_entity_t *ent = &cg_entities[cg.frame->ps.clientnum];
 
     if (ent->serverframe != cg.frame->number)
         return NULL;
@@ -39,7 +39,7 @@ CG_AddViewWeapon
 */
 static void CG_AddViewWeapon(void)
 {
-    const centity_t *ent;
+    const cg_entity_t *ent;
     const player_state_t *ps;
     entity_t    gun;        // view model
     renderfx_t  shellfx;
@@ -335,7 +335,7 @@ static void CG_SetupFirstPersonView(void)
 static trace_t CG_LerpedTrace(const trace_args_t *args)
 {
     trace_t trace, tr;
-    const centity_t *ent;
+    const cg_entity_t *ent;
     vec3_t org, ang;
 
     // check against world
@@ -458,11 +458,11 @@ static void CG_ScreenEffects(void)
         cg.refdef.rdflags &= ~RDF_UNDERWATER;
 
     if (contents & CONTENTS_LAVA)
-        BG_AddBlend(1.0f, 0.3f, 0.0f, 0.6f, &cg.refdef.screen_blend);
+        BG_AddBlend(&cg.refdef.screen_blend, Vec4(1.0f, 0.3f, 0.0f, 0.6f));
     else if (contents & CONTENTS_SLIME)
-        BG_AddBlend(0.0f, 0.1f, 0.05f, 0.6f, &cg.refdef.screen_blend);
+        BG_AddBlend(&cg.refdef.screen_blend, Vec4(0.0f, 0.1f, 0.05f, 0.6f));
     else if (contents & CONTENTS_WATER)
-        BG_AddBlend(0.5f, 0.3f, 0.2f, 0.4f, &cg.refdef.screen_blend);
+        BG_AddBlend(&cg.refdef.screen_blend, Vec4(0.5f, 0.3f, 0.2f, 0.4f));
 
     // add depth of field
     if (cg.draw_weapon_wheel || cg.draw_powerup_wheel || (trap_Key_GetDest() & KEY_MENU))
@@ -721,13 +721,6 @@ void CG_RenderView(void)
     if (cg.test_muzzle.model)
         trap_R_AddEntity(&cg.test_muzzle);
 #endif
-
-    // never let it sit exactly on a node line, because a water plane can
-    // disappear when viewed with the eye exactly on it.
-    // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-    cg.refdef.vieworg.x += 1.0f / 16;
-    cg.refdef.vieworg.y += 1.0f / 16;
-    cg.refdef.vieworg.z += 1.0f / 16;
 
     cg.refdef.x = scr_vrect.x;
     cg.refdef.y = scr_vrect.y;

@@ -142,7 +142,7 @@ CG_LoadClientinfo
 
 ================
 */
-static void CG_LoadClientinfo(clientinfo_t *ci, const char *s)
+static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
 {
     int         i;
     char        model_name[MAX_QPATH];

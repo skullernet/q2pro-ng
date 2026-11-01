@@ -27,7 +27,7 @@ player_fog_t    cg_custom_fog;
 const cgame_import_t    *cgi;
 #endif
 
-centity_t   cg_entities[MAX_EDICTS];
+cg_entity_t     cg_entities[MAX_EDICTS];
 
 vm_cvar_t   cg_noskins;
 vm_cvar_t   cg_footsteps;

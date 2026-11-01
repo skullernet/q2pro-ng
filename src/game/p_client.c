@@ -506,6 +506,7 @@ player_die
 void DIE(player_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point, mod_t mod)
 {
     PlayerTrail_Destroy(self);
+    M_FreeBeams(self);
 
     self->avelocity = vec3_origin;
 
@@ -771,8 +772,6 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     if (!*val)
         val = "male/grunt";
 
-    int playernum = ent->s.number;
-
     // combine name and skin into a configstring
     // ZOID
     if (G_TeamplayEnabled())
@@ -784,13 +783,13 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
         if (!COM_IsPath(tag))
             tag = "default";
         Q_snprintf(buffer, sizeof(buffer), "%s\\%s\\%s", ent->client->pers.netname, val, tag);
-        trap_SetConfigstring(CS_PLAYERSKINS + playernum, buffer);
+        trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, buffer);
     }
 
     // ZOID
     //  set player name field (used in id_state view)
     if (deathmatch.integer)
-        trap_SetConfigstring(CS_CTF_PLAYER_NAME + playernum, ent->client->pers.netname);
+        trap_SetConfigstring(CS_CTF_PLAYER_NAME + ent->s.number, ent->client->pers.netname);
     // ZOID
 
     // fov
@@ -817,7 +816,7 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     if (*val) {
         ent->client->pers.autoshield = Q_atoi(val);
     } else {
-        ent->client->pers.autoshield = -1;
+        ent->client->pers.autoshield = AUTO_SHIELD_MANUAL;
     }
 
     // save off the userinfo in case we want to check something later
@@ -1401,7 +1400,7 @@ static bool TryLandmarkSpawn(edict_t *ent, vec3_t *origin, vec3_t *angles)
     *angles = Vec3_Add(ent->client->oldviewangles, landmark->s.angles);
 
     // rotate the velocity that we grabbed from the map
-    ent->velocity = Vec3_Rotate(ent->velocity, axis);
+    ent->velocity = Vec3_Rotate(ent->client->oldvelocity, axis);
 
     return true;
 }
@@ -1520,23 +1519,23 @@ static void CopyToBodyQue(edict_t *ent)
     if (!ent->s.modelindex)
         return;
 
-    edict_t *body;
-
     // grab a body que and cycle to the next one
-    body = &g_edicts[game.maxclients + level.body_que];
+    edict_t *body = &g_edicts[game.maxclients + level.body_que];
     level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
-    // FIXME: send an effect on the removed body
+    // send an effect on the removed body
+    if (body->s.modelindex)
+        G_TempEntity(body->s.origin, EV_BLOOD, 0);
 
-    trap_UnlinkEntity(ent);
-    trap_UnlinkEntity(body);
-
-    body->s = ent->s;
     body->s.number = body - g_edicts;
+    body->s.origin = ent->s.origin;
+    body->s.old_origin = ent->s.origin;
+    body->s.angles = ent->s.angles;
+    body->s.modelindex = ent->s.modelindex;
+    body->s.frame = ent->s.frame;
     body->s.skinnum = ent->s.skinnum & 0xFF; // only copy the client #
-    body->s.effects = EF_NONE;
-    body->s.renderfx = RF_NONE;
-
+    body->s.alpha = ent->s.alpha;
+    body->s.scale = ent->s.scale;
     body->r.svflags = ent->r.svflags;
     body->r.solid = ent->r.solid;
     body->clipmask = ent->clipmask;
@@ -1544,21 +1543,15 @@ static void CopyToBodyQue(edict_t *ent)
     body->movetype = ent->movetype;
     body->health = ent->health;
     body->gib_health = ent->gib_health;
-    memset(body->s.event, 0, sizeof(body->s.event));
     body->velocity = ent->velocity;
     body->avelocity = ent->avelocity;
     body->groundentity = ent->groundentity;
     body->groundentity_linkcount = ent->groundentity_linkcount;
-
-    G_AddEvent(body, EV_OTHER_TELEPORT, 0);
-
-    if (ent->takedamage)
-        body->r.box = ent->r.box;
-    else
-        body->r.box = box3_origin;
-
+    body->r.box = ent->takedamage ? ent->r.box : box3_origin;
     body->die = body_die;
     body->takedamage = true;
+
+    G_AddEvent(body, EV_OTHER_TELEPORT, 0);
 
     trap_LinkEntity(body);
 }
@@ -1772,10 +1765,7 @@ void PutClientInServer(edict_t *ent)
     client = ent->client;
 
     // clear velocity now, since landmark may change it
-    if (client->landmark_name[0])
-        ent->velocity = client->oldvelocity;
-    else
-        ent->velocity = vec3_origin;
+    ent->velocity = vec3_origin;
 
     // find a spawn point
     // do it before setting health back up, so farthest
@@ -1809,22 +1799,7 @@ void PutClientInServer(edict_t *ent)
         // find a spot to place us
         if (!level.respawn_intermission) {
             // find an intermission spot
-            edict_t *pt = G_Find(NULL, FOFS(classname), "info_player_intermission");
-            if (!pt) {
-                // the map creator forgot to put in an intermission point...
-                pt = G_Find(NULL, FOFS(classname), "info_player_start");
-                if (!pt)
-                    pt = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
-            } else {
-                // choose one of four spots
-                int i = irandom1(4);
-                while (i--) {
-                    pt = G_Find(pt, FOFS(classname), "info_player_intermission");
-                    if (!pt) // wrap around the list
-                        pt = G_Find(pt, FOFS(classname), "info_player_intermission");
-                }
-            }
-
+            edict_t *pt = G_FindIntermissionSpot();
             level.intermission_origin = pt->s.origin;
             level.intermission_angle = pt->s.angles;
             level.respawn_intermission = true;
@@ -1922,7 +1897,7 @@ void PutClientInServer(edict_t *ent)
     ent->client = &g_clients[index];
     ent->takedamage = true;
     ent->movetype = MOVETYPE_WALK;
-    ent->viewheight = 22;
+    ent->viewheight = PLAYER_VIEWHEIGHT;
     ent->r.inuse = true;
     ent->classname = "player";
     ent->mass = 200;
@@ -1962,6 +1937,7 @@ void PutClientInServer(edict_t *ent)
 
     // clear entity state values
     ent->s.effects = EF_NONE;
+    ent->s.morefx = EFX_NONE;
     ent->s.modelindex = MODELINDEX_PLAYER;  // will use the skin specified model
     ent->s.modelindex2 = MODELINDEX_PLAYER; // custom gun model
     // sknum is player num and weapon number
@@ -2367,6 +2343,7 @@ qvm_exported void G_ClientDisconnect(int clientnum)
     // ZOID
 
     PlayerTrail_Destroy(ent);
+    M_FreeBeams(ent);
 
     //============
     // ROGUE
@@ -2516,7 +2493,7 @@ static bool HandleMenuMovement(edict_t *ent, usercmd_t *ucmd)
         return false;
 
     // [Paril-KEX] handle menu movement
-    int menu_sign = ucmd->forwardmove > 0 ? 1 : ucmd->forwardmove < 0 ? -1 : 0;
+    int menu_sign = Q_clip(ucmd->forwardmove, -1, 1);
 
     if (ent->client->menu_sign != menu_sign) {
         ent->client->menu_sign = menu_sign;
@@ -2823,7 +2800,6 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t *spot)
     static const float yaw_spread[] = { 0, 90, 45, -45, -90 };
     const float back_distance = 128;
     const float up_distance = 128;
-    const float player_viewheight = 22;
 
     // we don't want to spawn inside of these
     contents_t mask = MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME;
@@ -2871,13 +2847,13 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t *spot)
 
         // don't spawn us *inside* liquids
         end = tr.endpos;
-        end.z += player_viewheight;
+        end.z += PLAYER_VIEWHEIGHT;
 
         if (trap_PointContents(end) & MASK_WATER)
             continue;
 
         // don't spawn us on steep slopes
-        if (tr.plane.normal.z < 0.7f)
+        if (tr.plane.normal.z < MIN_STEP_NORMAL)
             continue;
 
         *spot = tr.endpos;
@@ -2885,21 +2861,21 @@ static bool G_FindRespawnSpot(edict_t *player, vec3_t *spot)
         float z_diff = fabsf(player->s.origin.z - tr.endpos.z);
 
         // 5 steps is way too many steps
-        if (z_diff > STEPSIZE * 4)
+        if (z_diff > STEP_SIZE * 4)
             continue;
 
         // if we went up or down 1 step, make sure we can still see their origin and their head
-        if (z_diff > STEPSIZE) {
+        if (z_diff > STEP_SIZE) {
             tr = G_TraceLine(player->s.origin, tr.endpos, player->s.number, mask);
 
             if (tr.fraction != 1.0f)
                 continue;
 
             start = player->s.origin;
-            start.z += player_viewheight;
+            start.z += PLAYER_VIEWHEIGHT;
 
             end = tr.endpos;
-            end.z += player_viewheight;
+            end.z += PLAYER_VIEWHEIGHT;
 
             tr = G_TraceLine(start, end, player->s.number, mask);
 

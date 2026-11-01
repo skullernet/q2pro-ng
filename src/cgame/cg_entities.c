@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cg_local.h"
 
-static void CG_SetEntitySoundOrigin(const centity_t *ent);
+static void CG_SetEntitySoundOrigin(const cg_entity_t *ent);
 
 /*
 =========================================================================
@@ -59,7 +59,7 @@ static bool CG_EntityWasTeleported(const entity_state_t *state)
     return false;
 }
 
-static void CG_InitEntity(centity_t *ent, const entity_state_t *state)
+static void CG_InitEntity(cg_entity_t *ent, const entity_state_t *state)
 {
     ent->trailcount = 1024;     // for diminishing rocket / grenade trails
     ent->step_time = -STEP_TIME;
@@ -72,7 +72,7 @@ static void CG_InitEntity(centity_t *ent, const entity_state_t *state)
         ent->prev_frame = state->old_frame;
 }
 
-static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
+static void CG_DeltaEntityNew(cg_entity_t *ent, const entity_state_t *state)
 {
     CG_InitEntity(ent, state);
 
@@ -88,7 +88,7 @@ static void CG_DeltaEntityNew(centity_t *ent, const entity_state_t *state)
     ent->lerp_origin = state->old_origin;
 }
 
-static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
+static void CG_DeltaEntityOld(cg_entity_t *ent, const entity_state_t *state)
 {
     if (state->modelindex != ent->current.modelindex
         || state->modelindex2 != ent->current.modelindex2
@@ -114,7 +114,7 @@ static void CG_DeltaEntityOld(centity_t *ent, const entity_state_t *state)
     ent->prev = ent->current;
 }
 
-static bool CG_EntityIsNew(const centity_t *ent)
+static bool CG_EntityIsNew(const cg_entity_t *ent)
 {
     if (ent->serverframe != cg.oldframe->number)
         return true;    // wasn't in last received frame
@@ -127,7 +127,7 @@ static bool CG_EntityIsNew(const centity_t *ent)
 
 static void CG_DeltaEntity(entity_state_t *state)
 {
-    centity_t *ent = &cg_entities[state->number];
+    cg_entity_t *ent = &cg_entities[state->number];
 
     // if entity is solid, decode mins/maxs and add to the list
     if (state->solid && state->number != cg.frame->ps.clientnum)
@@ -282,7 +282,7 @@ void CG_DeltaFrame(void)
     // fire events. due to footstep tracing this must be done
     // after updating all entities.
     for (int i = 0; i < cg.frame->num_entities; i++) {
-        centity_t *ent = &cg_entities[cg.frame->entities[i].number];
+        cg_entity_t *ent = &cg_entities[cg.frame->entities[i].number];
         if (effects)
             CG_EntityEffects(ent);
         CG_EntityEvents(ent);
@@ -309,7 +309,7 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARAMS
 ==========================================================================
 */
 
-float CG_LerpEntityAlpha(const centity_t *ent)
+float CG_LerpEntityAlpha(const cg_entity_t *ent)
 {
     float prev = ent->prev.alpha;
     float curr = ent->current.alpha;
@@ -335,7 +335,7 @@ static float CG_HandMultiplier(void)
     return 1;
 }
 
-static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
+static void CG_DrawBeam(const cg_entity_t *cent, vec3_t start, vec3_t end)
 {
     int         i, steps;
     vec3_t      dir, org, offset = vec3_origin;
@@ -412,7 +412,7 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
 
         // if it's a player, use the hardcoded player offset
         if (entnum < cgs.maxclients) {
-            const centity_t *cent = &cg_entities[entnum];
+            const cg_entity_t *cent = &cg_entities[entnum];
             org = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
             angles = Vec3_LerpAngles(cent->prev.angles, cent->current.angles, cg.lerpfrac);
 
@@ -488,7 +488,7 @@ static void CG_DrawBeam(const centity_t *cent, vec3_t start, vec3_t end)
     }
 }
 
-static void CG_SetEntitySoundOrigin(const centity_t *ent)
+static void CG_SetEntitySoundOrigin(const cg_entity_t *ent)
 {
     vec3_t org, vel;
 
@@ -593,7 +593,7 @@ renderfx_t CG_EntityShellEffect(const entity_state_t *s)
     return renderfx;
 }
 
-#define GET_COLOR(skinnum)  (color_t){ skinnum ? BigLong(skinnum) : U32_WHITE }
+#define GET_COLOR(skinnum)  (color_t){ .u32 = skinnum ? BigLong(skinnum) : U32_WHITE }
 
 /*
 ===============
@@ -607,8 +607,8 @@ static void CG_AddPacketEntities(void)
     const entity_state_t    *s1;
     float                   autorotate, autobob, autolerp;
     int                     i, pnum, autoanim;
-    centity_t               *cent;
-    const clientinfo_t      *ci;
+    cg_entity_t             *cent;
+    const cg_clientinfo_t   *ci;
     effects_t               effects;
     renderfx_t              renderfx, shellfx;
     bool                    has_trail;

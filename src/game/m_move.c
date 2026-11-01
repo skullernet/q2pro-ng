@@ -55,10 +55,10 @@ bool M_CheckBottom_Slow_Generic(vec3_t origin, box3_t box, int ignore, contents_
     // PGM
     if (!ceiling) {
         start.z = origin.z + box.mins.z;
-        stop.z = start.z - STEPSIZE * 2;
+        stop.z = start.z - STEP_SIZE * 2;
     } else {
         start.z = origin.z + box.maxs.z;
-        stop.z = start.z + STEPSIZE * 2;
+        stop.z = start.z + STEP_SIZE * 2;
     }
     // PGM
 
@@ -96,10 +96,10 @@ bool M_CheckBottom_Slow_Generic(vec3_t origin, box3_t box, int ignore, contents_
         // PGM
         //  FIXME - this will only handle 0,0,1 and 0,0,-1 gravity vectors
         if (ceiling) {
-            if (trace.fraction == 1.0f || trace.endpos.z - mid > (STEPSIZE))
+            if (trace.fraction == 1.0f || trace.endpos.z - mid > (STEP_SIZE))
                 return false;
         } else {
-            if (trace.fraction == 1.0f || mid - trace.endpos.z > (STEPSIZE))
+            if (trace.fraction == 1.0f || mid - trace.endpos.z > (STEP_SIZE))
                 return false;
         }
         // PGM
@@ -164,7 +164,7 @@ static vec3_t G_IdealHoverPosition(edict_t *ent)
     return Vec3_Scale(Vec3_SphereDir(phi, theta), d);
 }
 
-static bool SV_flystep_testvisposition(vec3_t wanted_pos, bool bottom, edict_t *ent)
+static bool SV_flystep_testvisposition(edict_t *ent, vec3_t wanted_pos, bool bottom)
 {
     vec3_t start = ent->s.origin;
     vec3_t end = ent->s.origin;
@@ -210,7 +210,7 @@ vec3_t Vec3_SLerp(vec3_t from, vec3_t to, float t)
     return Vec3_Mix(from, to, aFactor, bFactor);
 }
 
-static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_bad)
+static bool SV_alternate_flystep(edict_t *ent)
 {
     // swimming monsters just follow their velocity in the air
     if ((ent->flags & FL_SWIM) && ent->waterlevel < WATER_UNDER)
@@ -233,10 +233,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
         return false;
 
     if (ent->monsterinfo.aiflags & AI_PATHING) {
-        if (ent->monsterinfo.nav_path.returnCode == PathReturnCode_TraversalPending)
-            towards_origin = ent->monsterinfo.nav_path.secondMovePoint;
-        else
-            towards_origin = ent->monsterinfo.nav_path.firstMovePoint;
+        towards_origin = (ent->monsterinfo.nav_path.returnCode == PathReturnCode_TraversalPending) ?
+            ent->monsterinfo.nav_path.secondMovePoint : ent->monsterinfo.nav_path.firstMovePoint;
     } else if (ent->enemy && !(ent->monsterinfo.aiflags & (AI_COMBAT_POINT | AI_SOUND_TARGET | AI_LOST_SIGHT))) {
         towards_origin = ent->enemy->s.origin;
         towards_velocity = ent->enemy->velocity;
@@ -297,8 +295,8 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
 
     // it's a fairly close block, so we may want to shift more dramatically
     if (tr.fraction < 0.25f) {
-        bool bottom_visible = SV_flystep_testvisposition(wanted_pos, true,  ent);
-        bool top_visible    = SV_flystep_testvisposition(wanted_pos, false, ent);
+        bool bottom_visible = SV_flystep_testvisposition(ent, wanted_pos, true);
+        bool top_visible    = SV_flystep_testvisposition(ent, wanted_pos, false);
 
         // top & bottom are same, so we need to try right/left
         if (bottom_visible == top_visible) {
@@ -337,7 +335,7 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
     else
         turn_factor = min(1.0f, 0.84f + (0.08f * (current_speed / ent->monsterinfo.fly_speed)));
 
-    vec3_t final_dir = Vec3_IsEmpty(dir) ? wanted_dir : dir;
+    vec3_t final_dir = !Vec3_IsEmpty(dir) ? dir : wanted_dir;
 
     // FIXME
     if (isnan(final_dir.x) || isnan(final_dir.y) || isnan(final_dir.z))
@@ -424,7 +422,7 @@ static bool SV_alternate_flystep(edict_t *ent, vec3_t move, bool relink, edict_t
 static bool SV_flystep(edict_t *ent, vec3_t move, bool relink, edict_t *current_bad)
 {
     if (ent->monsterinfo.aiflags & AI_ALTERNATE_FLY)
-        if (SV_alternate_flystep(ent, move, relink, current_bad))
+        if (SV_alternate_flystep(ent))
             return true;
 
     // try the move
@@ -610,7 +608,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     if (ent->spawnflags & SPAWNFLAG_MONSTER_SUPER_STEP && ent->health > 0)
         stepsize = 64;
     else if (!(ent->monsterinfo.aiflags & AI_NOSTEP))
-        stepsize = STEPSIZE;
+        stepsize = STEP_SIZE;
     else
         stepsize = 1;
 

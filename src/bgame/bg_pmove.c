@@ -158,7 +158,7 @@ static void PM_StepSlideMove(void)
     down_v = pml.velocity;
 
     up = start_o;
-    up.z += STEPSIZE;
+    up.z += STEP_SIZE;
 
     trace = PM_Trace(start_o, up, pm->box, pml.clipmask);
     if (trace.allsolid)
@@ -208,7 +208,7 @@ static void PM_StepSlideMove(void)
     if ((pm->s->pm_flags & PMF_ON_GROUND) && !(pm->s->pm_flags & PMF_ON_LADDER) &&
         (pm->waterlevel < WATER_WAIST || (!(pm->cmd.buttons & BUTTON_JUMP) && pml.velocity.z <= 0))) {
         down = pml.origin;
-        down.z -= STEPSIZE;
+        down.z -= STEP_SIZE;
         trace = PM_Trace(pml.origin, down, pm->box, pml.clipmask);
         if (trace.fraction < 1.0f)
             pml.origin = trace.endpos;
@@ -607,7 +607,7 @@ static void PM_CategorizePosition(void)
         // wedged between a slope and a wall (which is irrecoverable
         // most of the time), we'll allow the player to "stand" on
         // slopes if they are right up against a wall
-        bool slanted_ground = !trace.startsolid && trace.fraction < 1.0f && trace.plane.normal.z < 0.7f;
+        bool slanted_ground = !trace.startsolid && trace.fraction < 1.0f && trace.plane.normal.z < MIN_STEP_NORMAL;
 
         if (slanted_ground) {
             point = Vec3_Add(pml.origin, trace.plane.normal);
@@ -751,7 +751,7 @@ static void PM_CheckSpecialMovement(void)
     trace = PM_Trace(pml.origin, point, pm->box, MASK_SOLID);
 
     // we aren't blocked, or what we're blocked by is something we can walk up
-    if (trace.fraction == 1.0f || trace.plane.normal.z >= 0.7f)
+    if (trace.fraction == 1.0f || trace.plane.normal.z >= MIN_STEP_NORMAL)
         return;
 
     // [Paril-KEX] improved waterjump
@@ -782,11 +782,11 @@ static void PM_CheckSpecialMovement(void)
     trace = PM_Trace(waterjump_origin, down, pm->box, MASK_SOLID);
 
     // can't stand here
-    if (trace.fraction == 1.0f || trace.plane.normal.z < 0.7f || trace.endpos.z < pml.origin.z)
+    if (trace.fraction == 1.0f || trace.plane.normal.z < MIN_STEP_NORMAL || trace.endpos.z < pml.origin.z)
         return;
 
     // we're currently standing on ground, and the snapped position is a step
-    if (pm->groundentitynum != ENTITYNUM_NONE && fabsf(pml.origin.z - trace.endpos.z) <= STEPSIZE)
+    if (pm->groundentitynum != ENTITYNUM_NONE && fabsf(pml.origin.z - trace.endpos.z) <= STEP_SIZE)
         return;
 
     water_level_t level;
@@ -883,7 +883,7 @@ static void PM_SetDimensions(void)
 {
     if (pm->s->pm_type == PM_NOCLIP) {
         pm->box = box3_origin;
-        pm->s->viewheight = 22;
+        pm->s->viewheight = PLAYER_VIEWHEIGHT;
         return;
     }
 
@@ -907,7 +907,7 @@ static void PM_SetDimensions(void)
         pm->s->viewheight = -2;
     } else {
         pm->box.maxs.z = 32;
-        pm->s->viewheight = 22;
+        pm->s->viewheight = PLAYER_VIEWHEIGHT;
     }
 }
 

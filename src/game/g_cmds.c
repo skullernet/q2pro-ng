@@ -556,11 +556,11 @@ static void Cmd_Noclip_f(edict_t *ent, cmdflags_t flags)
 {
     if (ent->movetype == MOVETYPE_NOCLIP) {
         ent->movetype = MOVETYPE_WALK;
-        ent->r.svflags &= ~SVF_DEADMONSTER;
+        ent->r.solid = SOLID_BBOX;
         G_ClientPrintf(ent, PRINT_HIGH, "noclip OFF\n");
     } else {
         ent->movetype = MOVETYPE_NOCLIP;
-        ent->r.svflags |= SVF_DEADMONSTER;
+        ent->r.solid = SOLID_TRIGGER;
         G_ClientPrintf(ent, PRINT_HIGH, "noclip ON\n");
     }
 }

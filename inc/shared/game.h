@@ -57,12 +57,11 @@ typedef enum {
 } solid_t;
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
-// FIXME: eliminate AREA_ distinction?
 typedef enum {
-    AREA_NONE,
-    AREA_SOLID,
-    AREA_TRIGGERS,
-    AREA_ALL
+    AREA_NONE       = 0U,
+    AREA_SOLID      = BIT(0),
+    AREA_TRIGGERS   = BIT(1),
+    AREA_ALL        = AREA_SOLID | AREA_TRIGGERS
 } areatype_t;
 
 //===============================================================

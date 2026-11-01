@@ -64,13 +64,13 @@ static void fixbot_set_fly_parameters(edict_t *self, fixbot_mode_t mode)
     self->monsterinfo.fly_position_time = 0;
     self->monsterinfo.fly_acceleration = 5;
     self->monsterinfo.fly_speed = 110;
-    self->monsterinfo.fly_buzzard = false;
-    self->monsterinfo.fly_thrusters = mode == FB_HEAL;
+    self->monsterinfo.fly_thrusters = false;
 
     switch (mode) {
     case FB_HEAL:
         self->monsterinfo.fly_min_distance = 100;
         self->monsterinfo.fly_max_distance = 100;
+        self->monsterinfo.fly_thrusters = true;
         break;
     case FB_WELD:
     case FB_ROAM:

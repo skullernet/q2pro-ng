@@ -19,15 +19,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
-#define STEPSIZE    18.0f
+#define STEP_SIZE       18.0f
 
-#define STOP_EPSILON 0.1f
+#define STOP_EPSILON    0.1f
 
 #define MIN_STEP_HEIGHT     4.0f
 
 #define MIN_STEP_NORMAL     0.7f // can't step up onto very steep slopes
 
 #define PSX_PHYSICS_SCALAR  0.875f
+
+#define PLAYER_VIEWHEIGHT   22
 
 #define INFINITE_AMMO   MASK(AMMO_BITS)
 
@@ -528,6 +530,15 @@ static inline vec3_t BG_ProjectSource2(vec3_t point, vec3_t distance, vec3_t for
     return point;
 }
 
+static inline void BG_AddBlend(vec4_t *v_blend, vec4_t color)
+{
+    float a2 = v_blend->a + (1 - v_blend->a) * color.a; // new total alpha
+    float a3 = v_blend->a / a2; // fraction of color from old
+
+    *v_blend = Vec4_Mix(*v_blend, color, a3, 1 - a3);
+    v_blend->a = a2;
+}
+
 //==============================================
 
 // pmove_state_t is the information necessary for client side movement
@@ -666,7 +677,5 @@ void PM_StepSlideMove_Generic(vec3_t *origin, vec3_t *velocity, float frametime,
 void PM_ClampAngles(player_state_t *s, const usercmd_t *cmd);
 
 void BG_Pmove(pmove_t *pmove);
-
-void BG_AddBlend(float r, float g, float b, float a, vec4_t *v_blend);
 
 const char *BG_EventName(entity_event_t event);

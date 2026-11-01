@@ -851,6 +851,12 @@ qvm_exported void G_RunFrame(int64_t time)
         G_RunEntity(ent);
     }
 
+    // [Paril-KEX] run monster pains now
+    FOR_EACH_ENTITY(e) {
+        if (e->r.svflags & SVF_MONSTER)
+            M_ProcessPain(e);
+    }
+
     // see if it is time to end a deathmatch
     CheckDMRules();
 
@@ -888,12 +894,6 @@ qvm_exported void G_RunFrame(int64_t time)
     // the game as an entity, increase timer on current entry
     if (level.entry && !level.intermissiontime && g_edicts[0].r.inuse && g_clients[0].pers.connected)
         level.entry->time += FRAME_TIME;
-
-    // [Paril-KEX] run monster pains now
-    FOR_EACH_ENTITY(e) {
-        if (e->r.svflags & SVF_MONSTER)
-            M_ProcessPain(e);
-    }
 
     level.in_frame = false;
 }

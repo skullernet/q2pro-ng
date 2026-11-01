@@ -273,7 +273,7 @@ void TOUCH(prox_land)(edict_t *ent, edict_t *other, const trace_t *tr, bool othe
 
     if (other != world) {
         // Here we need to check to see if we can stop on this entity.
-        if (tr->plane.normal.z <= 0.7f)
+        if (tr->plane.normal.z <= MIN_STEP_NORMAL)
             return;
 
         if (other->movetype != MOVETYPE_PUSH) {

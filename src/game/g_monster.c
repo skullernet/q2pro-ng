@@ -196,12 +196,12 @@ void M_CheckGround(edict_t *ent, contents_t mask)
     // check steepness
     // PGM
     if (ent->gravityVector.z < 0) { // normal gravity
-        if (trace.plane.normal.z < 0.7f && !trace.startsolid) {
+        if (trace.plane.normal.z < MIN_STEP_NORMAL && !trace.startsolid) {
             ent->groundentity = NULL;
             return;
         }
     } else { // inverted gravity
-        if (trace.plane.normal.z > -0.7f && !trace.startsolid) {
+        if (trace.plane.normal.z > -MIN_STEP_NORMAL && !trace.startsolid) {
             ent->groundentity = NULL;
             return;
         }

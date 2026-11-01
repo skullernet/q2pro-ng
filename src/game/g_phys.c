@@ -165,7 +165,7 @@ void SV_FlyMove(edict_t *ent, float time, contents_t mask)
     for (int i = 0; i < touch.num; i++) {
         trace_t *trace = &touch.traces[i];
 
-        if (trace->plane.normal.z > 0.7f) {
+        if (trace->plane.normal.z > MIN_STEP_NORMAL) {
             ent->groundentity = &g_edicts[trace->entnum];
             ent->groundentity_linkcount = ent->groundentity->r.linkcount;
         }
@@ -622,7 +622,7 @@ static void SV_Physics_Toss(edict_t *ent)
         // RAFAEL
 
         // stop if on ground
-        if (trace.plane.normal.z > 0.7f) {
+        if (trace.plane.normal.z > MIN_STEP_NORMAL) {
             if ((ent->movetype == MOVETYPE_TOSS && Vec3_Length(ent->velocity) < 60) ||
                 (ent->movetype != MOVETYPE_TOSS && Vec3_Dot(ent->velocity, trace.plane.normal) < 60)) {
                 if (!(ent->flags & FL_NO_STANDING) || hit->r.solid == SOLID_BSP) {

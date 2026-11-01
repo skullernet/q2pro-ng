@@ -141,9 +141,9 @@ blocked_jump_result_t blocked_checkjump(edict_t *self, float dist)
 
     AngleVectors(self->s.angles, &forward, NULL, &up);
 
-    if (self->enemy->r.absbox.mins.z > (self->r.absbox.mins.z + STEPSIZE))
+    if (self->enemy->r.absbox.mins.z > (self->r.absbox.mins.z + STEP_SIZE))
         playerPosition = 1;
-    else if (self->enemy->r.absbox.mins.z < (self->r.absbox.mins.z - STEPSIZE))
+    else if (self->enemy->r.absbox.mins.z < (self->r.absbox.mins.z - STEP_SIZE))
         playerPosition = -1;
     else
         playerPosition = 0;
@@ -918,7 +918,7 @@ bool M_CalculatePitchToFire(edict_t *self, vec3_t target, vec3_t start, vec3_t *
                 float dist = Vec3_DistanceSquared(origin, target);
                 edict_t *hit = &g_edicts[tr.entnum];
 
-                if (hit == self->enemy || hit->client || (tr.plane.normal.z >= 0.7f && dist < (128 * 128) && dist < best_dist)) {
+                if (hit == self->enemy || hit->client || (tr.plane.normal.z >= MIN_STEP_NORMAL && dist < (128 * 128) && dist < best_dist)) {
                     best_pitch = pitch;
                     best_dist = dist;
                 }

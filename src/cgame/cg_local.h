@@ -54,9 +54,9 @@ typedef struct {
     float           step_factor;
 
     int             fly_stoptime;
-} centity_t;
+} cg_entity_t;
 
-extern centity_t    cg_entities[MAX_EDICTS];
+extern cg_entity_t  cg_entities[MAX_EDICTS];
 
 // view pitching times
 #define DAMAGE_TIME 500
@@ -91,7 +91,7 @@ typedef struct {
     bool            teleported;
 
     // rebuilt each valid frame
-    centity_t       *solid_entities[MAX_PACKET_ENTITIES];
+    cg_entity_t     *solid_entities[MAX_PACKET_ENTITIES];
     int             num_solid_entities;
 
     cg_server_frame_t   *frame;     // received from server
@@ -221,7 +221,7 @@ typedef enum {
     SS_PAIN100_2,
 
     SS_MAX
-} sexed_sound_t;
+} cg_sexed_sound_t;
 
 typedef struct {
     char        name[MAX_QPATH];
@@ -233,7 +233,7 @@ typedef struct {
     qhandle_t   model;
     qhandle_t   weaponmodel[MAX_CLIENTWEAPONS];
     qhandle_t   sounds[SS_MAX];
-} clientinfo_t;
+} cg_clientinfo_t;
 
 typedef struct {
     qhandle_t   ric[3];
@@ -336,8 +336,8 @@ typedef struct {
 
     char        statusbar[MAX_NET_STRING];
 
-    clientinfo_t    clientinfo[MAX_CLIENTS];
-    clientinfo_t    baseclientinfo;
+    cg_clientinfo_t     clientinfo[MAX_CLIENTS];
+    cg_clientinfo_t     baseclientinfo;
 
     struct {
         cg_wheel_ammo_t ammo[MAX_WHEEL_ITEMS];
@@ -518,7 +518,7 @@ void CG_UpdateConfigstring(unsigned index);
 
 void CG_DeltaFrame(void);
 void CG_AddEntities(void);
-float CG_LerpEntityAlpha(const centity_t *ent);
+float CG_LerpEntityAlpha(const cg_entity_t *ent);
 renderfx_t CG_EntityShellEffect(const entity_state_t *s);
 
 //
@@ -538,17 +538,17 @@ typedef struct cg_sustain_s {
     void    (*think)(struct cg_sustain_s *self);
 } cg_sustain_t;
 
-typedef struct explosion_s explosion_t;
+typedef struct cg_explosion_s cg_explosion_t;
 
 void CG_AddHelpPath(vec3_t origin, vec3_t dir, bool first);
 
-explosion_t *CG_PlainExplosion(vec3_t pos);
+cg_explosion_t *CG_PlainExplosion(vec3_t pos);
 void CG_SmokeAndFlash(vec3_t origin);
 void CG_SlamEffect(vec3_t start, vec3_t end, vec3_t dir);
 void CG_ColorFlash(vec3_t pos, int intensity, float r, float g, float b);
 
-void CG_EntityEffects(centity_t *cent);
-void CG_EntityEvents(centity_t *cent);
+void CG_EntityEffects(cg_entity_t *cent);
+void CG_EntityEvents(cg_entity_t *cent);
 
 void CG_RegisterTEntSounds(void);
 void CG_RegisterTEntModels(void);
@@ -588,8 +588,8 @@ static inline trace_t CG_Trace(vec3_t start, vec3_t end, box3_t box, int passent
 #define PARTICLE_GRAVITY    40
 #define INSTANT_PARTICLE    -10000.0f
 
-typedef struct cparticle_s {
-    struct cparticle_s    *next;
+typedef struct cg_particle_s {
+    struct cg_particle_s    *next;
 
     int     time;
     vec3_t  org;
@@ -600,7 +600,7 @@ typedef struct cparticle_s {
     float   alpha;
     float   alphavel;
     color_t rgba;
-} cparticle_t;
+} cg_particle_t;
 
 typedef enum {
     DT_GIB,
@@ -616,8 +616,8 @@ typedef enum {
     trap_R_AddLight(&(dlight_t){ .origin = (org), .radius = (rad), .color = { (r), (g), (b) }})
 
 void CG_BigTeleportParticles(vec3_t org);
-void CG_DiminishingTrail(centity_t *ent, vec3_t end, diminishing_trail_t type);
-void CG_FlyEffect(centity_t *ent, vec3_t origin);
+void CG_DiminishingTrail(cg_entity_t *ent, vec3_t end, diminishing_trail_t type);
+void CG_FlyEffect(cg_entity_t *ent, vec3_t origin);
 void CG_BfgParticles(const entity_t *ent);
 void CG_ItemRespawnParticles(vec3_t org);
 void CG_InitEffects(void);
@@ -625,43 +625,43 @@ void CG_ClearEffects(void);
 void CG_BlasterParticles(vec3_t org, vec3_t dir);
 void CG_ExplosionParticles(vec3_t org);
 void CG_BFGExplosionParticles(vec3_t org);
-void CG_BlasterTrail(centity_t *ent, vec3_t end);
+void CG_BlasterTrail(cg_entity_t *ent, vec3_t end);
 void CG_OldRailTrail(vec3_t start, vec3_t end);
 void CG_BubbleTrail(vec3_t start, vec3_t end);
-void CG_FlagTrail(centity_t *ent, vec3_t end, int color);
-void CG_MuzzleFlash(centity_t *ent, player_muzzle_t weapon);
-void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon);
+void CG_FlagTrail(cg_entity_t *ent, vec3_t end, int color);
+void CG_MuzzleFlash(cg_entity_t *ent, player_muzzle_t weapon);
+void CG_MuzzleFlash2(cg_entity_t *ent, monster_muzzleflash_id_t weapon);
 void CG_TeleporterParticles(vec3_t org);
 void CG_TeleportParticles(vec3_t org);
 void CG_ParticleEffect(vec3_t org, vec3_t dir, int color, int count);
 void CG_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count);
-cparticle_t *CG_AllocParticle(void);
+cg_particle_t *CG_AllocParticle(void);
 void CG_AddParticles(void);
 void CG_AddMuzzleFlashes(void);
 void CG_SetLightStyle(int index, const char *s);
 void CG_AddLightStyles(void);
 
 void CG_BlasterParticles2(vec3_t org, vec3_t dir, unsigned int color);
-void CG_BlasterTrail2(centity_t *ent, vec3_t end);
+void CG_BlasterTrail2(cg_entity_t *ent, vec3_t end);
 void CG_DebugTrail(vec3_t start, vec3_t end);
 void CG_ForceWall(vec3_t start, vec3_t end, int color);
 void CG_BubbleTrail2(vec3_t start, vec3_t end, int dist);
 void CG_Heatbeam(vec3_t start, vec3_t forward);
 void CG_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude);
-void CG_TrackerTrail(centity_t *ent, vec3_t end);
-void CG_TagTrail(centity_t *ent, vec3_t end, int color);
-void CG_Tracker_Shell(const centity_t *cent, vec3_t origin);
+void CG_TrackerTrail(cg_entity_t *ent, vec3_t end);
+void CG_TagTrail(cg_entity_t *ent, vec3_t end, int color);
+void CG_Tracker_Shell(const cg_entity_t *cent, vec3_t origin);
 void CG_MonsterPlasma_Shell(vec3_t origin);
 void CG_ColorExplosionParticles(vec3_t org, int color, int run);
 void CG_ParticleSmokeEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude);
 void CG_Widowbeamout(cg_sustain_t *self);
 void CG_Nukeblast(cg_sustain_t *self);
 void CG_WidowSplash(vec3_t pos);
-void CG_IonripperTrail(centity_t *ent, vec3_t end);
-void CG_TrapParticles(centity_t *ent, vec3_t origin);
+void CG_IonripperTrail(cg_entity_t *ent, vec3_t end);
+void CG_TrapParticles(cg_entity_t *ent, vec3_t origin);
 void CG_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count);
 void CG_SlamParticles(vec3_t org, vec3_t dir);
-void CG_PowerSplash(const centity_t *cent);
+void CG_PowerSplash(const cg_entity_t *cent);
 void CG_TeleporterParticles2(vec3_t org);
 void CG_HologramParticles(vec3_t org);
 void CG_BarrelExplodingParticles(vec3_t org);

@@ -31,7 +31,7 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->ps.clientnum = ent->s.number;
 
     if (deathmatch.integer || !level.is_n64)
-        ent->client->ps.viewheight = ent->viewheight = 22;
+        ent->client->ps.viewheight = ent->viewheight = PLAYER_VIEWHEIGHT;
     else
         ent->client->ps.viewheight = ent->viewheight = 0;
 
@@ -123,6 +123,31 @@ void G_EndOfUnitMessage(void)
         client->showeou = true;
 }
 
+edict_t *G_FindIntermissionSpot(void)
+{
+    edict_t *ent;
+
+    ent = G_Find(NULL, FOFS(classname), "info_player_intermission");
+    if (!ent) {
+        // the map creator forgot to put in an intermission point...
+        ent = G_Find(NULL, FOFS(classname), "info_player_start");
+        if (!ent)
+            ent = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
+        if (!ent)
+            return world;
+    } else {
+        // choose one of four spots
+        int i = irandom1(4);
+        while (i--) {
+            ent = G_Find(ent, FOFS(classname), "info_player_intermission");
+            if (!ent) // wrap around the list
+                ent = G_Find(ent, FOFS(classname), "info_player_intermission");
+        }
+    }
+
+    return ent;
+}
+
 void BeginIntermission(edict_t *targ)
 {
     edict_t *ent;
@@ -194,26 +219,9 @@ void BeginIntermission(edict_t *targ)
 
     if (!level.level_intermission_set) {
         // find an intermission spot
-        ent = G_Find(NULL, FOFS(classname), "info_player_intermission");
-        if (!ent) {
-            // the map creator forgot to put in an intermission point...
-            ent = G_Find(NULL, FOFS(classname), "info_player_start");
-            if (!ent)
-                ent = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
-        } else {
-            // choose one of four spots
-            int i = irandom1(4);
-            while (i--) {
-                ent = G_Find(ent, FOFS(classname), "info_player_intermission");
-                if (!ent) // wrap around the list
-                    ent = G_Find(ent, FOFS(classname), "info_player_intermission");
-            }
-        }
-
-        if (ent) {
-            level.intermission_origin = ent->s.origin;
-            level.intermission_angle = ent->s.angles;
-        }
+        ent = G_FindIntermissionSpot();
+        level.intermission_origin = ent->s.origin;
+        level.intermission_angle = ent->s.angles;
     }
 
     // move all clients to the intermission point

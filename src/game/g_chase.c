@@ -49,7 +49,7 @@ void G_StopChaseCam(edict_t *ent)
     ent->client->ps.clientnum = ent->s.number;
     ent->client->ps.gunindex = 0;
     ent->client->ps.gunskin = 0;
-    ent->client->ps.viewheight = ent->viewheight = 22;
+    ent->client->ps.viewheight = ent->viewheight = PLAYER_VIEWHEIGHT;
     ent->client->ps.velocity = ent->velocity = vec3_origin;
     P_SetClientAngles(ent->client, ent->client->ps.viewangles);
 }

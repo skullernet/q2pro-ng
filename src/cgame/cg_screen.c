@@ -1126,7 +1126,7 @@ static void SCR_ExecuteLayoutString(const char *s)
     char    *token;
     int     width;
     int     index;
-    clientinfo_t    *ci;
+    const cg_clientinfo_t   *ci;
 
     if (!s[0])
         return;

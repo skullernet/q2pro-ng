@@ -1681,7 +1681,6 @@ edict_t *PlayerTrail_Pick(edict_t *self, bool next);
 #define SPAWNFLAG_CHANGELEVEL_IMMEDIATE_LEAVE   64
 
 void respawn(edict_t *ent);
-void BeginIntermission(edict_t *targ);
 void PutClientInServer(edict_t *ent);
 void InitClientPersistant(edict_t *ent, gclient_t *client);
 void InitClientResp(gclient_t *client);
@@ -1716,12 +1715,15 @@ void G_CompleteCommand(int firstarg, int argnum);
 //
 // p_view.c
 //
+void G_SetClientFrame(edict_t *ent, gclient_t *client);
 void ClientEndServerFrame(edict_t *ent);
 
 //
 // p_hud.c
 //
 void MoveClientToIntermission(edict_t *client);
+void BeginIntermission(edict_t *targ);
+edict_t *G_FindIntermissionSpot(void);
 void G_SetStats(edict_t *ent);
 void G_SetCoopStats(edict_t *ent);
 void G_SetSpectatorStats(edict_t *ent);

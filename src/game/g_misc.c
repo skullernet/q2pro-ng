@@ -71,7 +71,7 @@ void DIE(gib_die)(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 void TOUCH(gib_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
 {
-    if (tr->plane.normal.z > 0.7f) {
+    if (tr->plane.normal.z > MIN_STEP_NORMAL) {
         self->s.angles.pitch = Q_clipf(self->s.angles.pitch, -5.0f, 5.0f);
         self->s.angles.roll = Q_clipf(self->s.angles.roll, -5.0f, 5.0f);
     }
@@ -115,6 +115,7 @@ edict_t *ThrowGibEx(edict_t *self, const char *gibname, int damage, gib_type_t t
     gib->r.svflags &= ~SVF_MONSTER;
     gib->clipmask = MASK_SOLID;
     gib->s.effects = EF_NONE;
+    gib->s.morefx = EFX_NONE;
     gib->s.renderfx = RF_LOW_PRIORITY;
     gib->s.renderfx |= RF_NOSHADOW;
     if (!(type & GIB_DEBRIS)) {

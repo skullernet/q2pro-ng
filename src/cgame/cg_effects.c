@@ -175,7 +175,7 @@ void CG_AddMuzzleFlashes(void)
             org = cg.player_entity_origin;
             ang = cg.player_entity_angles;
         } else {
-            const centity_t *cent = &cg_entities[entnum];
+            const cg_entity_t *cent = &cg_entities[entnum];
             org = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
             ang = Vec3_LerpAngles(cent->prev.angles, cent->current.angles, cg.lerpfrac);
         }
@@ -295,7 +295,7 @@ static const vec3_t player_flash_offset[MZ_LAST] = {
 CG_MuzzleFlash
 ==============
 */
-void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
+void CG_MuzzleFlash(cg_entity_t *pl, player_muzzle_t weapon)
 {
     cg_muzzleflash_t    *mz;
     float       volume;
@@ -625,7 +625,7 @@ void CG_MuzzleFlash(centity_t *pl, player_muzzle_t weapon)
 CG_MuzzleFlash2
 ==============
 */
-void CG_MuzzleFlash2(centity_t *ent, monster_muzzleflash_id_t weapon)
+void CG_MuzzleFlash2(cg_entity_t *ent, monster_muzzleflash_id_t weapon)
 {
     cg_muzzleflash_t    *mz;
     vec3_t      offset, origin;
@@ -1052,9 +1052,9 @@ PARTICLE MANAGEMENT
 ==============================================================
 */
 
-static cparticle_t  *active_particles, *free_particles;
+static cg_particle_t  *active_particles, *free_particles;
 
-static cparticle_t  particles[MAX_PARTICLES];
+static cg_particle_t  particles[MAX_PARTICLES];
 
 static void CG_ClearParticles(void)
 {
@@ -1068,9 +1068,9 @@ static void CG_ClearParticles(void)
     particles[i].next = NULL;
 }
 
-cparticle_t *CG_AllocParticle(void)
+cg_particle_t *CG_AllocParticle(void)
 {
-    cparticle_t *p;
+    cg_particle_t *p;
 
     if (!free_particles)
         return NULL;
@@ -1093,7 +1093,7 @@ Wall impact puffs
 void CG_ParticleEffect(vec3_t org, vec3_t dir, int color, int count)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < count; i++) {
         p = CG_AllocParticle();
@@ -1123,7 +1123,7 @@ CG_ParticleEffect2
 void CG_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < count; i++) {
         p = CG_AllocParticle();
@@ -1153,7 +1153,7 @@ CG_TeleporterParticles
 void CG_TeleporterParticles(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 8; i++) {
         p = CG_AllocParticle();
@@ -1186,7 +1186,7 @@ CG_LogoutEffect
 static void CG_LogoutEffect(vec3_t org, int color)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 500; i++) {
         p = CG_AllocParticle();
@@ -1220,7 +1220,7 @@ CG_ItemRespawnParticles
 void CG_ItemRespawnParticles(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 64; i++) {
         p = CG_AllocParticle();
@@ -1250,7 +1250,7 @@ CG_ExplosionParticles
 void CG_ExplosionParticles(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 256; i++) {
         p = CG_AllocParticle();
@@ -1279,7 +1279,7 @@ void CG_BigTeleportParticles(vec3_t org)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       angle, dist;
 
     for (i = 0; i < 4096; i++) {
@@ -1320,7 +1320,7 @@ Wall impact puffs
 void CG_BlasterParticles(vec3_t org, vec3_t dir)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 40; i++) {
         p = CG_AllocParticle();
@@ -1348,12 +1348,12 @@ CG_BlasterTrail
 
 ===============
 */
-void CG_BlasterTrail(centity_t *ent, vec3_t end)
+void CG_BlasterTrail(cg_entity_t *ent, vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
     int         i, count;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 5;
 
     vec = Vec3_Sub(end, ent->lerp_origin);
@@ -1390,12 +1390,12 @@ CG_FlagTrail
 
 ===============
 */
-void CG_FlagTrail(centity_t *ent, vec3_t end, int color)
+void CG_FlagTrail(cg_entity_t *ent, vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
     int         i, count;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 5;
 
     vec = Vec3_Sub(end, ent->lerp_origin);
@@ -1433,14 +1433,14 @@ CG_DiminishingTrail
 Now combined with CG_RocketTrail().
 ===============
 */
-void CG_DiminishingTrail(centity_t *ent, vec3_t end, diminishing_trail_t type)
+void CG_DiminishingTrail(cg_entity_t *ent, vec3_t end, diminishing_trail_t type)
 {
     static const byte  colors[DT_COUNT] = { 0xe8, 0xdb, 0x04, 0x04, 0xd8 };
     static const float alphas[DT_COUNT] = { 0.4f, 0.4f, 0.2f, 0.2f, 0.4f };
     vec3_t      move;
     vec3_t      vec;
     int         i, count;
-    cparticle_t *p;
+    cg_particle_t *p;
     const float dec = 0.5f;
     float       orgscale;
     float       velscale;
@@ -1528,7 +1528,7 @@ void CG_OldRailTrail(vec3_t start, vec3_t end)
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       dec;
     vec3_t      right, up;
     int         i;
@@ -1598,7 +1598,7 @@ void CG_BubbleTrail(vec3_t start, vec3_t end)
     vec3_t      vec;
     float       len;
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       dec;
 
     move = start;
@@ -1638,7 +1638,7 @@ CG_FlyParticles
 static void CG_FlyParticles(vec3_t origin, int count)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       angle;
     float       sp, sy, cp, cy;
     vec3_t      forward;
@@ -1681,7 +1681,7 @@ static void CG_FlyParticles(vec3_t origin, int count)
     }
 }
 
-void CG_FlyEffect(centity_t *ent, vec3_t origin)
+void CG_FlyEffect(cg_entity_t *ent, vec3_t origin)
 {
     int     n;
     int     count;
@@ -1716,7 +1716,7 @@ CG_BfgParticles
 void CG_BfgParticles(const entity_t *ent)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       angle;
     float       sp, sy, cp, cy;
     vec3_t      forward;
@@ -1766,7 +1766,7 @@ CG_BFGExplosionParticles
 void CG_BFGExplosionParticles(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 256; i++) {
         p = CG_AllocParticle();
@@ -1796,7 +1796,7 @@ CG_TeleportParticles
 void CG_TeleportParticles(vec3_t org)
 {
     int         i, j, k;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       vel;
     vec3_t      dir;
 
@@ -1840,7 +1840,7 @@ void CG_DebugTrail(vec3_t start, vec3_t end)
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       dec;
 
     move = start;
@@ -1874,7 +1874,7 @@ void CG_ForceWall(vec3_t start, vec3_t end, int color)
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     move = start;
     vec = Vec3_Sub(end, start);
@@ -1919,7 +1919,7 @@ void CG_BubbleTrail2(vec3_t start, vec3_t end, int dist)
     vec3_t      vec;
     float       len;
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     float       dec;
 
     move = start;
@@ -1954,7 +1954,7 @@ void CG_Heatbeam(vec3_t start, vec3_t forward)
     vec3_t      move;
     vec3_t      vec;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
     int         i;
     float       c, s;
     vec3_t      dir;
@@ -2014,7 +2014,7 @@ Puffs with velocity along direction, with some randomness thrown in
 void CG_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      r, u;
 
     MakeNormalVectors(dir, &r, &u);
@@ -2046,13 +2046,13 @@ void CG_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int ma
 CG_TrackerTrail
 ===============
 */
-void CG_TrackerTrail(centity_t *ent, vec3_t end)
+void CG_TrackerTrail(cg_entity_t *ent, vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
     vec3_t      forward, up, angle_dir;
     int         i, count, sign;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 3;
     float       dist;
 
@@ -2094,11 +2094,11 @@ void CG_TrackerTrail(centity_t *ent, vec3_t end)
     ent->lerp_origin = move;
 }
 
-void CG_Tracker_Shell(const centity_t *ent, vec3_t origin)
+void CG_Tracker_Shell(const cg_entity_t *ent, vec3_t origin)
 {
     vec3_t          org;
     int             i, count;
-    cparticle_t     *p;
+    cg_particle_t   *p;
     float           radius, scale;
 
     if (sv_paused.integer)
@@ -2129,7 +2129,7 @@ void CG_Tracker_Shell(const centity_t *ent, vec3_t origin)
 void CG_MonsterPlasma_Shell(vec3_t origin)
 {
     int             i;
-    cparticle_t     *p;
+    cg_particle_t   *p;
 
     if (sv_paused.integer)
         return;
@@ -2154,7 +2154,7 @@ void CG_Widowbeamout(cg_sustain_t *self)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
     int             i;
-    cparticle_t     *p;
+    cg_particle_t   *p;
     float           ratio;
 
     if (sv_paused.integer)
@@ -2182,7 +2182,7 @@ void CG_Nukeblast(cg_sustain_t *self)
 {
     static const byte   colortable[4] = {110, 112, 114, 116};
     int             i;
-    cparticle_t     *p;
+    cg_particle_t   *p;
     float           ratio;
 
     if (sv_paused.integer)
@@ -2209,9 +2209,9 @@ void CG_Nukeblast(cg_sustain_t *self)
 void CG_WidowSplash(vec3_t pos)
 {
     static const byte   colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
-    int         i;
-    cparticle_t *p;
-    vec3_t      dir;
+    int             i;
+    cg_particle_t   *p;
+    vec3_t          dir;
 
     for (i = 0; i < 256; i++) {
         p = CG_AllocParticle();
@@ -2238,12 +2238,12 @@ CG_TagTrail
 
 ===============
 */
-void CG_TagTrail(centity_t *ent, vec3_t end, int color)
+void CG_TagTrail(cg_entity_t *ent, vec3_t end, int color)
 {
     vec3_t      move;
     vec3_t      vec;
     int         i, count;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 5;
 
     vec = Vec3_Sub(end, ent->lerp_origin);
@@ -2282,7 +2282,7 @@ CG_ColorExplosionParticles
 void CG_ColorExplosionParticles(vec3_t org, int color, int run)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 128; i++) {
         p = CG_AllocParticle();
@@ -2311,7 +2311,7 @@ CG_ParticleSmokeEffect - like the steam effect, but unaffected by gravity
 void CG_ParticleSmokeEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      r, u;
 
     MakeNormalVectors(dir, &r, &u);
@@ -2347,7 +2347,7 @@ Wall impact puffs (Green)
 void CG_BlasterParticles2(vec3_t org, vec3_t dir, unsigned int color)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < 40; i++) {
         p = CG_AllocParticle();
@@ -2376,12 +2376,12 @@ CG_BlasterTrail2
 Green!
 ===============
 */
-void CG_BlasterTrail2(centity_t *ent, vec3_t end)
+void CG_BlasterTrail2(cg_entity_t *ent, vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
     int         i, count;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 5;
 
     vec = Vec3_Sub(end, ent->lerp_origin);
@@ -2417,11 +2417,11 @@ void CG_BlasterTrail2(centity_t *ent, vec3_t end)
 CG_IonripperTrail
 ===============
 */
-void CG_IonripperTrail(centity_t *ent, vec3_t end)
+void CG_IonripperTrail(cg_entity_t *ent, vec3_t end)
 {
     vec3_t      move;
     vec3_t      vec;
-    cparticle_t *p;
+    cg_particle_t *p;
     const int   dec = 5;
     int         i, count, sign;
 
@@ -2464,13 +2464,13 @@ void CG_IonripperTrail(centity_t *ent, vec3_t end)
 CG_TrapParticles
 ===============
 */
-void CG_TrapParticles(centity_t *ent, vec3_t origin)
+void CG_TrapParticles(cg_entity_t *ent, vec3_t origin)
 {
     vec3_t      move;
     vec3_t      vec;
     vec3_t      start, end;
     float       len;
-    cparticle_t *p;
+    cg_particle_t *p;
     int         dec;
 
     if (cg.time - ent->fly_stoptime < 10)
@@ -2512,7 +2512,7 @@ void CG_TrapParticles(centity_t *ent, vec3_t origin)
 
     {
         int         i, j, k;
-        cparticle_t *p;
+        cg_particle_t *p;
         vec3_t      dir;
         vec3_t      org;
 
@@ -2556,7 +2556,7 @@ CG_ParticleEffect3
 void CG_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
 
     for (i = 0; i < count; i++) {
         p = CG_AllocParticle();
@@ -2587,7 +2587,7 @@ void CG_SlamParticles(vec3_t org, vec3_t dir)
 {
     static const byte   colortable[4] = {110, 112, 114, 116};
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      r, u;
 
     MakeNormalVectors(dir, &r, &u);
@@ -2620,11 +2620,11 @@ CG_PowerSplash
 TODO: differentiate screen/shield
 ===============
 */
-void CG_PowerSplash(const centity_t *cent)
+void CG_PowerSplash(const cg_entity_t *cent)
 {
     static const byte   colortable[4] = {208, 209, 210, 211};
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      org, dir;
 
     org = Vec3_Add(cent->current.origin, Box3_Center(cent->box));
@@ -2656,7 +2656,7 @@ CG_TeleporterParticles
 void CG_TeleporterParticles2(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      dir;
 
     for (i = 0; i < 8; i++) {
@@ -2687,7 +2687,7 @@ CG_HologramParticles
 void CG_HologramParticles(vec3_t org)
 {
     int         i;
-    cparticle_t *p;
+    cg_particle_t *p;
     vec3_t      dir;
     float       ltime;
     axis3_t     axis;
@@ -2748,8 +2748,6 @@ void CG_BarrelExplodingParticles(vec3_t org)
     }
 }
 
-static particle_t   r_particles[MAX_PARTICLES];
-
 /*
 ===============
 CG_AddParticles
@@ -2757,11 +2755,12 @@ CG_AddParticles
 */
 void CG_AddParticles(void)
 {
-    cparticle_t     *p, *next;
+    cg_particle_t   *p, *next;
     float           alpha, time;
-    cparticle_t     *active, *tail;
+    cg_particle_t   *active, *tail;
     particle_t      *part;
-    int r_numparticles = 0;
+    static particle_t   r_particles[MAX_PARTICLES];
+    int                 r_numparticles = 0;
 
     active = NULL;
     tail = NULL;
