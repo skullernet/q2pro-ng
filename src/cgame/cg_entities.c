@@ -221,12 +221,11 @@ static void CG_DeltaPlayerstate(void)
     }
 
     // damage kicks
-    if (ps->stats[STAT_DAMAGE]) {
-        float kick = (ps->stats[STAT_DAMAGE] & 255) * 0.3f;
-        int dir_b = (ps->stats[STAT_DAMAGE] >> 8) & 255;
+    if (ps->damage_kick) {
+        float kick = ps->damage_kick * 0.3f;
 
-        if (dir_b) {
-            vec3_t dir = ByteToDir(dir_b);
+        if (ps->damage_dir) {
+            vec3_t dir = ByteToDir(ps->damage_dir);
             cg.v_dmg_pitch = -kick * Vec3_Dot(dir, cg.v_forward);
             cg.v_dmg_roll  =  kick * Vec3_Dot(dir, cg.v_right);
         } else {
@@ -239,10 +238,13 @@ static void CG_DeltaPlayerstate(void)
     }
 
     // damage indicators
-    uint64_t encoded = (uint32_t)ps->stats[STAT_DAMAGE_DIR_LO] | (uint64_t)(uint32_t)ps->stats[STAT_DAMAGE_DIR_HI] << 32;
-    while (encoded) {
+    for (int i = 0; i < MAX_DAMAGE_INDICATORS; i++) {
+        uint32_t encoded = ps->damage_indicators[i];
         vec3_t color = vec3_origin;
         int damage = encoded & 0xff;
+
+        if (!damage)
+            continue;
 
         if (damage & DAMAGE_INDICATOR_HEALTH)
             color.r += 1.0f;
@@ -257,7 +259,6 @@ static void CG_DeltaPlayerstate(void)
         }
 
         SCR_AddToDamageDisplay(damage & 0x1F, color, ByteToDir((encoded >> 8) & 0xff));
-        encoded >>= 16;
     }
 
     if (!CG_PredictionEnabled()) {

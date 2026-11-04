@@ -1837,6 +1837,8 @@ typedef enum : uint32_t {
 #define EVSEQ_BITS      3
 #define EVSEQ_MASK      MASK(EVSEQ_BITS)
 
+#define MAX_DAMAGE_INDICATORS   4
+
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
@@ -1912,11 +1914,14 @@ typedef struct {
     vec4_t      screen_blend;       // rgba full screen effect
     vec4_t      damage_blend;
 
+    uint32_t    damage_dir;
+    uint32_t    damage_kick;
+    uint32_t    damage_indicators[MAX_DAMAGE_INDICATORS];
+
     player_fog_t        fog;
     player_heightfog_t  heightfog;
 
     int32_t     fov;            // horizontal field of view
-
     uint32_t    rdflags;        // refdef flags
 
     uint32_t    ammo[MAX_AMMO];

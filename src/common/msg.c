@@ -530,6 +530,9 @@ static const netfield_t player_state_fields[] = {
     NETF(gunskin, 8),
     NETF(gunframe, 8),
     NETF(gunrate, 2),
+    NETF(fov, 8),
+    NETF(rdflags, NETF_LEB),
+
     NETF(screen_blend.r, NETF_COLOR),
     NETF(screen_blend.g, NETF_COLOR),
     NETF(screen_blend.b, NETF_COLOR),
@@ -538,8 +541,13 @@ static const netfield_t player_state_fields[] = {
     NETF(damage_blend.g, NETF_COLOR),
     NETF(damage_blend.b, NETF_COLOR),
     NETF(damage_blend.a, NETF_COLOR),
-    NETF(fov, 8),
-    NETF(rdflags, NETF_LEB),
+
+    NETF(damage_dir, 8),
+    NETF(damage_kick, 6),
+    NETF(damage_indicators[0], 16),
+    NETF(damage_indicators[1], 16),
+    NETF(damage_indicators[2], 16),
+    NETF(damage_indicators[3], 16),
 
     NETF(fog.color.r, NETF_COLOR),
     NETF(fog.color.g, NETF_COLOR),

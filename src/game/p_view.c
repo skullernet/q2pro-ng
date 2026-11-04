@@ -60,9 +60,8 @@ static void P_DamageFeedback(edict_t *player)
     } else if (client->flash_time < level.time)
         client->ps.stats[STAT_FLASHES] = 0;
 
-    client->ps.stats[STAT_DAMAGE] =
-    client->ps.stats[STAT_DAMAGE_DIR_LO] =
-    client->ps.stats[STAT_DAMAGE_DIR_HI] = 0;
+    client->ps.damage_kick = 0;
+    memset(client->ps.damage_indicators, 0, sizeof(client->ps.damage_indicators));
 
     // total points of damage shot at the player this frame
     count = client->damage_blood + client->damage_armor + client->damage_parmor;
@@ -153,14 +152,13 @@ static void P_DamageFeedback(edict_t *player)
             kick = 50;
 
         v = Vec3_Direction(client->damage_from, player->s.origin);
-        client->ps.stats[STAT_DAMAGE] = DirToByte(v) << 8 | kick;
+        client->ps.damage_dir = DirToByte(v);
+        client->ps.damage_kick = kick;
     }
 
     //
     // encode damage indicators
     //
-    uint64_t encoded = 0;
-
     for (int i = 0; i < client->num_damage_indicators; i++) {
         const damage_indicator_t *indicator = &client->damage_indicators[i];
 
@@ -176,13 +174,8 @@ static void P_DamageFeedback(edict_t *player)
             damage |= DAMAGE_INDICATOR_POWER;
 
         v = Vec3_Direction(indicator->from, player->s.origin);
-
-        encoded <<= 16;
-        encoded |= DirToByte(v) << 8 | damage;
+        client->ps.damage_indicators[i] = DirToByte(v) << 8 | damage;
     }
-
-    client->ps.stats[STAT_DAMAGE_DIR_LO] = encoded & 0xffffffff;
-    client->ps.stats[STAT_DAMAGE_DIR_HI] = encoded >> 32;
 
     //
     // clear totals
