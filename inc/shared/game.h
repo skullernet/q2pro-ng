@@ -35,17 +35,18 @@ typedef enum {
     SVF_MONSTER             = BIT(2),       // only used by server as entity priority hint
     SVF_PLAYER              = BIT(3),       // treat as CONTENTS_PLAYER for collision
     SVF_PROJECTILE          = BIT(4),       // treat as CONTENTS_PROJECTILE for collision
-    SVF_BOT                 = BIT(5),
-    SVF_RESPAWNING          = BIT(6),
-    SVF_INSTANCED           = BIT(7),
-    SVF_BROADCAST           = BIT(8),       // always send entity to clients (no PVS checks)
-    SVF_CLIENTMASK          = BIT(9),       // don't send entity to clients in r.clientmask
-    SVF_PHS                 = BIT(10),      // PHS cull this entity
-    SVF_HULL                = BIT(11),      // always clip to BSP model
-    SVF_DOOR                = BIT(12),      // entity is a door
-    SVF_LOCKED              = BIT(13),      // entity is a locked door
-    SVF_LASER_FIELD         = BIT(14),      // entity is a laser
-    SVF_TRAP                = BIT(15),      // entity is a trap
+    SVF_HULL                = BIT(5),       // always clip to BSP model
+    SVF_BOT                 = BIT(6),
+    SVF_RESPAWNING          = BIT(7),
+    SVF_INSTANCED           = BIT(8),
+    SVF_BROADCAST           = BIT(9),       // always send entity to clients (no PVS checks)
+    SVF_CLIENTMASK          = BIT(10),      // don't send entity to clients in r.clientmask
+    SVF_PHS                 = BIT(11),      // PHS cull this entity
+    SVF_EVENT               = BIT(12),      // entity has event(s)
+    SVF_DOOR                = BIT(13),      // entity is a door
+    SVF_LOCKED              = BIT(14),      // entity is a locked door
+    SVF_LASER_FIELD         = BIT(15),      // entity is a laser
+    SVF_TRAP                = BIT(16),      // entity is a trap
 } svflags_t;
 
 // edict->solid values

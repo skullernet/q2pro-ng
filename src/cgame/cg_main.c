@@ -188,6 +188,7 @@ qvm_exported void CG_ClearState(void)
         trap_Cvar_Set("timescale", "1");
 
     memset(&cg, 0, sizeof(cg));
+    memset(&cg_entities, 0, sizeof(cg_entities));
 
     CG_ClearEffects();
     CG_ClearTEnts();

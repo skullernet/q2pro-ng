@@ -457,8 +457,7 @@ void SV_PrintMiscInfo(void);
 
 static inline bool SV_EntityHasEffects(const edict_t *ent)
 {
-    return ent->s.modelindex || ent->s.effects ||
-        ent->s.morefx || ent->s.sound || ent->s.event[0];
+    return ent->s.modelindex || ent->s.effects || ent->s.morefx || ent->s.sound;
 }
 
 void SV_BuildClientFrame(client_t *client);

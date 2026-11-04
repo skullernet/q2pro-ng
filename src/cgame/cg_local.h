@@ -42,6 +42,9 @@ typedef struct {
     float           radius;             // from mid point
 
     unsigned        serverframe;        // if not current, this ent isn't in the frame
+    int             servertime;
+
+    int             event_sequence;
 
     int             trailcount;         // for diminishing grenade trails
     vec3_t          lerp_origin;        // for trails (variable hz)
@@ -67,6 +70,7 @@ extern cg_entity_t  cg_entities[MAX_EDICTS];
 #define QUAKE_TIME  1000
 #define FLASH_TIME  400
 #define MUZZLE_TIME 50
+#define EVENT_TIME  300
 
 #define MAX_STEP    32
 

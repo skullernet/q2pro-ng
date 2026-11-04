@@ -71,6 +71,8 @@ typedef uint32_t spawnflags_t;
 #define FRAME_TIME      game.frame_time
 #define FRAME_TIME_SEC  game.frame_time_sec
 
+#define EVENT_TIME      Time_FromMsec(300)
+
 #define MELEE_DISTANCE  50
 
 #define BODY_QUEUE_SIZE 8
@@ -1026,6 +1028,7 @@ typedef struct {
     byte                    chosen_reinforcements[MAX_REINFORCEMENTS]; // readied for spawn; 255 is value for none
 
     gtime_t jump_time;
+    gtime_t step_time;
 
     // NOTE: if adding new elements, make sure to add them
     // in g_save.cpp too!
@@ -2442,8 +2445,8 @@ struct edict_s {
     const char *style_on, *style_off;
     int crosslevel_flags;
     gtime_t no_gravity_time;
+    gtime_t event_time[MAX_EVENTS];
     float vision_cone;
-    bool free_after_event;
     bool remove_phs_after_event;
     // NOTE: if adding new elements, make sure to add them
     // in g_save.cpp too!

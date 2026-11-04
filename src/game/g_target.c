@@ -67,11 +67,13 @@ void SP_target_temp_entity(edict_t *ent)
 Normal sounds play each time the target is used.  The reliable flag can be set for crucial voiceovers.
 
 [Paril-KEX] looped sounds are by default atten 3 / vol 1, and the use function toggles it on/off.
+
+Reliable flag was removed, because events are much more resilient to packet loss now.
 */
 
 #define SPAWNFLAG_SPEAKER_LOOPED_ON     1
 #define SPAWNFLAG_SPEAKER_LOOPED_OFF    2
-#define SPAWNFLAG_SPEAKER_RELIABLE      4
+#define SPAWNFLAG_SPEAKER_RELIABLE      4   // ignored
 #define SPAWNFLAG_SPEAKER_NO_STEREO     8
 
 void USE(Use_Target_Speaker)(edict_t *ent, edict_t *other, edict_t *activator)
@@ -187,7 +189,8 @@ These are single use targets.
 */
 void USE(use_target_secret)(edict_t *ent, edict_t *other, edict_t *activator)
 {
-    G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
+    if (!ent->message)
+        G_StartSound(activator, CHAN_AUTO, ent->noise_index, 1, ATTN_NORM);
 
     level.found_secrets++;
 

@@ -1659,7 +1659,7 @@ qvm_exported void G_WriteLevel(qhandle_t handle)
     begin_block("entities");
     for (i = 0; i < level.num_edicts; i++) {
         ent = &g_edicts[i];
-        if (!ent->r.inuse || ent->free_after_event)
+        if (!ent->r.inuse)
             continue;
         write_fields(va("%d", i), edict_t_fields, nullent, ent);
     }

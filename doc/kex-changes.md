@@ -7,6 +7,7 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Entity 0 *is* player 0 now. World entity has been moved to slot 8190. Slot
   8191 is special "none" entity that's never spawned.
 * All temporary entities and muzzleflashes have been converted to events.
+* Events last for multiple frames and are more resilient to packet loss.
 * Game code can no longer stuff its own command bytes into network stream.
 * Unified network protocol: everything is entity, configstring or client
   command now.

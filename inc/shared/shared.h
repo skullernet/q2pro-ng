@@ -1831,6 +1831,11 @@ typedef enum : uint32_t {
 #define FF_RESERVED     BIT(3)
 
 #define MAX_EVENTS      4
+#define EVENT_MASK      (MAX_EVENTS - 1)
+
+// needs an extra bit to detect wrapping
+#define EVSEQ_BITS      3
+#define EVSEQ_MASK      MASK(EVSEQ_BITS)
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will
@@ -1854,6 +1859,7 @@ typedef struct {
                                    // events only go out for a single frame, they
                                    // are automatically cleared each frame
     uint32_t    event_param[MAX_EVENTS];
+    uint32_t    event_sequence;
     uint32_t    morefx;
     float       alpha;
     float       scale;

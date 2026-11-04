@@ -898,6 +898,26 @@ qvm_exported void G_RunFrame(int64_t time)
     level.in_frame = false;
 }
 
+static void G_ExpireEvents(edict_t *ent)
+{
+    bool events = false;
+
+    for (int i = 0; i < MAX_EVENTS; i++) {
+        if (ent->event_time[i] > level.time) {
+            events = true;
+        } else {
+            ent->s.event[i] = 0;
+            ent->s.event_param[i] = 0;
+        }
+    }
+
+    if (!events) {
+        ent->r.svflags &= ~SVF_EVENT;
+        if (ent->remove_phs_after_event)
+            ent->r.svflags &= ~SVF_PHS;
+    }
+}
+
 /*
 ================
 G_PrepFrame
@@ -912,19 +932,12 @@ qvm_exported void G_PrepFrame(void)
         if (!ent->r.inuse)
             continue;
 
-        if (ent->free_after_event) {
-            G_FreeEdict(ent);
-            continue;
-        }
-
         // Paril: RF_BEAM entities update their old_origin by hand.
         if (!(ent->s.renderfx & RF_BEAM))
             ent->s.old_origin = ent->s.origin;
 
-        memset(ent->s.event, 0, sizeof(ent->s.event));
-        memset(ent->s.event_param, 0, sizeof(ent->s.event_param));
-        if (ent->remove_phs_after_event)
-            ent->r.svflags &= ~SVF_PHS;
+        if (ent->r.svflags & SVF_EVENT)
+            G_ExpireEvents(ent);
     }
 }
 

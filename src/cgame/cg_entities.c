@@ -51,11 +51,17 @@ static void CG_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
     es->angles.roll = 0;
 }
 
-static bool CG_EntityWasTeleported(const entity_state_t *state)
+static bool CG_EntityWasTeleported(const cg_entity_t *ent, const entity_state_t *state)
 {
-    for (int i = 0; i < MAX_EVENTS; i++)
-        if (state->event[i] == EV_PLAYER_TELEPORT || state->event[i] == EV_OTHER_TELEPORT)
+    int seq = ent->event_sequence;
+
+    while (seq != state->event_sequence) {
+        seq = (seq + 1) & EVSEQ_MASK;
+        if (state->event[seq & EVENT_MASK] == EV_PLAYER_TELEPORT ||
+            state->event[seq & EVENT_MASK] == EV_OTHER_TELEPORT)
             return true;
+    }
+
     return false;
 }
 
@@ -76,7 +82,7 @@ static void CG_DeltaEntityNew(cg_entity_t *ent, const entity_state_t *state)
 {
     CG_InitEntity(ent, state);
 
-    if (CG_EntityWasTeleported(state) || (state->renderfx & RF_BEAM) || state->number == cg.frame->ps.clientnum) {
+    if (CG_EntityWasTeleported(ent, state) || (state->renderfx & RF_BEAM) || state->number == cg.frame->ps.clientnum) {
         // no lerping if teleported, or no valid old_origin
         ent->lerp_origin = state->origin;
         return;
@@ -94,7 +100,7 @@ static void CG_DeltaEntityOld(cg_entity_t *ent, const entity_state_t *state)
         || state->modelindex2 != ent->current.modelindex2
         || state->modelindex3 != ent->current.modelindex3
         || state->modelindex4 != ent->current.modelindex4
-        || CG_EntityWasTeleported(state)) {
+        || CG_EntityWasTeleported(ent, state)) {
         // some data changes will force no lerping
         CG_InitEntity(ent, state);
 
@@ -151,6 +157,15 @@ static void CG_DeltaEntity(entity_state_t *state)
     if (state->number == cg.frame->ps.clientnum)
         CG_PlayerToEntityState(&cg.frame->ps, state);
 
+    Q_assert(state->event_sequence < BIT(EVSEQ_BITS));
+
+    // reset event sequence if out of date
+    if (cg.frame->servertime - ent->servertime > EVENT_TIME)
+        ent->event_sequence = -1;
+
+    if (((state->event_sequence - ent->event_sequence) & EVSEQ_MASK) > MAX_EVENTS)
+        ent->event_sequence = (state->event_sequence - MAX_EVENTS) & EVSEQ_MASK;
+
     if (CG_EntityIsNew(ent)) {
         // wasn't in last update, so initialize some things
         CG_DeltaEntityNew(ent, state);
@@ -159,6 +174,7 @@ static void CG_DeltaEntity(entity_state_t *state)
     }
 
     ent->serverframe = cg.frame->number;
+    ent->servertime = cg.frame->servertime;
     ent->current = *state;
 
     // set sound origin for events

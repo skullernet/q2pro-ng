@@ -377,7 +377,7 @@ edict_t *G_Spawn(void)
     for (i = game.maxclients, e = g_edicts + i; i < level.num_edicts; i++, e++) {
         // the first couple seconds of server time can involve a lot of
         // freeing and allocating, so relax the replacement policy
-        if (!e->r.inuse && (e->freetime < Time_FromSec(2) || level.time - e->freetime > Time_FromSec(0.5f))) {
+        if (!e->r.inuse && (e->freetime < Time_FromSec(0.5f) || level.time - e->freetime > Time_FromSec(0.5f))) {
             G_InitEdict(e);
             return e;
         }
@@ -644,54 +644,22 @@ static bool G_IsHearableEvent(entity_event_t event)
     }
 }
 
-static bool G_IsLowPriorityEvent(entity_event_t event)
-{
-    switch (event) {
-    case EV_FOOTSTEP:
-    case EV_OTHER_FOOTSTEP:
-    case EV_LADDER_STEP:
-        return true;
-    default:
-        return false;
-    }
-}
-
 void G_AddEvent(edict_t *ent, entity_event_t event, uint32_t param)
 {
     if (!event)
         return;
 
+    ent->s.event_sequence = (ent->s.event_sequence + 1) & EVSEQ_MASK;
+    int seq = ent->s.event_sequence & EVENT_MASK;
+    ent->s.event[seq] = event;
+    ent->s.event_param[seq] = param;
+    ent->event_time[seq] = level.time + EVENT_TIME;
+
+    ent->r.svflags |= SVF_EVENT;
+
     if (!(ent->r.svflags & SVF_PHS) && G_IsHearableEvent(event)) {
         ent->r.svflags |= SVF_PHS;
         ent->remove_phs_after_event = true;
-    }
-
-    for (int i = 0; i < MAX_EVENTS; i++) {
-        if (ent->s.event[i] == event && ent->s.event_param[i] == param)
-            return;
-        if (!ent->s.event[i]) {
-            ent->s.event[i] = event;
-            ent->s.event_param[i] = param;
-            return;
-        }
-    }
-
-    if (G_IsLowPriorityEvent(event))
-        return;
-
-    for (int i = 0; i < MAX_EVENTS; i++) {
-        if (G_IsLowPriorityEvent(ent->s.event[i])) {
-            ent->s.event[i] = event;
-            ent->s.event_param[i] = param;
-            return;
-        }
-    }
-
-    if (sv_running.integer >= 2) {
-        G_Printf("Too many events for %s: ", etos(ent));
-        for (int i = 0; i < MAX_EVENTS; i++)
-            G_Printf("%s, ", BG_EventName(ent->s.event[i]));
-        G_Printf("%s\n", BG_EventName(event));
     }
 }
 
@@ -700,14 +668,13 @@ edict_t *G_TempEntity(vec3_t origin, entity_event_t event, uint32_t param)
     edict_t *ent;
 
     ent = G_Spawn();
-    if (G_IsHearableEvent(event))
-        ent->r.svflags |= SVF_PHS;
     ent->s.origin = G_SnapVector(origin);
-    ent->s.event[0] = event;
-    ent->s.event_param[0] = param;
-    ent->free_after_event = true;
+    ent->nextthink = level.time + EVENT_TIME;
+    ent->think = G_FreeEdict;
     trap_LinkEntity(ent);
 
+    ent->s.event_sequence = -1;
+    G_AddEvent(ent, event, param);
     return ent;
 }
 
@@ -719,10 +686,12 @@ edict_t *G_SpawnTrail(vec3_t start, vec3_t end, entity_event_t event)
     ent->s.renderfx = RF_BEAM;
     ent->s.old_origin = G_SnapVector(start);
     ent->s.origin = G_SnapVector(end);
-    ent->s.event[0] = event;
-    ent->free_after_event = true;
+    ent->nextthink = level.time + EVENT_TIME;
+    ent->think = G_FreeEdict;
     trap_LinkEntity(ent);
 
+    ent->s.event_sequence = -1;
+    G_AddEvent(ent, event, 0);
     return ent;
 }
 

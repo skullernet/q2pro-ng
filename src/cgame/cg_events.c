@@ -1145,9 +1145,13 @@ static void CG_EntityEvent(cg_entity_t *cent, entity_event_t event, uint32_t par
     vec3_t start = s->old_origin;
     int number = s->number;
 
+    if (!event)
+        return;
+
 #if USE_DEBUG
     if (cg_showevents.integer) {
-        Com_Printf("time %u ent %d event %s ", cg.oldframe->servertime, number, BG_EventName(event));
+        Com_Printf("time %u ent %d seq %d event %s ", cg.oldframe->servertime,
+                   number, cent->event_sequence, BG_EventName(event));
         if (param)
             Com_Printf("param %#x ", param);
         if (event == EV_SOUND || event == EV_POSITIONED_SOUND) {
@@ -1329,9 +1333,11 @@ void CG_EntityEvents(cg_entity_t *cent)
 {
     const entity_state_t *s = &cent->current;
 
-    for (int i = 0; i < MAX_EVENTS; i++)
-        if (s->event[i])
-            CG_EntityEvent(cent, s->event[i], s->event_param[i]);
+    while (cent->event_sequence != s->event_sequence) {
+        cent->event_sequence = (cent->event_sequence + 1) & EVSEQ_MASK;
+        CG_EntityEvent(cent, s->event[cent->event_sequence & EVENT_MASK],
+                       s->event_param[cent->event_sequence & EVENT_MASK]);
+    }
 }
 
 /*

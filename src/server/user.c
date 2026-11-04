@@ -87,6 +87,7 @@ static void SV_CreateBaselines(void)
         // don't ever transmit event
         memset(base->event, 0, sizeof(base->event));
         memset(base->event_param, 0, sizeof(base->event_param));
+        base->event_sequence = 0;
     }
 }
 
