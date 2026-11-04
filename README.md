@@ -1,13 +1,16 @@
 Q2PRO-ng
 ========
 
-Experimental client and server for Quake II Enhanced that runs game code in a
-lightweight QVM sandbox. For my personal use.
+Experimental client and server for Quake II Enhanced. The goal is to improve
+the engine further than KEX port did: put game code into QVM sandbox, add
+proper client game module, and clean up network protocol by dropping legacy
+features.
 
 Has built-in support for various single player content released for Quake II
 Enhanced: base game, CotM, Q2PSX, CotV and others. Has feature parity with KEX
 engine for the most part, some technical differences are listed
-[here](doc/kex-changes.md).
+[here](doc/kex-changes.md). All re-release content is fully playable, but
+custom game features will require porting.
 
 I'm publishing this because keeping it just to myself would be a waste. But
 there is absolutely no user support provided. No backward compatibility

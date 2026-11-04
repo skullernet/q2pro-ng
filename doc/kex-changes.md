@@ -7,8 +7,9 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Entity 0 *is* player 0 now. World entity has been moved to slot 8190. Slot
   8191 is special "none" entity that's never spawned.
 * All temporary entities and muzzleflashes have been converted to events.
-* gi.multicast, gi.unicast, gi.sound, etc are gone. Everything is entity,
-  configstring or client command now.
+* Game code can no longer stuff its own command bytes into network stream.
+* Unified network protocol: everything is entity, configstring or client
+  command now.
 * Delta encoding format is bitstream based and easily extensible. No more
   manual bit packing madness, just add new entries to entity/player state field
   table.
@@ -55,6 +56,7 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
   topnode check (which can be slow).
 * Server properly expands absbox for rotating bmodels, which can affect some
   maps that rely on old buggy behavior.
+* Point contents check now clips to brushes instead of returning leaf contents.
 * Player state stats are 32-bit signed integers (LEB-encoded).
 * Player state has additional array for 10-bit unsigned ammo counters.
 * Fog parameters are part of player state.
