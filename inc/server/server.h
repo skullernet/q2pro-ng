@@ -35,7 +35,8 @@ void SV_ErrorEvent(const netadr_t *from, int ee_errno, int ee_info);
 #endif
 void SV_Init(void);
 void SV_Shutdown(const char *finalmsg, error_type_t type);
-unsigned SV_Frame(unsigned msec);
+bool SV_CheckPaused(void);
+gtime_t SV_Frame(gtime_t delta, gtime_t delta_s);
 #if USE_SYSCON
 void SV_SetConsoleTitle(void);
 #endif

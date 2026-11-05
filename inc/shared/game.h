@@ -264,22 +264,22 @@ typedef struct {
     size_t      (*FS_ErrorString)(qerror_t error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
-    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
-    void (*R_AddDebugBounds)(box3_t box, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, gtime_t time, bool depth_test);
+    void (*R_AddDebugBounds)(box3_t box, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, gtime_t time,
                                bool depth_test);
     void (*R_AddDebugArrow)(vec3_t start, vec3_t end, float size, uint32_t line_color,
-                            uint32_t arrow_color, uint32_t time, bool depth_test);
+                            uint32_t arrow_color, gtime_t time, bool depth_test);
     void (*R_AddDebugCurveArrow)(vec3_t start, vec3_t ctrl, vec3_t end, float size,
-                                 uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
+                                 uint32_t line_color, uint32_t arrow_color, gtime_t time, bool depth_test);
     void (*R_AddDebugText)(vec3_t origin, const char *text,
-                           float size, uint32_t color, uint32_t time, bool depth_test);
+                           float size, uint32_t color, gtime_t time, bool depth_test);
     void (*R_AddDebugAngledText)(vec3_t origin, vec3_t angles, const char *text,
-                                 float size, uint32_t color, uint32_t time, bool depth_test);
+                                 float size, uint32_t color, gtime_t time, bool depth_test);
 } game_import_t;
 
 //
@@ -321,7 +321,7 @@ typedef struct {
     void (*ClientThink)(int clientnum);
 
     void (*PrepFrame)(void);
-    void (*RunFrame)(int64_t time);
+    void (*RunFrame)(uint64_t framenum);
 
     // ServerCommand will be called when an "sv <command>" command is issued on the
     // server console.

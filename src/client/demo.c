@@ -140,7 +140,7 @@ static void emit_delta_frame(const server_frame_t *from, const server_frame_t *t
     MSG_WriteByte(svc_frame);
     MSG_WriteBits(from ? 1 : 0, FRAMEDELTA_BITS);
     MSG_WriteBits(to->flags, FRAMEFLAGS_BITS);
-    MSG_WriteBits(to->servertime, SERVERTIME_BITS);
+    MSG_WriteLeb64(to->serverframe);
 
     // send over the areabits
     MSG_WriteDeltaAreaBits(from ? from->areabits : NULL, to->areabits, to->areabytes);
@@ -353,6 +353,7 @@ static void CL_Record_f(void)
     MSG_WriteLong(cl.servercount);
     MSG_WriteByte(cl.serverstate);
     MSG_WriteByte(cl.clientnum);
+    MSG_WriteLong(cl.timebase);
     MSG_WriteString(cl.gamedir);
     MSG_WriteString(cl.mapname);
     MSG_WriteData(cl.mapchecksum, sizeof(cl.mapchecksum));
@@ -823,7 +824,7 @@ void CL_FirstDemoFrame(void)
     // begin timedemo
     if (com_timedemo->integer) {
         cls.demo.time_frames = 0;
-        cls.demo.time_start = Sys_Milliseconds();
+        cls.demo.time_start = Sys_Timestamp();
     }
 
     // force initial snapshot
@@ -1102,10 +1103,10 @@ void CL_CleanupDemos(void)
         FS_CloseFile(cls.demo.playback);
 
         if (com_timedemo->integer && cls.demo.time_frames) {
-            unsigned msec = Sys_Milliseconds();
+            gtime_t time = Sys_Timestamp();
 
-            if (msec > cls.demo.time_start) {
-                float sec = (msec - cls.demo.time_start) * 0.001f;
+            if (time > cls.demo.time_start) {
+                float sec = Time_ToSec(time - cls.demo.time_start);
                 float fps = cls.demo.time_frames / sec;
 
                 Com_Printf("%u frames, %3.1f seconds: %3.1f fps\n",

@@ -124,7 +124,7 @@ void Netchan_Init(void)
 #endif
 
     // pick a port value that should be nice and random
-    net_qport = Cvar_Get("qport", va("%d", Sys_Milliseconds() & 0xffff), 0);
+    net_qport = Cvar_Get("qport", va("%"PRId64, Sys_Timestamp() & 0xffff), 0);
     net_maxmsglen = Cvar_Get("net_maxmsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
     net_maxmsglen->changed = net_maxmsglen_changed;
 }
@@ -499,7 +499,7 @@ bool Netchan_ShouldUpdate(const netchan_t *chan)
     return chan->message.cursize
         || chan->reliable_ack_pending
         || chan->fragment_out.cursize
-        || com_localTime - chan->last_sent > 1000;
+        || com_localTime - chan->last_sent > Time_FromSec(1);
 }
 
 /*

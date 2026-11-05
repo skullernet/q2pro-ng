@@ -185,7 +185,7 @@ void THINK(body_think)(edict_t *self)
         if (self->s.frame > FRAME_stand40)
             self->s.frame = FRAME_stand01;
 
-        self->teleport_time = level.time + Time_FromHertz(10);
+        self->teleport_time = level.time + BASE_FRAMETIME;
     }
 
     self->nextthink = level.time + FRAME_TIME;
@@ -230,7 +230,7 @@ void fire_doppleganger(edict_t *ent, vec3_t start, vec3_t aimdir)
     body->ideal_yaw = 0;
     body->s.origin = start;
     body->s.origin.z += 8;
-    body->teleport_time = level.time + Time_FromHertz(10);
+    body->teleport_time = level.time + BASE_FRAMETIME;
     body->think = body_think;
     body->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(body);

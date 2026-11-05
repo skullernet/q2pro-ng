@@ -126,7 +126,7 @@ static struct pollfd    io_entries[MAX_POLL_FDS];
 static int              io_numfds;
 
 // current rate measurement
-static unsigned     net_rate_time;
+static gtime_t      net_rate_time;
 static size_t       net_rate_rcvd;
 static size_t       net_rate_sent;
 static size_t       net_rate_dn;
@@ -431,8 +431,8 @@ static void NET_LogPacket(const netadr_t *address, const char *prefix,
         return;
     }
 
-    FS_FPrintf(net_logFile, "%u : %s : %s : %zu bytes\n",
-               com_localTime, prefix, NET_AdrToString(address), length);
+    FS_FPrintf(net_logFile, "%"PRId64" : %s : %s : %zu bytes\n",
+               Time_ToMsec(com_localTime), prefix, NET_AdrToString(address), length);
 
     numRows = (length + 15) / 16;
     for (i = 0; i < numRows; i++) {
@@ -469,13 +469,13 @@ static void NET_LogPacket(const netadr_t *address, const char *prefix,
 
 void NET_UpdateStats(void)
 {
-    unsigned diff;
+    gtime_t diff;
 
     if (net_rate_time > com_eventTime) {
         net_rate_time = com_eventTime;
     }
     diff = com_eventTime - net_rate_time;
-    if (diff < RATE_SECS * 1000) {
+    if (diff < Time_FromSec(RATE_SECS)) {
         return;
     }
     net_rate_time = com_eventTime;

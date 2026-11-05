@@ -197,13 +197,6 @@ void SV_DropClient(client_t *client, const char *reason)
 
 //============================================================================
 
-// highest power of two that avoids credit overflow for 1 day
-#define CREDITS_PER_MSEC    32
-#define CREDITS_PER_SEC     (CREDITS_PER_MSEC * 1000)
-
-// allows rates up to 10,000 hits per second
-#define RATE_LIMIT_SCALE    10000
-
 /*
 ===============
 SV_RateLimited
@@ -214,7 +207,7 @@ kernel. Returns true if limit is exceeded.
 */
 bool SV_RateLimited(ratelimit_t *r)
 {
-    r->credit += (svs.realtime - r->time) * CREDITS_PER_MSEC;
+    r->credit += svs.realtime - r->time;
     r->time = svs.realtime;
     if (r->credit > r->credit_cap)
         r->credit = r->credit_cap;
@@ -241,14 +234,6 @@ void SV_RateRecharge(ratelimit_t *r)
         r->credit = r->credit_cap;
 }
 
-static unsigned rate2credits(unsigned rate)
-{
-    if (rate > UINT_MAX / CREDITS_PER_SEC)
-        return (rate / RATE_LIMIT_SCALE) * CREDITS_PER_SEC;
-
-    return (rate * CREDITS_PER_SEC) / RATE_LIMIT_SCALE;
-}
-
 /*
 ===============
 SV_RateInit
@@ -258,12 +243,12 @@ Full syntax is: <limit>[/<period>[sec|min|hour]][*<burst>]
 */
 void SV_RateInit(ratelimit_t *r, const char *s)
 {
-    unsigned limit, period, mult, burst, rate;
+    uint64_t limit, period, mult, burst, rate;
     char *p;
 
-    limit = strtoul(s, &p, 10);
+    limit = strtoull(s, &p, 10);
     if (*p == '/') {
-        period = strtoul(p + 1, &p, 10);
+        period = strtoull(p + 1, &p, 10);
         if (*p == 's' || *p == 'S') {
             mult = 1;
             p++;
@@ -291,34 +276,36 @@ void SV_RateInit(ratelimit_t *r, const char *s)
         return;
     }
 
-    if (period > UINT_MAX / (RATE_LIMIT_SCALE * mult)) {
-        Com_Printf("Period too large: %u\n", period);
+    if (period > UINT64_MAX / Time_FromSec(mult)) {
+        Com_Printf("Period too large: %"PRIu64"\n", period);
         return;
     }
 
-    rate = (RATE_LIMIT_SCALE * period * mult) / limit;
+    rate = Time_FromSec(period * mult) / limit;
     if (!rate) {
-        Com_Printf("Limit too large: %u\n", limit);
+        Com_Printf("Limit too large: %"PRIu64"\n", limit);
         return;
     }
 
     p = strchr(p, '*');
     if (p) {
-        burst = strtoul(p + 1, NULL, 10);
+        burst = strtoull(p + 1, NULL, 10);
+        if (!burst)
+            burst = 1;
     } else {
         // default burst is 5 hits
         burst = 5;
     }
 
-    if (burst > UINT_MAX / rate) {
-        Com_Printf("Burst too large: %u\n", burst);
+    if (burst > UINT64_MAX / rate) {
+        Com_Printf("Burst too large: %"PRIu64"\n", burst);
         return;
     }
 
     r->time = svs.realtime;
-    r->credit = rate2credits(rate * burst);
-    r->credit_cap = rate2credits(rate * burst);
-    r->cost = rate2credits(rate);
+    r->credit = rate * burst;
+    r->credit_cap = rate * burst;
+    r->cost = rate;
 }
 
 addrmatch_t *SV_MatchAddress(const list_t *list, const netadr_t *addr)
@@ -516,7 +503,7 @@ flood the server with invalid connection IPs.  With a
 challenge, they must give a valid IP address.
 =================
 */
-static void make_challenge(uint8_t *out, uint32_t time)
+static void make_challenge(uint8_t *out, gtime_t time)
 {
     blake2b_state md;
 
@@ -611,7 +598,7 @@ static bool check_challenge(void)
 {
     uint8_t out[CHALLENGE_SIZE];
     uint8_t buf[CHALLENGE_SIZE];
-    uint32_t time;
+    gtime_t time;
 
     if (!COM_ParseHexString(buf, Cmd_Argv(3), sizeof(buf)))
         return false;
@@ -1041,29 +1028,30 @@ static int ping_nop(const client_t *cl)
 static int ping_min(const client_t *cl)
 {
     const client_frame_t *frame;
-    int i, j, count = INT_MAX;
+    gtime_t ping = INT64_MAX;
+    int i, j;
 
     for (i = 0; i < UPDATE_BACKUP; i++) {
-        j = cl->framenum - i - 1;
+        j = cl->netchan.outgoing_sequence - i - 1;
         frame = &cl->frames[j & UPDATE_MASK];
         if (frame->number != j)
             continue;
         if (frame->latency == -1)
             continue;
-        if (count > frame->latency)
-            count = frame->latency;
+        ping = min(ping, frame->latency);
     }
 
-    return count == INT_MAX ? 0 : count;
+    return ping == INT64_MAX ? 0 : Time_ToMsec(ping);
 }
 
 static int ping_avg(const client_t *cl)
 {
     const client_frame_t *frame;
-    int i, j, total = 0, count = 0;
+    int i, j, count = 0;
+    gtime_t total = 0;
 
     for (i = 0; i < UPDATE_BACKUP; i++) {
-        j = cl->framenum - i - 1;
+        j = cl->netchan.outgoing_sequence - i - 1;
         frame = &cl->frames[j & UPDATE_MASK];
         if (frame->number != j)
             continue;
@@ -1073,7 +1061,7 @@ static int ping_avg(const client_t *cl)
         total += frame->latency;
     }
 
-    return count ? total / count : 0;
+    return count ? Time_ToMsec(total / count) : 0;
 }
 
 /*
@@ -1089,16 +1077,13 @@ static void SV_CalcPings(void)
     int         (*calc)(const client_t *);
     bool        res = false;
 
-    switch (sv_calcpings_method->integer) {
-        case 0:  calc = ping_nop; break;
-        case 2:  calc = ping_min; break;
-        default: calc = ping_avg; break;
-    }
+    calc = sv_calcpings_method->integer < 1 ? ping_nop :
+        sv_calcpings_method->integer > 1 ? ping_min : ping_avg;
 
     // update avg ping and fps every 10 seconds
-    if (sv.time - sv.last_calcping_time > 10000) {
+    if (svs.realtime - sv.last_calcping_time >= Time_FromSec(10)) {
         res = true;
-        sv.last_calcping_time = sv.time;
+        sv.last_calcping_time = svs.realtime;
     }
 
     FOR_EACH_CLIENT(cl) {
@@ -1107,7 +1092,8 @@ static void SV_CalcPings(void)
             if (cl->ping) {
                 if (cl->ping < cl->min_ping) {
                     cl->min_ping = cl->ping;
-                } else if (cl->ping > cl->max_ping) {
+                }
+                if (cl->ping > cl->max_ping) {
                     cl->max_ping = cl->ping;
                 }
                 if (res) {
@@ -1143,17 +1129,17 @@ static void SV_GiveMsec(void)
 {
     client_t    *cl;
 
-    if (sv.time - sv.last_givemsec_time > 1600) {
+    if (svs.realtime - sv.last_givemsec_time >= Time_FromSec(1.6f)) {
         FOR_EACH_CLIENT(cl) {
             cl->command_msec = 1800; // 1600 + some slop
         }
-        sv.last_givemsec_time = sv.time;
+        sv.last_givemsec_time = svs.realtime;
     }
 
-    if (svs.realtime - svs.last_timescale_check < sv_timescale_time->integer)
+    if (svs.realtime - svs.last_timescale_check < Time_FromSec(sv_timescale_time->value))
         return;
 
-    float d = svs.realtime - svs.last_timescale_check;
+    float d = Time_ToMsecFrac(svs.realtime - svs.last_timescale_check);
     svs.last_timescale_check = svs.realtime;
 
     FOR_EACH_CLIENT(cl) {
@@ -1334,7 +1320,12 @@ if necessary
 static void SV_CheckTimeouts(void)
 {
     client_t    *client;
-    unsigned    delta;
+    gtime_t     delta;
+
+    gtime_t zombietime = Time_FromSec(sv_zombietime->value);
+    gtime_t ghostime   = Time_FromSec(sv_ghostime->value);
+    gtime_t timeout    = Time_FromSec(sv_timeout->value);
+    gtime_t idlekick   = Time_FromSec(sv_idlekick->value);
 
     FOR_EACH_CLIENT(client) {
         if (Netchan_SeqTooBig(&client->netchan)) {
@@ -1346,28 +1337,27 @@ static void SV_CheckTimeouts(void)
         if (NET_IsLocalAddress(&client->netchan.remote_address)) {
             continue;
         }
-        // NOTE: delta calculated this way is not sensitive to overflow
+
         delta = svs.realtime - client->lastmessage;
         if (client->state == cs_zombie) {
-            if (delta > sv_zombietime->integer) {
+            if (delta > zombietime) {
                 SV_RemoveClient(client);
             }
             continue;
         }
+
         if (client->drop_hack) {
             SV_DropClient(client, NULL);
             continue;
         }
 #if USE_ICMP
-        if (client->unreachable) {
-            if (delta > sv_ghostime->integer) {
-                SV_DropClient(client, "connection reset by peer");
-                SV_RemoveClient(client);      // don't bother with zombie state
-                continue;
-            }
+        if (client->unreachable && delta > ghostime) {
+            SV_DropClient(client, "connection reset by peer");
+            SV_RemoveClient(client);      // don't bother with zombie state
+            continue;
         }
 #endif
-        if (delta > sv_timeout->integer || (client->state == cs_assigned && delta > sv_ghostime->integer)) {
+        if (delta > timeout || (client->state == cs_assigned && delta > ghostime)) {
             SV_DropClient(client, "?timed out");
             SV_RemoveClient(client);      // don't bother with zombie state
             continue;
@@ -1378,41 +1368,35 @@ static void SV_CheckTimeouts(void)
             continue;
         }
 
-        if (sv_idlekick->integer && svs.realtime - client->lastactivity > sv_idlekick->integer) {
+        if (idlekick && svs.realtime - client->lastactivity > idlekick) {
             SV_DropClient(client, "idling");
             continue;
         }
     }
 }
 
-// pause if there is only local client on the server
-static inline bool check_paused(void)
+/*
+=================
+SV_CheckPaused
+
+Pause if there is only local client on the server
+=================
+*/
+bool SV_CheckPaused(void)
 {
 #if USE_CLIENT
-    if (dedicated->integer)
-        goto resume;
+    if (!svs.initialized)
+        return sv_paused->integer;  // let client handle it
 
-    if (!cl_paused->integer)
-        goto resume;
+    bool paused = cl_paused->integer && !dedicated->integer &&
+        !com_timedemo->integer && LIST_SINGLE(&sv_clientlist);
 
-    if (com_timedemo->integer)
-        goto resume;
-
-    if (!LIST_SINGLE(&sv_clientlist))
-        goto resume;
-
-    if (!sv_paused->integer) {
-        Cvar_Set("sv_paused", "1");
+    if ((bool)sv_paused->integer != paused) {
+        Cvar_SetInteger(sv_paused, paused, FROM_CODE);
         IN_Activate();
     }
 
-    return true; // don't run if paused
-
-resume:
-    if (sv_paused->integer) {
-        Cvar_Set("sv_paused", "0");
-        IN_Activate();
-    }
+    return paused;
 #endif
 
     return false;
@@ -1427,14 +1411,14 @@ static void SV_RunGameFrame(void)
 {
 #if USE_CLIENT
     if (host_speeds->integer)
-        time_before_game = Sys_Milliseconds();
+        time_before_game = Sys_Timestamp();
 #endif
 
-    ge->RunFrame(sv.time);
+    ge->RunFrame(sv.framenum);
 
 #if USE_CLIENT
     if (host_speeds->integer)
-        time_after_game = Sys_Milliseconds();
+        time_after_game = Sys_Timestamp();
 #endif
 }
 
@@ -1458,7 +1442,7 @@ static void SV_MasterHeartbeat(void)
     if (!sv_public->integer)
         return;        // a private dedicated game
 
-    if (svs.realtime - svs.last_heartbeat < HEARTBEAT_SECONDS * 1000)
+    if (svs.realtime - svs.last_heartbeat < HEARTBEAT_TIME)
         return;        // not time to send yet
 
     // find the next master to send to
@@ -1532,14 +1516,14 @@ initialized.
 Returns amount of extra frametime available for sleeping on IO.
 ==================
 */
-unsigned SV_Frame(unsigned msec)
+gtime_t SV_Frame(gtime_t delta, gtime_t delta_s)
 {
 #if USE_CLIENT
     time_before_game = time_after_game = 0;
 #endif
 
     // advance local server time
-    svs.realtime += msec;
+    svs.realtime += delta;
 
     if (COM_DEDICATED) {
         // process console commands if not running a client
@@ -1555,12 +1539,12 @@ unsigned SV_Frame(unsigned msec)
     }
 
     // move autonomous things around if enough time has passed
-    sv.frameresidual += msec;
+    sv.frameresidual += delta_s;
     if (sv.frameresidual < sv.frametime) {
         return sv.frametime - sv.frameresidual;
     }
 
-    if (svs.initialized && !check_paused()) {
+    if (svs.initialized) {
         // check timeouts
         SV_CheckTimeouts();
 
@@ -1585,7 +1569,7 @@ unsigned SV_Frame(unsigned msec)
         ge->PrepFrame();
 
         // advance for next frame
-        sv.time += sv.frametime;
+        sv.framenum++;
     }
 
     if (COM_DEDICATED) {
@@ -1600,9 +1584,8 @@ unsigned SV_Frame(unsigned msec)
     }
 
     // don't accumulate bogus residual
-    if (sv.frameresidual > 250) {
-        Com_DDDPrintf("Reset residual %u\n", sv.frameresidual);
-        sv.frameresidual = 100;
+    if (sv.frameresidual > Time_FromMsec(250)) {
+        sv.frameresidual = Time_FromMsec(100);
     }
 
     return 0;
@@ -1725,16 +1708,6 @@ static void sv_rate_changed(cvar_t *self)
     Cvar_ClampInteger(sv_min_rate, 1500, Cvar_ClampInteger(sv_max_rate, 1500, INT_MAX));
 }
 
-void sv_sec_timeout_changed(cvar_t *self)
-{
-    self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
-}
-
-void sv_min_timeout_changed(cvar_t *self)
-{
-    self->integer = 1000 * 60 * Cvar_ClampValue(self, 0, 24 * 24 * 60);
-}
-
 static void sv_namechange_limit_changed(cvar_t *self)
 {
     client_t *client;
@@ -1788,21 +1761,11 @@ void SV_Init(void)
     sv_hostname->changed = sv_hostname_changed;
 #endif
     sv_timeout = Cvar_Get("timeout", "90", 0);
-    sv_timeout->changed = sv_sec_timeout_changed;
-    sv_timeout->changed(sv_timeout);
     sv_zombietime = Cvar_Get("zombietime", "2", 0);
-    sv_zombietime->changed = sv_sec_timeout_changed;
-    sv_zombietime->changed(sv_zombietime);
     sv_ghostime = Cvar_Get("sv_ghostime", "6", 0);
-    sv_ghostime->changed = sv_sec_timeout_changed;
-    sv_ghostime->changed(sv_ghostime);
     sv_idlekick = Cvar_Get("sv_idlekick", "0", 0);
-    sv_idlekick->changed = sv_sec_timeout_changed;
-    sv_idlekick->changed(sv_idlekick);
     sv_enforcetime = Cvar_Get("sv_enforcetime", "1", 0);
     sv_timescale_time = Cvar_Get("sv_timescale_time", "16", 0);
-    sv_timescale_time->changed = sv_sec_timeout_changed;
-    sv_timescale_time->changed(sv_timescale_time);
     sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
     sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);

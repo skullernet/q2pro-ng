@@ -55,7 +55,7 @@ static void P_DamageFeedback(edict_t *player)
         want_flashes |= 2;
 
     if (want_flashes) {
-        client->flash_time = level.time + Time_FromHertz(10);
+        client->flash_time = level.time + BASE_FRAMETIME;
         client->ps.stats[STAT_FLASHES] = want_flashes;
     } else if (client->flash_time < level.time)
         client->ps.stats[STAT_FLASHES] = 0;
@@ -451,14 +451,14 @@ static void P_WorldEffects(edict_t *ent)
             int dmg = (envirosuit ? 1 : 3) * waterlevel; // take 1/3 damage with envirosuit
 
             T_Damage(ent, world, world, vec3_origin, ent->s.origin, BYTEDIR_NONE, dmg, 0, DAMAGE_NONE, MOD_LAVA);
-            ent->slime_debounce_time = level.time + Time_FromHertz(10);
+            ent->slime_debounce_time = level.time + BASE_FRAMETIME;
         }
 
         if (ent->watertype & CONTENTS_SLIME) {
             if (!envirosuit) {
                 // no damage from slime with envirosuit
                 T_Damage(ent, world, world, vec3_origin, ent->s.origin, BYTEDIR_NONE, 1 * waterlevel, 0, DAMAGE_NONE, MOD_SLIME);
-                ent->slime_debounce_time = level.time + Time_FromHertz(10);
+                ent->slime_debounce_time = level.time + BASE_FRAMETIME;
             }
         }
     }
@@ -629,7 +629,7 @@ void G_SetClientFrame(edict_t *ent, gclient_t *client)
     if ((client->anim_priority & ANIM_REVERSED) && (ent->s.frame > client->anim_end)) {
         if (client->anim_time <= level.time) {
             ent->s.frame--;
-            client->anim_time = level.time + Time_FromHertz(10);
+            client->anim_time = level.time + BASE_FRAMETIME;
         }
         return;
     }
@@ -637,7 +637,7 @@ void G_SetClientFrame(edict_t *ent, gclient_t *client)
         // continue an animation
         if (client->anim_time <= level.time) {
             ent->s.frame++;
-            client->anim_time = level.time + Time_FromHertz(10);
+            client->anim_time = level.time + BASE_FRAMETIME;
         }
         return;
     }
@@ -657,7 +657,7 @@ void G_SetClientFrame(edict_t *ent, gclient_t *client)
             ent->s.frame = FRAME_jump3;
             ent->client->anim_end = FRAME_jump6;
         }
-        ent->client->anim_time = level.time + Time_FromHertz(10);
+        ent->client->anim_time = level.time + BASE_FRAMETIME;
         return;
     }
 
@@ -666,7 +666,7 @@ newanim:
     client->anim_priority = ANIM_BASIC;
     client->anim_duck = duck;
     client->anim_run = run;
-    client->anim_time = level.time + Time_FromHertz(10);
+    client->anim_time = level.time + BASE_FRAMETIME;
 
     if (!ent->groundentity) {
         // ZOID: if on grapple, don't go into jump frame, go into standing

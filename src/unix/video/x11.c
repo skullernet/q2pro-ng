@@ -860,8 +860,8 @@ static char *get_selection(Atom sel)
 
     XConvertSelection(x11.dpy, sel, XA_STRING, property, x11.win, CurrentTime);
 
-    unsigned now = Sys_Milliseconds();
-    unsigned deadline = now + 50;
+    gtime_t now = Sys_Timestamp();
+    gtime_t deadline = now + Time_FromMsec(50);
     while (1) {
         XEvent event;
         if (XCheckTypedWindowEvent(x11.dpy, x11.win, SelectionNotify, &event))
@@ -877,7 +877,7 @@ static char *get_selection(Atom sel)
         if (poll(&fd, 1, deadline - now) <= 0)
             return NULL;
 
-        now = Sys_Milliseconds();
+        now = Sys_Timestamp();
     }
 
     if (XGetWindowProperty(x11.dpy, x11.win, property, 0, 1024, True,

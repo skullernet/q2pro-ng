@@ -249,7 +249,7 @@ void THINK(makron_torso_think)(edict_t *self)
     if (++self->s.frame > FRAME_death320)
         self->s.frame = FRAME_death301;
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 
     if (self->s.angles.pitch > 0)
         self->s.angles.pitch = max(0, self->s.angles.pitch - 15);
@@ -266,7 +266,7 @@ static void makron_spawn_torso(edict_t *self)
     ent->s.frame = FRAME_death301;
     ent->s.skinnum = 1;
     ent->think = makron_torso_think;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
     ent->s.sound = G_SoundIndex("makron/spine.wav");
     ent->movetype = MOVETYPE_TOSS;
     ent->s.effects = EF_GIB;

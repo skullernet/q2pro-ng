@@ -80,7 +80,7 @@ typedef enum {
 
 #define MENU_SPACING    GENERIC_SPACING(CONCHAR_HEIGHT)
 
-#define DOUBLE_CLICK_DELAY    300
+#define DOUBLE_CLICK_DELAY    Time_FromMsec(300)
 
 #define UI_IsItemSelectable(item) \
     ((item)->type != MTYPE_SEPARATOR && \
@@ -194,12 +194,12 @@ typedef struct menuList_s {
 
     int         prestep;
     int         curvalue;
-    unsigned    clickTime;
+    gtime_t     clickTime;
 
 #if 0
     char        scratch[8];
     int         scratchCount;
-    unsigned    scratchTime;
+    gtime_t     scratchTime;
 #endif
 
     int     drag_y;
@@ -273,7 +273,7 @@ void PlayerModel_Free(void);
 
 typedef struct {
     bool initialized;
-    unsigned realtime;
+    gtime_t realtime;
     int width, height; // scaled
     float scale;
     int menuDepth;

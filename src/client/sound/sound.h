@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 typedef struct {
-    int         length;
+    gtime_t     length;
     int         loopstart;
     int         width;
     int         channels;
@@ -68,7 +68,7 @@ typedef struct {
     int         entchannel;
     bool        fixed_origin;   // use origin field instead of entnum's origin
     vec3_t      origin;
-    unsigned    begin;          // cls.realtime this sound starts
+    gtime_t     begin;          // cls.realtime this sound starts
 } playsound_t;
 
 #if USE_MINIAUDIO
@@ -87,7 +87,7 @@ typedef enum {
 
 typedef struct {
     sfx_t       *sfx;           // sfx number
-    unsigned    end;            // cls.realtime this sound ends
+    gtime_t     end;            // cls.realtime this sound ends
     int         entnum;         // to allow overriding a specific sound
     int         entchannel;     //
     vec3_t      origin;         // only use if fixed_origin is set

@@ -1099,7 +1099,7 @@ void THINK(droptofloor)(edict_t *ent)
         ent->r.solid = SOLID_NOT;
 
         if (ent == ent->teammaster) {
-            ent->nextthink = level.time + Time_FromHertz(10);
+            ent->nextthink = level.time + BASE_FRAMETIME;
             ent->think = DoRespawn;
         }
     }

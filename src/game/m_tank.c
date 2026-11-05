@@ -1046,7 +1046,7 @@ void THINK(Think_TankStand)(edict_t *ent)
         ent->s.frame = FRAME_stand01;
     else
         ent->s.frame++;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 /*QUAKED monster_tank_stand (1 .5 0) (-32 -32 0) (32 32 90)
@@ -1073,6 +1073,6 @@ void SP_monster_tank_stand(edict_t *self)
 
     self->use = Use_Boss3;
     self->think = Think_TankStand;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
     trap_LinkEntity(self);
 }

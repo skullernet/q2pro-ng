@@ -27,8 +27,10 @@ PLAYER CONFIG MENU
 =============================================================================
 */
 
-#define ID_MODEL 103
-#define ID_SKIN    104
+#define FRAME_TIME  Time_FromMsec(120)
+
+#define ID_MODEL    103
+#define ID_SKIN     104
 
 typedef struct {
     menuFrameWork_t     menu;
@@ -41,8 +43,8 @@ typedef struct {
     entity_t    entities[2];
     int         num_entities;
 
-    unsigned    time;
-    unsigned    oldTime;
+    gtime_t     time;
+    gtime_t     oldTime;
 
     char *pmnames[MAX_PLAYERMODELS + 1];
 } m_player_t;
@@ -93,12 +95,12 @@ static void RunFrame(void)
     if (m_player.time < uis.realtime) {
         m_player.oldTime = m_player.time;
 
-        m_player.time += 120;
+        m_player.time += FRAME_TIME;
         if (m_player.time < uis.realtime) {
             m_player.time = uis.realtime;
         }
 
-        frame = (m_player.time / 120) % 40;
+        frame = (m_player.time / FRAME_TIME) % 40;
 
         for (i = 0; i < m_player.num_entities; i++) {
             m_player.entities[i].oldframe = m_player.entities[i].frame;
@@ -114,7 +116,7 @@ static void Draw(menuFrameWork_t *self)
 
     R_ClearScene();
 
-    m_player.refdef.time = uis.realtime * 0.001f;
+    m_player.refdef.time = Time_ToSec(uis.realtime);
 
     RunFrame();
 
@@ -287,7 +289,7 @@ static bool Push(menuFrameWork_t *self)
     ReloadMedia();
 
     // set up oldframe correctly
-    m_player.time = uis.realtime - 120;
+    m_player.time = uis.realtime - FRAME_TIME;
     m_player.oldTime = m_player.time;
     RunFrame();
 

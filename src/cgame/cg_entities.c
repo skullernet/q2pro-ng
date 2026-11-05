@@ -485,7 +485,7 @@ static void CG_DrawBeam(const cg_entity_t *cent, vec3_t start, vec3_t end)
         ent.flags |= RF_FULLBRIGHT;
         ent.angles.pitch = -angles.pitch;
         ent.angles.yaw = angles.yaw + 180.0f;
-        ent.angles.roll = cg.time % 360;
+        ent.angles.roll = Time_ToMsec(cg.time) % 360;
     } else if (model == cgs.models.lightning) {
         ent.flags |= RF_FULLBRIGHT;
         ent.angles.pitch = -angles.pitch;
@@ -519,7 +519,7 @@ static void CG_SetEntitySoundOrigin(const cg_entity_t *ent)
     // set velocity for doppler effect
     if (cg.frame->servertime > cg.oldframe->servertime) {
         vel = Vec3_Sub(ent->current.origin, ent->prev.origin);
-        vel = Vec3_Scale(vel, 1000.0f / (cg.frame->servertime - cg.oldframe->servertime));
+        vel = Vec3_Scale(vel, 1.0f / Time_ToSec(cg.frame->servertime - cg.oldframe->servertime));
     } else {
         vel = vec3_origin;
     }
@@ -633,13 +633,13 @@ static void CG_AddPacketEntities(void)
     uint64_t                ent_flags;
 
     // bonus items rotate at a fixed rate
-    autorotate = cg.time * 0.1f;
+    autorotate = cg.refdef.time * 100.0f;
 
     // brush models can auto animate their frames
-    autoanim = cg.time / 500;
-    autolerp = 1.0f - (cg.time % 500) * 0.002f;
+    autoanim = cg.time / Time_FromHertz(2);
+    autolerp = 1.0f - (cg.time % Time_FromHertz(2)) * (1.0f / Time_FromHertz(2));
 
-    autobob = 5 * sinf(cg.time / 400.0f);
+    autobob = 5 * sinf(cg.refdef.time * 2.5f);
 
     memset(&ent, 0, sizeof(ent));
 
@@ -667,15 +667,15 @@ static void CG_AddPacketEntities(void)
             ent.oldframe = ent.frame - 1;
             ent.backlerp = autolerp;
         } else if (effects & EF_ANIM_ALLFAST) {
-            ent.frame = cg.time / 100;
+            ent.frame = cg.time / BASE_FRAMETIME;
             ent.oldframe = ent.frame - 1;
-            ent.backlerp = 1.0f - (cg.time % 100) * 0.01f;
+            ent.backlerp = 1.0f - (cg.time % BASE_FRAMETIME) * BASE_1_FRAMETIME;
         } else if (renderfx & RF_BEAM) {
             ent.frame = ent.oldframe = s1->frame;
             ent.backlerp = 0;
         } else if (cent->prev_frame != cent->curr_frame) {
             // run alias model animation
-            int delta = cg.time - cent->anim_start;
+            gtime_t delta = cg.time - cent->anim_start;
 
             if (delta > BASE_FRAMETIME) {
                 cent->prev_frame = cent->curr_frame;
@@ -708,9 +708,9 @@ static void CG_AddPacketEntities(void)
                 // interpolate origin
                 ent.origin = Vec3_Lerp(cent->prev.origin, cent->current.origin, cg.lerpfrac);
                 // smooth out stair climbing
-                int delta = cg.time - cent->step_time;
+                gtime_t delta = cg.time - cent->step_time;
                 if (delta < STEP_TIME)
-                    ent.origin.z = cent->current.origin.z - cent->step_factor * (STEP_TIME - delta);
+                    ent.origin.z -= cent->step_factor * (STEP_TIME - delta);
                 ent.oldorigin = ent.origin;
             }
 
@@ -848,7 +848,8 @@ static void CG_AddPacketEntities(void)
                     if (team_index && team_index == self_index) {
                         vec3_t point = ent.origin;
                         point.z += cent->box.maxs.z + 32;
-                        SCR_AddPOI(s1->number + 1, point, cgs.images.friend, poi_index ? U32_RED : U32_ORANGE, 200);
+                        SCR_AddPOI(s1->number + 1, point, cgs.images.friend,
+                                   poi_index ? U32_RED : U32_ORANGE, BASE_FRAMETIME * 2);
                     }
                 }
             } else {
@@ -874,7 +875,7 @@ static void CG_AddPacketEntities(void)
             vec3_t start;
 
             ent.angles.pitch = 0;
-            ent.angles.yaw = cg.time / 2 + s1->angles.yaw;
+            ent.angles.yaw = cg.refdef.time * 500.0f + s1->angles.yaw;
             ent.angles.roll = 180;
 
             AngleVectors(ent.angles, &forward, NULL, NULL);
@@ -1121,7 +1122,7 @@ static void CG_AddPacketEntities(void)
             has_trail = true;
         } else if (effects & EF_TRACKERTRAIL) {
             if (effects & EF_TRACKER) {
-                float intensity = 50 + (500 * (sinf(cg.time / 500.0f) + 1.0f));
+                float intensity = 50 + (500 * (sinf(cg.refdef.time * 2.0f) + 1.0f));
                 CG_AddSphereLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
             } else {
                 CG_Tracker_Shell(cent, ent.origin);

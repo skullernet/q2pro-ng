@@ -91,7 +91,7 @@ void SCR_AddNetgraph(void)
     } else {
         // see what the latency was on this packet
         i = cls.netchan.incoming_acknowledged & CMD_MASK;
-        value = (cls.realtime - cl.history[i].sent) / 30;
+        value = (cls.realtime - cl.history[i].sent) / Time_FromMsec(30);
         color = 0xd0;
     }
 
@@ -142,7 +142,7 @@ static void SCR_DrawDebugStats(void)
     int y = scr_height - 5 * CONCHAR_HEIGHT;
 
     for (int i = 0; i < 4; i++) {
-        R_DrawString(x, y, 0, -1, va("%4d %s", cls.measure.fps[i], names[i]), scr_font);
+        R_DrawString(x, y, 0, -1, va("%4d %s", min(cls.measure.fps[i], 9999), names[i]), scr_font);
         y += CONCHAR_HEIGHT;
     }
 }
@@ -219,7 +219,7 @@ void SCR_BeginLoadingPlaque(void)
     SCR_UpdateScreen();
     cls.draw_loading = false;
 
-    cls.disable_screen = Sys_Milliseconds();
+    cls.disable_screen = Sys_Timestamp();
 }
 
 /*
@@ -236,6 +236,8 @@ void SCR_EndLoadingPlaque(void)
     Con_ClearNotify_f();
 }
 
+extern gtime_t scr_extra, scr_extra_s;
+
 static void SCR_DrawActive(void)
 {
     // if full screen menu is up, do nothing at all
@@ -251,8 +253,14 @@ static void SCR_DrawActive(void)
     if (cls.state == ca_cinematic)
         SCR_DrawCinematic();
 
-    if (cls.state == ca_active || cls.draw_loading) {
-        cge->DrawFrame(cls.realtime, cls.state == ca_active, cls.draw_loading);
+    cg_draw_flags_t flags = CG_DRAW_NONE;
+    if (cls.state == ca_active)
+        flags |= CG_DRAW_ACTIVE;
+    if (cls.draw_loading)
+        flags |= CG_DRAW_LOADING;
+
+    if (flags) {
+        cge->DrawFrame(scr_extra, scr_extra_s, flags);
         R_SetTransform(Mat4_Identity()); // undo any transform set by cgame
     }
 
@@ -287,9 +295,9 @@ void SCR_UpdateScreen(void)
 
     // if the screen is disabled (loading plaque is up), do nothing at all
     if (cls.disable_screen) {
-        unsigned delta = Sys_Milliseconds() - cls.disable_screen;
+        gtime_t delta = Sys_Timestamp() - cls.disable_screen;
 
-        if (delta < 120 * 1000) {
+        if (delta < Time_FromSec(120)) {
             return;
         }
 

@@ -58,8 +58,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //=============================================================================
 
 typedef struct {
-    unsigned    sent;    // time sent, for calculating pings
-    unsigned    rcvd;    // time rcvd, for calculating pings
+    gtime_t     sent;    // time sent, for calculating pings
+    gtime_t     rcvd;    // time rcvd, for calculating pings
     unsigned    cmdNumber;    // current cmdNumber for this frame
 } client_history_t;
 
@@ -67,10 +67,11 @@ typedef struct {
     bool            valid;
 
     unsigned        flags;
-    unsigned        number;
-    unsigned        servertime;
+    unsigned        number;         // incoming packet sequence
+    uint64_t        serverframe;    // server frame number
+    gtime_t         servertime;     // serverframe * timebase
+    gtime_t         latency;
     unsigned        cmdnum;
-    unsigned        latency;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
@@ -88,9 +89,8 @@ typedef struct {
 typedef struct {
     int         timeoutcount;
 
-    unsigned    lastTransmitTime;
+    gtime_t     transmitTimeBudget;
     unsigned    lastTransmitCmdNumber;
-    unsigned    lastTransmitCmdNumberReal;
     bool        sendPacketNow;
 
     usercmd_t   cmd;
@@ -125,7 +125,9 @@ typedef struct {
     // localmove and pending cmd, cleared each time cmd is finalized
     vec2_t      mousemove;
 
-    int         time;           // this is the time value that the client
+    gtime_t     movetime;
+
+    gtime_t     time;           // this is the time value that the client
                                 // is rendering at.  always <= cl.servertime
     float       lerpfrac;       // between oldframe and frame
 
@@ -137,7 +139,8 @@ typedef struct {
     int         serverstate;    // ss_* constants
     int         servercount;    // server identification for prespawns
     char        gamedir[MAX_QPATH];
-    int         clientnum;          // never changed during gameplay, set by serverdata packet
+    int         clientnum;      // never changed during gameplay, set by serverdata packet
+    int         timebase;       // usually server frame time, but doesn't have to be
 
     char        *baseconfigstrings[MAX_CONFIGSTRINGS];
     char        *configstrings[MAX_CONFIGSTRINGS];
@@ -163,10 +166,10 @@ of server connections
 */
 
 // resend delay for challenge/connect packets
-#define CONNECT_DELAY       3000u
+#define CONNECT_DELAY       Time_FromSec(3)
 
 #define CONNECT_INSTANT     CONNECT_DELAY
-#define CONNECT_FAST        (CONNECT_DELAY - 1000u)
+#define CONNECT_FAST        Time_FromSec(2)
 
 typedef enum {
     ca_uninitialized,
@@ -207,7 +210,7 @@ typedef struct {
 } dlqueue_t;
 
 typedef struct {
-    int64_t     servertime;
+    gtime_t     servertime;
     int64_t     filepos;
     uint32_t    framenum;
     uint32_t    msglen;
@@ -223,14 +226,14 @@ typedef struct {
     bool        ref_initialized;
 
     bool        draw_loading;
-    unsigned    disable_screen;
+    gtime_t     disable_screen;
 
     int         userinfo_modified;
     cvar_t      *userinfo_updates[MAX_PACKET_USERINFOS];
 // this is set each time a CVAR_USERINFO variable is changed
 // so that the client knows to send it to the server
 
-    unsigned    realtime;           // always increasing, no clamping, etc
+    gtime_t     realtime;           // always increasing, no clamping, etc
     float       frametime;          // seconds since last video frame
 
 // performance measurement
@@ -243,7 +246,7 @@ typedef struct {
 #define M_FRAMES    cls.measure.frames[2]
 #define P_FRAMES    cls.measure.frames[3]
     struct {
-        unsigned    time;
+        gtime_t     time;
         int         frames[4];
         int         fps[4];
         int         ping;
@@ -252,7 +255,7 @@ typedef struct {
 // connection information
     netadr_t    serverAddress;
     char        servername[MAX_OSPATH]; // name of server from original connect
-    unsigned    connect_time;           // for connection retransmits
+    gtime_t     connect_time;           // for connection retransmits
     int         connect_count;
     bool        passive;
 
@@ -289,7 +292,7 @@ typedef struct {
     struct {
         qhandle_t   playback;
         qhandle_t   recording;
-        unsigned    time_start;
+        gtime_t     time_start;
         unsigned    time_frames;
         int         last_server_frame;  // number of server frame the last svc_frame was written
         int         frames_written;     // number of frames written to demo file
@@ -297,7 +300,7 @@ typedef struct {
         int         others_dropped;     // number of misc svc_* messages that didn't fit
         int         frames_read;        // number of frames read from demo file
         int64_t     last_snapshot_pos;  // file position of last snapshot
-        int         starttime;          // server time of first demo frame
+        gtime_t     starttime;          // server time of first demo frame
         int64_t     file_size;
         int64_t     file_offset;
         float       file_progress;
@@ -404,9 +407,9 @@ void IN_Activate(void);
 void IN_HolsterUp(void);
 
 void CL_RegisterInput(void);
-void CL_UpdateCmd(int msec);
+void CL_UpdateCmd(gtime_t delta);
 void CL_FinalizeCmd(void);
-void CL_SendCmd(void);
+void CL_SendCmd(gtime_t delta);
 
 
 //

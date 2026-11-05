@@ -285,7 +285,7 @@ void THINK(Trap_Think)(edict_t *ent)
         return;
     }
 
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 
     if (!ent->groundentity)
         return;

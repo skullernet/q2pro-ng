@@ -95,7 +95,7 @@ static void SV_CalcSendTime(client_t *client, unsigned size)
         client->message_size[client->framenum % RATE_MESSAGES] = size;
 
     client->send_time = svs.realtime;
-    client->send_delta = size * 1000 / client->rate;
+    client->send_delta = Time_FromSec(size) / client->rate;
 }
 
 /*
@@ -409,7 +409,7 @@ void SV_SendAsyncPackets(void)
         }
 
         // see if it's time to resend a (possibly dropped) packet
-        retransmit = (com_localTime - netchan->last_sent > 1000);
+        retransmit = (com_localTime - netchan->last_sent > Time_FromSec(1));
 
         // don't write new reliables if not yet acknowledged
         if (netchan->reliable_length && !retransmit && client->state != cs_zombie) {

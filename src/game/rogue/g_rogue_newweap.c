@@ -158,7 +158,7 @@ void THINK(prox_seek)(edict_t *ent)
     if (ent->s.frame > 13)
         ent->s.frame = 9;
     ent->think = prox_seek;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 static bool monster_or_player(edict_t *ent)
@@ -239,7 +239,7 @@ void THINK(prox_open)(edict_t *ent)
         }
         ent->s.frame++;
         ent->think = prox_open;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     }
 }
 
@@ -560,7 +560,7 @@ void THINK(Nuke_Think)(edict_t *ent)
         }
 
         ent->think = Nuke_Think;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
         ent->health = 1;
         ent->r.ownernum = ENTITYNUM_NONE;
         G_AddEvent(ent, EV_MUZZLEFLASH, muzzleflash);
@@ -782,7 +782,7 @@ void THINK(tesla_think_active)(edict_t *self)
 
     if (self->r.inuse) {
         self->think = tesla_think_active;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
     }
 }
 
@@ -856,7 +856,7 @@ void THINK(tesla_think)(edict_t *ent)
     if (ent->s.frame > 14) {
         ent->s.frame = 14;
         ent->think = tesla_activate;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     } else {
         if (ent->s.frame > 9) {
             if (ent->s.frame == 10) {
@@ -870,7 +870,7 @@ void THINK(tesla_think)(edict_t *ent)
                 ent->s.skinnum = 3;
         }
         ent->think = tesla_think;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     }
 }
 
@@ -1173,7 +1173,7 @@ void THINK(tracker_pain_daemon_think)(edict_t *self)
                      hurt, 0, TRACKER_DAMAGE_FLAGS, MOD_TRACKER);
         }
 
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 
         if (self->enemy->client)
             self->enemy->client->tracker_pain_time = self->nextthink;
@@ -1270,7 +1270,7 @@ void THINK(tracker_fly)(edict_t *self)
     self->velocity = Vec3_Scale(dir, self->speed);
     self->monsterinfo.saved_goal = dest;
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, edict_t *enemy)
@@ -1289,7 +1289,7 @@ void fire_tracker(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
     trap_LinkEntity(bolt);
 
     if (enemy) {
-        bolt->nextthink = level.time + Time_FromHertz(10);
+        bolt->nextthink = level.time + BASE_FRAMETIME;
         bolt->think = tracker_fly;
     } else {
         bolt->nextthink = level.time + Time_FromSec(10);

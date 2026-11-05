@@ -199,7 +199,9 @@ static void CL_ParseFrame(void)
 
     delta = MSG_ReadBits(FRAMEDELTA_BITS);
     frame.flags = MSG_ReadBits(FRAMEFLAGS_BITS);
-    frame.servertime = MSG_ReadBits(SERVERTIME_BITS);
+    frame.serverframe = MSG_ReadLeb64();
+    frame.servertime = cl.timebase * frame.serverframe;
+    Q_assert_soft(frame.servertime >= 0);
 
     if (cls.demo.playback) {
         frame.number = cls.demo.frames_read++;
@@ -264,8 +266,9 @@ static void CL_ParseFrame(void)
     // save the frame off in the backup array for later delta comparisons
     cl.frames[frame.number & UPDATE_MASK] = frame;
 
-    SHOWNET(3, "%3u:frame:%d  delta:%d  rtt:%d  svtime:%d\n",
-            msg_read.readcount, frame.number, deltaframe, frame.latency, frame.servertime);
+    SHOWNET(3, "%3u:frame:%d  delta:%d  rtt:%"PRId64"  svtime:%"PRId64"\n",
+            msg_read.readcount, frame.number, deltaframe, Time_ToMsec(frame.latency),
+            Time_ToMsec(frame.servertime));
 
     if (!frame.valid) {
         cl.frame.valid = false;
@@ -373,9 +376,10 @@ static void CL_ParseServerData(void)
     cl.servercount = MSG_ReadLong();
     cl.serverstate = MSG_ReadByte();
     cl.clientnum   = MSG_ReadByte();
+    cl.timebase    = MSG_ReadLong();
 
-    Com_DPrintf("Serverdata packet received (protocol=%d, servercount=%d, serverstate=%d, clientnum=%d)\n",
-                protocol, cl.servercount, cl.serverstate, cl.clientnum);
+    Com_DPrintf("Serverdata packet received (protocol=%d, servercount=%d, serverstate=%d, clientnum=%d, timebase=%d)\n",
+                protocol, cl.servercount, cl.serverstate, cl.clientnum, cl.timebase);
 
     // game directory
     if (MSG_ReadString(cl.gamedir, sizeof(cl.gamedir)) >= sizeof(cl.gamedir)) {

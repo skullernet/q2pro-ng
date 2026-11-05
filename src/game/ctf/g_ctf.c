@@ -730,7 +730,7 @@ void THINK(CTFFlagThink)(edict_t *ent)
 {
     if (ent->r.solid != SOLID_NOT)
         ent->s.frame = 173 + (((ent->s.frame - 173) + 1) % 16);
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void THINK(CTFFlagSetup)(edict_t *ent)
@@ -764,7 +764,7 @@ void THINK(CTFFlagSetup)(edict_t *ent)
 
     trap_LinkEntity(ent);
 
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
     ent->think = CTFFlagThink;
 }
 
@@ -2005,7 +2005,7 @@ The banner is 248 tall.
 void THINK(misc_ctf_banner_think)(edict_t *ent)
 {
     ent->s.frame = (ent->s.frame + 1) % 16;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 #define SPAWNFLAG_CTF_BANNER_BLUE   1
@@ -2022,7 +2022,7 @@ void SP_misc_ctf_banner(edict_t *ent)
     trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 /*QUAKED misc_ctf_small_banner (1 .5 0) (-4 -32 0) (4 32 124) TEAM2
@@ -2041,7 +2041,7 @@ void SP_misc_ctf_small_banner(edict_t *ent)
     trap_LinkEntity(ent);
 
     ent->think = misc_ctf_banner_think;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 }
 
 /*-----------------------------------------------------------------------*/

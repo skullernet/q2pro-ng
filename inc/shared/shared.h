@@ -1518,6 +1518,23 @@ REAL TIME
 ==========================================================
 */
 
+// system time in abstract units (currently microseconds).
+// never assume units, always use macros for conversions.
+typedef int64_t gtime_t;
+
+#define Time_FromMin(n)     ((gtime_t)((n) * 60000000LL))
+#define Time_FromSec(n)     ((gtime_t)((n) * 1000000LL))
+#define Time_FromMsec(n)    ((gtime_t)((n) * 1000LL))
+#define Time_FromNsec(n)    ((gtime_t)(n) / 1000)
+#define Time_FromHertz(n)   ((gtime_t)(1000000LL / (n)))
+
+#define Time_ToSec(f)       ((f) * 1e-6f)
+#define Time_ToMsec(f)      ((f) / 1000)
+#define Time_ToMsecFrac(f)  ((f) * 1e-3f)
+
+// for cursor blinking
+#define TIME_BLINK_BIT      BIT_ULL(18)
+
 typedef struct {
     int tm_sec;
     int tm_min;
@@ -1810,10 +1827,9 @@ typedef enum : uint32_t {
 #define AMMO_BITS   10
 
 // default server FPS
-#define BASE_FRAMERATE          10
-#define BASE_FRAMETIME          100
-#define BASE_1_FRAMETIME        0.01f   // 1/BASE_FRAMETIME
-#define BASE_FRAMETIME_1000     0.1f    // BASE_FRAMETIME/1000
+#define BASE_FRAMERATE      10
+#define BASE_FRAMETIME      Time_FromHertz(BASE_FRAMERATE)
+#define BASE_1_FRAMETIME    (1.0f / BASE_FRAMETIME)
 
 #define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
 #define SHORT2ANGLE(x)  ((x)*(360.0f/65536))

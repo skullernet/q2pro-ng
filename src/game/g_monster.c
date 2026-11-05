@@ -539,7 +539,7 @@ static void M_MoveFrame(edict_t *self)
         if (self->monsterinfo.aiflags & AI_HIGH_TICK_RATE)
             self->monsterinfo.next_move_time = level.time;
         else
-            self->monsterinfo.next_move_time = level.time + Time_FromHertz(10);
+            self->monsterinfo.next_move_time = level.time + BASE_FRAMETIME;
 
         if ((self->monsterinfo.nextframe) && !((self->monsterinfo.nextframe >= move->firstframe) &&
                                                (self->monsterinfo.nextframe <= move->lastframe)))
@@ -678,13 +678,13 @@ void THINK(monster_dead_think)(edict_t *self)
             self->s.frame++;
     }
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void monster_dead(edict_t *self)
 {
     self->think = monster_dead_think;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
     self->movetype = MOVETYPE_TOSS;
     self->r.svflags |= SVF_DEADMONSTER;
     self->monsterinfo.damage_blood = 0;

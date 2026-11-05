@@ -679,7 +679,7 @@ void MOVEINFO_BLOCKED(rotating_blocked)(edict_t *self, edict_t *other)
         return;
     if (level.time < self->touch_debounce_time)
         return;
-    self->touch_debounce_time = level.time + Time_FromHertz(10);
+    self->touch_debounce_time = level.time + BASE_FRAMETIME;
     T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
 }
 
@@ -1367,7 +1367,7 @@ void MOVEINFO_BLOCKED(door_blocked)(edict_t *self, edict_t *other)
     }
 
     if (self->dmg && level.time >= self->touch_debounce_time) {
-        self->touch_debounce_time = level.time + Time_FromHertz(10);
+        self->touch_debounce_time = level.time + BASE_FRAMETIME;
         T_Damage(other, self, self, vec3_origin, other->s.origin, BYTEDIR_NONE, self->dmg, 1, DAMAGE_NONE, MOD_CRUSH);
     }
 
@@ -2540,7 +2540,7 @@ void THINK(func_eye_setup)(edict_t *self)
     }
 
     self->think = func_eye_think;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void SP_func_eye(edict_t *ent)
@@ -2570,10 +2570,10 @@ void SP_func_eye(edict_t *ent)
 
     if (ent->pathtarget) {
         ent->think = func_eye_setup;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     } else {
         ent->think = func_eye_think;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     }
 
     trap_LinkEntity(ent);

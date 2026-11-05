@@ -56,11 +56,12 @@ CG_AddLightStyles
 */
 void CG_AddLightStyles(void)
 {
-    int     i, ofs = cg.time / 100;
+    int     i;
+    gtime_t ofs = cg.time / BASE_FRAMETIME;
     cg_lightstyle_t *ls;
 
     if (cg_lerp_lightstyles.integer) {
-        float f = (cg.time % 100) * 0.01f;
+        float f = (cg.time % BASE_FRAMETIME) * BASE_1_FRAMETIME;
         float b = 1.0f - f;
 
         for (i = 0, ls = cgs.lightstyles; i < MAX_LIGHTSTYLES; i++, ls++) {
@@ -315,7 +316,7 @@ void CG_MuzzleFlash(cg_entity_t *pl, player_muzzle_t weapon)
 
     mz = CG_AllocMuzzleFlash(entnum | weapon << ENTITYNUM_BITS);
     mz->radius = 100 * (2 - silenced) + (Q_rand() & 31);
-    mz->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    mz->die = cg.time + Time_FromSec(cg_muzzlelight_time.value);
     mz->die2 = cg.time + MUZZLE_TIME;
     mz->offset = player_flash_offset[weapon];
 
@@ -559,7 +560,7 @@ void CG_MuzzleFlash(cg_entity_t *pl, player_muzzle_t weapon)
         break;
     case MZ_HEATBEAM:
         mz->color = Vec3(1, 1, 0);
-        mz->die = cg.time + 100;
+        mz->die = cg.time + BASE_FRAMETIME;
         if (local) {
             CG_AddWeaponMuzzleFX(MFLASH_BEAMER, Vec3(18.0f, 6.0f, -8.5f), 16.0f);
         } else {
@@ -580,19 +581,19 @@ void CG_MuzzleFlash(cg_entity_t *pl, player_muzzle_t weapon)
         break;
     case MZ_NUKE1:
         mz->color = Vec3(1, 0, 0);
-        mz->die = cg.time + 100;
+        mz->die = cg.time + BASE_FRAMETIME;
         break;
     case MZ_NUKE2:
         mz->color = Vec3(1, 1, 0);
-        mz->die = cg.time + 100;
+        mz->die = cg.time + BASE_FRAMETIME;
         break;
     case MZ_NUKE4:
         mz->color = Vec3(0, 0, 1);
-        mz->die = cg.time + 100;
+        mz->die = cg.time + BASE_FRAMETIME;
         break;
     case MZ_NUKE8:
         mz->color = Vec3(0, 1, 1);
-        mz->die = cg.time + 100;
+        mz->die = cg.time + BASE_FRAMETIME;
         break;
     default:
         memset(mz, 0, sizeof(*mz));
@@ -653,7 +654,7 @@ void CG_MuzzleFlash2(cg_entity_t *ent, monster_muzzleflash_id_t weapon)
 
     mz = CG_AllocMuzzleFlash(entnum | weapon << ENTITYNUM_BITS);
     mz->radius = 200 + (Q_rand() & 31);
-    mz->die = cg.time + Q_clip(cg_muzzlelight_time.integer, 0, 1000);
+    mz->die = cg.time + Time_FromSec(cg_muzzlelight_time.value);
     mz->die2 = cg.time + MUZZLE_TIME;
     mz->offset = offset;
     mz->offset.x += 4.0f * scale;
@@ -910,7 +911,7 @@ void CG_MuzzleFlash2(cg_entity_t *ent, monster_muzzleflash_id_t weapon)
     case MZ2_WIZARD_BEAM:
         mz->radius = 300 + (Q_rand() & 100);
         mz->color = Vec3(1, 1, 0);
-        mz->die = cg.time + 200;
+        mz->die = cg.time + BASE_FRAMETIME * 2;
         mz->type = MFLASH_BEAMER;
         mz->scale = 32;
         break;
@@ -1648,7 +1649,7 @@ static void CG_FlyParticles(vec3_t origin, int count)
     if (count > NUMVERTEXNORMALS)
         count = NUMVERTEXNORMALS;
 
-    ltime = cg.time * 0.001f;
+    ltime = cg.refdef.time;
     for (i = 0; i < count; i += 2) {
         p = CG_AllocParticle();
         if (!p)
@@ -1683,24 +1684,23 @@ static void CG_FlyParticles(vec3_t origin, int count)
 
 void CG_FlyEffect(cg_entity_t *ent, vec3_t origin)
 {
-    int     n;
     int     count;
-    int     starttime;
+    gtime_t starttime, n;
 
     if (ent->fly_stoptime < cg.time) {
         starttime = cg.time;
-        ent->fly_stoptime = cg.time + 60000;
+        ent->fly_stoptime = cg.time + Time_FromSec(60);
     } else {
-        starttime = ent->fly_stoptime - 60000;
+        starttime = ent->fly_stoptime - Time_FromSec(60);
     }
 
     n = cg.time - starttime;
-    if (n < 20000)
-        count = n * NUMVERTEXNORMALS / 20000;
+    if (n < Time_FromSec(20))
+        count = n * NUMVERTEXNORMALS / Time_FromSec(20);
     else {
         n = ent->fly_stoptime - cg.time;
-        if (n < 20000)
-            count = n * NUMVERTEXNORMALS / 20000;
+        if (n < Time_FromSec(20))
+            count = n * NUMVERTEXNORMALS / Time_FromSec(20);
         else
             count = NUMVERTEXNORMALS;
     }
@@ -1723,7 +1723,7 @@ void CG_BfgParticles(const entity_t *ent)
     float       dist;
     float       ltime;
 
-    ltime = cg.time * 0.001f;
+    ltime = cg.refdef.time;
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
         p = CG_AllocParticle();
         if (!p)
@@ -1967,7 +1967,7 @@ void CG_Heatbeam(vec3_t start, vec3_t forward)
     move = start;
     vec = Vec3_NormalizeLength(forward, &len);
 
-    ltime = cg.time * 0.001f;
+    ltime = cg.refdef.time;
     start_pt = fmodf(ltime * 96.0f, step);
     move = Vec3_MA(move, start_pt, vec);
 
@@ -2160,7 +2160,7 @@ void CG_Widowbeamout(cg_sustain_t *self)
     if (sv_paused.integer)
         return;
 
-    ratio = 1.0f - (self->endtime - cg.time) / 2100.0f;
+    ratio = 1.0f - Time_ToSec(self->endtime - cg.time) / 2.1f;
 
     for (i = 0; i < 300; i++) {
         p = CG_AllocParticle();
@@ -2188,7 +2188,7 @@ void CG_Nukeblast(cg_sustain_t *self)
     if (sv_paused.integer)
         return;
 
-    ratio = 1.0f - (self->endtime - cg.time) / 1000.0f;
+    ratio = 1.0f - Time_ToSec(self->endtime - cg.time);
 
     for (i = 0; i < 700; i++) {
         p = CG_AllocParticle();
@@ -2473,7 +2473,7 @@ void CG_TrapParticles(cg_entity_t *ent, vec3_t origin)
     cg_particle_t *p;
     int         dec;
 
-    if (cg.time - ent->fly_stoptime < 10)
+    if (cg.time - ent->fly_stoptime < Time_FromMsec(10))
         return;
     ent->fly_stoptime = cg.time;
 
@@ -2692,7 +2692,7 @@ void CG_HologramParticles(vec3_t org)
     float       ltime;
     axis3_t     axis;
 
-    ltime = cg.time * 0.03f;
+    ltime = cg.refdef.time * 30.0f;
     axis = Axis3_FromAngles(Vec3(ltime, ltime, 0));
 
     for (i = 0; i < NUMVERTEXNORMALS; i++) {
@@ -2769,7 +2769,7 @@ void CG_AddParticles(void)
         next = p->next;
 
         if (p->alphavel != INSTANT_PARTICLE) {
-            time = (cg.time - p->time) * 0.001f;
+            time = Time_ToSec(cg.time - p->time);
             alpha = p->alpha + time * p->alphavel;
             if (alpha <= 0) {
                 // faded out

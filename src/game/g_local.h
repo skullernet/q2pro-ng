@@ -52,20 +52,7 @@ typedef enum {
 #define SPAWNFLAG_RESERVED2         0x00008000
 #define SPAWNFLAG_EDITOR_MASK       0x0000ff00
 
-// stores a level time; most newer engines use int64_t for
-// time storage, but seconds are handy for compatibility
-// with Quake and older mods.
-
-typedef int64_t gtime_t;
 typedef uint32_t spawnflags_t;
-
-#define Time_FromMin(n)     ((gtime_t)((n) * 60000LL))
-#define Time_FromSec(n)     ((gtime_t)((n) * 1000LL))
-#define Time_FromMsec(n)    ((gtime_t)(n))
-#define Time_FromHertz(n)   ((gtime_t)(1000LL / (n)))
-
-#define Time_ToSec(f)   ((f) * 0.001f)
-#define Time_ToMsec(f)  (f)
 
 #define TICK_RATE       game.tick_rate
 #define FRAME_TIME      game.frame_time
@@ -1809,7 +1796,7 @@ vec3_t G_ClipVelocity(vec3_t in, vec3_t normal, float overbounce);
 //
 void G_Init(void);
 void G_Shutdown(void);
-void G_RunFrame(int64_t time);
+void G_RunFrame(uint64_t framenum);
 void G_PrepFrame(void);
 void SaveClientData(void);
 void FetchClientEntData(edict_t *ent);

@@ -40,7 +40,7 @@ static jmp_buf                  exitBuf;
 static atomic_int               shouldExit;
 static atomic_int               errorEntered;
 
-static LARGE_INTEGER            timer_freq;
+static uint64_t                 timer_mult;
 static DWORD                    main_thread_id;
 
 static cvar_t                   *sys_exitonerror;
@@ -864,11 +864,11 @@ bool Sys_IsMainThread(void)
     return GetCurrentThreadId() == main_thread_id;
 }
 
-unsigned Sys_Milliseconds(void)
+gtime_t Sys_Timestamp(void)
 {
     LARGE_INTEGER tm;
     QueryPerformanceCounter(&tm);
-    return tm.QuadPart * 1000ULL / timer_freq.QuadPart;
+    return ((unsigned __int128)(uint64_t)tm.QuadPart * timer_mult) >> 32;
 }
 
 void Sys_AddDefaultConfig(void)
@@ -906,8 +906,10 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    if (!QueryPerformanceFrequency(&timer_freq))
+    LARGE_INTEGER freq;
+    if (!QueryPerformanceFrequency(&freq))
         Sys_Error("QueryPerformanceFrequency failed");
+    timer_mult = ((uint64_t)Time_FromSec(1) << 32) / freq.QuadPart;
 
     if (COM_DEDICATED)
         SetErrorMode(SEM_FAILCRITICALERRORS);

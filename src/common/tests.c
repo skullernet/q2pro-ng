@@ -62,7 +62,7 @@ static void Com_Activate_f(void)
 
 static void Com_Freeze_f(void)
 {
-    unsigned time, msec;
+    gtime_t start, time;
     float seconds;
 
     if (Cmd_Argc() < 2) {
@@ -75,9 +75,9 @@ static void Com_Freeze_f(void)
         return;
     }
 
-    time = Sys_Milliseconds();
-    msec = seconds * 1000;
-    while (Sys_Milliseconds() - time < msec)
+    start = Sys_Timestamp();
+    time = Time_FromSec(seconds);
+    while (Sys_Timestamp() - start < time)
         ;
 }
 
@@ -162,7 +162,7 @@ static void BSP_Test_f(void)
     int i, count, errors;
     bsp_t *bsp;
     qerror_t ret;
-    unsigned start, end;
+    gtime_t start, end;
 
     list = FS_ListFiles(NULL, ".bsp", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
@@ -170,7 +170,7 @@ static void BSP_Test_f(void)
         return;
     }
 
-    start = Sys_Milliseconds();
+    start = Sys_Timestamp();
 
     errors = 0;
     for (i = 0; i < count; i++) {
@@ -185,10 +185,10 @@ static void BSP_Test_f(void)
         BSP_Free(bsp);
     }
 
-    end = Sys_Milliseconds();
+    end = Sys_Timestamp();
 
-    Com_Printf("%d msec, %d failures, %d maps tested\n",
-               end - start, errors, count);
+    Com_Printf("%.1f sec, %d failures, %d maps tested\n",
+               Time_ToSec(end - start), errors, count);
 
     FS_FreeList(list);
 }
@@ -537,7 +537,7 @@ static void Com_TestModels_f(void)
 {
     void **list;
     int i, count, errors;
-    unsigned start, end;
+    gtime_t start, end;
 
     list = FS_ListFiles(NULL, ".md2", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
@@ -545,7 +545,7 @@ static void Com_TestModels_f(void)
         return;
     }
 
-    start = Sys_Milliseconds();
+    start = Sys_Timestamp();
 
     R_BeginRegistration(NULL);
 
@@ -563,10 +563,10 @@ static void Com_TestModels_f(void)
 
     R_EndRegistration();
 
-    end = Sys_Milliseconds();
+    end = Sys_Timestamp();
 
-    Com_Printf("%d msec, %d failures, %d models tested\n",
-               end - start, errors, count);
+    Com_Printf("%.1f sec, %d failures, %d models tested\n",
+               Time_ToSec(end - start), errors, count);
 
     FS_FreeList(list);
 }
@@ -575,7 +575,7 @@ static void Com_TestImages_f(void)
 {
     void **list;
     int i, count, errors;
-    unsigned start, end;
+    gtime_t start, end;
     const char *filter = ".pcx;.wal;.png;.jpg;.tga";
 
     if (Cmd_Argc() > 1)
@@ -587,7 +587,7 @@ static void Com_TestImages_f(void)
         return;
     }
 
-    start = Sys_Milliseconds();
+    start = Sys_Timestamp();
 
     R_BeginRegistration(NULL);
 
@@ -605,10 +605,10 @@ static void Com_TestImages_f(void)
 
     R_EndRegistration();
 
-    end = Sys_Milliseconds();
+    end = Sys_Timestamp();
 
-    Com_Printf("%d msec, %d failures, %d images tested\n",
-               end - start, errors, count);
+    Com_Printf("%.1f sec, %d failures, %d images tested\n",
+               Time_ToSec(end - start), errors, count);
 
     FS_FreeList(list);
 }
@@ -619,7 +619,7 @@ static void Com_TestSounds_f(void)
 {
     void **list;
     int i, count, errors;
-    unsigned start, end;
+    gtime_t start, end;
 
     list = FS_ListFiles(NULL, ".wav", FS_SEARCH_RECURSIVE, &count);
     if (!list) {
@@ -627,7 +627,7 @@ static void Com_TestSounds_f(void)
         return;
     }
 
-    start = Sys_Milliseconds();
+    start = Sys_Timestamp();
 
     S_BeginRegistration();
 
@@ -645,10 +645,10 @@ static void Com_TestSounds_f(void)
 
     S_EndRegistration();
 
-    end = Sys_Milliseconds();
+    end = Sys_Timestamp();
 
-    Com_Printf("%d msec, %d failures, %d sounds tested\n",
-               end - start, errors, count);
+    Com_Printf("%.1f sec, %d failures, %d sounds tested\n",
+               Time_ToSec(end - start), errors, count);
 
     FS_FreeList(list);
 }

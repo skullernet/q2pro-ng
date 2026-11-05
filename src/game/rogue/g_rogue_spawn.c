@@ -260,7 +260,7 @@ void THINK(widowlegs_think)(edict_t *self)
 
     if (self->s.frame < MAX_LEGSFRAME) {
         self->s.frame++;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         return;
     }
 
@@ -304,7 +304,7 @@ void THINK(widowlegs_think)(edict_t *self)
         G_TempEntity(point, EV_EXPLOSION1, 0);
     }
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void Widowlegs_Spawn(edict_t *self)
@@ -324,6 +324,6 @@ void Widowlegs_Spawn(edict_t *self)
     ent->s.modelindex = G_ModelIndex("models/monsters/legs/tris.md2");
     ent->think = widowlegs_think;
 
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
     trap_LinkEntity(ent);
 }

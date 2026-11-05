@@ -610,14 +610,14 @@ Called by the system between frames for both key up and key down events
 Should NOT be called during an interrupt!
 ===================
 */
-void Key_Event(unsigned key, bool down, unsigned time)
+void Key_Event(unsigned key, bool down, gtime_t time)
 {
     char    *kb;
     char    cmd[MAX_STRING_CHARS];
 
     Q_assert(key < 256);
 
-    Com_DDDPrintf("%u: %c%s\n", time,
+    Com_DDDPrintf("%"PRId64": %c%s\n", time,
                   down ? '+' : '-', Key_KeynumToString(key));
 
     // hack for menu key binding
@@ -712,7 +712,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
         if (!down) {
             kb = keybindings[key];
             if (kb && kb[0] == '+') {
-                Q_snprintf(cmd, sizeof(cmd), "-%s %i %i\n",
+                Q_snprintf(cmd, sizeof(cmd), "-%s %i %"PRId64"\n",
                            kb + 1, key, time);
                 Cbuf_AddText(&cmd_buffer, cmd);
             }
@@ -732,7 +732,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
         if (kb) {
             if (kb[0] == '+') {
                 // button commands add keynum and time as a param
-                Q_snprintf(cmd, sizeof(cmd), "%s %i %i\n", kb, key, time);
+                Q_snprintf(cmd, sizeof(cmd), "%s %i %"PRId64"\n", kb, key, time);
                 Cbuf_AddText(&cmd_buffer, cmd);
 
                 // skip the rest of the cinematic

@@ -1444,7 +1444,7 @@ static void Cmd_ShowMonsters_f(edict_t *ent, cmdflags_t flags)
         if (!(e->r.svflags & SVF_MONSTER) || (e->monsterinfo.aiflags & AI_DO_NOT_COUNT) || e->deadflag)
             continue;
 
-        trap_R_AddDebugBounds(e->r.absbox, (e->r.svflags & SVF_NOCLIENT) ? U32_BLUE : U32_RED, 10000, false);
+        trap_R_AddDebugBounds(e->r.absbox, (e->r.svflags & SVF_NOCLIENT) ? U32_BLUE : U32_RED, Time_FromSec(10), false);
         monsters++;
     }
 
@@ -1466,7 +1466,7 @@ static void Cmd_ShowSecrets_f(edict_t *self, cmdflags_t flags)
         other = NULL;
         found = false;
         while ((other = G_Find(other, FOFS(target), ent->targetname))) {
-            trap_R_AddDebugBounds(other->r.absbox, U32_RED, 10000, false);
+            trap_R_AddDebugBounds(other->r.absbox, U32_RED, Time_FromSec(10), false);
             found = true;
         }
 

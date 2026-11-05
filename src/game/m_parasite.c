@@ -512,7 +512,7 @@ void THINK(proboscis_think)(edict_t *self)
                     T_Damage(self->enemy, self, owner, tr.plane.normal, tr.endpos, tr.plane.dir, 2, 0, DAMAGE_NONE, MOD_UNKNOWN);
                     owner->health = min(owner->max_health, owner->health + 2);
                     owner->monsterinfo.setskin(owner);
-                    self->timestamp = level.time + Time_FromHertz(10);
+                    self->timestamp = level.time + BASE_FRAMETIME;
                 }
             }
 

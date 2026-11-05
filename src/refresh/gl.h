@@ -99,7 +99,7 @@ typedef enum {
 typedef struct {
     GLuint query;
     float frac;
-    unsigned timestamp;
+    gtime_t timestamp;
     bool pending;
     bool visible;
 } glquery_t;

@@ -528,11 +528,11 @@ static void trigger_push_effect(edict_t *self)
 void THINK(trigger_push_inactive)(edict_t *self)
 {
     if (self->timestamp > level.time) {
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
     } else {
         self->touch = trigger_push_touch;
         self->think = trigger_push_active;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
 }
@@ -540,12 +540,12 @@ void THINK(trigger_push_inactive)(edict_t *self)
 void THINK(trigger_push_active)(edict_t *self)
 {
     if (self->timestamp > level.time) {
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         trigger_push_effect(self);
     } else {
         self->touch = NULL;
         self->think = trigger_push_inactive;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
 }
@@ -581,7 +581,7 @@ void SP_trigger_push(edict_t *self)
             self->wait = 10;
 
         self->think = trigger_push_active;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         self->timestamp = self->nextthink + Time_FromSec(self->wait);
     }
     // RAFAEL
@@ -665,7 +665,7 @@ void USE(hurt_use)(edict_t *self, edict_t *other, edict_t *activator)
             if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
                 self->nextthink = level.time + Time_FromSec(1);
             else
-                self->nextthink = level.time + Time_FromHertz(10);
+                self->nextthink = level.time + BASE_FRAMETIME;
         } else
             self->nextthink = 0;
     }
@@ -720,7 +720,7 @@ void THINK(hurt_think)(edict_t *self)
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
         self->nextthink = level.time + Time_FromSec(1);
     else
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool other_touching_self)
@@ -736,7 +736,7 @@ void TOUCH(hurt_touch)(edict_t *self, edict_t *other, const trace_t *tr, bool ot
     if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
         self->timestamp = level.time + Time_FromSec(1);
     else
-        self->timestamp = level.time + Time_FromHertz(10);
+        self->timestamp = level.time + BASE_FRAMETIME;
 
     if (!(self->spawnflags & SPAWNFLAG_HURT_SILENT)) {
         if (self->fly_sound_debounce_time < level.time) {
@@ -766,7 +766,7 @@ void SP_trigger_hurt(edict_t *self)
             if (self->spawnflags & SPAWNFLAG_HURT_SLOW)
                 self->nextthink = level.time + Time_FromSec(1);
             else
-                self->nextthink = level.time + Time_FromHertz(10);
+                self->nextthink = level.time + BASE_FRAMETIME;
         }
     } else
         self->touch = hurt_touch;

@@ -58,7 +58,7 @@ typedef struct {
     char        *rules[MAX_STATUS_RULES];
     int         numPlayers;
     char        *players[MAX_STATUS_PLAYERS];
-    unsigned    timestamp;
+    gtime_t     timestamp;
     uint32_t    color;
     char        name[1];
 } serverslot_t;
@@ -70,11 +70,11 @@ typedef struct {
     menuList_t      players;
     void            *names[MAX_STATUS_SERVERS];
     char            *args;
-    unsigned        timestamp;
+    gtime_t         timestamp;
     int             pingstage;
     int             pingindex;
-    int             pingtime;
-    int             pingextra;
+    gtime_t         pingtime;
+    gtime_t         pingextra;
     const char      *status_c;
     char            status_r[32];
 } m_servers_t;
@@ -186,7 +186,7 @@ static serverslot_t *FindSlot(const netadr_t *search, int *index_p)
     return found;
 }
 
-static uint32_t ColorForStatus(const serverStatus_t *status, unsigned ping)
+static uint32_t ColorForStatus(const serverStatus_t *status, gtime_t ping)
 {
     if (Q_atoi(Info_ValueForKey(status->infostring, "needpass")) >= 1)
         return uis.color.disabled.u32;
@@ -215,7 +215,7 @@ void UI_StatusEvent(const serverStatus_t *status)
     serverslot_t *slot;
     char *hostname;
     const char *host, *mod, *map, *maxclients;
-    unsigned timestamp, ping;
+    gtime_t timestamp, ping;
     const char *info = status->infostring;
     char key[MAX_INFO_STRING];
     char value[MAX_INFO_STRING];
@@ -266,13 +266,13 @@ void UI_StatusEvent(const serverStatus_t *status)
     if (timestamp > com_eventTime)
         timestamp = com_eventTime;
 
-    ping = com_eventTime - timestamp;
+    ping = Time_ToMsec(com_eventTime - timestamp);
     if (ping > 999)
         ping = 999;
 
     slot = UI_FormatColumns(SLOT_EXTRASIZE, host, mod, map,
                             va("%d/%s", status->numPlayers, maxclients),
-                            va("%u", ping),
+                            va("%"PRId64, ping),
                             NULL);
     slot->status = SLOT_VALID;
     slot->address = net_from;
@@ -329,7 +329,7 @@ void UI_ErrorEvent(const netadr_t *from)
     serverslot_t *slot;
     netadr_t address;
     char *hostname;
-    unsigned timestamp, ping;
+    gtime_t timestamp, ping;
     int i;
 
     // ignore unless menu is up
@@ -352,12 +352,12 @@ void UI_ErrorEvent(const netadr_t *from)
     if (timestamp > com_eventTime)
         timestamp = com_eventTime;
 
-    ping = com_eventTime - timestamp;
+    ping = Time_ToMsec(com_eventTime - timestamp);
     if (ping > 999)
         ping = 999;
 
     slot = UI_FormatColumns(SLOT_EXTRASIZE, hostname,
-                            "???", "???", "down", va("%u", ping), NULL);
+                            "???", "???", "down", va("%"PRId64, ping), NULL);
     slot->status = SLOT_ERROR;
     slot->address = address;
     slot->hostname = hostname;
@@ -677,7 +677,7 @@ static void CalcPingRate(void)
         rate = Q_clip(info_rate->integer / 450, 1, 100);
 
     // drop rate by stage
-    m_servers.pingtime = (1000 * PING_STAGES) / (rate * m_servers.pingstage);
+    m_servers.pingtime = Time_FromMsec((1000 * PING_STAGES) / (rate * m_servers.pingstage));
 }
 
 /*
@@ -686,14 +686,14 @@ UI_Frame
 
 =================
 */
-void UI_Frame(int msec)
+void UI_Frame(gtime_t delta)
 {
     serverslot_t *slot;
 
     if (!m_servers.pingstage)
         return;
 
-    m_servers.pingextra += msec;
+    m_servers.pingextra += delta;
     if (m_servers.pingextra < m_servers.pingtime)
         return;
 
@@ -737,7 +737,7 @@ static void PingServers(void)
     memset(&broadcast, 0, sizeof(broadcast));
     ParseMasterArgs(&broadcast);
 
-    m_servers.timestamp = Sys_Milliseconds();
+    m_servers.timestamp = Sys_Timestamp();
 
     // optionally ping broadcast
     if (broadcast.type)

@@ -34,7 +34,7 @@ void    Sys_FreeLibrary(void *handle);
 void    *Sys_GetProcAddress(void *handle, const char *sym);
 void    *Sys_LoadGameLibrary(void);
 
-unsigned    Sys_Milliseconds(void);
+gtime_t     Sys_Timestamp(void);
 void        Sys_Sleep(int msec);
 
 void    Sys_Init(void);

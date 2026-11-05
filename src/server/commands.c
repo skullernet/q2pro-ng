@@ -81,7 +81,7 @@ static void SV_SetMaster_f(void)
         // make sure the server is listed public
         Cvar_Set("public", "1");
 
-        svs.last_heartbeat = svs.realtime - HEARTBEAT_SECONDS * 1000;
+        svs.last_heartbeat = svs.realtime - HEARTBEAT_TIME;
         svs.heartbeat_index = 0;
     }
 }
@@ -108,7 +108,7 @@ static void SV_ListMasters_f(void)
         } else if (!m->last_ack) {
             msg = "never";
         } else {
-            msg = va("%u", svs.realtime - m->last_ack);
+            msg = va("%"PRId64, Time_ToMsec(svs.realtime - m->last_ack));
         }
         Com_Printf("%3d %-21.21s %7s %-21s\n", i + 1, m->name, msg, NET_AdrToString(&m->adr));
     }
@@ -540,9 +540,9 @@ static void dump_clients(void)
             break;
         }
 
-        Com_Printf("%3i %5i %s %-15.15s %7u %-21s %5i %2i %3i\n", client->number,
+        Com_Printf("%3i %5i %s %-15.15s %7"PRId64" %-21s %5i %2i %3i\n", client->number,
                    SV_GetClient_Stat(client, STAT_FRAGS),
-                   ping, client->name, svs.realtime - client->lastmessage,
+                   ping, client->name, Time_ToMsec(svs.realtime - client->lastmessage),
                    NET_AdrToString(&client->netchan.remote_address),
                    client->rate, client->protocol, client->moves_per_sec);
     }
@@ -574,7 +574,7 @@ static void dump_time(void)
         "--- --------------- ---- --------\n");
 
     FOR_EACH_CLIENT(client) {
-        idle = (svs.realtime - client->lastactivity) / 1000;
+        idle = Time_ToSec(svs.realtime - client->lastactivity);
         if (idle > 9999)
             idle = 9999;
         Com_TimeDiff(buffer, sizeof(buffer),
@@ -718,7 +718,7 @@ SV_Heartbeat_f
 */
 static void SV_Heartbeat_f(void)
 {
-    svs.last_heartbeat = svs.realtime - HEARTBEAT_SECONDS * 1000;
+    svs.last_heartbeat = svs.realtime - HEARTBEAT_TIME;
     svs.heartbeat_index = 0;
 }
 

@@ -32,10 +32,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct {
     unsigned        flags;
-    unsigned        number;
-    unsigned        servertime;
+    unsigned        number;         // incoming packet sequence
+    uint64_t        serverframe;    // server frame number
+    gtime_t         servertime;     // serverframe * timebase
+    gtime_t         latency;
     unsigned        cmdnum;
-    unsigned        latency;
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
@@ -50,6 +51,12 @@ typedef struct {
     char        servername[MAX_QPATH];
     float       demoprogress;
 } cg_client_info_t;
+
+typedef enum {
+    CG_DRAW_NONE    = 0U,
+    CG_DRAW_ACTIVE  = BIT(0),
+    CG_DRAW_LOADING = BIT(1),
+} cg_draw_flags_t;
 
 //===============================================================
 
@@ -191,22 +198,22 @@ typedef struct {
     size_t (*FS_ErrorString)(qerror_t error, char *buf, size_t size);
 
     void (*R_ClearDebugLines)(void);
-    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
-    void (*R_AddDebugBounds)(box3_t box, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+    void (*R_AddDebugLine)(vec3_t start, vec3_t end, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugPoint)(vec3_t point, float size, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugAxis)(vec3_t origin, vec3_t angles, float size, gtime_t time, bool depth_test);
+    void (*R_AddDebugBounds)(box3_t box, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugSphere)(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugCircle)(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+    void (*R_AddDebugCylinder)(vec3_t origin, float half_height, float radius, uint32_t color, gtime_t time,
                                bool depth_test);
     void (*R_AddDebugArrow)(vec3_t start, vec3_t end, float size, uint32_t line_color,
-                            uint32_t arrow_color, uint32_t time, bool depth_test);
+                            uint32_t arrow_color, gtime_t time, bool depth_test);
     void (*R_AddDebugCurveArrow)(vec3_t start, vec3_t ctrl, vec3_t end, float size,
-                                 uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
+                                 uint32_t line_color, uint32_t arrow_color, gtime_t time, bool depth_test);
     void (*R_AddDebugText)(vec3_t origin, const char *text,
-                           float size, uint32_t color, uint32_t time, bool depth_test);
+                           float size, uint32_t color, gtime_t time, bool depth_test);
     void (*R_AddDebugAngledText)(vec3_t origin, vec3_t angles, const char *text,
-                                 float size, uint32_t color, uint32_t time, bool depth_test);
+                                 float size, uint32_t color, gtime_t time, bool depth_test);
 } cgame_import_t;
 
 //
@@ -220,7 +227,7 @@ typedef struct {
     void (*Shutdown)(void);
     void (*PrepRefresh)(bool demoplayback);
     void (*ClearState)(void);
-    void (*DrawFrame)(unsigned msec, bool active, bool loading);
+    void (*DrawFrame)(gtime_t delta, gtime_t delta_s, cg_draw_flags_t flags);
     void (*ModeChanged)(void);
     bool (*ConsoleCommand)(void);
     void (*CompleteCommand)(int firstarg, int argnum);

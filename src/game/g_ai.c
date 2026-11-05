@@ -1212,7 +1212,7 @@ static bool ai_checkattack(edict_t *self, float dist)
     retval = false;
 
     if (self->monsterinfo.checkattack_time <= level.time) {
-        self->monsterinfo.checkattack_time = level.time + Time_FromHertz(10);
+        self->monsterinfo.checkattack_time = level.time + BASE_FRAMETIME;
         retval = self->monsterinfo.checkattack(self);
     }
 
@@ -1548,7 +1548,7 @@ void ai_run(edict_t *self, float dist)
         dist = min(dist, Vec3_Distance(self->s.origin, self->monsterinfo.last_sighting));
         // [Paril-KEX] this helps them navigate corners when two next pursuits
         // are really close together
-        self->monsterinfo.random_change_time = level.time + Time_FromHertz(10);
+        self->monsterinfo.random_change_time = level.time + BASE_FRAMETIME;
     }
 
     self->goalentity->s.origin = self->monsterinfo.last_sighting;

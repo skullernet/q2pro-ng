@@ -31,8 +31,8 @@ typedef struct {
     unsigned    total_dropped;      // for statistics
     unsigned    total_received;
 
-    unsigned    last_received;      // for timeouts
-    unsigned    last_sent;          // for retransmits
+    gtime_t     last_received;      // for timeouts
+    gtime_t     last_sent;          // for retransmits
 
     int         qport;              // qport value to write when transmitting
     netadr_t    remote_address;

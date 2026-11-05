@@ -188,7 +188,7 @@ static void MSG_WriteSignedLeb32(int32_t v)
     MSG_WriteLeb32(((uint32_t)v << 1) ^ (v >> 31));
 }
 
-static void MSG_WriteLeb64(uint64_t v)
+void MSG_WriteLeb64(uint64_t v)
 {
     while (v) {
         MSG_WriteBit(1);
@@ -837,7 +837,7 @@ static int32_t MSG_ReadSignedLeb32(void)
     return (v >> 1) ^ -(v & 1);
 }
 
-static uint64_t MSG_ReadLeb64(void)
+uint64_t MSG_ReadLeb64(void)
 {
     uint64_t v = 0;
     int bits = 0;

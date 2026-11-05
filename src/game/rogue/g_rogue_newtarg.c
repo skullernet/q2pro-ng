@@ -246,7 +246,7 @@ void SP_target_orb(edict_t *ent)
     }
 
     ent->think = blacklight_think;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
     ent->s.skinnum = 1;
     ent->s.modelindex = G_ModelIndex("models/items/spawngro3/tris.md2");
     ent->s.frame = 2;

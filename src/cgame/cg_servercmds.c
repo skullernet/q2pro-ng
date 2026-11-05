@@ -95,7 +95,7 @@ static void CG_Poi(void)
     unsigned index = CG_ParseInt(4);
     Q_assert_soft(index < MAX_IMAGES);
 
-    SCR_AddPOI(POI_OBJECTIVE, point, cgs.images.precache[index], U32_GREEN, cg_compass_time.value * 1000);
+    SCR_AddPOI(POI_OBJECTIVE, point, cgs.images.precache[index], U32_GREEN, Time_FromSec(cg_compass_time.value));
 
     trap_S_StartSound(cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
 }
@@ -110,7 +110,7 @@ static void CG_Ping(void)
     unsigned index = CG_ParseInt(5);
     Q_assert_soft(index < MAX_IMAGES);
 
-    SCR_AddPOI(POI_PING + entnum, point, cgs.images.precache[index], U32_GREEN, cg_location_time.value * 1000);
+    SCR_AddPOI(POI_PING + entnum, point, cgs.images.precache[index], U32_GREEN, Time_FromSec(cg_location_time.value));
 
     trap_S_StartSound(cg.listener.entnum, CHAN_AUTO, cgs.sounds.help_marker, 1, ATTN_NONE, 0);
 }

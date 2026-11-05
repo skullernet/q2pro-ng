@@ -62,7 +62,7 @@ void CL_ErrorEvent(const netadr_t *from);
 void CL_Init(void);
 void CL_Disconnect(error_type_t type);
 void CL_Shutdown(void);
-unsigned CL_Frame(unsigned msec);
+gtime_t CL_Frame(gtime_t delta, gtime_t delta_s);
 void CL_RestartFilesystem(bool total);
 void CL_Activate(active_t active);
 void CL_UpdateUserinfo(cvar_t *var, from_t from);
@@ -125,42 +125,42 @@ void SCR_Cinematic_g(void);
 
 #if USE_REF && USE_DEBUG
 void R_ClearDebugLines(void);
-void R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-void R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-void R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
-void R_AddDebugBounds(box3_t box, uint32_t color, uint32_t time, bool depth_test);
-void R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+void R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, gtime_t time, bool depth_test);
+void R_AddDebugPoint(vec3_t point, float size, uint32_t color, gtime_t time, bool depth_test);
+void R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, gtime_t time, bool depth_test);
+void R_AddDebugBounds(box3_t box, uint32_t color, gtime_t time, bool depth_test);
+void R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+void R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+void R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, gtime_t time,
                         bool depth_test);
 void R_DrawArrowCap(vec3_t apex, vec3_t dir, float size,
-                    uint32_t color, uint32_t time, bool depth_test);
+                    uint32_t color, gtime_t time, bool depth_test);
 void R_AddDebugArrow(vec3_t start, vec3_t end, float size, uint32_t line_color,
-                     uint32_t arrow_color, uint32_t time, bool depth_test);
+                     uint32_t arrow_color, gtime_t time, bool depth_test);
 void R_AddDebugCurveArrow(vec3_t start, vec3_t ctrl, vec3_t end, float size,
-                          uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
+                          uint32_t line_color, uint32_t arrow_color, gtime_t time, bool depth_test);
 void R_AddDebugText(vec3_t origin, const char *text,
-                    float size, uint32_t color, uint32_t time, bool depth_test);
+                    float size, uint32_t color, gtime_t time, bool depth_test);
 void R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
-                          float size, uint32_t color, uint32_t time, bool depth_test);
+                          float size, uint32_t color, gtime_t time, bool depth_test);
 #else
 static inline void R_ClearDebugLines(void) { }
-static inline void R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugBounds(box3_t box, uint32_t color, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test) { }
-static inline void R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+static inline void R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugPoint(vec3_t point, float size, uint32_t color, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugBounds(box3_t box, uint32_t color, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test) { }
+static inline void R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, gtime_t time,
                                       bool depth_test) { }
 static inline void R_DrawArrowCap(vec3_t apex, vec3_t dir, float size,
-                                  uint32_t color, uint32_t time, bool depth_test) { }
+                                  uint32_t color, gtime_t time, bool depth_test) { }
 static inline void R_AddDebugArrow(vec3_t start, vec3_t end, float size, uint32_t line_color,
-                                   uint32_t arrow_color, uint32_t time, bool depth_test) { }
+                                   uint32_t arrow_color, gtime_t time, bool depth_test) { }
 static inline void R_AddDebugCurveArrow(vec3_t start, vec3_t ctrl, vec3_t end, float size,
-                                        uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test) { }
+                                        uint32_t line_color, uint32_t arrow_color, gtime_t time, bool depth_test) { }
 static inline void R_AddDebugText(vec3_t origin, const char *text,
-                                  float size, uint32_t color, uint32_t time, bool depth_test) { }
+                                  float size, uint32_t color, gtime_t time, bool depth_test) { }
 static inline void R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
-                                        float size, uint32_t color, uint32_t time, bool depth_test) { }
+                                        float size, uint32_t color, gtime_t time, bool depth_test) { }
 #endif

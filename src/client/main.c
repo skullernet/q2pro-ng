@@ -22,7 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 cvar_t  *rcon_address;
 
 cvar_t  *cl_timeout;
-cvar_t  *cl_warn_on_fps_rounding;
 cvar_t  *cl_maxfps;
 cvar_t  *cl_async;
 cvar_t  *r_maxfps;
@@ -75,7 +74,7 @@ typedef enum {
 typedef struct {
     requestType_t type;
     netadr_t adr;
-    unsigned time;
+    gtime_t time;
 } request_t;
 
 #define MAX_REQUESTS    64
@@ -108,14 +107,14 @@ static request_t *CL_FindRequest(void)
             continue;
         }
         if (r->adr.type == NA_BROADCAST) {
-            if (cls.realtime - r->time > 3000) {
+            if (cls.realtime - r->time > Time_FromSec(3)) {
                 continue;
             }
             if (!NET_IsLanAddress(&net_from)) {
                 continue;
             }
         } else {
-            if (cls.realtime - r->time > 6000) {
+            if (cls.realtime - r->time > Time_FromSec(6)) {
                 break;
             }
             if (!NET_IsEqualBaseAdr(&net_from, &r->adr)) {
@@ -1738,11 +1737,6 @@ static void cl_allow_download_changed(cvar_t *self)
     }
 }
 
-void cl_timeout_changed(cvar_t *self)
-{
-    self->integer = 1000 * Cvar_ClampValue(self, 0, 24 * 24 * 60 * 60);
-}
-
 static void info_dogtag_g(void)
 {
     FS_File_g("tags", NULL, FS_SEARCH_STRIPEXT);
@@ -1796,8 +1790,7 @@ static void CL_InitLocal(void)
     //
     // register our variables
     //
-    cl_warn_on_fps_rounding = Cvar_Get("cl_warn_on_fps_rounding", "1", 0);
-    cl_maxfps = Cvar_Get("cl_maxfps", "62", 0);
+    cl_maxfps = Cvar_Get("cl_maxfps", "60", 0);
     cl_maxfps->changed = cl_sync_changed;
     cl_async = Cvar_Get("cl_async", "1", 0);
     cl_async->changed = cl_sync_changed;
@@ -1817,8 +1810,6 @@ static void CL_InitLocal(void)
 #endif
 
     cl_timeout = Cvar_Get("cl_timeout", "120", 0);
-    cl_timeout->changed = cl_timeout_changed;
-    cl_timeout_changed(cl_timeout);
 
     rcon_address = Cvar_Get("rcon_address", "", CVAR_PRIVATE);
     rcon_address->generator = Com_Address_g;
@@ -1939,16 +1930,17 @@ void CL_Activate(active_t active)
 
 static void CL_MeasureStats(void)
 {
+    float d;
     int i;
 
-    if (com_localTime - cls.measure.time < 1000) {
+    if (com_localTime - cls.measure.time < Time_FromSec(1)) {
         return;
     }
 
     // measure average ping
     if (cls.netchan.init) {
         int ack = cls.netchan.incoming_acknowledged;
-        int ping = 0;
+        gtime_t ping = 0;
         int j, k = 0;
 
         i = ack - 16 + 1;
@@ -1963,12 +1955,14 @@ static void CL_MeasureStats(void)
             }
         }
 
-        cls.measure.ping = k ? ping / k : 0;
+        cls.measure.ping = k ? Time_ToMsec(ping / k) : 0;
     }
+
+    d = Time_ToSec(com_localTime - cls.measure.time);
 
     // measure main/refresh frame counts
     for (i = 0; i < 4; i++) {
-        cls.measure.fps[i] = cls.measure.frames[i];
+        cls.measure.fps[i] = cls.measure.frames[i] / d + 0.5f;
         cls.measure.frames[i] = 0;
     }
 
@@ -1985,12 +1979,12 @@ static void CL_CheckTimeout(void)
     }
 
 #if USE_ICMP
-    if (cls.errorReceived && com_localTime - cls.netchan.last_received > 5000) {
+    if (cls.errorReceived && com_localTime - cls.netchan.last_received > Time_FromSec(5)) {
         Com_Error(ERR_DISCONNECT, "Server connection was reset.");
     }
 #endif
 
-    if (cl_timeout->integer && com_localTime - cls.netchan.last_received > cl_timeout->integer) {
+    if (cl_timeout->integer && com_localTime - cls.netchan.last_received > Time_FromSec(cl_timeout->value)) {
         // timeoutcount saves debugger
         if (++cl.timeoutcount > 5) {
             Com_Error(ERR_DISCONNECT, "Server connection timed out.");
@@ -2062,59 +2056,23 @@ static const char *const sync_names[] = {
 };
 #endif
 
-static int ref_msec, phys_msec, main_msec;
-static int ref_extra, phys_extra, main_extra;
+static gtime_t ref_time, phys_time, main_time;
+static gtime_t ref_extra, phys_extra, main_extra, main_extra_s;
 static sync_mode_t sync_mode;
+
+gtime_t scr_extra, scr_extra_s;
 
 #define MIN_PHYS_HZ 10
 #define MAX_PHYS_HZ 125
 #define MIN_REF_HZ MIN_PHYS_HZ
 #define MAX_REF_HZ 1000
 
-static inline int fps_to_msec(int fps)
+static gtime_t fps_to_frame_time(cvar_t *cvar, int min, int max)
 {
-    return 1000 / fps;
-}
-
-static void warn_on_fps_rounding(const cvar_t *cvar, int msec)
-{
-    static bool warned = false;
-    int real_maxfps;
-
-    if (cl_warn_on_fps_rounding->integer <= 0)
-        return;
-
-    if (!msec)
-        return;
-
-    real_maxfps = 1000 / msec;
-    if (cvar->integer == real_maxfps)
-        return;
-
-    Com_WPrintf("%s value `%d' is inexact and will be rounded to `%d'.\n",
-                cvar->name, cvar->integer, real_maxfps);
-    if (!warned) {
-        Com_Printf("(Set `%s' to `0' to disable this warning.)\n",
-                   cl_warn_on_fps_rounding->name);
-        warned = true;
-    }
-}
-
-static int fps_to_clamped_msec(cvar_t *cvar, int min, int max)
-{
-    int msec;
-
     if (cvar->integer == 0)
-        return fps_to_msec(max);
+        return Time_FromHertz(max);
 
-    msec = fps_to_msec(Cvar_ClampInteger(cvar, min, max));
-
-    if (cvar->modified) {
-        warn_on_fps_rounding(cvar, msec);
-        cvar->modified = false;
-    }
-
-    return msec;
+    return Time_FromHertz(Cvar_ClampInteger(cvar, min, max));
 }
 
 /*
@@ -2130,8 +2088,9 @@ void CL_UpdateFrameTimes(void)
         return; // not yet fully initialized
     }
 
-    phys_msec = ref_msec = main_msec = 0;
-    ref_extra = phys_extra = main_extra = 0;
+    phys_time = ref_time = main_time = 0;
+    ref_extra = phys_extra = main_extra = main_extra_s = 0;
+    scr_extra = scr_extra_s = 0;
     cls.frametime = 0.0f;
 
     if (com_timedemo->integer) {
@@ -2139,29 +2098,29 @@ void CL_UpdateFrameTimes(void)
         sync_mode = SYNC_TIMEDEMO;
     } else if (cls.active == ACT_MINIMIZED) {
         // run at 10 fps if minimized
-        main_msec = fps_to_msec(10);
+        main_time = Time_FromHertz(10);
         sync_mode = SYNC_SLEEP_10;
     } else if (cls.active == ACT_RESTORED || cls.state != ca_active) {
         // run at 60 fps if not active
-        main_msec = fps_to_msec(60);
+        main_time = Time_FromHertz(60);
         sync_mode = SYNC_SLEEP_60;
     } else if (cl_async->integer > 0) {
         // run physics and refresh separately
-        phys_msec = fps_to_clamped_msec(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
+        phys_time = fps_to_frame_time(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
         if (cl_async->integer > 1 && r_config.flags & QVF_VIDEOSYNC) {
             sync_mode = ASYNC_VIDEO;
         } else {
-            ref_msec = fps_to_clamped_msec(r_maxfps, MIN_REF_HZ, MAX_REF_HZ);
+            ref_time = fps_to_frame_time(r_maxfps, MIN_REF_HZ, MAX_REF_HZ);
             sync_mode = ASYNC_FULL;
         }
     } else {
         // everything ticks in sync with refresh
-        main_msec = fps_to_clamped_msec(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
+        main_time = fps_to_frame_time(cl_maxfps, MIN_PHYS_HZ, MAX_PHYS_HZ);
         sync_mode = SYNC_MAXFPS;
     }
 
-    Com_DDPrintf("%s: mode=%s main_msec=%d ref_msec=%d, phys_msec=%d\n",
-                 __func__, sync_names[sync_mode], main_msec, ref_msec, phys_msec);
+    Com_DDPrintf("%s: mode=%s main_time=%"PRId64" ref_time=%"PRId64", phys_time=%"PRId64"\n",
+                 __func__, sync_names[sync_mode], main_time, ref_time, phys_time);
 }
 
 /*
@@ -2170,7 +2129,7 @@ CL_Frame
 
 ==================
 */
-unsigned CL_Frame(unsigned msec)
+gtime_t CL_Frame(gtime_t delta, gtime_t delta_s)
 {
     bool phys_frame = true, ref_frame = true;
 
@@ -2180,8 +2139,13 @@ unsigned CL_Frame(unsigned msec)
         return UINT_MAX;
     }
 
-    main_extra += msec;
-    cls.realtime += msec;
+    main_extra += delta;
+    main_extra_s += delta_s;
+
+    scr_extra += delta;
+    scr_extra_s += delta_s;
+
+    cls.realtime += delta;
 
     CL_ProcessEvents();
 
@@ -2195,8 +2159,8 @@ unsigned CL_Frame(unsigned msec)
         // fall through
     case SYNC_SLEEP_60:
         // run at limited fps if not active
-        if (main_extra < main_msec) {
-            return main_msec - main_extra;
+        if (main_extra < main_time) {
+            return main_time - main_extra;
         }
         break;
     case ASYNC_VIDEO:
@@ -2204,26 +2168,26 @@ unsigned CL_Frame(unsigned msec)
         // run physics and refresh separately
         phys_extra += main_extra;
 
-        if (phys_extra < phys_msec) {
+        if (phys_extra < phys_time) {
             phys_frame = false;
-        } else if (phys_extra > phys_msec * 4) {
-            phys_extra = phys_msec;
+        } else if (phys_extra > phys_time * 4) {
+            phys_extra = phys_time;
         }
 
         if (sync_mode == ASYNC_VIDEO) {
             ref_frame = R_VideoSync();
         } else {
             ref_extra += main_extra;
-            if (ref_extra < ref_msec) {
+            if (ref_extra < ref_time) {
                 ref_frame = false;
-            } else if (ref_extra > ref_msec * 4) {
-                ref_extra = ref_msec;
+            } else if (ref_extra > ref_time * 4) {
+                ref_extra = ref_time;
             }
         }
         break;
     case SYNC_MAXFPS:
         // everything ticks in sync with refresh
-        if (main_extra < main_msec) {
+        if (main_extra < main_time) {
             if (!cl.sendPacketNow) {
                 return 0;
             }
@@ -2232,19 +2196,19 @@ unsigned CL_Frame(unsigned msec)
         break;
     }
 
-    Com_DDDDPrintf("main_extra=%d ref_frame=%d ref_extra=%d "
-                   "phys_frame=%d phys_extra=%d\n",
+    Com_DDDDPrintf("main_extra=%"PRId64" ref_frame=%d ref_extra=%"PRId64" "
+                   "phys_frame=%d phys_extra=%"PRId64"\n",
                    main_extra, ref_frame, ref_extra,
                    phys_frame, phys_extra);
 
     // decide the simulation time
-    cls.frametime += main_extra * 0.001f;
+    cls.frametime += Time_ToSec(main_extra);
 
     if (cls.frametime > 1.0f / 5)
         cls.frametime = 1.0f / 5;
 
-    if (!sv_paused->integer && cls.demo.playback)
-        cl.time += main_extra;
+    if (cls.demo.playback)
+        cl.time += main_extra_s;
 
     // read next demo frame
     CL_DemoFrame();
@@ -2253,24 +2217,23 @@ unsigned CL_Frame(unsigned msec)
     CL_CheckForResend();
 
     // read user intentions
-    CL_UpdateCmd(main_extra);
+    CL_UpdateCmd(main_extra_s);
 
     // finalize pending cmd
     phys_frame |= cl.sendPacketNow;
     if (phys_frame) {
         CL_FinalizeCmd();
-        phys_extra -= phys_msec;
-        M_FRAMES++;
+        phys_extra -= phys_time;
 
         // don't let the time go too far off
         // this can happen due to cl.sendPacketNow
-        if (phys_extra < -phys_msec * 4) {
+        if (phys_extra < -phys_time * 4) {
             phys_extra = 0;
         }
     }
 
     // send pending cmds
-    CL_SendCmd();
+    CL_SendCmd(main_extra);
 
     SCR_RunCinematic();
 
@@ -2281,16 +2244,17 @@ unsigned CL_Frame(unsigned msec)
 
         // update the screen
         if (host_speeds->integer)
-            time_before_ref = Sys_Milliseconds();
+            time_before_ref = Sys_Timestamp();
 
         SCR_UpdateScreen();
 
         if (host_speeds->integer)
-            time_after_ref = Sys_Milliseconds();
+            time_after_ref = Sys_Timestamp();
 
         cls.frametime = 0.0f;
+        scr_extra = scr_extra_s = 0;
 
-        ref_extra -= ref_msec;
+        ref_extra -= ref_time;
         R_FRAMES++;
     }
 
@@ -2305,7 +2269,7 @@ unsigned CL_Frame(unsigned msec)
 
     CL_MeasureStats();
 
-    main_extra = 0;
+    main_extra = main_extra_s = 0;
     return 0;
 }
 

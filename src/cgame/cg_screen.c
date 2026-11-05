@@ -58,7 +58,7 @@ static struct {
     vec2_t      hud_center;
     float       hud_scale;
 
-    unsigned    timestamp;
+    gtime_t     timestamp;
     int         frames, fps;
 } scr;
 
@@ -165,7 +165,7 @@ void SCR_DrawStringMulti(float x, float y, ui_flags_t flags, size_t maxlen,
         s = o;
     }
 
-    if (flags & UI_DRAWCURSOR && cgs.realtime & BIT(8)) {
+    if (flags & UI_DRAWCURSOR && cgs.realtime & TIME_BLINK_BIT) {
         if (scr.font_is_ttf)
             trap_R_DrawChar(last_x, last_y, flags, '_', font);
         else
@@ -179,10 +179,10 @@ void SCR_DrawStringMulti(float x, float y, ui_flags_t flags, size_t maxlen,
 SCR_FadeAlpha
 =================
 */
-float SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime)
+float SCR_FadeAlpha(gtime_t startTime, gtime_t visTime, gtime_t fadeTime)
 {
     float alpha;
-    unsigned timeLeft, delta = cgs.realtime - startTime;
+    gtime_t timeLeft, delta = cgs.realtime - startTime;
 
     if (delta >= visTime) {
         return 0;
@@ -250,9 +250,9 @@ static void SCR_DrawDemo(void)
     SCR_DrawString(x, h, UI_NONE, buffer);
 
     if (scr_demobar.integer > 1) {
-        int sub = cg.frame->servertime / BASE_FRAMETIME;
-        int sec = sub / 10; sub %= 10;
-        int min = sec / 60; sec %= 60;
+        int min = cg.frame->servertime / Time_FromMin(1);
+        int sec = (cg.frame->servertime / Time_FromSec(1)) % 60;
+        int sub = (cg.frame->servertime / Time_FromMsec(100)) % 10;
 
         Q_snprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, sub);
         SCR_DrawString(0, h, UI_NONE, buffer);
@@ -276,7 +276,8 @@ CENTER PRINTING
 
 typedef struct {
     char string[MAX_STRING_CHARS];
-    unsigned start, lines, typewrite;
+    gtime_t start, typewrite;
+    int lines;
 } centerprint_t;
 
 static centerprint_t    scr_centerprints[MAX_CENTERPRINTS];
@@ -336,7 +337,7 @@ void SCR_CenterPrint(const char *str, bool typewrite)
     // for typewritten strings set minimum display time
     if (typewrite && scr_printspeed.value > 0) {
         size_t nb_chars = strlen(cp->string) - cp->lines + 2;
-        cp->typewrite = nb_chars * 1000 / scr_printspeed.value + 300;
+        cp->typewrite = Time_FromSec(nb_chars / scr_printspeed.value + 0.3f);
     }
 
     // echo it to the console
@@ -367,7 +368,7 @@ static bool SCR_DrawCenterString(unsigned index)
     if (!cp->start)
         cp->start = cgs.realtime;
 
-    alpha = SCR_FadeAlpha(cp->start, scr_centertime.integer + cp->typewrite, 300);
+    alpha = SCR_FadeAlpha(cp->start, Time_FromSec(scr_centertime.integer) + cp->typewrite, Time_FromSec(0.3f));
     if (!alpha)
         return false;
 
@@ -382,7 +383,7 @@ static bool SCR_DrawCenterString(unsigned index)
     flags = UI_CENTER | UI_DROPSHADOW;
 
     if (cp->typewrite) {
-        maxlen = scr_printspeed.value * 0.001f * (cgs.realtime - cp->start);
+        maxlen = scr_printspeed.value * Time_ToSec(cgs.realtime - cp->start);
         flags |= UI_DRAWCURSOR;
     } else {
         maxlen = MAX_STRING_CHARS;
@@ -398,15 +399,7 @@ static bool SCR_DrawCenterString(unsigned index)
 
 static void SCR_DrawCenterStrings(void)
 {
-    if (scr_centertime.modified) {
-        if (scr_centertime.value > 0)
-            scr_centertime.integer = 1000 * Q_clipf(scr_centertime.value, 1.0f, 30.0f);
-        else
-            scr_centertime.integer = 0;
-        scr_centertime.modified = false;
-    }
-
-    if (!scr_centertime.integer || (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INTERMISSION))
+    if (scr_centertime.value <= 0 || (cg.frame->ps.stats[STAT_LAYOUTS] & LAYOUTS_INTERMISSION))
         return;
 
     while (true) {
@@ -455,7 +448,7 @@ void SCR_LagSample(const cg_server_frame_t *frame)
         return;
     }
 
-    ping = frame->latency;
+    ping = Time_ToMsec(frame->latency);
     if (frame->flags)
         ping |= LAG_WARN_BIT;
 
@@ -522,7 +515,7 @@ static void SCR_DrawNet(void)
     // draw phone jack
     unsigned current = trap_GetUsercmdNumber();
     if (current - cg.frame->cmdnum > CMD_BACKUP) {
-        if ((cgs.realtime >> 8) & 3) {
+        if ((cgs.realtime >> 18) & 3) {
             SCR_DrawStretchPic(x, y, LAG_WIDTH, LAG_HEIGHT, scr.net_pic);
         }
     }
@@ -542,7 +535,7 @@ CHAT HUD
 
 typedef struct {
     char        text[MAX_CHAT_TEXT];
-    unsigned    time;
+    gtime_t     time;
 } chatline_t;
 
 static chatline_t   scr_chatlines[MAX_CHAT_LINES];
@@ -572,6 +565,7 @@ static void SCR_DrawChatHUD(void)
 {
     int x, y, i, lines, flags, step;
     float alpha;
+    gtime_t timeout;
     chatline_t *line;
 
     if (scr_chathud.integer == 0)
@@ -603,11 +597,13 @@ static void SCR_DrawChatHUD(void)
     if (lines > scr_chathead)
         lines = scr_chathead;
 
+    timeout = Time_FromSec(scr_chathud_time.value);
+
     for (i = 0; i < lines; i++) {
         line = &scr_chatlines[(scr_chathead - i - 1) & CHAT_LINE_MASK];
 
-        if (scr_chathud_time.integer) {
-            alpha = SCR_FadeAlpha(line->time, scr_chathud_time.integer, 1000);
+        if (timeout) {
+            alpha = SCR_FadeAlpha(line->time, timeout, Time_FromSec(1));
             if (!alpha)
                 break;
 
@@ -786,6 +782,7 @@ void SCR_RegisterMedia(void)
 
     scr_font.modified = true;
     scr_crosshair.modified = true;
+    scr.timestamp = 0;
 
     SCR_UpdateCvars();
 }
@@ -825,9 +822,9 @@ static const vm_cvar_reg_t scr_cvars[] = {
     { &scr_lag_max, "scr_lag_max", "200", 0 },
     { &scr_alpha, "scr_alpha", "1", 0 },
 
-    { &scr_hit_marker_time, "scr_hit_marker_time", "500", 0 },
+    { &scr_hit_marker_time, "scr_hit_marker_time", "0.5", 0 },
     { &scr_damage_indicators, "scr_damage_indicators", "1", 0 },
-    { &scr_damage_indicator_time, "scr_damage_indicator_time", "1000", 0 },
+    { &scr_damage_indicator_time, "scr_damage_indicator_time", "1", 0 },
 };
 
 /*
@@ -1045,7 +1042,7 @@ static void SCR_DrawInventory(void)
         SCR_DrawString(x + 256 - 34, y, flags | UI_RIGHT, string);
 
         // draw a blinky cursor by the selected item
-        if (item == selected && cgs.realtime & BIT(8))
+        if (item == selected && cgs.realtime & TIME_BLINK_BIT)
             SCR_DrawStringEx(x, y, flags, -1, cur, cur_font);
 
         y += h;
@@ -1797,7 +1794,7 @@ POI
 
 typedef struct {
     poi_id_t    id;
-    int         time;
+    gtime_t     time;
     vec3_t      pos;
     qhandle_t   image;
     vec2_t      size;
@@ -1827,7 +1824,8 @@ void SCR_RemovePOI(poi_id_t id)
 static scr_poi_t *SCR_AllocPOI(poi_id_t id)
 {
     scr_poi_t *poi, *oldest = NULL;
-    int i, oldest_time = INT_MAX;
+    gtime_t oldest_time = INT64_MAX;
+    int i;
 
     for (i = 0, poi = scr_pois; i < MAX_POIS; i++, poi++) {
         if (poi->id) {
@@ -1845,7 +1843,7 @@ static scr_poi_t *SCR_AllocPOI(poi_id_t id)
     return oldest;
 }
 
-void SCR_AddPOI(poi_id_t id, vec3_t point, qhandle_t image, uint32_t color, int time)
+void SCR_AddPOI(poi_id_t id, vec3_t point, qhandle_t image, uint32_t color, gtime_t time)
 {
     scr_poi_t *poi = SCR_AllocPOI(id);
     if (!poi)
@@ -1939,7 +1937,8 @@ DAMAGE INDICATORS
 */
 
 typedef struct {
-    int time, damage;
+    gtime_t time;
+    int damage;
     vec3_t color, dir;
     float yaw;
 } scr_damage_entry_t;
@@ -1956,7 +1955,7 @@ static scr_damage_entry_t *SCR_AllocDamageDisplay(vec3_t dir)
     scr_damage_entry_t *entry = scr_damage_entries;
 
     for (int i = 0; i < MAX_DAMAGE_INDICATORS; i++, entry++) {
-        if (entry->time <= cg.time)
+        if (entry->time <= cgs.realtime)
             goto new_entry;
 
         if (Vec3_Dot(entry->dir, dir) >= 0.95f)
@@ -1980,17 +1979,17 @@ void SCR_AddToDamageDisplay(int damage, vec3_t color, vec3_t dir)
     entry->color = Vec3_Add(entry->color, color);
     entry->dir = dir;
     entry->yaw = vectoangles(dir).yaw;
-    entry->time = cg.time + scr_damage_indicator_time.integer;
+    entry->time = cgs.realtime + Time_FromSec(scr_damage_indicator_time.value);
 }
 
 static void SCR_DrawDamageDisplays(void)
 {
     for (int i = 0; i < MAX_DAMAGE_INDICATORS; i++) {
         const scr_damage_entry_t *entry = &scr_damage_entries[i];
-        if (entry->time <= cg.time)
+        if (entry->time <= cgs.realtime)
             continue;
 
-        float frac = (entry->time - cg.time) / scr_damage_indicator_time.value;
+        float frac = Time_ToSec(entry->time - cgs.realtime) / scr_damage_indicator_time.value;
         color_t color = Vec4_ToColor(Vec4_FromVec3(Vec3_Normalize(entry->color), frac * ch_alpha.value));
 
         float angle = DEG2RAD(cg.refdef.viewangles.yaw - entry->yaw + 180);
@@ -2040,9 +2039,9 @@ static void SCR_EndOfUnitEntry(float x, float y, const level_entry_t *entry, flo
     SCR_DrawString(x + widths[2] / 2, y, UI_CENTER | UI_DROPSHADOW, va("%d/%d", entry->found_secrets, entry->total_secrets));
     x += widths[2];
 
-    int minutes = entry->time / 60000;
-    int seconds = (entry->time / 1000) % 60;
-    int tensofsec = (entry->time / 100) % 10;
+    int minutes = entry->time / Time_FromMin(1);
+    int seconds = (entry->time / Time_FromSec(1)) % 60;
+    int tensofsec = (entry->time / Time_FromMsec(100)) % 10;
 
     SCR_DrawString(x, y, UI_DROPSHADOW, va("%02d:%02d.%d", minutes, seconds, tensofsec));
 }
@@ -2128,8 +2127,8 @@ static void SCR_DrawFps(void)
     if (!scr_showfps.integer)
         return;
     scr.frames++;
-    if (cgs.realtime - scr.timestamp > 250) {
-        scr.fps = scr.frames * 1000 / (cgs.realtime - scr.timestamp);
+    if (cgs.realtime - scr.timestamp >= Time_FromMsec(250)) {
+        scr.fps = scr.frames / Time_ToSec(cgs.realtime - scr.timestamp) + 0.5f;
         scr.timestamp = cgs.realtime;
         scr.frames = 0;
     }
@@ -2162,13 +2161,13 @@ static void SCR_DrawHitMarker(void)
 {
     if (!cg.hit_marker_count)
         return;
-    if (!scr.hit_marker_pic || scr_hit_marker_time.integer <= 0 ||
-        cgs.realtime - cg.hit_marker_time > scr_hit_marker_time.integer) {
+    if (!scr.hit_marker_pic || scr_hit_marker_time.value <= 0 ||
+        cgs.realtime - cg.hit_marker_time > Time_FromSec(scr_hit_marker_time.value)) {
         cg.hit_marker_count = 0;
         return;
     }
 
-    float frac = (float)(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time.integer;
+    float frac = Time_ToSec(cgs.realtime - cg.hit_marker_time) / scr_hit_marker_time.value;
     float alpha = 1.0f - (frac * frac);
 
     float scale = 1.0f - min(frac, 0.5f);
@@ -2312,22 +2311,20 @@ static void SCR_DrawActive(void)
 }
 
 // if not active, all we can draw is loading plaque
-qvm_exported void CG_DrawFrame(unsigned time, bool active, bool loading)
+qvm_exported void CG_DrawFrame(gtime_t delta, gtime_t delta_s, cg_draw_flags_t flags)
 {
-    unsigned msec = time - cgs.realtime;
-    cgs.realtime = time;
-
-    if (!sv_paused.integer)
-        cg.time += msec;
-
-    cgs.frametime = msec * 0.001f;
+    // run times
+    cgs.realtime += delta;
+    cgs.realtime_s += delta_s;
+    cgs.frametime = Time_ToSec(delta_s);
+    cg.time += delta_s;
 
     // do 3D refresh drawing
-    if (active)
+    if (flags & CG_DRAW_ACTIVE)
         SCR_DrawActive();
 
     // draw loading plaque
-    if (loading)
+    if (flags & CG_DRAW_LOADING)
         SCR_DrawLoading();
 }
 

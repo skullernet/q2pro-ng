@@ -207,7 +207,7 @@ static void CG_WeapPrev_f(void)
             break;
     }
 
-    cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
+    cg.weapon_select_time = cg.time + Time_FromSec(cg_weapon_select_time.value);
 }
 
 static void CG_WeapNext_f(void)
@@ -236,7 +236,7 @@ static void CG_WeapNext_f(void)
             break;
     }
 
-    cg.weapon_select_time = cg.time + Q_clip(cg_weapon_select_msec.integer, 100, 2000);
+    cg.weapon_select_time = cg.time + Time_FromSec(cg_weapon_select_time.value);
 }
 
 #if USE_DEBUG

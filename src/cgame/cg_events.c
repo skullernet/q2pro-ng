@@ -268,7 +268,7 @@ typedef struct cg_explosion_s {
     int         frames;
     float       light;
     vec3_t      lightcolor;
-    unsigned    start;
+    gtime_t     start;
     int         baseframe;
 } cg_explosion_t;
 
@@ -283,7 +283,7 @@ static cg_explosion_t *CG_AllocExplosion(void)
 {
     cg_explosion_t *e, *oldest;
     int         i;
-    unsigned    time;
+    gtime_t     time;
 
     for (i = 0, e = cg_explosions; i < MAX_EXPLOSIONS; i++, e++) {
         if (e->type == ex_free) {
@@ -502,7 +502,7 @@ static void CG_AddExplosions(void)
             break;
 
         case ex_marker:
-            frac = (cg.time - ex->start) / (cg_compass_time.value * 1000.0f);
+            frac = Time_ToSec(cg.time - ex->start) / cg_compass_time.value;
 
             if (frac > 1.0f) {
                 ex->type = ex_free;
@@ -511,7 +511,7 @@ static void CG_AddExplosions(void)
 
             ent->alpha = (1.0f - frac) * 0.5f;
 
-            frac = 1.0f - (cg.time - ex->start) / 1000.0f;
+            frac = 1.0f - Time_ToSec(cg.time - ex->start);
 
             if (frac > 0)
                 ent->origin.z = ex->lightcolor.z + powf(frac, 5.0f) * 512.0f;
@@ -563,7 +563,7 @@ typedef struct {
     int         color;
     color_t     rgba;
     int         width;
-    int         lifetime, starttime;
+    gtime_t     lifetime, starttime;
 } cg_laser_t;
 
 static cg_laser_t   cg_lasers[MAX_LASERS];
@@ -594,7 +594,7 @@ static void CG_AddLasers(void)
     cg_laser_t  *l;
     entity_t    ent;
     int         i;
-    int         time;
+    gtime_t     time;
 
     memset(&ent, 0, sizeof(ent));
 
@@ -631,7 +631,7 @@ static void CG_ParseLaser(vec3_t start, vec3_t end, uint32_t colors)
 
     l->start = start;
     l->end = end;
-    l->lifetime = 100;
+    l->lifetime = BASE_FRAMETIME;
     l->color = (colors >> ((Q_rand() % 4) * 8)) & 0xff;
     l->width = 4;
 }
@@ -690,7 +690,7 @@ static void CG_ParseWidow(vec3_t pos)
         return;
 
     s->org = pos;
-    s->endtime = cg.time + 2100;
+    s->endtime = cg.time + Time_FromSec(2.1f);
     s->think = CG_Widowbeamout;
 }
 
@@ -711,7 +711,7 @@ static void CG_ParseNuke(vec3_t pos)
         return;
 
     s->org = pos;
-    s->endtime = cg.time + 1000;
+    s->endtime = cg.time + Time_FromSec(1);
     s->think = CG_Nukeblast;
 }
 
@@ -736,7 +736,7 @@ static void CG_RailCore(vec3_t start, vec3_t end)
     l->start = start;
     l->end = end;
     l->color = -1;
-    l->lifetime = cg_railtrail_time.value * 1000;
+    l->lifetime = Time_FromSec(cg_railtrail_time.value);
     l->width = cg_railcore_width.integer;
     l->rgba = railcore_color;
 }
@@ -1116,12 +1116,13 @@ static void CG_StairStep(cg_entity_t *cent)
     float prev_step   = 0;
 
     // check for stepping up before a previous step is completed
-    int delta = cg.time - cent->step_time;
+    gtime_t delta = cg.time - cent->step_time;
     if (delta < STEP_TIME)
         prev_step = cent->step_factor * (STEP_TIME - delta);
 
     cent->step_factor = Q_clipf(prev_step + step_height, -MAX_STEP, MAX_STEP) / STEP_TIME;
     cent->step_time   = cg.oldframe->servertime;
+    cent->prev.origin.z = cent->current.origin.z;
 
     // step local view too for demos if this is player entity
     if (cent->current.number == cg.frame->ps.clientnum && !CG_PredictionEnabled()) {
@@ -1129,12 +1130,14 @@ static void CG_StairStep(cg_entity_t *cent)
         prev_step   = 0;
 
         // check for stepping up before a previous step is completed
-        delta = cgs.realtime - cg.predicted_step_time;
+        delta = cgs.realtime_s - cg.predicted_step_time;
         if (delta < STEP_TIME)
             prev_step = cg.predicted_step * (STEP_TIME - delta);
 
         cg.predicted_step = Q_clipf(prev_step + step_height, -MAX_STEP, MAX_STEP) / STEP_TIME;
-        cg.predicted_step_time = cgs.realtime;
+        cg.predicted_step_time = cgs.realtime_s;
+        cg.oldframe->ps.origin.z = cg.frame->ps.origin.z;
+        SHOWSTEP("%u: step %.f\n", cg.frame->number, step_height);
     }
 }
 
@@ -1150,7 +1153,7 @@ static void CG_EntityEvent(cg_entity_t *cent, entity_event_t event, uint32_t par
 
 #if USE_DEBUG
     if (cg_showevents.integer) {
-        Com_Printf("time %u ent %d seq %d event %s ", cg.oldframe->servertime,
+        Com_Printf("time %"PRId64" ent %d seq %d event %s ", Time_ToMsec(cg.oldframe->servertime),
                    number, cent->event_sequence, BG_EventName(event));
         if (param)
             Com_Printf("param %#x ", param);

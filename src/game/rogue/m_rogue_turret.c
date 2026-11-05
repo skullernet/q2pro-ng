@@ -413,7 +413,7 @@ static void TurretFire(edict_t *self)
                     if (self->monsterinfo.next_duck_time < level.time &&
                         self->monsterinfo.melee_debounce_time <= level.time) {
                         monster_fire_bullet(self, start, dir, TURRET_BULLET_DAMAGE, 0, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, MZ2_TURRET_MACHINEGUN);
-                        self->monsterinfo.melee_debounce_time = level.time + Time_FromHertz(10);
+                        self->monsterinfo.melee_debounce_time = level.time + BASE_FRAMETIME;
                     }
 
                     if (self->monsterinfo.duck_wait_time < level.time)

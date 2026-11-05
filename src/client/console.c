@@ -60,8 +60,8 @@ typedef struct {
     float   scale;
     color_t ts_color;
 
-    unsigned    times[CON_TIMES];   // cls.realtime time the line was generated
-                                    // for transparent notify lines
+    gtime_t times[CON_TIMES];   // cls.realtime time the line was generated
+                                // for transparent notify lines
     bool    skipNotify;
     bool    initialized;
 
@@ -478,8 +478,6 @@ void Con_Init(void)
     Cmd_Register(c_console);
 
     con_notifytime = Cvar_Get("con_notifytime", "3", 0);
-    con_notifytime->changed = cl_timeout_changed;
-    con_notifytime->changed(con_notifytime);
     con_notifylines = Cvar_Get("con_notifylines", "4", 0);
     con_clock = Cvar_Get("con_clock", "0", 0);
     con_height = Cvar_Get("con_height", "0.5", 0);
@@ -763,7 +761,7 @@ static int Con_DrawLine(int v, int row, float alpha, bool notify)
 }
 
 #define CON_PRESTEP     (con.charheight * 3 + con.charheight / 4)
-#define CON_FADE_TIME   300
+#define CON_FADE_TIME   Time_FromSec(0.3f)
 
 /*
 ================
@@ -777,7 +775,7 @@ static void Con_DrawNotify(void)
     int     x, y;
     const char  *text;
     int     i, j;
-    unsigned    time, delta;
+    gtime_t     time, delta, notifytime;
     int     skip;
     float   alpha;
 
@@ -797,6 +795,8 @@ static void Con_DrawNotify(void)
         j = CON_TIMES;
     }
 
+    notifytime = Time_FromSec(con_notifytime->value);
+
     y = 0;
     for (i = con.current - j + 1; i <= con.current; i++) {
         if (i < 0)
@@ -806,9 +806,9 @@ static void Con_DrawNotify(void)
             continue;
         // alpha fade the last string left on screen
         delta = cls.realtime - time;
-        if (delta >= con_notifytime->integer)
+        if (delta >= notifytime)
             continue;
-        delta = con_notifytime->integer - delta;
+        delta = notifytime - delta;
         if (y || i != con.current || delta > CON_FADE_TIME)
             alpha = 1;  // don't fade
         else

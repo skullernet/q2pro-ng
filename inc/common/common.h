@@ -159,6 +159,7 @@ extern cvar_t   *com_timedemo;
 #if USE_QVM
 extern cvar_t   *com_native_modules;
 #endif
+extern cvar_t   *timescale;
 
 extern cvar_t   *rcon_password;
 
@@ -168,18 +169,18 @@ extern cvar_t   *sys_history;
 
 #if USE_CLIENT
 // host_speeds times
-extern unsigned     time_before_game;
-extern unsigned     time_after_game;
-extern unsigned     time_before_ref;
-extern unsigned     time_after_ref;
+extern gtime_t      time_before_game;
+extern gtime_t      time_after_game;
+extern gtime_t      time_before_ref;
+extern gtime_t      time_after_ref;
 #endif
 
 extern const char   com_version_string[];
 
 extern unsigned     com_framenum;
-extern unsigned     com_eventTime; // system time of the last event
-extern unsigned     com_localTime; // milliseconds since Q2 startup
-extern unsigned     com_localTime2; // milliseconds since Q2 startup, but doesn't run if paused
+extern gtime_t      com_eventTime; // system time of the last event
+extern gtime_t      com_localTime; // time since Q2 startup
+extern gtime_t      com_localTime2; // time since Q2 startup, doesn't run if paused, affected by timescale
 extern bool         com_initialized;
 extern time_t       com_startTime;
 

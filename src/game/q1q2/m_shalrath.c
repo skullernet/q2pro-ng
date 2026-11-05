@@ -139,7 +139,7 @@ void fire_shalrath_pod(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
     pod->s.modelindex = G_ModelIndex("models/monsters/podstrogg/tris.md2");
     pod->s.effects |= EF_IONRIPPER;
     pod->touch = shalrath_pod_touch;
-    pod->nextthink = level.time + Time_FromHertz(10);
+    pod->nextthink = level.time + BASE_FRAMETIME;
     pod->think = shalrath_pod_home;
     pod->dmg = damage;
     pod->enemy = self->enemy;

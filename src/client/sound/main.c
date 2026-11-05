@@ -487,7 +487,7 @@ channel_t *S_PickChannel(int entnum, int entchannel)
 {
     int         ch_idx;
     int         first_to_die;
-    unsigned    life_left;
+    gtime_t     life_left;
     channel_t   *ch;
 
 // Check for replacement sound, or find the best one to replace
@@ -580,7 +580,7 @@ static void S_IssuePlaysound(playsound_t *ps)
 
 #if USE_DEBUG
     if (s_show->integer)
-        Com_Printf("Issue %i\n", ps->begin);
+        Com_Printf("Issue %"PRId64"\n", ps->begin);
 #endif
     // pick a channel to play on
     ch = S_PickChannel(ps->entnum, ps->entchannel);
@@ -666,7 +666,7 @@ static void S_StartSoundInternal(vec3_t origin, int entnum, int entchannel, qhan
     ps->attenuation = attenuation;
     ps->volume = vol;
     ps->sfx = sfx;
-    ps->begin = cls.realtime + timeofs * 1000;
+    ps->begin = cls.realtime + Time_FromSec(timeofs);
 
     // sort into the pending sound list
     LIST_FOR_EACH(sort, &s_pendingplays, entry)

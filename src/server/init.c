@@ -134,7 +134,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     sv.spawncount = Q_rand() & INT_MAX;
 
     // set framerate parameters
-    sv.frametime = 1000 / Cvar_ClampInteger(sv_fps, 10, 60);
+    sv.frametime = Time_FromHertz(Cvar_ClampInteger(sv_fps, 10, 60));
 
     // save name for levels that don't set message
     sv.configstrings[CS_NAME] = SV_CopyString(cmd->server);
@@ -169,8 +169,8 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     ge->SpawnEntities();
 
     // run for 0.2 seconds to allow everything to settle
-    for (i = 0; i < 200 / sv.frametime; i++, sv.time += sv.frametime)
-        ge->RunFrame(sv.time);
+    for (i = 0; i < 200 / sv.frametime; i++)
+        ge->RunFrame(sv.framenum++);
 
     // check for a savegame
     SV_CheckForSavegame(cmd);
@@ -408,7 +408,7 @@ void SV_InitGame(void)
     }
 
     // send heartbeat very soon
-    svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;
+    svs.last_heartbeat = -HEARTBEAT_TIME + Time_FromSec(5);
     svs.heartbeat_index = 0;
 
     svs.initialized = true;

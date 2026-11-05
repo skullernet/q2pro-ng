@@ -79,11 +79,11 @@ bool Sys_IsMainThread(void)
 }
 #endif
 
-unsigned Sys_Milliseconds(void)
+gtime_t Sys_Timestamp(void)
 {
     struct timespec ts;
     (void)clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
+    return Time_FromSec(ts.tv_sec) + Time_FromNsec(ts.tv_nsec);
 }
 
 /*

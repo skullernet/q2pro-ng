@@ -730,7 +730,7 @@ static void Nav_DebugPath(const nav_path_t *path)
 #if NAV_DEBUG
     const PathRequest *request = path->request;
     const PathInfo *info = path->info;
-    uint32_t time = request->debugging.drawTime * 1000;
+    gtime_t time = Time_FromSec(request->debugging.drawTime);
 
     R_AddDebugSphere(request->start, 8.0f, U32_YELLOW, time, false);
     R_AddDebugSphere(request->goal, 8.0f, U32_YELLOW, time, false);
@@ -1103,7 +1103,7 @@ static void Nav_SetupEntities(void)
 
 void Nav_Frame(void)
 {
-    if (!nav_data.setup_entities && sv.time >= 1000) {
+    if (!nav_data.setup_entities && sv.framenum * sv.frametime >= Time_FromSec(1)) {
         Nav_SetupEntities();
         nav_data.setup_entities = true;
     }

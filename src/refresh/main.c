@@ -456,13 +456,13 @@ static void GL_OccludeFlares(void)
 
         if (q) {
             // reset visibility if entity disappeared
-            if (com_eventTime - q->timestamp >= 2500) {
+            if (com_eventTime - q->timestamp >= Time_FromSec(2.5f)) {
                 q->pending = q->visible = false;
                 q->frac = 0;
             } else {
                 if (q->pending)
                     continue;
-                if (com_eventTime - q->timestamp <= 33)
+                if (com_eventTime - q->timestamp <= Time_FromHertz(30))
                     continue;
             }
         } else {

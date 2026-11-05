@@ -105,14 +105,14 @@ void THINK(object_repair_fx)(edict_t *ent)
 void THINK(object_repair_dead)(edict_t *ent)
 {
     G_UseTargets(ent, ent);
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
     ent->think = object_repair_fx;
 }
 
 void THINK(object_repair_sparks)(edict_t *ent)
 {
     if (ent->health <= 0) {
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
         ent->think = object_repair_dead;
         return;
     }

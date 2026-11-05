@@ -416,7 +416,7 @@ void THINK(defender_think)(edict_t *self)
     sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void THINK(hunter_think)(edict_t *self)
@@ -470,7 +470,7 @@ void THINK(hunter_think)(edict_t *self)
         sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void THINK(vengeance_think)(edict_t *self)
@@ -492,7 +492,7 @@ void THINK(vengeance_think)(edict_t *self)
         sphere_fly(self);
 
     if (self->r.inuse)
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 // *************************
@@ -557,7 +557,7 @@ edict_t *Sphere_Spawn(edict_t *owner, spawnflags_t spawnflags)
         return NULL;
     }
 
-    sphere->nextthink = level.time + Time_FromHertz(10);
+    sphere->nextthink = level.time + BASE_FRAMETIME;
 
     trap_LinkEntity(sphere);
 

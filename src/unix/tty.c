@@ -78,8 +78,8 @@ static void tty_write(const char *buf, size_t len)
         len -= ret;
     }
 
-    unsigned now = Sys_Milliseconds();
-    unsigned deadline = now + 100;
+    gtime_t now = Sys_Timestamp();
+    gtime_t deadline = now + Time_FromMsec(100);
     while (now < deadline) {
         struct pollfd fd = {
             .fd = STDOUT_FILENO,
@@ -107,7 +107,7 @@ static void tty_write(const char *buf, size_t len)
             }
         }
 
-        now = Sys_Milliseconds();
+        now = Sys_Timestamp();
     }
 }
 

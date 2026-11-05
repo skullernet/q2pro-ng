@@ -40,7 +40,7 @@ static void CG_SetActiveState(void)
 
 static void CG_SetClientTime(void)
 {
-    int prevtime, servertime;
+    gtime_t prevtime, servertime;
 
     if (sv_paused.integer)
         return;
@@ -57,22 +57,22 @@ static void CG_SetClientTime(void)
     prevtime = cg.oldframe->servertime;
     servertime = cg.frame->servertime;
     if (prevtime >= servertime) {
-        SHOWCLAMP(2, "reset time %i\n", servertime);
+        SHOWCLAMP(2, "reset time %"PRId64"\n", servertime);
         cg.time = servertime;
         cg.lerpfrac = 1.0f;
     } else if (cg.time > servertime) {
-        SHOWCLAMP(2, "high clamp %i\n", cg.time - servertime);
+        SHOWCLAMP(2, "high clamp %"PRId64"\n", cg.time - servertime);
         cg.time = servertime;
         cg.lerpfrac = 1.0f;
     } else if (cg.time < prevtime) {
-        SHOWCLAMP(2, "low clamp %i\n", prevtime - cg.time);
+        SHOWCLAMP(2, "low clamp %"PRId64"\n", prevtime - cg.time);
         cg.time = prevtime;
         cg.lerpfrac = 0;
     } else {
         cg.lerpfrac = (float)(cg.time - prevtime) / (servertime - prevtime);
     }
 
-    SHOWCLAMP(3, "time %d %d, lerpfrac %.3f\n",
+    SHOWCLAMP(3, "time cg %"PRId64" sv %"PRId64" lerpfrac %.3f\n",
               cg.time, servertime, cg.lerpfrac);
 }
 
@@ -93,9 +93,11 @@ void CG_ProcessFrames(void)
             continue;
         }
 
+        Q_assert(frame->servertime >= 0);
+
         // handle server time wraparound
         if (cg.frame && frame->servertime < cg.frame->servertime) {
-            SHOWCLAMP(1, "reset time %i\n", frame->servertime);
+            SHOWCLAMP(1, "reset time %"PRId64"\n", frame->servertime);
             CG_ClearState();
             continue;
         }
@@ -103,8 +105,8 @@ void CG_ProcessFrames(void)
         cg.oldframe = cg.frame;
         cg.frame = frame;
 
-        // once valid, oldframe will never turn invalid, but can be copy of
-        // current if dropped
+        // once valid, oldframe will never turn invalid,
+        // but will be copy of current if dropped
         if (!cg.oldframe)
             CG_SetActiveState();
         else if (cg.oldframe->number != cg.serverframe - 1)

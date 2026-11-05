@@ -231,7 +231,7 @@ void THINK(force_wall_think)(edict_t *self)
     }
 
     self->think = force_wall_think;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -245,7 +245,7 @@ void USE(force_wall_use)(edict_t *self, edict_t *other, edict_t *activator)
     } else {
         self->wait = 0;
         self->think = force_wall_think;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         self->r.solid = SOLID_BSP;
         trap_LinkEntity(self);
         G_KillBox(self, KILLBOX_BSPCLIP, MOD_TELEFRAG); // Is this appropriate?
@@ -289,7 +289,7 @@ void SP_func_force_wall(edict_t *ent)
     if (ent->spawnflags & SPAWNFLAG_FORCEWALL_START_ON) {
         ent->r.solid = SOLID_BSP;
         ent->think = force_wall_think;
-        ent->nextthink = level.time + Time_FromHertz(10);
+        ent->nextthink = level.time + BASE_FRAMETIME;
     } else
         ent->r.solid = SOLID_NOT;
 

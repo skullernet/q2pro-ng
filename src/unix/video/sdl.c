@@ -161,7 +161,7 @@ static void set_clipboard_data(const char *data)
 static bool my_event_filter(void *userdata, SDL_Event *event)
 {
     // SDL uses relative time, we need absolute
-    event->common.timestamp = Sys_Milliseconds();
+    event->common.timestamp = Sys_Timestamp();
     return true;
 }
 

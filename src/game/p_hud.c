@@ -704,7 +704,7 @@ void G_SetStats(edict_t *ent)
         }
 
         if (num_keys_held > 3)
-            key_offset = Time_ToMsec(level.time) / 5000;
+            key_offset = level.time / Time_FromSec(5);
 
         for (int i = 0; i < min(num_keys_held, 3); i++)
             ent->client->ps.stats[STAT_KEY_A + i] = G_ImageIndex(GetItemByIndex(keys_held[(i + key_offset) % num_keys_held])->icon);

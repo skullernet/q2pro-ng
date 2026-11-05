@@ -599,47 +599,47 @@ VM_THUNK(R_ClearDebugLines) {
 }
 
 VM_THUNK(R_AddDebugLine) {
-    R_AddDebugLine(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugLine(VM_VEC3(0), VM_VEC3(1), VM_U32(2), VM_U64(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugPoint) {
-    R_AddDebugPoint(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugPoint(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U64(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugAxis) {
-    R_AddDebugAxis(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugAxis(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U64(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugBounds) {
-    R_AddDebugBounds(VM_BOX3(0), VM_U32(1), VM_U32(2), VM_U32(3));
+    R_AddDebugBounds(VM_BOX3(0), VM_U32(1), VM_U64(2), VM_U32(3));
 }
 
 VM_THUNK(R_AddDebugSphere) {
-    R_AddDebugSphere(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugSphere(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U64(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugCircle) {
-    R_AddDebugCircle(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U32(3), VM_U32(4));
+    R_AddDebugCircle(VM_VEC3(0), VM_F32(1), VM_U32(2), VM_U64(3), VM_U32(4));
 }
 
 VM_THUNK(R_AddDebugCylinder) {
-    R_AddDebugCylinder(VM_VEC3(0), VM_F32(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+    R_AddDebugCylinder(VM_VEC3(0), VM_F32(1), VM_F32(2), VM_U32(3), VM_U64(4), VM_U32(5));
 }
 
 VM_THUNK(R_AddDebugArrow) {
-    R_AddDebugArrow(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+    R_AddDebugArrow(VM_VEC3(0), VM_VEC3(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U64(5), VM_U32(6));
 }
 
 VM_THUNK(R_AddDebugCurveArrow) {
-    R_AddDebugCurveArrow(VM_VEC3(0), VM_VEC3(1), VM_VEC3(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6), VM_U32(7));
+    R_AddDebugCurveArrow(VM_VEC3(0), VM_VEC3(1), VM_VEC3(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U64(6), VM_U32(7));
 }
 
 VM_THUNK(R_AddDebugText) {
-    R_AddDebugText(VM_VEC3(0), VM_STR(1), VM_F32(2), VM_U32(3), VM_U32(4), VM_U32(5));
+    R_AddDebugText(VM_VEC3(0), VM_STR(1), VM_F32(2), VM_U32(3), VM_U64(4), VM_U32(5));
 }
 
 VM_THUNK(R_AddDebugAngledText) {
-    R_AddDebugAngledText(VM_VEC3(0), VM_VEC3(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U32(5), VM_U32(6));
+    R_AddDebugAngledText(VM_VEC3(0), VM_VEC3(1), VM_STR(2), VM_F32(3), VM_U32(4), VM_U64(5), VM_U32(6));
 }
 
 static const vm_import_t game_vm_imports[] = {
@@ -696,17 +696,17 @@ static const vm_import_t game_vm_imports[] = {
     VM_IMPORT(FS_ListFiles, "i iiiii"),
     VM_IMPORT(FS_ErrorString, "i iii"),
     VM_IMPORT(R_ClearDebugLines, ""),
-    VM_IMPORT(R_AddDebugLine, "iiiii"),
-    VM_IMPORT(R_AddDebugPoint, "ifiii"),
-    VM_IMPORT(R_AddDebugAxis, "iifii"),
-    VM_IMPORT(R_AddDebugBounds, "iiii"),
-    VM_IMPORT(R_AddDebugSphere, "ifiii"),
-    VM_IMPORT(R_AddDebugCircle, "ifiii"),
-    VM_IMPORT(R_AddDebugCylinder, "iffiii"),
-    VM_IMPORT(R_AddDebugArrow, "iifiiii"),
-    VM_IMPORT(R_AddDebugCurveArrow, "iiifiiii"),
-    VM_IMPORT(R_AddDebugText, "iifiii"),
-    VM_IMPORT(R_AddDebugAngledText, "iiifiii"),
+    VM_IMPORT(R_AddDebugLine, "iiiIi"),
+    VM_IMPORT(R_AddDebugPoint, "ifiIi"),
+    VM_IMPORT(R_AddDebugAxis, "iifIi"),
+    VM_IMPORT(R_AddDebugBounds, "iiIi"),
+    VM_IMPORT(R_AddDebugSphere, "ifiIi"),
+    VM_IMPORT(R_AddDebugCircle, "ifiIi"),
+    VM_IMPORT(R_AddDebugCylinder, "iffiIi"),
+    VM_IMPORT(R_AddDebugArrow, "iifiiIi"),
+    VM_IMPORT(R_AddDebugCurveArrow, "iiifiiIi"),
+    VM_IMPORT(R_AddDebugText, "iifiIi"),
+    VM_IMPORT(R_AddDebugAngledText, "iiifiIi"),
 
     { 0 }
 };
@@ -843,9 +843,9 @@ static void thunk_G_PrepFrame(void) {
     VM_Call(game.vm, vm_G_PrepFrame);
 }
 
-static void thunk_G_RunFrame(int64_t time) {
+static void thunk_G_RunFrame(uint64_t framenum) {
     vm_value_t *stack = VM_Push(game.vm, 1);
-    VM_U64(0) = time;
+    VM_U64(0) = framenum;
     VM_Call(game.vm, vm_G_RunFrame);
 }
 

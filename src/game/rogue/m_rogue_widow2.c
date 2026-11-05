@@ -346,7 +346,7 @@ static void widow2_start_spawn(edict_t *self)
 {
     widow_start_spawn(self);
     widow2_step(self);
-    self->fly_sound_debounce_time = level.time + Time_FromHertz(10);
+    self->fly_sound_debounce_time = level.time + BASE_FRAMETIME;
 }
 
 static const mframe_t widow2_frames_spawn[] = {
@@ -1162,7 +1162,7 @@ void THINK(WidowExplode)(edict_t *self)
             ThrowWidowGib(self, "models/objects/gibs/sm_metal/tris.md2", 400, GIB_METALLIC);
         self->deadflag = true;
         self->think = monster_think;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
         M_SetAnimation(self, &widow2_move_dead);
         return;
     }
@@ -1199,7 +1199,7 @@ void THINK(WidowExplode)(edict_t *self)
         G_TempEntity(org, (self->count & 1) ? EV_EXPLOSION1 : EV_EXPLOSION1_NP, 0);
 
     self->think = WidowExplode;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 static const vec3_t explosion1_offsets[] = {

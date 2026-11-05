@@ -137,7 +137,7 @@ static int write_level_file(void)
     MSG_WriteByte(len);
     MSG_WriteData(portalbits, len);
 
-    MSG_WriteLong64(sv.time);
+    MSG_WriteLong64(sv.framenum);
 
     FS_Write(msg_write.data, msg_write.cursize, f);
     SZ_Clear(&msg_write);
@@ -454,8 +454,7 @@ static int read_level_file(void)
     len = MSG_ReadByte();
     CM_SetPortalStates(&sv.cm, MSG_ReadData(len), len);
 
-    sv.time = MSG_ReadLong64();
-    sv.time = Q_align_up(sv.time, sv.frametime);
+    sv.framenum = MSG_ReadLong64();
 
     Com_AbortFunc(NULL, NULL);
     FS_FreeFile(data);
@@ -569,8 +568,8 @@ void SV_CheckForSavegame(const mapcmd_t *cmd)
         frames = 10000 / sv.frametime;
     }
 
-    for (int i = 0; i < frames; i++, sv.time += sv.frametime)
-        ge->RunFrame(sv.time);
+    for (int i = 0; i < frames; i++)
+        ge->RunFrame(sv.framenum++);
 }
 
 static void SV_Savegame_c(int firstarg, int argnum)
@@ -651,7 +650,7 @@ static void SV_Savegame_f(void)
         type = SAVE_MANUAL;
     }
 
-    unsigned start = Sys_Milliseconds();
+    gtime_t start = Sys_Timestamp();
 
     // archive current level, including all client edicts.
     // when the level is reloaded, they will be shells awaiting
@@ -679,7 +678,7 @@ static void SV_Savegame_f(void)
         return;
     }
 
-    Com_Printf("Game saved in %d msec.\n", Sys_Milliseconds() - start);
+    Com_Printf("Game saved in %"PRId64" msec.\n", Time_ToMsec(Sys_Timestamp() - start));
 }
 
 static const cmdreg_t c_savegames[] = {

@@ -66,12 +66,12 @@ static void Action_Draw(menuAction_t *a)
     flags = a->generic.uiFlags;
     if (a->generic.flags & QMF_HASFOCUS) {
         if ((a->generic.uiFlags & UI_CENTER) != UI_CENTER) {
-            if ((uis.realtime >> 8) & 1) {
+            if (uis.realtime & TIME_BLINK_BIT) {
                 UI_DrawChar(a->generic.x - RCOLUMN_OFFSET / 2, a->generic.y, a->generic.uiFlags | UI_RIGHT, 13);
             }
         } else {
             flags |= UI_ALTCOLOR;
-            if ((uis.realtime >> 8) & 1) {
+            if (uis.realtime & TIME_BLINK_BIT) {
                 UI_DrawChar(a->generic.x - strlen(a->generic.name) * CONCHAR_WIDTH / 2 - CONCHAR_WIDTH, a->generic.y, flags, 13);
             }
         }
@@ -156,7 +156,7 @@ static void Bitmap_Init(menuBitmap_t *b)
 static void Bitmap_Draw(menuBitmap_t *b)
 {
     if (b->generic.flags & QMF_HASFOCUS) {
-        unsigned frame = (uis.realtime / 100) % NUM_CURSOR_FRAMES;
+        unsigned frame = (uis.realtime / Time_FromMsec(100)) % NUM_CURSOR_FRAMES;
         R_DrawPic(b->generic.x - CURSOR_OFFSET, b->generic.y, uis.bitmapCursors[frame]);
         R_DrawPic(b->generic.x, b->generic.y, b->pics[1]);
     } else {
@@ -225,7 +225,7 @@ static void Keybind_Draw(menuKeybind_t *k)
     if (k->generic.flags & QMF_HASFOCUS) {
         /*if(k->generic.parent->keywait) {
             UI_DrawChar(k->generic.x + RCOLUMN_OFFSET / 2, k->generic.y, k->generic.uiFlags | UI_RIGHT, '=');
-        } else*/ if ((uis.realtime >> 8) & 1) {
+        } else*/ if (uis.realtime & TIME_BLINK_BIT) {
             UI_DrawChar(k->generic.x + RCOLUMN_OFFSET / 2, k->generic.y, k->generic.uiFlags | UI_RIGHT, 13);
         }
     } else {
@@ -623,7 +623,7 @@ static void SpinControl_Draw(menuSpinControl_t *s)
                   s->generic.uiFlags | UI_RIGHT | UI_ALTCOLOR, s->generic.name);
 
     if (s->generic.flags & QMF_HASFOCUS) {
-        if ((uis.realtime >> 8) & 1) {
+        if (uis.realtime & TIME_BLINK_BIT) {
             UI_DrawChar(s->generic.x + RCOLUMN_OFFSET / 2, s->generic.y,
                         s->generic.uiFlags | UI_RIGHT, 13);
         }
@@ -1105,7 +1105,7 @@ static menuSound_t MenuList_Key(menuList_t *l, int key)
 
 #if 0
     if (key > 32 && key < 127) {
-        if (uis.realtime > l->scratchTime + 1300) {
+        if (uis.realtime > l->scratchTime + Time_FromSec(1.3f)) {
             l->scratchCount = 0;
             l->scratchTime = uis.realtime;
         }
@@ -1632,7 +1632,7 @@ static void Slider_Draw(menuSlider_t *s)
     flags = s->generic.uiFlags & ~(UI_LEFT | UI_RIGHT);
 
     if (s->generic.flags & QMF_HASFOCUS) {
-        if ((uis.realtime >> 8) & 1) {
+        if (uis.realtime & TIME_BLINK_BIT) {
             UI_DrawChar(s->generic.x + RCOLUMN_OFFSET / 2, s->generic.y, s->generic.uiFlags | UI_RIGHT, 13);
         }
     }

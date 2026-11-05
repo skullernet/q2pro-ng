@@ -79,8 +79,8 @@ typedef struct {
     player_state_t ps;
     int         areabytes;
     byte        areabits[MAX_MAP_AREA_BYTES];  // portalarea visibility bits
-    unsigned    sentTime;                   // for ping calculations
-    int         latency;
+    gtime_t     sentTime;                   // for ping calculations
+    gtime_t     latency;
 } client_frame_t;
 
 typedef struct {
@@ -95,12 +95,12 @@ typedef struct {
     int             spawncount; // random number generated each server spawn
     bool            nextserver_pending;
 
-    int64_t     time;
-    unsigned    frametime;
-    unsigned    frameresidual;
+    uint64_t    framenum;
+    gtime_t     frametime;
+    gtime_t     frameresidual;
 
-    int64_t     last_calcping_time;
-    int64_t     last_givemsec_time;
+    gtime_t     last_calcping_time;
+    gtime_t     last_givemsec_time;
 
     char        mapcmd[MAX_QPATH];          // ie: *intro.cin+base
 
@@ -138,7 +138,7 @@ typedef enum {
 #define RATE_MESSAGES   10
 
 #define CHALLENGE_SIZE      8
-#define CHALLENGE_SHIFT     12  // at least 4 sec to reply
+#define CHALLENGE_SHIFT     22  // at least 4 sec to reply
 
 #define FOR_EACH_CLIENT(client) \
     LIST_FOR_EACH(client, &sv_clientlist, entry)
@@ -154,10 +154,10 @@ typedef enum {
     cl->avg_ping_time / cl->avg_ping_count : cl->ping)
 
 typedef struct {
-    unsigned    time;
-    unsigned    credit;
-    unsigned    credit_cap;
-    unsigned    cost;
+    uint64_t    time;
+    uint64_t    credit;
+    uint64_t    credit_cap;
+    uint64_t    cost;
 } ratelimit_t;
 
 typedef struct client_s {
@@ -186,8 +186,8 @@ typedef struct client_s {
     ratelimit_t     ratelimit_namechange;       // for suppressing "foo changed name" flood
 
     // usercmd stuff
-    unsigned        lastmessage;    // svs.realtime when packet was last received
-    unsigned        lastactivity;   // svs.realtime when user activity was last seen
+    gtime_t         lastmessage;    // svs.realtime when packet was last received
+    gtime_t         lastactivity;   // svs.realtime when user activity was last seen
     int             lastframe;      // for delta compression
     usercmd_t       lastcmd;        // for filling in big drops
     int             command_msec;   // every seconds this is reset, if user
@@ -205,12 +205,11 @@ typedef struct client_s {
     unsigned        frames_sent, frames_acked, frames_nodelta;
     int             framenum;
     unsigned        frameflags;
-    int64_t         begin_time;     // sv.time client has entered the game
 
     // rate dropping
     unsigned        message_size[RATE_MESSAGES];    // used to rate drop normal packets
     int             suppress_count;                 // number of messages rate suppressed
-    unsigned        send_time, send_delta;          // used to rate drop async packets
+    gtime_t         send_time, send_delta;          // used to rate drop async packets
 
     // protocol stuff
     int             protocol;   // minor version
@@ -256,11 +255,11 @@ typedef struct {
 } stuffcmd_t;
 
 #define MAX_MASTERS         8       // max recipients for heartbeat packets
-#define HEARTBEAT_SECONDS   300
+#define HEARTBEAT_TIME      Time_FromMin(5)
 
 typedef struct {
     netadr_t        adr;
-    unsigned        last_ack;
+    gtime_t         last_ack;
     time_t          last_resolved;
     char            *name;
 } master_t;
@@ -276,7 +275,7 @@ typedef struct {
 
 typedef struct {
     bool        initialized;        // sv_init has completed
-    unsigned    realtime;           // always increasing, no clamping, etc
+    gtime_t     realtime;           // always increasing, no clamping, etc
 
     int         maxclients_soft;    // minus reserved slots
     int         maxclients;
@@ -300,8 +299,8 @@ typedef struct {
     unsigned        z_buffer_size;
 #endif
 
-    unsigned        last_heartbeat;
-    unsigned        last_timescale_check;
+    gtime_t         last_heartbeat;
+    gtime_t         last_timescale_check;
 
     unsigned        heartbeat_index;
 
@@ -397,9 +396,6 @@ int SV_CountClients(void);
 voidpf SV_zalloc(voidpf opaque, uInt items, uInt size);
 void SV_zfree(voidpf opaque, voidpf address);
 #endif
-
-void sv_sec_timeout_changed(cvar_t *self);
-void sv_min_timeout_changed(cvar_t *self);
 
 //
 // sv_init.c

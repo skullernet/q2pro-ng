@@ -116,8 +116,8 @@ static void CG_AddViewWeapon(void)
     } else {
         // run alias model animation
         if (cg.weapon.prev_frame != ps->gunframe) {
-            int delta = cg.time - cg.weapon.anim_start;
-            int frametime = BASE_FRAMETIME >> ps->gunrate;
+            gtime_t delta = cg.time - cg.weapon.anim_start;
+            gtime_t frametime = BASE_FRAMETIME >> ps->gunrate;
             float frac;
 
             if (delta > frametime) {
@@ -249,8 +249,8 @@ static void CG_CalcViewOffset(void)
 
     // run kick angles at 10 Hz
     if (true) {
-        int ofs = (cg.time / 100) & 1;
-        float f = (cg.time % 100) * 0.01f;
+        int ofs = (cg.time / BASE_FRAMETIME) & 1;
+        float f = (cg.time % BASE_FRAMETIME) * BASE_1_FRAMETIME;
 
         if (cg.kick_frame != ofs) {
             CG_RunViewKicks(ofs ^ 1);
@@ -266,8 +266,8 @@ static void CG_CalcViewOffset(void)
 
     // run earthquake angles at 40 Hz
     if (cg.quake_time > cg.time) {
-        int ofs = (cg.time / 25) & 1;
-        float f = (cg.time % 25) * 0.04f;
+        int ofs = (cg.time / Time_FromHertz(40)) & 1;
+        float f = (cg.time % Time_FromHertz(40)) * (1.0f / Time_FromHertz(40));
 
         if (cg.quake_frame != ofs) {
             cg.quake_angles[ofs ^ 1] = Vec3_CenterRandom();
@@ -591,17 +591,11 @@ static void CG_CalcViewValues(void)
 
     lerp = cg.lerpfrac;
 
-    unsigned steptime = cgs.realtime - cg.predicted_step_time;
-
     // calculate the origin
     if (CG_PredictionEnabled()) {
         // use predicted values
         float backlerp = lerp - 1.0f;
         cg.refdef.vieworg = Vec3_MA(cg.predicted_ps.origin, backlerp, cg.prediction_error);
-
-        // smooth out stair climbing
-        if (steptime < STEP_TIME)
-            cg.refdef.vieworg.z -= cg.predicted_step * (STEP_TIME - steptime);
     } else {
         // just use interpolated values
         cg.refdef.vieworg = Vec3_Lerp(ops->origin, ps->origin, lerp);
@@ -613,11 +607,12 @@ static void CG_CalcViewValues(void)
             delta += 256;
         cg.predicted_ps.bobtime = ops->bobtime + cg.lerpfrac * delta;
         cg.predicted_ps.pm_flags = ps->pm_flags;
-
-        // smooth out stair climbing
-        if (steptime < STEP_TIME)
-            cg.refdef.vieworg.z = ps->origin.z - cg.predicted_step * (STEP_TIME - steptime);
     }
+
+    // smooth out stair climbing
+    gtime_t steptime = cgs.realtime_s - cg.predicted_step_time;
+    if (steptime < STEP_TIME)
+        cg.refdef.vieworg.z -= cg.predicted_step * (STEP_TIME - steptime);
 
     // if not running a demo or on a locked frame, add the local angle movement
     if (cgs.demoplayback) {
@@ -706,6 +701,10 @@ CG_RenderView
 */
 void CG_RenderView(void)
 {
+    // wrap time after one day to avoid floating point issues
+    cg.refdef.frametime = cgs.frametime;
+    cg.refdef.time = Time_ToSec(cgs.realtime_s % Time_FromSec(24 * 60 * 60));
+
     CG_PredictMovement();
 
     CG_CalcViewValues();
@@ -736,8 +735,6 @@ void CG_RenderView(void)
         cg.refdef.fov_y = V_CalcFov(cg.refdef.fov_x, cg.refdef.width, cg.refdef.height);
     }
 
-    cg.refdef.frametime = cgs.frametime;
-    cg.refdef.time = cg.time * 0.001f;
     memcpy(cg.refdef.areabits, cg.frame->areabits, sizeof(cg.refdef.areabits));
 
     if (cg_custom_fog.density) {

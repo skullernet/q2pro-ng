@@ -86,22 +86,22 @@ size_t trap_FS_ListFiles(const char *path, const char *filter, unsigned flags, c
 size_t trap_FS_ErrorString(int error, char *buf, size_t size);
 
 void trap_R_ClearDebugLines(void);
-void trap_R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugPoint(vec3_t point, float size, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, uint32_t time, bool depth_test);
-void trap_R_AddDebugBounds(box3_t box, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, uint32_t time, bool depth_test);
-void trap_R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, uint32_t time,
+void trap_R_AddDebugLine(vec3_t start, vec3_t end, uint32_t color, gtime_t time, bool depth_test);
+void trap_R_AddDebugPoint(vec3_t point, float size, uint32_t color, gtime_t time, bool depth_test);
+void trap_R_AddDebugAxis(vec3_t origin, vec3_t angles, float size, gtime_t time, bool depth_test);
+void trap_R_AddDebugBounds(box3_t box, uint32_t color, gtime_t time, bool depth_test);
+void trap_R_AddDebugSphere(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+void trap_R_AddDebugCircle(vec3_t origin, float radius, uint32_t color, gtime_t time, bool depth_test);
+void trap_R_AddDebugCylinder(vec3_t origin, float half_height, float radius, uint32_t color, gtime_t time,
                              bool depth_test);
 void trap_R_AddDebugArrow(vec3_t start, vec3_t end, float size, uint32_t line_color,
-                          uint32_t arrow_color, uint32_t time, bool depth_test);
+                          uint32_t arrow_color, gtime_t time, bool depth_test);
 void trap_R_AddDebugCurveArrow(vec3_t start, vec3_t ctrl, vec3_t end, float size,
-                               uint32_t line_color, uint32_t arrow_color, uint32_t time, bool depth_test);
+                               uint32_t line_color, uint32_t arrow_color, gtime_t time, bool depth_test);
 void trap_R_AddDebugText(vec3_t origin, const char *text,
-                         float size, uint32_t color, uint32_t time, bool depth_test);
+                         float size, uint32_t color, gtime_t time, bool depth_test);
 void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
-                               float size, uint32_t color, uint32_t time, bool depth_test);
+                               float size, uint32_t color, gtime_t time, bool depth_test);
 #else
 #define trap_Print gi->Print
 #define trap_Error gi->Error

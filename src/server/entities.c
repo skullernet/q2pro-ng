@@ -140,23 +140,18 @@ SV_WriteFrameToClient
 void SV_WriteFrameToClient(client_t *client)
 {
     const client_frame_t *frame, *oldframe;
-    int delta;
 
     // this is the frame we are creating
     frame = &client->frames[client->netchan.outgoing_sequence & UPDATE_MASK];
 
     // this is the frame we are delta'ing from
     oldframe = get_last_frame(client);
-    if (oldframe)
-        delta = frame->number - client->lastframe;
-    else
-        delta = 0;
 
     MSG_BeginWriting();
     MSG_WriteByte(svc_frame);
-    MSG_WriteBits(delta, FRAMEDELTA_BITS);
+    MSG_WriteBits(oldframe ? frame->number - oldframe->number : 0, FRAMEDELTA_BITS);
     MSG_WriteBits(client->frameflags, FRAMEFLAGS_BITS);
-    MSG_WriteBits(sv.time - client->begin_time, SERVERTIME_BITS);
+    MSG_WriteLeb64(sv.framenum);
 
     // send over the areabits
     MSG_WriteDeltaAreaBits(oldframe ? oldframe->areabits : NULL, frame->areabits, frame->areabytes);

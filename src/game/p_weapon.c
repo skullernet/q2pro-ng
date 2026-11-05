@@ -385,7 +385,7 @@ static gtime_t Weapon_AnimationTime(edict_t *ent)
 
     ent->client->ps.gunrate = min(gunrate, TICK_RATE / BASE_FRAMERATE - 1);
 
-    return Time_FromMsec(BASE_FRAMETIME >> gunrate);
+    return BASE_FRAMETIME >> gunrate;
 }
 
 /*

@@ -2456,7 +2456,7 @@ static void P_FallingDamage(edict_t *ent, const pmove_t *pm)
     if (ent->client->landmark_free_fall) {
         delta = min(30, delta);
         ent->client->landmark_free_fall = false;
-        ent->client->landmark_noise_time = level.time + Time_FromHertz(10);
+        ent->client->landmark_noise_time = level.time + BASE_FRAMETIME;
     }
 
     if (delta < 15) {
@@ -2628,7 +2628,7 @@ qvm_exported void G_ClientThink(int clientnum)
 
         if (ent->client->landmark_free_fall && pm.groundentitynum != ENTITYNUM_NONE) {
             ent->client->landmark_free_fall = false;
-            ent->client->landmark_noise_time = level.time + Time_FromHertz(10);
+            ent->client->landmark_noise_time = level.time + BASE_FRAMETIME;
         }
 
         // [Paril-KEX] save old position for G_TouchProjectiles

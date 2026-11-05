@@ -346,7 +346,7 @@ qvm_exported void G_Init(void)
     // variable FPS support
     Q_assert_soft(sv_fps.integer >= 10);
     game.tick_rate = sv_fps.integer;
-    game.frame_time = 1000 / game.tick_rate;
+    game.frame_time = Time_FromHertz(game.tick_rate);
     game.frame_time_sec = 1.0f / game.tick_rate;
 
     G_LoadL10nFile();
@@ -752,10 +752,10 @@ G_RunFrame
 Advances the world by 0.1 seconds
 ================
 */
-qvm_exported void G_RunFrame(int64_t time)
+qvm_exported void G_RunFrame(uint64_t framenum)
 {
     level.in_frame = true;
-    level.time = time;
+    level.time = framenum * FRAME_TIME;
 
     G_CheckCvars();
 

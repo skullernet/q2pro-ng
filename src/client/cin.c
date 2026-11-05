@@ -36,7 +36,7 @@ typedef struct {
 typedef struct {
     AVCodecContext  *dec_ctx;
     PacketQueue     queue;
-    unsigned        timestamp;
+    gtime_t         timestamp;
     int             stream_idx;
     AVFrame         *frame;
     bool            eof;
@@ -70,7 +70,7 @@ typedef struct {
 
     const crop_info_t   *info;
     unsigned            framenum;
-    unsigned            start_time;
+    gtime_t             start_time;
     bool                eof;
 
     byte                avio_ctx_buffer[4096];
@@ -386,7 +386,7 @@ static int decode_frames(DecoderState *s)
 
         // ignore AV_NOPTS_VALUE, etc
         if (frame->pts > 0)
-            s->timestamp = av_rescale(frame->pts, dec->pkt_timebase.num * 1000LL, dec->pkt_timebase.den);
+            s->timestamp = av_rescale(frame->pts, Time_FromSec(dec->pkt_timebase.num), dec->pkt_timebase.den);
 
         // drop video if we can't keep up, but never drop audio
         if (dec->codec->type == AVMEDIA_TYPE_VIDEO) {

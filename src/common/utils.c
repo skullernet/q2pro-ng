@@ -257,14 +257,14 @@ Parses time/frame specification for seeking in demos.
 Does not check for integer overflow...
 ================
 */
-bool Com_ParseTimespec(const char *s, int64_t *msec)
+bool Com_ParseTimespec(const char *s, int64_t *time)
 {
     unsigned long long c1, c2, c3;
     char *p;
 
     c1 = strtoull(s, &p, 10);
     if (!*p) {
-        *msec = c1 * 1000; // sec
+        *time = Time_FromSec(c1); // sec
         return true;
     }
 
@@ -272,14 +272,14 @@ bool Com_ParseTimespec(const char *s, int64_t *msec)
         c2 = strtoull(p + 1, &p, 10);
         if (*p)
             return false;
-        *msec = c1 * 1000 + c2 * 100; // sec.frac
+        *time = Time_FromSec(c1) + Time_FromMsec(c2 * 100); // sec.frac
         return true;
     }
 
     if (*p == ':') {
         c2 = strtoull(p + 1, &p, 10);
         if (!*p) {
-            *msec = c1 * 60000 + c2 * 1000; // min:sec
+            *time = Time_FromMin(c1) + Time_FromSec(c2); // min:sec
             return true;
         }
 
@@ -287,7 +287,7 @@ bool Com_ParseTimespec(const char *s, int64_t *msec)
             c3 = strtoull(p + 1, &p, 10);
             if (*p)
                 return false;
-            *msec = c1 * 60000 + c2 * 1000 + c3 * 100; // min:sec.frac
+            *time = Time_FromMin(c1) + Time_FromSec(c2) + Time_FromMsec(c3 * 100); // min:sec.frac
             return true;
         }
 
@@ -514,14 +514,15 @@ ms. Used for random effects that shouldn't cause too much tearing without vsync.
 */
 uint32_t Com_SlowRand(void)
 {
-    static uint32_t com_rand_ts;
+    static uint32_t com_rand_period;
     static uint32_t com_rand_base;
     static uint32_t com_rand_seed;
     static uint32_t com_rand_frame;
+    uint32_t period = (com_localTime2 >> 14) & 1;
 
     // see if it's time to reseed
-    if (com_rand_ts != com_localTime2 / 16) {
-        com_rand_ts = com_localTime2 / 16;
+    if (com_rand_period != period) {
+        com_rand_period = period;
         com_rand_base = Q_rand();
     }
 

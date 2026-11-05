@@ -195,6 +195,7 @@ void SV_New_f(void)
     MSG_WriteLong(sv.spawncount);
     MSG_WriteByte(sv.state);
     MSG_WriteByte(sv_client->number);
+    MSG_WriteLong(sv.frametime);
     MSG_WriteString(fs_game->string);
     MSG_WriteString(sv.name);
     MSG_WriteData(sv.cm.checksum, sizeof(sv.cm.checksum));
@@ -244,7 +245,6 @@ void SV_Begin_f(void)
 
     Com_DPrintf("Going from cs_primed to cs_spawned for %s\n", sv_client->name);
     sv_client->state = cs_spawned;
-    sv_client->begin_time = sv.time;
     sv_client->send_delta = 0;
     sv_client->command_msec = 1800;
     sv_client->cmd_msec_used = 0;

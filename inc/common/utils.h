@@ -22,7 +22,7 @@ bool Com_WildCmpEx(const char *filter, const char *string, int term, bool ignore
 #define Com_WildCmp(filter, string)  Com_WildCmpEx(filter, string, 0, false)
 
 #if USE_CLIENT
-bool Com_ParseTimespec(const char *s, int64_t *msec);
+bool Com_ParseTimespec(const char *s, int64_t *time);
 #endif
 
 // only begin attenuating sound volumes when outside the FULLVOLUME range

@@ -115,9 +115,9 @@ const char  com_version_string[] =
     APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
 
 unsigned    com_framenum;
-unsigned    com_eventTime;
-unsigned    com_localTime;
-unsigned    com_localTime2;
+gtime_t     com_eventTime;
+gtime_t     com_localTime;
+gtime_t     com_localTime2;
 bool        com_initialized;
 time_t      com_startTime;
 
@@ -125,10 +125,10 @@ time_t      com_startTime;
 cvar_t  *host_speeds;
 
 // host_speeds times
-unsigned    time_before_game;
-unsigned    time_after_game;
-unsigned    time_before_ref;
-unsigned    time_after_ref;
+gtime_t     time_before_game;
+gtime_t     time_after_game;
+gtime_t     time_before_ref;
+gtime_t     time_after_ref;
 #endif
 
 /*
@@ -1008,7 +1008,7 @@ void Qcommon_Init(int argc, char **argv)
 
     time(&com_startTime);
 
-    com_eventTime = Sys_Milliseconds();
+    com_eventTime = Sys_Timestamp();
 }
 
 /*
@@ -1019,11 +1019,11 @@ Qcommon_Frame
 void Qcommon_Frame(void)
 {
 #if USE_CLIENT
-    unsigned time_before, time_event, time_between, time_after;
-    unsigned clientrem;
+    gtime_t time_before, time_event, time_between, time_after;
+    gtime_t clientrem;
 #endif
-    unsigned oldtime, msec;
-    static unsigned remaining;
+    gtime_t oldtime, delta, delta_s;
+    static gtime_t remaining;
     static float frac;
 
     if (setjmp(com_abortframe)) {
@@ -1036,56 +1036,59 @@ void Qcommon_Frame(void)
     time_before = time_event = time_between = time_after = 0;
 
     if (host_speeds->integer)
-        time_before = Sys_Milliseconds();
+        time_before = Sys_Timestamp();
 #endif
 
     // sleep on network sockets when running a dedicated server
     // still do a select(), but don't sleep when running a client!
-    NET_Sleep(remaining);
+    NET_Sleep(Time_ToMsec(remaining));
 
     // calculate time spent running last frame and sleeping
     oldtime = com_eventTime;
-    com_eventTime = Sys_Milliseconds();
+    com_eventTime = Sys_Timestamp();
     if (oldtime > com_eventTime) {
         oldtime = com_eventTime;
     }
-    msec = com_eventTime - oldtime;
+    delta = com_eventTime - oldtime;
 
 #if USE_CLIENT
     // spin until msec is non-zero if running a client
     if (!dedicated->integer && !com_timedemo->integer) {
-        while (msec < 1) {
+        while (delta < 1) {
             bool break_now = CL_ProcessEvents();
-            com_eventTime = Sys_Milliseconds();
-            msec = com_eventTime - oldtime;
+            com_eventTime = Sys_Timestamp();
+            delta = com_eventTime - oldtime;
             if (break_now)
                 break;
         }
     }
 #endif
 
-    if (msec > 250) {
-        Com_DPrintf("Hitch warning: %u msec frame time\n", msec);
-        msec = 100; // time was unreasonable
+    if (delta > Time_FromMsec(250)) {
+        Com_DPrintf("Hitch warning: %"PRId64" msec frame time\n", Time_ToMsec(delta));
+        delta = Time_FromMsec(100); // time was unreasonable
     }
 
-    if (fixedtime->integer) {
-        Cvar_ClampInteger(fixedtime, 1, 1000);
-        msec = fixedtime->integer;
+    // decide scaled time delta
+    delta_s = delta;
+    if (SV_CheckPaused()) {
+        delta_s = 0;
+    } else if (fixedtime->integer) {
+        delta_s = Time_FromMsec(Cvar_ClampInteger(fixedtime, 1, 1000));
     } else if (timescale->value > 0) {
-        frac += msec * timescale->value;
-        msec = frac;
-        frac -= msec;
+        frac += delta_s * timescale->value;
+        delta_s = frac;
+        frac -= delta_s;
     }
 
     // run local time
-    com_localTime += msec;
-    com_localTime2 += msec & (sv_paused->integer - 1);
+    com_localTime += delta;
+    com_localTime2 += delta_s;
     com_framenum++;
 
 #if USE_CLIENT
     if (host_speeds->integer)
-        time_event = Sys_Milliseconds();
+        time_event = Sys_Timestamp();
 #endif
 
     // run system console
@@ -1093,19 +1096,19 @@ void Qcommon_Frame(void)
 
     NET_UpdateStats();
 
-    remaining = SV_Frame(msec);
+    remaining = SV_Frame(delta, delta_s);
 
 #if USE_CLIENT
     if (host_speeds->integer)
-        time_between = Sys_Milliseconds();
+        time_between = Sys_Timestamp();
 
-    clientrem = CL_Frame(msec);
+    clientrem = CL_Frame(delta, delta_s);
     if (remaining > clientrem) {
         remaining = clientrem;
     }
 
     if (host_speeds->integer)
-        time_after = Sys_Milliseconds();
+        time_after = Sys_Timestamp();
 
     if (host_speeds->integer) {
         int all, ev, sv, gm, cl, rf;

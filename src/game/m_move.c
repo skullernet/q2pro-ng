@@ -793,7 +793,7 @@ static bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
     }
 
     if (stepped && TICK_RATE > 10 && ent->monsterinfo.step_time <= level.time) {
-        ent->monsterinfo.step_time = level.time + Time_FromHertz(10);
+        ent->monsterinfo.step_time = level.time + BASE_FRAMETIME;
         G_AddEvent(ent, EV_STAIR_STEP, 0);
     }
 

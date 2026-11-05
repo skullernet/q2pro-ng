@@ -166,7 +166,7 @@ static int MA_UploadSfx(sfx_t *s)
     int size = s_info.samples * s_info.width * s_info.channels;
     sfxcache_t *sc = s->cache = S_Malloc(sizeof(*sc) + size - 1);
 
-    sc->length = s_info.samples * 1000LL / s_info.rate; // in msec
+    sc->length = Time_FromSec(s_info.samples) / s_info.rate;
     sc->loopstart = s_info.loopstart;
     sc->width = s_info.width;
     sc->format = format;

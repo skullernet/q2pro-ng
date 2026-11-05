@@ -215,7 +215,7 @@ void SP_target_secret(edict_t *ent)
     }
 
     ent->think = G_VerifyTargetted;
-    ent->nextthink = level.time + Time_FromHertz(10);
+    ent->nextthink = level.time + BASE_FRAMETIME;
 
     ent->use = use_target_secret;
     if (!st.noise)
@@ -784,7 +784,7 @@ void THINK(target_laser_think)(edict_t *self)
     self->s.old_origin = G_SnapVector(tr.endpos);
 
     if (damaged_thing)
-        self->damage_debounce_time = level.time + Time_FromHertz(10);
+        self->damage_debounce_time = level.time + BASE_FRAMETIME;
 
     self->nextthink = level.time + FRAME_TIME;
     trap_LinkEntity(self);
@@ -1023,7 +1023,7 @@ void THINK(target_earthquake_think)(edict_t *self)
     G_AddEvent(self, EV_EARTHQUAKE, self->speed);
 
     if (level.time < self->timestamp)
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void USE(target_earthquake_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1183,12 +1183,12 @@ void THINK(target_camera_dummy_think)(edict_t *self)
 
     // alpha fade out for voops
     if (self->hackflags & HACKFLAG_TELEPORT_OUT) {
-        self->timestamp = max(0, self->timestamp - Time_FromHertz(10));
+        self->timestamp = max(0, self->timestamp - BASE_FRAMETIME);
         float frac = Time_ToSec(self->timestamp) / Time_ToSec(self->pain_debounce_time);
         self->s.alpha = max(1.0f / 255, frac);
     }
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1217,7 +1217,7 @@ void USE(use_target_camera)(edict_t *self, edict_t *other, edict_t *activator)
         dummy->groundentity = activator->groundentity;
         dummy->groundentity_linkcount = dummy->groundentity ? dummy->groundentity->r.linkcount : 0;
         dummy->think = target_camera_dummy_think;
-        dummy->nextthink = level.time + Time_FromHertz(10);
+        dummy->nextthink = level.time + BASE_FRAMETIME;
         dummy->r.solid = SOLID_BBOX;
         dummy->movetype = MOVETYPE_STEP;
         dummy->r.box = activator->r.box;
@@ -1362,7 +1362,7 @@ void THINK(target_light_flicker_think)(edict_t *self)
     if (brandom())
         self->r.svflags ^= SVF_NOCLIENT;
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 // think function handles interpolation from start to finish.
@@ -1404,7 +1404,7 @@ void THINK(target_light_think)(edict_t *self)
 
     self->s.skinnum = MakeBigLong(r, g, b, 0);
 
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
@@ -1425,10 +1425,10 @@ void USE(target_light_use)(edict_t *self, edict_t *other, edict_t *activator)
     // has dynamic light "target"
     if (self->chain) {
         self->think = target_light_think;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
     } else if (self->spawnflags & SPAWNFLAG_TARGET_LIGHT_FLICKER) {
         self->think = target_light_flicker_think;
-        self->nextthink = level.time + Time_FromHertz(10);
+        self->nextthink = level.time + BASE_FRAMETIME;
     }
 }
 

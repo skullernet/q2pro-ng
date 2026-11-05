@@ -476,7 +476,7 @@ typedef struct {
     int total_monsters;
     int killed_monsters;
     // total time spent in the level, for end screen
-    int64_t time;
+    gtime_t time;
     // the order we visited levels in
     int visit_order;
 } level_entry_t;

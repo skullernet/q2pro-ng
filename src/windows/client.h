@@ -79,7 +79,7 @@ typedef struct {
     HWND    wnd;
     HDC     dc;
 
-    DWORD   lastMsgTime;
+    gtime_t lastMsgTime;
     HHOOK   kbdHook;
 
     vidFlags_t flags;

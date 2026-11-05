@@ -231,8 +231,8 @@ Key_Event (int key, bool down, unsigned time);
 
 typedef struct {
     int         down[2];        // key nums holding it down
-    unsigned    downtime;        // msec timestamp
-    unsigned    msec;            // msec down this frame
+    gtime_t     downtime;       // msec timestamp
+    gtime_t     time;           // msec down this frame
     int         state;
 } kbutton_t;
 
@@ -273,9 +273,9 @@ static void KeyDown(kbutton_t *b)
 
     // save timestamp
     c = Cmd_Argv(2);
-    b->downtime = Q_atoi(c);
+    b->downtime = strtoll(c, NULL, 10);
     if (!b->downtime) {
-        b->downtime = com_eventTime - 100;
+        b->downtime = com_eventTime - Time_FromMsec(100);
     }
 
     b->state |= 1 + 2;    // down + impulse down
@@ -285,7 +285,7 @@ static void KeyUp(kbutton_t *b)
 {
     int k;
     char *c;
-    unsigned uptime;
+    gtime_t uptime;
 
     c = Cmd_Argv(1);
     if (c[0])
@@ -311,11 +311,11 @@ static void KeyUp(kbutton_t *b)
 
     // save timestamp
     c = Cmd_Argv(2);
-    uptime = Q_atoi(c);
+    uptime = strtoll(c, NULL, 10);
     if (!uptime) {
-        b->msec += 10;
+        b->time += Time_FromMsec(10);
     } else if (uptime > b->downtime) {
-        b->msec += uptime - b->downtime;
+        b->time += uptime - b->downtime;
     }
 
     b->state &= ~1;        // now up
@@ -323,7 +323,7 @@ static void KeyUp(kbutton_t *b)
 
 static void KeyClear(kbutton_t *b)
 {
-    b->msec = 0;
+    b->time = 0;
     b->state &= ~2;        // clear impulses
     if (b->state & 1) {
         b->downtime = com_eventTime; // still down
@@ -419,27 +419,29 @@ Returns the fraction of the frame that the key was down
 */
 static float CL_KeyState(const kbutton_t *key)
 {
-    unsigned msec = key->msec;
+    gtime_t time = key->time;
 
     if (key->state & 1) {
         // still down
         if (com_eventTime > key->downtime) {
-            msec += com_eventTime - key->downtime;
+            time += com_eventTime - key->downtime;
         }
     }
 
     // special case for instant packet
-    if (!cl.cmd.msec) {
+    if (!cl.movetime) {
         return (float)(key->state & 1);
     }
 
-    return Q_clipf((float)msec / cl.cmd.msec, 0, 1);
+    return Q_clipf(time * timescale->value / cl.movetime, 0, 1);
 }
 
 //==========================================================================
 
 static float autosens_x;
 static float autosens_y;
+
+static gtime_t transmitTimeCost;
 
 /*
 ================
@@ -514,14 +516,14 @@ CL_AdjustAngles
 Moves the local angle positions
 ================
 */
-static void CL_AdjustAngles(int msec)
+static void CL_AdjustAngles(gtime_t delta)
 {
     float speed;
 
     if (in_speed.state & 1)
-        speed = msec * cl_anglespeedkey->value * 0.001f;
+        speed = Time_ToSec(delta) * cl_anglespeedkey->value;
     else
-        speed = msec * 0.001f;
+        speed = Time_ToSec(delta);
 
     if (!(in_strafe.state & 1)) {
         cl.viewangles.yaw -= speed * cl_yawspeed->value * CL_KeyState(&in_right);
@@ -594,7 +596,7 @@ Updates msec, angles and builds interpolated movement vector for local predictio
 Doesn't touch command forward/side/upmove, these are filled by CL_FinalizeCmd.
 =================
 */
-void CL_UpdateCmd(int msec)
+void CL_UpdateCmd(gtime_t delta)
 {
     cl.localmove = vec3_origin;
 
@@ -603,10 +605,11 @@ void CL_UpdateCmd(int msec)
     }
 
     // add to milliseconds of time to apply the move
-    cl.cmd.msec += msec;
+    cl.movetime += delta;
+    cl.cmd.msec = min(Time_ToMsec(cl.movetime), 255);
 
     // adjust viewangles
-    CL_AdjustAngles(msec);
+    CL_AdjustAngles(delta);
 
     // get basic movement from keyboard
     CL_BaseMove(&cl.localmove);
@@ -647,6 +650,15 @@ static void m_autosens_changed(cvar_t *self)
 
     autosens_x = 1.0f / fov;
     autosens_y = 1.0f / V_CalcFov(fov, 4, 3);
+}
+
+static void cl_maxpackets_changed(cvar_t *self)
+{
+    if (!self->integer) {
+        transmitTimeCost = 0;
+    } else {
+        transmitTimeCost = Time_FromHertz(Cvar_ClampInteger(self, 10, 125));
+    }
 }
 
 static const cmdreg_t c_input[] = {
@@ -700,7 +712,9 @@ void CL_RegisterInput(void)
     Cmd_Register(c_input);
 
     cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
-    cl_maxpackets = Cvar_Get("cl_maxpackets", "62", 0);
+    cl_maxpackets = Cvar_Get("cl_maxpackets", "60", 0);
+    cl_maxpackets->changed = cl_maxpackets_changed;
+    cl_maxpackets_changed(cl_maxpackets);
     cl_packetdup = Cvar_Get("cl_packetdup", "1", 0);
 #if USE_DEBUG
     cl_showpackets = Cvar_Get("cl_showpackets", "0", 0);
@@ -768,10 +782,6 @@ void CL_FinalizeCmd(void)
         cl.cmd.buttons |= BUTTON_ANY;
     }
 
-    if (cl.cmd.msec > 250) {
-        cl.cmd.msec = 100;        // time was unreasonable
-    }
-
     // rebuild the movement vector
     move = vec3_origin;
 
@@ -796,9 +806,12 @@ void CL_FinalizeCmd(void)
     cl.cmdNumber++;
     cl.cmds[cl.cmdNumber & CMD_MASK] = cl.cmd;
 
+    M_FRAMES++;
+
 clear:
     // clear pending cmd
     memset(&cl.cmd, 0, sizeof(cl.cmd));
+    cl.movetime = 0;
 
     // clear all states
     cl.mousemove.x = 0;
@@ -828,31 +841,16 @@ clear:
 
 static inline bool ready_to_send(void)
 {
-    unsigned msec;
-
     if (cl.sendPacketNow) {
         return true;
     }
     if (cls.netchan.message.cursize || cls.netchan.reliable_ack_pending) {
         return true;
     }
-    if (!cl_maxpackets->integer) {
+    if (cl.transmitTimeBudget >= transmitTimeCost) {
         return true;
     }
-
-    if (cl_maxpackets->integer < 10) {
-        Cvar_Set("cl_maxpackets", "10");
-    }
-
-    msec = 1000 / cl_maxpackets->integer;
-    if (msec) {
-        msec = 100 / (100 / msec);
-    }
-    if (cls.realtime - cl.lastTransmitTime < msec) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 /*
@@ -879,9 +877,10 @@ static void CL_SendBatchedCmd(void)
     history->sent = cls.realtime;    // for ping calculation
     history->rcvd = 0;
 
-    cl.lastTransmitTime = cls.realtime;
+    cl.transmitTimeBudget -= transmitTimeCost;
+    if (cl.transmitTimeBudget < -transmitTimeCost * 4)
+        cl.transmitTimeBudget = 0;
     cl.lastTransmitCmdNumber = cl.cmdNumber;
-    cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
     // begin a client move command
     MSG_BeginWriting();
@@ -957,9 +956,7 @@ static void CL_SendKeepAlive(void)
     history->sent = cls.realtime;    // for ping calculation
     history->rcvd = 0;
 
-    cl.lastTransmitTime = cls.realtime;
     cl.lastTransmitCmdNumber = cl.cmdNumber;
-    cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
     cursize = Netchan_Transmit(&cls.netchan, 0, NULL, 1);
 #if USE_DEBUG
@@ -1016,7 +1013,7 @@ static void CL_SendReliable(void)
     }
 }
 
-void CL_SendCmd(void)
+void CL_SendCmd(gtime_t delta)
 {
     if (cls.state < ca_connected) {
         return; // not talking to a server
@@ -1024,6 +1021,7 @@ void CL_SendCmd(void)
 
     // generate usercmds while playing a demo, but do not send them
     if (cls.demo.playback) {
+        cl.sendPacketNow = false;
         return;
     }
 
@@ -1036,9 +1034,14 @@ void CL_SendCmd(void)
             CL_SendKeepAlive();
         }
 
+        cl.transmitTimeBudget = 0;
         cl.sendPacketNow = false;
         return;
     }
+
+    cl.transmitTimeBudget += delta;
+    if (cl.transmitTimeBudget > transmitTimeCost * 4)
+        cl.transmitTimeBudget = transmitTimeCost;
 
     // are there any new usercmds to send after all?
     if (cl.lastTransmitCmdNumber == cl.cmdNumber) {

@@ -41,7 +41,7 @@ void THINK(mal_laser_think)(edict_t *self)
     self->r.svflags &= ~SVF_NOCLIENT;
     target_laser_think(self);
     self->think = mal_laser_think2;
-    self->nextthink = level.time + Time_FromHertz(10);
+    self->nextthink = level.time + BASE_FRAMETIME;
 }
 
 void SP_target_mal_laser(edict_t *self)

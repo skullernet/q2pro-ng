@@ -408,7 +408,7 @@ void UI_MouseEvent(int x, int y)
 UI_Draw
 =================
 */
-void UI_Draw(unsigned realtime)
+void UI_Draw(gtime_t realtime)
 {
     int i;
 

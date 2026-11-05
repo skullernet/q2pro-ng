@@ -313,7 +313,7 @@ static int AL_UploadSfx(sfx_t *s)
 
     // allocate placeholder sfxcache
     sfxcache_t *sc = s->cache = S_Malloc(sizeof(*sc));
-    sc->length = s_info.samples * 1000LL / s_info.rate; // in msec
+    sc->length = Time_FromSec(s_info.samples) / s_info.rate;
     sc->loopstart = s_info.loopstart;
     sc->width = s_info.width;
     sc->channels = s_info.channels;

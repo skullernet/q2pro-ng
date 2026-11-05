@@ -103,11 +103,11 @@ static struct {
     int cursor_hotspot_y;
 
     uint32_t keyboard_enter_serial;
-    int32_t keyrepeat_delta;
-    int32_t keyrepeat_delay;
+    gtime_t keyrepeat_delta;
+    gtime_t keyrepeat_delay;
     int lastkeydown;
-    unsigned keydown_time;
-    unsigned keyrepeat_time;
+    gtime_t keydown_time;
+    gtime_t keyrepeat_time;
 
     char *clipboard_data;
     const char *data_offer_type;
@@ -301,8 +301,8 @@ static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboar
 static void keyboard_handle_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
                                         int32_t rate, int32_t delay)
 {
-    wl.keyrepeat_delta = rate ? 1000 / rate : 0;
-    wl.keyrepeat_delay = delay;
+    wl.keyrepeat_delta = rate ? Time_FromHertz(rate) : 0;
+    wl.keyrepeat_delay = Time_FromMsec(delay);
 }
 
 static const struct wl_keyboard_listener keyboard_listener = {
@@ -756,8 +756,8 @@ static bool init(void)
     wl.scale_factor = 1;
     get_default_geometry(&wl.width, &wl.height);
 
-    wl.keyrepeat_delta = 30;
-    wl.keyrepeat_delay = 600;
+    wl.keyrepeat_delta = Time_FromMsec(30);
+    wl.keyrepeat_delay = Time_FromMsec(600);
 
     CHECK_ERR(wl.display = wl_display_connect(NULL), "wl_display_connect");
     CHECK_ERR(wl.registry = wl_display_get_registry(wl.display), "wl_display_get_registry");
