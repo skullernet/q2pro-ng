@@ -1750,8 +1750,8 @@ typedef struct {
     byte    buttons;
     short   angles[3];
     short   forwardmove, sidemove, upmove;
-    byte    impulse;        // remove?
-    byte    lightlevel;     // light level the player is standing on
+    byte    impulse;    // remove?
+    byte    padding;    // was lightlevel
 } usercmd_t;
 
 // entity_state_t->renderfx flags
@@ -1763,7 +1763,7 @@ typedef enum : uint32_t {
     RF_FULLBRIGHT       = BIT(3),   // always draw full intensity
     RF_DEPTHHACK        = BIT(4),   // for view weapon Z crunching
     RF_TRANSLUCENT      = BIT(5),
-    RF_FRAMELERP        = BIT(6),
+    RF_FRAMELERP        = BIT(6),   // unused
     RF_BEAM             = BIT(7),
     RF_CUSTOMSKIN       = BIT(8),   // skin is an index in image_precache
     RF_GLOW             = BIT(9),   // pulse lighting for bonus items
@@ -1784,11 +1784,11 @@ typedef enum : uint32_t {
     RF_SHELL_LITE_GREEN = BIT(19),
     RF_CUSTOM_LIGHT     = BIT(20),
     RF_FLARE            = BIT(21),
-    RF_OLD_FRAME_LERP   = BIT(22),
+    RF_OLD_FRAME_LERP   = BIT(22),  // old_frame is valid
     RF_DOT_SHADOW       = BIT(23),
     RF_LOW_PRIORITY     = BIT(24),
     RF_NO_LOD           = BIT(25),
-    RF_STAIR_STEP       = BIT(26),
+    RF_STAIR_STEP       = BIT(26),  // unused (see EV_STAIR_STEP)
 
     RF_FLARE_LOCK_ANGLE = RF_MINLIGHT,
     RF_BEAM_LIGHTNING   = RF_BEAM | RF_GLOW,
@@ -1806,10 +1806,29 @@ typedef enum : uint32_t {
     RDF_UVGOGGLES       = BIT(3),
 //ROGUE
 
-    RDF_TELEPORT_BIT    = BIT(4),
+    RDF_TELEPORT_BIT    = BIT(4),   // don't lerp playerstate if flipped
     RDF_NO_WEAPON_BOB   = BIT(5),
-    RDF_DOF             = BIT(6),
+    RDF_DOF             = BIT(6),   // depth of field effect
 } rdflags_t;
+
+// server frame flags
+typedef enum : uint32_t {
+    FF_NONE         = 0U,
+    FF_SUPPRESSED   = BIT(0),
+    FF_CLIENTDROP   = BIT(1),
+    FF_CLIENTPRED   = BIT(2),
+    FF_RESERVED     = BIT(3)
+} frame_flags_t;
+
+// server state
+typedef enum {
+    ss_dead,            // no map loaded
+    ss_loading,         // spawning level edicts
+    ss_game,            // actively running
+    ss_pic,             // showing static picture
+    ss_cinematic,       // playing a cinematic
+    ss_demo = -1,       // hack for demomap command, not a real server state
+} server_state_t;
 
 // hack to encode ATTN_STATIC more efficiently
 #define ATTN_ESCAPE_CODE    (ATTN_STATIC * 64)
@@ -1840,12 +1859,6 @@ typedef enum : uint32_t {
 #define CS_NAME             0   // server and game both reference!!!
 #define MAX_CONFIGSTRINGS   0x4000
 
-// server frame flags
-#define FF_SUPPRESSED   BIT(0)
-#define FF_CLIENTDROP   BIT(1)
-#define FF_CLIENTPRED   BIT(2)
-#define FF_RESERVED     BIT(3)
-
 #define MAX_EVENTS      4
 #define EVENT_MASK      (MAX_EVENTS - 1)
 
@@ -1854,6 +1867,9 @@ typedef enum : uint32_t {
 #define EVSEQ_MASK      MASK(EVSEQ_BITS)
 
 #define MAX_DAMAGE_INDICATORS   4
+
+// all entity_state_t and player_state_t fields must be 32-bit.
+// when adding more fields, add them to common/msg.c too!
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will

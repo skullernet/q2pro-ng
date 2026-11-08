@@ -50,7 +50,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_PACKET_STRINGCMDS   8
 #define MAX_PACKET_USERINFOS    8
 
-#define MVD_MAGIC               MakeRawLong('M','V','D','2')
+// negative value that can't occur in vanilla demos
+#define DM2_MAGIC               MakeRawLong('D','M','2',0x80)
 
 //
 // server to client

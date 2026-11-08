@@ -769,7 +769,7 @@ void THINK(monster_think)(edict_t *self)
         }
     }
 
-    if (self->health > 0 && self->monsterinfo.dodge && sv_running.integer >= 2)
+    if (self->health > 0 && self->monsterinfo.dodge && sv_running.integer >= ss_game)
         M_CheckDodge(self);
 
     M_MoveFrame(self);

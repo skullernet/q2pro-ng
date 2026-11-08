@@ -248,7 +248,6 @@ void SV_Begin_f(void)
     sv_client->send_delta = 0;
     sv_client->command_msec = 1800;
     sv_client->cmd_msec_used = 0;
-    sv_client->suppress_count = 0;
     sv_client->download = false;
 
     // allocate packet entities if not done yet
@@ -339,7 +338,7 @@ static void SV_Lag_f(void)
     SV_ClientCommand(sv_client, "print \""
                     "Lag stats for:       %s\n"
                     "RTT (min/avg/max):   %d/%d/%d ms\n"
-                    "Server to client PL: %.2f%% (approx)\n"
+                    "Server to client PL: %.2f%%\n"
                     "Client to server PL: %.2f%%\n"
                     "Timescale          : %.3f\n\"",
                     cl->name, cl->min_ping, AVG_PING(cl), cl->max_ping,
@@ -428,7 +427,9 @@ static inline void SV_ClientThink(usercmd_t *cmd)
     sv_client->cmd_msec_used += cmd->msec;
     sv_client->num_moves++;
 
-    if (sv_client->command_msec < 0 && sv_enforcetime->integer) {
+    // no time enforcement for local clients
+    if (sv_client->command_msec < 0 && sv_enforcetime->integer &&
+        !NET_IsLocalAddress(&sv_client->netchan.remote_address)) {
         Com_DPrintf("commandMsec underflow from %s: %d\n",
                     sv_client->name, sv_client->command_msec);
         return;
@@ -469,9 +470,6 @@ static void SV_SetLastFrame(int lastframe)
                     frame->latency = com_eventTime - frame->sentTime;
             }
         }
-
-        // count valid ack
-        sv_client->frames_acked++;
     }
 
     sv_client->lastframe = lastframe;
@@ -488,7 +486,7 @@ static void SV_NewClientExecuteMove(int c)
     usercmd_t   *lastcmd, *cmd;
     int         lastframe;
     int         numCmds[MAX_PACKET_FRAMES], numDups;
-    int         i, j, lightlevel;
+    int         i, j;
     int         net_drop;
 
     if (moveIssued) {
@@ -504,7 +502,7 @@ static void SV_NewClientExecuteMove(int c)
         lastframe = sv_client->netchan.incoming_acknowledged;
     }
 
-    lightlevel = MSG_ReadByte();
+    sv_client->packetloss = MSG_ReadByte();
 
     numDups = MSG_ReadBits(3);
     if (numDups >= MAX_PACKET_FRAMES) {
@@ -531,7 +529,6 @@ static void SV_NewClientExecuteMove(int c)
             }
             cmd = &cmds[i][j];
             MSG_ReadDeltaUsercmd(lastcmd, cmd);
-            cmd->lightlevel = lightlevel;
             lastcmd = cmd;
         }
     }

@@ -31,12 +31,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 typedef struct {
-    unsigned        flags;
+    frame_flags_t   flags;
     unsigned        number;         // incoming packet sequence
     uint64_t        serverframe;    // server frame number
     gtime_t         servertime;     // serverframe * timebase
     gtime_t         latency;
-    unsigned        cmdnum;
+    unsigned        cmdnum;         // usercmd acknowledge
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
@@ -48,9 +48,15 @@ typedef struct {
 } cg_server_frame_t;
 
 typedef struct {
-    char        servername[MAX_QPATH];
-    float       demoprogress;
-} cg_client_info_t;
+    char            servername[MAX_QPATH];
+    server_state_t  serverstate;    // ss_* constants
+    int             servercount;    // server identification for prespawns
+    int             clientnum;      // never changed during gameplay, set by serverdata packet
+    int             timebase;       // usually server frame time, but doesn't have to be
+    bool            demoplayback;
+    float           demoprogress;
+    gtime_t         demostarttime;
+} cg_server_info_t;
 
 typedef enum {
     CG_DRAW_NONE    = 0U,
@@ -94,7 +100,7 @@ typedef struct {
     unsigned (*GetServerFrameNumber)(void);
     bool (*GetServerFrame)(unsigned frame, cg_server_frame_t *out);
 
-    void (*GetClientInfo)(cg_client_info_t *info);
+    void (*GetServerInfo)(cg_server_info_t *info);
 
     void (*ClientCommand)(const char *cmd);
 
@@ -122,6 +128,7 @@ typedef struct {
     void (*InsertCommandString)(const char *text);
 
     void (*WarpMouse)(int x, int y);
+    void (*SetMouseSpeed)(float x, float y);
 
     bool        (*Key_GetOverstrikeMode)(void);
     void        (*Key_SetOverstrikeMode)(bool overstrike);

@@ -1097,7 +1097,7 @@ static void Nav_SetupEntities(void)
         }
 
         if (!e->game_edict)
-            Com_Printf("Nav entity %i appears to be missing (needs entity with model %i)\n", i, e->model);
+            Com_DPrintf("Nav entity %i appears to be missing (needs entity with model %i)\n", i, e->model);
     }
 }
 

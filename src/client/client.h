@@ -66,12 +66,12 @@ typedef struct {
 typedef struct {
     bool            valid;
 
-    unsigned        flags;
+    frame_flags_t   flags;
     unsigned        number;         // incoming packet sequence
     uint64_t        serverframe;    // server frame number
     gtime_t         servertime;     // serverframe * timebase
     gtime_t         latency;
-    unsigned        cmdnum;
+    unsigned        cmdnum;         // usercmd acknowledge
 
     byte            areabits[MAX_MAP_AREA_BYTES];
     int             areabytes;
@@ -99,7 +99,6 @@ typedef struct {
     client_history_t    history[CMD_BACKUP];
     unsigned    initialSeq;
 
-    // rebuilt each valid frame
     entity_state_t  baselines[MAX_EDICTS];
 
     entity_state_t  entities[MAX_PARSE_ENTITIES];
@@ -107,8 +106,6 @@ typedef struct {
 
     server_frame_t  frames[UPDATE_BACKUP];
     server_frame_t  frame;          // received from server
-
-    size_t          dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
 
     // the client maintains its own idea of view angles, which are
     // sent to the server each frame.  It is cleared to 0 upon entering each level.
@@ -125,26 +122,26 @@ typedef struct {
     // localmove and pending cmd, cleared each time cmd is finalized
     vec2_t      mousemove;
 
-    gtime_t     movetime;
+    vec2_t      mousespeed;     // adjusted by cgame
+
+    gtime_t     movetime;       // interpolated cmd time
 
     gtime_t     time;           // this is the time value that the client
                                 // is rendering at.  always <= cl.servertime
-    float       lerpfrac;       // between oldframe and frame
-
-    int         lightlevel;
 
     //
     // server state information
     //
-    int         serverstate;    // ss_* constants
-    int         servercount;    // server identification for prespawns
-    char        gamedir[MAX_QPATH];
-    int         clientnum;      // never changed during gameplay, set by serverdata packet
-    int         timebase;       // usually server frame time, but doesn't have to be
+    server_state_t  serverstate;    // ss_* constants
+    int             servercount;    // server identification for prespawns
+    int             clientnum;      // never changed during gameplay, set by serverdata packet
+    int             timebase;       // usually server frame time, but doesn't have to be
 
     char        *baseconfigstrings[MAX_CONFIGSTRINGS];
     char        *configstrings[MAX_CONFIGSTRINGS];
+    size_t      dcs[BC_COUNT(MAX_CONFIGSTRINGS)];
 
+    char        gamedir[MAX_QPATH];
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
     //
@@ -322,20 +319,6 @@ extern client_static_t      cls;
 // cvars
 //
 
-#if USE_DEBUG
-#define SHOWCLAMP(level, ...) \
-    do { if (cl_showclamp->integer >= level) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
-#define SHOWMISS(...) \
-    do { if (cl_showmiss->integer) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__); } while (0)
-extern cvar_t   *cl_showmiss;
-extern cvar_t   *cl_showclamp;
-#else
-#define SHOWCLAMP(...)
-#define SHOWMISS(...)
-#endif
-
 extern cvar_t   *cl_disconnectcmd;
 extern cvar_t   *cl_changemapcmd;
 extern cvar_t   *cl_beginmapcmd;
@@ -353,10 +336,10 @@ extern cvar_t   *info_name;
 extern cvar_t   *info_skin;
 extern cvar_t   *info_rate;
 extern cvar_t   *info_fov;
-extern cvar_t   *info_msg;
 extern cvar_t   *info_hand;
 extern cvar_t   *info_gender;
-extern cvar_t   *info_uf;
+extern cvar_t   *info_autoswitch;
+extern cvar_t   *info_autoshield;
 
 //=============================================================================
 
@@ -393,8 +376,6 @@ void CL_SendRcon(const netadr_t *adr, const char *pass, const char *cmd);
 const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
-
-void cl_timeout_changed(cvar_t *self);
 
 
 //

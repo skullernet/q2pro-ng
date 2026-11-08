@@ -221,7 +221,7 @@ DEMO BAR
 
 static void SCR_DrawDemo(void)
 {
-    cg_client_info_t info;
+    cg_server_info_t info;
     char buffer[16];
     int x, w, h;
     size_t len;
@@ -231,7 +231,7 @@ static void SCR_DrawDemo(void)
     if (!cgs.demoplayback)
         return;
 
-    trap_GetClientInfo(&info);
+    trap_GetServerInfo(&info);
     w = Q_rint(scr.hud_width * info.demoprogress);
     h = Q_rint(CONCHAR_HEIGHT / scr.hud_scale);
 
@@ -250,9 +250,10 @@ static void SCR_DrawDemo(void)
     SCR_DrawString(x, h, UI_NONE, buffer);
 
     if (scr_demobar.integer > 1) {
-        int min = cg.frame->servertime / Time_FromMin(1);
-        int sec = (cg.frame->servertime / Time_FromSec(1)) % 60;
-        int sub = (cg.frame->servertime / Time_FromMsec(100)) % 10;
+        gtime_t time = cg.frame->servertime - info.demostarttime;
+        int min = time / Time_FromMin(1);
+        int sec = (time / Time_FromSec(1)) % 60;
+        int sub = (time / Time_FromMsec(100)) % 10;
 
         Q_snprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, sub);
         SCR_DrawString(0, h, UI_NONE, buffer);

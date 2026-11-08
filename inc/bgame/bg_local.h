@@ -110,18 +110,6 @@ typedef enum : uint32_t {
     LAYOUTS_EOU             = BIT(6),
 } layout_flags_t;
 
-// uf flags
-typedef enum : uint32_t {
-    UF_NONE             = 0U,
-    UF_AUTOSCREENSHOT   = BIT(0),
-    UF_AUTORECORD       = BIT(1),
-    UF_LOCALFOV         = BIT(2),
-    UF_MUTE_PLAYERS     = BIT(3),
-    UF_MUTE_OBSERVERS   = BIT(4),
-    UF_MUTE_MISC        = BIT(5),
-    UF_PLAYERFOV        = BIT(6),
-} user_flags_t;
-
 //==============================================
 
 // entity_state_t->effects

@@ -282,6 +282,7 @@ static void CL_Record_f(void)
     char    buffer[MAX_OSPATH];
     int     i, c;
     size_t  len;
+    uint32_t        magic;
     entity_state_t  *ent;
     char            *s;
     qhandle_t       f;
@@ -340,6 +341,10 @@ static void CL_Record_f(void)
 
     // clear dirty configstrings
     memset(cl.dcs, 0, sizeof(cl.dcs));
+
+    // write magic
+    magic = DM2_MAGIC;
+    FS_Write(&magic, sizeof(magic), f);
 
     //
     // write out messages to hold the startup information
@@ -437,8 +442,6 @@ static void resume_record(void)
     //cls.demo.last_server_frame = -1;
     CL_EmitDemoFrame();
 
-    // FIXME: write layout if it fits? most likely it won't
-
     // write it to the demo file
     CL_WriteDemoMessage(&cls.demo.buffer);
 }
@@ -491,50 +494,23 @@ static void CL_Suspend_f(void)
     CL_Resume_f();
 }
 
-static int read_first_message(qhandle_t f)
+static int check_demo_type(qhandle_t f)
 {
-    uint32_t    ul;
-    uint16_t    us;
-    size_t      msglen;
-    int         read, type;
+    uint32_t    magic;
+    int         read;
 
-    // read magic/msglen
-    read = FS_Read(&ul, 4, f);
+    // read magic
+    read = FS_Read(&magic, 4, f);
     if (read != 4) {
         return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
     }
 
     // determine demo type
-    if (ul == MVD_MAGIC) {
-        read = FS_Read(&us, 2, f);
-        if (read != 2) {
-            return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
-        }
-        if (!us) {
-            return Q_ERR_UNEXPECTED_EOF;
-        }
-        msglen = LittleShort(us);
-        type = 1;
-    } else {
-        if (ul == (uint32_t)-1) {
-            return Q_ERR_UNEXPECTED_EOF;
-        }
-        msglen = LittleLong(ul);
-        type = 0;
-    }
-
-    if (msglen > sizeof(msg_read_buffer)) {
+    if (magic != DM2_MAGIC) {
         return Q_ERR_INVALID_DATA;
     }
 
-    // read packet data
-    read = FS_Read(msg_read_buffer, msglen, f);
-    if (read != msglen) {
-        return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
-    }
-
-    SZ_InitRead(&msg_read, msg_read_buffer, msglen);
-    return type;
+    return Q_ERR_SUCCESS;
 }
 
 static int read_next_message(qhandle_t f)
@@ -652,15 +628,9 @@ static void CL_PlayDemo_f(void)
         return;
     }
 
-    type = read_first_message(f);
+    type = check_demo_type(f);
     if (type < 0) {
-        Com_Printf("Couldn't read %s: %s\n", name, Q_ErrorString(type));
-        FS_CloseFile(f);
-        return;
-    }
-
-    if (type == 1) {
-        Com_Printf("MVD support was not compiled in.\n");
+        Com_Printf("%s is not a valid demo\n", name);
         FS_CloseFile(f);
         return;
     }
@@ -678,9 +648,6 @@ static void CL_PlayDemo_f(void)
 
     Con_Popup(true);
     SCR_UpdateScreen();
-
-    // parse the first message just read
-    CL_ParseServerMessage();
 
     // read and parse messages util `precache' command
     for (int i = 0; cls.state == ca_connected && i < 1000; i++) {
@@ -744,10 +711,6 @@ void CL_EmitDemoSnapshot(void)
         MSG_WriteShort(i);
         MSG_WriteString(to);
     }
-
-    // write layout
-    //MSG_WriteByte(svc_stringcmd);
-    //MSG_WriteString(va("layout %s", cl.layout));
 
     if (msg_write.overflowed) {
         Com_DWPrintf("%s: message buffer overflowed\n", __func__);
@@ -1013,25 +976,6 @@ done:
     cls.demo.seeking = false;
 }
 
-static void parse_info_string(demoInfo_t *info, int clientNum, int index)
-{
-#if 0
-    char string[MAX_QPATH], *p;
-
-    MSG_ReadString(string, sizeof(string));
-
-    if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
-        if (index - CS_PLAYERSKINS == clientNum) {
-            Q_strlcpy(info->pov, string, sizeof(info->pov));
-            p = strchr(info->pov, '\\');
-            if (p) {
-                *p = 0;
-            }
-        }
-    }
-#endif
-}
-
 /*
 ====================
 CL_GetDemoInfo
@@ -1039,56 +983,7 @@ CL_GetDemoInfo
 */
 bool CL_GetDemoInfo(const char *path, demoInfo_t *info)
 {
-    qhandle_t f;
-    int c, index, clientNum, type;
-    bool res = false;
-
-    FS_OpenFile(path, &f, FS_MODE_READ | FS_FLAG_GZIP);
-    if (!f) {
-        return false;
-    }
-
-    type = read_first_message(f);
-    if (type != 0) {
-        goto fail;
-    }
-
-    if (MSG_ReadByte() != svc_serverdata) {
-        goto fail;
-    }
-    c = MSG_ReadLong();
-    if (!Q2PRO_SUPPORTED(c)) {
-        goto fail;
-    }
-    MSG_ReadLong();
-    MSG_ReadByte();
-    MSG_ReadString(NULL, 0);
-    clientNum = MSG_ReadShort();
-    MSG_ReadString(info->map, sizeof(info->map));
-    MSG_ReadString(NULL, 0);
-
-    while (1) {
-        c = MSG_ReadByte();
-        if (c == -1) {
-            if (read_next_message(f) <= 0) {
-                break;
-            }
-            continue; // parse new message
-        }
-        if (c != svc_configstring) {
-            break;
-        }
-        index = MSG_ReadShort();
-        if (index < 0 || index >= MAX_CONFIGSTRINGS) {
-            goto fail;
-        }
-        parse_info_string(info, clientNum, index);
-    }
-    res = true;
-
-fail:
-    FS_CloseFile(f);
-    return res;
+    return false;
 }
 
 // =========================================================================

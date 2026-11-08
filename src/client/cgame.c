@@ -102,6 +102,11 @@ static void PF_InsertCommandString(const char *string)
     Cbuf_InsertText(&cmd_buffer, string);
 }
 
+static void PF_SetMouseSpeed(float x, float y)
+{
+    cl.mousespeed = Vec2(x, y);
+}
+
 static size_t PF_Key_KeynumToString(int keynum, char *buf, size_t size)
 {
     return Q_strlcpy(buf, Key_KeynumToString(keynum), size);
@@ -241,10 +246,16 @@ static bool PF_GetServerFrame(unsigned number, cg_server_frame_t *out)
     return true;
 }
 
-static void PF_GetClientInfo(cg_client_info_t *info)
+static void PF_GetServerInfo(cg_server_info_t *info)
 {
     Q_strlcpy(info->servername, cls.servername, sizeof(info->servername));
+    info->serverstate = cl.serverstate;
+    info->servercount = cl.servercount;
+    info->clientnum = cl.clientnum;
+    info->timebase = cl.timebase;
+    info->demoplayback = cls.demo.playback;
     info->demoprogress = cls.demo.file_progress;
+    info->demostarttime = cls.demo.starttime;
 }
 
 //==============================================
@@ -311,8 +322,8 @@ VM_THUNK(GetServerFrame) {
     VM_U32(0) = PF_GetServerFrame(VM_U32(0), VM_PTR(1, cg_server_frame_t));
 }
 
-VM_THUNK(GetClientInfo) {
-    PF_GetClientInfo(VM_PTR(0, cg_client_info_t));
+VM_THUNK(GetServerInfo) {
+    PF_GetServerInfo(VM_PTR(0, cg_server_info_t));
 }
 
 VM_THUNK(ClientCommand) {
@@ -385,6 +396,10 @@ VM_THUNK(InsertCommandString) {
 
 VM_THUNK(WarpMouse) {
     IN_WarpMouse(VM_U32(0), VM_U32(1));
+}
+
+VM_THUNK(SetMouseSpeed) {
+    PF_SetMouseSpeed(VM_F32(0), VM_F32(1));
 }
 
 VM_THUNK(Key_GetOverstrikeMode) {
@@ -703,7 +718,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(GetUsercmd, "i ii"),
     VM_IMPORT(GetServerFrameNumber, "i "),
     VM_IMPORT(GetServerFrame, "i ii"),
-    VM_IMPORT(GetClientInfo, "i"),
+    VM_IMPORT(GetServerInfo, "i"),
     VM_IMPORT(ClientCommand, "i"),
     VM_IMPORT(SetCompletionOptions, "i"),
     VM_IMPORT(AddCommandCompletion, "i"),
@@ -722,6 +737,7 @@ static const vm_import_t cgame_vm_imports[] = {
     VM_IMPORT(AddCommandString, "i"),
     VM_IMPORT(InsertCommandString, "i"),
     VM_IMPORT(WarpMouse, "ii"),
+    VM_IMPORT(SetMouseSpeed, "ff"),
     VM_IMPORT(Key_GetOverstrikeMode, "i "),
     VM_IMPORT(Key_SetOverstrikeMode, "i"),
     VM_IMPORT(Key_GetDest, "i "),
@@ -958,7 +974,7 @@ static const cgame_import_t cgame_dll_imports = {
     .GetServerFrameNumber = PF_GetServerFrameNumber,
     .GetServerFrame = PF_GetServerFrame,
 
-    .GetClientInfo = PF_GetClientInfo,
+    .GetServerInfo = PF_GetServerInfo,
 
     .ClientCommand = CL_ClientCommand,
 
@@ -986,6 +1002,7 @@ static const cgame_import_t cgame_dll_imports = {
     .InsertCommandString = PF_InsertCommandString,
 
     .WarpMouse = IN_WarpMouse,
+    .SetMouseSpeed = PF_SetMouseSpeed,
 
     .Key_GetOverstrikeMode = Key_GetOverstrikeMode,
     .Key_SetOverstrikeMode = Key_SetOverstrikeMode,
@@ -1116,6 +1133,8 @@ void CL_ShutdownCGame(void)
 
 void CL_InitCGame(void)
 {
+    cl.mousespeed = Vec2(1, 1);
+
     // load cgame module if not done yet
     if (!cge) {
         cge = VM_LoadModule(&cgame, &cgame_iface);

@@ -29,8 +29,6 @@ cvar_t  *cl_autopause;
 
 #if USE_DEBUG
 cvar_t  *cl_shownet;
-cvar_t  *cl_showmiss;
-cvar_t  *cl_showclamp;
 #endif
 
 cvar_t  *cl_disconnectcmd;
@@ -53,10 +51,10 @@ cvar_t  *info_skin;
 cvar_t  *info_dogtag;
 cvar_t  *info_rate;
 cvar_t  *info_fov;
-cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
-cvar_t  *info_uf;
+cvar_t  *info_autoswitch;
+cvar_t  *info_autoshield;
 
 client_static_t cls;
 client_state_t  cl;
@@ -1805,8 +1803,6 @@ static void CL_InitLocal(void)
 
 #if USE_DEBUG
     cl_shownet = Cvar_Get("cl_shownet", "0", 0);
-    cl_showmiss = Cvar_Get("cl_showmiss", "0", 0);
-    cl_showclamp = Cvar_Get("showclamp", "0", 0);
 #endif
 
     cl_timeout = Cvar_Get("cl_timeout", "120", 0);
@@ -1836,13 +1832,13 @@ static void CL_InitLocal(void)
     info_dogtag = Cvar_Get("dogtag", "default", CVAR_USERINFO | CVAR_ARCHIVE);
     info_dogtag->generator = info_dogtag_g;
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_msg = Cvar_Get("msg", "1", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
     //info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
     info_gender->modified = false; // clear this so we know when user sets it manually
-    info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
+    info_autoswitch = Cvar_Get("autoswitch", "0", CVAR_USERINFO | CVAR_ARCHIVE);
+    info_autoshield = Cvar_Get("autoshield", "0", CVAR_USERINFO | CVAR_ARCHIVE);
 
 
     //

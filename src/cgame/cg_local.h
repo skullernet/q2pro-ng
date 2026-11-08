@@ -195,6 +195,8 @@ typedef struct {
 
     vec2_t      mouse_pos;
 
+    float       autosens_x, autosens_y;
+
     vec3_t      size_probes[SIZE_PROBES];
     int         size_probe_index;
     gtime_t     size_probe_time;
@@ -453,6 +455,7 @@ extern vm_cvar_t    cg_thirdperson_angle;
 extern vm_cvar_t    cg_thirdperson_range;
 
 extern vm_cvar_t    cg_adjustfov;
+extern vm_cvar_t    cg_autosens;
 extern vm_cvar_t    cg_lerp_lightstyles;
 extern vm_cvar_t    cg_muzzlelight_time;
 extern vm_cvar_t    cg_muzzleflashes_cvar;
@@ -482,10 +485,10 @@ extern vm_cvar_t    info_name;
 extern vm_cvar_t    info_skin;
 extern vm_cvar_t    info_rate;
 extern vm_cvar_t    info_fov;
-extern vm_cvar_t    info_msg;
 extern vm_cvar_t    info_hand;
 extern vm_cvar_t    info_gender;
-extern vm_cvar_t    info_uf;
+extern vm_cvar_t    info_autoswitch;
+extern vm_cvar_t    info_autoshield;
 
 //=============================================================================
 

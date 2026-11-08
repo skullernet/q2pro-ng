@@ -67,6 +67,7 @@ vm_cvar_t   cg_dlight_hacks;
 vm_cvar_t   cg_chat_notify;
 vm_cvar_t   cg_chat_sound;
 vm_cvar_t   cg_adjustfov;
+vm_cvar_t   cg_autosens;
 vm_cvar_t   cg_lerp_lightstyles;
 vm_cvar_t   cg_muzzlelight_time;
 vm_cvar_t   cg_muzzleflashes_cvar;
@@ -87,7 +88,6 @@ vm_cvar_t   s_reverb;
 vm_cvar_t   com_timedemo;
 vm_cvar_t   info_hand;
 vm_cvar_t   info_fov;
-vm_cvar_t   info_uf;
 
 static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_gun, "1", 0),
@@ -128,6 +128,7 @@ static const vm_cvar_reg_t cg_cvars[] = {
     VM_CVAR(cg_chat_notify, "1", 0),
     VM_CVAR(cg_chat_sound, "1", 0),
     VM_CVAR(cg_adjustfov, "1", 0),
+    VM_CVAR(cg_autosens, "0", 0),
     VM_CVAR(cg_lerp_lightstyles, "1", 0),
     VM_CVAR(cg_muzzlelight_time, "0.1", 0),
     { &cg_muzzleflashes_cvar, "cg_muzzleflashes", "1", 0 },
@@ -149,9 +150,15 @@ static const vm_cvar_reg_t cg_cvars[] = {
     { &com_timedemo, "timedemo", "0", CVAR_CHEAT },
     { &info_hand, "hand", "0", CVAR_USERINFO | CVAR_ARCHIVE },
     { &info_fov, "fov", "90", CVAR_USERINFO | CVAR_ARCHIVE },
-    { &info_uf, "uf", "", CVAR_USERINFO },
 };
 
+/*
+=================
+CG_Init
+
+Called once when cgame is first loaded
+=================
+*/
 qvm_exported void CG_Init(void)
 {
     // seed RNG
@@ -166,6 +173,11 @@ qvm_exported void CG_Init(void)
     CG_InitEffects();
 }
 
+/*
+=================
+CG_Shutdown
+=================
+*/
 qvm_exported void CG_Shutdown(void)
 {
 }
@@ -265,6 +277,11 @@ qvm_exported bool CG_KeyEvent(unsigned key, bool down)
     return true;
 }
 
+/*
+=================
+CG_CharEvent
+=================
+*/
 qvm_exported void CG_CharEvent(unsigned key)
 {
 }

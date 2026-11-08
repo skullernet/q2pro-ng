@@ -626,7 +626,7 @@ bool FindTarget(edict_t *self)
     bool     ignore_sight_sound = false;
 
     // [Paril-KEX] if we're in a level transition, don't worry about enemies
-    if (sv_running.integer < 2)
+    if (sv_running.integer < ss_game)
         return false;
 
     // N64 cutscene behavior

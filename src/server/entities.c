@@ -159,8 +159,7 @@ void SV_WriteFrameToClient(client_t *client)
     // delta encode the playerstate
     MSG_WriteDeltaPlayerstate(oldframe ? &oldframe->ps : NULL, &frame->ps);
 
-    client->suppress_count = 0;
-    client->frameflags = 0;
+    client->frameflags = FF_NONE;
 
     // delta encode the entities
     SV_EmitPacketEntities(client, oldframe, frame);
@@ -231,8 +230,6 @@ void SV_BuildClientFrame(client_t *client)
     frame->number = client->netchan.outgoing_sequence;
     frame->sentTime = com_eventTime; // save it for ping calc later
     frame->latency = -1; // not yet acked
-
-    client->frames_sent++;
 
     // find the client's PVS
     clientorg = SV_GetClient_ViewOrg(client);

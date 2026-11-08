@@ -67,11 +67,6 @@ cvar_t  *sv_max_rate;
 cvar_t  *sv_calcpings_method;
 cvar_t  *sv_changemapcmd;
 
-cvar_t  *sv_strafejump_hack;
-cvar_t  *sv_waterjump_hack;
-#if USE_PACKETDUP
-cvar_t  *sv_packetdup_hack;
-#endif
 cvar_t  *sv_allow_map;
 cvar_t  *sv_cinematics;
 #if USE_SERVER
@@ -844,7 +839,6 @@ static void SVC_DirectConnect(void)
 
     Com_DPrintf("Going from cs_free to cs_assigned for %s\n", newcl->name);
     newcl->state = cs_assigned;
-    newcl->framenum = 1; // frame 0 can't be used
     newcl->lastframe = -1;
     newcl->lastmessage = svs.realtime;    // don't timeout
     newcl->lastactivity = svs.realtime;
@@ -1554,6 +1548,7 @@ gtime_t SV_Frame(gtime_t delta, gtime_t delta_s)
         // give the clients some timeslices
         SV_GiveMsec();
 
+        // update navigation nodes
         Nav_Frame();
 
         // let everything in the world think and move
@@ -1650,14 +1645,6 @@ void SV_UserinfoChanged(client_t *cl)
         NET_IsLanAddress(&cl->netchan.remote_address)) {
         cl->rate = 0;
     }
-
-#if 0
-    // msg command
-    val = Info_ValueForKey(cl->userinfo, "msg");
-    if (*val) {
-        cl->messagelevel = Q_clip(Q_atoi(val), PRINT_LOW, 256);
-    }
-#endif
 }
 
 
@@ -1792,13 +1779,6 @@ void SV_Init(void)
     sv_calcpings_method = Cvar_Get("sv_calcpings_method", "2", 0);
     sv_changemapcmd = Cvar_Get("sv_changemapcmd", "", 0);
 
-    sv_strafejump_hack = Cvar_Get("sv_strafejump_hack", "1", CVAR_LATCH);
-    sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "1", CVAR_LATCH);
-
-#if USE_PACKETDUP
-    sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);
-#endif
-
     sv_allow_map = Cvar_Get("sv_allow_map", COM_DEDICATED ? "0" : "1", 0);
     sv_cinematics = Cvar_Get("sv_cinematics", "1", 0);
 
@@ -1873,9 +1853,9 @@ static void SV_FinalMessage(const char *message, error_type_t type)
     else
         MSG_WriteByte(svc_disconnect);
 
-    // send it twice
+    // send it 3 times
     // stagger the packets to crutch operating system limited buffers
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < 3; i++) {
         FOR_EACH_CLIENT(client) {
             if (client->state == cs_zombie) {
                 continue;

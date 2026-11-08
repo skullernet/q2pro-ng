@@ -29,11 +29,9 @@ void SV_ClientReset(client_t *client)
 
     // any partially connected client will be restarted
     client->state = cs_connected;
-    client->framenum = 1; // frame 0 can't be used
     client->lastframe = -1;
     client->frames_nodelta = 0;
     client->send_delta = 0;
-    client->suppress_count = 0;
     client->next_entity = 0;
     memset(&client->lastcmd, 0, sizeof(client->lastcmd));
 }
@@ -117,6 +115,7 @@ void SV_SpawnServer(const mapcmd_t *cmd)
     Com_Printf("------- Server Initialization -------\n");
     Com_Printf("SpawnServer: %s\n", cmd->server);
 
+    Q_assert(svs.initialized);
     Q_assert(cmd->state >= ss_game);
 
     // everyone needs to reconnect
@@ -354,13 +353,9 @@ void SV_InitGame(void)
         SCR_BeginLoadingPlaque();
         R_ClearDebugLines();
         CL_Disconnect(ERR_RECONNECT);
-
-        CM_FreeMap(&sv.cm);
-        memset(&sv, 0, sizeof(sv));
-
-        // set up default frametime for main loop
-        sv.frametime = BASE_FRAMETIME;
     }
+
+    Q_assert(sv.state == ss_dead);
 
     // get any latched variable changes (maxclients, etc)
     Cvar_GetLatchedVars();

@@ -309,7 +309,7 @@ static void CG_CalcViewOffset(void)
 static void CG_SetupFirstPersonView(void)
 {
     // smooth abrupt stops
-    if (cg.teleported || Vec3_DistanceSquared(cg.slowvelocity, cg.predicted_ps.velocity) > 1000 * 1000)
+    if (Vec3_DistanceSquared(cg.slowvelocity, cg.predicted_ps.velocity) > 1000 * 1000)
         cg.slowvelocity = cg.predicted_ps.velocity;
     else for (int i = 0; i < 3; i++)
         CG_AdvanceValue(&cg.slowvelocity.xyz[i], cg.predicted_ps.velocity.xyz[i], 1500);
@@ -318,6 +318,7 @@ static void CG_SetupFirstPersonView(void)
         cg.kick_angles[0] = cg.kick_angles[1] = vec3_origin;
         cg.kick_origin[0] = cg.kick_origin[1] = vec3_origin;
         cg.v_dmg_time = cg.fall_time = 0;
+        cg.slowvelocity = vec3_origin;
     }
 
     cg.bobfracsin = sinf(cg.predicted_ps.bobtime * (M_PIf / 128));
@@ -426,22 +427,12 @@ static void CG_FinishViewValues(void)
 static float CG_LerpFov(float ofov, float nfov, float lerp)
 {
     if (cgs.demoplayback) {
-        int fov = info_fov.integer;
+        int fov = Q_clip(info_fov.integer, 1, 160);
 
-        if (fov < 1)
-            fov = 90;
-        else if (fov > 160)
-            fov = 160;
-
-        if (info_uf.integer & UF_LOCALFOV)
-            return fov;
-
-        if (!(info_uf.integer & UF_PLAYERFOV)) {
-            if (ofov >= 90)
-                ofov = fov;
-            if (nfov >= 90)
-                nfov = fov;
-        }
+        if (ofov >= 90)
+            ofov = fov;
+        if (nfov >= 90)
+            nfov = fov;
     }
 
     return ofov + lerp * (nfov - ofov);
@@ -693,6 +684,29 @@ static void CG_CalcViewValues(void)
     trap_S_UpdateListener(&cg.listener);
 }
 
+static void CG_SetMouseSpeed(void)
+{
+    if (cg_autosens.modified) {
+        float fov;
+
+        if (cg_autosens.value > 90.0f && cg_autosens.value <= 179.0f)
+            fov = cg_autosens.value;
+        else
+            fov = 90.0f;
+
+        cg.autosens_x = 1.0f / fov;
+        cg.autosens_y = 1.0f / V_CalcFov(fov, 4, 3);
+    }
+
+    if (cg_autosens.integer)
+        trap_SetMouseSpeed(cg.fov_x * cg.autosens_x, cg.fov_y * cg.autosens_y);
+    else if (cg_autosens.modified)
+        trap_SetMouseSpeed(1.0f, 1.0f);
+
+    cg_autosens.modified = false;
+}
+
+
 /*
 ==================
 CG_RenderView
@@ -710,6 +724,8 @@ void CG_RenderView(void)
     CG_CalcViewValues();
 
     CG_FinishViewValues();
+
+    CG_SetMouseSpeed();
 
     // build a refresh entity list
     CG_AddEntities();

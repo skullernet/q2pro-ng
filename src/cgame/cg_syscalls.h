@@ -42,7 +42,7 @@ bool trap_GetUsercmd(unsigned number, usercmd_t *ucmd);
 unsigned trap_GetServerFrameNumber(void);
 bool trap_GetServerFrame(unsigned frame, cg_server_frame_t *out);
 
-void trap_GetClientInfo(cg_client_info_t *info);
+void trap_GetServerInfo(cg_server_info_t *info);
 
 void trap_ClientCommand(const char *cmd);
 void trap_RegisterCommand(const char *cmd);
@@ -71,6 +71,7 @@ void trap_AddCommandString(const char *text);
 void trap_InsertCommandString(const char *text);
 
 void trap_WarpMouse(int x, int y);
+void trap_SetMouseSpeed(float x, float y);
 
 bool        trap_Key_GetOverstrikeMode(void);
 void        trap_Key_SetOverstrikeMode(bool overstrike);
@@ -186,7 +187,7 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_GetServerFrameNumber cgi->GetServerFrameNumber
 #define trap_GetServerFrame cgi->GetServerFrame
 
-#define trap_GetClientInfo cgi->GetClientInfo
+#define trap_GetServerInfo cgi->GetServerInfo
 
 #define trap_ClientCommand cgi->ClientCommand
 #define trap_RegisterCommand cgi->RegisterCommand
@@ -215,6 +216,7 @@ void trap_R_AddDebugAngledText(vec3_t origin, vec3_t angles, const char *text,
 #define trap_InsertCommandString cgi->InsertCommandString
 
 #define trap_WarpMouse cgi->WarpMouse
+#define trap_SetMouseSpeed cgi->SetMouseSpeed
 
 #define trap_Key_GetOverstrikeMode cgi->Key_GetOverstrikeMode
 #define trap_Key_SetOverstrikeMode cgi->Key_SetOverstrikeMode

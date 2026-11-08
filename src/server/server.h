@@ -135,8 +135,6 @@ typedef enum {
 
 #define ZPACKET_HEADER      5
 
-#define RATE_MESSAGES   10
-
 #define CHALLENGE_SIZE      8
 #define CHALLENGE_SHIFT     22  // at least 4 sec to reply
 
@@ -146,8 +144,7 @@ typedef enum {
 #define CLIENT_ACTIVE(cl) \
     ((cl)->state == cs_spawned && !(cl)->nodata)
 
-#define PL_S2C(cl) (cl->frames_sent ? \
-    (1.0f - (float)cl->frames_acked / cl->frames_sent) * 100.0f : 0.0f)
+#define PL_S2C(cl) (cl->packetloss * (100.0f / 255.0f))
 #define PL_C2S(cl) (cl->netchan.total_received ? \
     ((float)cl->netchan.total_dropped / cl->netchan.total_received) * 100.0f : 0.0f)
 #define AVG_PING(cl) (cl->avg_ping_count ? \
@@ -181,7 +178,6 @@ typedef struct client_s {
     // userinfo
     char            userinfo[MAX_INFO_STRING];  // name, etc
     char            name[MAX_CLIENT_NAME];      // extracted from userinfo, high bits masked
-    int             messagelevel;               // for filtering printed messages
     unsigned        rate;
     ratelimit_t     ratelimit_namechange;       // for suppressing "foo changed name" flood
 
@@ -196,19 +192,17 @@ typedef struct client_s {
     int             moves_per_sec;  // average movement FPS
     int             cmd_msec_used;
     float           timescale;
+    int             packetloss;     // client reported total packet loss
 
     int             ping, min_ping, max_ping;
     int             avg_ping_time, avg_ping_count;
 
     // frame encoding
-    client_frame_t  frames[UPDATE_BACKUP];    // updates can be delta'd from here
-    unsigned        frames_sent, frames_acked, frames_nodelta;
-    int             framenum;
-    unsigned        frameflags;
+    client_frame_t  frames[UPDATE_BACKUP];      // updates can be delta'd from here
+    unsigned        frames_nodelta;
+    frame_flags_t   frameflags;
 
     // rate dropping
-    unsigned        message_size[RATE_MESSAGES];    // used to rate drop normal packets
-    int             suppress_count;                 // number of messages rate suppressed
     gtime_t         send_time, send_delta;          // used to rate drop async packets
 
     // protocol stuff
@@ -317,12 +311,7 @@ extern master_t     sv_masters[MAX_MASTERS];    // address of the master server
 
 extern list_t       sv_banlist;
 extern list_t       sv_blacklist;
-extern list_t       sv_cmdlist_connect;
-extern list_t       sv_cmdlist_begin;
 extern list_t       sv_lrconlist;
-extern list_t       sv_filterlist;
-extern list_t       sv_cvarbanlist;
-extern list_t       sv_infobanlist;
 extern list_t       sv_clientlist;  // linked list of non-free clients
 
 extern server_static_t      svs;        // persistent server info
@@ -345,10 +334,6 @@ extern cvar_t       *sv_lan_force_rate;
 extern cvar_t       *sv_calcpings_method;
 extern cvar_t       *sv_changemapcmd;
 
-extern cvar_t       *sv_strafejump_hack;
-#if USE_PACKETDUP
-extern cvar_t       *sv_packetdup_hack;
-#endif
 extern cvar_t       *sv_allow_map;
 extern cvar_t       *sv_cinematics;
 #if USE_SERVER

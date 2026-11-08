@@ -30,7 +30,6 @@ static cvar_t    *cl_instantpacket;
 
 static cvar_t    *m_filter;
 static cvar_t    *m_accel;
-static cvar_t    *m_autosens;
 
 static cvar_t    *cl_upspeed;
 static cvar_t    *cl_forwardspeed;
@@ -438,9 +437,6 @@ static float CL_KeyState(const kbutton_t *key)
 
 //==========================================================================
 
-static float autosens_x;
-static float autosens_y;
-
 static gtime_t transmitTimeCost;
 
 /*
@@ -484,15 +480,8 @@ static void CL_MouseMove(void)
     speed = sqrtf(mx * mx + my * my);
     speed = sensitivity->value + speed * m_accel->value;
 
-    mx *= speed;
-    my *= speed;
-
-    /*
-    if (m_autosens->integer) {
-        mx *= cl.fov_x * autosens_x;
-        my *= cl.fov_y * autosens_y;
-    }
-    */
+    mx *= speed * cl.mousespeed.x;
+    my *= speed * cl.mousespeed.y;
 
 // add mouse X/Y movement
     if ((in_strafe.state & 1) || (lookstrafe->integer && !in_mlooking)) {
@@ -639,19 +628,6 @@ void CL_UpdateCmd(gtime_t delta)
         cl.cmd.buttons &= ~BUTTON_CROUCH;
 }
 
-static void m_autosens_changed(cvar_t *self)
-{
-    float fov;
-
-    if (self->value > 90.0f && self->value <= 179.0f)
-        fov = self->value;
-    else
-        fov = 90.0f;
-
-    autosens_x = 1.0f / fov;
-    autosens_y = 1.0f / V_CalcFov(fov, 4, 3);
-}
-
 static void cl_maxpackets_changed(cvar_t *self)
 {
     if (!self->integer) {
@@ -740,9 +716,6 @@ void CL_RegisterInput(void)
     m_side = Cvar_Get("m_side", "1", 0);
     m_filter = Cvar_Get("m_filter", "0", 0);
     m_accel = Cvar_Get("m_accel", "0", 0);
-    m_autosens = Cvar_Get("m_autosens", "0", 0);
-    m_autosens->changed = m_autosens_changed;
-    m_autosens_changed(m_autosens);
 }
 
 /*
@@ -893,8 +866,11 @@ static void CL_SendBatchedCmd(void)
         MSG_WriteByte(clc_move_batched);
     }
 
-    // send lightlevel
-    MSG_WriteByte(cl.lightlevel);
+    // send packet loss percentage
+    if (cls.netchan.total_received)
+        MSG_WriteByte(cls.netchan.total_dropped * 255 / cls.netchan.total_received);
+    else
+        MSG_WriteByte(0);
 
     numDups = Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
     MSG_WriteBits(numDups, 3);

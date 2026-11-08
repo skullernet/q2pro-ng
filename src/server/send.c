@@ -47,41 +47,6 @@ void SV_FlushRedirect(int redirected, const char *outputbuf, size_t len)
     }
 }
 
-/*
-=======================
-SV_RateDrop
-
-Returns true if the client is over its current
-bandwidth estimation and should not be sent another packet
-=======================
-*/
-static bool SV_RateDrop(client_t *client)
-{
-    size_t  total;
-    int     i;
-
-    // never drop over the loopback
-    if (!client->rate) {
-        return false;
-    }
-
-    total = 0;
-    for (i = 0; i < RATE_MESSAGES; i++) {
-        total += client->message_size[i];
-    }
-
-    if (total > client->rate) {
-        SV_DPrintf(1, "Frame %d suppressed for %s (total = %zu)\n",
-                   client->framenum, client->name, total);
-        client->frameflags |= FF_SUPPRESSED;
-        client->suppress_count++;
-        client->message_size[client->framenum % RATE_MESSAGES] = 0;
-        return true;
-    }
-
-    return false;
-}
-
 static void SV_CalcSendTime(client_t *client, unsigned size)
 {
     // never drop over the loopback
@@ -90,9 +55,6 @@ static void SV_CalcSendTime(client_t *client, unsigned size)
         client->send_delta = 0;
         return;
     }
-
-    if (client->state == cs_spawned)
-        client->message_size[client->framenum % RATE_MESSAGES] = size;
 
     client->send_time = svs.realtime;
     client->send_delta = Time_FromSec(size) / client->rate;
@@ -348,8 +310,10 @@ void SV_SendClientMessages(void)
         }
 
         // don't overrun bandwidth
-        if (SV_RateDrop(client))
+        if (svs.realtime - client->send_time < client->send_delta) {
+            client->frameflags |= FF_SUPPRESSED;
             goto finish;
+        }
 
         // don't write any frame data until all fragments are sent
         if (client->netchan.fragment_pending) {
@@ -389,22 +353,31 @@ void SV_SendAsyncPackets(void)
     int         cursize;
 
     FOR_EACH_CLIENT(client) {
+        netchan = &client->netchan;
+
+        // if the reliable message overflowed,
+        // drop the client (should never happen)
+        if (netchan->message.overflowed) {
+            SZ_Clear(&netchan->message);
+            SV_DropClient(client, "reliable message overflowed");
+            continue;
+        }
+
         // don't overrun bandwidth
         if (svs.realtime - client->send_time < client->send_delta) {
             continue;
         }
 
-        netchan = &client->netchan;
-
         // make sure all fragments are transmitted first
         if (netchan->fragment_pending) {
             cursize = Netchan_TransmitNextFragment(netchan);
             SV_DPrintf(2, "%s: frag: %d\n", client->name, cursize);
-            goto calctime;
+            SV_CalcSendTime(client, cursize);
+            continue;
         }
 
         // spawned clients are handled elsewhere
-        if (CLIENT_ACTIVE(client)) {
+        if (CLIENT_ACTIVE(client) && !SV_PAUSED) {
             continue;
         }
 
@@ -420,7 +393,6 @@ void SV_SendAsyncPackets(void)
             netchan->reliable_length || retransmit) {
             cursize = Netchan_Transmit(netchan, 0, NULL, 1);
             SV_DPrintf(2, "%s: send: %d\n", client->name, cursize);
-calctime:
             SV_CalcSendTime(client, cursize);
         }
     }
