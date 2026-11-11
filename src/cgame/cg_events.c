@@ -1110,6 +1110,20 @@ static void CG_PainEvent(int number, int health)
     CG_SexedSound(number, CHAN_VOICE, l + (Q_rand() & 1), 1, ATTN_NORM);
 }
 
+static void CG_ClientObituary(uint32_t param)
+{
+    mod_t mod = param & 127;
+    uint32_t targ = (param >> 7) & 255;
+    uint32_t attacker = param >> 15;
+    const cg_clientinfo_t *ci = &cgs.clientinfo[targ];
+    const char *base = BG_ObituaryString(mod, ci->gender, targ, attacker);
+
+    if (attacker < MAX_CLIENTS)
+        Com_Printf(base, ci->name, cgs.clientinfo[attacker].name);
+    else
+        Com_Printf(base, ci->name);
+}
+
 static void CG_StairStep(cg_entity_t *cent)
 {
     float step_height = cent->current.origin.z - cent->prev.origin.z;
@@ -1215,6 +1229,9 @@ static void CG_EntityEvent(cg_entity_t *cent, entity_event_t event, uint32_t par
         break;
     case EV_JUMP:
         CG_SexedSound(number, CHAN_VOICE, SS_JUMP, 1, ATTN_NORM);
+        break;
+    case EV_OBITUARY:
+        CG_ClientObituary(param);
         break;
     case EV_MUZZLEFLASH:
         CG_MuzzleFlash(cent, param);

@@ -70,10 +70,11 @@ Breaks up playerskin into name (optional), model and skin components.
 If model or skin are found to be invalid, replaces them with sane defaults.
 ================
 */
-static void CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
+static player_gender_t CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
 {
     size_t len;
     char *t;
+    player_gender_t gender;
 
     len = strlen(s);
     Q_assert(len < MAX_QPATH);
@@ -103,6 +104,15 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag
         *dogtag = 0;
     }
 
+    // isolate gender
+    t = strchr(dogtag, '\\');
+    if (t) {
+        *t = 0;
+        gender = Q_clip(Q_atoi(t + 1), GENDER_MALE, GENDER_NEUTRAL);
+    } else {
+        gender = GENDER_NEUTRAL;
+    }
+
     // isolate the model name
     t = strchr(model, '/');
     if (!t)
@@ -123,7 +133,7 @@ static void CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag
     if (cg_noskins.integer || !COM_IsPath(model))
         goto default_model;
 
-    return;
+    return gender;
 
 default_skin:
     if (!Q_stricmp(model, "female")) {
@@ -134,6 +144,8 @@ default_model:
         strcpy(model, "male");
         strcpy(skin, "grunt");
     }
+
+    return gender;
 }
 
 /*
@@ -153,7 +165,7 @@ static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
     char        weapon_filename[MAX_QPATH];
     char        icon_filename[MAX_QPATH];
 
-    CG_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
+    ci->gender = CG_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
 
     // model file
     Q_concat(model_filename, sizeof(model_filename),
@@ -169,14 +181,6 @@ static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
     Q_concat(skin_filename, sizeof(skin_filename),
              "players/", model_name, "/", skin_name, ".pcx");
     ci->skin = trap_R_RegisterSkin(skin_filename);
-
-    // if we don't have the skin and the model was female,
-    // see if athena skin exists
-    if (!ci->skin && !Q_stricmp(model_name, "female")) {
-        strcpy(skin_name, "athena");
-        strcpy(skin_filename, "players/female/athena.pcx");
-        ci->skin = trap_R_RegisterSkin(skin_filename);
-    }
 
     // if we don't have the skin and the model wasn't male,
     // see if the male has it (this is for CTF's skins)

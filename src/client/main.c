@@ -37,8 +37,6 @@ cvar_t  *cl_beginmapcmd;
 
 cvar_t  *cl_allow_vid_restart;
 
-cvar_t  *gender_auto;
-
 cvar_t  *allow_download;
 
 //
@@ -1127,35 +1125,9 @@ void CL_ErrorEvent(const netadr_t *from)
 
 //=============================================================================
 
-/*
-==============
-CL_FixUpGender_f
-==============
-*/
-static void CL_FixUpGender(void)
-{
-    char *p;
-    char sk[MAX_QPATH];
-
-    Q_strlcpy(sk, info_skin->string, sizeof(sk));
-    if ((p = strchr(sk, '/')) != NULL)
-        *p = 0;
-    if (Q_stricmp(sk, "male") == 0 || Q_stricmp(sk, "cyborg") == 0)
-        Cvar_Set("gender", "male");
-    else if (Q_stricmp(sk, "female") == 0 || Q_stricmp(sk, "crackhor") == 0)
-        Cvar_Set("gender", "female");
-    else
-        Cvar_Set("gender", "none");
-    info_gender->modified = false;
-}
-
 void CL_UpdateUserinfo(cvar_t *var, from_t from)
 {
     int i;
-
-    if (var == info_skin && from > FROM_CONSOLE && gender_auto->integer) {
-        CL_FixUpGender();
-    }
 
     if (cls.state < ca_connected) {
         return;
@@ -1816,8 +1788,6 @@ static void CL_InitLocal(void)
 
     cl_allow_vid_restart = Cvar_Get("cl_allow_vid_restart", "0", 0);
 
-    gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
-
     allow_download = Cvar_Get("allow_download", "1", CVAR_ARCHIVE);
     allow_download->changed = cl_allow_download_changed;
     cl_allow_download_changed(allow_download);
@@ -1833,10 +1803,8 @@ static void CL_InitLocal(void)
     info_dogtag->generator = info_dogtag_g;
     info_rate = Cvar_Get("rate", "15000", CVAR_USERINFO | CVAR_ARCHIVE);
     info_hand = Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
-    //info_hand->changed = info_hand_changed;
     info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
-    info_gender->modified = false; // clear this so we know when user sets it manually
+    info_gender = Cvar_Get("gender", "auto", CVAR_USERINFO | CVAR_ARCHIVE);
     info_autoswitch = Cvar_Get("autoswitch", "0", CVAR_USERINFO | CVAR_ARCHIVE);
     info_autoshield = Cvar_Get("autoshield", "0", CVAR_USERINFO | CVAR_ARCHIVE);
 

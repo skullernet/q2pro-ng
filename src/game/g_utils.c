@@ -638,6 +638,7 @@ static bool G_IsHearableEvent(entity_event_t event)
     case EV_OTHER_TELEPORT:
     case EV_SPLASH_UNKNOWN ... EV_TUNNEL_SPARKS:
     case EV_CHAINFIST_SMOKE:
+    case EV_OBITUARY:
         return false;
     default:
         return true;

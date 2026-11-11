@@ -245,13 +245,13 @@ void CTFAssignSkin(edict_t *ent, const char *s)
 
     switch (ent->client->resp.ctf_team) {
     case CTF_TEAM1:
-        p = va("%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM1_SKIN);
+        p = va("%s\\%s%s\\default\\%d", ent->client->pers.netname, t, CTF_TEAM1_SKIN, ent->client->pers.gender);
         break;
     case CTF_TEAM2:
-        p = va("%s\\%s%s", ent->client->pers.netname, t, CTF_TEAM2_SKIN);
+        p = va("%s\\%s%s\\default\\%d", ent->client->pers.netname, t, CTF_TEAM2_SKIN, ent->client->pers.gender);
         break;
     default:
-        p = va("%s\\%s", ent->client->pers.netname, s);
+        p = va("%s\\%s\\default\\%d", ent->client->pers.netname, s, ent->client->pers.gender);
         break;
     }
 

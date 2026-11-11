@@ -239,6 +239,7 @@ typedef struct {
     qhandle_t   skin;
     qhandle_t   icon;
     qhandle_t   dogtag;
+    player_gender_t gender;
     char        model_name[MAX_QPATH];
     char        skin_name[MAX_QPATH];
     qhandle_t   model;

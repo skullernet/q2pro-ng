@@ -101,230 +101,26 @@ bool P_UseCoopInstancedItems(void)
 
 static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker, mod_t mod)
 {
-    const char *base = NULL;
     bool friendly_fire = OnSameTeam(self, attacker);
     bool no_point_loss = mod == MOD_SUICIDE_NP;
 
-    switch (mod) {
-    case MOD_SUICIDE:
-    case MOD_SUICIDE_NP:
-        base = "%s suicides.\n";
-        break;
-    case MOD_FALLING:
-        base = "%s cratered.\n";
-        break;
-    case MOD_CRUSH:
-        base = "%s was squished.\n";
-        break;
-    case MOD_WATER:
-        base = "%s sank like a rock.\n";
-        break;
-    case MOD_SLIME:
-        base = "%s melted.\n";
-        break;
-    case MOD_LAVA:
-        base = "%s does a back flip into the lava.\n";
-        break;
-    case MOD_EXPLOSIVE:
-    case MOD_BARREL:
-        base = "%s blew up.\n";
-        break;
-    case MOD_EXIT:
-        base = "%s found a way out.\n";
-        break;
-    case MOD_TARGET_LASER:
-        base = "%s saw the light.\n";
-        break;
-    case MOD_TARGET_BLASTER:
-        base = "%s got blasted.\n";
-        break;
-    case MOD_BOMB:
-    case MOD_SPLASH:
-    case MOD_TRIGGER_HURT:
-        base = "%s was in the wrong place.\n";
-        break;
-    // RAFAEL
-    case MOD_GEKK:
-    case MOD_BRAINTENTACLE:
-        base = "%s... that's gotta hurt!\n";
-        break;
-    // RAFAEL
-    default:
-        base = NULL;
-        break;
-    }
+    // broadcast entity
+    uint32_t attkr = (attacker && attacker->client) ? attacker->s.number : MAX_CLIENTS;
+    uint32_t param = mod | self->s.number << 7 | attkr << 15;
+    G_TempEntity(vec3_origin, EV_OBITUARY, param)->r.svflags |= SVF_BROADCAST;
 
-    if (attacker == self) {
-        switch (mod) {
-        case MOD_HELD_GRENADE:
-            base = "%s tried to put the pin back in.\n";
-            break;
-        case MOD_HG_SPLASH:
-        case MOD_G_SPLASH:
-            base = "%s tripped on their own grenade.\n";
-            break;
-        case MOD_R_SPLASH:
-            base = "%s blew themselves up.\n";
-            break;
-        case MOD_BFG_BLAST:
-            base = "%s should have used a smaller gun.\n";
-            break;
-        // RAFAEL 03-MAY-98
-        case MOD_TRAP:
-            base = "%s was sucked into their own trap.\n";
-            break;
-        // RAFAEL
-        // ROGUE
-        case MOD_DOPPLE_EXPLODE:
-            base = "%s was fooled by their own doppelganger.\n";
-            break;
-        // ROGUE
-        default:
-            base = "%s killed themselves.\n";
-            break;
-        }
-    }
-
-    // send generic/self
-    if (base) {
-        G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname);
-        if (deathmatch.integer && !no_point_loss) {
-            self->client->resp.score--;
-
-            if (teamplay.integer)
-                G_AdjustTeamScore(self->client->resp.ctf_team, -1);
-        }
-        self->enemy = NULL;
-        return;
+    // echo to console
+    if (sv_dedicated.integer) {
+        const char *base = BG_ObituaryString(mod, self->client->pers.gender, self->s.number, attkr);
+        if (attacker && attacker->client)
+            G_Printf(base, self->client->pers.netname, attacker->client->pers.netname);
+        else
+            G_Printf(base, self->client->pers.netname);
     }
 
     // has a killer
-    self->enemy = attacker;
-    if (attacker && attacker->client) {
-        switch (mod) {
-        case MOD_BLASTER:
-            base = "%s was blasted by %s.\n";
-            break;
-        case MOD_SHOTGUN:
-            base = "%s was gunned down by %s.\n";
-            break;
-        case MOD_SSHOTGUN:
-            base = "%s was blown away by %s's Super Shotgun.\n";
-            break;
-        case MOD_MACHINEGUN:
-            base = "%s was machinegunned by %s.\n";
-            break;
-        case MOD_CHAINGUN:
-            base = "%s was cut in half by %s's Chaingun.\n";
-            break;
-        case MOD_GRENADE:
-            base = "%s was popped by %s's grenade.\n";
-            break;
-        case MOD_G_SPLASH:
-            base = "%s was shredded by %s's shrapnel.\n";
-            break;
-        case MOD_ROCKET:
-            base = "%s ate %s's rocket.\n";
-            break;
-        case MOD_R_SPLASH:
-            base = "%s almost dodged %s's rocket.\n";
-            break;
-        case MOD_HYPERBLASTER:
-            base = "%s was melted by %s's HyperBlaster.\n";
-            break;
-        case MOD_RAILGUN:
-            base = "%s was railed by %s.\n";
-            break;
-        case MOD_BFG_LASER:
-            base = "%s saw the pretty lights from %s's BFG.\n";
-            break;
-        case MOD_BFG_BLAST:
-            base = "%s was disintegrated by %s's BFG blast.\n";
-            break;
-        case MOD_BFG_EFFECT:
-            base = "%s couldn't hide from %s's BFG.\n";
-            break;
-        case MOD_HANDGRENADE:
-            base = "%s caught %s's handgrenade.\n";
-            break;
-        case MOD_HG_SPLASH:
-            base = "%s didn't see %s's handgrenade.\n";
-            break;
-        case MOD_HELD_GRENADE:
-            base = "%s feels %s's pain.\n";
-            break;
-        case MOD_TELEFRAG:
-        case MOD_TELEFRAG_SPAWN:
-            base = "%s tried to invade %s's personal space.\n";
-            break;
-        // RAFAEL 14-APR-98
-        case MOD_RIPPER:
-            base = "%s ripped to shreds by %s's ripper gun.\n";
-            break;
-        case MOD_PHALANX:
-            base = "%s was evaporated by %s.\n";
-            break;
-        case MOD_TRAP:
-            base = "%s was caught in %s's trap.\n";
-            break;
-        // RAFAEL
-        //===============
-        // ROGUE
-        case MOD_CHAINFIST:
-            base = "%s was shredded by %s's ripsaw.\n";
-            break;
-        case MOD_DISINTEGRATOR:
-            base = "%s lost his grip courtesy of %s's Disintegrator.\n";
-            break;
-        case MOD_ETF_RIFLE:
-            base = "%s was perforated by %s.\n";
-            break;
-        case MOD_HEATBEAM:
-            base = "%s was scorched by %s's Plasma Beam.\n";
-            break;
-        case MOD_TESLA:
-            base = "%s was enlightened by %s's tesla mine.\n";
-            break;
-        case MOD_PROX:
-            base = "%s got too close to %s's proximity mine.\n";
-            break;
-        case MOD_NUKE:
-            base = "%s was nuked by %s's antimatter bomb.\n";
-            break;
-        case MOD_VENGEANCE_SPHERE:
-            base = "%s was purged by %s's Vengeance Sphere.\n";
-            break;
-        case MOD_DEFENDER_SPHERE:
-            base = "%s had a blast with %s's Defender Sphere.\n";
-            break;
-        case MOD_HUNTER_SPHERE:
-            base = "%s was hunted down by %s's Hunter Sphere.\n";
-            break;
-        case MOD_TRACKER:
-            base = "%s was annihilated by %s's Disruptor.\n";
-            break;
-        case MOD_DOPPLE_EXPLODE:
-            base = "%s was tricked by %s's Doppelganger.\n";
-            break;
-        case MOD_DOPPLE_VENGEANCE:
-            base = "%s was purged by %s's Doppelganger.\n";
-            break;
-        case MOD_DOPPLE_HUNTER:
-            base = "%s was hunted down by %s's Doppelganger.\n";
-            break;
-        // ROGUE
-        //===============
-        // ZOID
-        case MOD_GRAPPLE:
-            base = "%s was caught by %s's grapple.\n";
-            break;
-        // ZOID
-        default:
-            base = "%s was killed by %s.\n";
-            break;
-        }
-
-        G_ClientPrintf(NULL, PRINT_MEDIUM, base, self->client->pers.netname, attacker->client->pers.netname);
+    if (attacker && attacker->client && attacker != self) {
+        self->enemy = attacker;
 
         if (G_TeamplayEnabled()) {
             // ZOID
@@ -371,7 +167,8 @@ static void ClientObituary(edict_t *self, edict_t *inflictor, edict_t *attacker,
         return;
     }
 
-    G_ClientPrintf(NULL, PRINT_MEDIUM, "%s died.\n", self->client->pers.netname);
+    self->enemy = NULL;
+
     // ROGUE
     if (deathmatch.integer && !no_point_loss) {
         if (gamerules.integer) {
@@ -767,6 +564,21 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
     else
         ent->client->pers.spectator = false;
 
+    // set gender
+    val = Info_ValueForKey(userinfo, "gender");
+    if (Q_stricmp(val, "auto") == 0) {
+        val = Info_ValueForKey(userinfo, "skin");
+        char *p = strchr(val, '/');
+        if (p)
+            *p = 0;
+    }
+    if (Q_stricmp(val, "male") == 0 || Q_stricmp(val, "cyborg") == 0)
+        ent->client->pers.gender = GENDER_MALE;
+    else if (Q_stricmp(val, "female") == 0)
+        ent->client->pers.gender = GENDER_FEMALE;
+    else
+        ent->client->pers.gender = GENDER_NEUTRAL;
+
     // set skin
     val = Info_ValueForKey(userinfo, "skin");
     if (!*val)
@@ -782,7 +594,8 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
         char *tag = Info_ValueForKey(userinfo, "dogtag");
         if (!COM_IsPath(tag))
             tag = "default";
-        Q_snprintf(buffer, sizeof(buffer), "%s\\%s\\%s", ent->client->pers.netname, val, tag);
+        Q_snprintf(buffer, sizeof(buffer), "%s\\%s\\%s\\%d",
+                   ent->client->pers.netname, val, tag, ent->client->pers.gender);
         trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, buffer);
     }
 

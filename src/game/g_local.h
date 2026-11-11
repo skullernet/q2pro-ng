@@ -508,76 +508,6 @@ typedef enum {
     POWERUP_MAX
 } powerup_t;
 
-// means of death
-typedef enum {
-    MOD_UNKNOWN,
-    MOD_BLASTER,
-    MOD_SHOTGUN,
-    MOD_SSHOTGUN,
-    MOD_MACHINEGUN,
-    MOD_CHAINGUN,
-    MOD_GRENADE,
-    MOD_G_SPLASH,
-    MOD_ROCKET,
-    MOD_R_SPLASH,
-    MOD_HYPERBLASTER,
-    MOD_RAILGUN,
-    MOD_BFG_LASER,
-    MOD_BFG_BLAST,
-    MOD_BFG_EFFECT,
-    MOD_HANDGRENADE,
-    MOD_HG_SPLASH,
-    MOD_WATER,
-    MOD_SLIME,
-    MOD_LAVA,
-    MOD_CRUSH,
-    MOD_TELEFRAG,
-    MOD_TELEFRAG_SPAWN,
-    MOD_FALLING,
-    MOD_SUICIDE,
-    MOD_SUICIDE_NP,
-    MOD_HELD_GRENADE,
-    MOD_EXPLOSIVE,
-    MOD_BARREL,
-    MOD_BOMB,
-    MOD_EXIT,
-    MOD_SPLASH,
-    MOD_TARGET_LASER,
-    MOD_TRIGGER_HURT,
-    MOD_HIT,
-    MOD_TARGET_BLASTER,
-    // RAFAEL 14-APR-98
-    MOD_RIPPER,
-    MOD_PHALANX,
-    MOD_BRAINTENTACLE,
-    MOD_BLASTOFF,
-    MOD_GEKK,
-    MOD_TRAP,
-    // END 14-APR-98
-    //========
-    // ROGUE
-    MOD_CHAINFIST,
-    MOD_DISINTEGRATOR,
-    MOD_ETF_RIFLE,
-    MOD_BLASTER2,
-    MOD_HEATBEAM,
-    MOD_TESLA,
-    MOD_PROX,
-    MOD_NUKE,
-    MOD_VENGEANCE_SPHERE,
-    MOD_HUNTER_SPHERE,
-    MOD_DEFENDER_SPHERE,
-    MOD_TRACKER,
-    MOD_DBALL_CRUSH,
-    MOD_DOPPLE_EXPLODE,
-    MOD_DOPPLE_VENGEANCE,
-    MOD_DOPPLE_HUNTER,
-    // ROGUE
-    //========
-    MOD_GRAPPLE,
-    MOD_BLUEBLASTER
-} mod_t;
-
 #define FOFS(x) offsetof(edict_t, x)
 #define STOFS(x) offsetof(spawn_temp_t, x)
 #define CLOFS(x) offsetof(gclient_t, x)
@@ -2010,6 +1940,7 @@ typedef struct {
     char          userinfo[MAX_INFO_STRING];
     char          social_id[MAX_INFO_VALUE];
     char          netname[MAX_NETNAME];
+    player_gender_t gender;
     handedness_t  hand;
     auto_switch_t autoswitch;
     int           autoshield; // see AUTO_SHIELD_*
