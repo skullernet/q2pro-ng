@@ -235,27 +235,26 @@ static int CTFOtherTeam(ctfteam_t team)
 
 void CTFAssignSkin(edict_t *ent, const char *s)
 {
-    char t[MAX_QPATH], *p;
+    char    model_name[MAX_QPATH];
+    char    skin_name[MAX_QPATH];
 
-    Q_strlcpy(t, s, sizeof(t));
-    if ((p = strchr(t, '/')) != NULL)
-        p[1] = 0;
-    else
-        strcpy(t, "male/");
+    BG_ParsePlayerSkin(model_name, skin_name, s, g_no_skins.integer);
 
     switch (ent->client->resp.ctf_team) {
     case CTF_TEAM1:
-        p = va("%s\\%s%s\\default\\%d", ent->client->pers.netname, t, CTF_TEAM1_SKIN, ent->client->pers.gender);
+        strcpy(skin_name, CTF_TEAM1_SKIN);
         break;
     case CTF_TEAM2:
-        p = va("%s\\%s%s\\default\\%d", ent->client->pers.netname, t, CTF_TEAM2_SKIN, ent->client->pers.gender);
+        strcpy(skin_name, CTF_TEAM2_SKIN);
         break;
     default:
-        p = va("%s\\%s\\default\\%d", ent->client->pers.netname, s, ent->client->pers.gender);
         break;
     }
 
-    trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, p);
+    char *cs = va("\\name\\%s\\skin\\%s/%s\\gender\\%d",
+                  ent->client->pers.netname, model_name, skin_name,
+                  ent->client->pers.gender);
+    trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, cs);
 }
 
 void CTFAssignTeam(gclient_t *who)

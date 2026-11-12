@@ -1102,6 +1102,7 @@ extern vm_cvar_t g_no_nukes;
 extern vm_cvar_t g_no_spheres;
 extern vm_cvar_t g_teamplay_armor_protect;
 extern vm_cvar_t g_allow_techs;
+extern vm_cvar_t g_no_skins;
 
 extern vm_cvar_t g_start_items;
 extern vm_cvar_t g_map_list;

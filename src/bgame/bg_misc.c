@@ -307,6 +307,52 @@ const char *BG_ObituaryString(mod_t mod, player_gender_t gender, uint32_t targ, 
     }
 }
 
+/*
+================
+BG_ParsePlayerSkin
+
+Breaks up playerskin into model and skin components.
+If model or skin are found to be invalid, replaces them with sane defaults.
+================
+*/
+void BG_ParsePlayerSkin(char *model, char *skin, const char *s, int noskins)
+{
+    char *t;
+
+    // sanity check length
+    if (strlen(s) >= MAX_PLAYER_SKIN)
+        goto default_model;
+
+    // isolate the model name
+    strcpy(model, s);
+    t = strchr(model, '/');
+    if (!t)
+        goto default_model;
+    *t = 0;
+
+    // isolate the skin name
+    strcpy(skin, t + 1);
+
+    // apply restrictions on skins
+    if (noskins >= 2 || !COM_IsPath(skin))
+        goto default_skin;
+
+    if (noskins >= 1 || !COM_IsPath(model))
+        goto default_model;
+
+    return;
+
+default_skin:
+    if (!Q_stricmp(model, "female")) {
+        strcpy(model, "female");
+        strcpy(skin, "athena");
+    } else {
+default_model:
+        strcpy(model, "male");
+        strcpy(skin, "grunt");
+    }
+}
+
 void BG_ParseSkyParams(sky_params_t *sky, const char *s)
 {
     COM_ParseToken(&s, sky->name, sizeof(sky->name));

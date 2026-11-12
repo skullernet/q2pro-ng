@@ -235,16 +235,15 @@ typedef enum {
 } cg_sexed_sound_t;
 
 typedef struct {
-    char        name[MAX_QPATH];
-    qhandle_t   skin;
-    qhandle_t   icon;
-    qhandle_t   dogtag;
+    char            name[MAX_CLIENT_NAME];
     player_gender_t gender;
-    char        model_name[MAX_QPATH];
-    char        skin_name[MAX_QPATH];
-    qhandle_t   model;
-    qhandle_t   weaponmodel[MAX_CLIENTWEAPONS];
-    qhandle_t   sounds[SS_MAX];
+    qhandle_t       skin;
+    qhandle_t       disguise_skin;
+    qhandle_t       icon;
+    qhandle_t       dogtag;
+    qhandle_t       model;
+    qhandle_t       weaponmodel[MAX_CLIENTWEAPONS];
+    qhandle_t       sounds[SS_MAX];
 } cg_clientinfo_t;
 
 typedef struct {

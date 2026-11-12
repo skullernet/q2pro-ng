@@ -525,6 +525,10 @@ _Static_assert(STAT_END <= MAX_STATS, "Too many stats");
 const char *BG_EventName(entity_event_t event);
 const char *BG_ObituaryString(mod_t mod, player_gender_t gender, uint32_t targ, uint32_t attacker);
 
+#define MAX_PLAYER_SKIN     48
+
+void BG_ParsePlayerSkin(char *model, char *skin, const char *s, int noskins);
+
 typedef struct {
     char        name[MAX_QPATH];
     float       rotate;

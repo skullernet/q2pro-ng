@@ -102,6 +102,7 @@ vm_cvar_t g_no_nukes;
 vm_cvar_t g_no_spheres;
 vm_cvar_t g_teamplay_armor_protect;
 vm_cvar_t g_allow_techs;
+vm_cvar_t g_no_skins;
 vm_cvar_t g_start_items;
 vm_cvar_t g_map_list;
 vm_cvar_t g_map_list_shuffle;
@@ -233,6 +234,7 @@ static const vm_cvar_reg_t g_cvars[] = {
     { &g_teamplay_force_join, "g_teamplay_force_join", "0", 0 },
     { &g_teamplay_armor_protect, "g_teamplay_armor_protect", "0", 0 },
     { &g_allow_techs, "g_allow_techs", "auto", 0 },
+    { &g_no_skins, "g_no_skins", "0", CVAR_LATCH },
 
     { &g_start_items, "g_start_items", "", CVAR_LATCH },
     { &g_map_list, "g_map_list", "", 0 },

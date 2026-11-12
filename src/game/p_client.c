@@ -581,8 +581,6 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
 
     // set skin
     val = Info_ValueForKey(userinfo, "skin");
-    if (!*val)
-        val = "male/grunt";
 
     // combine name and skin into a configstring
     // ZOID
@@ -590,13 +588,18 @@ static void ClientUserinfoChanged(edict_t *ent, char *userinfo)
         CTFAssignSkin(ent, val);
     else {
     // ZOID
-        char buffer[MAX_QPATH];
-        char *tag = Info_ValueForKey(userinfo, "dogtag");
-        if (!COM_IsPath(tag))
-            tag = "default";
-        Q_snprintf(buffer, sizeof(buffer), "%s\\%s\\%s\\%d",
-                   ent->client->pers.netname, val, tag, ent->client->pers.gender);
-        trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, buffer);
+        char    model_name[MAX_QPATH];
+        char    skin_name[MAX_QPATH];
+        BG_ParsePlayerSkin(model_name, skin_name, val, g_no_skins.integer);
+
+        char *dogtag = Info_ValueForKey(userinfo, "dogtag");
+        if (!COM_IsPath(dogtag) || strlen(dogtag) >= MAX_PLAYER_SKIN)
+            dogtag = "default";
+
+        char *cs = va("\\name\\%s\\skin\\%s/%s\\dogtag\\%s\\gender\\%d",
+                      ent->client->pers.netname, model_name, skin_name,
+                      dogtag, ent->client->pers.gender);
+        trap_SetConfigstring(CS_PLAYERSKINS + ent->s.number, cs);
     }
 
     // ZOID

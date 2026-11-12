@@ -53,6 +53,7 @@ Non-exhaustive list of technical changes/fixes from KEX Quake II:
 * Horizontal movement speed on ladders increased by 50%.
 * Maximum configstring length increased to 4096 characters.
 * Brush models no longer pollute configstring namespace.
+* Playerskins are now in standard infostring format.
 * Server checks all entity clusters for visibility rather than falling back to
   topnode check (which can be slow).
 * Server properly expands absbox for rotating bmodels, which can affect some

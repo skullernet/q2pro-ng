@@ -43,157 +43,50 @@ static const char *const sexed_sounds[SS_MAX] = {
     [SS_PAIN100_2] = "pain100_2",
 };
 
-static qhandle_t CG_RegisterSexedSound(const char *model, const char *base)
-{
-    char buffer[MAX_QPATH];
-    qhandle_t sfx;
-
-    // see if we already know of the model specific sound
-    if (Q_concat(buffer, MAX_QPATH, "#players/", model, "/", base, ".wav") >= MAX_QPATH)
-        Q_concat(buffer, MAX_QPATH, "#players/male/", base, ".wav");
-
-    // see if it exists
-    sfx = trap_S_RegisterSound(buffer);
-    if (sfx)
-        return sfx;
-
-    // no, revert to the male sound in the pak0.pak
-    Q_concat(buffer, MAX_QPATH, "player/male/", base, ".wav");
-    return trap_S_RegisterSound(buffer);
-}
-
-/*
-================
-CG_ParsePlayerSkin
-
-Breaks up playerskin into name (optional), model and skin components.
-If model or skin are found to be invalid, replaces them with sane defaults.
-================
-*/
-static player_gender_t CG_ParsePlayerSkin(char *name, char *model, char *skin, char *dogtag, const char *s)
-{
-    size_t len;
-    char *t;
-    player_gender_t gender;
-
-    len = strlen(s);
-    Q_assert(len < MAX_QPATH);
-
-    // isolate the player's name
-    t = (char *)strchr(s, '\\');
-    if (t) {
-        len = t - s;
-        strcpy(model, t + 1);
-    } else {
-        len = 0;
-        strcpy(model, s);
-    }
-
-    // copy the player's name
-    if (name) {
-        memcpy(name, s, len);
-        name[len] = 0;
-    }
-
-    // isolate the dogtag name
-    t = strchr(model, '\\');
-    if (t) {
-        *t = 0;
-        strcpy(dogtag, t + 1);
-    } else {
-        *dogtag = 0;
-    }
-
-    // isolate gender
-    t = strchr(dogtag, '\\');
-    if (t) {
-        *t = 0;
-        gender = Q_clip(Q_atoi(t + 1), GENDER_MALE, GENDER_NEUTRAL);
-    } else {
-        gender = GENDER_NEUTRAL;
-    }
-
-    // isolate the model name
-    t = strchr(model, '/');
-    if (!t)
-        goto default_model;
-    *t = 0;
-
-    // isolate the skin name
-    strcpy(skin, t + 1);
-
-    // fix empty model to male
-    if (t == model)
-        strcpy(model, "male");
-
-    // apply restrictions on skins
-    if (cg_noskins.integer == 2 || !COM_IsPath(skin))
-        goto default_skin;
-
-    if (cg_noskins.integer || !COM_IsPath(model))
-        goto default_model;
-
-    return gender;
-
-default_skin:
-    if (!Q_stricmp(model, "female")) {
-        strcpy(model, "female");
-        strcpy(skin, "athena");
-    } else {
-default_model:
-        strcpy(model, "male");
-        strcpy(skin, "grunt");
-    }
-
-    return gender;
-}
-
 /*
 ================
 CG_LoadClientinfo
 
+Parse short infostring containing player name, skin, etc.
 ================
 */
 static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
 {
-    int         i;
-    char        model_name[MAX_QPATH];
-    char        skin_name[MAX_QPATH];
-    char        dogtag_name[MAX_QPATH];
-    char        model_filename[MAX_QPATH];
-    char        skin_filename[MAX_QPATH];
-    char        weapon_filename[MAX_QPATH];
-    char        icon_filename[MAX_QPATH];
+    char    model_name[MAX_QPATH];
+    char    skin_name[MAX_QPATH];
+    int     i;
+    char    *val;
 
-    ci->gender = CG_ParsePlayerSkin(ci->name, model_name, skin_name, dogtag_name, s);
+    // name and gender
+    Q_strlcpy(ci->name, Info_ValueForKey(s, "name"), sizeof(ci->name));
+    val = Info_ValueForKey(s, "gender");
+    if (*val)
+        ci->gender = Q_clip(Q_atoi(val), GENDER_MALE, GENDER_NEUTRAL);
+    else
+        ci->gender = GENDER_NEUTRAL;
+
+    val = Info_ValueForKey(s, "skin");
+    BG_ParsePlayerSkin(model_name, skin_name, val, cg_noskins.integer);
 
     // model file
-    Q_concat(model_filename, sizeof(model_filename),
-             "players/", model_name, "/tris.md2");
-    ci->model = trap_R_RegisterModel(model_filename);
+    ci->model = trap_R_RegisterModel(va("players/%s/tris.md2", model_name));
     if (!ci->model && Q_stricmp(model_name, "male")) {
         strcpy(model_name, "male");
-        strcpy(model_filename, "players/male/tris.md2");
-        ci->model = trap_R_RegisterModel(model_filename);
+        ci->model = trap_R_RegisterModel("players/male/tris.md2");
     }
 
     // skin file
-    Q_concat(skin_filename, sizeof(skin_filename),
-             "players/", model_name, "/", skin_name, ".pcx");
-    ci->skin = trap_R_RegisterSkin(skin_filename);
+    ci->skin = trap_R_RegisterSkin(va("players/%s/%s.pcx", model_name, skin_name));
 
     // if we don't have the skin and the model wasn't male,
     // see if the male has it (this is for CTF's skins)
     if (!ci->skin && Q_stricmp(model_name, "male")) {
         // change model to male
         strcpy(model_name, "male");
-        strcpy(model_filename, "players/male/tris.md2");
-        ci->model = trap_R_RegisterModel(model_filename);
+        ci->model = trap_R_RegisterModel("players/male/tris.md2");
 
         // see if the skin exists for the male model
-        Q_concat(skin_filename, sizeof(skin_filename),
-                 "players/male/", skin_name, ".pcx");
-        ci->skin = trap_R_RegisterSkin(skin_filename);
+        ci->skin = trap_R_RegisterSkin(va("players/male/%s.pcx", skin_name));
     }
 
     // if we still don't have a skin, it means that the male model
@@ -201,23 +94,23 @@ static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
     if (!ci->skin) {
         // see if the skin exists for the male model
         strcpy(skin_name, "grunt");
-        strcpy(skin_filename, "players/male/grunt.pcx");
-        ci->skin = trap_R_RegisterSkin(skin_filename);
+        ci->skin = trap_R_RegisterSkin("players/male/grunt.pcx");
     }
+
+    // disguise skin
+    ci->disguise_skin = trap_R_RegisterSkin(va("players/%s/disguise.pcx", model_name));
+    if (!ci->disguise_skin)
+        ci->disguise_skin = ci->skin;
 
     // weapon file
     for (i = 0; i < MAX_CLIENTWEAPONS; i++) {
         char name[MAX_QPATH];
         if (!trap_GetConfigstring(CS_CLIENTWEAPONS + i, name, sizeof(name)))
             break;
-        Q_concat(weapon_filename, sizeof(weapon_filename),
-                 "players/", model_name, "/", name);
-        ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
+        ci->weaponmodel[i] = trap_R_RegisterModel(va("players/%s/%s", model_name, name));
         if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
             // try male
-            Q_concat(weapon_filename, sizeof(weapon_filename),
-                     "players/male/", name);
-            ci->weaponmodel[i] = trap_R_RegisterModel(weapon_filename);
+            ci->weaponmodel[i] = trap_R_RegisterModel(va("players/male/%s", name));
         }
         // only default model when vwep is off
         if (!cg_vwep.integer)
@@ -225,26 +118,25 @@ static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
     }
 
     // icon file
-    Q_concat(icon_filename, sizeof(icon_filename),
-             "/players/", model_name, "/", skin_name, "_i.pcx");
-    ci->icon = trap_R_RegisterPic(icon_filename);
+    ci->icon = trap_R_RegisterPic(va("/players/%s/%s_i.pcx", model_name, skin_name));
 
     // dogtag file
+    val = Info_ValueForKey(s, "dogtag");
     ci->dogtag = 0;
-    if (COM_IsPath(dogtag_name)) {
-        Q_concat(icon_filename, sizeof(icon_filename),
-                 "/tags/", dogtag_name, ".pcx");
-        ci->dogtag = trap_R_RegisterPic(icon_filename);
-    }
+    if (COM_IsPath(val))
+        ci->dogtag = trap_R_RegisterPic(va("/tags/%s.pcx", val));
     if (!ci->dogtag)
         ci->dogtag = trap_R_RegisterPic("/tags/default.pcx");
 
-    strcpy(ci->model_name, model_name);
-    strcpy(ci->skin_name, skin_name);
-
     // sounds
-    for (i = 0; i < SS_MAX; i++)
-        ci->sounds[i] = CG_RegisterSexedSound(model_name, sexed_sounds[i]);
+    for (i = 0; i < SS_MAX; i++) {
+        // see if we already know of the model specific sound
+        ci->sounds[i] = trap_S_RegisterSound(va("#players/%s/%s.wav", model_name, sexed_sounds[i]));
+        if (!ci->sounds[i]) {
+            // no, revert to the male sound in the pak0.pak
+            ci->sounds[i] = trap_S_RegisterSound(va("player/male/%s.wav", sexed_sounds[i]));
+        }
+    }
 
     // base info should be at least partially valid
     if (ci == &cgs.baseclientinfo)
@@ -253,12 +145,11 @@ static void CG_LoadClientinfo(cg_clientinfo_t *ci, const char *s)
     // must have loaded all data types to be valid
     if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]) {
         ci->skin = 0;
+        ci->disguise_skin = 0;
         ci->icon = 0;
         ci->dogtag = 0;
         ci->model = 0;
         ci->weaponmodel[0] = 0;
-        ci->model_name[0] = 0;
-        ci->skin_name[0] = 0;
     }
 }
 
@@ -380,6 +271,7 @@ void CG_RegisterMedia(void)
 {
     int     i;
     char    name[MAX_QPATH];
+    char    skin[MAX_INFO_STRING];
 
     trap_SetLoadText("models");
     CG_RegisterTEntModels();
@@ -409,11 +301,11 @@ void CG_RegisterMedia(void)
     }
 
     trap_SetLoadText("clients");
-    CG_LoadClientinfo(&cgs.baseclientinfo, "unnamed\\male/grunt");
+    CG_LoadClientinfo(&cgs.baseclientinfo, "\\name\\unnamed\\skin\\male/grunt");
     for (i = 0; i < MAX_CLIENTS; i++) {
-        if (!trap_GetConfigstring(CS_PLAYERSKINS + i, name, sizeof(name)))
+        if (!trap_GetConfigstring(CS_PLAYERSKINS + i, skin, sizeof(skin)))
             continue;
-        CG_LoadClientinfo(&cgs.clientinfo[i], name);
+        CG_LoadClientinfo(&cgs.clientinfo[i], skin);
     }
 
     for (i = 0; i < MAX_LIGHTSTYLES; i++) {
@@ -451,6 +343,13 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
 
     if (index == CS_LAYOUT) {
         trap_GetConfigstring(index, cg.layout, sizeof(cg.layout));
+        return;
+    }
+
+    if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
+        char s[MAX_INFO_STRING];
+        trap_GetConfigstring(index, s, sizeof(s));
+        CG_LoadClientinfo(&cgs.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 
@@ -501,11 +400,6 @@ qvm_exported void CG_UpdateConfigstring(unsigned index)
 
     if (index >= CS_LIGHTS && index < CS_LIGHTS + MAX_LIGHTSTYLES) {
         CG_SetLightStyle(index - CS_LIGHTS, s);
-        return;
-    }
-
-    if (index >= CS_PLAYERSKINS && index < CS_PLAYERSKINS + MAX_CLIENTS) {
-        CG_LoadClientinfo(&cgs.clientinfo[index - CS_PLAYERSKINS], s);
         return;
     }
 }

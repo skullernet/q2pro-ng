@@ -835,12 +835,8 @@ static void CG_AddPacketEntities(void)
                     ent.model = cgs.baseclientinfo.model;
                     ci = &cgs.baseclientinfo;
                 }
-                if (renderfx & RF_USE_DISGUISE) {
-                    char buffer[MAX_QPATH];
-
-                    Q_concat(buffer, sizeof(buffer), "players/", ci->model_name, "/disguise.pcx");
-                    ent.skin = trap_R_RegisterSkin(buffer);
-                }
+                if (renderfx & RF_USE_DISGUISE)
+                    ent.skin = ci->disguise_skin;
                 if (s1->number < cgs.maxclients && s1->number != cg.frame->ps.clientnum) {
                     int self_index = (cg_entities[cg.frame->ps.clientnum].current.skinnum >> 16) & 15;
                     int team_index = (s1->skinnum >> 16) & 15;
