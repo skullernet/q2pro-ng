@@ -543,7 +543,6 @@ static const save_field_t level_locals_t_fields[] = {
 
     F(start_items),
     F(no_grapple),
-    F(have_compass),
 
     F(gravity),
     F(hub_map),

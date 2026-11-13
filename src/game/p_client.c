@@ -703,7 +703,7 @@ void InitClientPersistant(edict_t *ent, gclient_t *client)
                 client->pers.inventory[IT_WEAPON_BLASTER] = 1;
 
             if (!deathmatch.integer)
-                client->pers.inventory[IT_ITEM_COMPASS] = level.have_compass;
+                client->pers.inventory[IT_ITEM_COMPASS] = 1;
 
             // [Kex]
             // start items!
