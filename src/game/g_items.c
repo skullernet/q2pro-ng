@@ -1423,7 +1423,8 @@ void Compass_Update(edict_t *ent, bool first)
 static void Use_Compass(edict_t *ent, const gitem_t *inv)
 {
     if (!level.valid_poi) {
-        G_ClientPrintf(ent, PRINT_HIGH, "Compass data not available for objective.\n");
+        G_ClientPrintf(ent, PRINT_CENTER, "Compass data not available for objective.");
+        G_LocalSound(ent, CHAN_AUTO, G_SoundIndex("misc/help_marker.wav"), 1, ATTN_NONE);
         return;
     }
 
