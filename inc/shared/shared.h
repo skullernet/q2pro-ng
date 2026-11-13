@@ -1763,7 +1763,7 @@ typedef enum : uint32_t {
     RF_FULLBRIGHT       = BIT(3),   // always draw full intensity
     RF_DEPTHHACK        = BIT(4),   // for view weapon Z crunching
     RF_TRANSLUCENT      = BIT(5),
-    RF_FRAMELERP        = BIT(6),   // unused
+    RF_INLINE_BMODEL    = BIT(6),   // modelindex is inline bmodel index
     RF_BEAM             = BIT(7),
     RF_CUSTOMSKIN       = BIT(8),   // skin is an index in image_precache
     RF_GLOW             = BIT(9),   // pulse lighting for bonus items

@@ -129,6 +129,7 @@ static void PF_SetBrushModel(edict_t *ent, const char *name)
     if (num < 1 || num >= bsp->nummodels)
         Com_Error(ERR_DROP, "%s: bad inline model: %d", __func__, num);
 
+    ent->s.renderfx |= RF_INLINE_BMODEL;
     ent->s.modelindex = num;
     mod = &bsp->models[num];
 

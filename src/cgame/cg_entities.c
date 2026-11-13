@@ -818,7 +818,7 @@ static void CG_AddPacketEntities(void)
             ent.skinnum = (s1->skinnum >> ((trap_SlowRand() % 4) * 8)) & 0xff;
             ent.skin = 0;
             ent.model = 0;
-        } else if (s1->solid == PACKED_BSP) {
+        } else if (renderfx & RF_INLINE_BMODEL) {
             ent.skinnum = 0;
             ent.skin = 0;
             ent.model = ~s1->modelindex;

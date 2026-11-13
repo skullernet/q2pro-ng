@@ -1107,6 +1107,9 @@ void ED_ParseField(const char *key, const char *value, edict_t *ent)
 
         // found it
         ED_LoadField(f, value, (byte *)ent);
+
+        if (!strcmp(f->name, "renderfx"))
+            ent->s.renderfx &= ~RF_INLINE_BMODEL;
         return;
     }
 

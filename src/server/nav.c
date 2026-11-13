@@ -1087,7 +1087,7 @@ static void Nav_SetupEntities(void)
 
             if (!game_e->r.inuse)
                 continue;
-            if (game_e->r.solid != SOLID_TRIGGER && game_e->r.solid != SOLID_BSP)
+            if (!(game_e->s.renderfx & RF_INLINE_BMODEL))
                 continue;
 
             if (game_e->s.modelindex == e->model) {
