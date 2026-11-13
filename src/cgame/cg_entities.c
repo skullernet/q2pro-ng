@@ -818,41 +818,39 @@ static void CG_AddPacketEntities(void)
             ent.skinnum = (s1->skinnum >> ((trap_SlowRand() % 4) * 8)) & 0xff;
             ent.skin = 0;
             ent.model = 0;
+        } else if (s1->solid == PACKED_BSP) {
+            ent.skinnum = 0;
+            ent.skin = 0;
+            ent.model = ~s1->modelindex;
+        } else if (s1->modelindex == MODELINDEX_PLAYER) {
+            // use custom player skin
+            ent.skinnum = 0;
+            ci = &cgs.clientinfo[s1->skinnum & (MAX_CLIENTS - 1)];
+            ent.skin = ci->skin;
+            ent.model = ci->model;
+            if (!ent.skin || !ent.model) {
+                ent.skin = cgs.baseclientinfo.skin;
+                ent.model = cgs.baseclientinfo.model;
+                ci = &cgs.baseclientinfo;
+            }
+            if (renderfx & RF_USE_DISGUISE)
+                ent.skin = ci->disguise_skin;
+            if (s1->number < cgs.maxclients && s1->number != cg.frame->ps.clientnum) {
+                int self_index = (cg_entities[cg.frame->ps.clientnum].current.skinnum >> 16) & 15;
+                int team_index = (s1->skinnum >> 16) & 15;
+                int poi_index  = (s1->skinnum >> 20) & 15;
+                if (team_index && team_index == self_index) {
+                    vec3_t point = ent.origin;
+                    point.z += cent->box.maxs.z + 32;
+                    SCR_AddPOI(s1->number + 1, point, cgs.images.friend,
+                               poi_index ? U32_RED : U32_ORANGE, BASE_FRAMETIME * 2);
+                }
+            }
         } else {
             // set skin
-            if (s1->solid == PACKED_BSP) {
-                ent.skinnum = 0;
-                ent.skin = 0;
-                ent.model = ~s1->modelindex;
-            } else if (s1->modelindex == MODELINDEX_PLAYER) {
-                // use custom player skin
-                ent.skinnum = 0;
-                ci = &cgs.clientinfo[s1->skinnum & (MAX_CLIENTS - 1)];
-                ent.skin = ci->skin;
-                ent.model = ci->model;
-                if (!ent.skin || !ent.model) {
-                    ent.skin = cgs.baseclientinfo.skin;
-                    ent.model = cgs.baseclientinfo.model;
-                    ci = &cgs.baseclientinfo;
-                }
-                if (renderfx & RF_USE_DISGUISE)
-                    ent.skin = ci->disguise_skin;
-                if (s1->number < cgs.maxclients && s1->number != cg.frame->ps.clientnum) {
-                    int self_index = (cg_entities[cg.frame->ps.clientnum].current.skinnum >> 16) & 15;
-                    int team_index = (s1->skinnum >> 16) & 15;
-                    int poi_index  = (s1->skinnum >> 20) & 15;
-                    if (team_index && team_index == self_index) {
-                        vec3_t point = ent.origin;
-                        point.z += cent->box.maxs.z + 32;
-                        SCR_AddPOI(s1->number + 1, point, cgs.images.friend,
-                                   poi_index ? U32_RED : U32_ORANGE, BASE_FRAMETIME * 2);
-                    }
-                }
-            } else {
-                ent.skinnum = s1->skinnum;
-                ent.skin = 0;
-                ent.model = cgs.models.precache[s1->modelindex];
-            }
+            ent.skinnum = s1->skinnum;
+            ent.skin = 0;
+            ent.model = cgs.models.precache[s1->modelindex];
         }
 
         // allow skin override
