@@ -1228,9 +1228,9 @@ void USE(door_use)(edict_t *self, edict_t *other, edict_t *activator)
         return;
 
     if ((strcmp(self->classname, "func_door_rotating") == 0) && (self->spawnflags & SPAWNFLAG_DOOR_ROTATING_SAFE_OPEN) &&
-        (self->moveinfo.state == STATE_BOTTOM || self->moveinfo.state == STATE_DOWN) && !Vec3_IsEmpty(self->moveinfo.dir)) {
+        (self->moveinfo.state == STATE_BOTTOM || self->moveinfo.state == STATE_DOWN) && !Vec3_IsEmpty(self->movedir)) {
         vec3_t forward = Vec3_Direction(activator->s.origin, self->s.origin);
-        self->moveinfo.reversing = Vec3_Dot(forward, self->moveinfo.dir) > 0;
+        self->moveinfo.reversing = Vec3_Dot(forward, self->movedir) > 0;
     }
 
     if ((self->spawnflags & SPAWNFLAG_DOOR_TOGGLE) && (self->moveinfo.state == STATE_UP || self->moveinfo.state == STATE_TOP)) {
@@ -1559,23 +1559,24 @@ void SP_func_door_rotating(edict_t *ent)
 {
     if (ent->spawnflags & SPAWNFLAG_DOOR_ROTATING_SAFE_OPEN) {
         G_SetMovedir(ent);
-        ent->moveinfo.dir = ent->movedir;
+        // these don't behave well when blocked...
+        ent->spawnflags |= SPAWNFLAG_DOOR_CRUSHER;
     }
 
     ent->s.angles = vec3_origin;
 
     // set the axis of rotation
-    ent->movedir = vec3_origin;
+    vec3_t movedir = vec3_origin;
     if (ent->spawnflags & SPAWNFLAG_DOOR_ROTATING_X_AXIS)
-        ent->movedir.z = 1.0f;
+        movedir.z = 1.0f;
     else if (ent->spawnflags & SPAWNFLAG_DOOR_ROTATING_Y_AXIS)
-        ent->movedir.x = 1.0f;
+        movedir.x = 1.0f;
     else // Z_AXIS
-        ent->movedir.y = 1.0f;
+        movedir.y = 1.0f;
 
     // check for reverse rotation
     if (ent->spawnflags & SPAWNFLAG_DOOR_REVERSE)
-        ent->movedir = Vec3_Negate(ent->movedir);
+        movedir = Vec3_Negate(movedir);
 
     if (!st.distance) {
         G_Printf("%s: no distance set\n", etos(ent));
@@ -1583,8 +1584,8 @@ void SP_func_door_rotating(edict_t *ent)
     }
 
     ent->pos1 = ent->s.angles;
-    ent->pos2 = Vec3_MA(ent->s.angles, st.distance, ent->movedir);
-    ent->pos3 = Vec3_MA(ent->s.angles, -st.distance, ent->movedir);
+    ent->pos2 = Vec3_MA(ent->s.angles, st.distance, movedir);
+    ent->pos3 = Vec3_MA(ent->s.angles, -st.distance, movedir);
     ent->moveinfo.distance = st.distance;
 
     ent->movetype = MOVETYPE_PUSH;
@@ -1622,7 +1623,6 @@ void SP_func_door_rotating(edict_t *ent)
         ent->s.angles = ent->pos2;
         ent->pos2 = ent->pos1;
         ent->pos1 = ent->s.angles;
-        ent->movedir = Vec3_Negate(ent->movedir);
     }
 
     if (ent->spawnflags & SPAWNFLAG_DOOR_ROTATING_NO_COLLISION)
