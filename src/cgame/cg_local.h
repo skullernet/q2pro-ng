@@ -372,7 +372,8 @@ typedef struct {
 
 extern cgame_static_t   cgs;
 
-extern player_fog_t     cg_custom_fog;
+extern player_fog_t         cg_custom_fog;
+extern player_heightfog_t   cg_custom_heightfog;
 
 //=============================================================================
 

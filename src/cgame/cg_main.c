@@ -21,7 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 cgame_state_t   cg;
 cgame_static_t  cgs;
 
-player_fog_t    cg_custom_fog;
+player_fog_t        cg_custom_fog;
+player_heightfog_t  cg_custom_heightfog;
 
 #ifndef Q2_VM
 const cgame_import_t    *cgi;

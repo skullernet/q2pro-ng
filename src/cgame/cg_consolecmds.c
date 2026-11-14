@@ -53,7 +53,6 @@ static void dump_heightfog(const player_heightfog_t *fog)
 static void V_Fog_f(void)
 {
     int argc = trap_Argc();
-    float args[5];
 
     if (argc == 1) {
         if (cg_custom_fog.density || cg_custom_fog.sky_factor) {
@@ -61,42 +60,73 @@ static void V_Fog_f(void)
             dump_fog(&cg_custom_fog);
             return;
         }
-        if (!cg.frame) {
-            Com_Printf("No fog.\n");
-            return;
-        }
-        if (cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor) {
+        if (cg.frame && (cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor)) {
             Com_Printf("Global fog:\n");
             dump_fog(&cg.frame->ps.fog);
+        } else {
+            Com_Printf("No global fog.\n");
         }
-        if (cg.frame->ps.heightfog.density) {
-            Com_Printf("Height fog:\n");
-            dump_heightfog(&cg.frame->ps.heightfog);
-        }
-        if (!(cg.frame->ps.fog.density || cg.frame->ps.fog.sky_factor || cg.frame->ps.heightfog.density))
-            Com_Printf("No fog.\n");
         return;
     }
 
-    if (argc < 5) {
+    if (argc < 4) {
         Com_Printf("Usage: fog <r g b density> [sky_factor]\n");
         return;
     }
 
+    union {
+        float f[5];
+        player_fog_t g;
+    } args;
+
     for (int i = 0; i < 5; i++) {
         char buf[MAX_QPATH];
         trap_Argv(i + 1, buf, sizeof(buf));
-        args[i] = Q_clipf(Q_atof(buf), 0, 1);
+        args.f[i] = Q_clipf(Q_atof(buf), 0, 1);
     }
 
-    cg_custom_fog.color.r    = args[0];
-    cg_custom_fog.color.g    = args[1];
-    cg_custom_fog.color.b    = args[2];
-    cg_custom_fog.density    = args[3];
-    cg_custom_fog.sky_factor = args[4];
+    cg_custom_fog = args.g;
+}
 
-    cg.refdef.fog = cg_custom_fog;
-    cg.refdef.heightfog = (player_heightfog_t){ 0 };
+static void V_HeightFog_f(void)
+{
+    int argc = trap_Argc();
+
+    if (argc == 1) {
+        if (cg_custom_heightfog.density) {
+            Com_Printf("User set height fog:\n");
+            dump_heightfog(&cg_custom_heightfog);
+            return;
+        }
+        if (cg.frame && cg.frame->ps.heightfog.density) {
+            Com_Printf("Height fog:\n");
+            dump_heightfog(&cg.frame->ps.heightfog);
+        } else {
+            Com_Printf("No height fog.\n");
+        }
+        return;
+    }
+
+    if (argc < 10) {
+        Com_Printf("Usage: heightfog <r g b dist> <r g b dist> <density> <falloff>\n");
+        return;
+    }
+
+    union {
+        float f[10];
+        player_heightfog_t g;
+    } args;
+
+    for (int i = 0; i < 10; i++) {
+        char buf[MAX_QPATH];
+        trap_Argv(i + 1, buf, sizeof(buf));
+        if (i == 3 || i == 7)
+            args.f[i] = Q_atof(buf);
+        else
+            args.f[i] = Q_clipf(Q_atof(buf), 0, 1);
+    }
+
+    cg_custom_heightfog = args.g;
 }
 
 /*
@@ -376,6 +406,7 @@ static cg_consolecmd_t cg_consolecmds[] = {
     // use anytime commands
     { "viewpos", V_Viewpos_f },
     { "fog", V_Fog_f },
+    { "heightfog", V_HeightFog_f },
     { "sky", SCR_Sky_f },
     { "clearchathud", SCR_ClearChatHUD_f },
 

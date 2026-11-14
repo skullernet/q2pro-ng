@@ -753,10 +753,10 @@ void CG_RenderView(void)
 
     memcpy(cg.refdef.areabits, cg.frame->areabits, sizeof(cg.refdef.areabits));
 
-    if (cg_custom_fog.density) {
+    if (cg_custom_fog.density)
         cg.refdef.fog = cg_custom_fog;
-        cg.refdef.heightfog = (player_heightfog_t){ 0 };
-    }
+    if (cg_custom_heightfog.density)
+        cg.refdef.heightfog = cg_custom_heightfog;
 
     trap_R_RenderScene(&cg.refdef);
 }
