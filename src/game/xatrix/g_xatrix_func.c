@@ -125,7 +125,7 @@ void THINK(object_repair_sparks)(edict_t *ent)
 void SP_object_repair(edict_t *ent)
 {
     ent->movetype = MOVETYPE_NONE;
-    ent->r.solid = SOLID_NOT;
+    ent->r.solid = SOLID_TRIGGER;
     ent->classname = "object_repair";
     ent->r.box = Box3_FromRadius(8);
     ent->think = object_repair_sparks;

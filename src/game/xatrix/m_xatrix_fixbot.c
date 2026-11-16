@@ -113,10 +113,10 @@ static void landing_goal(edict_t *self)
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->r.solid = SOLID_BBOX;
+    ent->r.solid = SOLID_NOT;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    trap_LinkEntity(ent);   // FIXME
+    ent->nextthink = level.time + FRAME_TIME;
 
     ent->r.box = Box3_FromSize(32, -24, 24);
 
@@ -140,10 +140,10 @@ static void takeoff_goal(edict_t *self)
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->r.solid = SOLID_BBOX;
+    ent->r.solid = SOLID_NOT;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
-    trap_LinkEntity(ent);   // FIXME
+    ent->nextthink = level.time + FRAME_TIME;
 
     ent->r.box = Box3_FromSize(32, -24, 24);
 
@@ -195,23 +195,22 @@ static void roam_goal(edict_t *self)
     vec3_t   forward;
     vec3_t   end;
     edict_t *ent;
-    vec3_t   dang;
+    vec3_t   dang = vec3_origin;
     float    len, oldlen;
     int      i;
     vec3_t   whichvec = vec3_origin;
 
     ent = G_Spawn();
     ent->classname = "bot_goal";
-    ent->r.solid = SOLID_BBOX;
+    ent->r.solid = SOLID_NOT;
     ent->r.ownernum = self->s.number;
     ent->think = bot_goal_check;
     ent->nextthink = level.time + FRAME_TIME;
-    trap_LinkEntity(ent);   // FIXME
 
     oldlen = 0;
 
     for (i = 0; i < 12; i++) {
-        dang = self->s.angles;
+        dang.yaw = self->s.angles.yaw;
 
         if (i < 6)
             dang.yaw += 30 * i;
