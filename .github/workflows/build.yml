@@ -44,9 +44,6 @@ env:
 jobs:
   mingw:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: ["i686", "x86_64"]
     steps:
       - uses: actions/checkout@v4
 
@@ -62,7 +59,7 @@ jobs:
 
       - name: Build
         run: |
-          meson setup --cross-file=.ci/${{ matrix.arch }}-w64-mingw32.txt \
+          meson setup --cross-file=.ci/x86_64-w64-mingw32.txt \
           ${{ env.MESON_ARGS }} ${{ env.MESON_ARGS_WIN }} builddir
           meson compile -C builddir
 
