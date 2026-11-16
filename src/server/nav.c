@@ -554,28 +554,32 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
     if (num_points > 1) {
         link = Nav_GetLink(&nav_data.nodes[ctx->went_to[0]], &nav_data.nodes[ctx->went_to[1]]);
         Q_assert(link);
+    }
 
-        if (!request->nodeSearch.ignoreNodeFlags) {
-            // if the node isn't a traversal, we may want
-            // to skip the first node if we're either past it
-            // or touching it
-            if (!link->traversal) {
-                if (Nav_NodeReached(request->start, &nav_data.nodes[ctx->went_to[0]])) {
-                    first_point++;
-                }
+    if (!request->nodeSearch.ignoreNodeFlags) {
+        // if the node isn't a traversal, we may want
+        // to skip the first node if we're either past it
+        // or touching it
+        if (!link || !link->traversal) {
+            if (Nav_NodeReached(request->start, &nav_data.nodes[ctx->went_to[0]])) {
+                first_point++;
             }
         }
     }
 
     // store resulting path for compass, etc
     if (path->maxPoints) {
-        // if we're too far from the first node, add in our current position.
-        float dist = Vec3_DistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
+        float dist;
 
-        if (dist > PATH_POINT_TOO_CLOSE) {
-            if (info->numPathPoints < path->maxPoints)
-                path->points[info->numPathPoints] = request->start;
-            info->numPathPoints++;
+        // if we're too far from the first node, add in our current position.
+        if (first_point < num_points) {
+            dist = Vec3_DistanceSquared(request->start, nav_data.nodes[ctx->went_to[first_point]].origin);
+
+            if (dist > PATH_POINT_TOO_CLOSE) {
+                if (info->numPathPoints < path->maxPoints)
+                    path->points[info->numPathPoints] = request->start;
+                info->numPathPoints++;
+            }
         }
 
         // crawl forwards and add nodes
@@ -609,7 +613,10 @@ static void Nav_ReachedGoal(nav_path_t *path, int current)
         info->secondMovePoint = link->traversal->end;
         info->returnCode = PathReturnCode_TraversalPending;
     } else {
-        info->firstMovePoint = nav_data.nodes[ctx->went_to[first_point]].origin;
+        if (first_point < num_points)
+            info->firstMovePoint = nav_data.nodes[ctx->went_to[first_point]].origin;
+        else
+            info->firstMovePoint = request->goal;
         if (first_point + 1 < num_points)
             info->secondMovePoint = nav_data.nodes[ctx->went_to[first_point + 1]].origin;
         else
